@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 import { BrowserRouter, Route } from 'react-router-dom';
 
 import './App.css';
-import LoginForm from './LoginForm';
-import Board from './Board';
+import LoginForm from './views/LoginForm';
+import Board from './views/Board';
 
 class App extends Component {
   render() {
