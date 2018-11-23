@@ -1,17 +1,39 @@
-import React, { Component } from 'react'
+import React, { Component, createContext } from 'react'
 
 import { GraphProvider } from '../components/GraphProvider';
-import Device from '../components/Device';
+import Toolbar from '../components/Toolbar';
+import { createDevice } from '../DeviceFactory';
+
+import { getDevices, addDevice } from '../core/actions';
+
+const { Provider, Consumer: BoardConsumer } = createContext();
 
 class Board extends Component {
   state = {
-    devices: []
+    devices: [],
+    app: {
+      mode: 'dashboard', // modes are dashboard, connection
+    }
   };
 
-  addDevice = device => {
-    this.setState({
-     devices: this.state.devices.concat(device)
-    });
+  componentDidMount() {
+    this.fetchDevices();
+  }
+
+  addDevice = async deviceId => {
+    await addDevice({ deviceId });
+    await this.fetchDevices();
+  }
+
+  fetchDevices = async () => {
+    const { devices } = await getDevices();
+
+    console.log('Current devices', devices);
+    if(devices) {
+      this.setState({
+          devices: devices.map(deviceId => createDevice(deviceId))
+      });
+    }
   }
 
   render() {
@@ -20,17 +42,32 @@ class Board extends Component {
         style={{
           height: '100%',
           width: '100%',
+          padding: 5
         }}
       >
-        <GraphProvider
-          onAddDevice={this.addDevice}
-          devices={this.state.devices}
+       <Provider
+          value={this.state.app}
         >
-          <Device />
-        </GraphProvider>
+          <Toolbar
+            onAddDevice={this.addDevice}
+            enterAddConnectionMode={() =>
+              this.setState({
+                app: {
+                  ...this.state.app,
+                  mode: 'connection'
+                }
+              })
+            }
+            onRefresh={this.fetchDevices}
+          />
+          <GraphProvider>
+            { this.state.devices }
+          </GraphProvider>
+        </Provider>
       </div>
     );
   }
 }
 
 export default Board
+export { BoardConsumer };

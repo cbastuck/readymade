@@ -8134,6 +8134,10 @@ unique-filename@^1.1.0:
   dependencies:
     unique-slug "^2.0.0"
 
+unique-names-generator@^1.0.14:
+  version "1.0.14"
+  resolved "https://registry.yarnpkg.com/unique-names-generator/-/unique-names-generator-1.0.14.tgz#37722a7f417f75852e01710d3104e0bcf3c572b6"
+
 unique-slug@^2.0.0:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/unique-slug/-/unique-slug-2.0.1.tgz#5e9edc6d1ce8fb264db18a507ef9bd8544451ca6"

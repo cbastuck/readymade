@@ -8,7 +8,9 @@
     "react-dom": "^16.6.1",
     "react-router-dom": "^4.3.1",
     "semantic-ui-css": "^2.4.1",
-    "semantic-ui-react": "^0.83.0"
+    "semantic-ui-react": "^0.83.0",
+    "unique-names-generator": "^1.0.14",
+    "uuid": "^3.3.2"
   },
   "devDependencies": {
     "react-scripts": "2.1.1"
@@ -17,7 +19,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "rsync -avz --progress --exclude node_modules build/* hookup:frontend"
   },
   "eslintConfig": {
     "extends": "react-app"
