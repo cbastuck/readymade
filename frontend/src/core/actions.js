@@ -6,17 +6,20 @@ function currentBoardName() {
 function request(path, method='GET', body=undefined) {
   return fetch(`/api/${path}`, {
     method,
-    body: body && JSON.stringify(body)
+    body: body && JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json'
+    }
   });
 }
 
-export function addDevice(device) {
+export function addService(serviceDesc) {
   const board = currentBoardName();
-  return request(`devices?board=${board}`, 'PUT', device);
+  return request(`services?board=${board}`, 'PUT', serviceDesc);
 }
 
-export function getDevices() {
+export function getServices() {
   const board = currentBoardName();
-  return request(`devices?board=${board}`)
+  return request(`services?board=${board}`)
           .then(response => response.json());
 }

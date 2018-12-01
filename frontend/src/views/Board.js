@@ -2,36 +2,35 @@ import React, { Component, createContext } from 'react'
 
 import { GraphProvider } from '../components/GraphProvider';
 import Toolbar from '../components/Toolbar';
-import { createDevice } from '../DeviceFactory';
+import { createServiceUI } from '../UIFactory';
 
-import { getDevices, addDevice } from '../core/actions';
+import { getServices, addService } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
 
 class Board extends Component {
   state = {
-    devices: [],
+    services: [],
     app: {
       mode: 'dashboard', // modes are dashboard, connection
     }
   };
 
   componentDidMount() {
-    this.fetchDevices();
+    this.fetchServices();
   }
 
-  addDevice = async deviceId => {
-    await addDevice({ deviceId });
-    await this.fetchDevices();
+  addService = async serviceDesc => {
+    await addService(serviceDesc);
+    await this.fetchServices();
   }
 
-  fetchDevices = async () => {
-    const { devices } = await getDevices();
-
-    console.log('Current devices', devices);
-    if(devices) {
+  fetchServices = async () => {
+    const { services } = await getServices();
+    if(services) {
       this.setState({
-          devices: devices.map(deviceId => createDevice(deviceId))
+          services: services.map(serviceId =>
+            createServiceUI(serviceId))
       });
     }
   }
@@ -49,7 +48,7 @@ class Board extends Component {
           value={this.state.app}
         >
           <Toolbar
-            onAddDevice={this.addDevice}
+            onAddService={this.addService}
             enterAddConnectionMode={() =>
               this.setState({
                 app: {
@@ -58,10 +57,10 @@ class Board extends Component {
                 }
               })
             }
-            onRefresh={this.fetchDevices}
+            onRefresh={this.fetchServices}
           />
           <GraphProvider>
-            { this.state.devices }
+            { this.state.services }
           </GraphProvider>
         </Provider>
       </div>

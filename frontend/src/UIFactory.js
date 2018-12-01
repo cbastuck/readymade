@@ -3,9 +3,9 @@ import uuid from 'uuid/v4';
 
 import Device from './components/Device';
 
-export function createDevice(deviceId) {
+export function createServiceUI(serviceId) {
   const id = uuid();
-  switch(deviceId) {
+  switch(serviceId) {
     default:
       return <Device key={id} id={id} />;
   }

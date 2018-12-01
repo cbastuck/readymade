@@ -1,5 +1,12 @@
 import React, { Component } from 'react';
 
+const selectedServiceDesc = {
+  serviceId: 'hookup.to/service/rest-endpoint',
+  operation: 'POST',
+  serviceName: 'email',
+  selector: { query: 'email' }
+};
+
 export default class Toolbar extends Component {
   render() {
     return (
@@ -20,7 +27,7 @@ export default class Toolbar extends Component {
             margin: 3,
             borderRadius: 3,
           }}
-          onClick={() => this.props.onAddDevice('device')}
+          onClick={() => this.props.onAddService(selectedServiceDesc)}
         >
           +
         </button>
