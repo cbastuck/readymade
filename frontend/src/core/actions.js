@@ -23,3 +23,8 @@ export function getServices() {
   return request(`services?board=${board}`)
           .then(response => response.json());
 }
+
+export function getRegistry() {
+  return request('registry')
+    .then(response => response.json());
+}
