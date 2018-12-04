@@ -18,6 +18,11 @@ export function addService(serviceDesc) {
   return request(`services?board=${board}`, 'PUT', serviceDesc);
 }
 
+export function clearBoard() {
+  const board = currentBoardName();
+  return request(`services?board=${board}`, 'DELETE');
+}
+
 export function getServices() {
   const board = currentBoardName();
   return request(`services?board=${board}`)

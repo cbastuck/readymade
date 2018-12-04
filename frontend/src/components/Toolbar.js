@@ -5,7 +5,8 @@ import ServiceDropdown from './ServiceDropdown';
 import { getRegistry } from '../core/actions';
 
 export default class Toolbar extends Component {
-  state ={};
+  state = {
+  };
 
   componentDidMount() {
     getRegistry()
