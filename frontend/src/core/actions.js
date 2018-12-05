@@ -1,4 +1,4 @@
-function currentBoardName() {
+export function currentBoardName() {
   const path = window.location.href.split('/');
   return path[path.length - 1];
 }

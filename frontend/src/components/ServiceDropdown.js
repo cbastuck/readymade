@@ -3,7 +3,10 @@ import { Dropdown, Menu } from 'semantic-ui-react'
 
 import 'semantic-ui-css/semantic.min.css';
 
-import { clearBoard } from '../core/actions';
+import {
+  currentBoardName,
+  clearBoard
+} from '../core/actions';
 
 export default class ServiceDropdown extends Component {
 
@@ -16,7 +19,22 @@ export default class ServiceDropdown extends Component {
     return (
       <Menu>
         <Dropdown
-          text='Services'
+          text={`Board Menu`}
+          className='link item'
+        >
+          <Dropdown.Menu>
+            <Dropdown.Header>
+              {currentBoardName()}
+            </Dropdown.Header>
+            <Dropdown.Item
+              onClick={clearBoard}
+            >
+              Clear Board
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+        <Dropdown
+          text='Add Services'
           search
           selection
           pointing
@@ -37,7 +55,7 @@ export default class ServiceDropdown extends Component {
                       key={`${runtimeName}.${service.serviceId}`}
                       onClick={() => this.props.addService(service)}
                     >
-                      {service.serviceId}
+                      {service.serviceName}
                     </Dropdown.Item>
                   ),
                   <Dropdown.Divider
@@ -49,9 +67,10 @@ export default class ServiceDropdown extends Component {
           </Dropdown.Menu>
         </Dropdown>
         <Menu.Item
-          onClick={clearBoard}
+          onClick={() => console.log('Redirect to login')}
+          className="right"
         >
-          Clear
+          Account
         </Menu.Item>
       </Menu>
     );
