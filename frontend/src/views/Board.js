@@ -1,6 +1,7 @@
 import React, { Component, createContext } from 'react'
 
 import { GraphProvider } from '../components/GraphProvider';
+import Scene from '../components/Scene';
 import Toolbar from '../components/Toolbar';
 import { createServiceUI } from '../UIFactory';
 
@@ -59,9 +60,16 @@ class Board extends Component {
             }
             onRefresh={this.fetchServices}
           />
-          <GraphProvider>
+          <Scene>
             { this.state.services }
-          </GraphProvider>
+          </Scene>
+          {
+            /*
+            <GraphProvider>
+              { this.state.services }
+            </GraphProvider>
+           */
+         }
         </Provider>
       </div>
     );
