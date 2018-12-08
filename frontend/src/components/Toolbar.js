@@ -31,8 +31,8 @@ export default class Toolbar extends Component {
             this.props.onAddService({
               ...service,
               operation: 'POST',
-              serviceName: 'email',
-              selector: { query: 'email' },
+              instanceName: 'email',
+              selector: { query: 'in' },
             }
           )}
           onAccount={this.props.onAccount}
