@@ -18,9 +18,6 @@ export default class Toolbar extends Component {
       <div
         style={{
           width: '100%',
-          height: 40,
-          border: 'solid 1px gray',
-          borderRadius: 3,
           marginBottom: 5,
           textAlign: 'left'
         }}

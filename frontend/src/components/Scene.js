@@ -8,9 +8,9 @@ export default class Scene extends Component {
     return (
       <div
         style={{
-          height: '100%',
+          height: '94%',
           width: '100%',
-          border: 'solid 1px gray',
+          border: 'solid 1px lightgray',
           borderRadius: 3
         }}
       >

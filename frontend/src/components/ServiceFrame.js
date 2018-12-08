@@ -19,7 +19,7 @@ export default class ServiceFrame extends Component {
             top,
             marginTop: 80,
             left: position * width + (position + 1) * margin - 7,
-            color: '#7F7F7F',
+            color: 'lightgray',
             zIndex: 100,
             backgroundColor: 'white'
           }}
@@ -28,7 +28,7 @@ export default class ServiceFrame extends Component {
         </div>
         <div
           style={{
-            border: 'solid 2px #7F7F7F',
+            border: 'solid 1px lightgray',
             width,
             height: width,
             borderRadius: 10,
@@ -41,7 +41,7 @@ export default class ServiceFrame extends Component {
             position: 'absolute',
             left: position * width + (position + 1) * margin,
             fontSize: 15,
-            color: this.state.mouseOver ? 'black' : 'gray'
+            color: 'black'
           }}
           onMouseOver={() => this.setState({ mouseOver: true })}
           onMouseOut={() => this.setState({ mouseOver: false })}
