@@ -67,7 +67,7 @@ export default class ServiceDropdown extends Component {
           </Dropdown.Menu>
         </Dropdown>
         <Menu.Item
-          onClick={() => console.log('Redirect to login')}
+          onClick={this.props.onAccount}
           className="right"
         >
           Account

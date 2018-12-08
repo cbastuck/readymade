@@ -1,11 +1,10 @@
 import React, { Component, createContext } from 'react'
 
-import { GraphProvider } from '../components/GraphProvider';
 import Scene from '../components/Scene';
 import Toolbar from '../components/Toolbar';
 import { createServiceUI } from '../UIFactory';
 
-import { getServices, addService } from '../core/actions';
+import { getServices, addService, redirectToLogin } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
 
@@ -37,6 +36,7 @@ class Board extends Component {
   }
 
   render() {
+   const { history } = this.props;
     return (
       <div
         style={{
@@ -59,17 +59,11 @@ class Board extends Component {
               })
             }
             onRefresh={this.fetchServices}
+            onAccount={redirectToLogin}
           />
           <Scene>
             { this.state.services }
           </Scene>
-          {
-            /*
-            <GraphProvider>
-              { this.state.services }
-            </GraphProvider>
-           */
-         }
         </Provider>
       </div>
     );

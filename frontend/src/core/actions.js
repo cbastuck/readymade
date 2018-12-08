@@ -1,3 +1,5 @@
+import qs from 'querystring';
+
 export function currentBoardName() {
   const path = window.location.href.split('/');
   return path[path.length - 1];
@@ -32,4 +34,16 @@ export function getServices() {
 export function getRegistry() {
   return request('registry')
     .then(response => response.json());
+}
+
+export function redirectToLogin() {
+  const query = qs.stringify({
+    client_id: 'oidcCLIENT',
+    response_type: 'code',
+    scope: 'openid',
+    redirect_url: 'http://localhost/auth2app'
+  });
+  const target = `/openid/auth?${query}`;
+  window.location.href = target;
+  return false;
 }

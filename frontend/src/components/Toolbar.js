@@ -35,6 +35,7 @@ export default class Toolbar extends Component {
               selector: { query: 'email' },
             }
           )}
+          onAccount={this.props.onAccount}
         />
       </div>
     );
