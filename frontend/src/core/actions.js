@@ -36,12 +36,16 @@ export function getRegistry() {
     .then(response => response.json());
 }
 
+export function redirectUri() {
+  return `${window.location.protocol}//${window.location.host}/auth2app`;
+}
+
 export function redirectToLogin() {
   const query = qs.stringify({
     client_id: 'oidcCLIENT',
     response_type: 'code',
     scope: 'openid',
-    redirect_url: 'http://localhost/auth2app'
+    redirect_uri: redirectUri()
   });
   const target = `/openid/auth?${query}`;
   window.location.href = target;

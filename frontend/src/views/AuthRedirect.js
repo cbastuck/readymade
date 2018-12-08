@@ -3,9 +3,10 @@ import { Redirect } from 'react-router-dom';
 import moment from 'moment';
 import qs from 'querystring';
 
+import { redirectUri } from '../core/actions';
+
 const clientId = 'oidcCLIENT';
 const clientSecret = 'test';
-const callbackUrl = 'http://localhost/auth2app';
 
 export default class AuthRedirect extends Component {
   constructor(props) {
@@ -18,7 +19,7 @@ export default class AuthRedirect extends Component {
 
   exchangeCodeForToken = async code => {
     const response = await fetch(
-      `http://localhost/openid/token`,
+      `/openid/token`,
       {
          method: 'POST',
          headers: {
@@ -28,7 +29,7 @@ export default class AuthRedirect extends Component {
          body: qs.stringify({
            client_secret: clientSecret,
            client_id: clientId,
-           redirect_uri: callbackUrl,
+           redirect_uri: redirectUri(),
            grant_type: 'authorization_code',
            code: code,
           }
