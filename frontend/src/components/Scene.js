@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import SericeFrame from './ServiceFrame';
+import ServiceFrame from './ServiceFrame';
 
 export default class Scene extends Component {
   render() {
@@ -17,7 +17,8 @@ export default class Scene extends Component {
         {
           children && children.map(
             (service, idx) => (
-              <SericeFrame
+              <ServiceFrame
+                key={`scene-frame-${service.uuid}`}
                 service={service}
                 position={idx}
               />

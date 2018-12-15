@@ -7,21 +7,23 @@ export default class ServiceFrame extends Component {
 
   render() {
     const { position, service } = this.props;
-    const width = 200;
+    const width = 230;
     const margin = 20;
     const top = '40%';
     return (
-      <div>
+      <div
+        key={`service-frame-${service.uuid}`}
+      >
         <div
           style={{
-            fontSize: '4em',
+            fontSize: '3em',
             position: 'absolute',
             top,
-            marginTop: 80,
+            marginTop: '7%',
+            marginLeft: -8,
             left: position * width + (position + 1) * margin - 7,
             color: 'lightgray',
             zIndex: 100,
-            backgroundColor: 'white'
           }}
         >
           >
@@ -30,7 +32,6 @@ export default class ServiceFrame extends Component {
           style={{
             border: 'solid 1px lightgray',
             width,
-            height: width,
             borderRadius: 10,
             textAlign: 'center',
             display: 'flex',

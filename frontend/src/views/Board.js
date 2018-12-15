@@ -4,7 +4,11 @@ import Scene from '../components/Scene';
 import Toolbar from '../components/Toolbar';
 import { createServiceUI } from '../UIFactory';
 
-import { getServices, addService, redirectToLogin } from '../core/actions';
+import {
+  getServices,
+  addService,
+  redirectToLogin
+} from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
 

@@ -24,14 +24,7 @@ export default class Toolbar extends Component {
       >
         <ServiceDropdown
           registry={this.state.registry}
-          addService={service =>
-            this.props.onAddService({
-              ...service,
-              operation: 'POST',
-              instanceName: 'email',
-              selector: { query: 'in' },
-            }
-          )}
+          addService={service => this.props.onAddService(service)}
           onAccount={this.props.onAccount}
         />
       </div>

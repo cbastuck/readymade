@@ -36,6 +36,11 @@ export function getRegistry() {
     .then(response => response.json());
 }
 
+export function configureService(service, config) {
+  const board = currentBoardName();
+  return request(`services?board=${board}`, 'POST', { service, config });
+}
+
 export function redirectUri() {
   return `${window.location.protocol}//${window.location.host}/auth2app`;
 }

@@ -46,7 +46,8 @@ class AppContext extends Component {
   processToken = incomingToken => {
     const { token, decoded } = validateToken(incomingToken);
     if (!token && getCookie('token')) {
-      return removeCookie('token');
+      removeCookie('token');
+      return {};
     }
     return { token, username: decoded && decoded.nickname };
   }
