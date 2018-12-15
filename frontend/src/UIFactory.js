@@ -7,6 +7,8 @@ export function createServiceUI(service) {
   switch(service.serviceId) {
     case 'hookup.to/service/rest-input':
       return <RESTInputUI key={id} id={id} service={service}/>;
+    case 'hookup.to/service/requester':
+      return <div key={id} id={id} service={service}/>;
     default:
       return <div>Unknown Service {service.serviceId}</div>;
   }

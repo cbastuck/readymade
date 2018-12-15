@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Header } from 'semantic-ui-react';
 
 export default class ServiceFrame extends Component {
   state = {
@@ -47,8 +48,25 @@ export default class ServiceFrame extends Component {
           onMouseOver={() => this.setState({ mouseOver: true })}
           onMouseOut={() => this.setState({ mouseOver: false })}
         >
+          <div
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          <div
+            style={{
+              marginTop: 15,
+              marginBottom: 20
+            }}
+          >
+            <Header as='h3' dividing>
+              { service.props.service.serviceName }
+            </Header>
+          </div>
           { service }
         </div>
+      </div>
       </div>
     );
   }

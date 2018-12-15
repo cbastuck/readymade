@@ -36,112 +36,95 @@ export default class extends Component {
     };
 
     return (
-      <div
-        style={{
-          width: '100%',
-          height: '100%',
-        }}
-      >
+      <div>
+        <div
+          style={lineStyle}
+        >
+          <Label>
+            Method
+          </Label>
+          <Dropdown
+            className="left"
+            placeholder='Operation'
+            options={[
+              { key: 'GET', value: 'GET', text: 'GET' },
+              { key: 'POST', value: 'POST', text: 'POST' },
+              { key: 'DELETE', value: 'DELETE', text: 'DELETE' },
+              { key: 'PUT', value: 'PUT', text: 'PUT' },
+            ]}
+            value={this.state.op}
+            onChange={(_ev, data) => this.setState({ op: data.value })}
+          />
+        </div>
+
+        <div
+          style={lineStyle}
+        >
+          <Label>Path</Label>
+          <Input
+            placeholder='Path'
+            value={this.state.path}
+            style={{ width: '75%' }}
+            onChange={(_, data) => this.setState({ path: data.value })}
+          />
+        </div>
+
+        {
+          this.state.op === 'GET' && (
+            <div
+              style={lineStyle}
+            >
+              <Label>Query</Label>
+              <Input
+                placeholder='Param'
+                value={this.state.selector.query}
+                style={{ width: '75%' }}
+                onChange={(_, data) => this.setState({
+                  selector: {
+                    ...this.state.selector,
+                    query: data.value
+                  }})
+                }
+              />
+            </div>
+          )
+        }
+
         <div
           style={{
-            marginTop: 15,
-            marginBottom: 20
+            ...lineStyle,
+            textAlign: 'center',
           }}
         >
-          <Header as='h3' dividing>
-            {service.serviceName}
-          </Header>
-        </div>
-        <div>
-          <div
-            style={lineStyle}
-          >
-            <Label>
-              Method
-            </Label>
-            <Dropdown
-              className="left"
-              placeholder='Operation'
-              options={[
-                { key: 'GET', value: 'GET', text: 'GET' },
-                { key: 'POST', value: 'POST', text: 'POST' },
-                { key: 'DELETE', value: 'DELETE', text: 'DELETE' },
-                { key: 'PUT', value: 'PUT', text: 'PUT' },
-              ]}
-              value={this.state.op}
-              onChange={(_ev, data) => this.setState({ op: data.value })}
-            />
-          </div>
-
-          <div
-            style={lineStyle}
-          >
-            <Label>Path</Label>
-            <Input
-              placeholder='Path'
-              value={this.state.path}
-              style={{ width: '75%' }}
-              onChange={(_, data) => this.setState({ path: data.value })}
-            />
-          </div>
-
-          {
-            this.state.op === 'GET' && (
-              <div
-                style={lineStyle}
-              >
-                <Label>Query</Label>
-                <Input
-                  placeholder='Param'
-                  value={this.state.selector.query}
-                  style={{ width: '75%' }}
-                  onChange={(_, data) => this.setState({
-                    selector: {
-                      ...this.state.selector,
-                      query: data.value
-                    }})
-                  }
-                />
-              </div>
-            )
-          }
-
-          <div
-            style={{
-              ...lineStyle,
-              textAlign: 'center',
+          <Button
+            style={{ width: '95%' }}
+            onClick={async () => {
+              const config = await configureService(service, this.state);
+              this.setState({ ...config });
             }}
           >
-            <Button
-              style={{ width: '95%' }}
-              onClick={async () => {
-                const config = await configureService(service, this.state);
-                this.setState({ ...config });
-              }}
-            >
-              Configure
-            </Button>
-          </div>
-
-          {
-            this.state.op === 'GET' &&
-            this.state.running && (
-              <div
-                style={{
-                  ...lineStyle,
-                  textAlign: 'right',
-                  margin: '1px 10px',
-              }}>
-                <a
-                  href={`/api/${service.board}/${this.state.path}?${this.state.selector.query}=test`}
-                  target="blank"
-                >
-                  test
-                </a>
-              </div>
-            )
-          }
+            Configure
+          </Button>
         </div>
+
+        {
+          this.state.op === 'GET' &&
+          this.state.running && (
+            <div
+              style={{
+                ...lineStyle,
+                textAlign: 'right',
+                margin: '1px 10px',
+            }}>
+              <a
+                href={`/api/${service.board}/${this.state.path}?${this.state.selector.query}=test`}
+                target="blank"
+              >
+                test
+              </a>
+            </div>
+          )
+        }
       </div>
    );
   }
