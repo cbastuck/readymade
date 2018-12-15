@@ -16,6 +16,7 @@ const { Provider, Consumer: BoardConsumer } = createContext();
 class Board extends Component {
   state = {
     services: [],
+
     // context the board provides
     boardContext: {
       mode: 'dashboard', // modes are dashboard, connection

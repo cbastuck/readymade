@@ -17,11 +17,11 @@ export default class ServiceFrame extends Component {
       >
         <div
           style={{
-            fontSize: '3em',
+            fontSize: '2em',
             position: 'absolute',
             top,
-            marginTop: '7%',
-            marginLeft: -8,
+            marginTop: 5,
+            marginLeft: -10,
             left: position * width + (position + 1) * margin - 7,
             color: 'lightgray',
             zIndex: 100,
@@ -56,7 +56,7 @@ export default class ServiceFrame extends Component {
         >
           <div
             style={{
-              marginTop: 15,
+              marginTop: 5,
               marginBottom: 20
             }}
           >
