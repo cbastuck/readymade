@@ -1,8 +1,6 @@
 import React, { Component } from 'react';
 import { Dropdown, Menu } from 'semantic-ui-react'
 
-import 'semantic-ui-css/semantic.min.css';
-
 import { AppConsumer } from '../AppContext';
 import {
   currentBoardName,
