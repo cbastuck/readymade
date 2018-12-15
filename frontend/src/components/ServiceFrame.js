@@ -10,7 +10,7 @@ export default class ServiceFrame extends Component {
     const { position, service } = this.props;
     const width = 230;
     const margin = 20;
-    const top = '40%';
+    const top = '15%';
     return (
       <div
         key={`service-frame-${service.uuid}`}
