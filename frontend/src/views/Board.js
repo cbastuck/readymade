@@ -11,7 +11,8 @@ const { Provider, Consumer: BoardConsumer } = createContext();
 class Board extends Component {
   state = {
     services: [],
-    app: {
+    // context the board provides
+    boardContext: {
       mode: 'dashboard', // modes are dashboard, connection
     }
   };
@@ -45,14 +46,14 @@ class Board extends Component {
         }}
       >
        <Provider
-          value={this.state.app}
+          value={this.state.boardContext}
         >
           <Toolbar
             onAddService={this.addService}
             enterAddConnectionMode={() =>
               this.setState({
                 app: {
-                  ...this.state.app,
+                  ...this.state.boardContext,
                   mode: 'connection'
                 }
               })

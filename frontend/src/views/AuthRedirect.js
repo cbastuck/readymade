@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import { Redirect } from 'react-router-dom';
-import moment from 'moment';
 import qs from 'querystring';
 
-import { redirectUri } from '../core/actions';
+import { AppConsumer } from '../AppContext'
+import { redirectUri, redirectToLogin } from '../core/actions';
 
 const clientId = 'oidcCLIENT';
 const clientSecret = 'test';
@@ -11,10 +11,17 @@ const clientSecret = 'test';
 export default class AuthRedirect extends Component {
   constructor(props) {
     super(props);
-    const { location } = props;
 
+    const { location } = props;
     const params = qs.parse(location.search.substr(1));
-    this.exchangeCodeForToken(params.code);
+
+    this.state = {
+      error: params.error
+    };
+
+    if (params.code) {
+      this.exchangeCodeForToken(params.code);
+    }
   }
 
   exchangeCodeForToken = async code => {
@@ -42,13 +49,33 @@ export default class AuthRedirect extends Component {
     }
   }
 
+  renderError = error => {
+    switch(error) {
+      case 'access_denied':
+        return redirectToLogin();
+      default:
+        return <div>Unknown Error</div>;
+    }
+  }
+
   render() {
+    if (this.state.error) {
+      return this.renderError(this.state.error);
+    }
+
     const token = this.state && this.state.token;
     if (!token) {
       return false;
     }
-    const exp = moment.utc().add(1, 'd').toString();
-    document.cookie = `token=${this.state.token}; expires=${exp}`;
-    return <Redirect to="/" />
+    return (
+      <AppConsumer>
+        {
+          appContext => {
+            appContext.updateToken(this.state.token);
+            return <Redirect to="/" />
+          }
+        }
+      </AppConsumer>
+    );
   }
 }

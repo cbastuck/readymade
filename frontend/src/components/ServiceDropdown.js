@@ -3,6 +3,7 @@ import { Dropdown, Menu } from 'semantic-ui-react'
 
 import 'semantic-ui-css/semantic.min.css';
 
+import { AppConsumer } from '../AppContext';
 import {
   currentBoardName,
   clearBoard
@@ -17,62 +18,68 @@ export default class ServiceDropdown extends Component {
     }
 
     return (
-      <Menu>
-        <Dropdown
-          text={`Board Menu`}
-          className='link item'
-        >
-          <Dropdown.Menu>
-            <Dropdown.Header>
-              {currentBoardName()}
-            </Dropdown.Header>
-            <Dropdown.Item
-              onClick={clearBoard}
-            >
-              Clear Board
-            </Dropdown.Item>
-          </Dropdown.Menu>
-        </Dropdown>
-        <Dropdown
-          text='Add Services'
-          search
-          selection
-          pointing
-          className='link item'
-          onSearchChange={e => console.log('search', e.target.value)}
-        >
-          <Dropdown.Menu>
-            {
-              Object.keys(registry).map(runtimeName =>
-                [
-                  <Dropdown.Header
-                    key={`${runtimeName}.header`}
+      <AppConsumer>
+        {
+          appContext => (
+            <Menu>
+              <Dropdown
+                text={`Board Menu`}
+                className='link item'
+              >
+                <Dropdown.Menu>
+                  <Dropdown.Header>
+                    {currentBoardName()}
+                  </Dropdown.Header>
+                  <Dropdown.Item
+                    onClick={clearBoard}
                   >
-                    {runtimeName}
-                  </Dropdown.Header>,
-                  registry[runtimeName].map(service =>
-                    <Dropdown.Item
-                      key={`${runtimeName}.${service.serviceId}`}
-                      onClick={() => this.props.addService(service)}
-                    >
-                      {service.serviceName}
-                    </Dropdown.Item>
-                  ),
-                  <Dropdown.Divider
-                    key={`${runtimeName}.devider`}
-                  />
-                ]
-              )
-            }
-          </Dropdown.Menu>
-        </Dropdown>
-        <Menu.Item
-          onClick={this.props.onAccount}
-          className="right"
-        >
-          Account
-        </Menu.Item>
-      </Menu>
+                    Clear Board
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+              <Dropdown
+                text='Add Services'
+                search
+                selection
+                pointing
+                className='link item'
+                onSearchChange={e => console.log('search', e.target.value)}
+              >
+                <Dropdown.Menu>
+                  {
+                    Object.keys(registry).map(runtimeName =>
+                      [
+                        <Dropdown.Header
+                          key={`${runtimeName}.header`}
+                        >
+                          {runtimeName}
+                        </Dropdown.Header>,
+                        registry[runtimeName].map(service =>
+                          <Dropdown.Item
+                            key={`${runtimeName}.${service.serviceId}`}
+                            onClick={() => this.props.addService(service)}
+                          >
+                            {service.serviceName}
+                          </Dropdown.Item>
+                        ),
+                        <Dropdown.Divider
+                          key={`${runtimeName}.devider`}
+                        />
+                      ]
+                    )
+                  }
+                </Dropdown.Menu>
+              </Dropdown>
+              <Menu.Item
+                onClick={this.props.onAccount}
+                className="right"
+              >
+                { appContext.username || 'Account' }
+              </Menu.Item>
+            </Menu>
+          )
+        }
+      </AppConsumer>
     );
   }
 }

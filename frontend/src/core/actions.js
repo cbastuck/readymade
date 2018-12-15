@@ -44,7 +44,7 @@ export function redirectToLogin() {
   const query = qs.stringify({
     client_id: 'oidcCLIENT',
     response_type: 'code',
-    scope: 'openid',
+    scope: 'openid profile',
     redirect_uri: redirectUri()
   });
   const target = `/openid/auth?${query}`;
