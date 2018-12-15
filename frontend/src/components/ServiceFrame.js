@@ -24,7 +24,6 @@ export default class ServiceFrame extends Component {
             marginLeft: -10,
             left: position * width + (position + 1) * margin - 7,
             color: 'lightgray',
-            zIndex: 100,
           }}
         >
           >

@@ -39,11 +39,14 @@ export default class RestInputUI extends Component {
         <div
           style={lineStyle}
         >
-          <Label>
+          <Label
+            style={{ width: 60 }}
+          >
             Method
           </Label>
           <Dropdown
             className="left"
+            style={{ marginLeft: 5 }}
             placeholder='Operation'
             options={[
               { key: 'GET', value: 'GET', text: 'GET' },
@@ -59,11 +62,13 @@ export default class RestInputUI extends Component {
         <div
           style={lineStyle}
         >
-          <Label>Path</Label>
+          <Label
+            style={{ width: 60 }}
+          >Path</Label>
           <Input
             placeholder='Path'
             value={this.state.path}
-            style={{ width: '75%' }}
+            style={{ width: 160 }}
             onChange={(_, data) => this.setState({ path: data.value })}
           />
         </div>
@@ -71,13 +76,17 @@ export default class RestInputUI extends Component {
         {
           this.state.op === 'GET' && (
             <div
-              style={lineStyle}
+              style={{ ...lineStyle }}
             >
-              <Label>Query</Label>
+              <Label
+                style={{ width: 60 }}
+              >
+                Query
+              </Label>
               <Input
                 placeholder='Param'
                 value={this.state.selector.query}
-                style={{ width: '75%' }}
+                style={{ width: 160 }}
                 onChange={(_, data) => this.setState({
                   selector: {
                     ...this.state.selector,
@@ -96,7 +105,7 @@ export default class RestInputUI extends Component {
           }}
         >
           <Button
-            style={{ width: '95%' }}
+            style={{ width: 210 }}
             onClick={async () => {
               const config = await configureService(service, this.state);
               this.setState({ ...config });
