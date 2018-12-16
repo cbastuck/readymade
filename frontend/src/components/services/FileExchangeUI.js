@@ -2,19 +2,28 @@ import React, { Component } from 'react';
 import {
   Input,
   Button,
-  Label
 } from 'semantic-ui-react';
 
-import { configureService } from '../../core/actions';
+import {
+  configureService,
+  getServiceConfiguration
+} from '../../core/actions';
 
 export default class FileExchangeUI extends Component {
   state = {
-    name: 'name'
+    uploadName: undefined,
+    availableDownloads: undefined
   };
 
   componentDidMount() {
-    if (this.state && this.state.name) {
-      this.onNameChanged(this.state.name);
+    this.syncConfiguration();
+  }
+
+  syncConfiguration = async () => {
+    const { service } = this.props;
+    const config = await getServiceConfiguration(service);
+    if (config.files) {
+      this.setState({ availableDownloads: Object.keys(config.files) });
     }
   }
 
@@ -23,7 +32,7 @@ export default class FileExchangeUI extends Component {
       clearTimeout(this.changeNameTimer);
       this.changeNameTimer = undefined;
     }
-    this.setState({ name });
+    this.setState({ uploadName: name });
     this.changeNameTimer = setTimeout(
       () => {
         this.updateExchangeName(name);
@@ -43,73 +52,64 @@ export default class FileExchangeUI extends Component {
       textAlign: 'left',
       marginBottom: 10,
     };
-    return (
-      <div
-        style={lineStyle}
-      >
-        <div
-          style={lineStyle}
-        >
-          <Label style={{ width: 60 }}>
-            Name
-          </Label>
-          <Input
-            placeholder='Name of Exchange'
-            value={this.state.name}
-            style={{ width: 160 }}
-            onChange={(_, data) => this.onNameChanged(data.value)}
-          />
-        </div>
 
+    return (
+      <div>
         <div
           style={{
             ...lineStyle,
             textAlign: 'center',
           }}
         >
-          <div style={lineStyle}>
-
-            <form
-              action={`/api/${service.board}/${this.state.name}`}
-              method="post"
-              enctype="multipart/form-data"
+          <form
+            action={`/api/${service.board}/${this.state.uploadName}`}
+            method="post"
+            encType="multipart/form-data"
+          >
+            <Input
+              style={{ width: '100%' }}
+              type="file"
+              name="file"
+              onChange={(_, data) => {
+                const filePath = data.value.split('\\');
+                const fileName = filePath[filePath.length - 1];
+                this.onNameChanged(fileName)
+              }}
+            />
+            <div
+              style={{
+                ...lineStyle,
+                textAlign: 'center',
+              }}
             >
-              <div
-                className="container input"
-                style={lineStyle}
-              >
-                  <input type="file" name="file"/>
-              </div>
-              <div
+              <Button
+                type="submit"
                 style={{
-                  ...lineStyle,
-                  textAlign: 'center',
+                  width: 210,
+                  marginTop: 10,
                 }}
+                disabled={!this.state.uploadName}
               >
-                <Button
-                  type="submit"
-                  style={{
-                    width: 210,
-                    marginTop: 10,
-                  }}
-                >
-                  Upload
-                </Button>
-              </div>
-            </form>
-          </div>
+                Upload
+              </Button>
+            </div>
+          </form>
         </div>
-
         <div
           style={{
             ...lineStyle,
             textAlign: 'center',
           }}>
-          <a href={`/api/${service.board}/${this.state.name}`}>
+          <a href={`/api/${service.board}/${this.state.availableDownloads && this.state.availableDownloads[0]}`}>
             <Button
               style={{
                 width: 210,
               }}
+              disabled={
+                !this.state.availableDownloads ||
+                this.state.availableDownloads.length === 0
+              }
+              onClick={() => setTimeout(this.syncConfiguration, 1000)}
             >
               Download
             </Button>

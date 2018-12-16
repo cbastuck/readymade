@@ -38,7 +38,13 @@ export function getRegistry() {
 
 export function configureService(service, config) {
   const board = currentBoardName();
-  return request(`services?board=${board}`, 'POST', { service, config });
+  return request(`config?board=${board}`, 'POST', { service, config });
+}
+
+export async function getServiceConfiguration(service) {
+  const board = currentBoardName();
+  const response = await request(`config?board=${board}&service=${service.uuid}`, 'GET');
+  return await response.json();
 }
 
 export function redirectUri() {
