@@ -4,6 +4,7 @@ import { BrowserRouter as Router, Route } from 'react-router-dom';
 import AppContext from './AppContext';
 import LoginForm from './views/LoginForm';
 import BuildBoard from './views/BuildBoard';
+import BuildQR from './views/BuildQR';
 import Board from './views/Board';
 import AuthRedirect from './views/AuthRedirect';
 
@@ -13,7 +14,6 @@ class App extends Component {
       <AppContext>
         <Router>
           <div
-            className="App"
             style={{
               height: "100%",
               width: "100%"
@@ -22,6 +22,7 @@ class App extends Component {
             <Route path="/" exact component={BuildBoard} />
             <Route path="/login" component={LoginForm} />
             <Route path="/auth2app" component={AuthRedirect} />
+            <Route path="/:boardName/qr" component={BuildQR} />
             <Route component={Board} />
           </div>
         </Router>

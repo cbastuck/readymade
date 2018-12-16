@@ -2,7 +2,7 @@ import jwtDecode from 'jwt-decode';
 import moment from 'moment';
 
 export function validateToken(token) {
-  if (!token) {
+  if (!token || token === 'undefined') {
     return {};
   }
   const decoded = jwtDecode(token);

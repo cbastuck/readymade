@@ -98,6 +98,29 @@ export default class RestInputUI extends Component {
           )
         }
 
+        {
+          this.state.op === 'GET' &&
+          this.state.running && (
+            <div
+              style={{
+                ...lineStyle,
+                textAlign: 'right',
+                margin: '10px 10px',
+            }}>
+              <a
+                href={`/api/${service.board}/${this.state.path}?${this.state.selector.query}=test`}
+                target="blank"
+                style={{
+                  color: 'black',
+                  padding: 5
+                }}
+              >
+                Click to test
+              </a>
+            </div>
+          )
+        }
+
         <div
           style={{
             ...lineStyle,
@@ -114,25 +137,6 @@ export default class RestInputUI extends Component {
             Configure
           </Button>
         </div>
-
-        {
-          this.state.op === 'GET' &&
-          this.state.running && (
-            <div
-              style={{
-                ...lineStyle,
-                textAlign: 'right',
-                margin: '1px 10px',
-            }}>
-              <a
-                href={`/api/${service.board}/${this.state.path}?${this.state.selector.query}=test`}
-                target="blank"
-              >
-                test
-              </a>
-            </div>
-          )
-        }
       </div>
    );
   }

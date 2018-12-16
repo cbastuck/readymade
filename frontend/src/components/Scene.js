@@ -8,10 +8,10 @@ export default class Scene extends Component {
     return (
       <div
         style={{
-          height: '94%',
-          width: '100%',
+          height: '93%',
+          minWidth: children ? children.length * ServiceFrame.overallWidth : '100%',
           border: 'solid 1px lightgray',
-          borderRadius: 3
+          borderRadius: 3,
         }}
       >
         {

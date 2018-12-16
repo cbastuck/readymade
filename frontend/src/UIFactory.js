@@ -3,6 +3,7 @@ import uuid from 'uuid/v4';
 
 import RESTInputUI from './components/services/restInputUI';
 import DOMSelectorUI  from './components/services/domSelectorUI';
+import FileExchangeUI from './components/services/FileExchangeUI';
 
 export function createServiceUI(service) {
   const id = uuid();
@@ -11,6 +12,8 @@ export function createServiceUI(service) {
       return <RESTInputUI key={id} id={id} service={service}/>;
     case 'hookup.to/service/dom-selector':
       return <DOMSelectorUI key={id} id={id} service={service}/>;
+    case 'hookup.to/service/file-exchange':
+      return <FileExchangeUI key={id} id={id} service={service}/>;
     default:
       return <div key={id} id={id} service={service}/>;
   }

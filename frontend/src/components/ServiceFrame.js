@@ -6,11 +6,15 @@ export default class ServiceFrame extends Component {
     mouseOver: false
   };
 
+  static frameMargin = 20;
+  static frameWidth = 230;
+  static overallWidth = ServiceFrame.frameMargin + ServiceFrame.frameWidth;
+
   render() {
     const { position, service } = this.props;
-    const width = 230;
-    const margin = 20;
-    const top = '15%';
+    const width = ServiceFrame.frameWidth;
+    const margin = ServiceFrame.frameMargin;
+    const top = '18%';
     return (
       <div
         key={`service-frame-${service.uuid}`}
