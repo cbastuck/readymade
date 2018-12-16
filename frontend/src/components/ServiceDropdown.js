@@ -10,7 +10,7 @@ import {
 export default class ServiceDropdown extends Component {
 
   render() {
-    const { registry } = this.props;
+    const { registry, onAction } = this.props;
     if (!registry) {
       return false;
     }
@@ -32,6 +32,11 @@ export default class ServiceDropdown extends Component {
                     onClick={clearBoard}
                   >
                     Clear Board
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => onAction('showQRCode')}
+                  >
+                    Show QR Code
                   </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
