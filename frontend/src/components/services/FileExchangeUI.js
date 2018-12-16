@@ -9,8 +9,33 @@ import { configureService } from '../../core/actions';
 
 export default class FileExchangeUI extends Component {
   state = {
-    name: 'ex'
+    name: 'name'
   };
+
+  componentDidMount() {
+    if (this.state && this.state.name) {
+      this.onNameChanged(this.state.name);
+    }
+  }
+
+  onNameChanged = name => {
+    if (this.changeNameTimer) {
+      clearTimeout(this.changeNameTimer);
+      this.changeNameTimer = undefined;
+    }
+    this.setState({ name });
+    this.changeNameTimer = setTimeout(
+      () => {
+        this.updateExchangeName(name);
+        this.changeNameTimer = undefined;
+      }, 1000
+    );
+  }
+
+  updateExchangeName = name => {
+    const { service } = this.props;
+    return configureService(service, { name });
+  }
 
   render() {
     const { service } = this.props;
@@ -32,7 +57,7 @@ export default class FileExchangeUI extends Component {
             placeholder='Name of Exchange'
             value={this.state.name}
             style={{ width: 160 }}
-            onChange={(_, data) => this.setState({ name: data.value })}
+            onChange={(_, data) => this.onNameChanged(data.value)}
           />
         </div>
 
@@ -43,13 +68,16 @@ export default class FileExchangeUI extends Component {
           }}
         >
           <div style={lineStyle}>
-            <Label style={{ width: 60 }}>File</Label>
+
             <form
               action={`/api/${service.board}/${this.state.name}`}
               method="post"
               enctype="multipart/form-data"
             >
-              <div class="ui container action input">
+              <div
+                className="container input"
+                style={lineStyle}
+              >
                   <input type="file" name="file"/>
               </div>
               <div
@@ -77,24 +105,15 @@ export default class FileExchangeUI extends Component {
             ...lineStyle,
             textAlign: 'center',
           }}>
-          <a href={`/api/${service.board}/${this.state.name}`}>Download</a>
-        </div>
-
-        <div
-          style={{
-            ...lineStyle,
-            textAlign: 'center',
-          }}
-        >
-          <Button
-            style={{ width: 210 }}
-            onClick={async () => {
-              const config = await configureService(service, this.state);
-              this.setState({ ...config });
-            }}
-          >
-            Configure
-          </Button>
+          <a href={`/api/${service.board}/${this.state.name}`}>
+            <Button
+              style={{
+                width: 210,
+              }}
+            >
+              Download
+            </Button>
+          </a>
         </div>
       </div>
     );
