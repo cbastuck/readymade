@@ -46,11 +46,13 @@ export function redirectUri() {
 }
 
 export function redirectToLogin() {
+  const board = currentBoardName();
   const query = qs.stringify({
     client_id: 'oidcCLIENT',
     response_type: 'code',
     scope: 'openid profile',
-    redirect_uri: redirectUri()
+    redirect_uri: redirectUri(),
+    state: board
   });
   const target = `/openid/auth?${query}`;
   window.location.href = target;

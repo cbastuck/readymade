@@ -16,7 +16,8 @@ export default class AuthRedirect extends Component {
     const params = qs.parse(location.search.substr(1));
 
     this.state = {
-      error: params.error
+      error: params.error,
+      board: params.state
     };
 
     if (params.code) {
@@ -72,7 +73,9 @@ export default class AuthRedirect extends Component {
         {
           appContext => {
             appContext.updateToken(this.state.token);
-            return <Redirect to="/" />
+            return this.state.board ?
+              <Redirect to={`/${this.state.board}`}/>  :
+              <Redirect to="/" />
           }
         }
       </AppConsumer>
