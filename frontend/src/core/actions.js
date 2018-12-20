@@ -51,6 +51,11 @@ export function redirectUri() {
   return `${window.location.protocol}//${window.location.host}/auth2app`;
 }
 
+export function redirectTo(target) {
+  window.location.href = target;
+  return false;
+}
+
 export function redirectToLogin() {
   const board = currentBoardName();
   const query = qs.stringify({
@@ -61,6 +66,5 @@ export function redirectToLogin() {
     state: board
   });
   const target = `/openid/auth?${query}`;
-  window.location.href = target;
-  return false;
+  return redirectTo(target);
 }

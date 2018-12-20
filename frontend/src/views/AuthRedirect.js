@@ -3,7 +3,7 @@ import { Redirect } from 'react-router-dom';
 import qs from 'querystring';
 
 import { AppConsumer } from '../AppContext'
-import { redirectUri, redirectToLogin } from '../core/actions';
+import { redirectUri, redirectTo } from '../core/actions';
 
 const clientId = 'oidcCLIENT';
 const clientSecret = 'test';
@@ -53,7 +53,8 @@ export default class AuthRedirect extends Component {
   renderError = error => {
     switch(error) {
       case 'access_denied':
-        return redirectToLogin();
+      case 'login_required':
+        return redirectTo('/');
       default:
         return <div>Unknown Error</div>;
     }

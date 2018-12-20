@@ -3,6 +3,7 @@ import React, { Component, createContext } from'react';
 import moment from 'moment';
 
 import { validateToken } from './Auth';
+import { redirectToLogin } from './core/actions';
 
 const { Provider, Consumer: AppConsumer } = createContext();
 
@@ -39,13 +40,15 @@ class AppContext extends Component {
       username,
 
       // modifying functions
-      updateToken: this.updateToken
+      updateToken: this.updateToken,
+      logout: this.logout
     };
   }
 
   processToken = incomingToken => {
     const { token, decoded } = validateToken(incomingToken);
     if (!token && getCookie('token')) {
+      removeCookie('_session');
       removeCookie('token');
       return {};
     }
@@ -53,14 +56,26 @@ class AppContext extends Component {
   }
 
   updateToken = incomingToken => {
-    const { token, username } = this.processToken(incomingToken);
-    if (token) {
-      setTimeout(
-        () => this.setState({ token, username },
-          () => setCookie('token', this.state.token, 1, 'd')
-        )
-      );
-    }
+    return new Promise(resolve => {
+      const { token, username } = this.processToken(incomingToken);
+      if (token) {
+        setTimeout(
+          () => this.setState({ token, username },
+            () => {
+              setCookie('token', this.state.token, 1, 'd')
+              resolve()
+            }
+          )
+        );
+      } else {
+        return resolve();
+      }
+    });
+  }
+
+  logout = async () => {
+    await this.updateToken();
+    redirectToLogin();
   }
 
   render() {

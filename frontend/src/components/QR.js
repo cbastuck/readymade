@@ -8,8 +8,7 @@ export default class QR extends Component {
 
   render() {
     if (this.state.canvas) {
-      const location = window.location.href.split('/');
-      const url = location.slice(0, location.length - 1).join('/');
+      const url = window.location.href;
       QRCode.toCanvas(this.state.canvas, url, error => {
         if (error) {
           console.error(error);

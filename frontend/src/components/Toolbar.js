@@ -27,13 +27,12 @@ export default class Toolbar extends Component {
         <ServiceDropdown
           registry={this.state.registry}
           addService={service => this.props.onAddService(service)}
-          onAccount={this.props.onAccount}
           onAction={action => {
-            switch (action) {
+            switch (action.type) {
               case 'showQRCode':
                 return this.setState({ qrCodeVisible: true });
               default:
-                break;
+                this.props.onAction(action)
             }
           }}
         />

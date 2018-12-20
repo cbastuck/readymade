@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Dropdown, Menu } from 'semantic-ui-react'
 
 import { AppConsumer } from '../AppContext';
+import AccountDropdown from './AccountDropdown';
 import {
   currentBoardName,
   clearBoard
@@ -9,12 +10,18 @@ import {
 
 export default class ServiceDropdown extends Component {
 
+  onAction = action => {
+    switch(action.type) {
+      default:
+        this.props.onAction(action);
+    }
+  }
+
   render() {
-    const { registry, onAction } = this.props;
+    const { registry } = this.props;
     if (!registry) {
       return false;
     }
-
     return (
       <AppConsumer>
         {
@@ -34,7 +41,9 @@ export default class ServiceDropdown extends Component {
                     Clear Board
                   </Dropdown.Item>
                   <Dropdown.Item
-                    onClick={() => onAction('showQRCode')}
+                    onClick={() => this.onAction({
+                      type: 'showQRCode',
+                    })}
                   >
                     Show QR Code
                   </Dropdown.Item>
@@ -73,12 +82,16 @@ export default class ServiceDropdown extends Component {
                   }
                 </Dropdown.Menu>
               </Dropdown>
-              <Menu.Item
-                onClick={this.props.onAccount}
-                className="right"
-              >
-                { appContext.username || 'Account' }
-              </Menu.Item>
+              <AccountDropdown
+                label={appContext.username || 'Account'}
+                onAction={action => {
+                  if (action.type === 'logout') {
+                    appContext.logout();
+                  } else {
+                    this.onAction(action)
+                  }
+                }}
+              />
             </Menu>
           )
         }

@@ -100,7 +100,10 @@ export default class FileExchangeUI extends Component {
             ...lineStyle,
             textAlign: 'center',
           }}>
-          <a href={`/api/${service.board}/${this.state.availableDownloads && this.state.availableDownloads[0]}`}>
+          <a
+            href={`/api/${service.board}/${this.state.availableDownloads && this.state.availableDownloads[0]}`}
+            target='blank'
+          >
             <Button
               style={{
                 width: 210,

@@ -8,7 +8,6 @@ import { createServiceUI } from '../UIFactory';
 import {
   getServices,
   addService,
-  redirectToLogin
 } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -42,6 +41,13 @@ class Board extends Component {
     }
   }
 
+  onAction = action => {
+    switch (action.type) {
+      default:
+        break;
+    }
+  }
+
   render() {
     return (
       <Authorization>
@@ -66,7 +72,7 @@ class Board extends Component {
                 })
               }
               onRefresh={this.fetchServices}
-              onAccount={redirectToLogin}
+              onAction={this.onAction}
             />
             <Scene>
               { this.state.services }
