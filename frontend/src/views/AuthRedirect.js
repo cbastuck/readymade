@@ -3,25 +3,20 @@ import { Redirect } from 'react-router-dom';
 import qs from 'querystring';
 
 import { AppConsumer } from '../AppContext'
-import { redirectUri, redirectTo } from '../core/actions';
+import {
+  redirectUri,
+  redirectTo
+} from '../core/actions';
 
 const clientId = 'oidcCLIENT';
 const clientSecret = 'test';
 
 export default class AuthRedirect extends Component {
-  constructor(props) {
-    super(props);
-
-    const { location } = props;
-    const params = qs.parse(location.search.substr(1));
-
-    this.state = {
-      error: params.error,
-      board: params.state
-    };
-
-    if (params.code) {
-      this.exchangeCodeForToken(params.code);
+  componentDidMount() {
+    const { location } = this.props;
+    this.queryParams = qs.parse(location.search.substr(1));
+    if (this.queryParams.code) {
+      this.exchangeCodeForToken(this.queryParams.code);
     }
   }
 
@@ -54,14 +49,18 @@ export default class AuthRedirect extends Component {
     switch(error) {
       case 'access_denied':
       case 'login_required':
-        return redirectTo('/');
       default:
-        return <div>Unknown Error</div>;
+        break;
     }
+    return redirectTo('/');
   }
 
   render() {
-    if (this.state.error) {
+    if (!this.queryParams) {
+      return false;
+    }
+
+    if (this.queryParams.error) {
       return this.renderError(this.state.error);
     }
 
@@ -74,8 +73,8 @@ export default class AuthRedirect extends Component {
         {
           appContext => {
             appContext.updateToken(this.state.token);
-            return this.state.board ?
-              <Redirect to={`/${this.state.board}`}/>  :
+            return this.queryParams.state ?
+              <Redirect to={`/${this.queryParams.state}`}/>  :
               <Redirect to="/" />
           }
         }

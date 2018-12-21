@@ -7,7 +7,7 @@ import { createServiceUI } from '../UIFactory';
 
 import {
   getServices,
-  addService,
+  addService
 } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();

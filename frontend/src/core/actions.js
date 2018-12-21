@@ -1,50 +1,66 @@
 import qs from 'querystring';
 
-export function currentBoardName() {
-  const path = window.location.href.split('/');
-  return path[path.length - 1];
+import {
+  removeToken,
+  restoreToken
+} from './Auth';
+
+export function setCurrentBoardName(name) {
+  localStorage.setItem('board', name);
 }
 
-function request(path, method='GET', body=undefined) {
-  return fetch(`/api/${path}`, {
+export function currentBoardName() {
+  const name = localStorage.getItem('board');
+  return name;
+}
+
+async function request(path, method='GET', parseJSON=true, body=undefined) {
+  const response = await fetch(`/api/${path}`, {
     method,
     body: body && JSON.stringify(body),
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'Authorization': restoreToken() || '',
     }
   });
+  const status = response.status;
+  if (status === 401) {
+    removeToken();
+    return redirectToLogin();
+  }
+  if (parseJSON) {
+    return response.json();
+  }
+  return response;
 }
 
 export function addService(serviceDesc) {
   const board = currentBoardName();
-  return request(`services?board=${board}`, 'PUT', serviceDesc);
+  return request(`services?board=${board}`, 'PUT', false, serviceDesc);
 }
 
 export function clearBoard() {
   const board = currentBoardName();
-  return request(`services?board=${board}`, 'DELETE');
+  return request(`services?board=${board}`, 'DELETE', false);
 }
 
 export function getServices() {
   const board = currentBoardName();
-  return request(`services?board=${board}`)
-          .then(response => response.json());
+  return request(`services?board=${board}`);
 }
 
 export function getRegistry() {
-  return request('registry')
-    .then(response => response.json());
+  return request('registry');
 }
 
 export function configureService(service, config) {
   const board = currentBoardName();
-  return request(`config?board=${board}`, 'POST', { service, config });
+  return request(`config?board=${board}`, 'POST', false, { service, config });
 }
 
 export async function getServiceConfiguration(service) {
   const board = currentBoardName();
-  const response = await request(`config?board=${board}&service=${service.uuid}`, 'GET');
-  return await response.json();
+  return await request(`config?board=${board}&service=${service.uuid}`);
 }
 
 export function redirectUri() {

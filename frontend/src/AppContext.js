@@ -1,39 +1,23 @@
 
 import React, { Component, createContext } from'react';
-import moment from 'moment';
 
-import { validateToken } from './Auth';
-import { redirectToLogin } from './core/actions';
+import {
+  restoreToken,
+  processToken,
+  setToken
+} from './core/Auth';
+import {
+  redirectToLogin,
+} from './core/actions';
 
 const { Provider, Consumer: AppConsumer } = createContext();
-
-function getCookie(key) {
-    const cookieKey = `${key}=`;
-    const cookies = document.cookie.split(';');
-    const value = cookies.find(c => c.includes(cookieKey));
-    return value && value.split(cookieKey)[1];
-}
-
-function setCookie(key, value, expCount, expUnit) {
-  if (value) {
-    const exp = moment.utc().add(expCount, expUnit).toString();
-    const cookie = `${key}=${value}; expires=${exp}`;
-    document.cookie = cookie;
-  }
-}
-
-function removeCookie(key) {
-  if (getCookie(key)) {
-    setCookie(key, "removed", -100, 'y');
-  }
-}
 
 class AppContext extends Component {
 
   constructor(props) {
     super(props);
 
-    const { token, username } = this.processToken(getCookie('token'));
+    const { token, username } = processToken(restoreToken());
     this.state = {
       // state members
       token,
@@ -45,30 +29,22 @@ class AppContext extends Component {
     };
   }
 
-  processToken = incomingToken => {
-    const { token, decoded } = validateToken(incomingToken);
-    if (!token && getCookie('token')) {
-      removeCookie('_session');
-      removeCookie('token');
-      return {};
-    }
-    return { token, username: decoded && decoded.nickname };
-  }
-
   updateToken = incomingToken => {
     return new Promise(resolve => {
-      const { token, username } = this.processToken(incomingToken);
+      const { token, username } = processToken(incomingToken);
       if (token) {
-        setTimeout(
-          () => this.setState({ token, username },
-            () => {
-              setCookie('token', this.state.token, 1, 'd')
-              resolve()
-            }
-          )
-        );
-      } else {
-        return resolve();
+        const currentToken = restoreToken();
+        if (currentToken !== incomingToken) {
+          setToken(incomingToken)
+          setTimeout(
+            () => this.setState(
+              { token, username },
+              resolve
+            )
+          );
+        } else {
+          return resolve();
+        }
       }
     });
   }

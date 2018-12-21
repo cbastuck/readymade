@@ -10,7 +10,7 @@ export default class Authorization extends Component {
   }
 
   scheduleRedirect = () => {
-    this.redirectTimer = setTimeout(redirectToLogin, 1000);
+    // this.redirectTimer = setTimeout(redirectToLogin, 1000);
     return false;
   }
 
