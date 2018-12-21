@@ -1,6 +1,5 @@
 import React, { Component, createContext } from 'react'
 
-import Authorization from '../components/Authorization';
 import Scene from '../components/Scene';
 import Toolbar from '../components/Toolbar';
 import { createServiceUI } from '../UIFactory';
@@ -50,36 +49,34 @@ class Board extends Component {
 
   render() {
     return (
-      <Authorization>
-        <div
-          style={{
-            height: '100%',
-            width: '100%',
-            padding: 5
-          }}
+      <div
+        style={{
+          height: '100%',
+          width: '100%',
+          padding: 5
+        }}
+      >
+      <Provider
+          value={this.state.boardContext}
         >
-        <Provider
-            value={this.state.boardContext}
-          >
-            <Toolbar
-              onAddService={this.addService}
-              enterAddConnectionMode={() =>
-                this.setState({
-                  app: {
-                    ...this.state.boardContext,
-                    mode: 'connection'
-                  }
-                })
-              }
-              onRefresh={this.fetchServices}
-              onAction={this.onAction}
-            />
-            <Scene>
-              { this.state.services }
-            </Scene>
-          </Provider>
-        </div>
-      </Authorization>
+          <Toolbar
+            onAddService={this.addService}
+            enterAddConnectionMode={() =>
+              this.setState({
+                app: {
+                  ...this.state.boardContext,
+                  mode: 'connection'
+                }
+              })
+            }
+            onRefresh={this.fetchServices}
+            onAction={this.onAction}
+          />
+          <Scene>
+            { this.state.services }
+          </Scene>
+        </Provider>
+      </div>
     );
   }
 }
