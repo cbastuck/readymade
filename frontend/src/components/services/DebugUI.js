@@ -8,13 +8,25 @@ import {
 } from '../../core/actions';
 
 export default class DebugUI extends Component {
-  constructor(props) {
-    super(props);
+  state = {
+    value: ''
+  }
 
-    this.state = {
-      value: ''
-    }
+  componentDidMount() {
     this.connectEventSource();
+  }
+
+  componentWillUnmount() {
+    if (this.eventSource) {
+      this.eventSource.removeEventListener(
+        'debug',
+        this.onMessage
+      );
+    }
+  }
+
+  onMessage = e => {
+    this.setState({ value: e.data });
   }
 
   connectEventSource = async () => {
@@ -24,8 +36,8 @@ export default class DebugUI extends Component {
     this.eventSource = new EventSource(`/api/${service.board}/${config.name}`);
 
     this.eventSource.addEventListener(
-      'test',
-      e => this.setState({ value: e.data })
+      'debug',
+      this.onMessage
     );
   }
 

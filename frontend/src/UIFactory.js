@@ -6,6 +6,7 @@ import FileExchangeUI from './components/services/FileExchangeUI';
 import WebsocketConsumer from './components/services/WebsocketConsumer';
 import DebugUI from './components/services/DebugUI';
 import EventStreamUI from './components/services/EventStreamUI';
+import FilterUI from './components/services/FilterUI';
 
 export function createServiceUI(service) {
   const id = service.uuid;
@@ -22,7 +23,9 @@ export function createServiceUI(service) {
       return <DebugUI key={id} id={id} service={service} />;
     case 'hookup.to/service/event-stream':
       return <EventStreamUI key={id} id={id} service={service} />;
+    case 'hookup.to/service/filter':
+      return <FilterUI key={id} id={id} service={service} />;
     default:
-      return <div key={id} id={id} service={service}/>;
+      return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
   }
 }
