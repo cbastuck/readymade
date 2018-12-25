@@ -3,7 +3,10 @@ import React, { Component } from 'react';
 import ServiceDropdown from './ServiceDropdown';
 
 import QR from './QR';
-import { getRegistry } from '../core/actions';
+import {
+  getRegistry,
+  clearBoard
+} from '../core/actions';
 
 export default class Toolbar extends Component {
   state = {
@@ -26,13 +29,17 @@ export default class Toolbar extends Component {
       >
         <ServiceDropdown
           registry={this.state.registry}
-          addService={service => this.props.onAddService(service)}
-          onAction={action => {
+          addService={this.props.onAddService}
+          onAction={async action => {
+            const { onAction } = this.props;
             switch (action.type) {
               case 'showQRCode':
                 return this.setState({ qrCodeVisible: true });
+              case 'clearBoard':
+                await clearBoard();
+                return onAction(action);
               default:
-                this.props.onAction(action)
+                onAction(action)
             }
           }}
         />

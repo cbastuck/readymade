@@ -5,7 +5,6 @@ import { AppConsumer } from '../AppContext';
 import AccountDropdown from './AccountDropdown';
 import {
   currentBoardName,
-  clearBoard
 } from '../core/actions';
 
 export default class ServiceDropdown extends Component {
@@ -36,7 +35,9 @@ export default class ServiceDropdown extends Component {
                     {currentBoardName()}
                   </Dropdown.Header>
                   <Dropdown.Item
-                    onClick={clearBoard}
+                    onClick={() => this.onAction({
+                      type: 'clearBoard'
+                    })}
                   >
                     Clear Board
                   </Dropdown.Item>

@@ -216,7 +216,12 @@ export default class FilterUI extends Component {
     const { recentInput, filter } = this.state;
     if (recentInput) {
       const keys = Object.keys(recentInput);
-      const values = keys.map(key => JSON.stringify(recentInput[key]));
+      const values = keys.map(key => {
+        const value = recentInput[key];
+        return typeof value === 'object' ?
+          JSON.stringify(value) :
+          value.toString();
+      });
       if (filter) {
         const filterValues = keys.map((key, idx) => {
           const filterValue = filter[key];

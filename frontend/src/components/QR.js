@@ -25,6 +25,8 @@ export default class QR extends Component {
           top: '25%',
           left: '25%',
           backgroundColor: 'white',
+          zIndex: 1000,
+          border: 'solid 1px lightgray'
         }}
         onClick={this.props.onClick}
       >

@@ -42,6 +42,9 @@ class Board extends Component {
 
   onAction = action => {
     switch (action.type) {
+      case 'clearBoard':
+        this.setState({services: []});
+        break;
       default:
         break;
     }
@@ -69,7 +72,6 @@ class Board extends Component {
                 }
               })
             }
-            onRefresh={this.fetchServices}
             onAction={this.onAction}
           />
           <Scene>
