@@ -13,9 +13,8 @@ export default class RestInputUI extends Component {
     super(props);
 
     const { service } = props;
-    const board = service && service.board;
     const op = service && service.op && service.op.toUpperCase();
-    const path = service && service.path && service.path.split(`${board}/`)[1];
+    const path = service && service.path;
     const query = service && service.selector && service.selector.query;
     this.state = {
       op: op || 'GET',

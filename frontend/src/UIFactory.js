@@ -7,7 +7,7 @@ import FileExchangeUI from './components/services/FileExchangeUI';
 import WebsocketConsumer from './components/services/WebsocketConsumer';
 
 export function createServiceUI(service) {
-  const id = uuid();
+  const id = service.uuid;
   switch(service.serviceId) {
     case 'hookup.to/service/rest-input':
       return <RESTInputUI key={id} id={id} service={service}/>;
