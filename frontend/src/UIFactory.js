@@ -7,6 +7,7 @@ import WebsocketConsumer from './components/services/WebsocketConsumer';
 import DebugUI from './components/services/DebugUI';
 import EventStreamUI from './components/services/EventStreamUI';
 import FilterUI from './components/services/FilterUI';
+import MySqlUI from './components/services/MySqlUI';
 
 export function createServiceUI(service) {
   const id = service.uuid;
@@ -25,6 +26,8 @@ export function createServiceUI(service) {
       return <EventStreamUI key={id} id={id} service={service} />;
     case 'hookup.to/service/filter':
       return <FilterUI key={id} id={id} service={service} />;
+    case 'hookup.to/service/mysql':
+      return <MySqlUI key={id} id={id} service={service} />;
     default:
       return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
   }
