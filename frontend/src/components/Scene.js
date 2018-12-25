@@ -9,7 +9,6 @@ export default class Scene extends Component {
       <div
         style={{
           height: '93%',
-          minWidth: children ? children.length * ServiceFrame.overallWidth : '100%',
           border: 'solid 1px lightgray',
           borderRadius: 3,
         }}
@@ -18,9 +17,8 @@ export default class Scene extends Component {
           children && children.map(
             (service, idx) => (
               <ServiceFrame
-                key={`scene-frame-${service.uuid}`}
+                key={`scene-frame-${service.props.id}`}
                 service={service}
-                position={idx}
               />
             )
           )

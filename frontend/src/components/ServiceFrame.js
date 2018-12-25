@@ -6,14 +6,8 @@ export default class ServiceFrame extends Component {
     mouseOver: false
   };
 
-  static frameMargin = 20;
-  static frameWidth = 230;
-  static overallWidth = ServiceFrame.frameMargin + ServiceFrame.frameWidth;
-
   render() {
-    const { position, service } = this.props;
-    const width = ServiceFrame.frameWidth;
-    const margin = ServiceFrame.frameMargin;
+    const { service } = this.props;
     const top = '18%';
     return (
       <div
@@ -21,30 +15,16 @@ export default class ServiceFrame extends Component {
       >
         <div
           style={{
-            fontSize: '2em',
-            position: 'absolute',
-            top,
-            marginTop: 5,
-            marginLeft: -10,
-            left: position * width + (position + 1) * margin - 7,
-            color: 'lightgray',
-          }}
-        >
-          >
-        </div>
-        <div
-          style={{
             border: 'solid 1px lightgray',
-            width,
             borderRadius: 10,
             textAlign: 'center',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: 'white',
+            float: 'left',
             top,
-            position: 'absolute',
-            left: position * width + (position + 1) * margin,
+            margin: 10,
             fontSize: 15,
             color: 'black'
           }}

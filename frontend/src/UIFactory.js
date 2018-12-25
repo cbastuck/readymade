@@ -1,10 +1,11 @@
 import React from 'react';
-import uuid from 'uuid/v4';
 
 import RESTInputUI from './components/services/restInputUI';
 import DOMSelectorUI  from './components/services/domSelectorUI';
 import FileExchangeUI from './components/services/FileExchangeUI';
 import WebsocketConsumer from './components/services/WebsocketConsumer';
+import DebugUI from './components/services/DebugUI';
+import EventStreamUI from './components/services/EventStreamUI';
 
 export function createServiceUI(service) {
   const id = service.uuid;
@@ -17,6 +18,10 @@ export function createServiceUI(service) {
       return <FileExchangeUI key={id} id={id} service={service}/>;
     case 'hookup.to/service/websocket-provider':
       return <WebsocketConsumer key={id} id={id} service={service} />;
+    case 'hookup.to/service/debug':
+      return <DebugUI key={id} id={id} service={service} />;
+    case 'hookup.to/service/event-stream':
+      return <EventStreamUI key={id} id={id} service={service} />;
     default:
       return <div key={id} id={id} service={service}/>;
   }
