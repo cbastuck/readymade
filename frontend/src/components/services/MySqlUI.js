@@ -32,7 +32,6 @@ export default class MySqlUI extends Component {
 
   getConfig = async () => {
     const config = await getServiceConfiguration(this.props.service);
-    console.log('GOT CONFIG', config);
     this.setState({ connection: config.connectionDetails });
   }
 
@@ -155,7 +154,10 @@ export default class MySqlUI extends Component {
     ]
     return (
       <div>
-        <Tab panes={panes} />
+        <Tab
+          panes={panes}
+          activeIndex={this.state.connection ? 1 : 0}
+        />
       </div>
     );
   }
