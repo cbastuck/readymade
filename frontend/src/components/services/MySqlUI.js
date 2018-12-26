@@ -33,6 +33,7 @@ export default class MySqlUI extends Component {
   getConfig = async () => {
     const config = await getServiceConfiguration(this.props.service);
     console.log('GOT CONFIG', config);
+    this.setState({ connection: config.connectionDetails });
   }
 
   createNewInstance = async () => {
@@ -43,7 +44,7 @@ export default class MySqlUI extends Component {
         tableName: this.state.createTableName
       }
     };
-    const res = await configureService(service, config);
+    await configureService(service, config);
   }
 
   renderProvisioningTab = () => {
@@ -59,6 +60,7 @@ export default class MySqlUI extends Component {
             onChange={(_, data) => this.setState({
               createDatabaseName: data.value
             })}
+            disabled={this.state.connection}
           />
         </div>
         <div style={{ ...lineStyle }}>
@@ -71,6 +73,7 @@ export default class MySqlUI extends Component {
             onChange={(_, data) => this.setState({
               createTableName: data.value
             })}
+            disabled={this.state.connection}
           />
         </div>
         <div
@@ -80,10 +83,10 @@ export default class MySqlUI extends Component {
           }}
         >
           <Button
-            style={{ width: 210 }}
             onClick={this.createNewInstance}
+            disabled={this.state.connection}
           >
-            Provisioning
+            Provision
           </Button>
         </div>
       </div>
@@ -98,11 +101,31 @@ export default class MySqlUI extends Component {
             Host
           </Label>
           <Input
-            placeholder='Name of Database'
-            value={this.state.databaseName}
+            placeholder='Host'
+            value={this.state.connection ?
+              this.state.connection.host :
+              this.state.existingHost
+            }
             onChange={(_, data) => this.setState({
               databaseName: data.value
             })}
+            disabled={this.state.connection}
+          />
+        </div>
+        <div style={{ ...lineStyle }}>
+          <Label style={labelStyle}>
+            Database
+          </Label>
+          <Input
+            placeholder='Name of Database'
+            value={this.state.connection ?
+              this.state.connection.tableName :
+              this.state.tableName
+            }
+            onChange={(_, data) => this.setState({
+              tableName: data.value
+            })}
+            disabled={this.state.connection}
           />
         </div>
         <div style={{ ...lineStyle }}>
@@ -110,11 +133,15 @@ export default class MySqlUI extends Component {
             Table
           </Label>
           <Input
-            placeholder='Name of table'
-            value={this.state.tableName}
+            placeholder='Name of Table'
+            value={this.state.connection ?
+              this.state.connection.tableName :
+              this.state.tableName
+            }
             onChange={(_, data) => this.setState({
               tableName: data.value
             })}
+            disabled={this.state.connection}
           />
         </div>
       </div>
