@@ -3,8 +3,7 @@ import {
   Input,
   Label,
   Button,
-  Tab,
-  TextArea
+  Tab
 } from 'semantic-ui-react';
 
 import {
@@ -36,7 +35,8 @@ export default class MySqlUI extends Component {
     const config = await getServiceConfiguration(this.props.service);
     this.setState({
       connection: config.connectionDetails,
-      currentTab: 1
+      currentTab: 1,
+      schema: config.schema
     });
   }
 
@@ -64,7 +64,7 @@ export default class MySqlUI extends Component {
             onChange={(_, data) => this.setState({
               createDatabaseName: data.value
             })}
-            disabled={this.state.connection}
+            disabled={!!this.state.connection}
           />
         </div>
         <div style={{ ...lineStyle }}>
@@ -77,7 +77,7 @@ export default class MySqlUI extends Component {
             onChange={(_, data) => this.setState({
               createTableName: data.value
             })}
-            disabled={this.state.connection}
+            disabled={!!this.state.connection}
           />
         </div>
         <div

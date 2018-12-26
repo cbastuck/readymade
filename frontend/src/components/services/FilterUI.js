@@ -1,10 +1,5 @@
 import React, { Component } from 'react';
 import {
-  Table,
-  Menu,
-  Icon,
-  Input,
-  Checkbox,
   Button
 } from 'semantic-ui-react';
 
@@ -12,12 +7,11 @@ import {
   configureService,
   getServiceConfiguration
 } from '../../core/actions';
+import PropertySelector from '../shared/PropertySelector';
 
 export default class FilterUI extends Component {
   state = {
-    currentPage: 0,
     selectedKeys: {},
-    numPropertiesPerPage: 5,
   };
 
   componentDidMount() {
@@ -42,169 +36,13 @@ export default class FilterUI extends Component {
     configureService(this.props.service, config);
   }
 
-  renderCheckbox = idx => {
-    return (
-      <div
-        style={{
-          textAlign: 'center'
-        }}
-      >
-        <Checkbox
-          slider
-          onChange={(_, { checked }) =>
-            this.setState({
-              selectedKeys: {
-                ...this.state.selectedKeys,
-                [this.state.keys[idx]]: checked
-              }
-            }, this.configureService)
-          }
-          checked={this.state.selectedKeys[this.state.keys[idx]]}
-        />
-      </div>
-    );
-  }
-
-  renderRuleValue = idx => {
-    return (
-      <Input
-        value={this.state.values[idx]}
-        onChange={(_, data) => {
-          this.setState({
-            values: Object.assign([], this.state.values, {[idx]: data.value}),
-            selectedKeys: {
-              ...this.state.selectedKeys,
-              [this.state.keys[idx]]: false
-            }
-          })
-        }}
-      />
-    );
-  }
-
-  renderHeader = () => {
-    return (
-      <Table.Header>
-        <Table.Row>
-          <Table.HeaderCell>Property</Table.HeaderCell>
-          <Table.HeaderCell>Condition</Table.HeaderCell>
-          <Table.HeaderCell>Value</Table.HeaderCell>
-          <Table.HeaderCell>Enabled</Table.HeaderCell>
-        </Table.Row>
-      </Table.Header>
-    );
-  }
-
-  renderBody = () => {
-    const { keys, currentPage, numPropertiesPerPage } = this.state;
-    const startIdx = currentPage * numPropertiesPerPage;
-    return (
-      <Table.Body>
-        {
-          keys.slice(startIdx, startIdx + numPropertiesPerPage)
-            .map((key, idx) => (
-              <Table.Row
-                key={key}
-              >
-                <Table.Cell>{key}</Table.Cell>
-                <Table.Cell>Equals</Table.Cell>
-                <Table.Cell>{this.renderRuleValue(startIdx + idx)}</Table.Cell>
-                <Table.Cell>{this.renderCheckbox(startIdx + idx)}</Table.Cell>
-              </Table.Row>
-            ))
-        }
-      </Table.Body>
-    );
-  }
-
-  renderFooter = () => {
-    const numPages = this.state.recentInput ?
-      Math.ceil(Object.keys(this.state.recentInput).length / this.state.numPropertiesPerPage) :
-      0;
-
-    return (
-      <Table.Footer>
-        <Table.Row>
-          <Table.HeaderCell colSpan={4}>
-            <Menu floated='right' pagination>
-              <Menu.Item
-                as='a'
-                icon
-                onClick={() => {
-                  this.setState(
-                    { currentPage: this.state.currentPage - 1}
-                  )
-                }}
-                disabled={this.state.currentPage < 1}
-              >
-                <Icon name='chevron left' />
-              </Menu.Item>
-              {
-                numPages > 0 && (
-                  new Array(numPages)
-                    .fill(null)
-                    .map((_, idx) => (
-                      <Menu.Item
-                        key={idx}
-                        as='a'
-                        active={idx === this.state.currentPage}
-                        onClick={() =>
-                          this.setState(
-                            { currentPage: idx}
-                          )
-                        }
-                      >
-                        {idx}
-                      </Menu.Item>
-                    ))
-                )
-              }
-              <Menu.Item
-                as='a'
-                icon
-                onClick={() => {
-                  this.setState(
-                    { currentPage: this.state.currentPage + 1}
-                  )
-                }}
-                disabled={this.state.currentPage >= numPages -1}
-              >
-                <Icon name='chevron right' />
-              </Menu.Item>
-            </Menu>
-          </Table.HeaderCell>
-        </Table.Row>
-      </Table.Footer>
-    );
-  }
-
-  renderTable = () => {
-    const { keys, values } = this.state;
-    if (!keys || !values) {
-      return false;
-    }
-
-    return (
-      <Table
-        celled
-        style={{
-          maxWidth: 100
-        }}
-      >
-        { this.renderHeader() }
-        { this.renderBody() }
-        { this.renderFooter() }
-      </Table>
-    );
-  }
-
   sync = async () => {
     const { service } = this.props;
     const config = await getServiceConfiguration(service);
     const recentInput = config.recentInput;
     if (recentInput) {
       this.setState(
-        { recentInput, filter: config.filter, currentPage: 0 },
+        { recentInput, filter: config.filter },
         this.updateKeyValues
       );
     } else {
@@ -245,7 +83,20 @@ export default class FilterUI extends Component {
       <div
         style={lineStyle}
       >
-        { this.renderTable() }
+        <PropertySelector
+          keys={this.state.keys}
+          values={this.state.values}
+          onCheckbox={(key, checked) =>
+            this.setState({
+              selectedKeys: {
+                ...this.state.selectedKeys,
+                [key]: checked
+              }
+            }, this.configureService)
+          }
+          onValues={values => this.setState({ values })}
+          selectedKeys={this.state.selectedKeys}
+        />
         <div style={lineStyle}>
           <Button
             onClick={() => configureService(service, {})}
