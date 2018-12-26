@@ -24,6 +24,8 @@ export default class MySqlUI extends Component {
   state = {
     createDatabaseName: '',
     createTableName: '',
+    currentTab: 0,
+    query: ''
   };
 
   componentDidMount() {
@@ -32,7 +34,10 @@ export default class MySqlUI extends Component {
 
   getConfig = async () => {
     const config = await getServiceConfiguration(this.props.service);
-    this.setState({ connection: config.connectionDetails });
+    this.setState({
+      connection: config.connectionDetails,
+      currentTab: 1
+    });
   }
 
   createNewInstance = async () => {
@@ -83,9 +88,9 @@ export default class MySqlUI extends Component {
         >
           <Button
             onClick={this.createNewInstance}
-            disabled={this.state.connection}
+            disabled={!!this.state.connection}
           >
-            Provision
+            Deploy
           </Button>
         </div>
       </div>
@@ -108,7 +113,7 @@ export default class MySqlUI extends Component {
             onChange={(_, data) => this.setState({
               databaseName: data.value
             })}
-            disabled={this.state.connection}
+            disabled={!!this.state.connection}
           />
         </div>
         <div style={{ ...lineStyle }}>
@@ -124,7 +129,7 @@ export default class MySqlUI extends Component {
             onChange={(_, data) => this.setState({
               tableName: data.value
             })}
-            disabled={this.state.connection}
+            disabled={!!this.state.connection}
           />
         </div>
         <div style={{ ...lineStyle }}>
@@ -140,8 +145,41 @@ export default class MySqlUI extends Component {
             onChange={(_, data) => this.setState({
               tableName: data.value
             })}
-            disabled={this.state.connection}
+            disabled={!!this.state.connection}
           />
+        </div>
+      </div>
+    );
+  }
+
+  renderQueryTab = () => {
+    return (
+      <div>
+        <div style={{ ...lineStyle }}>
+          <Label style={labelStyle}>
+            Query
+          </Label>
+          <Input
+            placeholder='Enter Query'
+            value={this.state.query}
+            onChange={(_, { value }) => this.setState({
+              query: value
+            })}
+            disabled={!this.state.connection}
+          />
+        </div>
+        <div
+          style={{
+            ...lineStyle,
+            textAlign: 'center',
+          }}
+        >
+          <Button
+            onClick={this.createNewInstance}
+            disabled={!this.state.connection}
+          >
+            Execute
+          </Button>
         </div>
       </div>
     );
@@ -150,13 +188,17 @@ export default class MySqlUI extends Component {
   render() {
     const panes = [
       { menuItem: 'Create Instance', render: () => <Tab.Pane>{this.renderProvisioningTab()}</Tab.Pane> },
-      { menuItem: 'Existing Instance', render: () => <Tab.Pane>{this.renderConnectionTab()}</Tab.Pane> },
+      { menuItem: 'Deployed Instance', render: () => <Tab.Pane>{this.renderConnectionTab()}</Tab.Pane> },
+      { menuItem: 'Query', render: () => <Tab.Pane>{this.renderQueryTab()}</Tab.Pane> },
     ]
     return (
       <div>
         <Tab
           panes={panes}
-          activeIndex={this.state.connection ? 1 : 0}
+          activeIndex={this.state.currentTab}
+          onTabChange={
+            (e, { activeIndex }) => this.setState({ currentTab: activeIndex })
+          }
         />
       </div>
     );
