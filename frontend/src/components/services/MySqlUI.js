@@ -10,6 +10,7 @@ import {
   configureService,
   getServiceConfiguration
 } from '../../core/actions';
+import PropertySelector from '../shared/PropertySelector';
 
 const lineStyle = {
   textAlign: 'left',
@@ -24,7 +25,8 @@ export default class MySqlUI extends Component {
     createDatabaseName: '',
     createTableName: '',
     currentTab: 0,
-    query: ''
+    schema: undefined,
+    selectedQueryKeys: []
   };
 
   componentDidMount() {
@@ -35,7 +37,7 @@ export default class MySqlUI extends Component {
     const config = await getServiceConfiguration(this.props.service);
     this.setState({
       connection: config.connectionDetails,
-      currentTab: 1,
+      currentTab: config.connectionDetails ? 1 : 0,
       schema: config.schema
     });
   }
@@ -153,21 +155,23 @@ export default class MySqlUI extends Component {
   }
 
   renderQueryTab = () => {
+    const { schema } = this.state;
+    console.log('!!!', schema)
+    const keys = schema && Object.keys(schema);
+    const values = keys && keys.map(key => schema[key]);
     return (
       <div>
-        <div style={{ ...lineStyle }}>
-          <Label style={labelStyle}>
-            Query
-          </Label>
-          <Input
-            placeholder='Enter Query'
-            value={this.state.query}
-            onChange={(_, { value }) => this.setState({
-              query: value
-            })}
-            disabled={!this.state.connection}
-          />
-        </div>
+        <PropertySelector
+          keys={keys}
+          values={values}
+          selectedKeys={this.state.selectedQueryKeys}
+          onCheckboxChanged={
+            (key, checked) => checked ?
+              this.setState({ selectedQueryKeys: this.state.selectedQueryKeys.concat(key) }) :
+              this.setState({ selectedQueryKeys: this.state.selectedQueryKeys.filter(x => x === key) })
+          }
+          onValueChanged={(key, value) => console.log('Change value', key, value)}
+        />
         <div
           style={{
             ...lineStyle,

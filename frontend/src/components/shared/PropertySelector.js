@@ -15,8 +15,8 @@ export default class PropertySelector extends Component {
     numPropertiesPerPage: 5,
   };
 
-  renderCheckbox = idx => {
-    const { keys, onCheckbox } = this.props;
+  renderCheckbox = key => {
+    const { onCheckboxChanged } = this.props;
     return (
       <div
         style={{
@@ -25,21 +25,21 @@ export default class PropertySelector extends Component {
       >
         <Checkbox
           slider
-          onChange={(_, { checked }) => onCheckbox(keys[idx], checked)}
-          checked={this.props.selectedKeys[keys[idx]]}
+          onChange={(_, { checked }) => onCheckboxChanged(key, checked)}
+          checked={this.props.selectedKeys.indexOf(key) !== -1}
         />
       </div>
     );
   }
 
-  renderRuleValue = idx => {
-    const { values, keys, onCheckbox, onValues} = this.props;
+  renderValue = (key, value) => {
+    const { onCheckboxChanged, onValueChanged} = this.props;
     return (
       <Input
-        value={values[idx]}
+        value={value}
         onChange={(_, data) => {
-          onCheckbox(keys[idx], false);
-          onValues(Object.assign([], values, {[idx]: data.value}));
+          onCheckboxChanged(key, false);
+          onValueChanged(key, data.value);
         }}
       />
     );
@@ -59,7 +59,7 @@ export default class PropertySelector extends Component {
   }
 
   renderBody = () => {
-    const { keys } = this.props;
+    const { keys, values} = this.props;
     const { currentPage, numPropertiesPerPage } = this.state;
     const startIdx = currentPage * numPropertiesPerPage;
     return (
@@ -67,13 +67,11 @@ export default class PropertySelector extends Component {
         {
           keys.slice(startIdx, startIdx + numPropertiesPerPage)
             .map((key, idx) => (
-              <Table.Row
-                key={key}
-              >
+              <Table.Row key={key}>
                 <Table.Cell>{key}</Table.Cell>
                 <Table.Cell>Equals</Table.Cell>
-                <Table.Cell>{this.renderRuleValue(startIdx + idx)}</Table.Cell>
-                <Table.Cell>{this.renderCheckbox(startIdx + idx)}</Table.Cell>
+                <Table.Cell>{this.renderValue(keys[startIdx + idx], values[startIdx + idx])}</Table.Cell>
+                <Table.Cell>{this.renderCheckbox(keys[startIdx + idx])}</Table.Cell>
               </Table.Row>
             ))
         }

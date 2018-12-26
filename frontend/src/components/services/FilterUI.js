@@ -11,7 +11,9 @@ import PropertySelector from '../shared/PropertySelector';
 
 export default class FilterUI extends Component {
   state = {
-    selectedKeys: {},
+    selectedKeys: [],
+    keys: [],
+    values: []
   };
 
   componentDidMount() {
@@ -24,9 +26,9 @@ export default class FilterUI extends Component {
   }
 
   configureService = () => {
-    const config = Object.keys(this.state.selectedKeys).reduce(
+    const config = this.state.selectedKeys.reduce(
       (all, key) => {
-        const isSelected = this.state.selectedKeys[key];
+        const isSelected = this.state.selectedKeys.indexOf(key) !== -1;
         return isSelected ?
           { ...all, [key]: this.currentValueForKey(key)} :
           all;
@@ -65,7 +67,7 @@ export default class FilterUI extends Component {
           const filterValue = filter[key];
           return filterValue ? filterValue : values[idx]
         });
-        const selectedKeys = Object.keys(filter).reduce((all, cur) => ({...all, [cur]: true}), {});
+        const selectedKeys = Object.keys(filter);
         this.setState({ keys, values: filterValues, selectedKeys });
       } else {
         this.setState({ keys, values });
@@ -84,18 +86,22 @@ export default class FilterUI extends Component {
         style={lineStyle}
       >
         <PropertySelector
+          selectedKeys={this.state.selectedKeys}
           keys={this.state.keys}
           values={this.state.values}
-          onCheckbox={(key, checked) =>
+          onValueChanged={(key, value) => {
+            const idx = this.state.keys.findIndex(k => k === key);
+            const values = Object.assign([], this.state.values, { [idx]: value });
+            this.setState({ values })
+          }}
+          onCheckboxChanged={(key, checked) =>
             this.setState({
-              selectedKeys: {
-                ...this.state.selectedKeys,
-                [key]: checked
-              }
-            }, this.configureService)
-          }
-          onValues={values => this.setState({ values })}
-          selectedKeys={this.state.selectedKeys}
+              selectedKeys: checked ?
+                this.state.selectedKeys.concat(key) :
+                this.state.selectedKeys.filter(x => x !== key)
+            },
+            this.configureService
+          )}
         />
         <div style={lineStyle}>
           <Button

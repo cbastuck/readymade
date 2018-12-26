@@ -1,18 +1,33 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Button,
-  Label
+  Label,
+  Checkbox
 } from 'semantic-ui-react';
 
 import {
-  configureService
+  configureService,
+  getServiceConfiguration
 } from '../../core/actions';
 
 export default class EventStreamUI extends Component {
   state = {
-    url: 'https://stream.wikimedia.org/v2/stream/recentchange'
+    url: 'https://stream.wikimedia.org/v2/stream/recentchange',
+    active: false
   };
+
+  componentDidMount() {
+    this.update();
+  }
+
+  update = async () => {
+    const config = await getServiceConfiguration(this.props.service);
+    const newState = { active: config.active };
+    if (config.url) {
+      newState.url = config.url;
+    }
+    this.setState(newState);
+  }
 
   render() {
     const { service } = this.props;
@@ -24,34 +39,33 @@ export default class EventStreamUI extends Component {
 
     return (
       <div>
-        <div
-          style={lineStyle}
-        >
-          <Label
-            style={{ width: 60 }}
-          >
+        <div style={lineStyle}>
+          <Label style={{ width: 60 }}>
             Stream
           </Label>
           <Input
             value={this.state.url}
+            onChange={(_, { value }) =>
+              this.setState({ url: value })
+            }
           />
         </div>
-        <div
-          style={{
-            ...lineStyle,
-            textAlign: 'center',
-          }}
-        >
-          <Button
-            style={{ width: 210 }}
-            onClick={async () => {
-              const config = await configureService(service, this.state);
-              this.setState({ ...config });
+        <div style={lineStyle}>
+          <Label style={{ width: 60 }}>
+            Active
+          </Label>
+          <Checkbox
+            slider
+            checked={this.state.active}
+            style={{ marginLeft: 10 }}
+            onChange={async (_, { checked }) => {
+              await configureService(
+                service, { url: this.state.url, active: checked }
+              );
+              this.setState({ active: checked });
             }}
-          >
-            Configure
-          </Button>
-        </div>
+          />
+         </div>
       </div>
     );
   }
