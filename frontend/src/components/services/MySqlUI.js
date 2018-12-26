@@ -1,12 +1,9 @@
 import React, { Component } from 'react';
 import {
-  Table,
-  Menu,
-  Icon,
   Input,
   Label,
-  Checkbox,
   Button,
+  Tab,
   TextArea
 } from 'semantic-ui-react';
 
@@ -15,9 +12,18 @@ import {
   getServiceConfiguration
 } from '../../core/actions';
 
+const lineStyle = {
+  textAlign: 'left',
+  margin: 10,
+};
+const labelStyle = {
+  width: 70
+};
+
 export default class MySqlUI extends Component {
   state = {
-    tableName: undefined
+    createDatabaseName: '',
+    createTableName: '',
   };
 
   componentDidMount() {
@@ -29,46 +35,41 @@ export default class MySqlUI extends Component {
     console.log('GOT CONFIG', config);
   }
 
-  render() {
+  createNewInstance = async () => {
     const { service } = this.props;
-    const lineStyle = {
-      textAlign: 'left',
-      margin: 10,
+    const config = {
+      createInstanceDetails: {
+        databaseName: this.state.createDatabaseName,
+        tableName: this.state.createTableName
+      }
     };
-    const labelStyle = {
-      width: 70
-    };
+    const res = await configureService(service, config);
+  }
+
+  renderProvisioningTab = () => {
     return (
       <div>
-         <div
-          style={{ ...lineStyle }}
-        >
-          <Label
-            style={labelStyle}
-          >
+         <div style={{ ...lineStyle }}>
+          <Label style={labelStyle}>
             Database
           </Label>
           <Input
             placeholder='Name of Database'
-            value={this.state.databaseName}
+            value={this.state.createDatabaseName}
             onChange={(_, data) => this.setState({
-              databaseName: data.value
+              createDatabaseName: data.value
             })}
           />
         </div>
-        <div
-          style={{ ...lineStyle }}
-        >
-          <Label
-            style={labelStyle}
-          >
+        <div style={{ ...lineStyle }}>
+          <Label style={labelStyle}>
             Table
           </Label>
           <Input
             placeholder='Name of table'
-            value={this.state.tableName}
+            value={this.state.createTableName}
             onChange={(_, data) => this.setState({
-              tableName: data.value
+              createTableName: data.value
             })}
           />
         </div>
@@ -80,14 +81,54 @@ export default class MySqlUI extends Component {
         >
           <Button
             style={{ width: 210 }}
-            onClick={async () => {
-              const config = await configureService(service, this.state);
-              this.setState({ ...config });
-            }}
+            onClick={this.createNewInstance}
           >
-            Configure
+            Provisioning
           </Button>
         </div>
+      </div>
+    );
+  }
+
+  renderConnectionTab = () => {
+    return (
+      <div>
+         <div style={{ ...lineStyle }}>
+          <Label style={labelStyle}>
+            Host
+          </Label>
+          <Input
+            placeholder='Name of Database'
+            value={this.state.databaseName}
+            onChange={(_, data) => this.setState({
+              databaseName: data.value
+            })}
+          />
+        </div>
+        <div style={{ ...lineStyle }}>
+          <Label style={labelStyle}>
+            Table
+          </Label>
+          <Input
+            placeholder='Name of table'
+            value={this.state.tableName}
+            onChange={(_, data) => this.setState({
+              tableName: data.value
+            })}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  render() {
+    const panes = [
+      { menuItem: 'Create Instance', render: () => <Tab.Pane>{this.renderProvisioningTab()}</Tab.Pane> },
+      { menuItem: 'Existing Instance', render: () => <Tab.Pane>{this.renderConnectionTab()}</Tab.Pane> },
+    ]
+    return (
+      <div>
+        <Tab panes={panes} />
       </div>
     );
   }
