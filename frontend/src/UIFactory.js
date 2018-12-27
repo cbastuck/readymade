@@ -1,6 +1,6 @@
 import React from 'react';
 
-import RESTInputUI from './components/services/restInputUI';
+import EndpointUI from './components/services/EndpointUI';
 import DOMSelectorUI  from './components/services/domSelectorUI';
 import FileExchangeUI from './components/services/FileExchangeUI';
 import WebsocketConsumer from './components/services/WebsocketConsumer';
@@ -13,8 +13,8 @@ import MySqlServiceUI from './components/services/MySqlServiceUI';
 export function createServiceUI(service) {
   const id = service.uuid;
   switch(service.serviceId) {
-    case 'hookup.to/service/rest-input':
-      return <RESTInputUI key={id} id={id} service={service}/>;
+    case 'hookup.to/service/endpoint':
+      return <EndpointUI key={id} id={id} service={service}/>;
     case 'hookup.to/service/dom-selector':
       return <DOMSelectorUI key={id} id={id} service={service}/>;
     case 'hookup.to/service/file-exchange':

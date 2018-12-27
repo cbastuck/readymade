@@ -11,7 +11,7 @@ import {
   getServiceConfiguration
 } from '../../core/actions';
 
-export default class RestInputUI extends Component {
+export default class EndpointUI extends Component {
   state = {
     op: '',
     path: '',
@@ -28,13 +28,15 @@ export default class RestInputUI extends Component {
     const path = service && service.path;
     const query = service && service.selector && service.selector.query;
     const active = service && service.active;
+    const redirect = service && service.redirect;
     this.setState({
       op: op,
       path: path,
       selector: {
         query: query
       },
-      active
+      active,
+      redirect
     });
   }
 
@@ -75,7 +77,7 @@ export default class RestInputUI extends Component {
           </Label>
           <Input
             placeholder='Path'
-            value={this.state.path}
+            value={this.state.path || ''}
             onChange={
               (_, data) => this.setState({ path: data.value, active: false })
             }
@@ -131,7 +133,8 @@ export default class RestInputUI extends Component {
           />
         </div>
         {
-          this.state.active && (
+          this.state.active &&
+          this.state.op === 'GET' &&  (
             <div
               style={{
                 ...lineStyle,
