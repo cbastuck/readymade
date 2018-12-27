@@ -22,6 +22,7 @@ export default class ServiceDropdown extends Component {
       return false;
     }
 
+    const runtimes = Object.keys(registry);
     return (
       <AppConsumer>
         {
@@ -61,7 +62,7 @@ export default class ServiceDropdown extends Component {
               {
                 <Dropdown.Menu>
                   {
-                    Object.keys(registry).map(runtimeName =>
+                    runtimes.map((runtimeName, runtimeIdx) =>
                       [
                         <Dropdown.Header
                           key={`${runtimeName}.header`}
@@ -76,7 +77,7 @@ export default class ServiceDropdown extends Component {
                             {service.serviceName}
                           </Dropdown.Item>
                         ),
-                        <Dropdown.Divider
+                        (runtimeIdx + 1 < runtimes.length) && <Dropdown.Divider
                           key={`${runtimeName}.devider`}
                         />
                       ]
