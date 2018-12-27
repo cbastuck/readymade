@@ -110,7 +110,7 @@ export default class MySqlUI extends Component {
             placeholder='Host'
             value={this.state.connection ?
               this.state.connection.host :
-              this.state.existingHost
+              (this.state.existingHost ||'')
             }
             onChange={(_, data) => this.setState({
               databaseName: data.value
