@@ -2,45 +2,53 @@ import React, { Component } from 'react';
 import {
   Dropdown,
   Input,
-  Button,
-  Label
+  Label,
+  Checkbox
 } from 'semantic-ui-react';
 
-import { configureService } from '../../core/actions';
+import {
+  configureService,
+  getServiceConfiguration
+} from '../../core/actions';
 
 export default class RestInputUI extends Component {
-  constructor(props) {
-    super(props);
+  state = {
+    op: '',
+    path: '',
+    redirect: ''
+  };
 
-    const { service } = props;
+  componentDidMount() {
+    this.update();
+  }
+
+  update = async() => {
+    const service = await getServiceConfiguration(this.props.service);
     const op = service && service.op && service.op.toUpperCase();
     const path = service && service.path;
     const query = service && service.selector && service.selector.query;
-    this.state = {
-      op: op || 'GET',
-      path: path || 'email',
+    const active = service && service.active;
+    this.setState({
+      op: op,
+      path: path,
       selector: {
-        query: query || 'in'
+        query: query
       },
-      running: op && path
-    }
+      active
+    });
   }
 
   render() {
     const { service } = this.props;
     const lineStyle = {
       textAlign: 'left',
-      marginBottom: 10,
+      margin: '8px 10px',
     };
 
     return (
       <div>
-        <div
-          style={lineStyle}
-        >
-          <Label
-            style={{ width: 60 }}
-          >
+        <div style={lineStyle}>
+          <Label style={{ width: 70 }}>
             Method
           </Label>
           <Dropdown
@@ -54,52 +62,76 @@ export default class RestInputUI extends Component {
               { key: 'PUT', value: 'PUT', text: 'PUT' },
             ]}
             value={this.state.op}
-            onChange={(_ev, data) => this.setState({ op: data.value })}
+            onChange={
+              (_ev, data) => this.setState({ op: data.value, active: false })}
           />
         </div>
 
         <div
           style={lineStyle}
         >
-          <Label
-            style={{ width: 60 }}
-          >Path</Label>
+          <Label style={{ width: 70 }}>
+            Path
+          </Label>
           <Input
             placeholder='Path'
             value={this.state.path}
-            style={{ width: 160 }}
-            onChange={(_, data) => this.setState({ path: data.value })}
+            onChange={
+              (_, data) => this.setState({ path: data.value, active: false })
+            }
           />
         </div>
-
-        {
-          this.state.op === 'GET' && (
-            <div
-              style={{ ...lineStyle }}
-            >
-              <Label
-                style={{ width: 60 }}
-              >
-                Query
-              </Label>
-              <Input
-                placeholder='Param'
-                value={this.state.selector.query}
-                style={{ width: 160 }}
-                onChange={(_, data) => this.setState({
-                  selector: {
-                    ...this.state.selector,
-                    query: data.value
-                  }})
+        <div
+          style={{
+            ...lineStyle,
+            textAlign: 'center',
+          }}
+        >
+          <Label
+            style={{ width: 70 }}
+          >
+            Redirect
+          </Label>
+          <Input
+            onChange={async (_, { value }) => {
+              this.setState(
+                { redirect: value, active: false },
+                async () => {
+                  await configureService(service, this.state);
+                  this.update();
                 }
-              />
-            </div>
-          )
-        }
-
+              )
+            }}
+            value={this.state.redirect}
+          />
+        </div>
+        <div
+          style={{
+            ...lineStyle,
+          }}
+        >
+          <Label
+            style={{ width: 70 }}
+          >
+            Active
+          </Label>
+          <Checkbox
+            slider
+            style={{ padding: '5px 5px' }}
+            onChange={async (_, { checked }) => {
+              this.setState(
+                { active: checked },
+                async () => {
+                  await configureService(service, this.state);
+                  this.update();
+                }
+              )
+            }}
+            checked={this.state.active}
+          />
+        </div>
         {
-          this.state.op === 'GET' &&
-          this.state.running && (
+          this.state.active && (
             <div
               style={{
                 ...lineStyle,
@@ -107,7 +139,7 @@ export default class RestInputUI extends Component {
                 margin: '10px 10px',
             }}>
               <a
-                href={`/api/${service.board}/${this.state.path}?${this.state.selector.query}=test`}
+                href={`/api/${service.board}/${this.state.path}?key=value`}
                 target="blank"
                 style={{
                   color: 'black',
@@ -119,23 +151,6 @@ export default class RestInputUI extends Component {
             </div>
           )
         }
-
-        <div
-          style={{
-            ...lineStyle,
-            textAlign: 'center',
-          }}
-        >
-          <Button
-            style={{ width: 210 }}
-            onClick={async () => {
-              const config = await configureService(service, this.state);
-              this.setState({ ...config });
-            }}
-          >
-            Configure
-          </Button>
-        </div>
       </div>
    );
   }
