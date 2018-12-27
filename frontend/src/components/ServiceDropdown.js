@@ -21,6 +21,7 @@ export default class ServiceDropdown extends Component {
     if (!registry) {
       return false;
     }
+
     return (
       <AppConsumer>
         {
@@ -51,13 +52,13 @@ export default class ServiceDropdown extends Component {
                 </Dropdown.Menu>
               </Dropdown>
               <Dropdown
-                text='Add Services'
+                text="Click to add Services"
                 search
-                selection
                 pointing
-                className='link item'
+                className='link item selection'
                 onSearchChange={e => console.log('search', e.target.value)}
               >
+              {
                 <Dropdown.Menu>
                   {
                     Object.keys(registry).map(runtimeName =>
@@ -82,6 +83,7 @@ export default class ServiceDropdown extends Component {
                     )
                   }
                 </Dropdown.Menu>
+              }
               </Dropdown>
               <AccountDropdown
                 label={appContext.username || 'Account'}
