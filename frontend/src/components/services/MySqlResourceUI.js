@@ -10,7 +10,6 @@ import {
   configureService,
   getServiceConfiguration
 } from '../../core/actions';
-import PropertySelector from '../shared/PropertySelector';
 
 const lineStyle = {
   textAlign: 'left',
@@ -20,13 +19,11 @@ const labelStyle = {
   width: 70
 };
 
-export default class MySqlUI extends Component {
+export default class MySqlResourceUI extends Component {
   state = {
     createDatabaseName: '',
     createTableName: '',
     currentTab: 0,
-    schema: undefined,
-    selectedQueryKeys: []
   };
 
   componentDidMount() {
@@ -38,7 +35,6 @@ export default class MySqlUI extends Component {
     this.setState({
       connection: config.connectionDetails,
       currentTab: config.connectionDetails ? 1 : 0,
-      schema: config.schema
     });
   }
 
@@ -112,10 +108,7 @@ export default class MySqlUI extends Component {
               this.state.connection.host :
               (this.state.existingHost ||'')
             }
-            onChange={(_, data) => this.setState({
-              databaseName: data.value
-            })}
-            disabled={!!this.state.connection}
+            disabled
           />
         </div>
         <div style={{ ...lineStyle }}>
@@ -126,12 +119,9 @@ export default class MySqlUI extends Component {
             placeholder='Name of Database'
             value={this.state.connection ?
               this.state.connection.tableName :
-              this.state.tableName
+              ''
             }
-            onChange={(_, data) => this.setState({
-              tableName: data.value
-            })}
-            disabled={!!this.state.connection}
+            disabled
           />
         </div>
         <div style={{ ...lineStyle }}>
@@ -142,48 +132,10 @@ export default class MySqlUI extends Component {
             placeholder='Name of Table'
             value={this.state.connection ?
               this.state.connection.tableName :
-              this.state.tableName
+              ''
             }
-            onChange={(_, data) => this.setState({
-              tableName: data.value
-            })}
-            disabled={!!this.state.connection}
+            disabled
           />
-        </div>
-      </div>
-    );
-  }
-
-  renderQueryTab = () => {
-    const { schema } = this.state;
-    console.log('!!!', schema)
-    const keys = schema && Object.keys(schema);
-    const values = keys && keys.map(key => schema[key]);
-    return (
-      <div>
-        <PropertySelector
-          keys={keys}
-          values={values}
-          selectedKeys={this.state.selectedQueryKeys}
-          onCheckboxChanged={
-            (key, checked) => checked ?
-              this.setState({ selectedQueryKeys: this.state.selectedQueryKeys.concat(key) }) :
-              this.setState({ selectedQueryKeys: this.state.selectedQueryKeys.filter(x => x === key) })
-          }
-          onValueChanged={(key, value) => console.log('Change value', key, value)}
-        />
-        <div
-          style={{
-            ...lineStyle,
-            textAlign: 'center',
-          }}
-        >
-          <Button
-            onClick={this.createNewInstance}
-            disabled={!this.state.connection}
-          >
-            Execute
-          </Button>
         </div>
       </div>
     );
@@ -193,7 +145,6 @@ export default class MySqlUI extends Component {
     const panes = [
       { menuItem: 'Create Instance', render: () => <Tab.Pane>{this.renderProvisioningTab()}</Tab.Pane> },
       { menuItem: 'Deployed Instance', render: () => <Tab.Pane>{this.renderConnectionTab()}</Tab.Pane> },
-      { menuItem: 'Query', render: () => <Tab.Pane>{this.renderQueryTab()}</Tab.Pane> },
     ]
     return (
       <div>
