@@ -9,6 +9,7 @@ import EventStreamUI from './components/services/EventStreamUI';
 import FilterUI from './components/services/FilterUI';
 import MySqlResourceUI from './components/services/MySqlResourceUI';
 import MySqlServiceUI from './components/services/MySqlServiceUI';
+import TimerUI from './components/services/TimerUI';
 
 export function createServiceUI(service) {
   const id = service.uuid;
@@ -31,6 +32,8 @@ export function createServiceUI(service) {
       return <MySqlResourceUI key={id} id={id} service={service} />;
     case 'hookup.to/service/mysql':
       return <MySqlServiceUI key={id} id={id} service={service} />;
+    case 'hookup.to/service/timer':
+      return <TimerUI key={id} id={id} service={service} />;
     default:
       return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
   }

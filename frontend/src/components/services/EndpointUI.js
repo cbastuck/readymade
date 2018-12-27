@@ -48,7 +48,9 @@ export default class EndpointUI extends Component {
     };
 
     return (
-      <div>
+      <div
+        style={{ marginBottom: 15 }}
+      >
         <div style={lineStyle}>
           <Label style={{ width: 70 }}>
             Method
