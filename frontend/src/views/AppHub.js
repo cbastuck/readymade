@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import qs from 'querystring';
 
 import {
   Input,
@@ -11,6 +12,9 @@ export default class AppHub extends Component {
   };
 
   render() {
+    const query = qs.parse(this.props.location.search.substr(1));
+    const path = query.path || 'email';
+    const board = this.props.match.params.board;
     return (
       <div
         style={{
@@ -23,9 +27,9 @@ export default class AppHub extends Component {
         }}
       >
         <form
-          action="/api/popular-amber-skunk/email"
+          action={`/api/${board}/${path}`}
           method="post"
-          enctype="application/x-www-form-urlencoded"
+          encType="application/x-www-form-urlencoded"
         >
           <Label>
             Email

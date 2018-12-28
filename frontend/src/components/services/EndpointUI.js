@@ -106,7 +106,7 @@ export default class EndpointUI extends Component {
                 }
               )
             }}
-            value={this.state.redirect}
+            value={this.state.redirect || ''}
           />
         </div>
         <div
@@ -132,6 +132,7 @@ export default class EndpointUI extends Component {
               )
             }}
             checked={this.state.active}
+            disabled={!this.state.op || !this.state.path}
           />
         </div>
         {
