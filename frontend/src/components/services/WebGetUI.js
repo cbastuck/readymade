@@ -9,6 +9,7 @@ import {
   configureService,
   getServiceConfiguration
 } from '../../core/actions';
+import { debounce } from  '../shared/util';
 
 export default class WebGetUI extends Component {
   state = {
@@ -26,8 +27,12 @@ export default class WebGetUI extends Component {
     this.setState({ url, preserveInput });
   }
 
+  sendConfig = debounce(async() => {
+    await configureService(this.props.service, this.state);
+    this.update();
+  });
+
   render() {
-    const { service } = this.props;
     const lineStyle = {
       textAlign: 'left',
       margin: '8px 10px',
@@ -46,10 +51,7 @@ export default class WebGetUI extends Component {
             onChange={(_, { value }) => {
               this.setState(
                 { url: value },
-                async () => {
-                  await configureService(service, this.state);
-                  this.update();
-                }
+                this.sendConfig
               )
             }}
             value={this.state.url || ''}
@@ -64,10 +66,7 @@ export default class WebGetUI extends Component {
             onChange={(_, { checked }) => {
               this.setState(
                 { preserveInput: checked },
-                async () => {
-                  await configureService(service, this.state);
-                  this.update();
-                }
+                this.sendConfig
               )
             }}
             checked={this.state.preserveInput}

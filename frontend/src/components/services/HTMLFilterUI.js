@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Button,
   Label
 } from 'semantic-ui-react';
 
@@ -9,6 +8,7 @@ import {
   configureService,
   getServiceConfiguration
 } from '../../core/actions';
+import { debounce } from '../shared/util';
 
 export default class HTMLFilterUI extends Component {
   state = {
@@ -24,10 +24,10 @@ export default class HTMLFilterUI extends Component {
     this.setState({ selector: config.selector });
   }
 
-  sendConfig = async () => {
+  sendConfig = debounce(async () => {
     await configureService(this.props.service, this.state);
     await this.update();
-  }
+  })
 
   render() {
     const lineStyle = {
