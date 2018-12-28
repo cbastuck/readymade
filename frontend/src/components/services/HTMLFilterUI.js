@@ -5,56 +5,52 @@ import {
   Label
 } from 'semantic-ui-react';
 
-import { configureService } from '../../core/actions';
+import {
+  configureService,
+  getServiceConfiguration
+} from '../../core/actions';
 
 export default class HTMLFilterUI extends Component {
   state = {
-    query: ''
+    selector: ''
   };
 
+  componentDidMount() {
+    this.update();
+  }
+
+  update = async () => {
+    const config = await getServiceConfiguration(this.props.service);
+    this.setState({ selector: config.selector });
+  }
+
+  sendConfig = async () => {
+    await configureService(this.props.service, this.state);
+    await this.update();
+  }
+
   render() {
-    const { service } = this.props;
     const lineStyle = {
       textAlign: 'left',
-      marginBottom: 10,
+      margin: '8px 10px',
     };
     return (
-      <div
-        style={lineStyle}
-      >
-        <div
-          style={{
-            marginBottom: 10
-          }}
-        >
-          <Label
-            style={{ width: 60 }}
-          >
+      <div style={lineStyle}>
+        <div style={{ marginBottom: 10 }}>
+          <Label style={{ width: 60 }}>
             Selector
           </Label>
           <Input
-            placeholder='Query'
-            value={this.state.query}
+            placeholder='Selector'
+            value={this.state.selector}
             style={{ width: 160 }}
-            onChange={(_, data) => this.setState({ query: data.value })}
+            onChange={(_, { value }) =>
+              this.setState(
+                { selector: value },
+                this.sendConfig
+              )
+            }
           />
-        </div>
-
-        <div
-          style={{
-            ...lineStyle,
-            textAlign: 'center',
-          }}
-        >
-          <Button
-            style={{ width: 210 }}
-            onClick={async () => {
-              const config = await configureService(service, this.state);
-              this.setState({ ...config });
-            }}
-          >
-            Configure
-          </Button>
         </div>
       </div>
     );
