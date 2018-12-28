@@ -11,6 +11,9 @@ export default class Scene extends Component {
           height: '93%',
           border: 'solid 1px lightgray',
           borderRadius: 3,
+          display: 'flex',
+          flexDirection: 'row',
+          overflow: 'auto'
         }}
       >
         {
