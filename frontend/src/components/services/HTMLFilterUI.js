@@ -7,7 +7,7 @@ import {
 
 import { configureService } from '../../core/actions';
 
-export default class DomSelectorUI extends Component {
+export default class HTMLFilterUI extends Component {
   state = {
     query: ''
   };

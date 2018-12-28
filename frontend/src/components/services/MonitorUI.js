@@ -7,7 +7,7 @@ import {
   getServiceConfiguration
 } from '../../core/actions';
 
-export default class DebugUI extends Component {
+export default class MonitorUI extends Component {
   state = {
     value: ''
   }
@@ -18,6 +18,7 @@ export default class DebugUI extends Component {
 
   componentWillUnmount() {
     if (this.eventSource) {
+      this.eventSource.close();
       this.eventSource.removeEventListener(
         'debug',
         this.onMessage
