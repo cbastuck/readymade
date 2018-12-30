@@ -12,7 +12,7 @@ export default class Scene extends Component {
           border: 'solid 1px lightgray',
           borderRadius: 3,
           display: 'flex',
-          flexDirection: 'row',
+          flexFlow: 'row wrap',
           overflow: 'auto'
         }}
       >

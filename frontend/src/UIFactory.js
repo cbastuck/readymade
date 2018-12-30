@@ -11,6 +11,7 @@ import MySqlResourceUI from './components/services/MySqlResourceUI';
 import MySqlServiceUI from './components/services/MySqlServiceUI';
 import TimerUI from './components/services/TimerUI';
 import WebGetUI from './components/services/WebGetUI';
+import DataInjectorUI from './components/services/DataInjectorUI';
 
 export function createServiceUI(service) {
   const id = service.uuid;
@@ -37,6 +38,8 @@ export function createServiceUI(service) {
       return <TimerUI key={id} id={id} service={service} />;
     case 'hookup.to/service/web-get':
       return <WebGetUI key={id} id={id} service={service} />;
+    case 'hookup.to/service/data-injector':
+      return <DataInjectorUI key={id} id={id} service={service} />;
     default:
       return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
   }
