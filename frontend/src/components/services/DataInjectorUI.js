@@ -13,7 +13,7 @@ const testData = ['eins', 'zwei', 'drei'];
 
 export default class DataInjectorUI extends Component {
   state = {
-    data: ['eins', 'zwei', 'drei']
+    data: testData
   };
 
   update = async() => {
