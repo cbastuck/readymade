@@ -13,13 +13,15 @@ export default class HTMLTemplatesUI extends Component {
   };
 
   update = async() => {
-    const config = await getServiceConfiguration(this.props.service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
     const { data } = config;
     this.setState({ data });
   }
 
   sendConfig = async () => {
-    await configureService(this.props.service, this.state);
+    const { board, service } = this.props;
+    await configureService(board, service, this.state);
     this.update();
   }
 

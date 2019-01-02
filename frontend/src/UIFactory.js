@@ -1,6 +1,6 @@
 import React from 'react';
 
-import EndpointUI from './components/services/EndpointUI';
+import InputUI from './components/services/InputUI';
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
 import FileExchangeUI from './components/services/FileExchangeUI';
 import WebsocketConsumer from './components/services/WebsocketConsumer';
@@ -15,35 +15,35 @@ import DataInjectorUI from './components/services/DataInjectorUI';
 import HTMLTemplatesUI from './components/services/HTMLTemplatesUI';
 
 
-export function createServiceUI(service) {
+export function createServiceUI(board, service) {
   const id = service.uuid;
   switch(service.serviceId) {
-    case 'hookup.to/service/endpoint':
-      return <EndpointUI key={id} id={id} service={service}/>;
+    case 'hookup.to/service/input':
+      return <InputUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/html-filter':
-      return <HTMLFilterUI key={id} id={id} service={service}/>;
+      return <HTMLFilterUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/file-exchange':
-      return <FileExchangeUI key={id} id={id} service={service}/>;
+      return <FileExchangeUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/websocket-provider':
-      return <WebsocketConsumer key={id} id={id} service={service} />;
+      return <WebsocketConsumer key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/monitor':
-      return <MonitorUI key={id} id={id} service={service} />;
+      return <MonitorUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/event-stream':
-      return <EventStreamUI key={id} id={id} service={service} />;
+      return <EventStreamUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/filter':
-      return <FilterUI key={id} id={id} service={service} />;
+      return <FilterUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/resource/docker/mysql':
-      return <MySqlResourceUI key={id} id={id} service={service} />;
+      return <MySqlResourceUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/mysql':
-      return <MySqlServiceUI key={id} id={id} service={service} />;
+      return <MySqlServiceUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/timer':
-      return <TimerUI key={id} id={id} service={service} />;
+      return <TimerUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/web-get':
-      return <WebGetUI key={id} id={id} service={service} />;
+      return <WebGetUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/data-injector':
-      return <DataInjectorUI key={id} id={id} service={service} />;
+      return <DataInjectorUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/html-templates':
-      return <HTMLTemplatesUI key={id} id={id} service={service} />;
+      return <HTMLTemplatesUI key={id} id={id} service={service} board={board} />;
     default:
       return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
   }

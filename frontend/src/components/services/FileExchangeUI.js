@@ -20,8 +20,8 @@ export default class FileExchangeUI extends Component {
   }
 
   syncConfiguration = async () => {
-    const { service } = this.props;
-    const config = await getServiceConfiguration(service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
     if (config.files) {
       this.setState({ availableDownloads: Object.keys(config.files) });
     }
@@ -42,8 +42,8 @@ export default class FileExchangeUI extends Component {
   }
 
   updateExchangeName = name => {
-    const { service } = this.props;
-    return configureService(service, { name });
+    const { board, service } = this.props;
+    return configureService(board, service, { name });
   }
 
   render() {

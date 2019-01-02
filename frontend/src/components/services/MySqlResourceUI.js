@@ -31,7 +31,8 @@ export default class MySqlResourceUI extends Component {
   }
 
   getConfig = async () => {
-    const config = await getServiceConfiguration(this.props.service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
     this.setState({
       connection: config.connectionDetails,
       currentTab: config.connectionDetails ? 1 : 0,
@@ -39,14 +40,14 @@ export default class MySqlResourceUI extends Component {
   }
 
   createNewInstance = async () => {
-    const { service } = this.props;
+    const { board, service } = this.props;
     const config = {
       createInstanceDetails: {
         databaseName: this.state.createDatabaseName,
         tableName: this.state.createTableName
       }
     };
-    await configureService(service, config);
+    await configureService(board, service, config);
   }
 
   renderProvisioningTab = () => {

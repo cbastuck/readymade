@@ -26,6 +26,7 @@ export default class FilterUI extends Component {
   }
 
   configureService = () => {
+    const { board, service } = this.props;
     const config = this.state.selectedKeys.reduce(
       (all, key) => {
         const isSelected = this.state.selectedKeys.indexOf(key) !== -1;
@@ -35,12 +36,12 @@ export default class FilterUI extends Component {
       },
       {}
     );
-    configureService(this.props.service, config);
+    configureService(board, service, config);
   }
 
   sync = async () => {
-    const { service } = this.props;
-    const config = await getServiceConfiguration(service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
     const recentInput = config.recentInput;
     if (recentInput) {
       this.setState(

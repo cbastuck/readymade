@@ -36,7 +36,8 @@ export default class MySqlServiceUI extends Component {
   }
 
   getConfig = async () => {
-    const config = await getServiceConfiguration(this.props.service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
 
     const keys = config.sample ? Object.keys(config.sample) : [];
     const values = keys.map(key => config.sample[key]);
@@ -51,8 +52,10 @@ export default class MySqlServiceUI extends Component {
 
   connectToInstance = details => {
     const { host, databaseName, tableName, user, password } = details;
+    const { board, service } = this.props;
     return configureService(
-      this.props.service,
+      board,
+      service,
       { host, databaseName, tableName, user, password }
     );
   }
@@ -68,8 +71,10 @@ export default class MySqlServiceUI extends Component {
         }),
         {}
       );
+      const { board, service } = this.props;
       return configureService(
-        this.props.service,
+        board,
+        service,
         { query }
       );
     }

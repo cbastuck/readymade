@@ -21,7 +21,8 @@ export default class EventStreamUI extends Component {
   }
 
   update = async () => {
-    const config = await getServiceConfiguration(this.props.service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
     const newState = { active: config.active };
     if (config.url) {
       newState.url = config.url;
@@ -30,7 +31,7 @@ export default class EventStreamUI extends Component {
   }
 
   render() {
-    const { service } = this.props;
+    const { board, service } = this.props;
     const lineStyle = {
       textAlign: 'left',
       marginBottom: 10,
@@ -45,9 +46,14 @@ export default class EventStreamUI extends Component {
           </Label>
           <Input
             value={this.state.url}
-            onChange={(_, { value }) =>
-              this.setState({ url: value })
-            }
+            onChange={(_, { value }) => {
+              this.setState(
+                { url: value, active: false },
+                () => configureService(
+                  board, service, { url: this.state.url, active: false }
+                )
+              );
+            }}
           />
         </div>
         <div style={lineStyle}>
@@ -60,7 +66,7 @@ export default class EventStreamUI extends Component {
             style={{ marginLeft: 10 }}
             onChange={async (_, { checked }) => {
               await configureService(
-                service, { url: this.state.url, active: checked }
+                board, service, { url: this.state.url, active: checked }
               );
               this.setState({ active: checked });
             }}

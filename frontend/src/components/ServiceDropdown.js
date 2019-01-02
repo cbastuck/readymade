@@ -3,9 +3,6 @@ import { Dropdown, Menu } from 'semantic-ui-react'
 
 import { AppConsumer } from '../AppContext';
 import AccountDropdown from './AccountDropdown';
-import {
-  currentBoardName,
-} from '../core/actions';
 
 export default class ServiceDropdown extends Component {
 
@@ -17,7 +14,7 @@ export default class ServiceDropdown extends Component {
   }
 
   render() {
-    const { registry } = this.props;
+    const { registry, board } = this.props;
     if (!registry) {
       return false;
     }
@@ -34,7 +31,7 @@ export default class ServiceDropdown extends Component {
               >
                 <Dropdown.Menu>
                   <Dropdown.Header>
-                    {currentBoardName()}
+                    {board}
                   </Dropdown.Header>
                   <Dropdown.Item
                     onClick={() => this.onAction({

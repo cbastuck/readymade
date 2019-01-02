@@ -20,12 +20,14 @@ export default class HTMLFilterUI extends Component {
   }
 
   update = async () => {
-    const config = await getServiceConfiguration(this.props.service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
     this.setState({ selector: config.selector });
   }
 
   sendConfig = debounce(async () => {
-    await configureService(this.props.service, this.state);
+    const { board, service } = this.props;
+    await configureService(board, service, this.state);
     await this.update();
   })
 

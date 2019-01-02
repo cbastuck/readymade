@@ -22,13 +22,15 @@ export default class WebGetUI extends Component {
   }
 
   update = async() => {
-    const config = await getServiceConfiguration(this.props.service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
     const { url, preserveInput } = config;
     this.setState({ url, preserveInput });
   }
 
   sendConfig = debounce(async() => {
-    await configureService(this.props.service, this.state);
+    const { board, service } = this.props;
+    await configureService(board, service, this.state);
     this.update();
   });
 

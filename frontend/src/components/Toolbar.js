@@ -19,6 +19,7 @@ export default class Toolbar extends Component {
   }
 
   render() {
+    const { board } = this.props;
     return (
       <div
         style={{
@@ -36,7 +37,7 @@ export default class Toolbar extends Component {
               case 'showQRCode':
                 return this.setState({ qrCodeVisible: true });
               case 'clearBoard':
-                await clearBoard();
+                await clearBoard(board);
                 return onAction(action);
               default:
                 onAction(action)

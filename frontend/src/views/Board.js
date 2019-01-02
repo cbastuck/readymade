@@ -7,7 +7,6 @@ import { createServiceUI } from '../UIFactory';
 import {
   getServices,
   addService,
-  setCurrentBoardName
 } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -24,20 +23,21 @@ class Board extends Component {
 
   componentDidMount() {
     this.fetchServices();
-    setCurrentBoardName(this.props.match.params.board);
   }
 
   addService = async serviceDesc => {
-    await addService(serviceDesc);
+    const { match } = this.props;
+    await addService(match.params.board, serviceDesc);
     await this.fetchServices();
   }
 
   fetchServices = async () => {
-    const { services } = await getServices();
+    const { match } = this.props;
+    const { services } = await getServices(match.params.board);
     if(services) {
       this.setState({
           services: services.map(serviceId =>
-            createServiceUI(serviceId))
+            createServiceUI(match.params.board, serviceId))
       });
     }
   }
@@ -53,6 +53,7 @@ class Board extends Component {
   }
 
   render() {
+    const { match } = this.props;
     return (
       <div
         style={{
@@ -67,6 +68,7 @@ class Board extends Component {
           <Toolbar
             onAddService={this.addService}
             onAction={this.onAction}
+            board={match.params.board}
           />
           <Scene>
             { this.state.services }

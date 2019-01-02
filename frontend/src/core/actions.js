@@ -5,15 +5,6 @@ import {
   restoreToken
 } from './Auth';
 
-export function setCurrentBoardName(name) {
-  localStorage.setItem('board', name);
-}
-
-export function currentBoardName() {
-  const name = localStorage.getItem('board');
-  return name;
-}
-
 async function request(path, method='GET', parseJSON=true, body=undefined) {
   const response = await fetch(`/api/${path}`, {
     method,
@@ -26,7 +17,8 @@ async function request(path, method='GET', parseJSON=true, body=undefined) {
   const status = response.status;
   if (status === 401) {
     removeToken();
-    return redirectToLogin();
+    const query = qs.parse(path.split('?')[1]);
+    return redirectToLogin(query.board);
   }
   if (parseJSON) {
     return response.json();
@@ -34,18 +26,15 @@ async function request(path, method='GET', parseJSON=true, body=undefined) {
   return response;
 }
 
-export function addService(serviceDesc) {
-  const board = currentBoardName();
+export function addService(board, serviceDesc) {
   return request(`services?board=${board}`, 'PUT', false, serviceDesc);
 }
 
-export function clearBoard() {
-  const board = currentBoardName();
+export function clearBoard(board) {
   return request(`services?board=${board}`, 'DELETE', false);
 }
 
-export function getServices() {
-  const board = currentBoardName();
+export function getServices(board) {
   return request(`services?board=${board}`);
 }
 
@@ -53,13 +42,11 @@ export function getRegistry() {
   return request('registry');
 }
 
-export function configureService(service, config) {
-  const board = currentBoardName();
+export function configureService(board, service, config) {
   return request(`config?board=${board}`, 'POST', false, { service, config });
 }
 
-export async function getServiceConfiguration(service) {
-  const board = currentBoardName();
+export async function getServiceConfiguration(board, service) {
   return await request(`config?board=${board}&service=${service.uuid}`);
 }
 
@@ -72,8 +59,7 @@ export function redirectTo(target) {
   return false;
 }
 
-export function redirectToLogin() {
-  const board = currentBoardName();
+export function redirectToLogin(board) {
   const query = qs.stringify({
     client_id: 'oidcCLIENT',
     response_type: 'code',

@@ -18,8 +18,8 @@ export default class WebsocketConsumer extends Component {
   }
 
   connectWebsocket = async () => {
-    const { service } = this.props;
-    const { port } = await getServiceConfiguration(service);
+    const { board, service } = this.props;
+    const { port } = await getServiceConfiguration(board, service);
     if (!port) {
       console.log('Reconnecting, as no port is available ...');
       return setTimeout(this.connectWebsocket, 1000);

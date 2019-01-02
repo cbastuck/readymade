@@ -11,7 +11,7 @@ import {
   getServiceConfiguration
 } from '../../core/actions';
 
-export default class EndpointUI extends Component {
+export default class InputUI extends Component {
   state = {
     op: '',
     path: '',
@@ -23,12 +23,13 @@ export default class EndpointUI extends Component {
   }
 
   update = async() => {
-    const service = await getServiceConfiguration(this.props.service);
-    const op = service && service.op && service.op.toUpperCase();
-    const path = service && service.path;
-    const query = service && service.selector && service.selector.query;
-    const active = service && service.active;
-    const redirect = service && service.redirect;
+    const { board, service } = this.props;
+    const conf = await getServiceConfiguration(board, service);
+    const op = conf && conf.op && conf.op.toUpperCase();
+    const path = conf && conf.path;
+    const query = conf && conf.selector && conf.selector.query;
+    const active = conf && conf.active;
+    const redirect = conf && conf.redirect;
     this.setState({
       op: op,
       path: path,
@@ -41,7 +42,7 @@ export default class EndpointUI extends Component {
   }
 
   render() {
-    const { service } = this.props;
+    const { board, service } = this.props;
     const lineStyle = {
       textAlign: 'left',
       margin: '8px 10px',
@@ -101,7 +102,7 @@ export default class EndpointUI extends Component {
               this.setState(
                 { redirect: value, active: false },
                 async () => {
-                  await configureService(service, this.state);
+                  await configureService(board, service, this.state);
                   this.update();
                 }
               )
@@ -126,7 +127,7 @@ export default class EndpointUI extends Component {
               this.setState(
                 { active: checked },
                 async () => {
-                  await configureService(service, this.state);
+                  await configureService(board, service, this.state);
                   this.update();
                 }
               )

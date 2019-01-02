@@ -20,7 +20,7 @@ export default class MonitorUI extends Component {
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource.removeEventListener(
-        'debug',
+        'data',
         this.onMessage
       );
     }
@@ -31,13 +31,13 @@ export default class MonitorUI extends Component {
   }
 
   connectEventSource = async () => {
-    const { service } = this.props;
+    const { board, service } = this.props;
 
-    const config = await getServiceConfiguration(service);
+    const config = await getServiceConfiguration(board, service);
     this.eventSource = new EventSource(`/api/${service.board}/${config.name}`);
 
     this.eventSource.addEventListener(
-      'debug',
+      'data',
       this.onMessage
     );
   }

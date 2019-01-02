@@ -34,14 +34,16 @@ export default class TimerUI extends Component {
   }
 
   update = async () => {
-    const config = await getServiceConfiguration(this.props.service);
+    const { board, service } = this.props;
+    const config = await getServiceConfiguration(board, service);
     this.setState(config);
   }
 
   scheduleTimer = async (optionalConfig) => {
     const config = optionalConfig || this.state;
+    const { board, service } = this.props;
 
-    await configureService(this.props.service, config);
+    await configureService(board, service, config);
     setTimeout(this.update, 500);
   }
 
