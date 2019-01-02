@@ -29,7 +29,7 @@ class App extends Component {
               <Route path="/login" component={LoginForm} />
               <Route path="/auth2app" component={AuthRedirect} />
               <Route path="/:board/app" component={AppHub} />
-              <Route component={Board} />
+              <Route path="/:board" component={Board} />
             </Switch>
           </div>
         </Router>

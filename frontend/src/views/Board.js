@@ -6,7 +6,8 @@ import { createServiceUI } from '../UIFactory';
 
 import {
   getServices,
-  addService
+  addService,
+  setCurrentBoardName
 } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -23,6 +24,7 @@ class Board extends Component {
 
   componentDidMount() {
     this.fetchServices();
+    setCurrentBoardName(this.props.match.params.board);
   }
 
   addService = async serviceDesc => {
@@ -64,14 +66,6 @@ class Board extends Component {
         >
           <Toolbar
             onAddService={this.addService}
-            enterAddConnectionMode={() =>
-              this.setState({
-                app: {
-                  ...this.state.boardContext,
-                  mode: 'connection'
-                }
-              })
-            }
             onAction={this.onAction}
           />
           <Scene>
