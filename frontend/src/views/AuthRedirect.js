@@ -12,8 +12,11 @@ const clientId = 'oidcCLIENT';
 const clientSecret = 'test';
 
 export default class AuthRedirect extends Component {
-  componentDidMount() {
-    const { location } = this.props;
+  constructor(props) {
+    super(props);
+    this.state = {};
+
+    const { location } = props;
     this.queryParams = qs.parse(location.search.substr(1));
     if (this.queryParams.code) {
       this.exchangeCodeForToken(this.queryParams.code);
