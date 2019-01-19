@@ -43,7 +43,7 @@ function removeCookie(key) {
 export function processToken(incomingToken) {
   const { token, decoded } = validateToken(incomingToken);
   if (!token && restoreToken()) {
-    removeToken();
+    removeToken(); // the stored token token is not valid anymore
     return {};
   }
   return { token, username: decoded && decoded.nickname };

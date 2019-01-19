@@ -7,7 +7,7 @@ import {
   setToken
 } from './core/Auth';
 import {
-  redirectToLogin,
+  redirectTo,
 } from './core/actions';
 
 const { Provider, Consumer: AppConsumer } = createContext();
@@ -42,16 +42,15 @@ class AppContext extends Component {
               resolve
             )
           );
-        } else {
-          return resolve();
         }
       }
+      resolve();
     });
   }
 
   logout = async () => {
     await this.updateToken();
-    redirectToLogin();
+    redirectTo('/');
   }
 
   render() {
