@@ -14,7 +14,7 @@ export default class ServiceDropdown extends Component {
   }
 
   render() {
-    const { registry, board } = this.props;
+    const { registry, board, savedBoards } = this.props;
     if (!registry) {
       return false;
     }
@@ -33,6 +33,26 @@ export default class ServiceDropdown extends Component {
                   <Dropdown.Header>
                     {board}
                   </Dropdown.Header>
+                  <Dropdown.Item>
+                    <Dropdown text="Load Board">
+                      <Dropdown.Menu>
+                        {
+                          savedBoards && savedBoards.map(savedBoard => (
+                            <Dropdown.Item
+                              key={`restore-entry-${savedBoard}`}
+                              onClick={() => this.onAction({
+                                type: 'loadBoard',
+                                board: savedBoard
+                              })}
+                            >
+                              {savedBoard}
+                            </Dropdown.Item>
+                          ))
+                        }
+                      </Dropdown.Menu>
+                    </Dropdown>
+                  </Dropdown.Item>
+
                   <Dropdown.Item
                     onClick={() => this.onAction({
                       type: 'saveBoard'

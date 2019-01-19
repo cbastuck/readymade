@@ -34,6 +34,10 @@ export function clearBoard(board) {
   return request(`services?board=${board}`, 'DELETE', false);
 }
 
+export function loadBoard(board) {
+  redirectTo(`/${board}`);
+}
+
 export function saveBoard(board) {
   return request(`board/${board}`, 'PUT', false);
 }
@@ -52,6 +56,10 @@ export function configureService(board, service, config) {
 
 export async function getServiceConfiguration(board, service) {
   return await request(`config?board=${board}&service=${service.uuid}`);
+}
+
+export function getUserBoards() {
+  return request('boards');
 }
 
 export function redirectUri() {

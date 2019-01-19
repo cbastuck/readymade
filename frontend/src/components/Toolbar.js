@@ -19,7 +19,7 @@ export default class Toolbar extends Component {
   }
 
   render() {
-    const { board } = this.props;
+    const { board, savedBoards, onAddService} = this.props;
     return (
       <div
         style={{
@@ -28,9 +28,11 @@ export default class Toolbar extends Component {
           textAlign: 'left'
         }}
       >
-        <ServiceDropdown
+
+        <ServiceDropdown // TODO: the name is wrong, also contains the menu
           registry={this.state.registry}
-          addService={this.props.onAddService}
+          addService={onAddService}
+          savedBoards={savedBoards}
           onAction={async action => {
             const { onAction } = this.props;
             switch (action.type) {

@@ -8,6 +8,8 @@ import {
   getServices,
   addService,
   saveBoard,
+  getUserBoards,
+  loadBoard
 } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -24,6 +26,7 @@ class Board extends Component {
 
   componentDidMount() {
     this.fetchServices();
+    this.fetchUserBoards();
   }
 
   getBoardName = () => {
@@ -47,6 +50,13 @@ class Board extends Component {
     }
   }
 
+  fetchUserBoards = async () => {
+    const boards = await getUserBoards();
+    this.setState({
+      savedBoards: boards
+    });
+  }
+
   onAction = async action => {
     switch (action.type) {
       case 'clearBoard':
@@ -55,13 +65,16 @@ class Board extends Component {
       case 'saveBoard':
         saveBoard(this.getBoardName());
         break;
+      case 'loadBoard':
+        loadBoard(action.board);
+        break;
       default:
+        console.log('Unknown action', action);
         break;
     }
   }
 
   render() {
-    const { match } = this.props;
     return (
       <div
         style={{
@@ -76,7 +89,8 @@ class Board extends Component {
           <Toolbar
             onAddService={this.addService}
             onAction={this.onAction}
-            board={match.params.board}
+            board={this.getBoardName()}
+            savedBoards={this.state.savedBoards}
           />
           <Scene>
             { this.state.services }
