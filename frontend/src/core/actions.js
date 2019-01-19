@@ -34,6 +34,10 @@ export function clearBoard(board) {
   return request(`services?board=${board}`, 'DELETE', false);
 }
 
+export function saveBoard(board) {
+  return request(`board/${board}`, 'PUT', false);
+}
+
 export function getServices(board) {
   return request(`services?board=${board}`);
 }

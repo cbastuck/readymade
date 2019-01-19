@@ -7,6 +7,7 @@ import { createServiceUI } from '../UIFactory';
 import {
   getServices,
   addService,
+  saveBoard,
 } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -25,27 +26,34 @@ class Board extends Component {
     this.fetchServices();
   }
 
-  addService = async serviceDesc => {
+  getBoardName = () => {
     const { match } = this.props;
-    await addService(match.params.board, serviceDesc);
+    return match.params.board;
+  }
+
+  addService = async serviceDesc => {
+    await addService(this.getBoardName(), serviceDesc);
     await this.fetchServices();
   }
 
   fetchServices = async () => {
-    const { match } = this.props;
-    const { services } = await getServices(match.params.board);
+    const board = this.getBoardName();
+    const { services } = await getServices(board);
     if(services) {
       this.setState({
           services: services.map(serviceId =>
-            createServiceUI(match.params.board, serviceId))
+            createServiceUI(board, serviceId))
       });
     }
   }
 
-  onAction = action => {
+  onAction = async action => {
     switch (action.type) {
       case 'clearBoard':
         this.setState({services: []});
+        break;
+      case 'saveBoard':
+        saveBoard(this.getBoardName());
         break;
       default:
         break;

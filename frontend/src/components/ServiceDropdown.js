@@ -35,6 +35,13 @@ export default class ServiceDropdown extends Component {
                   </Dropdown.Header>
                   <Dropdown.Item
                     onClick={() => this.onAction({
+                      type: 'saveBoard'
+                    })}
+                  >
+                    Save Board
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    onClick={() => this.onAction({
                       type: 'clearBoard'
                     })}
                   >
