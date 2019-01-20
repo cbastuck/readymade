@@ -10,7 +10,6 @@ import {
   configureService,
   getServiceConfiguration
 } from '../../core/actions';
-import { debounce } from '../shared/util';
 
 export default class InputUI extends Component {
   state = {
@@ -42,11 +41,11 @@ export default class InputUI extends Component {
     });
   }
 
-  sendConfig = debounce(async () => {
+  sendConfig = async () => {
     const { board, service } = this.props;
     await configureService(board, service, this.state);
     this.update();
-  });
+  };
 
   render() {
     const { service } = this.props;
@@ -106,10 +105,7 @@ export default class InputUI extends Component {
           </Label>
           <Input
             onChange={async (_, { value }) => {
-              this.setState(
-                { redirect: value, active: false },
-                this.sendConfig
-              )
+              this.setState({ redirect: value, active: false })
             }}
             value={this.state.redirect || ''}
           />
