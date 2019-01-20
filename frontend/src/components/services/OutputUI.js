@@ -3,8 +3,6 @@ import {
   Input,
   Label,
   Checkbox,
-  Dropdown,
-  Button
 } from 'semantic-ui-react';
 
 import {
