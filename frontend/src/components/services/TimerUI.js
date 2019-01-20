@@ -23,6 +23,8 @@ const lineStyle = {
   margin: 10,
 };
 
+moment.locale('de')
+
 export default class TimerUI extends Component {
   state = {
     date: '',
@@ -61,7 +63,11 @@ export default class TimerUI extends Component {
             placeholder="Date"
             value={this.state.date}
             iconPosition="left"
-            onChange={(_, { value }) => this.setState({date: moment(value).format('DD-MM-YYYY') })}
+            onChange={(_, { value }) => {
+              console.log('SETTING TO', moment.locale(), value, moment(value, 'DD-MM-YYYY').format('MM-DD-YYYY'))
+              this.setState({date: moment(value, 'DD-MM-YYYY').format('MM-DD-YYYY') })
+            }
+            }
           />
         </div>
          <div style={lineStyle}>
@@ -75,7 +81,7 @@ export default class TimerUI extends Component {
             placeholder="Time"
             value={this.state.time}
             iconPosition="left"
-            onChange={(_, { value }) => this.setState({ time: moment(value).format('HH:mm') })}
+            onChange={(_, { value }) => this.setState({ time: moment.utc(value).format('HH:mm') })}
           />
         </div>
         <div style={lineStyle}>

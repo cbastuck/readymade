@@ -4,7 +4,6 @@ import ServiceDropdown from './ServiceDropdown';
 
 import QR from './QR';
 import {
-  getRegistry,
   clearBoard
 } from '../core/actions';
 
@@ -12,11 +11,6 @@ export default class Toolbar extends Component {
   state = {
     qrCodeVisible: false
   };
-
-  componentDidMount() {
-    getRegistry()
-      .then(registry => this.setState({ registry }));
-  }
 
   render() {
     const { board, savedBoards, onAddService} = this.props;
@@ -30,7 +24,7 @@ export default class Toolbar extends Component {
       >
 
         <ServiceDropdown // TODO: the name is wrong, also contains the menu
-          registry={this.state.registry}
+          registry={this.props.registry}
           addService={onAddService}
           savedBoards={savedBoards}
           onAction={async action => {

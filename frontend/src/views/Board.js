@@ -9,7 +9,8 @@ import {
   addService,
   saveBoard,
   getUserBoards,
-  loadBoard
+  loadBoard,
+  getRegistry
 } from '../core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -25,6 +26,7 @@ class Board extends Component {
   };
 
   componentDidMount() {
+    this.fetchRegistry();
     this.fetchServices();
     this.fetchUserBoards();
   }
@@ -37,6 +39,12 @@ class Board extends Component {
   addService = async serviceDesc => {
     await addService(this.getBoardName(), serviceDesc);
     await this.fetchServices();
+  }
+
+  fetchRegistry = async () => {
+    const board = this.getBoardName();
+    const registry = await getRegistry(board);
+    this.setState({ registry });
   }
 
   fetchServices = async () => {
@@ -91,6 +99,7 @@ class Board extends Component {
             onAction={this.onAction}
             board={this.getBoardName()}
             savedBoards={this.state.savedBoards}
+            registry={this.state.registry}
           />
           <Scene>
             { this.state.services }

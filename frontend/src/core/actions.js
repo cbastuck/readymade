@@ -46,8 +46,8 @@ export function getServices(board) {
   return request(`services?board=${board}`);
 }
 
-export function getRegistry() {
-  return request('registry');
+export function getRegistry(board) {
+  return request(`registry?board=${board}`);
 }
 
 export function configureService(board, service, config) {
