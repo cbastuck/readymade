@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import {
-  Dropdown,
   Input,
   Label,
   Checkbox
@@ -13,149 +12,67 @@ import {
 
 export default class InputUI extends Component {
   state = {
-    op: '',
-    path: '',
-    redirect: ''
+    url: 'https://stream.wikimedia.org/v2/stream/recentchange',
+    active: false
   };
 
   componentDidMount() {
     this.update();
   }
 
-  update = async() => {
+  update = async () => {
     const { board, service } = this.props;
-    const conf = await getServiceConfiguration(board, service);
-    const op = conf && conf.op && conf.op.toUpperCase();
-    const path = conf && conf.path;
-    const query = conf && conf.selector && conf.selector.query;
-    const active = conf && conf.active;
-    const redirect = conf && conf.redirect;
-    this.setState({
-      op: op,
-      path: path,
-      selector: {
-        query: query
-      },
-      active,
-      redirect
-    });
+    const config = await getServiceConfiguration(board, service);
+    const newState = { active: config.active };
+    if (config.url) {
+      newState.url = config.url;
+    }
+    this.setState(newState);
   }
 
-  sendConfig = async () => {
-    const { board, service } = this.props;
-    await configureService(board, service, this.state);
-    this.update();
-  };
-
   render() {
-    const { service } = this.props;
+    const { board, service } = this.props;
     const lineStyle = {
       textAlign: 'left',
-      margin: '8px 10px',
+      marginBottom: 10,
+      padding: 10
     };
 
     return (
-      <div
-        style={{ marginBottom: 15 }}
-      >
+      <div>
         <div style={lineStyle}>
-          <Label style={{ width: 70 }}>
-            Method
-          </Label>
-          <Dropdown
-            className="left"
-            style={{ marginLeft: 5 }}
-            placeholder='Operation'
-            options={[
-              { key: 'GET', value: 'GET', text: 'GET' },
-              { key: 'POST', value: 'POST', text: 'POST' },
-              { key: 'DELETE', value: 'DELETE', text: 'DELETE' },
-              { key: 'PUT', value: 'PUT', text: 'PUT' },
-            ]}
-            value={this.state.op}
-            onChange={
-              (_ev, data) => this.setState({ op: data.value, active: false })}
-          />
-        </div>
-
-        <div
-          style={lineStyle}
-        >
-          <Label style={{ width: 70 }}>
-            Path
+          <Label style={{ width: 60 }}>
+            Stream
           </Label>
           <Input
-            placeholder='Path'
-            value={this.state.path || ''}
-            onChange={
-              (_, data) => this.setState({ path: data.value, active: false })
-            }
-          />
-        </div>
-        <div
-          style={{
-            ...lineStyle,
-            textAlign: 'center',
-          }}
-        >
-          <Label
-            style={{ width: 70 }}
-          >
-            Redirect
-          </Label>
-          <Input
-            onChange={async (_, { value }) => {
-              this.setState({ redirect: value, active: false })
+            value={this.state.url}
+            onChange={(_, { value }) => {
+              this.setState(
+                { url: value, active: false },
+                () => configureService(
+                  board, service, { url: this.state.url, active: false }
+                )
+              );
             }}
-            value={this.state.redirect || ''}
           />
         </div>
-        <div
-          style={{
-            ...lineStyle,
-          }}
-        >
-          <Label
-            style={{ width: 70 }}
-          >
+        <div style={lineStyle}>
+          <Label style={{ width: 60 }}>
             Active
           </Label>
           <Checkbox
             slider
-            style={{ padding: '5px 5px' }}
-            onChange={async (_, { checked }) => {
-              this.setState(
-                { active: checked },
-                this.sendConfig
-              )
-            }}
             checked={this.state.active}
-            disabled={!this.state.op || !this.state.path}
+            style={{ marginLeft: 10 }}
+            onChange={async (_, { checked }) => {
+              await configureService(
+                board, service, { url: this.state.url, active: checked }
+              );
+              this.setState({ active: checked });
+            }}
           />
-        </div>
-        {
-          this.state.active &&
-          this.state.op === 'GET' &&  (
-            <div
-              style={{
-                ...lineStyle,
-                textAlign: 'right',
-                margin: '10px 10px',
-            }}>
-              <a
-                href={`/api/${service.board}/${this.state.path}?key=value`}
-                target="blank"
-                style={{
-                  color: 'black',
-                  padding: 5
-                }}
-              >
-                Click to test
-              </a>
-            </div>
-          )
-        }
+         </div>
       </div>
-   );
+    );
   }
 }

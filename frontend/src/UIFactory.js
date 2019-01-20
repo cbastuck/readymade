@@ -1,11 +1,11 @@
 import React from 'react';
 
-import InputUI from './components/services/InputUI';
+import IngressUI from './components/services/IngressUI';
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
 import FileExchangeUI from './components/services/FileExchangeUI';
 import WebsocketConsumer from './components/services/WebsocketConsumer';
 import MonitorUI from './components/services/MonitorUI';
-import EventStreamUI from './components/services/EventStreamUI';
+import InputUI from './components/services/InputUI';
 import FilterUI from './components/services/FilterUI';
 import MySqlResourceUI from './components/services/MySqlResourceUI';
 import MySqlServiceUI from './components/services/MySqlServiceUI';
@@ -18,8 +18,8 @@ import OutputUI from './components/services/OutputUI';
 export function createServiceUI(board, service) {
   const id = service.uuid;
   switch(service.serviceId) {
-    case 'hookup.to/service/input':
-      return <InputUI key={id} id={id} service={service} board={board} />;
+    case 'hookup.to/service/ingress':
+      return <IngressUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/html-filter':
       return <HTMLFilterUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/file-exchange':
@@ -28,8 +28,8 @@ export function createServiceUI(board, service) {
       return <WebsocketConsumer key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/monitor':
       return <MonitorUI key={id} id={id} service={service} board={board} />;
-    case 'hookup.to/service/event-stream':
-      return <EventStreamUI key={id} id={id} service={service} board={board} />;
+    case 'hookup.to/service/input':
+      return <InputUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/filter':
       return <FilterUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/resource/docker/mysql':

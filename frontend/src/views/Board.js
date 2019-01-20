@@ -68,10 +68,12 @@ class Board extends Component {
   onAction = async action => {
     switch (action.type) {
       case 'clearBoard':
-        this.setState({services: []});
+        await this.fetchServices();
+        await this.fetchUserBoards();
         break;
       case 'saveBoard':
-        saveBoard(this.getBoardName());
+        await saveBoard(this.getBoardName());
+        await this.fetchUserBoards();
         break;
       case 'loadBoard':
         loadBoard(action.board);
