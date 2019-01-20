@@ -6,7 +6,6 @@ import {
   Dropdown,
   Button
 } from 'semantic-ui-react';
-import moment from 'moment';
 
 import {
   DateInput,
@@ -22,8 +21,6 @@ const lineStyle = {
   textAlign: 'left',
   margin: 10,
 };
-
-moment.locale('de')
 
 export default class TimerUI extends Component {
   state = {
@@ -63,11 +60,7 @@ export default class TimerUI extends Component {
             placeholder="Date"
             value={this.state.date}
             iconPosition="left"
-            onChange={(_, { value }) => {
-              console.log('SETTING TO', moment.locale(), value, moment(value, 'DD-MM-YYYY').format('MM-DD-YYYY'))
-              this.setState({date: moment(value, 'DD-MM-YYYY').format('MM-DD-YYYY') })
-            }
-            }
+            onChange={(_, { value }) => this.setState({date: value })}
           />
         </div>
          <div style={lineStyle}>
@@ -81,7 +74,7 @@ export default class TimerUI extends Component {
             placeholder="Time"
             value={this.state.time}
             iconPosition="left"
-            onChange={(_, { value }) => this.setState({ time: moment.utc(value).format('HH:mm') })}
+            onChange={(_, { value }) => this.setState({ time: value })}
           />
         </div>
         <div style={lineStyle}>
