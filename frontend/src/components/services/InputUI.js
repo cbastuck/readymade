@@ -10,6 +10,7 @@ import {
   configureService,
   getServiceConfiguration
 } from '../../core/actions';
+import { debounce } from '../shared/util';
 
 export default class InputUI extends Component {
   state = {
@@ -41,8 +42,14 @@ export default class InputUI extends Component {
     });
   }
 
-  render() {
+  sendConfig = debounce(async () => {
     const { board, service } = this.props;
+    await configureService(board, service, this.state);
+    this.update();
+  });
+
+  render() {
+    const { service } = this.props;
     const lineStyle = {
       textAlign: 'left',
       margin: '8px 10px',
@@ -101,10 +108,7 @@ export default class InputUI extends Component {
             onChange={async (_, { value }) => {
               this.setState(
                 { redirect: value, active: false },
-                async () => {
-                  await configureService(board, service, this.state);
-                  this.update();
-                }
+                this.sendConfig
               )
             }}
             value={this.state.redirect || ''}
@@ -126,10 +130,7 @@ export default class InputUI extends Component {
             onChange={async (_, { checked }) => {
               this.setState(
                 { active: checked },
-                async () => {
-                  await configureService(board, service, this.state);
-                  this.update();
-                }
+                this.sendConfig
               )
             }}
             checked={this.state.active}
