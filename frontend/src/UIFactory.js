@@ -13,7 +13,7 @@ import TimerUI from './components/services/TimerUI';
 import WebGetUI from './components/services/WebGetUI';
 import DataInjectorUI from './components/services/DataInjectorUI';
 import HTMLTemplatesUI from './components/services/HTMLTemplatesUI';
-
+import OutputUI from './components/services/OutputUI';
 
 export function createServiceUI(board, service) {
   const id = service.uuid;
@@ -44,6 +44,8 @@ export function createServiceUI(board, service) {
       return <DataInjectorUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/service/html-templates':
       return <HTMLTemplatesUI key={id} id={id} service={service} board={board} />;
+    case 'hookup.to/service/output':
+      return <OutputUI key={id} id={id} service={service} board={board} />
     default:
       return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
   }
