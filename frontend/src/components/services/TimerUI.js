@@ -81,6 +81,7 @@ export default class TimerUI extends Component {
           <Checkbox
             label="Periodic"
             onChange={(_, { checked }) => this.setState({ periodic: checked })}
+            checked={this.state.periodic}
           />
         </div>
         {
