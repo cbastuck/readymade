@@ -8,6 +8,7 @@ import {
 import AppContext from './AppContext';
 import LoginForm from './views/LoginForm';
 
+import Welcome from './views/Welcome';
 import Board from './views/Board';
 import BuildBoard from './views/BuildBoard';
 import AuthRedirect from './views/AuthRedirect';
@@ -25,7 +26,8 @@ class App extends Component {
             }}
           >
             <Switch>
-              <Route path="/" exact component={BuildBoard} />
+              <Route path="/" exact component={Welcome} />
+              <Route path="/new" exact component={BuildBoard} />
               <Route path="/login" component={LoginForm} />
               <Route path="/auth2app" component={AuthRedirect} />
               <Route path="/:board/app" component={AppHub} />
