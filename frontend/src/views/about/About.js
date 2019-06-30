@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 import { Link } from 'react-router-dom';
 
+import Toolbar from '../../components/Toolbar';
+
 import './About.css';
 
 import cb from './cb.png'
@@ -33,44 +35,48 @@ export default class Board extends Component {
 
   render() {
     return (
-      <div className="about-image container">
-        <div className="about-text">
-          <h1>About us</h1>
-          
-          <div className="ui relaxed grid">
-            <div class="three column row">
-              <div className="column">
-              <Profile 
-                  avatar={cb}
-                  name="Bastuck"
-                  title="CTO"
-                  description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
-                />
-              </div>
-              <div className="column">
+      <div>
+        <Toolbar />
+        <div className="about-image container">
+          <div className="about-text">
+            <h1>About us</h1>
+            
+            <div className="ui relaxed grid">
+              <div class="three column row">
+                <div className="column">
                 <Profile 
-                  avatar={jcb}
-                  name="Bombeck"
-                  title="CEO"
-                  description="Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
-                />
-              </div>
-              <div className="column">
-              <Profile 
-                  avatar={sn}
-                  name="Nicklbeck"
-                  title="COO"
-                  description="Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
-                />
+                    avatar={cb}
+                    name="Bastuck"
+                    title="CTO"
+                    description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+                  />
+                </div>
+                <div className="column">
+                  <Profile 
+                    avatar={jcb}
+                    name="Bombeck"
+                    title="CEO"
+                    description="Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+                  />
+                </div>
+                <div className="column">
+                <Profile 
+                    avatar={sn}
+                    name="Nicklbeck"
+                    title="CCO"
+                    description="Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
+                  />
+                </div>
               </div>
             </div>
+            <h1>Our Mission</h1>
+            <p className="about-mission">
+              Enable people use computers and data
+            </p>
+            <Link to="/new">
+              <button>Start making</button>
+            </Link>
           </div>
-          <p className="about-mission">
-            Our Mission: Enable people not computers
-          </p>
-          <Link to="/new">
-            <button>Start making</button>
-          </Link>
         </div>
       </div>
     );

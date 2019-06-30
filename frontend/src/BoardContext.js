@@ -24,16 +24,30 @@ class BoardContext extends Component {
 
       // data
       boardName: props.boardName,
-      services: []
+      services: [],
+      registry: undefined,
+      savedBoards: []
     };
   }
 
   componentDidMount() {
+    if(this.props.fetchData) {
+      this.fetchData();
+    }
+  }
+
+  componentDidUpdate(prevProps) {
+    if (prevProps.fetchData !== this.props.fetchData && this.props.fetchData) {
+      this.fetchData();
+    }
+  }
+
+  fetchData = () => {
     this.fetchRegistry();
     this.fetchServices();
     this.fetchUserBoards();
   }
-
+    
   getBoardName = () => {
     return this.state.boardName;
   }
@@ -94,6 +108,10 @@ class BoardContext extends Component {
       </Provider>
     );
   }
+}
+
+BoardContext.defaultProps = {
+  fetchData: true
 }
 
 export { BoardConsumer };

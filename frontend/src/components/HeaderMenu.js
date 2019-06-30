@@ -21,9 +21,13 @@ export default class HeaderMenu extends Component {
         className='link item'
       >
         <Dropdown.Menu>
-          <Dropdown.Header>
-            {board}
-          </Dropdown.Header>
+          {
+            !!board && (
+              <Dropdown.Header>
+                {board}
+              </Dropdown.Header>
+            )
+          }
           <Link to="/new">
             <Dropdown.Item>New Board</Dropdown.Item>
           </Link>
@@ -48,6 +52,7 @@ export default class HeaderMenu extends Component {
           </Dropdown.Item>
 
           <Dropdown.Item
+            disabled={!board}
             onClick={() => this.onAction({
               type: 'saveBoard'
             })}
@@ -58,16 +63,21 @@ export default class HeaderMenu extends Component {
             onClick={() => this.onAction({
               type: 'clearBoard'
             })}
+            disabled={!board}
           >
             Clear Board
           </Dropdown.Item>
-          <Dropdown.Item
-            onClick={() => this.onAction({
-              type: 'showQRCode',
-            })}
-          >
-            Show QR Code
-          </Dropdown.Item>
+          {
+
+            <Dropdown.Item
+              onClick={() => this.onAction({
+                type: 'showQRCode',
+              })}
+              disabled={!board}
+            >
+              Show QR Code
+            </Dropdown.Item>
+          }
         </Dropdown.Menu>
       </Dropdown>
     );
