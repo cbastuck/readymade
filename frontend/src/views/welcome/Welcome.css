@@ -26,12 +26,12 @@ body, html {
 }
 
 .hero-text h1 {
-  font-size: 50px;
+  font-size: 40px;
 }
 
 .hero-claim {
   color: #454f6d;
-  font-size: 18pt;
+  font-size: 15pt;
   font-weight: bold;
 }
 
