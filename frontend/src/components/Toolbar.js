@@ -23,19 +23,22 @@ export default class Toolbar extends Component {
         }}
       >
         <HeaderMenu
+          board={board}
           registry={this.props.registry}
           addService={onAddService}
           savedBoards={savedBoards}
           onAction={async action => {
             const { onAction } = this.props;
-            switch (action.type) {
-              case 'showQRCode':
-                return this.setState({ qrCodeVisible: true });
-              case 'clearBoard':
-                await clearBoard(board);
-                return onAction(action);
-              default:
-                onAction(action)
+            if (onAction) {
+              switch (action.type) {
+                case 'showQRCode':
+                  return this.setState({ qrCodeVisible: true });
+                case 'clearBoard':
+                  await clearBoard(board);
+                  return onAction(action);
+                default:
+                  onAction(action)
+              }
             }
           }}
         />

@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Dropdown, Menu } from 'semantic-ui-react'
+import { Link } from 'react-router-dom';
 
 import { AppConsumer } from '../AppContext';
 import AccountDropdown from './AccountDropdown';
@@ -23,6 +24,9 @@ export default class HeaderMenu extends Component {
           <Dropdown.Header>
             {board}
           </Dropdown.Header>
+          <Link to="/new">
+            <Dropdown.Item>New Board</Dropdown.Item>
+          </Link>
           <Dropdown.Item>
             <Dropdown text="Load Board">
               <Dropdown.Menu>
@@ -112,7 +116,7 @@ export default class HeaderMenu extends Component {
   renderAccountMenu(appContext) {
     return (
       <AccountDropdown
-        label={appContext.username || 'Account'}
+        currentUser={appContext.username}
         onAction={action => {
           if (action.type === 'logout') {
             appContext.logout();
@@ -132,7 +136,7 @@ export default class HeaderMenu extends Component {
           appContext => (
             <Menu>
               {
-                board && this.renderBoardMenu(board, savedBoards)
+                appContext.username && this.renderBoardMenu(board, savedBoards)
               }
               {
                 registry && this.renderServiceMenu(registry)

@@ -77,7 +77,7 @@ export function redirectToLogin(board) {
     response_type: 'code',
     scope: 'openid profile',
     redirect_uri: redirectUri(),
-    state: board
+    state: board || ''
   });
   const target = `/openid/auth?${query}`;
   return redirectTo(target);
