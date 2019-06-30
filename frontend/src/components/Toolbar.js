@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import ServiceDropdown from './ServiceDropdown';
+import HeaderMenu from './HeaderMenu';
 
 import QR from './QR';
 import {
@@ -22,8 +22,7 @@ export default class Toolbar extends Component {
           textAlign: 'left'
         }}
       >
-
-        <ServiceDropdown // TODO: the name is wrong, also contains the menu
+        <HeaderMenu
           registry={this.props.registry}
           addService={onAddService}
           savedBoards={savedBoards}
