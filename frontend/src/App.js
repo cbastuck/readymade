@@ -13,6 +13,19 @@ import Board from './views/Board';
 import BuildBoard from './views/BuildBoard';
 import AuthRedirect from './views/AuthRedirect';
 import AppHub from './views/AppHub';
+import BoardProvider from './BoardContext';
+
+class BoardWithContext extends Component {
+  render() {
+    const { match } = this.props;
+    const boardName = match.params.board;
+    return (
+      <BoardProvider boardName={boardName}>
+        <Board />
+      </BoardProvider>
+    );
+  }
+}
 
 class App extends Component {
   render() {
@@ -31,7 +44,7 @@ class App extends Component {
               <Route path="/login" component={LoginForm} />
               <Route path="/auth2app" component={AuthRedirect} />
               <Route path="/:board/app" component={AppHub} />
-              <Route path="/:board" component={Board} />
+              <Route path="/:board" component={BoardWithContext} />
             </Switch>
           </div>
         </Router>
