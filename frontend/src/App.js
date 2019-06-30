@@ -8,7 +8,8 @@ import {
 import AppContext from './AppContext';
 import LoginForm from './views/LoginForm';
 
-import Welcome from './views/Welcome';
+import Welcome from './views/welcome/Welcome';
+import About from './views/about/About';
 import Board from './views/Board';
 import BuildBoard from './views/BuildBoard';
 import AuthRedirect from './views/AuthRedirect';
@@ -40,6 +41,7 @@ class App extends Component {
           >
             <Switch>
               <Route path="/" exact component={Welcome} />
+              <Route path="/about" component={About} />
               <Route path="/new" exact component={BuildBoard} />
               <Route path="/login" component={LoginForm} />
               <Route path="/auth2app" component={AuthRedirect} />

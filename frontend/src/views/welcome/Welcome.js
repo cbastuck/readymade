@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 
 import { Link } from 'react-router-dom';
-import Toolbar from '../components/Toolbar';
+import Toolbar from '../../components/Toolbar';
+import Footer from '../../components/Footer';
 
 import './Welcome.css';
 
@@ -19,6 +20,7 @@ export default class Welcome extends Component {
             <button>Start making</button>
           </Link>
         </div>
+        <Footer />
       </div>
     );
   }
