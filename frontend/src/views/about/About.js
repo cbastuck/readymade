@@ -46,24 +46,24 @@ export default class Board extends Component {
                 <div className="column">
                 <Profile 
                     avatar={cb}
-                    name="Bastuck"
-                    title="CTO"
+                    name="cbx"
+                    title=""
                     description="Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
                   />
                 </div>
                 <div className="column">
                   <Profile 
                     avatar={jcb}
-                    name="Bombeck"
-                    title="CEO"
+                    name="jcb"
+                    title=""
                     description="Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
                   />
                 </div>
                 <div className="column">
                 <Profile 
                     avatar={sn}
-                    name="Nicklbeck"
-                    title="CCO"
+                    name="snk"
+                    title=""
                     description="Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."
                   />
                 </div>

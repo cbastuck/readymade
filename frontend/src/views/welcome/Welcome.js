@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
-
 import { Link } from 'react-router-dom';
+
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
@@ -29,9 +29,9 @@ export default class Welcome extends Component {
                 </BoardConsumer>
                 <div className="hero-text">
                   <h1>
-                    Build Services
+                    Building Services
                   </h1>
-                  <p className="hero-claim">using other Services</p>
+                  <p className="hero-claim">on top of services</p>
                   <Link to="/new">
                     <button>Start making</button>
                   </Link>

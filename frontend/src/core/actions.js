@@ -5,6 +5,8 @@ import {
   restoreToken
 } from './Auth';
 
+let pendingLoginRequest = null;
+
 async function request(path, method='GET', parseJSON=true, body=undefined) {
   const response = await fetch(`/api/${path}`, {
     method,
@@ -18,6 +20,7 @@ async function request(path, method='GET', parseJSON=true, body=undefined) {
   if (status === 401) {
     removeToken();
     const query = qs.parse(path.split('?')[1]);
+    console.log(`Request to "${path}" unauthorized redirect to login`)
     return redirectToLogin(query.board);
   }
   if (parseJSON) {
@@ -46,8 +49,8 @@ export function getServices(board) {
   return request(`services?board=${board}`);
 }
 
-export function getRegistry() {
-  return request(`registry`);
+export function getRegistry(board) {
+  return request(`registry?board=${board}`);
 }
 
 export function configureService(board, service, config) {
@@ -66,19 +69,45 @@ export function redirectUri() {
   return `${window.location.protocol}//${window.location.host}/auth2app`;
 }
 
-export function redirectTo(target) {
-  window.location.href = target;
+export function redirectTo(target, openAsPopup) {
+  if (openAsPopup) {
+    window.open(target, 'login-popup', 'width=450,height=430')
+  } else {
+    window.location.href = target;
+  }  
   return false;
 }
 
 export function redirectToLogin(board) {
-  const query = qs.stringify({
-    client_id: 'oidcCLIENT',
-    response_type: 'code',
-    scope: 'openid profile',
-    redirect_uri: redirectUri(),
-    state: board || ''
+  if (pendingLoginRequest) {
+    return;
+  }
+  return new Promise((resolve, reject) => {
+    pendingLoginRequest = { resolve, reject };
+    const query = qs.stringify({
+      client_id: 'oidcCLIENT',
+      response_type: 'code',
+      scope: 'openid profile',
+      redirect_uri: redirectUri(),
+      state: board || ''
+    });
+    const target = `/openid/auth?${query}`;
+    return redirectTo(target, true);
   });
-  const target = `/openid/auth?${query}`;
-  return redirectTo(target);
 }
+
+export async function finishPendingLoginRequest(success) {
+  if (pendingLoginRequest) {
+    const { resolve, reject } = pendingLoginRequest;
+    pendingLoginRequest = null;
+    if (success) {
+      await resolve();
+      window.location.reload();
+    } else {
+      redirectTo('/loginFail');
+      await reject();
+    }
+  }
+}
+
+window.finishPendingLoginRequest = finishPendingLoginRequest;

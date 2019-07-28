@@ -5,7 +5,7 @@ import qs from 'querystring';
 import { AppConsumer } from '../AppContext'
 import {
   redirectUri,
-  redirectTo
+  redirectTo,
 } from '../core/actions';
 
 const clientId = 'oidcCLIENT';
@@ -15,11 +15,19 @@ export default class AuthRedirect extends Component {
   constructor(props) {
     super(props);
     this.state = {};
+    console.log('AUTH REDIRECT!!!!!')
 
     const { location } = props;
     this.queryParams = qs.parse(location.search.substr(1));
     if (this.queryParams.code) {
-      this.exchangeCodeForToken(this.queryParams.code);
+      this.exchangeCodeForToken(this.queryParams.code)
+        .then(() => {
+          window.opener.finishPendingLoginRequest(true);
+          window.close();
+        });
+    } else {
+      window.opener.finishPendingLoginRequest(false);
+      window.close();
     }
   }
 

@@ -28,7 +28,7 @@ export default class Board extends Component {
               />
               <Scene>
                 { 
-                  boardContext.services.map(serviceId => 
+                  boardContext && boardContext.services && boardContext.services.map(serviceId => 
                     createServiceUI(boardContext.boardName, serviceId)
                   )
                 }

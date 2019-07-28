@@ -42,10 +42,14 @@ class BoardContext extends Component {
     }
   }
 
-  fetchData = () => {
-    this.fetchRegistry();
-    this.fetchServices();
-    this.fetchUserBoards();
+  fetchData = async () => {
+    try {
+      await this.fetchRegistry();
+      await this.fetchServices();
+      await this.fetchUserBoards();
+    } catch(error) {
+      console.log('Fetching data failed');
+    }
   }
     
   getBoardName = () => {
@@ -53,8 +57,10 @@ class BoardContext extends Component {
   }
 
   fetchRegistry = async () => {
-    const registry = await getRegistry();
+    const board = this.getBoardName();
+    const registry = await getRegistry(board || '');
     this.setState({ registry });
+    return registry;
   }
 
   fetchServices = async () => {
@@ -62,6 +68,7 @@ class BoardContext extends Component {
     if (board) {
       const { services } = await getServices(board);
       this.setState({ services });
+      return services;
     }
   }
 
@@ -70,6 +77,7 @@ class BoardContext extends Component {
     this.setState({
       savedBoards: boards
     });
+    return boards;
   }
 
   onAction = async action => {
