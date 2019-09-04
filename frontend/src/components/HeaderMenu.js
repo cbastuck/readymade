@@ -75,7 +75,7 @@ export default class HeaderMenu extends Component {
               })}
               disabled={!board}
             >
-              Show QR Code
+              Share Board
             </Dropdown.Item>
           }
         </Dropdown.Menu>
