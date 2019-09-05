@@ -50,6 +50,7 @@ export function createServiceUI(board, service) {
     case 'hookup.to/resource/file-s3':
       return <FileS3UI key={id} id={id} service={service} board={board} />;
     default:
+      console.log('Insert default for ', service)
       return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
   }
 }

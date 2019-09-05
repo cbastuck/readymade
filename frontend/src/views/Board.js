@@ -33,11 +33,12 @@ export default class Board extends Component {
                 boardContext.runtimes.map(
                   runtime => 
                     <Scene 
-                      key={`${runtime}-scene`}
-                      runtime={runtime}
+                      key={`${runtime.name}-scene`}
+                      runtime={runtime.name}
                     >
                       {
-                        boardContext.services[runtime] && boardContext.services[runtime].map(serviceId => 
+                        boardContext.services[runtime.name] && 
+                        boardContext.services[runtime.name].map(serviceId => 
                           createServiceUI(boardContext.boardName, serviceId)
                         )
                       }

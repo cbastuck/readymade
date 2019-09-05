@@ -34,7 +34,7 @@ export function getRuntimes(board) {
 }
 
 export function addRuntime(board, descriptor) {
-  return request(`board/${board}/runtimes`, 'POST', false, descriptor)
+  return request(`board/${board}/runtimes`, 'POST', true, descriptor)
 }
 
 export function getServices(board, runtime) {

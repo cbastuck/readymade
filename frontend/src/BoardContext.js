@@ -1,6 +1,8 @@
 
 import React, { Component, createContext } from'react';
 
+import BrowserRuntime from './runtime/BrowserRuntime';
+
 import {
   getServices,
   addService,
@@ -32,6 +34,8 @@ class BoardContext extends Component {
       registry: undefined,
       savedBoards: []
     };
+
+    this.browserRuntimes = [];
   }
 
   componentDidMount() {
@@ -51,6 +55,7 @@ class BoardContext extends Component {
       await this.fetchRuntimes();
       await this.fetchRegistry();
       await this.fetchServices();
+      await this.restoreBrowserRuntimes();
 
       //await this.fetchUserBoards();
     } catch(error) {
@@ -65,7 +70,7 @@ class BoardContext extends Component {
   fetchRuntimes = async () => {
     const board = this.getBoardName();
     const runtimes = board ? await getRuntimes(board) : [];
-    this.setState({ runtimes });
+    this.setState({ runtimes: runtimes });
     return runtimes;
   }
 
@@ -73,8 +78,8 @@ class BoardContext extends Component {
     const board = this.getBoardName();
     const registry = {};
     for (const runtime of this.state.runtimes) {
-      const runtimeRegistry = await getRuntimeRegistry(board, runtime);
-      registry[runtime] = runtimeRegistry;
+      const runtimeRegistry = await getRuntimeRegistry(board, runtime.name);
+      registry[runtime.name] = runtimeRegistry;
     } 
     this.setState({ registry });
   }
@@ -84,8 +89,8 @@ class BoardContext extends Component {
     const services = {};
     if (board) {
       for (const runtime of this.state.runtimes) {
-        const { services: runtimeServices } = await getServices(board, runtime);
-        services[runtime] = runtimeServices;
+        const { services: runtimeServices } = await getServices(board, runtime.name);
+        services[runtime.name] = runtimeServices;
       }
     }
     this.setState({ services });
@@ -120,16 +125,25 @@ class BoardContext extends Component {
     }
   }
 
-  addRuntime = async type => {
+  addRuntime = async (type, name) => {
     const boardName = this.getBoardName();
     if (boardName) {
+      const runtimeName = `${name || type}-${this.state.runtimes.length}`;
+      const params = {};
+      if (type === 'browser') {
+        params.registry = BrowserRuntime.registry();
+      }
       const desc = { 
-        type, 
-        name: `${type}-${this.state.runtimes.length}`
+        type,
+        name: runtimeName,
+        params
       };
-      await addRuntime(boardName, desc);
-      await this.fetchRuntimes();
-      await this.fetchRegistry();
+      const created = await addRuntime(boardName, desc);
+      if (type === 'browser') {
+        // remember if of created runtime, it belongs to 'this' browser
+        localStorage.setItem(`runtimeId-${boardName}`, created.id);
+      }
+      await this.fetchData();
     }
   }
 
@@ -138,6 +152,31 @@ class BoardContext extends Component {
     if (boardName) {
       await addService(boardName, descriptor);
       await this.fetchServices();
+    }
+  }
+
+  restoreBrowserRuntimes = async () => {
+    const board = this.getBoardName();
+    // did we store a runtime we should restore
+    const localBoardRuntimeId = localStorage.getItem(`runtimeId-${board}`);
+    if (localBoardRuntimeId) {
+      const runtime = this.state.runtimes.find(rt => rt.id === localBoardRuntimeId);
+      if (runtime) {
+        const browserRuntime = new BrowserRuntime(runtime.name);
+        this.browserRuntimes.push(browserRuntime);
+        browserRuntime.connect(localBoardRuntimeId);
+        for (const service of this.state.services[runtime.name]) {
+          browserRuntime.createService(
+            { 
+              serviceId: service.serviceId, 
+              board 
+            }, 
+            service.uuid
+          );
+        }
+      } else {
+        localStorage.removeItem(`runtimeId-${board}`); // seems the remote rt does not exist anymore
+      } 
     }
   }
 
