@@ -4,18 +4,25 @@ import ServiceFrame from './ServiceFrame';
 
 export default class Scene extends Component {
   render() {
-    const { children } = this.props;
+    const { children, runtime, wrap=false } = this.props;
     return (
       <div
         style={{
-          height: '93%',
+          // height: '93%',
           border: 'solid 1px lightgray',
           borderRadius: 3,
-          display: 'flex',
-          flexFlow: 'row wrap',
-          overflow: 'auto'
+          backgroundColor: '#EEEEEE10',
+          padding: 10
         }}
       >
+        <h3>{runtime}</h3>
+        <div
+          style={{
+            display: 'flex',
+            flexFlow: wrap ? 'row wrap' : 'row nowrap',
+            overflow: 'auto',
+          }}
+        >
         {
           children && children.map(
             (service, idx) => (
@@ -26,6 +33,7 @@ export default class Scene extends Component {
             )
           )
         }
+        </div>
       </div>
     );
   }

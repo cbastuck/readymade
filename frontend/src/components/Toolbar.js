@@ -4,7 +4,7 @@ import HeaderMenu from './HeaderMenu';
 
 import QR from './QR';
 import {
-  clearBoard
+  clearBoard,
 } from '../core/actions';
 
 export default class Toolbar extends Component {
@@ -13,7 +13,7 @@ export default class Toolbar extends Component {
   };
 
   render() {
-    const { board, savedBoards, onAddService} = this.props;
+    const { board, savedBoards, onAddService, onAddRuntime} = this.props;
     return (
       <div
         style={{
@@ -26,6 +26,7 @@ export default class Toolbar extends Component {
           board={board}
           registry={this.props.registry}
           addService={onAddService}
+          addRuntime={onAddRuntime}
           savedBoards={savedBoards}
           onAction={async action => {
             const { onAction } = this.props;

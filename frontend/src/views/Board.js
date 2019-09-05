@@ -21,18 +21,29 @@ export default class Board extends Component {
             >
               <Toolbar
                 onAddService={boardContext.addService}
+                onAddRuntime={boardContext.addRuntime}
                 onAction={boardContext.onAction}
                 board={boardContext.boardName}
                 savedBoards={boardContext.savedBoards}
                 registry={boardContext.registry}
               />
-              <Scene>
-                { 
-                  boardContext && boardContext.services && boardContext.services.map(serviceId => 
-                    createServiceUI(boardContext.boardName, serviceId)
-                  )
-                }
-              </Scene>
+              {
+                boardContext && 
+                boardContext.runtimes && 
+                boardContext.runtimes.map(
+                  runtime => 
+                    <Scene 
+                      key={`${runtime}-scene`}
+                      runtime={runtime}
+                    >
+                      {
+                        boardContext.services[runtime] && boardContext.services[runtime].map(serviceId => 
+                          createServiceUI(boardContext.boardName, serviceId)
+                        )
+                      }
+                    </Scene>
+                )
+              }
             </div>
           )
         }

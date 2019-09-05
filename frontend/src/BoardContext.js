@@ -7,7 +7,9 @@ import {
   saveBoard,
   getUserBoards,
   loadBoard,
-  getRegistry
+  getRuntimes,
+  getRuntimeRegistry,
+  addRuntime
 } from './core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -19,12 +21,14 @@ class BoardContext extends Component {
 
     this.state = {
       // API
+      addRuntime: this.addRuntime,
       addService: this.addService,
       onAction: this.onAction,
 
       // data
       boardName: props.boardName,
-      services: [],
+      runtimes: [],
+      services: {},
       registry: undefined,
       savedBoards: []
     };
@@ -44,9 +48,11 @@ class BoardContext extends Component {
 
   fetchData = async () => {
     try {
+      await this.fetchRuntimes();
       await this.fetchRegistry();
       await this.fetchServices();
-      await this.fetchUserBoards();
+
+      //await this.fetchUserBoards();
     } catch(error) {
       console.log('Fetching data failed');
     }
@@ -56,20 +62,34 @@ class BoardContext extends Component {
     return this.state.boardName;
   }
 
+  fetchRuntimes = async () => {
+    const board = this.getBoardName();
+    const runtimes = board ? await getRuntimes(board) : [];
+    this.setState({ runtimes });
+    return runtimes;
+  }
+
   fetchRegistry = async () => {
     const board = this.getBoardName();
-    const registry = await getRegistry(board || '');
+    const registry = {};
+    for (const runtime of this.state.runtimes) {
+      const runtimeRegistry = await getRuntimeRegistry(board, runtime);
+      registry[runtime] = runtimeRegistry;
+    } 
     this.setState({ registry });
-    return registry;
   }
 
   fetchServices = async () => {
     const board = this.getBoardName();
+    const services = {};
     if (board) {
-      const { services } = await getServices(board);
-      this.setState({ services });
-      return services;
+      for (const runtime of this.state.runtimes) {
+        const { services: runtimeServices } = await getServices(board, runtime);
+        services[runtime] = runtimeServices;
+      }
     }
+    this.setState({ services });
+    return services;
   }
 
   fetchUserBoards = async () => {
@@ -83,6 +103,7 @@ class BoardContext extends Component {
   onAction = async action => {
     switch (action.type) {
       case 'clearBoard':
+        await this.fetchRuntimes();
         await this.fetchServices();
         await this.fetchUserBoards();
         break;
@@ -99,10 +120,23 @@ class BoardContext extends Component {
     }
   }
 
-  addService = async serviceDesc => {
+  addRuntime = async type => {
     const boardName = this.getBoardName();
     if (boardName) {
-      await addService(boardName, serviceDesc);
+      const desc = { 
+        type, 
+        name: `${type}-${this.state.runtimes.length}`
+      };
+      await addRuntime(boardName, desc);
+      await this.fetchRuntimes();
+      await this.fetchRegistry();
+    }
+  }
+
+  addService = async descriptor => {
+    const boardName = this.getBoardName();
+    if (boardName) {
+      await addService(boardName, descriptor);
       await this.fetchServices();
     }
   }

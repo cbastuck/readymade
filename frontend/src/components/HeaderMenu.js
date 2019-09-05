@@ -67,17 +67,14 @@ export default class HeaderMenu extends Component {
           >
             Clear Board
           </Dropdown.Item>
-          {
-
-            <Dropdown.Item
-              onClick={() => this.onAction({
-                type: 'showQRCode',
-              })}
-              disabled={!board}
-            >
-              Share Board
-            </Dropdown.Item>
-          }
+          <Dropdown.Item
+            onClick={() => this.onAction({
+              type: 'showQRCode',
+            })}
+            disabled={!board}
+          >
+            Share Board
+          </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
     );
@@ -95,6 +92,17 @@ export default class HeaderMenu extends Component {
       >
       {
         <Dropdown.Menu>
+          <Dropdown.Header>Runtimes</Dropdown.Header>
+          <Dropdown.Item
+            onClick={() => this.props.addRuntime('node')}
+          >
+            Hookup.to
+          </Dropdown.Item>
+          <Dropdown.Item
+            onClick={() => this.props.addRuntime('browser')}
+          >
+            Browser
+          </Dropdown.Item>
           {
             runtimes.map((runtimeName, runtimeIdx) =>
               [

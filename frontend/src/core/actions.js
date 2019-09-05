@@ -29,12 +29,40 @@ async function request(path, method='GET', parseJSON=true, body=undefined) {
   return response;
 }
 
-export function addService(board, serviceDesc) {
-  return request(`services?board=${board}`, 'PUT', false, serviceDesc);
+export function getRuntimes(board) {
+  return request(`board/${board}/runtimes`);
+}
+
+export function addRuntime(board, descriptor) {
+  return request(`board/${board}/runtimes`, 'POST', false, descriptor)
+}
+
+export function getServices(board, runtime) {
+  return request(`board/${board}/runtime/${runtime}/services`);
+}
+
+export function addService(board, descriptor) {
+  return request(`board/${board}/runtime/${descriptor.runtime}/services`, 'PUT', false, descriptor);
 }
 
 export function clearBoard(board) {
-  return request(`services?board=${board}`, 'DELETE', false);
+  return request(`board/${board}`, 'DELETE', false);
+}
+
+export function getRuntimeRegistry(board, runtimeName) {
+  return request(`board/${board}/runtime/${runtimeName}/registry`);
+}
+
+export async function getServiceConfiguration(board, service) {
+  return await request(`board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config`);
+}
+
+export function configureService(board, service, config) {
+  return request(`board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config`, 'POST', false, config);
+}
+
+export function getUserBoards() {
+  return request('boards');
 }
 
 export function loadBoard(board) {
@@ -43,26 +71,6 @@ export function loadBoard(board) {
 
 export function saveBoard(board) {
   return request(`board/${board}`, 'PUT', false);
-}
-
-export function getServices(board) {
-  return request(`services?board=${board}`);
-}
-
-export function getRegistry(board) {
-  return request(`registry?board=${board}`);
-}
-
-export function configureService(board, service, config) {
-  return request(`config?board=${board}`, 'POST', false, { service, config });
-}
-
-export async function getServiceConfiguration(board, service) {
-  return await request(`config?board=${board}&service=${service.uuid}`);
-}
-
-export function getUserBoards() {
-  return request('boards');
 }
 
 export function redirectUri() {
