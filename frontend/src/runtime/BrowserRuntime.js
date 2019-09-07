@@ -1,11 +1,13 @@
 import timerDescriptor from './services/Timer';
 import monitorDescriptor from './services/Monitor';
+import microphoneDescriptor from './services/Microphone';
 
 export default class BrowserRuntime {
   static registry() {
     return [
       timerDescriptor,
-      monitorDescriptor
+      monitorDescriptor,
+      microphoneDescriptor
     ];
   }
 
@@ -35,6 +37,7 @@ export default class BrowserRuntime {
   }
 
   connect(id) {
+    this.id = id;
     this.backendUrl = `/api/${id}`;
     this.eventSource = new EventSource(this.backendUrl);
     this.eventSource.addEventListener(
@@ -85,5 +88,9 @@ export default class BrowserRuntime {
       return console.error(`Could not find service to configure: ${uuid} in ${JSON.stringify(this.services)}`);
     }
     service.configure(config);
+  }
+
+  getServiceById(uuid) {
+    return this.services.find(s => s.uuid = uuid);
   }
 };

@@ -26,6 +26,7 @@ class BoardContext extends Component {
       addRuntime: this.addRuntime,
       addService: this.addService,
       onAction: this.onAction,
+      getCurrentBrowserRuntime: this.getCurrentBrowserRuntime,
 
       // data
       boardName: props.boardName,
@@ -178,6 +179,12 @@ class BoardContext extends Component {
         localStorage.removeItem(`runtimeId-${board}`); // seems the remote rt does not exist anymore
       } 
     }
+  }
+
+  getCurrentBrowserRuntime = () => {
+    const board = this.getBoardName();
+    const localBoardRuntimeId = localStorage.getItem(`runtimeId-${board}`);
+    return this.browserRuntimes.find(rt => rt.id === localBoardRuntimeId);
   }
 
   render() {

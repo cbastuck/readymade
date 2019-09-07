@@ -38,8 +38,8 @@ export default class Board extends Component {
                     >
                       {
                         boardContext.services[runtime.name] && 
-                        boardContext.services[runtime.name].map(serviceId => 
-                          createServiceUI(boardContext.boardName, serviceId)
+                        boardContext.services[runtime.name].map(svc => 
+                          createServiceUI(boardContext.boardName, svc)
                         )
                       }
                     </Scene>

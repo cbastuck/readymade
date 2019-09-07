@@ -16,6 +16,8 @@ import HTMLTemplatesUI from './components/services/HTMLTemplatesUI';
 import OutputUI from './components/services/OutputUI';
 import FileS3UI from './components/services/FileS3UI';
 
+import BrowserRuntime from './runtime/BrowserRuntime';
+
 export function createServiceUI(board, service) {
   const id = service.uuid;
   switch(service.serviceId) {
@@ -50,7 +52,14 @@ export function createServiceUI(board, service) {
     case 'hookup.to/resource/file-s3':
       return <FileS3UI key={id} id={id} service={service} board={board} />;
     default:
-      console.log('Insert default for ', service)
-      return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
+      const factory = BrowserRuntime.registry().find(s => 
+         service.serviceId === s.serviceId && s.createUI
+      );
+      if (factory) {
+        return React.createElement(factory.createUI, { service, board, key: `key-${service.uuid}` });
+      } else {
+        console.log('UIFactory insert default UI for', service)
+        return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
+      }
   }
 }
