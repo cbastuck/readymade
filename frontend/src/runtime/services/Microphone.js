@@ -79,9 +79,9 @@ class Microphone {
   configure(config) {
   }
 
-  process(params) {
-    console.log('Processing', params)
-    return this.app.next(this, params);
+  async process(params) {
+    const { blob } = params;
+    return this.app.next(this, blob);
   }
 }
 

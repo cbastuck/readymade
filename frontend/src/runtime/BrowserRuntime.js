@@ -62,13 +62,14 @@ export default class BrowserRuntime {
     if (!this.backendUrl) {
       return console.error('Could not send result data, no backend is connected');
     }
+    const isBinary = data instanceof Blob;
     await fetch(
       this.backendUrl, 
       { 
         method: 'POST', 
-        body: JSON.stringify(data),
+        body: isBinary ? await new Response(data).arrayBuffer() : JSON.stringify(data),
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': isBinary ? data.type : 'application/json',
         }
       }
     );
