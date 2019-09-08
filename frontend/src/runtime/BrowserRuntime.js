@@ -54,6 +54,8 @@ export default class BrowserRuntime {
         return this.createService(command.descriptor, command.uuid);
       case 'config':
         return this.configureService(command.uuid, command.config);
+      case 'process':
+        return this.processService(command.uuid, command.params);
       default:
         console.error('Unknown action in browser runtime: ', command);
     }
@@ -77,9 +79,17 @@ export default class BrowserRuntime {
   configureService(uuid, config) {
     const service = this.services.find(s => s.uuid = uuid);
     if (!service) {
-      return console.error(`Could not find service to configure: ${uuid} in ${JSON.stringify(this.services)}`);
+      return console.error(`Could not find browser service to configure: ${uuid} in ${JSON.stringify(this.services)}`);
     }
     service.configure(config);
+  }
+
+  processService(uuid, params) {
+    const service = this.services.find(s => s.uuid = uuid);
+    if (!service) {
+      return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
+    }
+    service.process(params);
   }
 
   getServiceById(uuid) {
