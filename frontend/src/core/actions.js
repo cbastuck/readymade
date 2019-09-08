@@ -7,12 +7,15 @@ import {
 
 let pendingLoginRequest = null;
 
-async function request(path, method='GET', parseJSON=true, body=undefined) {
+export async function request(path, method='GET', parseJSON=true, body=undefined) {
+  const isBinary = body instanceof Blob;
   const response = await fetch(`/api/${path}`, {
     method,
-    body: body && JSON.stringify(body),
+    body: body && (isBinary ? await new Response(body).arrayBuffer() : JSON.stringify(body)),
+    //body: body && JSON.stringify(body),
     headers: {
-      'Content-Type': 'application/json',
+      'Content-Type': isBinary ? body.type : 'application/json',
+      //'Content-Type': 'application/json',
       'Authorization': restoreToken() || '',
     }
   });

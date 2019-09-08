@@ -35,6 +35,9 @@ export default class Board extends Component {
                     <Scene 
                       key={`${runtime.name}-scene`}
                       runtime={runtime.name}
+                      style={{
+                        marginBottom: 5
+                      }}
                     >
                       {
                         boardContext.services[runtime.name] && 

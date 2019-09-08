@@ -4,7 +4,7 @@ import ServiceFrame from './ServiceFrame';
 
 export default class Scene extends Component {
   render() {
-    const { children, runtime, wrap=false } = this.props;
+    const { children, runtime, wrap=false, style } = this.props;
     return (
       <div
         style={{
@@ -12,7 +12,8 @@ export default class Scene extends Component {
           border: 'solid 1px lightgray',
           borderRadius: 3,
           backgroundColor: '#EEEEEE10',
-          padding: 10
+          padding: 10,
+          ...style
         }}
       >
         <h3>{runtime}</h3>

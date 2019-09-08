@@ -1,6 +1,7 @@
 import timerDescriptor from './services/Timer';
 import monitorDescriptor from './services/Monitor';
 import microphoneDescriptor from './services/Microphone';
+import { request } from '../core/actions';
 
 export default class BrowserRuntime {
   static registry() {
@@ -38,8 +39,8 @@ export default class BrowserRuntime {
 
   connect(id) {
     this.id = id;
-    this.backendUrl = `/api/${id}`;
-    this.eventSource = new EventSource(this.backendUrl);
+    const backendUrl = `/api/${id}`;
+    this.eventSource = new EventSource(backendUrl);
     this.eventSource.addEventListener(
       'data',
       this.onMessage.bind(this)
@@ -58,21 +59,11 @@ export default class BrowserRuntime {
     }
   }
 
-  async sendResult(data) {
-    if (!this.backendUrl) {
+  sendResult(data) {
+    if (!this.id) {
       return console.error('Could not send result data, no backend is connected');
     }
-    const isBinary = data instanceof Blob;
-    await fetch(
-      this.backendUrl, 
-      { 
-        method: 'POST', 
-        body: isBinary ? await new Response(data).arrayBuffer() : JSON.stringify(data),
-        headers: {
-          'Content-Type': isBinary ? data.type : 'application/json',
-        }
-      }
-    );
+   return request(this.id, 'POST', false, data);
   }
 
   createService({ serviceId, board }, id) {
