@@ -24,7 +24,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "deploy": "rsync -avz --progress --exclude node_modules build/* hookup:frontend"
+    "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend"
   },
   "eslintConfig": {
     "extends": "react-app"
