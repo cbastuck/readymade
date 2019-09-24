@@ -168,7 +168,7 @@ class BoardContext extends Component {
         browserRuntime.connect(localBoardRuntimeId);
         for (const service of this.state.services[runtime.name]) {
           browserRuntime.createService(
-            { 
+            {
               serviceId: service.serviceId, 
               board 
             }, 

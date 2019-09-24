@@ -17,7 +17,7 @@ export default class HeaderMenu extends Component {
   renderBoardMenu(board, savedBoards) {
     return (
       <Dropdown
-        text={`Board Menu`}
+        text={`Board`}
         className='link item'
       >
         <Dropdown.Menu>

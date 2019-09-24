@@ -89,22 +89,18 @@ export function redirectTo(target, openAsPopup) {
   return false;
 }
 
+export function detectBrowserIOS() {
+  const ua = window.navigator.userAgent;
+  const iOS = !!ua.match(/iPad/i) || !!ua.match(/iPhone/i);
+  const webkit = !!ua.match(/WebKit/i);
+  const iOSSafari = iOS && webkit && !ua.match(/CriOS/i);
+  return iOSSafari;
+}
+
 export function redirectToLogin(board) {
   if (pendingLoginRequest) {
     return;
   }
-  return new Promise((resolve, reject) => {
-    pendingLoginRequest = { resolve, reject };
-    const query = qs.stringify({
-      client_id: 'oidcCLIENT',
-      response_type: 'code',
-      scope: 'openid profile',
-      redirect_uri: redirectUri(),
-      state: board || ''
-    });
-    const target = `/openid/auth?${query}`;
-    return redirectTo(target, true);
-  });
 }
 
 export async function finishPendingLoginRequest(success) {

@@ -1,5 +1,6 @@
 import React, { Component } from 'react'
 
+import Login from './Login';
 import Scene from '../components/Scene';
 import Toolbar from '../components/Toolbar';
 import { BoardConsumer } from '../BoardContext';
@@ -8,6 +9,7 @@ import { createServiceUI } from '../UIFactory';
 export default class Board extends Component {
   
   render() {
+    const { appContext } = this.props;
     return (
       <BoardConsumer>
         {
@@ -28,6 +30,14 @@ export default class Board extends Component {
                 registry={boardContext.registry}
               />
               {
+                !appContext.token && (
+                  <Login 
+                    board={boardContext.boardName}
+                  />
+                )
+              }
+              {
+                appContext.token &&
                 boardContext && 
                 boardContext.runtimes && 
                 boardContext.runtimes.map(

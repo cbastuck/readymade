@@ -5,7 +5,7 @@ import qs from 'querystring';
 import { AppConsumer } from '../AppContext'
 import {
   redirectUri,
-  redirectTo,
+  finishPendingLoginRequest
 } from '../core/actions';
 
 const clientId = 'oidcCLIENT';
@@ -15,19 +15,21 @@ export default class AuthRedirect extends Component {
   constructor(props) {
     super(props);
     this.state = {};
-    console.log('AUTH REDIRECT!!!!!')
 
-    const { location } = props;
-    this.queryParams = qs.parse(location.search.substr(1));
-    if (this.queryParams.code) {
-      this.exchangeCodeForToken(this.queryParams.code)
-        .then(() => {
-          window.opener.finishPendingLoginRequest(true);
-          window.close();
-        });
+    // TODO: this checks if we're in an iframe and
+    // if so delegates the request to the parent.
+    // This logic should not be here
+    if (window.parent !== window) {
+      window.parent.location.href = window.location.href;
     } else {
-      window.opener.finishPendingLoginRequest(false);
-      window.close();
+      const { location } = props;
+      this.queryParams = qs.parse(location.search.substr(1));
+      if (this.queryParams.code) {
+        this.exchangeCodeForToken(this.queryParams.code)
+          .then(() => finishPendingLoginRequest(true));
+      } else {
+        finishPendingLoginRequest(false);
+      }
     }
   }
 
@@ -56,29 +58,27 @@ export default class AuthRedirect extends Component {
     }
   }
 
-  renderError = error => {
-    switch(error) {
-      case 'access_denied':
-      case 'login_required':
-      default:
-        break;
-    }
-    return redirectTo('/');
-  }
-
   render() {
     if (!this.queryParams) {
       return false;
     }
 
     if (this.queryParams.error) {
-      return this.renderError(this.state.error);
+      return (
+        <Redirect 
+          to={{
+            pathname: '/loginFail',
+            state: { errorMessage: this.queryParams.error }
+          }}
+        />
+      );
     }
 
     const token = this.state && this.state.token;
     if (!token) {
       return false;
     }
+
     return (
       <AppConsumer>
         {

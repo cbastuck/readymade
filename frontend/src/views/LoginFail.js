@@ -8,6 +8,10 @@ import Footer from '../components/Footer';
 
 export default class LoginFail extends Component {
   render() {
+    const errorMessage = this.props.location &&
+      this.props.location.state && 
+      this.props.location.state.errorMessage;
+    
     return (
       <AppConsumer>
         {
@@ -29,6 +33,11 @@ export default class LoginFail extends Component {
                   <h1>
                     Login Failed
                   </h1>
+                  {
+                    errorMessage && (
+                      <div> { errorMessage } </div>
+                    )
+                  }
                   <Link to="/new">
                     <button>Try again</button>
                   </Link>
