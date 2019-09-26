@@ -20,6 +20,7 @@ export default class AuthRedirect extends Component {
     // if so delegates the request to the parent.
     // This logic should not be here
     if (window.parent !== window) {
+      // TODO: we should not do this here
       window.parent.location.href = window.location.href;
     } else {
       const { location } = props;

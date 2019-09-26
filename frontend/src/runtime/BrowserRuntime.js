@@ -1,6 +1,7 @@
 import timerDescriptor from './services/Timer';
 import monitorDescriptor from './services/Monitor';
 import microphoneDescriptor from './services/Microphone';
+import playbackDescriptor from './services/Playback';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -8,7 +9,8 @@ export default class BrowserRuntime {
     return [
       timerDescriptor,
       monitorDescriptor,
-      microphoneDescriptor
+      microphoneDescriptor,
+      playbackDescriptor
     ];
   }
 
@@ -93,6 +95,6 @@ export default class BrowserRuntime {
   }
 
   getServiceById(uuid) {
-    return this.services.find(s => s.uuid = uuid);
+    return this.services.find(s => s.id === uuid);
   }
 };

@@ -56,7 +56,6 @@ class BoardContext extends Component {
       await this.fetchRuntimes();
       await this.fetchRegistry();
       await this.fetchServices();
-      await this.restoreBrowserRuntimes();
 
       //await this.fetchUserBoards();
     } catch(error) {
@@ -94,6 +93,8 @@ class BoardContext extends Component {
         services[runtime.name] = runtimeServices;
       }
     }
+
+    this.restoreBrowserRuntimes(board, services);
     this.setState({ services });
     return services;
   }
@@ -156,8 +157,7 @@ class BoardContext extends Component {
     }
   }
 
-  restoreBrowserRuntimes = async () => {
-    const board = this.getBoardName();
+  restoreBrowserRuntimes = async (board, services) => {
     // did we store a runtime we should restore
     const localBoardRuntimeId = localStorage.getItem(`runtimeId-${board}`);
     if (localBoardRuntimeId) {
@@ -166,7 +166,7 @@ class BoardContext extends Component {
         const browserRuntime = new BrowserRuntime(runtime.name);
         this.browserRuntimes.push(browserRuntime);
         browserRuntime.connect(localBoardRuntimeId);
-        for (const service of this.state.services[runtime.name]) {
+        for (const service of services[runtime.name]) {
           browserRuntime.createService(
             {
               serviceId: service.serviceId, 
@@ -184,6 +184,7 @@ class BoardContext extends Component {
   getCurrentBrowserRuntime = () => {
     const board = this.getBoardName();
     const localBoardRuntimeId = localStorage.getItem(`runtimeId-${board}`);
+    console.log('Getting current browser runtime', localBoardRuntimeId, this.browserRuntimes)
     return this.browserRuntimes.find(rt => rt.id === localBoardRuntimeId);
   }
 
