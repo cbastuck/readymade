@@ -12,10 +12,26 @@ class PlaybackUI extends Component {
     this.state = {};
   }
 
-  process(data) {
-    const buffer = `data:audio/ogg;base64,${data}`;
-    console.log('Processing', buffer);
-    this.setState({ encodedBuffer: buffer });
+  encodeAsDataURL(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = e => {
+          const dataurl = e.target.result;
+          return resolve(dataurl.substr(dataurl.indexOf(',')+1));
+      };
+      reader.onerror = err => reject(err);
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  async process(data) {
+    if (data instanceof Blob) {
+      const base64Blob = await this.encodeAsDataURL(data);
+      const buffer = `data:${data.type};base64,${base64Blob}`;
+      this.setState({ encodedBuffer: buffer });
+    } else {
+      console.error('Processing non-blob data in Playback service', data);
+    }
   }
 
   render() {
