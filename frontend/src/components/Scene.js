@@ -26,12 +26,12 @@ export default class Scene extends Component {
         >
         {
           children && children.map(
-            (service, idx) => (
-              <ServiceFrame
-                key={`scene-frame-${service.props.id}`}
+            (service, idx) => {
+              return <ServiceFrame
+                key={`scene-frame-${service.props.service.uuid}`}
                 service={service}
               />
-            )
+            }
           )
         }
         </div>
