@@ -43,9 +43,24 @@ export default class BrowserRuntime {
     this.id = id;
     const backendUrl = `/api/${id}`;
     this.eventSource = new EventSource(backendUrl);
+    const onMessage = event => this.onMessage(event);
+    const onError = error => {
+      if (error.target.readyState === EventSource.CLOSED) {
+        this.eventSource.removeEventListener('data', onMessage);
+        this.eventSource.removeEventListener('error', onError);
+        this.eventSource = undefined;
+        return this.connect(id);
+      } else {
+        console.error('Unknown error in BrowserRuntime', error);
+      }
+    }
     this.eventSource.addEventListener(
       'data',
-      this.onMessage.bind(this)
+      onMessage
+    );
+    this.eventSource.addEventListener(
+      'error',
+      onError
     );
   }
 
