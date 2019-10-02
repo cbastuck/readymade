@@ -162,7 +162,6 @@ class BoardContext extends Component {
   }
 
   restoreBrowserRuntimes = async (board, runtime, services) => {
-    console.log('RESTORING BROWSER RUNTIME', runtime.name)
     // is the given runtime one handled by this browser?
     const localBoardRuntimes = JSON.parse(localStorage.getItem(`runtimes-${board}`) || '[]');
     if (localBoardRuntimes.find(lrt => lrt === runtime.id)) {
@@ -171,10 +170,8 @@ class BoardContext extends Component {
       if (exists) {
         return; // we already created it 
       }
-      console.log('CREATING BROWSER RUNTIME', runtime.name)
       const browserRuntime = new BrowserRuntime(runtime);
       this.browserRuntimes.push(browserRuntime);
-      console.log('CONNECTING BROWSER RUNTIME', runtime.name, localBoardRuntimeId)
       browserRuntime.connect(localBoardRuntimeId);
       for (const service of services[runtime.name]) {
         browserRuntime.createService(
