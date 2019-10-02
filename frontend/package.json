@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "eventsource": "^1.0.7",
     "jointjs": "^2.2.0",
     "jwt-decode": "^2.2.0",
     "moment": "^2.22.2",

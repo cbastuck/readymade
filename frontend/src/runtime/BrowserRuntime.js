@@ -1,3 +1,5 @@
+import EventSource from 'eventsource';
+
 import timerDescriptor from './services/Timer';
 import monitorDescriptor from './services/Monitor';
 import microphoneDescriptor from './services/Microphone';
@@ -43,14 +45,15 @@ export default class BrowserRuntime {
   connect(id) {
     this.id = id;
     const backendUrl = `/api/${id}`;
+    console.log('Connecting', backendUrl, this.id, this.name)
     this.eventSource = new EventSource(backendUrl);
     const onMessage = event => this.onMessage(event);
-    const onError = (error, c, b) => {
-      if (error.target.readyState === EventSource.CLOSED) {
+    const onError = error => {
+      if (error.status === 504) { // HTTP Gateway Timeout 
         this.eventSource.removeEventListener('data', onMessage);
         this.eventSource.removeEventListener('error', onError);
         this.eventSource = undefined;
-        console.log('Reconnecting browser runtime', this.id, error, error.status, b, c);
+        console.log('Reconnecting browser runtime', error, error.status);
         setTimeout(() => this.connect(id), 1000);
         return;
       } else {
@@ -119,7 +122,7 @@ export default class BrowserRuntime {
     if (!service) {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
     }
-    service.destroy();
+    service.destroy && service.destroy();
   }
 
   getServiceById(uuid) {
