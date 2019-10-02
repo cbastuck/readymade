@@ -14,8 +14,9 @@ export default class BrowserRuntime {
     ];
   }
 
-  constructor(name) {
-    this.name = name;
+  constructor(runtime) {
+    this.id = runtime.id;
+    this.name = runtime.name;
     this.registry = BrowserRuntime.registry();
     this.services = [];
 
@@ -44,12 +45,14 @@ export default class BrowserRuntime {
     const backendUrl = `/api/${id}`;
     this.eventSource = new EventSource(backendUrl);
     const onMessage = event => this.onMessage(event);
-    const onError = error => {
+    const onError = (error, c, b) => {
       if (error.target.readyState === EventSource.CLOSED) {
         this.eventSource.removeEventListener('data', onMessage);
         this.eventSource.removeEventListener('error', onError);
         this.eventSource = undefined;
-        return this.connect(id);
+        console.log('Reconnecting browser runtime', this.id, error, error.status, b, c);
+        setTimeout(() => this.connect(id), 1000);
+        return;
       } else {
         console.error('Unknown error in BrowserRuntime', error);
       }
@@ -73,6 +76,8 @@ export default class BrowserRuntime {
         return this.configureService(command.uuid, command.config);
       case 'process':
         return this.processService(command.uuid, command.params);
+      case 'destroy':
+        return this.destroyService(command.uuid);
       default:
         console.error('Unknown action in browser runtime: ', command);
     }
@@ -107,6 +112,14 @@ export default class BrowserRuntime {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
     }
     service.process(params);
+  }
+
+  destroyService(uuid) {
+    const service = this.services.find(s => s.uuid = uuid);
+    if (!service) {
+      return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
+    }
+    service.destroy();
   }
 
   getServiceById(uuid) {

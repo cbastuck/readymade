@@ -49,9 +49,9 @@ class PlaybackUI extends Component {
               src={this.state.encodedBuffer}
             />
             {
-              boardContext.getCurrentBrowserRuntime() &&
+              boardContext.getCurrentBrowserRuntime(this.props.runtimeId) &&
               (
-                boardContext.getCurrentBrowserRuntime()
+                boardContext.getCurrentBrowserRuntime(this.props.runtimeId)
                   .getServiceById(this.props.service.uuid)
                   .setPlaybackFunc(this.process.bind(this))
               )

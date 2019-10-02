@@ -9,6 +9,7 @@ class Timer {
   }
 
   configure(config) {
+    console.log('Configuring Timer')
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
@@ -18,7 +19,15 @@ class Timer {
     }
   }
 
+  destroy() {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = undefined;
+    }
+  }
+
   process() {
+    console.log('Processing Timer');
     this.app.next(this, { triggerCount: ++this.count });
   }
 }

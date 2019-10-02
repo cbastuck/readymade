@@ -26,9 +26,11 @@ class MicrophoneUI extends Component {
     this.recorder.start();
     this.recorder.ondataavailable = (e) => {
       // send the data to the service
-      const runtime = boardContext.getCurrentBrowserRuntime();
-      const service = runtime.getServiceById(this.props.service.uuid)
-      service && service.process({ blob: e.data });
+      const runtime = boardContext.getCurrentBrowserRuntime(this.props.runtimeId);
+      if (runtime) {
+        const service = runtime.getServiceById(this.props.service.uuid)
+        service && service.process({ blob: e.data });
+      }
     }
     this.setState({ recording: true });
   }

@@ -9,6 +9,7 @@ class Monitor {
   }
 
   configure(config) {
+    console.log('Configuring Monitor')
   }
 
   process(params) {

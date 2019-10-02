@@ -54,7 +54,7 @@ class BoardContext extends Component {
   fetchData = async () => {
     try {
       await this.fetchRuntimes();
-      await this.fetchRegistry();
+      await this.fetchRegistry(); // FIXME: always after fetchRuntimes
       await this.fetchServices();
 
       //await this.fetchUserBoards();
@@ -91,10 +91,11 @@ class BoardContext extends Component {
       for (const runtime of this.state.runtimes) {
         const { services: runtimeServices } = await getServices(board, runtime.name);
         services[runtime.name] = runtimeServices;
+
+        this.restoreBrowserRuntimes(board, runtime, services);
       }
     }
 
-    this.restoreBrowserRuntimes(board, services);
     this.setState({ services });
     return services;
   }
@@ -111,6 +112,7 @@ class BoardContext extends Component {
     switch (action.type) {
       case 'clearBoard':
         await this.fetchRuntimes();
+        await this.fetchRegistry(); // FIXME: always after fetchRuntimes
         await this.fetchServices();
         await this.fetchUserBoards();
         this.browserRuntimes = [];
@@ -144,7 +146,8 @@ class BoardContext extends Component {
       const created = await addRuntime(boardName, desc);
       if (type === 'browser') {
         // remember if of created runtime, it belongs to 'this' browser
-        localStorage.setItem(`runtimeId-${boardName}`, created.id);
+        const existing = JSON.parse(localStorage.getItem(`runtimes-${boardName}`) || '[]');
+        localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(existing.concat(created.id)));
       }
       await this.fetchData();
     }
@@ -158,38 +161,40 @@ class BoardContext extends Component {
     }
   }
 
-  restoreBrowserRuntimes = async (board, services) => {
-    // did we store a runtime we should restore
-    const localBoardRuntimeId = localStorage.getItem(`runtimeId-${board}`);
-    if (localBoardRuntimeId) {
+  restoreBrowserRuntimes = async (board, runtime, services) => {
+    console.log('RESTORING BROWSER RUNTIME', runtime.name)
+    // is the given runtime one handled by this browser?
+    const localBoardRuntimes = JSON.parse(localStorage.getItem(`runtimes-${board}`) || '[]');
+    if (localBoardRuntimes.find(lrt => lrt === runtime.id)) {
+      const localBoardRuntimeId = runtime.id;
       const exists = this.browserRuntimes.find(brt => brt.id === localBoardRuntimeId);
       if (exists) {
-        return;
+        return; // we already created it 
       }
-      const runtime = this.state.runtimes.find(rt => rt.id === localBoardRuntimeId);
-      if (runtime) {
-        const browserRuntime = new BrowserRuntime(runtime.name);
-        this.browserRuntimes.push(browserRuntime);
-        browserRuntime.connect(localBoardRuntimeId);
-        for (const service of services[runtime.name]) {
-          browserRuntime.createService(
-            {
-              serviceId: service.serviceId, 
-              board 
-            }, 
-            service.uuid
-          );
-        }
-      } else {
-        localStorage.removeItem(`runtimeId-${board}`); // seems the remote rt does not exist anymore
-      } 
+      console.log('CREATING BROWSER RUNTIME', runtime.name)
+      const browserRuntime = new BrowserRuntime(runtime);
+      this.browserRuntimes.push(browserRuntime);
+      console.log('CONNECTING BROWSER RUNTIME', runtime.name, localBoardRuntimeId)
+      browserRuntime.connect(localBoardRuntimeId);
+      for (const service of services[runtime.name]) {
+        browserRuntime.createService(
+          {
+            serviceId: service.serviceId, 
+            board 
+          }, 
+          service.uuid
+        );
+      }
     }
   }
 
-  getCurrentBrowserRuntime = () => {
+  getCurrentBrowserRuntime = runtimeId => {
     const board = this.getBoardName();
-    const localBoardRuntimeId = localStorage.getItem(`runtimeId-${board}`);
-    return this.browserRuntimes.find(rt => rt.id === localBoardRuntimeId);
+
+    const localRuntimes = JSON.parse(localStorage.getItem(`runtimes-${board}`) || '[]');
+    if (localRuntimes.find(lrt => lrt === runtimeId)) {
+      return this.browserRuntimes.find(rt => rt.id === runtimeId);
+    }
   }
 
   render() {
