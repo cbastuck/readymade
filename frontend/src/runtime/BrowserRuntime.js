@@ -26,17 +26,18 @@ export default class BrowserRuntime {
       next: async (service, params) => {
         const position = this.services.findIndex(s => s === service);
         if (position === -1) {
-          return console.log('Called next() runtime, but could not find current', service);
+          return console.log('Called next() in browser but could not find current service', service);
         }
 
+        let svc = this.services[position];
         let result = params;
         for (let i = position+1; !!this.services[i]; ++i) {
-          const s = this.services[i];
-          result = await s.process(params);
+          svc = this.services[i];
+          result = await svc.process(params);
           params = result;
         }
 
-        await this.sendResult(result);
+        await this.sendResult({ serviceUuid: svc.id, result });
         return result;
       }
     }
