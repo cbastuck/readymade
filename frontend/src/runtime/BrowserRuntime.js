@@ -46,7 +46,7 @@ export default class BrowserRuntime {
   connect(id) {
     this.id = id;
     const backendUrl = `/api/${id}`;
-    console.log('Connecting', backendUrl, this.id, this.name)
+    console.log(`Connecting ${this.name} to ${backendUrl}`)
     this.eventSource = new EventSource(backendUrl);
     const onMessage = event => this.onMessage(event);
     const onError = error => {
@@ -82,6 +82,8 @@ export default class BrowserRuntime {
         return this.processService(command.uuid, command.params);
       case 'destroy':
         return this.destroyService(command.uuid);
+      case 'ping':
+        return console.log('Received ping ...');
       default:
         console.error('Unknown action in browser runtime: ', command);
     }
@@ -128,5 +130,12 @@ export default class BrowserRuntime {
 
   getServiceById(uuid) {
     return this.services.find(s => s.id === uuid);
+  }
+
+  destroyRuntime() {
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = undefined;
+    }
   }
 };

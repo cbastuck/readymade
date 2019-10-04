@@ -111,15 +111,18 @@ class BoardContext extends Component {
   onAction = async action => {
     switch (action.type) {
       case 'clearBoard':
+        for (const runtime of this.browserRuntimes) {
+          runtime.destroyRuntime();
+        }
+        this.browserRuntimes = [];
         await this.fetchRuntimes();
         await this.fetchRegistry(); // FIXME: always after fetchRuntimes
         await this.fetchServices();
-        await this.fetchUserBoards();
-        this.browserRuntimes = [];
+        //await this.fetchUserBoards();
         break;
       case 'saveBoard':
         await saveBoard(this.getBoardName());
-        await this.fetchUserBoards();
+        //await this.fetchUserBoards();
         break;
       case 'loadBoard':
         loadBoard(action.board);
