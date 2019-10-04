@@ -12,25 +12,38 @@ class PlaybackUI extends Component {
     this.state = {};
   }
 
-  encodeAsDataURL(blob) {
+  encodeBlob(blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = e => {
-          const dataurl = e.target.result;
-          return resolve(dataurl.substr(dataurl.indexOf(',')+1));
+        const dataurl = e.target.result;
+        return resolve(dataurl.substr(dataurl.indexOf(',')+1));
       };
       reader.onerror = err => reject(err);
       reader.readAsDataURL(blob);
     });
   }
 
+  encodeBuffer(buf) {
+    const binstr = Array.prototype.map.call(buf, ch => 
+        String.fromCharCode(ch)
+    ).join('');
+    return btoa(binstr);
+}
+
   async process(data) {
     if (data instanceof Blob) {
-      const base64Blob = await this.encodeAsDataURL(data);
-      const buffer = `data:${data.type};base64,${base64Blob}`;
+      const base64Data = await this.encodeBlob(data);
+      const buffer = `data:${data.type};base64,${base64Data}`;
       this.setState({ encodedBuffer: buffer });
-    } else {
-      console.error('Processing non-blob data in Playback service', data);
+    } else if (data.type === 'Buffer' && data.data) {
+      // TODO: hardcoded to mime-type: audio/webm
+      const base64Data = await this.encodeBuffer(data.data);
+      const buffer = `data:audio/webm;base64,${base64Data}`;
+      this.setState({ encodedBuffer: buffer });
+    }
+    else {
+      console.error('Processing non-blob data in Playback service', data, typeof data, typeof data.data);
     }
   }
 

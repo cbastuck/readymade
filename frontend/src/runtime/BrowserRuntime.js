@@ -37,7 +37,7 @@ export default class BrowserRuntime {
           params = result;
         }
 
-        await this.sendResult({ serviceUuid: svc.id, result });
+        await this.sendResult(svc.id, result);
         return result;
       }
     }
@@ -87,11 +87,11 @@ export default class BrowserRuntime {
     }
   }
 
-  sendResult(data) {
+  sendResult(serviceUuid, data) {
     if (!this.id) {
       return console.error('Could not send result data, no backend is connected');
     }
-   return request(this.id, 'POST', false, data);
+   return request(`${this.id}/${serviceUuid}`, 'POST', false, data);
   }
 
   createService({ serviceId, board }, id) {
