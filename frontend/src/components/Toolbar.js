@@ -19,7 +19,9 @@ export default class Toolbar extends Component {
         style={{
           width: '100%',
           marginBottom: 5,
-          textAlign: 'left'
+          textAlign: 'left',
+          //position: 'fixed',
+          //zIndex: 10000,
         }}
       >
         <HeaderMenu

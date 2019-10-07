@@ -18,28 +18,38 @@ export default class MonitorUI extends Component {
 
   componentWillUnmount() {
     if (this.eventSource) {
-      this.eventSource.close();
       this.eventSource.removeEventListener(
         'data',
         this.onMessage
       );
+      this.eventSource.close();
     }
   }
 
   onMessage = e => {
-    this.setState({ value: e.data });
+    let data = e.data;
+    try {
+      const incoming = JSON.parse(e.data);
+      if (incoming && incoming.action === 'ping') {
+        return; // filter pings
+      }
+      data = incoming; 
+    } catch (e) {
+    }
+    this.setState({ value: data });
   }
 
   connectEventSource = async () => {
     const { board, service } = this.props;
+    if (service && service.board) {
+      const config = await getServiceConfiguration(board, service);
 
-    const config = await getServiceConfiguration(board, service);
-    this.eventSource = new EventSource(`/api/${service.board}/${config.name}`);
-
-    this.eventSource.addEventListener(
-      'data',
-      this.onMessage
-    );
+      this.eventSource = new EventSource(`/api/${service.board}/${config.uuid}`);
+      this.eventSource.addEventListener(
+        'data',
+        this.onMessage
+      );
+    }
   }
 
   render() {
