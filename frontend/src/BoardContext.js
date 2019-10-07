@@ -1,5 +1,6 @@
 
 import React, { Component, createContext } from'react';
+import UAParser from 'ua-parser-js';
 
 import BrowserRuntime from './runtime/BrowserRuntime';
 
@@ -27,6 +28,7 @@ class BoardContext extends Component {
       addService: this.addService,
       onAction: this.onAction,
       getCurrentBrowserRuntime: this.getCurrentBrowserRuntime,
+      isRuntimeVisible: this.isRuntimeVisible,
 
       // data
       boardName: props.boardName,
@@ -141,9 +143,11 @@ class BoardContext extends Component {
       if (type === 'browser') {
         params.registry = BrowserRuntime.registry();
       }
+      const browser = new UAParser().getBrowser();
+      const userAgent = browser && `${browser.name}-${browser.version}`;
       const desc = { 
         type,
-        name: runtimeName,
+        name: userAgent || runtimeName,
         params
       };
       const created = await addRuntime(boardName, desc);
@@ -194,6 +198,14 @@ class BoardContext extends Component {
     const localRuntimes = JSON.parse(localStorage.getItem(`runtimes-${board}`) || '[]');
     if (localRuntimes.find(lrt => lrt === runtimeId)) {
       return this.browserRuntimes.find(rt => rt.id === runtimeId);
+    }
+  }
+
+  isRuntimeVisible = runtime => {
+    if (runtime.type === 'browser') {
+      return this.browserRuntimes.find(rt => rt.id === runtime.id);
+    } else {
+      return true;
     }
   }
 
