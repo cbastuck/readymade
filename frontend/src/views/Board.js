@@ -43,7 +43,7 @@ export default class Board extends Component {
                 boardContext.runtimes.map(
                   runtime => 
                     <Scene 
-                      key={`${runtime.name}-scene`}
+                      key={`${runtime.id}-scene`}
                       runtime={runtime.name}
                       style={{
                         marginBottom: 5

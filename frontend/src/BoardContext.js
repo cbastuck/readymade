@@ -138,16 +138,15 @@ class BoardContext extends Component {
   addRuntime = async (type, name) => {
     const boardName = this.getBoardName();
     if (boardName) {
-      const runtimeName = `${name || type}-${this.state.runtimes.length}`;
       const params = {};
       if (type === 'browser') {
         params.registry = BrowserRuntime.registry();
       }
       const browser = new UAParser().getBrowser();
-      const userAgent = browser && `${browser.name}-${browser.version}`;
+      const userAgent = browser && `${browser.name}-${browser.version} [${this.state.runtimes.length}]`;
       const desc = { 
         type,
-        name: userAgent || runtimeName,
+        name: userAgent,
         params
       };
       const created = await addRuntime(boardName, desc);
