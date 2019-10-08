@@ -94,7 +94,7 @@ export default class HeaderMenu extends Component {
         <Dropdown.Menu>
           <Dropdown.Header>Runtimes</Dropdown.Header>
           <Dropdown.Item
-            onClick={() => this.props.addRuntime('node', 'hookup')}
+            onClick={() => this.props.addRuntime('node', 'Hookup')}
           >
             Hookup.to
           </Dropdown.Item>
