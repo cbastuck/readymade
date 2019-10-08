@@ -37,9 +37,9 @@ class PlaybackUI extends Component {
       const buffer = `data:${data.type};base64,${base64Data}`;
       this.setState({ encodedBuffer: buffer });
     } else if (data.type === 'Buffer' && data.data) {
-      // TODO: hardcoded to mime-type: audio/webm
+      // TODO: hardcoded to mime-type: audio/mp3
       const base64Data = await this.encodeBuffer(data.data);
-      const buffer = `data:audio/webm;base64,${base64Data}`;
+      const buffer = `data:audio/mp3;base64,${base64Data}`;
       this.setState({ encodedBuffer: buffer });
     }
     else {

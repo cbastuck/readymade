@@ -3,6 +3,8 @@ import EventSource from 'eventsource';
 import timerDescriptor from './services/Timer';
 import monitorDescriptor from './services/Monitor';
 import microphoneDescriptor from './services/Microphone';
+import microphonePolyfillDescriptor from './services/MicrophonePolyfill';
+import mp3Encoder from './services/MP3Encoder';
 import playbackDescriptor from './services/Playback';
 import { request } from '../core/actions';
 
@@ -12,7 +14,9 @@ export default class BrowserRuntime {
       timerDescriptor,
       monitorDescriptor,
       microphoneDescriptor,
-      playbackDescriptor
+      microphonePolyfillDescriptor,
+      playbackDescriptor,
+      mp3Encoder
     ];
   }
 
