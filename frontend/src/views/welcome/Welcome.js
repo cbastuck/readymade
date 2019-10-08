@@ -29,9 +29,9 @@ export default class Welcome extends Component {
                 </BoardConsumer>
                 <div className="hero-text">
                   <h1>
-                    Building Services
+                    Build your Service
                   </h1>
-                  <p className="hero-claim">on top of services</p>
+                  <p className="hero-claim">using existing Services</p>
                   <Link to="/new">
                     <button>Start making</button>
                   </Link>
