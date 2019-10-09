@@ -4,11 +4,12 @@ import {
 } from 'semantic-ui-react';
 
 import { BoardConsumer } from '../../BoardContext';
+import MediaRecorder from 'audio-recorder-polyfill';
 
 const serviceId = 'hookup.to/service/microphone';
 const serviceName = 'Microphone';
 
-class MicrophoneUI extends Component {
+class MicrophonePolyfillUI extends Component {
   constructor(props) {
     super(props);
     this.recorder = undefined;
@@ -23,15 +24,15 @@ class MicrophoneUI extends Component {
     });
     this.gumStream = stream;
     this.recorder = new MediaRecorder(stream);
-    this.recorder.start();
-    this.recorder.ondataavailable = (e) => {
+    this.recorder.addEventListener('dataavailable', e => {
       // send the data to the service
       const runtime = boardContext.getCurrentBrowserRuntime(this.props.runtimeId);
       if (runtime) {
         const service = runtime.getServiceById(this.props.service.uuid)
         service && service.process({ blob: e.data });
       }
-    }
+    });
+    this.recorder.start();
     this.setState({ recording: true });
   }
 
@@ -71,7 +72,7 @@ class MicrophoneUI extends Component {
   }
 }
 
-class Microphone {
+class MicrophonePolyfill {
   constructor(app, board, descriptor, id) {
     this.id = id;
     this.board = board;
@@ -91,8 +92,8 @@ const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
-    new Microphone(app, board, descriptor, id),
-  createUI: MicrophoneUI
+    new MicrophonePolyfill(app, board, descriptor, id),
+  createUI: MicrophonePolyfillUI
 };
 
 export default descriptor;
