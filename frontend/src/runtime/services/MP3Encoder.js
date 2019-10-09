@@ -8,9 +8,14 @@ class Encoder {
     this.id = id;
     this.board = board;
     this.app = app;
+
+    this.bitrate = 128;
   }
 
   configure(config) {
+    if (config.bitrate !== undefined) {
+      this.bitrate = config.bitrate;
+    }
   }
 
   toArrayBuffer(blob) {
@@ -29,16 +34,13 @@ class Encoder {
   async process(blob) {
     const ab = await this.toArrayBuffer(blob);
     const header = WavHeader.readHeader(new DataView(ab));
-
-    const encoder = new Mp3Encoder(header.channels, header.sampleRate, 128);
+    const encoder = new Mp3Encoder(header.channels, header.sampleRate, this.bitrate);
     const samples = new Int16Array(ab, header.dataOffset, header.dataLen / 2);
-    var mp3Tmp = encoder.encodeBuffer(samples);
-    var mp3Data = [];
-    mp3Data.push(mp3Tmp);
-    mp3Tmp = encoder.flush()
-    mp3Data.push(mp3Tmp);
-    var mp3blob = new Blob(mp3Data, {type: 'audio/mp3'});
-    return this.app.next(this, mp3blob);
+    const mp3Data = [
+      encoder.encodeBuffer(samples),
+      encoder.flush()
+    ];
+    return this.app.next(this, new Blob(mp3Data, { type: 'audio/mp3' }));
   }
 }
 
