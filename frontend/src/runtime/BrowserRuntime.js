@@ -6,6 +6,8 @@ import monitorDescriptor from './services/Monitor';
 import microphoneDescriptor from './services/Microphone';
 import mp3Encoder from './services/MP3Encoder';
 import playbackDescriptor from './services/Playback';
+import FileProviderDescriptor from './services/FileProvider';
+import DownloaderDescriptor from './services/Downloader';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -15,7 +17,9 @@ export default class BrowserRuntime {
       monitorDescriptor,
       microphoneDescriptor,
       playbackDescriptor,
-      mp3Encoder
+      mp3Encoder,
+      FileProviderDescriptor,
+      DownloaderDescriptor
     ];
   }
 
