@@ -7,7 +7,7 @@ import {
 import { WritableStream } from "web-streams-polyfill/ponyfill";
 import StreamSaver from 'streamsaver';
 
-import { BoardConsumer } from '../../BoardContext';
+import ServiceUI from './ServiceUI';
 
 const serviceId = 'hookup.to/service/downloader';
 const serviceName = 'Downloader';
@@ -22,61 +22,50 @@ class DownloaderUI extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      filename: "sample.txt"
+      filename: undefined
     };
   }
 
-  onButton = boardContext => {
-    const runtime = boardContext.getCurrentBrowserRuntime(this.props.runtimeId);
-    if (runtime) {
-      const service = runtime.getServiceById(this.props.service.uuid)
-      service && service.configure({ filename: this.state.filename });
-    }
-  }
-
-  onClose = boardContext => {
-    const runtime = boardContext.getCurrentBrowserRuntime(this.props.runtimeId);
-    if (runtime) {
-      const service = runtime.getServiceById(this.props.service.uuid)
-      service && service.onClose();
+  onClose = service => {
+    if (service) {
+      service.onClose();
+      service.configure({ autosense: false });
     }
   }
 
   render() {
+    const { service, runtimeId } = this.props;
     return (
-      <BoardConsumer>
+      <ServiceUI
+        backendService={service}
+        runtimeId={runtimeId}
+        onTimer={service => this.setState({ running: service.running })}
+      >
       {
-        boardContext => (
+        ({ service }) => (
           <div
-            style={{
-              margin: "10px 0px"
-            }}
+            style={{ margin: "10px 0px" }}
           >
-            <div style={{ textAlign: 'left', margin: '0px 10px' }}>Filename</div>
-            <div
-              style={{ margin: 10 }}
-            >
+            <div style={{ textAlign: 'left', margin: '0px 10px' }}>
+              Filename
+            </div>
+            <div style={{ margin: 10 }}>
               <Input
-                value={this.state.filename}
-                onChange={(_, { value }) => {
-                  this.setState({ filename: value });
-                }}
+                value={this.state.filename || service.filename}
+                onChange={(_, { value }) => this.setState({ filename: value })}
+                onKeyUp={ev => ev.key === 'Enter' && service.configure({ filename: this.state.filename, autosense: true })}
               />
             </div>
             <Button
-              onClick={() => this.onButton(boardContext)}
+              disabled={!this.state.running}
+              onClick={() => this.onClose(service)}
             >
-              New File
-            </Button>
-            <Button
-              onClick={() => this.onClose(boardContext)}
-            >
-              Close File
+              Close
             </Button>
           </div>
         )
       }
-      </BoardConsumer>
+      </ServiceUI>
     );
   }
 }
@@ -89,14 +78,30 @@ class Downloader {
 
     this._fileStream = undefined;
     this._writer = undefined;
+    this.filename = "incoming.txt"
+    this.autosense = true;
+    this.running = false;
   }
 
   configure(config) {
-    if (config.filename) {
-      this.onClose();
-      this._fileStream = StreamSaver.createWriteStream(config.filename);
-      this._writer = this._fileStream.getWriter();
+    if (config.filename !== undefined) {
+      this.openDestination(config.filename);
     }
+    if (config.autosense !== undefined) {
+      this.autosense = config.autosense;
+    }
+  }
+
+  openDestination(filename) {
+    this.onClose();
+    this.filename = filename;
+    this._fileStream = StreamSaver.createWriteStream(filename);
+    this._writer = this._fileStream.getWriter();
+    this.running = true;
+  }
+
+  isOpen() {
+    return this._fileStream !== undefined;
   }
 
   onClose() {
@@ -105,6 +110,7 @@ class Downloader {
     }
     this._fileStream = undefined;
     this._writer = undefined;
+    this.running = false;
   }
 
   async pump(reader, writer) {
@@ -116,12 +122,18 @@ class Downloader {
   }
 
   async process(params) {
-    if (this._writer !== undefined) { 
-      const blob = (params instanceof Blob) ? params : new Blob([JSON.stringify(params)]);
-      const readableStream = blob.stream();
-      const reader = readableStream.getReader();
-      await this.pump(reader, this._writer);
-    }
+    if (!this.isOpen()) {
+      if (!this.autosense) {
+        return params;
+      } else {
+        this.openDestination(this.filename)
+      }
+    } 
+    const blob = (params instanceof Blob) ? params : new Blob([JSON.stringify(params)]);
+    const readableStream = blob.stream();
+    const reader = readableStream.getReader();
+    await this.pump(reader, this._writer);
+    
     return params;
   }
 }

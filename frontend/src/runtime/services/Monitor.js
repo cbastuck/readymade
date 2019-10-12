@@ -8,7 +8,7 @@ class Monitor {
     this.app = app;
   }
 
-  configure(config) {
+  configure() {
     console.log('Configuring Monitor')
   }
 
