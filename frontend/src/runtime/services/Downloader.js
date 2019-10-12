@@ -4,12 +4,19 @@ import {
   Input,
 } from 'semantic-ui-react';
 
+import { WritableStream } from "web-streams-polyfill/ponyfill";
 import StreamSaver from 'streamsaver';
 
 import { BoardConsumer } from '../../BoardContext';
 
 const serviceId = 'hookup.to/service/downloader';
 const serviceName = 'Downloader';
+
+// Apply the polyfill if needed
+if (!StreamSaver.WritableStream) {
+  StreamSaver.WritableStream = WritableStream;
+}
+
 
 class DownloaderUI extends Component {
   constructor(props) {
@@ -94,7 +101,6 @@ class Downloader {
 
   onClose() {
     if (this._writer) {
-
       this._writer.close();
     }
     this._fileStream = undefined;
@@ -114,8 +120,9 @@ class Downloader {
       const blob = (params instanceof Blob) ? params : new Blob([JSON.stringify(params)]);
       const readableStream = blob.stream();
       const reader = readableStream.getReader();
-      this.pump(reader, this._writer);
+      await this.pump(reader, this._writer);
     }
+    return params;
   }
 }
 

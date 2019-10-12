@@ -67,7 +67,7 @@ class FileProvider {
     this.board = board;
     this.app = app;
 
-    this.chunkSize = 1024;
+    this.chunkSize = 1024 * 1024;
     this.running = false;
   }
 
@@ -97,8 +97,7 @@ class FileProvider {
     const processingFileSize = file.size;
     const handleChunk = (callback, e) => {
       const contents = e.target.result;
-      console.log('processing chunk', contents);
-      this.app.next(this, { chunk: contents });
+      this.app.next(this, new Blob([contents]));
       callback();
     };
 
@@ -109,7 +108,7 @@ class FileProvider {
       const blob = file.slice(offset, Math.min(offset + this.chunkSize, processingFileSize));
       const reader = new FileReader();
       reader.onload = handleChunk.bind(this, () => readChunk(offset + this.chunkSize))
-      reader.readAsText(blob);
+      reader.readAsArrayBuffer(blob);
     }
 
     readChunk(0);

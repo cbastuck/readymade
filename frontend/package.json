@@ -19,7 +19,8 @@
     "streamsaver": "^2.0.3",
     "ua-parser-js": "^0.7.20",
     "unique-names-generator": "^1.0.14",
-    "uuid": "^3.3.2"
+    "uuid": "^3.3.2",
+    "web-streams-polyfill": "^2.0.5"
   },
   "devDependencies": {
     "react-scripts": "2.1.1"

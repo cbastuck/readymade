@@ -14,7 +14,7 @@ class Monitor {
 
   process(params) {
     console.log('Browser monitors incoming ', params);
-    return this.app.next(this, params);
+    return params;
   }
 }
 
