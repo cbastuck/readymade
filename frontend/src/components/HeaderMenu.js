@@ -3,6 +3,7 @@ import { Dropdown, Menu } from 'semantic-ui-react'
 import { Link } from 'react-router-dom';
 
 import { AppConsumer } from '../AppContext';
+import { BoardConsumer } from '../BoardContext';
 import AccountDropdown from './AccountDropdown';
 
 export default class HeaderMenu extends Component {
@@ -80,8 +81,7 @@ export default class HeaderMenu extends Component {
     );
   }
 
-  renderServiceMenu(registry) {
-    const runtimes = registry ? Object.keys(registry) : [];
+  renderServiceMenu(registry, boardContext) {
     return (
       <Dropdown
         text="Click to add Services"
@@ -104,26 +104,29 @@ export default class HeaderMenu extends Component {
             Browser
           </Dropdown.Item>
           {
-            runtimes.map((runtimeName, runtimeIdx) =>
-              [
-                <Dropdown.Header
-                  key={`${runtimeName}.header`}
-                >
-                  {runtimeName}
-                </Dropdown.Header>,
-                registry[runtimeName].map(service =>
-                  <Dropdown.Item
-                    key={`${runtimeName}.${service.serviceId}`}
-                    onClick={() => this.props.addService(service)}
+            boardContext && boardContext.runtimes
+              .filter(runtime => boardContext.isRuntimeInScope(runtime))
+              .map((runtime, runtimeIdx) =>
+                [
+                  <Dropdown.Header
+                    key={`${runtime.name}.header`}
                   >
-                    {service.serviceName}
-                  </Dropdown.Item>
-                ),
-                (runtimeIdx + 1 < runtimes.length) && <Dropdown.Divider
-                  key={`${runtimeName}.devider`}
-                />
-              ]
-            )
+                    {runtime.name}
+                  </Dropdown.Header>,
+                  registry[runtime.name] && 
+                  registry[runtime.name].map(service =>
+                    <Dropdown.Item
+                      key={`${runtime.name}.${service.serviceId}`}
+                      onClick={() => this.props.addService(service)}
+                    >
+                      {service.serviceName}
+                    </Dropdown.Item>
+                  ),
+                  (runtimeIdx + 1 < boardContext.runtimes.length) && <Dropdown.Divider
+                    key={`${runtime.name}.devider`}
+                  />
+                ]
+              )
           }
         </Dropdown.Menu>
       }
@@ -152,17 +155,23 @@ export default class HeaderMenu extends Component {
       <AppConsumer>
         {
           appContext => (
-            <Menu>
+            <BoardConsumer>
               {
-                appContext.username && this.renderBoardMenu(board, savedBoards)
+                boardContext => (
+                  <Menu>
+                    {
+                      appContext.username && this.renderBoardMenu(board, savedBoards)
+                    }
+                    {
+                      registry && this.renderServiceMenu(registry, boardContext)
+                    }
+                    {
+                      appContext && this.renderAccountMenu(appContext)
+                    }
+                  </Menu>
+                )
               }
-              {
-                registry && this.renderServiceMenu(registry)
-              }
-              {
-                appContext && this.renderAccountMenu(appContext)
-              }
-            </Menu>
+            </BoardConsumer>
           )
         }
       </AppConsumer>

@@ -28,7 +28,7 @@ class BoardContext extends Component {
       addService: this.addService,
       onAction: this.onAction,
       getCurrentBrowserRuntime: this.getCurrentBrowserRuntime,
-      isRuntimeVisible: this.isRuntimeVisible,
+      isRuntimeInScope: this.isRuntimeInScope,
 
       // data
       boardName: props.boardName,
@@ -202,12 +202,11 @@ class BoardContext extends Component {
     }
   }
 
-  isRuntimeVisible = runtime => {
+  isRuntimeInScope = runtime => {
     if (runtime.type === 'browser') {
       return this.browserRuntimes.find(rt => rt.id === runtime.id);
-    } else {
-      return true;
-    }
+    } 
+    return true;
   }
 
   render() {

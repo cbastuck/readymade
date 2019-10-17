@@ -34,11 +34,9 @@ class DownloaderUI extends Component {
   }
 
   render() {
-    const { service, runtimeId } = this.props;
     return (
       <ServiceUI
-        backendService={service}
-        runtimeId={runtimeId}
+        {...this.props}
         onTimer={service => this.setState({ running: service.running })}
       >
       {

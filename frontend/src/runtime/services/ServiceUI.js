@@ -13,12 +13,14 @@ export default class ServiceUI extends Component {
     }
   }
 
-  setup = (boardContext, { runtimeId, backendService, onTimer }) => {
+  setup = (boardContext, { runtimeId, service: backendService, onTimer }) => {
     if (!this.service) {
       const runtime = boardContext && boardContext.getCurrentBrowserRuntime(runtimeId);
       const service = runtime && runtime.getServiceById(backendService.uuid);
       this.service = service;
-      this.timer = setInterval(() => onTimer(service), 1000);
+      if (onTimer) {
+        this.timer = setInterval(() => onTimer(service), 1000);
+      }
     }
     return this.service;
   }

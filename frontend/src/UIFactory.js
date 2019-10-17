@@ -18,6 +18,17 @@ import FileS3UI from './components/services/FileS3UI';
 
 import BrowserRuntime from './runtime/BrowserRuntime';
 
+export function createPlaceholderUI(service) {
+  return (
+    <div 
+      key={service.uuid} 
+      id={service.uuid} 
+      service={service} 
+      style={{ minWidth: 200 }} 
+    />
+  );
+}
+
 export function createServiceUI(board, service, runtimeId) {
   const id = service.uuid;
   switch(service.serviceId) {
@@ -59,7 +70,7 @@ export function createServiceUI(board, service, runtimeId) {
         return React.createElement(factory.createUI, { service, board, runtimeId, key: `key-${service.uuid}` });
       } else {
         console.log('UIFactory insert default UI for', service)
-        return <div key={id} id={id} service={service} style={{ minWidth: 200 }} />;
+        return createPlaceholderUI(service);
       }
   }
 }

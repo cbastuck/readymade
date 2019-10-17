@@ -4,10 +4,31 @@ import Login from './Login';
 import Scene from '../components/Scene';
 import Toolbar from '../components/Toolbar';
 import { BoardConsumer } from '../BoardContext';
-import { createServiceUI } from '../UIFactory';
+import { createServiceUI, createPlaceholderUI } from '../UIFactory';
 
 export default class Board extends Component {
   
+  renderRuntime(boardContext, runtime) {
+    const readonly = !boardContext.isRuntimeInScope(runtime);
+    return (
+      <Scene
+        key={`${runtime.id}-scene`}
+        runtime={runtime.name}
+        readonly={readonly}
+        style={{ marginBottom: 5 }}
+      >
+        {
+          boardContext.services[runtime.name] && 
+          boardContext.services[runtime.name].map(svc =>
+            readonly ? 
+              createPlaceholderUI(svc) :
+              createServiceUI(boardContext.boardName, svc, runtime.id)
+          )
+        }
+      </Scene>
+    );
+  }
+
   render() {
     const { appContext } = this.props;
     return (
@@ -40,24 +61,7 @@ export default class Board extends Component {
                 appContext.token &&
                 boardContext && 
                 boardContext.runtimes && 
-                boardContext.runtimes.map(
-                  runtime => 
-                    <Scene 
-                      key={`${runtime.id}-scene`}
-                      runtime={runtime.name}
-                      style={{
-                        marginBottom: 5
-                      }}
-                    >
-                      {
-                        boardContext.isRuntimeVisible(runtime) &&
-                        boardContext.services[runtime.name] && 
-                        boardContext.services[runtime.name].map(svc => 
-                          createServiceUI(boardContext.boardName, svc, runtime.id)
-                        )
-                      }
-                    </Scene>
-                )
+                boardContext.runtimes.map(runtime => this.renderRuntime(boardContext, runtime))
               }
             </div>
           )
