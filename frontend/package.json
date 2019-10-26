@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "audio-recorder-polyfill": "^0.1.6",
+    "base64-arraybuffer": "^0.2.0",
     "eventsource": "^1.0.7",
     "jointjs": "^2.2.0",
     "jwt-decode": "^2.2.0",

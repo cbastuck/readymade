@@ -126,7 +126,7 @@ class Downloader {
       } else {
         this.openDestination(this.filename)
       }
-    } 
+    }
     const blob = (params instanceof Blob) ? params : new Blob([JSON.stringify(params)]);
     const readableStream = blob.stream();
     const reader = readableStream.getReader();

@@ -91,13 +91,17 @@ class FileProvider {
     this.running = true;
 
     const onFinished = () => {
-      this.processing = false;
+      this.running = false;
     }
 
     const processingFileSize = file.size;
     const handleChunk = (callback, e) => {
       const contents = e.target.result;
-      this.app.next(this, new Blob([contents]));
+      const blob = new Blob(
+        [contents], 
+        { type: 'application/octet-stream' }
+      );
+      this.app.next(this, blob);
       callback();
     };
 

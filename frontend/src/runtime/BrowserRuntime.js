@@ -1,4 +1,5 @@
 import EventSource from 'eventsource';
+import { decode } from 'base64-arraybuffer';
 
 import timerDescriptor from './services/Timer';
 import monitorDescriptor from './services/Monitor';
@@ -124,7 +125,16 @@ export default class BrowserRuntime {
     if (!service) {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
     }
-    service.process(params);
+
+       // if it's not an object it's a binary buffer base64 encoded
+    const data = typeof params === 'string' ?
+      new Blob(
+        [decode(params)], 
+        { type: 'application/octet-binary' }
+      ) :
+      params;
+
+    service.process(data);
   }
 
   destroyService(uuid) {
