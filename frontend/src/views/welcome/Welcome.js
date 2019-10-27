@@ -28,12 +28,10 @@ export default class Welcome extends Component {
                   }
                 </BoardConsumer>
                 <div className="hero-text">
-                  <h1>
-                    Build your Service
-                  </h1>
-                  <p className="hero-claim">using existing Services</p>
+                  <h1>Welcome</h1>
+                  <p className="hero-claim">Create Services using Services</p>
                   <Link to="/new">
-                    <button>Start making</button>
+                    <button>Come in</button>
                   </Link>
                 </div>
                 <Footer />
