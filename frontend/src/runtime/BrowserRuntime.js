@@ -9,6 +9,7 @@ import mp3Encoder from './services/MP3Encoder';
 import playbackDescriptor from './services/Playback';
 import FileProviderDescriptor from './services/FileProvider';
 import DownloaderDescriptor from './services/Downloader';
+import PlotterDescriptor from './services/Plotter';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -20,7 +21,8 @@ export default class BrowserRuntime {
       playbackDescriptor,
       mp3Encoder,
       FileProviderDescriptor,
-      DownloaderDescriptor
+      DownloaderDescriptor,
+      PlotterDescriptor
     ];
   }
 
@@ -44,7 +46,6 @@ export default class BrowserRuntime {
           result = await svc.process(params);
           params = result;
         }
-
         await this.sendResult(svc.id, result);
         return result;
       }
@@ -126,7 +127,7 @@ export default class BrowserRuntime {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
     }
 
-       // if it's not an object it's a binary buffer base64 encoded
+    // if it's not an object it's a binary buffer base64 encoded
     const data = typeof params === 'string' ?
       new Blob(
         [decode(params)], 
