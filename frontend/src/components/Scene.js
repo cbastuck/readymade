@@ -25,15 +25,15 @@ export default class Scene extends Component {
     }
   }
 
-  renderExpandIcon() {
+  renderExpandableHeadline(headline) {
     const style = {
       width: 100,
       cursor: 'pointer'
     };
     const onClick = _ => this.setState({ expanded: !this.state.expanded })
     return this.state.expanded ? 
-      <span style={style} onClick={onClick}> - </span> :
-      <span style={style} onClick={onClick}> + </span>;
+      <span style={style} onClick={onClick}> - {headline} </span> :
+      <span style={style} onClick={onClick}> + {headline} </span>;
   }
 
   render() {
@@ -61,31 +61,28 @@ export default class Scene extends Component {
           ...style,
         }}
       >
-        <h4>{this.renderExpandIcon()} {runtime}</h4>
+        <h4>{this.renderExpandableHeadline(runtime)}</h4>
         <div
           style={{
             display: 'flex',
             flexFlow: wrap ? 'row wrap' : 'row nowrap',
             overflow: 'auto',
+            ...readonlyStyle
           }}
+          onClickCapture={e => readonly && e.stopPropagation()}
         >
-          <div 
-            style={readonlyStyle}
-            onClickCapture={e => readonly && e.stopPropagation()}
-          >
-          {
-            this.state.expanded && children && children.map(
-              service => {
-                return (
-                  <ServiceFrame
-                    key={`scene-frame-${service.props.service.uuid}`}
-                    service={service}
-                  />
-                )
-              }
-            )
-          }
-          </div>
+        {
+          this.state.expanded && children && children.map(
+            service => {
+              return (
+                <ServiceFrame
+                  key={`scene-frame-${service.props.service.uuid}`}
+                  service={service}
+                />
+              )
+            }
+          )
+        }
         </div>
       </div>
     );
