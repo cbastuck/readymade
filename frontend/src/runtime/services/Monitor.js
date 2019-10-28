@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { TextArea } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 
@@ -19,11 +20,18 @@ class MonitorUI extends Component {
           service.register(message => this.setState({ message })) && (
             <div
               style={{
+                textAlign: 'left',
                 margin: 10,
-                width: 200
               }}
             >
-              {this.state.message}
+              <TextArea
+                style={{ 
+                  width: '100%', 
+                  minHeight: 150, 
+                  minWidth: 200 
+                }}
+                value={this.state.message}
+              />
             </div>
           )
         }
@@ -44,7 +52,6 @@ class Monitor {
   }
 
   process(params) {
-    console.log('Browser monitors incoming ', params);
     if (this.callback) {
       this.callback(JSON.stringify(params, null, 2));
     }
