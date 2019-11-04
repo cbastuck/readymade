@@ -15,6 +15,7 @@ import DataInjectorUI from './components/services/DataInjectorUI';
 import HTMLTemplatesUI from './components/services/HTMLTemplatesUI';
 import OutputUI from './components/services/OutputUI';
 import FileS3UI from './components/services/FileS3UI';
+import AggregatorUI from './components/services/AggregatorUI';
 
 import BrowserRuntime from './runtime/BrowserRuntime';
 
@@ -62,6 +63,8 @@ export function createServiceUI(board, service, runtimeId) {
       return <OutputUI key={id} id={id} service={service} board={board} />;
     case 'hookup.to/resource/file-s3':
       return <FileS3UI key={id} id={id} service={service} board={board} />;
+    case 'hookup.to/service/aggregator':
+      return <AggregatorUI key={id} id={id} service={service} board={board} />
     default:
       const factory = BrowserRuntime.registry().find(s => 
          service.serviceId === s.serviceId && s.createUI

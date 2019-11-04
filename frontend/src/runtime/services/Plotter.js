@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Line } from 'react-chartjs-2';
+import moment from 'moment';
 
 import ServiceUI from './ServiceUI';
 
@@ -8,6 +9,8 @@ const serviceName = 'Plotter';
 
 class PlotterUI extends Component {
   state = {
+    propertyX: '',
+    propertyY: '',
     data: {
       labels: [],
       datasets: [
@@ -37,16 +40,26 @@ class PlotterUI extends Component {
   }
 
   updateData(data) {
-    const updated = {
-      labels: data.triggerTime,
-      datasets: [
-        {
-          ...this.state.data.datasets[0],
-          data: data.triggerCount
-        }
-      ]
-    };
-    this.setState({ data: updated })
+    console.log('GOT DATA', data)
+    const propertyX = this.state.propertyX;
+    const propertyY = this.state.propertyY;
+    if (!propertyX) {
+      const keys = Object.keys(data);
+      this.setState({ propertyX: keys[0]});
+    }
+
+    if (propertyX) {
+      const updated = {
+        labels: propertyY ? data[propertyY] : this.state.data.labels.concat(moment.utc().toISOString()),
+        datasets: [
+          {
+            ...this.state.data.datasets[0],
+            data: data[propertyX]
+          }
+        ]
+      };
+      this.setState({ data: updated });
+    }
   }
 
   render() {
