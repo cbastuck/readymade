@@ -33,23 +33,25 @@ export default class BrowserRuntime {
     this.services = [];
 
     this.app = {
-      next: async (service, params) => {
-        const position = this.services.findIndex(s => s === service);
-        if (position === -1) {
-          return console.log('Called next() in browser but could not find current service', service);
-        }
-
-        let svc = this.services[position];
-        let result = params;
-        for (let i = position+1; !!this.services[i]; ++i) {
-          svc = this.services[i];
-          result = await svc.process(params);
-          params = result;
-        }
-        await this.sendResult(svc.id, result);
-        return result;
-      }
+      next: this.next
     }
+  }
+
+  next = async (service, params, advanceBeforeProcess=true) => {
+    const position = this.services.findIndex(s => s === service);
+    if (position === -1) {
+      return console.log('Called next() in browser but could not find current service', service);
+    }
+
+    let svc = this.services[position];
+    let result = params;
+    for (let i = advanceBeforeProcess ? position+1 : position; !!this.services[i]; ++i) {
+      svc = this.services[i];
+      result = await svc.process(params);
+      params = result;
+    }
+    await this.sendResult(svc.id, result);
+    return result;
   }
 
   connect(id) {
@@ -121,12 +123,12 @@ export default class BrowserRuntime {
     service.configure(config);
   }
 
-  processService(uuid, params) {
-    const service = this.services.find(s => s.uuid = uuid);
-    if (!service) {
+  async processService(uuid, params) {
+    const position = this.services.findIndex(s => s.uuid = uuid);
+    if (position === -1) {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
     }
-
+    
     // if it's not an object it's a binary buffer base64 encoded
     const data = typeof params === 'string' ?
       new Blob(
@@ -135,7 +137,8 @@ export default class BrowserRuntime {
       ) :
       params;
 
-    service.process(data);
+    const service = this.services[position];
+    return this.next(service, data, false);
   }
 
   destroyService(uuid) {
