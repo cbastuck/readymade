@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import {
   Button,
-  Label
 } from 'semantic-ui-react';
 
 import {
