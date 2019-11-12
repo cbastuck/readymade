@@ -52,12 +52,16 @@ class PlotterUI extends Component {
     }
 
     if (propertyX && propertyY) {
+      const values = data[propertyX];
+      const labels = propertyY === 'timestamps' ? 
+        data[propertyY].map(d => new Date(d).toISOString()) : 
+        data[propertyY];
       const updated = {
-        labels: data[propertyY],
+        labels,
         datasets: [
           {
             ...this.state.data.datasets[0],
-            data: data[propertyX]
+            data: values
           }
         ]
       };
