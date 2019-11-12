@@ -37,7 +37,7 @@ export default class BrowserRuntime {
     }
   }
 
-  next = async (service, params, advanceBeforeProcess=true) => {
+  next = async (service, params, requestId, advanceBeforeProcess=true) => {
     const position = this.services.findIndex(s => s === service);
     if (position === -1) {
       return console.log('Called next() in browser but could not find current service', service);
@@ -50,7 +50,7 @@ export default class BrowserRuntime {
       result = await svc.process(params);
       params = result;
     }
-    await this.sendResult(svc.id, result);
+    await this.sendResult(svc.id, result, requestId);
     return result;
   }
 
@@ -90,7 +90,7 @@ export default class BrowserRuntime {
       case 'config':
         return this.configureService(command.uuid, command.config);
       case 'process':
-        return this.processService(command.uuid, command.params);
+        return this.processService(command.uuid, command.params, command.requestId);
       case 'destroy':
         return this.destroyService(command.uuid);
       case 'ping':
@@ -100,11 +100,11 @@ export default class BrowserRuntime {
     }
   }
 
-  sendResult(serviceUuid, data) {
+  sendResult(serviceUuid, data, requestId) {
     if (!this.id) {
       return console.error('Could not send result data, no backend is connected');
     }
-   return request(`${this.id}/${serviceUuid}`, 'POST', false, data);
+   return request(`${this.id}/${requestId}`, 'POST', false, data);
   }
 
   createService({ serviceId, board }, id) {
@@ -123,7 +123,7 @@ export default class BrowserRuntime {
     service.configure(config);
   }
 
-  async processService(uuid, params) {
+  async processService(uuid, params, requestId) {
     const position = this.services.findIndex(s => s.uuid = uuid);
     if (position === -1) {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
@@ -138,7 +138,7 @@ export default class BrowserRuntime {
       params;
 
     const service = this.services[position];
-    return this.next(service, data, false);
+    return this.next(service, data, requestId, false);
   }
 
   destroyService(uuid) {
