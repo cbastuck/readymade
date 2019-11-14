@@ -8,7 +8,6 @@ import {
   getServices,
   addService,
   saveBoard,
-  getUserBoards,
   loadBoard,
   getRuntimes,
   getRuntimeRegistry,
@@ -58,8 +57,7 @@ class BoardContext extends Component {
       await this.fetchRuntimes();
       await this.fetchRegistry(); // FIXME: always after fetchRuntimes
       await this.fetchServices();
-
-      //await this.fetchUserBoards();
+      await this.fetchUserBoards();
     } catch(error) {
       console.log('Fetching data failed');
     }
@@ -80,7 +78,7 @@ class BoardContext extends Component {
     const board = this.getBoardName();
     const registry = {};
     for (const runtime of this.state.runtimes) {
-      const runtimeRegistry = await getRuntimeRegistry(board, runtime.name);
+      const runtimeRegistry = await getRuntimeRegistry(board, runtime.id);
       registry[runtime.name] = runtimeRegistry;
     } 
     this.setState({ registry });
@@ -91,7 +89,7 @@ class BoardContext extends Component {
     const services = {};
     if (board) {
       for (const runtime of this.state.runtimes) {
-        const { services: runtimeServices } = await getServices(board, runtime.name);
+        const { services: runtimeServices } = await getServices(board, runtime.id);
         services[runtime.name] = runtimeServices;
 
         this.restoreBrowserRuntimes(board, runtime, services);
@@ -103,7 +101,10 @@ class BoardContext extends Component {
   }
 
   fetchUserBoards = async () => {
-    const boards = await getUserBoards();
+    const boards = Object.keys(localStorage)
+            .filter(key => key.startsWith('board-'))
+            .map(key => key.substr(6));
+
     this.setState({
       savedBoards: boards
     });
@@ -111,6 +112,7 @@ class BoardContext extends Component {
   }
 
   onAction = async action => {
+    const boardname = this.getBoardName();
     switch (action.type) {
       case 'clearBoard':
         for (const runtime of this.browserRuntimes) {
@@ -120,14 +122,21 @@ class BoardContext extends Component {
         await this.fetchRuntimes();
         await this.fetchRegistry(); // FIXME: always after fetchRuntimes
         await this.fetchServices();
-        //await this.fetchUserBoards();
+        await this.fetchUserBoards();
         break;
       case 'saveBoard':
-        await saveBoard(this.getBoardName());
-        //await this.fetchUserBoards();
+        const saveState = await saveBoard(boardname);
+        localStorage.setItem(`board-${boardname}`, JSON.stringify(saveState));
+        await this.fetchUserBoards();
         break;
       case 'loadBoard':
-        loadBoard(action.board);
+        try {
+          const loadState = JSON.parse(localStorage.getItem(`board-${boardname}`));
+          await loadBoard(action.board, loadState);
+          await this.fetchData();
+        } catch(error) {
+          console.error('Loading board failed with error', error);
+        }
         break;
       default:
         console.log('Unknown action', action);

@@ -64,16 +64,12 @@ export function configureService(board, service, config) {
   return request(`board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config`, 'POST', false, config);
 }
 
-export function getUserBoards() {
-  return request('boards');
-}
-
-export function loadBoard(board) {
-  redirectTo(`/${board}`);
+export function loadBoard(board, state) {
+  return request(`board/${board}`, 'PUT', false, state);
 }
 
 export function saveBoard(board) {
-  return request(`board/${board}`, 'PUT', false);
+  return request(`board/${board}`, 'GET', true);
 }
 
 export function redirectUri() {
