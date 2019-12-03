@@ -72,7 +72,9 @@ export default class Scene extends Component {
           onClickCapture={e => readonly && e.stopPropagation()}
         >
         {
-          this.state.expanded && children && children.map(
+          this.state.expanded && 
+          children && 
+          children.map(
             service => {
               return (
                 <ServiceFrame

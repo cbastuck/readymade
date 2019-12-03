@@ -16,6 +16,7 @@ import AppHub from './views/AppHub';
 import Login from './views/Login';
 import LoginFail from './views/LoginFail';
 import BoardProvider from './BoardContext';
+import Sandbox from './Sandbox';
 
 import { AppConsumer } from './AppContext';
 
@@ -51,6 +52,7 @@ class App extends Component {
           >
             <Switch>
               <Route path="/" exact component={Welcome} />
+              <Route path="/sandbox" component={Sandbox} />
               <Route path="/about" component={About} />
               <Route path="/new" exact component={BuildBoard} />
               <Route path="/login" component={Login} />

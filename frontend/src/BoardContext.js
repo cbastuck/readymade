@@ -26,7 +26,7 @@ class BoardContext extends Component {
       addRuntime: this.addRuntime,
       addService: this.addService,
       onAction: this.onAction,
-      getCurrentBrowserRuntime: this.getCurrentBrowserRuntime,
+      getCurrentBrowserRuntime: props.getCurrentBrowserRuntime || this.getCurrentBrowserRuntime,
       isRuntimeInScope: this.isRuntimeInScope,
 
       // data

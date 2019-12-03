@@ -27,13 +27,17 @@ export default class BrowserRuntime {
   }
 
   constructor(runtime) {
+    this.registry = BrowserRuntime.registry();
+
     this.id = runtime.id;
     this.name = runtime.name;
-    this.registry = BrowserRuntime.registry();
-    this.services = [];
-
+    this.services = runtime.services || [];
     this.app = {
       next: this.next
+    }
+
+    if (runtime.sendResult) {
+      this.sendResult = runtime.sendResult;
     }
   }
 
@@ -50,7 +54,7 @@ export default class BrowserRuntime {
       result = await svc.process(params);
       params = result;
     }
-    await this.sendResult(svc.id, result, requestId);
+    await this.sendResult(svc.uuid, result, requestId);
     return result;
   }
 
@@ -104,7 +108,7 @@ export default class BrowserRuntime {
     if (!this.id) {
       return console.error('Could not send result data, no backend is connected');
     }
-   return request(`${this.id}/${requestId}`, 'POST', false, data);
+    return request(`${this.id}/${requestId}`, 'POST', false, data);
   }
 
   createService({ serviceId, board }, id) {
@@ -112,6 +116,7 @@ export default class BrowserRuntime {
     if (descriptor) {
       const service = descriptor.create(this.app, board, descriptor, id);
       this.services.push(service);
+      return service;
     }
   }
 
@@ -150,7 +155,7 @@ export default class BrowserRuntime {
   }
 
   getServiceById(uuid) {
-    return this.services.find(s => s.id === uuid);
+    return this.services.find(s => s.uuid === uuid);
   }
 
   destroyRuntime() {

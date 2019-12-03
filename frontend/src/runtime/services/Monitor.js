@@ -15,7 +15,7 @@ class MonitorUI extends Component {
     return (
       <ServiceUI {...this.props}>
         {
-          ({ service}) => 
+          ({ service }) => 
           service && 
           service.register(message => this.setState({ message })) && (
             <div
@@ -42,7 +42,7 @@ class MonitorUI extends Component {
 
 class Monitor {
   constructor(app, board, descriptor, id) {
-    this.id = id;
+    this.uuid = id;
     this.board = board;
     this.app = app;
   }

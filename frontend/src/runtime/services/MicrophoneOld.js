@@ -73,7 +73,7 @@ class MicrophoneUI extends Component {
 
 class Microphone {
   constructor(app, board, descriptor, id) {
-    this.id = id;
+    this.uuid = id;
     this.board = board;
     this.app = app;
   }
