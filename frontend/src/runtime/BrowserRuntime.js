@@ -10,7 +10,7 @@ import playbackDescriptor from './services/Playback';
 import FileProviderDescriptor from './services/FileProvider';
 import DownloaderDescriptor from './services/Downloader';
 import PlotterDescriptor from './services/Plotter';
-import TimelineDescriptor from './services/Timeline';
+import SequencerDescriptor from './services/Sequencer';
 import CanvasDescriptor from './services/Canvas';
 import { request } from '../core/actions';
 
@@ -25,7 +25,7 @@ export default class BrowserRuntime {
       FileProviderDescriptor,
       DownloaderDescriptor,
       PlotterDescriptor,
-      TimelineDescriptor,
+      SequencerDescriptor,
       CanvasDescriptor
     ];
   }

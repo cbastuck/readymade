@@ -12,7 +12,13 @@ class CanvasUI extends Component {
       const ctx = this.canvas.getContext("2d");
       ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
       ctx.font = "30px Arial";
-      ctx.fillText(s, 10, 50);
+      if (data.type === 'text/uri-list') {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0);
+        img.src = data.data
+      } else {
+        ctx.fillText(s, 10, 50);
+      }
     }
   }
 

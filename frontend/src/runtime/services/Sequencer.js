@@ -2,12 +2,38 @@ import React, { Component } from 'react';
 
 import ServiceUI from './ServiceUI';
 
-const serviceId = 'hookup.to/service/timeline';
-const serviceName = 'Timeline';
+const serviceId = 'hookup.to/service/sequencer';
+const serviceName = 'Sequencer';
+
+function resolveTransferItem(dataTransferItem) {
+  return new Promise(resolve => {
+    const { kind, type } = dataTransferItem;
+    dataTransferItem.getAsString(str => resolve({
+      type,
+      kind,
+      data: str
+    }))
+  });
+}
 
 class Step extends Component {
+  allowDrop = ev => true; // TODO: allow everything
+
+  onDrop = async ev => {
+    console.log('DROPPED SOMETHING', ev.dataTransfer.files.length, ev.dataTransfer.items.length);
+    for (let i=0; i<ev.dataTransfer.files.length; ++i) {
+      console.log("f--->", ev.dataTransfer.files[i])
+    }
+
+    for(let i=0; i<ev.dataTransfer.items.length; ++i) {
+      const item = ev.dataTransfer.items[i];
+      return await resolveTransferItem(item); // TODO: returning the first item
+    }
+    return true;
+  }
+
   render() {
-    const { active, onClick } = this.props;
+    const { active, onClick, onData } = this.props;
     return (
       <div
         style={{
@@ -17,13 +43,19 @@ class Step extends Component {
           height: 50
         }}
         onClick={onClick}
+        onDragOver={ev => this.allowDrop(ev) && ev.preventDefault()}
+        onDrop={async ev => {
+          ev.preventDefault();
+          const data = await this.onDrop(ev);
+          onData(data);
+        }}
       >
       </div>
     );
   }
 }
 
-class TimelineUI extends Component {
+class SequencerUI extends Component {
   state = {
     currentStep: 0
   }
@@ -53,6 +85,7 @@ class TimelineUI extends Component {
                     position={idx}
                     active={this.state.currentStep === idx}
                     onClick={() => service.setCurrentStep(idx)}
+                    onData={data => service.setStepData(idx, data)}
                   />
                 ))
               }
@@ -65,7 +98,7 @@ class TimelineUI extends Component {
   }
 }
 
-class Timeline {
+class Sequencer {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
@@ -87,6 +120,10 @@ class Timeline {
     }
   }
 
+  setStepData(step, data) {
+    this.steps[step] = data;
+  }
+
   process() {
     const n = ++this.currentStep % this.steps.length;
     if (this.callback) {
@@ -100,8 +137,8 @@ const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
-    new Timeline(app, board, descriptor, id),
-  createUI: TimelineUI
+    new Sequencer(app, board, descriptor, id),
+  createUI: SequencerUI
 };
 
 export default descriptor;
