@@ -5,6 +5,7 @@ import {
   Dropdown,
   Button
 } from 'semantic-ui-react';
+import moment from 'moment';
 
 import ServiceUI from './ServiceUI';
 
@@ -21,13 +22,20 @@ class TimerUI extends Component {
   state = {
     periodic: false,
     periodicValue: 1,
-    periodicUnit: 's',
-    scheduled: false,
+    periodicUnit: 's'
   };
+
+  onInit(initialState) {
+    this.setState({
+      periodic: initialState.periodic,
+      periodicValue: initialState.periodicValue,
+      periodicUnit: initialState.periodicUnit,
+    });
+  }
 
   render() {
     return (
-      <ServiceUI {...this.props}>
+      <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
       {
         ({ service }) => (
           <div>
@@ -96,6 +104,10 @@ class Timer {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.periodic = false;
+    this.periodicValue = 1;
+    this.periodicUnit = 's';
   }
 
   clearTimer() {
@@ -111,8 +123,16 @@ class Timer {
     } else {
       this.clearTimer(); // TODO: 
       this.count = 0;
-      if (config.periodic) {
-        this.timer = setInterval(this.process.bind(this), 1000);
+      this.periodicValue = config.periodicValue || 1000;
+      this.periodicUnit = config.periodicUnit || 's';
+      this.periodic = config.periodic;
+      if (this.periodic) {
+        const timeBetween = moment.duration(this.periodicValue, this.periodicUnit);
+        const process = this.process.bind(this);
+        this.timer = setInterval(process, timeBetween.asMilliseconds());
+        if (config.immediate) {
+          setImmediate(process);
+        }
       } else {
         setTimeout(this.process.bind(this), 0)
       }
@@ -127,7 +147,6 @@ class Timer {
   }
 
   process() {
-    console.log('Processing Timer');
     this.app.next(this, { triggerCount: ++this.count });
   }
 }

@@ -124,6 +124,12 @@ class Sequencer {
     this.steps[step] = data;
   }
 
+  configure(config) {
+    if (config.steps) {
+      this.steps = config.steps;
+    }
+  }
+
   process() {
     const n = ++this.currentStep % this.steps.length;
     if (this.callback) {

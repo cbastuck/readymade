@@ -41,7 +41,11 @@ export default class Sandbox extends Component {
       name: `${backendData.name}-public`,
       sendResult: (uuid, result) => console.log('SENDING RESULT', result)
     });
-    backendData.services.map(s => runtime.createService(s, s.uuid));
+    backendData.services.map(s => {
+      const svc = runtime.createService(s, s.uuid);
+      svc && svc.configure && svc.configure(s);
+      return svc;
+    });
     this.setState({ runtime, backendData });
   }
 
