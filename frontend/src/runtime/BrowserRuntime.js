@@ -12,6 +12,7 @@ import DownloaderDescriptor from './services/Downloader';
 import PlotterDescriptor from './services/Plotter';
 import SequencerDescriptor from './services/Sequencer';
 import CanvasDescriptor from './services/Canvas';
+import ThreeViewersDescriptor from './services/ThreeViewer';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -26,7 +27,8 @@ export default class BrowserRuntime {
       DownloaderDescriptor,
       PlotterDescriptor,
       SequencerDescriptor,
-      CanvasDescriptor
+      CanvasDescriptor,
+      ThreeViewersDescriptor
     ];
   }
 
