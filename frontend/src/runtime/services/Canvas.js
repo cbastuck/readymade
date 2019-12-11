@@ -48,7 +48,9 @@ class CanvasUI extends Component {
     return (
       <ServiceUI 
         {...this.props}
-        onInit={service => this.setState({ fullscreen: service.fullscreen })}
+        onInit={service => 
+          this.setState({ fullscreen: service.fullscreen })
+        }
       >
       {
         ({ service }) => (
