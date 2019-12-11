@@ -8,7 +8,8 @@ const serviceName = 'Canvas';
 class CanvasUI extends Component {
   state = {
     fullWidth: document.body.clientWidth,
-    fullHeight: document.body.clientHeight
+    fullHeight: document.body.clientHeight,
+    fullscreen: false
   };
 
   componentDidMount() {
@@ -45,19 +46,28 @@ class CanvasUI extends Component {
 
   render() {
     return (
-      <ServiceUI {...this.props}>
+      <ServiceUI 
+        {...this.props}
+        onInit={service => this.setState({ fullscreen: service.fullscreen })}
+      >
       {
         ({ service }) => (
           service && service.register(this.update) && (
             <canvas 
               ref={canvas => this.canvas = canvas} 
               style={{
-                position: service.fullscreen && 'fixed',
+                position: this.state.fullscreen && 'fixed',
                 top: 0,
                 left: 0
               }}
-              width={service.fullscreen ? this.state.fullWidth : 300}
-              height={service.fullscreen ? this.state.fullHeight : 150}
+              width={this.state.fullscreen ? this.state.fullWidth : 300}
+              height={this.state.fullscreen ? this.state.fullHeight : 150}
+              onDoubleClick={() => 
+                this.setState(
+                  { fullscreen: !this.state.fullscreen },
+                  () => service.fullscreen = this.state.fullscreen
+                )
+              }
             />
           )
         )
