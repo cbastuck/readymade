@@ -60,6 +60,7 @@ class TimerUI extends Component {
                     style={{ margin: 5 }}
                     placeholder='Unit'
                     options={[
+                      { key: 'ms', value: 'ms', text: 'milliseconds' },
                       { key: 's', value: 's', text: 'seconds' },
                       { key: 'm', value: 'm', text: 'minutes' },
                       { key: 'h', value: 'h', text: 'hours' },
