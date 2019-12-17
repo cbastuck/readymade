@@ -13,6 +13,7 @@ import PlotterDescriptor from './services/Plotter';
 import SequencerDescriptor from './services/Sequencer';
 import CanvasDescriptor from './services/Canvas';
 import ThreeViewersDescriptor from './services/ThreeViewer';
+import RemoteWindowDescriptor from './services/RemoteWindow';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -28,7 +29,8 @@ export default class BrowserRuntime {
       PlotterDescriptor,
       SequencerDescriptor,
       CanvasDescriptor,
-      ThreeViewersDescriptor
+      ThreeViewersDescriptor,
+      RemoteWindowDescriptor
     ];
   }
 
