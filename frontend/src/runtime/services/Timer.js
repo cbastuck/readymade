@@ -126,15 +126,15 @@ class Timer {
       this.periodicValue = config.periodicValue || 1000;
       this.periodicUnit = config.periodicUnit || 's';
       this.periodic = config.periodic;
+      const process = this.process.bind(this);
       if (this.periodic) {
         const timeBetween = moment.duration(this.periodicValue, this.periodicUnit);
-        const process = this.process.bind(this);
         this.timer = setInterval(process, timeBetween.asMilliseconds());
         if (config.immediate) {
           setImmediate(process);
         }
       } else {
-        setTimeout(this.process.bind(this), 0)
+        setTimeout(process, 0)
       }
     }
   }

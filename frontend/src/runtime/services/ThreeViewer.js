@@ -64,13 +64,12 @@ class ThreeViewerUI extends Component {
   }
 
   createGeometry = vertices => {
+    const pointsGeometry = new THREE.BufferGeometry().setFromPoints(vertices);
     const pointsMaterial = new THREE.PointsMaterial({
       color: 0x0080ff,
       size: 1,
       alphaTest: 0.5
     });
-    
-    const pointsGeometry = new THREE.BufferGeometry().setFromPoints(vertices);
     return new THREE.Points(pointsGeometry, pointsMaterial); 
   }
 
