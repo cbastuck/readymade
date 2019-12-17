@@ -53,7 +53,7 @@ class TimerUI extends Component {
                     type="number"
                     style={{ maxWidth: 80, marginRight: 5 }}
                     value={this.state.periodicValue}
-                    onChange={(_, { value }) => this.setState({ periodicValue: value })}
+                    onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
                   />
                   <Dropdown
                     className="left"
@@ -80,7 +80,11 @@ class TimerUI extends Component {
                 }}
               >
                 <Button
-                  onClick={() => service.configure({ periodic: this.state.periodic })}
+                  onClick={() => service.configure({ 
+                    periodic: this.state.periodic,
+                    periodicValue: this.state.periodicValue,
+                    periodicUnit: this.state.periodicUnit,
+                  })}
                   style={{ marginRight: 10 }}
                 >
                 { this.state.periodic ? 'Start' : 'One Shot' }
@@ -123,7 +127,7 @@ class Timer {
     } else {
       this.clearTimer(); // TODO: 
       this.count = 0;
-      this.periodicValue = config.periodicValue || 1000;
+      this.periodicValue = config.periodicValue || 1;
       this.periodicUnit = config.periodicUnit || 's';
       this.periodic = config.periodic;
       const process = this.process.bind(this);
