@@ -12,6 +12,9 @@ export default class Sandbox extends Component {
   state = {
     backendData: undefined,
     runtime: undefined,
+    options: {
+      frameless: true,
+    }
   };
 
   componentDidMount() {
@@ -26,11 +29,14 @@ export default class Sandbox extends Component {
   async fetchData(src) {
     const response = await fetch(src);
     const data = await response.json();
-    const runtimesInData = Object.keys(data);
+    const options = data.options;
+    console.log('OPTIONS', options)
+    const runtimesInData = Object.keys(data).filter(k => k !== 'options');
     const firstRuntimeId = runtimesInData && runtimesInData[0];
     if (firstRuntimeId) {
       const firstRuntimeData = data[firstRuntimeId];
-      this.createBrowserRuntime(firstRuntimeData);
+      const runtime = this.createBrowserRuntime(firstRuntimeData);
+      this.setState({ runtime, backendData: firstRuntimeData, options });
       return firstRuntimeData;
     }
   }
@@ -46,10 +52,11 @@ export default class Sandbox extends Component {
       svc && svc.configure && svc.configure(s);
       return svc;
     });
-    this.setState({ runtime, backendData });
+    return runtime;
   }
 
   render() {
+    console.log('SANDBOX', this.state.options)
     return (
       <AppConsumer>
       {
@@ -68,6 +75,7 @@ export default class Sandbox extends Component {
                       runtime="Sandbox"
                       readonly={false}
                       style={{ marginBottom: 5 }}
+                      frameless={this.state.options && this.state.options.frameless}
                     >
                       {
                         this.state.backendData && 

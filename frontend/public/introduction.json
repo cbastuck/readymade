@@ -1,0 +1,110 @@
+{
+  "options": {
+    "frameless": true
+  },
+  "4122caaa-2b93-40f0-a98e-8582369b685e": {
+    "id": "4122caaa-2b93-40f0-a98e-8582369b685e",
+    "name": "Chrome-78.0.3904.108 (0)",
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/browser-timer",
+        "uuid": "f7b62ea7-38bb-4535-8c61-f0a8dfeb213d",
+        "__descriptor": {
+          "serviceName": "Timer",
+          "serviceId": "hookup.to/service/timer",
+          "runtime": "4122caaa-2b93-40f0-a98e-8582369b685e",
+          "board": "liquid-amaranth-trout",
+          "userId": 1
+        },
+        "periodic": true,
+        "periodicValue": 3,
+        "periodicUnit": "s",
+        "immediate": true
+      },
+      {
+        "serviceName": "Sequencer",
+        "serviceId": "hookup.to/service/sequencer",
+        "uuid": "f7b62ea7-38bb-4535-8c61-f0a8dfeb213a",
+        "__descriptor": {
+          "serviceName": "Sequencer",
+          "serviceId": "hookup.to/service/timeline",
+          "runtime": "4122caaa-2b93-40f0-a98e-8582369b685e",
+          "board": "liquid-amaranth-trout",
+          "userId": 1
+        },
+        "steps": [
+          {
+            "type": "text/uri-list",
+            "kind": "string",
+            "data": "https://www.w3schools.com/w3images/wedding.jpg"
+          }, 
+          {
+            "type": "text/uri-list",
+            "kind": "string",
+            "data": "https://www.w3schools.com/w3images/underwater.jpg"
+          },
+          {
+            "type": "text/uri-list",
+            "kind": "string",
+            "data": "https://www.w3schools.com/w3images/rocks.jpg"
+          },
+          {
+            "type": "text/uri-list",
+            "kind": "string",
+            "data": "https://www.w3schools.com/w3images/ocean.jpg"
+          },
+          {
+            "type": "text/uri-list",
+            "kind": "string",
+            "data": "https://www.w3schools.com/w3images/falls2.jpg"
+          },
+          {
+            "type": "text/uri-list",
+            "kind": "string",
+            "data": "https://www.w3schools.com/w3images/mountainskies.jpg"
+          },
+          {
+            "type": "text/uri-list",
+            "kind": "string",
+            "data": "https://www.w3schools.com/w3images/paris.jpg"
+          },
+          {
+            "type": "text/uri-list",
+            "kind": "string",
+            "data": "https://www.w3schools.com/w3images/nature.jpg"
+          }
+        ]
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor-browser",
+        "uuid": "45ec2f09-1d82-46a3-a4bf-8004a5a13a15",
+        "__descriptor": {
+          "serviceName": "Monitor",
+          "serviceId": "hookup.to/service/monitor-browser",
+          "runtime": "4122caaa-2b93-40f0-a98e-8582369b685e",
+          "board": "liquid-amaranth-trout",
+          "userId": 1
+        }
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "uuid": "a7b62ea7-38bb-4535-8c61-f0a8dfeb213b",
+        "__descriptor": {
+          "serviceName": "Canvas",
+          "serviceId": "hookup.to/service/canvas",
+          "runtime": "4122caaa-2b93-40f0-a98e-8582369b685e",
+          "board": "liquid-amaranth-trout",
+          "userId": 1
+        },
+        "fullscreen": true
+      }
+    ],
+    "params": {
+      "registry": []
+    }
+  }
+}

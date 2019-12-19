@@ -158,7 +158,13 @@ export default class HeaderMenu extends Component {
             <BoardConsumer>
               {
                 boardContext => (
-                  <Menu>
+                  <Menu
+                    style={{
+                      boxShadow: 'none',
+                      border: 'none',
+                      borderBottom: '1px solid rgba(34,36,38,.15)'
+                    }}
+                  >
                     {
                       appContext.username && this.renderBoardMenu(board, savedBoards)
                     }

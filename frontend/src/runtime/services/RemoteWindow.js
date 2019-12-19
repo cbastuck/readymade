@@ -5,6 +5,15 @@ import ServiceUI from './ServiceUI';
 const serviceId = 'hookup.to/service/remote-window';
 const serviceName = 'RemoteWindow';
 
+function getRandomColor() {
+  var letters = '0123456789ABCDEF';
+  var color = '#';
+  for (var i = 0; i < 6; i++) {
+    color += letters[Math.floor(Math.random() * 16)];
+  }
+  return color;
+}
+
 class RemoteWindowUI extends Component {
   componentDidMount() {
     this.setState(
@@ -12,16 +21,35 @@ class RemoteWindowUI extends Component {
     );
   }
 
-  update = () => {
+  update = value => {
     const wdw = this.state.window;
     const doc = wdw.document;
     if (!doc.title) {
       doc.title = 'Hookup Remote';  
     }
     
-    wdw.document.body.appendChild(
+    /*
+    doc.body.appendChild(
       doc.createTextNode('Hello Remote Window')
     );
+    */
+    
+    //doc.body.style.backgroundColor = getRandomColor();
+
+    if(!value.bot) {
+      doc.body.appendChild(
+        doc.createElement('h1')
+          .appendChild(doc.createTextNode(value.user))
+          .parentNode
+      );
+      const link = doc.createElement('a')
+        .appendChild(doc.createTextNode(value.meta.uri))
+        .parentNode;
+        link.setAttribute('href', value.meta.uri);
+        link.setAttribute('target', '_blank');
+      doc.body.appendChild(link);
+    }
+
   }
 
   render() {

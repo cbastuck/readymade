@@ -37,9 +37,9 @@ export default class Scene extends Component {
   }
 
   render() {
-    const { children, runtime, wrap=false, style, readonly=false } = this.props;
-    
-    const readonlyStyle = readonly ? 
+    const { children, runtime, wrap=false, style, readonly=false, frameless=false } = this.props;
+    console.log('RENDERUNG FRAMELSS', frameless);
+    const readonlyStyle = (readonly && !frameless) ? 
       {
         backgroundColor: '#FFFFFF',
         opacity: 0.3,
@@ -53,15 +53,16 @@ export default class Scene extends Component {
     return (
       <div
         style={{
-          // height: '93%',
-          border: 'solid 1px lightgray',
+          border: !frameless && 'solid 1px lightgray',
           borderRadius: 3,
-          backgroundColor: '#EEEEEE10',
+          backgroundColor: !frameless && '#EEEEEE10',
           padding: 10,
           ...style,
         }}
       >
-        <h4>{this.renderExpandableHeadline(runtime)}</h4>
+        {
+          !frameless && <h4>{ this.renderExpandableHeadline(runtime)}</h4>
+        }
         <div
           style={{
             display: 'flex',

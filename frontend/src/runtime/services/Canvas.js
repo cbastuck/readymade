@@ -44,6 +44,9 @@ class CanvasUI extends Component {
     }
   }
 
+  isFullscreen = service => 
+    this.state.fullscreen || service.fullscreen;
+
   render() {
     return (
       <ServiceUI 
@@ -52,18 +55,18 @@ class CanvasUI extends Component {
           this.setState({ fullscreen: service.fullscreen })
         }
       >
-      {
+      { 
         ({ service }) => (
           service && service.register(this.update) && (
             <canvas 
               ref={canvas => this.canvas = canvas} 
               style={{
-                position: this.state.fullscreen && 'fixed',
+                position: this.isFullscreen(service) && 'fixed',
                 top: 0,
                 left: 0
               }}
-              width={this.state.fullscreen ? this.state.fullWidth : 300}
-              height={this.state.fullscreen ? this.state.fullHeight : 150}
+              width={this.isFullscreen(service) ? this.state.fullWidth : 300}
+              height={this.isFullscreen(service) ? this.state.fullHeight : 150}
               onDoubleClick={() => 
                 this.setState(
                   { fullscreen: !this.state.fullscreen },

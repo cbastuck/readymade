@@ -39,7 +39,7 @@ export default class Board extends Component {
         <Toolbar />
         <div className="about-image container">
           <div className="about-text">
-            <h1>About us</h1>
+            <h1>About</h1>
             
             <div className="ui relaxed grid">
               <div class="three column row">
