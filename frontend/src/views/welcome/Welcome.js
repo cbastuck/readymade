@@ -34,7 +34,7 @@ export default class Welcome extends Component {
       <div className="hero-text">
         <iframe 
           title="Hookup Intro Board"
-          src="/sandbox?src=/introduction.json" 
+          src="/sandbox?src=/introduction.json&frameless=true" 
           height="100%"
           width="100%"
           frameBorder="0"

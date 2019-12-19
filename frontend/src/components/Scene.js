@@ -38,7 +38,6 @@ export default class Scene extends Component {
 
   render() {
     const { children, runtime, wrap=false, style, readonly=false, frameless=false } = this.props;
-    console.log('RENDERUNG FRAMELSS', frameless);
     const readonlyStyle = (readonly && !frameless) ? 
       {
         backgroundColor: '#FFFFFF',
