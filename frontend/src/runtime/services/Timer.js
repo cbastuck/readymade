@@ -81,14 +81,14 @@ class TimerUI extends Component {
                 }}
               >
                 <Button
+                  style={{ marginRight: 10 }}
                   onClick={() => service.configure({ 
                     periodic: this.state.periodic,
                     periodicValue: this.state.periodicValue,
                     periodicUnit: this.state.periodicUnit,
                   })}
-                  style={{ marginRight: 10 }}
                 >
-                { this.state.periodic ? 'Start' : 'One Shot' }
+                  { this.state.periodic ? 'Start' : 'One Shot' }
                 </Button>
                 <Button
                   onClick={() => service.configure({ stop: true })}

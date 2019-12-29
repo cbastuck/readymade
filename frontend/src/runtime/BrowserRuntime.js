@@ -14,6 +14,7 @@ import SequencerDescriptor from './services/Sequencer';
 import CanvasDescriptor from './services/Canvas';
 import ThreeViewersDescriptor from './services/ThreeViewer';
 import RemoteWindowDescriptor from './services/RemoteWindow';
+import StateDescriptor from './services/State';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -30,7 +31,8 @@ export default class BrowserRuntime {
       SequencerDescriptor,
       CanvasDescriptor,
       ThreeViewersDescriptor,
-      RemoteWindowDescriptor
+      RemoteWindowDescriptor,
+      StateDescriptor
     ];
   }
 

@@ -69,7 +69,7 @@ export default class Board extends Component {
                 </div>
               </div>
             </div>
-            <h1>Our Mission</h1>
+            <h1>Mission</h1>
             <p className="about-mission">
               Enable people use computers and data
             </p>

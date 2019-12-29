@@ -5,6 +5,7 @@ import ServiceUI from './ServiceUI';
 const serviceId = 'hookup.to/service/remote-window';
 const serviceName = 'RemoteWindow';
 
+/*
 function getRandomColor() {
   var letters = '0123456789ABCDEF';
   var color = '#';
@@ -13,6 +14,7 @@ function getRandomColor() {
   }
   return color;
 }
+*/
 
 class RemoteWindowUI extends Component {
   componentDidMount() {

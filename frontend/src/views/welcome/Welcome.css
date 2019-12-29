@@ -18,12 +18,19 @@ body, html {
   width: 100%;
   top: 50%;
   left: 50%;
-  padding-top: 25px;
+  padding-top: 55px;
   padding-bottom: 25px;
   transform: translate(-50%, -50%);
   color: #454f6d;
   border-top: 1px solid rgba(34,36,38,.15);
   border-bottom: 1px solid rgba(34,36,38,.15);
+  height: 250px;
+  transition: height 0.5s linear;
+}
+
+.hero-text.intro {
+  padding-top: 25px;
+  height: 450px;
 }
 
 .hero-text h1 {
@@ -73,4 +80,15 @@ body, html {
 .make {
   font-weight: lighter;
   font-style: italic;
+  /*border: solid 1px #454f6d;*/
+  padding: 2px;
+}
+
+.at-home {
+  /*
+    background-color: #454f6d;
+    color: white;
+    border: solid 1px #454f6d;
+    padding: 2px;
+  */
 }

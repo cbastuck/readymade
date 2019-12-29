@@ -106,6 +106,7 @@ class Sequencer {
 
     this.steps = new Array(10).fill(undefined).map((_, i) => ({ step: i }));
     this.currentStep = 0;
+    this.repeat = true;
   }
 
   register(callback) {
@@ -125,13 +126,21 @@ class Sequencer {
   }
 
   configure(config) {
-    if (config.steps) {
+    if (config.steps !== undefined) {
       this.steps = config.steps;
+    }
+
+    if (config.repeat !== undefined) {
+      this.repeat = config.repeat;
     }
   }
 
   process() {
-    const n = ++this.currentStep % this.steps.length;
+    if (!this.repeat && this.currentStep >= this.steps.length) {
+      return undefined;
+    }
+
+    const n = this.currentStep++ % this.steps.length;
     if (this.callback) {
       this.callback(n);
     }

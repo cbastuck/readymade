@@ -14,38 +14,103 @@ class CanvasUI extends Component {
 
   componentDidMount() {
     document.body.onresize = ev => {
-      this.setState({
-        fullWidth: document.body.clientWidth,
-        fullHeight: document.body.clientHeight
-      })
+      this.setState(
+        {
+          fullWidth: document.body.clientWidth,
+          fullHeight: document.body.clientHeight
+        },
+        () => this.update(this.recentData || {})
+      );
     };
   }
 
-  update = data => {
-    const s = JSON.stringify(data);
-    if (this.canvas) {
-      const ctx = this.canvas.getContext("2d");
-      ctx.fillStyle = "#FFF";
-      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-      ctx.font = "30px Arial";
-      const centerX = this.canvas.width / 2;
-      const centerY = this.canvas.height / 2;
-      if (data.type === 'text/uri-list') {
-        const img = new Image();
-        img.onload = () => ctx.drawImage(
-            img, 
-            centerX - img.width / 2 , 
-            centerY - img.height / 2
-          );
-        img.src = data.data
-      } else {
-        ctx.fillText(s, 10, 50);
+  getCanvasDim = () => {
+    return {
+      width: this.canvas.width,
+      height: this.canvas.height
+    };
+  }
+
+  getCanvasCenter = () => {
+    const { width, height } = this.getCanvasDim();
+    const centerX = width / 2;
+    const centerY = height / 2;
+    return { 
+      centerX, 
+      centerY, 
+      canvasWidth: width, 
+      canvasHeight: height 
+    };
+  }
+
+  drawImage = (ctx, data) => {
+    const { url, offsetX, offsetY, opacity} = data; 
+    const img = new Image();
+    img.onload = () => {
+      const { centerX, centerY, canvasHeight } = this.getCanvasCenter();
+      const aspectRatio = img.width / img.height;
+      const scaledWidth = canvasHeight * aspectRatio;
+      const imgCentX = offsetX ? offsetX : (centerX - scaledWidth / 2);
+      const imgCentY = offsetY ? offsetY : (centerY - img.height / 2);
+
+      ctx.save();
+      if (opacity !== undefined) {
+        ctx.globalAlpha = opacity;
+      }
+      ctx.drawImage(
+        img, 
+        imgCentX,
+        imgCentY,
+        scaledWidth,
+        canvasHeight
+      );
+      ctx.restore();
+    }
+    img.src = url;
+  }
+
+  drawText = (ctx, data) => {
+    const { centerX, centerY } = this.getCanvasCenter();
+    ctx.fillStyle = data.color || "#000";
+
+    ctx.save();
+    ctx.font = data.font || "30px Arial";
+    const width = ctx.measureText(data.text).width;
+    ctx.fillText(data.text, centerX - width / 2, centerY);
+    if (data.contour) {
+      ctx.strokeStyle = data.contour.color;
+      ctx.lineWidth = data.contour.lineWidth || 1;
+      ctx.strokeText(data.text, centerX - width / 2, centerY);
+    }
+    ctx.restore();
+  }
+
+  update = objectOrArray => {
+    this.recentData = objectOrArray;
+    if (!this.canvas || !objectOrArray) {
+      // nothing to render, or nowhere to render to
+      return;
+    }
+
+    const dataArray = Array.isArray(objectOrArray) ? objectOrArray : [objectOrArray];
+    const ctx = this.canvas.getContext("2d");
+    ctx.fillStyle = "#FFF";
+    ctx.strokeStyle = "#FFF";
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    for (const data of dataArray) {
+      switch (data.type) {
+        case 'image':
+          this.drawImage(ctx, data);
+          break;
+        case 'text':
+          this.drawText(ctx, data);
+          break;
+        default:
+          break;
       }
     }
   }
-
-  isFullscreen = service => 
-    this.state.fullscreen || service.fullscreen;
 
   render() {
     return (
@@ -61,18 +126,17 @@ class CanvasUI extends Component {
             <canvas 
               ref={canvas => this.canvas = canvas} 
               style={{
-                position: this.isFullscreen(service) && 'fixed',
+                position: (this.state.fullscreen || service.fullscreen) && 'fixed',
                 top: 0,
                 left: 0
               }}
-              width={this.isFullscreen(service) ? this.state.fullWidth : 300}
-              height={this.isFullscreen(service) ? this.state.fullHeight : 150}
-              onDoubleClick={() => 
-                this.setState(
-                  { fullscreen: !this.state.fullscreen },
-                  () => service.fullscreen = this.state.fullscreen
-                )
-              }
+              width={(this.state.fullscreen || service.fullscreen) ? this.state.fullWidth : 300}
+              height={(this.state.fullscreen || service.fullscreen) ? this.state.fullHeight : 150}
+              onDoubleClick={() => {
+                const toggled = !this.state.fullscreen;
+                service.fullscreen = toggled;
+                this.setState({ fullscreen: toggled });
+              }}
             />
           )
         )

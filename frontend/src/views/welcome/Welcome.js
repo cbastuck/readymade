@@ -14,16 +14,17 @@ export default class Welcome extends Component {
 
   renderWelcome() {
     return (
-      <div className="hero-text">
+      <div>
         <h1>Welcome.</h1>
         <p className="hero-claim">
-          <span className="make">Make</span> yourself at home
+          <span className="make">Make yourself </span> 
+          <span className="at-home">at home</span>
         </p>
         <button
           className="button"
           onClick={() => this.setState({ page: 'intro' }) }
         >
-          What's next?
+          What next?
         </button>
       </div>
     );
@@ -31,20 +32,27 @@ export default class Welcome extends Component {
 
   renderIntro() {
     return (
-      <div className="hero-text">
+      <div style={{ height: '100%' }}>
         <iframe 
           title="Hookup Intro Board"
           src="/sandbox?src=/introduction.json&frameless=true" 
-          height="100%"
-          width="100%"
           frameBorder="0"
+          style={{
+            height: '100%',
+            width: '100%'
+          }}
         />
-        <button
-          className="button back-button"
+        <div 
+          style={{ 
+            textAlign: 'right',
+            marginRight: 10,
+            cursor: 'pointer',
+            textDecoration: 'underline'
+          }}
           onClick={() => this.setState({ page: 'welcome' }) }
         >
-          Next
-        </button>
+          Back
+        </div>
       </div>
     );
   }
@@ -67,8 +75,10 @@ export default class Welcome extends Component {
                       />
                   }
                 </BoardConsumer>
-                  { this.state.page === 'welcome' && this.renderWelcome() } 
-                  { this.state.page === 'intro' && this.renderIntro() } 
+                  <div className={`hero-text ${this.state.page === 'intro' ? 'intro' : ''}`}>
+                    { this.state.page === 'welcome' && this.renderWelcome() } 
+                    { this.state.page === 'intro' && this.renderIntro() } 
+                  </div>
                 <Footer />
               </div>
             </BoardContext> 

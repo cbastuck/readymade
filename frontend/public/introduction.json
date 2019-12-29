@@ -8,13 +8,6 @@
         "serviceName": "Timer",
         "serviceId": "hookup.to/service/browser-timer",
         "uuid": "f7b62ea7-38bb-4535-8c61-f0a8dfeb213d",
-        "__descriptor": {
-          "serviceName": "Timer",
-          "serviceId": "hookup.to/service/timer",
-          "runtime": "4122caaa-2b93-40f0-a98e-8582369b685e",
-          "board": "liquid-amaranth-trout",
-          "userId": 1
-        },
         "periodic": true,
         "periodicValue": 3,
         "periodicUnit": "s",
@@ -24,79 +17,70 @@
         "serviceName": "Sequencer",
         "serviceId": "hookup.to/service/sequencer",
         "uuid": "f7b62ea7-38bb-4535-8c61-f0a8dfeb213a",
-        "__descriptor": {
-          "serviceName": "Sequencer",
-          "serviceId": "hookup.to/service/timeline",
-          "runtime": "4122caaa-2b93-40f0-a98e-8582369b685e",
-          "board": "liquid-amaranth-trout",
-          "userId": 1
-        },
+        "repeat": false,
         "steps": [
-          {
-            "type": "text/uri-list",
-            "kind": "string",
-            "data": "https://www.w3schools.com/w3images/wedding.jpg"
-          }, 
-          {
-            "type": "text/uri-list",
-            "kind": "string",
-            "data": "https://www.w3schools.com/w3images/underwater.jpg"
-          },
-          {
-            "type": "text/uri-list",
-            "kind": "string",
-            "data": "https://www.w3schools.com/w3images/rocks.jpg"
-          },
-          {
-            "type": "text/uri-list",
-            "kind": "string",
-            "data": "https://www.w3schools.com/w3images/ocean.jpg"
-          },
-          {
-            "type": "text/uri-list",
-            "kind": "string",
-            "data": "https://www.w3schools.com/w3images/falls2.jpg"
-          },
-          {
-            "type": "text/uri-list",
-            "kind": "string",
-            "data": "https://www.w3schools.com/w3images/mountainskies.jpg"
-          },
-          {
-            "type": "text/uri-list",
-            "kind": "string",
-            "data": "https://www.w3schools.com/w3images/paris.jpg"
-          },
-          {
-            "type": "text/uri-list",
-            "kind": "string",
-            "data": "https://www.w3schools.com/w3images/nature.jpg"
-          }
+          [
+            {
+              "type": "text",
+              "id": "message",
+              "text": "IT is not about Tech anymore",
+              "color": "#454f6d",
+              "font": "lighter 30px Helvetica Neue",
+              "contour": {
+                "color": "#454f6d",
+                "lineWidth": 1
+              }
+            },
+            {
+              "type": "image",
+              "id": "backgroundImage",
+              "url": "/assets/noun_Diversity_962526.svg",
+              "offsetY": 10,
+              "opacity": 0
+            }
+          ],
+          [
+              {
+                "ref": "backgroundImage",
+                "opacity": 0.01
+             },
+             {
+              "ref": "message",
+              "text": "It is about Everybody"
+            }
+          ],
+          [
+            {
+              "ref": "backgroundImage",
+              "opacity": 0.5
+            },
+            {
+              "ref": "message",
+              "text": "Adjust the Narrative",
+              "color": "white",
+              "font": "lighter 60px Helvetica Neue",
+              "contour": {
+                "color": "black",
+                "lineWidth": 1
+              }
+            }
+          ]
         ]
+      },
+      {
+        "serviceName": "State",
+        "serviceId": "hookup.to/service/state",
+        "uuid": "15ec2f19-1d82-46a3-a4bf-8125b5a13a15"
       },
       {
         "serviceName": "Monitor",
         "serviceId": "hookup.to/service/monitor-browser",
-        "uuid": "45ec2f09-1d82-46a3-a4bf-8004a5a13a15",
-        "__descriptor": {
-          "serviceName": "Monitor",
-          "serviceId": "hookup.to/service/monitor-browser",
-          "runtime": "4122caaa-2b93-40f0-a98e-8582369b685e",
-          "board": "liquid-amaranth-trout",
-          "userId": 1
-        }
+        "uuid": "45ec2f09-1d82-46a3-a4bf-8004a5a13a15"
       },
       {
         "serviceName": "Canvas",
         "serviceId": "hookup.to/service/canvas",
         "uuid": "a7b62ea7-38bb-4535-8c61-f0a8dfeb213b",
-        "__descriptor": {
-          "serviceName": "Canvas",
-          "serviceId": "hookup.to/service/canvas",
-          "runtime": "4122caaa-2b93-40f0-a98e-8582369b685e",
-          "board": "liquid-amaranth-trout",
-          "userId": 1
-        },
         "fullscreen": true
       }
     ],
