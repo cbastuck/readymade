@@ -23,7 +23,7 @@
             {
               "type": "text",
               "id": "message",
-              "text": "IT is not about Tech anymore",
+              "text": "It is not about Tech",
               "color": "#454f6d",
               "font": "lighter 30px Helvetica Neue",
               "contour": {
@@ -40,15 +40,26 @@
             }
           ],
           [
-              {
-                "ref": "backgroundImage",
-                "opacity": 0.01
-             },
-             {
+            {
+              "ref": "backgroundImage",
+              "opacity": 0.02
+            },
+            {
               "ref": "message",
-              "text": "It is about Everybody"
+              "text": "It is about Creativity"
             }
           ],
+          {
+            "type": "macro:slide",
+            "text": "It is a Literacy",
+            "opacity": 0.05
+          },
+          {
+            "type": "macro:slide",
+            "text": "IT is for Everybody",
+            "opacity": 0.2,
+            "font": "lighter 40px Helvetica Neue"
+          },
           [
             {
               "ref": "backgroundImage",
@@ -70,7 +81,23 @@
       {
         "serviceName": "State",
         "serviceId": "hookup.to/service/state",
-        "uuid": "15ec2f19-1d82-46a3-a4bf-8125b5a13a15"
+        "uuid": "15ec2f19-1d82-46a3-a4bf-8125b5a13a15",
+        "macros": {
+          "slide": {
+            "variables": ["text", "opacity", "font"],
+            "template": [
+              {
+                "ref": "backgroundImage",
+                "opacity": "$value"
+              },
+              {
+                "ref": "message",
+                "text": "$value",
+                "font": "$value"
+              }
+            ]
+          }
+        }
       },
       {
         "serviceName": "Monitor",
