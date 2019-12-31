@@ -5,6 +5,8 @@ import ServiceUI from './ServiceUI';
 const serviceId = 'hookup.to/service/canvas';
 const serviceName = 'Canvas';
 
+const TWO_PI = 2 * Math.PI;
+
 class CanvasUI extends Component {
   state = {
     fullWidth: document.body.clientWidth,
@@ -85,6 +87,56 @@ class CanvasUI extends Component {
     ctx.restore();
   }
 
+  drawCircle = (ctx, data) => {
+    const { radius=100, color, contour } = data || {};
+    ctx.save();
+    
+    const drawPath = ctx => {
+      const { centerX, centerY } = this.getCanvasCenter();
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, radius, 0, TWO_PI);
+    }
+
+    if (contour) {
+      ctx.strokeStyle = contour.color;
+      ctx.lineWidth = contour.lineWidth || 1;
+      drawPath(ctx);
+      ctx.stroke();
+    }
+
+    if (color) {
+      ctx.fillStyle = color;
+      drawPath(ctx);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  drawRect = (ctx, data) => {
+    const { x, y, width, height, color, contour } = data || {};
+    ctx.save();
+
+    const drawPath = ctx => {
+      ctx.beginPath();
+      ctx.rect(x , y, width, height);
+    }
+
+    if (contour) {
+      ctx.strokeStyle = contour.color;
+      ctx.lineWidth = contour.lineWidth || 1;
+      drawPath(ctx);
+      ctx.stroke();
+    }
+
+    if (color) {
+      ctx.fillStyle = color;
+      drawPath(ctx);
+      ctx.fill();
+    }
+
+    ctx.restore();
+  }
+
   update = objectOrArray => {
     this.recentData = objectOrArray;
     if (!this.canvas || !objectOrArray) {
@@ -105,6 +157,12 @@ class CanvasUI extends Component {
           break;
         case 'text':
           this.drawText(ctx, data);
+          break;
+        case 'circle':
+          this.drawCircle(ctx, data);
+          break;
+        case 'rect':
+          this.drawRect(ctx, data);
           break;
         default:
           break;

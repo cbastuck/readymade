@@ -9,7 +9,7 @@ import { AppConsumer } from '../../AppContext';
 
 export default class Welcome extends Component {
   state = {
-    page: 'welcome'
+    page: 'visualisation'
   };
 
   renderWelcome() {
@@ -57,6 +57,22 @@ export default class Welcome extends Component {
     );
   }
 
+  renderVisualisation() {
+    return (
+      <div style={{ height: '100%' }}>
+        <iframe 
+          title="Hookup Intro Board"
+          src="/sandbox?src=/visualisation.json&frameless=true" 
+          frameBorder="0"
+          style={{
+            height: '100%',
+            width: '100%'
+          }}
+        />
+      </div>
+    );
+  }
+
   render() {
     return (
       <AppConsumer>
@@ -75,9 +91,10 @@ export default class Welcome extends Component {
                       />
                   }
                 </BoardConsumer>
-                  <div className={`hero-text ${this.state.page === 'intro' ? 'intro' : ''}`}>
+                  <div className={`hero-text ${this.state.page}`}>
                     { this.state.page === 'welcome' && this.renderWelcome() } 
                     { this.state.page === 'intro' && this.renderIntro() } 
+                    { this.state.page === 'visualisation' && this.renderVisualisation() } 
                   </div>
                 <Footer />
               </div>

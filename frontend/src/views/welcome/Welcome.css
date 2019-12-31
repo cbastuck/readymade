@@ -28,7 +28,18 @@ body, html {
   transition: height 0.5s linear;
 }
 
-.hero-text.intro {
+.welcome {
+  /*
+   * add if needed
+   */
+}
+
+.intro {
+  padding-top: 25px;
+  height: 450px;
+}
+
+.visualisation {
   padding-top: 25px;
   height: 450px;
 }
