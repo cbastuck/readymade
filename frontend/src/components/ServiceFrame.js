@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
 import { Header } from 'semantic-ui-react';
 
+import './ServiceFrame.css';
+
 export default class ServiceFrame extends Component {
   state = {
     mouseOver: false
@@ -14,6 +16,7 @@ export default class ServiceFrame extends Component {
         key={`service-frame-${service.uuid}`}
       >
         <div
+          className="unselectable"
           style={{
             border: 'solid 1px lightgray',
             borderRadius: 10,
