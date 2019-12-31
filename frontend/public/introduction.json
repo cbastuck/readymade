@@ -23,7 +23,7 @@
             {
               "type": "text",
               "id": "message",
-              "text": "It is not about Tech",
+              "text": "Tech is not for IT",
               "color": "#454f6d",
               "font": "lighter 30px Helvetica Neue",
               "contour": {
@@ -51,7 +51,7 @@
           ],
           {
             "type": "macro:slide",
-            "text": "It is a Literacy",
+            "text": "It is Literacy",
             "opacity": 0.05
           },
           {
