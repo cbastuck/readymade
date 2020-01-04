@@ -42,7 +42,7 @@ export default class Board extends Component {
             <h1>About</h1>
             
             <div className="ui relaxed grid">
-              <div class="three column row">
+              <div className="three column row">
                 <div className="column">
                 <Profile 
                     avatar={cb}

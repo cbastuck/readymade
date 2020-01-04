@@ -7,6 +7,19 @@ const serviceName = 'Canvas';
 
 const TWO_PI = 2 * Math.PI;
 
+function toAbsolute(value, upper) {
+  if (value === undefined || upper === undefined) {
+    return 0;
+  }
+  if (typeof value === 'string') {
+    const components = value.split('%');
+    if (components.length > 1) {
+      return Number(components[0]) / 100 * upper;
+    }
+  }
+  return value;
+}
+
 class CanvasUI extends Component {
   state = {
     fullWidth: document.body.clientWidth,
@@ -88,13 +101,19 @@ class CanvasUI extends Component {
   }
 
   drawCircle = (ctx, data) => {
+    const { width, height } = this.getCanvasDim();
     const { radius=100, color, contour } = data || {};
-    ctx.save();
     
+    ctx.save();
     const drawPath = ctx => {
-      const { centerX, centerY } = this.getCanvasCenter();
       ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, TWO_PI);
+      ctx.arc(
+        toAbsolute(data.x, width), 
+        toAbsolute(data.y, height), 
+        toAbsolute(radius, height), 
+        0, 
+        TWO_PI
+      );
     }
 
     if (contour) {
@@ -113,12 +132,18 @@ class CanvasUI extends Component {
   }
 
   drawRect = (ctx, data) => {
-    const { x, y, width, height, color, contour } = data || {};
+    const { width: canvasWidth, height: canvasHeight } = this.getCanvasDim();
+    const { x, y, length, width=length, height=length, color, contour } = data || {};
+    
     ctx.save();
-
     const drawPath = ctx => {
       ctx.beginPath();
-      ctx.rect(x , y, width, height);
+      ctx.rect(
+        toAbsolute(x, canvasWidth) , 
+        toAbsolute(y, canvasHeight), 
+        toAbsolute(width, canvasWidth), 
+        toAbsolute(height, length !== undefined ? canvasWidth : canvasHeight)
+      );
     }
 
     if (contour) {
@@ -162,6 +187,7 @@ class CanvasUI extends Component {
           this.drawCircle(ctx, data);
           break;
         case 'rect':
+        case 'square':
           this.drawRect(ctx, data);
           break;
         default:

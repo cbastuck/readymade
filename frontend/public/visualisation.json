@@ -9,8 +9,8 @@
         "serviceId": "hookup.to/service/browser-timer",
         "uuid": "0e5e8233-6856-474e-9091-bae598a6be48",
         "periodic": true,
-        "periodicValue": 1,
-        "periodicUnit": "s",
+        "periodicValue": 100,
+        "periodicUnit": "msec",
         "immediate": true
       },
       {
@@ -19,13 +19,66 @@
         "uuid": "dc2052ea-8b4c-4e40-a441-58c7fbacbb93",
         "targetShape": {
           "type": "circle",
-          "radius": 190,
-          "color": "lightgray"
+          "radius": "50%",
+          "color": "#454f6d",
+          "x": "50%",
+          "y": "50%"
         },
         "genomeShape": {
-          "type": "rect",
-          "color": "#454f6dA0"
-        }
+          "type": "square",
+          "color": "#FFFFFF",
+          "contour": {
+            "color": "gray"
+          },
+          "length": "2%",
+          "ttl": 2
+        },
+        "initialPopulation": [
+          {
+            "type": "square",
+            "color": "#FFFFFF",
+            "contour": {
+              "color": "gray"
+            },
+            "length": "2%",
+            "x": "4%",
+            "y": "4%",
+            "ttl": 2
+          },
+          {
+            "type": "square",
+            "color": "#FFFFFF",
+            "contour": {
+              "color": "gray"
+            },
+            "length": "2%",
+            "x": "95%",
+            "y": "95%",
+            "ttl": 2
+          },
+          {
+            "type": "square",
+            "color": "#FFFFFF",
+            "contour": {
+              "color": "gray"
+            },
+            "length": "2%",
+            "x": "4%",
+            "y": "95%",
+            "ttl": 2
+          },
+          {
+            "type": "square",
+            "color": "#FFFFFF",
+            "contour": {
+              "color": "gray"
+            },
+            "length": "2%",
+            "x": "95%",
+            "y": "4%",
+            "ttl": 2
+          }
+        ]
       },
       {
         "serviceName": "Monitor",
