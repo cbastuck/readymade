@@ -104,7 +104,7 @@ class CanvasUI extends Component {
 
   drawCircle = (ctx, data) => {
     const { width, height } = this.getCanvasDim();
-    const { radius=100, color, contour } = data || {};
+    const { radius=100, color, contour, gradient } = data || {};
     
     ctx.save();
     const drawPath = ctx => {
@@ -127,6 +127,26 @@ class CanvasUI extends Component {
 
     if (color) {
       ctx.fillStyle = color;
+      drawPath(ctx);
+      ctx.fill();
+    }
+
+    if (gradient) {
+      const r = toAbsolute(gradient.radius, height);
+      const gx = toAbsolute(gradient.centerX, width);
+      const gy = toAbsolute(gradient.centerY, height);
+      const grd = ctx.createRadialGradient(
+        gx, 
+        gy,
+        r * 0.2,
+        gx, 
+        gy,
+        r * 1.5
+      );
+      const nColors = gradient.colors.length;
+      gradient.colors.forEach((c, i) => grd.addColorStop(i / nColors, c));
+      ctx.fillStyle = grd;
+
       drawPath(ctx);
       ctx.fill();
     }

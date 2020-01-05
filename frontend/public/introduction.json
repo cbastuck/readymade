@@ -9,7 +9,7 @@
         "serviceId": "hookup.to/service/browser-timer",
         "uuid": "f7b62ea7-38bb-4535-8c61-f0a8dfeb213d",
         "periodic": true,
-        "periodicValue": 3,
+        "periodicValue": 4,
         "periodicUnit": "s",
         "immediate": true
       },
@@ -23,7 +23,7 @@
             {
               "type": "text",
               "id": "message",
-              "text": "Tech is not for IT",
+              "text": "Tech is not IT",
               "color": "#454f6d",
               "font": "lighter 30px Helvetica Neue",
               "contour": {
@@ -46,17 +46,17 @@
             },
             {
               "ref": "message",
-              "text": "It is about Creativity"
+              "text": "Tech is Creativity"
             }
           ],
           {
             "type": "macro:slide",
-            "text": "It is Literacy",
+            "text": "Tech is Literacy",
             "opacity": 0.05
           },
           {
             "type": "macro:slide",
-            "text": "IT is for Everybody",
+            "text": "IT should be Everybody",
             "opacity": 0.2,
             "font": "lighter 40px Helvetica Neue"
           },

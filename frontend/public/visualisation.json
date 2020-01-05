@@ -10,7 +10,7 @@
         "uuid": "0e5e8233-6856-474e-9091-bae598a6be48",
         "periodic": true,
         "periodicValue": 100,
-        "periodicUnit": "msec",
+        "periodicUnit": "ms",
         "immediate": true
       },
       {
@@ -20,13 +20,18 @@
         "targetShape": {
           "type": "circle",
           "radius": "50%",
-          "color": "#454f6d",
+          "gradient": {
+            "colors": ["#454f6d", "#fff"],
+            "centerX": "50%",
+            "centerY": "50%",
+            "radius": "50%"
+          },
           "x": "50%",
           "y": "50%"
         },
         "genomeShape": {
           "type": "square",
-          "color": "#FFFFFF",
+          "color": "#454f6d",
           "contour": {
             "color": "gray"
           },
@@ -56,6 +61,36 @@
             "y": "4%",
             "length": "2%",
             "ttl": 2
+          }
+        ]
+      },
+      {
+        "serviceName": "Sequencer",
+        "serviceId": "hookup.to/service/sequencer",
+        "uuid": "0d6f0b3b-caa5-4d87-82d6-e9a55198d6f5",
+        "repeat": false,
+        "steps": [
+          {
+            "type": "text",
+            "text": "Evolution to the Center",
+            "color": "white",
+            "font": "lighter 28px Helvetica Neue",
+            "y": "50%"
+          },
+          {
+            "type": "text",
+            "id": "message",
+            "text": "Diversity is Nature's Problem Solving Strategy",
+            "color": "black",
+            "font": "lighter 28px Helvetica Neue",
+            "y": "25%"
+          }
+        ],
+        "conditions": [
+          { 
+            "operation": "less",
+            "property": "length",
+            "value": 6
           }
         ]
       },

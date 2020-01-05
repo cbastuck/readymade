@@ -118,7 +118,9 @@ class Genetic {
     const minFitness = meanFitness - stdFitness;
     return population.filter((g, idx) => {
       const ttl = g[3] - 1;
-      if (fitness[idx] < minFitness) {
+      const f = fitness[idx];
+      g[4] = f; // fitness
+      if (f < minFitness) {
         g[3] = ttl; // set decremented ttl
       }
       return ttl > 0;
@@ -151,13 +153,18 @@ class Genetic {
     const toPercent = val => `${Math.floor(val * 100)}%`;
 
     const populationShapes = survivors.map(
-      (genome, idx) => ({
-        ...this.genomeShape,
-        x: toPercent(genome[0]),
-        y: toPercent(genome[1]),
-        length: toPercent(genome[2]),
-        color: `rgb(${fitness[idx] * 255}, 0, 0)`
-      })
+      (genome, idx) => {
+        // const fi = (1 - genome[4]) * 255;
+        return {
+          ...this.genomeShape,
+          x: toPercent(genome[0]),
+          y: toPercent(genome[1]),
+          length: toPercent(genome[2]),
+          color: `rgba(0, 0, 0, ${genome[4]})`
+          //color: `rgb(255, ${fi}, ${fi})`
+          //color: `rgb(${fi}, ${fi}, ${fi})`
+        };
+      }
     );
 
     // TODO: add text
@@ -171,7 +178,7 @@ class Genetic {
       text: `Generation ${this.generation} has ${populationShapes.length} unique Genes`,
       y: '90%',
       x: '80%',
-      font: 'lighter 25px Helvetica Neue'
+      font: 'lighter 1.2em Helvetica Neue'
     };
     return [this.targetShape].concat(populationShapes).concat(statusText);
   }

@@ -133,18 +133,51 @@ class Sequencer {
     if (config.repeat !== undefined) {
       this.repeat = config.repeat;
     }
+
+    if (config.conditions !== undefined) {
+      this.conditions = config.conditions;
+    }
   }
 
-  process() {
+  checkCondition(inData, refData, op) {
+    switch (op) {
+      case 'less':
+      console.log('!!!!', inData, refData)
+        return inData < refData;
+      default:
+        break;
+    }
+    return false;
+  }
+
+  process(params) {
     if (!this.repeat && this.currentStep >= this.steps.length) {
       return undefined;
     }
+    
+    if (this.conditions) {
+      const condition = this.conditions[this.currentStep];
+      if (condition) {
+        const inputData = params[condition.property];
+        const refData = condition.value;
+        const fulfilled = this.checkCondition(inputData, refData, condition.operation);
+        if (fulfilled) {
+          ++this.currentStep;
+        }
+      }
+    } else {
+      ++this.currentStep;
+    }
 
-    const n = this.currentStep++ % this.steps.length;
+    const n = this.currentStep % this.steps.length;
     if (this.callback) {
       this.callback(n);
     }
-    return this.steps[n];
+    if (Array.isArray(params)) {
+      return params.concat(this.steps[n]);
+    } else {
+      return this.steps[n];
+    }
   }
 }
 

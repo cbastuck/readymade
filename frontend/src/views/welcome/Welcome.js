@@ -49,9 +49,9 @@ export default class Welcome extends Component {
             cursor: 'pointer',
             textDecoration: 'underline'
           }}
-          onClick={() => this.setState({ page: 'welcome' }) }
+          onClick={() => this.setState({ page: 'visualisation' })}
         >
-          Back
+          Why? 
         </div>
       </div>
     );
