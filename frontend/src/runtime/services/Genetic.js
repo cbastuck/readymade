@@ -18,19 +18,6 @@ function percentToRelative(value) {
   return value;
 }
 
-function toAbsolute(value, upper) {
-  if (value === undefined || upper === undefined) {
-    return 0;
-  }
-  if (typeof value === 'string') {
-    const components = value.split('%');
-    if (components.length > 1) {
-      return Number(components[0]) / 100 * upper;
-    }
-  }
-  return value;
-}
-
 class Genetic {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
@@ -52,7 +39,6 @@ class Genetic {
     }
 
     if (initialPopulation !== undefined) {
-      
       if (Array.isArray(initialPopulation)) {
         this.population = initialPopulation.map(g => [
           percentToRelative(g.x),
@@ -85,13 +71,12 @@ class Genetic {
   }
 
   nextGeneration(population) {
-    const { genome: father, idx: fatherIdx } = this.pickGenome();
-    const { genome: mother, idx: motherIdx } = this.pickGenome();
+    const { genome: father } = this.pickGenome();
+    const { genome: mother } = this.pickGenome();
     if (!father || !mother) {
       return population;
     } 
     const child = this.mixGenomes(father, mother);
-    child.parents = { fatherIdx, motherIdx };
     return population.concat([child]);
   }
 
@@ -118,7 +103,10 @@ class Genetic {
   }
 
   applySelection(population, fitness) {
-    const meanFitness = fitness.reduce((a, c) => a + c, 0) / fitness.length;
+    const meanFitness = fitness.reduce(
+      (a, c) => a + c, 
+      0
+    ) / fitness.length;
     const varFitness = fitness.reduce(
       (a, c) => {
         const d = c - meanFitness;
@@ -129,18 +117,20 @@ class Genetic {
     const stdFitness = Math.sqrt(varFitness);
     const minFitness = meanFitness - stdFitness;
     return population.filter((g, idx) => {
+      const ttl = g[3] - 1;
       if (fitness[idx] < minFitness) {
-        g[3] = g[3] - 1; // decrement ttl
+        g[3] = ttl; // set decremented ttl
       }
-      return g[3] > 0;
+      return ttl > 0;
     });
   }
 
   removeDuplicates(population) {
     const deduplicated = [];
-    const reduced = population.reduce(
+    return population.reduce(
       (acc, g) => {
-        const id = `${Math.floor(g[0] * 100)}${Math.floor(g[1] * 100)}`;
+        const quantizePoint = (x, y) => Math.floor(x * 100) * 100 + Math.floor(y * 100);
+        const id = quantizePoint(g[0], g[1]);
         if (deduplicated.indexOf(id) === -1) {
           deduplicated.push(id);
           return [...acc, g];
@@ -149,7 +139,6 @@ class Genetic {
       },
       []
     );
-    return reduced;
   }
 
   process(params) {
@@ -171,17 +160,20 @@ class Genetic {
       })
     );
 
-    // give parent shapes a color
-    /*
-    survivors.filter(s => !!s.parents)
-      .forEach((child, idx) => {
-        populationShapes[child.parents.fatherIdx].color = 'blue';
-        populationShapes[child.parents.motherIdx].color = 'blue';
-        populationShapes[survivors.indexOf(child)].color = 'green';
-        child.parents = undefined;
-      });
-      */
-    return [this.targetShape].concat(populationShapes);
+    // TODO: add text
+    // Diverstity is nature's answer to generic problem solving
+    // Explore the space of possibilities
+    // Any system is fractal it will always replicate it's own internal structures
+    // Let's reconsider
+
+    const statusText = {
+      type: 'text',
+      text: `Generation ${this.generation} has ${populationShapes.length} unique Genes`,
+      y: '90%',
+      x: '80%',
+      font: 'lighter 25px Helvetica Neue'
+    };
+    return [this.targetShape].concat(populationShapes).concat(statusText);
   }
 }
 

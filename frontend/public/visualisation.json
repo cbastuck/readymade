@@ -30,60 +30,34 @@
           "contour": {
             "color": "gray"
           },
-          "length": "2%",
-          "ttl": 2
+          "length": "2%"
         },
         "initialPopulation": [
           {
-            "type": "square",
-            "color": "#FFFFFF",
-            "contour": {
-              "color": "gray"
-            },
-            "length": "2%",
             "x": "4%",
             "y": "4%",
+            "length": "2%",
             "ttl": 2
           },
           {
-            "type": "square",
-            "color": "#FFFFFF",
-            "contour": {
-              "color": "gray"
-            },
-            "length": "2%",
             "x": "95%",
             "y": "95%",
+            "length": "2%",
             "ttl": 2
           },
           {
-            "type": "square",
-            "color": "#FFFFFF",
-            "contour": {
-              "color": "gray"
-            },
-            "length": "2%",
             "x": "4%",
             "y": "95%",
+            "length": "2%",
             "ttl": 2
           },
           {
-            "type": "square",
-            "color": "#FFFFFF",
-            "contour": {
-              "color": "gray"
-            },
-            "length": "2%",
             "x": "95%",
             "y": "4%",
+            "length": "2%",
             "ttl": 2
           }
         ]
-      },
-      {
-        "serviceName": "Monitor",
-        "serviceId": "hookup.to/service/monitor-browser",
-        "uuid": "a73fcf4f-d690-4531-b111-a7abd3341f5d"
       },
       {
         "serviceName": "Canvas",

@@ -85,13 +85,15 @@ class CanvasUI extends Component {
   }
 
   drawText = (ctx, data) => {
-    const { centerX, centerY } = this.getCanvasCenter();
+    const { centerX, centerY, canvasWidth, canvasHeight } = this.getCanvasCenter();
     ctx.fillStyle = data.color || "#000";
 
     ctx.save();
     ctx.font = data.font || "30px Arial";
     const width = ctx.measureText(data.text).width;
-    ctx.fillText(data.text, centerX - width / 2, centerY);
+    const x = data.x === undefined ? centerX : toAbsolute(data.x, canvasWidth);
+    const y = data.y === undefined ? centerY : toAbsolute(data.y, canvasHeight);
+    ctx.fillText(data.text, x - width / 2, y);
     if (data.contour) {
       ctx.strokeStyle = data.contour.color;
       ctx.lineWidth = data.contour.lineWidth || 1;
