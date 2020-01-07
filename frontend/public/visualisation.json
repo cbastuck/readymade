@@ -65,6 +65,12 @@
         ]
       },
       {
+        "serviceName": "Stats",
+        "serviceId": "hookup.to/service/stats",
+        "uuid": "3f7e5f41-803f-4bad-bea4-a0ba7bb54083",
+        "property": "fitness"
+      },
+      {
         "serviceName": "Sequencer",
         "serviceId": "hookup.to/service/sequencer",
         "uuid": "0d6f0b3b-caa5-4d87-82d6-e9a55198d6f5",
@@ -72,25 +78,37 @@
         "steps": [
           {
             "type": "text",
-            "text": "Evolution to the Center",
+            "text": "Evolution to the center",
             "color": "white",
             "font": "lighter 28px Helvetica Neue",
             "y": "50%"
           },
-          {
-            "type": "text",
-            "id": "message",
-            "text": "Diversity is Nature's Problem Solving Strategy",
-            "color": "black",
-            "font": "lighter 28px Helvetica Neue",
-            "y": "25%"
-          }
+          [
+            {
+              "type": "text",
+              "id": "message",
+              "text": "Diversity is nature's problem-solving strategy",
+              "color": "black",
+              "font": "lighter 28px Helvetica Neue",
+              "y": "25%"
+            },
+            {
+              "type": "image",
+              "url": "https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcTiVRD9-sRfhUcG6nf4iex8qDi55SFn1h2X7EWL9DWr_2mpB6TX",
+              "x": "10%",
+              "y": "10%",
+              "onClick": {
+                "url": "blabla"
+              }
+            }
+          ]
         ],
         "conditions": [
           { 
-            "operation": "less",
-            "property": "length",
-            "value": 6
+            "operation": "greater",
+            "property": "mean",
+            "index": 0,
+            "value": 0.92
           }
         ]
       },

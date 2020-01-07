@@ -20,10 +20,9 @@ class Step extends Component {
   allowDrop = ev => true; // TODO: allow everything
 
   onDrop = async ev => {
-    console.log('DROPPED SOMETHING', ev.dataTransfer.files.length, ev.dataTransfer.items.length);
-    for (let i=0; i<ev.dataTransfer.files.length; ++i) {
-      console.log("f--->", ev.dataTransfer.files[i])
-    }
+    //for (let i=0; i<ev.dataTransfer.files.length; ++i) {
+    //  console.log("f--->", ev.dataTransfer.files[i])
+    //}
 
     for(let i=0; i<ev.dataTransfer.items.length; ++i) {
       const item = ev.dataTransfer.items[i];
@@ -142,8 +141,9 @@ class Sequencer {
   checkCondition(inData, refData, op) {
     switch (op) {
       case 'less':
-      console.log('!!!!', inData, refData)
         return inData < refData;
+      case 'greater':
+        return inData > refData;
       default:
         break;
     }
@@ -158,7 +158,8 @@ class Sequencer {
     if (this.conditions) {
       const condition = this.conditions[this.currentStep];
       if (condition) {
-        const inputData = params[condition.property];
+        const item = condition.index !== undefined ? params[condition.index] : params;
+        const inputData = item[condition.property];
         const refData = condition.value;
         const fulfilled = this.checkCondition(inputData, refData, condition.operation);
         if (fulfilled) {

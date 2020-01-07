@@ -70,6 +70,18 @@ class Genetic {
     });
   }
 
+  applyMutation(genome) {
+    const r = Math.random();
+    if (r < 0.90) {
+      return genome;
+    }
+    return genome.map((g, idx) => 
+      (idx < 2 && Math.random() > 0.3) ?
+        Math.random() :
+        g
+    );
+  }
+
   nextGeneration(population) {
     const { genome: father } = this.pickGenome();
     const { genome: mother } = this.pickGenome();
@@ -77,7 +89,8 @@ class Genetic {
       return population;
     } 
     const child = this.mixGenomes(father, mother);
-    return population.concat([child]);
+    const mutatedChild = this.applyMutation(child);
+    return population.concat([mutatedChild]);
   }
 
   computeFitness(genome) {
@@ -160,18 +173,20 @@ class Genetic {
           x: toPercent(genome[0]),
           y: toPercent(genome[1]),
           length: toPercent(genome[2]),
-          color: `rgba(0, 0, 0, ${genome[4]})`
+          color: `rgba(0, 0, 0, ${genome[4]})`,
+          fitness: genome[4]
           //color: `rgb(255, ${fi}, ${fi})`
           //color: `rgb(${fi}, ${fi}, ${fi})`
         };
       }
     );
 
-    // TODO: add text
-    // Diverstity is nature's answer to generic problem solving
-    // Explore the space of possibilities
-    // Any system is fractal it will always replicate it's own internal structures
-    // Let's reconsider
+    /*  // TODO: add text
+        // Diverstity is nature's answer to generic problem solving
+        // Explore the space of possibilities
+        // Any system is fractal it will always replicate it's own internal structures
+        // Let's reconsider
+    */
 
     const statusText = {
       type: 'text',
