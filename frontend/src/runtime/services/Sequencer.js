@@ -155,6 +155,7 @@ class Sequencer {
       return undefined;
     }
     
+    const n = this.currentStep % this.steps.length;
     if (this.conditions) {
       const condition = this.conditions[this.currentStep];
       if (condition) {
@@ -170,7 +171,6 @@ class Sequencer {
       ++this.currentStep;
     }
 
-    const n = this.currentStep % this.steps.length;
     if (this.callback) {
       this.callback(n);
     }

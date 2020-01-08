@@ -27,6 +27,9 @@ class CanvasUI extends Component {
     fullscreen: false
   };
 
+  imageCache = {};
+  clickHandlers = {};
+
   componentDidMount() {
     document.body.onresize = ev => {
       this.setState(
@@ -58,30 +61,80 @@ class CanvasUI extends Component {
     };
   }
 
-  drawImage = (ctx, data) => {
-    const { url, offsetX, offsetY, opacity} = data; 
-    const img = new Image();
-    img.onload = () => {
-      const { centerX, centerY, canvasHeight } = this.getCanvasCenter();
-      const aspectRatio = img.width / img.height;
-      const scaledWidth = canvasHeight * aspectRatio;
-      const imgCentX = offsetX ? offsetX : (centerX - scaledWidth / 2);
-      const imgCentY = offsetY ? offsetY : (centerY - img.height / 2);
-
-      ctx.save();
-      if (opacity !== undefined) {
-        ctx.globalAlpha = opacity;
+  getImage = url => {
+    return new Promise((resolve, reject) => {
+      const image = this.imageCache[url];
+      if (!image) {
+        const img = new Image();
+        img.onload = () => {
+          this.imageCache[url] = img
+          resolve(img);
+        }
+        img.src = url;
+      } else {
+        resolve(image);
       }
-      ctx.drawImage(
-        img, 
-        imgCentX,
-        imgCentY,
-        scaledWidth,
-        canvasHeight
-      );
-      ctx.restore();
+    });
+  }
+
+  registerClickHandler = (rect, action) => {
+    const id = `${rect.x}${rect.y}`;
+    this.clickHandlers[id] = { rect, action };
+  } 
+
+  onClick = ev => {
+    const { clientX: x , clientY: y} = ev;
+    for (const id in this.clickHandlers) {
+      const { rect, action } = this.clickHandlers[id];
+      if (x >= rect.x && 
+          x <= rect.x + rect.width && 
+          y >= rect.y && 
+          y <= rect.y + rect.height) {
+        return this.invokeClickAction(action);
+      }
     }
-    img.src = url;
+  }
+
+  invokeClickAction = action => {
+    const { url } = action;
+    if (url) {
+      window.open(url, '_self');
+    } 
+  }
+ 
+  drawImage = async (ctx, data) => {
+    const { url, offsetX, offsetY, opacity, x, y, height, unscaled, onClick } = data; 
+    const img = await this.getImage(url);
+    
+    const { centerX, centerY, canvasWidth, canvasHeight } = this.getCanvasCenter();
+    const aspectRatio = img.width / img.height;
+    const scaledHeight = height === undefined ? canvasHeight : toAbsolute(height, canvasHeight);
+    const scaledWidth =  scaledHeight * aspectRatio ;
+    const imgCentX = offsetX ? offsetX : (centerX - scaledWidth / 2);
+    const imgCentY = offsetY ? offsetY : (centerY - img.height / 2);
+    const imgX = x === undefined ? imgCentX : toAbsolute(x, canvasWidth);
+    const imgY = y === undefined ? imgCentY : toAbsolute(y, canvasHeight);
+    const rect = {
+      x: imgX,
+      y: imgY,
+      width: unscaled ? img.width : scaledWidth,
+      height: unscaled ? img.height : scaledHeight
+    };
+    if (onClick) {
+      this.registerClickHandler(rect, onClick); 
+    }
+    ctx.save();
+    if (opacity !== undefined) {
+      ctx.globalAlpha = opacity;
+    }
+    ctx.drawImage(
+      img, 
+      rect.x,
+      rect.y,
+      rect.width,
+      rect.height
+    );
+    ctx.restore();
   }
 
   drawText = (ctx, data) => {
@@ -243,6 +296,7 @@ class CanvasUI extends Component {
                 service.fullscreen = toggled;
                 this.setState({ fullscreen: toggled });
               }}
+              onClick={this.onClick.bind(this)}
             />
           )
         )
