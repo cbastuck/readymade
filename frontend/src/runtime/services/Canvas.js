@@ -96,10 +96,10 @@ class CanvasUI extends Component {
   }
 
   invokeClickAction = action => {
-    const { url } = action;
-    if (url) {
-      window.open(url, '_self');
-    } 
+    const target = window.frameElement;
+    if (target && target.onAction) {
+      target.onAction(action);
+    }
   }
  
   drawImage = async (ctx, data) => {

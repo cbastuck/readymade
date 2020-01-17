@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Input, Button } from 'semantic-ui-react';
 
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
@@ -9,7 +10,8 @@ import { AppConsumer } from '../../AppContext';
 
 export default class Welcome extends Component {
   state = {
-    page: 'visualisation'
+    page: 'welcome',
+    email: ''
   };
 
   renderWelcome() {
@@ -41,18 +43,13 @@ export default class Welcome extends Component {
             height: '100%',
             width: '100%'
           }}
-        />
-        <div 
-          style={{ 
-            textAlign: 'right',
-            marginRight: 10,
-            cursor: 'pointer',
-            textDecoration: 'underline'
+          ref={frame => {
+            if (frame) {
+              frame.onAction = action => 
+                this.setState({ page: action.page })
+            }
           }}
-          onClick={() => this.setState({ page: 'visualisation' })}
-        >
-          Why? 
-        </div>
+        />
       </div>
     );
   }
@@ -68,9 +65,40 @@ export default class Welcome extends Component {
             height: '100%',
             width: '100%'
           }}
+          ref={frame => {
+            if (frame) {
+              frame.onAction = action => 
+                this.setState({ page: action.page })
+            }
+          }}
         />
       </div>
     );
+  }
+
+  renderMission() {
+    return (
+      <div>
+        <h1>You are early</h1>
+        <p className="hero-claim">
+          <span className="make">.. but still in?</span> 
+        </p>
+        <Input 
+          placeholder="Email" 
+          onChange={ev => this.setState({ email: ev.target.value })}
+          value={this.state.email}
+          /> 
+        <div style={{ marginTop: 3 }}>
+          <Button onClick={() => this.onRegisterEmail(this.state.email) }>
+            Give me more
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  onRegisterEmail(address) {
+    console.log('Registering email address', address);
   }
 
   render() {
@@ -95,6 +123,7 @@ export default class Welcome extends Component {
                     { this.state.page === 'welcome' && this.renderWelcome() } 
                     { this.state.page === 'intro' && this.renderIntro() } 
                     { this.state.page === 'visualisation' && this.renderVisualisation() } 
+                    { this.state.page === 'mission' && this.renderMission() } 
                   </div>
                 <Footer />
               </div>

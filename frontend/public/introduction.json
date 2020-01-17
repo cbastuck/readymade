@@ -74,6 +74,15 @@
                 "color": "black",
                 "lineWidth": 1
               }
+            },
+            {
+              "type": "image",
+              "url": "/assets/arrow-right.png",
+              "x": "90%",
+              "unscaled": true,
+              "onClick": {
+                "page": "visualisation"
+              }
             }
           ]
         ]
