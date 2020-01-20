@@ -87,8 +87,8 @@
             {
               "type": "text",
               "id": "message",
-              "text": "Diversity samples the space for Solutions",
-              "color": "gray",
+              "text": "Diversity samples the space for Solutions!",
+              "color": "#454f6d",
               "font": "lighter 28px Helvetica Neue",
               "y": "91%"
             },

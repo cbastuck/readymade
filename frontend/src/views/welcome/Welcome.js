@@ -4,6 +4,7 @@ import { Input, Button } from 'semantic-ui-react';
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
+import Sandbox from '../Sandbox';
 
 import './Welcome.css';
 import { AppConsumer } from '../../AppContext';
@@ -35,20 +36,14 @@ export default class Welcome extends Component {
   renderIntro() {
     return (
       <div style={{ height: '100%' }}>
-        <iframe 
+        <Sandbox
           title="Hookup Intro"
-          src="/sandbox?src=/introduction.json&frameless=true" 
-          frameBorder="0"
-          style={{
-            height: '100%',
-            width: '100%'
-          }}
-          ref={frame => {
-            if (frame) {
-              frame.onAction = action => 
-                this.setState({ page: action.page })
-            }
-          }}
+          src="/introduction.json"
+          frameless="true"
+          frameBorder={0}
+          height="100%"
+          width="100%"
+          onAction={action => this.setState({ page: action.page })} 
         />
       </div>
     );
@@ -57,20 +52,14 @@ export default class Welcome extends Component {
   renderVisualisation() {
     return (
       <div style={{ height: '100%' }}>
-        <iframe 
+        <Sandbox
           title="Hookup Visualisation"
-          src="/sandbox?src=/visualisation.json&frameless=true" 
-          frameBorder="0"
-          style={{
-            height: '100%',
-            width: '100%'
-          }}
-          ref={frame => {
-            if (frame) {
-              frame.onAction = action => 
-                this.setState({ page: action.page })
-            }
-          }}
+          src="/visualisation.json"
+          frameless="true"
+          frameBorder={0}
+          height="100%"
+          width="100%"
+          onAction={action => this.setState({ page: action.page })} 
         />
       </div>
     );
@@ -81,7 +70,7 @@ export default class Welcome extends Component {
       <div>
         <h1>You are early</h1>
         <p className="hero-claim">
-          <span className="make">.. but still in?</span> 
+          <span className="make">.. but ready?</span> 
         </p>
         <Input 
           placeholder="Email" 
@@ -89,9 +78,12 @@ export default class Welcome extends Component {
           value={this.state.email}
           /> 
         <div style={{ marginTop: 3 }}>
-          <Button onClick={() => this.onRegisterEmail(this.state.email) }>
+          <button
+            onClick={() => this.onRegisterEmail(this.state.email) }
+            className="button"
+          >
             Give me more
-          </Button>
+          </button>
         </div>
       </div>
     );
