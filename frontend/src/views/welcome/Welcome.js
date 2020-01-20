@@ -36,7 +36,7 @@ export default class Welcome extends Component {
     return (
       <div style={{ height: '100%' }}>
         <iframe 
-          title="Hookup Intro Board"
+          title="Hookup Intro"
           src="/sandbox?src=/introduction.json&frameless=true" 
           frameBorder="0"
           style={{
@@ -58,7 +58,7 @@ export default class Welcome extends Component {
     return (
       <div style={{ height: '100%' }}>
         <iframe 
-          title="Hookup Intro Board"
+          title="Hookup Visualisation"
           src="/sandbox?src=/visualisation.json&frameless=true" 
           frameBorder="0"
           style={{
