@@ -8,7 +8,9 @@ export default class Footer extends Component {
     return (
       <div className="footer-container">
         <div className="footer-link">
-          <Link to="/about">about</Link>
+          <Link to="/about"> about </Link>
+          {' ‧ '}
+          <Link to="/imprint"> imprint </Link>
         </div>
       </div>
     );

@@ -9,6 +9,7 @@ import AppContext from './AppContext';
 
 import Welcome from './views/welcome/Welcome';
 import About from './views/about/About';
+import Imprint from './views/about/Imprint';
 import Board from './views/Board';
 import BuildBoard from './views/BuildBoard';
 import AuthRedirect from './views/AuthRedirect';
@@ -54,6 +55,7 @@ class App extends Component {
               <Route path="/" exact component={Welcome} />
               <Route path="/sandbox" component={Sandbox} />
               <Route path="/about" component={About} />
+              <Route path="/imprint" component={Imprint} />
               <Route path="/new" exact component={BuildBoard} />
               <Route path="/login" component={Login} />
               <Route path="/loginFail" component={LoginFail} />

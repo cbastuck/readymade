@@ -31,16 +31,20 @@ export default class LoginFail extends Component {
                 </BoardConsumer>
                 <div className="hero-text">
                   <h1>
-                    Login Failed
+                    Login failed
                   </h1>
                   {
                     errorMessage && (
-                      <div> { errorMessage } </div>
+                      <div> { /*errorMessage*/ } </div>
                     )
                   }
-                  <Link to="/new">
-                    <button>Try again</button>
-                  </Link>
+                  <div style={{ marginTop: 15 }}>
+                    <Link to="/new"> 
+                      <button className="button">
+                        Try again
+                      </button>
+                    </Link>
+                  </div>
                 </div>
                 <Footer />
               </div>

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Input, Button } from 'semantic-ui-react';
+// import { Input, Button } from 'semantic-ui-react';
 
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
@@ -25,7 +25,7 @@ export default class Welcome extends Component {
         </p>
         <button
           className="button"
-          onClick={() => this.setState({ page: 'intro' }) }
+          onClick={() => this.setState({ page: 'visualisation' }) }
         >
           What next?
         </button>
@@ -70,21 +70,25 @@ export default class Welcome extends Component {
       <div>
         <h1>You are early</h1>
         <p className="hero-claim">
-          <span className="make">.. but ready?</span> 
+          <span className="make">.. come back later</span> 
         </p>
-        <Input 
-          placeholder="Email" 
-          onChange={ev => this.setState({ email: ev.target.value })}
-          value={this.state.email}
-          /> 
-        <div style={{ marginTop: 3 }}>
-          <button
-            onClick={() => this.onRegisterEmail(this.state.email) }
-            className="button"
-          >
-            Give me more
-          </button>
-        </div>
+        {
+          /*
+            <Input 
+              placeholder="Email" 
+              onChange={ev => this.setState({ email: ev.target.value })}
+              value={this.state.email}
+            /> 
+            <div style={{ marginTop: 3 }}>
+              <button
+                onClick={() => this.onRegisterEmail(this.state.email) }
+                className="button"
+              >
+                Give me more
+              </button>
+            </div>
+        */
+        }
       </div>
     );
   }

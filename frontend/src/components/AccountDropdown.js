@@ -5,31 +5,39 @@ import { Dropdown } from 'semantic-ui-react';
 
 export default class AccountDropdown extends Component {
 
-  render() {
+  renderLogin() {
     const { currentUser, onAction } = this.props;
+    return (
+      currentUser ? 
+        (
+          <Dropdown.Item
+            onClick={() => onAction({
+              type: 'logout'
+            })}
+          >
+            Logout
+          </Dropdown.Item>
+        ) : (
+          <Link to="/new">
+            <Dropdown.Item>
+              Login
+            </Dropdown.Item>
+          </Link>
+        )
+    );
+  }
 
+  render() {
+    const { currentUser} = this.props;
+    const dropDownText = currentUser || ''; //'Account'
     return (
       <Dropdown
-        text={currentUser || 'Account'}
+        text={dropDownText}
         className='link item right'
       >
         <Dropdown.Menu>
           {
-            currentUser ? (
-              <Dropdown.Item
-                onClick={() => onAction({
-                  type: 'logout'
-                })}
-              >
-                Logout
-              </Dropdown.Item>
-            ) : (
-              <Link to="/new">
-                <Dropdown.Item>
-                  Login
-                </Dropdown.Item>
-              </Link>
-            )
+            // this.renderLogin()
           }
         </Dropdown.Menu>
       </Dropdown>
