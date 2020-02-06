@@ -68,7 +68,10 @@
         "serviceName": "Stats",
         "serviceId": "hookup.to/service/stats",
         "uuid": "3f7e5f41-803f-4bad-bea4-a0ba7bb54083",
-        "property": "fitness"
+        "property": "fitness",
+        "features": {
+          "mean": "mean"
+        }
       },
       {
         "serviceName": "Sequencer",

@@ -1,6 +1,10 @@
 const serviceId = 'hookup.to/service/stats';
 const serviceName = 'Stats';
 
+function square(x) {
+  return x * x;
+}
+
 class Stats {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
@@ -12,7 +16,13 @@ class Stats {
   }
 
   configure(config) {
-    this.property = config.property;
+    if (config.property !== undefined) {
+      this.property = config.property;
+    }
+    
+    if (config.features !== undefined) {
+      this.features = config.features;
+    }
   }
 
   process(params) {
@@ -30,17 +40,40 @@ class Stats {
         if (val === undefined) {
           return acc;
         }
-        return { ...acc, mean: acc.mean + val, n: acc.n + 1 };
+        return { 
+          ...acc,
+          sum: acc.sum + val,
+          n: acc.n + 1,
+          values: [...acc.values, val]
+        };
       }, 
       {
         type: 'meta',
         n: 0,
-        mean: 0 
+        sum: 0,
+        values: [],
       }
     );
 
-    stats.mean /= stats.n;  
-    return [stats].concat(params);
+    const result = {};
+    if (this.features) {
+      const meanProperty = this.features.mean;
+      if (meanProperty) {
+        result[meanProperty] = stats.sum / stats.n;
+      }
+      const stdProperty = this.features.std;
+      if (stdProperty) {
+        const mx = stats[meanProperty] || (stats.sum / stats.n);
+        const sx = stats.values.reduce(
+          (p, c) => p + square(c - mx),
+          0
+        );
+        result[stdProperty] = Math.sqrt(sx / stats.sum);
+      }
+    }
+    result.n = stats.n;
+
+    return [result].concat(params);
   }
 }
 
