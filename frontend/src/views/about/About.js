@@ -6,9 +6,9 @@ import Footer from '../../components/Footer';
 
 import './About.css';
 
-import cb from './cb.png'
-import jcb from './jcb.png'
-import sn from './sn.png'
+//import cb from './cb.png'
+//import jcb from './jcb.png'
+//import sn from './sn.png'
 
 class Profile extends Component {
   render() {
