@@ -28,6 +28,28 @@ body, html {
   transition: height 0.5s linear;
 }
 
+.fade-in-linear {
+  animation: opac-linear 0.8s;
+}
+@keyframes opac-linear{
+  0% {opacity: 0}
+  100%{opacity: 1}
+}
+
+.fade-in{
+  animation: opac 1s;
+}
+@keyframes opac{
+  0% {opacity: 0}
+  50% {opacity: 0}
+  100%{opacity: 1}
+}
+
+.closed {
+  height: 0px;
+  padding: 0px;
+}
+
 .welcome {
   /*
    * add if needed

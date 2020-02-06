@@ -65,8 +65,11 @@ class Genetic {
 
   mixGenomes(a, b) {
     return a.map((xa, i) => {
-      const alpha = Math.random();
-      return (alpha * xa) + (1 - alpha) * b[i];
+      if (i < 2) { // only mix position
+        const alpha = Math.random();
+        return (alpha * xa) + (1 - alpha) * b[i];
+      }
+      return xa;
     });
   }
 
@@ -190,7 +193,7 @@ class Genetic {
 
     const statusText = {
       type: 'text',
-      text: `Generation ${this.generation} has ${populationShapes.length} unique Genes`,
+      text: `generation ${this.generation} has ${populationShapes.length} unique genes`,
       y: '90%',
       x: '80%',
       font: 'lighter 1.2em Helvetica Neue',

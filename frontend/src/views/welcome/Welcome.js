@@ -11,13 +11,19 @@ import { AppConsumer } from '../../AppContext';
 
 export default class Welcome extends Component {
   state = {
-    page: 'welcome',
+    page: 'closed',
     email: ''
   };
 
+  componentDidMount() {
+    setTimeout(() => {
+      this.setState({ page: 'welcome' });
+    }, 200);
+  }
+
   renderWelcome() {
     return (
-      <div>
+      <div className="fade-in">
         <h1>Welcome.</h1>
         <p className="hero-claim">
           <span className="make">Make yourself </span> 
@@ -51,7 +57,7 @@ export default class Welcome extends Component {
 
   renderVisualisation() {
     return (
-      <div style={{ height: '100%' }}>
+      <div style={{ height: '100%' }} className="fade-in">
         <Sandbox
           title="Hookup Visualisation"
           src="/visualisation.json"
@@ -67,11 +73,17 @@ export default class Welcome extends Component {
 
   renderMission() {
     return (
-      <div>
+      <div className="fade-in">
         <h1>You are early</h1>
         <p className="hero-claim">
-          <span className="make">.. come back later</span> 
+          <span className="make">come back later, please</span> 
         </p>
+         <button
+          className="button"
+          onClick={() => this.setState({ page: 'visualisation' }) }
+        >
+          Do it again
+        </button>
         {
           /*
             <Input 
@@ -115,7 +127,7 @@ export default class Welcome extends Component {
                       />
                   }
                 </BoardConsumer>
-                  <div className={`hero-text ${this.state.page}`}>
+                  <div className={`hero-text ${this.state.page} fade-in-linear`}>
                     { this.state.page === 'welcome' && this.renderWelcome() } 
                     { this.state.page === 'intro' && this.renderIntro() } 
                     { this.state.page === 'visualisation' && this.renderVisualisation() } 

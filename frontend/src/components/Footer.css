@@ -1,5 +1,5 @@
 .footer-container {
-  position: absolute;
+  position: fixed;
   width: 100%;
   height: 30;
   bottom: 0px;
@@ -9,6 +9,5 @@
 }
 
 .footer-link {
-  position: relative;
   margin: 10px;
 }

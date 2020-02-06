@@ -55,20 +55,20 @@ export default class Imprint extends Component {
         <Toolbar />
         <div>
           <div className="imprint-container">
-            <h2 className="imprint-text">
-              Information in accordance with Section 5 TMG:
-            </h2>
+            <h3 className="imprint-text">
+              Information in accordance with Section 5 TMG
+            </h3>
             { this.renderAddress() }
             <Separator />
-            <h2 className="imprint-text">
+            <h3 className="imprint-text">
               Responsible for the content
               in accordance with Section 55 paragraph 2 of the German Rundfunkstaatsvertrag (RStV):
-            </h2>
+            </h3>
             { this.renderAddress() }
             <Separator />
-            <h2 className="imprint-text">
-              Used Images and Resources
-            </h2>
+            <h3 className="imprint-text">
+              Sources of the used images and graphics
+            </h3>
             <div className="imprint-text">
               Diversity icon designed by voneff on the @NounProject. https://thenounproject.com/term/diversity/962526
             </div>
