@@ -1,0 +1,37 @@
+{
+  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+    "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
+    "name": "Chrome-78.0.3904.108 (0)",
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/browser-timer",
+        "uuid": "0e5e8233-6856-474e-9091-bae598a6be48",
+        "periodic": true,
+        "periodicValue": 10,
+        "periodicUnit": "ms",
+        "immediate": true
+      },
+      {
+        "serviceName": "Sampling",
+        "serviceId": "hookup.to/service/sampling",
+        "uuid": "dc2052ea-8b4c-4e40-a441-58c7fbacbb93"
+      },
+      {
+        "serviceName": "Buffer",
+        "serviceId": "hookup.to/service/buffer",
+        "uuid": "e1dc3fc1-a2a5-4e6e-ba6f-14cc5e383536"
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "uuid": "4122caaa-2b93-40f0-a98e-8582369b685f",
+        "fullscreen": false
+      }
+    ],
+    "params": {
+      "registry": []
+    }
+  }
+}

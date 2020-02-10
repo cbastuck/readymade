@@ -1,0 +1,143 @@
+{
+  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+    "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
+    "name": "Chrome-78.0.3904.108 (0)",
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/browser-timer",
+        "uuid": "0e5e8233-6856-474e-9091-bae598a6be48",
+        "periodic": true,
+        "periodicValue": 100,
+        "periodicUnit": "ms",
+        "immediate": true
+      },
+      {
+        "serviceName": "Genetic",
+        "serviceId": "hookup.to/service/genetic",
+        "uuid": "dc2052ea-8b4c-4e40-a441-58c7fbacbb93",
+        "targetShape": {
+          "type": "circle",
+          "radius": "50%",
+          "gradient": {
+            "colors": ["#454f6d", "#fff"],
+            "centerX": "50%",
+            "centerY": "50%",
+            "radius": "50%"
+          },
+          "x": "50%",
+          "y": "50%"
+        },
+        "genomeShape": {
+          "type": "square",
+          "color": "#454f6d",
+          "contour": {
+            "color": "gray"
+          },
+          "length": "1%"
+        },
+        "initialPopulation": [
+          {
+            "x": "4%",
+            "y": "4%",
+            "length": "1%",
+            "ttl": 2
+          },
+          {
+            "x": "95%",
+            "y": "95%",
+            "length": "1%",
+            "ttl": 2
+          },
+          {
+            "x": "4%",
+            "y": "95%",
+            "length": "1%",
+            "ttl": 2
+          },
+          {
+            "x": "95%",
+            "y": "4%",
+            "length": "1%",
+            "ttl": 2
+          }
+        ]
+      },
+      {
+        "serviceName": "Stats",
+        "serviceId": "hookup.to/service/stats",
+        "uuid": "3f7e5f41-803f-4bad-bea4-a0ba7bb54083",
+        "property": "fitness",
+        "features": {
+          "mean": "mean"
+        }
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor-browser",
+        "uuid": "45ec2f09-1d82-46a3-a4bf-8004a5a13a15"
+      },
+      {
+        "serviceName": "Sequencer",
+        "serviceId": "hookup.to/service/sequencer",
+        "uuid": "0d6f0b3b-caa5-4d87-82d6-e9a55198d6f5",
+        "repeat": false,
+        "steps": [
+          {
+            "type": "text",
+            "text": "evolution to the center",
+            "color": "white",
+            "font": "lighter 28px Helvetica Neue",
+            "y": "50%"
+          },
+          [
+            {
+              "type": "text",
+              "id": "message",
+              "text": "variety explores the solution space",
+              "color": "#454f6d",
+              "font": "lighter 28px Helvetica Neue",
+              "y": "16%"
+            },
+            {
+              "type": "text",
+              "id": "message",
+              "text": "converge in manifold solutions",
+              "color": "#454f6d",
+              "font": "lighter 28px Helvetica Neue",
+              "y": "86%"
+            },
+            {
+              "type": "image",
+              "url": "/assets/arrow-right.png",
+              "y": "50%",
+              "x": "50%",
+              "unscaled": true,
+              "onClick": {
+                "page": "mission"
+              }
+            }
+          ]
+        ],
+        "conditions": [
+          { 
+            "property": "mean",
+            "operation": "greater",
+            "index": 0,
+            "value": 0.92
+          }
+        ]
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "uuid": "4122caaa-2b93-40f0-a98e-8582369b685f",
+        "fullscreen": true
+      }
+    ],
+    "params": {
+      "registry": []
+    }
+  }
+}

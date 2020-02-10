@@ -18,6 +18,7 @@ function percentToRelative(value) {
   return value;
 }
 
+
 class Genetic {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
@@ -183,13 +184,6 @@ class Genetic {
         };
       }
     );
-
-    /*  // TODO: add text
-        // Diverstity is nature's answer to generic problem solving
-        // Explore the space of possibilities
-        // Any system is fractal it will always replicate it's own internal structures
-        // Let's reconsider
-    */
 
     const statusText = {
       type: 'text',

@@ -14,8 +14,8 @@
         "immediate": true
       },
       {
-        "serviceName": "Genetic",
-        "serviceId": "hookup.to/service/genetic",
+        "serviceName": "Optimizer",
+        "serviceId": "hookup.to/service/genetic-optimizer",
         "uuid": "dc2052ea-8b4c-4e40-a441-58c7fbacbb93",
         "targetShape": {
           "type": "circle",
@@ -61,66 +61,6 @@
             "y": "4%",
             "length": "1%",
             "ttl": 2
-          }
-        ]
-      },
-      {
-        "serviceName": "Stats",
-        "serviceId": "hookup.to/service/stats",
-        "uuid": "3f7e5f41-803f-4bad-bea4-a0ba7bb54083",
-        "property": "fitness",
-        "features": {
-          "mean": "mean"
-        }
-      },
-      {
-        "serviceName": "Sequencer",
-        "serviceId": "hookup.to/service/sequencer",
-        "uuid": "0d6f0b3b-caa5-4d87-82d6-e9a55198d6f5",
-        "repeat": false,
-        "steps": [
-          {
-            "type": "text",
-            "text": "evolution to the center",
-            "color": "white",
-            "font": "lighter 28px Helvetica Neue",
-            "y": "50%"
-          },
-          [
-            {
-              "type": "text",
-              "id": "message",
-              "text": "variety explores the solution space",
-              "color": "#454f6d",
-              "font": "lighter 28px Helvetica Neue",
-              "y": "16%"
-            },
-            {
-              "type": "text",
-              "id": "message",
-              "text": "converge in manifold solutions",
-              "color": "#454f6d",
-              "font": "lighter 28px Helvetica Neue",
-              "y": "86%"
-            },
-            {
-              "type": "image",
-              "url": "/assets/arrow-right.png",
-              "y": "50%",
-              "x": "50%",
-              "unscaled": true,
-              "onClick": {
-                "page": "mission"
-              }
-            }
-          ]
-        ],
-        "conditions": [
-          { 
-            "operation": "greater",
-            "property": "mean",
-            "index": 0,
-            "value": 0.92
           }
         ]
       },

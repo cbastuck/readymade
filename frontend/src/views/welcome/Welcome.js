@@ -44,7 +44,7 @@ export default class Welcome extends Component {
       <div style={{ height: '100%' }}>
         <Sandbox
           title="Hookup Intro"
-          src="/introduction.json"
+          src="/boards/introduction.json"
           frameless="true"
           frameBorder={0}
           height="100%"
@@ -60,7 +60,7 @@ export default class Welcome extends Component {
       <div style={{ height: '100%' }} className="fade-in">
         <Sandbox
           title="Hookup Visualisation"
-          src="/visualisation.json"
+          src="/boards/visualisation.json"
           frameless="true"
           frameBorder={0}
           height="100%"

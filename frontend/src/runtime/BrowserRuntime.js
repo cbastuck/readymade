@@ -16,7 +16,11 @@ import ThreeViewersDescriptor from './services/ThreeViewer';
 import RemoteWindowDescriptor from './services/RemoteWindow';
 import StateDescriptor from './services/State';
 import GeneticDescriptor from './services/Genetic';
+import GeneticOptimizerDescriptor from './services/GeneticOptimizer';
 import StatsDescriptor from './services/Stats';
+import SwitchDescriptor from './services/Switch';
+import SamplingDescriptor from './services/Sampling';
+import BufferDescriptor from './services/Buffer';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -36,7 +40,11 @@ export default class BrowserRuntime {
       RemoteWindowDescriptor,
       StateDescriptor,
       GeneticDescriptor,
-      StatsDescriptor
+      GeneticOptimizerDescriptor,
+      StatsDescriptor,
+      SwitchDescriptor,
+      SamplingDescriptor,
+      BufferDescriptor,
     ];
   }
 

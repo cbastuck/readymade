@@ -38,7 +38,7 @@ class TimerUI extends Component {
       <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
       {
         ({ service }) => (
-          <div>
+          <div style={{ }}>
             <div style={lineStyle}>
               <Checkbox
                 label="Periodic"
@@ -74,14 +74,18 @@ class TimerUI extends Component {
               )
             }
             <div
-                style={{
-                  ...lineStyle,
-                  margin: '15px 10px',
-                  textAlign: 'center'
-                }}
-              >
+              className="ui buttons"
+              style={{
+                ...lineStyle,
+                margin: '15px 10px',
+                textAlign: 'center',
+              }}
+            >
                 <Button
-                  style={{ marginRight: 10, width: 100 }}
+                  style={{ 
+                    marginRight: 5,
+                    width: this.state.periodic ? 100 : 150
+                  }}
                   onClick={() => service.configure({ 
                     periodic: this.state.periodic,
                     periodicValue: this.state.periodicValue,
@@ -90,12 +94,16 @@ class TimerUI extends Component {
                 >
                   { this.state.periodic ? 'Start' : 'One Shot' }
                 </Button>
-                <Button
-                  style={{ width: 100 }}
-                  onClick={() => service.configure({ stop: true })}
-                >
-                  Stop
-                </Button>
+                {
+                  this.state.periodic && (
+                    <Button
+                      style={{ width: 100 }}
+                      onClick={() => service.configure({ stop: true })}
+                    >
+                      Stop
+                    </Button>
+                  )
+                }
               </div>
             </div>
           )
