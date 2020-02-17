@@ -1,27 +1,85 @@
+import React, { Component } from 'react';
+import {
+  Input,
+  Button,
+} from 'semantic-ui-react';
+
+import jstat from 'jstat';
+
+import ServiceUI from './ServiceUI';
+
 const serviceId = 'hookup.to/service/sampling';
 const serviceName = 'Sampling';
 
-function erf(x) {
-    // constants
-    var a1 =  0.254829592;
-    var a2 = -0.284496736;
-    var a3 =  1.421413741;
-    var a4 = -1.453152027;
-    var a5 =  1.061405429;
-    var p  =  0.3275911;
+function isJSON(x) {
+  try {
+    return JSON.parse(x);
+  } catch(err) {
+    return undefined;
+  }
+}
 
-    // Save the sign of x
-    var sign = 1;
-    if (x < 0) {
-        sign = -1;
+class SamplingUI extends Component {
+  state = {};
+
+  onInit(initialState) {
+    const newState = {};
+    const { mean, std } = initialState;
+    if (mean !== undefined) {
+      newState.mean = JSON.stringify(mean);
     }
-    x = Math.abs(x);
+    if (std !== undefined) {
+      newState.std = JSON.stringify(std);
+    }
 
-    // A&S formula 7.1.26
-    var t = 1.0/(1.0 + p*x);
-    var y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*Math.exp(-x*x);
+    this.setState(newState);
+  }
 
-    return sign*y;
+  render() {
+    const marginStyle = { margin: '5px 5px' };
+    return (
+      <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
+      {
+        ({ service }) => (
+          <div style={marginStyle}>
+            <Input
+              style={marginStyle}
+              type="text"
+              value={this.state.mean}
+              label="Mean"
+              onChange={(_, { value: mean }) => this.setState({ mean })}
+              onBlur={() => service.mean = isJSON(this.state.mean)}
+            />
+            <Input
+              style={marginStyle}
+              type="text"
+              value={this.state.std}
+              label="Std"
+              onChange={(_, { value: std }) => this.setState({ std })}
+              onBlur={() => service.std = isJSON(this.state.std)}
+            />
+            <Input
+              style={marginStyle}
+              type="text"
+              value={this.state.key}
+              label="Key"
+              onChange={(_, { value: key }) => this.setState({ key })}
+              onBlur={() => service.key = this.state.key}
+            />
+            <Input
+              style={marginStyle}
+              type="text"
+              value={this.state.value}
+              label="Value"
+              onChange={(_, { value }) => this.setState({ value })}
+              onBlur={() => service.value = this.state.value}
+            />
+          </div>
+        )
+      }
+      </ServiceUI>
+    );
+  }
 }
 
 class Sampling {
@@ -31,15 +89,21 @@ class Sampling {
     this.app = app;
 
     this.mean = [0.5, 0.5];
-    this.std = [0.2, 0.2];    
+    this.std = [0.1, 0.1];
   }
 
   configure(config) {
+    if (config.mean !== undefined) {
+      this.mean = config.mean;
+    }
+
+    if (config.std !== undefined) {
+      this.std = config.std;
+    }    
   }
 
   sample(mx, sx) {
-    const x = Math.random();
-    return 0.5 * (1 + erf((x - mx) / Math.sqrt(2 * sx * sx)));
+    return jstat.normal.sample(mx, sx);
   }
 
   process(params) {
@@ -55,14 +119,15 @@ class Sampling {
     const sample = new Array(n).fill(0).map(
       (_, idx) => this.sample(this.mean[idx], this.std[idx])
     );
+    
+    if (!params) {
+      return sample;
+    }
 
-    return {
-      type: 'circle',
-      x: `${Math.floor(sample[0] * 100)}%`,
-      y: `${Math.floor(sample[1] * 100)}%`,
-      radius: '1%',
-      color: 'black'
-    };
+    if (Array.isArray(params)) {
+      return [...params, sample];
+    }
+    return [params, sample];
   }
 }
 
@@ -71,6 +136,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new Sampling(app, board, descriptor, id),
+  createUI: SamplingUI
 };
 
 export default descriptor;

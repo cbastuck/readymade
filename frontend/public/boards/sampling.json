@@ -16,7 +16,28 @@
       {
         "serviceName": "Sampling",
         "serviceId": "hookup.to/service/sampling",
-        "uuid": "dc2052ea-8b4c-4e40-a441-58c7fbacbb93"
+        "uuid": "dc2052ea-8b4c-4e40-a441-58c7fbacbb93",
+        "mean": [0.5, 0.5],
+        "std": [0.2, 0.2]
+      },
+      {
+        "serviceName": "Sampling",
+        "serviceId": "hookup.to/service/sampling",
+        "uuid": "a4791d3e-674d-4d96-86a2-bc6717e41e3e",
+        "mean": [0.1, 0.1],
+        "std": [0.1, 0.1]
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "uuid": "75ef7ce8-fb68-491d-ba8e-2bf4d0048ae1",
+        "template": {
+          "type": "circle",
+          "radius": "0.5%",
+          "color": "black",
+          "x=": "Math.floor(params[0] * 100) + '%'",
+          "y=": "Math.floor(params[1] * 100) + '%'"
+        }
       },
       {
         "serviceName": "Buffer",

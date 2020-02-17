@@ -4983,6 +4983,11 @@ jsprim@^1.2.2:
     json-schema "0.2.3"
     verror "1.10.0"
 
+jstat@^1.9.2:
+  version "1.9.2"
+  resolved "https://registry.yarnpkg.com/jstat/-/jstat-1.9.2.tgz#cd2d24df200fd3488861dc7868be01ff65a238cc"
+  integrity sha512-nc3uAadgrWWvJz6RyXUFN0lvTWEXYxMVIrm6ZVoOh4YPLvukLKYpqMofKIE2ReWkL7gFw6hEo6VWZjotYW2Bsw==
+
 jsx-ast-utils@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/jsx-ast-utils/-/jsx-ast-utils-2.0.1.tgz#e801b1b39985e20fffc87b40e3748080e2dcac7f"

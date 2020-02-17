@@ -21,6 +21,7 @@ import StatsDescriptor from './services/Stats';
 import SwitchDescriptor from './services/Switch';
 import SamplingDescriptor from './services/Sampling';
 import BufferDescriptor from './services/Buffer';
+import MapDescriptor from './services/Map';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -45,6 +46,7 @@ export default class BrowserRuntime {
       SwitchDescriptor,
       SamplingDescriptor,
       BufferDescriptor,
+      MapDescriptor,
     ];
   }
 
