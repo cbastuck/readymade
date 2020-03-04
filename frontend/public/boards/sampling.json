@@ -17,8 +17,9 @@
         "serviceId": "hookup.to/service/sampling",
         "mean": [0.5, 0.5],
         "std": [0.2, 0.2],
+        "root": "sample",
         "annotations": {
-          "type": "sample"
+          "source": "sampler1"
         }
       },
       {
@@ -26,9 +27,7 @@
         "serviceId": "hookup.to/service/sampling",
         "mean": [0.1, 0.1],
         "std": [0.1, 0.1],
-        "annotations": {
-          "type": "sample"
-        }
+        "root": "sample"
       },
       {
         "serviceName": "Buffer",

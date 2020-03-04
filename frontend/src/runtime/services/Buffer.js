@@ -73,7 +73,7 @@ class Buffer {
   process(params) {
     this.buffer = this.buffer.concat(params);
     if (this.buffer.length > this.capacity) {
-      const diff = this.buffer.length - this.capacity + 1;
+      const diff = this.buffer.length - this.capacity;
       this.buffer = this.buffer.slice(diff);
     }
     return this.buffer;

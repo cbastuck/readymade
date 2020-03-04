@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Label,
+  Checkbox,
 } from 'semantic-ui-react';
 
 import jstat from 'jstat';
@@ -21,11 +21,13 @@ function isJSON(x) {
 }
 
 class SamplingUI extends Component {
-  state = {};
+  state = {
+    wrapSample: false,
+  };
 
   onInit(initialState) {
     const newState = {};
-    const { mean, std, annotations } = initialState;
+    const { mean, std, annotations, root } = initialState;
     if (mean !== undefined) {
       newState.mean = JSON.stringify(mean);
     }
@@ -35,8 +37,14 @@ class SamplingUI extends Component {
     if (annotations !== undefined) {
       newState.annotations = annotations;
     }
+    if (root !== undefined) {
+      newState.root = root;
+    }
 
-    this.setState(newState);
+    this.setState({ 
+      ...newState, 
+      wrapSample: !!newState.root 
+    });
   }
 
   render() {
@@ -66,11 +74,32 @@ class SamplingUI extends Component {
               onBlur={() => service.std = isJSON(this.state.std)}
             />
             <div style={{ textAlign: 'left' }}>
+              <Checkbox
+                checked={this.state.wrapSample}
+                label="Wrap Sample?"
+                onChange={(_, { checked }) => {
+                  const root = !checked ? undefined : this.state.root;
+                  service.root = root;
+                  this.setState({ wrapSample: checked, root })
+                }}
+              />
+              <Input
+                style={{ ...vspace, width: '100%' }}
+                type="text"
+                value={this.state.root || ''}
+                label="Root"
+                labelPosition="left"
+                onChange={(_, { value: root }) => this.setState({ root })}
+                onBlur={() => service.root = this.state.root}
+                disabled={!this.state.wrapSample}
+              />
+            </div>
+            <div style={{ textAlign: 'left' }}>
               <div className="section-header">Annotations</div>
               {
                 this.state.annotations &&
                 Object.keys(this.state.annotations).map((key, i) => (
-                  <div key={`sample-annotation-${key}-${i}`}>
+                  <div key={`sample-annotation-${service.uuid}-${i}`}>
                     <Input
                       style={{ ...vspace, width: '100%' }}
                       type="text"
@@ -88,7 +117,7 @@ class SamplingUI extends Component {
                             {}
                           )
                       })}
-                      onBlur={() => service.key = this.state.key}
+                      onBlur={() => service.annotations = this.state.annotations}
                     />
                     <Input
                       style={{ ...vspace, width: '100%' }}
@@ -104,7 +133,7 @@ class SamplingUI extends Component {
                           }
                         })
                       }
-                      onBlur={() => service.value = this.state.value}
+                      onBlur={() => service.annotations = this.state.annotations}
                     />
                   </div>
                 ))
@@ -126,11 +155,12 @@ class Sampling {
 
     this.mean = [0.5, 0.5];
     this.std = [0.1, 0.1];
-    this.annotations = {};
+    this.annotations = undefined;
+    this.root = undefined;
   }
 
   configure(config) {
-    const { mean, std, annotations } = config;
+    const { mean, std, annotations, root } = config;
     if (mean !== undefined) {
       this.mean = mean;
     }
@@ -141,6 +171,10 @@ class Sampling {
 
     if (annotations !== undefined) {
       this.annotations = annotations;
+    }
+
+    if (root !== undefined) {
+      this.root = root;
     }
   }
 
@@ -162,7 +196,10 @@ class Sampling {
       (_, idx) => this.sample(this.mean[idx], this.std[idx])
     );
 
-    const result = this.annotations ? { ...this.annotations, sample } : sample;
+    // wrap sample in object in case root or annotations are specified
+    const result = this.annotations ? 
+      { ...this.annotations, [this.root || 'sample']: sample } : 
+      (this.root ? { [this.root]: sample } : sample);
     
     if (!params) {
       return result;
@@ -171,7 +208,7 @@ class Sampling {
     if (Array.isArray(params)) {
       return [...params, result];
     }
-    
+
     return [params, result];
   }
 }
