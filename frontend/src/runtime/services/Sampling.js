@@ -1,12 +1,13 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Button,
+  Label,
 } from 'semantic-ui-react';
 
 import jstat from 'jstat';
 
 import ServiceUI from './ServiceUI';
+import './Sampling.css';
 
 const serviceId = 'hookup.to/service/sampling';
 const serviceName = 'Sampling';
@@ -24,12 +25,15 @@ class SamplingUI extends Component {
 
   onInit(initialState) {
     const newState = {};
-    const { mean, std } = initialState;
+    const { mean, std, annotations } = initialState;
     if (mean !== undefined) {
       newState.mean = JSON.stringify(mean);
     }
     if (std !== undefined) {
       newState.std = JSON.stringify(std);
+    }
+    if (annotations !== undefined) {
+      newState.annotations = annotations;
     }
 
     this.setState(newState);
@@ -37,43 +41,75 @@ class SamplingUI extends Component {
 
   render() {
     const marginStyle = { margin: '5px 5px' };
+    const vspace = { marginBottom: 5 }
     return (
       <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
       {
         ({ service }) => (
-          <div style={marginStyle}>
+          <div className="sampling-service" style={marginStyle}>
             <Input
-              style={marginStyle}
+              style={{ ...vspace, width: '100%' }}
               type="text"
-              value={this.state.mean}
+              value={this.state.mean || ''}
               label="Mean"
+              labelPosition="left"
               onChange={(_, { value: mean }) => this.setState({ mean })}
               onBlur={() => service.mean = isJSON(this.state.mean)}
             />
             <Input
-              style={marginStyle}
+              style={{ ...vspace, width: '100%' }}
               type="text"
-              value={this.state.std}
+              value={this.state.std || ''}
               label="Std"
+              labelPosition="left"
               onChange={(_, { value: std }) => this.setState({ std })}
               onBlur={() => service.std = isJSON(this.state.std)}
             />
-            <Input
-              style={marginStyle}
-              type="text"
-              value={this.state.key}
-              label="Key"
-              onChange={(_, { value: key }) => this.setState({ key })}
-              onBlur={() => service.key = this.state.key}
-            />
-            <Input
-              style={marginStyle}
-              type="text"
-              value={this.state.value}
-              label="Value"
-              onChange={(_, { value }) => this.setState({ value })}
-              onBlur={() => service.value = this.state.value}
-            />
+            <div style={{ textAlign: 'left' }}>
+              <div className="section-header">Annotations</div>
+              {
+                this.state.annotations &&
+                Object.keys(this.state.annotations).map((key, i) => (
+                  <div key={`sample-annotation-${key}-${i}`}>
+                    <Input
+                      style={{ ...vspace, width: '100%' }}
+                      type="text"
+                      value={key}
+                      label="Key"
+                      labelPosition="left"
+                      onChange={(_, { value: newKey }) => this.setState({ 
+                        annotations: Object.keys(this.state.annotations)
+                          .reduce(
+                            (all, oldKey) => {
+                              // replace the old key with the new key preserving the value
+                              const k = (oldKey === key) ? newKey : oldKey;
+                              return { ...all, [k]: this.state.annotations[oldKey] };
+                            },
+                            {}
+                          )
+                      })}
+                      onBlur={() => service.key = this.state.key}
+                    />
+                    <Input
+                      style={{ ...vspace, width: '100%' }}
+                      type="text"
+                      value={this.state.annotations[key]}
+                      label="Value"
+                      labelPosition="left"
+                      onChange={(_, { value }) => 
+                        this.setState({ 
+                          annotations: { 
+                            ...this.state.annotations, 
+                            [key]: value
+                          }
+                        })
+                      }
+                      onBlur={() => service.value = this.state.value}
+                    />
+                  </div>
+                ))
+              }
+            </div>
           </div>
         )
       }
@@ -90,16 +126,22 @@ class Sampling {
 
     this.mean = [0.5, 0.5];
     this.std = [0.1, 0.1];
+    this.annotations = {};
   }
 
   configure(config) {
-    if (config.mean !== undefined) {
-      this.mean = config.mean;
+    const { mean, std, annotations } = config;
+    if (mean !== undefined) {
+      this.mean = mean;
     }
 
-    if (config.std !== undefined) {
-      this.std = config.std;
-    }    
+    if (std !== undefined) {
+      this.std = std;
+    }
+
+    if (annotations !== undefined) {
+      this.annotations = annotations;
+    }
   }
 
   sample(mx, sx) {
@@ -119,15 +161,18 @@ class Sampling {
     const sample = new Array(n).fill(0).map(
       (_, idx) => this.sample(this.mean[idx], this.std[idx])
     );
+
+    const result = this.annotations ? { ...this.annotations, sample } : sample;
     
     if (!params) {
-      return sample;
+      return result;
     }
 
     if (Array.isArray(params)) {
-      return [...params, sample];
+      return [...params, result];
     }
-    return [params, sample];
+    
+    return [params, result];
   }
 }
 

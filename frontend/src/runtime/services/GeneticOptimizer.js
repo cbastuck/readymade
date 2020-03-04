@@ -163,6 +163,10 @@ class GeneticOptimizer {
   }
 
   process(params) {
+    if (!this.targetShape) {
+      return params;
+    }
+
     ++this.generation;
     const population = this.removeDuplicates(this.nextGeneration(this.population));
     const fitness = population.map(this.computeFitness.bind(this));
@@ -173,16 +177,13 @@ class GeneticOptimizer {
 
     const populationShapes = survivors.map(
       (genome, idx) => {
-        // const fi = (1 - genome[4]) * 255;
         return {
           ...this.genomeShape,
           x: toPercent(genome[0]),
           y: toPercent(genome[1]),
           length: toPercent(genome[2]),
           color: `rgba(0, 0, 0, ${genome[4]})`,
-          fitness: genome[4]
-          //color: `rgb(255, ${fi}, ${fi})`
-          //color: `rgb(${fi}, ${fi}, ${fi})`
+          fitness: genome[4],
         };
       }
     );
@@ -195,7 +196,9 @@ class GeneticOptimizer {
       font: 'lighter 1.2em Helvetica Neue',
       color: '#454f6d'
     };
-    return [this.targetShape].concat(populationShapes).concat(statusText);
+    
+    const res = this.targetShape ? [this.targetShape] : [];
+    return res.concat(populationShapes).concat(statusText).concat(params);
   }
 }
 

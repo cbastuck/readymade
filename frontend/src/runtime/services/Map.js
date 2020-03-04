@@ -1,29 +1,110 @@
 import React, { Component } from 'react';
+import {
+  Input,
+  Button,
+} from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
+import './Map.css';
 
 const serviceId = 'hookup.to/service/map';
 const serviceName = 'Map';
 
-function evil(f, params) {
-  return eval(f);
+function evalTerm(f, params) {
+  if (f && params) {
+    const scopedFunction = (term, params) => {
+      return eval(term);
+    };
+    return scopedFunction.call(null, f, params);
+  }
 }
 
+const newProperty = { key: 'value' };
+
 class MapUI extends Component {
+  state = {
+    template: {},
+    addProperty: null,
+  };
+
   onInit(initialState) {
-    const { bla } = initialState;
+    const { template } = initialState;
     this.setState({
-      bla
+      template,
     });
   }
 
   render() {
     const marginStyle = { margin: '10px 5px' };
+    const vspace = { marginBottom: 5 }
     return (
       <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
       {
         ({ service }) => (
-          <div style={marginStyle}>
+          <div className="map-service" style={marginStyle}>
+            {
+              Object.keys(this.state.template || {})
+                .map((key, idx) => (
+                  <Input
+                    key={`${service.uuid}-${idx}`}
+                    style={{ ...vspace, width: '100%' }}
+                    type="text"
+                    value={this.state.template[key]}
+                    onChange={(_, { value }) => { 
+                      this.setState({
+                        template: {
+                          ...this.state.template,
+                          [key]: value
+                        }
+                      })
+                    }}
+                    onBlur={service.configure({ template: this.state.template })}
+                    label={key}
+                    labelPosition="left"
+                  />
+                ))
+            }
+            {
+              this.state.addProperty && (
+                <Input 
+                  style={{ ...vspace, width: '100%' }}
+                  type="text"
+                  label={this.state.addProperty.key}
+                  value={this.state.addProperty.value}
+                  onChange={(_, { value }) => { 
+                    this.setState({ addProperty: {
+                      key: value
+                    } })
+                  }}
+                  
+                />
+              )
+            }
+            <div>
+              <Button 
+                style={{ width: this.state.addProperty ? '48%' : '100%' }}
+                onClick={() => {
+                  if (this.state.addProperty) {
+                    // commit the new property
+                    this.setState({ addProperty: null });
+                  } else {
+                    this.setState({ addProperty: newProperty });
+                  }
+                }}
+              >
+                Add
+              </Button>
+              {
+                this.state.addProperty && (
+                  <Button 
+                    style={{ width: '48%' }}
+                    onClick={() => this.setState({ addProperty: null })}
+                  >
+                    Cancel
+                  </Button>
+                )
+              }
+            </div>
           </div>
         )
       }
@@ -42,12 +123,14 @@ class Map {
   configure(config) {
     const { template } = config;
     if (template !== undefined) {
-      const terms = {};
-      this.template = Object.keys(template).reduce(
+      this.terms = {};
+      this.template = template;
+      this.properties = Object.keys(template).reduce(
         (all, cur) => {
           const value = template[cur];
           if (cur[cur.length - 1] === '=') {
-            terms[cur.substr(0, cur.length - 1)] = value;
+            // treated as a dynamic term not a static property
+            this.terms[cur.substr(0, cur.length - 1)] = value;
             return all;
           } else {
             return { ...all, [cur]: value };
@@ -55,20 +138,26 @@ class Map {
         }, 
         {}
       );
-      this.terms = terms;
     }
   }
 
   process(params) {
-    return params.map(x => ({
+    const mapper = x => ({
       ...this.template,
       ...Object.keys(this.terms).reduce(
-        (p, c) => ({ ...p, [c]: evil(this.terms[c], x) }),
+        (p, key) => ({ 
+          ...p, 
+          [key]: evalTerm(this.terms[key], x),
+        }),
         {}
       )
-      //x: `${Math.floor(sample[0] * 100)}%`,
-      //y: `${Math.floor(sample[1] * 100)}%`,
-    }));
+    });
+
+    if (Array.isArray(params)) {
+      return params.map(mapper);
+    }
+    
+    return mapper(params);
   }
 }
 

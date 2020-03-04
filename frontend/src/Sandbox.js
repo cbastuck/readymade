@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 
+import uuid from 'uuid';
 import queryString from 'query-string'
 
 import Scene from './components/Scene';
@@ -38,6 +39,15 @@ export default class Sandbox extends Component {
     const firstRuntimeId = runtimesInData && runtimesInData[0];
     if (firstRuntimeId) {
       const firstRuntimeData = data[firstRuntimeId];
+      if (firstRuntimeData && firstRuntimeData.services) {
+        // add an uuid to each service if this is not present
+        firstRuntimeData.services.map(s => {
+          if (!s.uuid) {
+            s.uuid = uuid.v4();
+          }
+          return s;
+        })
+      }
       const runtime = this.createBrowserRuntime(firstRuntimeData);
       this.setState({ runtime, backendData: firstRuntimeData });
       return firstRuntimeData;
