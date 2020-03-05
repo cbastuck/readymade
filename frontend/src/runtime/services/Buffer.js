@@ -38,7 +38,7 @@ class BufferUI extends Component {
                 style={marginStyle}
               />
             <Button
-              style={{ width: '95%', ...marginStyle }}
+              style={{  ...marginStyle }}
               onClick={
                 () => service.buffer = []
               }

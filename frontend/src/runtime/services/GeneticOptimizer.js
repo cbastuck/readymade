@@ -29,26 +29,28 @@ class GeneticOptimizer {
 
     this.generation = 0;
     this.population = [];
+    this.dataRoot = undefined;
   }
 
   configure(config) {
-    const { targetShape, genomeShape, initialPopulation } = config || {};
-    if (targetShape) {
-      this.targetShape = targetShape;
-    }
+    const { genomeShape, initialPopulation, dataRoot } = config || {};
 
-    if (genomeShape) {
+    if (dataRoot !== undefined) {
+      this.dataRoot = dataRoot;
+    }
+   
+    if (genomeShape !== undefined && initialPopulation !== undefined) {
       this.genomeShape = genomeShape;
-    }
 
-    if (initialPopulation !== undefined) {
       if (Array.isArray(initialPopulation)) {
-        this.population = initialPopulation.map(g => [
-          percentToRelative(g.x),
-          percentToRelative(g.y),
-          percentToRelative(g.length),
-          g.ttl
-        ]);
+        this.population = initialPopulation.map(
+          g => [
+            percentToRelative(g.x),
+            percentToRelative(g.y),
+            percentToRelative(g.length),
+            g.ttl
+          ]
+        );
       } else {
         this.population = [...Array(rand(initialPopulation))]
           .map(g => [
@@ -58,7 +60,7 @@ class GeneticOptimizer {
             (genomeShape.ttl && genomeShape) ? genomeShape.ttl : 10,  // ttl
           ]);
       }
-    }
+    }   
   }
 
   pickGenome() {

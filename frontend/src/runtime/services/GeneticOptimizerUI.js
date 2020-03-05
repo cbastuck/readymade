@@ -14,11 +14,10 @@ export default class GeneticOptimizerUI extends Component {
   };
 
   onInit(initialState) {
-    const dimensionality = initialState.dimensionality;
-    const ttl = initialState.ttl;
+    const { ttl, dataRoot } = initialState;
     this.setState({
-      dimensionality,
       ttl,
+      dataRoot,
     });
   }
 
@@ -30,17 +29,20 @@ export default class GeneticOptimizerUI extends Component {
         ({ service }) => (
           <div style={{ textAlign: 'left' }}>
             <Input
-              type="number"
-              value={this.state.dimensionality}
-              onChange={(_, { value }) => this.setState({ dimensionality: Number(value) })}
-              label="Dimensionality"
+              type="text"
+              value={this.state.dataRoot || ''}
+              onChange={(_, { value: dataRoot }) => {
+                this.setState({ dataRoot });
+                service.dataRoot = dataRoot;
+              }}
+              label="Root"
               style={inputStyle}
             />
             <Input
               type="number"
               value={this.state.ttl}
               onChange={(_, { value }) => this.setState({ ttl: Number(value) })}
-              label="Time to Live"
+              label="TTL"
               style={inputStyle}
             />
           </div>

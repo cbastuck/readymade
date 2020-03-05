@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import {
   Input,
   Checkbox,
+  Button,
 } from 'semantic-ui-react';
 
 import jstat from 'jstat';
@@ -62,7 +63,7 @@ class SamplingUI extends Component {
               label="Mean"
               labelPosition="left"
               onChange={(_, { value: mean }) => this.setState({ mean })}
-              onBlur={() => service.mean = isJSON(this.state.mean)}
+              onKeyPress={e => e.key === 'Enter' && (service.mean = isJSON(this.state.mean))}
             />
             <Input
               style={{ ...vspace, width: '100%' }}
@@ -71,12 +72,12 @@ class SamplingUI extends Component {
               label="Std"
               labelPosition="left"
               onChange={(_, { value: std }) => this.setState({ std })}
-              onBlur={() => service.std = isJSON(this.state.std)}
+              onKeyPress={e => e.key === 'Enter' && (service.std = isJSON(this.state.std))}
             />
             <div style={{ textAlign: 'left' }}>
               <Checkbox
                 checked={this.state.wrapSample}
-                label="Wrap Sample?"
+                label="Wrap in Object"
                 onChange={(_, { checked }) => {
                   const root = !checked ? undefined : this.state.root;
                   service.root = root;
@@ -90,12 +91,18 @@ class SamplingUI extends Component {
                 label="Root"
                 labelPosition="left"
                 onChange={(_, { value: root }) => this.setState({ root })}
-                onBlur={() => service.root = this.state.root}
+                onKeyPress={e => e.key === 'Enter' && (service.root = this.state.root)}
                 disabled={!this.state.wrapSample}
               />
             </div>
             <div style={{ textAlign: 'left' }}>
-              <div className="section-header">Annotations</div>
+              <div className="section-header">
+                Annotations 
+                <span 
+                  style={{ backgroundColor: '#e0e1e2', cursor: 'pointer', textAlign: 'center', margin: 10, padding: '1px 4px', borderRadius: '50%' }}
+                >+
+                </span>
+              </div>
               {
                 this.state.annotations &&
                 Object.keys(this.state.annotations).map((key, i) => (
@@ -117,7 +124,7 @@ class SamplingUI extends Component {
                             {}
                           )
                       })}
-                      onBlur={() => service.annotations = this.state.annotations}
+                      onKeyPress={e => e.key === 'Enter' && (service.annotations = this.state.annotations)}
                     />
                     <Input
                       style={{ ...vspace, width: '100%' }}
@@ -133,7 +140,7 @@ class SamplingUI extends Component {
                           }
                         })
                       }
-                      onBlur={() => service.annotations = this.state.annotations}
+                      onKeyPress={e => e.key === 'Enter' && (service.annotations = this.state.annotations)}
                     />
                   </div>
                 ))

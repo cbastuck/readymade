@@ -34,12 +34,18 @@
         "serviceId": "hookup.to/service/buffer"
       },
       {
+        "serviceName": "Filter",
+        "serviceId": "hookup.to/service/filter-browser",
+        "condition": "params.sample && params.source"
+      },
+      {
         "serviceName": "Monitor",
         "serviceId": "hookup.to/service/monitor-browser"
       },
       {
         "serviceName": "Genetic",
         "serviceId": "hookup.to/service/genetic-optimizer",
+        "dataRoot": "sample",
         "targetShape": {
           "type": "circle",
           "radius": "50%",
@@ -94,8 +100,8 @@
           "type": "circle",
           "radius": "0.5%",
           "color": "black",
-          "x=": "Math.floor(params[0] * 100) + '%'",
-          "y=": "Math.floor(params[1] * 100) + '%'"
+          "x=": "Math.floor(params.sample[0] * 100) + '%'",
+          "y=": "Math.floor(params.sample[1] * 100) + '%'"
         }
       },
       {

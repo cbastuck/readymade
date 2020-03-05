@@ -4,20 +4,12 @@ import {
   Button,
 } from 'semantic-ui-react';
 
+import evilEval from '../../evilEval';
 import ServiceUI from './ServiceUI';
 import './Map.css';
 
 const serviceId = 'hookup.to/service/map';
 const serviceName = 'Map';
-
-function evalTerm(f, params) {
-  if (f && params) {
-    const scopedFunction = (term, params) => {
-      return eval(term);
-    };
-    return scopedFunction.call(null, f, params);
-  }
-}
 
 const newProperty = { key: 'value' };
 
@@ -58,7 +50,7 @@ class MapUI extends Component {
                         }
                       })
                     }}
-                    onBlur={service.configure({ template: this.state.template })}
+                    onKeyPress={e => e.key === 'Enter' && service.configure({ template: this.state.template })}
                     label={key}
                     labelPosition="left"
                   />
@@ -147,7 +139,7 @@ class Map {
       ...Object.keys(this.terms).reduce(
         (p, key) => ({ 
           ...p, 
-          [key]: evalTerm(this.terms[key], x),
+          [key]: evilEval(this.terms[key], x),
         }),
         {}
       )
