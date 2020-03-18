@@ -1,3 +1,5 @@
+import jstat from 'jstat';
+
 import GeneticOptimizerUI from './GeneticOptimizerUI';
 
 const serviceId = 'hookup.to/service/genetic-optimizer';
@@ -101,26 +103,19 @@ class GeneticOptimizer {
     return population.concat([mutatedChild]);
   }
 
-  computeFitness(genome) {
-    const width = 1000;
-    const height = width;
+  computeFitness(targetDistribution, genome) {
+    const probabilities = targetDistribution.map(
+      sample => {
+        const probX = jstat.normal.pdf(sample[0], genome[0], 1);
+        const probY = jstat.normal.pdf(sample[1], genome[1], 1);
+        return probX * probY;
+      }
+    );
 
-    const targetCenterX = percentToRelative(this.targetShape.x) * width;
-    const targetCenterY = percentToRelative(this.targetShape.y) * height;
-    const targetRadius = percentToRelative(this.targetShape.radius) * width;
-
-    const upperLeftX = genome[0] * width;   // x
-    const upperLeftY = genome[1] * height;  // y
-    const length = genome[2] * width;       // length
-
-    const genomeCenterX = upperLeftX + length / 2;
-    const genomeCenterY = upperLeftY + length / 2;
-
-    const dx = Math.abs(targetCenterX - genomeCenterX);
-    const dy = Math.abs(targetCenterY - genomeCenterY);
-    const distance = Math.sqrt(dx * dx + dy * dy);
-
-    return distance > targetRadius ? 0 : (1 - distance / targetRadius);
+    return probabilities.reduce(
+      (a, p) => a + p, 
+      0
+    ) / probabilities.length;
   }
 
   applySelection(population, fitness) {
@@ -165,18 +160,19 @@ class GeneticOptimizer {
   }
 
   process(params) {
-    if (!this.targetShape) {
-      return params;
-    }
+    const targetDistribution = this.dataRoot ? 
+      params.map(x => x[this.dataRoot]) : 
+      params;
 
     ++this.generation;
     const population = this.removeDuplicates(this.nextGeneration(this.population));
-    const fitness = population.map(this.computeFitness.bind(this));
+    const fitness = population.map(this.computeFitness.bind(this, targetDistribution));
     const survivors = this.applySelection(population, fitness);
   
     this.population = survivors;
-    const toPercent = val => `${Math.floor(val * 100)}%`;
 
+    // generate shapes out of population
+    const toPercent = val => `${Math.floor(val * 100)}%`;
     const populationShapes = survivors.map(
       (genome, idx) => {
         return {
@@ -184,23 +180,13 @@ class GeneticOptimizer {
           x: toPercent(genome[0]),
           y: toPercent(genome[1]),
           length: toPercent(genome[2]),
-          color: `rgba(0, 0, 0, ${genome[4]})`,
+          color: 'red',
           fitness: genome[4],
         };
       }
     );
-
-    const statusText = {
-      type: 'text',
-      text: `generation ${this.generation} has ${populationShapes.length} unique genes`,
-      y: '90%',
-      x: '80%',
-      font: 'lighter 1.2em Helvetica Neue',
-      color: '#454f6d'
-    };
     
-    const res = this.targetShape ? [this.targetShape] : [];
-    return res.concat(populationShapes).concat(statusText).concat(params);
+    return populationShapes.concat(params);
   }
 }
 

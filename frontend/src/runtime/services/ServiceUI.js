@@ -1,9 +1,23 @@
 import React, { Component } from 'react';
+import { 
+  Menu,
+  Segment,
+} from 'semantic-ui-react';
 
 import { BoardConsumer } from '../../BoardContext';
 
 export default class ServiceUI extends Component {
-  componentDidMount() {
+  state = {
+    currentSegmentName: undefined,
+  };
+
+  componentDidMount(){
+    this.setState({
+      currentSegmentName: 
+        this.props.segments && 
+        this.props.segments[0] && 
+        this.props.segments[0].name,
+    });
   }
 
   componentWillUnmount() {
@@ -28,19 +42,51 @@ export default class ServiceUI extends Component {
     return this.service;
   }
 
-  render() {
-    const { children } = this.props;
+  renderSegments = ({ service }, segments) => {
+    const segment = segments.find(segment => segment.name === this.state.currentSegmentName);
+    const marginStyle = { margin: '5px 5px' };
     return (
-     <BoardConsumer>
-       {
-         boardContext => children(
-          { 
-            boardContext,
-            service: this.setup(boardContext, this.props)
-          }
-         )
-       }
-     </BoardConsumer>
+      <div className="sampling-service" style={marginStyle}>
+        <Menu compact pointing>
+        { 
+          segments.map(
+            (segment, idx) => 
+              <Menu.Item
+                key={`${service.uuid}-${segment.name}-${idx}`}
+                name={segment.name}
+                active={this.state.currentSegmentName === segment.name}
+                onClick={(_, { name: currentSegmentName }) => this.setState({ currentSegmentName })}
+              />
+          )
+        }
+        </Menu>
+        <Segment style={{ margin: '15px 20px' }}>
+          { segment && segment.render(service) }
+        </Segment>
+      </div>
+    );
+  }
+
+  render() {
+    const { children, segments } = this.props;
+    return (
+      <BoardConsumer>
+        {
+          boardContext => 
+            segments ? 
+              this.renderSegments(
+                { 
+                  boardContext, 
+                  service: this.setup(boardContext, this.props),
+                }, 
+                segments
+              ) : 
+              children({ 
+                boardContext,
+                service: this.setup(boardContext, this.props)
+              })
+        }
+      </BoardConsumer>
    ); 
   }
 }

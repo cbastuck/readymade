@@ -31,7 +31,8 @@
       },
       {
         "serviceName": "Buffer",
-        "serviceId": "hookup.to/service/buffer"
+        "serviceId": "hookup.to/service/buffer",
+        "capacity": 1000
       },
       {
         "serviceName": "Filter",
@@ -46,18 +47,6 @@
         "serviceName": "Genetic",
         "serviceId": "hookup.to/service/genetic-optimizer",
         "dataRoot": "sample",
-        "targetShape": {
-          "type": "circle",
-          "radius": "50%",
-          "gradient": {
-            "colors": ["#454f6d", "#fff"],
-            "centerX": "50%",
-            "centerY": "50%",
-            "radius": "50%"
-          },
-          "x": "50%",
-          "y": "50%"
-        },
         "genomeShape": {
           "type": "square",
           "color": "#454f6d",
@@ -96,6 +85,7 @@
       {
         "serviceName": "Map",
         "serviceId": "hookup.to/service/map",
+        "condition": "params.source === 'sampler1'",
         "template": {
           "type": "circle",
           "radius": "0.5%",

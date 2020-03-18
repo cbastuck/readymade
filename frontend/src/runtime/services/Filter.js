@@ -36,7 +36,6 @@ class FilterUI extends Component {
               style={{ ...vspace, width: '100%' }}
               type="text"
               value={this.state.condition || ''}
-              label="Condition"
               labelPosition="left"
               onChange={(_, { value: condition }) => this.setState({ condition })}
               onKeyPress={e => e.key === 'Enter' && service.configure({ condition: this.state.condition })}

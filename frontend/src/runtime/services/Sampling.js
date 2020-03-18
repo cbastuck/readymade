@@ -1,13 +1,13 @@
 import React, { Component } from 'react';
-import {
+import { 
   Input,
   Checkbox,
-  Button,
 } from 'semantic-ui-react';
-
 import jstat from 'jstat';
 
 import ServiceUI from './ServiceUI';
+import Annotations from '../../components/shared/Annotations';
+
 import './Sampling.css';
 
 const serviceId = 'hookup.to/service/sampling';
@@ -48,108 +48,89 @@ class SamplingUI extends Component {
     });
   }
 
-  render() {
-    const marginStyle = { margin: '5px 5px' };
-    const vspace = { marginBottom: 5 }
+  renderModel = service => {
+    const vspace = { marginBottom: 5 };
     return (
-      <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
-      {
-        ({ service }) => (
-          <div className="sampling-service" style={marginStyle}>
-            <Input
-              style={{ ...vspace, width: '100%' }}
-              type="text"
-              value={this.state.mean || ''}
-              label="Mean"
-              labelPosition="left"
-              onChange={(_, { value: mean }) => this.setState({ mean })}
-              onKeyPress={e => e.key === 'Enter' && (service.mean = isJSON(this.state.mean))}
-            />
-            <Input
-              style={{ ...vspace, width: '100%' }}
-              type="text"
-              value={this.state.std || ''}
-              label="Std"
-              labelPosition="left"
-              onChange={(_, { value: std }) => this.setState({ std })}
-              onKeyPress={e => e.key === 'Enter' && (service.std = isJSON(this.state.std))}
-            />
-            <div style={{ textAlign: 'left' }}>
-              <Checkbox
-                checked={this.state.wrapSample}
-                label="Wrap in Object"
-                onChange={(_, { checked }) => {
-                  const root = !checked ? undefined : this.state.root;
-                  service.root = root;
-                  this.setState({ wrapSample: checked, root })
-                }}
-              />
-              <Input
-                style={{ ...vspace, width: '100%' }}
-                type="text"
-                value={this.state.root || ''}
-                label="Root"
-                labelPosition="left"
-                onChange={(_, { value: root }) => this.setState({ root })}
-                onKeyPress={e => e.key === 'Enter' && (service.root = this.state.root)}
-                disabled={!this.state.wrapSample}
-              />
-            </div>
-            <div style={{ textAlign: 'left' }}>
-              <div className="section-header">
-                Annotations 
-                <span 
-                  style={{ backgroundColor: '#e0e1e2', cursor: 'pointer', textAlign: 'center', margin: 10, padding: '1px 4px', borderRadius: '50%' }}
-                >+
-                </span>
-              </div>
-              {
-                this.state.annotations &&
-                Object.keys(this.state.annotations).map((key, i) => (
-                  <div key={`sample-annotation-${service.uuid}-${i}`}>
-                    <Input
-                      style={{ ...vspace, width: '100%' }}
-                      type="text"
-                      value={key}
-                      label="Key"
-                      labelPosition="left"
-                      onChange={(_, { value: newKey }) => this.setState({ 
-                        annotations: Object.keys(this.state.annotations)
-                          .reduce(
-                            (all, oldKey) => {
-                              // replace the old key with the new key preserving the value
-                              const k = (oldKey === key) ? newKey : oldKey;
-                              return { ...all, [k]: this.state.annotations[oldKey] };
-                            },
-                            {}
-                          )
-                      })}
-                      onKeyPress={e => e.key === 'Enter' && (service.annotations = this.state.annotations)}
-                    />
-                    <Input
-                      style={{ ...vspace, width: '100%' }}
-                      type="text"
-                      value={this.state.annotations[key]}
-                      label="Value"
-                      labelPosition="left"
-                      onChange={(_, { value }) => 
-                        this.setState({ 
-                          annotations: { 
-                            ...this.state.annotations, 
-                            [key]: value
-                          }
-                        })
-                      }
-                      onKeyPress={e => e.key === 'Enter' && (service.annotations = this.state.annotations)}
-                    />
-                  </div>
-                ))
-              }
-            </div>
-          </div>
-        )
-      }
-      </ServiceUI>
+      <div>
+        <Input
+          style={{ ...vspace, width: '100%' }}
+          type="text"
+          value={this.state.mean || ''}
+          label="Mean"
+          labelPosition="left"
+          onChange={(_, { value: mean }) => this.setState({ mean })}
+          onKeyPress={e => e.key === 'Enter' && (service.mean = isJSON(this.state.mean))}
+        />
+        <Input
+          style={{ ...vspace, width: '100%' }}
+          type="text"
+          value={this.state.std || ''}
+          label="Std"
+          labelPosition="left"
+          onChange={(_, { value: std }) => this.setState({ std })}
+          onKeyPress={e => e.key === 'Enter' && (service.std = isJSON(this.state.std))}
+        />
+      </div>
+    )
+  }
+
+  renderWrapping = service => {
+    const vspace = { marginBottom: 5 };
+    return (
+      <div style={{ margin: '10px 0px', textAlign: 'left' }}>
+        <Checkbox
+          label="Wrap sample in Object"
+          checked={this.state.wrapSample}
+          onChange={(_, { checked }) => {
+            const root = !checked ? undefined : this.state.root;
+            service.root = root;
+            this.setState({ wrapSample: checked, root })
+          }}
+        />
+        <Input
+          style={{ ...vspace, width: '100%' }}
+          type="text"
+          value={this.state.root || ''}
+          label="Root"
+          labelPosition="left"
+          onChange={(_, { value: root }) => this.setState({ root })}
+          onKeyPress={e => e.key === 'Enter' && (service.root = this.state.root)}
+        />
+      </div>
+    );
+  }
+
+  renderAnnotations = service => {
+    return (
+      <div style={{ textAlign: 'left' }}>
+        <div className="section-header">
+          Annotations 
+          <span 
+            style={{ backgroundColor: '#e0e1e2', cursor: 'pointer', textAlign: 'center', margin: 10, padding: '1px 4px', borderRadius: '50%' }}
+          >+
+          </span>
+        </div>
+        <Annotations
+          id={service && service.uuid}
+          values={this.state.annotations}
+          onChange={annotations => this.setState({ annotations })}
+          onEnter={() => (service.annotations = this.state.annotations)}
+        />
+      </div>
+    );
+  }
+  
+  render() {
+    return (
+      <ServiceUI 
+        {...this.props} 
+        onInit={this.onInit.bind(this)}
+        segments={[
+          { name: 'model', render: this.renderModel },
+          { name: 'wrapping', render: this.renderWrapping },
+          { name: 'annotate', render: this.renderAnnotations },
+        ]}
+      />
     );
   }
 }
