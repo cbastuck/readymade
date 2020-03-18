@@ -102,24 +102,13 @@ class SamplingUI extends Component {
 
   renderAnnotations = service => {
     return (
-      <div style={{ textAlign: 'left' }}>
-        <div className="section-header">
-          Annotations 
-          <span 
-            style={{ backgroundColor: '#e0e1e2', cursor: 'pointer', textAlign: 'center', margin: 10, padding: '1px 4px', borderRadius: '50%' }}
-          >+
-          </span>
-        </div>
-        <Annotations
-          id={service && service.uuid}
-          values={this.state.annotations}
-          onChange={annotations => this.setState({ annotations })}
-          onEnter={() => (service.annotations = this.state.annotations)}
-        />
-      </div>
+      <Annotations
+        service={service}
+        initial={this.state.annotations}
+      />
     );
   }
-  
+
   render() {
     return (
       <ServiceUI 
