@@ -6,6 +6,8 @@ import {
 } from 'semantic-ui-react';
 
 import evilEval from '../../evilEval';
+import InputLabelValue from '../../components/shared/InputLabelValue';
+
 import ServiceUI from './ServiceUI';
 
 import './Map.css';
@@ -18,7 +20,6 @@ const newProperty = { key: 'value' };
 class MapUI extends Component {
   state = {
     template: {},
-    addProperty: null,
     conditionEnabled: false,
   };
 
@@ -38,64 +39,37 @@ class MapUI extends Component {
         {
           Object.keys(this.state.template || {})
             .map((key, idx) => (
-              <Input
-                key={`${service.uuid}-${idx}`}
-                style={{ ...vspace, width: '100%' }}
-                type="text"
-                value={this.state.template[key]}
-                onChange={(_, { value }) => { 
-                  this.setState({
-                    template: {
-                      ...this.state.template,
-                      [key]: value
-                    }
-                  })
-                }}
-                onKeyPress={e => e.key === 'Enter' && service.configure({ template: this.state.template })}
+              <InputLabelValue
+                key={`${service.uuid}-${key}-${idx}`}
                 label={key}
+                value={this.state.template[key]}
+                onCommit={({ label: newKey, value }) => { 
+                  const template = Object.keys(this.state.template).reduce(
+                    (all, cur) => (cur !== key) ? 
+                        { ...all, [cur]: this.state.template[cur] } : // this is the input that changed
+                        (newKey !== '' ? { ...all, [newKey]: value } : all), // empty key means deleting the item
+                    {}
+                  );
+                  service.configure({ template });
+                  this.setState({ template });
+                }}
                 labelPosition="left"
               />
             ))
         }
-        {
-          this.state.addProperty && (
-            <Input 
-              style={{ ...vspace, width: '100%' }}
-              type="text"
-              label={this.state.addProperty.key}
-              value={this.state.addProperty.value}
-              onChange={(_, { value }) => { 
-                this.setState({ addProperty: {
-                  key: value
-                } })
-              }}
-            />
-          )
-        }
         <div>
-          <Button 
-            style={{ width: this.state.addProperty ? '48%' : '100%' }}
-            onClick={() => {
-              if (this.state.addProperty) {
-                // commit the new property
-                this.setState({ addProperty: null });
-              } else {
-                this.setState({ addProperty: newProperty });
-              }
-            }}
+          <Button
+            style={{ width: '100%' }}
+            onClick={() => this.setState({ 
+                template: {
+                  ...this.state.template,
+                  ...newProperty,
+                }
+              })
+            }
           >
             Add Property
           </Button>
-          {
-            this.state.addProperty && (
-              <Button 
-                style={{ width: '48%' }}
-                onClick={() => this.setState({ addProperty: null })}
-              >
-                Cancel
-              </Button>
-            )
-          }
         </div>
       </div>
     )
