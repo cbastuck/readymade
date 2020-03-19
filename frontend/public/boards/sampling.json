@@ -8,7 +8,7 @@
         "serviceName": "Timer",
         "serviceId": "hookup.to/service/browser-timer",
         "periodic": true,
-        "periodicValue": 500,
+        "periodicValue": 50,
         "periodicUnit": "ms",
         "immediate": true
       },
@@ -27,7 +27,10 @@
         "serviceId": "hookup.to/service/sampling",
         "mean": [0.1, 0.1],
         "std": [0.1, 0.1],
-        "root": "sample"
+        "root": "sample",
+        "annotations": {
+          "source": "sampler2"
+        }
       },
       {
         "serviceName": "Buffer",
@@ -89,7 +92,19 @@
         "template": {
           "type": "circle",
           "radius": "0.5%",
-          "color": "black",
+          "color": "gray",
+          "x=": "Math.floor(params.sample[0] * 100) + '%'",
+          "y=": "Math.floor(params.sample[1] * 100) + '%'"
+        }
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "condition": "params.source === 'sampler2'",
+        "template": {
+          "type": "circle",
+          "radius": "0.5%",
+          "color": "purple",
           "x=": "Math.floor(params.sample[0] * 100) + '%'",
           "y=": "Math.floor(params.sample[1] * 100) + '%'"
         }

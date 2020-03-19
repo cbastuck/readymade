@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import {
-  Input,
   Button,
 } from 'semantic-ui-react';
+
+import InputLabelValue from './InputLabelValue';
 
 import './Annotations.css';
 
@@ -12,50 +13,36 @@ export default class Annotations extends Component {
   componentDidMount() {
     this.setState({
       annotations: this.props.initial || {},
-      addAnnotation: null,
     })
   }
 
   render() {
-    const { service } = this.props;
+    const { service, onCommit } = this.props;
     const { annotations = {}} = this.state || {};
-    const vspace = { marginBottom: 5 };
     return (
       <div className="annotation-header">
         {
           Object.keys(annotations).map((key, i) => (
-            <div className="annotations" key={`annotation-${service.uuid}-${i}`}>
-              <Input
-                style={{ ...vspace, width: '100%' }}
-                type="text"
+            <div 
+              className="annotations" 
+              kkey={`container-${service.uuid}-${key}-${i}`}
+            >
+              <InputLabelValue
+                key={`input-${service.uuid}-${key}-${i}`}
                 value={annotations[key]}
                 label={key}
                 labelPosition="left"
-                onKeyChanged={(_, { value: newKey }) => 
-                  Object.keys(annotations).reduce(
-                    (all, oldKey) => {
-                      // replace the old key with the new key preserving the value
-                      const k = (oldKey === key) ? newKey : oldKey;
-                      return { ...all, [k]: annotations[oldKey] };
-                    },
+                onCommit={({ label: newKey, value }) => { 
+                  const newAnnotations = Object.keys(annotations).reduce(
+                    (all, cur) => (cur !== key) ? 
+                        { ...all, [cur]: annotations[cur] } : // this is the input that changed
+                        (newKey !== '' ? { ...all, [newKey]: value } : all), // empty key means deleting the item
                     {}
-                  )
-                }
-                onChange={(_, { value }) => 
-                  this.setState({ 
-                    annotations: { 
-                      ...annotations,
-                      [key]: value
-                    }
-                  })
-                }
-                onKeyPress={
-                  e => {
-                    if (e.key === 'Enter') {
-                      service.configure({ annotations });
-                    }
-                  }
-                }
+                  );
+
+                  this.setState({ annotations: newAnnotations });
+                  onCommit(newAnnotations);
+                }}
               />
             </div>
           ))
@@ -63,12 +50,12 @@ export default class Annotations extends Component {
         <Button
           style={{ marginTop: 1, width: '100%' }}
           onClick={() => {
-            if (this.state.addAnnotation) {
-              // commit the new property
-              this.setState({ addAnnotation: null });
-            } else {
-              this.setState({ addAnnotation: newAnnotation });
-            }
+              this.setState({ 
+                annotations: {
+                  ...this.state.annotations,
+                  ...newAnnotation,
+                }
+              });
           }}
         >
           Add Annotation

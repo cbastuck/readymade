@@ -47,19 +47,23 @@ export default class ServiceUI extends Component {
     const marginStyle = { margin: '5px 5px' };
     return (
       <div className="sampling-service" style={marginStyle}>
-        <Menu compact pointing>
-        { 
-          segments.map(
-            (segment, idx) => 
-              <Menu.Item
-                key={`${service.uuid}-${segment.name}-${idx}`}
-                name={segment.name}
-                active={this.state.currentSegmentName === segment.name}
-                onClick={(_, { name: currentSegmentName }) => this.setState({ currentSegmentName })}
-              />
+        {
+          segments.length > 1 && (
+            <Menu compact pointing>
+            { 
+              segments.map(
+                (segment, idx) => 
+                  <Menu.Item
+                    key={`${service.uuid}-${segment.name}-${idx}`}
+                    name={segment.name}
+                    active={this.state.currentSegmentName === segment.name}
+                    onClick={(_, { name: currentSegmentName }) => this.setState({ currentSegmentName })}
+                  />
+              )
+            }
+            </Menu>
           )
         }
-        </Menu>
         <Segment style={{ margin: '15px 20px' }}>
           { segment && segment.render(service) }
         </Segment>

@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Button,
 } from 'semantic-ui-react';
 
 import evilEval from '../../evilEval';
@@ -24,26 +23,30 @@ class FilterUI extends Component {
     });
   }
 
-  render() {
-    const marginStyle = { margin: '10px 5px' };
-    const vspace = { marginBottom: 5 }
+  renderMain = service => {
     return (
-      <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
-      {
-        ({ service }) => (
-          <div className="filter-service" style={marginStyle}>
-            <Input
-              style={{ ...vspace, width: '100%' }}
-              type="text"
-              value={this.state.condition || ''}
-              labelPosition="left"
-              onChange={(_, { value: condition }) => this.setState({ condition })}
-              onKeyPress={e => e.key === 'Enter' && service.configure({ condition: this.state.condition })}
-            />
-          </div>
-        )
-      }
-      </ServiceUI>
+      <div className="filter-service" style={{ textAlign: 'left' }}>
+        <Input
+          type="text"
+          label="Condition"
+          value={this.state.condition || ''}
+          labelPosition="left"
+          onChange={(_, { value: condition }) => this.setState({ condition })}
+          onKeyPress={e => e.key === 'Enter' && service.configure({ condition: this.state.condition })}
+        />
+      </div>
+    );
+  }
+
+  render() {
+    return (
+      <ServiceUI 
+        {...this.props} 
+        onInit={this.onInit.bind(this)}
+        segments={[
+          { name: 'main', render: this.renderMain }
+        ]}
+      />
     );
   }
 }

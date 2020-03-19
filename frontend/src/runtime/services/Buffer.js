@@ -19,36 +19,38 @@ class BufferUI extends Component {
     });
   }
 
-  render() {
-    const marginStyle = { margin: '10px 5px' };
+  renderMain = service => {
     return (
-      <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
-      {
-        ({ service }) => (
-          <div>
-            <Input
-                type="number"
-                value={this.state.capacity}
-                onChange={(_, { value }) => {
-                  const capacity = value !== '' && Number(value);
-                  service.configure({ capacity });
-                  this.setState({ capacity });
-                }}
-                label="Capacity"
-                style={marginStyle}
-              />
-            <Button
-              style={{  ...marginStyle }}
-              onClick={
-                () => service.buffer = []
-              }
-            >
-              Clear
-            </Button>
-          </div>
-        )
-      }
-      </ServiceUI>
+      <div>
+        <Input
+            type="number"
+            value={this.state.capacity}
+            onChange={(_, { value }) => {
+              const capacity = value !== '' && Number(value);
+              service.configure({ capacity });
+              this.setState({ capacity });
+            }}
+            label="Capacity"
+          />
+        <Button
+          style={{ width: '100%', marginTop: 5 }}
+          onClick={() => service.buffer = []}
+        >
+          Clear
+        </Button>
+      </div>
+    );
+  }
+
+  render() {
+    return (
+      <ServiceUI 
+        {...this.props} 
+        onInit={this.onInit.bind(this)}
+        segments={[
+          { name: 'main', render: this.renderMain }
+        ]}
+      />
     );
   }
 }

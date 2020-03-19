@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Checkbox,
   Dropdown,
-  Button
+  Button,
+  Label,
 } from 'semantic-ui-react';
 import moment from 'moment';
 
@@ -12,14 +12,9 @@ import ServiceUI from './ServiceUI';
 const serviceId = 'hookup.to/service/browser-timer';
 const serviceName = 'Timer';
 
-const lineStyle = {
-  textAlign: 'left',
-  margin: 10,
-};
-
-
 class TimerUI extends Component {
   state = {
+    timerIsRunning: false,
     periodic: false,
     periodicValue: 1,
     periodicUnit: 's'
@@ -27,88 +22,90 @@ class TimerUI extends Component {
 
   onInit(initialState) {
     this.setState({
-      periodic: initialState.periodic,
       periodicValue: initialState.periodicValue,
       periodicUnit: initialState.periodicUnit,
     });
   }
 
+  renderPeriodic = service => {
+    return (
+      <div>
+        <Input
+          type="number"
+          label="Interval"
+          value={this.state.periodicValue}
+          onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
+        />
+        <div style={{ textAlign: 'left', marginTop: 10 }}>
+          <Label size="large">Unit</Label>
+          <Dropdown
+            style={{ marginLeft: 5 }}
+            placeholder='Unit'
+            options={[
+              { key: 'ms', value: 'ms', text: 'milliseconds' },
+              { key: 's', value: 's', text: 'seconds' },
+              { key: 'm', value: 'm', text: 'minutes' },
+              { key: 'h', value: 'h', text: 'hours' },
+              { key: 'd', value: 'd', text: 'days' },
+            ]}
+            value={this.state.periodicUnit}
+            onChange={
+              (_ev, { value }) => 
+                this.setState({ periodicUnit: value })
+            }
+          />
+        </div>
+        <Button.Group 
+          widths="10" 
+          style={{ marginTop: 10 }}
+        >
+          <Button
+            style={{ margin: 1 }}
+            onClick={() => service.configure({ 
+              periodic: true,
+              periodicValue: this.state.periodicValue,
+              periodicUnit: this.state.periodicUnit,
+            })}
+            disabled={this.state.timerIsRunning}
+          >
+            Start
+          </Button>
+          <Button
+            style={{ margin: 1 }}
+            onClick={() => service.configure({ stop: true })}
+            disabled={!this.state.timerIsRunning}
+          >
+            Stop
+          </Button>      
+        </Button.Group>
+      </div>
+    );
+  }
+
+  renderOneShot = service => (
+    <Button
+      onClick={() => service.configure({ 
+        periodic: false,
+      })}
+    >
+      Trigger 
+    </Button>
+  )
+
   render() {
     return (
-      <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
-      {
-        ({ service }) => (
-          <div style={{ }}>
-            <div style={lineStyle}>
-              <Checkbox
-                label="Periodic"
-                onChange={(_, { checked }) => this.setState({ periodic: checked })}
-                checked={this.state.periodic}
-              />
-            </div>
-            {
-              this.state.periodic && (
-                <div style={lineStyle}>
-                  <Input
-                    type="number"
-                    style={{ maxWidth: 80, marginRight: 5 }}
-                    value={this.state.periodicValue}
-                    onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
-                  />
-                  <Dropdown
-                    className="left"
-                    style={{ margin: 5 }}
-                    placeholder='Unit'
-                    options={[
-                      { key: 'ms', value: 'ms', text: 'milliseconds' },
-                      { key: 's', value: 's', text: 'seconds' },
-                      { key: 'm', value: 'm', text: 'minutes' },
-                      { key: 'h', value: 'h', text: 'hours' },
-                      { key: 'd', value: 'd', text: 'days' },
-                    ]}
-                    value={this.state.periodicUnit}
-                    onChange={
-                      (_ev, { value }) => this.setState({ periodicUnit: value })}
-                  />
-                </div>
-              )
-            }
-            <div
-              className="ui buttons"
-              style={{
-                ...lineStyle,
-                margin: '15px 10px',
-                textAlign: 'center',
-              }}
-            >
-                <Button
-                  style={{ 
-                    marginRight: 5,
-                    width: this.state.periodic ? 100 : 150
-                  }}
-                  onClick={() => service.configure({ 
-                    periodic: this.state.periodic,
-                    periodicValue: this.state.periodicValue,
-                    periodicUnit: this.state.periodicUnit,
-                  })}
-                >
-                  { this.state.periodic ? 'Start' : 'One Shot' }
-                </Button>
-                {
-                  this.state.periodic && (
-                    <Button
-                      style={{ width: 100 }}
-                      onClick={() => service.configure({ stop: true })}
-                    >
-                      Stop
-                    </Button>
-                  )
-                }
-              </div>
-            </div>
-          )
+      <ServiceUI 
+        {...this.props} 
+        onInit={this.onInit.bind(this)}
+        onTimer={service => 
+          (!!service.timer !== this.state.timerIsRunning) && 
+          this.setState({ timerIsRunning: !!service.timer })
         }
-      </ServiceUI>
+        segments={[
+          { name: 'periodic', render: this.renderPeriodic },
+          { name: 'one-shot', render: this.renderOneShot },
+        ]}
+      />
     );
   }
 }

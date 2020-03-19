@@ -105,6 +105,10 @@ class SamplingUI extends Component {
       <Annotations
         service={service}
         initial={this.state.annotations}
+        onCommit={annotations => {
+          this.setState({ annotations });
+          service.annotations = annotations;
+        }}
       />
     );
   }

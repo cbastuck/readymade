@@ -33,7 +33,6 @@ class MapUI extends Component {
   }
 
   renderMapping = service => {
-    const vspace = { marginBottom: 5 }
     return (
       <div>
         {
@@ -42,6 +41,7 @@ class MapUI extends Component {
               <InputLabelValue
                 key={`${service.uuid}-${key}-${idx}`}
                 label={key}
+                labelPosition="left"
                 value={this.state.template[key]}
                 onCommit={({ label: newKey, value }) => { 
                   const template = Object.keys(this.state.template).reduce(
@@ -53,7 +53,6 @@ class MapUI extends Component {
                   service.configure({ template });
                   this.setState({ template });
                 }}
-                labelPosition="left"
               />
             ))
         }
