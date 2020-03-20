@@ -1,54 +1,81 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Label,
-  Checkbox,
-  Dropdown,
-  Button
+  Button,
 } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
+import Annotations from '../../components/shared/Annotations';
 
 export default class GeneticOptimizerUI extends Component {
   state = {
   };
 
   onInit(initialState) {
-    const { ttl, dataRoot } = initialState;
+    const { ttl, dataRoot, annotations={} } = initialState;
     this.setState({
       ttl,
       dataRoot,
+      annotations,
     });
   }
 
-  render() {
-    const inputStyle = { margin: '10px 5px' };
+  renderMain = service => {
+    const vspace = { marginBottom: 5 };
     return (
-      <ServiceUI {...this.props} onInit={this.onInit.bind(this)}>
-      {
-        ({ service }) => (
-          <div style={{ textAlign: 'left' }}>
-            <Input
-              type="text"
-              value={this.state.dataRoot || ''}
-              onChange={(_, { value: dataRoot }) => {
-                this.setState({ dataRoot });
-                service.dataRoot = dataRoot;
-              }}
-              label="Root"
-              style={inputStyle}
-            />
-            <Input
-              type="number"
-              value={this.state.ttl}
-              onChange={(_, { value }) => this.setState({ ttl: Number(value) })}
-              label="TTL"
-              style={inputStyle}
-            />
-          </div>
-        )
-      }
-      </ServiceUI>
+      <div style={{ textAlign: 'left' }}>
+        <Input
+          style={{ ...vspace, width: '100%' }}
+          type="text"
+          value={this.state.dataRoot || ''}
+          onChange={(_, { value: dataRoot }) => {
+            this.setState({ dataRoot });
+            service.dataRoot = dataRoot;
+          }}
+          label="Root"
+        />
+        <Input
+          style={{ ...vspace, width: '100%' }}
+          type="number"
+          value={this.state.ttl || ''}
+          onChange={(_, { value }) => this.setState({ ttl: value })}
+          onKeyPress={
+            e => (e.key === 'Enter') && service.configure({ttl: Number(this.state.ttl) })
+          }
+          label="TTL"
+        />
+        <Button
+          style={{ ...vspace, width: '100%' }}
+          onClick={() => service.configure({ initialPopulation: service.initialPopulation || []})}
+        >
+          Reset
+        </Button>
+      </div>
+    );
+  }
+
+  renderAnnotations = service => {
+    return (
+      <Annotations
+        service={service}
+        initial={this.state.annotations}
+        onCommit={annotations => {
+          this.setState({ annotations });
+          service.annotations = annotations;
+        }}
+      />
+    );
+  }
+  render() {
+    return (
+      <ServiceUI 
+        {...this.props} 
+        onInit={this.onInit.bind(this)}
+        segments={[
+          { name: 'main', render: this.renderMain },
+          { name: 'annotations', render: this.renderAnnotations },
+        ]} 
+      />
     );
   }
 }

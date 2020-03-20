@@ -9,19 +9,9 @@ function rand(upper) {
   return Math.floor(Math.random() * upper);
 }
 
-function percentToRelative(value) {
-  if (value === undefined) {
-    return 0;
-  }
-  if (typeof value === 'string') {
-    const components = value.split('%');
-    if (components.length > 1) {
-      return Number(components[0]) / 100;
-    }
-  }
-  return value;
+function deepCopy(x) {
+  return JSON.parse(JSON.stringify(x));
 }
-
 
 class GeneticOptimizer {
   constructor(app, board, descriptor, id) {
@@ -31,52 +21,48 @@ class GeneticOptimizer {
 
     this.generation = 0;
     this.population = [];
+    this.ttl = 2;
     this.dataRoot = undefined;
   }
 
   configure(config) {
-    const { genomeShape, initialPopulation, dataRoot } = config || {};
+    const {
+      initialPopulation,
+      dataRoot,
+      annotations,
+      ttl,
+    } = config || {};
 
     if (dataRoot !== undefined) {
       this.dataRoot = dataRoot;
     }
-   
-    if (genomeShape !== undefined && initialPopulation !== undefined) {
-      this.genomeShape = genomeShape;
 
-      if (Array.isArray(initialPopulation)) {
-        this.population = initialPopulation.map(
-          g => [
-            percentToRelative(g.x),
-            percentToRelative(g.y),
-            percentToRelative(g.length),
-            g.ttl
-          ]
-        );
-      } else {
-        this.population = [...Array(rand(initialPopulation))]
-          .map(g => [
-            Math.random(),  // x
-            Math.random(),  // y
-            percentToRelative(genomeShape ? genomeShape.length : 0.1),  // length
-            (genomeShape.ttl && genomeShape) ? genomeShape.ttl : 10,  // ttl
-          ]);
-      }
-    }   
+    if (annotations !== undefined) {
+      this.annotations = annotations;
+    }
+   
+    if (Array.isArray(initialPopulation)) {
+      this.population = initialPopulation;
+      this.initialPopulation = deepCopy(initialPopulation);
+    }
+
+    if (ttl !== undefined) {
+      this.ttl = ttl;
+    }
   }
 
   pickGenome() {
     const idx = rand(this.population.length - 1);
-    return { genome: this.population[idx], idx };
+    return this.population[idx];
   }
 
   mixGenomes(a, b) {
     return a.map((xa, i) => {
-      if (i < 2) { // only mix position
-        const alpha = Math.random();
-        return (alpha * xa) + (1 - alpha) * b[i];
+      if (i === 0) { // first item is internal, contains: ttl, fitness, etc.
+        return { ttl: this.ttl };
       }
-      return xa;
+      const alpha = Math.random();
+      return (alpha * xa) + (1 - alpha) * b[i];
     });
   }
 
@@ -86,15 +72,15 @@ class GeneticOptimizer {
       return genome;
     }
     return genome.map((g, idx) => 
-      (idx < 2 && Math.random() > 0.3) ?
+      (idx > 0 && Math.random() > 0.3) ?
         Math.random() :
         g
     );
   }
 
   nextGeneration(population) {
-    const { genome: father } = this.pickGenome();
-    const { genome: mother } = this.pickGenome();
+    const father = this.pickGenome();
+    const mother = this.pickGenome();
     if (!father || !mother) {
       return population;
     } 
@@ -106,14 +92,16 @@ class GeneticOptimizer {
   computeFitness(targetDistribution, genome) {
     const probabilities = targetDistribution.map(
       sample => {
-        const probX = jstat.normal.pdf(sample[0], genome[0], 1);
-        const probY = jstat.normal.pdf(sample[1], genome[1], 1);
+        //TODO: std equals 1
+        const probX = jstat.normal.pdf(sample[0], genome[1], 1); // [1] = x
+        //TODO: std equals 1
+        const probY = jstat.normal.pdf(sample[1], genome[2], 1); // [2] = y
         return probX * probY;
       }
     );
 
     return probabilities.reduce(
-      (a, p) => a + p, 
+      (a, p) => a + p,
       0
     ) / probabilities.length;
   }
@@ -133,11 +121,11 @@ class GeneticOptimizer {
     const stdFitness = Math.sqrt(varFitness);
     const minFitness = meanFitness - stdFitness;
     return population.filter((g, idx) => {
-      const ttl = g[3] - 1;
+      const ttl = g[0].ttl - 1;
       const f = fitness[idx];
-      g[4] = f; // fitness
+      g[0].fitness = f; // fitness
       if (f < minFitness) {
-        g[3] = ttl; // set decremented ttl
+        g[0].ttl = ttl; // set decremented ttl
       }
       return ttl > 0;
     });
@@ -148,7 +136,7 @@ class GeneticOptimizer {
     return population.reduce(
       (acc, g) => {
         const quantizePoint = (x, y) => Math.floor(x * 100) * 100 + Math.floor(y * 100);
-        const id = quantizePoint(g[0], g[1]);
+        const id = quantizePoint(g[1], g[2]);
         if (deduplicated.indexOf(id) === -1) {
           deduplicated.push(id);
           return [...acc, g];
@@ -168,25 +156,20 @@ class GeneticOptimizer {
     const population = this.removeDuplicates(this.nextGeneration(this.population));
     const fitness = population.map(this.computeFitness.bind(this, targetDistribution));
     const survivors = this.applySelection(population, fitness);
-  
     this.population = survivors;
 
     // generate shapes out of population
-    const toPercent = val => `${Math.floor(val * 100)}%`;
-    const populationShapes = survivors.map(
-      (genome, idx) => {
-        return {
-          ...this.genomeShape,
-          x: toPercent(genome[0]),
-          y: toPercent(genome[1]),
-          length: toPercent(genome[2]),
-          color: 'red',
-          fitness: genome[4],
-        };
-      }
-    );
-    
-    return populationShapes.concat(params);
+    const annotations = this.annotations || {};
+    return survivors
+      .map(
+        (genome, idx) => {
+          return {
+            ...annotations,
+            genome,
+          };
+        }
+      )
+      .concat(params);
   }
 }
 

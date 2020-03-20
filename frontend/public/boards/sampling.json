@@ -50,39 +50,15 @@
         "serviceName": "Genetic",
         "serviceId": "hookup.to/service/genetic-optimizer",
         "dataRoot": "sample",
-        "genomeShape": {
-          "type": "square",
-          "color": "#454f6d",
-          "contour": {
-            "color": "gray"
-          },
-          "length": "1%"
+        "annotations": {
+          "source": "genetic"
         },
+        "ttl": 2,
         "initialPopulation": [
-          {
-            "x": "4%",
-            "y": "4%",
-            "length": "1%",
-            "ttl": 2
-          },
-          {
-            "x": "95%",
-            "y": "95%",
-            "length": "1%",
-            "ttl": 2
-          },
-          {
-            "x": "4%",
-            "y": "95%",
-            "length": "1%",
-            "ttl": 2
-          },
-          {
-            "x": "95%",
-            "y": "4%",
-            "length": "1%",
-            "ttl": 2
-          }
+          [{ "ttl": 2 }, 0.04, 0.04, 0.01],
+          [{ "ttl": 2 }, 0.95, 0.95, 0.01],
+          [{ "ttl": 2 }, 0.04, 0.95, 0.01],
+          [{ "ttl": 2 }, 0.95, 0.04, 0.01]
         ]
       },
       {
@@ -107,6 +83,19 @@
           "color": "purple",
           "x=": "Math.floor(params.sample[0] * 100) + '%'",
           "y=": "Math.floor(params.sample[1] * 100) + '%'"
+        }
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "condition": "params.source === 'genetic'",
+        "template": {
+          "type": "square",
+          "color": "green",
+          "contour": { "color": "gray" },
+          "length": "2%",
+          "x=": "Math.floor(params.genome[1] * 100) + '%'",
+          "y=": "Math.floor(params.genome[2] * 100) + '%'"
         }
       },
       {
