@@ -37,6 +37,8 @@ class MapUI extends Component {
       <div>
         {
           Object.keys(this.state.template || {})
+            // TODO: support nested objects
+            .filter(key => typeof this.state.template[key] !== 'object')
             .map((key, idx) => (
               <InputLabelValue
                 key={`${service.uuid}-${key}-${idx}`}
