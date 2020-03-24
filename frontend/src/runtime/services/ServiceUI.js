@@ -46,10 +46,16 @@ export default class ServiceUI extends Component {
     const segment = segments.find(segment => segment.name === this.state.currentSegmentName);
     const marginStyle = { margin: '5px 5px' };
     return (
-      <div className="sampling-service" style={marginStyle}>
+      <div style={marginStyle}>
         {
           segments.length > 1 && (
-            <Menu compact pointing>
+            <Menu 
+              compact 
+              pointing 
+              style={{ 
+                marginTop: 10, 
+              }}
+            >
             { 
               segments.map(
                 (segment, idx) => 

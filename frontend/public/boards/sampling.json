@@ -7,7 +7,7 @@
       {
         "serviceName": "Timer",
         "serviceId": "hookup.to/service/browser-timer",
-        "periodic": true,
+        "periodic": false,
         "periodicValue": 50,
         "periodicUnit": "ms",
         "immediate": true

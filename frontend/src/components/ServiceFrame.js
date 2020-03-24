@@ -20,8 +20,9 @@ export default class ServiceFrame extends Component {
       style={{ 
         boxShadow: 'none', 
         border: 'none', 
-        borderBottom: 'solid 1px lightgray', 
-        borderRadius: 0 
+        //borderBottom: 'solid 1px lightgray',
+        //borderRadius: 5,
+        margin: 0,
       }}
     >
       <div 
@@ -29,7 +30,8 @@ export default class ServiceFrame extends Component {
           textAlign: 'center',
           width: '100%',
           fontSize: 16,
-          marginTop: 10,
+          fontWeight: 'lighter',
+          marginTop: 15,
         }}
       >    
         { service.props.service.serviceName }
@@ -40,7 +42,7 @@ export default class ServiceFrame extends Component {
       >
         <Icon 
           name='bars' 
-          style={{ color: '#ddd' }}
+          style={{ color: '#ddd', margin: 5, }}
         />
       </Menu.Item>
     </Menu>
@@ -49,7 +51,6 @@ export default class ServiceFrame extends Component {
   renderMenu = () => {
     const itemStyle = { 
       height: 40,
-      
     };
     return (
       <Menu
@@ -58,32 +59,26 @@ export default class ServiceFrame extends Component {
         style={{ height: '100%' }}
       >
         <Menu.Item 
-          as="a"
+          as='a'
           onClick={this.onTrashIcon}
           style={itemStyle}
         >
-          <Icon
-            name='trash alternate outline'
-          />
+          <Icon name='trash alternate outline' />
         </Menu.Item>
 
         <Menu.Item
-          as="a"
+          as='a'
           onClick={this.handleItemClick}
           style={itemStyle}
         >
-          <Icon 
-            name='clone outline'
-          />
+          <Icon name='clone outline' />
         </Menu.Item>
 
         <Menu.Item
-          as="a"
+          as='a'
           style={itemStyle}
         >
-          <Icon 
-            name='compress'
-          />
+          <Icon name='compress' />
         </Menu.Item>
       </Menu> 
     );
@@ -96,7 +91,7 @@ export default class ServiceFrame extends Component {
     return (
       <div key={`service-frame-${service.uuid}`}>
         <div
-          className="unselectable"
+          className='unselectable'
           style={{
             border: 'solid 1px lightgray',
             borderRadius: 5,
@@ -125,6 +120,7 @@ export default class ServiceFrame extends Component {
                 // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
                 // without it, the fullscreen is not working, eg. canvas service
                 transform: 'none',
+                margin: 0,
               }}
             >
               <Sidebar
@@ -138,9 +134,7 @@ export default class ServiceFrame extends Component {
               <Sidebar.Pusher 
                 // dimmed={this.state.menuVisible}
               >
-                <Segment basic>
-                  { this.renderService(service) }
-                </Segment>
+                { this.renderService(service) } 
               </Sidebar.Pusher>
              </Sidebar.Pushable>
           </div>
