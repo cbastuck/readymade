@@ -122,6 +122,8 @@ export default class ServiceFrame extends Component {
              <Sidebar.Pushable 
               as={Segment}
               style={{
+                // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
+                // without it, the fullscreen is not working, eg. canvas service
                 transform: 'none',
               }}
             >
