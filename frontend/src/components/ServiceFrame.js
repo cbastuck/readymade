@@ -1,5 +1,10 @@
 import React, { Component } from 'react';
-import { Icon, Menu } from 'semantic-ui-react';
+import {
+  Icon,
+  Menu,
+  Sidebar,
+  Segment,
+} from 'semantic-ui-react';
 
 import './ServiceFrame.css';
 
@@ -42,24 +47,45 @@ export default class ServiceFrame extends Component {
   )
 
   renderMenu = () => {
+    const itemStyle = { 
+      height: 40,
+      
+    };
     return (
-      <div>
-      <Menu compact icon='labeled' vertical>
-        <Menu.Item onClick={this.onTrashIcon}>
-          <Icon name='trash alternate outline' />
+      <Menu
+        vertical
+        compact
+        style={{ height: '100%' }}
+      >
+        <Menu.Item 
+          as="a"
+          onClick={this.onTrashIcon}
+          style={itemStyle}
+        >
+          <Icon
+            name='trash alternate outline'
+          />
         </Menu.Item>
 
         <Menu.Item
+          as="a"
           onClick={this.handleItemClick}
+          style={itemStyle}
         >
-          <Icon name='clone outline' />
+          <Icon 
+            name='clone outline'
+          />
         </Menu.Item>
 
-        <Menu.Item>
-            <Icon name='compress' />
+        <Menu.Item
+          as="a"
+          style={itemStyle}
+        >
+          <Icon 
+            name='compress'
+          />
         </Menu.Item>
       </Menu> 
-      </div>
     );
   }
 
@@ -93,12 +119,22 @@ export default class ServiceFrame extends Component {
             {
               this.renderHeader(service)
             }
-            { this.renderService(service) }
-            { 
-              this.state.menuVisible ? 
-                this.renderMenu() : 
-                false  
-            }
+             <Sidebar.Pushable as={Segment}>
+              <Sidebar
+                animation='overlay'
+                direction='right'
+                width='very thin'
+                visible={this.state.menuVisible}
+              >
+                { this.renderMenu() }
+              </Sidebar>
+              <Sidebar.Pusher>
+                <Segment basic>
+                  { this.renderService(service) }
+                </Segment>
+              </Sidebar.Pusher>
+             </Sidebar.Pushable>
+            
           </div>
         </div>
       </div>
