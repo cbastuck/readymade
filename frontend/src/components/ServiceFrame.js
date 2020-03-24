@@ -119,7 +119,12 @@ export default class ServiceFrame extends Component {
             {
               this.renderHeader(service)
             }
-             <Sidebar.Pushable as={Segment}>
+             <Sidebar.Pushable 
+              as={Segment}
+              style={{
+                transform: 'none',
+              }}
+            >
               <Sidebar
                 animation='overlay'
                 direction='right'
@@ -128,13 +133,14 @@ export default class ServiceFrame extends Component {
               >
                 { this.renderMenu() }
               </Sidebar>
-              <Sidebar.Pusher>
+              <Sidebar.Pusher 
+                // dimmed={this.state.menuVisible}
+              >
                 <Segment basic>
                   { this.renderService(service) }
                 </Segment>
               </Sidebar.Pusher>
              </Sidebar.Pushable>
-            
           </div>
         </div>
       </div>
