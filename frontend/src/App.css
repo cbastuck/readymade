@@ -1,0 +1,4 @@
+/* consistent input with label appearance across application */
+.labeled .label {
+  min-width: 65px;
+}

@@ -4,6 +4,7 @@ import {
   Menu,
   Sidebar,
   Segment,
+  Header,
 } from 'semantic-ui-react';
 
 import './ServiceFrame.css';
@@ -12,33 +13,40 @@ export default class ServiceFrame extends Component {
   state = {
     mouseOver: false,
     menuVisible: false,
+    frameCollapsed: false,
   };
+
+  renderServiceName = name => (
+    <Header size='small'>{name}</Header>
+  )
 
   renderHeader = service => (
     <Menu
       borderless={true}
-      style={{ 
-        boxShadow: 'none', 
-        border: 'none', 
-        //borderBottom: 'solid 1px lightgray',
-        //borderRadius: 5,
+      style={{
+        boxShadow: 'none',
+        border: 'none',
         margin: 0,
       }}
     >
       <div 
-        style={{ 
+        style={{
           textAlign: 'center',
           width: '100%',
           fontSize: 16,
           fontWeight: 'lighter',
           marginTop: 15,
+          marginLeft: 50,
         }}
-      >    
-        { service.props.service.serviceName }
+      >
+        { this.renderServiceName(service.props.service.serviceName) }
       </div>
       <Menu.Item
         position="right"
-        onClick={() => this.setState({ menuVisible: !this.state.menuVisible })}
+        onClick={() => this.setState({ 
+          menuVisible: !this.state.menuVisible,
+          frameCollapsed: this.state.frameCollapsed && !this.state.menuVisible,
+        })}
       >
         <Icon 
           name='bars' 
@@ -56,29 +64,30 @@ export default class ServiceFrame extends Component {
       <Menu
         vertical
         compact
-        style={{ height: '100%' }}
+        style={{  minHeight: '100%' }}
       >
-        <Menu.Item 
-          as='a'
-          onClick={this.onTrashIcon}
-          style={itemStyle}
-        >
-          <Icon name='trash alternate outline' />
-        </Menu.Item>
-
         <Menu.Item
           as='a'
-          onClick={this.handleItemClick}
+          onClick={() => 
+            this.setState({ 
+              frameCollapsed: !this.state.frameCollapsed 
+            })
+          }
+          style={itemStyle}
+        >
+          <Icon name='compress' />
+        </Menu.Item>
+        <Menu.Item
+          as='a'
           style={itemStyle}
         >
           <Icon name='clone outline' />
         </Menu.Item>
-
-        <Menu.Item
+        <Menu.Item 
           as='a'
           style={itemStyle}
         >
-          <Icon name='compress' />
+          <Icon name='trash alternate outline' />
         </Menu.Item>
       </Menu> 
     );
@@ -114,29 +123,35 @@ export default class ServiceFrame extends Component {
             {
               this.renderHeader(service)
             }
-             <Sidebar.Pushable 
-              as={Segment}
-              style={{
-                // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
-                // without it, the fullscreen is not working, eg. canvas service
-                transform: 'none',
-                margin: 0,
-              }}
-            >
-              <Sidebar
-                animation='overlay'
-                direction='right'
-                width='very thin'
-                visible={this.state.menuVisible}
-              >
-                { this.renderMenu() }
-              </Sidebar>
-              <Sidebar.Pusher 
-                // dimmed={this.state.menuVisible}
-              >
-                { this.renderService(service) } 
-              </Sidebar.Pusher>
-             </Sidebar.Pushable>
+            {
+              !this.state.frameCollapsed && (
+                <Sidebar.Pushable 
+                  as={Segment}
+                  style={{
+                    // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
+                    // without it, the fullscreen is not working, eg. canvas service
+                    transform: 'none',
+                    border: 'none',
+                    margin: 0,
+                  }}
+                >
+                  <Sidebar
+                    animation='overlay'
+                    direction='right'
+                    width='very thin'
+                    visible={this.state.menuVisible}
+                    style={{ overflowX: 'hidden', }}
+                  >
+                    { this.renderMenu() }
+                  </Sidebar>
+                  <Sidebar.Pusher 
+                    // dimmed={this.state.menuVisible}
+                  >
+                    { this.renderService(service) } 
+                  </Sidebar.Pusher>
+                </Sidebar.Pushable>
+              )
+            }
           </div>
         </div>
       </div>

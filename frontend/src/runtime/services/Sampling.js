@@ -8,8 +8,6 @@ import jstat from 'jstat';
 import ServiceUI from './ServiceUI';
 import Annotations from '../../components/shared/Annotations';
 
-import './Sampling.css';
-
 const serviceId = 'hookup.to/service/sampling';
 const serviceName = 'Sampling';
 

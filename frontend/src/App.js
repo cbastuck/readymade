@@ -21,6 +21,8 @@ import Sandbox from './Sandbox';
 
 import { AppConsumer } from './AppContext';
 
+import './App.css';
+
 class BoardWithContext extends Component {
   render() {
     const { match } = this.props;

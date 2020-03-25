@@ -10,8 +10,6 @@ import InputLabelValue from '../../components/shared/InputLabelValue';
 
 import ServiceUI from './ServiceUI';
 
-import './Map.css';
-
 const serviceId = 'hookup.to/service/map';
 const serviceName = 'Map';
 

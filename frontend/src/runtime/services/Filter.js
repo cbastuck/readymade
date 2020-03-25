@@ -5,7 +5,6 @@ import {
 
 import evilEval from '../../evilEval';
 import ServiceUI from './ServiceUI';
-import './Map.css';
 
 const serviceId = 'hookup.to/service/filter-browser';
 const serviceName = 'Filter';
