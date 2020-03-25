@@ -129,6 +129,7 @@ export default class ServiceFrame extends Component {
                   as={Segment}
                   style={{
                     border: 'none',
+                    boxShadow: 'none',
                     margin: 0,
                     // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
                     // without it, the fullscreen is not working, eg. canvas service

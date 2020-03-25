@@ -70,7 +70,12 @@ export default class ServiceUI extends Component {
             </Menu>
           )
         }
-        <Segment style={{ margin: '15px 20px' }}>
+        <Segment 
+          style={{ 
+            margin: '15px 20px', 
+            //boxShadow: 'none' 
+          }}
+        >
           { segment && segment.render(service) }
         </Segment>
       </div>
