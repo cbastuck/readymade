@@ -128,11 +128,11 @@ export default class ServiceFrame extends Component {
                 <Sidebar.Pushable 
                   as={Segment}
                   style={{
+                    border: 'none',
+                    margin: 0,
                     // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
                     // without it, the fullscreen is not working, eg. canvas service
                     transform: 'none',
-                    border: 'none',
-                    margin: 0,
                   }}
                 >
                   <Sidebar
@@ -140,15 +140,11 @@ export default class ServiceFrame extends Component {
                     direction='right'
                     width='very thin'
                     visible={this.state.menuVisible}
-                    style={{ overflowX: 'hidden', }}
+                    style={{ overflowX: 'hidden' }}
                   >
                     { this.renderMenu() }
                   </Sidebar>
-                  <Sidebar.Pusher 
-                    // dimmed={this.state.menuVisible}
-                  >
-                    { this.renderService(service) } 
-                  </Sidebar.Pusher>
+                  { this.renderService(service) } 
                 </Sidebar.Pushable>
               )
             }

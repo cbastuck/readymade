@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Dropdown,
   Button,
   Label,
+  Select,
 } from 'semantic-ui-react';
 import moment from 'moment';
 
@@ -36,11 +36,11 @@ class TimerUI extends Component {
           value={this.state.periodicValue}
           onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
         />
-        <div style={{ textAlign: 'left', marginTop: 10 }}>
-          <Label size="large">Unit</Label>
-          <Dropdown
-            style={{ marginLeft: 5 }}
-            placeholder='Unit'
+        <div style={{ textAlign: 'left', marginTop: 5, width: '100%' }}>
+          <Label size="large" style={{ minWidth: 70, borderRadius: 2 }}>Unit</Label>
+          <Select
+            style={{ margin: 5 }}
+            compact
             options={[
               { key: 'ms', value: 'ms', text: 'milliseconds' },
               { key: 's', value: 's', text: 'seconds' },
