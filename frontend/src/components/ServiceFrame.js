@@ -141,7 +141,10 @@ export default class ServiceFrame extends Component {
                     direction='right'
                     width='very thin'
                     visible={this.state.menuVisible}
-                    style={{ overflowX: 'hidden' }}
+                    style={{ 
+                      overflowX: 'hidden',
+                      boxShadow: '0 0 2px rgba(34,36,38,.15)',
+                    }}
                   >
                     { this.renderMenu() }
                   </Sidebar>
