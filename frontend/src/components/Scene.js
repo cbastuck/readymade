@@ -1,4 +1,10 @@
 import React, { Component } from 'react';
+import { 
+  Icon,
+  Sidebar,
+  Segment,
+  Menu,
+} from 'semantic-ui-react';
 
 import ServiceFrame from './ServiceFrame';
 
@@ -6,6 +12,7 @@ export default class Scene extends Component {
   state = {
     expanded: false,
     readonly: false,
+    showSettings: false,
   };
 
   componentDidMount() {
@@ -25,17 +32,61 @@ export default class Scene extends Component {
     }
   }
 
-  renderExpandableHeadline(headline) {
-    const style = {
-      width: 100,
-      cursor: 'pointer'
-    };
-    const onClick = _ => this.setState({ expanded: !this.state.expanded })
-    return this.state.expanded ? 
-      <span style={style} onClick={onClick}> - {headline} </span> :
-      <span style={style} onClick={onClick}> + {headline} </span>;
+  renderExpandableHeadline(headline) {    
+    return (
+      <div 
+        style={{ 
+          marginTop: 5,
+          marginLeft: 5,
+        }}
+      >
+        <Icon 
+          name="bars"
+          style={{ margin: 5, cursor: 'pointer', color: '#ddd' }}
+          onClick={() => this.setState({ 
+            showSettings: !this.state.showSettings,
+            expanded: !this.state.expanded ? !this.state.showSettings : this.state.expanded
+          })}
+        />
+        <span> 
+           {headline} 
+        </span> 
+      </div>
+    );
   }
 
+  renderSettings = () => {
+    const itemStyle = { 
+      height: 40,
+      margin: 0,
+    };
+    return (
+      <Menu
+        vertical
+        compact
+        style={{ height: '100%' }}
+      >
+        <Menu.Item
+          as='a'
+          style={itemStyle}
+          onClick={() => this.setState({
+            expanded: !this.state.expanded,
+            showSettings: this.state.showSettings && !this.state.expanded
+          })}
+        >
+          <Icon name='compress' />
+        </Menu.Item>
+        <Menu.Item
+          as='a'
+          style={itemStyle}
+          onClick={() => {}}
+        >
+          <Icon name='keyboard' />
+        </Menu.Item>
+      </Menu>
+    );
+  }
+    
   render() {
     const { children, runtime, wrap=false, style, readonly=false, frameless=false } = this.props;
     const readonlyStyle = (readonly && !frameless) ? 
@@ -55,37 +106,61 @@ export default class Scene extends Component {
           border: !frameless && 'solid 1px lightgray',
           borderRadius: 3,
           backgroundColor: !frameless && '#EEEEEE10',
-          padding: 10,
           ...style,
         }}
       >
         {
           !frameless && <h4>{ this.renderExpandableHeadline(runtime)}</h4>
         }
-        <div
+         <Sidebar.Pushable 
+          as={Segment}
           style={{
-            display: 'flex',
-            flexFlow: wrap ? 'row wrap' : 'row nowrap',
-            overflow: 'auto',
-            ...readonlyStyle
+            border: 'none',
+            boxShadow: 'none',
+            margin: 0,
+            // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
+            // without it, the fullscreen is not working, eg. canvas service
+            transform: 'none',
           }}
-          onClickCapture={e => readonly && e.stopPropagation()}
         >
-        {
-          this.state.expanded && 
-          children && 
-          children.map(
-            service => {
-              return (
-                <ServiceFrame
-                  key={`scene-frame-${service.props.service.uuid}`}
-                  service={service}
-                />
-              )
-            }
-          )
-        }
-        </div>
+          <Sidebar
+            animation='overlay'
+            direction='left'
+            width='very thin'
+            visible={this.state.showSettings}
+            style={{ 
+              overflowX: 'hidden',
+              boxShadow: '0 0 2px rgba(34,36,38,.15)',
+            }}
+          >
+            { this.renderSettings() }
+          </Sidebar>
+          <div
+            style={{
+              display: 'flex',
+              flexFlow: wrap ? 'row wrap' : 'row nowrap',
+              overflow: 'auto',
+              padding: 10,
+              ...readonlyStyle
+            }}
+            onClickCapture={e => readonly && e.stopPropagation()}
+          >
+          {
+            this.state.expanded && 
+            children && 
+            children.map(
+              service => {
+                return (
+                  <ServiceFrame
+                    key={`scene-frame-${service.props.service.uuid}`}
+                    service={service}
+                  />
+                )
+              }
+            )
+          }
+          </div>
+        </Sidebar.Pushable>
       </div>
     );
   }
