@@ -17,13 +17,16 @@ class TimerUI extends Component {
     timerIsRunning: false,
     periodic: false,
     periodicValue: 1,
-    periodicUnit: 's'
+    periodicUnit: 's',
+    oneShotDelay: 0,
   };
 
   onInit(initialState) {
     this.setState({
+      periodic: initialState.periodic,
       periodicValue: initialState.periodicValue,
       periodicUnit: initialState.periodicUnit,
+      oneShotDelay: initialState.oneShotDelay,
     });
   }
 
@@ -83,13 +86,51 @@ class TimerUI extends Component {
   }
 
   renderOneShot = service => (
-    <Button
-      onClick={() => service.configure({ 
-        periodic: false,
-      })}
-    >
-      Trigger 
-    </Button>
+    <div>
+      <Input 
+        style={{ marginBottom: 10 }}
+        label="Delay"
+        type="number"
+        value={this.state.oneShotDelay || 0}
+        onChange={(_, {value: oneShotDelay}) => {
+          this.setState({ oneShotDelay });
+          service.configure({ oneShotDelay});
+        }}
+      />
+      <Button
+        style={{ width: '100%' }}
+        onClick={() => service.configure({ 
+          periodic: false,
+          immediate: true,
+        })}
+      >
+        Trigger 
+      </Button>
+    </div>
+  )
+
+  renderCounter = service => (
+    <div>
+      <Input
+        style={{ marginBottom: 10 }}
+        label="Counter"
+        type="number"
+        value={this.state.resetCounterValue || 0}
+        onChange={(_, { value: resetCounterValue }) => 
+          this.setState({ resetCounterValue })
+        }
+      />
+      <Button
+        style={{ width: '100%' }}
+        onClick={() => 
+          service.configure({ 
+            counter: this.state.resetCounterValue
+          })
+        }
+      >
+        Reset
+      </Button>
+    </div>
   )
 
   render() {
@@ -104,7 +145,9 @@ class TimerUI extends Component {
         segments={[
           { name: 'periodic', render: this.renderPeriodic },
           { name: 'one-shot', render: this.renderOneShot },
+          { name: 'counter', render: this.renderCounter },
         ]}
+        initialSegment={() => this.state.periodic ? 'periodic' : 'one-shot'}
       />
     );
   }
@@ -116,15 +159,18 @@ class Timer {
     this.board = board;
     this.app = app;
 
+    this.count = 0;
     this.periodic = false;
     this.periodicValue = 1;
     this.periodicUnit = 's';
+    this.oneShotDelay = 0;
   }
 
   clearTimer() {
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
+      this.count = 0;
     }
   }
 
@@ -132,20 +178,47 @@ class Timer {
     if (config.stop) {
       this.clearTimer();
     } else {
-      this.clearTimer(); // TODO: 
-      this.count = 0;
-      this.periodicValue = config.periodicValue || 1;
-      this.periodicUnit = config.periodicUnit || 's';
-      this.periodic = config.periodic;
-      const process = this.process.bind(this);
+      const { 
+        periodicValue,
+        periodicUnit,
+        periodic,
+        oneShotDelay,
+        immediate,
+        counter
+      } = config;
+
+      if (periodicValue !== undefined) {
+        this.periodicValue = periodicValue;
+      }
+      
+      if (periodicUnit !== undefined) {
+        this.periodicUnit = periodicUnit;
+      }
+      
+      if (periodic !== undefined) {
+        this.periodic = periodic;
+      }
+
+      if (oneShotDelay !== undefined) {
+        this.oneShotDelay = oneShotDelay;
+      }
+
+      if (counter !== undefined) {
+        this.count = counter;
+      }
+      
+      const process = () => this.app.next(this, this.nextTimerArgument());
       if (this.periodic) {
+        this.clearTimer();
         const timeBetween = moment.duration(this.periodicValue, this.periodicUnit);
         this.timer = setInterval(process, timeBetween.asMilliseconds());
-        if (config.immediate) {
+        if (immediate) {
           setImmediate(process);
         }
       } else {
-        setTimeout(process, 0)
+        if (immediate) {
+          setImmediate(process);
+        }
       }
     }
   }
@@ -157,8 +230,26 @@ class Timer {
     }
   }
 
-  process() {
-    this.app.next(this, { triggerCount: ++this.count });
+  nextTimerArgument(params = {}) {
+    return { ...params, triggerCount: ++this.count };
+  }
+
+  async process(params) {
+    if (this.periodic || this.oneShotDelay === undefined) {
+      return params;
+    } 
+    if (this.isSleeping) {
+      console.warn('Processing timer service while sleeping ... process dropped')
+      clearTimeout(this.sleeping);
+      this.sleeping = undefined;
+      return params;
+    }
+    const sleep = () => new Promise(resolve => {
+      this.isSleeping = setTimeout(resolve, this.oneShotDelay);
+    });
+    await sleep();
+    this.isSleeping = undefined;
+    return this.nextTimerArgument(params);
   }
 }
 

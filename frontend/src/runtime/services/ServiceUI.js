@@ -11,15 +11,6 @@ export default class ServiceUI extends Component {
     currentSegmentName: undefined,
   };
 
-  componentDidMount(){
-    this.setState({
-      currentSegmentName: 
-        this.props.segments && 
-        this.props.segments[0] && 
-        this.props.segments[0].name,
-    });
-  }
-
   componentWillUnmount() {
     if (this.timer) {
       clearInterval(this.timer);
@@ -42,8 +33,21 @@ export default class ServiceUI extends Component {
     return this.service;
   }
 
+  getCurrentSegmentName = () => {
+    if (this.state.currentSegmentName) {
+      return this.state.currentSegmentName;
+    }
+    if (this.props.initialSegment) {
+      return this.props.initialSegment();
+    }
+    return this.props.segments && 
+      this.props.segments[0] && 
+      this.props.segments[0].name
+  }
+
   renderSegments = ({ service }, segments) => {
-    const segment = segments.find(segment => segment.name === this.state.currentSegmentName);
+    const currentSegmentName = this.getCurrentSegmentName();
+    const segment = segments.find(segment => segment.name === currentSegmentName);
     const marginStyle = { margin: '5px 5px' };
     return (
       <div style={marginStyle}>
@@ -62,7 +66,7 @@ export default class ServiceUI extends Component {
                   <Menu.Item
                     key={`${service.uuid}-${segment.name}-${idx}`}
                     name={segment.name}
-                    active={this.state.currentSegmentName === segment.name}
+                    active={currentSegmentName === segment.name}
                     onClick={(_, { name: currentSegmentName }) => this.setState({ currentSegmentName })}
                   />
               )

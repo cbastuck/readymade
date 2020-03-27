@@ -1,0 +1,35 @@
+{
+  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+    "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
+    "name": "Chrome-78.0.3904.108 (0)",
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Feedback Source",
+        "serviceId": "hookup.to/service/feedback-source",
+        "name": "loop"
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor-browser"
+      },
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/browser-timer",
+        "oneShotDelay": 1000
+      },
+      {
+        "serviceName": "Feedback Sink",
+        "serviceId": "hookup.to/service/feedback-sink",
+        "source": "loop"
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor-browser"
+      }
+    ],
+    "params": {
+      "registry": []
+    }
+  }
+}
