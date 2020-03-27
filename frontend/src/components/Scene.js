@@ -13,6 +13,7 @@ export default class Scene extends Component {
     expanded: false,
     readonly: false,
     showSettings: false,
+    wrapServices: false,
   };
 
   componentDidMount() {
@@ -34,24 +35,26 @@ export default class Scene extends Component {
 
   renderExpandableHeadline(headline) {    
     return (
-      <div 
-        style={{ 
-          marginTop: 5,
-          marginLeft: 5,
-        }}
-      >
-        <Icon 
-          name="bars"
-          style={{ margin: 5, cursor: 'pointer', color: '#ddd' }}
-          onClick={() => this.setState({ 
-            showSettings: !this.state.showSettings,
-            expanded: !this.state.expanded ? !this.state.showSettings : this.state.expanded
-          })}
-        />
-        <span> 
-           {headline} 
-        </span> 
-      </div>
+      <h4>
+        <div 
+          style={{ 
+            marginTop: 5,
+            marginLeft: 5,
+          }}
+        >
+          <Icon 
+            name="bars"
+            style={{ margin: '10px 18px', cursor: 'pointer', color: '#ddd' }}
+            onClick={() => this.setState({ 
+              showSettings: !this.state.showSettings,
+              expanded: !this.state.expanded ? !this.state.showSettings : this.state.expanded
+            })}
+          />
+          <span> 
+            {headline} 
+          </span> 
+        </div>
+      </h4>
     );
   }
 
@@ -79,6 +82,15 @@ export default class Scene extends Component {
         <Menu.Item
           as='a'
           style={itemStyle}
+          onClick={() => this.setState({ wrapServices: !this.state.wrapServices })}
+        >
+          <Icon 
+            name={ this.state.wrapServices ? 'exchange' : 'sort amount down' }
+          />
+        </Menu.Item>
+        <Menu.Item
+          as='a'
+          style={itemStyle}
           onClick={() => {}}
         >
           <Icon name='keyboard' />
@@ -88,7 +100,8 @@ export default class Scene extends Component {
   }
     
   render() {
-    const { children, runtime, wrap=false, style, readonly=false, frameless=false } = this.props;
+    const { children, runtime, style, readonly=false, frameless=false } = this.props;
+    const { wrapServices } = this.state;
     const readonlyStyle = (readonly && !frameless) ? 
       {
         backgroundColor: '#FFFFFF',
@@ -110,7 +123,7 @@ export default class Scene extends Component {
         }}
       >
         {
-          !frameless && <h4>{ this.renderExpandableHeadline(runtime)}</h4>
+          !frameless && this.renderExpandableHeadline(runtime)
         }
          <Sidebar.Pushable 
           as={Segment}
@@ -138,7 +151,7 @@ export default class Scene extends Component {
           <div
             style={{
               display: 'flex',
-              flexFlow: wrap ? 'row wrap' : 'row nowrap',
+              flexFlow: wrapServices ? 'row wrap' : 'row nowrap',
               overflow: 'auto',
               padding: 10,
               ...readonlyStyle

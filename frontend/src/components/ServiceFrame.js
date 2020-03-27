@@ -17,7 +17,21 @@ export default class ServiceFrame extends Component {
   };
 
   renderServiceName = name => (
-    <Header size='small'>{name}</Header>
+    <div 
+      style={{
+        textAlign: 'center',
+        width: '100%',
+        fontSize: 16,
+        fontWeight: 'lighter',
+        marginTop: 15,
+        marginLeft: 50,
+      }}
+      onDoubleClick={() => this.setState({ frameCollapsed: !this.state.frameCollapsed })}
+    >
+      <Header size='small'>
+        {name}
+      </Header>
+    </div>
   )
 
   renderHeader = service => (
@@ -29,18 +43,7 @@ export default class ServiceFrame extends Component {
         margin: 0,
       }}
     >
-      <div 
-        style={{
-          textAlign: 'center',
-          width: '100%',
-          fontSize: 16,
-          fontWeight: 'lighter',
-          marginTop: 15,
-          marginLeft: 50,
-        }}
-      >
-        { this.renderServiceName(service.props.service.serviceName) }
-      </div>
+      { this.renderServiceName(service.props.service.serviceName) }
       <Menu.Item
         position="right"
         onClick={() => this.setState({ 
