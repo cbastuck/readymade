@@ -166,7 +166,7 @@ class Map {
           {}
         );
         return {
-          ...this.template,
+          ...this.properties,
           ...evaluatedTerms,
         }
       } catch(error) {
