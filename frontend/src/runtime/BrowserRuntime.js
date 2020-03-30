@@ -25,6 +25,7 @@ import MapDescriptor from './services/Map';
 import FilterDescriptor from './services/Filter';
 import FeedbackSourceDesriptor from './services/FeedbackSource';
 import FeedbackSinkDesriptor from './services/FeedbackSink';
+import FetcherDesriptor from './services/Fetcher';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -53,6 +54,7 @@ export default class BrowserRuntime {
       FilterDescriptor,
       FeedbackSourceDesriptor,
       FeedbackSinkDesriptor,
+      FetcherDesriptor,
     ];
   }
 

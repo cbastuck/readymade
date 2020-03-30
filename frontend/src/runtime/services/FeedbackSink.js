@@ -24,7 +24,15 @@ class FeedbackSinkUI extends Component {
 
   renderMain = service => {
     return (
-      <div>
+      <div style={{ textAlign: 'left' }}>
+        <Input
+          style={{
+            marginBottom: 10,
+          }}
+          label="Source"
+          value={this.state.source || ''}
+          disabled
+        />
         <Checkbox
           toggle
           label="Feedback enabled"
@@ -35,14 +43,6 @@ class FeedbackSinkUI extends Component {
               () => service.configure({ feedbackEnabled })
             )
           }
-          style={{
-            marginBottom: 10
-          }}
-        />
-        <Input
-          label="Source"
-          value={this.state.source || ''}
-          disabled
         />
       </div>
     );
