@@ -19,6 +19,7 @@ class TimerUI extends Component {
     periodicValue: 1,
     periodicUnit: 's',
     oneShotDelay: 0,
+    resetCounterValue: 0,
   };
 
   onInit(initialState) {
