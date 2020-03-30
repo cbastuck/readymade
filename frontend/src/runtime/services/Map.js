@@ -158,11 +158,19 @@ class Map {
         }
       }
       try {
-        const evaluatedTerms = Object.keys(this.terms).reduce(
-          (p, key) => ({ 
-            ...p, 
-            [key]: evilEval(this.terms[key], x),
-          }),
+        const keys = Object.keys(this.terms);
+        // map to scalar value (not an object) if only an '=', i.e. empty string
+        if (keys.length === 1 && keys[0] === '') {
+          return evilEval(this.terms[keys[0]], x);
+        }
+        const evaluatedTerms = keys.reduce(
+          (p, key) => {
+            const y = evilEval(this.terms[key], x);
+            return { 
+              ...p, 
+              [key]: y,
+            };
+          },
           {}
         );
         return {

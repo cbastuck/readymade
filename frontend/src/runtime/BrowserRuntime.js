@@ -23,8 +23,8 @@ import SamplingDescriptor from './services/Sampling';
 import BufferDescriptor from './services/Buffer';
 import MapDescriptor from './services/Map';
 import FilterDescriptor from './services/Filter';
-import FeedbackSourceDesriptor from './services/FeedbackSource';
-import FeedbackSinkDesriptor from './services/FeedbackSink';
+import FeedbackProviderDesriptor from './services/FeedbackProvider';
+import FeedbackTakerDesriptor from './services/FeedbackTaker';
 import FetcherDesriptor from './services/Fetcher';
 import { request } from '../core/actions';
 
@@ -52,8 +52,8 @@ export default class BrowserRuntime {
       BufferDescriptor,
       MapDescriptor,
       FilterDescriptor,
-      FeedbackSourceDesriptor,
-      FeedbackSinkDesriptor,
+      FeedbackProviderDesriptor,
+      FeedbackTakerDesriptor,
       FetcherDesriptor,
     ];
   }

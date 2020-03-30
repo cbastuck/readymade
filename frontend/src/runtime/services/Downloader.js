@@ -26,6 +26,12 @@ class DownloaderUI extends Component {
     };
   }
 
+  onInit = initialState => {
+    this.setState({
+      filename: initialState.filename
+    });
+  }
+
   onClose = service => {
     if (service) {
       service.onClose();
@@ -33,37 +39,37 @@ class DownloaderUI extends Component {
     }
   }
 
+  renderMain = service => (
+    <div style={{ margin: "10px 0px" }}>
+      <div style={{ textAlign: 'left', margin: '0px 10px' }}>
+        Filename
+      </div>
+      <div style={{ margin: 10 }}>
+        <Input
+          value={this.state.filename || service.filename}
+          onChange={(_, { value }) => this.setState({ filename: value })}
+          onKeyUp={ev => ev.key === 'Enter' && service.configure({ filename: this.state.filename, autosense: true })}
+        />
+      </div>
+      <Button
+        disabled={!this.state.running}
+        onClick={() => this.onClose(service)}
+      >
+        Close
+      </Button>
+    </div>
+  );
+
   render() {
     return (
       <ServiceUI
         {...this.props}
+        onInit={this.onInit.bind(this)}
         onTimer={service => this.setState({ running: service.running })}
-      >
-      {
-        ({ service }) => (
-          <div
-            style={{ margin: "10px 0px" }}
-          >
-            <div style={{ textAlign: 'left', margin: '0px 10px' }}>
-              Filename
-            </div>
-            <div style={{ margin: 10 }}>
-              <Input
-                value={this.state.filename || service.filename}
-                onChange={(_, { value }) => this.setState({ filename: value })}
-                onKeyUp={ev => ev.key === 'Enter' && service.configure({ filename: this.state.filename, autosense: true })}
-              />
-            </div>
-            <Button
-              disabled={!this.state.running}
-              onClick={() => this.onClose(service)}
-            >
-              Close
-            </Button>
-          </div>
-        )
-      }
-      </ServiceUI>
+        segments={[ 
+          { name: 'main', render: this.renderMain }
+        ]}
+      />
     );
   }
 }

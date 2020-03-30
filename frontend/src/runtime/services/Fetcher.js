@@ -1,8 +1,6 @@
 import React, { Component } from 'react';
 import {
   Input,
-  Button,
-  Checkbox,
 } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
@@ -11,7 +9,7 @@ const serviceId = 'hookup.to/service/fetcher';
 const serviceName = 'Fetcher';
 
 class FetcherUI extends Component {
-  state = {};
+  state = { url: '' };
 
   onInit(initialState) {
     this.setState({
@@ -20,7 +18,13 @@ class FetcherUI extends Component {
   }
 
   renderMain = service => {
-    return <div />;
+    return (
+      <Input
+        disabled
+        label="Fetching"
+        value={this.state.url}
+      />
+    );
   }
 
   render() {
@@ -28,6 +32,10 @@ class FetcherUI extends Component {
       <ServiceUI
         {...this.props} 
         onInit={this.onInit.bind(this)}
+        onTimer={service => 
+          service.fetchingURL !== this.state.url && 
+          this.setState({ url: service.fetchingURL || '' })
+        }
         segments={[
           { name: 'Main', render: this.renderMain },
         ]}
@@ -41,15 +49,35 @@ class Fetcher {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.fetchingURL = undefined;
   }
 
   configure(config) {
   }
 
+  getURL(params) {
+    switch (typeof params) {
+      case 'string':
+        return params;
+      case 'object':
+        return params.url;
+      default: 
+        break;
+    }
+  } 
+
   async process(params) {
-    const res = await fetch(params.url);
+    const url = params && this.getURL(params);
+    if (!url) {
+      return;
+    }
+
+    this.fetchingURL = url;
+    const res = await fetch(url);
     const blob = await res.blob();
-    return blob;
+    this.fetchingURL = undefined;
+    return blob;  
   }
 }
 
