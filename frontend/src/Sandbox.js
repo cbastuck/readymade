@@ -36,21 +36,24 @@ export default class Sandbox extends Component {
     const response = await fetch(src);
     const data = await response.json();
     const runtimesInData = Object.keys(data);
-    const firstRuntimeId = runtimesInData && runtimesInData[0];
-    if (firstRuntimeId) {
-      const firstRuntimeData = data[firstRuntimeId];
-      if (firstRuntimeData && firstRuntimeData.services) {
+    const browserRuntimeIds = runtimesInData.filter(runtimeId => data[runtimeId].type === 'browser');
+    const firstBrowserRuntimeId = browserRuntimeIds[0];
+    if (firstBrowserRuntimeId) {
+      const firstBrowserRuntimeData = data[firstBrowserRuntimeId];
+      if (firstBrowserRuntimeData && firstBrowserRuntimeData.services) {
         // add an uuid to each service if this is not present
-        firstRuntimeData.services.map(s => {
+        firstBrowserRuntimeData.services.map(s => {
           if (!s.uuid) {
             s.uuid = uuid.v4();
           }
           return s;
         })
+
+        firstBrowserRuntimeData.id = firstBrowserRuntimeId;
       }
-      const runtime = this.createBrowserRuntime(firstRuntimeData);
-      this.setState({ runtime, backendData: firstRuntimeData });
-      return firstRuntimeData;
+      const runtime = this.createBrowserRuntime(firstBrowserRuntimeData);
+      this.setState({ runtime, backendData: firstBrowserRuntimeData });
+      return firstBrowserRuntimeData;
     }
   }
 
