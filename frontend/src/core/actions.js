@@ -72,6 +72,10 @@ export function saveBoard(board) {
   return request(`board/${board}`, 'GET', true);
 }
 
+export function importBoard(board, data) {
+  return request(`board/${board}/import`, 'POST', true, data);
+}
+
 export function redirectUri() {
   return `${window.location.protocol}//${window.location.host}/auth2app`;
 }

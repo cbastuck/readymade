@@ -1,0 +1,12 @@
+{
+  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+    "name": "Browser runtime",
+    "type": "browser",
+    "services": []
+  },
+  "2802ecf0-6684-4498-bde6-8a75f774786f": {
+    "name": "Local runtime",
+    "type": "node",
+    "services": []
+  }
+}

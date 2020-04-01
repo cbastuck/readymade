@@ -18,6 +18,7 @@ import Login from './views/Login';
 import LoginFail from './views/LoginFail';
 import BoardProvider from './BoardContext';
 import Sandbox from './Sandbox';
+import Import from './Import';
 
 import { AppConsumer } from './AppContext';
 
@@ -56,6 +57,7 @@ class App extends Component {
             <Switch>
               <Route path="/" exact component={Welcome} />
               <Route path="/sandbox" component={Sandbox} />
+              <Route path="/import" component={Import} />
               <Route path="/about" component={About} />
               <Route path="/imprint" component={Imprint} />
               <Route path="/new" exact component={BuildBoard} />
