@@ -17,6 +17,11 @@ import {
 const { Provider, Consumer: BoardConsumer } = createContext();
 
 class BoardContext extends Component {
+  static registerBrowserRuntime(boardName, runtimeId) {
+    // remember if of created runtime, it belongs to 'this' browser
+    const existing = JSON.parse(localStorage.getItem(`runtimes-${boardName}`) || '[]');
+    localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(existing.concat(runtimeId)));
+  }
 
   constructor(props) {
     super(props);
@@ -162,9 +167,7 @@ class BoardContext extends Component {
       };
       const created = await addRuntime(boardName, desc);
       if (type === 'browser') {
-        // remember if of created runtime, it belongs to 'this' browser
-        const existing = JSON.parse(localStorage.getItem(`runtimes-${boardName}`) || '[]');
-        localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(existing.concat(created.id)));
+        BoardContext.registerBrowserRuntime(boardName, created.id);
       }
       await this.fetchData();
     }
