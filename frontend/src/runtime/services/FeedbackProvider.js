@@ -23,7 +23,7 @@ class FeedbackProviderUI extends Component {
   renderMain = service => {
     return (
       <div style={{ textAlign: 'left' }}>
-        <Label size="large">From Channel</Label>
+        <Label size="large">Source Channel</Label>
         <Select
           label="Channels"
           options={this.state.options}
