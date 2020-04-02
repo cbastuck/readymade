@@ -46,7 +46,7 @@ export default class Scene extends Component {
             name="bars"
             style={{ margin: '10px 18px', cursor: 'pointer', color: '#ddd' }}
             onClick={() => this.setState({ 
-              showSettings: !this.state.showSettings,
+              showSettings: this.state.expanded && !this.state.showSettings,
               expanded: !this.state.expanded ? !this.state.showSettings : this.state.expanded
             })}
           />
