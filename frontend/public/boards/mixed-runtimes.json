@@ -6,11 +6,12 @@
       {
         "serviceName": "Timer",
         "serviceId": "hookup.to/service/browser-timer"
+      },
+      {
+        "serviceName": "Camera",
+        "serviceId": "hookup.to/service/camera"
       }
-    ],
-    "params": {
-      "registry": []
-    }
+    ]
   },
   "2802ecf0-6684-4498-bde6-8a75f774786f": {
     "name": "Local runtime",

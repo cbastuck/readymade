@@ -26,7 +26,10 @@ export default class Import extends Component {
       for (const runtimeId in data) {
         const rt = data[runtimeId];
         if (rt.type === 'browser') {
-          rt.params.registry = BrowserRuntime.registry();
+          rt.params = rt.params || {};
+          if (!rt.params.registry) {
+            rt.params.registry = BrowserRuntime.registry();
+          }
           BoardContext.registerBrowserRuntime(name, runtimeId);
         }
         if (!rt.id) {

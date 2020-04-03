@@ -26,6 +26,7 @@ import FilterDescriptor from './services/Filter';
 import FeedbackProviderDesriptor from './services/FeedbackProvider';
 import FeedbackTakerDesriptor from './services/FeedbackTaker';
 import FetcherDesriptor from './services/Fetcher';
+import CameraDesriptor from './services/Camera';
 import { request } from '../core/actions';
 
 export default class BrowserRuntime {
@@ -55,6 +56,7 @@ export default class BrowserRuntime {
       FeedbackProviderDesriptor,
       FeedbackTakerDesriptor,
       FetcherDesriptor,
+      CameraDesriptor,
     ];
   }
 
