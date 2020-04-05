@@ -82,7 +82,7 @@ class Downloader {
 
     this._fileStream = undefined;
     this._writer = undefined;
-    this.filename = "incoming.txt"
+    this.filename = 'incoming.txt'
     this.autosense = true;
     this.running = false;
   }

@@ -10,6 +10,11 @@
       {
         "serviceName": "Camera",
         "serviceId": "hookup.to/service/camera"
+      },
+      {
+        "serviceName": "Downloader",
+        "serviceId": "hookup.to/service/downloader",
+        "filename": "capture.webm"
       }
     ]
   },

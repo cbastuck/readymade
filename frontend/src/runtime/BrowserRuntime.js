@@ -124,7 +124,7 @@ export default class BrowserRuntime {
     const command = JSON.parse(e.data);
     switch (command.action) {
       case 'create':
-        return this.createService(command.descriptor, command.uuid);
+        return this.createService(command.descriptor, command.uuid, command.initialConfig);
       case 'config':
         return this.configureService(command.uuid, command.config);
       case 'process':
@@ -145,10 +145,13 @@ export default class BrowserRuntime {
     return request(`${this.id}/${requestId}`, 'POST', false, data);
   }
 
-  createService({ serviceId, board }, id) {
+  createService({ serviceId, board }, id, initialConfig) {
     const descriptor = this.registry.find(elem => elem.serviceId === serviceId);
     if (descriptor) {
       const service = descriptor.create(this.app, board, descriptor, id);
+      if (initialConfig) {
+        service.configure(initialConfig);
+      }
       this.services.push(service);
       return service;
     }

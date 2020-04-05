@@ -10,7 +10,10 @@ const serviceId = 'hookup.to/service/camera';
 const serviceName = 'Camera';
 
 class CameraUI extends Component {
-  state = { mirror: true };
+  state = { 
+    mirror: true,
+    recording: false, 
+  };
 
   componentWillUnmount() {
     this.stopVideo();
@@ -93,7 +96,26 @@ class CameraUI extends Component {
     }
   }
 
-  renderMain = () => {
+  startRecording(stream) {
+    return new Promise((resolve, reject) => {
+      this.recorder = new MediaRecorder(stream);
+      let data = [];
+    
+      this.recorder.ondataavailable = event => data.push(event.data);
+      this.recorder.start();
+
+      this.recorder.onstop = () => resolve(data);
+      this.recorder.onerror = event => reject(event);
+    });
+  }
+
+  stopRecording() {
+    if (this.recorder && this.recorder.state === 'recording') {
+      this.recorder.stop();
+    }
+  }
+
+  renderMain = service => {
     const mirrorStyle = this.state.mirror && {
       transform: 'rotateY(180deg)',
       WebkitTransform: 'rotateY(180deg)', /* Safari and Chrome */
@@ -147,6 +169,27 @@ class CameraUI extends Component {
             Stop
           </Button>
         </div>
+        <Button
+          style={{ marginTop: 5, width: '100%' }}
+          disabled={!this.state.stream}
+          onClick={() =>
+            this.setState(
+              { recording: !this.state.recording },
+              () => {
+                if (this.state.recording) {
+                  this.startRecording(this.state.stream)
+                    .then(data => service.inject(
+                      new Blob(data, { type: 'video/webm' })
+                    ));
+                } else {
+                  this.stopRecording();
+                }
+              }
+            )
+          }
+        >
+          { this.state.recording ? 'Stop' : 'Capture' }
+        </Button>
       </div>
     );
   }
@@ -171,10 +214,17 @@ class Camera {
     this.app = app;
   }
 
-  configure(config) {
+  configure() {
   }
 
-  async process(params) {
+  inject(blob) {
+    setImmediate(() => this.app.next(this, blob));
+  }
+
+  process(params) {
+    // TODO: take a screenshot and send it to the output
+    // How can we trigger a screenshot from the service in the 
+    // service ui?
     return params;
   }
 }

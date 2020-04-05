@@ -96,7 +96,6 @@ class BoardContext extends Component {
       for (const runtime of this.state.runtimes) {
         const { services: runtimeServices } = await getServices(board, runtime.id);
         services[runtime.name] = runtimeServices;
-
         this.restoreBrowserRuntimes(board, runtime, services);
       }
     }
@@ -199,7 +198,8 @@ class BoardContext extends Component {
             serviceId: service.serviceId, 
             board 
           }, 
-          service.uuid
+          service.uuid,
+          service.initialConfig,
         );
       }
     }
