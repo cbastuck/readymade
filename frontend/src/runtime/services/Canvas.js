@@ -20,6 +20,22 @@ function toAbsolute(value, upper) {
   return value;
 }
 
+function createObjectURL(object) {
+  try {
+    return window.URL ? 
+      window.URL.createObjectURL(object) : 
+      window.webkitURL.createObjectURL(object);
+  } catch (err) {
+    console.warn(`Can not create data url from: ${object}`);    
+  }
+}
+
+function revokeObjectURL(object) {
+  return window.URL ? 
+    window.URL.revokeObjectURL(object) : 
+    window.webkitURL.revokeObjectURL(object);
+}
+
 class CanvasUI extends Component {
   state = {
     fullWidth: document.body.clientWidth,
@@ -61,7 +77,7 @@ class CanvasUI extends Component {
     };
   }
 
-  getImage = url => {
+  fetchImage = url => {
     return new Promise((resolve, reject) => {
       const image = this.imageCache[url];
       if (!image) {
@@ -74,6 +90,21 @@ class CanvasUI extends Component {
       } else {
         resolve(image);
       }
+    });
+  }
+
+  createImage = blob => {
+    return new Promise((resolve, reject) => {
+      const imageUrl = createObjectURL(blob);
+      const img = new Image();
+      img.addEventListener(
+        'load', 
+        () => {
+          revokeObjectURL(imageUrl);
+          resolve(img);
+        }
+      );
+      img.src = imageUrl;
     });
   }
 
@@ -103,8 +134,19 @@ class CanvasUI extends Component {
   }
  
   drawImage = async (ctx, data) => {
-    const { url, offsetX, offsetY, opacity, x, y, height, unscaled, onClick } = data; 
-    const img = await this.getImage(url);
+    const { 
+      url,
+      data: blob, 
+      offsetX, 
+      offsetY, 
+      opacity, 
+      x, 
+      y, 
+      height, 
+      unscaled, 
+      onClick 
+    } = data;
+    const img = url ? await this.fetchImage(url) : await this.createImage(blob);
     
     const { centerX, centerY, canvasWidth, canvasHeight } = this.getCanvasCenter();
     const aspectRatio = img.width / img.height;
@@ -237,6 +279,36 @@ class CanvasUI extends Component {
     ctx.restore();
   }
 
+  drawVideo = (ctx, data) => {
+    const { 
+      x = 0, 
+      y = 0, 
+      width = 100, 
+      height = 100, 
+      fps = 10,
+      looped = false,
+      data: blob } = data;
+    const video = document.createElement('video');
+    if (looped) {
+      video.setAttribute('loop', true);
+    }
+    const url = createObjectURL(blob);
+    video.src = url;
+    const looper = () => {
+      if (video && !video.paused && !video.ended) {
+        ctx.drawImage(video, x, y, width, height);
+      }
+      setTimeout(looper, 1000 / fps);
+    };
+    video.addEventListener('loadeddata', () => {
+      if (video.src && video.src !== url) {
+        revokeObjectURL(video.src); // cleanup the old
+      }
+      video.play();
+      setImmediate(looper);
+    });
+  }
+
   update = objectOrArray => {
     this.recentData = objectOrArray;
     if (!this.canvas || !objectOrArray) {
@@ -253,18 +325,16 @@ class CanvasUI extends Component {
     for (const data of dataArray) {
       switch (data.type) {
         case 'image':
-          this.drawImage(ctx, data);
-          break;
+          return this.drawImage(ctx, data);
         case 'text':
-          this.drawText(ctx, data);
-          break;
+          return this.drawText(ctx, data);
         case 'circle':
-          this.drawCircle(ctx, data);
-          break;
+          return this.drawCircle(ctx, data);
         case 'rect':
         case 'square':
-          this.drawRect(ctx, data);
-          break;
+          return this.drawRect(ctx, data);
+        case 'video':
+          return this.drawVideo(ctx, data);
         default:
           break;
       }

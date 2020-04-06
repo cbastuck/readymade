@@ -13,15 +13,18 @@ class CameraUI extends Component {
   state = { 
     mirror: true,
     recording: false, 
+    width: 320,
+    height: 200
   };
 
   componentWillUnmount() {
     this.stopVideo();
   }
 
-  onInit(initialState) {
+  onInit(service) {
+    service.registerUI(this);
     this.setState({
-      ...initialState
+      ...service
     });
   }
 
@@ -115,6 +118,20 @@ class CameraUI extends Component {
     }
   }
 
+  triggerScreenshot() {
+    return new Promise(resolve => {
+      const { width, height } = this.state;
+      if (!this.canvas) {
+        this.canvas = document.createElement('canvas');
+        this.canvas.width = width;
+        this.canvas.height = height;
+      }
+      const ctx = this.canvas.getContext('2d');
+      ctx.drawImage(this.videoElement, 0, 0, width, height);
+      this.canvas.toBlob(resolve);
+    });
+  }
+
   renderMain = service => {
     const mirrorStyle = this.state.mirror && {
       transform: 'rotateY(180deg)',
@@ -137,8 +154,8 @@ class CameraUI extends Component {
             borderRadius: 5,
             ...mirrorStyle,
           }}
-          width="320" 
-          height="240" 
+          width={this.state.width}
+          height={this.state.height}
           autoPlay
         />
         <div 
@@ -157,12 +174,14 @@ class CameraUI extends Component {
         </div>
         <div>
           <Button
+            style={{ width: '48%' }}
             disabled={!!this.state.stream && !!this.videoElement}
             onClick={() => this.startVideo(this.videoElement) }
           >
             Start
           </Button>
           <Button
+            style={{ width: '48%' }}
             disabled={!this.state.stream}
             onClick={() => this.stopVideo() }
           >
@@ -170,7 +189,7 @@ class CameraUI extends Component {
           </Button>
         </div>
         <Button
-          style={{ marginTop: 5, width: '100%' }}
+          style={{ marginTop: 5, width: '98%' }}
           disabled={!this.state.stream}
           onClick={() =>
             this.setState(
@@ -221,10 +240,19 @@ class Camera {
     setImmediate(() => this.app.next(this, blob));
   }
 
-  process(params) {
-    // TODO: take a screenshot and send it to the output
-    // How can we trigger a screenshot from the service in the 
-    // service ui?
+  registerUI(ui) {
+    if (ui) {
+      this.ui = ui;
+    }
+  }
+
+  async process(params) {
+    if (this.ui) {
+      return {
+        ...params,
+        image: await this.ui.triggerScreenshot()
+      };
+    }
     return params;
   }
 }

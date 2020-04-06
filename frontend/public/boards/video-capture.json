@@ -1,0 +1,49 @@
+{
+  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+    "name": "Browser runtime",
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/browser-timer"
+      },
+      {
+        "serviceName": "Camera",
+        "serviceId": "hookup.to/service/camera"
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "type": "video",
+          "x": 0,
+          "y": 0,
+          "width": 300,
+          "height": 200,
+          "looped": true,
+          "fps": 20,
+          "data=": "params"
+        }
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor-browser"
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "fullscreen": false
+      }
+    ]
+  },
+  "2802ecf0-6684-4498-bde6-8a75f774786f": {
+    "name": "Local runtime",
+    "type": "node",
+    "services": [
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor"
+      }
+    ]
+  }
+}

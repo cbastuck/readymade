@@ -12,9 +12,30 @@
         "serviceId": "hookup.to/service/camera"
       },
       {
-        "serviceName": "Downloader",
-        "serviceId": "hookup.to/service/downloader",
-        "filename": "capture.webm"
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "type": "image",
+          "x=": "params.triggerCount * 10",
+          "y=": "params.triggerCount * 10",
+          "width": 300,
+          "height": 200,
+          "data=": "params.image"
+        }
+      },
+      {
+        "serviceName": "Buffer",
+        "serviceId": "hookup.to/service/buffer",
+        "capacity": 20
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor-browser"
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "fullscreen": false
       }
     ]
   },
