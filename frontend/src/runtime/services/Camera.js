@@ -233,7 +233,11 @@ class Camera {
     this.app = app;
   }
 
-  configure() {
+  configure(config) {
+    const { captureAs } = config;
+    if (captureAs !== undefined) {
+      this.captureAs = captureAs;
+    }
   }
 
   inject(blob) {
@@ -248,10 +252,13 @@ class Camera {
 
   async process(params) {
     if (this.ui) {
-      return {
-        ...params,
-        image: await this.ui.triggerScreenshot()
-      };
+      const image = await this.ui.triggerScreenshot();
+      return this.captureAs ? 
+        { 
+          ...params, 
+          [this.captureAs]: image 
+        } : 
+        image;
     }
     return params;
   }
