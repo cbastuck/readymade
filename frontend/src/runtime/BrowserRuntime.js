@@ -75,7 +75,7 @@ export default class BrowserRuntime {
     }
   }
 
-  next = async (service, params, requestId, advanceBeforeProcess=true) => {
+  next = async (service, params, requestId=null, advanceBeforeProcess=true) => {
     const position = this.services.findIndex(s => s === service);
     if (position === -1) {
       return console.log('Called next() in browser but could not find current service', service);

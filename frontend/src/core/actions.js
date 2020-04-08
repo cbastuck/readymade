@@ -7,17 +7,68 @@ import {
 
 let pendingLoginRequest = null;
 
+async function serializeObject(body) {
+  if (!body) {
+    return {
+      contentType: undefined,
+      body: undefined,
+    };
+  }
+  
+  if (body instanceof Blob) {
+    return {
+      contentType: body.type,
+      body: await new Response(body).arrayBuffer(),
+    };
+  }
+
+  const firstLevelBlobs = Object.keys(body).filter(key => body[key] instanceof Blob);
+  if (firstLevelBlobs.length === 0) {
+    return { 
+      contentType: 'application/json',
+      body: JSON.stringify(body),
+    };
+  }
+
+  const createBlobKey = key => `raw-blob-data-@${key}`;
+  const formData = new FormData();
+  formData.append(
+    'json', 
+    JSON.stringify({ 
+      ...body,
+      ...firstLevelBlobs.reduce((acc, key) => 
+        ({ ...acc, [key]: createBlobKey(key) }),
+        {},
+      )
+    })
+  );
+  firstLevelBlobs.forEach(key => {
+    const blobKey = createBlobKey(key);
+    formData.append(blobKey, body[key], blobKey);
+  });
+
+  return {
+    contentType: undefined, // by browser with boundary 'multipart/form-data',
+    body: formData,
+  }
+}
+
 export async function request(path, method='GET', parseJSON=true, body=undefined) {
-  const isBinary = body instanceof Blob;
+  const { 
+    body: serialisedBody, 
+    contentType 
+  } = await serializeObject(body);
+
+  const headers = {
+    'Authorization': restoreToken() || '',
+  };
+  if (contentType) {
+    headers['Content-Type'] = contentType;
+  }
   const response = await fetch(`/api/${path}`, {
     method,
-    body: body && (isBinary ? await new Response(body).arrayBuffer() : JSON.stringify(body)),
-    //body: body && JSON.stringify(body),
-    headers: {
-      'Content-Type': isBinary ? body.type : 'application/json',
-      //'Content-Type': 'application/json',
-      'Authorization': restoreToken() || '',
-    }
+    headers,
+    body: serialisedBody,
   });
   const status = response.status;
   if (status === 401) {
