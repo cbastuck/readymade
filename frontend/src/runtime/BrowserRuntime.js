@@ -94,30 +94,52 @@ export default class BrowserRuntime {
 
   connect(id) {
     this.id = id;
-    const backendUrl = `/api/${id}`;
-    console.log(`Connecting ${this.name} to ${backendUrl}`)
-    this.eventSource = new EventSource(backendUrl);
-    const onMessage = event => this.onMessage(event);
-    const onError = error => {
-      if (error.status === 504) { // HTTP Gateway Timeout 
-        this.eventSource.removeEventListener('data', onMessage);
-        this.eventSource.removeEventListener('error', onError);
-        this.eventSource = undefined;
-        console.log('Reconnecting browser runtime', error, error.status);
-        setTimeout(() => this.connect(id), 1000);
-        return;
-      } else {
-        console.error('Unknown error in BrowserRuntime', error);
-      }
+     // TODO: assume coordinator is on the same host as frontend
+    const backendHost = window.location.host; 
+    const backendPath = `/api/${id}`;
+    console.log(`Connecting ${this.name} to ${backendPath}`)
+    this.eventSource = new EventSource(backendPath);
+    // ------
+    this.websocket = new WebSocket(`ws://${backendHost}${backendPath}`);
+    this.websocket.onmessage = event => {
+      const message = event.data;
+      console.log(`Received on ${id}`, message);
+    };
+    this.websocket.onclose = event => {
+      console.log(`Closed WebSocket with ${id}`);
+    };
+    this.websocket.onerror = function(error) {
+      console.log(`WebSocket ${id} Error: `, error);
+    };
+
+    this.websocket.onopen = event => {
+      console.log(`WebSocket to ${id} is open`);
     }
-    this.eventSource.addEventListener(
-      'data',
-      onMessage
-    );
-    this.eventSource.addEventListener(
-      'error',
-      onError
-    );
+    // ------
+
+    if (this.eventSource) {
+      const onMessage = event => this.onMessage(event);
+      const onError = error => {
+        if (error.status === 504) { // HTTP Gateway Timeout 
+          this.eventSource.removeEventListener('data', onMessage);
+          this.eventSource.removeEventListener('error', onError);
+          this.eventSource = undefined;
+          console.log('Reconnecting browser runtime', error, error.status);
+          setTimeout(() => this.connect(id), 1000);
+          return;
+        } else {
+          console.error('Unknown error in BrowserRuntime', error);
+        }
+      }
+      this.eventSource.addEventListener(
+        'data',
+        onMessage
+      );
+      this.eventSource.addEventListener(
+        'error',
+        onError
+      );
+    }
   }
 
   onMessage(e) {
