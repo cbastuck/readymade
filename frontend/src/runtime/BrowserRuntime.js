@@ -28,6 +28,7 @@ import FeedbackTakerDesriptor from './services/FeedbackTaker';
 import FetcherDesriptor from './services/Fetcher';
 import CameraDesriptor from './services/Camera';
 import { request } from '../core/actions';
+import { parseResponse } from './MultiformParser';
 
 export default class BrowserRuntime {
   static registry() {
@@ -101,9 +102,12 @@ export default class BrowserRuntime {
     this.eventSource = new EventSource(backendPath);
     // ------
     this.websocket = new WebSocket(`ws://${backendHost}${backendPath}`);
+    this.websocket.binaryType = 'arraybuffer'; // 'blob';
     this.websocket.onmessage = event => {
       const message = event.data;
-      console.log(`Received on ${id}`, message);
+      // const parsed = MultiPart_parse(message);
+      const parsed = parseResponse(message);
+      console.log(`Received on ${id} (${this.name})`, message, parsed);
     };
     this.websocket.onclose = event => {
       console.log(`Closed WebSocket with ${id}`);

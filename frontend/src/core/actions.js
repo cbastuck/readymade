@@ -30,7 +30,7 @@ async function serializeObject(body) {
     };
   }
 
-  const createBlobKey = key => `raw-blob-data-@${key}`;
+  const createBlobKey = key => `+binary-data-@${key}`;
   const formData = new FormData();
   formData.append(
     'json', 
