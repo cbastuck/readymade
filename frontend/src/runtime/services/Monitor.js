@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { TextArea } from 'semantic-ui-react';
+import { TextArea, Checkbox } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 
@@ -11,9 +11,16 @@ class MonitorUI extends Component {
     message: ''
   };
 
+  onInit = initialState => {
+    this.setState({ ...initialState, message: '' });
+  }
+
   render() {
     return (
-      <ServiceUI {...this.props}>
+      <ServiceUI 
+        {...this.props}
+        onInit={this.onInit.bind(this)}
+      >
         {
           ({ service }) => 
           service && 
@@ -23,7 +30,7 @@ class MonitorUI extends Component {
                 textAlign: 'left',
                 margin: 10,
               }}
-            >
+            >        
               <TextArea
                 style={{ 
                   width: '100%', 
@@ -31,6 +38,16 @@ class MonitorUI extends Component {
                   minWidth: 200 
                 }}
                 value={this.state.message}
+              />
+              <Checkbox
+                label="active"
+                checked={this.state.enabled}
+                onChange={(_, { checked: enabled }) => 
+                 this.setState(
+                  { enabled }, 
+                  () => service.configure({ enabled })
+                 )
+                }
               />
             </div>
           )
@@ -45,13 +62,19 @@ class Monitor {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.enabled = true;
   }
 
-  configure() {
+  configure(config) {
+    const { enabled } = config;
+    if (enabled  !== undefined) {
+      this.enabled = enabled;
+    }
   }
 
   process(params) {
-    if (this.callback) {
+    if (this.callback && this.enabled) {
       this.callback(JSON.stringify(params, null, 2));
     }
     return params;

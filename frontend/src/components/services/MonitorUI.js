@@ -1,15 +1,18 @@
 import React, { Component } from 'react';
 import {
   TextArea,
+  Checkbox,
 } from 'semantic-ui-react';
 
 import {
-  getServiceConfiguration
+  getServiceConfiguration,
+  configureService,
 } from '../../core/actions';
 
 export default class MonitorUI extends Component {
   state = {
-    value: ''
+    value: '',
+    enabled: true,
   }
 
   componentDidMount() {
@@ -58,7 +61,7 @@ export default class MonitorUI extends Component {
       marginBottom: 10,
       padding: 10,
     };
-
+    const { board, service } = this.props;
     return (
       <div>
         <div
@@ -68,6 +71,18 @@ export default class MonitorUI extends Component {
             style={{ width: '100%' }}
             value={this.state.value}
           />
+           <Checkbox
+              label="active"
+              checked={this.state.enabled}
+              onChange={(_, { checked: enabled }) => 
+                this.setState(
+                  { enabled }, 
+                  () => configureService(
+                    board, service, { enabled: this.state.enabled }
+                  )
+                )
+              }
+            />
         </div>
       </div>
    );
