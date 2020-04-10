@@ -105,9 +105,8 @@ export default class BrowserRuntime {
     this.websocket.binaryType = 'arraybuffer'; // 'blob';
     this.websocket.onmessage = event => {
       const message = event.data;
-      // const parsed = MultiPart_parse(message);
       const parsed = parseResponse(message);
-      console.log(`Received on ${id} (${this.name})`, message, parsed);
+      console.log(`Received on ${id} (${this.name})`, parsed);
     };
     this.websocket.onclose = event => {
       console.log(`Closed WebSocket with ${id}`);
