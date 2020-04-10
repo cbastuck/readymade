@@ -101,12 +101,33 @@ export default class BrowserRuntime {
     console.log(`Connecting ${this.name} to ${backendPath}`)
     this.eventSource = new EventSource(backendPath);
     // ------
+    function rebuild(json, message) {
+      return Object.keys(json).reduce(
+        (acc, key) => {
+          const value = json[key];
+          if (typeof value === 'object') {
+            return { ...acc, [key]: rebuild(value, message) };
+          }
+          if (value.startsWith && value.startsWith('+binary-data-@')) {
+            const blob = new Blob(
+              [message[value].payload],
+              { type : message[value].headers['content-type'] },
+            );
+            return { ...acc, [key]: blob };
+          } else {
+            return { ...acc, [key]: value };
+          }
+        },
+        {}
+      );
+    }
     this.websocket = new WebSocket(`ws://${backendHost}${backendPath}`);
-    this.websocket.binaryType = 'arraybuffer'; // 'blob';
+    this.websocket.binaryType = 'arraybuffer';
     this.websocket.onmessage = event => {
-      const message = event.data;
-      const parsed = parseResponse(message);
-      console.log(`Received on ${id} (${this.name})`, parsed);
+      const message = parseResponse(event.data);
+      const action = message.json ? rebuild(message.json.payload, message) : JSON.parse(message);
+      console.log(`Received on ${id} (${this.name})`, action);
+      this.onMessage(action);
     };
     this.websocket.onclose = event => {
       console.log(`Closed WebSocket with ${id}`);
@@ -121,7 +142,7 @@ export default class BrowserRuntime {
     // ------
 
     if (this.eventSource) {
-      const onMessage = event => this.onMessage(event);
+      const onMessage = e => this.onMessage(e.data ? JSON.parse(e.data) : e);
       const onError = error => {
         if (error.status === 504) { // HTTP Gateway Timeout 
           this.eventSource.removeEventListener('data', onMessage);
@@ -145,8 +166,7 @@ export default class BrowserRuntime {
     }
   }
 
-  onMessage(e) {
-    const command = JSON.parse(e.data);
+  onMessage(command) {
     switch (command.action) {
       case 'create':
         return this.createService(command.descriptor, command.uuid, command.initialConfig);

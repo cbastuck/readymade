@@ -13,13 +13,13 @@ const CRLF = '\r\n';
 export function parseResponse(arraybuf) {
   const view = new DataView(arraybuf);
   const boundaryLength = view.getUint32(0); // BE
-  if (boundaryLength === 0) { // no multipart/form data
+  if (boundaryLength === 0) { // no multipart-form data
     const useUTF8 = true;
     return useUTF8 ? 
       utf8BufferToStr(arraybuf.slice(4)) : 
       utf16leBufferToStr(arraybuf.slice(4));
   }
-  
+  // the reponse is a multipart-form
   const boundaryBuf = arraybuf.slice(4, boundaryLength + 4);
   const boundary = `--${utf8BufferToStr(boundaryBuf)}`;
   const body = arraybuf.slice(boundaryLength + 4);
@@ -74,7 +74,7 @@ function parsePartHeader(view, verifyBoundary) {
       return { headers, end }; // header ends with empty CLCR
     }
   }
-  return {};
+  throw new Error(`No ending CRLF when parsing multiform header found`);
 }
 
 function assureEqual(view, start, end, expectedStr) {
@@ -107,20 +107,27 @@ function readPart(fullView, boundary, startPos=0) {
 
   const contentType = headers['content-type'];
   const isJSON = contentType && contentType === 'application/json';
+  
+  const contentDisposition = headers['content-disposition'];
+  const quotedPartName = contentDisposition && contentDisposition.split('name=')[1];
   return { 
     headers,
     payload: isJSON ? JSON.parse(utf8BufferToStr(payload)) : payload,
     end: startPos + payloadEndPos + 2,
+    name: quotedPartName && quotedPartName.substr(1, quotedPartName.length - 2), // remove quotes around name
   };
 }
 
 function parseMultipart(body, boundary) { 
   const view = new Uint8Array(body);
-  let part, parts = [];
+  let part, parts = {};
   do {
     part = readPart(view, boundary, part && part.end);
     if (part) {
-      parts.push(part);
+      parts[part.name] = { 
+        headers: part.headers,
+        payload: part.payload,
+      };
     }
   } while(part);
   return parts;
