@@ -12,7 +12,7 @@ import {
 export default class MonitorUI extends Component {
   state = {
     value: '',
-    enabled: true,
+    enabled: undefined,
   }
 
   componentDidMount() {
@@ -46,7 +46,7 @@ export default class MonitorUI extends Component {
     const { board, service } = this.props;
     if (service && service.board) {
       const config = await getServiceConfiguration(board, service);
-
+      this.setState({ enabled: config.enabled });
       this.eventSource = new EventSource(`/api/${service.board}/${config.uuid}`);
       this.eventSource.addEventListener(
         'data',

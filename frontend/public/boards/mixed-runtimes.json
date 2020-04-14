@@ -20,7 +20,8 @@
     "services": [
       {
         "serviceName": "Monitor",
-        "serviceId": "hookup.to/service/monitor"
+        "serviceId": "hookup.to/service/monitor",
+        "enabled": false
       }
     ]
   },
@@ -36,13 +37,14 @@
           "x": 0,
           "y": 0,
           "width": 300,
-          "height": 200,
+          "height": "100%",
           "data=": "params.image"
         }
       },
       {
         "serviceName": "Monitor",
-        "serviceId": "hookup.to/service/monitor-browser"
+        "serviceId": "hookup.to/service/monitor-browser",
+        "enabled": false
       },
       {
         "serviceName": "Canvas",

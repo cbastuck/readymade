@@ -94,13 +94,21 @@ export default class BrowserRuntime {
   }
 
   connect(id) {
-    this.id = id;
-     // TODO: assume coordinator is on the same host as frontend
-    const backendHost = window.location.host; 
+    this.id = id; // TODO: do we need this? Already done in c'tor
     const backendPath = `/api/${id}`;
     console.log(`Connecting ${this.name} to ${backendPath}`)
-    this.eventSource = new EventSource(backendPath);
-    // ------
+    
+    const useWebSockets = true;
+    if (useWebSockets) {
+      // TODO: assume coordinator is on the same host as frontend
+      const backendHost = window.location.host; 
+      this.connectRuntimeViaWebSocket(backendHost, backendPath);
+    } else {
+      this.connectRuntimeViaEventSource(backendPath);
+    }
+  }
+
+  connectRuntimeViaWebSocket(backendHost, backendPath) {
     function rebuild(json, message) {
       return Object.keys(json).reduce(
         (acc, key) => {
@@ -121,49 +129,51 @@ export default class BrowserRuntime {
         {}
       );
     }
+
     this.websocket = new WebSocket(`ws://${backendHost}${backendPath}`);
     this.websocket.binaryType = 'arraybuffer';
     this.websocket.onmessage = event => {
       const message = parseResponse(event.data);
       const action = message.json ? rebuild(message.json.payload, message) : JSON.parse(message);
-      console.log(`Received on ${id} (${this.name})`, action);
+      console.log(`Received on ${this.id} (${this.name})`, action);
       this.onMessage(action);
     };
     this.websocket.onclose = event => {
-      console.log(`Closed WebSocket with ${id}`);
+      console.log(`Closed WebSocket with ${this.id}`);
     };
     this.websocket.onerror = function(error) {
-      console.log(`WebSocket ${id} Error: `, error);
+      console.log(`WebSocket ${this.id} Error: `, error);
     };
 
     this.websocket.onopen = event => {
-      console.log(`WebSocket to ${id} is open`);
+      console.log(`WebSocket to ${this.id} is open`);
     }
-    // ------
+  }
 
-    if (this.eventSource) {
-      const onMessage = e => this.onMessage(e.data ? JSON.parse(e.data) : e);
-      const onError = error => {
-        if (error.status === 504) { // HTTP Gateway Timeout 
-          this.eventSource.removeEventListener('data', onMessage);
-          this.eventSource.removeEventListener('error', onError);
-          this.eventSource = undefined;
-          console.log('Reconnecting browser runtime', error, error.status);
-          setTimeout(() => this.connect(id), 1000);
-          return;
-        } else {
-          console.error('Unknown error in BrowserRuntime', error);
-        }
+  connectRuntimeViaEventSource(backendPath) {
+    this.eventSource = new EventSource(backendPath);
+    
+    const onMessage = e => this.onMessage(e.data ? JSON.parse(e.data) : e);
+    const onError = error => {
+      if (error.status === 504) { // HTTP Gateway Timeout 
+        this.eventSource.removeEventListener('data', onMessage);
+        this.eventSource.removeEventListener('error', onError);
+        this.eventSource = undefined;
+        console.log('Reconnecting browser runtime', error, error.status);
+        setTimeout(() => this.connect(this.id), 1000);
+        return;
+      } else {
+        console.error('Unknown error in BrowserRuntime', error);
       }
-      this.eventSource.addEventListener(
-        'data',
-        onMessage
-      );
-      this.eventSource.addEventListener(
-        'error',
-        onError
-      );
     }
+    this.eventSource.addEventListener(
+      'data',
+      onMessage
+    );
+    this.eventSource.addEventListener(
+      'error',
+      onError
+    );
   }
 
   onMessage(command) {
