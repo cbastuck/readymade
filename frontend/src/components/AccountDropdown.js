@@ -29,7 +29,7 @@ export default class AccountDropdown extends Component {
 
   render() {
     const { currentUser} = this.props;
-    const dropDownText = currentUser || ''; //'Account'
+    const dropDownText = currentUser || 'Account'
     return (
       <Dropdown
         text={dropDownText}
@@ -37,7 +37,7 @@ export default class AccountDropdown extends Component {
       >
         <Dropdown.Menu>
           {
-            // this.renderLogin()
+            this.renderLogin()
           }
         </Dropdown.Menu>
       </Dropdown>
