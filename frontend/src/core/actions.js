@@ -7,6 +7,7 @@ import {
 
 let pendingLoginRequest = null;
 
+// TODO: this implementation should not be in this file
 async function serializeObject(body) {
   if (!body) {
     return {

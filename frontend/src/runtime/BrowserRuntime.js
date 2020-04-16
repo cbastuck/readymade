@@ -30,6 +30,8 @@ import CameraDesriptor from './services/Camera';
 import { request } from '../core/actions';
 import { parseResponse } from './MultiformParser';
 
+import { restoreToken } from '../core/Auth';
+
 export default class BrowserRuntime {
   static registry() {
     return [
@@ -130,7 +132,7 @@ export default class BrowserRuntime {
       );
     }
 
-    this.websocket = new WebSocket(`ws://${backendHost}${backendPath}`);
+    this.websocket = new WebSocket(`ws://${backendHost}${backendPath}`, restoreToken());
     this.websocket.binaryType = 'arraybuffer';
     this.websocket.onmessage = event => {
       const message = parseResponse(event.data);
