@@ -21,17 +21,19 @@ export function restoreToken() {
 
 export function setToken(value) {
   localStorage.setItem('token', value);
+  setCookie('token', value);
 }
 
 export function removeToken() {
   localStorage.removeItem('token');
+  removeCookie('token');
   removeCookie('_session');
 }
 
-function setCookie(key, value, expCount, expUnit) {
+function setCookie(key, value, expCount=undefined, expUnit=undefined) {
   if (value) {
-    const exp = moment.utc().add(expCount, expUnit).toString();
-    const cookie = `${key}=${value}; expires=${exp}`;
+    const exp = (expCount && expUnit) && moment.utc().add(expCount, expUnit).toString();
+    const cookie = `${key}=${value}; ${exp ? `expires=${exp}` : '' }`;
     document.cookie = cookie;
   }
 }
