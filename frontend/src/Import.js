@@ -10,7 +10,7 @@ import {
 } from './core/actions';
 
 export default class Import extends Component {
-  state = { name: undefined };
+  state = { board: undefined };
   
   componentDidMount() {
     this.doImport();
@@ -19,8 +19,8 @@ export default class Import extends Component {
   async doImport() {
     const { location } = this.props;
     const values = queryString.parse(location.search);
-    const { src, name } = values;
-    if (src && name) {
+    const { src, board } = values;
+    if (src && board) {
       const response = await fetch(src);
       const data = await response.json();  
       for (const runtimeId in data) {
@@ -30,22 +30,22 @@ export default class Import extends Component {
           if (!rt.params.registry) {
             rt.params.registry = BrowserRuntime.registry();
           }
-          BoardContext.registerBrowserRuntime(name, runtimeId);
+          BoardContext.registerBrowserRuntime(board, runtimeId);
         }
         if (!rt.id) {
           rt.id = runtimeId;
         }
       }
-      await clearBoard(name);
-      await loadBoard(name, data);
-      this.setState({ name });
+      await clearBoard(board);
+      await loadBoard(board, data);
+      this.setState({ board });
     }
   }
 
   render() {
-    if (!this.state.name) {
+    if (!this.state.board) {
       return false;
     }
-    return <Redirect to={`/${this.state.name}`} />;
+    return <Redirect to={`/${this.state.board}`} />;
   }
 }
