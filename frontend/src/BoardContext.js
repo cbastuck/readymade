@@ -18,9 +18,16 @@ const { Provider, Consumer: BoardConsumer } = createContext();
 
 class BoardContext extends Component {
   static registerBrowserRuntime(boardName, runtimeId) {
-    // remember if of created runtime, it belongs to 'this' browser
+    // remember id of created runtime, it belongs to 'this' browser
     const existing = JSON.parse(localStorage.getItem(`runtimes-${boardName}`) || '[]');
     localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(existing.concat(runtimeId)));
+  }
+
+  static unregisterBrowserRuntime(boardName, runtimeId) {
+    // unremember that the id belongs to 'this' browser
+    const existing = JSON.parse(localStorage.getItem(`runtimes-${boardName}`) || '[]');
+    const pruned = existing.filter(id => id !== runtimeId);
+    localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(pruned));
   }
 
   constructor(props) {
@@ -33,6 +40,8 @@ class BoardContext extends Component {
       onAction: this.onAction,
       getCurrentBrowserRuntime: props.getCurrentBrowserRuntime || this.getCurrentBrowserRuntime,
       isRuntimeInScope: this.isRuntimeInScope,
+      acquireRuntimeScope: this.acquireRuntimeScope,
+      releaseRuntimeScope: this.releaseRuntimeScope,
 
       // data
       boardName: props.boardName,
@@ -219,6 +228,34 @@ class BoardContext extends Component {
       return this.browserRuntimes.find(rt => rt.id === runtime.id);
     } 
     return true;
+  }
+
+  acquireRuntimeScope = (boardname, runtime) => {
+    console.log('AM ACQUIRING')
+    if (runtime.type === 'browser') {
+      if (!this.isRuntimeInScope(runtime)) {
+        BoardContext.registerBrowserRuntime(boardname, runtime.id);
+        this.fetchData();
+      }
+    }
+  }
+
+  releaseRuntimeScope = (boardname, runtime) => {
+    if (runtime.type === 'browser') {
+      BoardContext.unregisterBrowserRuntime(boardname, runtime.id);
+      let releasedRT;
+      this.browserRuntimes = this.browserRuntimes.filter(rt => {
+        if (rt.id === runtime.id) {
+          releasedRT = rt;
+          return false;
+        }
+        return true;
+      });
+      if (releasedRT) {
+        releasedRT.destroyRuntime();
+      }
+      this.fetchData();
+    }
   }
 
   render() {

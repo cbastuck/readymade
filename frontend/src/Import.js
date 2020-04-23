@@ -27,10 +27,16 @@ export default class Import extends Component {
         const rt = data[runtimeId];
         if (rt.type === 'browser') {
           rt.params = rt.params || {};
+
+          // TODO: this might not be the registry from the 
+          // browser runtime which assumes ownership
+          // POST/PUT endpoint to set the registry for an existing runtime
           if (!rt.params.registry) {
-            rt.params.registry = BrowserRuntime.registry();
+              rt.params.registry = BrowserRuntime.registry();
+            }
+          if (rt.params.leaveOwnership !== true) {
+            BoardContext.registerBrowserRuntime(board, runtimeId);
           }
-          BoardContext.registerBrowserRuntime(board, runtimeId);
         }
         if (!rt.id) {
           rt.id = runtimeId;

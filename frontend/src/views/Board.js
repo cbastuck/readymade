@@ -9,13 +9,20 @@ import { createServiceUI, createPlaceholderUI } from '../UIFactory';
 export default class Board extends Component {
   
   renderRuntime(boardContext, runtime) {
-    const readonly = !boardContext.isRuntimeInScope(runtime);
+    const isOwner = boardContext.isRuntimeInScope(runtime);
+    const readonly = !isOwner;
     return (
       <Scene
         key={`${runtime.id}-scene`}
-        runtime={runtime.name}
+        runtime={runtime}
         readonly={readonly}
         style={{ marginBottom: 5 }}
+        onToggleOwnership={() => 
+          boardContext.isRuntimeInScope(runtime) ? 
+            boardContext.releaseRuntimeScope(boardContext.boardName, runtime) :
+            boardContext.acquireRuntimeScope(boardContext.boardName, runtime)
+        }
+        isOwner={isOwner}
       >
         {
           boardContext.services[runtime.name] && 

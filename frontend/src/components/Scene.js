@@ -58,7 +58,7 @@ export default class Scene extends Component {
     );
   }
 
-  renderSettings = () => {
+  renderSettings = (runtime, onToggleOwnership, isOwner) => {
     const itemStyle = { 
       height: 40,
       margin: 0,
@@ -95,12 +95,32 @@ export default class Scene extends Component {
         >
           <Icon name='keyboard' />
         </Menu.Item>
+        {
+          runtime && runtime.type === 'browser' && (
+            <Menu.Item
+              as='a'
+              style={itemStyle}
+              onClick={() => onToggleOwnership && onToggleOwnership() }
+            >
+              <Icon name={isOwner ? 'unlink' : 'linkify'} />
+            </Menu.Item>
+          )
+        }
       </Menu>
     );
   }
     
   render() {
-    const { children, runtime, style, readonly=false, frameless=false } = this.props;
+    const { 
+      style,
+      children,
+      isOwner = false,
+      runtime=null,
+      runtimeName=runtime && runtime.name,
+      readonly=false, 
+      frameless=false,
+      onToggleOwnership=null,
+    } = this.props;
     const { wrapServices } = this.state;
     const readonlyStyle = (readonly && !frameless) ? 
       {
@@ -123,7 +143,7 @@ export default class Scene extends Component {
         }}
       >
         {
-          !frameless && this.renderExpandableHeadline(runtime)
+          !frameless && this.renderExpandableHeadline(runtimeName)
         }
          <Sidebar.Pushable 
           as={Segment}
@@ -146,7 +166,7 @@ export default class Scene extends Component {
               boxShadow: '0 0 2px rgba(34,36,38,.15)',
             }}
           >
-            { this.renderSettings() }
+            { this.renderSettings(runtime, onToggleOwnership, isOwner) }
           </Sidebar>
           <div
             style={{
