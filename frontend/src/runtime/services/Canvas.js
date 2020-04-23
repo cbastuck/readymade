@@ -40,7 +40,8 @@ class CanvasUI extends Component {
   state = {
     fullWidth: document.body.clientWidth,
     fullHeight: document.body.clientHeight,
-    fullscreen: false
+    fullscreen: false,
+    clearOnRedraw: true,
   };
 
   imageCache = {};
@@ -318,9 +319,11 @@ class CanvasUI extends Component {
 
     const dataArray = Array.isArray(objectOrArray) ? objectOrArray : [objectOrArray];
     const ctx = this.canvas.getContext("2d");
-    ctx.fillStyle = "#FFF";
-    ctx.strokeStyle = "#FFF";
-    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    if (this.state.clearOnRedraw) {
+      ctx.fillStyle = "#FFF";
+      ctx.strokeStyle = "#FFF";
+      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+    }
 
     for (const data of dataArray) {
       switch (data.type) {
@@ -346,7 +349,10 @@ class CanvasUI extends Component {
       <ServiceUI 
         {...this.props}
         onInit={service => 
-          this.setState({ fullscreen: service.fullscreen })
+          this.setState({ 
+            fullscreen: service.fullscreen,
+            clearOnRedraw: service.clearOnRedraw,
+          })
         }
       >
       { 
@@ -383,6 +389,7 @@ class Canvas {
     this.app = app;
     
     this.fullscreen = false;
+    this.clearOnRedraw = true;
   }
 
   register(callback) {
@@ -391,8 +398,13 @@ class Canvas {
   }
 
   configure(config) {
-    if (config.fullscreen !== undefined) {
-      this.fullscreen = config.fullscreen;
+    const { fullscreen, clearOnRedraw } = config || {};
+    if (fullscreen !== undefined) {
+      this.fullscreen = fullscreen;
+    }
+
+    if (clearOnRedraw !== undefined) {
+      this.clearOnRedraw = clearOnRedraw;
     }
   }
 
