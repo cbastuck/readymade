@@ -100,6 +100,10 @@ export function addService(board, descriptor) {
   return request(`board/${board}/runtime/${descriptor.runtime}/services`, 'PUT', false, descriptor);
 }
 
+export function removeService(board, runtimeId, serviceId) {
+  return request(`board/${board}/runtime/${runtimeId}/services/${serviceId}`, 'DELETE', false);
+}
+
 export function clearBoard(board) {
   return request(`board/${board}`, 'DELETE', false);
 }

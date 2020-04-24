@@ -7,6 +7,7 @@ import BrowserRuntime from './runtime/BrowserRuntime';
 import {
   getServices,
   addService,
+  removeService,
   saveBoard,
   loadBoard,
   getRuntimes,
@@ -37,6 +38,7 @@ class BoardContext extends Component {
       // API
       addRuntime: this.addRuntime,
       addService: this.addService,
+      removeService: this.removeService,
       onAction: this.onAction,
       getCurrentBrowserRuntime: props.getCurrentBrowserRuntime || this.getCurrentBrowserRuntime,
       isRuntimeInScope: this.isRuntimeInScope,
@@ -189,6 +191,14 @@ class BoardContext extends Component {
     const boardName = this.getBoardName();
     if (boardName) {
       await addService(boardName, descriptor);
+      await this.fetchServices();
+    }
+  }
+
+  removeService = async (runtime, service) => {
+    const boardName = this.getBoardName();
+    if (boardName) {
+      await removeService(boardName, runtime.id, service.uuid);
       await this.fetchServices();
     }
   }

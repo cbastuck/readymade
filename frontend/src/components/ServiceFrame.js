@@ -67,7 +67,7 @@ export default class ServiceFrame extends Component {
       <Menu
         vertical
         compact
-        style={{  minHeight: '100%' }}
+        style={{ minHeight: '100%' }}
       >
         <Menu.Item
           as='a'
@@ -89,6 +89,15 @@ export default class ServiceFrame extends Component {
         <Menu.Item 
           as='a'
           style={itemStyle}
+          onClick={() => {
+            const { onAction, service } = this.props;
+            if (onAction) {
+              onAction({ 
+                action: 'remove', 
+                service: service.props.service,
+              });
+            }
+          }}
         >
           <Icon name='trash alternate outline' />
         </Menu.Item>
@@ -99,9 +108,10 @@ export default class ServiceFrame extends Component {
   renderService = service => service;
 
   render() {
-    const { service } = this.props;    
+    const { service } = this.props;
+    const uuid = service && service.props && service.props.service && service.props.service.uuid;
     return (
-      <div key={`service-frame-${service.uuid}`}>
+      <div key={`service-frame-${uuid}`}>
         <div
           className='unselectable'
           style={{

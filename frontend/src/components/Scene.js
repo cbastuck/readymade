@@ -34,10 +34,25 @@ export default class Scene extends Component {
     }
   }
 
-  addService(service) {
+  onAddService(service) {
     const { boardContext } = this.props;
     if (boardContext) {
       boardContext.addService(service);
+    }
+  }
+
+  onServiceAction = (command) => {
+    const { boardContext, runtime } = this.props;
+    const { service, action } = command;
+    switch (action) {
+      case 'remove': {
+        if (boardContext && runtime && service) {
+          return boardContext.removeService(runtime, service);
+        }
+        break;
+      }
+      default: 
+        console.log('Scene processing unknown service action', action);
     }
   }
 
@@ -63,7 +78,7 @@ export default class Scene extends Component {
             registry && registry.map(service =>
               <Dropdown.Item
                 key={`${runtime.name}.${service.serviceId}`}
-                onClick={() => this.addService(service)}
+                onClick={() => this.onAddService(service)}
               >
                 {service.serviceName}
               </Dropdown.Item>
@@ -241,6 +256,7 @@ export default class Scene extends Component {
                   <ServiceFrame
                     key={`scene-frame-${service.props.service.uuid}`}
                     service={service}
+                    onAction={this.onServiceAction}
                   />
                 )
               }
