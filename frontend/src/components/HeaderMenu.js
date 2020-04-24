@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Dropdown, Menu } from 'semantic-ui-react'
+import { Dropdown, Menu } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
 import { AppConsumer } from '../AppContext';
@@ -84,7 +84,7 @@ export default class HeaderMenu extends Component {
   renderServiceMenu(registry, boardContext) {
     return (
       <Dropdown
-        text="Click to add Services"
+        text="Add Runtimes"
         search
         pointing
         className='link item selection'
@@ -103,31 +103,6 @@ export default class HeaderMenu extends Component {
           >
             Browser
           </Dropdown.Item>
-          {
-            boardContext && boardContext.runtimes
-              .filter(runtime => boardContext.isRuntimeInScope(runtime))
-              .map((runtime, runtimeIdx) =>
-                [
-                  <Dropdown.Header
-                    key={`${runtime.name}.header`}
-                  >
-                    {runtime.name}
-                  </Dropdown.Header>,
-                  registry[runtime.name] && 
-                  registry[runtime.name].map(service =>
-                    <Dropdown.Item
-                      key={`${runtime.name}.${service.serviceId}`}
-                      onClick={() => this.props.addService(service)}
-                    >
-                      {service.serviceName}
-                    </Dropdown.Item>
-                  ),
-                  (runtimeIdx + 1 < boardContext.runtimes.length) && <Dropdown.Divider
-                    key={`${runtime.name}.devider`}
-                  />
-                ]
-              )
-          }
         </Dropdown.Menu>
       }
       </Dropdown>

@@ -15,14 +15,8 @@ export default class Board extends Component {
       <Scene
         key={`${runtime.id}-scene`}
         runtime={runtime}
-        readonly={readonly}
         style={{ marginBottom: 5 }}
-        onToggleOwnership={() => 
-          boardContext.isRuntimeInScope(runtime) ? 
-            boardContext.releaseRuntimeScope(boardContext.boardName, runtime) :
-            boardContext.acquireRuntimeScope(boardContext.boardName, runtime)
-        }
-        isOwner={isOwner}
+        boardContext={boardContext}
       >
         {
           boardContext.services[runtime.name] && 

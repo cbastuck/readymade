@@ -4,6 +4,7 @@ import {
   Sidebar,
   Segment,
   Menu,
+  Dropdown,
 } from 'semantic-ui-react';
 
 import ServiceFrame from './ServiceFrame';
@@ -33,7 +34,49 @@ export default class Scene extends Component {
     }
   }
 
-  renderExpandableHeadline(headline) {    
+  addService(service) {
+    const { boardContext } = this.props;
+    if (boardContext) {
+      boardContext.addService(service);
+    }
+  }
+
+  renderServiceMenu(runtime) {
+    const registry = runtime && runtime.registry;
+    return (
+      <Dropdown
+        text="Add Services"
+        style={{ fontWeight: 100  }} // disable bold appearance due to h4 of text
+        search
+        pointing
+        className='link item selection'
+        onSearchChange={e => console.log('search', e.target.value)}
+      >
+      {
+        <Dropdown.Menu>  
+          <Dropdown.Header
+            key={`${runtime.name}.header`}
+          >
+            {runtime.name}
+          </Dropdown.Header>
+          {
+            registry && registry.map(service =>
+              <Dropdown.Item
+                key={`${runtime.name}.${service.serviceId}`}
+                onClick={() => this.addService(service)}
+              >
+                {service.serviceName}
+              </Dropdown.Item>
+            )
+          }
+        </Dropdown.Menu>
+      }
+      </Dropdown>
+    );
+  }
+
+
+  renderExpandableHeadline(headline, runtime) {    
     return (
       <h4>
         <div 
@@ -52,7 +95,12 @@ export default class Scene extends Component {
           />
           <span> 
             {headline} 
-          </span> 
+          </span>
+          <span style={{ marginRight: 10, marginTop: 5, float: 'right' }} >
+            {
+              this.renderServiceMenu(runtime)
+            }
+          </span>
         </div>
       </h4>
     );
@@ -114,13 +162,19 @@ export default class Scene extends Component {
     const { 
       style,
       children,
-      isOwner = false,
       runtime=null,
-      runtimeName=runtime && runtime.name,
-      readonly=false, 
+      runtimeName=runtime ? runtime.name : 'Blank',
       frameless=false,
-      onToggleOwnership=null,
+      boardContext=null,
     } = this.props;
+
+    const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
+    const readonly = !isOwner;
+    const onToggleOwnership = () => 
+      boardContext.isRuntimeInScope(runtime) ? 
+        boardContext.releaseRuntimeScope(boardContext.boardName, runtime) :
+        boardContext.acquireRuntimeScope(boardContext.boardName, runtime);
+
     const { wrapServices } = this.state;
     const readonlyStyle = (readonly && !frameless) ? 
       {
@@ -143,7 +197,7 @@ export default class Scene extends Component {
         }}
       >
         {
-          !frameless && this.renderExpandableHeadline(runtimeName)
+          !frameless && this.renderExpandableHeadline(runtimeName, runtime)
         }
          <Sidebar.Pushable 
           as={Segment}

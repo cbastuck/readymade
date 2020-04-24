@@ -84,18 +84,22 @@ class BoardContext extends Component {
   fetchRuntimes = async () => {
     const board = this.getBoardName();
     const runtimes = board ? await getRuntimes(board) : [];
-    this.setState({ runtimes: runtimes });
+    this.setState({ runtimes });
     return runtimes;
   }
 
   fetchRegistry = async () => {
     const board = this.getBoardName();
     const registry = {};
+    const runtimes = [];
     for (const runtime of this.state.runtimes) {
       const runtimeRegistry = await getRuntimeRegistry(board, runtime.id);
-      registry[runtime.name] = runtimeRegistry;
+      registry[runtime.name] = runtimeRegistry; // legacy access by name ...
+      registry[runtime.id] = runtimeRegistry; // you should only address by id
+      runtime.registry = runtimeRegistry; // or directly use the referenced registry with a runtime instance
+      runtimes.push(runtime);
     } 
-    this.setState({ registry });
+    this.setState({ registry, runtimes });
   }
 
   fetchServices = async () => {
@@ -231,7 +235,6 @@ class BoardContext extends Component {
   }
 
   acquireRuntimeScope = (boardname, runtime) => {
-    console.log('AM ACQUIRING')
     if (runtime.type === 'browser') {
       if (!this.isRuntimeInScope(runtime)) {
         BoardContext.registerBrowserRuntime(boardname, runtime.id);
