@@ -231,6 +231,8 @@ class Camera {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.captureAs = 'image';
   }
 
   configure(config) {
