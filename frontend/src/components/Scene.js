@@ -56,7 +56,7 @@ export default class Scene extends Component {
     }
   }
 
-  renderServiceMenu(runtime) {
+  renderServiceMenu(runtimeName, runtime) {
     const registry = runtime && runtime.registry;
     return (
       <Dropdown
@@ -70,14 +70,14 @@ export default class Scene extends Component {
       {
         <Dropdown.Menu>  
           <Dropdown.Header
-            key={`${runtime.name}.header`}
+            key={`${runtimeName}.header`}
           >
-            {runtime.name}
+            {runtimeName}
           </Dropdown.Header>
           {
             registry && registry.map(service =>
               <Dropdown.Item
-                key={`${runtime.name}.${service.serviceId}`}
+                key={`${runtimeName}.${service.serviceId}`}
                 onClick={() => this.onAddService(service)}
               >
                 {service.serviceName}
@@ -91,7 +91,7 @@ export default class Scene extends Component {
   }
 
 
-  renderExpandableHeadline(headline, runtime) {    
+  renderExpandableHeadline(name, runtime) {    
     return (
       <h4>
         <div 
@@ -109,11 +109,11 @@ export default class Scene extends Component {
             })}
           />
           <span> 
-            {headline} 
+            {name} 
           </span>
           <span style={{ marginRight: 10, marginTop: 5, float: 'right' }} >
             {
-              this.renderServiceMenu(runtime)
+              this.renderServiceMenu(name, runtime)
             }
           </span>
         </div>
@@ -184,7 +184,7 @@ export default class Scene extends Component {
     } = this.props;
 
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
-    const readonly = !isOwner;
+    const readonly = !isOwner && !!runtime;
     const onToggleOwnership = () => 
       boardContext.isRuntimeInScope(runtime) ? 
         boardContext.releaseRuntimeScope(boardContext.boardName, runtime) :

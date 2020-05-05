@@ -88,7 +88,6 @@ export default class Sandbox extends Component {
                     <Scene
                       key="sandbox-scene"
                       runtimeName="Sandbox"
-                      readonly={false}
                       style={{ marginBottom: 5 }}
                       frameless={this.state.options && this.state.options.frameless}
                     >

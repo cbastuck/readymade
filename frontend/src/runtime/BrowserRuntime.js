@@ -189,7 +189,7 @@ export default class BrowserRuntime {
       case 'destroy':
         return this.destroyService(command.uuid);
       case 'ping':
-        return console.log('Received ping ...');
+        return;
       default:
         console.error('Unknown action in browser runtime: ', command);
     }
