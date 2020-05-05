@@ -201,7 +201,6 @@ class CanvasUI extends Component {
   drawCircle = (ctx, data) => {
     const { width, height } = this.getCanvasDim();
     const { radius=100, color, contour, gradient } = data || {};
-    
     ctx.save();
     const drawPath = ctx => {
       ctx.beginPath();
@@ -328,16 +327,21 @@ class CanvasUI extends Component {
     for (const data of dataArray) {
       switch (data.type) {
         case 'image':
-          return this.drawImage(ctx, data);
+          this.drawImage(ctx, data);
+          break;
         case 'text':
-          return this.drawText(ctx, data);
+          this.drawText(ctx, data);
+          break;
         case 'circle':
-          return this.drawCircle(ctx, data);
+          this.drawCircle(ctx, data);
+          break;
         case 'rect':
         case 'square':
-          return this.drawRect(ctx, data);
+          this.drawRect(ctx, data);
+          break;
         case 'video':
-          return this.drawVideo(ctx, data);
+          this.drawVideo(ctx, data);
+          break;
         default:
           break;
       }
