@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-// import { Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
@@ -78,6 +78,11 @@ export default class Imprint extends Component {
             </div>
           </div>
         </div>
+        <Link to="/">
+          <button className="button">
+            Back to Start
+          </button>
+        </Link>
         <Footer />
       </div>
     );
