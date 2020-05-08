@@ -367,7 +367,8 @@ class CanvasUI extends Component {
               style={{
                 position: (this.state.fullscreen || service.fullscreen) && 'fixed',
                 top: 0,
-                left: 0
+                left: 0,
+                zIndex: this.state.fullscreen && 10
               }}
               width={(this.state.fullscreen || service.fullscreen) ? this.state.fullWidth : 300}
               height={(this.state.fullscreen || service.fullscreen) ? this.state.fullHeight : 150}

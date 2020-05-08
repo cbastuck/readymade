@@ -77,7 +77,8 @@
       {
         "serviceName": "Monitor",
         "serviceId": "hookup.to/service/monitor-browser",
-        "uuid": "45ec2f09-1d82-46a3-a4bf-8004a5a13a15"
+        "uuid": "45ec2f09-1d82-46a3-a4bf-8004a5a13a15",
+        "enabled": false
       },
       {
         "serviceName": "Sequencer",
@@ -87,7 +88,14 @@
         "steps": [
           {
             "type": "text",
-            "text": "Evolution for Solution",
+            "text": "Evolution for solution ...",
+            "color": "white",
+            "font": "lighter 26px Helvetica Neue",
+            "y": "50%"
+          },
+          {
+            "type": "text",
+            "text": "Sometimes ideas take longer",
             "color": "white",
             "font": "lighter 26px Helvetica Neue",
             "y": "50%"
@@ -95,10 +103,20 @@
           [
             {
               "type": "text",
-              "text": "Some ideas take a bit longer",
-              "color": "white",
+              "text": "Somtimes much longer!",
+              "color": "#001",
               "font": "lighter 26px Helvetica Neue",
-              "y": "50%"
+              "y": "30%"
+            },
+            {
+              "type": "image",
+              "url": "/assets/arrow-right.png",
+              "y": "48%",
+              "x": "50%",
+              "unscaled": true,
+              "onClick": {
+                "page": "mission"
+              }
             }
           ],
           [
@@ -113,7 +131,7 @@
             {
               "type": "text",
               "id": "message",
-              "text": "We are manifold solutions",
+              "text": "... with manifold solutions",
               "color": "#001",
               "font": "lighter 28px Helvetica Neue",
               "y": "75%"
@@ -132,15 +150,23 @@
         ],
         "conditions": [
           {
-            "property": "iteration",
-            "operation": "greater",
             "index": 0,
-            "value": 50
+            "operation": "greater",
+            "property": "iteration",
+            "value": 150,
+            "weak": true
+          },
+          {
+            "index": 0,
+            "operation": "greater",
+            "property": "iteration",
+            "value": 250,
+            "weak": true
           },
           { 
-            "property": "mean",
-            "operation": "greater",
             "index": 0,
+            "operation": "greater",
+            "property": "mean",
             "value": 0.92
           }
         ]

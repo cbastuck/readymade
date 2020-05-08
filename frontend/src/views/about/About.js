@@ -60,12 +60,12 @@ export default class About extends Component {
           <div className="about-text">
             <h1><Switcher data={['About', 'Intent']} /></h1>
             <div style={{
-                marginTop: 50, 
-                marginBottom: 20,
+                marginTop: 30, 
+                marginBottom: 0,
                 fontSize: 20,
               }}
             >
-              <p><span style={amp}>Enable</span> <span style={{ fontStyle: 'italic' }}>everybody</span> to play with technical ideas</p>
+              <p><span style={amp}>Enable</span> <span style={{ fontStyle: 'italic' }}>everybody</span> to play with technical concepts.</p>
               <p>Seed <span style={amp}>Inspiration</span> and <span style={amp}>Curiousity</span> </p>
               <p>as a source for <span style={amp}>Creativity</span></p>
               <p>that allows for <span style={amp}>Improvisation</span> with complexity.</p>

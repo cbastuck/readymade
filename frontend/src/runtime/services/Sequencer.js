@@ -138,12 +138,15 @@ class Sequencer {
     }
   }
 
-  checkCondition(inData, refData, op) {
+  checkCondition(input, condition) {
+    const op = condition.operation;
+    const value = input[condition.property];
+    const referenceValue = condition.value;
     switch (op) {
       case 'less':
-        return inData < refData;
+        return value < referenceValue;
       case 'greater':
-        return inData > refData;
+        return value > referenceValue;
       default:
         break;
     }
@@ -158,14 +161,23 @@ class Sequencer {
     const n = this.currentStep % this.steps.length;
     if (this.conditions) {
       const condition = this.conditions[this.currentStep];
-      if (condition) {
-        const item = condition.index !== undefined ? params[condition.index] : params;
-        const inputData = item[condition.property];
-        const refData = condition.value;
-        const fulfilled = this.checkCondition(inputData, refData, condition.operation);
-        if (fulfilled) {
-          ++this.currentStep;
+      const nextNonWeakCondition = condition && condition.weak && this.conditions.find(
+        (next, nextIndex) => {
+          if (nextIndex <= this.currentStep) {
+            return false;
+          }
+          if (!next) {
+            return true; // unconditional (empty/undefined) steps are not weak
+          }
+          return !next.weak;
         }
+      );
+      const conditionFulfilled = condition && this.checkCondition(condition.index !== undefined ? params[condition.index] : params, condition);
+      const nonWeakConditionFulfilled = nextNonWeakCondition && this.checkCondition(nextNonWeakCondition.index !== undefined ? params[nextNonWeakCondition.index] : params, nextNonWeakCondition);
+      if (nonWeakConditionFulfilled) {
+        this.currentStep = this.conditions.indexOf(nextNonWeakCondition) + 1;
+      } else if (conditionFulfilled) {
+        ++this.currentStep;
       }
     } else {
       ++this.currentStep;
