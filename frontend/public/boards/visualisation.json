@@ -70,7 +70,8 @@
         "uuid": "3f7e5f41-803f-4bad-bea4-a0ba7bb54083",
         "property": "fitness",
         "features": {
-          "mean": "mean"
+          "mean": "mean",
+          "iteration": "iteration"
         }
       },
       {
@@ -86,27 +87,36 @@
         "steps": [
           {
             "type": "text",
-            "text": "evolution to the center",
+            "text": "Evolution for Solution",
             "color": "white",
-            "font": "lighter 28px Helvetica Neue",
+            "font": "lighter 26px Helvetica Neue",
             "y": "50%"
           },
           [
             {
               "type": "text",
+              "text": "Some ideas take a bit longer",
+              "color": "white",
+              "font": "lighter 26px Helvetica Neue",
+              "y": "50%"
+            }
+          ],
+          [
+            {
+              "type": "text",
               "id": "message",
-              "text": "variety explores the solution space",
-              "color": "#454f6d",
+              "text": "Variety explores the solution space",
+              "color": "#001",
               "font": "lighter 28px Helvetica Neue",
-              "y": "16%"
+              "y": "30%"
             },
             {
               "type": "text",
               "id": "message",
-              "text": "converge in manifold solutions",
-              "color": "#454f6d",
+              "text": "We are manifold solutions",
+              "color": "#001",
               "font": "lighter 28px Helvetica Neue",
-              "y": "86%"
+              "y": "75%"
             },
             {
               "type": "image",
@@ -121,6 +131,12 @@
           ]
         ],
         "conditions": [
+          {
+            "property": "iteration",
+            "operation": "greater",
+            "index": 0,
+            "value": 50
+          },
           { 
             "property": "mean",
             "operation": "greater",

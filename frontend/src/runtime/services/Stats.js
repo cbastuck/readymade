@@ -11,7 +11,7 @@ class Stats {
     this.board = board;
     this.app = app;
 
-    this.generation = 0;
+    this.iteration = 0;
     this.population = [];
   }
 
@@ -26,6 +26,7 @@ class Stats {
   }
 
   process(params) {
+    ++this.iteration;
     if (!this.property && params) {
       return params;
     }
@@ -69,6 +70,10 @@ class Stats {
           0
         );
         result[stdProperty] = Math.sqrt(sx / stats.sum);
+      }
+      const iterationProperty = this.features.iteration;
+      if (iterationProperty) {
+        result[iterationProperty] = this.iteration;
       }
     }
     result.n = stats.n;
