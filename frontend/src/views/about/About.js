@@ -1,8 +1,9 @@
-import React, { Component } from 'react'
-// import { Link } from 'react-router-dom';
+import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
+import Switcher from '../../components/Switcher';
 
 import './About.css';
 
@@ -48,14 +49,26 @@ export default class About extends Component {
   }
 
   render() {
+    const amp = {
+      fontSize: ' 1.4em',
+      fontWeight: 'bold',
+    };
     return (
       <div>
         <Toolbar />
         <div className="about-image container">
           <div className="about-text">
-            <h1>About</h1>
-            <div>
-              Everybody! Be able to orchestrate Technology.
+            <h1><Switcher data={['About', 'Intent']} /></h1>
+            <div style={{
+                marginTop: 50, 
+                marginBottom: 20,
+                fontSize: 20,
+              }}
+            >
+              <p><span style={amp}>Enable</span> <span style={{ fontStyle: 'italic' }}>everybody</span> to play with technical ideas</p>
+              <p>Seed <span style={amp}>Inspiration</span> and <span style={amp}>Curiousity</span> </p>
+              <p>as a source for <span style={amp}>Creativity</span></p>
+              <p>that allows for <span style={amp}>Improvisation</span> with complexity.</p>
             </div>
             <div className="ui relaxed grid">
               <div className="three column row">
@@ -68,6 +81,11 @@ export default class About extends Component {
                 }
               </div>
             </div>
+            <Link to="/">
+              <button className="button" style={{ color: 'white' }}>
+                Back to Start
+              </button>
+            </Link>
           </div>
         </div>
         <Footer />
