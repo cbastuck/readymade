@@ -182,19 +182,39 @@ class CanvasUI extends Component {
 
   drawText = (ctx, data) => {
     const { centerX, centerY, canvasWidth, canvasHeight } = this.getCanvasCenter();
-    ctx.fillStyle = data.color || "#000";
-
+    const {
+      font,
+      text,
+      x: dx,
+      y: dy,
+      onClick,
+      contour,
+      color,
+    } = data;
+    
     ctx.save();
-    ctx.font = data.font || "30px Arial";
-    const width = ctx.measureText(data.text).width;
-    const x = data.x === undefined ? centerX : toAbsolute(data.x, canvasWidth);
-    const y = data.y === undefined ? centerY : toAbsolute(data.y, canvasHeight);
-    ctx.fillText(data.text, x - width / 2, y);
-    if (data.contour) {
-      ctx.strokeStyle = data.contour.color;
-      ctx.lineWidth = data.contour.lineWidth || 1;
-      ctx.strokeText(data.text, centerX - width / 2, centerY);
+    ctx.fillStyle = color || '#000';    
+    ctx.font = font || '30px Arial';
+    const width = ctx.measureText(text).width;
+    const x = (dx === undefined ? centerX : toAbsolute(dx, canvasWidth)) - width / 2;
+    const y = dy === undefined ? centerY : toAbsolute(dy, canvasHeight);
+    ctx.fillText(text, x, y);
+    if (contour) {
+      ctx.strokeStyle = contour.color;
+      ctx.lineWidth = contour.lineWidth || 1;
+      ctx.strokeText(text, x, y);
     }
+    
+    if (onClick) {
+      const rect = {
+        x,
+        y: y - width,
+        width: width,
+        height: width + 4,
+      };
+      this.registerClickHandler(rect, onClick); 
+    }
+
     ctx.restore();
   }
 

@@ -95,7 +95,7 @@
           },
           {
             "type": "text",
-            "text": "Sometimes ideas take longer",
+            "text": "Some ideas take time",
             "color": "white",
             "font": "lighter 26px Helvetica Neue",
             "y": "50%"
@@ -103,17 +103,18 @@
           [
             {
               "type": "text",
-              "text": "Somtimes much longer!",
-              "color": "#001",
+              "text": "Too long?!",
+              "color": "white",
               "font": "lighter 26px Helvetica Neue",
-              "y": "30%"
+              "y": "50%"
             },
             {
-              "type": "image",
-              "url": "/assets/arrow-right.png",
-              "y": "48%",
+              "type": "text",
+              "text": "\uf2f9",
+              "color": "white",
+              "font": "600 28px 'Font Awesome 5 Free'",
               "x": "50%",
-              "unscaled": true,
+              "y": "55%",
               "onClick": {
                 "page": "mission"
               }
@@ -131,17 +132,18 @@
             {
               "type": "text",
               "id": "message",
-              "text": "... with manifold solutions",
+              "text": "of manifold solutions",
               "color": "#001",
               "font": "lighter 28px Helvetica Neue",
               "y": "75%"
             },
             {
-              "type": "image",
-              "url": "/assets/arrow-right.png",
+              "type": "text",
+              "text": "\uf051",
+              "color": "white",
+              "font": "600 28px 'Font Awesome 5 Free'",
               "y": "50%",
               "x": "50%",
-              "unscaled": true,
               "onClick": {
                 "page": "mission"
               }
@@ -160,7 +162,7 @@
             "index": 0,
             "operation": "greater",
             "property": "iteration",
-            "value": 250,
+            "value": 300,
             "weak": true
           },
           { 
