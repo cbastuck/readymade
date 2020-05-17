@@ -27,6 +27,7 @@ import FeedbackProviderDesriptor from './services/FeedbackProvider';
 import FeedbackTakerDesriptor from './services/FeedbackTaker';
 import FetcherDesriptor from './services/Fetcher';
 import CameraDesriptor from './services/Camera';
+import DispatcherDesriptor from './services/Dispatcher';
 import { request } from '../core/actions';
 import { parseResponse } from './MultiformParser';
 
@@ -60,6 +61,7 @@ export default class BrowserRuntime {
       FeedbackTakerDesriptor,
       FetcherDesriptor,
       CameraDesriptor,
+      DispatcherDesriptor,
     ];
   }
 
@@ -70,7 +72,8 @@ export default class BrowserRuntime {
     this.name = runtime.name;
     this.services = runtime.services || [];
     this.app = {
-      next: this.next
+      next: this.next,
+      getServiceById: id => this.services.find(s => s.uuid === id),
     }
 
     if (runtime.sendResult) {

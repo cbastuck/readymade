@@ -114,7 +114,7 @@ class CanvasUI extends Component {
     this.clickHandlers[id] = { rect, action };
   } 
 
-  onClick = ev => {
+  onClick = (service, ev) => {
     const { clientX: x , clientY: y} = ev;
     for (const id in this.clickHandlers) {
       const { rect, action } = this.clickHandlers[id];
@@ -122,15 +122,19 @@ class CanvasUI extends Component {
           x <= rect.x + rect.width && 
           y >= rect.y && 
           y <= rect.y + rect.height) {
-        return this.invokeClickAction(action);
+        return this.invokeClickAction(service, action);
       }
     }
   }
 
-  invokeClickAction = action => {
-    const target = window.frameElement;
-    if (target && target.onAction) {
-      target.onAction(action);
+  invokeClickAction = (service, action) => {
+    if (action.internal) { // internal dispatch event
+      service.app.next(service, action.internal);
+    } else { // external action
+      const target = window.frameElement;
+      if (target && target.onAction) {
+        target.onAction(action);
+      }
     }
   }
  
@@ -393,11 +397,13 @@ class CanvasUI extends Component {
               width={(this.state.fullscreen || service.fullscreen) ? this.state.fullWidth : 300}
               height={(this.state.fullscreen || service.fullscreen) ? this.state.fullHeight : 150}
               onDoubleClick={() => {
-                const toggled = !this.state.fullscreen;
-                service.fullscreen = toggled;
-                this.setState({ fullscreen: toggled });
+                if (service.toggleFullscreenOnDblClick) {
+                  const toggled = !this.state.fullscreen;
+                  service.fullscreen = toggled;
+                  this.setState({ fullscreen: toggled });
+                }
               }}
-              onClick={this.onClick.bind(this)}
+              onClick={this.onClick.bind(this, service)}
             />
           )
         )
@@ -423,13 +429,21 @@ class Canvas {
   }
 
   configure(config) {
-    const { fullscreen, clearOnRedraw } = config || {};
+    const { 
+      fullscreen, 
+      clearOnRedraw,
+      toggleFullscreenOnDblClick
+    } = config || {};
     if (fullscreen !== undefined) {
       this.fullscreen = fullscreen;
     }
 
     if (clearOnRedraw !== undefined) {
       this.clearOnRedraw = clearOnRedraw;
+    }
+
+    if (toggleFullscreenOnDblClick !== undefined) {
+      this.toggleFullscreenOnDblClick = toggleFullscreenOnDblClick;
     }
   }
 

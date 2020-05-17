@@ -65,8 +65,17 @@ export default class Welcome extends Component {
           frameBorder={0}
           height="100%"
           width="100%"
-          onAction={action => this.setState({ page: action.page })} 
+          onAction={action => this.setState({ page: action.page })}
         />
+        <div 
+          style={{ 
+            cursor: 'pointer', 
+            color: '#427DAB',
+          }} 
+          onClick={() => this.setState({ page: 'mission' }) }
+        >
+          Skip
+        </div>
       </div>
     );
   }
@@ -80,7 +89,7 @@ export default class Welcome extends Component {
         </p>
          <button
           className="button"
-          onClick={() => this.setState({ page: 'visualisation' }) }
+          onClick={() => this.setState({ page: 'welcome' }) }
         >
           Do it again
         </button>

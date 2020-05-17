@@ -103,6 +103,7 @@ class TimerUI extends Component {
         onClick={() => service.configure({ 
           periodic: false,
           immediate: true,
+          start: true,
         })}
       >
         Trigger 
@@ -176,39 +177,39 @@ class Timer {
   }
 
   configure(config) {
-    if (config.stop) {
-      this.clearTimer();
-    } else {
-      const { 
-        periodicValue,
-        periodicUnit,
-        periodic,
-        oneShotDelay,
-        immediate,
-        counter
-      } = config;
+    const { 
+      periodicValue,
+      periodicUnit,
+      periodic,
+      oneShotDelay,
+      immediate,
+      counter,
+      // commands
+      stop: doStop,
+      start: doStart,
+    } = config;
+    if (periodicValue !== undefined) {
+      this.periodicValue = periodicValue;
+    }
+    
+    if (periodicUnit !== undefined) {
+      this.periodicUnit = periodicUnit;
+    }
+    
+    if (periodic !== undefined) {
+      this.periodic = periodic;
+    }
 
-      if (periodicValue !== undefined) {
-        this.periodicValue = periodicValue;
-      }
-      
-      if (periodicUnit !== undefined) {
-        this.periodicUnit = periodicUnit;
-      }
-      
-      if (periodic !== undefined) {
-        this.periodic = periodic;
-      }
+    if (oneShotDelay !== undefined) {
+      this.oneShotDelay = oneShotDelay;
+    }
 
-      if (oneShotDelay !== undefined) {
-        this.oneShotDelay = oneShotDelay;
-      }
-
-      if (counter !== undefined) {
-        this.count = counter;
-      }
-      
-      const process = () => this.app.next(this, this.nextTimerArgument());
+    if (counter !== undefined) {
+      this.count = counter;
+    }
+    
+    const process = () => this.app.next(this, this.nextTimerArgument());
+    if (doStart) {
       if (this.periodic) {
         this.clearTimer();
         const timeBetween = moment.duration(this.periodicValue, this.periodicUnit);
@@ -217,10 +218,17 @@ class Timer {
           setImmediate(process);
         }
       } else {
+        if (this.timer) {
+          this.clearTimer();
+        }
         if (immediate) {
           setImmediate(process);
+        } else {
+          setTimeout(process) // oneShotDelay is accounted for in process
         }
       }
+    } else if (doStop) {
+      this.clearTimer();
     }
   }
 

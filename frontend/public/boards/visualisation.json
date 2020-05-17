@@ -8,15 +8,15 @@
         "serviceName": "Timer",
         "serviceId": "hookup.to/service/browser-timer",
         "uuid": "0e5e8233-6856-474e-9091-bae598a6be48",
-        "periodic": true,
+        "periodic": false,
         "periodicValue": 100,
         "periodicUnit": "ms",
-        "immediate": true
+        "immediate": true,
+        "start": true
       },
       {
         "serviceName": "Genetic",
         "serviceId": "hookup.to/service/genetic",
-        "uuid": "dc2052ea-8b4c-4e40-a441-58c7fbacbb93",
         "targetShape": {
           "type": "circle",
           "radius": "50%",
@@ -67,7 +67,6 @@
       {
         "serviceName": "Stats",
         "serviceId": "hookup.to/service/stats",
-        "uuid": "3f7e5f41-803f-4bad-bea4-a0ba7bb54083",
         "property": "fitness",
         "features": {
           "mean": "mean",
@@ -77,36 +76,162 @@
       {
         "serviceName": "Monitor",
         "serviceId": "hookup.to/service/monitor-browser",
-        "uuid": "45ec2f09-1d82-46a3-a4bf-8004a5a13a15",
         "enabled": false
       },
       {
         "serviceName": "Sequencer",
         "serviceId": "hookup.to/service/sequencer",
-        "uuid": "0d6f0b3b-caa5-4d87-82d6-e9a55198d6f5",
         "repeat": false,
         "steps": [
-          {
-            "type": "text",
-            "text": "Evolution for solution ...",
-            "color": "white",
-            "font": "lighter 26px Helvetica Neue",
-            "y": "50%"
-          },
-          {
-            "type": "text",
-            "text": "Some ideas take time",
-            "color": "white",
-            "font": "lighter 26px Helvetica Neue",
-            "y": "50%"
-          },
+          [ 
+            {
+              "type": "text",
+              "text": "Evolution for solution",
+              "color": "white",
+              "font": "lighter 26px Helvetica Neue",
+              "y": "43%"
+            },
+            {
+              "type": "text",
+              "text": "\uf051",
+              "color": "white",
+              "font": "600 28px 'Font Awesome 5 Free'",
+              "x": "44%",
+              "y": "53%",
+              "onClick": {
+                "internal": {
+                  "type": "dispatch",
+                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
+                  "config": {
+                    "start": true,
+                    "periodic": false
+                  }
+                }
+              }
+            },
+            {
+              "type": "text",
+              "text": "\uf04b",
+              "color": "white",
+              "font": "600 28px 'Font Awesome 5 Free'",
+              "x": "56%",
+              "y": "53%",
+              "onClick": {
+                "internal": {
+                  "type": "dispatch",
+                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
+                  "config": {
+                    "start": true,
+                    "periodic": true
+                  }
+                }
+              }
+            }
+          ],
+          [ 
+            {
+              "type": "text",
+              "text": "Started with four options",
+              "color": "#001",
+              "font": "lighter 26px Helvetica Neue",
+              "y": "20%"
+            },
+            {
+              "type": "text",
+              "text": "\uf051",
+              "color": "white",
+              "font": "600 28px 'Font Awesome 5 Free'",
+              "x": "44%",
+              "y": "53%",
+              "onClick": {
+                "internal": {
+                  "type": "dispatch",
+                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
+                  "config": {
+                    "start": true,
+                    "periodic": false
+                  }
+                }
+              }
+            },
+            {
+              "type": "text",
+              "text": "\uf04b",
+              "color": "white",
+              "font": "600 28px 'Font Awesome 5 Free'",
+              "x": "56%",
+              "y": "53%",
+              "onClick": {
+                "internal": {
+                  "type": "dispatch",
+                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
+                  "config": {
+                    "start": true,
+                    "periodic": true
+                  }
+                }
+              }
+            },  
+            {
+              "type": "text",
+              "text": "No solution, but an ideal start.",
+              "color": "#001",
+              "font": "lighter 26px Helvetica Neue",
+              "y": "80%"
+            }
+          ],
           [
             {
               "type": "text",
-              "text": "Too long?!",
+              "text": "Some ideas take time",
               "color": "white",
               "font": "lighter 26px Helvetica Neue",
-              "y": "50%"
+              "y": "43%"
+            },
+            {
+              "type": "text",
+              "text": "\uf051",
+              "color": "white",
+              "font": "600 28px 'Font Awesome 5 Free'",
+              "x": "44%",
+              "y": "53%",
+              "onClick": {
+                "internal": {
+                  "type": "dispatch",
+                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
+                  "config": {
+                    "start": true,
+                    "periodic": false
+                  }
+                }
+              }
+            },
+            {
+              "type": "text",
+              "text": "\uf04b",
+              "color": "white",
+              "font": "600 28px 'Font Awesome 5 Free'",
+              "x": "56%",
+              "y": "53%",
+              "onClick": {
+                "internal": {
+                  "type": "dispatch",
+                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
+                  "config": {
+                    "start": true,
+                    "periodic": true
+                  }
+                }
+              }
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "text": "Too long?",
+              "color": "white",
+              "font": "lighter 26px Helvetica Neue",
+              "y": "43%"
             },
             {
               "type": "text",
@@ -139,7 +264,7 @@
             },
             {
               "type": "text",
-              "text": "\uf051",
+              "text": "\uf04b",
               "color": "white",
               "font": "600 28px 'Font Awesome 5 Free'",
               "y": "50%",
@@ -151,6 +276,13 @@
           ]
         ],
         "conditions": [
+          {
+            "index": 0,
+            "operation": "greater",
+            "property": "iteration",
+            "value": 10,
+            "weak": true
+          },
           {
             "index": 0,
             "operation": "greater",
@@ -176,8 +308,12 @@
       {
         "serviceName": "Canvas",
         "serviceId": "hookup.to/service/canvas",
-        "uuid": "4122caaa-2b93-40f0-a98e-8582369b685f",
-        "fullscreen": true
+        "fullscreen": true,
+        "toggleFullscreenOnDblClick": false
+      },
+      {
+        "serviceName": "Dispatcher",
+        "serviceId": "hookup.to/service/dispatcher"
       }
     ],
     "params": {

@@ -20,10 +20,6 @@ class Step extends Component {
   allowDrop = ev => true; // TODO: allow everything
 
   onDrop = async ev => {
-    //for (let i=0; i<ev.dataTransfer.files.length; ++i) {
-    //  console.log("f--->", ev.dataTransfer.files[i])
-    //}
-
     for(let i=0; i<ev.dataTransfer.items.length; ++i) {
       const item = ev.dataTransfer.items[i];
       return await resolveTransferItem(item); // TODO: returning the first item

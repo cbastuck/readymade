@@ -11,7 +11,8 @@
         "periodic": true,
         "periodicValue": 100,
         "periodicUnit": "ms",
-        "immediate": true
+        "immediate": true,
+        "start": true
       },
       {
         "serviceName": "Optimizer",

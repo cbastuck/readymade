@@ -11,7 +11,8 @@
         "periodic": true,
         "periodicValue": 4,
         "periodicUnit": "s",
-        "immediate": true
+        "immediate": true,
+        "start": true
       },
       {
         "serviceName": "Sequencer",
