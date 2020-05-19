@@ -9,7 +9,7 @@ export default class Login extends Component {
     const query = qs.stringify({
       client_id: 'oidcCLIENT',
       response_type: 'code',
-      scope: 'openid profile',
+      scope: 'openid profile email permissions',
       redirect_uri: redirectUri(),
       state: board || ''
     });
