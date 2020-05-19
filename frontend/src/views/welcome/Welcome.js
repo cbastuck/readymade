@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-// import { Input, Button } from 'semantic-ui-react';
+// import { Icon } from 'semantic-ui-react';
 
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
@@ -136,12 +136,12 @@ export default class Welcome extends Component {
                       />
                   }
                 </BoardConsumer>
-                  <div className={`hero-text ${this.state.page} fade-in-linear`}>
-                    { this.state.page === 'welcome' && this.renderWelcome() } 
-                    { this.state.page === 'intro' && this.renderIntro() } 
-                    { this.state.page === 'visualisation' && this.renderVisualisation() } 
-                    { this.state.page === 'mission' && this.renderMission() } 
-                  </div>
+                <div className={`hero-text ${this.state.page} fade-in-linear`}>
+                  { this.state.page === 'welcome' && this.renderWelcome() } 
+                  { this.state.page === 'intro' && this.renderIntro() } 
+                  { this.state.page === 'visualisation' && this.renderVisualisation() } 
+                  { this.state.page === 'mission' && this.renderMission() } 
+                </div>
                 <Footer />
               </div>
             </BoardContext> 

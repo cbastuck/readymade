@@ -397,7 +397,7 @@ class CanvasUI extends Component {
               width={(this.state.fullscreen || service.fullscreen) ? this.state.fullWidth : 300}
               height={(this.state.fullscreen || service.fullscreen) ? this.state.fullHeight : 150}
               onDoubleClick={() => {
-                if (service.toggleFullscreenOnDblClick) {
+                if (!service.noToggleFullscreenOnDblClick) {
                   const toggled = !this.state.fullscreen;
                   service.fullscreen = toggled;
                   this.setState({ fullscreen: toggled });
@@ -432,7 +432,7 @@ class Canvas {
     const { 
       fullscreen, 
       clearOnRedraw,
-      toggleFullscreenOnDblClick
+      noToggleFullscreenOnDblClick
     } = config || {};
     if (fullscreen !== undefined) {
       this.fullscreen = fullscreen;
@@ -442,8 +442,8 @@ class Canvas {
       this.clearOnRedraw = clearOnRedraw;
     }
 
-    if (toggleFullscreenOnDblClick !== undefined) {
-      this.toggleFullscreenOnDblClick = toggleFullscreenOnDblClick;
+    if (noToggleFullscreenOnDblClick !== undefined) {
+      this.noToggleFullscreenOnDblClick = noToggleFullscreenOnDblClick;
     }
   }
 

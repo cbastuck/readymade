@@ -69,6 +69,7 @@ class TimerUI extends Component {
               periodic: true,
               periodicValue: this.state.periodicValue,
               periodicUnit: this.state.periodicUnit,
+              start: true,
             })}
             disabled={this.state.timerIsRunning}
           >

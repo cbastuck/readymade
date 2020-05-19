@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 
-import { Dropdown } from 'semantic-ui-react';
+import { Dropdown, Icon } from 'semantic-ui-react';
 
 export default class AccountDropdown extends Component {
 
@@ -29,7 +29,7 @@ export default class AccountDropdown extends Component {
 
   render() {
     const { currentUser} = this.props;
-    const dropDownText = currentUser || 'Account'
+    const dropDownText = currentUser || <Icon name="user" />
     return (
       <Dropdown
         text={dropDownText}
