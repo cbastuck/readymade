@@ -8,9 +8,6 @@ import {
   finishPendingLoginRequest
 } from '../core/actions';
 
-const clientId = 'oidcCLIENT';
-const clientSecret = 'test';
-
 export default class AuthRedirect extends Component {
   constructor(props) {
     super(props);
@@ -35,6 +32,7 @@ export default class AuthRedirect extends Component {
   }
 
   exchangeCodeForToken = async code => {
+    const clientId = 'hookup';
     const response = await fetch(
       `/openid/token`,
       {
@@ -44,7 +42,6 @@ export default class AuthRedirect extends Component {
            'Cache-Control': 'no-cache',
          },
          body: qs.stringify({
-           client_secret: clientSecret,
            client_id: clientId,
            redirect_uri: redirectUri(),
            grant_type: 'authorization_code',

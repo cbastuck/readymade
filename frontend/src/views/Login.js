@@ -7,7 +7,7 @@ export default class Login extends Component {
   render() {
     const { board } = this.props;
     const query = qs.stringify({
-      client_id: 'oidcCLIENT',
+      client_id: 'hookup',
       response_type: 'code',
       scope: 'openid profile email permissions',
       redirect_uri: redirectUri(),
