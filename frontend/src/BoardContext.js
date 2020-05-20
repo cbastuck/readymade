@@ -75,7 +75,7 @@ class BoardContext extends Component {
       await this.fetchServices();
       await this.fetchUserBoards();
     } catch(error) {
-      console.log('Fetching data failed');
+      console.log('Fetching data failed', error);
     }
   }
     
@@ -94,20 +94,22 @@ class BoardContext extends Component {
     const board = this.getBoardName();
     const registry = {};
     const runtimes = [];
-    for (const runtime of this.state.runtimes) {
-      const runtimeRegistry = await getRuntimeRegistry(board, runtime.id);
-      registry[runtime.name] = runtimeRegistry; // legacy access by name ...
-      registry[runtime.id] = runtimeRegistry; // you should only address by id
-      runtime.registry = runtimeRegistry; // or directly use the referenced registry with a runtime instance
-      runtimes.push(runtime);
-    } 
-    this.setState({ registry, runtimes });
+    if (this.state.runtimes) {
+      for (const runtime of this.state.runtimes) {
+        const runtimeRegistry = await getRuntimeRegistry(board, runtime.id);
+        registry[runtime.name] = runtimeRegistry; // legacy access by name ...
+        registry[runtime.id] = runtimeRegistry; // you should only address by id
+        runtime.registry = runtimeRegistry; // or directly use the referenced registry with a runtime instance
+        runtimes.push(runtime);
+      } 
+      this.setState({ registry, runtimes });
+    }
   }
 
   fetchServices = async () => {
     const board = this.getBoardName();
     const services = {};
-    if (board) {
+    if (board && this.state.runtimes) {
       for (const runtime of this.state.runtimes) {
         const { services: runtimeServices } = await getServices(board, runtime.id);
         services[runtime.name] = runtimeServices;

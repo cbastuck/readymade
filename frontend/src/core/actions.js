@@ -1,11 +1,7 @@
-import qs from 'querystring';
-
 import {
   removeToken,
   restoreToken
 } from './Auth';
-
-let pendingLoginRequest = null;
 
 // TODO: this implementation should not be in this file
 async function serializeObject(body) {
@@ -74,9 +70,7 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
   const status = response.status;
   if (status === 401) {
     removeToken();
-    const query = qs.parse(path.split('?')[1]);
-    console.log(`Request to "${path}" unauthorized redirect to login`)
-    return redirectToLogin(query.board);
+    return;
   }
   if (parseJSON) {
     return response.json();
@@ -152,25 +146,3 @@ export function detectBrowserIOS() {
   const iOSSafari = iOS && webkit && !ua.match(/CriOS/i);
   return iOSSafari;
 }
-
-export function redirectToLogin(board) {
-  if (pendingLoginRequest) {
-    return;
-  }
-}
-
-export async function finishPendingLoginRequest(success) {
-  if (pendingLoginRequest) {
-    const { resolve, reject } = pendingLoginRequest;
-    pendingLoginRequest = null;
-    if (success) {
-      await resolve();
-      window.location.reload();
-    } else {
-      redirectTo('/loginFail');
-      await reject();
-    }
-  }
-}
-
-window.finishPendingLoginRequest = finishPendingLoginRequest;

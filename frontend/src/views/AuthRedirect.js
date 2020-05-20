@@ -5,7 +5,6 @@ import qs from 'querystring';
 import { AppConsumer } from '../AppContext'
 import {
   redirectUri,
-  finishPendingLoginRequest
 } from '../core/actions';
 
 export default class AuthRedirect extends Component {
@@ -24,9 +23,6 @@ export default class AuthRedirect extends Component {
       this.queryParams = qs.parse(location.search.substr(1));
       if (this.queryParams.code) {
         this.exchangeCodeForToken(this.queryParams.code)
-          .then(() => finishPendingLoginRequest(true));
-      } else {
-        finishPendingLoginRequest(false);
       }
     }
   }
@@ -43,6 +39,7 @@ export default class AuthRedirect extends Component {
          },
          body: qs.stringify({
            client_id: clientId,
+           client_secret: 'hkp',
            redirect_uri: redirectUri(),
            grant_type: 'authorization_code',
            code: code,

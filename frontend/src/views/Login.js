@@ -9,7 +9,7 @@ export default class Login extends Component {
     const query = qs.stringify({
       client_id: 'hookup',
       response_type: 'code',
-      scope: 'openid profile email permissions',
+      scope: 'openid profile permissions',
       redirect_uri: redirectUri(),
       state: board || ''
     });
