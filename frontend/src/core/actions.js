@@ -1,7 +1,13 @@
+import queryString from 'query-string';
 import {
   removeToken,
   restoreToken
 } from './Auth';
+
+function queryParams() {
+  const { ownerId } = queryString.parse(window.location.search);
+  return queryString.stringify({ ownerId });
+}
 
 // TODO: this implementation should not be in this file
 async function serializeObject(body) {
@@ -79,51 +85,51 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
 }
 
 export function getRuntimes(board) {
-  return request(`board/${board}/runtimes`);
+  return request(`board/${board}/runtimes?${queryParams()}`);
 }
 
 export function addRuntime(board, descriptor) {
-  return request(`board/${board}/runtimes`, 'POST', true, descriptor)
+  return request(`board/${board}/runtimes?${queryParams()}`, 'POST', true, descriptor)
 }
 
 export function getServices(board, runtime) {
-  return request(`board/${board}/runtime/${runtime}/services`);
+  return request(`board/${board}/runtime/${runtime}/services?${queryParams()}`);
 }
 
 export function addService(board, descriptor) {
-  return request(`board/${board}/runtime/${descriptor.runtime}/services`, 'PUT', false, descriptor);
+  return request(`board/${board}/runtime/${descriptor.runtime}/services?${queryParams()}`, 'PUT', false, descriptor);
 }
 
 export function removeService(board, runtimeId, serviceId) {
-  return request(`board/${board}/runtime/${runtimeId}/services/${serviceId}`, 'DELETE', false);
+  return request(`board/${board}/runtime/${runtimeId}/services/${serviceId}?${queryParams()}`, 'DELETE', false);
 }
 
 export function clearBoard(board) {
-  return request(`board/${board}`, 'DELETE', false);
+  return request(`board/${board}?${queryParams()}`, 'DELETE', false);
 }
 
 export function getRuntimeRegistry(board, runtimeName) {
-  return request(`board/${board}/runtime/${runtimeName}/registry`);
+  return request(`board/${board}/runtime/${runtimeName}/registry?${queryParams()}`);
 }
 
 export async function getServiceConfiguration(board, service) {
-  return await request(`board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config`);
+  return await request(`board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config?${queryParams()}`);
 }
 
 export function configureService(board, service, config) {
-  return request(`board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config`, 'POST', false, config);
+  return request(`board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config?${queryParams()}`, 'POST', false, config);
 }
 
 export function loadBoard(board, state) {
-  return request(`board/${board}`, 'PUT', false, state);
+  return request(`board/${board}?${queryParams()}`, 'PUT', false, state);
 }
 
 export function saveBoard(board) {
-  return request(`board/${board}`, 'GET', true);
+  return request(`board/${board}?${queryParams()}`, 'GET', true);
 }
 
 export function importBoard(board, data) {
-  return request(`board/${board}/import`, 'POST', true, data);
+  return request(`board/${board}/import?${queryParams()}`, 'POST', true, data);
 }
 
 export function redirectUri() {
