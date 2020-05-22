@@ -65,7 +65,7 @@ export default class BrowserRuntime {
     ];
   }
 
-  constructor(runtime) {
+  constructor(runtime, { board, userId } = {}) {
     this.registry = BrowserRuntime.registry();
 
     this.id = runtime.id;
@@ -76,6 +76,14 @@ export default class BrowserRuntime {
       getServiceById: id => this.services.find(s => s.uuid === id),
     }
 
+    if (board) {
+      this.board = board;
+    }
+
+    if (userId) {
+      this.userId = userId;
+    }
+    
     if (runtime.sendResult) {
       this.sendResult = runtime.sendResult;
     }
@@ -100,7 +108,7 @@ export default class BrowserRuntime {
 
   connect(id) {
     this.id = id; // TODO: do we need this? Already done in c'tor
-    const backendPath = `/api/${id}`;
+    const backendPath = `/api/${this.userId}/${this.board}/${id}`;
     console.log(`Connecting ${this.name} to ${backendPath}`)
     
     const useWebSockets = true;
@@ -202,7 +210,7 @@ export default class BrowserRuntime {
     if (!this.id) {
       return console.error('Could not send result data, no backend is connected');
     }
-    return request(`${this.id}/${requestId}`, 'POST', false, data);
+    return request(`${this.userId}/${this.board}/${this.id}/${requestId}`, 'POST', false, data);
   }
 
   createService({ serviceId, board }, id, initialConfig) {

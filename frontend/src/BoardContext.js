@@ -46,6 +46,7 @@ class BoardContext extends Component {
       releaseRuntimeScope: this.releaseRuntimeScope,
 
       // data
+      userId: props.userId,
       boardName: props.boardName,
       runtimes: [],
       services: {},
@@ -214,7 +215,7 @@ class BoardContext extends Component {
       if (exists) {
         return; // we already created it 
       }
-      const browserRuntime = new BrowserRuntime(runtime);
+      const browserRuntime = new BrowserRuntime(runtime, { board: this.state.boardName, userId: this.state.userId });
       this.browserRuntimes.push(browserRuntime);
       browserRuntime.connect(localBoardRuntimeId);
       for (const service of services[runtime.name]) {

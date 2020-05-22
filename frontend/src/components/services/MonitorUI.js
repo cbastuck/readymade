@@ -43,11 +43,11 @@ export default class MonitorUI extends Component {
   }
 
   connectEventSource = async () => {
-    const { board, service } = this.props;
+    const { board, service, userId } = this.props;
     if (service && service.board) {
       const config = await getServiceConfiguration(board, service);
       this.setState({ enabled: config.enabled });
-      this.eventSource = new EventSource(`/api/${service.board}/${config.uuid}`);
+      this.eventSource = new EventSource(`/api/${userId}/${service.board}/${config.uuid}`);
       this.eventSource.addEventListener(
         'data',
         this.onMessage

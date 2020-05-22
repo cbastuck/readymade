@@ -15,6 +15,15 @@ export function validateToken(token) {
   return { token, decoded };
 }
 
+export function getUserId() {
+  const token = restoreToken();
+  if (!token) {
+    return;
+  }
+  const { userId } = processToken(token);
+  return userId;
+}
+
 export function restoreToken() {
   return localStorage.getItem('token');
 }
@@ -48,5 +57,10 @@ export function processToken(incomingToken) {
     removeToken(); // the stored token token is not valid anymore
     return {};
   }
-  return { token, username: decoded && decoded.nickname };
+
+  return { 
+    token, 
+    username: decoded && decoded.nickname,
+    userId: decoded && decoded.sub,
+  };
 }

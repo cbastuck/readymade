@@ -5,7 +5,7 @@ import {
   Switch
 } from 'react-router-dom';
 
-import AppContext from './AppContext';
+import AppContext, { AppConsumer } from './AppContext';
 
 import Welcome from './views/welcome/Welcome';
 import About from './views/about/About';
@@ -21,8 +21,6 @@ import BoardProvider from './BoardContext';
 import Sandbox from './Sandbox';
 import Import from './Import';
 
-import { AppConsumer } from './AppContext';
-
 import './App.css';
 
 class BoardWithContext extends Component {
@@ -33,7 +31,10 @@ class BoardWithContext extends Component {
       <AppConsumer>
         {
           appContext => 
-            <BoardProvider boardName={boardName}>
+            <BoardProvider
+              userId={appContext.userId}
+              boardName={boardName}
+            >
               <Board
                 appContext={appContext}
               />

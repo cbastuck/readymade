@@ -17,7 +17,7 @@ const lineStyle = {
 
 export default class OutputUI extends Component {
   state = {
-    name: 'out',
+    name: '',
     active: false
   };
 
@@ -28,11 +28,11 @@ export default class OutputUI extends Component {
   update = async () => {
     const { board, service } = this.props;
     const config = await getServiceConfiguration(board, service);
-    this.setState({ name: config.endpoint, active: config.active });
+    this.setState({ name: config.name, active: config.active });
   }
 
   render() {
-    const { service, board } = this.props;
+    const { service, board, userId } = this.props;
     return (
       <div>
         <div style={lineStyle}>
@@ -70,7 +70,7 @@ export default class OutputUI extends Component {
               </Label>
               <span style={{ padding: '5px 5px' }}>
                 <a
-                  href={`${window.location.origin}/api/${board}/${this.state.name}`}
+                  href={`${window.location.origin}/api/${userId}/${board}/${this.state.name}`}
                   target="blank"
                 >
                   Link

@@ -4,7 +4,8 @@ import React, { Component, createContext } from'react';
 import {
   restoreToken,
   processToken,
-  setToken
+  setToken,
+  getUserId,
 } from './core/Auth';
 import {
   redirectTo,
@@ -22,7 +23,7 @@ class AppContext extends Component {
       // state members
       token,
       username,
-
+      userId: getUserId(),
       // modifying functions
       updateToken: this.updateToken,
       logout: this.logout

@@ -23,7 +23,7 @@ export default class Board extends Component {
           boardContext.services[runtime.name].map(svc =>
             readonly ? 
               createPlaceholderUI(svc) :
-              createServiceUI(boardContext.boardName, svc, runtime.id)
+              createServiceUI(boardContext.boardName, svc, runtime.id, boardContext.userId)
           )
         }
       </Scene>

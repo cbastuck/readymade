@@ -30,41 +30,42 @@ export function createPlaceholderUI(service) {
   );
 }
 
-export function createServiceUI(board, service, runtimeId) {
+export function createServiceUI(board, service, runtimeId, userId=undefined) {
   const id = service.uuid;
+  const params = { key: id, id: id, service, board, userId };
   switch(service.serviceId) {
     case 'hookup.to/service/ingress':
-      return <IngressUI key={id} id={id} service={service} board={board} />;
+      return <IngressUI { ...params } />;
     case 'hookup.to/service/html-filter':
-      return <HTMLFilterUI key={id} id={id} service={service} board={board} />;
+      return <HTMLFilterUI { ...params } />;
     case 'hookup.to/service/file-exchange':
-      return <FileExchangeUI key={id} id={id} service={service} board={board} />;
+      return <FileExchangeUI { ...params } />;
     case 'hookup.to/service/websocket-provider':
-      return <WebsocketConsumer key={id} id={id} service={service} board={board} />;
+      return <WebsocketConsumer { ...params } />;
     case 'hookup.to/service/monitor':
-      return <MonitorUI key={id} id={id} service={service} board={board} />;
+      return <MonitorUI { ...params } />;
     case 'hookup.to/service/input':
-      return <InputUI key={id} id={id} service={service} board={board} />;
+      return <InputUI { ...params } />;
     case 'hookup.to/service/filter':
-      return <FilterUI key={id} id={id} service={service} board={board} />;
+      return <FilterUI { ...params } />;
     case 'hookup.to/resource/docker/mysql':
-      return <MySqlResourceUI key={id} id={id} service={service} board={board} />;
+      return <MySqlResourceUI { ...params } />;
     case 'hookup.to/service/mysql':
-      return <MySqlServiceUI key={id} id={id} service={service} board={board} />;
+      return <MySqlServiceUI { ...params } />;
     case 'hookup.to/service/timer':
-      return <TimerUI key={id} id={id} service={service} board={board} />;
+      return <TimerUI { ...params } />;
     case 'hookup.to/service/web-get':
-      return <WebGetUI key={id} id={id} service={service} board={board} />;
+      return <WebGetUI { ...params } />;
     case 'hookup.to/service/data-injector':
-      return <DataInjectorUI key={id} id={id} service={service} board={board} />;
+      return <DataInjectorUI { ...params } />;
     case 'hookup.to/service/html-templates':
-      return <HTMLTemplatesUI key={id} id={id} service={service} board={board} />;
+      return <HTMLTemplatesUI { ...params } />;
     case 'hookup.to/service/output':
-      return <OutputUI key={id} id={id} service={service} board={board} />;
+      return <OutputUI { ...params } />;
     case 'hookup.to/resource/file-s3':
-      return <FileS3UI key={id} id={id} service={service} board={board} />;
+      return <FileS3UI { ...params } />;
     case 'hookup.to/service/aggregator':
-      return <AggregatorUI key={id} id={id} service={service} board={board} />
+      return <AggregatorUI { ...params } />
     default:
       const factory = BrowserRuntime.registry().find(s => 
          service.serviceId === s.serviceId && s.createUI
