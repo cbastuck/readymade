@@ -181,7 +181,7 @@
             },  
             {
               "type": "text",
-              "text": "No solution, but an ideal start.",
+              "text": "No solution, but an ideal start",
               "color": "#001",
               "font": "lighter 26px Helvetica Neue",
               "y": "80%"
