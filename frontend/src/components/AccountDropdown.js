@@ -28,11 +28,16 @@ export default class AccountDropdown extends Component {
   }
 
   render() {
-    const { currentUser} = this.props;
-    const dropDownText = currentUser || <Icon name="user" />
+    const { currentUser = ''} = this.props;
+    const icon = (
+      <div>
+        <Icon name="user" style={{ margin: "0px 10px" }}/> 
+        {currentUser}
+      </div>
+    );
     return (
       <Dropdown
-        text={dropDownText}
+        icon={icon}
         className='link item right'
       >
         <Dropdown.Menu>

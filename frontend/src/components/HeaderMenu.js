@@ -32,34 +32,37 @@ export default class HeaderMenu extends Component {
           <Link to="/new">
             <Dropdown.Item>New Board</Dropdown.Item>
           </Link>
-          <Dropdown.Item>
-            <Dropdown text="Load Board">
-              <Dropdown.Menu>
-                {
-                  savedBoards && savedBoards.map(savedBoard => (
-                    <Dropdown.Item
-                      key={`restore-entry-${savedBoard}`}
-                      onClick={() => this.onAction({
-                        type: 'loadBoard',
-                        board: savedBoard
-                      })}
-                    >
-                      {savedBoard}
-                    </Dropdown.Item>
-                  ))
-                }
-              </Dropdown.Menu>
-            </Dropdown>
-          </Dropdown.Item>
-
-          <Dropdown.Item
-            disabled={!board}
-            onClick={() => this.onAction({
-              type: 'saveBoard'
-            })}
-          >
-            Save Board
-          </Dropdown.Item>
+          {
+          /*
+            <Dropdown.Item>
+              <Dropdown text="Load Board">
+                <Dropdown.Menu>
+                  {
+                    savedBoards && savedBoards.map(savedBoard => (
+                      <Dropdown.Item
+                        key={`restore-entry-${savedBoard}`}
+                        onClick={() => this.onAction({
+                          type: 'loadBoard',
+                          board: savedBoard
+                        })}
+                      >
+                        {savedBoard}
+                      </Dropdown.Item>
+                    ))
+                  }
+                </Dropdown.Menu>
+              </Dropdown>
+            </Dropdown.Item>
+            <Dropdown.Item
+              disabled={!board}
+              onClick={() => this.onAction({
+                type: 'saveBoard'
+              })}
+            >
+              Save Board
+            </Dropdown.Item>
+          */ 
+          }
           <Dropdown.Item
             onClick={() => this.onAction({
               type: 'clearBoard'
