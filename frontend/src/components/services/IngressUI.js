@@ -48,7 +48,7 @@ export default class IngressUI extends Component {
   };
 
   render() {
-    const { service } = this.props;
+    const { service, userId } = this.props;
     const lineStyle = {
       textAlign: 'left',
       margin: '8px 10px',
@@ -143,7 +143,7 @@ export default class IngressUI extends Component {
                 margin: '10px 10px',
             }}>
               <a
-                href={`/api/${service.board}/${this.state.path}?key=value`}
+                href={`/api/${userId}/${service.board}/${this.state.path}?key=value`}
                 target="blank"
                 style={{
                   color: 'black',
