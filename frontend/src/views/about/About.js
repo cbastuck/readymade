@@ -65,10 +65,10 @@ export default class About extends Component {
                 fontSize: 20,
               }}
             >
-              <p><span style={amp}>Enable</span> <span style={{ fontStyle: 'italic' }}>everybody</span> to play with technical concepts.</p>
+              <p><span style={amp}>Enable</span> <span style={{ fontStyle: 'italic' }}>everybody</span> to play with technical concepts</p>
               <p>Seed <span style={amp}>Inspiration</span> and <span style={amp}>Curiousity</span> </p>
-              <p>as a source for <span style={amp}>Creativity</span></p>
-              <p>that allows for <span style={amp}>Improvisation</span> with complexity.</p>
+              <p>Spawn <span style={amp}>Creativity</span></p>
+              <p><span style={amp}>Improvise</span> with complexity.</p>
             </div>
             <div className="ui relaxed grid">
               <div className="three column row">
