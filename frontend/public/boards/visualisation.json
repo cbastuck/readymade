@@ -42,7 +42,8 @@
             "x": "4%",
             "y": "4%",
             "length": "1%",
-            "ttl": 2
+            "ttl": 2,
+            "color": "red"
           },
           {
             "x": "95%",
@@ -86,18 +87,17 @@
           [ 
             {
               "type": "text",
-              "text": "Evolution for solution",
-              "color": "white",
+              "text": "How would four Genes evolve to find the center?",
+              "color": "#002",
               "font": "lighter 26px Helvetica Neue",
-              "y": "43%"
+              "y": "37%"
             },
             {
-              "type": "text",
-              "text": "\uf051",
-              "color": "white",
-              "font": "600 28px 'Font Awesome 5 Free'",
+              "type": "image",
+              "url": "assets/step.png",
+              "height": 25,
               "x": "44%",
-              "y": "53%",
+              "y": "48%",
               "onClick": {
                 "internal": {
                   "type": "dispatch",
@@ -110,12 +110,11 @@
               }
             },
             {
-              "type": "text",
-              "text": "\uf04b",
-              "color": "white",
-              "font": "600 28px 'Font Awesome 5 Free'",
+              "type": "image",
+              "url": "assets/run.png",
               "x": "56%",
-              "y": "53%",
+              "y": "48%",
+              "height": 25,
               "onClick": {
                 "internal": {
                   "type": "dispatch",
@@ -129,27 +128,26 @@
             },
             {
               "type": "text",
-              "text": "click left to step or right to play",
+              "text": "click left to step or right to run",
               "color": "white",
-              "font": "lighter 18px Helvetica Neue",
-              "y": "62%"
+              "font": "lighter 20px Helvetica Neue",
+              "y": "65%"
             }
           ],
           [ 
             {
               "type": "text",
-              "text": "Started with four options",
-              "color": "#001",
+              "text": "Four options, no solution ",
+              "color": "#002",
               "font": "lighter 26px Helvetica Neue",
               "y": "20%"
             },
             {
-              "type": "text",
-              "text": "\uf051",
-              "color": "white",
-              "font": "600 28px 'Font Awesome 5 Free'",
+              "type": "image",
+              "url": "assets/step.png",
+              "height": 25,
               "x": "44%",
-              "y": "53%",
+              "y": "48%",
               "onClick": {
                 "internal": {
                   "type": "dispatch",
@@ -162,12 +160,11 @@
               }
             },
             {
-              "type": "text",
-              "text": "\uf04b",
-              "color": "white",
-              "font": "600 28px 'Font Awesome 5 Free'",
+              "type": "image",
+              "url": "assets/run.png",
               "x": "56%",
-              "y": "53%",
+              "y": "48%",
+              "height": 25,
               "onClick": {
                 "internal": {
                   "type": "dispatch",
@@ -178,11 +175,11 @@
                   }
                 }
               }
-            },  
+            },
             {
               "type": "text",
-              "text": "No solution, but an ideal start",
-              "color": "#001",
+              "text": "But an ideal start",
+              "color": "#002",
               "font": "lighter 26px Helvetica Neue",
               "y": "80%"
             }
@@ -196,12 +193,11 @@
               "y": "43%"
             },
             {
-              "type": "text",
-              "text": "\uf051",
-              "color": "white",
-              "font": "600 28px 'Font Awesome 5 Free'",
+              "type": "image",
+              "url": "assets/step.png",
+              "height": 25,
               "x": "44%",
-              "y": "53%",
+              "y": "48%",
               "onClick": {
                 "internal": {
                   "type": "dispatch",
@@ -214,12 +210,11 @@
               }
             },
             {
-              "type": "text",
-              "text": "\uf04b",
-              "color": "white",
-              "font": "600 28px 'Font Awesome 5 Free'",
+              "type": "image",
+              "url": "assets/run.png",
+              "height": 25,
               "x": "56%",
-              "y": "53%",
+              "y": "48%",
               "onClick": {
                 "internal": {
                   "type": "dispatch",
@@ -238,18 +233,24 @@
               "text": "Too long?",
               "color": "white",
               "font": "lighter 26px Helvetica Neue",
-              "y": "43%"
+              "y": "42%"
             },
             {
-              "type": "text",
-              "text": "\uf2f9",
-              "color": "white",
-              "font": "600 28px 'Font Awesome 5 Free'",
-              "x": "50%",
-              "y": "55%",
+              "type": "image",
+              "url": "assets/redo.png",
+              "height": 25,
+              "x": "49%",
+              "y": "49%",
               "onClick": {
                 "page": "mission"
               }
+            },
+            {
+              "type": "text",
+              "text": "Not there yet",
+              "color": "white",
+              "font": "lighter 26px Helvetica Neue",
+              "y": "65%"
             }
           ],
           [
@@ -257,7 +258,7 @@
               "type": "text",
               "id": "message",
               "text": "Variety explores the solution space",
-              "color": "#001",
+              "color": "#002",
               "font": "lighter 28px Helvetica Neue",
               "y": "30%"
             },
@@ -265,16 +266,15 @@
               "type": "text",
               "id": "message",
               "text": "WE are manifold solutions",
-              "color": "#001",
+              "color": "#002",
               "font": "lighter 28px Helvetica Neue",
               "y": "75%"
             },
             {
-              "type": "text",
-              "text": "\uf04b",
-              "color": "white",
-              "font": "600 28px 'Font Awesome 5 Free'",
-              "y": "50%",
+              "type": "image",
+              "url": "assets/run.png",
+              "height": 25,
+              "y": "48%",
               "x": "50%",
               "onClick": {
                 "page": "mission"

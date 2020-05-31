@@ -24,18 +24,28 @@ class Genetic {
     this.uuid = id;
     this.board = board;
     this.app = app;
+    this.ttl = 2;
 
     this.generation = 0;
     this.population = [];
   }
 
   configure(config) {
-    const { targetShape, genomeShape, initialPopulation } = config || {};
-    if (targetShape) {
+    const { 
+      targetShape, 
+      genomeShape, 
+      initialPopulation,
+      ttl
+    } = config || {};
+    if (targetShape !== undefined) {
       this.targetShape = targetShape;
     }
 
-    if (genomeShape) {
+    if (ttl !== undefined) {
+      this.ttl = ttl;
+    }
+
+    if (genomeShape !== undefined) {
       this.genomeShape = genomeShape;
     }
 
@@ -45,7 +55,9 @@ class Genetic {
           percentToRelative(g.x),
           percentToRelative(g.y),
           percentToRelative(g.length),
-          g.ttl
+          g.ttl || this.ttl,
+          undefined, // fitness
+          'child',  // new-born
         ]);
       } else {
         this.population = [...Array(rand(initialPopulation))]
@@ -54,6 +66,8 @@ class Genetic {
             Math.random(),  // y
             percentToRelative(genomeShape ? genomeShape.length : 0.1),  // length
             (genomeShape.ttl && genomeShape) ? genomeShape.ttl : 10,  // ttl
+            undefined, // fitness
+            'child', // new-born
           ]);
       }
     }
@@ -65,13 +79,14 @@ class Genetic {
   }
 
   mixGenomes(a, b) {
-    return a.map((xa, i) => {
+    const child = a.map((xa, i) => {
       if (i < 2) { // only mix position
         const alpha = Math.random();
         return (alpha * xa) + (1 - alpha) * b[i];
       }
       return xa;
-    });
+    })
+    return child;
   }
 
   applyMutation(genome) {
@@ -91,9 +106,12 @@ class Genetic {
     const { genome: mother } = this.pickGenome();
     if (!father || !mother) {
       return population;
-    } 
+    }
     const child = this.mixGenomes(father, mother);
     const mutatedChild = this.applyMutation(child);
+    mutatedChild[5] = 'child'; // tags
+    population.forEach(g => g[5] = ''); // reset-tags
+    mother[5] = father[5] = 'parent';
     return population.concat([mutatedChild]);
   }
 
@@ -160,29 +178,35 @@ class Genetic {
     );
   }
 
-  process(params) {
-    ++this.generation;
-    const population = this.removeDuplicates(this.nextGeneration(this.population));
-    const fitness = population.map(this.computeFitness.bind(this));
-    const survivors = this.applySelection(population, fitness);
-  
-    this.population = survivors;
-    const toPercent = val => `${Math.floor(val * 100)}%`;
+  genomeShapeColor(genome) {
+    const tag = genome[5];
+    if (tag === 'child') {
+      return '#eaa';
+    }
+    if (tag === 'parent') {
+      return '#aad';
+    }
+    return `rgba(0, 0, 0, ${genome[4]})`;
+  }
 
-    const populationShapes = survivors.map(
-      (genome, idx) => {
-        // const fi = (1 - genome[4]) * 255;
-        return {
-          ...this.genomeShape,
-          x: toPercent(genome[0]),
-          y: toPercent(genome[1]),
-          length: toPercent(genome[2]),
-          color: `rgba(0, 0, 0, ${genome[4]})`,
-          fitness: genome[4]
-          //color: `rgb(255, ${fi}, ${fi})`
-          //color: `rgb(${fi}, ${fi}, ${fi})`
-        };
-      }
+  process(params) {
+    if (++this.generation > 1) { // start with the initial population
+      const population = this.removeDuplicates(this.nextGeneration(this.population));
+      const fitness = population.map(this.computeFitness.bind(this));
+      const survivors = this.applySelection(population, fitness);
+      this.population = survivors;
+    }
+      
+    const toPercent = val => `${Math.floor(val * 100)}%`;
+    const populationShapes = this.population.map(
+      (genome, idx) => ({
+        ...this.genomeShape,
+        x: toPercent(genome[0]),
+        y: toPercent(genome[1]),
+        length: toPercent(genome[2]),
+        color: this.genomeShapeColor(genome),
+        fitness: genome[4]
+      })
     );
 
     const statusText = {

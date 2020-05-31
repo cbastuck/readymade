@@ -73,7 +73,6 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
       if (factory) {
         return React.createElement(factory.createUI, { service, board, runtimeId, key: `key-${service.uuid}` });
       } else {
-        console.log('UIFactory insert default UI for', service)
         return createPlaceholderUI(service);
       }
   }

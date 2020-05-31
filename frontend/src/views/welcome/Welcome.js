@@ -127,6 +127,7 @@ export default class Welcome extends Component {
               fetchData={!!appContext.username}
             >
               <div className="hero-image">
+              
                 <BoardConsumer>
                   {
                     boardContext => 

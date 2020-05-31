@@ -61,7 +61,7 @@ export default class Sandbox extends Component {
     const runtime = new BrowserRuntime({ 
       id: `${backendData.id}-public`, 
       name: `${backendData.name}-public`,
-      sendResult: (uuid, result) => console.log('SENDING RESULT', result)
+      sendResult: (uuid, result) => { /*console.log('SENDING RESULT', result)*/ }
     });
     backendData.services.map(s => {
       const svc = runtime.createService(s, s.uuid);
