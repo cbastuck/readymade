@@ -230,7 +230,7 @@
           [
             {
               "type": "text",
-              "text": "Too long?",
+              "text": "Not there yet!",
               "color": "white",
               "font": "lighter 26px Helvetica Neue",
               "y": "42%"
@@ -247,7 +247,7 @@
             },
             {
               "type": "text",
-              "text": "Not there yet",
+              "text": "Too long?",
               "color": "white",
               "font": "lighter 26px Helvetica Neue",
               "y": "65%"
