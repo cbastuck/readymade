@@ -17,6 +17,7 @@
       {
         "serviceName": "Genetic",
         "serviceId": "hookup.to/service/genetic",
+        "uuid": "ba9e7ff4-19d1-4e9a-ba83-70979568294b",
         "targetShape": {
           "type": "circle",
           "radius": "50%",
@@ -42,8 +43,7 @@
             "x": "4%",
             "y": "4%",
             "length": "1%",
-            "ttl": 2,
-            "color": "red"
+            "ttl": 2
           },
           {
             "x": "95%",
@@ -87,7 +87,7 @@
           [ 
             {
               "type": "text",
-              "text": "How would four Genes evolve to find the center?",
+              "text": "How could four Genes evolve to find the center?",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
               "y": "37%"
@@ -242,7 +242,13 @@
               "x": "49%",
               "y": "49%",
               "onClick": {
-                "page": "mission"
+                "internal": {
+                  "type": "dispatch",
+                  "destination": "ba9e7ff4-19d1-4e9a-ba83-70979568294b",
+                  "config": {
+                    "reset": true
+                  }
+                }
               }
             },
             {
@@ -272,10 +278,10 @@
             },
             {
               "type": "image",
-              "url": "assets/run.png",
-              "height": 25,
-              "y": "48%",
-              "x": "50%",
+              "url": "assets/done.png",
+              "height": 35,
+              "y": "47%",
+              "x": "49%",
               "onClick": {
                 "page": "mission"
               }

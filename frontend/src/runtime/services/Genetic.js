@@ -35,7 +35,8 @@ class Genetic {
       targetShape, 
       genomeShape, 
       initialPopulation,
-      ttl
+      ttl,
+      reset,
     } = config || {};
     if (targetShape !== undefined) {
       this.targetShape = targetShape;
@@ -49,9 +50,20 @@ class Genetic {
       this.genomeShape = genomeShape;
     }
 
+    let setPopulation = false;
+    if (reset === true && this.initialPopulation) {
+      this.generation = 0;
+      setPopulation = true
+    }
+
     if (initialPopulation !== undefined) {
-      if (Array.isArray(initialPopulation)) {
-        this.population = initialPopulation.map(g => [
+      this.initialPopulation = initialPopulation;
+      setPopulation = true;
+    }
+
+    if (setPopulation) {
+      if (Array.isArray(this.initialPopulation)) {
+        this.population = this.initialPopulation.map(g => [
           percentToRelative(g.x),
           percentToRelative(g.y),
           percentToRelative(g.length),
@@ -60,7 +72,7 @@ class Genetic {
           'child',  // new-born
         ]);
       } else {
-        this.population = [...Array(rand(initialPopulation))]
+        this.population = [...Array(rand(this.initialPopulation))]
           .map(g => [
             Math.random(),  // x
             Math.random(),  // y
