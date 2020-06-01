@@ -11,6 +11,8 @@ export default class Footer extends Component {
           <Link to="/about"> about </Link>
           {' ‧ '}
           <Link to="/imprint"> imprint </Link>
+          {' ‧ '}
+          <Link to="/contact"> contact </Link>
         </div>
       </div>
     );
