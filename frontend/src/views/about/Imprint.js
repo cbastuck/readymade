@@ -70,11 +70,12 @@ export default class Imprint extends Component {
               Sources of the used images and graphics
             </h3>
             <div className="imprint-text">
-              Diversity icon designed by voneff on the @NounProject. https://thenounproject.com/term/diversity/962526
+              Background Image on Startpage
+              <a href="https://www.shutterstock.com/image-vector/grunge-background-abstract-geometric-pattern-squares-1196210650"> (here) </a>
             </div>
             <div className="imprint-text">
-              Background Image on Startpage
-              https://www.shutterstock.com/image-vector/grunge-background-abstract-geometric-pattern-squares-1196210650
+              Icons are coming from 
+              <a href="https://fontawesome.com/license/free"> Font Awesome </a>
             </div>
           </div>
         </div>
