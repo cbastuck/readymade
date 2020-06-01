@@ -340,6 +340,8 @@ class CanvasUI extends Component {
       return;
     }
 
+    this.clickHandlers = {};
+
     const dataArray = Array.isArray(objectOrArray) ? objectOrArray : [objectOrArray];
     const ctx = this.canvas.getContext("2d");
     if (this.state.clearOnRedraw) {
