@@ -66,6 +66,8 @@ class BoardContext extends Component {
   componentDidUpdate(prevProps) {
     if (prevProps.fetchData !== this.props.fetchData && this.props.fetchData) {
       this.fetchData();
+    } else if (prevProps.userId !== this.props.userId) {
+      this.setState({ userId: this.props.userId });
     }
   }
 

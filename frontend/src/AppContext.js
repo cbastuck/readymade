@@ -32,14 +32,14 @@ class AppContext extends Component {
 
   updateToken = incomingToken => {
     return new Promise(resolve => {
-      const { token, username } = processToken(incomingToken);
+      const { token, username, userId } = processToken(incomingToken);
       if (token) {
         const currentToken = restoreToken();
         if (currentToken !== incomingToken) {
           setToken(incomingToken)
           setTimeout(
             () => this.setState(
-              { token, username },
+              { token, username, userId },
               resolve
             )
           );
