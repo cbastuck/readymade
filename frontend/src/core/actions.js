@@ -3,57 +3,11 @@ import {
   removeToken,
   restoreToken
 } from './Auth';
+import serializeObject from './format';
 
 function queryParams() {
   const { ownerId } = queryString.parse(window.location.search);
   return queryString.stringify({ ownerId });
-}
-
-// TODO: this implementation should not be in this file
-async function serializeObject(body) {
-  if (!body) {
-    return {
-      contentType: undefined,
-      body: undefined,
-    };
-  }
-  
-  if (body instanceof Blob) {
-    return {
-      contentType: body.type,
-      body: await new Response(body).arrayBuffer(),
-    };
-  }
-
-  const firstLevelBlobs = Object.keys(body).filter(key => body[key] instanceof Blob);
-  if (firstLevelBlobs.length === 0) {
-    return { 
-      contentType: 'application/json',
-      body: JSON.stringify(body),
-    };
-  }
-
-  const createBlobKey = key => `+binary-data-@${key}`;
-  const formData = new FormData();
-  formData.append(
-    'json', 
-    JSON.stringify({ 
-      ...body,
-      ...firstLevelBlobs.reduce((acc, key) => 
-        ({ ...acc, [key]: createBlobKey(key) }),
-        {},
-      )
-    })
-  );
-  firstLevelBlobs.forEach(key => {
-    const blobKey = createBlobKey(key);
-    formData.append(blobKey, body[key], blobKey);
-  });
-
-  return {
-    contentType: undefined, // by browser with boundary 'multipart/form-data',
-    body: formData,
-  }
 }
 
 export async function request(path, method='GET', parseJSON=true, body=undefined) {

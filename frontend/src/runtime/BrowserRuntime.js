@@ -28,10 +28,16 @@ import FeedbackTakerDesriptor from './services/FeedbackTaker';
 import FetcherDesriptor from './services/Fetcher';
 import CameraDesriptor from './services/Camera';
 import DispatcherDesriptor from './services/Dispatcher';
+import InputDescriptor from './services/Input';
 import { request } from '../core/actions';
 import { parseResponse } from './MultiformParser';
 
 import { restoreToken } from '../core/Auth';
+import serializeObject from '../core/format';
+
+function logInfo(msg) {
+  console.log(msg);
+}
 
 export default class BrowserRuntime {
   static registry() {
@@ -62,6 +68,7 @@ export default class BrowserRuntime {
       FetcherDesriptor,
       CameraDesriptor,
       DispatcherDesriptor,
+      InputDescriptor,
     ];
   }
 
@@ -92,7 +99,7 @@ export default class BrowserRuntime {
   next = async (service, params, requestId=null, advanceBeforeProcess=true) => {
     const position = this.services.findIndex(s => s === service);
     if (position === -1) {
-      return console.log('Called next() in browser but could not find current service', service);
+      return console.error('Called next() in browser but could not find current service', service);
     }
 
     let svc = this.services[position];
@@ -109,7 +116,7 @@ export default class BrowserRuntime {
   connect(id) {
     this.id = id; // TODO: do we need this? Already done in c'tor
     const backendPath = `/api/${this.userId}/${this.board}/${id}`;
-    console.log(`Connecting ${this.name} to ${backendPath}`)
+    logInfo(`Connecting ${this.name} to ${backendPath}`);
     
     const useWebSockets = true;
     if (useWebSockets) {
@@ -148,18 +155,18 @@ export default class BrowserRuntime {
     this.websocket.onmessage = event => {
       const message = parseResponse(event.data);
       const action = message.json ? rebuild(message.json.payload, message) : JSON.parse(message);
-      console.log(`Received on ${this.id} (${this.name})`, action);
+      logInfo(`Received on ${this.id} (${this.name})`, action);
       this.onMessage(action);
     };
     this.websocket.onclose = event => {
-      console.log(`Closed WebSocket with ${this.id}`);
+      logInfo(`Closed WebSocket with ${this.id}`);
     };
     this.websocket.onerror = function(error) {
-      console.log(`WebSocket ${this.id} Error: `, error);
+      console.error(`WebSocket ${this.id} Error: `, error);
     };
 
     this.websocket.onopen = event => {
-      console.log(`WebSocket to ${this.id} is open`);
+      logInfo(`WebSocket to ${this.id} is open`);
     }
   }
 
@@ -172,7 +179,7 @@ export default class BrowserRuntime {
         this.eventSource.removeEventListener('data', onMessage);
         this.eventSource.removeEventListener('error', onError);
         this.eventSource = undefined;
-        console.log('Reconnecting browser runtime', error, error.status);
+        logInfo(`Reconnecting browser runtime ${error} - ${error.status}`);
         setTimeout(() => this.connect(this.id), 1000);
         return;
       } else {
@@ -206,11 +213,34 @@ export default class BrowserRuntime {
     }
   }
 
-  sendResult(serviceUuid, data, requestId) {
+  async sendResult(serviceUuid, data, requestId) {
     if (!this.id) {
       return console.error('Could not send result data, no backend is connected');
     }
-    return request(`${this.userId}/${this.board}/${this.id}/${requestId}`, 'POST', false, data);
+
+    if (this.websocket) { // send the result via websocket or post
+      const { body: serialisedBody, contentType } = await serializeObject(data);
+      const headers = {
+        path: `${this.userId}/${this.board}/${this.id}/${requestId}`,
+        'content-type': contentType,
+        board: this.board,
+        userId: this.userId,
+        serviceUuid,
+        requestId,
+      };
+      const encoder = new TextEncoder(); 
+      const binaryHeaders = encoder.encode(JSON.stringify(headers) + '\n\n');
+      const binaryBody = await new Response(serialisedBody).arrayBuffer();
+      
+      const buffer = new ArrayBuffer(binaryHeaders.length+binaryBody.byteLength);
+      const uint8 = new Uint8Array(buffer);
+      uint8.set(binaryHeaders);
+      uint8.set(new Uint8Array(binaryBody), binaryHeaders.length);
+      this.websocket.send(buffer);
+    // TODO: this returns undefined in contrast to else branch
+    } else {
+      return request(`${this.userId}/${this.board}/${this.id}/${requestId}`, 'POST', false, data);
+    }
   }
 
   createService({ serviceId, board }, id, initialConfig) {
