@@ -13,13 +13,13 @@ function queryParams() {
 export async function request(path, method='GET', parseJSON=true, body=undefined) {
   const { 
     body: serialisedBody, 
-    contentType 
+    contentType
   } = await serializeObject(body);
 
   const headers = {
     'Authorization': restoreToken() || '',
   };
-  if (contentType) {
+  if (contentType && contentType !== 'multipart/form-data') {
     headers['Content-Type'] = contentType;
   }
   const response = await fetch(`/api/${path}`, {

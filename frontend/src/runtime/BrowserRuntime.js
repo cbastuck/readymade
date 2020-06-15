@@ -220,24 +220,29 @@ export default class BrowserRuntime {
 
     if (this.websocket) { // send the result via websocket or post
       const { body: serialisedBody, contentType } = await serializeObject(data);
+      const td = new TextDecoder('utf-8');
+      const encoder = new TextEncoder();
+      
+      const binaryBody = await new Response(serialisedBody).arrayBuffer();
+      const uint8Body = new Uint8Array(binaryBody);
+      // cut the first two hyphens from the boundary as they don't appear in the boundary defintion
+      const boundary = td.decode(binaryBody.slice(2, uint8Body.indexOf(13)));
       const headers = {
         path: `${this.userId}/${this.board}/${this.id}/${requestId}`,
-        'content-type': contentType,
+        'content-type': `${contentType}; boundary=${boundary}`,
         board: this.board,
         userId: this.userId,
         serviceUuid,
         requestId,
       };
-      const encoder = new TextEncoder(); 
-      const binaryHeaders = encoder.encode(JSON.stringify(headers) + '\n\n');
-      const binaryBody = await new Response(serialisedBody).arrayBuffer();
       
+      const binaryHeaders = encoder.encode(JSON.stringify(headers) + '\n\n');
       const buffer = new ArrayBuffer(binaryHeaders.length+binaryBody.byteLength);
       const uint8 = new Uint8Array(buffer);
       uint8.set(binaryHeaders);
       uint8.set(new Uint8Array(binaryBody), binaryHeaders.length);
       this.websocket.send(buffer);
-    // TODO: this returns undefined in contrast to else branch
+      // TODO: this returns undefined in contrast to else branch
     } else {
       return request(`${this.userId}/${this.board}/${this.id}/${requestId}`, 'POST', false, data);
     }

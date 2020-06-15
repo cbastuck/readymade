@@ -39,7 +39,7 @@ export default async function serializeObject(body) {
   });
 
   return {
-    contentType: undefined, // by browser with boundary 'multipart/form-data',
+    contentType: 'multipart/form-data', // by browser with boundary 'multipart/form-data',
     body: formData,
   }
 }
