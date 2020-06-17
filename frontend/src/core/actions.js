@@ -3,7 +3,7 @@ import {
   removeToken,
   restoreToken
 } from './Auth';
-import serializeObject from './format';
+import { serializeObject } from './format';
 
 function queryParams() {
   const { ownerId } = queryString.parse(window.location.search);
