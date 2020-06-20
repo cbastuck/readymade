@@ -46,7 +46,7 @@ class BoardContext extends Component {
       releaseRuntimeScope: this.releaseRuntimeScope,
 
       // data
-      userId: props.userId,
+      user: props.user,
       boardName: props.boardName,
       runtimes: [],
       services: {},
@@ -64,10 +64,11 @@ class BoardContext extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (prevProps.fetchData !== this.props.fetchData && this.props.fetchData) {
+    const { user, fetchData } = this.props;
+    if (prevProps.fetchData !== fetchData && !!fetchData) {
       this.fetchData();
-    } else if (prevProps.userId !== this.props.userId) {
-      this.setState({ userId: this.props.userId });
+    } else if (prevProps.user !== user) {
+      this.setState({ user });
     }
   }
 
@@ -173,7 +174,7 @@ class BoardContext extends Component {
     if (boardName) {
       const params = {};
       if (type === 'browser') {
-        params.registry = BrowserRuntime.registry();
+        params.registry = BrowserRuntime.registry(this.state.user);
         const browser = new UAParser().getBrowser();
         if (browser) {
           name = `${browser.name}-${browser.version}`;
@@ -217,7 +218,7 @@ class BoardContext extends Component {
       if (exists) {
         return; // we already created it 
       }
-      const browserRuntime = new BrowserRuntime(runtime, { board: this.state.boardName, userId: this.state.userId });
+      const browserRuntime = new BrowserRuntime(runtime, { board: this.state.boardName, user: this.state.user });
       this.browserRuntimes.push(browserRuntime);
       browserRuntime.connect(localBoardRuntimeId);
       for (const service of services[runtime.name]) {

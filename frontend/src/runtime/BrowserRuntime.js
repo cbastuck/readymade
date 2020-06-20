@@ -1,79 +1,37 @@
 import EventSource from 'eventsource';
 import { decode } from 'base64-arraybuffer';
 
-import timerDescriptor from './services/Timer';
-import monitorDescriptor from './services/Monitor';
-//import microphoneDescriptor from './services/MicrophoneOld';
-import microphoneDescriptor from './services/Microphone';
-import mp3Encoder from './services/MP3Encoder';
-import playbackDescriptor from './services/Playback';
-import FileProviderDescriptor from './services/FileProvider';
-import DownloaderDescriptor from './services/Downloader';
-import PlotterDescriptor from './services/Plotter';
-import SequencerDescriptor from './services/Sequencer';
-import CanvasDescriptor from './services/Canvas';
-import ThreeViewersDescriptor from './services/ThreeViewer';
-import RemoteWindowDescriptor from './services/RemoteWindow';
-import StateDescriptor from './services/State';
-import GeneticDescriptor from './services/Genetic';
-import GeneticOptimizerDescriptor from './services/GeneticOptimizer';
-import StatsDescriptor from './services/Stats';
-import SwitchDescriptor from './services/Switch';
-import SamplingDescriptor from './services/Sampling';
-import BufferDescriptor from './services/Buffer';
-import MapDescriptor from './services/Map';
-import FilterDescriptor from './services/Filter';
-import FeedbackProviderDesriptor from './services/FeedbackProvider';
-import FeedbackTakerDesriptor from './services/FeedbackTaker';
-import FetcherDesriptor from './services/Fetcher';
-import CameraDesriptor from './services/Camera';
-import DispatcherDesriptor from './services/Dispatcher';
-import InputDescriptor from './services/Input';
 import { request } from '../core/actions';
 import { parseResponse } from './MultiformParser';
-
 import { restoreToken } from '../core/Auth';
 import { serializeWebsocketBuffer } from '../core/format';
+import defaultRegistry from './registry/Default';
 
 function logInfo(msg) {
   console.log(msg);
 }
 
 export default class BrowserRuntime {
-  static registry() {
-    return [
-      timerDescriptor,
-      monitorDescriptor,
-      microphoneDescriptor,
-      playbackDescriptor,
-      mp3Encoder,
-      FileProviderDescriptor,
-      DownloaderDescriptor,
-      PlotterDescriptor,
-      SequencerDescriptor,
-      CanvasDescriptor,
-      ThreeViewersDescriptor,
-      RemoteWindowDescriptor,
-      StateDescriptor,
-      GeneticDescriptor,
-      GeneticOptimizerDescriptor,
-      StatsDescriptor,
-      SwitchDescriptor,
-      SamplingDescriptor,
-      BufferDescriptor,
-      MapDescriptor,
-      FilterDescriptor,
-      FeedbackProviderDesriptor,
-      FeedbackTakerDesriptor,
-      FetcherDesriptor,
-      CameraDesriptor,
-      DispatcherDesriptor,
-      InputDescriptor,
-    ];
+  static registry(user) {
+    if (!BrowserRuntime.__createdRegistry) {
+      BrowserRuntime.__createdRegistry = defaultRegistry;
+      if (user.features && user.features.registry) {
+        const registry = JSON.parse(user.features.registry);
+        registry.forEach(reg => {
+          console.log('Importing registry', reg)
+          import('./registry/Audio').then(
+            bdl => {
+              bdl.doTheThing();
+            }
+          );
+        });
+      }
+    }   
+    return BrowserRuntime.__createdRegistry;
   }
 
-  constructor(runtime, { board, userId } = {}) {
-    this.registry = BrowserRuntime.registry();
+  constructor(runtime, { board, user } = {}) {
+    this.registry = BrowserRuntime.registry(user);
 
     this.id = runtime.id;
     this.name = runtime.name;
@@ -87,8 +45,8 @@ export default class BrowserRuntime {
       this.board = board;
     }
 
-    if (userId) {
-      this.userId = userId;
+    if (user) {
+      this.user = user;
     }
     
     if (runtime.sendResult) {
@@ -115,7 +73,7 @@ export default class BrowserRuntime {
 
   connect(id) {
     this.id = id; // TODO: do we need this? Already done in c'tor
-    const backendPath = `/api/${this.userId}/${this.board}/${id}`;
+    const backendPath = `/api/${this.user.userId}/${this.board}/${id}`;
     logInfo(`Connecting ${this.name} to ${backendPath}`);
     
     const useWebSockets = true;
@@ -223,7 +181,7 @@ export default class BrowserRuntime {
         data, 
         {
           board: this.board,
-          userId: this.userId,
+          userId: this.user.userId,
           serviceUuid,
           requestId,
         }
@@ -231,7 +189,7 @@ export default class BrowserRuntime {
       this.websocket.send(buffer);
       return null;
     } else { // ... or as post
-      return request(`${this.userId}/${this.board}/${this.id}/${requestId}`, 'POST', false, data);
+      return request(`${this.user.userId}/${this.board}/${this.id}/${requestId}`, 'POST', false, data);
     }
   }
 
@@ -289,6 +247,10 @@ export default class BrowserRuntime {
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = undefined;
+    } 
+    if (this.websocket) {
+      this.websocket.close();
+      this.websocket = undefined;
     }
   }
 };

@@ -7,7 +7,7 @@ const serviceId = 'hookup.to/service/monitor-browser';
 const serviceName = 'Monitor';
 
 class MonitorUI extends Component {
-  state ={
+  state = {
     message: ''
   };
 

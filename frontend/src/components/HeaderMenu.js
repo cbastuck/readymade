@@ -85,7 +85,7 @@ export default class HeaderMenu extends Component {
   renderAccountMenu(appContext) {
     return (
       <AccountDropdown
-        currentUser={appContext.username}
+        currentUser={appContext.user && appContext.user.username}
         onAction={action => {
           if (action.type === 'logout') {
             appContext.logout();
@@ -114,7 +114,7 @@ export default class HeaderMenu extends Component {
                     }}
                   >
                     {
-                      appContext.username && this.renderBoardMenu(board, savedBoards)
+                      appContext.user && this.renderBoardMenu(board, savedBoards)
                     }
                     {
                       registry && this.renderServiceMenu(registry, boardContext)

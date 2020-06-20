@@ -23,6 +23,7 @@
     "semantic-ui-react": "0.84.0",
     "streamsaver": "^2.0.3",
     "three": "^0.111.0",
+    "tone": "^13.8.25",
     "ua-parser-js": "^0.7.20",
     "unique-names-generator": "^1.0.14",
     "uuid": "^3.3.2",

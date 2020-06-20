@@ -5,7 +5,7 @@ import {
   restoreToken,
   processToken,
   setToken,
-  getUserId,
+//   getUserId,
 } from './core/Auth';
 import {
   redirectTo,
@@ -18,12 +18,15 @@ class AppContext extends Component {
   constructor(props) {
     super(props);
 
-    const { token, username } = processToken(restoreToken());
+    const { token, username, userId, features } = processToken(restoreToken());
     this.state = {
       // state members
-      token,
-      username,
-      userId: getUserId(),
+      token, // TODO: token should be in user struct below
+      user: {
+        username,
+        userId,
+        features,
+      },
       // modifying functions
       updateToken: this.updateToken,
       logout: this.logout
@@ -32,14 +35,17 @@ class AppContext extends Component {
 
   updateToken = incomingToken => {
     return new Promise(resolve => {
-      const { token, username, userId } = processToken(incomingToken);
+      const { token, username, userId, features } = processToken(incomingToken);
       if (token) {
         const currentToken = restoreToken();
         if (currentToken !== incomingToken) {
           setToken(incomingToken)
           setTimeout(
             () => this.setState(
-              { token, username, userId },
+              { 
+                token, 
+                user: { username, userId, features } 
+              },
               resolve
             )
           );

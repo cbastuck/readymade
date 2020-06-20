@@ -62,5 +62,6 @@ export function processToken(incomingToken) {
     token, 
     username: decoded && decoded.nickname,
     userId: decoded && decoded.sub,
+    features: decoded && JSON.parse(decoded.features || '{}'),
   };
 }

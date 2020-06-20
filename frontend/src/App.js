@@ -33,7 +33,7 @@ class BoardWithContext extends Component {
         {
           appContext => 
             <BoardProvider
-              userId={appContext.userId}
+              user={appContext.user}
               boardName={boardName}
             >
               <Board
