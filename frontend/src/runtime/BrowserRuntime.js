@@ -12,27 +12,38 @@ function logInfo(msg) {
 }
 
 export default class BrowserRuntime {
-  static registry(user) {
+  static async createInstance(runtime, { user, ...params }) {
+    const registry = await BrowserRuntime.registry(user);
+    return new BrowserRuntime(runtime, { ...params, user, registry });
+  }
+  static findServiceUI(serviceId) {
+    const a = BrowserRuntime.__createdRegistry || []
+    return a.find(s => serviceId === s.serviceId && s.createUI);
+  }
+  static async registry(user) {
     if (!BrowserRuntime.__createdRegistry) {
       BrowserRuntime.__createdRegistry = defaultRegistry;
       if (user.features && user.features.registry) {
         const registry = JSON.parse(user.features.registry);
-        registry.forEach(reg => {
-          console.log('Importing registry', reg)
-          import('./registry/Audio').then(
-            bdl => {
-              bdl.doTheThing();
-            }
-          );
-        });
+        for (const reg of registry) {
+          switch(reg) {
+            case 'hookup.to/registry/browser/Audio':
+              const { default: r } = await import('./registry/Audio');
+              BrowserRuntime.__createdRegistry = 
+                BrowserRuntime.__createdRegistry.concat(r());
+              break;
+            default:
+              console.error('Unknown registry', reg);
+              break;
+          }
+        }
       }
-    }   
+    }
     return BrowserRuntime.__createdRegistry;
   }
 
-  constructor(runtime, { board, user } = {}) {
-    this.registry = BrowserRuntime.registry(user);
-
+  constructor(runtime, { board, user, registry } = {}) {
+    this.registry = registry;
     this.id = runtime.id;
     this.name = runtime.name;
     this.services = runtime.services || [];

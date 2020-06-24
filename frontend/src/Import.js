@@ -32,7 +32,7 @@ export default class Import extends Component {
           // browser runtime which assumes ownership
           // POST/PUT endpoint to set the registry for an existing runtime
           if (!rt.params.registry) {
-              rt.params.registry = BrowserRuntime.registry();
+              rt.params.registry = await BrowserRuntime.registry();
             }
           if (rt.params.leaveOwnership !== true) {
             BoardContext.registerBrowserRuntime(board, runtimeId);

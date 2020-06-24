@@ -117,7 +117,7 @@ class BoardContext extends Component {
       for (const runtime of this.state.runtimes) {
         const { services: runtimeServices } = await getServices(board, runtime.id);
         services[runtime.name] = runtimeServices;
-        this.restoreBrowserRuntimes(board, runtime, services);
+        await this.restoreBrowserRuntimes(board, runtime, services);
       }
     }
 
@@ -174,7 +174,7 @@ class BoardContext extends Component {
     if (boardName) {
       const params = {};
       if (type === 'browser') {
-        params.registry = BrowserRuntime.registry(this.state.user);
+        params.registry = await BrowserRuntime.registry(this.state.user);
         const browser = new UAParser().getBrowser();
         if (browser) {
           name = `${browser.name}-${browser.version}`;
@@ -218,7 +218,7 @@ class BoardContext extends Component {
       if (exists) {
         return; // we already created it 
       }
-      const browserRuntime = new BrowserRuntime(runtime, { board: this.state.boardName, user: this.state.user });
+      const browserRuntime = await BrowserRuntime.createInstance(runtime, { board: this.state.boardName, user: this.state.user }); // new BrowserRuntime(runtime, { board: this.state.boardName, user: this.state.user });
       this.browserRuntimes.push(browserRuntime);
       browserRuntime.connect(localBoardRuntimeId);
       for (const service of services[runtime.name]) {

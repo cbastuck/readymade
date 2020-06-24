@@ -67,9 +67,7 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
     case 'hookup.to/service/aggregator':
       return <AggregatorUI { ...params } />
     default:
-      const factory = BrowserRuntime.registry().find(s => 
-         service.serviceId === s.serviceId && s.createUI
-      );
+      const factory = BrowserRuntime.findServiceUI(service.serviceId)
       if (factory) {
         return React.createElement(factory.createUI, { service, board, runtimeId, key: `key-${service.uuid}` });
       } else {
