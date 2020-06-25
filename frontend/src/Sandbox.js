@@ -51,14 +51,14 @@ export default class Sandbox extends Component {
 
         firstBrowserRuntimeData.id = firstBrowserRuntimeId;
       }
-      const runtime = this.createBrowserRuntime(firstBrowserRuntimeData);
+      const runtime = await this.createBrowserRuntime(firstBrowserRuntimeData);
       this.setState({ runtime, backendData: firstBrowserRuntimeData });
       return firstBrowserRuntimeData;
     }
   }
 
-  createBrowserRuntime = backendData => {
-    const runtime = new BrowserRuntime({ 
+  createBrowserRuntime = async backendData => {
+    const runtime = await BrowserRuntime.createInstance({ 
       id: `${backendData.id}-public`, 
       name: `${backendData.name}-public`,
       sendResult: (uuid, result) => { /*console.log('SENDING RESULT', result)*/ }

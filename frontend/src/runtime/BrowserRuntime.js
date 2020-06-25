@@ -12,7 +12,7 @@ function logInfo(msg) {
 }
 
 export default class BrowserRuntime {
-  static async createInstance(runtime, { user, ...params }) {
+  static async createInstance(runtime, { user, ...params } = {}) {
     const registry = await BrowserRuntime.registry(user);
     return new BrowserRuntime(runtime, { ...params, user, registry });
   }
@@ -23,7 +23,7 @@ export default class BrowserRuntime {
   static async registry(user) {
     if (!BrowserRuntime.__createdRegistry) {
       BrowserRuntime.__createdRegistry = defaultRegistry;
-      if (user.features && user.features.registry) {
+      if (user && user.features && user.features.registry) {
         const registry = JSON.parse(user.features.registry);
         for (const reg of registry) {
           switch(reg) {
