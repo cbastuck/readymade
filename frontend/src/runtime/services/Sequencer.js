@@ -1,4 +1,10 @@
 import React, { Component } from 'react';
+import { 
+  Input, 
+  Checkbox,
+  TextArea,
+  Button,
+} from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 
@@ -52,43 +58,132 @@ class Step extends Component {
 
 class SequencerUI extends Component {
   state = {
-    currentStep: 0
+    currentStep: 0,
+    numSteps: '',
+    repeat: false,
+    editBuffer: '',
+    editBufferStep: 0
   }
 
-  update = currentStep => {
-    this.setState({ currentStep })
+  onInit = initialState => {
+    this.setState({
+      currentStep: initialState.currentStep,
+      numSteps: initialState.steps.length,
+      repeat: initialState.repeat,
+      editBuffer: JSON.stringify(initialState.steps[initialState.currentStep]),
+      editBufferStep: initialState.currentStep
+    });
+  }
+
+  update = ({ currentStep }) => {
+    if (currentStep !== undefined) {
+      this.setState({ currentStep });
+    }
+  }
+
+  renderSteps = service => {
+    return service && service.register(this.update) && (
+      <div>
+        { this.renderStepBar(service) }
+        <div>
+          <Input 
+            type="number"
+            label="Steps"
+            value={this.state.numSteps}
+            onChange={(_, { value }) => {
+              this.setState({ numSteps: value });
+            }}
+            onBlur={() => {
+              const numSteps = Number(this.state.numSteps);
+              if (!Number.isNaN(numSteps)) {
+                service.configure({ numSteps });
+              }
+            }}
+          />
+        </div>
+        <div style={{ marginTop: 10 }}>
+          <Checkbox
+            label="Repeat"
+            checked={this.state.repeat}
+            onChange={(_, { checked }) => 
+              this.setState(
+                { repeat: checked }, 
+                () => service.configure({ repeat: checked })
+              )
+            }
+          />
+        </div>
+      </div>
+    )
+  }
+
+  renderStepBar = service => {
+    return (
+      <div 
+        style={{ 
+          display: 'flex',
+          flexDirection: 'row',
+          marginBottom: 10
+        }}
+      >
+      {
+        this.state.numSteps !== '' && 
+        new Array(Number(this.state.numSteps)).fill({}).map((stepData, idx) => (
+          <Step
+            key={`step-${idx}`}
+            data={stepData}
+            position={idx}
+            active={this.state.currentStep === idx}
+            onClick={() => {
+              service.setCurrentStep(idx);
+              this.setState({
+                editBuffer: JSON.stringify(service.steps[idx]),
+                editBufferStep: idx,
+              });
+            }}
+            onData={data => service.setStepData(idx, data)}
+          />
+        ))
+      }
+      </div>
+    );
+  }
+
+  renderStepConfig = service => {
+    return (
+      <div>
+        { this.renderStepBar(service) }
+        <TextArea
+          style={{ width: '100%' }}
+          value={this.state.editBuffer}
+          onChange={(_, data) => 
+            this.setState({ 
+              editBuffer: data.value 
+            })
+          }
+        />
+        <Button 
+          style={{ width: '100%', marginTop: 10 }}
+          onClick={() => {
+            service.steps[this.state.editBufferStep] = JSON.parse(this.state.editBuffer);
+          }}
+        >
+          Update Step
+        </Button>
+      </div>
+    );
   }
 
   render() {
     return (
-      <ServiceUI {...this.props}>
-      {
-        ({ service }) => (
-          service && service.register(this.update) && (
-            <div 
-              style={{ 
-                display: 'flex',
-                flexDirection: 'row',
-                margin: 10
-              }}
-            >
-              {
-                service.steps.map((stepData, idx) => (
-                  <Step
-                    key={`step-${idx}`}
-                    data={stepData}
-                    position={idx}
-                    active={this.state.currentStep === idx}
-                    onClick={() => service.setCurrentStep(idx)}
-                    onData={data => service.setStepData(idx, data)}
-                  />
-                ))
-              }
-            </div>
-          )
-        )
-      }
-    </ServiceUI>
+      <ServiceUI
+        {...this.props}
+        onInit={this.onInit.bind(this)}
+        segments={[
+          { name: 'Steps', render: this.renderSteps },
+          { name: 'Edit', render: this.renderStepConfig },
+        ]}
+      />
     )
   }
 }
@@ -99,7 +194,7 @@ class Sequencer {
     this.board = board;
     this.app = app;
 
-    this.steps = new Array(10).fill(undefined).map((_, i) => ({ step: i }));
+    this.steps = [{step: 1},{step: 2}, {step: 3}];
     this.currentStep = 0;
     this.repeat = true;
   }
@@ -112,7 +207,7 @@ class Sequencer {
   setCurrentStep(step) {
     this.currentStep = step;
     if (this.callback) {
-      this.callback(this.currentStep);
+      this.callback({ currentStep: this.currentStep });
     }
   }
 
@@ -121,16 +216,33 @@ class Sequencer {
   }
 
   configure(config) {
-    if (config.steps !== undefined) {
-      this.steps = config.steps;
+    const { 
+      numSteps, 
+      steps, 
+      repeat, 
+      conditions,
+    } = config || {};
+
+    if (steps !== undefined) {
+      this.steps = steps;
     }
 
-    if (config.repeat !== undefined) {
-      this.repeat = config.repeat;
+    if (repeat !== undefined) {
+      this.repeat = repeat;
     }
 
-    if (config.conditions !== undefined) {
-      this.conditions = config.conditions;
+    if (conditions !== undefined) {
+      this.conditions = conditions;
+    }
+
+    if (numSteps !== undefined) {
+      if (this.steps.length >= numSteps) {
+        this.steps = this.steps.slice(0, numSteps);
+      } else {
+        while (this.steps.length < numSteps) {
+          this.steps.push({});
+        }
+      }
     }
   }
 
@@ -180,8 +292,14 @@ class Sequencer {
     }
 
     if (this.callback) {
-      this.callback(n);
+      this.callback({ currentStep: n });
     }
+
+    if (this.steps[n] === undefined) {
+      return params;
+    }
+
+    // TODO: mix the result with incoming params
     if (Array.isArray(params)) {
       return params.concat(this.steps[n]);
     } else {
