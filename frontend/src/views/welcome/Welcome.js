@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-// import { Icon } from 'semantic-ui-react';
 
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
@@ -11,8 +10,7 @@ import { AppConsumer } from '../../AppContext';
 
 export default class Welcome extends Component {
   state = {
-    page: 'closed',
-    email: ''
+    page: 'welcome'
   };
 
   componentDidMount() {
@@ -21,41 +19,38 @@ export default class Welcome extends Component {
     }, 200);
   }
 
-  renderWelcome() {
-    return (
-      <div className="fade-in">
-        <h1>Welcome.</h1>
-        <p className="hero-claim">
-          <span className="make">Make yourself </span> 
-          <span className="at-home">at home</span>
-        </p>
-        <button
-          className="button"
-          onClick={() => this.setState({ page: 'visualisation' }) }
-        >
-          What next?
-        </button>
-      </div>
-    );
-  }
+  renderWelcome = () => (
+    <div className="fade-in">
+      <h1>Welcome.</h1>
+      <p className="hero-claim">
+        <span className="make">Make yourself</span> 
+        <span>at home</span>
+      </p>
+      <button
+        className="button"
+        onClick={() => this.setState({ page: 'mission' }) }
+      >
+        What is this?
+      </button>
+    </div>
+  );
+  
+  renderIntro = () => (
+    <div style={{ height: '100%' }}>
+      <Sandbox
+        title="Hookup Intro"
+        src="/boards/introduction.json"
+        frameless="true"
+        frameBorder={0}
+        height="100%"
+        width="100%"
+        onAction={action => this.setState({ page: action.page })} 
+      />
+    </div>
+  );
 
-  renderIntro() {
-    return (
-      <div style={{ height: '100%' }}>
-        <Sandbox
-          title="Hookup Intro"
-          src="/boards/introduction.json"
-          frameless="true"
-          frameBorder={0}
-          height="100%"
-          width="100%"
-          onAction={action => this.setState({ page: action.page })} 
-        />
-      </div>
-    );
-  }
 
-  renderVisualisation() {
+  renderVisualisation = () => {
     return (
       <div style={{ height: '100%' }} className="fade-in">
         <Sandbox
@@ -67,20 +62,53 @@ export default class Welcome extends Component {
           width="100%"
           onAction={action => this.setState({ page: action.page })}
         />
-        <div 
-          style={{ 
-            cursor: 'pointer', 
-            color: '#427DAB',
-          }} 
-          onClick={() => this.setState({ page: 'mission' }) }
+      </div>
+    );
+  }
+
+  renderMission = () => {
+    return (
+      <div style={{ width: '100%', height: '100%' }}>
+        <div
+          style={{
+            height: '100%',
+            width: '100%',
+            display: 'table',
+            tableLayout: 'fixed',
+          }}
         >
-          Skip
+        {
+          [
+            { q: 'What', a: 'It\'s an attempt to make technology more approachable and personal' },
+            { q: 'Why', a: 'IT is an enabler for creativity and inspiration' },
+            { q: 'How', a: 'Creatively connect devices and logic' },
+          ].map(x => (
+            <div
+              key={x.q}
+              style={{
+                textAlign: 'center', 
+                display: 'table-row' 
+              }}
+            >
+              <div
+                style={{
+                  display: 'table-cell',
+                  verticalAlign: 'middle',
+                  textAlign: 'center'
+                }}
+              >
+                <h1 style={{ fontSize: 27 }}> {x.q} </h1>
+                <div style={{ marginTop: 5, fontSize: 17 }}> {x.a} </div>
+              </div>
+            </div>
+          )) 
+        }
         </div>
       </div>
     );
   }
 
-  renderMission() {
+  renderConversion = () => {
     return (
       <div className="fade-in">
         <h1>You are early</h1>
@@ -93,29 +121,51 @@ export default class Welcome extends Component {
         >
           Do it again
         </button>
-        {
-          /*
-            <Input 
-              placeholder="Email" 
-              onChange={ev => this.setState({ email: ev.target.value })}
-              value={this.state.email}
-            /> 
-            <div style={{ marginTop: 3 }}>
-              <button
-                onClick={() => this.onRegisterEmail(this.state.email) }
-                className="button"
-              >
-                Give me more
-              </button>
-            </div>
-        */
+      </div>
+    );
+  }
+
+  renderNavBar = (pages) => {
+    if (this.state.page === pages[0].p) {
+      return false;
+    }
+     const renderBullet = (x, c) => (
+      <span
+        key={x.p}
+        style={{ cursor: 'pointer', padding: 5 }}
+        onClick={() => this.setState({ page: x.p })}
+      >
+        { c }
+      </span>
+    );
+    return (
+      <div 
+        style={{ 
+          fontSize: 22,
+          marginTop: 20,
+        }}
+      > 
+        { 
+          pages.map(x => x.p === this.state.page ? 
+            renderBullet(x, '●') : 
+            renderBullet(x, '￮')) 
         }
       </div>
     );
   }
 
-  onRegisterEmail(address) {
-    console.log('Registering email address', address);
+  renderContent(pages) {
+    return (
+      <div 
+        style={{ 
+          width: '100%', 
+          height: '95%',
+        }}
+      >
+        { pages.find(x => x.p === this.state.page).r() }
+        { this.renderNavBar(pages) }
+      </div>
+    );
   }
 
   render() {
@@ -137,10 +187,16 @@ export default class Welcome extends Component {
                   }
                 </BoardConsumer>
                 <div className={`hero-text ${this.state.page} fade-in-linear`}>
-                  { this.state.page === 'welcome' && this.renderWelcome() } 
-                  { this.state.page === 'intro' && this.renderIntro() } 
-                  { this.state.page === 'visualisation' && this.renderVisualisation() } 
-                  { this.state.page === 'mission' && this.renderMission() } 
+                  { 
+                    this.renderContent(
+                      [
+                        { p: 'welcome', r: this.renderWelcome },
+                        { p: 'mission', r: this.renderMission },
+                        { p: 'intro', r: this.renderIntro },
+                        { p: 'visualisation', r: this.renderVisualisation },
+                      ]
+                    )
+                  }
                 </div>
                 <Footer />
               </div>

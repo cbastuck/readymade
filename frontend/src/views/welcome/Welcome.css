@@ -66,6 +66,11 @@ body, html {
   height: 450px;
 }
 
+.mission {
+  padding-top: 25px;
+  height: 450px;
+}
+
 .hero-text h1 {
   font-size: 30pt;
   padding: 0px;
@@ -115,13 +120,4 @@ body, html {
   font-style: italic;
   /*border: solid 1px #454f6d;*/
   padding: 2px;
-}
-
-.at-home {
-  /*
-    background-color: #454f6d;
-    color: white;
-    border: solid 1px #454f6d;
-    padding: 2px;
-  */
 }

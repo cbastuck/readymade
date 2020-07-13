@@ -31,20 +31,9 @@
                 "color": "#454f6d",
                 "lineWidth": 1
               }
-            },
-            {
-              "type": "image",
-              "id": "backgroundImage",
-              "url": "/assets/noun_Diversity_962526.svg",
-              "offsetY": 10,
-              "opacity": 0
             }
           ],
           [
-            {
-              "ref": "backgroundImage",
-              "opacity": 0.02
-            },
             {
               "ref": "message",
               "text": "Tech is Creativity"
@@ -63,12 +52,8 @@
           },
           [
             {
-              "ref": "backgroundImage",
-              "opacity": 0.5
-            },
-            {
               "ref": "message",
-              "text": "Adjust the Narrative",
+              "text": "Extend the Narrative",
               "color": "white",
               "font": "lighter 60px Helvetica Neue",
               "contour": {
@@ -97,10 +82,6 @@
             "variables": ["text", "opacity", "font"],
             "template": [
               {
-                "ref": "backgroundImage",
-                "opacity": "$value"
-              },
-              {
                 "ref": "message",
                 "text": "$value",
                 "font": "$value"
@@ -108,11 +89,6 @@
             ]
           }
         }
-      },
-      {
-        "serviceName": "Monitor",
-        "serviceId": "hookup.to/service/monitor-browser",
-        "uuid": "45ec2f09-1d82-46a3-a4bf-8004a5a13a15"
       },
       {
         "serviceName": "Canvas",
