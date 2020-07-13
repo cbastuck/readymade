@@ -9,7 +9,7 @@
         "serviceId": "hookup.to/service/browser-timer",
         "uuid": "f7b62ea7-38bb-4535-8c61-f0a8dfeb213d",
         "periodic": true,
-        "periodicValue": 4,
+        "periodicValue": 6,
         "periodicUnit": "s",
         "immediate": true,
         "start": true
@@ -23,37 +23,76 @@
           [
             {
               "type": "text",
-              "id": "message",
-              "text": "Tech is not IT",
+              "text": "If you know nothing ...",
+              "color": "#454f6d",
+              "font": "lighter 20px Helvetica Neue",
+              "contour": {
+                "color": "#454f6d",
+                "lineWidth": 1
+              }
+            },
+            {
+              "type": "text",
+              "text": "The best solution merges from different minds",
               "color": "#454f6d",
               "font": "lighter 30px Helvetica Neue",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
+              },
+              "y": "70%"
+            }
+          ],
+          [
+            {
+              "type": "text",
+              "text": "The more contribute ...",
+              "color": "#454f6d",
+              "font": "lighter 50px Helvetica Neue",
+              "contour": {
+                "color": "#454f6d",
+                "lineWidth": 1
               }
+            },
+            {
+              "type": "text",
+              "text": "the lower the risk we miss something",
+              "color": "#454f6d",
+              "font": "lighter 20px Helvetica Neue",
+              "contour": {
+                "color": "#454f6d",
+                "lineWidth": 1
+              },
+              "y": "70%"
             }
           ],
           [
             {
-              "ref": "message",
-              "text": "Tech is Creativity"
+              "type": "text",
+              "text": "Technology shapes our future",
+              "color": "#454f6d",
+              "font": "lighter 40px Helvetica Neue",
+              "contour": {
+                "color": "#454f6d",
+                "lineWidth": 1
+              }
+            },
+            {
+              "type": "text",
+              "text": "WE build technology",
+              "color": "#454f6d",
+              "font": "lighter 45px Helvetica Neue",
+              "contour": {
+                "color": "#454f6d",
+                "lineWidth": 1
+              },
+              "y": "70%"
             }
           ],
-          {
-            "type": "macro:slide",
-            "text": "Tech is Literacy",
-            "opacity": 0.05
-          },
-          {
-            "type": "macro:slide",
-            "text": "Tech is Everybody",
-            "opacity": 0.2,
-            "font": "lighter 40px Helvetica Neue"
-          },
           [
             {
-              "ref": "message",
-              "text": "Extend the Narrative",
+              "type": "text",
+              "text": "Adjust the Narrative",
               "color": "white",
               "font": "lighter 60px Helvetica Neue",
               "contour": {
@@ -62,33 +101,19 @@
               }
             },
             {
-              "type": "image",
-              "url": "/assets/arrow-right.png",
-              "x": "90%",
-              "unscaled": true,
-              "onClick": {
-                "page": "visualisation"
-              }
+              "type": "text",
+              "text": "IT is everyone",
+              "color": "white",
+              "font": "lighter 30px Helvetica Neue",
+              "contour": {
+                "color": "black",
+                "lineWidth": 1
+              }, 
+              "y": "70%",
+              "x": "60%"
             }
           ]
         ]
-      },
-      {
-        "serviceName": "State",
-        "serviceId": "hookup.to/service/state",
-        "uuid": "15ec2f19-1d82-46a3-a4bf-8125b5a13a15",
-        "macros": {
-          "slide": {
-            "variables": ["text", "opacity", "font"],
-            "template": [
-              {
-                "ref": "message",
-                "text": "$value",
-                "font": "$value"
-              }
-            ]
-          }
-        }
       },
       {
         "serviceName": "Canvas",

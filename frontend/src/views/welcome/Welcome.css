@@ -31,6 +31,10 @@ body, html {
 .fade-in-linear {
   animation: opac-linear 0.8s;
 }
+
+.fade-in-linear-slow {
+  animation: opac-linear 2.2s;
+}
 @keyframes opac-linear{
   0% {opacity: 0}
   100%{opacity: 1}

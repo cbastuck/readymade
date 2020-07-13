@@ -75,9 +75,16 @@ class SequencerUI extends Component {
     });
   }
 
-  update = ({ currentStep }) => {
+  update = ({ currentStep, finished }) => {
     if (currentStep !== undefined) {
       this.setState({ currentStep });
+    }
+
+    if (finished === true) {
+      const target = window.frameElement;
+      if (target && target.onAction) {
+        target.onAction({ finished: true });
+      }
     }
   }
 
@@ -263,6 +270,9 @@ class Sequencer {
 
   process(params) {
     if (!this.repeat && this.currentStep >= this.steps.length) {
+      if (this.callback) {
+        this.callback({ finished: true });
+      }
       return undefined;
     }
     

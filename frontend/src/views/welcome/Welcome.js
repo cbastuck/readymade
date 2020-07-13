@@ -4,13 +4,16 @@ import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
 import Sandbox from '../Sandbox';
+import {
+  redirectTo,
+} from '../../core/actions';
 
 import './Welcome.css';
 import { AppConsumer } from '../../AppContext';
 
 export default class Welcome extends Component {
   state = {
-    page: 'welcome'
+    page: 'closed'
   };
 
   componentDidMount() {
@@ -42,17 +45,28 @@ export default class Welcome extends Component {
         src="/boards/introduction.json"
         frameless="true"
         frameBorder={0}
-        height="100%"
+        height="84%"
         width="100%"
-        onAction={action => this.setState({ page: action.page })} 
+        onAction={({ finished }) => finished && this.setState({ introFinished: true })}
       />
+      {
+        this.state.introFinished && (
+          <button
+            style={{ fontSize: 14 }}
+            className="button" 
+            onClick={() => this.setState({ page: 'visualisation' })}
+          >
+            A thought experiment
+          </button>
+        )
+      }
     </div>
   );
 
 
   renderVisualisation = () => {
     return (
-      <div style={{ height: '100%' }} className="fade-in">
+      <div style={{ height: '100%' }}>
         <Sandbox
           title="Hookup Visualisation"
           src="/boards/visualisation.json"
@@ -60,7 +74,14 @@ export default class Welcome extends Component {
           frameBorder={0}
           height="100%"
           width="100%"
-          onAction={action => this.setState({ page: action.page })}
+          onAction={({ page, finished }) => {
+            if (page) {
+              this.setState({ page });
+            }
+            if (finished) {
+              redirectTo('/ftu')
+            }
+          }}
         />
       </div>
     );
@@ -68,7 +89,7 @@ export default class Welcome extends Component {
 
   renderMission = () => {
     return (
-      <div style={{ width: '100%', height: '100%' }}>
+      <div className="fade-in-linear-slow" style={{ width: '100%', height: '100%' }}>
         <div
           style={{
             height: '100%',
@@ -79,12 +100,23 @@ export default class Welcome extends Component {
         >
         {
           [
-            { q: 'What', a: 'It\'s an attempt to make technology more approachable and personal' },
-            { q: 'Why', a: 'IT is an enabler for creativity and inspiration' },
-            { q: 'How', a: 'Creatively connect devices and logic' },
-          ].map(x => (
+            { q: 'What', a: 'An attempt to make technology more accessible and personal' },
+            { q: 'Why', a: 'Because tech is an enabler for creativity, inspiration and thinking' },
+            { q: 'How', a: 'Creatively connect logic, devices and services' },
+            { 
+              a: (
+              <button
+                style={{ fontSize: 14 }}
+                className="button" 
+                onClick={() => this.setState({ page: 'intro' })}
+              >
+                More details
+              </button>
+              ),
+            }
+          ].map((x, xi) => (
             <div
-              key={x.q}
+              key={xi}
               style={{
                 textAlign: 'center', 
                 display: 'table-row' 
@@ -97,7 +129,7 @@ export default class Welcome extends Component {
                   textAlign: 'center'
                 }}
               >
-                <h1 style={{ fontSize: 27 }}> {x.q} </h1>
+                { x.q && <h1 style={{ fontSize: 27 }}> {x.q} </h1> }
                 <div style={{ marginTop: 5, fontSize: 17 }}> {x.a} </div>
               </div>
             </div>
@@ -155,6 +187,7 @@ export default class Welcome extends Component {
   }
 
   renderContent(pages) {
+    const currentPage = pages.find(x => x.p === this.state.page);
     return (
       <div 
         style={{ 
@@ -162,7 +195,7 @@ export default class Welcome extends Component {
           height: '95%',
         }}
       >
-        { pages.find(x => x.p === this.state.page).r() }
+        { currentPage && currentPage.r() }
         { this.renderNavBar(pages) }
       </div>
     );
