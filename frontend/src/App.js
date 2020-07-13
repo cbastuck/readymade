@@ -11,6 +11,7 @@ import Welcome from './views/welcome/Welcome';
 import About from './views/about/About';
 import Imprint from './views/about/Imprint';
 import Contact from './views/about/Contact';
+import FirstTimeExperience from './views/FirstTimeExperience';
 import Board from './views/Board';
 import BuildBoard from './views/BuildBoard';
 import AuthRedirect from './views/AuthRedirect';
@@ -70,6 +71,7 @@ class App extends Component {
               <Route path="/auth2app" component={AuthRedirect} />
               <Route path="/:board/app" component={AppHub} />
               <Route path="/service/:service" component={ServiceReference} />
+              <Route path="/ftu" component={FirstTimeExperience} />
               <Route path="/:board" component={BoardWithContext} />
             </Switch>
           </div>
