@@ -57,8 +57,9 @@ class Sound {
   }
 
   process(params) {
+    const { note = 'C4', duration = '4n' } = params || {};
     if (this._synth) {
-      this._synth.triggerAttackRelease('C4', '8n');
+      this._synth.triggerAttackRelease(note, duration);
     }
     return params;
   }
