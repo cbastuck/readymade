@@ -29,7 +29,8 @@
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
-              }
+              },
+              "checkpoint": "@unnamed-trigger"
             },
             {
               "type": "text",
@@ -52,7 +53,8 @@
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
-              }
+              },
+              "checkpoint": "@unnamed-trigger"
             },
             {
               "type": "text",
@@ -75,7 +77,8 @@
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
-              }
+              },
+              "checkpoint": "@unnamed-trigger"
             },
             {
               "type": "text",
@@ -98,7 +101,8 @@
               "contour": {
                 "color": "black",
                 "lineWidth": 1
-              }
+              },
+              "checkpoint": "@last-slide"
             },
             {
               "type": "text",

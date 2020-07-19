@@ -50,6 +50,14 @@ export default class BrowserRuntime {
     this.app = {
       next: this.next,
       getServiceById: id => this.services.find(s => s.uuid === id),
+      sendAction: action => {
+        // the sandbox for example registers a listener 
+        // for these kind of actions
+        const target = window.frameElement;
+        if (target && target.onAction) {
+          target.onAction(action);
+        }
+      }
     }
 
     if (board) {

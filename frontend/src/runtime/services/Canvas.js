@@ -131,10 +131,7 @@ class CanvasUI extends Component {
     if (action.internal) { // internal dispatch event
       service.app.next(service, action.internal);
     } else { // external action
-      const target = window.frameElement;
-      if (target && target.onAction) {
-        target.onAction(action);
-      }
+      service.app.sendAction(action);
     }
   }
  

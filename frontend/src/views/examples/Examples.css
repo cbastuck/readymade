@@ -1,0 +1,21 @@
+body, html {
+  height: 100%;
+}
+
+.example {
+  height: 100px;
+  width: 180px;
+  border-radius: 5px;
+  border: solid 1px lightgray;
+  margin: 10px auto;
+  text-align: center;
+}
+
+.examples-container {
+  height: 70%;
+  width: 80%;
+  margin: 50px auto;
+  border-radius: 5px;
+  border: solid 1px lightgray;
+  background-color: #fefefe;
+}

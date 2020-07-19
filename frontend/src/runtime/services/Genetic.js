@@ -193,10 +193,10 @@ class Genetic {
   genomeShapeColor(genome) {
     const tag = genome[5];
     if (tag === 'child') {
-      return '#eaa';
+      return '#f5c842';
     }
     if (tag === 'parent') {
-      return '#aad';
+      return '#395a9a';
     }
     return `rgba(0, 0, 0, ${genome[4]})`;
   }

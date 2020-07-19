@@ -1,19 +1,23 @@
 import React, { Component } from 'react';
 
+import { AppConsumer } from '../../AppContext';
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
+import ProgressIndicator from '../../components/ProgressIndicator';
 import Sandbox from '../Sandbox';
 import {
   redirectTo,
 } from '../../core/actions';
 
 import './Welcome.css';
-import { AppConsumer } from '../../AppContext';
+
 
 export default class Welcome extends Component {
   state = {
-    page: 'closed'
+    page: 'closed',
+    introFinished: false,
+    visualisationFinished: false,
   };
 
   componentDidMount() {
@@ -43,20 +47,39 @@ export default class Welcome extends Component {
       <Sandbox
         title="Hookup Intro"
         src="/boards/introduction.json"
-        frameless="true"
+        frameless={true}
         frameBorder={0}
         height="84%"
         width="100%"
-        onAction={({ finished }) => finished && this.setState({ introFinished: true })}
+        onAction={
+          ({ checkpoint }) => {
+            if (checkpoint === '@last-slide') {
+              setTimeout(
+                () => this.setState({ introFinished: true }), 
+                500
+              );
+            } else if (checkpoint) {
+              this.progress && this.progress.triggerAnimation();
+            }
+          }
+        }
+      />
+      <ProgressIndicator 
+        durationInSec={7}
+        ref={progress => this.progress = progress}
+        visible={!this.state.introFinished}
       />
       {
         this.state.introFinished && (
           <button
             style={{ fontSize: 14 }}
-            className="button" 
-            onClick={() => this.setState({ page: 'visualisation' })}
+            className="button fade-in-linear" 
+            onClick={() => this.setState({ 
+              page: 'visualisation',
+              introFinished: false,
+            })}
           >
-            A thought experiment
+            Continue thought experiment
           </button>
         )
       }
@@ -70,19 +93,33 @@ export default class Welcome extends Component {
         <Sandbox
           title="Hookup Visualisation"
           src="/boards/visualisation.json"
-          frameless="true"
+          frameless={true}
           frameBorder={0}
-          height="100%"
+          height="95%"
           width="100%"
-          onAction={({ page, finished }) => {
+          onAction={({ page, finished, checkpoint }) => {
             if (page) {
               this.setState({ page });
             }
             if (finished) {
-              redirectTo('/ftu')
+              redirectTo('/examples')
+            }
+            if (checkpoint === '@last-state' && !this.state.visualisationFinished) {
+              this.setState({ visualisationFinished: true });
             }
           }}
         />
+        {
+          this.state.visualisationFinished && (
+            <button
+              style={{ fontSize: 14 }}
+              className="button fade-in-linear" 
+              onClick={() => redirectTo('/examples')}
+            >
+              Examples
+            </button>
+          )
+        }
       </div>
     );
   }
@@ -110,7 +147,7 @@ export default class Welcome extends Component {
                 className="button" 
                 onClick={() => this.setState({ page: 'intro' })}
               >
-                More details
+                Quick Pitch
               </button>
               ),
             }
@@ -158,7 +195,8 @@ export default class Welcome extends Component {
   }
 
   renderNavBar = (pages) => {
-    if (this.state.page === pages[0].p) {
+    if (this.state.page === pages[0].p ||
+        this.state.visualisationFinished) {
       return false;
     }
      const renderBullet = (x, c) => (

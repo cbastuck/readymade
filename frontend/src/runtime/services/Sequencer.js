@@ -75,21 +75,25 @@ class SequencerUI extends Component {
     });
   }
 
-  update = ({ currentStep, finished }) => {
+  update = (service, { currentStep, finished }) => {
     if (currentStep !== undefined) {
       this.setState({ currentStep });
     }
 
     if (finished === true) {
-      const target = window.frameElement;
-      if (target && target.onAction) {
-        target.onAction({ finished: true });
-      }
+      service.app.sendAction({ finished: true });
+    } else {
+      const step = service.steps[currentStep];
+      // checkpoints should be the first element of array steps
+      const checkpoint = Array.isArray(step) ? step[0].checkpoint : step.checkpoint;
+      if (checkpoint) {
+        service.app.sendAction({ checkpoint });
+      }      
     }
   }
 
   renderSteps = service => {
-    return service && service.register(this.update) && (
+    return service && service.register(this.update.bind(this, service)) && (
       <div>
         { this.renderStepBar(service) }
         <div>

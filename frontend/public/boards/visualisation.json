@@ -128,7 +128,7 @@
             },
             {
               "type": "text",
-              "text": "click left to step or right to run",
+              "text": "left button to step or right to run",
               "color": "white",
               "font": "lighter 20px Helvetica Neue",
               "y": "65%"
@@ -178,7 +178,7 @@
             },
             {
               "type": "text",
-              "text": "But an ideal start",
+              "text": "But somehow an ideal start",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
               "y": "80%"
@@ -266,7 +266,8 @@
               "text": "Variety explores the solution space",
               "color": "#002",
               "font": "lighter 28px Helvetica Neue",
-              "y": "30%"
+              "y": "30%",
+              "checkpoint": "@last-state"
             },
             {
               "type": "text",
@@ -278,12 +279,18 @@
             },
             {
               "type": "image",
-              "url": "assets/done.png",
-              "height": 35,
+              "url": "assets/redo.png",
+              "height": 25,
               "y": "47%",
               "x": "49%",
               "onClick": {
-                "finished": true
+                "internal": {
+                  "type": "dispatch",
+                  "destination": "ba9e7ff4-19d1-4e9a-ba83-70979568294b",
+                  "config": {
+                    "reset": true
+                  }
+                }
               }
             }
           ]
