@@ -87,10 +87,17 @@
           [ 
             {
               "type": "text",
-              "text": "How could four Genes evolve to find the center?",
+              "text": "Nature is beautiful ...",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
               "y": "37%"
+            },
+            {
+              "type": "text",
+              "text": "and kind-of an optimization framework",
+              "color": "#002",
+              "font": "lighter 26px Helvetica Neue",
+              "y": "80%"
             },
             {
               "type": "image",
@@ -137,10 +144,10 @@
           [ 
             {
               "type": "text",
-              "text": "Four options, no solution ",
+              "text": "Driving towards an optimum (somewhere)",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
-              "y": "20%"
+              "y": "37%"
             },
             {
               "type": "image",
@@ -178,7 +185,14 @@
             },
             {
               "type": "text",
-              "text": "But somehow an ideal start",
+              "text": "left button to step or right to run",
+              "color": "white",
+              "font": "lighter 20px Helvetica Neue",
+              "y": "65%"
+            },
+            {
+              "type": "text",
+              "text": "Adding variety we evolve faster",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
               "y": "80%"
@@ -187,8 +201,8 @@
           [
             {
               "type": "text",
-              "text": "Some ideas take time",
-              "color": "white",
+              "text": "Looks like a lack of variety",
+              "color": "#002",
               "font": "lighter 26px Helvetica Neue",
               "y": "43%"
             },
@@ -300,7 +314,7 @@
             "index": 0,
             "operation": "greater",
             "property": "iteration",
-            "value": 10,
+            "value": 0,
             "weak": true
           },
           {

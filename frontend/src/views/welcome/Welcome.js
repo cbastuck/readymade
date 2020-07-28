@@ -79,7 +79,7 @@ export default class Welcome extends Component {
               introFinished: false,
             })}
           >
-            Continue thought experiment
+            A thought experiment
           </button>
         )
       }
@@ -165,6 +165,7 @@ export default class Welcome extends Component {
                   verticalAlign: 'middle',
                   textAlign: 'center'
                 }}
+                className={`fade-in-${xi}`}
               >
                 { x.q && <h1 style={{ fontSize: 27 }}> {x.q} </h1> }
                 <div style={{ marginTop: 5, fontSize: 17 }}> {x.a} </div>
@@ -203,7 +204,10 @@ export default class Welcome extends Component {
       <span
         key={x.p}
         style={{ cursor: 'pointer', padding: 5 }}
-        onClick={() => this.setState({ page: x.p })}
+        onClick={() => this.setState({ 
+          page: x.p,
+          introFinished: false
+        })}
       >
         { c }
       </span>

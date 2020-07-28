@@ -49,6 +49,24 @@ body, html {
   100%{opacity: 1}
 }
 
+@keyframes opac-slow{
+  0% {opacity: 0}
+  100%{opacity: 1}
+}
+.fade-in-0 {
+  animation: opac-slow 0.1s;
+}
+.fade-in-1 {
+  animation: opac-slow 1s;
+}
+.fade-in-2 {
+  animation: opac-slow 2s;
+}
+.fade-in-3 {
+  animation: opac-slow 3s;
+}
+
+
 .closed {
   height: 0px;
   padding: 0px;
