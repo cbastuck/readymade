@@ -6,9 +6,7 @@ import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
 import ProgressIndicator from '../../components/ProgressIndicator';
 import Sandbox from '../Sandbox';
-import {
-  redirectTo,
-} from '../../core/actions';
+import { redirectTo } from '../../core/actions';
 
 import './Welcome.css';
 

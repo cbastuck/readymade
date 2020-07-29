@@ -1,0 +1,26 @@
+{
+  "MyRuntime": {
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/browser-timer",
+        "periodic": true,
+        "start": true
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "type": "text",
+          "text=": "`Hello World ${params.triggerCount}`"
+        }
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "fullscreen": false
+      }
+    ]
+  }
+}
