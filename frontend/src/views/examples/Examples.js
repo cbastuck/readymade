@@ -101,8 +101,22 @@ export default class Examples extends Component {
             marginBottom: 20
           }}
         >
-          <h1 style={{ fontSize: 20, margin: 0, padding: 0 }}>Examples</h1>
-          { this.renderBreadcrumbs() }
+          <h1 style={{ fontSize: 20, margin: 0, padding: 0 }}>
+            { 
+              currentExample ?  
+                <span>
+                  <span 
+                    style={{ cursor: 'pointer', marginRight: 10 }}
+                    onClick={() => this.setState({ currentExample: null }) }
+                  > 
+                    ❮ 
+                  </span>
+                  {currentExample.title} 
+                </span> : 
+                'Examples' 
+            }
+          </h1>
+          { currentExample && this.renderBreadcrumbs() }
         </div>
         <div className="examples-list">
         {

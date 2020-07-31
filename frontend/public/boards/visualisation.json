@@ -90,7 +90,7 @@
               "text": "Nature is beautiful ...",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
-              "y": "37%"
+              "y": "28%"
             },
             {
               "type": "text",
@@ -134,20 +134,36 @@
               }
             },
             {
-              "type": "text",
-              "text": "left button to step or right to run",
-              "color": "white",
-              "font": "lighter 20px Helvetica Neue",
-              "y": "65%"
+              "type": "explainer",
+              "text": "Press to Run",
+              "font": "lighter 18px Helvetica Neue",
+              "pointer": {
+                "x": "56%",
+                "y": "48%",
+                "length": "5%"
+              },
+              "color": "gray"
+            },
+            {
+              "type": "explainer",
+              "text": "Press to Step",
+              "font": "lighter 18px Helvetica Neue",
+              "pointer": {
+                "x": "44%",
+                "y": "48%",
+                "length": "5%"
+              },
+              "color": "gray",
+              "direction": "right-to-left"
             }
           ],
           [ 
             {
               "type": "text",
-              "text": "Driving towards an optimum (somewhere)",
+              "text": "... driving towards an optimum (somewhere)",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
-              "y": "37%"
+              "y": "28%"
             },
             {
               "type": "image",
@@ -185,14 +201,7 @@
             },
             {
               "type": "text",
-              "text": "left button to step or right to run",
-              "color": "white",
-              "font": "lighter 20px Helvetica Neue",
-              "y": "65%"
-            },
-            {
-              "type": "text",
-              "text": "Adding variety we evolve faster",
+              "text": "increasing variety, we evolve faster",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
               "y": "80%"
@@ -204,7 +213,7 @@
               "text": "Looks like a lack of variety",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue",
-              "y": "43%"
+              "y": "30%"
             },
             {
               "type": "image",
@@ -280,7 +289,7 @@
               "text": "Variety explores the solution space",
               "color": "#002",
               "font": "lighter 28px Helvetica Neue",
-              "y": "30%",
+              "y": "28%",
               "checkpoint": "@last-state"
             },
             {

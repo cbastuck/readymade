@@ -135,6 +135,47 @@ class CanvasUI extends Component {
     }
   }
  
+  drawExplainer = (ctx, data) => {
+     const { 
+      pointer = { x: '50%', y: '50%', length: '1%' },
+      text,
+      font,
+      color,
+      direction = 'left-to-right'
+    } = data;
+    const ltr = direction === 'left-to-right';
+    const { canvasWidth, canvasHeight } = this.getCanvasCenter();
+
+    const pointerX = toAbsolute(pointer.x, canvasWidth);
+    const pointerY = toAbsolute(pointer.y, canvasHeight);
+    const pointerLength = toAbsolute(pointer.length, canvasWidth);
+
+    const strokeDestX = ltr ? pointerX + pointerLength : pointerX - pointerLength;
+    const strokeDestY = ltr ? pointerY + pointerLength : pointerY - pointerLength;
+
+    ctx.strokeStyle = color || '#ff0000';
+    ctx.beginPath();
+    ctx.moveTo(pointerX, pointerY);
+    ctx.lineTo(strokeDestX, strokeDestY);
+    ctx.stroke();
+
+    const l = 100;
+    const destX = ltr ? strokeDestX + l : strokeDestX - l;
+    const destY = strokeDestY;
+    ctx.beginPath();
+    ctx.moveTo(strokeDestX, strokeDestY);
+    ctx.lineTo(destX, destY);
+    ctx.stroke();
+
+    const textData = {
+      text, 
+      font, 
+      x: destX + 10, 
+      y: destY - 10,
+    }
+    this.drawText(ctx, textData);
+  }
+
   drawImage = async (ctx, data) => {
     const { 
       url,
@@ -364,6 +405,9 @@ class CanvasUI extends Component {
           break;
         case 'video':
           this.drawVideo(ctx, data);
+          break;
+        case 'explainer':
+          this.drawExplainer(ctx, data);
           break;
         default:
           break;
