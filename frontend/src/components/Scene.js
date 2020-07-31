@@ -113,7 +113,7 @@ export default class Scene extends Component {
           </span>
           <span style={{ marginRight: 10, marginTop: 5, float: 'right' }} >
             {
-              this.renderServiceMenu(name, runtime)
+             runtime && runtime.registry && this.renderServiceMenu(name, runtime)
             }
           </span>
         </div>
