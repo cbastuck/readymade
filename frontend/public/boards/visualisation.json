@@ -210,7 +210,7 @@
           [
             {
               "type": "text",
-              "text": "Looks like a lack of variety",
+              "text": "Looks like a lack of variety?",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "30%"
@@ -253,10 +253,10 @@
           [
             {
               "type": "text",
-              "text": "Not there yet!",
-              "color": "white",
+              "text": "Stuck at a good solution",
+              "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "42%"
+              "y": "28%"
             },
             {
               "type": "image",
@@ -276,10 +276,10 @@
             },
             {
               "type": "text",
-              "text": "Too long?",
-              "color": "white",
+              "text": "Now it depends on fortune and time",
+              "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "65%"
+              "y": "80%"
             }
           ],
           [

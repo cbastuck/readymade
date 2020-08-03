@@ -226,7 +226,7 @@ class Genetic {
       text: `generation ${this.generation} has ${populationShapes.length} unique genes`,
       y: '90%',
       x: '80%',
-      font: 'lighter 1.2em Helvetica Neue',
+      font: 'lighter 1.2em Helvetica Neue, sans-serif',
       color: '#454f6d'
     };
     return [this.targetShape].concat(populationShapes).concat(statusText);
