@@ -32,19 +32,23 @@ class Dispatcher {
   }
 
   async dispatch(item) {
-    if (!item || !item.type || !item.type === 'dispatch') {
+    const { type, destinations } = item || {};    
+    if (!item || type !== 'dispatch' || !destinations) {
       return;
     }
-    const service = this.app.getServiceById(item.destination);
-    if (service) {
-      if (item.config) {
-        await service.configure(item.config);
-      } 
-      if (item.process) {
-        return await service.proces(item.params);
+
+    for (const dest of destinations) {
+      const { config, process, serviceUuid } = dest;
+      const service = this.app.getServiceById(serviceUuid);
+      if (service) {
+        if (config) {
+          await service.configure(config);
+        } 
+        if (process) {
+          return await service.process(process);
+        }
       }
     }
-
   }
 
   async process(params) {

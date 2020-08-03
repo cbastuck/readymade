@@ -71,7 +71,7 @@
         "property": "fitness",
         "features": {
           "mean": "mean",
-          "iteration": "iteration"
+          "max": "generation"
         }
       },
       {
@@ -82,6 +82,7 @@
       {
         "serviceName": "Sequencer",
         "serviceId": "hookup.to/service/sequencer",
+        "uuid": "ae8defbd-40f8-4da5-9f72-a68270097bb9",
         "repeat": false,
         "steps": [
           [ 
@@ -108,11 +109,15 @@
               "onClick": {
                 "internal": {
                   "type": "dispatch",
-                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
-                  "config": {
-                    "start": true,
-                    "periodic": false
-                  }
+                  "destinations": [
+                    {
+                      "serviceUuid": "0e5e8233-6856-474e-9091-bae598a6be48",
+                      "config": {
+                        "start": true,
+                        "periodic": false
+                      }
+                    }
+                  ]
                 }
               }
             },
@@ -125,11 +130,15 @@
               "onClick": {
                 "internal": {
                   "type": "dispatch",
-                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
-                  "config": {
-                    "start": true,
-                    "periodic": true
-                  }
+                  "destinations": [
+                    {
+                      "serviceUuid": "0e5e8233-6856-474e-9091-bae598a6be48",
+                      "config": {
+                        "start": true,
+                        "periodic": true
+                      }
+                    }
+                  ]
                 }
               }
             },
@@ -174,11 +183,15 @@
               "onClick": {
                 "internal": {
                   "type": "dispatch",
-                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
-                  "config": {
-                    "start": true,
-                    "periodic": false
-                  }
+                  "destinations": [
+                    {
+                      "serviceUuid": "0e5e8233-6856-474e-9091-bae598a6be48",
+                      "config": {
+                        "start": true,
+                        "periodic": false
+                      }
+                    }
+                  ]
                 }
               }
             },
@@ -191,17 +204,21 @@
               "onClick": {
                 "internal": {
                   "type": "dispatch",
-                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
-                  "config": {
-                    "start": true,
-                    "periodic": true
-                  }
+                  "destinations": [
+                    {
+                      "serviceUuid": "0e5e8233-6856-474e-9091-bae598a6be48",
+                      "config": {
+                        "start": true,
+                        "periodic": true
+                      }
+                    }
+                  ]
                 }
               }
             },
             {
               "type": "text",
-              "text": "increasing variety, we evolve faster",
+              "text": "with variety - we evolve",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "80%"
@@ -210,10 +227,10 @@
           [
             {
               "type": "text",
-              "text": "Looks like a lack of variety?",
+              "text": "Exploring can take time ...",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "30%"
+              "y": "28%"
             },
             {
               "type": "image",
@@ -224,11 +241,15 @@
               "onClick": {
                 "internal": {
                   "type": "dispatch",
-                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
-                  "config": {
-                    "start": true,
-                    "periodic": false
-                  }
+                  "destinations": [
+                    {
+                      "serviceUuid": "0e5e8233-6856-474e-9091-bae598a6be48",
+                      "config": {
+                        "start": true,
+                        "periodic": false
+                      }
+                    }
+                  ]
                 }
               }
             },
@@ -241,19 +262,30 @@
               "onClick": {
                 "internal": {
                   "type": "dispatch",
-                  "destination": "0e5e8233-6856-474e-9091-bae598a6be48",
-                  "config": {
-                    "start": true,
-                    "periodic": true
-                  }
+                  "destinations": [
+                    {
+                      "serviceUuid": "0e5e8233-6856-474e-9091-bae598a6be48",
+                      "config": {
+                        "start": true,
+                        "periodic": true
+                      }
+                    }
+                  ]
                 }
               }
+            },
+            {
+              "type": "text",
+              "text": "or we're stuck with a good solution",
+              "color": "#002",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
+              "y": "80%"
             }
           ],
           [
             {
               "type": "text",
-              "text": "Stuck at a good solution",
+              "text": "Further progress requires fortune and time",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "28%"
@@ -267,16 +299,26 @@
               "onClick": {
                 "internal": {
                   "type": "dispatch",
-                  "destination": "ba9e7ff4-19d1-4e9a-ba83-70979568294b",
-                  "config": {
-                    "reset": true
-                  }
+                  "destinations": [
+                    {
+                      "serviceUuid": "ba9e7ff4-19d1-4e9a-ba83-70979568294b",
+                      "config": {
+                        "reset": true
+                      }
+                    }, 
+                    {
+                      "serviceUuid": "ae8defbd-40f8-4da5-9f72-a68270097bb9",
+                      "config": {
+                        "currentStep": 1
+                      }
+                    }
+                  ]
                 }
               }
             },
             {
               "type": "text",
-              "text": "Now it depends on fortune and time",
+              "text": "Wait or restart?",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "80%"
@@ -286,7 +328,7 @@
             {
               "type": "text",
               "id": "message",
-              "text": "Variety explores the solution space",
+              "text": "Conclusion: variety explores the solution space",
               "color": "#002",
               "font": "lighter 28px Helvetica Neue, sans-serif",
               "y": "28%",
@@ -309,10 +351,20 @@
               "onClick": {
                 "internal": {
                   "type": "dispatch",
-                  "destination": "ba9e7ff4-19d1-4e9a-ba83-70979568294b",
-                  "config": {
-                    "reset": true
-                  }
+                  "destinations": [
+                    {
+                      "serviceUuid": "ba9e7ff4-19d1-4e9a-ba83-70979568294b",
+                      "config": {
+                        "reset": true
+                      }
+                    },
+                    {
+                      "serviceUuid": "ae8defbd-40f8-4da5-9f72-a68270097bb9",
+                      "config": {
+                        "currentStep": 1
+                      }
+                    }
+                  ]
                 }
               }
             }
@@ -322,21 +374,21 @@
           {
             "index": 0,
             "operation": "greater",
-            "property": "iteration",
+            "property": "generation",
             "value": 0,
             "weak": true
           },
           {
             "index": 0,
             "operation": "greater",
-            "property": "iteration",
+            "property": "generation",
             "value": 150,
             "weak": true
           },
           {
             "index": 0,
             "operation": "greater",
-            "property": "iteration",
+            "property": "generation",
             "value": 300,
             "weak": true
           },

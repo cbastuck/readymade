@@ -69,7 +69,8 @@ class Genetic {
           percentToRelative(g.length),
           g.ttl || this.ttl,
           undefined, // fitness
-          'child',  // new-born
+          'child',  // new-born,
+          0, // birthdate
         ]);
       } else {
         this.population = [...Array(rand(this.initialPopulation))]
@@ -80,6 +81,7 @@ class Genetic {
             (genomeShape.ttl && genomeShape) ? genomeShape.ttl : 10,  // ttl
             undefined, // fitness
             'child', // new-born
+            0, // birthdate
           ]);
       }
     }
@@ -124,6 +126,7 @@ class Genetic {
     mutatedChild[5] = 'child'; // tags
     population.forEach(g => g[5] = ''); // reset-tags
     mother[5] = father[5] = 'parent';
+    mutatedChild[6] = this.generation; // birthdate
     return population.concat([mutatedChild]);
   }
 
@@ -217,7 +220,8 @@ class Genetic {
         y: toPercent(genome[1]),
         length: toPercent(genome[2]),
         color: this.genomeShapeColor(genome),
-        fitness: genome[4]
+        fitness: genome[4],
+        generation: genome[6],
       })
     );
 

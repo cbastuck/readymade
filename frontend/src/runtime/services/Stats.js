@@ -10,23 +10,24 @@ class Stats {
     this.uuid = id;
     this.board = board;
     this.app = app;
-
-    this.iteration = 0;
-    this.population = [];
   }
 
   configure(config) {
-    if (config.property !== undefined) {
-      this.property = config.property;
+    const { property, features, copyProps } = config;
+    if (property !== undefined) {
+      this.property = property;
     }
     
-    if (config.features !== undefined) {
-      this.features = config.features;
+    if (features !== undefined) {
+      this.features = features;
+    }
+
+    if (copyProps !== undefined) {
+      this.copyProps = copyProps;
     }
   }
 
   process(params) {
-    ++this.iteration;
     if (!this.property && params) {
       return params;
     }
@@ -62,6 +63,7 @@ class Stats {
       if (meanProperty) {
         result[meanProperty] = stats.sum / stats.n;
       }
+      
       const stdProperty = this.features.std;
       if (stdProperty) {
         const mx = stats[meanProperty] || (stats.sum / stats.n);
@@ -71,13 +73,23 @@ class Stats {
         );
         result[stdProperty] = Math.sqrt(sx / stats.sum);
       }
-      const iterationProperty = this.features.iteration;
-      if (iterationProperty) {
-        result[iterationProperty] = this.iteration;
+      
+      const maxProperty = this.features.max;
+      if (maxProperty) {
+        const mx = params.reduce(
+          (p, c) => {
+            const v = c[maxProperty];
+            if (p === undefined) {
+              return v;
+            }
+            return v > p ? v : p;
+          }, 
+          undefined
+        );
+        result[maxProperty] = mx;
       }
     }
     result.n = stats.n;
-
     return [result].concat(params);
   }
 }

@@ -232,6 +232,7 @@ class Sequencer {
       steps, 
       repeat, 
       conditions,
+      currentStep,
     } = config || {};
 
     if (steps !== undefined) {
@@ -244,6 +245,10 @@ class Sequencer {
 
     if (conditions !== undefined) {
       this.conditions = conditions;
+    }
+
+    if (currentStep !== undefined) {
+      this.setCurrentStep(currentStep);
     }
 
     if (numSteps !== undefined) {
