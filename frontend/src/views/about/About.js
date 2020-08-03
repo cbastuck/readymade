@@ -1,15 +1,10 @@
 import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
 
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
 import Switcher from '../../components/Switcher';
 
 import './About.css';
-
-//import cb from './cb.png'
-//import jcb from './jcb.png'
-//import sn from './sn.png'
 
 class Profile extends Component {
   render() {
@@ -70,22 +65,6 @@ export default class About extends Component {
               <p>Spawn <span style={amp}>Creativity</span></p>
               <p><span style={amp}>Improvise</span> with complexity.</p>
             </div>
-            <div className="ui relaxed grid">
-              <div className="three column row">
-                { 
-                  [
-                    //this.renderProfile('cbx', cb),
-                    //this.renderProfile('jcb', jcb),
-                    //this.renderProfile('snk', sn),
-                  ]
-                }
-              </div>
-            </div>
-            <Link to="/">
-              <button className="button" style={{ color: 'white' }}>
-                Back to Start
-              </button>
-            </Link>
           </div>
         </div>
         <Footer />

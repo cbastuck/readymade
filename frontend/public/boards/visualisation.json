@@ -276,7 +276,7 @@
             },
             {
               "type": "text",
-              "text": "or we're stuck with a good solution",
+              "text": "or we're stuck with some solution",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "80%"
