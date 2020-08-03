@@ -25,7 +25,7 @@
               "type": "text",
               "text": "If you know nothing ...",
               "color": "#454f6d",
-              "font": "lighter 20px Helvetica Neue",
+              "font": "lighter 20px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -36,7 +36,7 @@
               "type": "text",
               "text": "The best solution merges from different minds",
               "color": "#454f6d",
-              "font": "lighter 30px Helvetica Neue",
+              "font": "lighter 30px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -49,7 +49,7 @@
               "type": "text",
               "text": "The more contribute ...",
               "color": "#454f6d",
-              "font": "lighter 50px Helvetica Neue",
+              "font": "lighter 50px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -60,7 +60,7 @@
               "type": "text",
               "text": "the lower the risk we miss something",
               "color": "#454f6d",
-              "font": "lighter 20px Helvetica Neue",
+              "font": "lighter 20px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -73,7 +73,7 @@
               "type": "text",
               "text": "Technology shapes our future",
               "color": "#454f6d",
-              "font": "lighter 40px Helvetica Neue",
+              "font": "lighter 40px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -84,7 +84,7 @@
               "type": "text",
               "text": "WE build technology",
               "color": "#454f6d",
-              "font": "lighter 45px Helvetica Neue",
+              "font": "lighter 45px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -96,10 +96,10 @@
             {
               "type": "text",
               "text": "Enable and Include",
-              "color": "white",
-              "font": "lighter 60px Helvetica Neue",
+              "color": "#454f6d",
+              "font": "lighter 60px Helvetica Neue, sans-serif",
               "contour": {
-                "color": "black",
+                "color": "#454f6d",
                 "lineWidth": 1
               },
               "checkpoint": "@last-slide"
@@ -107,12 +107,12 @@
             {
               "type": "text",
               "text": "Extend the Narrative",
-              "color": "white",
-              "font": "lighter 30px Helvetica Neue",
+              "color": "#454f6d",
+              "font": "lighter 30px Helvetica Neue, sans-serif",
               "contour": {
-                "color": "black",
+                "color": "#454f6d",
                 "lineWidth": 1
-              }, 
+              },
               "y": "70%",
               "x": "60%"
             }

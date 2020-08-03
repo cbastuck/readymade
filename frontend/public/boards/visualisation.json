@@ -89,14 +89,14 @@
               "type": "text",
               "text": "Nature is beautiful ...",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "28%"
             },
             {
               "type": "text",
               "text": "and kind-of an optimization framework",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "80%"
             },
             {
@@ -136,7 +136,7 @@
             {
               "type": "explainer",
               "text": "Press to Run",
-              "font": "lighter 18px Helvetica Neue",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
               "pointer": {
                 "x": "56%",
                 "y": "48%",
@@ -147,7 +147,7 @@
             {
               "type": "explainer",
               "text": "Press to Step",
-              "font": "lighter 18px Helvetica Neue",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
               "pointer": {
                 "x": "44%",
                 "y": "48%",
@@ -162,7 +162,7 @@
               "type": "text",
               "text": "... driving towards an optimum (somewhere)",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "28%"
             },
             {
@@ -203,7 +203,7 @@
               "type": "text",
               "text": "increasing variety, we evolve faster",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "80%"
             }
           ],
@@ -212,7 +212,7 @@
               "type": "text",
               "text": "Looks like a lack of variety",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "30%"
             },
             {
@@ -255,7 +255,7 @@
               "type": "text",
               "text": "Not there yet!",
               "color": "white",
-              "font": "lighter 26px Helvetica Neue",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "42%"
             },
             {
@@ -278,7 +278,7 @@
               "type": "text",
               "text": "Too long?",
               "color": "white",
-              "font": "lighter 26px Helvetica Neue",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "65%"
             }
           ],
@@ -288,7 +288,7 @@
               "id": "message",
               "text": "Variety explores the solution space",
               "color": "#002",
-              "font": "lighter 28px Helvetica Neue",
+              "font": "lighter 28px Helvetica Neue, sans-serif",
               "y": "28%",
               "checkpoint": "@last-state"
             },
@@ -297,7 +297,7 @@
               "id": "message",
               "text": "WE are manifold solutions",
               "color": "#002",
-              "font": "lighter 28px Helvetica Neue",
+              "font": "lighter 28px Helvetica Neue, sans-serif",
               "y": "75%"
             },
             {
