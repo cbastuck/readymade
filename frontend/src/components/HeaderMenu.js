@@ -15,6 +15,55 @@ export default class HeaderMenu extends Component {
     }
   }
 
+  renderHomeIcon() {
+    return (
+      <div
+        style={{
+          paddingTop: 7,
+          paddingLeft: 6,
+          marginLeft: 6,
+        }}
+      >
+        <Link to="/">
+           <img
+            height={25}
+            src="/assets/shutterstock_1196210650.png" 
+            alt="Hookup"
+          />
+        </Link>
+      </div>
+    );
+  }
+
+  renderNavigation(appContext) {
+    const navItemStyle = { 
+      margin: 10
+    };
+    return (
+      <div
+        style={{
+          marginTop: 10,
+          width: '100%',
+          textAlign: 'right',
+          marginRight: 10
+        }}
+      >
+        <span style={navItemStyle}>Go to</span>
+        <span> → </span>
+        {
+          appContext && appContext.user && appContext.user.username && (
+            <Link to="/examples" style={navItemStyle}>
+              {appContext.user.username}'s Boards
+            </Link>
+          )
+        }
+        <Link to="/examples" style={navItemStyle}>
+          Examples
+        </Link>
+      </div>
+    );
+  }
+
   renderBoardMenu(board, savedBoards) {
     return (
       <Dropdown
@@ -113,12 +162,14 @@ export default class HeaderMenu extends Component {
                       borderBottom: '1px solid rgba(34,36,38,.15)',
                     }}
                   >
+                    { this.renderHomeIcon() }
                     {
                       appContext.user && this.renderBoardMenu(board, savedBoards)
                     }
                     {
                       registry && this.renderServiceMenu(registry, boardContext)
                     }
+                    { this.renderNavigation(appContext) }
                     {
                       appContext && this.renderAccountMenu(appContext)
                     }
