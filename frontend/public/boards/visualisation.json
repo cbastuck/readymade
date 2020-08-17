@@ -169,7 +169,7 @@
           [ 
             {
               "type": "text",
-              "text": "... driving towards an optimum (somewhere)",
+              "text": "... driving towards an optimum (somewhere).",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "28%"
@@ -218,7 +218,7 @@
             },
             {
               "type": "text",
-              "text": "with variety - we evolve",
+              "text": "Variety makes it evolve.",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "80%"
@@ -227,7 +227,7 @@
           [
             {
               "type": "text",
-              "text": "Exploring can take time ...",
+              "text": "Exploration can take time ...",
               "color": "#002",
               "font": "lighter 26px Helvetica Neue, sans-serif",
               "y": "28%"

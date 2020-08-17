@@ -52,13 +52,16 @@ export default class HeaderMenu extends Component {
         <span> → </span>
         {
           appContext && appContext.user && appContext.user.username && (
-            <Link to="/examples" style={navItemStyle}>
+            <Link to="/dashboard" style={navItemStyle}>
               {appContext.user.username}'s Boards
             </Link>
           )
         }
         <Link to="/examples" style={navItemStyle}>
           Examples
+        </Link>
+        <Link to="/docs" style={navItemStyle}>
+          Documentation
         </Link>
       </div>
     );

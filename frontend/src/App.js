@@ -12,6 +12,8 @@ import About from './views/about/About';
 import Imprint from './views/about/Imprint';
 import Contact from './views/about/Contact';
 import Examples from './views/examples/Examples';
+import Quickstart from './views/docs/Quickstart';
+import MyBoards from './views/dashboard/MyBoards';
 import Board from './views/Board';
 import BuildBoard from './views/BuildBoard';
 import AuthRedirect from './views/AuthRedirect';
@@ -72,6 +74,8 @@ class App extends Component {
               <Route path="/:board/app" component={AppHub} />
               <Route path="/service/:service" component={ServiceReference} />
               <Route path="/examples" component={Examples} />
+              <Route path="/dashboard" component={MyBoards} />
+              <Route path="/docs" component={Quickstart} />
               <Route path="/:board" component={BoardWithContext} />
             </Switch>
           </div>
