@@ -45,7 +45,8 @@ export default class HeaderMenu extends Component {
           marginTop: 10,
           width: '100%',
           textAlign: 'right',
-          marginRight: 10
+          marginRight: 10,
+          fontSize: 13
         }}
       >
         <span style={navItemStyle}>Go to</span>

@@ -38,88 +38,157 @@ export default class Quickstart extends Component {
     );
   }
 
-  renderQuickstart = () => {
-    const sectionStyle = { 
-      fontSize: 20, 
-      textAlign: 'left' 
+  renderGroupItem = item => {
+    const itemStyle = {
+      width: '80%',
+      marginTop: 20,
+      padding: 10,
+      borderBottom: item.bottomDivider ? 'solid 1px lightgray' : 'none',
     };
     const itemImageStyle = {
       marginTop: 40, 
       minWidth: 150,
       marginLeft: 10,
     };
-    const itemStyle={
-      marginTop: 20,
-      padding: 10,
-      borderBottom: 'solid 1px gray',
-    };
     return (
-    <Container textAlign="left" style={{ marginTop: 20, marginBottom: 100 }}>
-      <h1 style={{ fontSize: 22, marginBottom: 50, textAlign: 'center'}}>Quickstarter</h1>
+      <Item style={itemStyle}>
+        <div style={itemImageStyle}> { item.image}  </div>
+        <Item.Content>
+          <Item.Header>{item.title}</Item.Header>
+          <Item.Description>
+            {
+              item.details.map((detail, idx) => 
+                <div key={`detail-${item.title}-${idx}`}> {detail} </div>
+              )
+            }
+          </Item.Description>
+        </Item.Content>
+      </Item>
+    );
+  }
 
-      <h2 style={sectionStyle}>Preface</h2>
-      <div style={{ textAlign: 'left', marginLeft: 20 }}>
-        <div>Make stupid things!</div>
-        <div style={{ fontStyle: 'italic' }}>Dance to all the wrong songs!</div>
-        <div style={{ fontStyle: 'italic' }}>Wir können alles. Und Alles können wir sein!</div>
+  renderClaim = claim => {
+    return (
+      <div
+        style={{
+          fontSize: 18,
+          fontWeight: 'bold',
+          textAlign: 'justify',
+          margin: '9px 10px',
+          color: '#1e70bf',
+        }}
+      > 
+          {claim.s}{ claim.c ? ': ' : '' } 
+        <span
+          style={{
+            fontStyle: 'italic',
+            color: 'rgba(10,10,10,1)'
+          }}
+        >
+          {claim.c}
+        </span>
+        <span
+          style={{
+            fontSize: 10
+          }}
+        >
+          { 
+            claim.cite ? (
+              <a 
+                href={claim.link} 
+                target="blank"
+              > 
+                [{claim.cite}] 
+              </a> ) :
+              '' 
+            }
+        </span>
+      </div>
+    );
+  }
+
+  renderQuickstart = () => {
+    const sectionStyle = { 
+      fontSize: 21, 
+      textAlign: 'left' 
+    };
+    
+    return (
+    <Container 
+      textAlign="left" 
+      style={{ 
+        marginTop: 20, 
+        marginBottom: 100,
+        }}
+    >
+      <h1 style={{ 
+        fontSize: 24, 
+        marginBottom: 50, 
+        textAlign: 'center',
+      }}>
+        Quickstarter
+      </h1>
+
+      <h2 style={sectionStyle}>Etiquette</h2>
+      <div 
+        style={{ 
+          marginLeft: 20, 
+          marginBottom: 30 
+        }}
+      >
+        { this.renderClaim({ s: 'Make stupid things!', c: '' }) }
+        { this.renderClaim({ s: 'Especially', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'Refused' }) }
+        { this.renderClaim({ s: 'Reason', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8&list=OLAK5uy_kSDoqpFk_Fw4-zSXVfo69Tf70B98iz14w', cite: 'Turbotstaat' }) }
+        { this.renderClaim({ s: 'Remember', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8&list=OLAK5uy_kSDoqpFk_Fw4-zSXVfo69Tf70B98iz14w', cite: 'Bratze' }) }
       </div>
       
-      <h2 style={sectionStyle}>Terms and concepts</h2>
-      <div style={{ width: '80%', margin: 'auto' }}>
+      <h2 style={sectionStyle}>Stuff to know about</h2>
+      <div style={{ textAlign: 'left', marginLeft: 20 }}>
         <Item.Group link>
-          <Item style={itemStyle}>
-            <div style={itemImageStyle}> ☐ → ☐ → ☐  </div>
-            <Item.Content>
-              <Item.Header>Chains</Item.Header>
-              <Item.Description>
-                <ul style={{ listStyle: 'none' }}>
-                  <li>Logic consists of chains of services. </li>
-                  <li>Data is flowing through services of the chain from left to right.</li>
-                  <li>Chains need a runtime to exist.</li>
-                </ul>
-              </Item.Description>
-            </Item.Content>
-          </Item>
-
-          <Item style={itemStyle}>
-            <div style={itemImageStyle}> → ☐ →  </div>
-            <Item.Content>
-              <Item.Header>Service</Item.Header>
-              <Item.Description>
-              <ul style={{ listStyle: 'none' }}>
-                <li>Services are units in a chain that do somethig with the data coming in.</li>
-                <li>Services have an input and an output.</li>
-                <li>The input accepts data, the output provides data to subsequent services.</li>
-                <li>When services produce data, they inject data at their output.</li>
-                <li>Services can produce data spontaneously whenever they want.</li>
-              </ul>
-              </Item.Description>
-            </Item.Content>
-          </Item>
-
-          <Item style={itemStyle}>
-            <div style={itemImageStyle}> 
-              <p> ( ☐ → ☐ ) →</p>
-              <p> → ( ☐ → ☐ ) </p>
-            </div>
-            <Item.Content>
-              <Item.Header>Runtimes</Item.Header>
-              <Item.Description>
-              <ul style={{ listStyle: 'none' }}>
-                <li>The runtime keeps services and chains together.</li>
-                <li>The output of the last service in a runtime becomes the output of the whole runtime.</li>
-                <li>Multiple runtimes can be chained after each other. </li>
-                <li>The output of a runtome becomes gets feeded into the subsequent runtime.</li>
-                <li>Injecting data into a runtime means calling the first service of the runtime with that data.</li>
-                <li>The runtime defines the running order if the services.</li>
-                <li>Runtimes can be living in the browser only or on a server. </li>
-                <li>Runtimes living in the browser are only active while the browser is open.</li>
-                <li>Runtimes living on a server are always on.</li>
-              </ul>
-                
-              </Item.Description>
-            </Item.Content>
-          </Item>
+          { this.renderGroupItem({
+            title: 'Service',
+            details: [
+              'Services are units in a chain that do somethig with the data coming in.',
+              'Services have an input and an output.',
+              'The input accepts data, the output provides data to subsequent services.',
+              'When services produce data, they inject data at their output.',
+              'Services can produce data spontaneously whenever they want.'
+            ],
+            image: <p> → ☐ → </p>,
+            bottomDivider: true
+          }) }
+          { this.renderGroupItem({
+              title: 'Chain',
+              details: [
+                'Logic consists of chains of services.',
+                'Data is flowing through services of the chain from left to right.',
+                'Chains need a runtime to exist.'
+              ],
+              image: <p> → ☐ → ☐ → </p>,
+              bottomDivider: true
+            })
+          }
+          { this.renderGroupItem({
+              title: 'Runtime',
+              details: [
+                'The runtime keeps services and chains together.',
+                'The output of the last service in a runtime becomes the output of the whole runtime.',
+                'Multiple runtimes can be chained after each other.',
+                'The output of a runtome becomes gets feeded into the subsequent runtime.',
+                'Injecting data into a runtime means calling the first service of the runtime with that data.',
+                'The runtime defines the running order if the services.',
+                'Runtimes can be living in the browser only or on a server.',
+                'Runtimes living in the browser are only active while the browser is open.',
+                'Runtimes living on a server are always on.',
+              ],
+              image: (
+                <div>
+                  <p> ( ☐ → ☐ ) → </p>
+                  <p> → ( ☐ → ☐ ) </p>
+                </div>
+              )
+            }) 
+          }
         </Item.Group>
       </div>
     </Container>
