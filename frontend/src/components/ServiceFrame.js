@@ -29,7 +29,15 @@ export default class ServiceFrame extends Component {
       onDoubleClick={() => this.setState({ frameCollapsed: !this.state.frameCollapsed })}
     >
       <Header size='small'>
-        {name}
+        <span 
+          style={{
+            fontSize: 12,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+          }}
+        >
+          {name}
+        </span>
       </Header>
     </div>
   )

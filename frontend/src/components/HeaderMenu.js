@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Dropdown, Menu } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
+import { redirectTo } from '../core/actions';
 import { AppConsumer } from '../AppContext';
 import { BoardConsumer } from '../BoardContext';
 import AccountDropdown from './AccountDropdown';
@@ -37,7 +38,9 @@ export default class HeaderMenu extends Component {
 
   renderNavigation(appContext) {
     const navItemStyle = { 
-      margin: 10
+      margin: 8,
+      fontSize: 11,
+      textTransform: 'uppercase',
     };
     return (
       <div
@@ -46,11 +49,10 @@ export default class HeaderMenu extends Component {
           width: '100%',
           textAlign: 'right',
           marginRight: 10,
-          fontSize: 13
         }}
       >
-        <span style={navItemStyle}>Go to</span>
-        <span> → </span>
+        <span style={navItemStyle}>Go to:</span>
+        <span>  </span>
         {
           appContext && appContext.user && appContext.user.username && (
             <Link to="/dashboard" style={navItemStyle}>
@@ -69,29 +71,39 @@ export default class HeaderMenu extends Component {
   }
 
   renderBoardMenu(board, savedBoards) {
+    const menuItemStyle= { 
+      fontSize: 10, 
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    };
     return (
       <Dropdown
-        text={`Board`}
+        text={board ? board : 'Board'}
         className='link item'
+        style={{ 
+          fontSize: 11,
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+          marginTop: board ? -5 : 0, // TODO: do we need this?
+        }}
       >
         <Dropdown.Menu>
-          {
-            !!board && (
-              <Dropdown.Header>
-                {board}
-              </Dropdown.Header>
-            )
-          }
-          <Link to="/new">
-            <Dropdown.Item>New Board</Dropdown.Item>
-          </Link>
+          <Dropdown.Item 
+            onClick={() => redirectTo('/new')}
+          >
+            <span style={menuItemStyle}>
+              New Board
+            </span>
+          </Dropdown.Item>
           <Dropdown.Item
             onClick={() => this.onAction({
               type: 'clearBoard'
             })}
             disabled={!board}
           >
-            Clear Board
+            <span style={menuItemStyle}>
+              Clear Board
+            </span>
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => this.onAction({
@@ -99,7 +111,7 @@ export default class HeaderMenu extends Component {
             })}
             disabled={!board}
           >
-            Share Board
+            <span style={menuItemStyle}>Share Board</span>
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
@@ -107,27 +119,35 @@ export default class HeaderMenu extends Component {
   }
 
   renderServiceMenu(registry, boardContext) {
+    const menuItemStyle = {
+      fontSize: 11,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    };
     return (
       <Dropdown
-        text="Add Runtimes"
+        text="Add Runtime"
         search
         pointing
         className='link item selection'
         onSearchChange={e => console.log('search', e.target.value)}
-        style={{ marginBottom: 5 }}
+        style={{ 
+          fontSize: 12,
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+        }}
       >
       {
         <Dropdown.Menu>
-          <Dropdown.Header>Runtimes</Dropdown.Header>
           <Dropdown.Item
             onClick={() => this.props.addRuntime('node', 'Hookup')}
           >
-            Hookup
+            <span style={menuItemStyle}>Hookup</span>
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => this.props.addRuntime('browser')}
           >
-            Browser
+            <span style={menuItemStyle}>Browser</span>
           </Dropdown.Item>
         </Dropdown.Menu>
       }

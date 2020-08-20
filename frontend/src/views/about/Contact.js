@@ -10,10 +10,26 @@ export default class Contact extends Component {
         <Toolbar />
         <div className="about-image container">
           <div className="about-text">
-            <h1>Email</h1>
-            <p>
-              to <a href="mailto:mail@hookup.to">mail@hookup.to</a>
-            </p>
+            <div 
+              style={{ 
+                fontSize: 40,
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                fontWeight: 'bold',
+              }}
+            >
+              Email
+            </div>
+            <div
+              style={{
+                margin: '8px 0px',
+                textTransform: 'uppercase',
+              }}
+            >
+              <a href="mailto:mail@hookup.to">
+                mail@hookup.to
+              </a>
+            </div>
           </div>
         </div>
       <Footer />

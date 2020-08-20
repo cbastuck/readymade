@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { 
   Breadcrumb,
   Container,
-  Image as ImageComponent, Item
+  Item,
 } from 'semantic-ui-react'
 
 import { AppConsumer } from '../../AppContext';
@@ -54,11 +54,29 @@ export default class Quickstart extends Component {
       <Item style={itemStyle}>
         <div style={itemImageStyle}> { item.image}  </div>
         <Item.Content>
-          <Item.Header style={{ fontSize: 16 }}>{item.title}</Item.Header>
+          <Item.Header 
+            style={{ 
+              fontSize: 14,
+              letterSpacing: 4,
+              textTransform: 'uppercase',
+            }}
+          >
+            {item.title}
+          </Item.Header>
           <Item.Description>
             {
               item.details.map((detail, idx) => 
-                <div key={`detail-${item.title}-${idx}`}> {detail} </div>
+                <div 
+                  key={`detail-${item.title}-${idx}`}
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: 1,
+                    textTransform: 'uppercase',
+                    margin: '5px 0px',
+                  }}
+                > 
+                  {detail} 
+                </div>
               )
             }
           </Item.Description>
@@ -71,11 +89,12 @@ export default class Quickstart extends Component {
     return (
       <div
         style={{
-          fontSize: 18,
-          fontWeight: 'bold',
-          textAlign: 'justify',
-          margin: '9px 10px',
+          fontSize: 14,
+          textAlign: 'left',
+          margin: '5px 5%',
           color: claim.c ? 'black' : '#454f6d',
+          letterSpacing: 1,
+          textTransform: 'uppercase',
         }}
       > 
           {claim.s}{ claim.c ? ': ' : '' } 
@@ -87,11 +106,7 @@ export default class Quickstart extends Component {
         >
           {claim.c}
         </span>
-        <span
-          style={{
-            fontSize: 10
-          }}
-        >
+        <span style={{ fontSize: 10 }}>
           { 
             claim.cite ? (
               <a 
@@ -109,9 +124,11 @@ export default class Quickstart extends Component {
 
   renderQuickstart = () => {
     const sectionStyle = { 
-      fontSize: 16, 
+      fontSize: 15, 
       textAlign: 'left',
       textTransform: 'uppercase',
+      letterSpacing: 2,
+      margin: '20px 0px',
     };
     
     return (
@@ -119,36 +136,34 @@ export default class Quickstart extends Component {
       style={{ 
         marginTop: 20, 
         marginBottom: 50,
-        width: '60%'
+        width: '70%'
       }}
     >
     { 
       <h1 style={{ 
-        fontSize: 24, 
+        fontSize: 20, 
         textAlign: 'center',
+        letterSpacing: 8,
+        textTransform: 'uppercase',
+        margin: '50px 0px',
       }}>
-        Q U I C K S T A R T E R
+        Quickstarter
       </h1>
     }
 
-      <h2 style={sectionStyle}>E t i q u e t t e</h2>
-      <div 
-        style={{ 
-          marginLeft: 20, 
-          marginBottom: 50 
-        }}
-      >
+      <h2 style={sectionStyle}>Etiquette</h2>
+      <div style={{ marginBottom: 35 }}>
         { this.renderClaim({ s: 'Make stupid things!', c: '' }) }
         { this.renderClaim({ s: 'In particular', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'Refused' }) }
-        { this.renderClaim({ s: 'Once knobs are relevant', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'Turbotstaat' }) }
-        { this.renderClaim({ s: 'I agree to', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=IIw1nP4KEHs', cite: 'Bratze' }) }
+        { this.renderClaim({ s: 'Imagine this', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'Turbotstaat' }) }
+        { this.renderClaim({ s: 'Agree to', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=IIw1nP4KEHs', cite: 'Bratze' }) }
       </div>
       
-      <h2 style={sectionStyle}>S t u f f  t o  k n o w  a b o u t</h2>
-      <div style={{ textAlign: 'left', marginLeft: 20 }}>
+      <h2 style={sectionStyle}>Stuff to know about</h2>
+      <div style={{ textAlign: 'left' }}>
         <Item.Group link>
           { this.renderGroupItem({
-            title: 'S E R V I C E',
+            title: 'Service',
             details: [
               'Services are units that generate data, modify data or just accept it.',
               'Services accept data at their input and provide data at their output.',
@@ -160,7 +175,7 @@ export default class Quickstart extends Component {
             bottomDivider: true
           }) }
           { this.renderGroupItem({
-              title: 'C H A I N',
+              title: 'Chain',
               details: [
                 'Workflows consist of subsequent services arranged in a chain.',
                 'Data flows through the chain from left to right.',
@@ -174,7 +189,7 @@ export default class Quickstart extends Component {
             })
           }
           { this.renderGroupItem({
-              title: 'R U N T I M E',
+              title: 'Runtime',
               details: [
                 'The runtime keeps services and chains together.',
                 'The output of the last service in a runtime becomes the output of the whole runtime.',

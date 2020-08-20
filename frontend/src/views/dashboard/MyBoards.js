@@ -57,13 +57,26 @@ export default class MyBoards extends Component {
 
   renderBreadcrumbs = () => {
     return (
-      <div style={{ textAlign: 'left', marginLeft: 5 }}>
+      <div 
+        style={{ 
+          textAlign: 'left', 
+          marginLeft: 5,
+        }}
+      >
         <Breadcrumb>
           <Breadcrumb.Section 
             link
             onClick={() => console.log('Selected breadcrumb')}
           >
-            Available Boards
+            <span 
+              style={{
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                fontSize: 10,
+              }}
+            >
+              Available Boards
+            </span>
           </Breadcrumb.Section>
           <Breadcrumb.Divider />
         </Breadcrumb>
@@ -81,7 +94,15 @@ export default class MyBoards extends Component {
             marginBottom: 20
           }}
         >
-          <h1 style={{ fontSize: 20, margin: 0, padding: 0 }}> 
+          <h1 
+            style={{ 
+              fontSize: 16, 
+              margin: '20px 0px',
+              padding: 0,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+            }}
+          > 
             {user ? `${user.username}'s` : 'My'} Boards
           </h1>
           { this.renderBreadcrumbs() }

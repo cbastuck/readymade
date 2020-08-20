@@ -57,11 +57,16 @@ export default class Scene extends Component {
   }
 
   renderServiceMenu(runtimeName, runtime) {
+    const serviceNameStyle = {
+      fontSize: 12,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    };
     const registry = runtime && runtime.registry;
     return (
       <Dropdown
         text="Add Services"
-        style={{ fontWeight: 100  }} // disable bold appearance due to h4 of text
+        style={{ ...serviceNameStyle, fontWeight: 100  }} // disable bold appearance due to h4 of text
         search
         pointing
         className='link item selection'
@@ -69,18 +74,13 @@ export default class Scene extends Component {
       >
       {
         <Dropdown.Menu>  
-          <Dropdown.Header
-            key={`${runtimeName}.header`}
-          >
-            {runtimeName}
-          </Dropdown.Header>
           {
             registry && registry.map(service =>
               <Dropdown.Item
                 key={`${runtimeName}.${service.serviceId}`}
                 onClick={() => this.onAddService(service)}
               >
-                {service.serviceName}
+                <span style={serviceNameStyle}>{service.serviceName}</span>
               </Dropdown.Item>
             )
           }
@@ -91,7 +91,12 @@ export default class Scene extends Component {
   }
 
 
-  renderExpandableHeadline(name, runtime) {    
+  renderExpandableHeadline(name, runtime) {
+    const sceneNameStyle = {
+      fontSize: 12,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    }; 
     return (
       <h4>
         <div 
@@ -108,7 +113,7 @@ export default class Scene extends Component {
               expanded: !this.state.expanded ? !this.state.showSettings : this.state.expanded
             })}
           />
-          <span> 
+          <span style={sceneNameStyle}> 
             {name} 
           </span>
           <span style={{ marginRight: 10, marginTop: 5, float: 'right' }} >

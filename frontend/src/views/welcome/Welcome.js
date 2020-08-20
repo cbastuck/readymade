@@ -34,6 +34,7 @@ export default class Welcome extends Component {
       <button
         className="button"
         onClick={() => this.setState({ page: 'mission' }) }
+        style={{ fontSize: 12, textTransform: 'uppercase' }}
       >
         What is this?
       </button>
@@ -141,7 +142,7 @@ export default class Welcome extends Component {
             { 
               a: (
               <button
-                style={{ fontSize: 14 }}
+                style={{ fontSize: 12, textTransform: 'uppercase' }}
                 className="button" 
                 onClick={() => this.setState({ page: 'intro' })}
               >
@@ -161,12 +162,14 @@ export default class Welcome extends Component {
                 style={{
                   display: 'table-cell',
                   verticalAlign: 'middle',
-                  textAlign: 'center'
+                  textAlign: 'center',
+                  letterSpacing: 1,
+                  textTransform: 'uppercase',
                 }}
                 className={`fade-in-${xi}`}
               >
-                { x.q && <h1 style={{ fontSize: 27 }}> {x.q} </h1> }
-                <div style={{ marginTop: 5, fontSize: 17 }}> {x.a} </div>
+                { x.q && <h1 style={{ fontSize: 22}}> {x.q} </h1> }
+                <div style={{ marginTop: 5, fontSize: 14 }}> {x.a} </div>
               </div>
             </div>
           )) 

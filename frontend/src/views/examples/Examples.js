@@ -29,10 +29,16 @@ export default class Examples extends Component {
   };
 
   renderCard = example => {
+    const fontStyle = {
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      fontSize: 12
+    };
     return (
       <Card 
         key={`example-card-${example.title}`} 
         className="example-card"
+        style={fontStyle}
       >
         <Card.Content>
           <Image
@@ -52,6 +58,7 @@ export default class Examples extends Component {
               basic 
               color="grey"
               onClick={() => this.setState({ currentExample: example })}
+              style={fontStyle}
             >
               Show Example
             </Button>
@@ -68,21 +75,35 @@ export default class Examples extends Component {
   );
 
   renderBreadcrumbs = () => {
+    const breadcrumpStyle = {
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      fontSize: 10
+    };
     const { currentExample } = this.state;
     return (
-      <div style={{ textAlign: 'left', marginLeft: 5 }}>
+      <div 
+        style={{ 
+          textAlign: 'left', 
+          marginLeft: 5,
+        }}
+      >
         <Breadcrumb>
           <Breadcrumb.Section 
             link
             onClick={() => this.setState({ currentExample: null })}
           >
-            Examples
+            <span style={breadcrumpStyle}>
+              Examples
+            </span>
           </Breadcrumb.Section>
           <Breadcrumb.Divider />
           { 
             currentExample && 
               <Breadcrumb.Section link>
-                  { currentExample.title }
+                  <span style={breadcrumpStyle}>
+                    { currentExample.title }
+                  </span>
               </Breadcrumb.Section>
           }
         </Breadcrumb>
@@ -91,6 +112,11 @@ export default class Examples extends Component {
   }
 
   renderExamplesContainer = () => {
+    const exampleNameStyle = {
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+      fontSize: 18
+    };
     const { currentExample } = this.state;
     return (
       <div className="examples-container">
@@ -103,17 +129,22 @@ export default class Examples extends Component {
         >
           <h1 style={{ fontSize: 20, margin: 0, padding: 0 }}>
             { 
-              currentExample ?  
+              currentExample ? (
                 <span>
                   <span 
-                    style={{ cursor: 'pointer', marginRight: 10 }}
+                    style={{ cursor: 'pointer', marginRight: 10, }}
                     onClick={() => this.setState({ currentExample: null }) }
                   > 
                     ❮ 
                   </span>
-                  {currentExample.title} 
-                </span> : 
-                'Examples' 
+                  <span style={exampleNameStyle}>
+                    {currentExample.title} 
+                  </span>
+                </span> ) : (
+                  <span style={exampleNameStyle}> 
+                    Examples
+                  </span>
+                )
             }
           </h1>
           { currentExample && this.renderBreadcrumbs() }

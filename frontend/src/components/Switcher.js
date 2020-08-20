@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import React, { Component } from 'react';
 
 export default class Switcher extends Component {
   state = {
@@ -18,6 +18,18 @@ export default class Switcher extends Component {
   render() {
     const { data } = this.props;
     const idx = this.state.counter % data.length;
-    return data[idx];
+    return (
+      <div
+        style={{
+          fontSize: 45,
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+          fontWeight: 'bold',
+          marginBottom: 50,
+        }}
+      > 
+        {data[idx]} 
+      </div>
+    );
   }
 }
