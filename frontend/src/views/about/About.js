@@ -45,15 +45,17 @@ export default class About extends Component {
 
   render() {
     const amp = {
-      fontSize: ' 1.4em',
-      fontWeight: 'bold',
+      fontSize: ' 22',
+      fontWeight: 'bolder',
+      textTransform: 'uppercase',
+      letterSpacing: 2,
     };
     return (
       <div>
         <Toolbar />
         <div className="about-image container">
           <div className="about-text">
-            <h1><Switcher data={['About', 'Intent']} /></h1>
+            <Switcher data={['About', 'Intent']} />
             <div style={{
                 marginTop: 30, 
                 marginBottom: 0,

@@ -94,7 +94,7 @@ export default class MyBoards extends Component {
             marginBottom: 20
           }}
         >
-          <h1 
+          <h1  
             style={{ 
               fontSize: 16, 
               margin: '20px 0px',
