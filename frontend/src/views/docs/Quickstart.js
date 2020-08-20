@@ -40,7 +40,7 @@ export default class Quickstart extends Component {
 
   renderGroupItem = item => {
     const itemStyle = {
-      width: '80%',
+      width: '100%',
       marginTop: 20,
       padding: 10,
       borderBottom: item.bottomDivider ? 'solid 1px lightgray' : 'none',
@@ -54,7 +54,7 @@ export default class Quickstart extends Component {
       <Item style={itemStyle}>
         <div style={itemImageStyle}> { item.image}  </div>
         <Item.Content>
-          <Item.Header>{item.title}</Item.Header>
+          <Item.Header style={{ fontSize: 16 }}>{item.title}</Item.Header>
           <Item.Description>
             {
               item.details.map((detail, idx) => 
@@ -75,14 +75,14 @@ export default class Quickstart extends Component {
           fontWeight: 'bold',
           textAlign: 'justify',
           margin: '9px 10px',
-          color: '#1e70bf',
+          color: claim.c ? 'black' : '#454f6d',
         }}
       > 
           {claim.s}{ claim.c ? ': ' : '' } 
         <span
           style={{
             fontStyle: 'italic',
-            color: 'rgba(10,10,10,1)'
+            color: '#454f6d'
           }}
         >
           {claim.c}
@@ -109,67 +109,72 @@ export default class Quickstart extends Component {
 
   renderQuickstart = () => {
     const sectionStyle = { 
-      fontSize: 21, 
-      textAlign: 'left' 
+      fontSize: 16, 
+      textAlign: 'left',
+      textTransform: 'uppercase',
     };
     
     return (
     <Container 
-      textAlign="left" 
       style={{ 
         marginTop: 20, 
-        marginBottom: 100,
-        }}
+        marginBottom: 50,
+        width: '60%'
+      }}
     >
+    { 
       <h1 style={{ 
         fontSize: 24, 
-        marginBottom: 50, 
         textAlign: 'center',
       }}>
-        Quickstarter
+        Q U I C K S T A R T E R
       </h1>
+    }
 
-      <h2 style={sectionStyle}>Etiquette</h2>
+      <h2 style={sectionStyle}>E t i q u e t t e</h2>
       <div 
         style={{ 
           marginLeft: 20, 
-          marginBottom: 30 
+          marginBottom: 50 
         }}
       >
         { this.renderClaim({ s: 'Make stupid things!', c: '' }) }
-        { this.renderClaim({ s: 'Especially', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'Refused' }) }
-        { this.renderClaim({ s: 'Reason', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8&list=OLAK5uy_kSDoqpFk_Fw4-zSXVfo69Tf70B98iz14w', cite: 'Turbotstaat' }) }
-        { this.renderClaim({ s: 'Remember', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8&list=OLAK5uy_kSDoqpFk_Fw4-zSXVfo69Tf70B98iz14w', cite: 'Bratze' }) }
+        { this.renderClaim({ s: 'In particular', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'Refused' }) }
+        { this.renderClaim({ s: 'Once knobs are relevant', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'Turbotstaat' }) }
+        { this.renderClaim({ s: 'I agree to', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=IIw1nP4KEHs', cite: 'Bratze' }) }
       </div>
       
-      <h2 style={sectionStyle}>Stuff to know about</h2>
+      <h2 style={sectionStyle}>S t u f f  t o  k n o w  a b o u t</h2>
       <div style={{ textAlign: 'left', marginLeft: 20 }}>
         <Item.Group link>
           { this.renderGroupItem({
-            title: 'Service',
+            title: 'S E R V I C E',
             details: [
-              'Services are units in a chain that do somethig with the data coming in.',
-              'Services have an input and an output.',
-              'The input accepts data, the output provides data to subsequent services.',
-              'When services produce data, they inject data at their output.',
-              'Services can produce data spontaneously whenever they want.'
+              'Services are units that generate data, modify data or just accept it.',
+              'Services accept data at their input and provide data at their output.',
+              'When services produce data, they sponateously inject that data at their output.',
+              'Services accept a configuration that specifies the mode the are running in.',
+              'Services can provide their current configuration to restore it later.'
             ],
             image: <p> → ☐ → </p>,
             bottomDivider: true
           }) }
           { this.renderGroupItem({
-              title: 'Chain',
+              title: 'C H A I N',
               details: [
-                'Logic consists of chains of services.',
-                'Data is flowing through services of the chain from left to right.',
-                'Chains need a runtime to exist.'
+                'Workflows consist of subsequent services arranged in a chain.',
+                'Data flows through the chain from left to right.',
+                'A service can decide to stop further processing of the chain',
+                'If a service in a chain sponateously emits data, subsequent services in the chain are triggered.',
+                'Chains might contain a feedback loop',
+                'A Chain needs a runtime to exist.'
               ],
               image: <p> → ☐ → ☐ → </p>,
               bottomDivider: true
             })
           }
           { this.renderGroupItem({
-              title: 'Runtime',
+              title: 'R U N T I M E',
               details: [
                 'The runtime keeps services and chains together.',
                 'The output of the last service in a runtime becomes the output of the whole runtime.',
