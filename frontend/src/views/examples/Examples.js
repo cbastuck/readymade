@@ -45,22 +45,29 @@ export default class Examples extends Component {
             floated="right"
             size="mini"
             src={example.image}
+            style={{ marginTop: 3 }}
           />
-          <Card.Header>{example.title}</Card.Header>
-          <Card.Meta>{example.brief}</Card.Meta>
-          <Card.Description>
-            {example.description}
+          <Card.Header
+            style={{ marginTop: 3 }}
+          >
+            {example.title}
+          </Card.Header>
+          <Card.Meta style={{ margin: '5px 0px' }}>
+            {example.brief}
+          </Card.Meta>
+          <Card.Description style={{ marginTop: 10 }}>
+            <div style={{ textAlign: 'left' }}>
+              {example.description}
+            </div>
           </Card.Description>
         </Card.Content>
         <Card.Content extra>
           <div className="ui two buttons">
             <Button 
-              basic 
-              color="grey"
+              basic
               onClick={() => this.setState({ currentExample: example })}
-              style={fontStyle}
             >
-              Show Example
+              <span style={{...fontStyle, color: '#4284C4' }}>Show Board</span>
             </Button>
           </div>
         </Card.Content>

@@ -51,7 +51,7 @@ export default class HeaderMenu extends Component {
           marginRight: 10,
         }}
       >
-        <span style={navItemStyle}>Go to:</span>
+        { /* <span style={navItemStyle}>Go to:</span> */ }
         <span>  </span>
         {
           appContext && appContext.user && appContext.user.username && (
@@ -84,7 +84,7 @@ export default class HeaderMenu extends Component {
           fontSize: 11,
           letterSpacing: 1,
           textTransform: 'uppercase',
-          marginTop: board ? -5 : 0, // TODO: do we need this?
+          // marginTop: board ? -5 : 0, // TODO: do we need this?
         }}
       >
         <Dropdown.Menu>

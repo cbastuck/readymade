@@ -206,6 +206,20 @@ export default class Quickstart extends Component {
                   <p> ( ☐ → ☐ ) → </p>
                   <p> → ( ☐ → ☐ ) </p>
                 </div>
+              ),
+              bottomDivider: true
+            }) 
+          }
+          { this.renderGroupItem({
+              title: 'Board',
+              details: [
+                'Board is the home for all runtimes',
+                'It belongs to a user',
+              ],
+              image: (
+                <div>
+                  Board
+                </div>
               )
             }) 
           }

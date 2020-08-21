@@ -111,7 +111,10 @@ export default class Welcome extends Component {
         {
           this.state.visualisationFinished && (
             <button
-              style={{ fontSize: 14 }}
+              style={{  
+                fontSize: 12,
+                textTransform: 'uppercase', 
+              }}
               className="button fade-in-linear" 
               onClick={() => redirectTo('/examples')}
             >

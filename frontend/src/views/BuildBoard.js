@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
 import { Redirect } from 'react-router-dom';
-import g from 'unique-names-generator'
+import { generate } from 'unique-names-generator';
 
 class BuildBoard extends Component {
   render() {
-    const name = g.generate('-');
+    const name = generate('-').split('-').slice(1).join('-');
     return <Redirect to={name} />;
   }
 }

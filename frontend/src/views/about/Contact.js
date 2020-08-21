@@ -22,11 +22,17 @@ export default class Contact extends Component {
             </div>
             <div
               style={{
-                margin: '8px 0px',
-                textTransform: 'uppercase',
+                margin: '7px 0px',
+                textTransform: 'lowercase',
+                fontSize: 18,
               }}
             >
-              <a href="mailto:mail@hookup.to">
+              <a 
+                href="mailto:mail@hookup.to"
+                style={{
+                  
+                }}
+              >
                 mail@hookup.to
               </a>
             </div>
