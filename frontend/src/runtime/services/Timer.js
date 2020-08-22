@@ -8,7 +8,7 @@ import {
 import moment from 'moment';
 
 import ServiceUI from './ServiceUI';
-
+import InputField from '../../components/shared/InputField';
 const serviceId = 'hookup.to/service/browser-timer';
 const serviceName = 'Timer';
 
@@ -34,6 +34,12 @@ class TimerUI extends Component {
   renderPeriodic = service => {
     return (
       <div>
+        <InputField 
+          type="number"
+          label="interval"
+          value={this.state.periodicValue}
+          onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
+        />
         <Input
           type="number"
           label="Interval"
