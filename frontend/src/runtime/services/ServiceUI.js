@@ -56,9 +56,7 @@ export default class ServiceUI extends Component {
             <Menu 
               compact 
               pointing 
-              style={{ 
-                marginTop: 10, 
-              }}
+              style={{  marginTop: 10 }}
             >
             { 
               segments.map(
@@ -68,6 +66,11 @@ export default class ServiceUI extends Component {
                     name={segment.name}
                     active={currentSegmentName === segment.name}
                     onClick={(_, { name: currentSegmentName }) => this.setState({ currentSegmentName })}
+                    style={{ 
+                      textTransform: 'uppercase',
+                      fontSize: 11,
+                      letterSpacing: 1,
+                    }}
                   />
               )
             }
@@ -75,10 +78,7 @@ export default class ServiceUI extends Component {
           )
         }
         <Segment 
-          style={{ 
-            margin: '15px 20px', 
-            //boxShadow: 'none' 
-          }}
+          style={{ margin: '15px 20px' }}
         >
           { segment && segment.render(service) }
         </Segment>

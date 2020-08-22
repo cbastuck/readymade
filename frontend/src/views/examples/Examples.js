@@ -122,7 +122,7 @@ export default class Examples extends Component {
     const exampleNameStyle = {
       letterSpacing: 1,
       textTransform: 'uppercase',
-      fontSize: 18
+      fontSize: 16
     };
     const { currentExample } = this.state;
     return (
@@ -134,7 +134,7 @@ export default class Examples extends Component {
             marginBottom: 20
           }}
         >
-          <h1 style={{ fontSize: 20, margin: 0, padding: 0 }}>
+          <h1 style={{ fontSize: 17, margin: 0, padding: 0 }}>
             { 
               currentExample ? (
                 <span>
