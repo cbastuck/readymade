@@ -1,42 +1,13 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import { 
-  Breadcrumb,
   Container,
   Item,
 } from 'semantic-ui-react'
 
-import { AppConsumer } from '../../AppContext';
-import BoardContext, { BoardConsumer } from '../../BoardContext';
-import Toolbar from '../../components/Toolbar';
-import Footer from '../../components/Footer';
+import Template from './Template';
 
 export default class Quickstart extends Component {
-  state = {
-    
-  };
-
-  renderBreadcrumbs = () => {
-    const { currentExample } = this.state;
-    return (
-      <div style={{ textAlign: 'left', marginLeft: 5 }}>
-        <Breadcrumb>
-          <Breadcrumb.Section 
-            link
-            onClick={() => this.setState({ currentExample: null })}
-          >
-            Examples
-          </Breadcrumb.Section>
-          <Breadcrumb.Divider />
-          { 
-            currentExample && 
-              <Breadcrumb.Section link>
-                  { currentExample.title }
-              </Breadcrumb.Section>
-          }
-        </Breadcrumb>
-      </div>
-    );
-  }
 
   renderGroupItem = item => {
     const itemStyle = {
@@ -61,7 +32,7 @@ export default class Quickstart extends Component {
               textTransform: 'uppercase',
             }}
           >
-            {item.title}
+            <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
           </Item.Header>
           <Item.Description>
             {
@@ -132,129 +103,99 @@ export default class Quickstart extends Component {
     };
     
     return (
-    <Container 
-      style={{ 
-        marginTop: 20, 
-        marginBottom: 50,
-        width: '70%'
-      }}
-    >
-    { 
-      <h1 style={{ 
-        fontSize: 20, 
-        textAlign: 'center',
-        letterSpacing: 8,
-        textTransform: 'uppercase',
-        margin: '50px 0px',
-      }}>
-        Quickstarter
-      </h1>
-    }
-
-      <h2 style={sectionStyle}>Etiquette</h2>
-      <div style={{ marginBottom: 35 }}>
-        { this.renderClaim({ s: 'Make stupid things!', c: '' }) }
-        { this.renderClaim({ s: 'In particular', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'Refused' }) }
-        { this.renderClaim({ s: 'Imagine this', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'Turbotstaat' }) }
-        { this.renderClaim({ s: 'Agree to', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=IIw1nP4KEHs', cite: 'Bratze' }) }
+      <div>
+        <h2 style={sectionStyle}>Etiquette</h2>
+        <div style={{ marginBottom: 35 }}>
+          { this.renderClaim({ s: 'Make stupid things!', c: '' }) }
+          { this.renderClaim({ s: 'In particular', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'D. Sandstrom, D. Lyxzen, K. Steen, J. Brannstrom' }) }
+          { this.renderClaim({ s: 'Imagine this', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'R. Sczimarkowsi, J. Windmeier, C. Knopp, M. Ebsen, C. Peter' }) }
+          { this.renderClaim({ s: 'Agree to', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=IIw1nP4KEHs', cite: ' K. Hamann, N. Kolodziej ' }) }
+          { this.renderClaim({ s: 'Demand', c: 'Give me grace and dancing feet And the power to impress”', link: 'https://www.youtube.com/watch?v=xk2CvKcJnC4', cite: 'G. Moakes, K. Okereke,  M. Tong, R. Lissackj' }) }
+        </div>
+        
+        <h2 style={sectionStyle}>Stuff to know about</h2>
+        <div style={{ textAlign: 'left' }}>
+          <Item.Group link>
+            { 
+              this.renderGroupItem({
+                title: 'Service',
+                details: [
+                  'Services are units that generate data, modify data or just accept it.',
+                  'Services accept data at their input and provide data at their output.',
+                  'When services produce data, they sponateously inject that data at their output.',
+                  'Services accept a configuration that specifies the mode the are running in.',
+                  'Services can provide their current configuration to restore it later.'
+                ],
+                image: <p> → ☐ → </p>,
+                bottomDivider: true
+              }) 
+            }
+            { 
+              this.renderGroupItem({
+                title: 'Chain',
+                details: [
+                  'Workflows consist of subsequent services arranged in a chain.',
+                  'Data flows through the chain from left to right.',
+                  'A service can decide to stop further processing of the chain',
+                  'If a service in a chain sponateously emits data, subsequent services in the chain are triggered.',
+                  'Chains might contain a feedback loop',
+                  'A Chain needs a runtime to exist.'
+                ],
+                image: <p> → ☐ → ☐ → </p>,
+                bottomDivider: true
+              })
+            }
+            { 
+              this.renderGroupItem({
+                title: 'Runtime',
+                details: [
+                  'The runtime keeps services and chains together.',
+                  'The output of the last service in a runtime becomes the output of the whole runtime.',
+                  'Multiple runtimes can be chained after each other.',
+                  'The output of a runtome becomes gets feeded into the subsequent runtime.',
+                  'Injecting data into a runtime means calling the first service of the runtime with that data.',
+                  'The runtime defines the running order if the services.',
+                  'Runtimes can be living in the browser only or on a server.',
+                  'Runtimes living in the browser are only active while the browser is open.',
+                  'Runtimes living on a server are always on.',
+                ],
+                image: (
+                  <div>
+                    <p> ( ☐ → ☐ ) → </p>
+                    <p> → ( ☐ → ☐ ) </p>
+                  </div>
+                ),
+                bottomDivider: true
+              }) 
+            }
+            { 
+              this.renderGroupItem({
+                title: 'Board',
+                details: [
+                  'Board is the home for all runtimes',
+                  'It belongs to a user',
+                ],
+                image: (
+                  <div>
+                    Board
+                  </div>
+                )
+              }) 
+            }
+          </Item.Group>
+        </div>
       </div>
-      
-      <h2 style={sectionStyle}>Stuff to know about</h2>
-      <div style={{ textAlign: 'left' }}>
-        <Item.Group link>
-          { this.renderGroupItem({
-            title: 'Service',
-            details: [
-              'Services are units that generate data, modify data or just accept it.',
-              'Services accept data at their input and provide data at their output.',
-              'When services produce data, they sponateously inject that data at their output.',
-              'Services accept a configuration that specifies the mode the are running in.',
-              'Services can provide their current configuration to restore it later.'
-            ],
-            image: <p> → ☐ → </p>,
-            bottomDivider: true
-          }) }
-          { this.renderGroupItem({
-              title: 'Chain',
-              details: [
-                'Workflows consist of subsequent services arranged in a chain.',
-                'Data flows through the chain from left to right.',
-                'A service can decide to stop further processing of the chain',
-                'If a service in a chain sponateously emits data, subsequent services in the chain are triggered.',
-                'Chains might contain a feedback loop',
-                'A Chain needs a runtime to exist.'
-              ],
-              image: <p> → ☐ → ☐ → </p>,
-              bottomDivider: true
-            })
-          }
-          { this.renderGroupItem({
-              title: 'Runtime',
-              details: [
-                'The runtime keeps services and chains together.',
-                'The output of the last service in a runtime becomes the output of the whole runtime.',
-                'Multiple runtimes can be chained after each other.',
-                'The output of a runtome becomes gets feeded into the subsequent runtime.',
-                'Injecting data into a runtime means calling the first service of the runtime with that data.',
-                'The runtime defines the running order if the services.',
-                'Runtimes can be living in the browser only or on a server.',
-                'Runtimes living in the browser are only active while the browser is open.',
-                'Runtimes living on a server are always on.',
-              ],
-              image: (
-                <div>
-                  <p> ( ☐ → ☐ ) → </p>
-                  <p> → ( ☐ → ☐ ) </p>
-                </div>
-              ),
-              bottomDivider: true
-            }) 
-          }
-          { this.renderGroupItem({
-              title: 'Board',
-              details: [
-                'Board is the home for all runtimes',
-                'It belongs to a user',
-              ],
-              image: (
-                <div>
-                  Board
-                </div>
-              )
-            }) 
-          }
-        </Item.Group>
-      </div>
-    </Container>
     );
   }
 
   render() {
     return (
-      <AppConsumer>
-        {
-          appContext => (
-            <BoardContext
-              fetchData={!!appContext.user && !!appContext.user.username}
-            >
-              <BoardConsumer>
-              {
-                boardContext => (
-                  <div style={{ height: '100%' }}>
-                    <Toolbar 
-                      savedBoards={boardContext.savedBoards}
-                      onAction={boardContext.onAction}
-                    />
-                    { this.renderQuickstart() }               
-                  </div>
-                )
-              }
-              </BoardConsumer>
-              <Footer />
-            </BoardContext> 
-          )
-        }
-      </AppConsumer>
+      <Template
+        title="Quickstarter"
+        isRoot={ true }
+      >
+        { this.renderQuickstart() } 
+      </Template>
     );
   }
 }
