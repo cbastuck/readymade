@@ -1,9 +1,6 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Container,
-  Item,
-} from 'semantic-ui-react'
+import { Item } from 'semantic-ui-react'
 
 import Template from './Template';
 
@@ -77,7 +74,11 @@ export default class Quickstart extends Component {
         >
           {claim.c}
         </span>
-        <span style={{ fontSize: 10 }}>
+        <span style={{ 
+          fontSize: 9, 
+          marginLeft: 5,
+          letterSpacing: 0,
+        }}>
           { 
             claim.cite ? (
               <a 
@@ -110,7 +111,7 @@ export default class Quickstart extends Component {
           { this.renderClaim({ s: 'In particular', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'D. Sandstrom, D. Lyxzen, K. Steen, J. Brannstrom' }) }
           { this.renderClaim({ s: 'Imagine this', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'R. Sczimarkowsi, J. Windmeier, C. Knopp, M. Ebsen, C. Peter' }) }
           { this.renderClaim({ s: 'Agree to', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=IIw1nP4KEHs', cite: ' K. Hamann, N. Kolodziej ' }) }
-          { this.renderClaim({ s: 'Demand', c: 'Give me grace and dancing feet And the power to impress”', link: 'https://www.youtube.com/watch?v=xk2CvKcJnC4', cite: 'G. Moakes, K. Okereke,  M. Tong, R. Lissackj' }) }
+          { this.renderClaim({ s: 'With respect', c: '"To want more than is given to you”', link: 'https://www.youtube.com/watch?v=xk2CvKcJnC4', cite: 'G. Moakes, K. Okereke,  M. Tong, R. Lissackj' }) }
         </div>
         
         <h2 style={sectionStyle}>Stuff to know about</h2>

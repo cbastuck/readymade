@@ -141,6 +141,7 @@ class CanvasUI extends Component {
       text,
       font,
       color,
+      textTransform,
       direction = 'left-to-right'
     } = data;
     const ltr = direction === 'left-to-right';
@@ -172,6 +173,7 @@ class CanvasUI extends Component {
       font, 
       x: destX + 10, 
       y: destY - 10,
+      textTransform,
     }
     this.drawText(ctx, textData);
   }
@@ -222,6 +224,22 @@ class CanvasUI extends Component {
     ctx.restore();
   }
 
+  applyTextTransform = (input, operation) => {
+    switch(operation) {
+      case 'lowercase': 
+        return input.toLowerCase();
+      case 'lowercase-spacing-1': 
+        return input.toLowerCase().split('').join(' ');
+      case 'uppercase': 
+        return input.toUpperCase();
+      case 'uppercase-spacing-1':
+        return input.toUpperCase().split('').join(' ');
+    default:
+      console.warn(`Unknown transform operation: ${operation}`);
+      return input;
+    }
+  } 
+
   drawText = (ctx, data) => {
     const { centerX, centerY, canvasWidth, canvasHeight } = this.getCanvasCenter();
     const {
@@ -232,19 +250,21 @@ class CanvasUI extends Component {
       onClick,
       contour,
       color,
+      textTransform,
     } = data;
     
     ctx.save();
     ctx.fillStyle = color || '#000';    
     ctx.font = font || '30px Arial';
-    const width = ctx.measureText(text).width;
+    const t = textTransform ? this.applyTextTransform(text, textTransform) : text;
+    const width = ctx.measureText(t).width;
     const x = (dx === undefined ? centerX : toAbsolute(dx, canvasWidth)) - width / 2;
     const y = dy === undefined ? centerY : toAbsolute(dy, canvasHeight);
-    ctx.fillText(text, x, y);
+    ctx.fillText(t, x, y);
     if (contour) {
       ctx.strokeStyle = contour.color;
       ctx.lineWidth = contour.lineWidth || 1;
-      ctx.strokeText(text, x, y);
+      ctx.strokeText(t, x, y);
     }
     
     if (onClick) {

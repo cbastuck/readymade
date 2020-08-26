@@ -24,24 +24,28 @@
             {
               "type": "text",
               "text": "If you know nothing ...",
+              "textTransform": "uppercase-spacing-1",
               "color": "#454f6d",
-              "font": "lighter 20px Helvetica Neue, sans-serif",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
               },
-              "checkpoint": "@unnamed-trigger"
+              "checkpoint": "@unnamed-trigger",
+              "x": "35%"
             },
             {
               "type": "text",
-              "text": "The best solution merges from different minds",
+              "text": "The best solution merges from many minds",
               "color": "#454f6d",
-              "font": "lighter 30px Helvetica Neue, sans-serif",
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 28px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
               },
-              "y": "70%"
+              "y": "68%",
+              "x": "55%"
             }
           ],
           [
@@ -49,7 +53,8 @@
               "type": "text",
               "text": "The more contribute ...",
               "color": "#454f6d",
-              "font": "lighter 50px Helvetica Neue, sans-serif",
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 44px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -60,12 +65,14 @@
               "type": "text",
               "text": "the lower the risk we miss something",
               "color": "#454f6d",
+              "textTransform": "uppercase-spacing-1",
               "font": "lighter 20px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
               },
-              "y": "70%"
+              "y": "70%",
+              "x": "55%"
             }
           ],
           [
@@ -73,7 +80,8 @@
               "type": "text",
               "text": "Technology shapes our future",
               "color": "#454f6d",
-              "font": "lighter 40px Helvetica Neue, sans-serif",
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 26px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -84,7 +92,8 @@
               "type": "text",
               "text": "WE build technology",
               "color": "#454f6d",
-              "font": "lighter 45px Helvetica Neue, sans-serif",
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 43px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -97,7 +106,8 @@
               "type": "text",
               "text": "Enable and Include",
               "color": "#454f6d",
-              "font": "lighter 60px Helvetica Neue, sans-serif",
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 40px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -108,13 +118,14 @@
               "type": "text",
               "text": "Extend the Narrative",
               "color": "#454f6d",
-              "font": "lighter 30px Helvetica Neue, sans-serif",
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 24px Helvetica Neue, sans-serif",
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
               },
-              "y": "70%",
-              "x": "60%"
+              "y": "65%",
+              "x": "59%"
             }
           ]
         ]

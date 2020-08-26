@@ -90,15 +90,17 @@
               "type": "text",
               "text": "Nature is beautiful ...",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "28%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "15%"
             },
             {
               "type": "text",
               "text": "and kind-of an optimization framework",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "80%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "85%"
             },
             {
               "type": "image",
@@ -145,7 +147,8 @@
             {
               "type": "explainer",
               "text": "Press to Run",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": "lighter 11px Helvetica Neue, sans-serif",
+              "textTransform": "uppercase-spacing-1",
               "pointer": {
                 "x": "56%",
                 "y": "48%",
@@ -156,7 +159,8 @@
             {
               "type": "explainer",
               "text": "Press to Step",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": "lighter 11px Helvetica Neue, sans-serif",
+              "textTransform": "uppercase-spacing-1",
               "pointer": {
                 "x": "44%",
                 "y": "48%",
@@ -171,8 +175,9 @@
               "type": "text",
               "text": "... driving towards an optimum (somewhere).",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "28%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "15%"
             },
             {
               "type": "image",
@@ -220,8 +225,9 @@
               "type": "text",
               "text": "Variety makes it evolve.",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "80%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "85%"
             }
           ],
           [
@@ -229,8 +235,9 @@
               "type": "text",
               "text": "Exploration can take time ...",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "28%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "15%"
             },
             {
               "type": "image",
@@ -276,10 +283,11 @@
             },
             {
               "type": "text",
-              "text": "or we're stuck with some solution",
+              "text": "or we're stuck with a solution",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "80%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "85%"
             }
           ],
           [
@@ -287,8 +295,9 @@
               "type": "text",
               "text": "Further progress requires fortune and time",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "28%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "15%"
             },
             {
               "type": "image",
@@ -320,18 +329,20 @@
               "type": "text",
               "text": "Wait or restart?",
               "color": "#002",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
-              "y": "80%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "85%"
             }
           ],
           [
             {
               "type": "text",
               "id": "message",
-              "text": "Conclusion: variety explores the solution space",
+              "text": "variety explores the solution space",
               "color": "#002",
-              "font": "lighter 28px Helvetica Neue, sans-serif",
-              "y": "28%",
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "y": "20%",
               "checkpoint": "@last-state"
             },
             {
@@ -339,8 +350,9 @@
               "id": "message",
               "text": "WE are manifold solutions",
               "color": "#002",
-              "font": "lighter 28px Helvetica Neue, sans-serif",
-              "y": "75%"
+              "textTransform": "uppercase-spacing-1",
+              "font": "lighter 30px Helvetica Neue, sans-serif",
+              "y": "83%"
             },
             {
               "type": "image",

@@ -34,7 +34,10 @@ export default class Welcome extends Component {
       <button
         className="button"
         onClick={() => this.setState({ page: 'mission' }) }
-        style={{ fontSize: 12, textTransform: 'uppercase' }}
+        style={{ 
+          fontSize: 11, 
+          textTransform: 'uppercase' 
+        }}
       >
         What is this?
       </button>
@@ -71,7 +74,10 @@ export default class Welcome extends Component {
       {
         this.state.introFinished && (
           <button
-            style={{ fontSize: 14 }}
+            style={{ 
+              fontSize: 12,
+              textTransform: 'uppercase',
+            }}
             className="button fade-in-linear" 
             onClick={() => this.setState({ 
               page: 'visualisation',
@@ -139,13 +145,16 @@ export default class Welcome extends Component {
         >
         {
           [
-            { q: 'What', a: 'An attempt to make technology more accessible and personal' },
-            { q: 'Why', a: 'Because tech is an enabler for creativity, inspiration and thinking' },
+            { q: 'What', a: 'An attempt to make technology more personal and wider accessible' },
+            { q: 'Why', a: 'I think tech is an enabler for creativity, inspiration and thinking' },
             { q: 'How', a: 'Creatively connect logic, devices and services' },
             { 
               a: (
               <button
-                style={{ fontSize: 12, textTransform: 'uppercase' }}
+                style={{ 
+                  fontSize: 11, 
+                  textTransform: 'uppercase' 
+                }}
                 className="button" 
                 onClick={() => this.setState({ page: 'intro' })}
               >
@@ -171,8 +180,8 @@ export default class Welcome extends Component {
                 }}
                 className={`fade-in-${xi}`}
               >
-                { x.q && <h1 style={{ fontSize: 22}}> {x.q} </h1> }
-                <div style={{ marginTop: 5, fontSize: 14 }}> {x.a} </div>
+                { x.q && <h1 style={{ fontSize: 19, color: '454f6d' }}> {x.q} </h1> }
+                <div style={{ marginTop: 10, fontSize: 15, fontWeight: 'lighter', color: '#505050' }}> {x.a} </div>
               </div>
             </div>
           )) 
