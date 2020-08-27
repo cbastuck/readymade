@@ -26,7 +26,11 @@
               "text": "If you know nothing ...",
               "textTransform": "uppercase-spacing-1",
               "color": "#454f6d",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "20%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -39,7 +43,11 @@
               "text": "The best solution merges from many minds",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 28px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "60%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -54,7 +62,11 @@
               "text": "The more contribute ...",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 44px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "40%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -66,7 +78,11 @@
               "text": "the lower the risk we miss something",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 20px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "35%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -81,7 +97,11 @@
               "text": "Technology shapes our future",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 26px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "33%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -93,7 +113,11 @@
               "text": "WE build technology",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 43px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "35%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -107,7 +131,11 @@
               "text": "Enable and Include",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 40px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "40%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1
@@ -119,7 +147,11 @@
               "text": "Extend the Narrative",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 24px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "26%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "contour": {
                 "color": "#454f6d",
                 "lineWidth": 1

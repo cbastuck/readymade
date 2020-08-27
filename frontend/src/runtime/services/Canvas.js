@@ -243,7 +243,7 @@ class CanvasUI extends Component {
   drawText = (ctx, data) => {
     const { centerX, centerY, canvasWidth, canvasHeight } = this.getCanvasCenter();
     const {
-      font,
+      font = '30px Arial',
       text,
       x: dx,
       y: dy,
@@ -252,13 +252,36 @@ class CanvasUI extends Component {
       color,
       textTransform,
     } = data;
-    
+
     ctx.save();
-    ctx.fillStyle = color || '#000';    
-    ctx.font = font || '30px Arial';
+    ctx.fillStyle = color || '#000';
+
+    const isFontString = (typeof font === 'string');
+    const { 
+      style = 'normal', 
+      weight = 'normal', 
+      size = '10px', 
+      family = 'Arial',
+    } = isFontString ? {} : font;
+    const isRelative = size[size.length - 1] === '%';
+
+    if (isFontString) { // relative font size not supported in this notation
+      ctx.font = font;
+    } else { // font is an object 
+      ctx.font = `${style} ${weight} ${isRelative ? '10px' : size} ${family}`;
+    }
+
     const t = textTransform ? this.applyTextTransform(text, textTransform) : text;
-    const width = ctx.measureText(t).width;
-    const x = (dx === undefined ? centerX : toAbsolute(dx, canvasWidth)) - width / 2;
+    let textWidth = ctx.measureText(t).width;
+    if (isRelative) {
+      const targetRelativeWidth = Number(size.substr(0, size.length - 1)) / 100;
+      const currentRelativeWidth = textWidth / canvasWidth;
+      const correctionRatio = targetRelativeWidth / currentRelativeWidth;
+      const correctedSize = Math.floor(correctionRatio * 10); // we tested with 10pt intially
+      ctx.font = `${style} ${weight} ${correctedSize}px ${family}`;
+      textWidth = ctx.measureText(t).width;
+    }
+    const x = (dx === undefined ? centerX : toAbsolute(dx, canvasWidth)) - textWidth / 2;
     const y = dy === undefined ? centerY : toAbsolute(dy, canvasHeight);
     ctx.fillText(t, x, y);
     if (contour) {
@@ -270,9 +293,9 @@ class CanvasUI extends Component {
     if (onClick) {
       const rect = {
         x,
-        y: y - width,
-        width: width,
-        height: width + 4,
+        y: y - textWidth,
+        width: textWidth,
+        height: textWidth + 4,
       };
       this.registerClickHandler(rect, onClick); 
     }
