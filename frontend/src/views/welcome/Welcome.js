@@ -138,7 +138,8 @@ export default class Welcome extends Component {
         <div
           style={{
             height: '100%',
-            width: '100%',
+            width: '80%',
+            marginLeft: '10%',
             display: 'table',
             tableLayout: 'fixed',
           }}
