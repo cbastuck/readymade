@@ -246,6 +246,7 @@ export default class Scene extends Component {
             style={{
               display: 'flex',
               flexFlow: wrapServices ? 'row wrap' : 'row nowrap',
+              overflow: 'auto',
               padding: 10,
               ...readonlyStyle
             }}

@@ -53,8 +53,8 @@ class BoardWithContext extends Component {
 
 class App extends Component {
   render() {
-    const { match } = this.props;
-    const { fullscreen } = match ? match.params : {};
+    // const { match } = this.props;
+    // const { fullscreen } = match ? match.params : {};
     return (
       <AppContext>
         <Router>
@@ -62,7 +62,7 @@ class App extends Component {
             style={{
               height: '100%',
               width: '100%',
-              overflow: fullscreen ? 'hidden' : 'auto'
+              // overflow: fullscreen ? 'hidden' : 'auto'
             }}
           >
             <Switch>

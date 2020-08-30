@@ -228,9 +228,13 @@ class Genetic {
     const statusText = {
       type: 'text',
       text: `generation ${this.generation} has ${populationShapes.length} unique genes`,
-      y: '90%',
-      x: '80%',
-      font: 'lighter 11px Helvetica Neue, sans-serif',
+      y: '92%',
+      x: '73%',
+      font: {
+        "weight": "lighter",
+        "size": "25%",
+        "family": "Helvetica Neue, sans-serif"
+      },
       color: '#454f6d',
       textTransform: 'uppercase-spacing-1'
     };
