@@ -46,6 +46,9 @@ export default class ServiceUI extends Component {
   }
 
   renderSegments = ({ service }, segments) => {
+    if (!service) {
+      return false;
+    }
     const currentSegmentName = this.getCurrentSegmentName();
     const segment = segments.find(segment => segment.name === currentSegmentName);
     const marginStyle = { margin: '5px 5px' };
@@ -77,9 +80,7 @@ export default class ServiceUI extends Component {
             </Menu>
           )
         }
-        <Segment 
-          style={{ margin: '15px 20px' }}
-        >
+        <Segment style={{ margin: '15px 20px' }}>
           { segment && segment.render(service) }
         </Segment>
       </div>
@@ -87,7 +88,7 @@ export default class ServiceUI extends Component {
   }
 
   render() {
-    const { children, segments } = this.props;
+    const { children, segments, service } = this.props;
     return (
       <BoardConsumer>
         {
@@ -96,13 +97,13 @@ export default class ServiceUI extends Component {
               this.renderSegments(
                 { 
                   boardContext, 
-                  service: this.setup(boardContext, this.props),
+                  service: service || this.setup(boardContext, this.props),
                 }, 
                 segments
               ) : 
               children({ 
                 boardContext,
-                service: this.setup(boardContext, this.props)
+                service: service || this.setup(boardContext, this.props)
               })
         }
       </BoardConsumer>

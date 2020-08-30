@@ -42,30 +42,32 @@ export default class ServiceFrame extends Component {
     </div>
   )
 
-  renderHeader = service => (
-    <Menu
-      borderless={true}
-      style={{
-        boxShadow: 'none',
-        border: 'none',
-        margin: 0,
-      }}
-    >
-      { this.renderServiceName(service.props.service.serviceName) }
-      <Menu.Item
-        position="right"
-        onClick={() => this.setState({ 
-          menuVisible: !this.state.menuVisible,
-          frameCollapsed: this.state.frameCollapsed && !this.state.menuVisible,
-        })}
+  renderHeader = service => {
+    return (
+      <Menu
+        borderless={true}
+        style={{
+          boxShadow: 'none',
+          border: 'none',
+          margin: 0,
+        }}
       >
-        <Icon 
-          name='bars' 
-          style={{ color: '#ddd', margin: 5, }}
-        />
-      </Menu.Item>
-    </Menu>
-  )
+        { this.renderServiceName(service.props.service.serviceName) }
+        <Menu.Item
+          position="right"
+          onClick={() => this.setState({ 
+            menuVisible: !this.state.menuVisible,
+            frameCollapsed: this.state.frameCollapsed && !this.state.menuVisible,
+          })}
+        >
+          <Icon 
+            name='bars' 
+            style={{ color: '#ddd', margin: 5, }}
+          />
+        </Menu.Item>
+      </Menu>
+    )
+  }
 
   renderMenu = () => {
     const itemStyle = { 

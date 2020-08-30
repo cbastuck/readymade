@@ -4,17 +4,19 @@ import { Item } from 'semantic-ui-react'
 
 import Template from './Template';
 
+import { ExampleService, ExampleServiceUI } from './ExampleService';
+import ServiceFrame from '../../components/ServiceFrame';
+
 export default class Quickstart extends Component {
 
   renderGroupItem = item => {
     const itemStyle = {
       width: '100%',
-      marginTop: 20,
+      marginTop: 10,
       padding: 10,
       borderBottom: item.bottomDivider ? 'solid 1px lightgray' : 'none',
     };
     const itemImageStyle = {
-      marginTop: 40, 
       minWidth: 150,
       marginLeft: 10,
     };
@@ -94,6 +96,20 @@ export default class Quickstart extends Component {
     );
   }
 
+  renderExampleService = () => {
+    const service = new ExampleService();
+    const serviceUI = (
+      <ExampleServiceUI 
+        service={service}
+      />
+    );
+    return (
+      <div style={{ marginRight: 30, paddingTop: 0 }}>
+        <ServiceFrame service={serviceUI} />
+      </div>
+    );
+  }
+
   renderQuickstart = () => {
     const sectionStyle = { 
       fontSize: 15, 
@@ -121,44 +137,43 @@ export default class Quickstart extends Component {
               this.renderGroupItem({
                 title: 'Service',
                 details: [
-                  'Services are units that generate data, modify data or just accept it.',
-                  'Services accept data at their input and provide data at their output.',
-                  'When services produce data, they sponateously inject that data at their output.',
-                  'Services accept a configuration that specifies the mode the are running in.',
-                  'Services can provide their current configuration to restore it later.'
+                  'Services are units that generate, transform or just accept data.',
+                  'Services receive data on their input and provide data on their output.',
+                  'If a Service generates data, this data is injected at its output spontaneously.',
+                  'A Service may behave differently depending on its configuration.',
+                  'Service configurations can be set and get at any time.'
                 ],
-                image: <p> → ☐ → </p>,
+                image: this.renderExampleService(),
                 bottomDivider: true
               }) 
             }
-            { 
+            { /* 
               this.renderGroupItem({
                 title: 'Chain',
                 details: [
                   'Workflows consist of subsequent services arranged in a chain.',
                   'Data flows through the chain from left to right.',
                   'A service can decide to stop further processing of the chain',
-                  'If a service in a chain sponateously emits data, subsequent services in the chain are triggered.',
+                  
                   'Chains might contain a feedback loop',
                   'A Chain needs a runtime to exist.'
                 ],
                 image: <p> → ☐ → ☐ → </p>,
                 bottomDivider: true
               })
+              */
             }
             { 
               this.renderGroupItem({
                 title: 'Runtime',
                 details: [
-                  'The runtime keeps services and chains together.',
-                  'The output of the last service in a runtime becomes the output of the whole runtime.',
-                  'Multiple runtimes can be chained after each other.',
-                  'The output of a runtome becomes gets feeded into the subsequent runtime.',
-                  'Injecting data into a runtime means calling the first service of the runtime with that data.',
-                  'The runtime defines the running order if the services.',
-                  'Runtimes can be living in the browser only or on a server.',
-                  'Runtimes living in the browser are only active while the browser is open.',
-                  'Runtimes living on a server are always on.',
+                  'A Runtime hosts multiple services and is responsible for the data flow.',
+                  'A Runtime calls the hosted services in order from left to right.',
+                  'If a Service is processed the Runtime calls the next Service forwarding the provided data.',
+                  'If a Service decides to stop further processing the Runtime stops propagation',
+                  'The input of the first Service of the Runtime is considered the input of the Runtime.',
+                  'The output of the last Service of the Runtime is considered the output of the Runtime.',
+                  'Runtimes can be running permanently or be only available on demand.',
                 ],
                 image: (
                   <div>
@@ -173,8 +188,9 @@ export default class Quickstart extends Component {
               this.renderGroupItem({
                 title: 'Board',
                 details: [
-                  'Board is the home for all runtimes',
-                  'It belongs to a user',
+                  'A Board is scoped to a user and within scope uniquely identified by its name',
+                  'A Board hosts multiple runtimes which are chained and form a workflow',
+                  '',
                 ],
                 image: (
                   <div>
