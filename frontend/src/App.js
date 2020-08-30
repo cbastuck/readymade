@@ -15,6 +15,7 @@ import Examples from './views/examples/Examples';
 import Quickstart from './views/docs/Quickstart';
 import ServiceDocumentation from './views/docs/Service';
 import BoardDocumentation from './views/docs/Board';
+import RuntimeDocumentation from './views/docs/Runtime';
 import MyBoards from './views/dashboard/MyBoards';
 import Board from './views/Board';
 import BuildBoard from './views/BuildBoard';
@@ -82,6 +83,7 @@ class App extends Component {
               <Route path="/dashboard" component={MyBoards} />
               <Route path="/docs/service" component={ServiceDocumentation} />
               <Route path="/docs/board" component={BoardDocumentation} />
+              <Route path="/docs/runtime" component={RuntimeDocumentation} />
               <Route path="/docs" component={Quickstart} />
               <Route path="/:board" component={BoardWithContext} />
             </Switch>
