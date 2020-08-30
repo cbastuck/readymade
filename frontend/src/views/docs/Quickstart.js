@@ -4,16 +4,13 @@ import { Item } from 'semantic-ui-react'
 
 import Template from './Template';
 
-import { ExampleService, ExampleServiceUI } from './ExampleService';
-import ServiceFrame from '../../components/ServiceFrame';
-
 export default class Quickstart extends Component {
 
   renderGroupItem = item => {
     const itemStyle = {
       width: '100%',
-      marginTop: 10,
-      padding: 10,
+      marginBottom: 30,
+      padding: 20,
       borderBottom: item.bottomDivider ? 'solid 1px lightgray' : 'none',
     };
     const itemImageStyle = {
@@ -22,17 +19,26 @@ export default class Quickstart extends Component {
     };
     return (
       <Item style={itemStyle}>
-        <div style={itemImageStyle}> { item.image}  </div>
-        <Item.Content>
-          <Item.Header 
-            style={{ 
-              fontSize: 14,
-              letterSpacing: 4,
-              textTransform: 'uppercase',
-            }}
-          >
-            <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
-          </Item.Header>
+        {
+           item.image ? 
+            <div style={itemImageStyle}> { item.image } </div>
+            : (
+            <Item.Header 
+              style={{ 
+                fontSize: 14,
+                letterSpacing: 4,
+                textTransform: 'uppercase',
+                paddingTop: 9,
+                marginLeft: 30,
+                width: 150
+              }}
+            >
+              <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
+            </Item.Header>
+           )
+        }
+        <Item.Content style={{marginLeft: 10 }}>
+          
           <Item.Description>
             {
               item.details.map((detail, idx) => 
@@ -96,21 +102,6 @@ export default class Quickstart extends Component {
     );
   }
 
-  renderExampleService = () => {
-    const service = new ExampleService();
-    const serviceUI = (
-      <ExampleServiceUI
-        service={service}
-        setup={() => service} 
-      />
-    );
-    return (
-      <div style={{ marginRight: 30, paddingTop: 0 }}>
-        <ServiceFrame service={serviceUI} />
-      </div>
-    );
-  }
-
   renderQuickstart = () => {
     const sectionStyle = { 
       fontSize: 15, 
@@ -144,25 +135,9 @@ export default class Quickstart extends Component {
                   'A Service may behave differently depending on its configuration.',
                   'Service configurations can be set and get at any time.'
                 ],
-                image: this.renderExampleService(),
+                image: undefined, //this.renderExampleService(),
                 bottomDivider: true
               }) 
-            }
-            { /* 
-              this.renderGroupItem({
-                title: 'Chain',
-                details: [
-                  'Workflows consist of subsequent services arranged in a chain.',
-                  'Data flows through the chain from left to right.',
-                  'A service can decide to stop further processing of the chain',
-                  
-                  'Chains might contain a feedback loop',
-                  'A Chain needs a runtime to exist.'
-                ],
-                image: <p> → ☐ → ☐ → </p>,
-                bottomDivider: true
-              })
-              */
             }
             { 
               this.renderGroupItem({
@@ -176,12 +151,7 @@ export default class Quickstart extends Component {
                   'The output of the last Service of the Runtime is considered the output of the Runtime.',
                   'Runtimes can be running permanently or be only available on demand.',
                 ],
-                image: (
-                  <div>
-                    <p> ( ☐ → ☐ ) → </p>
-                    <p> → ( ☐ → ☐ ) </p>
-                  </div>
-                ),
+                image: undefined, // this.renderSceneExample("Some Runtime"),
                 bottomDivider: true
               }) 
             }
@@ -193,12 +163,8 @@ export default class Quickstart extends Component {
                   'A Board hosts multiple runtimes which are chained and form a workflow',
                   '',
                 ],
-                image: (
-                  <div>
-                    Board
-                  </div>
-                )
-              }) 
+                image: undefined, //this.renderBoardExample(), 
+              })
             }
           </Item.Group>
         </div>

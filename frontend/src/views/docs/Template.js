@@ -70,16 +70,16 @@ export default class Template extends Component {
                         width: '70%'
                       }}
                     >
+                      { this.renderBreadcrumbs(title, isRoot) }
                       <h1 style={{ 
                         fontSize: 20, 
                         textAlign: 'center',
                         letterSpacing: 8,
                         textTransform: 'uppercase',
-                        margin: '50px 0px',
+                        margin: 0                        
                       }}>
                         { title }
                       </h1>
-                      { this.renderBreadcrumbs(title, isRoot) }
                       { children }
                     </Container>
                   </div>
