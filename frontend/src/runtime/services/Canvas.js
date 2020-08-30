@@ -174,6 +174,12 @@ class CanvasUI extends Component {
       x: destX + 10, 
       y: destY - 10,
       textTransform,
+      color,
+    }
+    if (ltr) {
+      textData.x -= pointerLength; 
+    } else {
+      textData.x -= pointerLength * 1.5 // TODO: HACK the text width is not taken into consideration
     }
     this.drawText(ctx, textData);
   }
@@ -255,6 +261,8 @@ class CanvasUI extends Component {
 
     ctx.save();
     ctx.fillStyle = color || '#000';
+    ctx.strokeStyle = contour ? contour.color : ctx.fillStyle;
+    ctx.lineWidth = contour ? contour.lineWidth : 1;
 
     const isFontString = (typeof font === 'string');
     const { 
@@ -277,18 +285,14 @@ class CanvasUI extends Component {
       const targetRelativeWidth = Number(size.substr(0, size.length - 1)) / 100;
       const currentRelativeWidth = textWidth / canvasWidth;
       const correctionRatio = targetRelativeWidth / currentRelativeWidth;
-      const correctedSize = Math.floor(correctionRatio * 10); // we tested with 10pt intially
+      const correctedSize = Math.floor(correctionRatio * 9.9); // we tested with 10pt intially, 9.9 because otherwise we overshoot (not sure why)
       ctx.font = `${style} ${weight} ${correctedSize}px ${family}`;
       textWidth = ctx.measureText(t).width;
     }
-    const x = (dx === undefined ? centerX : toAbsolute(dx, canvasWidth)) - textWidth / 2;
+    const x = (dx === undefined ? centerX  - textWidth / 2 : toAbsolute(dx, canvasWidth));
     const y = dy === undefined ? centerY : toAbsolute(dy, canvasHeight);
     ctx.fillText(t, x, y);
-    if (contour) {
-      ctx.strokeStyle = contour.color;
-      ctx.lineWidth = contour.lineWidth || 1;
-      ctx.strokeText(t, x, y);
-    }
+    ctx.strokeText(t, x, y);
     
     if (onClick) {
       const rect = {

@@ -32,7 +32,7 @@ import './App.css';
 class BoardWithContext extends Component {
   render() {
     const { match } = this.props;
-    const boardName = match.params.board;
+    const { board: boardName } = match.params;
     return (
       <AppConsumer>
         {
@@ -53,13 +53,16 @@ class BoardWithContext extends Component {
 
 class App extends Component {
   render() {
+    const { match } = this.props;
+    const { fullscreen } = match ? match.params : {};
     return (
       <AppContext>
         <Router>
           <div
             style={{
-              height: "100%",
-              width: "100%"
+              height: '100%',
+              width: '100%',
+              overflow: fullscreen ? 'hidden' : 'auto'
             }}
           >
             <Switch>

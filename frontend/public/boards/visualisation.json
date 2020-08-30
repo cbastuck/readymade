@@ -88,19 +88,27 @@
           [ 
             {
               "type": "text",
-              "text": "Nature is beautiful ...",
-              "color": "#002",
+              "text": "Nature is beautiful",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "37%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "15%"
             },
             {
               "type": "text",
               "text": "and kind-of an optimization framework",
-              "color": "#002",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
-              "y": "85%"
+              "font": {
+                "weight": "lighter",
+                "size": "77%",
+                "family": "Helvetica Neue, sans-serif"
+              },
+              "y": "84%"
             },
             {
               "type": "image",
@@ -147,36 +155,48 @@
             {
               "type": "explainer",
               "text": "Press to Run",
-              "font": "lighter 11px Helvetica Neue, sans-serif",
+              "font":  {
+                "weight": "lighter",
+                "size": "7pt",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "textTransform": "uppercase-spacing-1",
+              "color": "#454f6d",
               "pointer": {
                 "x": "56%",
                 "y": "48%",
                 "length": "5%"
-              },
-              "color": "gray"
+              }
             },
             {
               "type": "explainer",
               "text": "Press to Step",
-              "font": "lighter 11px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "7pt",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "textTransform": "uppercase-spacing-1",
+              "color": "#454f6d",
               "pointer": {
                 "x": "44%",
                 "y": "48%",
                 "length": "5%"
               },
-              "color": "gray",
               "direction": "right-to-left"
             }
           ],
           [ 
             {
               "type": "text",
-              "text": "... driving towards an optimum (somewhere).",
-              "color": "#002",
+              "text": "driving towards an optimum somewhere",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "80%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "15%"
             },
             {
@@ -224,19 +244,27 @@
             {
               "type": "text",
               "text": "Variety makes it evolve.",
-              "color": "#002",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "50%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "85%"
             }
           ],
           [
             {
               "type": "text",
-              "text": "Exploration can take time ...",
-              "color": "#002",
+              "text": "Exploration can take time",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "60%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "15%"
             },
             {
@@ -284,9 +312,13 @@
             {
               "type": "text",
               "text": "or we're stuck with a solution",
-              "color": "#002",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "60%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "85%"
             }
           ],
@@ -294,9 +326,13 @@
             {
               "type": "text",
               "text": "Further progress requires fortune and time",
-              "color": "#002",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "60%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "15%"
             },
             {
@@ -328,9 +364,13 @@
             {
               "type": "text",
               "text": "Wait or restart?",
-              "color": "#002",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "40%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "85%"
             }
           ],
@@ -339,19 +379,28 @@
               "type": "text",
               "id": "message",
               "text": "variety explores the solution space",
-              "color": "#002",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 18px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "80%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "20%",
+              "x": "10%",
               "checkpoint": "@last-state"
             },
             {
               "type": "text",
               "id": "message",
               "text": "WE are manifold solutions",
-              "color": "#002",
+              "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
-              "font": "lighter 30px Helvetica Neue, sans-serif",
+              "font": {
+                "weight": "lighter",
+                "size": "90%",
+                "family": "Helvetica Neue, sans-serif"
+              },
               "y": "83%"
             },
             {

@@ -23,72 +23,57 @@
           [
             {
               "type": "text",
-              "text": "If you know nothing ...",
+              "text": "If you know nothing",
               "textTransform": "uppercase-spacing-1",
               "color": "#454f6d",
               "font": {
                 "weight": "lighter",
-                "size": "20%",
+                "size": "38%",
                 "family": "Helvetica Neue, sans-serif"
               },
-              "contour": {
-                "color": "#454f6d",
-                "lineWidth": 1
-              },
               "checkpoint": "@unnamed-trigger",
-              "x": "35%"
+              "x": "2%"
             },
             {
               "type": "text",
-              "text": "The best solution merges from many minds",
+              "text": "Best solutions merge from many minds",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "60%",
+                "size": "90%",
                 "family": "Helvetica Neue, sans-serif"
               },
-              "contour": {
-                "color": "#454f6d",
-                "lineWidth": 1
-              },
-              "y": "68%",
-              "x": "55%"
+              "x": "5%",
+              "y": "70%"
             }
           ],
           [
             {
               "type": "text",
-              "text": "The more contribute ...",
+              "text": "The more contribute",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "40%",
+                "size": "90%",
                 "family": "Helvetica Neue, sans-serif"
               },
-              "contour": {
-                "color": "#454f6d",
-                "lineWidth": 1
-              },
-              "checkpoint": "@unnamed-trigger"
+              "checkpoint": "@unnamed-trigger",
+              "x": "5%"
             },
             {
               "type": "text",
-              "text": "the lower the risk we miss something",
+              "text": "we lower the risk to miss something",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "35%",
+                "size": "85%",
                 "family": "Helvetica Neue, sans-serif"
               },
-              "contour": {
-                "color": "#454f6d",
-                "lineWidth": 1
-              },
               "y": "70%",
-              "x": "55%"
+              "x": "8%"
             }
           ],
           [
@@ -99,14 +84,11 @@
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "33%",
+                "size": "80%",
                 "family": "Helvetica Neue, sans-serif"
               },
-              "contour": {
-                "color": "#454f6d",
-                "lineWidth": 1
-              },
-              "checkpoint": "@unnamed-trigger"
+              "checkpoint": "@unnamed-trigger",
+              "x": "10%"
             },
             {
               "type": "text",
@@ -115,14 +97,10 @@
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "35%",
+                "size": "89%",
                 "family": "Helvetica Neue, sans-serif"
               },
-              "contour": {
-                "color": "#454f6d",
-                "lineWidth": 1
-              },
-              "y": "70%"
+              "y": "75%"
             }
           ],
           [
@@ -133,12 +111,8 @@
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "40%",
+                "size": "80%",
                 "family": "Helvetica Neue, sans-serif"
-              },
-              "contour": {
-                "color": "#454f6d",
-                "lineWidth": 1
               },
               "checkpoint": "@last-slide"
             },
@@ -149,15 +123,11 @@
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "26%",
+                "size": "58%",
                 "family": "Helvetica Neue, sans-serif"
               },
-              "contour": {
-                "color": "#454f6d",
-                "lineWidth": 1
-              },
-              "y": "65%",
-              "x": "59%"
+              "y": "75%",
+              "x": "41%"
             }
           ]
         ]

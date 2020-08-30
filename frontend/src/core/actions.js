@@ -100,9 +100,25 @@ export function redirectTo(target, openAsPopup) {
 }
 
 export function detectBrowserIOS() {
-  const ua = window.navigator.userAgent;
+  const ua = window && window.navigator && window.navigator.userAgent;
+  if (ua) {
+    return false;
+  }
   const iOS = !!ua.match(/iPad/i) || !!ua.match(/iPhone/i);
   const webkit = !!ua.match(/WebKit/i);
   const iOSSafari = iOS && webkit && !ua.match(/CriOS/i);
   return iOSSafari;
+}
+
+export function iOS() {
+  return [
+    'iPad Simulator',
+    'iPhone Simulator',
+    'iPod Simulator',
+    'iPad',
+    'iPhone',
+    'iPod'
+  ].includes(navigator.platform)
+  // iPad on iOS 13 detection
+  || (navigator.userAgent.includes("Mac") && "ontouchend" in document)
 }

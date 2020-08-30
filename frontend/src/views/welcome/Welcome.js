@@ -53,6 +53,7 @@ export default class Welcome extends Component {
         frameBorder={0}
         height="84%"
         width="100%"
+        maxWidth={1200}
         onAction={
           ({ checkpoint }) => {
             if (checkpoint === '@last-slide') {
@@ -102,6 +103,7 @@ export default class Welcome extends Component {
           frameBorder={0}
           height="95%"
           width="100%"
+          maxWidth={1200}
           onAction={({ page, finished, checkpoint }) => {
             if (page) {
               this.setState({ page });

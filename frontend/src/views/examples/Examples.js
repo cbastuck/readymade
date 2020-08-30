@@ -85,7 +85,8 @@ export default class Examples extends Component {
     const breadcrumpStyle = {
       letterSpacing: 1,
       textTransform: 'uppercase',
-      fontSize: 10
+      fontSize: 12,
+      margin: '0px 2px',
     };
     const { currentExample } = this.state;
     return (
@@ -136,7 +137,7 @@ export default class Examples extends Component {
         >
           <h1 style={{ fontSize: 17, margin: 0, padding: 0 }}>
             { 
-              currentExample ? (
+              /*currentExample*/ false ? (
                 <span>
                   <span 
                     style={{ cursor: 'pointer', marginRight: 10, }}
