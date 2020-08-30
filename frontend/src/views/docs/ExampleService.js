@@ -29,7 +29,7 @@ export class ExampleServiceUI extends Component {
   render() {
     return (
       <ServiceUI
-        service={{...this.props}}
+        setup={this.props.setup}
         onInit={this.onInit.bind(this)}
         segments={[
           { name: 'main', render: this.renderMain },

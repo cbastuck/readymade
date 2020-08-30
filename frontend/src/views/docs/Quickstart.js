@@ -99,8 +99,9 @@ export default class Quickstart extends Component {
   renderExampleService = () => {
     const service = new ExampleService();
     const serviceUI = (
-      <ExampleServiceUI 
+      <ExampleServiceUI
         service={service}
+        setup={() => service} 
       />
     );
     return (

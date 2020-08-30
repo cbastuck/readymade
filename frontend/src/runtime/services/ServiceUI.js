@@ -88,7 +88,7 @@ export default class ServiceUI extends Component {
   }
 
   render() {
-    const { children, segments, service } = this.props;
+    const { children, segments, setup } = this.props;
     return (
       <BoardConsumer>
         {
@@ -97,13 +97,13 @@ export default class ServiceUI extends Component {
               this.renderSegments(
                 { 
                   boardContext, 
-                  service: service || this.setup(boardContext, this.props),
+                  service: setup ? setup(boardContext, this.props) : this.setup(boardContext, this.props),
                 }, 
                 segments
               ) : 
               children({ 
                 boardContext,
-                service: service || this.setup(boardContext, this.props)
+                service: setup ? setup(boardContext, this.props) : this.setup(boardContext, this.props)
               })
         }
       </BoardConsumer>
