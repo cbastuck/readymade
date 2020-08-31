@@ -32,7 +32,25 @@ export default class ServiceDocumentation extends Component {
       <Template 
         title="Service"
       >
-        <div style={{ height: '100%' }}>
+        <div 
+          style={{ 
+            height: '100%',
+            display: 'flex',
+            flexDirecton: 'row',
+          }}
+        >
+          <div 
+            style={{ 
+              margin: '30px 5px',
+              width: '80%',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              fontSize: 12,
+            }}
+          > 
+            Services consist of two components, one is the main and invisible component of the service implementing the logic.
+            The other component is the user interface (UI) which allows to configure and interact with the service.
+          </div>
           { this.renderExampleService() }
         </div>
       </Template>

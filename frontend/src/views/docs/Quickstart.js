@@ -13,29 +13,21 @@ export default class Quickstart extends Component {
       padding: 20,
       borderBottom: item.bottomDivider ? 'solid 1px lightgray' : 'none',
     };
-    const itemImageStyle = {
-      minWidth: 150,
-      marginLeft: 10,
-    };
     return (
       <Item style={itemStyle}>
         {
-           item.image ? 
-            <div style={itemImageStyle}> { item.image } </div>
-            : (
-            <Item.Header 
-              style={{ 
-                fontSize: 14,
-                letterSpacing: 4,
-                textTransform: 'uppercase',
-                paddingTop: 9,
-                marginLeft: 30,
-                width: 150
-              }}
-            >
-              <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
-            </Item.Header>
-           )
+          <Item.Header 
+            style={{ 
+              fontSize: 14,
+              letterSpacing: 4,
+              textTransform: 'uppercase',
+              paddingTop: 9,
+              marginLeft: 10,
+              width: 150
+            }}
+          >
+            <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
+          </Item.Header>
         }
         <Item.Content style={{marginLeft: 10 }}>
           
@@ -67,7 +59,7 @@ export default class Quickstart extends Component {
         style={{
           fontSize: 14,
           textAlign: 'left',
-          margin: '5px 5%',
+          margin: '5px 30px',
           color: claim.c ? 'black' : '#454f6d',
           letterSpacing: 1,
           textTransform: 'uppercase',
@@ -108,13 +100,12 @@ export default class Quickstart extends Component {
       textAlign: 'left',
       textTransform: 'uppercase',
       letterSpacing: 2,
-      margin: '20px 0px',
     };
     
     return (
       <div>
-        <h2 style={sectionStyle}>Etiquette</h2>
-        <div style={{ marginBottom: 35 }}>
+        <h2 style={{ ...sectionStyle, margin: '40px 0px' }}>Etiquette</h2>
+        <div style={{ marginBottom: 45 }}>
           { this.renderClaim({ s: 'Make stupid things!', c: '' }) }
           { this.renderClaim({ s: 'In particular', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'D. Sandstrom, D. Lyxzen, K. Steen, J. Brannstrom' }) }
           { this.renderClaim({ s: 'Imagine this', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'R. Sczimarkowsi, J. Windmeier, C. Knopp, M. Ebsen, C. Peter' }) }
@@ -122,7 +113,7 @@ export default class Quickstart extends Component {
           { this.renderClaim({ s: 'With respect', c: '"To want more than is given to you”', link: 'https://www.youtube.com/watch?v=xk2CvKcJnC4', cite: 'G. Moakes, K. Okereke,  M. Tong, R. Lissackj' }) }
         </div>
         
-        <h2 style={sectionStyle}>Stuff to know about</h2>
+        <h2 style={{ ...sectionStyle, margin: '30px 0px', }}>Stuff to know about</h2>
         <div style={{ textAlign: 'left' }}>
           <Item.Group link>
             { 

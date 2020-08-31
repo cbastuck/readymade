@@ -11,8 +11,6 @@ import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
 
-import './Examples.css';
-
 const examples = [
   {
     title: 'Hello World',
@@ -32,12 +30,12 @@ export default class Examples extends Component {
     const fontStyle = {
       letterSpacing: 1,
       textTransform: 'uppercase',
-      fontSize: 12
+      fontSize: 12,
+      textAlign: 'center',
     };
     return (
       <Card 
-        key={`example-card-${example.title}`} 
-        className="example-card"
+        key={`example-card-${example.title}`}
         style={fontStyle}
       >
         <Card.Content>
@@ -85,7 +83,7 @@ export default class Examples extends Component {
     const breadcrumpStyle = {
       letterSpacing: 1,
       textTransform: 'uppercase',
-      fontSize: 12,
+      fontSize: 11,
       margin: '0px 2px',
     };
     const { currentExample } = this.state;
@@ -120,44 +118,41 @@ export default class Examples extends Component {
   }
 
   renderExamplesContainer = () => {
-    const exampleNameStyle = {
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-      fontSize: 16
-    };
     const { currentExample } = this.state;
     return (
-      <div className="examples-container">
+      <div 
+        style={{ 
+          marginTop: 20, 
+          height: '100%',
+        }}
+      >
         <div 
           style={{ 
             margin: '10px 10px', 
             textAlign: 'center' ,
-            marginBottom: 20
+            marginBottom: 20,
           }}
         >
           <h1 style={{ fontSize: 17, margin: 0, padding: 0 }}>
-            { 
-              /*currentExample*/ false ? (
-                <span>
-                  <span 
-                    style={{ cursor: 'pointer', marginRight: 10, }}
-                    onClick={() => this.setState({ currentExample: null }) }
-                  > 
-                    ❮ 
-                  </span>
-                  <span style={exampleNameStyle}>
-                    {currentExample.title} 
-                  </span>
-                </span> ) : (
-                  <span style={exampleNameStyle}> 
-                    Examples
-                  </span>
-                )
-            }
+            <div 
+              style={{
+                letterSpacing: 8,
+                textTransform: 'uppercase',
+                fontSize: 20,
+                marginTop: 15
+              }}
+            > 
+              Examples
+            </div>
           </h1>
           { currentExample && this.renderBreadcrumbs() }
         </div>
-        <div className="examples-list">
+        <div 
+          style={{ 
+            margin: 40, 
+            height: '100%' 
+          }}
+        >
         {
           currentExample ? 
             this.renderSandbox() : 

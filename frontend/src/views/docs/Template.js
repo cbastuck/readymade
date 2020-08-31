@@ -15,7 +15,7 @@ export default class Template extends Component {
     const breadcrumpStyle = {
       letterSpacing: 1,
       textTransform: 'uppercase',
-      fontSize: 10
+      fontSize: 11,
     };
     if (isRoot) {
       return false;
@@ -25,6 +25,8 @@ export default class Template extends Component {
         style={{ 
           textAlign: 'left', 
           marginLeft: 5,
+          marginTop: 15,
+          width: 300
         }}
       >
         <Breadcrumb>
@@ -36,9 +38,7 @@ export default class Template extends Component {
                 Quickstarter
               </span>
             </Link>
-          </Breadcrumb.Section>
-          <Breadcrumb.Divider />
-          <Breadcrumb.Section link>
+          </Breadcrumb.Section><Breadcrumb.Divider /><Breadcrumb.Section link>
             <span style={breadcrumpStyle}>
               { title }
             </span>
@@ -70,8 +70,8 @@ export default class Template extends Component {
                         width: '70%'
                       }}
                     >
-                      { this.renderBreadcrumbs(title, isRoot) }
                       <h1 style={{ 
+                        width: '100%',
                         fontSize: 20, 
                         textAlign: 'center',
                         letterSpacing: 8,
@@ -80,6 +80,7 @@ export default class Template extends Component {
                       }}>
                         { title }
                       </h1>
+                      { this.renderBreadcrumbs(title, isRoot) }
                       { children }
                     </Container>
                   </div>
