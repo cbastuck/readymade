@@ -229,10 +229,10 @@ class Genetic {
       type: 'text',
       text: `generation ${this.generation} has ${populationShapes.length} unique genes`,
       y: '92%',
-      x: '73%',
+      x: '70%',
       font: {
         "weight": "lighter",
-        "size": "25%",
+        "size": "30%",
         "family": "Helvetica Neue, sans-serif"
       },
       color: '#454f6d',
