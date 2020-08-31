@@ -40,12 +40,6 @@ class TimerUI extends Component {
           value={this.state.periodicValue}
           onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
         />
-        <Input
-          type="number"
-          label="Interval"
-          value={this.state.periodicValue}
-          onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
-        />
         <div style={{ textAlign: 'left', marginTop: 5, width: '100%' }}>
           <Label size="large" style={{ minWidth: 70, borderRadius: 2 }}>Unit</Label>
           <Select

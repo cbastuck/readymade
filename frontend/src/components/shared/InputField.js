@@ -4,22 +4,40 @@ import { Label, Input } from 'semantic-ui-react';
 
 class SyncIndicator extends Component {
   render() {
+    const { inSync, onClick } = this.props;
     return (
       <div 
         style={{ 
-          width: 12,
-          height: 12,
+          width: 18,
+          height: 18,
           margin: '8px 10px',
-          backgroundColor: 'green',
+          backgroundColor: inSync ? 'green' : 'yellow',
+          cursor: !inSync ? 'pointer' : undefined,
         }}
+        onClick={ev => !inSync && onClick(ev)}
       />
     );
   }
 }
 
 export default class InputField extends Component {
+  state = {
+    value: ''
+  };
+
+  componentDidMount() {
+    this.setState({ value: this.props.value });
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.value !== prevProps.value) {
+      this.setState({ value: this.props.value });
+    }
+  }
+
   render() {
-    const { type, label, value, onChange } = this.props;
+    const { value } = this.state;
+    const { type, label, onChange, value: syncedValue } = this.props;
     const fontSize = 11;
     return (
       <div 
@@ -45,12 +63,16 @@ export default class InputField extends Component {
           {label} 
         </Label>
         <Input 
+          style={{ width: '50%', fontSize: fontSize + 1, flexGrow: 3, }}
           type={type}
           value={value}
-          onChange={onChange}
-          style={{ width: '50%', fontSize: fontSize + 1, flexGrow: 3, }}
+          onChange={(_, { value }) => this.setState({ value })}
+          onKeyUp={ev => ev.key === 'Enter' && onChange(ev, { value })}
         />
-        <SyncIndicator />
+        <SyncIndicator 
+          onClick={ev => onChange(ev, { value })}
+          inSync={value === syncedValue}
+        />
       </div>
     );
   }
