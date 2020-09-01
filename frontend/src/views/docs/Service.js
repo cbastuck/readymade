@@ -48,8 +48,15 @@ export default class ServiceDocumentation extends Component {
               fontSize: 12,
             }}
           > 
-            Services consist of two components, one is the main and invisible component of the service implementing the logic.
-            The other component is the user interface (UI) which allows to configure and interact with the service.
+            Services consist of two components:
+            <ul>
+              <li>
+                one is the main and invisible component of the service implementing the logic.
+              </li>
+              <li>
+                The other component is the user interface which allows to configure and interact with the service.
+              </li>
+            </ul>
           </div>
           { this.renderExampleService() }
         </div>

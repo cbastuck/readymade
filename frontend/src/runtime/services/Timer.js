@@ -9,6 +9,8 @@ import moment from 'moment';
 
 import ServiceUI from './ServiceUI';
 import InputField from '../../components/shared/InputField';
+import SelectorField from '../../components/shared/SelectorField';
+
 const serviceId = 'hookup.to/service/browser-timer';
 const serviceName = 'Timer';
 
@@ -32,6 +34,11 @@ class TimerUI extends Component {
   }
 
   renderPeriodic = service => {
+    const buttonStyle = {
+      margin: 1,
+      textTransform: 'uppercase',
+      fontSize: 12 
+    }
     return (
       <div>
         <InputField 
@@ -40,31 +47,27 @@ class TimerUI extends Component {
           value={this.state.periodicValue}
           onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
         />
-        <div style={{ textAlign: 'left', marginTop: 5, width: '100%' }}>
-          <Label size="large" style={{ minWidth: 70, borderRadius: 2 }}>Unit</Label>
-          <Select
-            style={{ margin: 5 }}
-            compact
-            options={[
-              { key: 'ms', value: 'ms', text: 'milliseconds' },
-              { key: 's', value: 's', text: 'seconds' },
-              { key: 'm', value: 'm', text: 'minutes' },
-              { key: 'h', value: 'h', text: 'hours' },
-              { key: 'd', value: 'd', text: 'days' },
-            ]}
-            value={this.state.periodicUnit}
-            onChange={
-              (_ev, { value }) => 
-                this.setState({ periodicUnit: value })
-            }
-          />
-        </div>
+        <SelectorField
+          label="unit"
+          options={{
+            ms: 'milliseconds',
+            s: 'seconds',
+            m: 'minutes',
+            h: 'hours',
+            d: 'days',
+          }}
+          value={this.state.periodicUnit}
+          onChange={
+            (_ev, { value }) => 
+              this.setState({ periodicUnit: value })
+          }
+        />
         <Button.Group 
           widths="10" 
           style={{ marginTop: 10 }}
         >
           <Button
-            style={{ margin: 1 }}
+            style={buttonStyle}
             onClick={() => service.configure({ 
               periodic: true,
               periodicValue: this.state.periodicValue,
@@ -76,7 +79,7 @@ class TimerUI extends Component {
             Start
           </Button>
           <Button
-            style={{ margin: 1 }}
+            style={buttonStyle}
             onClick={() => service.configure({ stop: true })}
             disabled={!this.state.timerIsRunning}
           >
