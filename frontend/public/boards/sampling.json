@@ -3,6 +3,7 @@
     "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
     "name": "Chrome-78.0.3904.108 (0)",
     "type": "browser",
+    "bundles": ["hookup.to/registry/browser/Statistic"],
     "services": [
       {
         "serviceName": "Timer",
@@ -43,10 +44,6 @@
         "condition": "params.sample && params.source"
       },
       {
-        "serviceName": "Monitor",
-        "serviceId": "hookup.to/service/monitor-browser"
-      },
-      {
         "serviceName": "Genetic",
         "serviceId": "hookup.to/service/genetic-optimizer",
         "dataRoot": "sample",
@@ -55,6 +52,10 @@
         },
         "ttl": 2,
         "initialPopulation": [
+          [{ "ttl": 2 }, 0.04, 0.04, 0.01],
+          [{ "ttl": 2 }, 0.95, 0.95, 0.01]
+        ],
+        "initialPopulationAll": [
           [{ "ttl": 2 }, 0.04, 0.04, 0.01],
           [{ "ttl": 2 }, 0.95, 0.95, 0.01],
           [{ "ttl": 2 }, 0.04, 0.95, 0.01],
