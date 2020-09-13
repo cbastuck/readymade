@@ -7,7 +7,6 @@
     "base64-arraybuffer": "^0.2.0",
     "chart.js": "^2.9.1",
     "eventsource": "^1.0.7",
-    "jointjs": "^2.2.0",
     "jstat": "^1.9.2",
     "jwt-decode": "^2.2.0",
     "lamejs": "^1.2.0",
