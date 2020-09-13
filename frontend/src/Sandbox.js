@@ -51,18 +51,22 @@ export default class Sandbox extends Component {
 
         firstBrowserRuntimeData.id = firstBrowserRuntimeId;
       }
-      const runtime = await this.createBrowserRuntime(firstBrowserRuntimeData);
-      this.setState({ runtime, backendData: firstBrowserRuntimeData });
+      const runtime = await this.createBrowserRuntime(firstBrowserRuntimeData, firstBrowserRuntimeData.bundles);
+      if (runtime) {
+        this.setState({ runtime, backendData: firstBrowserRuntimeData });
+      }
       return firstBrowserRuntimeData;
     }
   }
 
-  createBrowserRuntime = async backendData => {
+  createBrowserRuntime = async (backendData, bundles) => {
     const runtime = await BrowserRuntime.createInstance({ 
-      id: `${backendData.id}-public`, 
-      name: `${backendData.name}-public`,
-      sendResult: (uuid, result) => { /*console.log('SENDING RESULT', result)*/ }
-    });
+        id: `${backendData.id}-public`, 
+        name: `${backendData.name}-public`,
+        sendResult: (uuid, result) => { /*console.log('SENDING RESULT', result)*/ }
+      },
+      { bundles }
+    );
     backendData.services.map(s => {
       const svc = runtime.createService(s, s.uuid);
       svc && svc.configure && svc.configure(s);

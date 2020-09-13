@@ -39,16 +39,18 @@ class MonitorUI extends Component {
                 }}
                 value={this.state.message}
               />
-              <Checkbox
-                label="active"
-                checked={this.state.enabled}
-                onChange={(_, { checked: enabled }) => 
-                 this.setState(
-                  { enabled }, 
-                  () => service.configure({ enabled })
-                 )
-                }
-              />
+              <div>
+                <Checkbox
+                  label="active"
+                  checked={this.state.enabled}
+                  onChange={(_, { checked: enabled }) => 
+                  this.setState(
+                    { enabled }, 
+                    () => service.configure({ enabled })
+                  )
+                  }
+                />
+              </div>
             </div>
           )
         }

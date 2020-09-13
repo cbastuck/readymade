@@ -9,6 +9,10 @@ const serviceId = 'hookup.to/service/sound';
 const serviceName = 'Sound';
 
 class SoundUI extends Component {
+  state = {
+    running: false
+  };
+
   onInit = initialState => {
     this.setState({ ...initialState });
   }
@@ -19,13 +23,22 @@ class SoundUI extends Component {
         <Button 
           style={{ width: '100%' }}
           onClick={() => {
-            Tone.Transport.on('start', ev => {
-              console.log('Position', ev)
-            });
-            Tone.Transport.start();
+            this.setState(
+              { running: !this.state.running },
+              () => {
+                if (this.state.running) {
+                  Tone.Transport.start();              
+                } else {
+                  Tone.Transport.stop();
+                }
+              }
+            );
           }}
         >
-          Start Audio
+          { this.state.running ? 
+              <span>Stop Audio</span> :
+              <span>Start Audio</span>
+          }
         </Button>
       </div>
     );
@@ -58,7 +71,7 @@ class Sound {
 
   process(params) {
     const { note = 'C4', duration = '4n' } = params || {};
-    if (this._synth) {
+    if (this._synth && Tone.Transport.state === 'started') {
       this._synth.triggerAttackRelease(note, duration);
     }
     return params;

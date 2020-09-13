@@ -1,0 +1,26 @@
+
+{
+  "ExampleRuntime": {
+    "bundles": ["hookup.to/registry/browser/Audio"],
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Input",
+        "serviceId": "hookup.to/browser/input",
+        "eventSourceURL": "https://stream.wikimedia.org/v2/stream/recentchange",
+        "active": true
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "note=": "params.bot ? 'C4' : 'F5'" 
+        }
+      },
+      {
+        "serviceName": "Sound",
+        "serviceId": "hookup.to/service/sound"
+      }
+    ]
+  }
+}

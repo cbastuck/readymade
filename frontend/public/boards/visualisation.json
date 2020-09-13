@@ -330,7 +330,7 @@
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "60%",
+                "size": "65%",
                 "family": "Helvetica Neue, sans-serif"
               },
               "y": "15%"

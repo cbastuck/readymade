@@ -2,8 +2,6 @@ import React, { Component } from 'react';
 import {
   Input,
   Button,
-  Label,
-  Select,
 } from 'semantic-ui-react';
 import moment from 'moment';
 

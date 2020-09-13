@@ -6,39 +6,60 @@ import { parseResponse } from './MultiformParser';
 import { restoreToken } from '../core/Auth';
 import { serializeWebsocketBuffer } from '../core/format';
 import defaultRegistry from './registry/Default';
+import { loadBundle } from './Bundles';
 
 function logInfo(msg) {
   console.log(msg);
 }
 
 export default class BrowserRuntime {
-  static async createInstance(runtime, { user, ...params } = {}) {
-    const registry = await BrowserRuntime.registry(user);
+  static async createInstance(runtime, { user, bundles, ...params } = {}) {
+    const registry = await BrowserRuntime.registry(user, bundles);
     return new BrowserRuntime(runtime, { ...params, user, registry });
   }
+
   static findServiceUI(serviceId) {
     const a = BrowserRuntime.__createdRegistry || []
     return a.find(s => serviceId === s.serviceId && s.createUI);
   }
-  static async registry(user) {
-    if (!BrowserRuntime.__createdRegistry) {
-      BrowserRuntime.__createdRegistry = defaultRegistry;
-      if (user && user.features && user.features.registry) {
-        const registry = JSON.parse(user.features.registry);
-        for (const reg of registry) {
-          switch(reg) {
-            case 'hookup.to/registry/browser/Audio':
-              const { default: r } = await import('./registry/Audio');
-              BrowserRuntime.__createdRegistry = 
-                BrowserRuntime.__createdRegistry.concat(r());
-              break;
-            default:
-              console.error('Unknown registry', reg);
-              break;
+
+  static async loadBundles(bundles) {
+    if (bundles) {
+      const appendBundleServices = arr => arr.forEach(x => {
+        const exists = BrowserRuntime.__createdRegistry && 
+                      BrowserRuntime.__createdRegistry.find(
+                        s => x.serviceId === s.serviceId);
+        if (!exists) {
+          if (BrowserRuntime.__createdRegistry) {
+            BrowserRuntime.__createdRegistry.push(x);
+          } else {
+            BrowserRuntime.__createdRegistry = [x];
           }
         }
+      });
+      for (const bundleId of bundles) {
+        const bdl = await loadBundle(bundleId);
+        appendBundleServices(bdl);
       }
     }
+    return BrowserRuntime.__createdRegistry;
+  }
+
+  static async registry(user, bundles) {
+    if (!BrowserRuntime.__createdRegistry) {
+      BrowserRuntime.__createdRegistry = defaultRegistry;
+
+      // TODO: rename to user registry to user bundles
+      if (user && user.features && user.features.registry) {
+        const userBundles = JSON.parse(user.features.registry);
+        await BrowserRuntime.loadBundles(userBundles); 
+      }
+    }
+
+    if (bundles) {
+      await BrowserRuntime.loadBundles(bundles);
+    }
+
     return BrowserRuntime.__createdRegistry;
   }
 
@@ -272,4 +293,5 @@ export default class BrowserRuntime {
       this.websocket = undefined;
     }
   }
+
 };

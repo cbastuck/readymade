@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import { 
-  Button,
   Card,
   Image,
   Breadcrumb,
@@ -17,14 +17,19 @@ const examples = [
     brief: 'The mother of examples',
     description: 'This example is showing the basic structure of a hookup chain',
     image: '/assets/shutterstock_1196210650.png',
-    url: 'sandbox?src=/boards/examples/helloworld.json'
+    url: '/boards/examples/helloworld.json'
+  },
+  {
+    title: 'Bots vs. Humans',
+    brief: 'Who works harder',
+    description: 'Listen to changes on Wikipedia',
+    image: '/assets/shutterstock_1196210650.png',
+    url: '/boards/examples/botsvshumans.json'
   }
 ];
 
 export default class Examples extends Component {
-  state = {
-    currentExample: null
-  };
+  state = {};
 
   renderCard = example => {
     const fontStyle = {
@@ -60,13 +65,16 @@ export default class Examples extends Component {
           </Card.Description>
         </Card.Content>
         <Card.Content extra>
-          <div className="ui two buttons">
-            <Button 
-              basic
-              onClick={() => this.setState({ currentExample: example })}
+          <div style={{ margin: '5px 0px' }}>
+            <Link
+              style={{
+                ...fontStyle, 
+                color: '#4284C4',
+              }}
+              to={`/examples?url=${example.url}`}
             >
-              <span style={{...fontStyle, color: '#4284C4' }}>Show Board</span>
-            </Button>
+              Show Board
+            </Link>
           </div>
         </Card.Content>
       </Card>
@@ -86,7 +94,7 @@ export default class Examples extends Component {
       fontSize: 11,
       margin: '0px 2px',
     };
-    const { currentExample } = this.state;
+    const currentExample = this.getCurrentExample();
     return (
       <div 
         style={{ 
@@ -95,13 +103,13 @@ export default class Examples extends Component {
         }}
       >
         <Breadcrumb>
-          <Breadcrumb.Section 
-            link
-            onClick={() => this.setState({ currentExample: null })}
-          >
-            <span style={breadcrumpStyle}>
+          <Breadcrumb.Section>
+            <Link 
+              style={breadcrumpStyle} 
+              to="/examples"
+            >
               Examples
-            </span>
+            </Link>
           </Breadcrumb.Section>
           <Breadcrumb.Divider />
           { 
@@ -118,7 +126,7 @@ export default class Examples extends Component {
   }
 
   renderExamplesContainer = () => {
-    const { currentExample } = this.state;
+    const currentExample = this.getCurrentExample();
     return (
       <div 
         style={{ 
@@ -133,12 +141,12 @@ export default class Examples extends Component {
             marginBottom: 20,
           }}
         >
-          <h1 style={{ fontSize: 17, margin: 0, padding: 0 }}>
+          <h1 style={{ margin: 0, padding: 0 }}>
             <div 
               style={{
                 letterSpacing: 8,
                 textTransform: 'uppercase',
-                fontSize: 20,
+                fontSize: 18,
                 marginTop: 15
               }}
             > 
@@ -164,12 +172,12 @@ export default class Examples extends Component {
   }
 
   renderSandbox = () => {
-    const { currentExample } = this.state;
+    const currentExample = this.getCurrentExample();
     return currentExample && (
       <div style={{ width: '100%', height: '100%' }}>
         <iframe 
           title={currentExample.title}
-          src={currentExample.url}
+          src={`sandbox?src=${currentExample.url}`}
           frameBorder="0"
           style={{
             width: '100%',
@@ -179,6 +187,19 @@ export default class Examples extends Component {
         />
       </div>
     );
+  }
+
+  getCurrentExample = () => {
+    const search = this.props.location && this.props.location.search;
+    if (!search) {
+      return null;
+    }
+    const params = new URLSearchParams(search);
+    const exampleUrl = params && params.get('url');
+    if (!exampleUrl) {
+      return null;
+    }
+    return examples.find(ex => ex.url === exampleUrl);
   }
 
   render() {
