@@ -9,12 +9,16 @@ export default class MessageReceiver extends Component {
 
   componentDidMount() {
     const onMsgReceived = ev => {
-      const data = ev.data && JSON.parse(ev.data);
-      if (data.state) {
-        const callback = MessageReceiver.redirects[data.state];
-        if (callback) {
-          callback(data);
+      try{ 
+        const data = ev.data && typeof ev.data === 'string' && JSON.parse(ev.data);
+        if (data.state) {
+          const callback = MessageReceiver.redirects[data.state];
+          if (callback) {
+            callback(data);
+          }
         }
+      } catch (err) {
+        console.log(`MessageReceiver: string message is not a valid JSON: ${ev.data}`)
       }
     };
     window.addEventListener('message', onMsgReceived, false);

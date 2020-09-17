@@ -15,39 +15,28 @@ const redirectURI = 'http://localhost/serviceRedirect';
 
 class DropboxUI extends Component {
   state = {
-    accessToken: undefined,
     files: [],
+    user: undefined,
   };
 
   componentDidMount() {
     MessageReceiver.registerRedirect(
       loginStateId,
       async data => {
-        const files = await this.retrieveFiles(data.access_token);
-        this.setState({ accessToken: data.access_token, files });
+        const accessToken = data.access_token;
+        this.service.configure({ accessToken });
+        const user = await this.service.getUserAccount();
+        this.setState({ user });
       }
     );
   }
 
-  onInit = initialState => {
-    this.setState({ ...initialState });
-  }
-
-  retrieveFiles = async accessToken => {
-    const dbx = new DBox({
-      fetch, 
-      accessToken
-    });
-    const response = await dbx.filesListFolder({ path: '' });
-    return response.entries;
+  onInit = service => {
+    this.service = service;
   }
 
   onLogin = async () => {
-    const dbx = new DBox({
-      clientId,
-      fetch
-    });
-    const authUrl = dbx.getAuthenticationUrl(redirectURI, loginStateId);
+    const authUrl = this.service.getAuthUrl();
     window.open(authUrl, 'blank');
   }
 
@@ -67,13 +56,13 @@ class DropboxUI extends Component {
   renderFilesPanel() {
     return (
       <div>
-        { JSON.stringify(this.state.files) }
+        User: { this.state.user.email }
       </div>
     );
   }
 
   renderMain = () => {
-    if (!this.state.accessToken) {
+    if (!this.state.user) {
       return this.renderLoginPanel();     
     }
     return this.renderFilesPanel();
@@ -97,12 +86,49 @@ class Dropbox {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.dbx = new DBox({ clientId, fetch });
   }
 
   configure(config) {
+    const { accessToken, download } = config;
+    if (accessToken !== undefined) {
+      this.dbx.setAccessToken(accessToken);
+      this.trigger();
+    }
+
+    if (download !== undefined) {
+      this.download = download;
+    }
   }
 
-  process(params) {
+  getAuthUrl() {
+    return this.dbx.getAuthenticationUrl(redirectURI, loginStateId);
+  }
+
+  getUserAccount() {
+    return this.dbx.usersGetCurrentAccount();
+  }
+
+  async retrieveFiles() {
+    const response = await this.dbx.filesListFolder({ path: '' });
+    return response.entries;
+  }
+
+  async trigger(params) {
+    const data = await this.process(params);
+    await this.app.next(this, data);
+  }
+
+  async process(params) {
+    if (this.download) {
+      const files = await this.retrieveFiles();
+      const file = files.find(f => f.name === this.download);
+      if (file) {
+        const downloaded = await this.dbx.filesDownload({ path: file.path_lower });
+        return downloaded.fileBlob.text();
+      }
+    }
     return params;
   }
 }

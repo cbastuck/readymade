@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 
 import uuid from 'uuid';
-import queryString from 'query-string'
+import queryString from 'query-string';
 
 import Scene from './components/Scene';
 import { AppConsumer } from './AppContext';
