@@ -25,6 +25,13 @@ const examples = [
     description: 'Listen to changes on Wikipedia',
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/botsvshumans.json'
+  },
+  {
+    title: 'Filestorage',
+    brief: '',
+    description: 'Access files from dropbpx',
+    image: '/assets/shutterstock_1196210650.png',
+    url: '/boards/examples/filestorage.json'
   }
 ];
 

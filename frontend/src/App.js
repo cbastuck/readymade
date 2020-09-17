@@ -27,6 +27,8 @@ import ServiceReference from './views/ServiceReference';
 import BoardProvider from './BoardContext';
 import Sandbox from './Sandbox';
 import Import from './Import';
+import ServiceRedirect from './views/ServiceRedirect';
+import MessageReceiver from './MessageReceiver';
 
 import './App.css';
 
@@ -85,10 +87,12 @@ class App extends Component {
               <Route path="/docs/board" component={BoardDocumentation} />
               <Route path="/docs/runtime" component={RuntimeDocumentation} />
               <Route path="/docs" component={Quickstart} />
+              <Route path="/serviceRedirect" component={ServiceRedirect} />
               <Route path="/:board" component={BoardWithContext} />
             </Switch>
           </div>
         </Router>
+        <MessageReceiver />
       </AppContext>
     );
   }

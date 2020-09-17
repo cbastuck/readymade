@@ -9,6 +9,9 @@ export async function loadBundle(bundleId) {
     case 'hookup.to/registry/browser/Statistic':
       const { default: statisticRegistry } = await import('./registry/Statistic');
       return statisticRegistry();
+    case 'hookup.to/registry/browser/FileStorage':
+      const { default: fileStorageRegistry } = await import('./registry/FileStorage');
+      return fileStorageRegistry();
     default:
       console.error('Unknown registry-bundle', bundleId);
       return [];
