@@ -1,7 +1,9 @@
-import DropboxDescriptor from '../services/Dropbox';
+import DropboxSourceDescriptor from '../services/DropboxSource';
+import DropboxSinkDescriptor from '../services/DropboxSink';
 
 export default function () {
   return [
-    DropboxDescriptor,
+    DropboxSourceDescriptor,
+    DropboxSinkDescriptor,
   ];
 }

@@ -21,6 +21,7 @@ import FetcherDesriptor from '../services/Fetcher';
 import CameraDesriptor from '../services/Camera';
 import DispatcherDesriptor from '../services/Dispatcher';
 import InputDescriptor from '../services/Input';
+import TriggerDescriptor from '../services/Trigger';
 
 export default [
   timerDescriptor,
@@ -46,4 +47,5 @@ export default [
   CameraDesriptor,
   DispatcherDesriptor,
   InputDescriptor,
+  TriggerDescriptor,
 ];

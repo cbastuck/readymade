@@ -1,109 +1,35 @@
-import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
-
 import { Dropbox as DBox } from 'dropbox';
 
-import ServiceUI from './ServiceUI';
-import MessageReceiver from '../../MessageReceiver';
-
-const serviceId = 'hookup.to/service/dropbox';
-const serviceName = 'Dropbox';
-
 const clientId = '1gederbui19m8pk';
-const loginStateId = 'hkp-db-login';
 const redirectURI = 'http://localhost/serviceRedirect';
 
-class DropboxUI extends Component {
-  state = {
-    files: [],
-    user: undefined,
-  };
-
-  componentDidMount() {
-    MessageReceiver.registerRedirect(
-      loginStateId,
-      async data => {
-        const accessToken = data.access_token;
-        this.service.configure({ accessToken });
-        const user = await this.service.getUserAccount();
-        this.setState({ user });
-      }
-    );
-  }
-
-  onInit = service => {
-    this.service = service;
-  }
-
-  onLogin = async () => {
-    const authUrl = this.service.getAuthUrl();
-    window.open(authUrl, 'blank');
-  }
-
-  renderLoginPanel() {
-    return (
-      <div>
-        <Button 
-          style={{ width: '100%' }}
-          onClick={() => this.onLogin()}
-        >
-          Login
-        </Button>
-      </div>
-    ); 
-  }
-
-  renderFilesPanel() {
-    return (
-      <div>
-        User: { this.state.user.email }
-      </div>
-    );
-  }
-
-  renderMain = () => {
-    if (!this.state.user) {
-      return this.renderLoginPanel();     
-    }
-    return this.renderFilesPanel();
-  }
-
-  render() {
-    return (
-      <ServiceUI 
-        {...this.props} 
-        onInit={this.onInit.bind(this)}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
-      />
-    )
-  }
-}
-
-class Dropbox {
+export default class Dropbox {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
     this.app = app;
 
+    this.mode = 'download';
     this.dbx = new DBox({ clientId, fetch });
   }
 
   configure(config) {
-    const { accessToken, download } = config;
+    const { 
+      accessToken,
+      mode,
+    } = config;
+
     if (accessToken !== undefined) {
       this.dbx.setAccessToken(accessToken);
-      this.trigger();
     }
 
-    if (download !== undefined) {
-      this.download = download;
+    if (mode !== undefined) {
+      this.mode = mode;
     }
   }
 
-  getAuthUrl() {
-    return this.dbx.getAuthenticationUrl(redirectURI, loginStateId);
+  getAuthUrl(state) {
+    return this.dbx.getAuthenticationUrl(redirectURI, state);
   }
 
   getUserAccount() {
@@ -120,25 +46,60 @@ class Dropbox {
     await this.app.next(this, data);
   }
 
-  async process(params) {
-    if (this.download) {
-      const files = await this.retrieveFiles();
-      const file = files.find(f => f.name === this.download);
-      if (file) {
-        const downloaded = await this.dbx.filesDownload({ path: file.path_lower });
-        return downloaded.fileBlob.text();
-      }
+  async downloadFile(fn) {
+    const files = await this.retrieveFiles();
+    const file = files.find(f => f.name === fn);
+    if (file) {
+      return this.dbx.filesDownload({ path: file.path_lower });
     }
+  }
+
+  async processDownload(params) {
+    const file = params && params.file;
+    if (file) {
+      const f = await this.downloadFile(file);
+      return f.fileBlob.text();
+    } else {
+      console.log('Dropbox bypass param in download mode', params);
+    }
+  }
+
+  async processUpload(params) {
+    const args = { 
+      commit_info: {
+        path: '/testpath.txt',
+        autorename: true, 
+        mode: { '.tag': 'add' }
+      }
+    };
+    const uploadLink = await this.dbx.filesGetTemporaryUploadLink(args);
+    const response = await fetch(
+      uploadLink.link,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/octet-stream',
+        },
+        body: JSON.stringify(params)
+      }
+    );
+    console.log('Upload link ',uploadLink, response);
+    return params;
+  }
+
+  async process(params) {
+    if (!this.dbx.getAccessToken()) {
+      return params;
+    }
+
+    if (this.mode === 'download') {
+      return this.processDownload(params);
+    } else if (this.mode === 'upload') {
+      return this.processUpload(params);
+    } else {
+      console.log('Unknown dropbox mode', this.mode);
+    }
+  
     return params;
   }
 }
-
-const descriptor = {
-  serviceName,
-  serviceId,
-  create: (app, board, descriptor, id) =>
-    new Dropbox(app, board, descriptor, id),
-  createUI: DropboxUI,
-};
-
-export default descriptor;
