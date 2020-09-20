@@ -12,6 +12,10 @@ function logInfo(msg) {
   console.log(msg);
 }
 
+function serviceDataKey(uuid, key) {
+  return `service-data-${uuid}-${key}`;
+}
+
 export default class BrowserRuntime {
   static async createInstance(runtime, { user, bundles, ...params } = {}) {
     const registry = await BrowserRuntime.registry(user, bundles);
@@ -78,6 +82,15 @@ export default class BrowserRuntime {
         if (target && target.onAction) {
           target.onAction(action);
         }
+      },
+      storeServiceData: (serviceUuid, key, value) => {
+        localStorage.setItem(serviceDataKey(serviceUuid, key), value);
+      },
+      restoreServiceData: (serviceUuid, key) => {
+        return localStorage.getItem(serviceDataKey(serviceUuid, key)) || undefined;
+      },
+      removeServiceData: (serviceUuid, key) => {
+        localStorage.removeItem(serviceDataKey(serviceUuid, key));
       }
     }
 

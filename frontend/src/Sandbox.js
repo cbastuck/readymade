@@ -68,7 +68,7 @@ export default class Sandbox extends Component {
       { bundles }
     );
     backendData.services.map(s => {
-      const svc = runtime.createService(s, s.uuid);
+      const svc = runtime.createService(s, s.uuid || s.serviceUuid);
       svc && svc.configure && svc.configure(s);
       return svc;
     });

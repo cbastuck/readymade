@@ -41,6 +41,10 @@ class DropboxSinkUI extends Component {
     this.retrieveUserAccount(service);
   }
 
+  onTimer = service => {
+    this.setState({ asyncUploadRunning: !!service.uploadSession })
+  }
+
   onLogin = async service => {
     const authUrl = service.getAuthUrl(loginStateId);
     window.open(authUrl, 'blank');
@@ -59,10 +63,22 @@ class DropboxSinkUI extends Component {
     ); 
   }
 
-  renderFilesPanel(service) {
+  renderSinkPanel(service) {
     return (
       <div>
-        User: { this.state.user.email }
+        <div
+          style={{
+            margin: '10px 0px'
+          }}
+        >
+          User: { this.state.user.email }
+        </div>
+        <Button 
+          onClick={() => service.finishUpload()}
+          disabled={!this.state.asyncUploadRunning}
+        >
+          Finish
+        </Button>
       </div>
     );
   }
@@ -71,14 +87,15 @@ class DropboxSinkUI extends Component {
     if (!this.state.user) {
       return this.renderLoginPanel(service);     
     }
-    return this.renderFilesPanel(service);
+    return this.renderSinkPanel(service);
   }
 
   render() {
     return (
-      <ServiceUI 
+      <ServiceUI
         {...this.props} 
         onInit={this.onInit.bind(this)}
+        onTimer={this.onTimer.bind(this)}
         segments={[
           { name: 'Main', render: this.renderMain },
         ]}

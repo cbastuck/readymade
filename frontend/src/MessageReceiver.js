@@ -18,7 +18,7 @@ export default class MessageReceiver extends Component {
           }
         }
       } catch (err) {
-        console.log(`MessageReceiver: string message is not a valid JSON: ${ev.data}`)
+        // console.log(`MessageReceiver: string message is not a valid JSON: ${ev.data}`)
       }
     };
     window.addEventListener('message', onMsgReceived, false);
