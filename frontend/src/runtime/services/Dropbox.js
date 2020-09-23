@@ -75,6 +75,7 @@ export default class Dropbox {
   }
 
   onTokenExpired() {
+    this.dbx.setAccessToken('');
     this.app.removeServiceData(this.uuid, 'accessToken');
   }
 

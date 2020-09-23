@@ -3,71 +3,56 @@ import {
   Button
 } from 'semantic-ui-react';
 
-import { BoardConsumer } from '../../BoardContext';
+import ServiceUI from './ServiceUI';
 import MediaRecorder from 'audio-recorder-polyfill';
 
 const serviceId = 'hookup.to/service/microphone';
 const serviceName = 'Microphone';
 
 class MicrophonePolyfillUI extends Component {
-  constructor(props) {
-    super(props);
-    this.recorder = undefined;
-    this.state = {
-      recording: false
+  state = {
+    recording: false,
+  };
+
+  onTimer = service => {
+    if (this.state.recording !== service.isRecording) {
+      this.setState({ recording: service.isRecording });
     }
   }
 
-  async startRecorder(boardContext) {
-    const stream = await navigator.mediaDevices.getUserMedia({
-      audio: true
-    });
-    this.gumStream = stream;
-    this.recorder = new MediaRecorder(stream);
-    this.recorder.addEventListener('dataavailable', e => {
-      // send the data to the service
-      const runtime = boardContext.getCurrentBrowserRuntime(this.props.runtimeId);
-      if (runtime) {
-        const service = runtime.getServiceById(this.props.service.uuid)
-        service && service.process({ blob: e.data });
-      }
-    });
-    this.recorder.start();
-    this.setState({ recording: true });
-  }
-
-  stopRecorder() {
-    if (this.recorder && this.recorder.state === "recording") {
-      this.recorder.stop();
-      this.gumStream.getAudioTracks()[0].stop();
-      this.gumStream = this.recorder = undefined;
-      this.setState({ recording: false });
-    }
+  renderMain = service => {
+    return (
+      <div
+        style={{
+          margin: '0px 5px',
+        }}
+      >
+        <canvas 
+          ref={canvas => service.canvas = canvas}
+          height={100}
+          width={400}
+        />
+        <Button
+          onClick={() => this.state.recording ? 
+            service.stopRecorder() : 
+            service.startRecorder()
+          }
+        >
+          { this.state.recording ? 'STOP' : 'RECORD' }
+        </Button>
+      </div>
+    );
   }
 
   render() {
     return (
-      <BoardConsumer>
-      {
-        boardContext => (
-          <div
-            style={{
-              margin: 10
-            }}
-          >
-            <Button
-              onClick={() =>
-                this.state.recording ? 
-                  this.stopRecorder() : 
-                  this.startRecorder(boardContext)
-              }
-            >
-              { this.state.recording ? 'STOP' : 'RECORD' }
-            </Button>
-          </div>
-        )
-      }
-      </BoardConsumer>
+      <ServiceUI
+        {...this.props} 
+        onTimer={this.onTimer.bind(this)}
+        segments={[
+          { name: 'Main', render: this.renderMain },
+        ]}
+      />
     );
   }
 }
@@ -77,14 +62,108 @@ class MicrophonePolyfill {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.recorder = undefined;
+    this.isRecording = false;
+    this.timeslice = 1000;
+    this.stream = undefined;
+    this.audioCtx = undefined;
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        this.stream = stream;
+        this.visualize();
+      });
   }
 
   configure(config) {
+    const { timeslice } = config;
+
+    if (timeslice !== undefined) {
+      this.timeslice = timeslice;
+    }
+  }
+
+  async startRecorder() {
+    try {
+      this.recorder = new MediaRecorder(this.stream);
+      this.recorder.addEventListener(
+        'dataavailable', 
+        e => this.app.next(this, e.data)
+      );
+      this.recorder.start(this.timeslice);
+      this.isRecording = true;
+    } catch (err) {
+      console.error('Microphone error', err);
+    }
+  }
+
+  stopRecorder() {
+    if (this.recorder) {
+      this.recorder.stop();
+      this.stream.getAudioTracks()[0].stop();
+      this.stream = this.recorder = undefined;
+      this.isRecording = false;
+    }
+  }
+
+  // copied from here: https://github.com/mdn/web-dictaphone
+  visualize() {
+    if(!this.audioCtx) {
+      this.audioCtx = new AudioContext();
+    }
+
+    this.source = this.audioCtx.createMediaStreamSource(this.stream);
+    this.analyser = this.audioCtx.createAnalyser();
+    this.analyser.fftSize = 2048;
+    this.source.connect(this.analyser);
+    this.draw();
+  }
+
+  // copied from here: https://github.com/mdn/web-dictaphone
+  draw() {
+    if (!this.canvas) {
+      return;
+    }
+    const canvasCtx = this.canvas.getContext('2d');
+    const bufferLength = this.analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    const width = this.canvas.width
+    const height = this.canvas.height;
+
+    requestAnimationFrame(this.draw.bind(this));
+
+    this.analyser.getByteTimeDomainData(dataArray);
+  
+    canvasCtx.fillStyle = 'white';
+    canvasCtx.fillRect(0, 0, width, height);
+
+    canvasCtx.lineWidth = 1;
+    canvasCtx.strokeStyle = 'gray';
+
+    canvasCtx.beginPath();
+    const sliceWidth = width * 1.0 / bufferLength;
+    for(let i = 0, x = 0; i < bufferLength; i++) {
+      let v = dataArray[i] / 128.0;
+      let y = v * height / 2;
+
+      if(i === 0) {
+        canvasCtx.moveTo(x, y);
+      } else {
+        canvasCtx.lineTo(x, y);
+      }
+
+      x += sliceWidth;
+    }
+    canvasCtx.lineTo(width, height/2);
+    canvasCtx.stroke();
   }
 
   async process(params) {
-    const { blob } = params;
-    return this.app.next(this, blob);
+    if (!this.isRecording) {
+      await this.startRecorder();
+    }
+    return null;    
   }
 }
 

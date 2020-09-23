@@ -100,7 +100,7 @@ class DropboxSinkUI extends Component {
           { name: 'Main', render: this.renderMain },
         ]}
       />
-    )
+    );
   }
 }
 

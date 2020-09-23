@@ -7,10 +7,12 @@ import {
   Button
 } from 'semantic-ui-react';
 
+/*
 import {
   DateInput,
   TimeInput,
 } from 'semantic-ui-calendar-react';
+*/
 
 import {
   configureService,
@@ -53,6 +55,8 @@ export default class TimerUI extends Component {
           <Label style={{ width: 70 }}>
               Date
           </Label>
+          {
+          /*
           <DateInput
             closeOnMouseLeave={false}
             closable={true}
@@ -62,11 +66,15 @@ export default class TimerUI extends Component {
             iconPosition="left"
             onChange={(_, { value }) => this.setState({date: value })}
           />
+          */
+          }
         </div>
          <div style={lineStyle}>
           <Label style={{ width: 70 }}>
             Time
           </Label>
+          {
+          /*
           <TimeInput
             closeOnMouseLeave={false}
             closable={true}
@@ -76,6 +84,8 @@ export default class TimerUI extends Component {
             iconPosition="left"
             onChange={(_, { value }) => this.setState({ time: value })}
           />
+          */
+          }
         </div>
         <div style={lineStyle}>
           <Checkbox
