@@ -315,10 +315,7 @@ class AudioInput {
   }
 
   async process(params) {
-    if (!this.isRecording) {
-      await this.startRecorder(this.timeslice);
-    }
-    return null;    
+    return params;
   }
 }
 

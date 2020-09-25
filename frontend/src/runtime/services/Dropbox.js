@@ -12,6 +12,7 @@ export default class Dropbox {
     this.mode = 'download';
     this.uploadBehavior = 'async'; // can also be 'sync'
     this.uploadFilename = 'unnamed upload';
+    this.uploadActive = false;
     
     this.dbx = new DBox({ clientId, fetch });
     const accessToken = this.app.restoreServiceData(this.uuid, 'accessToken');
@@ -84,22 +85,21 @@ export default class Dropbox {
     await this.app.next(this, data);
   }
 
-  async downloadFile(fn) {
-    const files = await this.retrieveFiles();
-    const file = files.find(f => f.name === fn);
+  async downloadFileByName(params) {
+    let file = params && params.file;
+    if (!file) {
+      const files = await this.retrieveFiles();
+      file = files.find(f => f.path_lower === params);
+    }
     if (file) {
-      return this.dbx.filesDownload({ path: file.path_lower });
+      return this.downloadFileByPath(file);
     }
   }
 
-  async processDownload(params) {
-    const file = params && params.file;
-    if (file) {
-      const f = await this.downloadFile(file);
-      return f.fileBlob.text();
-    } else {
-      console.log('Dropbox bypass param in download mode', params);
-    }
+  async downloadFileByPath(file) {
+    const f = await this.dbx.filesDownload({ path: file.path_lower });
+    const blob = f.fileBlob;
+    return this.isTextContent ? blob.text() : blob;
   }
 
   paramsToBody(params) {
@@ -177,10 +177,10 @@ export default class Dropbox {
     }
 
     if (this.mode === 'download') {
-      return await this.processDownload(params);
+      return await this.downloadFileByName(params);
     } 
     
-    if (this.mode === 'upload') {
+    if (this.mode === 'upload' && this.uploadActive) {
       if (this.uploadBehavior === 'async') {
         await this.processAsyncUpload(this.uploadFilename, params);
       } else {

@@ -1,10 +1,6 @@
 import React, { Component } from 'react';
 
-import { Label } from 'semantic-ui-react';
-
 import SyncIndicator from './SyncIndicator';
-
-import { labelWidth, labelHeight } from './Defaults';
 
 export default class SelectorField extends Component {
   state = {

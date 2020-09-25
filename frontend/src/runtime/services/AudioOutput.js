@@ -1,8 +1,4 @@
 import React, { Component } from 'react';
-import {
-  Button,
-  Checkbox,
-} from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 
@@ -10,9 +6,6 @@ const serviceId = 'hookup.to/service/audio-output'; // TODO: change to audio-inp
 const serviceName = 'Audio Output';
 
 class AudioOutputUI extends Component {
-  state = {
-  };
-
   renderMain = service => {
     return (
       <div

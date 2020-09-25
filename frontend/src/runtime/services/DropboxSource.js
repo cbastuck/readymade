@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
+import { Button, List } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 import Dropbox from './Dropbox';
@@ -30,7 +30,8 @@ class DropboxSourceUI extends Component {
   retrieveUserAccount = async service => {
     const user = await service.getUserAccount();
     if (user) {
-      this.setState({ user });
+      const files = await service.retrieveFiles();
+      this.setState({ user, files });
     }
   }
 
@@ -57,10 +58,33 @@ class DropboxSourceUI extends Component {
     ); 
   }
 
+  renderFile(service, file) {
+    return (
+      <div
+        key={`dropbox-file-${file.path_lower}`}
+        style={{
+            cursor: 'pointer',
+            color: '#4183c4',
+          }}
+        onClick={() => service.trigger({ file })}
+      > 
+        { file.name } 
+      </div>
+    );
+  }
+
   renderFilesPanel(service) {
     return (
-      <div>
+      <div style={{ textAlign: 'left', width: 250 }}>
         User: { this.state.user.email }
+        <List>
+          
+          <List.Item>
+            { 
+              this.state.files.map(file => this.renderFile(service, file))
+            }
+          </List.Item>
+        </List>
       </div>
     );
   }

@@ -1,8 +1,4 @@
 import React, { Component } from 'react';
-import {
-  Button,
-  Checkbox,
-} from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 

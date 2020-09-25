@@ -31,6 +31,7 @@ export default class InputField extends Component {
       label, 
       onChange, 
       style,
+      disabled,
       value: syncedValue,
     } = this.props;
     const fontSize = 11;
@@ -53,9 +54,10 @@ export default class InputField extends Component {
         <Input 
           style={{ width: '50%', fontSize: fontSize + 1, flexGrow: 3, }}
           type={type}
-          value={value}
+          value={value || ''}
           onChange={(_, { value }) => this.setState({ value })}
           onKeyUp={ev => ev.key === 'Enter' && onChange(ev, { value })}
+          disabled={disabled}
         />
       </div>
     );

@@ -1,9 +1,13 @@
 import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
+import { 
+  Button,
+  Checkbox,
+} from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 import Dropbox from './Dropbox';
 import MessageReceiver from '../../MessageReceiver';
+import InputField from '../../components/shared/InputField';
 
 const serviceId = 'hookup.to/service/dropbox-sink';
 const serviceName = 'Dropbox Sink';
@@ -39,6 +43,10 @@ class DropboxSinkUI extends Component {
     service.configure({ mode: 'upload' });
     this.service = service;
     this.retrieveUserAccount(service);
+    this.setState({ 
+      uploadFilename: service.uploadFilename,
+      active: service.uploadActive,
+    });
   }
 
   onTimer = service => {
@@ -75,16 +83,45 @@ class DropboxSinkUI extends Component {
             margin: '10px 0px',
             textTransform: 'uppercase', 
             fontSize: 12,
+            textAlign: 'left',
           }}
         >
           User: { this.state.user.email }
         </div>
-        <Button 
-          onClick={() => service.finishUpload()}
-          disabled={!this.state.asyncUploadRunning}
+        <div
+          style={{
+            textAlign: 'left'
+          }}
         >
-          Finish
-        </Button>
+          <Checkbox
+            label="Active"
+            checked={this.state.active}
+            onChange={(_, {checked}) => 
+              this.setState(
+                { active: checked }, 
+                () => service.uploadActive = checked
+              )
+            }
+          />
+        </div>
+        <InputField
+          label="filename"
+          value={this.state.uploadFilename}
+          disabled={!this.state.active}
+          onChange={(_, { value }) => {
+            service.configure({ uploadFilename: value });
+            this.setState({ uploadFilename: value });
+          }}
+        />
+        <div>
+          <Button 
+            style={{ width: '100%' }}
+            onClick={() => service.finishUpload()}
+            disabled={!this.state.asyncUploadRunning}
+          >
+            Finish
+          </Button>
+        </div>
       </div>
     );
   }
