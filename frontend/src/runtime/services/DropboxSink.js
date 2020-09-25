@@ -54,7 +54,11 @@ class DropboxSinkUI extends Component {
     return (
       <div>
         <Button 
-          style={{ width: '100%' }}
+          style={{ 
+            width: '100%', 
+            textTransform: 'uppercase', 
+            fontSize: 11 
+          }}
           onClick={() => this.onLogin(service)}
         >
           Login
@@ -68,7 +72,9 @@ class DropboxSinkUI extends Component {
       <div>
         <div
           style={{
-            margin: '10px 0px'
+            margin: '10px 0px',
+            textTransform: 'uppercase', 
+            fontSize: 12,
           }}
         >
           User: { this.state.user.email }

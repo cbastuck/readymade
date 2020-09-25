@@ -37,21 +37,16 @@ export default class SelectorField extends Component {
           flexDirection: 'row',
         }}
       >
-        <Label 
+        <SyncIndicator 
+          onClick={ev => onChange(ev, { value })}
+          inSync={value === syncedValue}
+          label={label}
           style={{
-            backgroundColor: '#E8E8E8',
-            borderRadius: 2,
-            width: labelWidth,
             textTransform: 'uppercase',
             letterSpacing: 1,
             fontSize,
-            textAlign: 'center',
-            paddingTop: 10, 
-            height: labelHeight
           }}
-        > 
-          {label} 
-        </Label>
+        />
         { 
           !this.state.optionsVisible ? (
             <div 
@@ -91,10 +86,6 @@ export default class SelectorField extends Component {
             </div>
           )
         }
-        <SyncIndicator 
-          onClick={ev => onChange(ev, { value })}
-          inSync={value === syncedValue}
-        />
       </div>
     );
   }

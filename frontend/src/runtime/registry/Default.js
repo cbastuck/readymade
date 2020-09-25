@@ -1,6 +1,7 @@
 import timerDescriptor from '../services/Timer';
 import monitorDescriptor from '../services/Monitor';
-import microphoneDescriptor from '../services/Microphone';
+import audioInputDescriptor from '../services/AudioInput';
+import audioOutputDescriptor from '../services/AudioOutput';
 import playbackDescriptor from '../services/Playback';
 import FileProviderDescriptor from '../services/FileProvider';
 import DownloaderDescriptor from '../services/Downloader';
@@ -22,11 +23,13 @@ import CameraDesriptor from '../services/Camera';
 import DispatcherDesriptor from '../services/Dispatcher';
 import InputDescriptor from '../services/Input';
 import TriggerDescriptor from '../services/Trigger';
+import FileSourceDescriptor from '../services/FileSource';
 
 export default [
   timerDescriptor,
   monitorDescriptor,
-  microphoneDescriptor,
+  audioInputDescriptor,
+  audioOutputDescriptor,
   playbackDescriptor,
   FileProviderDescriptor,
   DownloaderDescriptor,
@@ -48,4 +51,6 @@ export default [
   DispatcherDesriptor,
   InputDescriptor,
   TriggerDescriptor,
+  TriggerDescriptor,
+  FileSourceDescriptor,
 ];

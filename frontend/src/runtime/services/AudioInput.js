@@ -4,8 +4,10 @@ import {
   Checkbox,
 } from 'semantic-ui-react';
 
-import ServiceUI from './ServiceUI';
 import MediaRecorder from 'audio-recorder-polyfill';
+
+import ServiceUI from './ServiceUI';
+import InputField from '../../components/shared/InputField';
 
 const serviceId = 'hookup.to/service/microphone'; // TODO: change to audio-input
 const serviceName = 'Audio Input';
@@ -21,14 +23,18 @@ class AudioInputUI extends Component {
     if (this.state.visualize) {
       const stream = await service.prepareStream();
       this.visualize(stream);
-      this.setState({ devices: service.availableDevices });
+      this.setState({ 
+        devices: service.availableDevices,
+        timeslice: service.timeslice,
+      });
     }
   }
 
   onTimer = service => {
-    if (this.state.recording !== service.isRecording) {
-      this.setState({ recording: service.isRecording });
-    }
+    this.setState({ 
+      recording: service.isRecording,
+      timeslice: service.timeslice,
+    });
   }
 
   renderDevices = service => {
@@ -45,7 +51,14 @@ class AudioInputUI extends Component {
             >
               { device.label }
               <Button
-                style={{ width: 60, height: 20, padding: 0, margin: '1px 10px' }}
+                style={{ 
+                  width: 60, 
+                  height: 20, 
+                  padding: 0, 
+                  margin: '1px 10px', 
+                  textTransform: 'uppercase', 
+                  fontSize: 11 
+                }}
                 onClick={async () => {
                   await service.configure({ device });
                   this.reInitVisualizer(service.stream);
@@ -62,6 +75,10 @@ class AudioInputUI extends Component {
   }
 
   renderMain = service => {
+    const buttonStyle = {
+      textTransform: 'uppercase', 
+      fontSize: 12,
+    };
     return (
       <div
         style={{
@@ -78,6 +95,7 @@ class AudioInputUI extends Component {
               }
             }}
             height={100}
+            style={{ width: '100%' }}
           />
         </div>
         <div style={{ margin: '5px 0px' }}>
@@ -93,14 +111,54 @@ class AudioInputUI extends Component {
           />
         </div>
         <Button
-          style={{ width: '100%', margin: '5px 0px' }}
-          onClick={() => this.state.recording ? 
-            service.stopRecorder() : 
-            service.startRecorder()
-          }
+          style={{ 
+            ...buttonStyle, 
+            width: '100%',
+          }}
+          onMouseDown={() => {
+            service.startRecorder();
+            this.setState({ pushRecording: true });
+          }}
+          onMouseUp={() => {
+            service.stopRecorder();
+            this.setState({ pushRecording: false });
+          }}
+          onMouseLeave={() => {
+            if (this.state.pushRecording) {
+              service.stopRecorder();
+              this.setState({ pushRecording: false });
+            }
+          }}
         >
-          { this.state.recording ? 'STOP' : 'RECORD' }
+          { !this.state.pushRecording ? 'Push to Record' : 'Recording ...' }
         </Button>
+        <div
+          style={{
+            marginTop: 5,
+            display: 'flex',
+            flexDirection: 'row'
+          }}
+        >
+          <InputField 
+            type="number"
+            label="timeslice"
+            value={this.state.timeslice}
+            onChange={(_, { value }) => {
+              const timeslice = Number(value);
+              service.timeslice = timeslice; 
+              this.setState({ timeslice: timeslice });
+            }}
+          />
+          <Button
+            style={{ ...buttonStyle }}
+            onClick={() => this.state.recording ? 
+              service.stopRecorder() : 
+              service.startRecorder(service.timeslice)
+            }
+          >
+            { this.state.recording ? 'Stop' : 'Record' }
+          </Button>
+        </div>
       </div>
     );
   }
@@ -231,32 +289,34 @@ class AudioInput {
     return this.stream;
   }
 
-  async startRecorder() {
+  async startRecorder(timeslice) {
     try {
-      this.recorder = new MediaRecorder(this.stream);
-      this.recorder.addEventListener(
-        'dataavailable', 
-        e => this.app.next(this, e.data)
-      );
-      this.recorder.start(this.timeslice);
+      if (!this.recorder) {
+        this.recorder = new MediaRecorder(this.stream);
+        this.recorder.addEventListener(
+          'dataavailable', 
+          e => this.app.next(this, e.data)
+        );
+      }
+      this.recorder.start(timeslice);
       this.isRecording = true;
     } catch (err) {
-      console.error('Microphone error', err);
+      console.error('AudioInput error', err);
     }
   }
 
   stopRecorder() {
     if (this.recorder) {
       this.recorder.stop();
-      this.stream.getAudioTracks()[0].stop();
-      this.stream = this.recorder = undefined;
+      //this.stream.getAudioTracks()[0].stop();
+      //this.stream = this.recorder = undefined;
       this.isRecording = false;
     }
   }
 
   async process(params) {
     if (!this.isRecording) {
-      await this.startRecorder();
+      await this.startRecorder(this.timeslice);
     }
     return null;    
   }
