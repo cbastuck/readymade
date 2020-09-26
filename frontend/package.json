@@ -34,7 +34,9 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "build": "mv node_modules/semantic-ui-offline node_modules/semantic-ui-css && react-scripts build",
+    "offlineFonts": "mv node_modules/semantic-ui-offline node_modules/semantic-ui-css",
+    "offlineFonts_": "echo null",
+    "build": "yarn run offlineFonts && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend"

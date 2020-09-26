@@ -156,6 +156,7 @@ export default class Examples extends Component {
       <div 
         style={{ 
           marginTop: 20,
+          height: '100%'
         }}
       >
         <div 
@@ -185,7 +186,7 @@ export default class Examples extends Component {
             height: '100%' 
           }}
         >
-        { this.renderExplainer() }
+        { !currentExample && this.renderExplainer() }
         {
           currentExample ? 
             this.renderSandbox() : 
@@ -245,7 +246,7 @@ export default class Examples extends Component {
           <p>
             Everything shown in the exampels is a fraction of the possibilities. 
             Examples run in a Sandbox. Purpose of the Sandbox is to build hookup 
-            workflows that only rely on the current browser state and no external resources.
+            workflows that only rely on the current browser state and need no external resources.
           </p>
 
           <p>
