@@ -119,7 +119,15 @@ class AudioInputUI extends Component {
             service.startRecorder();
             this.setState({ pushRecording: true });
           }}
+          onTouchStart={() => {
+            service.startRecorder();
+            this.setState({ pushRecording: true });
+          }}
           onMouseUp={() => {
+            service.stopRecorder();
+            this.setState({ pushRecording: false });
+          }}
+          onTouchEnd={() => {
             service.stopRecorder();
             this.setState({ pushRecording: false });
           }}
@@ -176,6 +184,7 @@ class AudioInputUI extends Component {
 
   visualize = stream => {
     if (!this._audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext; 
       this._audioCtx = new AudioContext();
       // taken from here: https://github.com/mdn/web-dictaphone
       const source = this._audioCtx.createMediaStreamSource(stream);
@@ -271,19 +280,21 @@ class AudioInput {
   }
 
   async prepareStream(device) {
-    const updateDeviceList = async () => {
-      // TODO: send notification to UI
-      this.availableDevices = await navigator.mediaDevices.enumerateDevices();
-    }  
+    if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange) {
+      const updateDeviceList = async () => {
+        // TODO: send notification to UI
+        this.availableDevices = await navigator.mediaDevices.enumerateDevices();
+      }  
+      navigator.mediaDevices.ondevicechange = updateDeviceList;
+      await updateDeviceList();
+    }
 
-    navigator.mediaDevices.ondevicechange = updateDeviceList;
-    await updateDeviceList();
-
-    if (!device) {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } else {
-      this.stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: device.deviceId }} });
-      console.log('Configuring stream with device', device, this.stream)
+    if (navigator.mediaDevices) {
+      if (!device) {
+        this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } else {
+        this.stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: device.deviceId }} });
+      }
     }
     
     return this.stream;

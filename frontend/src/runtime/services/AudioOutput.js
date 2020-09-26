@@ -45,6 +45,7 @@ class AudioOutput {
     this.board = board;
     this.app = app;
 
+    const AudioContext = window.AudioContext || window.webkitAudioContext; 
     this.audioCtx = new AudioContext();
     this.analyser = this.audioCtx.createAnalyser();
     this.analyser.minDecibels = -90;
@@ -104,9 +105,24 @@ class AudioOutput {
     );
   }
 
+  toArrayBuffer(blobOrFile) {
+    if (blobOrFile.arrayBuffer) {
+      return blobOrFile.arrayBuffer();
+    }
+    return new Promise((resolve, reject) => {
+      const fr = new FileReader();
+      try {
+        fr.onload = () => resolve(fr.result);
+        fr.readAsArrayBuffer(blobOrFile);
+      } catch(err) {
+        reject(err);
+      }
+    });
+  }
+
   async process(params) {
-    if (params && params instanceof Blob) {     
-      const ab = await params.arrayBuffer();
+    if (params && (params instanceof Blob || params instanceof File)) {     
+      const ab = await this.toArrayBuffer(params);
       const source = this.audioCtx.createBufferSource();
       source.buffer = await this.decodeBuffer(ab);
       source.connect(this.analyser);

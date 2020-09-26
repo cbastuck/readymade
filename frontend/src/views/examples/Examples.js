@@ -82,7 +82,7 @@ export default class Examples extends Component {
           <Card.Description style={{ marginTop: 10 }}>
             <div style={{ textAlign: 'left' }}>
               {Array.isArray(example.description) ? 
-                example.description.map(d => <p>{d}</p> ) : 
+                example.description.map((d, idx) => <p key={`example-${example.title}-desc-${idx}`}>{d}</p> ) : 
                 example.description}
             </div>
           </Card.Description>

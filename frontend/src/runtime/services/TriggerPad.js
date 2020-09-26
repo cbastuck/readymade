@@ -51,7 +51,24 @@ class TriggerPadUI extends Component {
             }
           });
         }}
+        onTouchStart={() => {
+          service.triggerPad(index);
+          this.setState({ 
+            triggeredPads: {
+              ...this.state.triggeredPads,
+              [index]: true
+            }
+          });
+        }}
         onMouseUp={() => {
+          this.setState({ 
+            triggeredPads: {
+              ...this.state.triggeredPads,
+              [index]: false
+            }
+          });
+        }}
+        onTouchEnd={() => {
           this.setState({ 
             triggeredPads: {
               ...this.state.triggeredPads,

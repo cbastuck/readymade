@@ -1,7 +1,7 @@
 import { Dropbox as DBox } from 'dropbox';
 
 const clientId = '1gederbui19m8pk';
-const redirectURI = 'http://localhost/serviceRedirect';
+const redirectURI = `${window.location.origin}/serviceRedirect`;
 
 export default class Dropbox {
   constructor(app, board, descriptor, id) {
