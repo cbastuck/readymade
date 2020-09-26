@@ -1,0 +1,36 @@
+
+{
+  "ExampleRuntime": {
+    "bundles": ["hookup.to/registry/browser/FileStorage"],
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/browser-timer",
+        "periodic": true,
+        "periodicValue": 10,
+        "periodicUnit": "s",
+        "immediate": true,
+        "start": true
+      },
+      {
+        "serviceName": "Camera",
+        "serviceId": "hookup.to/service/camera"
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "=": "params.image"
+        }
+      },
+      {
+        "serviceName": "Dropbox Sink",
+        "serviceId": "hookup.to/service/dropbox-sink",
+        "uuid": "29f30805-5410-4d08-90e8-70637dd754e5",
+        "uploadBehavior": "sync",
+        "uploadFilename": "hkp-example-image.png"
+      }
+    ]
+  }
+}

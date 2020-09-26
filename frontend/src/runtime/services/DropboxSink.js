@@ -94,7 +94,7 @@ class DropboxSinkUI extends Component {
           }}
         >
           <Checkbox
-            label="Active"
+            label="Upload Incoming"
             checked={this.state.active}
             onChange={(_, {checked}) => 
               this.setState(

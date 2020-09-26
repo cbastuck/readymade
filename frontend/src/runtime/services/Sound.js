@@ -62,18 +62,40 @@ class Sound {
     this.uuid = id;
     this.board = board;
     this.app = app;
-    
-    this._synth = new Tone.Synth().toMaster();
   }
 
   configure(config) {
+    const { generator } = config;
+    switch (generator) {
+      case 'synth':
+        this._synth = new Tone.Synth().toMaster();
+      break;
+      case 'sampler':
+        this._sampler = new Tone.Sampler({
+          urls: config.samplerUrls,
+          baseUrl: config.samplerBaseUrl,
+          onload: () => {
+          }
+        }).toMaster();
+        break;
+      default: 
+        console.error(`Unknown generator: ${generator}`);
+    }
   }
 
   process(params) {
     const { note = 'C4', duration = '4n' } = params || {};
-    if (this._synth && Tone.Transport.state === 'started') {
+    if (Tone.Transport.state !== 'started') {
+      return params;
+    }
+    
+    if (this._sampler) {
+      this._sampler.triggerAttackRelease([note], duration);
+    }
+    if (this._synth) {
       this._synth.triggerAttackRelease(note, duration);
     }
+    
     return params;
   }
 }

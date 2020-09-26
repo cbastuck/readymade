@@ -19,7 +19,8 @@
       },
       {
         "serviceName": "Sound",
-        "serviceId": "hookup.to/service/sound"
+        "serviceId": "hookup.to/service/sound",
+        "generator": "synth"
       }
     ]
   }

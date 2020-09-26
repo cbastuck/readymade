@@ -91,6 +91,11 @@ export default class BrowserRuntime {
       },
       removeServiceData: (serviceUuid, key) => {
         localStorage.removeItem(serviceDataKey(serviceUuid, key));
+      },
+      notify: (service, notification) => {
+        if (service.__notificationTarget) {
+          service.__notificationTarget(service, notification);
+        }
       }
     }
 

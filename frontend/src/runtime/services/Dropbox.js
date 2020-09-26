@@ -178,7 +178,7 @@ export default class Dropbox {
 
     if (this.mode === 'download') {
       return await this.downloadFileByName(params);
-    } 
+    }
     
     if (this.mode === 'upload' && this.uploadActive) {
       if (this.uploadBehavior === 'async') {
