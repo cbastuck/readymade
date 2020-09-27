@@ -79,6 +79,15 @@ class AudioInputUI extends Component {
       textTransform: 'uppercase', 
       fontSize: 12,
     };
+    const onStartRecording = () => {
+      service.startRecorder();
+      this.setState({ pushRecording: true });
+    };
+    const onStopRecording = () => {
+      service.stopRecorder();
+      this.setState({ pushRecording: false });
+    };
+    const isTouch = 'ontouchstart' in window;
     return (
       <div
         style={{
@@ -103,10 +112,10 @@ class AudioInputUI extends Component {
             label="Visualize" 
             checked={this.state.visualize}
              onChange={async (_, { checked }) => {
-               this.setState(
-                 { visualize: checked },
-                () => this.visualize(service.stream)
-              );
+                this.setState(
+                  { visualize: checked },
+                  () => this.visualize(service.stream)
+                );
              }}
           />
         </div>
@@ -115,28 +124,12 @@ class AudioInputUI extends Component {
             ...buttonStyle, 
             width: '100%',
           }}
-          onMouseDown={() => {
-            service.startRecorder();
-            this.setState({ pushRecording: true });
-          }}
-          onTouchStart={() => {
-            service.startRecorder();
-            this.setState({ pushRecording: true });
-          }}
-          onMouseUp={() => {
-            service.stopRecorder();
-            this.setState({ pushRecording: false });
-          }}
-          onTouchEnd={() => {
-            service.stopRecorder();
-            this.setState({ pushRecording: false });
-          }}
-          onMouseLeave={() => {
-            if (this.state.pushRecording) {
-              service.stopRecorder();
-              this.setState({ pushRecording: false });
-            }
-          }}
+          onMouseDown={!isTouch && onStartRecording}
+          onMouseLeave={!isTouch && onStopRecording}
+          onMouseUp={!isTouch && onStopRecording}
+          onTouchStart={isTouch && onStartRecording}
+          onTouchEnd={isTouch && onStopRecording}
+          onTouchCancel={isTouch && onStopRecording}
         >
           { !this.state.pushRecording ? 'Push to Record' : 'Recording ...' }
         </Button>
@@ -183,7 +176,7 @@ class AudioInputUI extends Component {
   }
 
   visualize = stream => {
-    if (!this._audioCtx) {
+    if (!this._audioCtx && stream) {
       const AudioContext = window.AudioContext || window.webkitAudioContext; 
       this._audioCtx = new AudioContext();
       // taken from here: https://github.com/mdn/web-dictaphone
@@ -197,7 +190,7 @@ class AudioInputUI extends Component {
   }
 
   draw = () => {
-    if (!this.canvas || !this.state.visualize) {
+    if (!this.canvas || !this.state.visualize || !this._audioCtx) {
       return;
     }
 

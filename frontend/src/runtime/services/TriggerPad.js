@@ -31,6 +31,32 @@ class TriggerPadUI extends Component {
     const index = makeIndex(rowIndex, colIndex);
     const isPadTriggered = this.state.triggeredPads[index];
     const isPadAssigned = this.state.assignments[index];
+    const onPush = ev => {
+      service.triggerPad(index);
+      this.setState({ 
+        triggeredPads: {
+          ...this.state.triggeredPads,
+          [index]: true
+        }
+      });
+      ev.stopPropagation();
+      ev.preventDefault();
+      return true;
+    }
+    const onEnd = ev => { 
+      if (this.state.triggeredPads[index]) {
+        this.setState({ 
+          triggeredPads: {
+            ...this.state.triggeredPads,
+            [index]: false
+          }
+        });
+      }
+      ev.stopPropagation();
+      ev.preventDefault();
+      return true;
+    };
+    const isTouch = 'ontouchstart' in window;
     return (
       <div
         style={{
@@ -42,52 +68,14 @@ class TriggerPadUI extends Component {
             (isPadAssigned ? '#eff' : 'white') : 
             '#4183c4'
         }}
-        onMouseDown={() => {
-          service.triggerPad(index);
-          this.setState({ 
-            triggeredPads: {
-              ...this.state.triggeredPads,
-              [index]: true
-            }
-          });
-        }}
-        onTouchStart={() => {
-          service.triggerPad(index);
-          this.setState({ 
-            triggeredPads: {
-              ...this.state.triggeredPads,
-              [index]: true
-            }
-          });
-        }}
-        onMouseUp={() => {
-          this.setState({ 
-            triggeredPads: {
-              ...this.state.triggeredPads,
-              [index]: false
-            }
-          });
-        }}
-        onTouchEnd={() => {
-          this.setState({ 
-            triggeredPads: {
-              ...this.state.triggeredPads,
-              [index]: false
-            }
-          });
-        }}
-        onMouseLeave={() => {
-          if (isPadTriggered) {
-            this.setState({ 
-              triggeredPads: {
-                ...this.state.triggeredPads,
-                [index]: false
-              }
-            });
-          }
-        }}
-      >  
-      </div>
+        onTouchStart={isTouch && onPush}
+        onTouchEnd={isTouch && onEnd}
+        onTouchCancel={isTouch && onEnd}
+        onMouseDown={!isTouch && onPush}
+        onMouseUp={!isTouch && onEnd}
+        onMouseLeave={!isTouch && onEnd}
+      />  
+      
     );
   }
 
