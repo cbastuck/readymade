@@ -8,6 +8,7 @@ import MediaRecorder from 'audio-recorder-polyfill';
 
 import ServiceUI from './ServiceUI';
 import InputField from '../../components/shared/InputField';
+import HoldableButton from '../../components/shared/HoldableButton';
 
 const serviceId = 'hookup.to/service/microphone'; // TODO: change to audio-input
 const serviceName = 'Audio Input';
@@ -87,7 +88,6 @@ class AudioInputUI extends Component {
       service.stopRecorder();
       this.setState({ pushRecording: false });
     };
-    const isTouch = 'ontouchstart' in window;
     return (
       <div
         style={{
@@ -119,20 +119,16 @@ class AudioInputUI extends Component {
              }}
           />
         </div>
-        <Button
+        <HoldableButton
           style={{ 
             ...buttonStyle, 
             width: '100%',
           }}
-          onMouseDown={!isTouch && onStartRecording}
-          onMouseLeave={!isTouch && onStopRecording}
-          onMouseUp={!isTouch && onStopRecording}
-          onTouchStart={isTouch && onStartRecording}
-          onTouchEnd={isTouch && onStopRecording}
-          onTouchCancel={isTouch && onStopRecording}
+          onDown={onStartRecording}
+          onUp={onStopRecording}
         >
           { !this.state.pushRecording ? 'Push to Record' : 'Recording ...' }
-        </Button>
+        </HoldableButton>
         <div
           style={{
             marginTop: 5,

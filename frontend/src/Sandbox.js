@@ -20,8 +20,10 @@ export default class Sandbox extends Component {
 
   componentDidMount() {
     const { location } = this.props;
-    const values = queryString.parse(location.search);
-    const { src, frameless='false' } = values;
+    const values = location ? 
+      queryString.parse(location.search) :
+      this.props;
+    const { src, data, frameless='false' } = values;
     if (src) {
       this.fetchData(src);
       this.setState({ 
@@ -29,12 +31,19 @@ export default class Sandbox extends Component {
           frameless: frameless === 'true'
         }
       });
+    } else if (data) {
+      const d = typeof data === 'string' ? JSON.parse(data) : data;
+      this.processData(d);
     }
   }
 
-  async fetchData(src) {
+  fetchData = async src => {
     const response = await fetch(src);
     const data = await response.json();
+    return this.processData(data);
+  }
+
+  processData = async data => {
     const runtimesInData = Object.keys(data);
     const browserRuntimeIds = runtimesInData.filter(runtimeId => data[runtimeId].type === 'browser');
     const firstBrowserRuntimeId = browserRuntimeIds[0];

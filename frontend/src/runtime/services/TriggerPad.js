@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 
 import ServiceUI from './ServiceUI';
+import HoldableButton from '../../components/shared/HoldableButton';
 
 const serviceId = 'hookup.to/service/trigger-pad';
 const serviceName = 'Trigger Pad';
@@ -56,9 +57,8 @@ class TriggerPadUI extends Component {
       ev.preventDefault();
       return true;
     };
-    const isTouch = 'ontouchstart' in window;
     return (
-      <div
+      <HoldableButton
         style={{
           width: 100,
           height: 100,
@@ -68,12 +68,8 @@ class TriggerPadUI extends Component {
             (isPadAssigned ? '#eff' : 'white') : 
             '#4183c4'
         }}
-        onTouchStart={isTouch && onPush}
-        onTouchEnd={isTouch && onEnd}
-        onTouchCancel={isTouch && onEnd}
-        onMouseDown={!isTouch && onPush}
-        onMouseUp={!isTouch && onEnd}
-        onMouseLeave={!isTouch && onEnd}
+        onDown={onPush}
+        onUp={onEnd}
       />  
       
     );
@@ -135,7 +131,20 @@ class TriggerPad {
     this.padAssignments = {};
   }
 
-  configure(config) { 
+  async configure(config) { 
+    const { enableMidiInput } = config;
+
+    if (enableMidiInput !== undefined) {
+      const midi = await navigator.requestMIDIAccess();
+      const inputs = midi.inputs.values();
+      for (let it = inputs.next(); it && !it.done; it = inputs.next()) {
+        const { value: input } = it;
+        if (input.name === enableMidiInput) {
+          input.onmidimessage = this.onMidi.bind(this);
+          return;
+        }
+      }
+    }
   }
 
   padAssignment(padIndex) {
@@ -146,6 +155,48 @@ class TriggerPad {
     const assignment = this.padAssignment(padIndex);
     if (assignment) {
       return this.app.next(this, assignment);
+    }
+  }
+
+  onMidi(message) {
+    const msg = {
+      command: message.data[0] >> 4,
+      channel: message.data[0] & 0xf,
+      note: message.data[1],
+      velocity: message.data[2] / 127
+    };
+    this.dispatchMidiMessage(msg);
+  }
+
+  dispatchMidiMessage(msg) {
+    console.log('Dispatching Midi message', msg);
+    const {command, channel, note, velocity} = msg
+
+    // Negative velocity is an upward release rather than a downward press.
+    if (command === 8) {
+      if (channel === 0) {
+        // onNote(note, -velocity); // Stop command.
+      }
+      else if (channel === 9) {
+        // onPad(note, -velocity);
+      }
+    }
+    else if (command === 9) {
+      if (channel === 0) {
+        // onNote(note, velocity); // Start command.
+      } else if (channel === 9) {
+        // onPad(note, velocity);
+      }
+    }
+    // Knob command.
+    else if (command === 11) {
+      if (note === 1) {
+        // onModWheel(velocity);
+      }
+    }
+    // Pitch bend command.
+    else if (command === 14) {
+      // onPitchBend(velocity);
     }
   }
 

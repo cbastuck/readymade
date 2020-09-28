@@ -156,7 +156,7 @@ export default class Examples extends Component {
       <div 
         style={{ 
           marginTop: 20,
-          height: '100%'
+          height: currentExample && '100%'
         }}
       >
         <div 

@@ -5,7 +5,7 @@ import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
 import ProgressIndicator from '../../components/ProgressIndicator';
-import Sandbox from '../Sandbox';
+import Sandbox from '../../components/Sandbox';
 import { redirectTo } from '../../core/actions';
 
 import './Welcome.css';

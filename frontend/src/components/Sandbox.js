@@ -19,6 +19,12 @@ export default class Sandbox extends Component {
     if (maxWidth) {
       style.maxWidth = maxWidth;
     }
+    
+    if (!src) {
+      console.warn('Sandbox component without src');
+      return false;
+    }
+
     return (
        <iframe 
           title={title}
