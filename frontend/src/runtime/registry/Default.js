@@ -2,6 +2,7 @@ import timerDescriptor from '../services/Timer';
 import monitorDescriptor from '../services/Monitor';
 import audioInputDescriptor from '../services/AudioInput';
 import audioOutputDescriptor from '../services/AudioOutput';
+import midiInputDescriptor from '../services/MidiInput';
 import playbackDescriptor from '../services/Playback';
 import FileProviderDescriptor from '../services/FileProvider';
 import DownloaderDescriptor from '../services/Downloader';
@@ -25,12 +26,14 @@ import InputDescriptor from '../services/Input';
 import TriggerDescriptor from '../services/Trigger';
 import TriggerPadDescriptor from '../services/TriggerPad';
 import FileSourceDescriptor from '../services/FileSource';
+import TimelineDescriptor from '../services/Timeline';
 
 export default [
   timerDescriptor,
   monitorDescriptor,
   audioInputDescriptor,
   audioOutputDescriptor,
+  midiInputDescriptor,
   playbackDescriptor,
   FileProviderDescriptor,
   DownloaderDescriptor,
@@ -54,4 +57,5 @@ export default [
   TriggerDescriptor,
   TriggerPadDescriptor,
   FileSourceDescriptor,
+  TimelineDescriptor,
 ];

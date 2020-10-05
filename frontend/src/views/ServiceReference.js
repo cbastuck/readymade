@@ -24,8 +24,7 @@ export default class ServiceReference extends Component {
                   },
                   {
                     "serviceName": "${service}",
-                    "serviceId": "hookup.to/service/${service}",
-                    "enableMidiInput": "Akai APC40"
+                    "serviceId": "hookup.to/service/${service}"
                   },
                   {
                     "serviceName": "Output",

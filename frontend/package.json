@@ -34,7 +34,7 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "offlineFonts": "mv node_modules/semantic-ui-offline node_modules/semantic-ui-css",
+    "offlineFonts": "yarn add semantic-ui-offline && mv node_modules/semantic-ui-offline node_modules/semantic-ui-css",
     "offlineFonts_": "echo null",
     "build": "yarn run offlineFonts && react-scripts build",
     "test": "react-scripts test",
