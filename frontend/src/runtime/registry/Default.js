@@ -23,7 +23,7 @@ import FetcherDesriptor from '../services/Fetcher';
 import CameraDesriptor from '../services/Camera';
 import DispatcherDesriptor from '../services/Dispatcher';
 import InputDescriptor from '../services/Input';
-import TriggerDescriptor from '../services/Trigger';
+import InjectorDescriptor from '../services/Injector';
 import TriggerPadDescriptor from '../services/TriggerPad';
 import FileSourceDescriptor from '../services/FileSource';
 import TimelineDescriptor from '../services/Timeline';
@@ -54,7 +54,7 @@ export default [
   CameraDesriptor,
   DispatcherDesriptor,
   InputDescriptor,
-  TriggerDescriptor,
+  InjectorDescriptor,
   TriggerPadDescriptor,
   FileSourceDescriptor,
   TimelineDescriptor,

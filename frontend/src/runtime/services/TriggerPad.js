@@ -131,20 +131,7 @@ class TriggerPad {
     this.padAssignments = {};
   }
 
-  async configure(config) { 
-    const { enableMidiInput } = config;
-
-    if (enableMidiInput !== undefined) {
-      const midi = await navigator.requestMIDIAccess();
-      const inputs = midi.inputs.values();
-      for (let it = inputs.next(); it && !it.done; it = inputs.next()) {
-        const { value: input } = it;
-        if (input.name === enableMidiInput) {
-          input.onmidimessage = this.onMidi.bind(this);
-          return;
-        }
-      }
-    }
+  configure(config) { 
   }
 
   padAssignment(padIndex) {
@@ -158,50 +145,14 @@ class TriggerPad {
     }
   }
 
-  onMidi(message) {
-    const msg = {
-      command: message.data[0] >> 4,
-      channel: message.data[0] & 0xf,
-      note: message.data[1],
-      velocity: message.data[2] / 127
-    };
-    this.dispatchMidiMessage(msg);
-  }
-
-  dispatchMidiMessage(msg) {
-    console.log('Dispatching Midi message', msg);
-    const {command, channel, note, velocity} = msg
-
-    // Negative velocity is an upward release rather than a downward press.
-    if (command === 8) {
-      if (channel === 0) {
-        // onNote(note, -velocity); // Stop command.
-      }
-      else if (channel === 9) {
-        // onPad(note, -velocity);
-      }
-    }
-    else if (command === 9) {
-      if (channel === 0) {
-        // onNote(note, velocity); // Start command.
-      } else if (channel === 9) {
-        // onPad(note, velocity);
-      }
-    }
-    // Knob command.
-    else if (command === 11) {
-      if (note === 1) {
-        // onModWheel(velocity);
-      }
-    }
-    // Pitch bend command.
-    else if (command === 14) {
-      // onPitchBend(velocity);
-    }
+  isMatch(params) {
+    const isBlob = params instanceof Blob;
+    const isObject = typeof params === 'object' && params !== null;
+    return isBlob || isObject;
   }
 
   async process(params) {
-    if (params instanceof Blob) {
+    if (this.isMatch(params)) {
       if (this.armedPad !== undefined) {
         const idx = `${this.armedPad}`;
         this.padAssignments[idx] = params;
