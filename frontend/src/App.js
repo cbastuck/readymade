@@ -24,6 +24,7 @@ import AppHub from './views/AppHub';
 import Login from './views/Login';
 import LoginFail from './views/LoginFail';
 import ServiceReference from './views/ServiceReference';
+import DataModelReference from './views/DataModelReference';
 import BoardProvider from './BoardContext';
 import Sandbox from './Sandbox';
 import Import from './Import';
@@ -56,8 +57,6 @@ class BoardWithContext extends Component {
 
 class App extends Component {
   render() {
-    // const { match } = this.props;
-    // const { fullscreen } = match ? match.params : {};
     return (
       <AppContext>
         <Router>
@@ -65,7 +64,6 @@ class App extends Component {
             style={{
               height: '100%',
               width: '100%',
-              // overflow: fullscreen ? 'hidden' : 'auto'
             }}
           >
             <Switch>
@@ -81,6 +79,7 @@ class App extends Component {
               <Route path="/auth2app" component={AuthRedirect} />
               <Route path="/:board/app" component={AppHub} />
               <Route path="/service/:service" component={ServiceReference} />
+              <Route path="/datamodel/:name" component={DataModelReference} />
               <Route path="/examples" component={Examples} />
               <Route path="/dashboard" component={MyBoards} />
               <Route path="/docs/service" component={ServiceDocumentation} />
