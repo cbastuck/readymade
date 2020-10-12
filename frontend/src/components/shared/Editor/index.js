@@ -37,25 +37,28 @@ export default class Editor extends Component {
       } = this.props;
 
       return (
-        <div
-          ref={container => {
-            if (!this.root) {
-              this.root = container;
-              this.editor = monaco.editor.create(
-                this.root, 
-                {
-                  value,
-                  language
-                }
-              );
-            }
-          }}
-          style={{
-            textAlign: 'left',
-            height,
-            width,
-          }}
-        />
+        <div>
+          <div
+            ref={container => {
+              if (!this.root) {
+                this.root = container;
+                this.editor = monaco.editor.create(
+                  this.root, 
+                  {
+                    value,
+                    language
+                  }
+                );
+              }
+            }}
+            style={{
+              border: 'solid 1px lightgray',
+              textAlign: 'left',
+              height,
+              width,
+            }}
+          />
+        </div>
       );
   }
 }

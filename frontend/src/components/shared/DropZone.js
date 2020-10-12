@@ -6,7 +6,7 @@ export default class DropZone extends Component {
   };
 
   isFilesDrag = ev => ev.dataTransfer.types.indexOf("Files") !== -1;
-  isItemsDrag = ev => ev.dataTransfer.types.indexOf("Items") !== -1;
+  isItemsDrag = ev => ev.dataTransfer.types.length && !this.isFilesDrag(ev);
 
   isDragAccepted = ev => {
     const { onFiles=false, onItems=false } = this.props;
@@ -42,7 +42,10 @@ export default class DropZone extends Component {
       }
 
       if (this.isItemsDrag(ev)) {
-        onItems(data.items);
+        const items = Array.from(data.items).map(
+          ({ type }) => ({ type, data: data.getData(type) })
+        );
+        onItems(items);
       }
     }
   
@@ -55,23 +58,18 @@ export default class DropZone extends Component {
     return (
       <div
         style={{
-          height: 80,
-          paddingTop: 30,
           border: 'solid 1px lightgray',
           borderRadius: 5,
           backgroundColor: this.state.dragZoneOpen ? 'lightgreen' : '#4183c4',
           color: 'white',
-          fontSize: 20,
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-          fontWeight: 'bold'
+          textAlign: 'center'
         }}
         onDragOver={this.onDragOver}
         onDrop={this.onDrop}
         onDragLeave={this.onDragLeave}
       >
-          {label}
-        </div>
+        {label} 
+      </div>
     );
   }
 }
