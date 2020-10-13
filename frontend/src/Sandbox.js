@@ -37,6 +37,16 @@ export default class Sandbox extends Component {
     }
   }
 
+  configureService = (serviceId, config) => {
+    const { runtime } = this.state;
+    if (runtime) {
+      const service = runtime.app.getServiceById(serviceId);
+      if (service) {
+        service.configure(config);
+      }
+    }
+  }
+
   fetchData = async src => {
     const response = await fetch(src);
     const data = await response.json();

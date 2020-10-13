@@ -1,11 +1,39 @@
 import React, { Component } from 'react';
-import { Message } from 'semantic-ui-react';
+import { 
+  Message, 
+  Button,
+} from 'semantic-ui-react';
 
 import { AppConsumer } from '../AppContext';
 import BoardContext, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Footer from '../components/Footer';
 import Sandbox from '../Sandbox'; 
+
+function getSandboxData(service) {
+  return `{
+    "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+      "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
+      "name": "Chrome-78.0.3904.108 (0)",
+      "type": "browser",
+      "services": [
+        {
+          "serviceName": "Injector",
+          "serviceId": "hookup.to/service/injector"
+        },
+        {
+          "serviceName": "${service}",
+          "serviceId": "hookup.to/service/${service}",
+          "uuid": "reference-service-id"
+        },
+        {
+          "serviceName": "Monitor",
+          "serviceId": "hookup.to/service/monitor-browser"
+        }
+      ]
+    }
+  }`;
+}
 
 export default class ServiceReference extends Component {
   state = {
@@ -18,11 +46,17 @@ export default class ServiceReference extends Component {
     this.fetchDocumentation(service);
   }
 
+  tryConfiguration = (service, config) => {
+    if (this.sandbox) {
+      this.sandbox.configureService('reference-service-id', config);
+    }   
+  }
+
   renderNoDocumentationAvailable = service => {
     return (
-      <div>
-        <div style={{ marginLeft: 10 }}>
-          Unfortunately no further documentation for <span style={{ fontWeight: 'bold' }}>{ service }</span> service exists at the the moment
+      <Message style={{ width: '100%' }} error>
+        <div style={{ marginLeft: 10, fontSize: 14 }}>
+          Unfortunately no further documentation for <span style={{ fontWeight: 'bold' }}>{ service }</span> exists at the the moment
         </div>
         <div style={{ marginTop: 30 }}>
           <span 
@@ -33,7 +67,7 @@ export default class ServiceReference extends Component {
             😬 
           </span>
         </div>
-      </div>
+      </Message>
     );
   }
 
@@ -54,20 +88,110 @@ export default class ServiceReference extends Component {
     );
   }
 
-  renderFetchedDocs = (service, data) => {
-    if (!data) {
-      return false;
-    }
+  renderHeadline = text => {
     return (
-      <div>
-        <h1>{service} Reference</h1>
-        {
-          data.sections && data.sections.map((section, idx) => (
-            <div key={`serice-reference-${service}-idx`}>
-              <h1>{section.title}</h1>
-            </div>
-          ))
+      <h1 
+        style={{ 
+          fontSize: 15,
+          letterSpacing: 1,
+          fontWeight: 'lighter',
+          textAlign: 'left',
+          color: '#4284C4'
+        }}
+      >
+        {text}
+      </h1>
+    );
+  }
+
+  renderItem = (service, item) => {
+    switch (item.type) {
+      case 'config':
+        return (
+            <Message 
+              style={{ 
+                width: '50%',
+                display: 'flex',
+                flexDirection: 'row',
+              }} 
+              color='green'
+            >
+              <pre>
+                { JSON.stringify(item.value, null, 2) }
+              </pre>
+               <div style={{ margin: 'auto' }}>
+                <Button 
+                  style={{ 
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                  }}
+                  // color="blue"
+                  onClick={() => this.tryConfiguration(service, item.value)}
+                >
+                  Try
+                </Button>
+              </div>
+            </Message>
+        );
+      default: 
+        return (
+          <div>Unknown Item {item.type}</div>
+        );
+    }
+  }
+
+  renderParagraph = (service, textOrObject) => {
+    return (
+      <div
+        style={{
+          textAlign: 'left',
+          margin: "5px 0px"
+        }}  
+      >
+        { 
+          typeof textOrObject === 'string' ? 
+            textOrObject : 
+            this.renderItem(service, textOrObject) 
         }
+      </div>
+    );
+  }
+
+  renderParagraphs = (service, paragraphs) => {
+    return paragraphs && paragraphs.map((section, idx) => (
+        <div key={`service-reference-desc-${service}-${idx}`}>
+        { this.renderParagraph(service, section) }
+        </div>
+      ))
+  }
+
+  renderFetchedDocs = (service, data) => {
+    return data && (
+      <div>
+        <Message style={{ width: '100%', marginBottom: 0 }}>
+          <h1 style={{ fontSize: 16 }}>
+            <span style={{ color: '#4284C4', fontWeight: 'bold' }}> {service} </span> 
+            <span style={{ color: 'black', fontWeight: 'lighter' }}> Reference </span>
+          </h1>
+        </Message>
+        <div 
+          style={{
+            border: 'solid 1px lightgray',
+            borderTop: 'none',
+            borderRadius: 5,
+            padding: 10,
+            marginTop: 0,
+          }}
+        >
+          { this.renderHeadline('brief') }
+          { this.renderParagraph(service, data.brief) }
+          { this.renderHeadline('configuration') }
+          { this.renderParagraphs(service, data.configuration) }
+          { this.renderHeadline("input") }
+          { this.renderParagraphs(service, data.inputs) }
+          { this.renderHeadline("output") }
+          { this.renderParagraphs(service, data.outputs) }
+        </div>
       </div>
     );
   }
@@ -84,7 +208,6 @@ export default class ServiceReference extends Component {
           textAlign: 'center',
         }}
       >
-        <Message style={{ width: '100%' }}>
           { 
             state === 'initial' ? false : (
               (state === 'fetching' && this.renderFetching(service))||
@@ -92,7 +215,6 @@ export default class ServiceReference extends Component {
               (state === 'missing' && this.renderNoDocumentationAvailable(service))
             )
           }
-        </Message>
       </div>
     );
   }
@@ -113,30 +235,9 @@ export default class ServiceReference extends Component {
   renderServiceSandbox = service => {
     return (
       <div>
-        <Sandbox 
-          data={`
-            {
-              "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
-                "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
-                "name": "Chrome-78.0.3904.108 (0)",
-                "type": "browser",
-                "services": [
-                  {
-                    "serviceName": "Injector",
-                    "serviceId": "hookup.to/service/injector"
-                  },
-                  {
-                    "serviceName": "${service}",
-                    "serviceId": "hookup.to/service/${service}"
-                  },
-                  {
-                    "serviceName": "Monitor",
-                    "serviceId": "hookup.to/service/monitor-browser"
-                  }
-                ]
-              }
-            }
-          `}
+        <Sandbox
+          ref={sandbox => this.sandbox = sandbox}
+          data={getSandboxData(service)}
         />
       </div>
     );

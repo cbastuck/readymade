@@ -1,7 +1,18 @@
 {
-  "sections": [
-    {  
-      "title": "inputs"
+  "brief": "Transform, add or seclect values from incoming structured data based on a fixed routine or depending on the input values",
+  "configuration": [
+    "A template controls how the incoming data is processed.",
+    {
+      "type": "config",
+      "value": {
+        "template": {
+          "key": "mapped value"
+        }
+      }
     }
-  ]
+  ],
+  "inputs": [
+    "Typically use this service with structured JSON coming into the service"
+  ],
+  "outputs": ""
 }

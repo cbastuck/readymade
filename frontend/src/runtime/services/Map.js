@@ -30,6 +30,13 @@ class MapUI extends Component {
     });
   }
 
+  onNotification = (service, notification) => {
+    const { template } = notification;
+    if (template !== undefined) {
+      this.setState({ template });
+    }
+  }
+
   renderMapping = service => {
     return (
       <div>
@@ -109,6 +116,7 @@ class MapUI extends Component {
       <ServiceUI 
         {...this.props} 
         onInit={this.onInit.bind(this)}
+        onNotification={this.onNotification.bind(this)}
         segments={[
           { name: 'Mapping', render: this.renderMapping },
           { name: 'Condition', render: this.renderCondition }
@@ -143,6 +151,7 @@ class Map {
         }, 
         {}
       );
+      this.app.notify(this, { template });
     }
 
     if (condition !== undefined) {
