@@ -8,6 +8,7 @@ import {
 } from 'semantic-ui-react';
 
 import ServiceFrame from './ServiceFrame';
+import { openTab } from '../core/actions';
 
 export default class Scene extends Component {
   state = {
@@ -49,6 +50,11 @@ export default class Scene extends Component {
         if (boardContext && runtime && service) {
           return boardContext.removeService(runtime, service);
         }
+        break;
+      }
+      case 'help': {
+        const parts = service.serviceId.split('/');
+        openTab(`/service/${parts[parts.length - 1]}`);
         break;
       }
       default: 

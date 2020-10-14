@@ -3,7 +3,7 @@ import { Dimmer, Loader } from 'semantic-ui-react';
 
 async function initialize() {
   const monaco = await import('monaco-editor');
-  const require = await import('./loader.min');
+  //const require = await import('./loader.min');
 
   //const baseUrl = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min';
   const baseUrl = `${window.location.origin}/res/monaco-editor/0.21.2`;
@@ -61,7 +61,7 @@ export default class Editor extends Component {
                 fontSize: 12
               }}
               inverted 
-              content='Loading Editor ...' 
+              content='Loading Editor' 
             />
           </Dimmer>
         </div>

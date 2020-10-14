@@ -7,9 +7,7 @@ import {
   setToken,
 //   getUserId,
 } from './core/Auth';
-import {
-  redirectTo,
-} from './core/actions';
+import { redirectTo } from './core/actions';
 
 const { Provider, Consumer: AppConsumer } = createContext();
 

@@ -99,6 +99,10 @@ export function redirectTo(target, openAsPopup) {
   return false;
 }
 
+export function openTab(url) {
+  window.open(url, 'blank');
+}
+
 export function detectBrowserIOS() {
   const ua = window && window.navigator && window.navigator.userAgent;
   if (ua) {

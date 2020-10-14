@@ -192,6 +192,7 @@ class InjectorUI extends Component {
               style={{ width: '100%' }}
               value={rawText}
               onChange={(_, { value: rawText }) => this.setState({ rawText })}
+              placeholder="Enter text here"
             />
         }
         <Button

@@ -111,6 +111,21 @@ export default class ServiceFrame extends Component {
         >
           <Icon name='trash alternate outline' />
         </Menu.Item>
+        <Menu.Item 
+          as='a'
+          style={itemStyle}
+          onClick={() => {
+            const { onAction, service } = this.props;
+            if (onAction) {
+              onAction({ 
+                action: 'help', 
+                service: service.props.service,
+              });
+            }
+          }}
+        >
+          <Icon name='help' />
+        </Menu.Item>
       </Menu> 
     );
   }

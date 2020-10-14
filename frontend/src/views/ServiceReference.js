@@ -55,14 +55,14 @@ export default class ServiceReference extends Component {
   renderNoDocumentationAvailable = service => {
     return (
       <Message style={{ width: '100%' }} error>
-        <div style={{ marginLeft: 10, fontSize: 14 }}>
+        <div style={{ marginLeft: 10, fontSize: 13 }}>
           Unfortunately no further documentation for <span style={{ fontWeight: 'bold' }}>{ service }</span> exists at the the moment
         </div>
         <div style={{ marginTop: 30 }}>
           <span 
             role="img" 
             aria-label="grimacing-emoji"
-            style={{ fontSize: 50 }}
+            style={{ fontSize: 45 }}
           > 
             😬 
           </span>
@@ -106,44 +106,68 @@ export default class ServiceReference extends Component {
 
   renderConfigItem = (service, item) => {
     return (
-      <div>
-        <div>
-          Example: { item.description }
-        </div>
-        <Message 
-          color='green'
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'row',
+          border: 'solid 1px lightgray',
+          borderRadius: 5,
+          padding: 10,
+        }}
+      >
+        <div 
           style={{ 
-            width: '50%',
+            marginTop: 10, 
+            marginRight: 10,
+            width: '60%',
+            display: 'flex',
+            flexDirection: 'column'
           }}
         >
-          <div
-            style={{ 
-              display: 'flex',
-              flexDirection: 'row',
-              marginLeft: 20,
-            }} 
+          <h1 style={{ fontSize: 13 }}>Example</h1>
+          <div>
+            { item.description }
+          </div>
+        </div>
+        <div 
+          style={{ 
+            width: '40%',
+            marginLeft: 'auto'
+          }}
+        >
+          <div 
+            style={{
+              padding: 5,
+              backgroundColor: '#4284C433',
+              border: 'solid 1px #4284C4',
+              borderRadius: 5,
+            }}
           >
-            <pre>
-              { JSON.stringify(item.value, null, 2) }
-            </pre>
-              <div style={{ marginLeft: 'auto', marginTop: 30 }}>
-              <Button 
+            <div>
+              <pre 
                 style={{ 
-                  fontSize: 12,
-                  textTransform: 'uppercase',
-                  letterSpacing: 1,
-                  backgroundColor: 'white',
-                  border: 'solid gray 1px',
-                  borderRadius: 5,
-                  color: '#4284C4'
+                  textTransform: 'none', 
+                  color: '#333',
                 }}
-                onClick={() => this.tryConfiguration(service, item.value)}
               >
-                Try
-              </Button>
+                { JSON.stringify(item.value, null, 2) }
+              </pre>
             </div>
           </div>
-        </Message>      
+          <Button 
+            style={{ 
+              fontSize: 12,
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              width: '100%',
+              marginTop: 5,
+              border: 'solid 1px #4284C499',
+            }}
+            onClick={() => this.tryConfiguration(service, item.value)}
+          >
+            Try
+          </Button>
+        </div>
       </div>
     );
   }
@@ -190,7 +214,7 @@ export default class ServiceReference extends Component {
         <Message style={{ width: '100%', marginBottom: 0 }}>
           <h1 style={{ fontSize: 13 }}>
             <span style={{ color: '#4284C4', fontWeight: 'bold' }}> {service} </span> 
-            <span style={{ color: 'black', fontWeight: 'lighter' }}> Reference </span>
+            <span style={{ color: 'black', fontWeight: 'lighter' }}> Service </span>
           </h1>
         </Message>
         <div 
@@ -281,7 +305,8 @@ export default class ServiceReference extends Component {
               <div 
                 style={{
                   display: 'flex',
-                  flexDirection: 'column'
+                  flexDirection: 'column',
+                  minHeight: '100%',
                 }}
               >
                 <BoardConsumer>

@@ -15,7 +15,7 @@
       "type": "config",
       "value": {
         "template": {
-          "key=": "params[key].toUpperCase()"
+          "mapped=": "params.key.split('')"
         }
       },
       "description": "Add or replace an existing <key> with a computed value. The structured input data is available in <params>."
@@ -24,5 +24,8 @@
   "inputs": [
     "Typically use this service with structured JSON coming into the service"
   ],
-  "outputs": ""
+  "outputs": [
+    "In case the input data type is non-structured data, the incoming data is returned as-is as output.",
+    "Otherwise the processed structured data is returned as an object."
+  ]
 }
