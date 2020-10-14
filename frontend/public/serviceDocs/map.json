@@ -1,5 +1,5 @@
 {
-  "brief": "Transform, add or seclect values from incoming structured data based on a fixed routine or depending on the input values",
+  "brief": "Transform, add or select values from incoming, structured data, based on a fixed routine or depending on the input values",
   "configuration": [
     "A template controls how the incoming data is processed.",
     {
@@ -8,7 +8,17 @@
         "template": {
           "key": "mapped value"
         }
-      }
+      },
+      "description": "Add or replace an existing <key> with a constant value"
+    },
+    {
+      "type": "config",
+      "value": {
+        "template": {
+          "key=": "params[key].toUpperCase()"
+        }
+      },
+      "description": "Add or replace an existing <key> with a computed value. The structured input data is available in <params>."
     }
   ],
   "inputs": [

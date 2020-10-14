@@ -92,7 +92,7 @@ export default class ServiceReference extends Component {
     return (
       <h1 
         style={{ 
-          fontSize: 15,
+          fontSize: 13,
           letterSpacing: 1,
           fontWeight: 'lighter',
           textAlign: 'left',
@@ -104,35 +104,54 @@ export default class ServiceReference extends Component {
     );
   }
 
+  renderConfigItem = (service, item) => {
+    return (
+      <div>
+        <div>
+          Example: { item.description }
+        </div>
+        <Message 
+          color='green'
+          style={{ 
+            width: '50%',
+          }}
+        >
+          <div
+            style={{ 
+              display: 'flex',
+              flexDirection: 'row',
+              marginLeft: 20,
+            }} 
+          >
+            <pre>
+              { JSON.stringify(item.value, null, 2) }
+            </pre>
+              <div style={{ marginLeft: 'auto', marginTop: 30 }}>
+              <Button 
+                style={{ 
+                  fontSize: 12,
+                  textTransform: 'uppercase',
+                  letterSpacing: 1,
+                  backgroundColor: 'white',
+                  border: 'solid gray 1px',
+                  borderRadius: 5,
+                  color: '#4284C4'
+                }}
+                onClick={() => this.tryConfiguration(service, item.value)}
+              >
+                Try
+              </Button>
+            </div>
+          </div>
+        </Message>      
+      </div>
+    );
+  }
+
   renderItem = (service, item) => {
     switch (item.type) {
       case 'config':
-        return (
-            <Message 
-              style={{ 
-                width: '50%',
-                display: 'flex',
-                flexDirection: 'row',
-              }} 
-              color='green'
-            >
-              <pre>
-                { JSON.stringify(item.value, null, 2) }
-              </pre>
-               <div style={{ margin: 'auto' }}>
-                <Button 
-                  style={{ 
-                    textTransform: 'uppercase',
-                    letterSpacing: 1,
-                  }}
-                  // color="blue"
-                  onClick={() => this.tryConfiguration(service, item.value)}
-                >
-                  Try
-                </Button>
-              </div>
-            </Message>
-        );
+        return this.renderConfigItem(service, item);
       default: 
         return (
           <div>Unknown Item {item.type}</div>
@@ -169,7 +188,7 @@ export default class ServiceReference extends Component {
     return data && (
       <div>
         <Message style={{ width: '100%', marginBottom: 0 }}>
-          <h1 style={{ fontSize: 16 }}>
+          <h1 style={{ fontSize: 13 }}>
             <span style={{ color: '#4284C4', fontWeight: 'bold' }}> {service} </span> 
             <span style={{ color: 'black', fontWeight: 'lighter' }}> Reference </span>
           </h1>
@@ -204,7 +223,7 @@ export default class ServiceReference extends Component {
           textTransform: 'uppercase',
           letterSpacing: 1,
           fontSize: 12,
-          margin: 20,
+          margin: '0px 20px',
           textAlign: 'center',
         }}
       >
@@ -259,21 +278,28 @@ export default class ServiceReference extends Component {
             <BoardContext
               fetchData={!!appContext.user && !!appContext.user.username}
             >
-              <BoardConsumer>
-              {
-                boardContext => (
-                  <div style={{ height: '100%' }}>
-                    <Toolbar 
-                      savedBoards={boardContext.savedBoards}
-                      onAction={boardContext.onAction}
-                    />
-                    { this.renderServiceSandbox(service) }
-                    { this.renderDocumentation(service) }
-                  </div>
-                )
-              }
-              </BoardConsumer>
-              <Footer />
+              <div 
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column'
+                }}
+              >
+                <BoardConsumer>
+                {
+                  boardContext => (
+                    <div style={{ height: '100%' }}>
+                      <Toolbar 
+                        savedBoards={boardContext.savedBoards}
+                        onAction={boardContext.onAction}
+                      />
+                      { this.renderServiceSandbox(service) }
+                      { this.renderDocumentation(service) }
+                    </div>
+                  )
+                }
+                </BoardConsumer>
+                <Footer flex />
+              </div>
             </BoardContext> 
           )
         }

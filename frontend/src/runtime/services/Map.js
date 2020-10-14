@@ -65,7 +65,13 @@ class MapUI extends Component {
         }
         <div>
           <Button
-            style={{ width: '100%', marginTop: 5 }}
+            style={{ 
+              width: '100%', 
+              marginTop: 5,
+              fontSize: 12,
+              textTransform: 'uppercase',
+              letterSpacing: 1
+            }}
             onClick={() => this.setState({ 
                 template: {
                   ...this.state.template,
