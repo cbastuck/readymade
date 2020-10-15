@@ -5,7 +5,7 @@ import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
 import ProgressIndicator from '../../components/ProgressIndicator';
-import Sandbox from '../../components/Sandbox';
+import SandboxFrame from '../../components/SandboxFrame';
 import { redirectTo } from '../../core/actions';
 
 import './Welcome.css';
@@ -46,7 +46,7 @@ export default class Welcome extends Component {
   
   renderIntro = () => (
     <div style={{ height: '100%' }}>
-      <Sandbox
+      <SandboxFrame
         title="Hookup Intro"
         src="/boards/introduction.json"
         frameless={true}
@@ -96,7 +96,7 @@ export default class Welcome extends Component {
   renderVisualisation = () => {
     return (
       <div style={{ height: '100%' }}>
-        <Sandbox
+        <SandboxFrame
           title="Hookup Visualisation"
           src="/boards/visualisation.json"
           frameless={true}

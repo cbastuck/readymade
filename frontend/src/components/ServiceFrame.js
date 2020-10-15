@@ -7,6 +7,9 @@ import {
   Header,
 } from 'semantic-ui-react';
 
+import Modal from './Modal'
+import ServiceReference from './ServiceReference';
+
 import './ServiceFrame.css';
 
 export default class ServiceFrame extends Component {
@@ -14,6 +17,7 @@ export default class ServiceFrame extends Component {
     mouseOver: false,
     menuVisible: false,
     frameCollapsed: false,
+    modalReferenceServiceId: undefined,
   };
 
   renderServiceName = name => (
@@ -115,13 +119,10 @@ export default class ServiceFrame extends Component {
           as='a'
           style={itemStyle}
           onClick={() => {
-            const { onAction, service } = this.props;
-            if (onAction) {
-              onAction({ 
-                action: 'help', 
-                service: service.props.service,
-              });
-            }
+            const { service } = this.props;
+            this.setState({ 
+              modalReferenceServiceId: service.props.service.serviceId
+            });
           }}
         >
           <Icon name='help' />
@@ -190,6 +191,12 @@ export default class ServiceFrame extends Component {
                 </Sidebar.Pushable>
               )
             }
+            <Modal
+              title="Service Documentation"
+              component={<ServiceReference serviceId={this.state.modalReferenceServiceId} />}
+              setOpen={open => !open && this.setState({ modalReferenceServiceId: undefined })}
+              isOpen={!!this.state.modalReferenceServiceId}
+            />
           </div>
         </div>
       </div>

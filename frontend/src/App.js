@@ -23,7 +23,7 @@ import AuthRedirect from './views/AuthRedirect';
 import AppHub from './views/AppHub';
 import Login from './views/Login';
 import LoginFail from './views/LoginFail';
-import ServiceReference from './views/ServiceReference';
+import ServiceReferenceView from './views/ServiceReferenceView';
 import DataModelReference from './views/DataModelReference';
 import BoardProvider from './BoardContext';
 import Sandbox from './Sandbox';
@@ -78,7 +78,7 @@ class App extends Component {
               <Route path="/loginFail" component={LoginFail} />
               <Route path="/auth2app" component={AuthRedirect} />
               <Route path="/:board/app" component={AppHub} />
-              <Route path="/service/:service" component={ServiceReference} />
+              <Route path="/service/:service" component={ServiceReferenceView} />
               <Route path="/datamodel/:name" component={DataModelReference} />
               <Route path="/examples" component={Examples} />
               <Route path="/dashboard" component={MyBoards} />
