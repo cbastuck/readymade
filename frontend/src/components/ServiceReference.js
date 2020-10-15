@@ -38,19 +38,10 @@ export default class ServiceReference extends Component {
   };
   
   componentDidMount() {
-    const service = this.getService();
+    const { service } = this.props;
     if (service) {
       this.fetchDocumentation(service);
     }
-  }
-
-  getService = () => {
-    const { serviceId } = this.props;
-    if (!serviceId) {
-      return false;
-    }
-    const parts = serviceId.split('/');
-    return parts[parts.length - 1];
   }
 
   tryConfiguration = (service, config) => {
@@ -294,11 +285,34 @@ export default class ServiceReference extends Component {
   }
 
   render() {
-    const service = this.getService();
+    const { service } = this.props;
+    if (!service) {
+      return false;
+    }
+
+    const headlineStyle = {
+      margin: 10,
+      fontSize: 14,
+    };
     return (
-      <div style={{ width: '100%', height: '100%' }}>
-        { this.renderServiceSandbox(service) }
-        { this.renderDocumentation(service) }
+      <div 
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          textTransform: 'uppercase', 
+          letterSpacing: 1, 
+          fontSize: 12,
+        }}
+      >
+      <h1 style={headlineStyle}>About this documentation</h1>
+      <div style={{ margin: 10, marginBottom: 20 }}>
+          The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{service}</span> service in different configurations and inject input data, 
+          while the monitor service on the output shows how the injected data is being processed with respect to the configuration.
+      </div>
+      <h1 style={headlineStyle}>Sandbox</h1>
+      { this.renderServiceSandbox(service) }
+      <h1 style={headlineStyle}>Detailed description</h1>
+      { this.renderDocumentation(service) }
       </div>
     );
   }

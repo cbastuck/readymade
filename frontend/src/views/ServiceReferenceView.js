@@ -8,7 +8,7 @@ import ServiceReference from '../components/ServiceReference';
 
 export default class ServiceReferenceView extends Component {
   
-  getServiceId = () => {
+  getService = () => {
     const { match } = this.props;
     const { params } = match || {};
     const { service } = params || {};
@@ -16,7 +16,7 @@ export default class ServiceReferenceView extends Component {
   }
 
   render() {
-    const serviceId = this.getServiceId();
+    const service = this.getService();
     return (
       <AppConsumer>
         {
@@ -39,7 +39,16 @@ export default class ServiceReferenceView extends Component {
                         savedBoards={boardContext.savedBoards}
                         onAction={boardContext.onAction}
                       />
-                      <ServiceReference serviceId={serviceId} />
+                      <div 
+                        style={{
+                          height: '100%',
+                          width: '80%',
+                          margin: 'auto',
+                          marginTop: 30
+                        }}
+                      >
+                        <ServiceReference service={service} />
+                      </div>
                     </div>
                   )
                 }

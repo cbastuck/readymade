@@ -17,7 +17,7 @@ export default class ServiceFrame extends Component {
     mouseOver: false,
     menuVisible: false,
     frameCollapsed: false,
-    modalReferenceServiceId: undefined,
+    modalReferenceService: undefined,
   };
 
   renderServiceName = name => (
@@ -120,8 +120,9 @@ export default class ServiceFrame extends Component {
           style={itemStyle}
           onClick={() => {
             const { service } = this.props;
+            const parts = service.props.service.serviceId.split('/');
             this.setState({ 
-              modalReferenceServiceId: service.props.service.serviceId
+              modalReferenceService: parts[parts.length - 1]
             });
           }}
         >
@@ -135,6 +136,7 @@ export default class ServiceFrame extends Component {
 
   render() {
     const { service } = this.props;
+    const { modalReferenceService } = this.state;
     const uuid = service && service.props && service.props.service && service.props.service.uuid;
     return (
       <div key={`service-frame-${uuid}`}>
@@ -193,9 +195,10 @@ export default class ServiceFrame extends Component {
             }
             <Modal
               title="Service Documentation"
-              component={<ServiceReference serviceId={this.state.modalReferenceServiceId} />}
-              setOpen={open => !open && this.setState({ modalReferenceServiceId: undefined })}
-              isOpen={!!this.state.modalReferenceServiceId}
+              component={<ServiceReference service={modalReferenceService} />}
+              url={`/service/${modalReferenceService}`}
+              setOpen={open => !open && this.setState({ modalReferenceService: undefined })}
+              isOpen={!!this.state.modalReferenceService}
             />
           </div>
         </div>

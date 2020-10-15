@@ -1,6 +1,8 @@
 import React, { Component } from 'react'
 import { Button, Modal } from 'semantic-ui-react'
 
+import { openTab } from '../core/actions';
+
 export default class ModalDialog extends Component {
   render() {
     const { 
@@ -10,13 +12,19 @@ export default class ModalDialog extends Component {
       isOpen=false,
       title='',
       style={
-        height: '90%',
+        height: '85%',
         width: '90%'
       },
     } = this.props;
     if (!isOpen || (!url && !component)) {
       return false;
     }
+
+    const buttonStyle = {
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+      fontSize: 12,
+    };
     return (
       <Modal
         onClose={() => setOpen(false)}
@@ -28,19 +36,14 @@ export default class ModalDialog extends Component {
         <Modal.Header 
           style={{ 
             textTransform: 'uppercase',
-            letterSpacing: 1,
-            fontSize: 13
+            letterSpacing: 2,
+            fontSize: 14,
+            textAlign: 'center',
           }}
         >
           {title}
         </Modal.Header>
-        <Modal.Content 
-          style={{ 
-            height: '100%', 
-            width: '100%' 
-          }}
-          scrolling
-        >
+        <Modal.Content scrolling>
           { 
             component ? 
               component : 
@@ -57,7 +60,11 @@ export default class ModalDialog extends Component {
         </Modal.Content>
         <Modal.Actions>
           <Button 
-            onClick={() => setOpen(false)}
+            style={buttonStyle}
+            onClick={() => {
+              openTab(url);
+              setOpen(false);
+            }}
           >
             Open in Tab
           </Button>
@@ -67,6 +74,7 @@ export default class ModalDialog extends Component {
             icon='checkmark'
             onClick={() => setOpen(false)}
             positive
+            style={buttonStyle}
           />
         </Modal.Actions>
       </Modal>
