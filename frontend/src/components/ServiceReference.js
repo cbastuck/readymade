@@ -2,6 +2,9 @@ import React, { Component } from 'react';
 import { 
   Message, 
   Button,
+  Dimmer,
+  Loader,
+  Segment,
 } from 'semantic-ui-react';
 
 import Sandbox from '../Sandbox'; 
@@ -71,18 +74,29 @@ export default class ServiceReference extends Component {
 
   renderFetching = service => {
     return (
-      <div>
-        <div style={{ marginLeft: 10, marginBottom: 20 }}>
-          Searching for <span style={{ fontWeight: 'bold' }}>{ service }</span> documentation ...
+      <Dimmer.Dimmable dimmed={true}>
+        <div 
+          style={{ 
+            paddingLeft: 10, 
+            marginBottom: 20, 
+            height: 200,
+            border: 'solid 1px gray',
+            borderRadius: 5,
+          }}
+        >
+          <Dimmer active inverted>
+            <Loader
+              style={{ 
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                fontSize: 12
+              }}
+              content='Retrieving Description'
+              inverted
+            />
+          </Dimmer>
         </div>
-        <span 
-            role="img" 
-            aria-label="searching-emoji"
-            style={{ fontSize: 50 }}
-          > 
-            🔍 
-          </span>
-      </div>
+      </Dimmer.Dimmable>
     );
   }
 
@@ -246,7 +260,7 @@ export default class ServiceReference extends Component {
           textTransform: 'uppercase',
           letterSpacing: 1,
           fontSize: 12,
-          margin: '0px 20px',
+          margin: '0px 10px',
           textAlign: 'center',
           height: '100%'
         }}
@@ -263,13 +277,14 @@ export default class ServiceReference extends Component {
   }
 
   fetchDocumentation = async service => {
+    this.setState({ state: 'fetching' });
     const url = `/serviceDocs/${service}.json`;
     try {
       const doc = await fetch(url);
       this.setState({ 
         data: await doc.json(),
         state: 'available'
-      }); 
+      });
     } catch(err) {
       this.setState({ state: 'missing' });
     } 
@@ -306,8 +321,12 @@ export default class ServiceReference extends Component {
       >
       <h1 style={headlineStyle}>About this documentation</h1>
       <div style={{ margin: 10, marginBottom: 20 }}>
-          The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{service}</span> service in different configurations and inject input data, 
-          while the monitor service on the output shows how the injected data is being processed with respect to the configuration.
+        <div>
+          The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{service}</span> service in different configurations and inject input data. The
+        </div>
+        <div>
+          The monitor service at the output shows how the injected data is processed.
+        </div>
       </div>
       <h1 style={headlineStyle}>Sandbox</h1>
       { this.renderServiceSandbox(service) }

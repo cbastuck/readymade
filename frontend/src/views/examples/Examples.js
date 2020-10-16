@@ -17,7 +17,7 @@ const examples = [
     title: 'Hello World',
     brief: 'The mother of examples',
     description: [
-      'This example is showing the basic structure of a hookup chain',
+      'This example is showing the basic structure of a workflow',
       'Try double-clicking the canvas and realize this is the service that is used in the quick pitch and the thought-experiment on the start-page'
     ],
     image: '/assets/shutterstock_1196210650.png',
@@ -245,8 +245,8 @@ export default class Examples extends Component {
         >
           <p>
             Everything shown in the exampels is a fraction of the possibilities. 
-            Examples run in a Sandbox. Purpose of the Sandbox is to build hookup 
-            workflows that only rely on the current browser state and need no external resources.
+            Examples run in a Sandbox. Purpose of the Sandbox is to hookup 
+            workflows that rely on the current browser only and need no external resources.
           </p>
 
           <p>
@@ -255,7 +255,7 @@ export default class Examples extends Component {
           </p>
 
           <p>
-            But for this an account is needed, which is not a public feature atm.
+            For these use-cases, a login is needed. This is currently not a public.
           </p>
         </Message>
       </div>

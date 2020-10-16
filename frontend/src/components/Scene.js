@@ -253,7 +253,7 @@ export default class Scene extends Component {
               display: 'flex',
               flexFlow: wrapServices ? 'row wrap' : 'row nowrap',
               overflow: 'auto',
-              padding: '0px 10px',
+              padding: !frameless && '0px 10px',
               ...readonlyStyle
             }}
             onClickCapture={e => readonly && e.stopPropagation()}
