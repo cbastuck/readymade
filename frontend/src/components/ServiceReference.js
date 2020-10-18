@@ -4,10 +4,11 @@ import {
   Button,
   Dimmer,
   Loader,
-  Segment,
 } from 'semantic-ui-react';
 
 import Sandbox from '../Sandbox'; 
+
+import { s, t } from '../styles';
 
 function getSandboxData(service) {
   return `{
@@ -103,16 +104,24 @@ export default class ServiceReference extends Component {
   renderHeadline = text => {
     return (
       <h1 
-        style={{ 
-          fontSize: 13,
-          letterSpacing: 1,
-          fontWeight: 'lighter',
-          textAlign: 'left',
-          color: '#4284C4'
-        }}
+        style={s(t.fs13, t.ls1, 
+          { fontWeight: 'lighter', textAlign: 'left', color: '#4284C4' }
+        )}
       >
         {text}
       </h1>
+    );
+  }
+
+  renderTodoItem = (service, item) => {
+    return (
+      <div>
+        <h1 style={s(t.ul, t.fs12)}>{item.brief}</h1>
+        <div> {item.description} </div>
+        <div style={t.right}>
+          <Button style={s(t.uc, t.ls1, t.fs11)}> Show Task </Button>
+        </div>
+      </div>
     );
   }
 
@@ -168,14 +177,7 @@ export default class ServiceReference extends Component {
             </div>
           </div>
           <Button 
-            style={{ 
-              fontSize: 12,
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-              width: '100%',
-              marginTop: 5,
-              border: 'solid 1px #4284C499',
-            }}
+            style={s(t.fs12, t.uc, t.ls1, t.w100, t.mt5, t.borderCol('#4284C499'))}
             onClick={() => this.tryConfiguration(service, item.value)}
           >
             Try
@@ -189,6 +191,8 @@ export default class ServiceReference extends Component {
     switch (item.type) {
       case 'config':
         return this.renderConfigItem(service, item);
+      case 'todo': 
+        return this.renderTodoItem(service, item)
       default: 
         return (
           <div>Unknown Item {item.type}</div>
@@ -198,12 +202,7 @@ export default class ServiceReference extends Component {
 
   renderParagraph = (service, textOrObject) => {
     return (
-      <div
-        style={{
-          textAlign: 'left',
-          margin: "5px 0px"
-        }}  
-      >
+      <div style={s(t.tl, t.m(0, 5))}>
         { 
           typeof textOrObject === 'string' ? 
             textOrObject : 
@@ -223,9 +222,9 @@ export default class ServiceReference extends Component {
 
   renderFetchedDocs = (service, data) => {
     return data && (
-      <div style={{ width: '100%', height: '100%' }}>
+      <div style={t.fill}>
         <Message style={{ width: '100%', marginBottom: 0 }}>
-          <h1 style={{ fontSize: 13 }}>
+          <h1 style={t.fs13}>
             <span style={{ color: '#4284C4', fontWeight: 'bold' }}> {service} </span> 
             <span style={{ color: 'black', fontWeight: 'lighter' }}> Service </span>
           </h1>
@@ -247,6 +246,8 @@ export default class ServiceReference extends Component {
           { this.renderParagraphs(service, data.inputs) }
           { this.renderHeadline("output") }
           { this.renderParagraphs(service, data.outputs) }
+          { this.renderHeadline("open issues") }
+          { this.renderParagraphs(service, data.todos) }
         </div>
       </div>
     );
@@ -260,7 +261,7 @@ export default class ServiceReference extends Component {
           textTransform: 'uppercase',
           letterSpacing: 1,
           fontSize: 12,
-          margin: '0px 10px',
+          margin: '10px 10px',
           textAlign: 'center',
           height: '100%'
         }}
@@ -305,22 +306,11 @@ export default class ServiceReference extends Component {
       return false;
     }
 
-    const headlineStyle = {
-      margin: 10,
-      fontSize: 14,
-    };
+    const headlineStyle = s(t.m(10, 0), t.fs14, t.uc, t.ls1);
     return (
-      <div 
-        style={{ 
-          width: '100%', 
-          height: '100%',
-          textTransform: 'uppercase', 
-          letterSpacing: 1, 
-          fontSize: 12,
-        }}
-      >
+      <div style={s(t.fill, t.fs12)}>
       <h1 style={headlineStyle}>About this documentation</h1>
-      <div style={{ margin: 10, marginBottom: 20 }}>
+      <div style={s(t.m10, t.uc, t.ls1, { marginBottom: 20 })}>
         <div>
           The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{service}</span> service in different configurations and inject input data. The
         </div>
@@ -328,7 +318,7 @@ export default class ServiceReference extends Component {
           The monitor service at the output shows how the injected data is processed.
         </div>
       </div>
-      <h1 style={headlineStyle}>Sandbox</h1>
+      <h1 style={headlineStyle}>{service}-service in Action</h1>
       { this.renderServiceSandbox(service) }
       <h1 style={headlineStyle}>Detailed description</h1>
       { this.renderDocumentation(service) }

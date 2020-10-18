@@ -6,7 +6,12 @@ export default class HoldableButton extends Component {
   }
 
   render() {
-    const { style, onDown, onUp } = this.props;
+    const {
+    style, 
+      onDown, 
+      onUp,
+      children,
+    } = this.props;
     return (
       <div
         style={style}
@@ -16,7 +21,9 @@ export default class HoldableButton extends Component {
         onMouseDown={!this.isTouch ? onDown : undefined}
         onMouseUp={!this.isTouch ? onUp : undefined}
         onMouseLeave={!this.isTouch ? onUp : undefined}
-      />
+      >
+      { children ? children : false }
+      </div>
     )
   }
 }

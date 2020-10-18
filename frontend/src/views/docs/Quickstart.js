@@ -108,7 +108,7 @@ export default class Quickstart extends Component {
         <div style={{ marginBottom: 45 }}>
           { this.renderClaim({ s: 'Make stupid things!', c: '' }) }
           { this.renderClaim({ s: 'In particular', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'D. Sandstrom, D. Lyxzen, K. Steen, J. Brannstrom' }) }
-          { this.renderClaim({ s: 'Imagine this', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'R. Sczimarkowsi, J. Windmeier, C. Knopp, M. Ebsen, C. Peter' }) }
+          { this.renderClaim({ s: 'Acknowledge', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'R. Sczimarkowsi, J. Windmeier, C. Knopp, M. Ebsen, C. Peter' }) }
           { this.renderClaim({ s: 'Agree to', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=IIw1nP4KEHs', cite: ' K. Hamann, N. Kolodziej ' }) }
           { this.renderClaim({ s: 'With respect', c: '"To want more than is given to you”', link: 'https://www.youtube.com/watch?v=xk2CvKcJnC4', cite: 'G. Moakes, K. Okereke,  M. Tong, R. Lissackj' }) }
         </div>

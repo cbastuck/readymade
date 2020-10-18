@@ -7,7 +7,7 @@ import {
   Header,
 } from 'semantic-ui-react';
 
-import Modal from './Modal'
+import Modal from './Modal';
 import ServiceReference from './ServiceReference';
 
 import './ServiceFrame.css';

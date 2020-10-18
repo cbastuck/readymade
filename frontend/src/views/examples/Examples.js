@@ -11,6 +11,10 @@ import { AppConsumer } from '../../AppContext';
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
+import DataModelReference from '../../components/DataModelReference';
+
+import Modal from '../../components/Modal';
+import { s, t } from '../../styles';
 
 const examples = [
   {
@@ -21,17 +25,18 @@ const examples = [
       'Try double-clicking the canvas and realize this is the service that is used in the quick pitch and the thought-experiment on the start-page'
     ],
     image: '/assets/shutterstock_1196210650.png',
-    url: '/boards/examples/helloworld.json'
+    url: '/boards/examples/helloworld.json',
+    explanation: 'In this basic example a timer emits an event every second. This is mapped to a #Renderable description and visualized using the canvas service.'
   },
   {
     title: 'Audiolize',
     brief: 'Visualizaton for the ear',
     description: [
-      'Instead of looking at discrete pixels of performance graphs, why not using a sense that has a better resolution.',
-      'Hear who makes changes on wikipedia: a bot or human user'
+      'Listen to changes on Wikipedia. Hear a sound whenever someone makes an to an article. You hear different sound whether a bit or a human makes the change.',
     ],
     image: '/assets/shutterstock_1196210650.png',
-    url: '/boards/examples/audiolize.json'
+    url: '/boards/examples/audiolize.json',
+    explanation: 'The first module connects to the event source that communicates changes on Wikipedia. Further we map that event into a #Note and pass it to the audio generator.'
   },
   {
     title: 'Dropbox',
@@ -50,7 +55,10 @@ const examples = [
 ];
 
 export default class Examples extends Component {
-  state = {};
+  state = {
+    currentExample: undefined,
+    modalReferenceDatamodel: undefined,
+  };
 
   renderCard = example => {
     const fontStyle = {
@@ -60,52 +68,45 @@ export default class Examples extends Component {
       textAlign: 'center',
     };
     return (
-      <Card 
-        key={`example-card-${example.title}`}
-        style={fontStyle}
-      >
-        <Card.Content>
-          <Image
-            floated="right"
-            size="mini"
-            src={example.image}
-            style={{ marginTop: 3 }}
-          />
-          <Card.Header
-            style={{ marginTop: 3, textAlign: 'left' }}
-          >
-            {example.title}
-          </Card.Header>
-          <Card.Meta style={{ margin: '5px 0px', textAlign: 'left' }}>
-            {example.brief}
-          </Card.Meta>
-          <Card.Description style={{ marginTop: 10 }}>
-            <div style={{ textAlign: 'left' }}>
-              {Array.isArray(example.description) ? 
-                example.description.map((d, idx) => <p key={`example-${example.title}-desc-${idx}`}>{d}</p> ) : 
-                example.description}
-            </div>
-          </Card.Description>
-        </Card.Content>
-        <Card.Content extra>
-          <Link
-            style={{
-              ...fontStyle, 
-              color: '#4284C4',
-            }}
-            to={`/examples?url=${example.url}`}
-          >
-            <div style={{ margin: '5px 0px' }}>
-              Show Board
-            </div>
-          </Link>
-        </Card.Content>
-      </Card>
+      <Link
+        key={`example-link-${example.title}`}
+        style={s(t.m10, { flex: 1, width: 0, minWidth: 200 })}
+        to={`/examples?url=${example.url}`}
+      >       
+        <Card 
+          key={`example-card-${example.title}`}
+          style={{ ...fontStyle, minHeight: 250 }}
+        >
+          <Card.Content>
+            <Image
+              floated="right"
+              size="mini"
+              src={example.image}
+              style={{ marginTop: 3 }}
+            />
+            <Card.Header
+              style={{ marginTop: 3, textAlign: 'left', color: '#4183c4' }}
+            >
+              {example.title}
+            </Card.Header>
+            <Card.Meta style={{ margin: '5px 0px', textAlign: 'left' }}>
+              {example.brief}
+            </Card.Meta>
+            <Card.Description style={{ marginTop: 10 }}>
+              <div style={t.tl}>
+                {Array.isArray(example.description) ? 
+                  example.description.map((d, idx) => <p key={`example-${example.title}-desc-${idx}`}>{d}</p> ) : 
+                  example.description}
+              </div>
+            </Card.Description>
+          </Card.Content>
+        </Card>
+      </Link>
     );
   }
 
   renderExamples = () => (
-    <Card.Group>
+    <Card.Group style={{ display: 'flex' }}>
       { 
         examples.map(ex => this.renderCard(ex)) 
       }
@@ -183,13 +184,13 @@ export default class Examples extends Component {
         <div 
           style={{ 
             margin: 40, 
-            height: '100%' 
+            height: '100%',
           }}
         >
-        { !currentExample && this.renderExplainer() }
+        { !currentExample && this.renderDisclaimer() }
         {
           currentExample ? 
-            this.renderSandbox() : 
+            this.renderCurrentExample() : 
             this.renderExamples()
         }
         </div>
@@ -197,17 +198,77 @@ export default class Examples extends Component {
     );
   }
 
-  renderSandbox = () => {
+  renderExplanation = explanation => {
+    const { modalReferenceDatamodel } = this.state;
+
+    if (!explanation) {
+      return false;
+    }
+
+    const parts = explanation.split('#')
+      .reduce(
+        (all, c) => {
+          if (all.length > 0) {
+            const epos = c.indexOf(' ');
+            return [...all, c.substr(0, epos), c.substr(epos+1)];
+          } 
+          return [...all, c];
+        },
+        []
+      );
+    return (
+      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10))}>
+        {
+          parts.map((p, idx) => 
+              (idx % 2 === 1) ? 
+              (
+                <span
+                  key={`example-explanation-part-${idx}`} 
+                  style={{ 
+                    color: '#4183c4', 
+                    cursor: 'pointer',
+                    fontStyle: 'italic',
+                  }}
+                  onClick={() => this.setState({ modalReferenceDatamodel: p.toLowerCase() })}
+                > 
+                  { ` ${p} ` }
+                </span>
+              ) : 
+              (
+                <span key={`example-explanation-part-${idx}`}> 
+                  { p } 
+                </span>
+              )
+          ) 
+        }
+        <Modal
+          title="Datamodel Documentation"
+          component={<DataModelReference name={modalReferenceDatamodel} />}
+          url={`/datamodel/${modalReferenceDatamodel}`}
+          setOpen={open => !open && this.setState({ modalReferenceDatamodel: undefined })}
+          isOpen={!!this.state.modalReferenceDatamodel}
+        />
+      </div>
+    );
+  }
+
+  renderCurrentExample = () => {
     const currentExample = this.getCurrentExample();
-    return currentExample && (
-      <div style={{ width: '100%', height: '100%' }}>
+    if (!currentExample) {
+      return false;
+    }
+    return (
+      <div style={t.fill}>
+        <div style={{ maxHeight: '20%' }}>
+          { this.renderExplanation(currentExample.explanation) }
+        </div>
         <iframe 
           title={currentExample.title}
           src={`sandbox?src=${currentExample.url}`}
           frameBorder="0"
           style={{
             width: '100%',
-            height: '100%',
+            height: '80%',
             border: 'none',
           }}
         />
@@ -228,13 +289,9 @@ export default class Examples extends Component {
     return examples.find(ex => ex.url === exampleUrl);
   }
 
-  renderExplainer = () => {
+  renderDisclaimer = () => {
     return (
-      <div
-        style={{
-          marginBottom: 30
-        }}
-      >
+      <div style={{ marginBottom: 30 }}>
         <Message
           style={{
             letterSpacing: 1,
@@ -244,18 +301,17 @@ export default class Examples extends Component {
           }}
         >
           <p>
-            Everything shown in the exampels is a fraction of the possibilities. 
+            Usecases shown in this examples are a small fraction of the possibilities. 
             Examples run in a Sandbox. Purpose of the Sandbox is to hookup 
-            workflows that rely on the current browser only and need no external resources.
+            workflows that rely on the current browser only and do not need external resources.
           </p>
 
           <p>
-            The real magic happens when you start mixing persistent and volatile runties 
-            on multiple devices.
+            More magic happens when mixing persistent and volatile runtimes on multiple devices.
           </p>
 
           <p>
-            For these use-cases, a login is needed. This is currently not a public.
+            For these use-cases a login is needed, which is currently scoped to a closed group. 
           </p>
         </Message>
       </div>

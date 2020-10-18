@@ -5,15 +5,9 @@ import BoardContext, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Footer from '../components/Footer';
 
-export default class DataModelReference extends Component {
-  renderDataModel(name) {
-    return (
-      <div>
-        Trait { name }
-      </div>
-    ) 
-  }
+import DataModelReference from '../components/DataModelReference';
 
+export default class DataModelReferenceView extends Component {
   render() {
     const { match } = this.props;
     const { params } = match || {};
@@ -33,7 +27,7 @@ export default class DataModelReference extends Component {
                       savedBoards={boardContext.savedBoards}
                       onAction={boardContext.onAction}
                     />
-                    { this.renderDataModel(name) }
+                    <DataModelReference name={name} />
                   </div>
                 )
               }

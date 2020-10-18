@@ -1,0 +1,63 @@
+export function s() {
+  return Array.from(arguments).reduce((a, c) => ({ ...a, ...c }), {});
+}
+
+export const t = {
+  uc: { textTransform: 'uppercase' },
+  ul: { textDecoration: 'underline' },
+  ls1: { letterSpacing: 1 },
+
+  fs: function(s) { return { fontSize: s}; },
+  fs14: { fontSize: 14 },
+  fs13: { fontSize: 13 },
+  fs12: { fontSize: 12 },
+  fs11: { fontSize: 11 },
+  fs10: { fontSize: 10 },
+
+  m: function(x, y){ return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` }; },
+  m3: { margin: 3 },
+  m5: { margin: 5 },
+  m10: { margin: 10 },
+  mt: function(x){ return { marginTop: x }; },
+  mt3: { marginTop: 3 },
+  mt5: { marginTop: 5 },
+  mt10: { marginTop: 10 }, 
+  mb: function(x){ return { marginBottom: x }; },
+  mb3: { marginBottom: 3 },
+  mb5: { marginBottom: 5 },
+  mb10: { marginBottom: 10 },
+
+  p: function(x, y){ return y === undefined ? { padding: x } : { padding: `${y}px ${x}px` }; },
+  p3: { padding: 3 },
+  p5: { padding: 5 },
+  p10: { padding: 10 },
+
+  w100: { width: '100%' },
+  h100: { height: '100%' },
+  fill: {
+    width: '100%', 
+    height: '100%',
+  },
+
+  tl: { textAlign: 'left' },
+  tc: { textAlign: 'center' },
+  tr: { textAlign: 'right' },
+  right: { width: '100%', textAlign: 'right' },
+  
+  bc: function (col) { return { backgroundColor: col }; },
+  borderCol: function(col) { return { border: `solid 1px ${col}`}; },
+  border: { border: 'solid 1px gray' },
+  br5: { borderRadius: 5 },
+  br10: { borderRadius: 10 },
+
+  unselectable: {
+    '-webkit-touch-callout': 'none',
+    '-webkit-user-select': 'none',
+    '-khtml-user-select': 'none',
+    '-moz-user-select': 'none',
+    '-ms-user-select': 'none',
+    'user-select': 'none',
+    '-webkit-tap-highlight-color': 'rgba(0,0,0,0)'
+  },
+  
+}

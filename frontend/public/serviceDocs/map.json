@@ -1,4 +1,5 @@
 {
+  "version": "1.0",
   "brief": "Transform, add or select values from incoming, structured data, based on a fixed routine or depending on the input values",
   "configuration": [
     "A template controls how the incoming data is processed.",
@@ -26,6 +27,23 @@
   ],
   "outputs": [
     "In case the input data type is non-structured data, the incoming data is returned as-is as output.",
-    "Otherwise the processed structured data is returned as an object."
-  ]
+    "Otherwise the processed structured data is returned as an object.",
+    {
+      "type": "config",
+      "value": {
+        "template": {
+          "=": "params.key"
+        }
+      },
+      "description": "By using this notation a single parameter can be selected for output. Note, depending on the type of selected parameter this can change the type of the output. For example from structured data to a plain string."
+    }
+  ],
+  "todos": [
+    {
+      "type": "todo",
+      "brief": "Nesting",
+      "description": "Currently nested data structures are not supported for selection and manipulation."
+    }
+  ],
+  "versions": []
 }

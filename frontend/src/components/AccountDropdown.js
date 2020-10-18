@@ -3,14 +3,18 @@ import { Link } from 'react-router-dom';
 
 import { Dropdown, Icon } from 'semantic-ui-react';
 
+import { s, t } from '../styles';
+
 export default class AccountDropdown extends Component {
 
   renderLogin() {
     const { currentUser, onAction } = this.props;
+    const fontStyle = s(t.uc, t.ls1, t.fs11 );
     return (
       currentUser ? 
         (
           <Dropdown.Item
+            style={fontStyle}
             onClick={() => onAction({
               type: 'logout'
             })}
@@ -19,7 +23,9 @@ export default class AccountDropdown extends Component {
           </Dropdown.Item>
         ) : (
           <Link to="/new">
-            <Dropdown.Item>
+            <Dropdown.Item 
+              style={fontStyle}
+            >
               Login
             </Dropdown.Item>
           </Link>

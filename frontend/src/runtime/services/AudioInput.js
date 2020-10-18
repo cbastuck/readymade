@@ -10,6 +10,8 @@ import ServiceUI from './ServiceUI';
 import InputField from '../../components/shared/InputField';
 import HoldableButton from '../../components/shared/HoldableButton';
 
+import { s, t } from '../../styles';
+
 const serviceId = 'hookup.to/service/microphone'; // TODO: change to audio-input
 const serviceName = 'Audio Input';
 
@@ -120,10 +122,7 @@ class AudioInputUI extends Component {
           />
         </div>
         <HoldableButton
-          style={{ 
-            ...buttonStyle, 
-            width: '100%',
-          }}
+          style={s(t.w100, t.uc, t.ls1, t.bc('#e0e1e2'), t.p5, t.tc, t.fs11)}
           onDown={onStartRecording}
           onUp={onStopRecording}
         >

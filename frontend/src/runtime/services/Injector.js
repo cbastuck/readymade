@@ -17,7 +17,7 @@ class InjectorUI extends Component {
   state = {
     files: [],
     user: undefined,
-    initialCode: JSON.stringify({key: "value"}, null, 2),
+    initialCode: JSON.stringify({ key: "value" }, null, 2),
     blob: null,
     dropName: undefined,
     items: null,
@@ -210,7 +210,7 @@ class InjectorUI extends Component {
     const { initialCode } = this.state;
     return (
       <div>
-        < h1
+        <h1
           style={{
             fontSize: 12,
             textTransform: 'uppercase',
