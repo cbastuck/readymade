@@ -16,43 +16,42 @@ import DataModelReference from '../../components/DataModelReference';
 import Modal from '../../components/Modal';
 import { s, t } from '../../styles';
 
-const examples = [
-  {
-    title: 'Hello World',
-    brief: 'The mother of examples',
-    description: [
-      'This example is showing the basic structure of a workflow',
-      'Try double-clicking the canvas and realize this is the service that is used in the quick pitch and the thought-experiment on the start-page'
-    ],
-    image: '/assets/shutterstock_1196210650.png',
-    url: '/boards/examples/helloworld.json',
-    explanation: 'In this basic example a timer emits an event every second. This is mapped to a #Renderable description and visualized using the canvas service.'
-  },
-  {
-    title: 'Audiolize',
-    brief: 'Visualizaton for the ear',
-    description: [
-      'Listen to changes on Wikipedia. Hear a sound whenever someone makes an to an article. You hear different sound whether a bit or a human makes the change.',
-    ],
-    image: '/assets/shutterstock_1196210650.png',
-    url: '/boards/examples/audiolize.json',
-    explanation: 'The first module connects to the event source that communicates changes on Wikipedia. Further we map that event into a #Note and pass it to the audio generator.'
-  },
-  {
-    title: 'Dropbox',
-    brief: 'Upload into your Dropbox',
-    description: 'Every 10 seconds make a picture with the camera and upload it into your Dropbox (once authorized and granted access)',
-    image: '/assets/shutterstock_1196210650.png',
-    url: '/boards/examples/dropbox.json'
-  },
-  {
-    title: 'Trigger Pad',
-    brief: 'Control the output',
-    description: 'Record sounds in your environment, put them on a launchpad and start playing with them',
-    image: '/assets/shutterstock_1196210650.png',
-    url: '/boards/examples/triggerpad.json'
+import examples from './ExamplesData';
+
+function* tokenize(str) {
+  if (!str) {
+    return '';
   }
-];
+
+  let spos = 0;
+  while (spos < str.length) {
+    const begin = str.indexOf('[', spos);
+    if (begin === -1) {
+      return str.substr(spos);
+    }
+
+    if (begin > spos) {
+      yield str.substr(spos, begin - spos);
+      spos = begin;
+    }
+
+    const end = str.indexOf(')', begin + 1);
+    if (end !== -1) {
+      const nameEnd = str.indexOf(']', begin + 1);
+      const linkBegin = str.indexOf('(', nameEnd + 1);
+      if (linkBegin !== -1 && nameEnd !== -1) {
+        yield {
+          type: 'link',
+          name: str.substr(begin + 1, nameEnd - begin - 1),
+          link: str.substr(linkBegin + 1, end - linkBegin - 1),
+        }
+      }
+    } else { // syntax error: closing bracket missing
+      return str.substr(spos);
+    }
+    spos = end + 1;
+  }
+}
 
 export default class Examples extends Component {
   state = {
@@ -61,12 +60,7 @@ export default class Examples extends Component {
   };
 
   renderCard = example => {
-    const fontStyle = {
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-      fontSize: 12,
-      textAlign: 'center',
-    };
+    const fontStyle = s(t.ls1, t.uc, t.fs12, t.tc);
     return (
       <Link
         key={`example-link-${example.title}`}
@@ -94,9 +88,17 @@ export default class Examples extends Component {
             </Card.Meta>
             <Card.Description style={{ marginTop: 10 }}>
               <div style={t.tl}>
-                {Array.isArray(example.description) ? 
-                  example.description.map((d, idx) => <p key={`example-${example.title}-desc-${idx}`}>{d}</p> ) : 
-                  example.description}
+                {
+                  Array.isArray(example.description) ? 
+                    example.description.map((d, idx) => (
+                      <p
+                        key={`example-${example.title}-desc-${idx}`}
+                        style={t.lh1_7}
+                      >
+                        {d}
+                      </p> )) : 
+                    example.description
+                }
               </div>
             </Card.Description>
           </Card.Content>
@@ -205,23 +207,17 @@ export default class Examples extends Component {
       return false;
     }
 
-    const parts = explanation.split('#')
-      .reduce(
-        (all, c) => {
-          if (all.length > 0) {
-            const epos = c.indexOf(' ');
-            return [...all, c.substr(0, epos), c.substr(epos+1)];
-          } 
-          return [...all, c];
-        },
-        []
-      );
     return (
-      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10))}>
+      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10), t.lh1_5)}>
         {
-          parts.map((p, idx) => 
-              (idx % 2 === 1) ? 
-              (
+          Array.from(tokenize(explanation)).map((p, idx) => 
+              typeof p === 'string' ? (
+                <span 
+                  key={`example-explanation-part-${idx}`}
+                > 
+                  { p } 
+                </span>
+              ) : (
                 <span
                   key={`example-explanation-part-${idx}`} 
                   style={{ 
@@ -229,14 +225,9 @@ export default class Examples extends Component {
                     cursor: 'pointer',
                     fontStyle: 'italic',
                   }}
-                  onClick={() => this.setState({ modalReferenceDatamodel: p.toLowerCase() })}
+                  onClick={() => this.setState({ modalReferenceDatamodel: p.link })}
                 > 
-                  { ` ${p} ` }
-                </span>
-              ) : 
-              (
-                <span key={`example-explanation-part-${idx}`}> 
-                  { p } 
+                  { ` ${p.name} ` }
                 </span>
               )
           ) 

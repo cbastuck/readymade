@@ -266,13 +266,13 @@ export default class ServiceReference extends Component {
           height: '100%'
         }}
       >
-          { 
-            state === 'initial' ? false : (
-              (state === 'fetching' && this.renderFetching(service))||
-              (state === 'available' && this.renderFetchedDocs(service, data)) ||
-              (state === 'missing' && this.renderNoDocumentationAvailable(service))
-            )
-          }
+        { 
+          state === 'initial' ? false : (
+            (state === 'fetching' && this.renderFetching(service))||
+            (state === 'available' && this.renderFetchedDocs(service, data)) ||
+            (state === 'missing' && this.renderNoDocumentationAvailable(service))
+          )
+        }
       </div>
     );
   }

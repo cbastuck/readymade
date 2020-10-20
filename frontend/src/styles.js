@@ -6,6 +6,12 @@ export const t = {
   uc: { textTransform: 'uppercase' },
   ul: { textDecoration: 'underline' },
   ls1: { letterSpacing: 1 },
+  lh1_5: { lineHeight: 1.5 },
+  lh1_6: { lineHeight: 1.6 },
+  lh1_7: { lineHeight: 1.7 },
+  lh1_8: { lineHeight: 1.8 },
+  lh2: { lineHeight: 2 },
+  lh3: { lineHeight: 3 },
 
   fs: function(s) { return { fontSize: s}; },
   fs14: { fontSize: 14 },
