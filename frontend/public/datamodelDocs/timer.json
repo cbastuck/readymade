@@ -1,0 +1,5 @@
+{
+  "properties": {
+    "counter": "Is a counter that is is being incremented every event"
+  }
+}

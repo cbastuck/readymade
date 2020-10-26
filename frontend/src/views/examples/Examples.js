@@ -202,12 +202,23 @@ export default class Examples extends Component {
   }
 
   renderExplanation = explanation => {
-    const { modalReferenceDatamodel } = this.state;
-    const isServiceReference = modalReferenceDatamodel && modalReferenceDatamodel.link.startsWith('/service');
-    const serviceName = isServiceReference && modalReferenceDatamodel.link.split('/').pop();
-
     if (!explanation) {
       return false;
+    }
+
+    const { modalReferenceDatamodel } = this.state;
+    const isServiceReference = modalReferenceDatamodel && modalReferenceDatamodel.link.startsWith('/service');
+    const isDatamodelReference = modalReferenceDatamodel && modalReferenceDatamodel.link.startsWith('/datamodel');
+    const id = modalReferenceDatamodel && modalReferenceDatamodel.link.split('/').pop();
+    
+    let title, component;
+    if (isDatamodelReference) {
+      title = `${id} Datamodel Documentation`;
+      component = <DataModelReference datamodel={id} name={modalReferenceDatamodel.name} />;
+    }
+    if (isServiceReference) {
+      title = `${id} Service Documentation`;
+      component = <ServiceReference service={id} name={modalReferenceDatamodel.name} />;
     }
 
     return (
@@ -236,12 +247,8 @@ export default class Examples extends Component {
           ) 
         }
         <Modal
-          title={serviceName ? 'Service Documentation' : 'Datamodel Documentation'}
-          component={modalReferenceDatamodel && (
-             serviceName ? 
-              <ServiceReference service={serviceName} name={modalReferenceDatamodel.name} /> :
-              <DataModelReference name={modalReferenceDatamodel.name} />
-          )}
+          title={title}
+          component={component}
           url={modalReferenceDatamodel && modalReferenceDatamodel.link}
           setOpen={open => !open && this.setState({ modalReferenceDatamodel: undefined })}
           isOpen={!!this.state.modalReferenceDatamodel}

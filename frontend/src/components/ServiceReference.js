@@ -2,11 +2,10 @@ import React, { Component } from 'react';
 import { 
   Message, 
   Button,
-  Dimmer,
-  Loader,
 } from 'semantic-ui-react';
 
 import Sandbox from '../Sandbox'; 
+import ReferenceTemplate from './ReferenceTemplate';
 
 import { s, t } from '../styles';
 
@@ -36,69 +35,10 @@ function getSandboxData(service, name) {
 }
 
 export default class ServiceReference extends Component {
-  state = {
-    state: 'initial',
-    data: undefined,
-  };
-  
-  componentDidMount() {
-    const { service } = this.props;
-    if (service) {
-      this.fetchDocumentation(service);
-    }
-  }
-
   tryConfiguration = (service, config) => {
     if (this.sandbox) {
       this.sandbox.configureService('reference-service-id', config);
     }   
-  }
-
-  renderNoDocumentationAvailable = (service, name) => {
-    return (
-      <Message style={{ width: '100%' }} error>
-        <div style={{ marginLeft: 10, fontSize: 13 }}>
-          Unfortunately no further documentation for <span style={{ fontWeight: 'bold' }}>{ name || service }</span> exists at the the moment
-        </div>
-        <div style={{ marginTop: 30 }}>
-          <span 
-            role="img" 
-            aria-label="grimacing-emoji"
-            style={{ fontSize: 45 }}
-          > 
-            😬 
-          </span>
-        </div>
-      </Message>
-    );
-  }
-
-  renderFetching = service => {
-    return (
-      <Dimmer.Dimmable dimmed={true}>
-        <div 
-          style={{ 
-            paddingLeft: 10, 
-            marginBottom: 20, 
-            height: 200,
-            border: 'solid 1px gray',
-            borderRadius: 5,
-          }}
-        >
-          <Dimmer active inverted>
-            <Loader
-              style={{ 
-                textTransform: 'uppercase',
-                letterSpacing: 1,
-                fontSize: 12
-              }}
-              content='Retrieving Description'
-              inverted
-            />
-          </Dimmer>
-        </div>
-      </Dimmer.Dimmable>
-    );
   }
 
   renderHeadline = text => {
@@ -253,30 +193,6 @@ export default class ServiceReference extends Component {
     );
   }
 
-  renderDocumentation = (service, name) => {
-    const { state, data } = this.state;
-    return (
-      <div
-        style={{
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-          fontSize: 12,
-          margin: '10px 10px',
-          textAlign: 'center',
-          height: '100%'
-        }}
-      >
-        { 
-          state === 'initial' ? false : (
-            (state === 'fetching' && this.renderFetching(service))||
-            (state === 'available' && this.renderFetchedDocs(service, data)) ||
-            (state === 'missing' && this.renderNoDocumentationAvailable(service, name))
-          )
-        }
-      </div>
-    );
-  }
-
   fetchDocumentation = async service => {
     this.setState({ state: 'fetching' });
     const url = `/serviceDocs/${service}.json`;
@@ -321,7 +237,11 @@ export default class ServiceReference extends Component {
       <h1 style={headlineStyle}>{name}-service in Action</h1>
       { this.renderServiceSandbox(service, name) }
       <h1 style={headlineStyle}>Detailed description</h1>
-      { this.renderDocumentation(service, name) }
+      <ReferenceTemplate 
+        name={name}
+        url={`/serviceDocs/${service}.json`}
+        renderFetched={data => this.renderFetchedDocs(service, data)}
+      />
       </div>
     );
   }
