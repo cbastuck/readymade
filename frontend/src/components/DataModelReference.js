@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 
 import ReferenceTemplate from './ReferenceTemplate';
 
-import { s, t } from '../styles';
+import { t } from '../styles';
 
 export default class DataModelReference extends Component {
   renderProp = (key, decription) => {

@@ -27,7 +27,7 @@ function getSandboxData(service, name) {
         },
         {
           "serviceName": "Monitor",
-          "serviceId": "hookup.to/service/monitor-browser"
+          "serviceId": "hookup.to/service/monitor"
         }
       ]
     }

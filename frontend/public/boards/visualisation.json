@@ -6,7 +6,7 @@
     "services": [
       {
         "serviceName": "Timer",
-        "serviceId": "hookup.to/service/browser-timer",
+        "serviceId": "hookup.to/service/timer",
         "uuid": "0e5e8233-6856-474e-9091-bae598a6be48",
         "periodic": false,
         "periodicValue": 100,
@@ -76,7 +76,7 @@
       },
       {
         "serviceName": "Monitor",
-        "serviceId": "hookup.to/service/monitor-browser",
+        "serviceId": "hookup.to/service/monitor",
         "enabled": false
       },
       {

@@ -298,12 +298,7 @@ export default class Examples extends Component {
     return (
       <div style={{ marginBottom: 30 }}>
         <Message
-          style={{
-            letterSpacing: 1,
-            textTransform: 'uppercase',
-            fontSize: 12,
-            textAlign: 'left',
-          }}
+          style={s(t.ls1, t.uc, t.fs12, t.tl)}
         >
           <p>
             Usecases shown in this examples are a small fraction of the possibilities. 
@@ -334,7 +329,7 @@ export default class Examples extends Component {
               <BoardConsumer>
               {
                 boardContext => (
-                  <div style={{ height: '100%' }}>
+                  <div style={t.h100}>
                     <Toolbar 
                       savedBoards={boardContext.savedBoards}
                       onAction={boardContext.onAction}

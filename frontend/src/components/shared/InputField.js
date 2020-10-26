@@ -2,8 +2,8 @@ import React, { Component } from 'react';
 
 import { Input } from 'semantic-ui-react';
 
-
 import SyncIndicator from './SyncIndicator';
+import { s, t } from '../../styles';
 
 export default class InputField extends Component {
   state = {
@@ -33,6 +33,7 @@ export default class InputField extends Component {
       style,
       disabled,
       value: syncedValue,
+      unit,
     } = this.props;
     const fontSize = 11;
     return (
@@ -59,6 +60,13 @@ export default class InputField extends Component {
           onKeyUp={ev => ev.key === 'Enter' && onChange(ev, { value })}
           disabled={disabled}
         />
+        { 
+          unit && (
+            <div style={s(t.uc, t.ls1, t.fs12, { marginLeft: 10, marginTop: 5 })}>
+              { unit }
+            </div>
+          )
+        }
       </div>
     );
   }

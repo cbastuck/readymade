@@ -1,5 +1,6 @@
 import React from 'react';
 
+/*
 import IngressUI from './components/services/IngressUI';
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
 import FileExchangeUI from './components/services/FileExchangeUI';
@@ -16,6 +17,7 @@ import HTMLTemplatesUI from './components/services/HTMLTemplatesUI';
 import OutputUI from './components/services/OutputUI';
 import FileS3UI from './components/services/FileS3UI';
 import AggregatorUI from './components/services/AggregatorUI';
+*/
 
 import BrowserRuntime from './runtime/BrowserRuntime';
 
@@ -31,6 +33,7 @@ export function createPlaceholderUI(service) {
 }
 
 export function createServiceUI(board, service, runtimeId, userId=undefined) {
+  /*
   const id = service.uuid;
   const params = { key: id, id: id, service, board, userId };
   switch(service.serviceId) {
@@ -67,11 +70,14 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
     case 'hookup.to/service/aggregator':
       return <AggregatorUI { ...params } />
     default:
-      const factory = BrowserRuntime.findServiceUI(service.serviceId)
-      if (factory) {
-        return React.createElement(factory.createUI, { service, board, runtimeId, key: `key-${service.uuid}` });
-      } else {
-        return createPlaceholderUI(service);
-      }
+      break;
+  }
+  */
+
+  const factory = BrowserRuntime.findServiceUI(service.serviceId)
+  if (factory) {
+    return React.createElement(factory.createUI, { service, board, runtimeId, key: `key-${service.uuid}` });
+  } else {
+    return createPlaceholderUI(service);
   }
 }

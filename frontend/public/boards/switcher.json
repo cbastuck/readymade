@@ -26,7 +26,7 @@
             "board": [
               {
                 "serviceName": "Nested Timer",
-                "serviceId": "hookup.to/service/browser-timer",
+                "serviceId": "hookup.to/service/timer",
                 "uuid": "74698507-db2a-459d-96ee-1744b31e7aea",
                 "periodic": true,
                 "periodicValue": 100,
@@ -35,7 +35,7 @@
               },
               {
                 "serviceName": "Monitor",
-                "serviceId": "hookup.to/service/monitor-browser",
+                "serviceId": "hookup.to/service/monitor",
                 "uuid": "b8724712-8027-4f5b-ae1d-d0ab515091d2"
               }
             ]

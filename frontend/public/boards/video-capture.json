@@ -5,7 +5,7 @@
     "services": [
       {
         "serviceName": "Timer",
-        "serviceId": "hookup.to/service/browser-timer"
+        "serviceId": "hookup.to/service/timer"
       },
       {
         "serviceName": "Camera",
@@ -27,7 +27,7 @@
       },
       {
         "serviceName": "Monitor",
-        "serviceId": "hookup.to/service/monitor-browser"
+        "serviceId": "hookup.to/service/monitor"
       },
       {
         "serviceName": "Canvas",

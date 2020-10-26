@@ -3,7 +3,7 @@ import { TextArea, Checkbox } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 
-const serviceId = 'hookup.to/service/monitor-browser';
+const serviceId = 'hookup.to/service/monitor';
 const serviceName = 'Monitor';
 
 class MonitorUI extends Component {

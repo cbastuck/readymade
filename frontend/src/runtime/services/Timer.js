@@ -8,8 +8,9 @@ import moment from 'moment';
 import ServiceUI from './ServiceUI';
 import InputField from '../../components/shared/InputField';
 import SelectorField from '../../components/shared/SelectorField';
+import { s, t } from '../../styles'; 
 
-const serviceId = 'hookup.to/service/browser-timer';
+const serviceId = 'hookup.to/service/timer';
 const serviceName = 'Timer';
 
 class TimerUI extends Component {
@@ -22,28 +23,35 @@ class TimerUI extends Component {
     resetCounterValue: 0,
   };
 
-  onInit(initialState) {
+  onInit = initialState => {
     this.setState({
       periodic: initialState.periodic,
       periodicValue: initialState.periodicValue,
       periodicUnit: initialState.periodicUnit,
       oneShotDelay: initialState.oneShotDelay,
+      timerIsRunning: !!initialState.timer,
     });
+  }
+  
+  onNotification = (service, notification) => {
+    const { running } = notification
+    if (running !== undefined) {
+      this.setState({ timerIsRunning: running });
+    }
   }
 
   renderPeriodic = service => {
-    const buttonStyle = {
-      margin: 1,
-      textTransform: 'uppercase',
-      fontSize: 12 
-    }
+    const buttonStyle = s(t.m1, t.uc, t.fs12, t.ls1);
     return (
       <div>
         <InputField 
           type="number"
           label="interval"
           value={this.state.periodicValue}
-          onChange={(_, { value }) => this.setState({ periodicValue: Number(value) })}
+          onChange={async (_, { value }) => {
+            await service.configure({ periodicValue: Number(value) });
+            this.setState({ periodicValue: Number(value) });
+          }}
         />
         <SelectorField
           label="unit"
@@ -55,10 +63,10 @@ class TimerUI extends Component {
             d: 'days',
           }}
           value={this.state.periodicUnit}
-          onChange={
-            (_ev, { value }) => 
-              this.setState({ periodicUnit: value })
-          }
+          onChange={async (_ev, { value }) => {
+            await service.configure({ periodicUnit: value });
+            this.setState({ periodicUnit: value });
+          }}
         />
         <Button.Group 
           widths="10" 
@@ -72,7 +80,7 @@ class TimerUI extends Component {
               periodicUnit: this.state.periodicUnit,
               start: true,
             })}
-            disabled={this.state.timerIsRunning}
+            disabled={!!this.state.timerIsRunning}
           >
             Start
           </Button>
@@ -90,21 +98,20 @@ class TimerUI extends Component {
 
   renderOneShot = service => (
     <div>
-      <Input 
-        style={{ marginBottom: 10 }}
-        label="Delay"
-        type="number"
-        value={this.state.oneShotDelay || 0}
-        onChange={(_, {value: oneShotDelay}) => {
+      <InputField 
+        type="number" 
+        label="delay"
+        unit="msec"
+        value={this.state.oneShotDelay || '0'}
+        onChange={async (_, { value: oneShotDelay }) => {
+          await service.configure({ oneShotDelay });
           this.setState({ oneShotDelay });
-          service.configure({ oneShotDelay});
         }}
       />
       <Button
-        style={{ width: '100%' }}
+        style={s(t.w100, t.uc, t.ls1, t.fs12)}
         onClick={() => service.configure({ 
           periodic: false,
-          immediate: true,
           start: true,
         })}
       >
@@ -141,15 +148,12 @@ class TimerUI extends Component {
     return (
       <ServiceUI 
         {...this.props} 
-        onInit={this.onInit.bind(this)}
-        onTimer={service => 
-          (!!service.timer !== this.state.timerIsRunning) && 
-          this.setState({ timerIsRunning: !!service.timer })
-        }
+        onInit={this.onInit}
+        onNotification={this.onNotification}
         segments={[
           { name: 'periodic', render: this.renderPeriodic },
           { name: 'one-shot', render: this.renderOneShot },
-          { name: 'counter', render: this.renderCounter },
+          // { name: 'counter', render: this.renderCounter },
         ]}
         initialSegment={() => this.state.periodic ? 'periodic' : 'one-shot'}
       />
@@ -175,6 +179,7 @@ class Timer {
       clearInterval(this.timer);
       this.timer = undefined;
       this.count = 0;
+      this.app.notify(this, { running: false });
     }
   }
 
@@ -187,19 +192,23 @@ class Timer {
       immediate,
       counter,
       // commands
-      stop: doStop,
-      start: doStart,
+      stop,
+      start,
     } = config;
+    let doStop = stop, doStart = start;
     if (periodicValue !== undefined) {
       this.periodicValue = periodicValue;
+      doStart = true;
     }
     
     if (periodicUnit !== undefined) {
       this.periodicUnit = periodicUnit;
+      doStart = true;
     }
     
     if (periodic !== undefined) {
       this.periodic = periodic;
+      doStart = true;
     }
 
     if (oneShotDelay !== undefined) {
@@ -226,19 +235,17 @@ class Timer {
         if (immediate) {
           setImmediate(process);
         } else {
-          setTimeout(process) // oneShotDelay is accounted for in process
+          setTimeout(process, this.oneShotDelay);
         }
       }
     } else if (doStop) {
       this.clearTimer();
     }
+    this.app.notify(this, { running: !!this.timer });
   }
 
   destroy() {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = undefined;
-    }
+    this.clearTimer();
   }
 
   nextTimerArgument(params = {}) {
