@@ -26,11 +26,12 @@ export default class Scene extends Component {
     });
   }
 
-  componentWillReceiveProps(nextProps) {
-    if (this.state.readonly !== nextProps.readonly) {
+  componentDidUpdate(prevProps) {
+    const { readonly } = this.props;
+    if (readonly !== prevProps.readonly) {
       this.setState({ 
-        expanded: !nextProps.readonly,
-        readonly: nextProps.readonly
+        expanded: !readonly,
+        readonly: readonly
       });
     }
   }

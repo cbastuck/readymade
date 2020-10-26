@@ -10,7 +10,7 @@ import Sandbox from '../Sandbox';
 
 import { s, t } from '../styles';
 
-function getSandboxData(service) {
+function getSandboxData(service, name) {
   return `{
     "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
       "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
@@ -22,7 +22,7 @@ function getSandboxData(service) {
           "serviceId": "hookup.to/service/injector"
         },
         {
-          "serviceName": "${service}",
+          "serviceName": "${name || service}",
           "serviceId": "hookup.to/service/${service}",
           "uuid": "reference-service-id"
         },
@@ -54,11 +54,11 @@ export default class ServiceReference extends Component {
     }   
   }
 
-  renderNoDocumentationAvailable = service => {
+  renderNoDocumentationAvailable = (service, name) => {
     return (
       <Message style={{ width: '100%' }} error>
         <div style={{ marginLeft: 10, fontSize: 13 }}>
-          Unfortunately no further documentation for <span style={{ fontWeight: 'bold' }}>{ service }</span> exists at the the moment
+          Unfortunately no further documentation for <span style={{ fontWeight: 'bold' }}>{ name || service }</span> exists at the the moment
         </div>
         <div style={{ marginTop: 30 }}>
           <span 
@@ -253,7 +253,7 @@ export default class ServiceReference extends Component {
     );
   }
 
-  renderDocumentation = service => {
+  renderDocumentation = (service, name) => {
     const { state, data } = this.state;
     return (
       <div
@@ -270,7 +270,7 @@ export default class ServiceReference extends Component {
           state === 'initial' ? false : (
             (state === 'fetching' && this.renderFetching(service))||
             (state === 'available' && this.renderFetchedDocs(service, data)) ||
-            (state === 'missing' && this.renderNoDocumentationAvailable(service))
+            (state === 'missing' && this.renderNoDocumentationAvailable(service, name))
           )
         }
       </div>
@@ -291,17 +291,17 @@ export default class ServiceReference extends Component {
     } 
   }
 
-  renderServiceSandbox = service => {
+  renderServiceSandbox = (service, name) => {
     return (
       <Sandbox
         ref={sandbox => this.sandbox = sandbox}
-        data={getSandboxData(service)}
+        data={getSandboxData(service, name)}
       />
     );
   }
 
   render() {
-    const { service } = this.props;
+    const { service, name=service } = this.props;
     if (!service) {
       return false;
     }
@@ -312,16 +312,16 @@ export default class ServiceReference extends Component {
       <h1 style={headlineStyle}>About this documentation</h1>
       <div style={s(t.m10, t.uc, t.ls1, { marginBottom: 20 })}>
         <div>
-          The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{service}</span> service in different configurations and inject input data. The
+          The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{name}</span> service in different configurations and inject input data. The
         </div>
         <div>
           The monitor service at the output shows how the injected data is processed.
         </div>
       </div>
-      <h1 style={headlineStyle}>{service}-service in Action</h1>
-      { this.renderServiceSandbox(service) }
+      <h1 style={headlineStyle}>{name}-service in Action</h1>
+      { this.renderServiceSandbox(service, name) }
       <h1 style={headlineStyle}>Detailed description</h1>
-      { this.renderDocumentation(service) }
+      { this.renderDocumentation(service, name) }
       </div>
     );
   }

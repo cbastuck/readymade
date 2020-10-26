@@ -14,6 +14,7 @@ import Footer from '../../components/Footer';
 import DataModelReference from '../../components/DataModelReference';
 
 import Modal from '../../components/Modal';
+import ServiceReference from '../../components/ServiceReference';
 import { s, t } from '../../styles';
 
 import examples from './ExamplesData';
@@ -202,6 +203,8 @@ export default class Examples extends Component {
 
   renderExplanation = explanation => {
     const { modalReferenceDatamodel } = this.state;
+    const isServiceReference = modalReferenceDatamodel && modalReferenceDatamodel.link.startsWith('/service');
+    const serviceName = isServiceReference && modalReferenceDatamodel.link.split('/').pop();
 
     if (!explanation) {
       return false;
@@ -225,7 +228,7 @@ export default class Examples extends Component {
                     cursor: 'pointer',
                     fontStyle: 'italic',
                   }}
-                  onClick={() => this.setState({ modalReferenceDatamodel: p.link })}
+                  onClick={() => this.setState({ modalReferenceDatamodel: p })}
                 > 
                   { ` ${p.name} ` }
                 </span>
@@ -233,9 +236,13 @@ export default class Examples extends Component {
           ) 
         }
         <Modal
-          title="Datamodel Documentation"
-          component={<DataModelReference name={modalReferenceDatamodel} />}
-          url={`/datamodel/${modalReferenceDatamodel}`}
+          title={serviceName ? 'Service Documentation' : 'Datamodel Documentation'}
+          component={modalReferenceDatamodel && (
+             serviceName ? 
+              <ServiceReference service={serviceName} name={modalReferenceDatamodel.name} /> :
+              <DataModelReference name={modalReferenceDatamodel.name} />
+          )}
+          url={modalReferenceDatamodel && modalReferenceDatamodel.link}
           setOpen={open => !open && this.setState({ modalReferenceDatamodel: undefined })}
           isOpen={!!this.state.modalReferenceDatamodel}
         />

@@ -5,6 +5,8 @@ import * as Tone from 'tone';
 
 import ServiceUI from './ServiceUI';
 
+import { s, t } from '../../styles';
+
 const serviceId = 'hookup.to/service/sound';
 const serviceName = 'Sound';
 
@@ -35,10 +37,12 @@ class SoundUI extends Component {
             );
           }}
         >
-          { this.state.running ? 
-              <span>Stop Audio</span> :
-              <span>Start Audio</span>
-          }
+          <span style={s(t.uc, t.ls1, t.fs11)}>
+            { 
+              this.state.running ? 
+                'Stop Audio' : 'Start Audio' 
+            }
+          </span> 
         </Button>
       </div>
     );

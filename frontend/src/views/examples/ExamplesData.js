@@ -8,7 +8,7 @@ export default [
     ],
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/helloworld.json',
-    explanation: 'In this basic example a [Timer](/service/timer) emits [time-data](/datamodel/timer) every second. This is [mapped](/service/map) to a [Renderable](/datamodel/renderable) datamodel, which is visualized using the [canvas](/service/canvas) service.'
+    explanation: 'In this basic example a [Timer](/service/browser-timer) emits [time-data](/datamodel/timer) every second. This is [mapped](/service/map) to a [Renderable](/datamodel/renderable) data-object, which is visualized using the [canvas](/service/canvas) service.'
   },
   {
     title: 'Audiolize',
