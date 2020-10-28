@@ -94,7 +94,7 @@ export default class BrowserRuntime {
       },
       notify: (service, notification) => {
         if (service.__notificationTarget) {
-          service.__notificationTarget(service, notification);
+          return service.__notificationTarget(service, notification);
         }
       }
     }

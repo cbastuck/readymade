@@ -33,5 +33,12 @@ export default [
     description: 'Record sounds in your environment, put them on a launchpad and start playing with them',
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/triggerpad.json'
+  },
+  {
+    title: 'Animate',
+    brief: 'Make a GIF',
+    description: 'Canvas has an output yeah',
+    image: '/assets/shutterstock_1196210650.png',
+    url: '/boards/examples/animate.json'
   }
 ];

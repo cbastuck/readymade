@@ -194,21 +194,28 @@ class Timer {
       // commands
       stop,
       start,
+      until,
     } = config;
     let doStop = stop, doStart = start;
     if (periodicValue !== undefined) {
       this.periodicValue = periodicValue;
-      doStart = true;
+      if (doStart === undefined) {
+        doStart = true;
+      }
     }
     
     if (periodicUnit !== undefined) {
       this.periodicUnit = periodicUnit;
-      doStart = true;
+      if (doStart === undefined) {
+        doStart = true;
+      }
     }
     
     if (periodic !== undefined) {
       this.periodic = periodic;
-      doStart = true;
+      if (doStart === undefined) {
+        doStart = true;
+      }
     }
 
     if (oneShotDelay !== undefined) {
@@ -219,7 +226,21 @@ class Timer {
       this.count = counter;
     }
     
-    const process = () => this.app.next(this, this.nextTimerArgument());
+    if (until !== undefined) {
+      const { triggerCount } = until;
+      this.conditionUntilTriggercount = Number(triggerCount);
+    }
+
+
+    const process = () => {
+      if (this.conditionUntilTriggercount &&
+          this.count > this.conditionUntilTriggercount) {
+            this.clearTimer();
+      } else {
+        this.app.next(this, this.nextTimerArgument());
+      }
+    };
+
     if (doStart) {
       if (this.periodic) {
         this.clearTimer();

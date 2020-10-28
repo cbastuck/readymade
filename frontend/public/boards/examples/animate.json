@@ -1,0 +1,45 @@
+{
+  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+    "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
+    "name": "Chrome-78.0.3904.108 (0)",
+    "type": "browser",
+    "bundles": ["hookup.to/registry/browser/Graphic"],
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/timer",
+        "periodic": true,
+        "periodicValue": 40,
+        "periodicUnit": "ms",
+        "start": false,
+        "until": {
+          "triggerCount": 10
+        }
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "type": "text",
+          "text": "🚶‍♀️",
+          "x=": "280 - params.triggerCount % 140 * 2",
+          "y=": "`${Math.sin(params.triggerCount) * 5 + 95}%`",
+          "width": "100%"
+        }
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor"
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "capture": "image/png"
+      },
+      {
+        "serviceName": "GIF Encoder",
+        "serviceId": "hookup.to/service/gif-encoder"
+      }
+    ]
+  }
+}
