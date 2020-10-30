@@ -34,7 +34,7 @@
         "capture": "image/png"
       },
       {
-        "serviceName": "GIF Encoder",
+        "serviceName": "GIF Recorder",
         "serviceId": "hookup.to/service/gif-encoder"
       }
     ]
