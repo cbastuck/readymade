@@ -1,64 +1,81 @@
 import React, { Component } from 'react';
-import {
-  Input,
-  Label,
-} from 'semantic-ui-react';
+import { Input } from 'semantic-ui-react';
+
+import InputField from '../../components/shared/InputField';
+
+import { s ,t } from '../../styles';
 
 export default class InputLabelValue extends Component {
+  state = {
+    editLabel: null,
+    renamedLabelBuffer: null,
+  };
+
   componentDidMount() {
+    const { value, label } = this.props;
     this.setState({ 
-      label: this.props.label,
-      value: this.props.value,
+      label,
+      value,
+    });
+  }
+
+  componentDidUpdate(prevProps) {
+    const { value, label } = this.props;
+    if (value !== prevProps.value) {
+      this.setState({ value });
+    }
+    if (label !== prevProps.label) {
+      this.setState({ label });
+    }
+  }
+
+  stopLabelEditing = () => {
+    this.setState({ 
       editLabel: null,
       renamedLabelBuffer: null,
     });
   }
 
-  render() {
+  renderEditableLabel = () => {
     const { onCommit } = this.props;
-    const { label='', value = '', editLabel, renamedLabelBuffer } = this.state || {};
-    const vspace = { marginBottom: 5 }
+    const { value = '', editLabel, renamedLabelBuffer } = this.state || {};
     return (
       <Input
-        type="text"
-        style={{ ...vspace, width: '100%' }}
-        label={editLabel === label ? 
-          <Input
-            value={renamedLabelBuffer === null ? editLabel : renamedLabelBuffer}
-            ref={element => element && element.focus()}
-            onChange={(_, { value: renamedLabelBuffer }) => this.setState({ renamedLabelBuffer })}
-            onKeyDown={e => {
-              switch(e.key) {
-                case 'Enter':
-                  onCommit({ 
-                    label: renamedLabelBuffer === null ? editLabel : renamedLabelBuffer, 
-                    value 
-                  });
-                  break;
-                case 'Escape':
-                  break;
-                default: 
-                  return;
-              }
-              this.setState({ 
-                editLabel: null,
-                renamedLabelBuffer: null,
+        style={s(t.fs12)}
+        value={renamedLabelBuffer === null ? editLabel : renamedLabelBuffer}
+        ref={element => element && element.focus()}
+        onChange={(_, { value: renamedLabelBuffer }) => this.setState({ renamedLabelBuffer })}
+        onKeyDown={e => {
+          switch(e.key) {
+            case 'Enter':
+              onCommit({ 
+                label: renamedLabelBuffer === null ? editLabel : renamedLabelBuffer, 
+                value 
               });
-            }}
-          /> :
-          <Label 
-            onClick={() => this.setState({ editLabel: label })}
-          >
-            {label}
-          </Label>
-        }
-        labelPosition="left"
+              break;
+            case 'Escape':
+              break;
+            default:
+              return; // all other keys don't set any state
+          }
+          this.stopLabelEditing();
+        }}
+        onBlur={this.stopLabelEditing}
+      />
+    );
+  }
+
+  render() {
+    const { onCommit } = this.props;
+    const { label='', value = '', editLabel } = this.state || {};
+    return (
+      <InputField
+        type="text"
+        label={editLabel === label ? this.renderEditableLabel() : label}
         value={value}
-        onChange={(_, { value }) => this.setState({ value })}
-        onKeyPress={
-          e => (e.key === 'Enter') &&
-            onCommit({ label, value })
-        }
+        onChange={(_, { value }) => onCommit({ label, value })}
+        onLabelClicked={() => this.setState({ editLabel: label })}
+        onFocus={() => this.setState({ editLabel: undefined })}
       />
     );
   }

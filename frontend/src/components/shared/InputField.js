@@ -30,12 +30,16 @@ export default class InputField extends Component {
       type, 
       label, 
       onChange, 
+      onEscape,
+      onLabelClicked,
+      onFocus,
       style,
       disabled,
       value: syncedValue,
       unit,
     } = this.props;
     const fontSize = 11;
+    const inSync = value === syncedValue;
     return (
       <div 
         style={{
@@ -47,8 +51,11 @@ export default class InputField extends Component {
         }}
       >
         <SyncIndicator 
-          onClick={ev => onChange(ev, { value })}
-          inSync={value === syncedValue}
+          onClick={ev => inSync ? 
+            onLabelClicked(ev, { value }) : 
+            onChange(ev, { value })
+          }
+          inSync={inSync}
           label={label}
           style={{ fontSize }}
         />
@@ -57,7 +64,17 @@ export default class InputField extends Component {
           type={type}
           value={value || ''}
           onChange={(_, { value }) => this.setState({ value })}
-          onKeyUp={ev => ev.key === 'Enter' && onChange(ev, { value })}
+          onKeyUp={ev => {
+            switch(ev.key) {
+              case 'Enter':
+                return onChange(ev, { value });
+              case 'Escape':
+                return onEscape && onEscape(ev, { value });
+              default:
+                break;
+            }
+          }}
+          onFocus={() => onFocus && onFocus()}
           disabled={disabled}
         />
         { 

@@ -38,27 +38,28 @@ class MapUI extends Component {
   }
 
   renderMapping = service => {
+    const { template={} } = this.state;
     return (
       <div>
         {
-          Object.keys(this.state.template || {})
+          Object.keys(template)
             // TODO: support nested objects
-            .filter(key => typeof this.state.template[key] !== 'object')
+            .filter(key => typeof template[key] !== 'object')
             .map((key, idx) => (
               <InputLabelValue
                 key={`${service.uuid}-${key}-${idx}`}
                 label={key}
                 labelPosition="left"
-                value={this.state.template[key]}
+                value={template[key]}
                 onCommit={({ label: newKey, value }) => { 
-                  const template = Object.keys(this.state.template).reduce(
+                  const updatedTemplate = Object.keys(template).reduce(
                     (all, cur) => (cur !== key) ? 
-                        { ...all, [cur]: this.state.template[cur] } : // this is the input that changed
+                        { ...all, [cur]: template[cur] } : // this is the input that changed
                         (newKey !== '' ? { ...all, [newKey]: value } : all), // empty key means deleting the item
                     {}
                   );
-                  service.configure({ template });
-                  this.setState({ template });
+                  service.configure({ template: updatedTemplate });
+                  this.setState({ template: updatedTemplate });
                 }}
               />
             ))
@@ -125,7 +126,7 @@ class MapUI extends Component {
         onNotification={this.onNotification.bind(this)}
         segments={[
           { name: 'Mapping', render: this.renderMapping },
-          { name: 'Condition', render: this.renderCondition }
+          // { name: 'Condition', render: this.renderCondition }
         ]}
       />
     );

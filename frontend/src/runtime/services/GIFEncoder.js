@@ -11,7 +11,8 @@ const serviceName = 'GIF Encoder';
 
 class GIFEncoderUI extends Component {
   state = {
-    gifData: undefined
+    gifData: undefined,
+    state: 'stopped',
   };
 
   componentWillUnmount() {
@@ -22,7 +23,7 @@ class GIFEncoderUI extends Component {
   }
 
   render() {
-    const { gifData } = this.state;
+    const { gifData, state } = this.state;
     return (
       <ServiceUI 
         {...this.props}
@@ -39,24 +40,40 @@ class GIFEncoderUI extends Component {
                     />
                   ) : (
                     <div style={{ height: 200, width: 300 }}>
-                      Not available
+                      { state === 'stopped' && 'No Recording available' }
+                      { state === 'rendering' && 'Rendering recording' }
+                      { state === 'recording' && 'Recording in progress' }
                     </div>
                   )
                 }
               </div>
               <Button
                 style={s(t.m(10), t.uc, t.ls1, t.fs12)}
+                disabled={state === 'rendering'}
                 onClick={async () => {
-                  const { gifData } = this.state;
-                  if (gifData) {
-                    URL.revokeObjectURL(gifData);
+                  if (state === 'stopped') {
+                    service.configure({ recording: true });
+                    this.setState({ 
+                      gifData: undefined, 
+                      state: 'recording', 
+                    });
+                  } else if (state === 'recording') {
+                    this.setState({ state: 'rendering' });
+                    const { gifData } = this.state;
+                    if (gifData) {
+                      URL.revokeObjectURL(gifData);
+                    }
+                    const blob = await service.renderAnimatedGIF();
+                    const url = URL.createObjectURL(blob);
+                    this.setState({ 
+                      gifData: url, 
+                      state: 'stopped' 
+                    });
+                    service.configure({ recording: false });
                   }
-                  const blob = await service.renderAnimatedGIF();
-                  const url = URL.createObjectURL(blob);
-                  this.setState({ gifData: url });
                 }}
               >
-                Update
+                { state === 'recording' ? 'Stop' : 'Record' }
               </Button>
               </div>
           )
@@ -73,9 +90,15 @@ class GIFEncoder {
     this.app = app;
 
     this.images = [];
+    this.recording = false;
   }
 
   configure(config) {
+    const { recording } = config;
+
+    if (recording !== undefined) {
+      this.recording = recording;
+    }
   }
 
   renderAnimatedGIF = () => {
@@ -101,17 +124,18 @@ class GIFEncoder {
   }
 
   async process(params) {
-    const image = await this.blobToImage(params);
-    
-    if (!this.gif) {
-      this.gif = new GIF({
-        workers: 2,
-        quality: 10,
-        workerScript: 'res/gif.js/gif.worker.js'
-      });
+    if (this.recording) {
+      const image = await this.blobToImage(params);
+      if (!this.gif) {
+        this.gif = new GIF({
+          workers: 2,
+          quality: 10,
+          workerScript: 'res/gif.js/gif.worker.js'
+        });
+      }
+      this.gif.addFrame(image, { delay: 1 });
     }
-    
-    this.gif.addFrame(image, { delay: 1 });
+    return params;
   }
 }
 

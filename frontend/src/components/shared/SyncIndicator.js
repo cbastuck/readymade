@@ -11,7 +11,7 @@ export default class SyncIndicator extends Component {
       inSync,
       onClick,
     } = this.props;
-    return (
+    return typeof label === 'string' ? (
       <Label 
         style={{
           backgroundColor: '#E8E8E8',
@@ -26,11 +26,12 @@ export default class SyncIndicator extends Component {
           cursor: !inSync ? 'pointer' : undefined,
           ...style
         }}
-        onClick={ev => !inSync && onClick(ev)}
+        onClick={onClick}
       > 
         { label } 
       </Label>
-    );
+    ) : 
+    label;
 }
 
   renderOld() {
