@@ -11,10 +11,7 @@
         "periodic": true,
         "periodicValue": 40,
         "periodicUnit": "ms",
-        "start": false,
-        "until": {
-          "triggerCount": 10
-        }
+        "start": true
       },
       {
         "serviceName": "Map",
