@@ -121,13 +121,23 @@ class AudioOutput {
   }
 
   async process(params) {
-    if (params && (params instanceof Blob || params instanceof File)) {     
-      const ab = await this.toArrayBuffer(params);
-      const source = this.audioCtx.createBufferSource();
-      source.buffer = await this.decodeBuffer(ab);
-      source.connect(this.analyser);
-      source.onended = () => source.disconnect();
-      source.start();
+    if (params) {
+      let source;
+      if (params instanceof Blob || params instanceof File) {
+        const ab = await this.toArrayBuffer(params);
+        source = this.audioCtx.createBufferSource();
+        source.buffer = await this.decodeBuffer(ab);
+      }
+      // TODO: do we want to allow multiple formats?
+      if (params instanceof AudioBuffer) {
+        source = this.audioCtx.createBufferSource();
+        source.buffer = params;
+      }
+      if (source) {
+        source.connect(this.analyser);
+        source.onended = () => source.disconnect();
+        source.start();
+      }
     }
     return params;
   }
