@@ -10,6 +10,7 @@ export default class HoldableButton extends Component {
     style, 
       onDown, 
       onUp,
+      onRightClick = () => {},
       children,
     } = this.props;
     return (
@@ -21,6 +22,7 @@ export default class HoldableButton extends Component {
         onMouseDown={!this.isTouch ? onDown : undefined}
         onMouseUp={!this.isTouch ? onUp : undefined}
         onMouseLeave={!this.isTouch ? onUp : undefined}
+        onContextMenu={onRightClick}
       >
       { children ? children : false }
       </div>

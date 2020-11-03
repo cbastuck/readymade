@@ -3,9 +3,9 @@ import { Button } from 'semantic-ui-react';
 
 import * as Tone from 'tone';
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from '../ServiceUI';
 
-import { s, t } from '../../styles';
+import { s, t } from '../../../styles';
 
 const serviceId = 'hookup.to/service/sound';
 const serviceName = 'Sound';

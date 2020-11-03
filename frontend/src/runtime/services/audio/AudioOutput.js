@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from '../ServiceUI';
+
+import { decodeBuffer } from './audioHelper';
+import { toArrayBuffer } from '../helpers';
 
 const serviceId = 'hookup.to/service/audio-output'; // TODO: change to audio-input
 const serviceName = 'Audio Output';
@@ -95,40 +98,15 @@ class AudioOutput {
       drawAlt();
   }
 
-  decodeBuffer(data) {
-    return new Promise((resolve, reject) => 
-      this.audioCtx.decodeAudioData(
-        data, 
-        buffer => resolve(buffer),
-        e => reject(e)
-      )
-    );
-  }
-
-  toArrayBuffer(blobOrFile) {
-    if (blobOrFile.arrayBuffer) {
-      return blobOrFile.arrayBuffer();
-    }
-    return new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      try {
-        fr.onload = () => resolve(fr.result);
-        fr.readAsArrayBuffer(blobOrFile);
-      } catch(err) {
-        reject(err);
-      }
-    });
-  }
-
   async process(params) {
     if (params) {
       let source;
       if (params instanceof Blob || params instanceof File) {
-        const ab = await this.toArrayBuffer(params);
+        const ab = await toArrayBuffer(params);
         source = this.audioCtx.createBufferSource();
-        source.buffer = await this.decodeBuffer(ab);
+        source.buffer = await decodeBuffer(this.audioCtx, ab);
       }
-      // TODO: do we want to allow multiple formats?
+      // TODO: do we want to allow multiple formats? Especially one that is non streamable?
       if (params instanceof AudioBuffer) {
         source = this.audioCtx.createBufferSource();
         source.buffer = params;

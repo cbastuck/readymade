@@ -1,9 +1,11 @@
 import React, { Component } from 'react';
 import { Button } from 'semantic-ui-react';
 
+import ServiceUI from '../ServiceUI';
+import { decodeBuffer, combineChannels } from './audioHelper';
+import { toArrayBuffer } from '../helpers';
 
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
+import { s, t } from '../../../styles';
 
 const serviceId = 'hookup.to/service/audio-recorder';
 const serviceName = 'Audio Recorder';
@@ -22,14 +24,48 @@ class AudioRecorderUI extends Component {
     });
   }
 
-  onNotification = (service, notification) => {
+  onNotification = async (service, notification) => {
     const { recording, rendered } = notification;
     if (this.state.recording !== recording) {
       this.setState({ recording });
     }
+
     if (this.state.rendered !== rendered) {
+      if (rendered) {
+        this.renderBuffer(service.renderedBuffer);
+      }
       this.setState({ rendered });
     }
+  }
+
+  renderBuffer = buffer => {
+    const WIDTH = this.canvas.width;
+    const HEIGHT = this.canvas.height;
+    this.canvasCtx.fillStyle = 'white';
+    this.canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+    this.canvasCtx.lineWidth = 1;
+    this.canvasCtx.strokeStyle = 'gray';
+    this.canvasCtx.beginPath();
+
+    const dataArray = buffer.numberOfChannels > 1 ? combineChannels(buffer) : buffer.getChannelData(0);
+    const bufferLength = dataArray.length;
+    const sliceWidth = bufferLength / WIDTH;
+    const halfHeight = HEIGHT / 2;
+    for (let x = 0; x < WIDTH; ++x) {
+      const idx = x * sliceWidth;
+      const v = dataArray
+        .slice(idx, idx+sliceWidth)
+        .reduce((sum, c) => sum + c, 0);
+      const y = v * halfHeight + halfHeight;
+      if (x === 0) {
+        this.canvasCtx.moveTo(x, y);
+      } else {
+        this.canvasCtx.lineTo(x, y);
+      }
+    }
+
+    this.canvasCtx.lineTo(WIDTH, halfHeight);
+    this.canvasCtx.stroke();
   }
 
   renderMain = service => {
@@ -48,6 +84,15 @@ class AudioRecorderUI extends Component {
             recording ? 'Stop Record' : 'Start Recording'
           }
         </Button>
+        <canvas 
+          ref={canvas => {
+            if (canvas && !this.canvas) {
+              this.canvas = canvas;
+              this.canvasCtx = canvas.getContext('2d');
+            }
+          }}
+          style={{ height: 200, width: 300 }}
+        />
         <Button
           style={s(t.uc, t.ls1, t.fs12, t.m(2))}
           onClick={service.injectRecording}
@@ -58,6 +103,7 @@ class AudioRecorderUI extends Component {
       </div>
     );
   }
+  
   render() {
     return (
       <ServiceUI 
@@ -80,7 +126,7 @@ class AudioRecorder {
 
     this.recording = false;
     this.sampleRate = 44100;
-    this.duration = 50;    
+    this.duration = 5;    
     this.offlineCtx = undefined;
     this.startTime = undefined;
   }
@@ -89,6 +135,7 @@ class AudioRecorder {
     const { recording } = config;
     if (recording !== undefined && this.recording !== recording) {
       if (recording) {
+        const OfflineAudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
         this.offlineCtx = new OfflineAudioContext(2, this.sampleRate*this.duration, this.sampleRate);
         this.startTime = undefined;
       }
@@ -113,39 +160,12 @@ class AudioRecorder {
     }
   }
 
-  // TODO: copied from AudioOutput
-  decodeBuffer(audioContext, data) {
-    return new Promise((resolve, reject) => 
-      audioContext.decodeAudioData(
-        data, 
-        buffer => resolve(buffer),
-        e => reject(e)
-      )
-    );
-  }
-
-  // TODO: copied from AudioOutput - looks very generic outside of audio context
-  toArrayBuffer(blobOrFile) {
-    if (blobOrFile.arrayBuffer) {
-      return blobOrFile.arrayBuffer();
-    }
-    return new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      try {
-        fr.onload = () => resolve(fr.result);
-        fr.readAsArrayBuffer(blobOrFile);
-      } catch(err) {
-        reject(err);
-      }
-    });
-  }
-
   async process(params) {
     if (this.recording) {
       if (params && (params instanceof Blob || params instanceof File)) {
-        const ab = await this.toArrayBuffer(params);
+        const ab = await toArrayBuffer(params);
         const source = this.offlineCtx.createBufferSource();
-        source.buffer = await this.decodeBuffer(this.offlineCtx, ab);
+        source.buffer = await decodeBuffer(this.offlineCtx, ab);
         source.connect(this.offlineCtx.destination);
 
         const now = Date.now() / 1000;

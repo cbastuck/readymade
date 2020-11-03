@@ -1,8 +1,5 @@
 import timerDescriptor from '../services/Timer';
 import monitorDescriptor from '../services/Monitor';
-import audioInputDescriptor from '../services/AudioInput';
-import audioOutputDescriptor from '../services/AudioOutput';
-import midiInputDescriptor from '../services/MidiInput';
 import playbackDescriptor from '../services/Playback';
 import FileProviderDescriptor from '../services/FileProvider';
 import DownloaderDescriptor from '../services/Downloader';
@@ -31,9 +28,6 @@ import TimelineDescriptor from '../services/Timeline';
 export default [
   timerDescriptor,
   monitorDescriptor,
-  audioInputDescriptor,
-  audioOutputDescriptor,
-  midiInputDescriptor,
   playbackDescriptor,
   FileProviderDescriptor,
   DownloaderDescriptor,

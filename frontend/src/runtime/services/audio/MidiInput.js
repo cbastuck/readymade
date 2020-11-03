@@ -3,7 +3,7 @@ import {
   Button,
 } from 'semantic-ui-react';
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from '../ServiceUI';
 
 const serviceId = 'hookup.to/service/midi-input';
 const serviceName = 'Midi Input';

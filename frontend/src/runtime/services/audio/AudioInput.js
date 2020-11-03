@@ -6,11 +6,11 @@ import {
 
 import MediaRecorder from 'audio-recorder-polyfill';
 
-import ServiceUI from './ServiceUI';
-import InputField from '../../components/shared/InputField';
-import HoldableButton from '../../components/shared/HoldableButton';
+import ServiceUI from '../ServiceUI';
+import InputField from '../../../components/shared/InputField';
+import HoldableButton from '../../../components/shared/HoldableButton';
 
-import { s, t } from '../../styles';
+import { s, t } from '../../../styles';
 
 const serviceId = 'hookup.to/service/microphone'; // TODO: change to audio-input
 const serviceName = 'Audio Input';

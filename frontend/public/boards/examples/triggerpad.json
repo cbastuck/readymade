@@ -1,7 +1,7 @@
 
 {
   "ExampleRuntime": {
-    "bundles": ["hookup.to/registry/browser/FileStorage"],
+    "bundles": ["hookup.to/registry/browser/Audio"],
     "type": "browser",
     "services": [
       {
@@ -12,6 +12,10 @@
       {
         "serviceName": "Trigger Pad",
         "serviceId": "hookup.to/service/trigger-pad"
+      },
+      {
+        "serviceName": "Audio Recorder",
+        "serviceId": "hookup.to/service/audio-recorder"
       },
       {
         "serviceName": "Audio Output",

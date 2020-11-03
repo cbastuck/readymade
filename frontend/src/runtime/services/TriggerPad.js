@@ -14,17 +14,23 @@ class TriggerPadUI extends Component {
   state = {
     triggeredPads: {},
     assignments: {},
+    armedPad: undefined,
   };
 
 
   onInit = service => {
     this.service = service;
+    this.setState({ armedPad: `${service.armedPad}` });
   }
 
   onNotification = (service, notification) => {
-    const { assignments } = notification;
+    const { assignments, armedPad } = notification;
     if (assignments) {
       this.setState({ assignments });
+    }
+
+    if (armedPad !== undefined) {
+      this.setState({ armedPad: `${armedPad}` });
     }
   }
 
@@ -32,6 +38,7 @@ class TriggerPadUI extends Component {
     const index = makeIndex(rowIndex, colIndex);
     const isPadTriggered = this.state.triggeredPads[index];
     const isPadAssigned = this.state.assignments[index];
+    const isPadArmed = this.state.armedPad === index;
     const onPush = ev => {
       service.triggerPad(index);
       this.setState({ 
@@ -63,13 +70,18 @@ class TriggerPadUI extends Component {
           width: 100,
           height: 100,
           margin: 2,
-          border: 'solid 1px lightgray',
+          border: `solid 1px ${isPadArmed ? '#4183c4' : 'lightgray'}`,
           backgroundColor: !isPadTriggered ? 
             (isPadAssigned ? '#eff' : 'white') : 
             '#4183c4'
         }}
         onDown={onPush}
         onUp={onEnd}
+        onRightClick={ev => {
+          service.clearPad(index);
+          ev.stopPropagation();
+          ev.preventDefault();
+        }}
       />  
       
     );
@@ -142,7 +154,16 @@ class TriggerPad {
     const assignment = this.padAssignment(padIndex);
     if (assignment) {
       return this.app.next(this, assignment);
+    } else {
+      this.armedPad = padIndex;
     }
+  }
+
+  clearPad(padIndex) {
+    const idx = `${padIndex}`;
+    this.padAssignments[idx] = undefined;
+    this.armedPad = padIndex;
+    this.app.notify(this, { assignments: this.padAssignments, armedPad: this.armedPad });
   }
 
   isMatch(params) {
@@ -156,8 +177,11 @@ class TriggerPad {
       if (this.armedPad !== undefined) {
         const idx = `${this.armedPad}`;
         this.padAssignments[idx] = params;
-        this.armedPad = ++this.armedPad % 16;
-        this.app.notify(this, { assignments: this.padAssignments })
+        this.app.notify(this, { assignments: this.padAssignments });
+        for (; this.padAssignments[this.armedPad]; ) {
+          ++this.armedPad;
+        }
+        this.app.notify(this, { armedPad: this.armedPad });
       }
     }
     return params;
