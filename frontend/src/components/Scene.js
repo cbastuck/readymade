@@ -10,6 +10,8 @@ import {
 import ServiceFrame from './ServiceFrame';
 import { openTab } from '../core/actions';
 
+import './Scene.css';
+
 export default class Scene extends Component {
   state = {
     expanded: false,
@@ -69,25 +71,72 @@ export default class Scene extends Component {
       letterSpacing: 1,
       textTransform: 'uppercase',
     };
+    const registry = runtime ? runtime.registry : [];
+    
+    const options = registry.map(s => ({
+      key: s.serviceId, value: s.serviceId, text: s.serviceName
+    }));
+    return (
+      <div
+        id="service-dropdown"
+        style={{
+          ...serviceNameStyle,
+          width: 180
+        }}
+      >
+        <Dropdown
+          deburr
+          fluid
+          options={options}
+          placeholder="Add Service"
+          search
+          selection
+          clearable
+          onChange={(ev, { value }) => {
+            if (value) {
+              const service = registry.find(s => s.serviceId === value);
+              this.onAddService(service);
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+  renderServiceMenu_(runtimeName, runtime) {
+    const serviceNameStyle = {
+      fontSize: 12,
+      letterSpacing: 1,
+      textTransform: 'uppercase',
+    };
+    const { searchTerm } = this.state;
     const registry = runtime && runtime.registry;
+    const filtered = !searchTerm ? registry : registry.filter(svc => svc.serviceId.indexOf(searchTerm) !== -1)
     return (
       <Dropdown
-        text="Add Services"
+        text="Add Service"
         style={{ ...serviceNameStyle, fontWeight: 100  }} // disable bold appearance due to h4 of text
         search
         pointing
         className='link item selection'
-        onSearchChange={e => console.log('search', e.target.value)}
+        onSearchChange={e => this.setState({ searchTerm: e.target.value })}
+        searchQuery={searchTerm}
+        onBlur={() => console.log('BLURRR')}
       >
       {
         <Dropdown.Menu>  
           {
-            registry && registry.map(service =>
+            filtered && filtered.map(service =>
               <Dropdown.Item
                 key={`${runtimeName}.${service.serviceId}`}
-                onClick={() => this.onAddService(service)}
+                onClick={() => {
+                  this.onAddService(service);
+                  this.setState({ searchTerm: '' });
+                }}
               >
-                <span style={serviceNameStyle}>{service.serviceName}</span>
+                <span style={{ ...serviceNameStyle, fontSize: 11 }}>
+                  {service.serviceName}
+                </span>
               </Dropdown.Item>
             )
           }
