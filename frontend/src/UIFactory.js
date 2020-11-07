@@ -74,9 +74,20 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
   }
   */
 
-  const factory = BrowserRuntime.findServiceUI(service.serviceId)
+  const serviceId = service.serviceId || service.__descriptor.serviceId;
+  const factory = BrowserRuntime.findServiceUi(serviceId);
+  console.log('GOt FACTOR', factory)
   if (factory) {
-    return React.createElement(factory.createUI, { service, board, runtimeId, key: `key-${service.uuid}` });
+    const props = {
+      service, 
+      board, 
+      runtimeId, 
+      key: `key-${service.uuid}` 
+    };
+    return React.createElement(
+      factory.createUI, 
+      props,
+    );
   } else {
     return createPlaceholderUI(service);
   }

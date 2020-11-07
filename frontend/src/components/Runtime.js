@@ -9,10 +9,11 @@ import {
 
 import ServiceFrame from './ServiceFrame';
 import { openTab } from '../core/actions';
+import { createServiceUI, createPlaceholderUI } from '../UIFactory';
 
-import './Scene.css';
+import './Runtime.css';
 
-export default class Scene extends Component {
+export default class Runtime extends Component {
   state = {
     expanded: false,
     readonly: false,
@@ -194,11 +195,14 @@ export default class Scene extends Component {
   render() {
     const { 
       style,
-      children,
       runtime=null,
       runtimeName=runtime ? runtime.name : 'Blank',
       frameless=false,
       boardContext=null,
+      services=[],
+      runtimeId=runtime && runtime.id,
+      userId=boardContext && boardContext.userId,
+      boardName=boardContext && boardContext.boardName,
     } = this.props;
 
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
@@ -219,7 +223,6 @@ export default class Scene extends Component {
         display: !this.state.expanded && 'none'
       } :
       {};
-
     return (
       <div
         style={{
@@ -266,19 +269,19 @@ export default class Scene extends Component {
             onClickCapture={e => readonly && e.stopPropagation()}
           >
           {
-            this.state.expanded && 
-            children && 
-            children.map(
-              service => {
-                return (
-                  <ServiceFrame
-                    key={`scene-frame-${service.props.service.uuid}`}
-                    service={service}
-                    onAction={this.onServiceAction}
-                  />
-                )
-              }
-            )
+            this.state.expanded && services && services.map(service => {
+              const serviceUi = readonly ? 
+                createPlaceholderUI(service) :
+                createServiceUI(boardName, service, runtimeId, userId)
+              return (
+                <ServiceFrame
+                  key={`scene-frame-${service.uuid}`}
+                  service={service}
+                  serviceUi={serviceUi}
+                  onAction={this.onServiceAction}
+                />
+              );
+            })
           }
           </div>
         </Sidebar.Pushable>

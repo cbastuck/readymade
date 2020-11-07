@@ -22,8 +22,8 @@ export default class BrowserRuntime {
     return new BrowserRuntime(runtime, { ...params, user, registry });
   }
 
-  static findServiceUI(serviceId) {
-    const a = BrowserRuntime.__createdRegistry || []
+  static findServiceUi(serviceId) {
+    const a = BrowserRuntime.__createdRegistry || defaultRegistry;
     return a.find(s => serviceId === s.serviceId && s.createUI);
   }
 

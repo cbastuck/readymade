@@ -56,7 +56,7 @@ export default class ServiceFrame extends Component {
           margin: 0,
         }}
       >
-        { this.renderServiceName(service.props.service.serviceName) }
+        { this.renderServiceName(service.serviceName) }
         <Menu.Item
           position="right"
           onClick={() => this.setState({ 
@@ -108,7 +108,7 @@ export default class ServiceFrame extends Component {
             if (onAction) {
               onAction({ 
                 action: 'remove', 
-                service: service.props.service,
+                service,
               });
             }
           }}
@@ -120,7 +120,7 @@ export default class ServiceFrame extends Component {
           style={itemStyle}
           onClick={() => {
             const { service } = this.props;
-            const parts = service.props.service.serviceId.split('/');
+            const parts = service.serviceId.split('/');
             this.setState({ 
               modalReferenceService: parts[parts.length - 1]
             });
@@ -132,12 +132,10 @@ export default class ServiceFrame extends Component {
     );
   }
 
-  renderService = service => service;
-
   render() {
-    const { service } = this.props;
     const { modalReferenceService } = this.state;
-    const uuid = service && service.props && service.props.service && service.props.service.uuid;
+    const { serviceUi, service } = this.props;
+    const uuid = service && service.uuid;
     return (
       <div key={`service-frame-${uuid}`}>
         <div
@@ -189,7 +187,7 @@ export default class ServiceFrame extends Component {
                   >
                     { this.renderMenu() }
                   </Sidebar>
-                  { this.renderService(service) } 
+                  { serviceUi } 
                 </Sidebar.Pushable>
               )
             }

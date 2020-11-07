@@ -22,16 +22,18 @@ export default class ServiceUI extends Component {
     if (!this.service) {
       const runtime = boardContext && boardContext.getCurrentBrowserRuntime(runtimeId);
       const service = runtime && runtime.getServiceById(backendService.uuid);
-      this.service = service;
-      if (onInit) {
-        setTimeout(() => onInit(service), 0);
-      }
-      if (onTimer) {
-        this.timer = setInterval(() => onTimer(service), 1000);
-      }
-      if (onNotification) {
-        service.__notificationTarget = onNotification;
-      }
+      if (service) {
+        this.service = service;
+        if (onInit) {
+          setTimeout(() => onInit(service), 0);
+        }
+        if (onTimer) {
+          this.timer = setInterval(() => onTimer(service), 1000);
+        }
+        if (onNotification) {
+          service.__notificationTarget = onNotification;
+        }
+      }      
     }
     return this.service;
   }

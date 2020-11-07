@@ -3,10 +3,9 @@ import React, { Component } from 'react';
 import uuid from 'uuid';
 import queryString from 'query-string';
 
-import Scene from './components/Scene';
+import Runtime from './components/Runtime';
 import { AppConsumer } from './AppContext';
 import BoardProvider, { BoardConsumer } from './BoardContext';
-import { createServiceUI } from './UIFactory';
 import BrowserRuntime from './runtime/BrowserRuntime';
 
 export default class Sandbox extends Component {
@@ -95,6 +94,7 @@ export default class Sandbox extends Component {
   }
 
   render() {
+    const { runtime } = this.state;
     return (
       <AppConsumer>
       {
@@ -108,23 +108,16 @@ export default class Sandbox extends Component {
               {
                 boardContext => {
                   return (
-                    <Scene
+                    <Runtime
                       key="sandbox-scene"
                       runtimeName="Sandbox"
                       style={{ marginBottom: 5 }}
                       frameless={this.state.options && this.state.options.frameless}
-                    >
-                      {
-                        this.state.backendData && 
-                        this.state.backendData.services.map(svc => 
-                          createServiceUI(
-                            boardContext.boardName, 
-                            svc, 
-                            this.state.runtime.id
-                          )
-                        )
-                      }
-                    </Scene>
+                      services={this.state.backendData && this.state.backendData.services}
+                      runtimeId={runtime && runtime.id}
+                      userId={undefined}
+                      boardName={boardContext.boardName}
+                    />
                   )
                 }
               }

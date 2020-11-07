@@ -1,32 +1,21 @@
 import React, { Component } from 'react'
 
 import Login from './Login';
-import Scene from '../components/Scene';
+import Runtime from '../components/Runtime';
 import Toolbar from '../components/Toolbar';
 import { BoardConsumer } from '../BoardContext';
-import { createServiceUI, createPlaceholderUI } from '../UIFactory';
 
 export default class Board extends Component {
   
   renderRuntime(boardContext, runtime) {
-    const isOwner = boardContext.isRuntimeInScope(runtime);
-    const readonly = !isOwner;
     return (
-      <Scene
+      <Runtime
         key={`${runtime.id}-scene`}
         runtime={runtime}
         style={{ marginBottom: 5 }}
         boardContext={boardContext}
-      >
-        {
-          boardContext.services[runtime.name] && 
-          boardContext.services[runtime.name].map(svc =>
-            readonly ? 
-              createPlaceholderUI(svc) :
-              createServiceUI(boardContext.boardName, svc, runtime.id, boardContext.userId)
-          )
-        }
-      </Scene>
+        services={boardContext.services[runtime.name]}
+      />
     );
   }
 

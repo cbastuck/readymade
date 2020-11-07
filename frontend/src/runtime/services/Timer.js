@@ -3,12 +3,13 @@ import {
   Input,
   Button,
 } from 'semantic-ui-react';
-import moment from 'moment';
 
 import ServiceUI from './ServiceUI';
 import InputField from '../../components/shared/InputField';
 import SelectorField from '../../components/shared/SelectorField';
 import { s, t } from '../../styles'; 
+
+import Timer from 'services/Timer';
 
 const serviceId = 'hookup.to/service/timer';
 const serviceName = 'Timer';
@@ -24,13 +25,15 @@ class TimerUI extends Component {
   };
 
   onInit = initialState => {
-    this.setState({
-      periodic: initialState.periodic,
-      periodicValue: initialState.periodicValue,
-      periodicUnit: initialState.periodicUnit,
-      oneShotDelay: initialState.oneShotDelay,
-      timerIsRunning: !!initialState.timer,
-    });
+    if (initialState) {
+      this.setState({
+        periodic: initialState.periodic,
+        periodicValue: initialState.periodicValue,
+        periodicUnit: initialState.periodicUnit,
+        oneShotDelay: initialState.oneShotDelay,
+        timerIsRunning: !!initialState.timer,
+      });
+    }
   }
   
   onNotification = (service, notification) => {
@@ -145,6 +148,7 @@ class TimerUI extends Component {
   )
 
   render() {
+    console.log('Rendering TimerUI', this.props)
     return (
       <ServiceUI 
         {...this.props} 
@@ -158,137 +162,6 @@ class TimerUI extends Component {
         initialSegment={() => this.state.periodic ? 'periodic' : 'one-shot'}
       />
     );
-  }
-}
-
-class Timer {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.count = 0;
-    this.periodic = false;
-    this.periodicValue = 1;
-    this.periodicUnit = 's';
-    this.oneShotDelay = 0;
-  }
-
-  clearTimer() {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = undefined;
-      this.count = 0;
-      this.app.notify(this, { running: false });
-    }
-  }
-
-  configure(config) {
-    const { 
-      periodicValue,
-      periodicUnit,
-      periodic,
-      oneShotDelay,
-      immediate,
-      counter,
-      // commands
-      stop,
-      start,
-      until,
-    } = config;
-    let doStop = stop, doStart = start;
-    if (periodicValue !== undefined) {
-      this.periodicValue = periodicValue;
-      if (doStart === undefined) {
-        doStart = true;
-      }
-    }
-    
-    if (periodicUnit !== undefined) {
-      this.periodicUnit = periodicUnit;
-      if (doStart === undefined) {
-        doStart = true;
-      }
-    }
-    
-    if (periodic !== undefined) {
-      this.periodic = periodic;
-      if (doStart === undefined) {
-        doStart = true;
-      }
-    }
-
-    if (oneShotDelay !== undefined) {
-      this.oneShotDelay = oneShotDelay;
-    }
-
-    if (counter !== undefined) {
-      this.count = counter;
-    }
-    
-    if (until !== undefined) {
-      const { triggerCount } = until;
-      this.conditionUntilTriggercount = Number(triggerCount);
-    }
-
-
-    const process = () => {
-      if (this.conditionUntilTriggercount &&
-          this.count > this.conditionUntilTriggercount) {
-            this.clearTimer();
-      } else {
-        this.app.next(this, this.nextTimerArgument());
-      }
-    };
-
-    if (doStart) {
-      if (this.periodic) {
-        this.clearTimer();
-        const timeBetween = moment.duration(this.periodicValue, this.periodicUnit);
-        this.timer = setInterval(process, timeBetween.asMilliseconds());
-        if (immediate) {
-          setImmediate(process);
-        }
-      } else {
-        if (this.timer) {
-          this.clearTimer();
-        }
-        if (immediate) {
-          setImmediate(process);
-        } else {
-          setTimeout(process, this.oneShotDelay);
-        }
-      }
-    } else if (doStop) {
-      this.clearTimer();
-    }
-    this.app.notify(this, { running: !!this.timer });
-  }
-
-  destroy() {
-    this.clearTimer();
-  }
-
-  nextTimerArgument(params = {}) {
-    return { ...params, triggerCount: ++this.count };
-  }
-
-  async process(params) {
-    if (this.periodic || this.oneShotDelay === undefined) {
-      return params;
-    } 
-    if (this.isSleeping) {
-      console.warn('Processing timer service while sleeping ... process dropped')
-      clearTimeout(this.sleeping);
-      this.sleeping = undefined;
-      return params;
-    }
-    const sleep = () => new Promise(resolve => {
-      this.isSleeping = setTimeout(resolve, this.oneShotDelay);
-    });
-    await sleep();
-    this.isSleeping = undefined;
-    return this.nextTimerArgument(params);
   }
 }
 

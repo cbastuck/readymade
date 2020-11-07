@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import Template from './Template'
 
 import { ExampleService, ExampleServiceUI } from './ExampleService';
-import Scene from '../../components/Scene';
+import Runtime from '../../components/Runtime';
 
 export function renderSceneExample(runtimeName) {
   const service = new ExampleService();
@@ -25,12 +25,11 @@ export function renderSceneExample(runtimeName) {
         width: 300
       }}
     >
-      <Scene
+      <Runtime
         runtime={runtime}
         runtimeName={runtimeName}
-      >
-        {services}
-      </Scene>
+        services={services}
+      />
     </div>
   );
 }
