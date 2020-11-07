@@ -91,6 +91,7 @@ export default class Scene extends Component {
           placeholder="Add Service"
           search
           selection
+          selectOnBlur={false}
           clearable
           onChange={(ev, { value }) => {
             if (value) {
@@ -102,50 +103,6 @@ export default class Scene extends Component {
       </div>
     );
   }
-
-  renderServiceMenu_(runtimeName, runtime) {
-    const serviceNameStyle = {
-      fontSize: 12,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-    };
-    const { searchTerm } = this.state;
-    const registry = runtime && runtime.registry;
-    const filtered = !searchTerm ? registry : registry.filter(svc => svc.serviceId.indexOf(searchTerm) !== -1)
-    return (
-      <Dropdown
-        text="Add Service"
-        style={{ ...serviceNameStyle, fontWeight: 100  }} // disable bold appearance due to h4 of text
-        search
-        pointing
-        className='link item selection'
-        onSearchChange={e => this.setState({ searchTerm: e.target.value })}
-        searchQuery={searchTerm}
-        onBlur={() => console.log('BLURRR')}
-      >
-      {
-        <Dropdown.Menu>  
-          {
-            filtered && filtered.map(service =>
-              <Dropdown.Item
-                key={`${runtimeName}.${service.serviceId}`}
-                onClick={() => {
-                  this.onAddService(service);
-                  this.setState({ searchTerm: '' });
-                }}
-              >
-                <span style={{ ...serviceNameStyle, fontSize: 11 }}>
-                  {service.serviceName}
-                </span>
-              </Dropdown.Item>
-            )
-          }
-        </Dropdown.Menu>
-      }
-      </Dropdown>
-    );
-  }
-
 
   renderExpandableHeadline(name, runtime) {
     const sceneNameStyle = {
