@@ -76,7 +76,6 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
 
   const serviceId = service.serviceId || service.__descriptor.serviceId;
   const factory = BrowserRuntime.findServiceUi(serviceId);
-  console.log('GOt FACTOR', factory)
   if (factory) {
     const props = {
       service, 

@@ -22,12 +22,19 @@ export default class SelectorField extends Component {
 
   render() {
     const { value } = this.state;
-    const { label, onChange, value: syncedValue, options } = this.props;
+    const { 
+      label, 
+      onChange, 
+      value: syncedValue,
+      options,
+      style={}
+    } = this.props;
     const text = options[value];
     const fontSize = 11;
     return (
       <div 
         style={{ 
+          ...style,
           width: '100%',
           display: 'flex',
           flexDirection: 'row',
@@ -52,6 +59,9 @@ export default class SelectorField extends Component {
                 padding: 8,
                 border: 'solid 1px #DDD',
                 borderRadius: 3,
+                width: 200,
+                height: 33,
+                textAlign: 'left'
               }}
               onClick={() => this.setState({ optionsVisible: true })}
             > 

@@ -1,0 +1,10 @@
+#runtime-dropdown .dropdown .menu .item {
+  text-transform: uppercase !important;
+  font-size: 11px !important;
+}
+
+#runtime-dropdown {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}

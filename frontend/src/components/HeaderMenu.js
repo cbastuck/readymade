@@ -7,6 +7,8 @@ import { AppConsumer } from '../AppContext';
 import { BoardConsumer } from '../BoardContext';
 import AccountDropdown from './AccountDropdown';
 
+import './HeaderMenu.css';
+
 export default class HeaderMenu extends Component {
 
   onAction = action => {
@@ -22,6 +24,7 @@ export default class HeaderMenu extends Component {
         style={{
           paddingTop: 7,
           paddingLeft: 6,
+          paddingRight: 12,
           marginLeft: 6,
         }}
       >
@@ -84,7 +87,7 @@ export default class HeaderMenu extends Component {
           fontSize: 11,
           letterSpacing: 1,
           textTransform: 'uppercase',
-          // marginTop: board ? -5 : 0, // TODO: do we need this?
+          //marginTop: board ? -5 : 0, // TODO: do we need this?
         }}
       >
         <Dropdown.Menu>
@@ -118,7 +121,39 @@ export default class HeaderMenu extends Component {
     );
   }
 
-  renderServiceMenu(registry, boardContext) {
+  renderRuntimeMenu(registry, boardContext) {
+    const options = [
+      { name: 'hookup', args: 'node, Hookup' }, 
+      { name: 'browser', args: 'browser' },
+    ].map(o => ({ key: o.name, value: o.args, text: o.name }));
+    return (
+      <div
+        id="runtime-dropdown"
+        style={{ 
+          marginLeft: 10,
+          marginTop: 3,
+          width: 220,
+        }}
+      >
+        <Dropdown
+          ref={dropdown => this.dropdown = dropdown}
+          options={options}
+          placeholder="Add Runtime"
+          selection
+          selectOnBlur={false}
+          onChange={(ev, { value }) => {
+            if (value) {
+              this.props.addRuntime(...value.split(','));
+              this.dropdown.clearValue();
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
+
+  renderRuntimeMenu_(registry, boardContext) {
     const menuItemStyle = {
       fontSize: 11,
       letterSpacing: 1,
@@ -191,7 +226,7 @@ export default class HeaderMenu extends Component {
                       appContext.user && this.renderBoardMenu(board, savedBoards)
                     }
                     {
-                      registry && this.renderServiceMenu(registry, boardContext)
+                      registry && this.renderRuntimeMenu(registry, boardContext)
                     }
                     { this.renderNavigation(appContext) }
                     {

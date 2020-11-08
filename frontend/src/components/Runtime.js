@@ -86,6 +86,7 @@ export default class Runtime extends Component {
         }}
       >
         <Dropdown
+          ref={dropdown => this.dropdown = dropdown }
           deburr
           fluid
           options={options}
@@ -93,11 +94,11 @@ export default class Runtime extends Component {
           search
           selection
           selectOnBlur={false}
-          clearable
           onChange={(ev, { value }) => {
             if (value) {
               const service = registry.find(s => s.serviceId === value);
               this.onAddService(service);
+              this.dropdown.clearValue();
             }
           }}
         />

@@ -47,7 +47,7 @@ class TimerUI extends Component {
     const buttonStyle = s(t.m1, t.uc, t.fs12, t.ls1);
     return (
       <div>
-        <InputField 
+        <InputField
           type="number"
           label="interval"
           value={this.state.periodicValue}
@@ -57,6 +57,7 @@ class TimerUI extends Component {
           }}
         />
         <SelectorField
+          style={t.mt3}
           label="unit"
           options={{
             ms: 'milliseconds',
@@ -73,7 +74,7 @@ class TimerUI extends Component {
         />
         <Button.Group 
           widths="10" 
-          style={{ marginTop: 10 }}
+          style={t.mt3}
         >
           <Button
             style={buttonStyle}
@@ -112,7 +113,7 @@ class TimerUI extends Component {
         }}
       />
       <Button
-        style={s(t.w100, t.uc, t.ls1, t.fs12)}
+        style={s(t.w100, t.uc, t.ls1, t.fs12, t.mt2)}
         onClick={() => service.configure({ 
           periodic: false,
           start: true,
@@ -148,7 +149,7 @@ class TimerUI extends Component {
   )
 
   render() {
-    console.log('Rendering TimerUI', this.props)
+    console.log('!!!!TMER PROPS', this.props)
     return (
       <ServiceUI 
         {...this.props} 

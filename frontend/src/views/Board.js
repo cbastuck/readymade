@@ -29,7 +29,7 @@ export default class Board extends Component {
               style={{
                 height: '100%',
                 width: '100%',
-                padding: 5
+                padding: '0px 5px',
               }}
             >
               <Toolbar
