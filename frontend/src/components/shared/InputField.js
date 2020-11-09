@@ -29,14 +29,14 @@ export default class InputField extends Component {
     const { 
       type, 
       label, 
-      onChange, 
-      onEscape,
-      onLabelClicked,
-      onFocus,
       style,
       disabled,
       value: syncedValue,
       unit,
+      onChange = () => {}, 
+      onEscape = () => {},
+      onFocus = () => {},
+      onLabelClicked = () => {},
     } = this.props;
     const fontSize = 11;
     const inSync = value === syncedValue;
@@ -79,7 +79,7 @@ export default class InputField extends Component {
         />
         { 
           unit && (
-            <div style={s(t.uc, t.ls1, t.fs12, { marginLeft: 10, marginTop: 5 })}>
+            <div style={s(t.uc, t.ls1, t.fs11, { marginLeft: 5, marginTop: 6 })}>
               { unit }
             </div>
           )
