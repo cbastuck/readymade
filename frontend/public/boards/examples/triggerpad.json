@@ -14,10 +14,6 @@
         "serviceId": "hookup.to/service/trigger-pad"
       },
       {
-        "serviceName": "Audio Recorder",
-        "serviceId": "hookup.to/service/audio-recorder"
-      },
-      {
         "serviceName": "Audio Output",
         "serviceId": "hookup.to/service/audio-output"
       }
