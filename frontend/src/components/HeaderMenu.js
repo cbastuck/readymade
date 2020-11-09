@@ -23,9 +23,10 @@ export default class HeaderMenu extends Component {
       <div
         style={{
           paddingTop: 7,
-          paddingLeft: 6,
-          paddingRight: 12,
-          marginLeft: 6,
+          paddingLeft: 4,
+          paddingRight: 4,
+          marginLeft: 4,
+          marginRight: 4,
         }}
       >
         <Link to="/">
