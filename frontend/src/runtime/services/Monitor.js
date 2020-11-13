@@ -24,6 +24,7 @@ class MonitorUI extends Component {
         {
           ({ service }) => 
           service && 
+          service.register &&
           service.register(message => this.setState({ message })) && (
             <div
               style={{

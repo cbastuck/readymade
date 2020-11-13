@@ -149,7 +149,6 @@ class TimerUI extends Component {
   )
 
   render() {
-    console.log('!!!!TMER PROPS', this.props)
     return (
       <ServiceUI 
         {...this.props} 

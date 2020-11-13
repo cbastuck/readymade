@@ -14,7 +14,7 @@ export default class Board extends Component {
         runtime={runtime}
         style={{ marginBottom: 5 }}
         boardContext={boardContext}
-        services={boardContext.services[runtime.name]}
+        services={boardContext.services[runtime.id]}
       />
     );
   }

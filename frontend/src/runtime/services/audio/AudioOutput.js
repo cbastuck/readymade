@@ -61,7 +61,7 @@ class AudioOutput {
   }
 
   // taken from here: https://github.com/mdn/voice-change-o-matic
-  visualize() {
+  visualize = () => {
     if (!this.canvas) {
       return;
     }

@@ -56,7 +56,13 @@ export default class ServiceFrame extends Component {
           margin: 0,
         }}
       >
-        { this.renderServiceName(service.serviceName) }
+        { 
+          this.renderServiceName(
+            service.__descriptor ? 
+              service.__descriptor.serviceName : 
+              service.serviceName 
+          ) 
+        }
         <Menu.Item
           position="right"
           onClick={() => this.setState({ 

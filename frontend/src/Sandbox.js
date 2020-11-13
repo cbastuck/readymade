@@ -10,7 +10,7 @@ import BrowserRuntime from './runtime/BrowserRuntime';
 
 export default class Sandbox extends Component {
   state = {
-    backendData: undefined,
+    createdServices: [],
     runtime: undefined,
     options: {
       frameless: true,
@@ -69,9 +69,9 @@ export default class Sandbox extends Component {
 
         firstBrowserRuntimeData.id = firstBrowserRuntimeId;
       }
-      const runtime = await this.createBrowserRuntime(firstBrowserRuntimeData, firstBrowserRuntimeData.bundles);
+      const { runtime, createdServices } = await this.createBrowserRuntime(firstBrowserRuntimeData, firstBrowserRuntimeData.bundles);
       if (runtime) {
-        this.setState({ runtime, backendData: firstBrowserRuntimeData });
+        this.setState({ runtime, createdServices });
       }
       return firstBrowserRuntimeData;
     }
@@ -85,12 +85,12 @@ export default class Sandbox extends Component {
       },
       { bundles }
     );
-    backendData.services.map(s => {
+    const createdServices = backendData.services.map(s => {
       const svc = runtime.createService(s, s.uuid || s.serviceUuid);
       svc && svc.configure && svc.configure(s);
       return svc;
     });
-    return runtime;
+    return { runtime, createdServices };
   }
 
   render() {
@@ -113,7 +113,7 @@ export default class Sandbox extends Component {
                       runtimeName="Sandbox"
                       style={{ marginBottom: 5 }}
                       frameless={this.state.options && this.state.options.frameless}
-                      services={this.state.backendData && this.state.backendData.services}
+                      services={this.state.createdServices}
                       runtimeId={runtime && runtime.id}
                       userId={undefined}
                       boardName={boardContext.boardName}

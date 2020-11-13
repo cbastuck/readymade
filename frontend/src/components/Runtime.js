@@ -236,7 +236,7 @@ export default class Runtime extends Component {
         {
           !frameless && this.renderExpandableHeadline(runtimeName, runtime)
         }
-         <Sidebar.Pushable 
+        <Sidebar.Pushable 
           as={Segment}
           style={{
             border: 'none',

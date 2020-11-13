@@ -5,7 +5,6 @@ import IngressUI from './components/services/IngressUI';
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
 import FileExchangeUI from './components/services/FileExchangeUI';
 import WebsocketConsumer from './components/services/WebsocketConsumer';
-import MonitorUI from './components/services/MonitorUI';
 import InputUI from './components/services/InputUI';
 import FilterUI from './components/services/FilterUI';
 import MySqlResourceUI from './components/services/MySqlResourceUI';
@@ -18,6 +17,7 @@ import OutputUI from './components/services/OutputUI';
 import FileS3UI from './components/services/FileS3UI';
 import AggregatorUI from './components/services/AggregatorUI';
 */
+// import MonitorUI from './components/services/MonitorUI';
 
 import BrowserRuntime from './runtime/BrowserRuntime';
 
@@ -33,10 +33,13 @@ export function createPlaceholderUI(service) {
 }
 
 export function createServiceUI(board, service, runtimeId, userId=undefined) {
-  /*
-  const id = service.uuid;
-  const params = { key: id, id: id, service, board, userId };
+  
+  // const id = service.uuid;
+  // const params = { key: id, id: id, service, board, userId };
   switch(service.serviceId) {
+    /*
+    case 'hookup.to/service/monitor':
+      return <MonitorUI { ...params } />;
     case 'hookup.to/service/ingress':
       return <IngressUI { ...params } />;
     case 'hookup.to/service/html-filter':
@@ -44,9 +47,7 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
     case 'hookup.to/service/file-exchange':
       return <FileExchangeUI { ...params } />;
     case 'hookup.to/service/websocket-provider':
-      return <WebsocketConsumer { ...params } />;
-    case 'hookup.to/service/monitor':
-      return <MonitorUI { ...params } />;
+      return <WebsocketConsumer { ...params } />;    
     case 'hookup.to/service/input':
       return <InputUI { ...params } />;
     case 'hookup.to/service/filter':
@@ -69,10 +70,10 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
       return <FileS3UI { ...params } />;
     case 'hookup.to/service/aggregator':
       return <AggregatorUI { ...params } />
+      */
     default:
       break;
   }
-  */
 
   const serviceId = service.serviceId || service.__descriptor.serviceId;
   const factory = BrowserRuntime.findServiceUi(serviceId);
@@ -81,7 +82,7 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
       service, 
       board, 
       runtimeId, 
-      key: `key-${service.uuid}` 
+      key: `key-${service.uuid}`,
     };
     return React.createElement(
       factory.createUI, 

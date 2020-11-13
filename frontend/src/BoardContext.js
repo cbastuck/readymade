@@ -2,6 +2,7 @@
 import React, { Component, createContext } from'react';
 import UAParser from 'ua-parser-js';
 
+import RemoteRuntime from './runtime/RemoteRuntime';
 import BrowserRuntime from './runtime/BrowserRuntime';
 
 import {
@@ -12,7 +13,8 @@ import {
   loadBoard,
   getRuntimes,
   getRuntimeRegistry,
-  addRuntime
+  addRuntime,
+  configureService,
 } from './core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -88,9 +90,21 @@ class BoardContext extends Component {
   }
 
   fetchRuntimes = async () => {
+    const { user } = this.state;
     const board = this.getBoardName();
     const runtimes = board ? await getRuntimes(board) : [];
-    this.setState({ runtimes });
+    
+    const rt = runtimes.map(r => {
+      if (r.type === 'node') {
+        const rrt = new RemoteRuntime(
+          user, board, r, () => this.state.services[r.id]
+        );
+        rrt.connect(); // TODO: this is an async call thag we should await? or make it somewhere else
+        return rrt;
+      }
+      return r;
+    });
+    this.setState({ runtimes: rt });
     return runtimes;
   }
 
@@ -101,8 +115,7 @@ class BoardContext extends Component {
     if (this.state.runtimes) {
       for (const runtime of this.state.runtimes) {
         const runtimeRegistry = await getRuntimeRegistry(board, runtime.id);
-        registry[runtime.name] = runtimeRegistry; // legacy access by name ...
-        registry[runtime.id] = runtimeRegistry; // you should only address by id
+        registry[runtime.id] = runtimeRegistry; // address registry by id
         runtime.registry = runtimeRegistry; // or directly use the referenced registry with a runtime instance
         runtimes.push(runtime);
       } 
@@ -116,8 +129,19 @@ class BoardContext extends Component {
     if (board && this.state.runtimes) {
       for (const runtime of this.state.runtimes) {
         const { services: runtimeServices } = await getServices(board, runtime.id);
-        services[runtime.name] = runtimeServices;
-        await this.restoreBrowserRuntimes(board, runtime, services);
+        if (runtime.type === 'browser') {
+          const createdServices = await this.restoreBrowserRuntimes(board, runtime, runtimeServices);
+          services[runtime.id] = createdServices;
+        } else if (runtime.type === 'node') {
+          // wrap the runtime services 
+          // TODO: Probably this should not happen here!
+          for (const svc of runtimeServices) {
+            svc.configure = config => configureService(board, svc, config);
+          }
+          services[runtime.id] = runtimeServices;
+        } else {
+          console.error('Unknown runtime type', runtime);
+        }
       }
     }
 
@@ -216,13 +240,17 @@ class BoardContext extends Component {
       const localBoardRuntimeId = runtime.id;
       const exists = this.browserRuntimes.find(brt => brt.id === localBoardRuntimeId);
       if (exists) {
-        return; // we already created it 
+        return exists.services; // we already created it 
       }
-      const browserRuntime = await BrowserRuntime.createInstance(runtime, { board: this.state.boardName, user: this.state.user }); // new BrowserRuntime(runtime, { board: this.state.boardName, user: this.state.user });
+      const createdBrowserServices = [];
+      const browserRuntime = await BrowserRuntime.createInstance(
+        runtime,
+        { board: this.state.boardName, user: this.state.user },
+      ); 
       this.browserRuntimes.push(browserRuntime);
       browserRuntime.connect(localBoardRuntimeId);
-      for (const service of services[runtime.name]) {
-        browserRuntime.createService(
+      for (const service of services) {
+        const browserService = browserRuntime.createService(
           {
             serviceId: service.serviceId, 
             board 
@@ -230,7 +258,11 @@ class BoardContext extends Component {
           service.uuid,
           service.initialConfig,
         );
+        browserService.serviceId = service.serviceId;
+        browserService.serviceName = service.serviceName;
+        createdBrowserServices.push(browserService);
       }
+      return createdBrowserServices;
     }
   }
 
@@ -279,9 +311,7 @@ class BoardContext extends Component {
 
   render() {
     return (
-      <Provider
-        value={this.state}
-      >
+      <Provider value={this.state}>
         { this.props.children }
       </Provider>
     );

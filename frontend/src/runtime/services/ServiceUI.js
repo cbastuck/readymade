@@ -19,9 +19,10 @@ export default class ServiceUI extends Component {
   }
 
   setup = (boardContext, { runtimeId, service: backendService, onTimer, onInit, onNotification }) => {
+    const { service } = this.props;
     if (!this.service) {
-      const runtime = boardContext && boardContext.getCurrentBrowserRuntime(runtimeId);
-      const service = runtime && runtime.getServiceById(backendService.uuid);
+      //const runtime = boardContext && boardContext.getCurrentBrowserRuntime(runtimeId);
+      //const service = runtime && runtime.getServiceById(backendService.uuid);
       if (service) {
         this.service = service;
         if (onInit) {

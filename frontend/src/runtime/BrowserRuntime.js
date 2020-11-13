@@ -251,10 +251,11 @@ export default class BrowserRuntime {
     }
   }
 
-  createService({ serviceId, board }, id, initialConfig) {
+  createService({ serviceId, serviceName, board }, id, initialConfig) {
     const descriptor = this.registry.find(elem => elem.serviceId === serviceId);
     if (descriptor) {
       const service = descriptor.create(this.app, board, descriptor, id);
+      service.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };
       if (initialConfig) {
         service.configure(initialConfig);
       }
