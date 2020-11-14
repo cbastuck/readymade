@@ -12,7 +12,7 @@ export default class RemoteRuntime {
   }
 
   connect() {
-    const backendPath = `/api/${this.remoteRuntimeUser.userId}/${this.remoteRuntimeBoard}/${this.id}`;
+    const backendPath = `/api/${this.remoteRuntimeUser.userId}/${this.remoteRuntimeBoard}/runtime/${this.id}`;
     console.log(`Connecting ${this.name} to ${backendPath}`);
 
     const backendHost = window.location.host; 
