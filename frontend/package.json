@@ -23,14 +23,14 @@
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-offline": "^2.4.1-1",
     "semantic-ui-react": "0.84.0",
+    "services": "file:../shared/services",
     "streamsaver": "^2.0.3",
     "three": "^0.111.0",
     "tone": "14.7",
     "ua-parser-js": "^0.7.20",
     "unique-names-generator": "^1.0.14",
     "uuid": "^3.3.2",
-    "web-streams-polyfill": "^2.0.5",
-    "services": "file:../shared/services"
+    "web-streams-polyfill": "^2.0.5"
   },
   "devDependencies": {
     "react-scripts": "2.1.1"

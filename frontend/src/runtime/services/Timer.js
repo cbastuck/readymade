@@ -9,10 +9,9 @@ import InputField from '../../components/shared/InputField';
 import SelectorField from '../../components/shared/SelectorField';
 import { s, t } from '../../styles'; 
 
-import Timer from 'services/Timer';
+import TimerDescriptor from 'services/Timer';
 
-const serviceId = 'hookup.to/service/timer';
-const serviceName = 'Timer';
+console.log('TimerDescriptor',TimerDescriptor)
 
 class TimerUI extends Component {
   state = {
@@ -165,6 +164,7 @@ class TimerUI extends Component {
   }
 }
 
+const { serviceName, serviceId, service: Timer } = TimerDescriptor;
 const descriptor = {  
   serviceName,
   serviceId,

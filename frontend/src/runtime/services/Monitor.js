@@ -1,10 +1,9 @@
 import React, { Component } from 'react';
 import { TextArea, Checkbox } from 'semantic-ui-react';
 
-import ServiceUI from './ServiceUI';
+import MonitorDescriptor from 'services/Monitor';
 
-const serviceId = 'hookup.to/service/monitor';
-const serviceName = 'Monitor';
+import ServiceUI from './ServiceUI';
 
 class MonitorUI extends Component {
   state = {
@@ -15,17 +14,21 @@ class MonitorUI extends Component {
     this.setState({ ...initialState, message: '' });
   }
 
+  onNotification = (service, params) => {
+    this.setState({
+      message: JSON.stringify(params, null, 2),
+    });
+  }
+
   render() {
     return (
       <ServiceUI 
         {...this.props}
-        onInit={this.onInit.bind(this)}
+        onInit={this.onInit}
+        onNotification={this.onNotification}
       >
         {
-          ({ service }) => 
-          service && 
-          service.register &&
-          service.register(message => this.setState({ message })) && (
+          ({ service }) => service && (
             <div
               style={{
                 textAlign: 'left',
@@ -52,7 +55,7 @@ class MonitorUI extends Component {
                   }
                 />
               </div>
-            </div>
+            </div> 
           )
         }
       </ServiceUI>
@@ -60,35 +63,7 @@ class MonitorUI extends Component {
   }
 }
 
-class Monitor {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.enabled = true;
-  }
-
-  configure(config) {
-    const { enabled } = config;
-    if (enabled  !== undefined) {
-      this.enabled = enabled;
-    }
-  }
-
-  process(params) {
-    if (this.callback && this.enabled) {
-      this.callback(JSON.stringify(params, null, 2));
-    }
-    return params;
-  }
-
-  register(callback) {
-    this.callback = callback;
-    return true;
-  }
-}
-
+const { serviceName, serviceId, service: Monitor } = MonitorDescriptor;
 const descriptor = {  
   serviceName,
   serviceId,

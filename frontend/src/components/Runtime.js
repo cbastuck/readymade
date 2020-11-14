@@ -73,9 +73,8 @@ export default class Runtime extends Component {
       textTransform: 'uppercase',
     };
     const registry = runtime ? runtime.registry : [];
-    
     const options = registry.map(s => ({
-      key: s.serviceId, value: s.serviceId, text: s.serviceName
+      key: `${runtime.id}${s.serviceId}`, value: s.serviceId, text: s.serviceName
     }));
     return (
       <div
