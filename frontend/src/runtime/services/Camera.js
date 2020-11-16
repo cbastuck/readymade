@@ -5,6 +5,7 @@ import {
 } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
+import { s, t } from '../../styles';
 
 const serviceId = 'hookup.to/service/camera';
 const serviceName = 'Camera';
@@ -165,6 +166,7 @@ class CameraUI extends Component {
           }}
         >
           <Checkbox
+            style={s(t.uc, t.fs11)}
             label="Mirror"
             checked={this.state.mirror}
             onChange={(_, { checked }) => 
@@ -172,16 +174,21 @@ class CameraUI extends Component {
             }
           />
         </div>
-        <div>
+        <div 
+          style={{
+            display: 'flex',
+            flexDirection: 'row'
+          }}
+        >
           <Button
-            style={{ width: '48%' }}
+            style={s(t.uc, t.fs12)}
             disabled={!!this.state.stream && !!this.videoElement}
             onClick={() => this.startVideo(this.videoElement) }
           >
             Start
           </Button>
           <Button
-            style={{ width: '48%' }}
+            style={s(t.uc, t.fs12)}
             disabled={!this.state.stream}
             onClick={() => this.stopVideo() }
           >
@@ -189,7 +196,7 @@ class CameraUI extends Component {
           </Button>
         </div>
         <Button
-          style={{ marginTop: 5, width: '98%' }}
+          style={s(t.uc, t.fs12, { marginTop: 3, width: '100%' })}
           disabled={!this.state.stream}
           onClick={() =>
             this.setState(

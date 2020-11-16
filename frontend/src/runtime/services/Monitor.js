@@ -3,6 +3,7 @@ import { TextArea, Checkbox } from 'semantic-ui-react';
 
 import MonitorDescriptor from 'services/Monitor';
 
+import { s, t } from '../../styles';
 import ServiceUI from './ServiceUI';
 
 class MonitorUI extends Component {
@@ -45,6 +46,7 @@ class MonitorUI extends Component {
               />
               <div>
                 <Checkbox
+                  style={s(t.uc, t.fs12)}
                   label="active"
                   checked={this.state.enabled}
                   onChange={(_, { checked: enabled }) => 

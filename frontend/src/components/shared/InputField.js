@@ -28,7 +28,8 @@ export default class InputField extends Component {
     const { value } = this.state;
     const { 
       type, 
-      label, 
+      label,
+      labelStyle,
       style,
       disabled,
       value: syncedValue,
@@ -57,7 +58,7 @@ export default class InputField extends Component {
           }
           inSync={inSync}
           label={label}
-          style={{ fontSize }}
+          style={{ ...labelStyle, fontSize }}
         />
         <Input 
           style={{ width: '50%', fontSize: fontSize + 1, flexGrow: 3, }}

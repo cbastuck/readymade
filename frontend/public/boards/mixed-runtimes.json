@@ -1,6 +1,6 @@
 {
   "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
-    "name": "laptop",
+    "name": "browser",
     "type": "browser",
     "services": [
       {
@@ -9,50 +9,47 @@
       },
       {
         "serviceName": "Camera",
-        "serviceId": "hookup.to/service/camera",
-        "captureAs": "image"
+        "serviceId": "hookup.to/service/camera"
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "=": "params.image"
+        }
       }
     ]
   },
   "2802ecf0-6684-4498-bde6-8a75f774786f": {
-    "name": "dispatcher",
+    "name": "remote",
     "type": "node",
     "services": [
       {
         "serviceName": "Monitor",
         "serviceId": "hookup.to/service/monitor",
-        "enabled": false
+        "enabled": false,
+        "logToConsole": false
       }
     ]
   },
-  "ee54bfd4-0f56-4f25-8776-5169d89800b9": {
-    "name": "phone",
+  "111305cb-f1fb-451b-b4e2-575e05864a4b": {
+    "name": "browser 2",
     "type": "browser",
-    "params": {
-      "leaveOwnership": true
-    },
     "services": [
       {
         "serviceName": "Map",
         "serviceId": "hookup.to/service/map",
         "template": {
           "type": "image",
-          "x": 0,
-          "y": 0,
-          "width": 300,
+          "data=": "params",
           "height": "100%",
-          "data=": "params.image"
+          "centerX": "50%",
+          "centerY": "50%"
         }
       },
       {
-        "serviceName": "Monitor",
-        "serviceId": "hookup.to/service/monitor",
-        "enabled": false
-      },
-      {
         "serviceName": "Canvas",
-        "serviceId": "hookup.to/service/canvas",
-        "clearOnRedraw": false
+        "serviceId": "hookup.to/service/canvas"
       }
     ]
   }

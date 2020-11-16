@@ -41,7 +41,7 @@ export default class InputLabelValue extends Component {
     const { value = '', editLabel, renamedLabelBuffer } = this.state || {};
     return (
       <Input
-        style={s(t.fs12)}
+        style={s(t.fs12, { width: 80 })}
         value={renamedLabelBuffer === null ? editLabel : renamedLabelBuffer}
         ref={element => element && element.focus()}
         onChange={(_, { value: renamedLabelBuffer }) => this.setState({ renamedLabelBuffer })}
@@ -72,6 +72,7 @@ export default class InputLabelValue extends Component {
       <InputField
         type="text"
         label={editLabel === label ? this.renderEditableLabel() : label}
+        labelStyle={{ textTransform: 'none' }}
         value={value}
         onChange={(_, { value }) => onCommit({ label, value })}
         onLabelClicked={() => this.setState({ editLabel: label })}

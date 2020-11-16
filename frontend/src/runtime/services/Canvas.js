@@ -185,28 +185,39 @@ class CanvasUI extends Component {
   }
 
   drawImage = async (ctx, data) => {
+     const { 
+      centerX: canvasCenterX, 
+      centerY: canvasCenterY, 
+      canvasWidth, 
+      canvasHeight,
+    } = this.getCanvasCenter();
+    
     const { 
       url,
       data: blob, 
-      offsetX, 
-      offsetY, 
       opacity, 
+      height='100%',
+      unscaled, 
+      onClick,
+      centerX,
+      centerY,
       x, 
       y, 
-      height, 
-      unscaled, 
-      onClick 
     } = data;
-    const img = url ? await this.fetchImage(url) : await this.createImage(blob);
-    
-    const { centerX, centerY, canvasWidth, canvasHeight } = this.getCanvasCenter();
+    const img = url ? await this.fetchImage(url) : await this.createImage(blob);   
+    const scaledHeight = height === undefined ?
+      canvasHeight : 
+      toAbsolute(height, canvasHeight);
     const aspectRatio = img.width / img.height;
-    const scaledHeight = height === undefined ? canvasHeight : toAbsolute(height, canvasHeight);
-    const scaledWidth =  scaledHeight * aspectRatio ;
-    const imgCentX = offsetX ? offsetX : (centerX - scaledWidth / 2);
-    const imgCentY = offsetY ? offsetY : (centerY - img.height / 2);
-    const imgX = x === undefined ? imgCentX : toAbsolute(x, canvasWidth);
-    const imgY = y === undefined ? imgCentY : toAbsolute(y, canvasHeight);
+    const scaledWidth =  scaledHeight * aspectRatio;
+    const cx = centerX ? 
+      (toAbsolute(centerX, canvasWidth) - scaledWidth / 2) : 
+      (canvasCenterX - scaledWidth / 2);
+    const cy = centerY ? 
+      (toAbsolute(centerY, canvasHeight) - scaledHeight / 2) : 
+      (canvasCenterY - img.height / 2);
+    const imgX = x === undefined ? cx : toAbsolute(x, canvasWidth);
+    const imgY = y === undefined ? cy : toAbsolute(y, canvasHeight);
     const rect = {
       x: imgX,
       y: imgY,
