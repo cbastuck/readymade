@@ -68,7 +68,7 @@ class MapUI extends Component {
           <Button
             style={{ 
               width: '100%', 
-              marginTop: 5,
+              marginTop: 1,
               fontSize: 12,
               textTransform: 'uppercase',
               letterSpacing: 1

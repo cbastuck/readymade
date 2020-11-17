@@ -1,35 +1,50 @@
 import React, { Component } from 'react';
 import { Label } from 'semantic-ui-react';
 
+import Tooltip from './Tooltip';
 import { labelWidth, labelHeight } from './Defaults';
 
 export default class SyncIndicator extends Component {
   render() {
     const { 
-      label, 
       style,
       inSync,
       onClick,
+      label, 
     } = this.props;
     return typeof label === 'string' ? (
-      <Label 
+      <div
         style={{
-          backgroundColor: '#E8E8E8',
-          borderRadius: 2,
           width: labelWidth,
-          textTransform: 'uppercase',
-          letterSpacing: 1,
-          textAlign: 'center',
-          paddingTop: 10,
+          // paddingTop: 10,
           height: labelHeight,
-          color: !inSync && 'red',
-          cursor: !inSync ? 'pointer' : undefined,
-          ...style
         }}
-        onClick={onClick}
-      > 
-        { label } 
-      </Label>
+      >
+        <Tooltip 
+          text={label}
+        >
+          <Label 
+            style={{
+              backgroundColor: '#E8E8E8',
+              borderRadius: 2,
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              textAlign: 'center',
+              paddingTop: 10,
+              width: labelWidth,
+              height: labelHeight,
+              color: !inSync && 'red',
+              cursor: !inSync ? 'pointer' : undefined,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis', 
+              ...style
+            }}
+            onClick={onClick}
+          > 
+            { label }
+          </Label>
+        </Tooltip>
+      </div>
     ) : 
     label;
 }

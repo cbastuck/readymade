@@ -11,8 +11,6 @@ import { s, t } from '../../styles';
 
 import TimerDescriptor from 'services/Timer';
 
-console.log('TimerDescriptor',TimerDescriptor)
-
 class TimerUI extends Component {
   state = {
     timerIsRunning: false,
