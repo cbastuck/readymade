@@ -14,19 +14,20 @@ export default class AccountDropdown extends Component {
       currentUser ? 
         (
           <Dropdown.Item
-            style={fontStyle}
             onClick={() => onAction({
               type: 'logout'
             })}
           >
-            Logout
+            <span style={fontStyle}> 
+              Logout 
+            </span>
           </Dropdown.Item>
         ) : (
           <Link to="/new">
-            <Dropdown.Item 
-              style={fontStyle}
-            >
-              Login
+            <Dropdown.Item>
+              <span style={fontStyle}> 
+                Login 
+              </span>
             </Dropdown.Item>
           </Link>
         )

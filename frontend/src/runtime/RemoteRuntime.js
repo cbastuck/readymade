@@ -15,13 +15,14 @@ export default class RemoteRuntime {
     const backendPath = `/api/${this.remoteRuntimeUser.userId}/${this.remoteRuntimeBoard}/runtime/${this.id}`;
     console.log(`Connecting ${this.name} to ${backendPath}`);
 
-    const backendHost = window.location.host; 
+    const { host: backendHost, protocol } = window.location; 
     const url = `${backendHost}${backendPath}`;
     if (this.remoteRuntimeWebsocket) {
       this.remoteRuntimeWebsocket.close();
       this.remoteRuntimeWebsocket = null;
     }
-    this.remoteRuntimeWebsocket = new WebsocketChannel(this.id, this.onAction);
+    const secureConnection = protocol.indexOf('https') === 0;
+    this.remoteRuntimeWebsocket = new WebsocketChannel(this.id, this.onAction, secureConnection);
     return this.remoteRuntimeWebsocket.open(url);
   }
 

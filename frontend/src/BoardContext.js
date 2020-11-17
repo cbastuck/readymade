@@ -93,18 +93,19 @@ class BoardContext extends Component {
     const { user } = this.state;
     const board = this.getBoardName();
     const runtimes = board ? await getRuntimes(board) : [];
-    
-    const rt = runtimes.map(r => {
-      if (r.type === 'node') {
-        const rrt = new RemoteRuntime(
-          user, board, r, () => this.state.services[r.id]
-        );
-        rrt.connect(); // TODO: this is an async call thag we should await? or make it somewhere else
-        return rrt;
-      }
-      return r;
-    });
-    this.setState({ runtimes: rt });
+    if (runtimes) {
+      const rts = runtimes.map(r => {
+        if (r.type === 'node') {
+          const rrt = new RemoteRuntime(
+            user, board, r, () => this.state.services[r.id]
+          );
+          rrt.connect(); // TODO: this is an async call thag we should await? or make it somewhere else
+          return rrt;
+        }
+        return r;
+      });
+      this.setState({ runtimes: rts });
+    } 
     return runtimes;
   }
 

@@ -137,14 +137,15 @@ export default class BrowserRuntime {
     const useWebSockets = true;
     if (useWebSockets) {
       // TODO: assume coordinator is on the same host as frontend
-      const backendHost = window.location.host; 
-      this.connectRuntimeViaWebSocket(backendHost, backendPath);
+      const { host: backendHost, protocol } = window.location;
+      const secureConnection = protocol.indexOf('https') === 0;
+      this.connectRuntimeViaWebSocket(backendHost, backendPath, secureConnection);
     } else {
       this.connectRuntimeViaEventSource(backendPath);
     }
   }
 
-  connectRuntimeViaWebSocket(backendHost, backendPath) {
+  connectRuntimeViaWebSocket(backendHost, backendPath, secureConnection) {
     function rebuild(json, message) {
       return Object.keys(json).reduce(
         (acc, key) => {
@@ -166,7 +167,8 @@ export default class BrowserRuntime {
       );
     }
 
-    this.websocket = new WebSocket(`ws://${backendHost}${backendPath}`, restoreToken());
+    const protocol = secureConnection ? 'wss' : 'ws';
+    this.websocket = new WebSocket(`${protocol}://${backendHost}${backendPath}`, restoreToken());
     this.websocket.binaryType = 'arraybuffer';
     this.websocket.onmessage = event => {
       const message = parseResponse(event.data);
