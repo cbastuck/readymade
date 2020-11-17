@@ -124,8 +124,8 @@ export default class HeaderMenu extends Component {
 
   renderRuntimeMenu(registry, boardContext) {
     const options = [
-      { name: 'hookup', args: 'node, Hookup' }, 
       { name: 'browser', args: 'browser' },
+      { name: 'hookup', args: 'node, Hookup' },
     ].map(o => ({ key: o.name, value: o.args, text: o.name }));
     return (
       <div

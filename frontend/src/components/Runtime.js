@@ -57,7 +57,8 @@ export default class Runtime extends Component {
         break;
       }
       case 'help': {
-        const parts = service.serviceId.split('/');
+        const serviceId = service.serviceId || service.__descriptor.serviceId;
+        const parts = serviceId.split('/');
         openTab(`/service/${parts[parts.length - 1]}`);
         break;
       }

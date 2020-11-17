@@ -126,7 +126,8 @@ export default class ServiceFrame extends Component {
           style={itemStyle}
           onClick={() => {
             const { service } = this.props;
-            const parts = service.serviceId.split('/');
+            const serviceId = service.serviceId || service.__descriptor.serviceId;
+            const parts = serviceId.split('/');
             this.setState({ 
               modalReferenceService: parts[parts.length - 1]
             });

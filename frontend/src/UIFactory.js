@@ -36,7 +36,8 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
   
   // const id = service.uuid;
   // const params = { key: id, id: id, service, board, userId };
-  switch(service.serviceId) {
+  const serviceId = service.serviceId || service.__descriptor.serviceId;
+  switch(serviceId) {
     /*
     case 'hookup.to/service/monitor':
       return <MonitorUI { ...params } />;
@@ -75,7 +76,6 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
       break;
   }
 
-  const serviceId = service.serviceId || service.__descriptor.serviceId;
   const factory = BrowserRuntime.findServiceUi(serviceId);
   if (factory) {
     const props = {
