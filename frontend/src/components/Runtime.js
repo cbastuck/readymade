@@ -106,7 +106,7 @@ export default class Runtime extends Component {
     );
   }
 
-  renderExpandableHeadline(name, runtime) {
+  renderExpandableHeadline(name, runtime, isOwner) {
     const sceneNameStyle = {
       fontSize: 12,
       letterSpacing: 1,
@@ -122,7 +122,11 @@ export default class Runtime extends Component {
         >
           <Icon 
             name="bars"
-            style={{ margin: '10px 18px', cursor: 'pointer', color: '#ddd' }}
+            style={{
+              margin: '10px 18px', 
+              cursor: 'pointer', 
+              color: '#ddd' 
+            }}
             onClick={() => this.setState({ 
               showSettings: this.state.expanded && !this.state.showSettings,
               expanded: !this.state.expanded ? !this.state.showSettings : this.state.expanded
@@ -131,9 +135,18 @@ export default class Runtime extends Component {
           <span style={sceneNameStyle}> 
             {name} 
           </span>
-          <span style={{ marginRight: 10, marginTop: 5, float: 'right' }} >
+          <span 
+            style={{ 
+              marginRight: 10, 
+              marginTop: 5, 
+              float: 'right' 
+            }} 
+          >
             {
-             runtime && runtime.registry && this.renderServiceMenu(name, runtime)
+              runtime && 
+              runtime.registry && 
+              isOwner &&
+              this.renderServiceMenu(name, runtime)
             }
           </span>
         </div>
@@ -146,18 +159,33 @@ export default class Runtime extends Component {
       height: 40,
       margin: 0,
     };
+    const { 
+      expanded, 
+      showSettings, 
+      wrapServices,
+    } = this.state;
     return (
       <Menu
         vertical
         compact
         style={{ height: '100%' }}
       >
+       <Menu.Item
+          as='a'
+          style={itemStyle}
+          onClick={() => {
+            const { boardContext, runtime } = this.props;
+            return boardContext.removeAllServices(runtime)
+          }}
+        >
+          <Icon name='remove' />
+        </Menu.Item>
         <Menu.Item
           as='a'
           style={itemStyle}
           onClick={() => this.setState({
-            expanded: !this.state.expanded,
-            showSettings: this.state.showSettings && !this.state.expanded
+            expanded: !expanded,
+            showSettings: showSettings && !expanded
           })}
         >
           <Icon name='compress' />
@@ -165,10 +193,10 @@ export default class Runtime extends Component {
         <Menu.Item
           as='a'
           style={itemStyle}
-          onClick={() => this.setState({ wrapServices: !this.state.wrapServices })}
+          onClick={() => this.setState({ wrapServices: !wrapServices })}
         >
           <Icon 
-            name={ this.state.wrapServices ? 'exchange' : 'sort amount down' }
+            name={ wrapServices ? 'exchange' : 'sort amount down' }
           />
         </Menu.Item>
         <Menu.Item
@@ -206,6 +234,8 @@ export default class Runtime extends Component {
       boardName=boardContext && boardContext.boardName,
     } = this.props;
 
+    const { showSettings } = this.state;
+    
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
     const readonly = !isOwner && !!runtime;
     const onToggleOwnership = () => 
@@ -234,7 +264,7 @@ export default class Runtime extends Component {
         }}
       >
         {
-          !frameless && this.renderExpandableHeadline(runtimeName, runtime)
+          !frameless && this.renderExpandableHeadline(runtimeName, runtime, isOwner)
         }
         <Sidebar.Pushable 
           as={Segment}
@@ -251,7 +281,7 @@ export default class Runtime extends Component {
             animation='overlay'
             direction='left'
             width='very thin'
-            visible={this.state.showSettings}
+            visible={showSettings}
             style={{ 
               overflowX: 'hidden',
               boxShadow: '0 0 2px rgba(34,36,38,.15)',
@@ -283,6 +313,11 @@ export default class Runtime extends Component {
                 />
               );
             })
+          }
+          {
+            !isOwner && showSettings && (
+              <div style={{ height: 180 }} />
+            )
           }
           </div>
         </Sidebar.Pushable>

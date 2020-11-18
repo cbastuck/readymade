@@ -41,6 +41,7 @@ class BoardContext extends Component {
       addRuntime: this.addRuntime,
       addService: this.addService,
       removeService: this.removeService,
+      removeAllServices: this.removeAllServices,
       onAction: this.onAction,
       getCurrentBrowserRuntime: props.getCurrentBrowserRuntime || this.getCurrentBrowserRuntime,
       isRuntimeInScope: this.isRuntimeInScope,
@@ -232,6 +233,17 @@ class BoardContext extends Component {
       await removeService(boardName, runtime.id, service.uuid);
       await this.fetchServices();
     }
+  }
+
+  removeAllServices = async runtime => {
+    const { services } = this.state;
+    const boardName = this.getBoardName();
+    if (boardName) {
+      for (const service of services[runtime.id]) {
+        await removeService(boardName, runtime.id, service.uuid);
+      }
+    }
+    await this.fetchData();
   }
 
   restoreBrowserRuntimes = async (board, runtime, services) => {

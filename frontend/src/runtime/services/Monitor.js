@@ -40,7 +40,9 @@ class MonitorUI extends Component {
                 style={{ 
                   width: '100%', 
                   minHeight: 150, 
-                  minWidth: 200 
+                  minWidth: 200,
+                  fontFamily: 'monospace',
+                  fontWeight: 'bold',
                 }}
                 value={this.state.message}
               />
