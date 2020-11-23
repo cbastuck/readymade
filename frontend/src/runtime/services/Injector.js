@@ -246,13 +246,13 @@ class InjectorUI extends Component {
 
   render() {
     return (
-      <ServiceUI 
+      <ServiceUI
         {...this.props} 
         onInit={this.onInit.bind(this)}
         segments={[
-          { name: 'Drag and Drop', render: this.renderDragNDropInput },
-          { name: 'Plain text', render: this.renderRawInput },
-          { name: 'Structured Data', render: this.renderStructuredData },
+          { name: 'DragDrop', render: this.renderDragNDropInput },
+          { name: 'Text', render: this.renderRawInput },
+          { name: 'JSON Data', render: this.renderStructuredData },
         ]}
       />
     )
@@ -264,9 +264,15 @@ class Injector {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.mode='dragndrop';
   }
 
   configure(config) { 
+    const { mode } = config;
+    if (mode !== undefined) {
+      this.mode = mode;
+    }
   }
 
   inject(data) {

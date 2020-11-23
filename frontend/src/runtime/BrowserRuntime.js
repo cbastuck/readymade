@@ -9,7 +9,7 @@ import defaultRegistry from './registry/Default';
 import { loadBundle } from './Bundles';
 
 function logInfo(msg) {
-  console.log(msg);
+  // console.log(msg);
 }
 
 function serviceDataKey(uuid, key) {
@@ -173,7 +173,7 @@ export default class BrowserRuntime {
     this.websocket.onmessage = event => {
       const message = parseResponse(event.data);
       const action = message.json ? rebuild(message.json.payload, message) : JSON.parse(message);
-      logInfo(`Received on ${this.id} (${this.name})`, action);
+      logInfo(`BrowserRuntime ${this.id} (${this.name}) received: ${JSON.stringify(action)}`);
       this.onMessage(action);
     };
     this.websocket.onclose = event => {

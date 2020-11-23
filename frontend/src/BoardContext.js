@@ -2,7 +2,7 @@
 import React, { Component, createContext } from'react';
 import UAParser from 'ua-parser-js';
 
-import RemoteRuntime from './runtime/RemoteRuntime';
+// TODO: this should also go to Runtime like the RemoteRuntime
 import BrowserRuntime from './runtime/BrowserRuntime';
 
 import {
@@ -91,22 +91,9 @@ class BoardContext extends Component {
   }
 
   fetchRuntimes = async () => {
-    const { user } = this.state;
     const board = this.getBoardName();
     const runtimes = board ? await getRuntimes(board) : [];
-    if (runtimes) {
-      const rts = runtimes.map(r => {
-        if (r.type === 'node') {
-          const rrt = new RemoteRuntime(
-            user, board, r, () => this.state.services[r.id]
-          );
-          rrt.connect(); // TODO: this is an async call thag we should await? or make it somewhere else
-          return rrt;
-        }
-        return r;
-      });
-      this.setState({ runtimes: rts });
-    } 
+    this.setState({ runtimes });
     return runtimes;
   }
 
@@ -133,12 +120,17 @@ class BoardContext extends Component {
         const { services: runtimeServices } = await getServices(board, runtime.id);
         if (runtime.type === 'browser') {
           const createdServices = await this.restoreBrowserRuntimes(board, runtime, runtimeServices);
-          services[runtime.id] = createdServices;
+          if (createdServices) {
+            services[runtime.id] = createdServices;
+          }
         } else if (runtime.type === 'node') {
           // wrap the runtime services 
           // TODO: Probably this should not happen here!
           for (const svc of runtimeServices) {
-            svc.configure = config => configureService(board, svc, config);
+            svc.configure = async config => {
+              const resp = await configureService(board, svc, config);
+              return resp.json();
+            }
           }
           services[runtime.id] = runtimeServices;
         } else {
@@ -146,7 +138,6 @@ class BoardContext extends Component {
         }
       }
     }
-
     this.setState({ services });
     return services;
   }

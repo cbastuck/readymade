@@ -1,28 +1,63 @@
 import React, { Component } from 'react';
 import {
-  Input,
   Button,
 } from 'semantic-ui-react';
 
+import { 
+  serviceName, 
+  serviceId,
+  Buffer 
+} from 'services/Buffer';
+
+import { List } from 'semantic-ui-react';
+import InputField from '../../components/shared/InputField';
+import { s, t } from '../../styles';
+
 import ServiceUI from './ServiceUI';
 
-const serviceId = 'hookup.to/service/buffer';
-const serviceName = 'Buffer';
-
 class BufferUI extends Component {
-  state = { capacity: 0 };
+  state = { 
+    capacity: 0,
+    items: [{ name: 'me' }, { name: 'you' }],
+  };
 
-  onInit(initialState) {
+  onInit = initialState => {
     const { capacity } = initialState;
     this.setState({
       capacity,
     });
   }
 
+  onNotification = async (service, notification) => {   
+    const items = await service.configure({ action: 'getBuffer' });
+    this.setState({ items });
+  }
+
+  renderBuffer = service => {
+    const { items } = this.state;
+    return (
+      <List
+        style={s(t.fill)}
+        verticalAlign="middle"
+        divided
+      >
+        {
+          items.map((item, idx) => (
+            <List.Item key={`buffer-list-item-${idx}`}>
+              <List.Content>
+                { JSON.stringify(item) }
+              </List.Content>
+            </List.Item>
+          ))
+        }
+      </List>
+    );
+  }
+
   renderMain = service => {
     return (
       <div>
-        <Input
+        <InputField
             type="number"
             value={this.state.capacity}
             onChange={(_, { value }) => {
@@ -31,9 +66,10 @@ class BufferUI extends Component {
               this.setState({ capacity });
             }}
             label="Capacity"
+            unit="items"
           />
         <Button
-          style={{ width: '100%', marginTop: 5 }}
+          style={s(t.w100, t.mt5, t.uc, t.ls1, t.fs11)}
           onClick={() => service.buffer = []}
         >
           Clear
@@ -46,39 +82,14 @@ class BufferUI extends Component {
     return (
       <ServiceUI 
         {...this.props} 
-        onInit={this.onInit.bind(this)}
+        onInit={this.onInit}
+        onNotification={this.onNotification}
         segments={[
-          { name: 'main', render: this.renderMain }
+          { name: 'main', render: this.renderMain },
+          { name: 'buffer', render: this.renderBuffer },
         ]}
       />
     );
-  }
-}
-
-class Buffer {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.buffer = [];
-    this.capacity = 100;
-  }
-
-  configure(config) {
-    const { capacity } = config;
-    if (capacity !== undefined) {
-      this.capacity = capacity;
-    }
-  }
-
-  process(params) {
-    this.buffer = this.buffer.concat(params);
-    if (this.buffer.length > this.capacity) {
-      const diff = this.buffer.length - this.capacity;
-      this.buffer = this.buffer.slice(diff);
-    }
-    return this.buffer;
   }
 }
 

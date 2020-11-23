@@ -1,19 +1,21 @@
+import React, { Component } from 'react';
+
 import WebsocketChannel from './WebsocketChannel';
 
-export default class RemoteRuntime {
-  constructor(user, board, rt, getServices) {
-    for (const key in rt) {
-      this[key] = rt[key];
-    }
-    this.remoteRuntimeBoard = board
-    this.remoteRuntimeUser = user;
+function logInfo(msg) {
+  // console.log(msg);
+}
+
+export default class RemoteRuntime extends Component {
+  componentDidMount() {
     this.remoteRuntimeWebsocket = null;
-    this.getServices = getServices;
+    this.connect();
   }
 
-  connect() {
-    const backendPath = `/api/${this.remoteRuntimeUser.userId}/${this.remoteRuntimeBoard}/runtime/${this.id}`;
-    console.log(`Connecting ${this.name} to ${backendPath}`);
+  connect = () => {
+    const { userId, board, runtime } = this.props;
+    const backendPath = `/api/${userId}/${board}/runtime/${runtime.id}`;
+    logInfo(`Connecting ${runtime.name} to ${backendPath}`);
 
     const { host: backendHost, protocol } = window.location; 
     const url = `${backendHost}${backendPath}`;
@@ -22,18 +24,24 @@ export default class RemoteRuntime {
       this.remoteRuntimeWebsocket = null;
     }
     const secureConnection = protocol.indexOf('https') === 0;
-    this.remoteRuntimeWebsocket = new WebsocketChannel(this.id, this.onAction, secureConnection);
+    this.remoteRuntimeWebsocket = new WebsocketChannel(runtime.id, this.onAction, secureConnection);
     return this.remoteRuntimeWebsocket.open(url);
   }
 
   onAction = action => {
-    const { type }  = action;
+    const { services, runtime } = this.props;
+    const { type } = action;
+    logInfo(`RemoteRuntime ${runtime.id} (${runtime.name}) received: ${JSON.stringify(action)}` );
     if (type === 'notification') {
       const { serviceUuid, notification } = action;
-      const service = this.getServices().find(s => s.uuid = serviceUuid);
-      if (service.__notificationTarget) {
+      const service = services.find(s => s.uuid === serviceUuid);
+      if (service && service.__notificationTarget) {
         service.__notificationTarget(service, notification);
       }
     }
+  }
+
+  render() {
+    return false;
   }
 }

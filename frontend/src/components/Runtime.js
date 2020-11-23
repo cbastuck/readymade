@@ -11,6 +11,8 @@ import ServiceFrame from './ServiceFrame';
 import { openTab } from '../core/actions';
 import { createServiceUI, createPlaceholderUI } from '../UIFactory';
 
+import RemoteRuntime from '../runtime/RemoteRuntime';
+
 import './Runtime.css';
 
 export default class Runtime extends Component {
@@ -230,7 +232,7 @@ export default class Runtime extends Component {
       boardContext=null,
       services=[],
       runtimeId=runtime && runtime.id,
-      userId=boardContext && boardContext.userId,
+      userId=boardContext && boardContext.user && boardContext.user.userId,
       boardName=boardContext && boardContext.boardName,
     } = this.props;
 
@@ -321,6 +323,24 @@ export default class Runtime extends Component {
           }
           </div>
         </Sidebar.Pushable>
+        {
+          runtime && runtime.type === 'node' && (
+            <RemoteRuntime
+              board={boardName}
+              userId={userId}
+              services={services}
+              runtime={runtime}
+            />
+          )
+        }
+        {
+        /* 
+          runtime && runtime.type === 'browser' && (
+            // TODO: probably the same thing like RemoteRuntime
+            // should happen for Browser Runtime here
+          )  
+        */
+        }
       </div>
     );
   }
