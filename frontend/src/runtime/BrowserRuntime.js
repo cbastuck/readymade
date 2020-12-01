@@ -263,6 +263,8 @@ export default class BrowserRuntime {
       }
       this.services.push(service);
       return service;
+    } else {
+      console.error('No browser service descriptor found for ', serviceId, this.registry)
     }
   }
 

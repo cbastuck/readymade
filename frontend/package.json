@@ -42,7 +42,8 @@
     "build": "yarn run offlineFonts && react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend"
+    "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend",
+    "push": "docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend"
   },
   "eslintConfig": {
     "extends": "react-app"

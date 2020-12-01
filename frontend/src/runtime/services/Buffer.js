@@ -18,7 +18,7 @@ import ServiceUI from './ServiceUI';
 class BufferUI extends Component {
   state = { 
     capacity: 0,
-    items: [{ name: 'me' }, { name: 'you' }],
+    items: [],
   };
 
   onInit = initialState => {

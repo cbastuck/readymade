@@ -262,9 +262,11 @@ class BoardContext extends Component {
           service.uuid,
           service.initialConfig,
         );
-        browserService.serviceId = service.serviceId;
-        browserService.serviceName = service.serviceName;
-        createdBrowserServices.push(browserService);
+        if (browserService) {
+          browserService.serviceId = service.serviceId;
+          browserService.serviceName = service.serviceName;
+          createdBrowserServices.push(browserService);
+        }
       }
       return createdBrowserServices;
     }

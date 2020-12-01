@@ -22,9 +22,12 @@ export default class Import extends Component {
     const { src, board } = values;
     if (src && board) {
       const response = await fetch(src);
-      const data = await response.json();  
-      for (const runtimeId in data) {
-        const rt = data[runtimeId];
+      const data = await response.json();
+      const runtimes = data.version ? 
+        data.runtimes :
+        Object.keys(data).map(key => data[key]);
+
+      for (const rt of runtimes) {
         if (rt.type === 'browser') {
           rt.params = rt.params || {};
 
@@ -32,14 +35,11 @@ export default class Import extends Component {
           // browser runtime which assumes ownership
           // POST/PUT endpoint to set the registry for an existing runtime
           if (!rt.params.registry) {
-              rt.params.registry = await BrowserRuntime.registry();
-            }
-          if (rt.params.leaveOwnership !== true) {
-            BoardContext.registerBrowserRuntime(board, runtimeId);
+            rt.params.registry = await BrowserRuntime.registry();
           }
-        }
-        if (!rt.id) {
-          rt.id = runtimeId;
+          if (rt.params.leaveOwnership !== true) {
+            BoardContext.registerBrowserRuntime(board, rt.id);
+          }
         }
       }
       await clearBoard(board);

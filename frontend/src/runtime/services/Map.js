@@ -5,13 +5,15 @@ import {
   Checkbox,
 } from 'semantic-ui-react';
 
-import evilEval from '../../evilEval';
+import MapDescriptor, { 
+  serviceName, 
+  serviceId,
+} from 'services/Map';
+
+// import evilEval from '../../evilEval';
 import InputLabelValue from '../../components/shared/InputLabelValue';
 
 import ServiceUI from './ServiceUI';
-
-const serviceId = 'hookup.to/service/map';
-const serviceName = 'Map';
 
 const newProperty = { key: 'value' };
 
@@ -132,7 +134,7 @@ class MapUI extends Component {
     );
   }
 }
-
+/*
 class Map {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
@@ -205,12 +207,13 @@ class Map {
     return mapper(params);
   }
 }
+*/
 
 const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
-    new Map(app, board, descriptor, id),
+    new MapDescriptor.service(app, board, descriptor, id),
   createUI: MapUI
 };
 
