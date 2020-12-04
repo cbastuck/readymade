@@ -28,7 +28,7 @@ class TimerUI extends Component {
         periodicValue: initialState.periodicValue,
         periodicUnit: initialState.periodicUnit,
         oneShotDelay: initialState.oneShotDelay,
-        timerIsRunning: !!initialState.timer,
+        timerIsRunning: initialState.running,
       });
     }
   }

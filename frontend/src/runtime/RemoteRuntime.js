@@ -42,6 +42,6 @@ export default class RemoteRuntime extends Component {
   }
 
   render() {
-    return false;
+    return <div />;
   }
 }

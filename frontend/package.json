@@ -19,10 +19,10 @@
     "react": "16.13",
     "react-chartjs-2": "^2.8.0",
     "react-dom": "16.13",
-    "react-router-dom": "^4.3.1",
+    "react-router-dom": "5.2.0",
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-offline": "^2.4.1-1",
-    "semantic-ui-react": "0.84.0",
+    "semantic-ui-react": "2.0.1",
     "services": "file:../shared/services",
     "streamsaver": "^2.0.3",
     "three": "^0.111.0",
@@ -37,13 +37,11 @@
   },
   "scripts": {
     "start": "react-scripts start",
-    "offlineFonts": "yarn add semantic-ui-offline && mv node_modules/semantic-ui-offline node_modules/semantic-ui-css",
-    "offlineFonts_": "echo null",
-    "build": "yarn run offlineFonts && react-scripts build",
+    "build": " react-scripts build && node replaceOnlineFonts.js",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend",
-    "push": "docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend"
+    "push": "yarn build && docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend"
   },
   "eslintConfig": {
     "extends": "react-app"
