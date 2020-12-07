@@ -13,6 +13,8 @@ import { createServiceUI, createPlaceholderUI } from '../UIFactory';
 
 import RemoteRuntime from '../runtime/RemoteRuntime';
 
+import { t } from '../styles';
+
 import './Runtime.css';
 
 export default class Runtime extends Component {
@@ -132,6 +134,7 @@ export default class Runtime extends Component {
           />
           <div 
             style={{
+              ...t.unselectable, 
               fontSize: 12,
               letterSpacing: 1,
               textTransform: 'uppercase',

@@ -229,7 +229,10 @@ export default class HeaderMenu extends Component {
                     {
                       registry && this.renderRuntimeMenu(registry, boardContext)
                     }
-                    { boardContext.appViewMode === 'wide' && this.renderNavigation(appContext) }
+                    { 
+                      (!registry || (boardContext.appViewMode === 'wide')) && 
+                        this.renderNavigation(appContext)
+                    }
                     {
                       appContext && this.renderAccountMenu(appContext)
                     }

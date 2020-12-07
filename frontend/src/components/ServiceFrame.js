@@ -9,8 +9,7 @@ import {
 
 import Modal from './Modal';
 import ServiceReference from './ServiceReference';
-
-import './ServiceFrame.css';
+import { t } from '../styles';
 
 export default class ServiceFrame extends Component {
   state = {
@@ -146,8 +145,8 @@ export default class ServiceFrame extends Component {
     return (
       <div key={`service-frame-${uuid}`}>
         <div
-          className='unselectable'
           style={{
+            ...t.unselectable,
             border: 'solid 1px lightgray',
             borderRadius: 5,
             textAlign: 'center',
