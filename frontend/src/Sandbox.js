@@ -7,6 +7,7 @@ import Runtime from './components/Runtime';
 import { AppConsumer } from './AppContext';
 import BoardProvider, { BoardConsumer } from './BoardContext';
 import BrowserRuntime from './runtime/BrowserRuntime';
+import ResizeObserver from './ResizeObserver';
 
 export default class Sandbox extends Component {
   state = {
@@ -115,8 +116,14 @@ export default class Sandbox extends Component {
                       frameless={this.state.options && this.state.options.frameless}
                       services={this.state.createdServices}
                       runtimeId={runtime && runtime.id}
-                      userId={undefined}
-                      boardName={boardContext.boardName}
+                      boardContext={{
+                        isRuntimeInScope: () => false,
+                        boardName: boardContext.boardName,
+                        appViewMode: boardContext.appViewMode,
+                        user: {
+                          userId: undefined,
+                        }
+                      }}
                     />
                   )
                 }

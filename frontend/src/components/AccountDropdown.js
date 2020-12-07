@@ -38,12 +38,13 @@ export default class AccountDropdown extends Component {
     const { currentUser = ''} = this.props;
     const icon = (
       <div>
-        <Icon name="user" style={{ margin: "0px 10px" }}/> 
+        <Icon name="user" style={{ margin: "0px 5px" }}/> 
         {currentUser}
       </div>
     );
     return (
       <Dropdown
+        style={{ width: 85, paddingLeft: 10 }}
         icon={icon}
         className='link item right'
       >

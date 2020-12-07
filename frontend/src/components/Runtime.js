@@ -20,7 +20,7 @@ export default class Runtime extends Component {
     expanded: false,
     readonly: false,
     showSettings: false,
-    wrapServices: false,
+    wrapServices: undefined,
   };
 
   componentDidMount() {
@@ -69,12 +69,8 @@ export default class Runtime extends Component {
     }
   }
 
-  renderServiceMenu(runtimeName, runtime) {
-    const serviceNameStyle = {
-      fontSize: 12,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-    };
+  renderServiceMenu(runtimeName, runtime, appViewMode) {
+    const wide = appViewMode === 'wide';
     const registry = runtime ? runtime.registry : [];
     const options = registry.map(s => ({
       key: `${runtime.id}${s.serviceId}`, value: s.serviceId, text: s.serviceName
@@ -83,16 +79,17 @@ export default class Runtime extends Component {
       <div
         id="service-dropdown"
         style={{
-          ...serviceNameStyle,
-          width: 180
+          fontSize: 12,
+          letterSpacing: 1,
+          textTransform: 'uppercase',
+          marginRight: 10
         }}
       >
         <Dropdown
           ref={dropdown => this.dropdown = dropdown }
           deburr
-          fluid
           options={options}
-          placeholder="Add Service"
+          placeholder={wide ? 'Add Service' : 'Service'}
           search
           selection
           selectOnBlur={false}
@@ -103,23 +100,22 @@ export default class Runtime extends Component {
               this.dropdown.clearValue();
             }
           }}
+          compact={!wide}
         />
       </div>
     );
   }
 
-  renderExpandableHeadline(name, runtime, isOwner) {
-    const sceneNameStyle = {
-      fontSize: 12,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-    }; 
+  renderExpandableHeadline(name, runtime, isOwner, appViewMode) {
     return (
-      <h4>
+      
         <div 
           style={{ 
+            width: '100%',
             marginTop: 5,
             marginLeft: 5,
+            display: 'flex',
+            flexDirection: 'row'
           }}
         >
           <Icon 
@@ -134,25 +130,35 @@ export default class Runtime extends Component {
               expanded: !this.state.expanded ? !this.state.showSettings : this.state.expanded
             })}
           />
-          <span style={sceneNameStyle}> 
+          <div 
+            style={{
+              fontSize: 12,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              marginTop: 10,
+            }}
+          > 
             {name} 
-          </span>
-          <span 
+          </div>
+
+          <div 
             style={{ 
               marginRight: 10, 
               marginTop: 5, 
-              float: 'right' 
+              marginBottom: 10,
+              marginLeft: 'auto',
+              textAlign: 'right'
             }} 
           >
             {
               runtime && 
               runtime.registry && 
-              isOwner &&
-              this.renderServiceMenu(name, runtime)
+              isOwner && 
+              this.renderServiceMenu(name, runtime, appViewMode) 
             }
-          </span>
+          </div>
         </div>
-      </h4>
+      
     );
   }
 
@@ -238,6 +244,8 @@ export default class Runtime extends Component {
 
     const { showSettings } = this.state;
     
+    const appViewMode = boardContext && boardContext.appViewMode;
+    const wide = boardContext ? appViewMode === 'wide' : true;
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
     const readonly = !isOwner && !!runtime;
     const onToggleOwnership = () => 
@@ -245,7 +253,7 @@ export default class Runtime extends Component {
         boardContext.releaseRuntimeScope(boardContext.boardName, runtime) :
         boardContext.acquireRuntimeScope(boardContext.boardName, runtime);
 
-    const { wrapServices } = this.state;
+    const { wrapServices=!wide } = this.state;
     const readonlyStyle = (readonly && !frameless) ? 
       {
         backgroundColor: '#FFFFFF',
@@ -266,7 +274,7 @@ export default class Runtime extends Component {
         }}
       >
         {
-          !frameless && this.renderExpandableHeadline(runtimeName, runtime, isOwner)
+          !frameless && this.renderExpandableHeadline(runtimeName, runtime, isOwner, appViewMode)
         }
         <Sidebar.Pushable 
           as={Segment}
@@ -294,7 +302,7 @@ export default class Runtime extends Component {
           <div
             style={{
               display: 'flex',
-              flexFlow: wrapServices ? 'row wrap' : 'row nowrap',
+              flexFlow: wrapServices  ? 'row wrap' : 'row nowrap',
               overflow: 'auto',
               padding: !frameless && '0px 10px',
               ...readonlyStyle

@@ -17,9 +17,9 @@ export default class Toolbar extends Component {
     return (
       <div
         style={{
-          width: '100%',
           marginBottom: 5,
           textAlign: 'left',
+          borderBottom: '1px solid rgba(34,36,38,.15)',
         }}
       >
         <HeaderMenu

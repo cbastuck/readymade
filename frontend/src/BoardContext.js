@@ -4,6 +4,7 @@ import UAParser from 'ua-parser-js';
 
 // TODO: this should also go to Runtime like the RemoteRuntime
 import BrowserRuntime from './runtime/BrowserRuntime';
+import ResizeObserver from './ResizeObserver';
 
 import {
   getServices,
@@ -49,12 +50,15 @@ class BoardContext extends Component {
       releaseRuntimeScope: this.releaseRuntimeScope,
 
       // data
+      viewportWidth: undefined,
+      appViewMode: 'wide',
+
       user: props.user,
       boardName: props.boardName,
       runtimes: [],
       services: {},
       registry: undefined,
-      savedBoards: []
+      savedBoards: [],
     };
 
     this.browserRuntimes = [];
@@ -194,7 +198,7 @@ class BoardContext extends Component {
         params.registry = await BrowserRuntime.registry(this.state.user);
         const browser = new UAParser().getBrowser();
         if (browser) {
-          name = `${browser.name}-${browser.version}`;
+          name = browser.name; // `${browser.name}-${browser.version}`;
         }
       }
       const desc = { 
@@ -319,6 +323,9 @@ class BoardContext extends Component {
     return (
       <Provider value={this.state}>
         { this.props.children }
+        <ResizeObserver 
+          onChange={data => this.setState({ ...data })} 
+        />
       </Provider>
     );
   }

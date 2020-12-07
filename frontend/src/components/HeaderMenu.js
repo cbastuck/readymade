@@ -10,7 +10,6 @@ import AccountDropdown from './AccountDropdown';
 import './HeaderMenu.css';
 
 export default class HeaderMenu extends Component {
-
   onAction = action => {
     switch(action.type) {
       default:
@@ -24,9 +23,9 @@ export default class HeaderMenu extends Component {
         style={{
           paddingTop: 7,
           paddingLeft: 4,
-          paddingRight: 4,
+          paddingRight: 1,
           marginLeft: 4,
-          marginRight: 4,
+          marginRight: 1,
         }}
       >
         <Link to="/">
@@ -60,7 +59,7 @@ export default class HeaderMenu extends Component {
         {
           appContext && appContext.user && appContext.user.username && (
             <Link to="/dashboard" style={navItemStyle}>
-              {appContext.user.username}'s Boards
+              {/*appContext.user.username*/}Home
             </Link>
           )
         }
@@ -68,7 +67,7 @@ export default class HeaderMenu extends Component {
           Examples
         </Link>
         <Link to="/docs" style={navItemStyle}>
-          Documentation
+          Docs
         </Link>
       </div>
     );
@@ -88,7 +87,8 @@ export default class HeaderMenu extends Component {
           fontSize: 11,
           letterSpacing: 1,
           textTransform: 'uppercase',
-          //marginTop: board ? -5 : 0, // TODO: do we need this?
+          paddingLeft: 5,
+          paddingRight: 8,
         }}
       >
         <Dropdown.Menu>
@@ -123,6 +123,7 @@ export default class HeaderMenu extends Component {
   }
 
   renderRuntimeMenu(registry, boardContext) {
+    const wideViewMode = boardContext.appViewMode === 'wide';
     const options = [
       { name: 'browser', args: 'browser' },
       { name: 'hookup', args: 'node, Hookup' },
@@ -133,13 +134,13 @@ export default class HeaderMenu extends Component {
         style={{ 
           marginLeft: 10,
           marginTop: 3,
-          width: 220,
         }}
       >
         <Dropdown
+          compact={!wideViewMode}
           ref={dropdown => this.dropdown = dropdown}
           options={options}
-          placeholder="Add Runtime"
+          placeholder={wideViewMode ? 'Add Runtime' : 'Runtime'}
           selection
           selectOnBlur={false}
           onChange={(ev, { value }) => {
@@ -219,7 +220,6 @@ export default class HeaderMenu extends Component {
                     style={{
                       boxShadow: 'none',
                       border: 'none',
-                      borderBottom: '1px solid rgba(34,36,38,.15)',
                     }}
                   >
                     { this.renderHomeIcon() }
@@ -229,7 +229,7 @@ export default class HeaderMenu extends Component {
                     {
                       registry && this.renderRuntimeMenu(registry, boardContext)
                     }
-                    { this.renderNavigation(appContext) }
+                    { boardContext.appViewMode === 'wide' && this.renderNavigation(appContext) }
                     {
                       appContext && this.renderAccountMenu(appContext)
                     }
