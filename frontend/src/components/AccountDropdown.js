@@ -43,17 +43,17 @@ export default class AccountDropdown extends Component {
       </div>
     );
     return (
-      <Dropdown
-        style={{ width: 85, paddingLeft: 10 }}
-        icon={icon}
-        className='link item right'
-      >
-        <Dropdown.Menu>
-          {
-            this.renderLogin()
-          }
-        </Dropdown.Menu>
-      </Dropdown>
+        <Dropdown
+          style={{ width: 85, height: '100%' }}
+          icon={icon}
+          className='link item right'
+        >
+          <Dropdown.Menu>
+            {
+              this.renderLogin()
+            }
+          </Dropdown.Menu>
+        </Dropdown>
     )
   }
 }

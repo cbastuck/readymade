@@ -39,7 +39,7 @@ class TriggerPadUI extends Component {
     const isPadTriggered = this.state.triggeredPads[index];
     const isPadAssigned = this.state.assignments[index];
     const isPadArmed = this.state.armedPad === index;
-    const onPush = ev => {
+    const onPush = () => {
       service.triggerPad(index);
       this.setState({ 
         triggeredPads: {
@@ -47,11 +47,9 @@ class TriggerPadUI extends Component {
           [index]: true
         }
       });
-      ev.stopPropagation();
-      ev.preventDefault();
       return true;
     }
-    const onEnd = ev => { 
+    const onEnd = () => { 
       if (this.state.triggeredPads[index]) {
         this.setState({ 
           triggeredPads: {
@@ -60,8 +58,6 @@ class TriggerPadUI extends Component {
           }
         });
       }
-      ev.stopPropagation();
-      ev.preventDefault();
       return true;
     };
     return (
@@ -77,10 +73,8 @@ class TriggerPadUI extends Component {
         }}
         onDown={onPush}
         onUp={onEnd}
-        onRightClick={ev => {
+        onRightClick={() => {
           service.clearPad(index);
-          ev.stopPropagation();
-          ev.preventDefault();
         }}
       />  
       

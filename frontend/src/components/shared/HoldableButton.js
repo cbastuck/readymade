@@ -1,28 +1,39 @@
 import React, { Component } from 'react';
 
+const isTouch = 'ontouchstart' in window;
+
 export default class HoldableButton extends Component {
-  ComponentDidMount() {
-    this.isTouch = 'ontouchstart' in window;
+  onDown = ev => {
+    const { onDown } = this.props;
+    ev.stopPropagation();
+    onDown();
+  }
+
+  onUp = ev => {
+    const { onUp } = this.props;
+    ev.stopPropagation();
+    onUp();
+  }
+
+  onRightClick = ev => {
+    const { onRightClick = () => {} } = this.props;
+    ev.preventDefault();
+    ev.stopPropagation();
+    onRightClick();
   }
 
   render() {
-    const {
-    style, 
-      onDown, 
-      onUp,
-      onRightClick = () => {},
-      children,
-    } = this.props;
+    const { style, children } = this.props;
     return (
       <div
         style={style}
-        onTouchStart={this.isTouch ? onDown : undefined}
-        onTouchEnd={this.isTouch ? onUp : undefined}
-        onTouchCancel={this.isTouch ? onUp : undefined}
-        onMouseDown={!this.isTouch ? onDown : undefined}
-        onMouseUp={!this.isTouch ? onUp : undefined}
-        onMouseLeave={!this.isTouch ? onUp : undefined}
-        onContextMenu={onRightClick}
+        onTouchStart={isTouch ? this.onDown : undefined}
+        onTouchEnd={isTouch ? this.onUp : undefined}
+        onTouchCancel={isTouch ? this.onUp : undefined}
+        onMouseDown={!isTouch ? this.onDown : undefined}
+        onMouseUp={!isTouch ? this.onUp : undefined}
+        onMouseLeave={!isTouch ? this.onUp : undefined}
+        onContextMenu={this.onRightClick}
       >
       { children ? children : false }
       </div>

@@ -7,7 +7,6 @@ import Runtime from './components/Runtime';
 import { AppConsumer } from './AppContext';
 import BoardProvider, { BoardConsumer } from './BoardContext';
 import BrowserRuntime from './runtime/BrowserRuntime';
-import ResizeObserver from './ResizeObserver';
 
 export default class Sandbox extends Component {
   state = {

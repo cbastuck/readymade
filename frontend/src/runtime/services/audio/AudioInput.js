@@ -111,6 +111,7 @@ class AudioInputUI extends Component {
         </div>
         <div style={{ margin: '5px 0px' }}>
           <Checkbox 
+            style={s(t.uc, t.fs11, t.ls1)}
             label="Visualize" 
             checked={this.state.visualize}
              onChange={async (_, { checked }) => {
