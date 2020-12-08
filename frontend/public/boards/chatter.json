@@ -1,59 +1,77 @@
 {
-  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
-    "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
-    "name": "CB",
-    "type": "browser",
-    "services": [
-      {
-        "serviceName": "Injector",
-        "serviceId": "hookup.to/service/injector",
-        "mode": "raw-text"
-      },
-      {
-        "serviceName": "Map",
-        "serviceId": "hookup.to/service/map",
-        "template": {
-          "timestamp=": "Date.now()",
-          "CB=": "params"
-        }
-      }
-    ],
-    "params": {
-      "leaveOwnership": true
-    }
+  "version": "2.0",
+  "topology": {
+    "type": "star",
+    "centerId": "70478c34-d312-474a-9f95-327e7c5d6aca"
   },
-  "0416ab77-2d1a-44da-acc3-8f7d22db1761": {
-    "id": "0416ab77-2d1a-44da-acc3-8f7d22db1761",
-    "name": "JCB",
-    "type": "browser",
-    "services": [
-      {
-        "serviceName": "Injector",
-        "serviceId": "hookup.to/service/injector",
-        "mode": "raw-text"
-      },
-      {
-        "serviceName": "Map",
-        "serviceId": "hookup.to/service/map",
-        "template": {
-          "timestamp=": "Date.now()",
-          "JCB=": "params"
+  "runtimes": [{
+      "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
+      "name": "CB",
+      "type": "browser",
+      "services": [
+        {
+          "serviceName": "Injector",
+          "serviceId": "hookup.to/service/injector",
+          "mode": "raw-text"
+        },
+        {
+          "serviceName": "Map",
+          "serviceId": "hookup.to/service/map",
+          "template": {
+            "timestamp=": "Date.now()",
+            "author": "CB",
+            "text=": "params"
+          }
         }
+      ],
+      "params": {
+        "leaveOwnership": true
       }
-    ],
-    "params": {
-      "leaveOwnership": true
+    }, {
+      "id": "0416ab77-2d1a-44da-acc3-8f7d22db1761",
+      "name": "JCB",
+      "type": "browser",
+      "services": [
+        {
+          "serviceName": "Injector",
+          "serviceId": "hookup.to/service/injector",
+          "mode": "raw-text"
+        },
+        {
+          "serviceName": "Map",
+          "serviceId": "hookup.to/service/map",
+          "template": {
+            "timestamp=": "Date.now()",
+            "author": "JCB",
+            "text=": "params"
+          }
+        }
+      ],
+      "params": {
+        "leaveOwnership": true
+      }
+    }, {
+      "id": "70478c34-d312-474a-9f95-327e7c5d6aca",
+      "name": "center", 
+      "type": "node",
+      "services": [
+        {
+          "serviceName": "Map",
+          "serviceId": "hookup.to/service/map",
+          "template": {
+            "time=": "new Date(params.timestamp).toLocaleTimeString()",
+            "date=": "new Date(params.timestamp).toLocaleDateString()",
+            "author=": "params.author",
+            "message=": "params.text"
+          }
+        },
+        {
+          "serviceName": "Output",
+          "serviceId": "hookup.to/service/output",
+          "active": true,
+          "keepAlive": true
+        }
+      ]
     }
-  },
-  "70478c34-d312-474a-9f95-327e7c5d6aca": {
-    "id": "70478c34-d312-474a-9f95-327e7c5d6aca",
-    "name": "center", 
-    "type": "node",
-    "services": [
-      {
-        "serviceName": "Buffer",
-        "serviceId": "hookup.to/service/buffer"
-      }
-    ]
-  }
+  ]
 }

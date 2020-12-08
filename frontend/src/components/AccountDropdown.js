@@ -43,8 +43,8 @@ export default class AccountDropdown extends Component {
       </div>
     );
     return (
+      <div style={{ width: currentUser ? 130 : undefined }}>
         <Dropdown
-          style={{ width: 85, height: '100%' }}
           icon={icon}
           className='link item right'
         >
@@ -54,6 +54,7 @@ export default class AccountDropdown extends Component {
             }
           </Dropdown.Menu>
         </Dropdown>
+      </div>
     )
   }
 }

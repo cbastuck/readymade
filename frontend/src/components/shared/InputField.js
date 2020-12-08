@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 
-import { Input } from 'semantic-ui-react';
+import { Input, Checkbox } from 'semantic-ui-react';
 
 import SyncIndicator from './SyncIndicator';
 import { s, t } from '../../styles';
@@ -24,44 +24,34 @@ export default class InputField extends Component {
     }
   }
 
-  render() {
-    const { value } = this.state;
-    const { 
-      type, 
-      label,
-      labelStyle,
-      style,
+  renderCheckboxType = value => {
+    const {
+      onChange = () => {}, 
+    } = this.props;
+    return (
+      <Checkbox
+        style={{ padding: '5px 5px' }}
+        slider
+        checked={value !== undefined ? value : false}
+        onChange={(ev, { checked }) => {
+          onChange(ev, { value: checked });
+        }}
+      />
+    );
+  }
+
+  renderInputType = (value, type, fontSize) => {
+    const {
       disabled,
-      value: syncedValue,
       unit,
       onChange = () => {}, 
       onEscape = () => {},
       onFocus = () => {},
-      onLabelClicked = () => {},
     } = this.props;
-    const fontSize = 11;
-    const inSync = value === syncedValue;
     return (
-      <div 
-        style={{
-          width: '100%',
-          display: 'flex',
-          flexDirection: 'row',
-          margin: '2px 0px',
-          ...style, 
-        }}
-      >
-        <SyncIndicator 
-          onClick={ev => inSync ? 
-            onLabelClicked(ev, { value }) : 
-            onChange(ev, { value })
-          }
-          inSync={inSync}
-          label={label}
-          style={{ ...labelStyle, fontSize }}
-        />
+      <div style={{ width: '50%', flexGrow: 3, }}>
         <Input 
-          style={{ width: '50%', fontSize: fontSize + 1, flexGrow: 3, }}
+          style={{ fontSize }}
           type={type}
           value={value || ''}
           onChange={(_, { value }) => this.setState({ value })}
@@ -84,6 +74,47 @@ export default class InputField extends Component {
               { unit }
             </div>
           )
+        }
+      </div>
+    );
+  }
+
+  render() {
+    const { 
+      type, 
+      label,
+      labelStyle,
+      style,
+      value: syncedValue,
+      onChange = () => {}, 
+      onLabelClicked = () => {},
+    } = this.props;
+    const { value } = this.state;
+    const inSync = value === syncedValue;
+    const fontSize = 11;
+    return (
+      <div 
+        style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'row',
+          margin: '2px 0px',
+          ...style, 
+        }}
+      >
+        <SyncIndicator 
+          onClick={ev => inSync ? 
+            onLabelClicked(ev, { value }) : 
+            onChange(ev, { value })
+          }
+          inSync={inSync}
+          label={label}
+          style={{ ...labelStyle, fontSize }}
+        />
+        {
+          type !== 'checkbox' ? 
+            this.renderInputType(value, type, fontSize + 1) : 
+            this.renderCheckboxType(syncedValue)
         }
       </div>
     );

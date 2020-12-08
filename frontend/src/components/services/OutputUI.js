@@ -1,19 +1,15 @@
 import React, { Component } from 'react';
-import {
-  Input,
-  Label,
-  Checkbox,
-} from 'semantic-ui-react';
+
+import InputField from '../../components/shared/InputField';
 
 import {
   configureService,
   getServiceConfiguration
 } from '../../core/actions';
 
-const lineStyle = {
-  textAlign: 'left',
-  margin: 10,
-};
+import { s, t } from '../../styles';
+
+import ServiceUI from '../../runtime/services/ServiceUI';
 
 export default class OutputUI extends Component {
   state = {
@@ -31,55 +27,58 @@ export default class OutputUI extends Component {
     this.setState({ name: config.name, active: config.active });
   }
 
-  render() {
-    const { service, board, userId } = this.props;
+  renderMain = service => {
+    const { board, userId } = this.props;
+    const { name, active } = this.state;
     return (
       <div>
-        <div style={lineStyle}>
-          <Label style={{ width: 70 }}>
-              Name
-          </Label>
-          <Input
-            style={{ maxWidth: 170, marginLeft: 5 }}
-            value={this.state.name}
-            onChange={(_, { value }) => this.setState({ name: value })}
-          />
-        </div>
-        <div style={lineStyle}>
-          <Label style={{ width: 70 }}>
-              Active
-          </Label>
-          <Checkbox
-            style={{ padding: '5px 5px' }}
-            slider
-            checked={this.state.active}
-            onChange={async (_, { checked }) => {
-              await configureService(board, service, {
-                active: checked,
-                name: this.state.name
-              });
-              this.update();
-            }}
-          />
-        </div>
+        <InputField
+          type="text"
+          label="Name"
+          value={name}
+          onChange={(_, { value }) => this.setState({ name: value })}
+        />
+        <InputField
+          type="checkbox"
+          label="Active"
+          value={active}
+          onChange={async (_, { value }) => {
+            await configureService(board, service, {
+              active: value,
+              name: this.state.name
+            });
+            this.update();
+          }}
+        />
         {
-          this.state.active && (
-            <div style={lineStyle}>
-              <Label style={{ width: 70 }}>
-                Output
-              </Label>
-              <span style={{ padding: '5px 5px' }}>
-                <a
-                  href={`${window.location.origin}/api/${userId}/${board}/${this.state.name}`}
-                  target="blank"
-                >
-                  Link
-                </a>
-              </span>
+          active && (
+            <div 
+              style={{ 
+                textAlign: 'right',
+              }}
+            >
+              <a
+                href={`${window.location.origin}/api/${userId}/${board}/${this.state.name}`}
+                target="blank"
+                style={s(t.uc, t.lc1, t.fs11)}
+              >
+                Show Output
+              </a>
             </div>
           )
         }
       </div>
+    );
+  }
+
+  render() {
+    return (
+      <ServiceUI 
+        { ...this.props }
+        segments={[
+          { name: 'main', render: this.renderMain },
+        ]}
+      />
     );
   }
 

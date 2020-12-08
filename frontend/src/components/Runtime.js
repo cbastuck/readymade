@@ -110,7 +110,6 @@ export default class Runtime extends Component {
 
   renderExpandableHeadline(name, runtime, isOwner, appViewMode) {
     return (
-      
         <div 
           style={{ 
             width: '100%',
@@ -313,7 +312,9 @@ export default class Runtime extends Component {
             onClickCapture={e => readonly && e.stopPropagation()}
           >
           {
-            this.state.expanded && services && services.map(service => {
+            this.state.expanded && 
+            services && 
+            services.map(service => {
               const serviceUi = readonly ? 
                 createPlaceholderUI(service) :
                 createServiceUI(boardName, service, runtimeId, userId)
@@ -326,6 +327,11 @@ export default class Runtime extends Component {
                 />
               );
             })
+          }
+          { 
+            services && services.length === 0 && (
+              <div style={{ height: 9 }} />  // just a placeholder for visual consistence
+            )
           }
           {
             !isOwner && showSettings && (

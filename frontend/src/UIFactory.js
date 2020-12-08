@@ -13,11 +13,10 @@ import TimerUI from './components/services/TimerUI';
 import WebGetUI from './components/services/WebGetUI';
 import DataInjectorUI from './components/services/DataInjectorUI';
 import HTMLTemplatesUI from './components/services/HTMLTemplatesUI';
-import OutputUI from './components/services/OutputUI';
 import FileS3UI from './components/services/FileS3UI';
 import AggregatorUI from './components/services/AggregatorUI';
 */
-// import MonitorUI from './components/services/MonitorUI';
+import OutputUI from './components/services/OutputUI';
 
 import BrowserRuntime from './runtime/BrowserRuntime';
 
@@ -33,11 +32,12 @@ export function createPlaceholderUI(service) {
 }
 
 export function createServiceUI(board, service, runtimeId, userId=undefined) {
-  
-  // const id = service.uuid;
-  // const params = { key: id, id: id, service, board, userId };
   const serviceId = service.serviceId || service.__descriptor.serviceId;
   switch(serviceId) {
+    case 'hookup.to/service/output': {
+      const params = { key: serviceId, id: serviceId, service, board, userId };
+      return <OutputUI { ...params } />;
+    }
     /*
     case 'hookup.to/service/monitor':
       return <MonitorUI { ...params } />;
@@ -65,8 +65,6 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
       return <DataInjectorUI { ...params } />;
     case 'hookup.to/service/html-templates':
       return <HTMLTemplatesUI { ...params } />;
-    case 'hookup.to/service/output':
-      return <OutputUI { ...params } />;
     case 'hookup.to/resource/file-s3':
       return <FileS3UI { ...params } />;
     case 'hookup.to/service/aggregator':
