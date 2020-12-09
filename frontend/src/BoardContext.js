@@ -12,6 +12,7 @@ import {
   removeService,
   saveBoard,
   loadBoard,
+  getBoard,
   getRuntimes,
   getRuntimeRegistry,
   addRuntime,
@@ -54,7 +55,8 @@ class BoardContext extends Component {
       appViewMode: 'wide',
 
       user: props.user,
-      boardName: props.boardName,
+      board: {},
+      boardName: props.boardName, // TODO: this is also part of board
       runtimes: [],
       services: {},
       registry: undefined,
@@ -81,6 +83,7 @@ class BoardContext extends Component {
 
   fetchData = async () => {
     try {
+      await this.fetchBoard();
       await this.fetchRuntimes();
       await this.fetchRegistry(); // FIXME: always after fetchRuntimes
       await this.fetchServices();
@@ -92,6 +95,12 @@ class BoardContext extends Component {
     
   getBoardName = () => {
     return this.state.boardName;
+  }
+
+  fetchBoard = async () => {
+    const boardname = this.getBoardName();
+    const board = await getBoard(boardname);      
+    this.setState({ board });
   }
 
   fetchRuntimes = async () => {
@@ -287,7 +296,7 @@ class BoardContext extends Component {
 
   isRuntimeInScope = runtime => {
     if (runtime.type === 'browser') {
-      return this.browserRuntimes.find(rt => rt.id === runtime.id);
+      return !!this.browserRuntimes.find(rt => rt.id === runtime.id);
     } 
     return true;
   }
