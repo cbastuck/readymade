@@ -59,9 +59,12 @@ export default class ServiceUI extends Component {
     }
     const currentSegmentName = this.getCurrentSegmentName();
     const segment = segments.find(segment => segment.name === currentSegmentName);
-    const marginStyle = { margin: '5px 5px' };
     return (
-      <div style={marginStyle}>
+      <div 
+        style={{ 
+          margin: '5px 5px', 
+        }}
+      >
         {
           segments.length > 1 && (
             <Menu 
@@ -88,7 +91,11 @@ export default class ServiceUI extends Component {
             </Menu>
           )
         }
-        <Segment style={{ margin: '15px 20px' }}>
+        <Segment 
+          style={{ 
+            margin: '15px 20px',
+          }}
+        >
           { segment && segment.render(service) }
         </Segment>
       </div>

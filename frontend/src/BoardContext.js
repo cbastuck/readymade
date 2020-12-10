@@ -329,9 +329,10 @@ class BoardContext extends Component {
   }
 
   render() {
+    const { children } = this.props;
     return (
       <Provider value={this.state}>
-        { this.props.children }
+        { children }
         <ResizeObserver 
           onChange={data => this.setState({ ...data })} 
         />

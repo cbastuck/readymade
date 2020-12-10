@@ -7,13 +7,13 @@ import {
   Header,
 } from 'semantic-ui-react';
 
+import Resizable from './Resizable';
 import Modal from './Modal';
 import ServiceReference from './ServiceReference';
-import { t } from '../styles';
+import { s, t } from '../styles';
 
 export default class ServiceFrame extends Component {
   state = {
-    mouseOver: false,
     menuVisible: false,
     frameCollapsed: false,
     modalReferenceService: undefined,
@@ -92,7 +92,8 @@ export default class ServiceFrame extends Component {
           as='a'
           onClick={() => 
             this.setState({ 
-              frameCollapsed: !this.state.frameCollapsed 
+              frameCollapsed: !this.state.frameCollapsed,
+              menuVisible: false
             })
           }
           style={itemStyle}
@@ -116,6 +117,7 @@ export default class ServiceFrame extends Component {
                 service,
               });
             }
+            this.setState({ menuVisible: false });
           }}
         >
           <Icon name='trash alternate outline' />
@@ -128,7 +130,8 @@ export default class ServiceFrame extends Component {
             const serviceId = service.serviceId || service.__descriptor.serviceId;
             const parts = serviceId.split('/');
             this.setState({ 
-              modalReferenceService: parts[parts.length - 1]
+              modalReferenceService: parts[parts.length - 1],
+              menuVisible: false
             });
           }}
         >
@@ -138,74 +141,109 @@ export default class ServiceFrame extends Component {
     );
   }
 
+  renderServiceWithSidebar = (serviceUi, menuVisible) => {
+    return (
+      <div
+        style={{
+          position: 'relative',
+        }}
+      >
+        {
+          menuVisible && (
+            <div 
+              style={{
+                position: 'absolute',
+                height: '100%',
+                width: '100%',
+                backgroundColor: 'white',
+                opacity: 0.8,
+                zIndex: 2000001,
+              }}
+              onClick={() => this.setState({ menuVisible: false })}
+            />
+          )
+        }
+        { serviceUi } 
+        <div
+          style={{
+            position: 'absolute',
+            height: '100%',
+            width: 59,
+            right: 0,
+            top: 0,
+            overflowY: 'auto',
+            zIndex: 2000002
+          }}
+        >
+          { menuVisible && this.renderMenu() }
+        </div>
+      </div>
+    );
+  }
+
+  renderServiceWithSidebarOld = (serviceUi, menuVisible) => {
+    return (
+      <Sidebar.Pushable as={Segment.Group} raised
+        style={{
+          border: 'none',
+          boxShadow: 'none',
+          margin: 0,
+          // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
+          // without it, the fullscreen is not working, eg. canvas service
+          transform: 'none',
+        }}
+      >
+        <Sidebar
+          animation='overlay'
+          direction='right'
+          width='very thin'
+          visible={menuVisible}
+          style={{ 
+            overflowX: 'hidden',
+            boxShadow: '0 0 2px rgba(34,36,38,.15)',
+          }}
+        >
+          { this.renderMenu() }
+        </Sidebar>
+        { serviceUi } 
+      </Sidebar.Pushable>
+    )
+  }
+
   render() {
-    const { modalReferenceService } = this.state;
+    const { modalReferenceService, menuVisible } = this.state;
     const { serviceUi, service } = this.props;
     const uuid = service && service.uuid;
     return (
       <div key={`service-frame-${uuid}`}>
-        <div
-          style={{
-            ...t.unselectable,
-            border: 'solid 1px lightgray',
-            borderRadius: 5,
-            textAlign: 'center',
-            backgroundColor: 'white',
-            top: '18%',
-            margin: 10,
-            fontSize: 15,
-            color: 'black'
-          }}
-          onMouseOver={() => this.setState({ mouseOver: true })}
-          onMouseOut={() => this.setState({ mouseOver: false })}
+        <Resizable
+          style={
+            s(t.unselectable, {
+              border: 'solid 1px lightgray',
+              borderRadius: 5,
+              textAlign: 'center',
+              backgroundColor: 'white',
+              margin: 10,
+              fontSize: 15,
+              color: 'black',
+            })
+          }
         >
-          <div
-            style={{
-              width: '100%',
-              height: '100%',
-            }}
-          >
-            {
-              this.renderHeader(service)
-            }
-            {
-              !this.state.frameCollapsed && (
-                <Sidebar.Pushable 
-                  as={Segment}
-                  style={{
-                    border: 'none',
-                    boxShadow: 'none',
-                    margin: 0,
-                    // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
-                    // without it, the fullscreen is not working, eg. canvas service
-                    transform: 'none',
-                  }}
-                >
-                  <Sidebar
-                    animation='overlay'
-                    direction='right'
-                    width='very thin'
-                    visible={this.state.menuVisible}
-                    style={{ 
-                      overflowX: 'hidden',
-                      boxShadow: '0 0 2px rgba(34,36,38,.15)',
-                    }}
-                  >
-                    { this.renderMenu() }
-                  </Sidebar>
-                  { serviceUi } 
-                </Sidebar.Pushable>
-              )
-            }
-            <Modal
-              title="Service Documentation"
-              component={<ServiceReference service={modalReferenceService} />}
-              url={`/service/${modalReferenceService}`}
-              setOpen={open => !open && this.setState({ modalReferenceService: undefined })}
-              isOpen={!!this.state.modalReferenceService}
-            />
-          </div>
-        </div>
+          {
+            this.renderHeader(service)
+          }
+          {
+            !this.state.frameCollapsed && 
+            this.renderServiceWithSidebar(serviceUi, menuVisible)
+          }
+          <Modal
+            title="Service Documentation"
+            component={<ServiceReference service={modalReferenceService} />}
+            url={`/service/${modalReferenceService}`}
+            setOpen={open => !open && this.setState({ modalReferenceService: undefined })}
+            isOpen={!!modalReferenceService}
+          />
+        </Resizable>
       </div>
     );
   }

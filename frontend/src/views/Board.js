@@ -5,6 +5,7 @@ import Login from './Login';
 import Runtime from '../components/Runtime';
 import Toolbar from '../components/Toolbar';
 import { BoardConsumer } from '../BoardContext';
+import DragProvider from '../DragContext';
 
 import { s, t } from '../styles';
 
@@ -50,7 +51,7 @@ export default class Board extends Component {
     } 
     return boardContext.runtimes.map(runtime => this.renderRuntime(boardContext, runtime));
   }
-  
+
   renderRuntime = (boardContext, runtime) => {
     return (
       <Runtime
@@ -69,7 +70,7 @@ export default class Board extends Component {
       <BoardConsumer>
         {
           boardContext => (
-            <div
+            <DragProvider
               style={{
                 height: '100%',
                 width: '100%',
@@ -96,7 +97,7 @@ export default class Board extends Component {
                 boardContext.runtimes && 
                 this.renderRuntimes(boardContext)
               }
-            </div>
+            </DragProvider>
           )
         }
       </BoardConsumer>
