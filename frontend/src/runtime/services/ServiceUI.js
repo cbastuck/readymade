@@ -5,6 +5,7 @@ import {
 } from 'semantic-ui-react';
 
 import { BoardConsumer } from '../../BoardContext';
+import Resizable from '../../components/Resizable';
 
 export default class ServiceUI extends Component {
   state = {
@@ -91,12 +92,10 @@ export default class ServiceUI extends Component {
             </Menu>
           )
         }
-        <Segment 
-          style={{ 
-            margin: '15px 20px',
-          }}
-        >
-          { segment && segment.render(service) }
+        <Segment style={{ margin: '15px 20px', padding: 0 }}>
+          <Resizable style={{ padding: 14 }}>
+            { segment && segment.render(service) }
+          </Resizable>
         </Segment>
       </div>
     );

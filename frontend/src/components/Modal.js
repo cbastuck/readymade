@@ -70,10 +70,7 @@ export default class ModalDialog extends Component {
           </Button>
           <Button
             content="Close"
-            labelPosition='right'
-            icon='checkmark'
             onClick={() => setOpen(false)}
-            positive
             style={buttonStyle}
           />
         </Modal.Actions>

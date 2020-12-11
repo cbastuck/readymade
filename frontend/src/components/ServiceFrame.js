@@ -7,7 +7,7 @@ import {
   Header,
 } from 'semantic-ui-react';
 
-import Resizable from './Resizable';
+// import Resizable from './Resizable';
 import Modal from './Modal';
 import ServiceReference from './ServiceReference';
 import { s, t } from '../styles';
@@ -164,19 +164,23 @@ export default class ServiceFrame extends Component {
           )
         }
         { serviceUi } 
-        <div
-          style={{
-            position: 'absolute',
-            height: '100%',
-            width: 59,
-            right: 0,
-            top: 0,
-            overflowY: 'auto',
-            zIndex: 2000002
-          }}
-        >
-          { menuVisible && this.renderMenu() }
-        </div>
+        {
+          menuVisible && (
+            <div
+              style={{
+                position: 'absolute',
+                height: '100%',
+                width: 59,
+                right: 0,
+                top: 0,
+                overflowY: 'auto',
+                zIndex: 2000002
+              }}
+            >
+              { this.renderMenu() }
+            </div>
+          )
+        }
       </div>
     );
   }
@@ -216,7 +220,7 @@ export default class ServiceFrame extends Component {
     const uuid = service && service.uuid;
     return (
       <div key={`service-frame-${uuid}`}>
-        <Resizable
+        <div
           style={
             s(t.unselectable, {
               border: 'solid 1px lightgray',
@@ -243,7 +247,7 @@ export default class ServiceFrame extends Component {
             setOpen={open => !open && this.setState({ modalReferenceService: undefined })}
             isOpen={!!modalReferenceService}
           />
-        </Resizable>
+        </div>
       </div>
     );
   }

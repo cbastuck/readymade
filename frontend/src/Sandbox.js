@@ -6,6 +6,7 @@ import queryString from 'query-string';
 import Runtime from './components/Runtime';
 import { AppConsumer } from './AppContext';
 import BoardProvider, { BoardConsumer } from './BoardContext';
+import DragProvider from './DragContext';
 import BrowserRuntime from './runtime/BrowserRuntime';
 
 export default class Sandbox extends Component {
@@ -108,22 +109,24 @@ export default class Sandbox extends Component {
               {
                 boardContext => {
                   return (
-                    <Runtime
-                      key="sandbox-scene"
-                      runtimeName="Sandbox"
-                      style={{ marginBottom: 5 }}
-                      frameless={this.state.options && this.state.options.frameless}
-                      services={this.state.createdServices}
-                      runtimeId={runtime && runtime.id}
-                      boardContext={{
-                        isRuntimeInScope: () => false,
-                        boardName: boardContext.boardName,
-                        appViewMode: boardContext.appViewMode,
-                        user: {
-                          userId: undefined,
-                        }
-                      }}
-                    />
+                    <DragProvider>
+                      <Runtime
+                        key="sandbox-scene"
+                        runtimeName="Sandbox"
+                        style={{ marginBottom: 5 }}
+                        frameless={this.state.options && this.state.options.frameless}
+                        services={this.state.createdServices}
+                        runtimeId={runtime && runtime.id}
+                        boardContext={{
+                          isRuntimeInScope: () => false,
+                          boardName: boardContext.boardName,
+                          appViewMode: boardContext.appViewMode,
+                          user: {
+                            userId: undefined,
+                          }
+                        }}
+                      />
+                    </DragProvider>
                   )
                 }
               }
