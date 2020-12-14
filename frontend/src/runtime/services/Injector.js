@@ -209,7 +209,13 @@ class InjectorUI extends Component {
   renderStructuredData = service => {
     const { initialCode } = this.state;
     return (
-      <div>
+      <div 
+        style={{ 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column' 
+        }}
+      >
         <h1
           style={{
             fontSize: 12,
@@ -217,6 +223,7 @@ class InjectorUI extends Component {
             letterSpacing: 1,
             textAlign: 'left',
             margin: '4px 0px',
+            width: '100%',
           }}
         >
           Input text below

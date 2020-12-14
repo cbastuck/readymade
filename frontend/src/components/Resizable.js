@@ -114,6 +114,7 @@ export default class Resizable extends Component {
               onMouseUp={ev => {
                 this.onEnd(ev);
                 dragContext.clearResizable();
+                ev.stopPropagation();
               }}
             >
               { children }
@@ -129,9 +130,10 @@ export default class Resizable extends Component {
                 onMouseDown={ev => {
                   this.onBegin(ev, width === undefined);
                   dragContext.setResizable(this);
+                  ev.stopPropagation();
                 }}
               >
-                <Triangle width="12" height="12"/>
+                <Triangle width="12" height="12" />
               </div>
             </div>
           )

@@ -59,7 +59,8 @@ export default class SelectorField extends Component {
                 padding: 8,
                 border: 'solid 1px #DDD',
                 borderRadius: 3,
-                width: 200,
+                width: '100%',
+                flexGrow: 3,
                 height: 33,
                 textAlign: 'left'
               }}
@@ -72,7 +73,8 @@ export default class SelectorField extends Component {
             <div
               style={{
                 textAlign: 'left',
-                textTransform: 'uppercase'
+                textTransform: 'uppercase',
+                backgroundColor: 'white'
               }}
             >
             {

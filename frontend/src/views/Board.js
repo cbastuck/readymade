@@ -76,6 +76,7 @@ export default class Board extends Component {
                 width: '100%',
               }}
             >
+            
               <Toolbar
                 onAddService={boardContext.addService}
                 onAddRuntime={boardContext.addRuntime}

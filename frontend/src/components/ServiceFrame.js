@@ -30,6 +30,11 @@ export default class ServiceFrame extends Component {
         marginLeft: 50,
       }}
       onDoubleClick={() => this.setState({ frameCollapsed: !this.state.frameCollapsed })}
+      draggable
+      onDragStart={ev => {
+        const { service } = this.props;
+        ev.dataTransfer.setData('text/plain', JSON.stringify(service));
+      }}
     >
       <Header size='small'>
         <span 
@@ -227,7 +232,7 @@ export default class ServiceFrame extends Component {
               borderRadius: 5,
               textAlign: 'center',
               backgroundColor: 'white',
-              margin: 10,
+              margin: '10px 0px',
               fontSize: 15,
               color: 'black',
             })

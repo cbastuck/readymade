@@ -69,7 +69,7 @@ export default class Editor extends Component {
     }   
 
     return (
-      <div>
+      <div style={{ height: '100%' }}>
         <div
           ref={container => {
             if (!this.root) {
@@ -78,7 +78,8 @@ export default class Editor extends Component {
                 this.root, 
                 {
                   value,
-                  language
+                  language,
+                  automaticLayout: true
                 }
               );
             }
@@ -86,8 +87,10 @@ export default class Editor extends Component {
           style={{
             border: 'solid 1px lightgray',
             textAlign: 'left',
-            height,
-            width,
+            minWidth: width,
+            minHeight: height,
+            width: '100%',
+            height: '100%',
           }}
         />
       </div>

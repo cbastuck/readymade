@@ -8,14 +8,36 @@ import {
 } from 'semantic-ui-react';
 
 import ServiceFrame from './ServiceFrame';
-import { openTab } from '../core/actions';
+import { openTab, getServiceConfiguration } from '../core/actions';
 import { createServiceUI, createPlaceholderUI } from '../UIFactory';
-
 import RemoteRuntime from '../runtime/RemoteRuntime';
 
 import { t } from '../styles';
 
 import './Runtime.css';
+
+class DropBar extends Component {
+  state = {
+    active: false
+  };
+
+  render() {
+    const { active } = this.state;
+    return (
+      <div 
+        style={{ 
+          width: 20,
+          height: '94%',
+          margin: '10px 0px',
+          borderRadius: 3,
+          background: active && 'linear-gradient(to right, #fff 0%, #fff 40%, #4183c4 50%, #fff 60%)'
+        }}
+        onDragOver={ev => this.setState({ active: true })}
+        onDragLeave={ev => this.setState({ active: false })}
+      />
+    );
+  }
+} 
 
 export default class Runtime extends Component {
   state = {
@@ -65,6 +87,9 @@ export default class Runtime extends Component {
         const parts = serviceId.split('/');
         openTab(`/service/${parts[parts.length - 1]}`);
         break;
+      }
+      case 'getConfig': {
+        return getServiceConfiguration(boardContext.boardName, service, runtime);
       }
       default: 
         console.log('Scene processing unknown service action', action);
@@ -306,7 +331,6 @@ export default class Runtime extends Component {
               display: 'flex',
               flexFlow: wrapServices  ? 'row wrap' : 'row nowrap',
               overflow: 'auto',
-              padding: !frameless && '0px 10px',
               ...readonlyStyle
             }}
             onClickCapture={e => readonly && e.stopPropagation()}
@@ -314,17 +338,23 @@ export default class Runtime extends Component {
           {
             this.state.expanded && 
             services && 
-            services.map(service => {
+            services.map((service, pos) => {
               const serviceUi = readonly ? 
                 createPlaceholderUI(service) :
                 createServiceUI(boardName, service, runtimeId, userId)
               return (
-                <ServiceFrame
+                <div 
                   key={`scene-frame-${service.uuid}`}
-                  service={service}
-                  serviceUi={serviceUi}
-                  onAction={this.onServiceAction}
-                />
+                  style={{ display: 'flex', flexDirection: 'row' }}
+                >
+                  { pos === 0 && <DropBar index={0} /> }
+                  <ServiceFrame
+                    service={service}
+                    serviceUi={serviceUi}
+                    onAction={this.onServiceAction}
+                  />
+                  <DropBar index={pos+1} />
+                </div>
               );
             })
           }

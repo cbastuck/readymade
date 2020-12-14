@@ -15,12 +15,18 @@ class DragContext extends Component {
   };
 
   render() {
-    const { resizeable } = this.state;
+    const { resizeable, clearResizable } = this.state;
     const { children, style } = this.props;
     return (
       <div 
         style={s(style, t.fill)}
         onMouseMove={ev => resizeable && resizeable.onMove(ev)}
+        onMouseUp={ev => {
+          if (resizeable) {
+            resizeable.onEnd();
+            clearResizable();
+          }
+        }}
       >
         <Provider value={this.state}>
           { children }

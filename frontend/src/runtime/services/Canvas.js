@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 
 import ServiceUI from './ServiceUI';
+import Resizable from '../../components/Resizable';
 
 const serviceId = 'hookup.to/service/canvas';
 const serviceName = 'Canvas';
@@ -497,6 +498,7 @@ class CanvasUI extends Component {
       >
       { 
         ({ service }) => (
+          <Resizable style={{ padding: 0, margin: 0 }}>
           <canvas 
             ref={canvas => this.canvas = canvas} 
             style={{
@@ -516,6 +518,7 @@ class CanvasUI extends Component {
             }}
             onClick={this.onClick.bind(this, service)}
           />
+          </Resizable>
         )
       }
       </ServiceUI>

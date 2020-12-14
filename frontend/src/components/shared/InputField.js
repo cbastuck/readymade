@@ -51,7 +51,7 @@ export default class InputField extends Component {
     return (
       <div style={{ width: '50%', flexGrow: 3, }}>
         <Input 
-          style={{ fontSize }}
+          style={{ fontSize, width: '100%', height: 33, }}
           type={type}
           value={value || ''}
           onChange={(_, { value }) => this.setState({ value })}
