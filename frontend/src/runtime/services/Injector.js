@@ -149,7 +149,14 @@ class InjectorUI extends Component {
   renderRawInput = service => {
     const { singleLineRawText, rawText } = this.state;
     return (
-      <div style={{ width: '100%' }}>
+      <div 
+        style={{ 
+          height: '100%', 
+          width: '100%', 
+          display: 'flex', 
+          flexDirection: 'column' 
+        }}
+      >
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <h1
             style={{
@@ -166,42 +173,49 @@ class InjectorUI extends Component {
                 'Enter multi row text below'
             }
           </h1>
-          <div
-            style={{
-              marginLeft: 'auto'
-            }}
-          >
+          <div style={{ marginLeft: 'auto' }}>
             <Checkbox
+              style={{ marginLeft: 10 }}
               toggle
               checked={singleLineRawText}
               onChange={(_, { checked: singleLineRawText }) => this.setState({ singleLineRawText })}
             />
           </div>
         </div>
-        { 
-          !singleLineRawText ? 
-            <TextArea 
-              style={{ 
-                width: '100%',
-                padding: 10,
-              }}
-              value={rawText}
-              onChange={(_, { value: rawText }) => this.setState({ rawText })}
-            /> : 
-            <Input 
-              style={{ width: '100%' }}
-              value={rawText}
-              onChange={(_, { value: rawText }) => this.setState({ rawText })}
-              placeholder="Enter text here"
-            />
-        }
-        <Button
-          style={this.buttonStyle}
-          onClick={() => service.inject(rawText)}
-          disabled={!rawText}
-        >
-          Inject
-        </Button>
+        <div 
+          style={{ 
+            flexGrow: 2, 
+            display: 'flex', 
+            flexDirection: 'column' 
+            }}
+          >
+          { 
+            !singleLineRawText ? 
+              <TextArea 
+                style={{
+                  flexGrow: 2,
+                  width: '100%',
+                  padding: 10,
+                  resize: 'none',
+                }}
+                value={rawText}
+                onChange={(_, { value: rawText }) => this.setState({ rawText })}
+              /> : 
+              <Input 
+                style={{ width: '100%' }}
+                value={rawText}
+                onChange={(_, { value: rawText }) => this.setState({ rawText })}
+                placeholder="Enter text here"
+              />
+          }
+          <Button
+            style={{ ...this.buttonStyle }}
+            onClick={() => service.inject(rawText)}
+            disabled={!rawText}
+          >
+            Inject
+          </Button>
+        </div>
       </div>
     );
   }

@@ -35,6 +35,8 @@ export const t = {
   mb3: { marginBottom: 3 },
   mb5: { marginBottom: 5 },
   mb10: { marginBottom: 10 },
+  mv: function(x){ return { marginTop: x, marginBottom: x }},
+  mh: function(x){ return { marginLeft: x, marginRight: x }},
 
   p: function(x, y){ return y === undefined ? { padding: x } : { padding: `${y}px ${x}px` }; },
   p2: { padding: 2 },
@@ -57,6 +59,8 @@ export const t = {
   bc: function (col) { return { backgroundColor: col }; },
   borderCol: function(col) { return { border: `solid 1px ${col}`}; },
   border: { border: 'solid 1px gray' },
+  br2: { borderRadius: 2 },
+  br3: { borderRadius: 3 },
   br5: { borderRadius: 5 },
   br10: { borderRadius: 10 },
 

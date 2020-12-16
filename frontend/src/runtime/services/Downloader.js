@@ -8,6 +8,7 @@ import { WritableStream } from "web-streams-polyfill/ponyfill";
 import StreamSaver from 'streamsaver';
 
 import ServiceUI from './ServiceUI';
+import { s, t } from '../../styles';
 
 const serviceId = 'hookup.to/service/downloader';
 const serviceName = 'Downloader';
@@ -35,28 +36,32 @@ class DownloaderUI extends Component {
   onClose = service => {
     if (service) {
       service.onClose();
-      service.configure({ autosense: false });
+      // service.configure({ autosense: false });
     }
   }
 
   renderMain = service => (
-    <div style={{ margin: "10px 0px" }}>
-      <div style={{ textAlign: 'left', margin: '0px 10px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+      <div style={s(t.uc, t.ls1, t.fs12)}>
         Filename
       </div>
-      <div style={{ margin: 10 }}>
+      <div style={t.mt3}>
         <Input
+          style={s(t.w100, { margin: 0 })}
           value={this.state.filename || service.filename}
           onChange={(_, { value }) => this.setState({ filename: value })}
           onKeyUp={ev => ev.key === 'Enter' && service.configure({ filename: this.state.filename, autosense: true })}
         />
       </div>
-      <Button
-        disabled={!this.state.running}
-        onClick={() => this.onClose(service)}
-      >
-        Close
-      </Button>
+      <div style={t.mt3}>
+        <Button
+          style={s(t.uc, t.ls1, t.fs11, t.w100)}
+          disabled={!this.state.running}
+          onClick={() => this.onClose(service)}
+        >
+          Close
+        </Button>
+      </div>
     </div>
   );
 
@@ -88,15 +93,18 @@ class Downloader {
   }
 
   configure(config) {
-    if (config.filename !== undefined) {
-      this.openDestination(config.filename);
+    const { filename, autosense } = config;
+    if (filename !== undefined) {
+      this.openDestination(filename);
     }
-    if (config.autosense !== undefined) {
-      this.autosense = config.autosense;
+
+    if (autosense !== undefined) {
+      this.autosense = autosense;
     }
   }
 
   openDestination(filename) {
+    console.log('Opening destination')
     this.onClose();
     this.filename = filename;
     this._fileStream = StreamSaver.createWriteStream(filename);
@@ -126,13 +134,14 @@ class Downloader {
   }
 
   async process(params) {
+    console.log('PROCESSING', params)
     if (!this.isOpen()) {
       if (!this.autosense) {
         return params;
-      } else {
-        this.openDestination(this.filename)
-      }
+      } 
+      this.openDestination(this.filename);
     }
+    console.log('pumping')
     const blob = (params instanceof Blob) ? params : new Blob([JSON.stringify(params)]);
     const readableStream = blob.stream();
     const reader = readableStream.getReader();

@@ -33,20 +33,25 @@ class AudioInputUI extends Component {
     }
   }
 
-  onTimer = service => {
+  onNotification = (service, notification) => {
+    const { 
+      isRecording=this.state.recording, 
+      timeslice=this.state.timeslice,
+    } = notification;
+
     this.setState({ 
-      recording: service.isRecording,
-      timeslice: service.timeslice,
+      recording: isRecording,
+      timeslice: timeslice,
     });
   }
 
   renderDevices = service => {
+    const { devices=[] } = this.state;
     return (
       <div>
         <ol>
         { 
-          this.state.devices
-            .filter(device => device.kind === 'audioinput')
+          devices.filter(device => device.kind === 'audioinput')
             .map((device, idx) => (
             <li 
               key={`device-${idx}`}
@@ -78,9 +83,11 @@ class AudioInputUI extends Component {
   }
 
   renderMain = service => {
-    const buttonStyle = {
+     const buttonStyle = {
       textTransform: 'uppercase', 
       fontSize: 12,
+      marginTop: 2,
+      marginBottom: 2,
     };
     const onStartRecording = () => {
       service.startRecorder();
@@ -94,7 +101,10 @@ class AudioInputUI extends Component {
       <div
         style={{
           margin: '0px 5px',
-          textAlign: 'left'
+          textAlign: 'left',
+          display: 'flex',
+          flexDirection: 'column',
+          width: '100%',
         }}
       >
         <div>
@@ -123,7 +133,7 @@ class AudioInputUI extends Component {
           />
         </div>
         <HoldableButton
-          style={s(t.w100, t.uc, t.ls1, t.bc('#e0e1e2'), t.p5, t.tc, t.fs11)}
+          style={s(t.uc, t.ls1, t.bc('#e0e1e2'), t.p5, t.tc, t.fs11, t.br3)}
           onDown={onStartRecording}
           onUp={onStopRecording}
         >
@@ -131,7 +141,7 @@ class AudioInputUI extends Component {
         </HoldableButton>
         <div
           style={{
-            marginTop: 5,
+            marginTop: 1,
             display: 'flex',
             flexDirection: 'row'
           }}
@@ -229,7 +239,7 @@ class AudioInputUI extends Component {
       <ServiceUI
         {...this.props} 
         onInit={this.onInit.bind(this)}
-        onTimer={this.onTimer.bind(this)}
+        onNotification={this.onNotification.bind(this)}
         segments={[
           { name: 'Main', render: this.renderMain },
           { name: 'Devices', render: this.renderDevices },
@@ -261,6 +271,7 @@ class AudioInput {
 
     if (timeslice !== undefined) {
       this.timeslice = timeslice;
+      this.app.notify(this, { timeslice });
     }
 
     if (device !== undefined) {
@@ -300,6 +311,7 @@ class AudioInput {
       }
       this.recorder.start(timeslice);
       this.isRecording = true;
+      this.app.notify(this, { isRecording: true });
     } catch (err) {
       console.error('AudioInput error', err);
     }
@@ -311,6 +323,7 @@ class AudioInput {
       //this.stream.getAudioTracks()[0].stop();
       //this.stream = this.recorder = undefined;
       this.isRecording = false;
+      this.app.notify(this, { isRecording: false });
     }
   }
 

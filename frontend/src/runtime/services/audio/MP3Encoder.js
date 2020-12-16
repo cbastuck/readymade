@@ -40,7 +40,7 @@ class Encoder {
       encoder.encodeBuffer(samples),
       encoder.flush()
     ];
-    return this.app.next(this, new Blob(mp3Data, { type: 'audio/mp3' }));
+    return new Blob(mp3Data, { type: 'audio/mp3' });
   }
 }
 
