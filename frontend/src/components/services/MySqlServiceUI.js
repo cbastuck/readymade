@@ -223,7 +223,7 @@ export default class MySqlServiceUI extends Component {
     const panes = [
       { menuItem: 'Connection', render: () => <Tab.Pane>{this.renderConnectionTab()}</Tab.Pane> },
       { menuItem: 'Query', render: () => <Tab.Pane>{this.renderQueryTab()}</Tab.Pane> },
-    ]
+    ];
     return (
       <div>
         <Tab
