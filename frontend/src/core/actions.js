@@ -85,6 +85,18 @@ export function importBoard(board, data) {
   return request(`board/${board}/import`, 'POST', true, data);
 }
 
+export function shareBoard(board, data) {
+  return request(`share/${board}`, 'POST', true, data);
+}
+
+export function getShares(board) {
+  return request(`share/${board}`, 'GET', true);
+}
+
+export function removeShare(board, share) {
+  return request(`share/${board}`, 'DELETE', false, share);
+}
+
 export function redirectUri() {
   return `${window.location.protocol}//${window.location.host}/auth2app`;
 }

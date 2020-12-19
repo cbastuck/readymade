@@ -111,7 +111,7 @@ export default class HeaderMenu extends Component {
           </Dropdown.Item>
           <Dropdown.Item
             onClick={() => this.onAction({
-              type: 'showQRCode',
+              type: 'shareBoard',
             })}
             disabled={!board}
           >

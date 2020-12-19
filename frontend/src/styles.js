@@ -4,6 +4,7 @@ export function s() {
 
 export const t = {
   uc: { textTransform: 'uppercase' },
+  nc: { textTransform: 'none' },
   ul: { textDecoration: 'underline' },
   ls1: { letterSpacing: 1 },
   lh1_5: { lineHeight: 1.5 },

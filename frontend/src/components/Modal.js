@@ -43,7 +43,10 @@ export default class ModalDialog extends Component {
         >
           {title}
         </Modal.Header>
-        <Modal.Content scrolling>
+        <Modal.Content 
+          style={{ height: '100%' }}
+          scrolling 
+        >
           { 
             component ? 
               component : 
@@ -59,15 +62,19 @@ export default class ModalDialog extends Component {
           }
         </Modal.Content>
         <Modal.Actions>
-          <Button 
-            style={buttonStyle}
-            onClick={() => {
-              openTab(url);
-              setOpen(false);
-            }}
-          >
-            Open in Tab
-          </Button>
+          { 
+            url && (
+              <Button 
+                style={buttonStyle}
+                onClick={() => {
+                  openTab(url);
+                  setOpen(false);
+                }}
+              >
+                Open in Tab
+              </Button>
+            )
+          }
           <Button
             content="Close"
             onClick={() => setOpen(false)}

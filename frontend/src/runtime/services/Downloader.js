@@ -134,14 +134,12 @@ class Downloader {
   }
 
   async process(params) {
-    console.log('PROCESSING', params)
     if (!this.isOpen()) {
       if (!this.autosense) {
         return params;
       } 
       this.openDestination(this.filename);
     }
-    console.log('pumping')
     const blob = (params instanceof Blob) ? params : new Blob([JSON.stringify(params)]);
     const readableStream = blob.stream();
     const reader = readableStream.getReader();

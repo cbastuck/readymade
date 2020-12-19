@@ -2,14 +2,20 @@ import React, { Component } from 'react';
 import { Tab, Menu } from 'semantic-ui-react'
 
 import Login from './Login';
+import Modal from '../components/Modal';
 import Runtime from '../components/Runtime';
 import Toolbar from '../components/Toolbar';
+import Share from '../components/Share';
 import { BoardConsumer } from '../BoardContext';
 import DragProvider from '../DragContext';
 
 import { s, t } from '../styles';
 
 export default class Board extends Component {
+  state = {
+    showShareDialog: false,
+  };
+
   renderRutimesStarTopology = (boardContext, centerId) => {
     const panes = boardContext.runtimes
       .filter(rt => rt.id !== centerId)
@@ -64,8 +70,21 @@ export default class Board extends Component {
     );
   }
 
+  onAction = (boardContext, action) => {
+    const { type } = action;
+    switch (type) {
+      case 'shareBoard':
+        this.setState({ showShareDialog: true });
+        break;
+      default:
+        boardContext.onAction(action);
+        break;
+    }
+  }
+
   render() {
     const { appContext } = this.props;
+    const { showShareDialog } = this.state;
     return (
       <BoardConsumer>
         {
@@ -80,7 +99,7 @@ export default class Board extends Component {
               <Toolbar
                 onAddService={boardContext.addService}
                 onAddRuntime={boardContext.addRuntime}
-                onAction={boardContext.onAction}
+                onAction={this.onAction.bind(this, boardContext)}
                 board={boardContext.boardName}
                 savedBoards={boardContext.savedBoards}
                 registry={boardContext.registry}
@@ -98,6 +117,12 @@ export default class Board extends Component {
                 boardContext.runtimes && 
                 this.renderRuntimes(boardContext)
               }
+              <Modal
+                title="Share Board with User"
+                component={<Share board={boardContext.boardName} />}
+                setOpen={isOpen => this.setState({ showShareDialog: isOpen })}
+                isOpen={showShareDialog}
+              />
             </DragProvider>
           )
         }

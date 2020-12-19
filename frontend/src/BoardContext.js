@@ -260,9 +260,14 @@ class BoardContext extends Component {
         return exists.services; // we already created it 
       }
       const createdBrowserServices = [];
+      const params = { 
+        ...runtime.params, 
+        board: this.state.boardName, 
+        user: this.state.user 
+      };
       const browserRuntime = await BrowserRuntime.createInstance(
         runtime,
-        { board: this.state.boardName, user: this.state.user },
+        params,
       ); 
       this.browserRuntimes.push(browserRuntime);
       browserRuntime.connect(localBoardRuntimeId);

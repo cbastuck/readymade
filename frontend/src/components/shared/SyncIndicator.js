@@ -16,7 +16,6 @@ export default class SyncIndicator extends Component {
       <div
         style={{
           width: labelWidth,
-          // paddingTop: 10,
           height: labelHeight,
         }}
       >

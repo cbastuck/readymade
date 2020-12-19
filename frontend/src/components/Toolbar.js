@@ -2,18 +2,20 @@ import React, { Component } from 'react';
 
 import HeaderMenu from './HeaderMenu';
 
-import QR from './QR';
 import {
   clearBoard,
 } from '../core/actions';
 
 export default class Toolbar extends Component {
-  state = {
-    qrCodeVisible: false
-  };
-
   render() {
-    const { board, savedBoards, onAddService, onAddRuntime} = this.props;
+    const { 
+      board, 
+      savedBoards, 
+      onAddService, 
+      onAddRuntime,
+      registry,
+      onAction
+    } = this.props;
     return (
       <div
         style={{
@@ -24,16 +26,13 @@ export default class Toolbar extends Component {
       >
         <HeaderMenu
           board={board}
-          registry={this.props.registry}
+          registry={registry}
           addService={onAddService}
           addRuntime={onAddRuntime}
           savedBoards={savedBoards}
           onAction={async action => {
-            const { onAction } = this.props;
             if (onAction) {
               switch (action.type) {
-                case 'showQRCode':
-                  return this.setState({ qrCodeVisible: true });
                 case 'clearBoard':
                   await clearBoard(board);
                   return onAction(action);
@@ -43,13 +42,6 @@ export default class Toolbar extends Component {
             }
           }}
         />
-        {
-          this.state.qrCodeVisible && (
-            <QR
-              onClick={() => this.setState({ qrCodeVisible: false })}
-            />
-          )
-        }
       </div>
     );
   }

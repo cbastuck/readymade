@@ -11,16 +11,20 @@ export default class InputField extends Component {
   };
 
   componentDidMount() {
-    const { value } = this.props;
-    this.setState({ 
-      value,
-    });
+    const { value, synced=true } = this.props;
+    if (synced) {
+      this.setState({ 
+        value,
+      });
+    }
   }
 
   componentDidUpdate(prevProps) {
-    const { value } = this.props;
-    if (value !== prevProps.value) {
-      this.setState({ value });
+    const { value, synced=true } = this.props;
+    if (synced) {
+      if (value !== prevProps.value) {
+        this.setState({ value });
+      }
     }
   }
 
@@ -40,7 +44,7 @@ export default class InputField extends Component {
     );
   }
 
-  renderInputType = (value, type, fontSize) => {
+  renderInputType = (value, type, fontSize, synced) => {
     const {
       disabled,
       unit,
@@ -54,7 +58,7 @@ export default class InputField extends Component {
           style={{ fontSize, width: '100%', height: 33, }}
           type={type}
           value={value || ''}
-          onChange={(_, { value }) => this.setState({ value })}
+          onChange={(ev, { value }) => synced ? this.setState({ value }) : onChange(ev, { value })}
           onKeyUp={ev => {
             switch(ev.key) {
               case 'Enter':
@@ -88,9 +92,10 @@ export default class InputField extends Component {
       value: syncedValue,
       onChange = () => {}, 
       onLabelClicked = () => {},
+      synced = true,
     } = this.props;
-    const { value } = this.state;
-    const inSync = value === syncedValue;
+    const value = synced ? this.state.value : syncedValue;
+    const inSync = synced ? (value === syncedValue) : true;
     const fontSize = 11;
     return (
       <div 
@@ -101,19 +106,19 @@ export default class InputField extends Component {
           margin: '2px 0px',
           ...style, 
         }}
-      >
+      >  
         <SyncIndicator 
           onClick={ev => inSync ? 
             onLabelClicked(ev, { value }) : 
             onChange(ev, { value })
           }
-          inSync={inSync}
+          inSync={synced ? inSync : true}
           label={label}
           style={{ ...labelStyle, fontSize }}
         />
         {
           type !== 'checkbox' ? 
-            this.renderInputType(value, type, fontSize + 1) : 
+            this.renderInputType(value, type, fontSize + 1, synced) : 
             this.renderCheckboxType(syncedValue)
         }
       </div>

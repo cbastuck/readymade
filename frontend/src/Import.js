@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Redirect } from 'react-router-dom';
 import queryString from 'query-string';
 
+import { AppConsumer } from './AppContext';
 import BoardContext from './BoardContext';
 import BrowserRuntime from './runtime/BrowserRuntime';
 import {
@@ -12,11 +13,12 @@ import {
 export default class Import extends Component {
   state = { board: undefined };
   
-  componentDidMount() {
-    this.doImport();
-  }
+  doImport = async context => {
+    if (this.isImporting) {
+      return;
+    }
+    this.isImporting = true;
 
-  async doImport() {
     const { location } = this.props;
     const values = queryString.parse(location.search);
     const { src, board } = values;
@@ -35,8 +37,10 @@ export default class Import extends Component {
           // browser runtime which assumes ownership
           // POST/PUT endpoint to set the registry for an existing runtime
           if (!rt.params.registry) {
-            rt.params.registry = await BrowserRuntime.registry();
+            const { bundles=[] } = rt.params;
+            rt.params.registry = await BrowserRuntime.registry(context.user, bundles);
           }
+          
           if (rt.params.leaveOwnership !== true) {
             BoardContext.registerBrowserRuntime(board, rt.id);
           }
@@ -44,14 +48,27 @@ export default class Import extends Component {
       }
       await clearBoard(board);
       await loadBoard(board, data);
-      this.setState({ board });
+      this.setState(
+        { board },
+        () => this.isImporting = false
+      );
     }
   }
 
   render() {
-    if (!this.state.board) {
-      return false;
+    const { board } = this.state;
+    if (!board) {
+      return (
+        <AppConsumer>
+          {
+            context => {
+              this.doImport(context);
+              return false;
+            }
+          }
+        </AppConsumer>
+      )
     }
-    return <Redirect to={`/${this.state.board}`} />;
+    return <Redirect to={`/${board}`} />;
   }
 }

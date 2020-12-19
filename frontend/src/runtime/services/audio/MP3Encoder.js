@@ -31,16 +31,19 @@ class Encoder {
     });
   }
 
-  async process(blob) {
-    const ab = await this.toArrayBuffer(blob);
-    const header = WavHeader.readHeader(new DataView(ab));
-    const encoder = new Mp3Encoder(header.channels, header.sampleRate, this.bitrate);
-    const samples = new Int16Array(ab, header.dataOffset, header.dataLen / 2);
-    const mp3Data = [
-      encoder.encodeBuffer(samples),
-      encoder.flush()
-    ];
-    return new Blob(mp3Data, { type: 'audio/mp3' });
+  async process(params) {
+    if (params instanceof Blob) {
+      const ab = await this.toArrayBuffer(params);
+      const header = WavHeader.readHeader(new DataView(ab));
+      const encoder = new Mp3Encoder(header.channels, header.sampleRate, this.bitrate);
+      const samples = new Int16Array(ab, header.dataOffset, header.dataLen / 2);
+      const mp3Data = [
+        encoder.encodeBuffer(samples),
+        encoder.flush()
+      ];
+      return new Blob(mp3Data, { type: 'audio/mp3' });
+    }
+    return params;
   }
 }
 
