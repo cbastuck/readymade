@@ -28,6 +28,7 @@ import DataModelReferenceView from './views/DataModelReferenceView';
 import BoardProvider from './BoardContext';
 import Sandbox from './Sandbox';
 import Import from './Import';
+import Join from './Join';
 import ServiceRedirect from './views/ServiceRedirect';
 import MessageReceiver from './MessageReceiver';
 
@@ -87,6 +88,7 @@ class App extends Component {
               <Route path="/docs/runtime" component={RuntimeDocumentation} />
               <Route path="/docs" component={Quickstart} />
               <Route path="/serviceRedirect" component={ServiceRedirect} />
+              <Route path="/join/:share" component={Join} />
               <Route path="/:board" component={BoardWithContext} />
             </Switch>
           </div>

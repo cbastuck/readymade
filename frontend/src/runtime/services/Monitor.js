@@ -48,15 +48,16 @@ class MonitorUI extends Component {
               />
               <div>
                 <Checkbox
-                  style={s(t.uc, t.fs12)}
+                  style={s(t.uc, t.fs12, t.m(0, 3))}
                   label="active"
                   checked={this.state.enabled}
                   onChange={(_, { checked: enabled }) => 
-                  this.setState(
-                    { enabled }, 
-                    () => service.configure({ enabled })
-                  )
+                    this.setState(
+                      { enabled }, 
+                      () => service.configure({ enabled })
+                    )
                   }
+                  toggle
                 />
               </div>
             </div> 

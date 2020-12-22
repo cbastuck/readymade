@@ -54,8 +54,9 @@ export default class Board extends Component {
     const { type, centerId } = board.topology || {};
     if (type === 'star') {
       return this.renderRutimesStarTopology(boardContext, centerId);
-    } 
-    return boardContext.runtimes.map(runtime => this.renderRuntime(boardContext, runtime));
+    }
+    return boardContext.runtimes && 
+           boardContext.runtimes.map(runtime => this.renderRuntime(boardContext, runtime));
   }
 
   renderRuntime = (boardContext, runtime) => {

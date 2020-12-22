@@ -182,7 +182,6 @@ export default class BrowserRuntime {
     this.websocket.onerror = function(error) {
       console.error(`WebSocket ${this.id} Error: `, error);
     };
-
     this.websocket.onopen = event => {
       logInfo(`WebSocket to ${this.id} is open`);
     }

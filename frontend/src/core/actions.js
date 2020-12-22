@@ -1,8 +1,23 @@
+import qs from 'querystring';
+
 import {
   removeToken,
   restoreToken
 } from './Auth';
 import { serializeObject } from './format';
+
+export function generateQueryParams() {
+  const { search='' } = window.location;
+  const parsed = qs.parse(search.substr(1));
+  if (!parsed) {
+    return;
+  }
+  const shareId = parsed.share;
+  if (!shareId) {
+    return;
+  }
+  return `?share=${shareId}`;
+}
 
 export async function request(path, method='GET', parseJSON=true, body=undefined) {
   const { 
@@ -16,7 +31,10 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
   if (contentType && contentType !== 'multipart/form-data') {
     headers['Content-Type'] = contentType;
   }
-  const response = await fetch(`/api/${path}`, {
+
+  const queryParams = ''; //(method === 'GET') && generateQueryParams();
+  const url = `/api/${path}${queryParams ? queryParams : ''}`;
+  const response = await fetch(url, {
     method,
     headers,
     body: serialisedBody,
@@ -26,18 +44,20 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
     removeToken();
     return;
   }
-  if (parseJSON) {
+  if (parseJSON && response.ok) {
     return response.json();
   }
   return response;
 }
 
 export function getBoard(board) {
-  return request(`board/${board}`);
+  return request(`board/${board}`)
+    .then(res => (res && res.status === 404) ? [] : res);
 }
 
 export function getRuntimes(board) {
-  return request(`board/${board}/runtimes`);
+  return request(`board/${board}/runtimes`)
+    .then(res => (res && res.status === 404) ? [] : res);
 }
 
 export function addRuntime(board, descriptor) {
@@ -45,7 +65,8 @@ export function addRuntime(board, descriptor) {
 }
 
 export function getServices(board, runtime) {
-  return request(`board/${board}/runtime/${runtime}/services`);
+  return request(`board/${board}/runtime/${runtime}/services`)
+    .then(res => (res && res.status === 404) ? [] : res);
 }
 
 export function addService(board, descriptor) {
@@ -95,6 +116,10 @@ export function getShares(board) {
 
 export function removeShare(board, share) {
   return request(`share/${board}`, 'DELETE', false, share);
+}
+
+export function joinBoard(shareId, connectedBoardname) {
+  return request(`join/${shareId}`, 'POST', false, { targetBoard: connectedBoardname });
 }
 
 export function redirectUri() {

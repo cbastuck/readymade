@@ -99,8 +99,10 @@ class BoardContext extends Component {
 
   fetchBoard = async () => {
     const boardname = this.getBoardName();
-    const board = await getBoard(boardname);      
-    this.setState({ board });
+    if (boardname) {
+      const board = await getBoard(boardname);      
+      this.setState({ board });
+    }
   }
 
   fetchRuntimes = async () => {

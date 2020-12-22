@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
-import { Button, Tab, Menu, Card, } from 'semantic-ui-react';
+import { Button, Tab, Menu, Card, Icon } from 'semantic-ui-react';
 
 import InputField from './shared/InputField';
 import { shareBoard, getShares, removeShare } from '../core/actions';
 import QR from './QR';
-import { s, t} from '../styles';
+import { s, t } from '../styles';
 
 export default class Share extends Component {
   state = {
@@ -12,6 +12,8 @@ export default class Share extends Component {
     shareUrl: '',
     shares: [],
   };
+
+  inputs = {};
 
   emailValidation = /^\S+@\S+\.\S+$/;
 
@@ -26,7 +28,7 @@ export default class Share extends Component {
   }
 
   makeShareUrl = id => {
-    return `${window.location.href}?share=${id}`;
+    return `${window.location.protocol}//${window.location.host}/join/${id}`;
   }
 
   onShare = async () => {
@@ -45,12 +47,42 @@ export default class Share extends Component {
     return email && email.match(this.emailValidation);
   }
 
+  renderShareLink = url => {
+    return (
+      <div
+        style={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'row'
+        }}
+      >
+        <div style={s(t.w100) }>
+          <input
+            ref={input => this.inputs[url] = input} 
+            style={s(t.w100, t.fs14, { border: 'none' }, { color: '#4183c4'})}
+            type="text" 
+            value={url}
+          /> 
+        </div>
+        <div style={t.m(5, 0)}>
+          <Icon 
+            name="copy"
+            onClick={() => {
+              this.inputs[url].select();
+              document.execCommand('copy');
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   renderShareCard = (share, url) => {
     const { board } = this.props; 
     return (
       <Card 
         key={`share-${url}`}
-        style={s(t.nc, t.m5)}
+        style={s(t.nc, t.m5, { overflowX: 'auto', minWidth: 350 })}
       >
         <Card.Content>
           <Card.Header 
@@ -59,7 +91,7 @@ export default class Share extends Component {
             {share.email}
           </Card.Header>
           <Card.Description>
-            <a href={url}>{ url }</a>
+            { this.renderShareLink(url) }
           </Card.Description>
         </Card.Content>
         <Card.Content extra>
@@ -148,8 +180,8 @@ export default class Share extends Component {
               via the following link:
               <div style={s.m10}>
                 <QR url={shareUrl} />
-                <div style={t.nc}>
-                  <a href={shareUrl}>{shareUrl}</a>
+                <div style={s(t.nc, { width: '50%', margin: 'auto' })}>
+                  { this.renderShareLink(shareUrl) }
                 </div>
               </div>
             </div>

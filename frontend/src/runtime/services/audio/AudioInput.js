@@ -85,7 +85,7 @@ class AudioInputUI extends Component {
   renderMain = service => {
      const buttonStyle = {
       textTransform: 'uppercase', 
-      fontSize: 12,
+      fontSize: 11,
       marginTop: 2,
       marginBottom: 2,
     };
@@ -122,7 +122,7 @@ class AudioInputUI extends Component {
         <div style={{ margin: '5px 0px' }}>
           <Checkbox 
             style={s(t.uc, t.fs11, t.ls1)}
-            label="Visualize" 
+            label="Visualize"
             checked={this.state.visualize}
              onChange={async (_, { checked }) => {
                 this.setState(
@@ -130,6 +130,7 @@ class AudioInputUI extends Component {
                   () => this.visualize(service.stream)
                 );
              }}
+            toggle
           />
         </div>
         <HoldableButton
