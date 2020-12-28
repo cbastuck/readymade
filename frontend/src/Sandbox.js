@@ -4,7 +4,6 @@ import uuid from 'uuid';
 import queryString from 'query-string';
 
 import Runtime from './components/Runtime';
-import { AppConsumer } from './AppContext';
 import BoardProvider, { BoardConsumer } from './BoardContext';
 import DragProvider from './DragContext';
 import BrowserRuntime from './runtime/BrowserRuntime';
@@ -19,21 +18,35 @@ export default class Sandbox extends Component {
   };
 
   componentDidMount() {
-    const { location } = this.props;
-    const values = location ? 
-      queryString.parse(location.search) :
-      this.props;
-    const { src, data, frameless='false' } = values;
-    if (src) {
-      this.fetchData(src);
+    const { location, runtime } = this.props;
+    if (runtime) {
+      this.setState({ 
+        runtime, 
+        createdServices: runtime.services,
+        frameless: false,
+      })
+    } else {
+      const values = location ? 
+        queryString.parse(location.search) :
+        this.props;
+
+      const { 
+        src, 
+        data, 
+        frameless='false',
+      } = values;
+
+      if (src) {
+        this.fetchDataAndCreateRuntime(src);
+      } else if (data) {
+        const d = typeof data === 'string' ? JSON.parse(data) : data;
+        this.readDataAndCreateRuntime(d);
+      }
       this.setState({ 
         options: {
-          frameless: frameless === 'true'
+          frameless: frameless === 'true' || frameless === true
         }
       });
-    } else if (data) {
-      const d = typeof data === 'string' ? JSON.parse(data) : data;
-      this.processData(d);
     }
   }
 
@@ -47,42 +60,64 @@ export default class Sandbox extends Component {
     }
   }
 
-  fetchData = async src => {
+  fetchDataAndCreateRuntime = async src => {
     const response = await fetch(src);
-    const data = await response.json();
-    return this.processData(data);
-  }
-
-  processData = async data => {
-    const runtimesInData = Object.keys(data);
-    const browserRuntimeIds = runtimesInData.filter(runtimeId => data[runtimeId].type === 'browser');
-    const firstBrowserRuntimeId = browserRuntimeIds[0];
-    if (firstBrowserRuntimeId) {
-      const firstBrowserRuntimeData = data[firstBrowserRuntimeId];
-      if (firstBrowserRuntimeData && firstBrowserRuntimeData.services) {
-        // add an uuid to each service if this is not present
-        firstBrowserRuntimeData.services.map(s => {
-          if (!s.uuid) {
-            s.uuid = uuid.v4();
-          }
-          return s;
-        })
-
-        firstBrowserRuntimeData.id = firstBrowserRuntimeId;
-      }
-      const { runtime, createdServices } = await this.createBrowserRuntime(firstBrowserRuntimeData, firstBrowserRuntimeData.bundles);
-      if (runtime) {
-        this.setState({ runtime, createdServices });
-      }
-      return firstBrowserRuntimeData;
+    try {
+      const data = await response.json();
+      return this.readDataAndCreateRuntime(data);
+    } catch (err) {
+      console.error('Fetched data is not valid JSON document', src, err);
     }
   }
 
+  extractRuntimeData = data => {
+    if (data.id && data.services) {
+      return data;
+    }
+
+    const runtimesInData = Object.keys(data);
+    const browserRuntimeIds = runtimesInData.filter(runtimeId => data[runtimeId].type === 'browser');
+    const firstBrowserRuntimeId = browserRuntimeIds[0];
+    if (!firstBrowserRuntimeId) {
+      return;
+    }
+
+    const firstBrowserRuntimeData = data[firstBrowserRuntimeId];
+    if (!firstBrowserRuntimeData || !firstBrowserRuntimeData.services) {
+      return;
+    }
+
+    firstBrowserRuntimeData.id = firstBrowserRuntimeId;
+    return firstBrowserRuntimeData;
+  }
+
+  readDataAndCreateRuntime = async data => {
+    const firstBrowserRuntimeData = this.extractRuntimeData(data);
+    if (!firstBrowserRuntimeData) {
+      return;
+    }
+
+    // add an uuid to each service if this is not present
+    firstBrowserRuntimeData.services.map(s => {
+      if (!s.uuid) {
+        s.uuid = uuid.v4();
+      }
+      return s;
+    });
+      
+    const { runtime, createdServices } = await this.createBrowserRuntime(firstBrowserRuntimeData, firstBrowserRuntimeData.bundles);
+    if (runtime) {
+      this.setState({ runtime, createdServices });
+    }
+    return firstBrowserRuntimeData;
+  }
+
   createBrowserRuntime = async (backendData, bundles) => {
+    const { onResult = (uuid, result) => {} } = this.props;
     const runtime = await BrowserRuntime.createInstance({ 
         id: `${backendData.id}-public`, 
         name: `${backendData.name}-public`,
-        sendResult: (uuid, result) => { /*console.log('SENDING RESULT', result)*/ }
+        sendResult: onResult,
       },
       { bundles }
     );
@@ -94,46 +129,55 @@ export default class Sandbox extends Component {
     return { runtime, createdServices };
   }
 
-  render() {
-    const { runtime } = this.state;
+  renderSandbox = boardContext => {
+    const {
+      runtime,
+      options,
+      createdServices,
+    } = this.state;
+
+    const runtimeId = runtime ? runtime.id : 'anonymousRuntime';
     return (
-      <AppConsumer>
-      {
-        appContext => 
-          <BoardProvider 
-            boardName="Sandbox"
-            fetchData={false}
-            getCurrentBrowserRuntime={_ => this.state.runtime}
-          >
-            <BoardConsumer>
-              {
-                boardContext => {
-                  return (
-                    <DragProvider>
-                      <Runtime
-                        key="sandbox-scene"
-                        runtimeName="Sandbox"
-                        style={{ marginBottom: 5 }}
-                        frameless={this.state.options && this.state.options.frameless}
-                        services={this.state.createdServices}
-                        runtimeId={runtime && runtime.id}
-                        boardContext={{
-                          isRuntimeInScope: () => false,
-                          boardName: boardContext.boardName,
-                          appViewMode: boardContext.appViewMode,
-                          user: {
-                            userId: undefined,
-                          }
-                        }}
-                      />
-                    </DragProvider>
-                  )
-                }
-              }
-            </BoardConsumer>
-          </BoardProvider>
-      }
-      </AppConsumer>
-    )
+      <DragProvider key={`sandbox-drag-provider-${runtimeId}`}>
+        <Runtime
+          runtimeName="Sandbox"
+          style={{ marginBottom: 5 }}
+          frameless={options && options.frameless}
+          services={createdServices}
+          runtimeId={runtimeId}
+          boardContext={boardContext}
+        />
+      </DragProvider>
+    );
+  }
+
+  render() {
+    const { 
+      boardContext,
+      boardName='Sandbox',
+    } = this.props;
+
+    const { runtime } = this.state;
+
+    return boardContext ? 
+      this.renderSandbox(boardContext) : 
+      (
+        <BoardProvider
+          key={runtime && runtime.id}
+          boardName={boardName}
+          fetchData={false}
+          getCurrentBrowserRuntime={_ => runtime}
+        >
+          <BoardConsumer>
+            { 
+              boardContext => 
+                this.renderSandbox({
+                  ...boardContext, 
+                  isRuntimeInScope: () => false 
+                })
+            }
+          </BoardConsumer>
+        </BoardProvider>
+      )
   }
 }

@@ -73,7 +73,7 @@ export default class HeaderMenu extends Component {
     );
   }
 
-  renderBoardMenu(board, savedBoards) {
+  renderBoardMenu(board) {
     const menuItemStyle= { 
       fontSize: 10, 
       textTransform: 'uppercase',
@@ -122,12 +122,9 @@ export default class HeaderMenu extends Component {
     );
   }
 
-  renderRuntimeMenu(registry, boardContext) {
+  renderRuntimeMenu(availableRuntimes, boardContext) {
     const wideViewMode = boardContext.appViewMode === 'wide';
-    const options = [
-      { name: 'browser', args: 'browser' },
-      { name: 'hookup', args: 'node, Hookup' },
-    ].map(o => ({ key: o.name, value: o.args, text: o.name }));
+    const options = availableRuntimes.map(o => ({ key: o.name, value: o.args, text: o.name }));
     return (
       <div
         id="runtime-dropdown"
@@ -154,44 +151,6 @@ export default class HeaderMenu extends Component {
     );
   }
 
-
-  renderRuntimeMenu_(registry, boardContext) {
-    const menuItemStyle = {
-      fontSize: 11,
-      letterSpacing: 1,
-      textTransform: 'uppercase',
-    };
-    return (
-      <Dropdown
-        text="Add Runtime"
-        search
-        pointing
-        className='link item selection'
-        onSearchChange={e => console.log('search', e.target.value)}
-        style={{ 
-          fontSize: 12,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-        }}
-      >
-      {
-        <Dropdown.Menu>
-          <Dropdown.Item
-            onClick={() => this.props.addRuntime('node', 'Hookup')}
-          >
-            <span style={menuItemStyle}>Hookup</span>
-          </Dropdown.Item>
-          <Dropdown.Item
-            onClick={() => this.props.addRuntime('browser')}
-          >
-            <span style={menuItemStyle}>Browser</span>
-          </Dropdown.Item>
-        </Dropdown.Menu>
-      }
-      </Dropdown>
-    );
-  }
-
   renderAccountMenu(appContext) {
     return (
       <AccountDropdown
@@ -208,7 +167,10 @@ export default class HeaderMenu extends Component {
   }
 
   render() {
-    const { registry, board, savedBoards } = this.props;
+    const { 
+      availableRuntimes, 
+      board, 
+    } = this.props;
     return (
       <AppConsumer>
         {
@@ -224,13 +186,13 @@ export default class HeaderMenu extends Component {
                   >
                     { this.renderHomeIcon() }
                     {
-                      appContext.user && this.renderBoardMenu(board, savedBoards)
+                      appContext.user && this.renderBoardMenu(board)
                     }
                     {
-                      registry && this.renderRuntimeMenu(registry, boardContext)
+                      availableRuntimes && this.renderRuntimeMenu(availableRuntimes, boardContext)
                     }
                     { 
-                      (!registry || (boardContext.appViewMode === 'wide')) && 
+                      (!availableRuntimes || (boardContext.appViewMode === 'wide')) && 
                         this.renderNavigation(appContext)
                     }
                     {

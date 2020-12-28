@@ -330,8 +330,7 @@ export default class Examples extends Component {
               {
                 boardContext => (
                   <div style={t.h100}>
-                    <Toolbar 
-                      savedBoards={boardContext.savedBoards}
+                    <Toolbar
                       onAction={boardContext.onAction}
                     />
                     { this.renderExamplesContainer() }

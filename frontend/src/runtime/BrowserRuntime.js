@@ -276,7 +276,7 @@ export default class BrowserRuntime {
   }
 
   async processService(uuid, params, requestId) {
-    const position = this.services.findIndex(s => s.uuid = uuid);
+    const position = (uuid === null) ? 0 : this.services.findIndex(s => s.uuid = uuid);
     if (position === -1) {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
     }
@@ -290,7 +290,9 @@ export default class BrowserRuntime {
       params;
 
     const service = this.services[position];
-    return this.next(service, data, requestId, false);
+    if (service) {
+      return this.next(service, data, requestId, false);
+    }
   }
 
   destroyService(uuid) {

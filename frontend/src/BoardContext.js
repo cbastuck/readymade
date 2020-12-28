@@ -41,12 +41,12 @@ class BoardContext extends Component {
     this.state = {
       // API
       addRuntime: this.addRuntime,
-      addService: this.addService,
+      addService: props.addService || this.addService,
       removeService: this.removeService,
       removeAllServices: this.removeAllServices,
       onAction: this.onAction,
       getCurrentBrowserRuntime: props.getCurrentBrowserRuntime || this.getCurrentBrowserRuntime,
-      isRuntimeInScope: this.isRuntimeInScope,
+      isRuntimeInScope: props.isRuntimeInScope || this.isRuntimeInScope,
       acquireRuntimeScope: this.acquireRuntimeScope,
       releaseRuntimeScope: this.releaseRuntimeScope,
 
@@ -225,10 +225,10 @@ class BoardContext extends Component {
     }
   }
 
-  addService = async descriptor => {
+  addService = async (descriptor, runtimeId) => {
     const boardName = this.getBoardName();
     if (boardName) {
-      await addService(boardName, descriptor);
+      await addService(boardName, descriptor, runtimeId);
       await this.fetchServices();
     }
   }

@@ -86,6 +86,10 @@ export default class Board extends Component {
   render() {
     const { appContext } = this.props;
     const { showShareDialog } = this.state;
+    const availableRuntimes = [
+      { name: 'browser', args: 'browser' },
+      { name: 'hookup', args: 'node, Hookup' },
+    ];
     return (
       <BoardConsumer>
         {
@@ -98,12 +102,10 @@ export default class Board extends Component {
             >
             
               <Toolbar
-                onAddService={boardContext.addService}
                 onAddRuntime={boardContext.addRuntime}
                 onAction={this.onAction.bind(this, boardContext)}
                 board={boardContext.boardName}
-                savedBoards={boardContext.savedBoards}
-                registry={boardContext.registry}
+                availableRuntimes={appContext.token && availableRuntimes}
               />
               {
                 !appContext.token && (

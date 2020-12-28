@@ -24,7 +24,6 @@ export default class LoginFail extends Component {
                   {
                     boardContext => 
                       <Toolbar 
-                        savedBoards={boardContext.savedBoards}
                         onAction={boardContext.onAction}
                       />
                   }

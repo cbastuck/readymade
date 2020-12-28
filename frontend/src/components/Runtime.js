@@ -66,9 +66,14 @@ export default class Runtime extends Component {
   }
 
   onAddService(service) {
-    const { boardContext } = this.props;
+    const { 
+      boardContext, 
+      runtime, 
+      runtimeId,
+    } = this.props;
+    const id = runtimeId || (runtime && runtime.id);
     if (boardContext) {
-      boardContext.addService(service);
+      boardContext.addService(service, id);
     }
   }
 

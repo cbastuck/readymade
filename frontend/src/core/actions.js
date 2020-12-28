@@ -69,8 +69,11 @@ export function getServices(board, runtime) {
     .then(res => (res && res.status === 404) ? [] : res);
 }
 
-export function addService(board, descriptor) {
-  return request(`board/${board}/runtime/${descriptor.runtime}/services`, 'PUT', false, descriptor);
+export function addService(board, descriptor, runtimeId) {
+  if (!runtimeId) {
+    runtimeId = descriptor.runtime;
+  }
+  return request(`board/${board}/runtime/${runtimeId}/services`, 'PUT', false, descriptor);
 }
 
 export function removeService(board, runtimeId, serviceId) {

@@ -9,12 +9,10 @@ import {
 export default class Toolbar extends Component {
   render() {
     const { 
-      board, 
-      savedBoards, 
-      onAddService, 
+      board,
       onAddRuntime,
-      registry,
-      onAction
+      availableRuntimes,
+      onAction,
     } = this.props;
     return (
       <div
@@ -26,10 +24,8 @@ export default class Toolbar extends Component {
       >
         <HeaderMenu
           board={board}
-          registry={registry}
-          addService={onAddService}
+          availableRuntimes={availableRuntimes}
           addRuntime={onAddRuntime}
-          savedBoards={savedBoards}
           onAction={async action => {
             if (onAction) {
               switch (action.type) {

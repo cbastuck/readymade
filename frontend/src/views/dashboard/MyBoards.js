@@ -128,7 +128,6 @@ export default class MyBoards extends Component {
                 boardContext => (
                   <div style={{ height: '100%' }}>
                     <Toolbar 
-                      savedBoards={boardContext.savedBoards}
                       onAction={boardContext.onAction}
                     />
                     { this.renderMyBoardsContainer(appContext.user) }               

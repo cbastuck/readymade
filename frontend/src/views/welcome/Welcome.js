@@ -271,8 +271,7 @@ export default class Welcome extends Component {
                 <BoardConsumer>
                   {
                     boardContext => 
-                      <Toolbar 
-                        savedBoards={boardContext.savedBoards}
+                      <Toolbar
                         onAction={boardContext.onAction}
                       />
                   }

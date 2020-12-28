@@ -5,7 +5,7 @@ import {
   Switch
 } from 'react-router-dom';
 
-import AppContext, { AppConsumer } from './AppContext';
+import AppContext from './AppContext';
 
 import Welcome from './views/welcome/Welcome';
 import About from './views/about/About';
@@ -17,7 +17,7 @@ import ServiceDocumentation from './views/docs/Service';
 import BoardDocumentation from './views/docs/Board';
 import RuntimeDocumentation from './views/docs/Runtime';
 import MyBoards from './views/dashboard/MyBoards';
-import Board from './views/Board';
+import BoardWithContext from './views/BoardWithContext';
 import BuildBoard from './views/BuildBoard';
 import AuthRedirect from './views/AuthRedirect';
 import AppHub from './views/AppHub';
@@ -25,7 +25,7 @@ import Login from './views/Login';
 import LoginFail from './views/LoginFail';
 import ServiceReferenceView from './views/ServiceReferenceView';
 import DataModelReferenceView from './views/DataModelReferenceView';
-import BoardProvider from './BoardContext';
+import Playground from './views/Playground';
 import Sandbox from './Sandbox';
 import Import from './Import';
 import Join from './Join';
@@ -33,28 +33,6 @@ import ServiceRedirect from './views/ServiceRedirect';
 import MessageReceiver from './MessageReceiver';
 
 import './App.css';
-
-class BoardWithContext extends Component {
-  render() {
-    const { match } = this.props;
-    const { board: boardName } = match.params;
-    return (
-      <AppConsumer>
-        {
-          appContext => 
-            <BoardProvider
-              user={appContext.user}
-              boardName={boardName}
-            >
-              <Board
-                appContext={appContext}
-              />
-            </BoardProvider>
-        }
-      </AppConsumer>
-    );
-  }
-}
 
 class App extends Component {
   render() {
@@ -89,6 +67,7 @@ class App extends Component {
               <Route path="/docs" component={Quickstart} />
               <Route path="/serviceRedirect" component={ServiceRedirect} />
               <Route path="/join/:share" component={Join} />
+              <Route path="/playground" component={Playground} />
               <Route path="/:board" component={BoardWithContext} />
             </Switch>
           </div>

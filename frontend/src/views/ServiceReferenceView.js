@@ -36,7 +36,6 @@ export default class ServiceReferenceView extends Component {
                   boardContext => (
                     <div style={{ height: '100%' }}>
                       <Toolbar 
-                        savedBoards={boardContext.savedBoards}
                         onAction={boardContext.onAction}
                       />
                       <div 
