@@ -23,6 +23,7 @@ class DropBar extends Component {
 
   render() {
     const { active } = this.state;
+    const { onDrop, index } = this.props;
     return (
       <div 
         style={{ 
@@ -32,8 +33,19 @@ class DropBar extends Component {
           borderRadius: 3,
           background: active && 'linear-gradient(to right, #fff 0%, #fff 40%, #4183c4 50%, #fff 60%)'
         }}
-        onDragOver={ev => this.setState({ active: true })}
+        onDragOver={ev => {
+          this.setState({ active: true });
+          ev.preventDefault();
+        }}
         onDragLeave={ev => this.setState({ active: false })}
+        onDrop={ev => {
+          this.setState({ active: false });
+          const data = ev.dataTransfer.getData('text/plain');
+          if (data) {
+            const svc = JSON.parse(data);
+            onDrop && onDrop(svc.uuid, index);
+          }
+        }}
       />
     );
   }
@@ -104,9 +116,10 @@ export default class Runtime extends Component {
   renderServiceMenu(runtimeName, runtime, appViewMode) {
     const wide = appViewMode === 'wide';
     const registry = runtime ? runtime.registry : [];
-    const options = registry.map(s => ({
-      key: `${runtime.id}${s.serviceId}`, value: s.serviceId, text: s.serviceName
-    }));
+    const options = registry
+      .map(s => ({
+        key: `${runtime.id}${s.serviceId}`, value: s.serviceId, text: s.serviceName
+      }))
     return (
       <div
         id="service-dropdown"
@@ -274,18 +287,16 @@ export default class Runtime extends Component {
       boardName=boardContext && boardContext.boardName,
     } = this.props;
 
-    const { showSettings } = this.state;
-    
     const appViewMode = boardContext && boardContext.appViewMode;
     const wide = boardContext ? appViewMode === 'wide' : true;
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
     const readonly = !isOwner && !!runtime;
-    const onToggleOwnership = () => 
-      boardContext.isRuntimeInScope(runtime) ? 
-        boardContext.releaseRuntimeScope(boardContext.boardName, runtime) :
-        boardContext.acquireRuntimeScope(boardContext.boardName, runtime);
+    const { 
+      wrapServices=!wide,
+      showSettings,
+      expanded,
+    } = this.state;
 
-    const { wrapServices=!wide } = this.state;
     const readonlyStyle = (readonly && !frameless) ? 
       {
         backgroundColor: '#FFFFFF',
@@ -296,6 +307,16 @@ export default class Runtime extends Component {
         display: !this.state.expanded && 'none'
       } :
       {};
+
+    const onDrop = (serviceUuid, position) => boardContext.arrangeService(
+      runtime, serviceUuid, position
+    );
+
+    const onToggleOwnership = () => 
+      boardContext.isRuntimeInScope(runtime) ? 
+        boardContext.releaseRuntimeScope(boardContext.boardName, runtime) :
+        boardContext.acquireRuntimeScope(boardContext.boardName, runtime);
+
     return (
       <div
         style={{
@@ -341,7 +362,7 @@ export default class Runtime extends Component {
             onClickCapture={e => readonly && e.stopPropagation()}
           >
           {
-            this.state.expanded && 
+            expanded &&
             services && 
             services.map((service, pos) => {
               const serviceUi = readonly ? 
@@ -352,13 +373,13 @@ export default class Runtime extends Component {
                   key={`scene-frame-${service.uuid}`}
                   style={{ display: 'flex', flexDirection: 'row' }}
                 >
-                  { pos === 0 && <DropBar index={0} /> }
+                  { pos === 0 && <DropBar index={0} onDrop={onDrop} /> }
                   <ServiceFrame
                     service={service}
                     serviceUi={serviceUi}
                     onAction={this.onServiceAction}
                   />
-                  <DropBar index={pos+1} />
+                  <DropBar index={pos+1} onDrop={onDrop} />
                 </div>
               );
             })
@@ -369,7 +390,7 @@ export default class Runtime extends Component {
             )
           }
           {
-            !isOwner && showSettings && (
+            showSettings && (!isOwner || (services && services.length === 0)) && (
               <div style={{ height: 180 }} />
             )
           }

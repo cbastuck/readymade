@@ -45,6 +45,8 @@ export default class HeaderMenu extends Component {
       fontSize: 11,
       textTransform: 'uppercase',
     };
+
+    const username = appContext && appContext.user && appContext.user.username;
     return (
       <div
         style={{
@@ -57,9 +59,16 @@ export default class HeaderMenu extends Component {
         { /* <span style={navItemStyle}>Go to:</span> */ }
         <span>  </span>
         {
-          appContext && appContext.user && appContext.user.username && (
+          username && (
             <Link to="/dashboard" style={navItemStyle}>
               {/*appContext.user.username*/}Home
+            </Link>
+          )
+        }
+        {
+          !username && (
+            <Link to="/playground" style={navItemStyle}>
+              Playground
             </Link>
           )
         }

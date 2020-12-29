@@ -17,6 +17,7 @@ import {
   getRuntimeRegistry,
   addRuntime,
   configureService,
+  clearBoard,
 } from './core/actions';
 
 const { Provider, Consumer: BoardConsumer } = createContext();
@@ -42,9 +43,10 @@ class BoardContext extends Component {
       // API
       addRuntime: this.addRuntime,
       addService: props.addService || this.addService,
+      arrangeService: props.arrangeService || this.arrangeService,
       removeService: this.removeService,
       removeAllServices: this.removeAllServices,
-      onAction: this.onAction,
+      onAction: props.onAction || this.onAction,
       getCurrentBrowserRuntime: props.getCurrentBrowserRuntime || this.getCurrentBrowserRuntime,
       isRuntimeInScope: props.isRuntimeInScope || this.isRuntimeInScope,
       acquireRuntimeScope: this.acquireRuntimeScope,
@@ -172,6 +174,7 @@ class BoardContext extends Component {
     const boardname = this.getBoardName();
     switch (action.type) {
       case 'clearBoard':
+        await clearBoard(boardname);
         for (const runtime of this.browserRuntimes) {
           runtime.destroyRuntime();
         }
@@ -199,6 +202,10 @@ class BoardContext extends Component {
         console.log('Unknown action', action);
         break;
     }
+  }
+
+  arrangeService(runtime, serviceUuid, position) {
+    console.log('TODO: BoardContext.arrangeService')
   }
 
   addRuntime = async (type, name) => {

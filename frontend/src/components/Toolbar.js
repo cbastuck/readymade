@@ -2,9 +2,7 @@ import React, { Component } from 'react';
 
 import HeaderMenu from './HeaderMenu';
 
-import {
-  clearBoard,
-} from '../core/actions';
+// import { clearBoard } from '../core/actions';
 
 export default class Toolbar extends Component {
   render() {
@@ -26,17 +24,7 @@ export default class Toolbar extends Component {
           board={board}
           availableRuntimes={availableRuntimes}
           addRuntime={onAddRuntime}
-          onAction={async action => {
-            if (onAction) {
-              switch (action.type) {
-                case 'clearBoard':
-                  await clearBoard(board);
-                  return onAction(action);
-                default:
-                  onAction(action)
-              }
-            }
-          }}
+          onAction={onAction}
         />
       </div>
     );
