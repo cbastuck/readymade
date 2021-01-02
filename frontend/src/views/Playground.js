@@ -5,41 +5,40 @@ import uuid from 'uuid';
 import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Runtime from '../components/Runtime';
-import BrowserRuntime from '../runtime/BrowserRuntime'; 
 import DragProvider from '../DragContext';
 import { s, t } from '../styles';
+import BrowserRegistry from '../runtime/BrowserRegistry';
 
-function createRuntime(id, name, onResult, bundles=['hookup.to/registry/browser/Audio']) {
-    return BrowserRuntime.createInstance({ 
-      id, 
-      name,
-      sendResult: onResult,
-    },
-    { bundles }
-  );
-}
+const defaultBundles = [
+  'hookup.to/registry/browser/Audio'
+];
+
+const defaultRegistry = new BrowserRegistry(defaultBundles);
 
 export default class Playground extends Component {
   state = {
     persistBoard: false,
-    runtimes: [],
-    services: {},
   };
 
-  componentDidMount() {
-    this.restoreBoard();
-  }
+  board = {
+    name: 'Playground',
+  };
 
-  restoreBoard = async () => {
+  user = { 
+    username: 'Anonymous',
+    userId: undefined,
+  };
+  
+  availableRuntimes = [
+    { name: 'browser', args: 'browser' },
+  ];
+
+  restoreBoard = () => {
     const data = localStorage.getItem('hkp-playground');
-    if (data) {
-      const state = JSON.parse(data);
-      const { runtimes, services } = state;
-      const createdRuntimes = await this.restoreRuntimes(runtimes);
-      await this.restoreServices(services, createdRuntimes);
-    }
+    return data ? JSON.parse(data) : {};
   }
-
+  
+  /*
   restoreRuntimes = async runtimes => {
     const created = [];
     for (const runtime of runtimes) {
@@ -60,51 +59,52 @@ export default class Playground extends Component {
       }
     }
   }
+  */
 
   storeBoard = () => {
-    const { runtimes, services } = this.state;
+    const { runtimes=[], services={} } = this.state;
     const data = JSON.stringify({ 
-      runtimes: runtimes.map(rt => ({ id: rt.id, name: rt.name })), 
-      services: Object.keys(services).reduce(
-        (all, key) => ({
-          ...all,
-          [key]: services[key].map(svc => ({
-            descriptor: svc.__descriptor,
-            config: svc,
-          }))
-        }), 
-        {}
-      ),
+      runtimes: runtimes.map(rt => ({ 
+        id: rt.id, name: rt.name, type: rt.type 
+      })), 
+      services,
     });
     localStorage.setItem('hkp-playground', data);
   }
 
-  addService = (descriptor, runtimeOrId) => {
-    const { runtimes, services } = this.state;
-    const runtime = (typeof runtimeOrId === 'string') ? 
-      runtimes.find(rt => rt.id === runtimeOrId) : 
-      runtimeOrId;
-    if (runtime) {
-      const uid = uuid.v4();
-      const svc = runtime.createService(descriptor, uid);
-      const svcs = services[runtime.id];
-      this.setState({ 
-        services: { 
-          ...services,
-          [runtime.id]: [...svcs, svc],
-        }
-      });
-      return svc;
+  addService = (boardName, descriptor, runtimeId) => {
+    const { runtimes=[], services={} } = this.state;
+    const runtime = runtimes.find(rt => rt.id === runtimeId);
+    if (!runtime) {
+      console.error('Unknown runtime', runtimeId);
+      return;
     }
+
+    const svc = {
+      __descriptor: descriptor,
+      uuid: uuid.v4(),
+    };
+    this.setState({
+      services: {
+        ...services,
+        [runtimeId]: [
+          ...services[runtimeId], 
+          svc,
+        ],
+      }
+    });
+    return svc;
   }
 
-  addRuntime = async (runtimeId, runtimeName) => {
-    const { runtimes, services } = this.state;
-    const rt = await createRuntime(
-      runtimeId,
-      runtimeName,
-      this.onResult.bind(this, runtimeId),
-    );
+  addRuntime = async (boardname, desc) => {
+    const { runtimes=[], services={} } = this.state;
+    const runtimeId = uuid.v4();
+    const rt = {
+      id: runtimeId,
+      name: `Runtime-${runtimes ? runtimes.length + 1 : 1}`,
+      type: 'browser',
+      sendResult: this.onResult.bind(this, runtimeId),
+    };
     this.setState({
       runtimes: runtimes.concat(rt),
       services: {
@@ -112,7 +112,6 @@ export default class Playground extends Component {
         [runtimeId]: []
       }
     });
-    return rt;
   }
 
   clearPlayground = () => {
@@ -159,48 +158,65 @@ export default class Playground extends Component {
     }
   }
 
+  fetchData = async () => {
+    let runtimes = this.state.runtimes;
+    let services = this.state.services;
+    if (!runtimes) {
+      const { 
+        runtimes: restoredRuntimes, 
+        services: restoredServices,
+      } = this.restoreBoard();
+
+      runtimes = restoredRuntimes || [];
+      services = restoredServices || {};
+      this.setState({ 
+        runtimes, 
+        services,
+      });
+    }
+
+    const data = {
+      runtimes, 
+      services, 
+      registry: runtimes && runtimes.reduce(
+        (all, rt) => ({ ...all, [rt.id]: defaultRegistry.availableServices }), 
+        {}
+      ),
+    };
+    return data;
+  }
+
   renderRuntimes = boardContext => {
-    const { runtimes, services } = this.state;
+    const { runtimes } = boardContext;
     return (
       <div style={s(t.w100)}>
-        {
-          runtimes.map(runtime => 
-            <DragProvider
-              style={{ marginBottom: 5 }}
-              key={`playground-drag-provider-${runtime.id}`}
-            >
-              <Runtime
-                key={`sandbox-playground-${runtime.id}`}
-                runtime={runtime}
-                boardContext={boardContext}
-                services={services[runtime.id]}
-              />
-            </DragProvider>
-          )
-        }
+      {
+        runtimes.map(runtime => 
+          <DragProvider
+            key={`playground-drag-provider-${runtime.id}`}
+            style={{ marginBottom: 5 }}
+          >
+            <Runtime
+              key={`sandbox-playground-${runtime.id}`}
+              runtime={runtime}
+              boardContext={boardContext}
+            />
+          </DragProvider>
+        )
+      }
       </div>
     );
   }
 
   render() {
-    const boardName = 'Playground';
-    const user = { 
-      username: 'Anonymous',
-      userId: undefined,
-    };
-    const availableRuntimes = [
-      { name: 'browser', args: 'browser' },
-    ];
-    const { 
-      persistBoard,
-      runtimes,
-    } = this.state;
+    const { persistBoard } = this.state;
     return (
       <BoardProvider
-        user={user}
-        boardName={boardName}
-        fetchData={false}
+        user={this.user}
+        boardName={this.board.name}
+        fetchData={this.fetchData}
         isRuntimeInScope={() => true}
+        addRuntime={this.addRuntime}
         addService={this.addService}
         arrangeService={this.arrangeService} 
       >
@@ -209,10 +225,9 @@ export default class Playground extends Component {
           boardContext => (
             <div style={t.fill}>
               <Toolbar
-                onAddRuntime={() => this.addRuntime(uuid.v4(), `Runtime-${runtimes.length + 1}`)}
                 onAction={this.onAction}
                 board={boardContext.boardName}
-                availableRuntimes={availableRuntimes}
+                availableRuntimes={this.availableRuntimes}
               />
               { this.renderRuntimes(boardContext) }
               <div style={s(t.w100, t.tr)}>

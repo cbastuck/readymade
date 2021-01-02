@@ -151,7 +151,7 @@ export default class HeaderMenu extends Component {
           selectOnBlur={false}
           onChange={(ev, { value }) => {
             if (value) {
-              this.props.addRuntime(...value.split(','));
+              boardContext.addRuntime(...value.split(','));
               this.dropdown.clearValue();
             }
           }}
@@ -193,7 +193,9 @@ export default class HeaderMenu extends Component {
                       border: 'none',
                     }}
                   >
-                    { this.renderHomeIcon() }
+                    { 
+                      this.renderHomeIcon() 
+                    }
                     {
                       appContext.user && this.renderBoardMenu(board)
                     }

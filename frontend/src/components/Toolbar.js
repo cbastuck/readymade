@@ -8,7 +8,6 @@ export default class Toolbar extends Component {
   render() {
     const { 
       board,
-      onAddRuntime,
       availableRuntimes,
       onAction,
     } = this.props;
@@ -23,7 +22,6 @@ export default class Toolbar extends Component {
         <HeaderMenu
           board={board}
           availableRuntimes={availableRuntimes}
-          addRuntime={onAddRuntime}
           onAction={onAction}
         />
       </div>

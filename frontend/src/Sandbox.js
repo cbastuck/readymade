@@ -8,69 +8,7 @@ import BoardProvider, { BoardConsumer } from './BoardContext';
 import DragProvider from './DragContext';
 import BrowserRuntime from './runtime/BrowserRuntime';
 
-export default class Sandbox extends Component {
-  state = {
-    createdServices: [],
-    runtime: undefined,
-    options: {
-      frameless: true,
-    }
-  };
-
-  componentDidMount() {
-    const { location, runtime } = this.props;
-    if (runtime) {
-      this.setState({ 
-        runtime, 
-        createdServices: runtime.services,
-        frameless: false,
-      })
-    } else {
-      const values = location ? 
-        queryString.parse(location.search) :
-        this.props;
-
-      const { 
-        src, 
-        data, 
-        frameless='false',
-      } = values;
-
-      if (src) {
-        this.fetchDataAndCreateRuntime(src);
-      } else if (data) {
-        const d = typeof data === 'string' ? JSON.parse(data) : data;
-        this.readDataAndCreateRuntime(d);
-      }
-      this.setState({ 
-        options: {
-          frameless: frameless === 'true' || frameless === true
-        }
-      });
-    }
-  }
-
-  configureService = (serviceId, config) => {
-    const { runtime } = this.state;
-    if (runtime) {
-      const service = runtime.app.getServiceById(serviceId);
-      if (service) {
-        service.configure(config);
-      }
-    }
-  }
-
-  fetchDataAndCreateRuntime = async src => {
-    const response = await fetch(src);
-    try {
-      const data = await response.json();
-      return this.readDataAndCreateRuntime(data);
-    } catch (err) {
-      console.error('Fetched data is not valid JSON document', src, err);
-    }
-  }
-
-  extractRuntimeData = data => {
+function extractRuntimeData(data) {
     if (data.id && data.services) {
       return data;
     }
@@ -91,8 +29,62 @@ export default class Sandbox extends Component {
     return firstBrowserRuntimeData;
   }
 
-  readDataAndCreateRuntime = async data => {
-    const firstBrowserRuntimeData = this.extractRuntimeData(data);
+export default class Sandbox extends Component {
+  state = {
+    data: '',
+    options: {
+      frameless: true,
+    }
+  };
+
+  componentDidMount() {
+    const { location } = this.props;
+    const values = location ? 
+      queryString.parse(location.search) :
+      this.props;
+
+    const { 
+      src, 
+      data, 
+      frameless='false',
+    } = values;
+
+    this.setState({ 
+      options: {
+        frameless: frameless === 'true' || frameless === true
+      }
+    });
+
+    if (src) {
+      this.fetchAndParseData(src);
+    } else if (data) {
+      const d = typeof data === 'string' ? JSON.parse(data) : data;
+      this.parseData(d);
+    }
+  }
+
+  configureService = (serviceId, config) => {
+    const { runtime } = this.state; // TODO: use ref to configure browser service inside the runtime
+    if (runtime) {
+      const service = runtime.app.getServiceById(serviceId);
+      if (service) {
+        service.configure(config);
+      }
+    }
+  }
+
+  fetchAndParseData = async src => {
+    const response = await fetch(src);
+    try {
+      const data = await response.json();
+      return this.parseData(data);
+    } catch (err) {
+      console.error('Fetched data is not valid JSON document', src, err);
+    }
+  }
+
+  parseData = async data => {
+    const firstBrowserRuntimeData = extractRuntimeData(data);
     if (!firstBrowserRuntimeData) {
       return;
     }
@@ -105,10 +97,8 @@ export default class Sandbox extends Component {
       return s;
     });
       
-    const { runtime, createdServices } = await this.createBrowserRuntime(firstBrowserRuntimeData, firstBrowserRuntimeData.bundles);
-    if (runtime) {
-      this.setState({ runtime, createdServices });
-    }
+    this.setState({ data: firstBrowserRuntimeData});
+    
     return firstBrowserRuntimeData;
   }
 
@@ -134,18 +124,22 @@ export default class Sandbox extends Component {
       runtime,
       options,
       createdServices,
+      data,
     } = this.state;
 
     const runtimeId = runtime ? runtime.id : 'anonymousRuntime';
     return (
       <DragProvider key={`sandbox-drag-provider-${runtimeId}`}>
         <Runtime
-          runtimeName="Sandbox"
           style={{ marginBottom: 5 }}
+          runtime={{
+            runtimeName: 'Sandbox',
+            runtimeId,
+          }}
           frameless={options && options.frameless}
           services={createdServices}
-          runtimeId={runtimeId}
           boardContext={boardContext}
+          bundles={data.bundles}
         />
       </DragProvider>
     );

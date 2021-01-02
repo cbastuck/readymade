@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 
 import WebsocketChannel from './WebsocketChannel';
+import ServiceContainer from './ServiceContainer';
 
 function logInfo(msg) {
   // console.log(msg);
@@ -42,6 +43,6 @@ export default class RemoteRuntime extends Component {
   }
 
   render() {
-    return <div />;
+    return <ServiceContainer {...this.props} />;
   }
 }

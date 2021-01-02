@@ -56,7 +56,8 @@ export default class Board extends Component {
       return this.renderRutimesStarTopology(boardContext, centerId);
     }
     return boardContext.runtimes && 
-           boardContext.runtimes.map(runtime => this.renderRuntime(boardContext, runtime));
+           boardContext.runtimes.map(
+              runtime => this.renderRuntime(boardContext, runtime));
   }
 
   renderRuntime = (boardContext, runtime) => {
@@ -66,7 +67,6 @@ export default class Board extends Component {
         runtime={runtime}
         style={{ marginBottom: 5 }}
         boardContext={boardContext}
-        services={boardContext.services[runtime.id]}
       />
     );
   }
@@ -100,9 +100,7 @@ export default class Board extends Component {
                 width: '100%',
               }}
             >
-            
               <Toolbar
-                onAddRuntime={boardContext.addRuntime}
                 onAction={this.onAction.bind(this, boardContext)}
                 board={boardContext.boardName}
                 availableRuntimes={appContext.token && availableRuntimes}

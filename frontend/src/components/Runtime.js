@@ -7,49 +7,13 @@ import {
   Dropdown,
 } from 'semantic-ui-react';
 
-import ServiceFrame from './ServiceFrame';
 import { openTab, getServiceConfiguration } from '../core/actions';
-import { createServiceUI, createPlaceholderUI } from '../UIFactory';
 import RemoteRuntime from '../runtime/RemoteRuntime';
+import BrowserRuntime from '../runtime/BrowserRuntime';
 
 import { t } from '../styles';
 
 import './Runtime.css';
-
-class DropBar extends Component {
-  state = {
-    active: false
-  };
-
-  render() {
-    const { active } = this.state;
-    const { onDrop, index } = this.props;
-    return (
-      <div 
-        style={{ 
-          width: 20,
-          height: '94%',
-          margin: '10px 0px',
-          borderRadius: 3,
-          background: active && 'linear-gradient(to right, #fff 0%, #fff 40%, #4183c4 50%, #fff 60%)'
-        }}
-        onDragOver={ev => {
-          this.setState({ active: true });
-          ev.preventDefault();
-        }}
-        onDragLeave={ev => this.setState({ active: false })}
-        onDrop={ev => {
-          this.setState({ active: false });
-          const data = ev.dataTransfer.getData('text/plain');
-          if (data) {
-            const svc = JSON.parse(data);
-            onDrop && onDrop(svc.uuid, index);
-          }
-        }}
-      />
-    );
-  }
-} 
 
 export default class Runtime extends Component {
   state = {
@@ -113,13 +77,14 @@ export default class Runtime extends Component {
     }
   }
 
-  renderServiceMenu(runtimeName, runtime, appViewMode) {
+  renderServiceMenu(runtimeId, runtimeName, registry, appViewMode) {
     const wide = appViewMode === 'wide';
-    const registry = runtime ? runtime.registry : [];
-    const options = registry
-      .map(s => ({
-        key: `${runtime.id}${s.serviceId}`, value: s.serviceId, text: s.serviceName
-      }))
+    const options = registry.map(s => ({
+      key: `${runtimeId}${s.serviceId}`, 
+      value: s.serviceId, 
+      text: s.serviceName,
+    }));
+
     return (
       <div
         id="service-dropdown"
@@ -151,7 +116,12 @@ export default class Runtime extends Component {
     );
   }
 
-  renderExpandableHeadline(name, runtime, isOwner, appViewMode) {
+  renderExpandableHeadline(id, name, registry, isOwner, appViewMode) {
+    const { 
+      expanded, 
+      showSettings,
+    } = this.state;
+
     return (
         <div 
           style={{ 
@@ -166,12 +136,12 @@ export default class Runtime extends Component {
             name="bars"
             style={{
               margin: '10px 18px', 
-              cursor: 'pointer', 
+              cursor: 'pointer',
               color: '#ddd' 
             }}
             onClick={() => this.setState({ 
-              showSettings: this.state.expanded && !this.state.showSettings,
-              expanded: !this.state.expanded ? !this.state.showSettings : this.state.expanded
+              showSettings: expanded && !showSettings,
+              expanded: !expanded ? !showSettings : expanded
             })}
           />
           <div 
@@ -185,7 +155,6 @@ export default class Runtime extends Component {
           > 
             {name} 
           </div>
-
           <div 
             style={{ 
               marginRight: 10, 
@@ -196,10 +165,9 @@ export default class Runtime extends Component {
             }} 
           >
             {
-              runtime && 
-              runtime.registry && 
+              registry && 
               isOwner && 
-              this.renderServiceMenu(name, runtime, appViewMode) 
+              this.renderServiceMenu(id, name, registry, appViewMode) 
             }
           </div>
         </div>
@@ -281,22 +249,25 @@ export default class Runtime extends Component {
       runtimeName=runtime ? runtime.name : 'Blank',
       frameless=false,
       boardContext=null,
-      services=[],
+      services=boardContext && boardContext.services[runtime && runtime.id],
       runtimeId=runtime && runtime.id,
+      user=boardContext && boardContext.user,
       userId=boardContext && boardContext.user && boardContext.user.userId,
       boardName=boardContext && boardContext.boardName,
+      registry=boardContext && boardContext.registry[runtime && runtime.id],
+      bundles=[],
     } = this.props;
 
     const appViewMode = boardContext && boardContext.appViewMode;
     const wide = boardContext ? appViewMode === 'wide' : true;
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
-    const readonly = !isOwner && !!runtime;
-    const { 
+    const {
       wrapServices=!wide,
       showSettings,
       expanded,
     } = this.state;
 
+    const readonly = !registry;
     const readonlyStyle = (readonly && !frameless) ? 
       {
         backgroundColor: '#FFFFFF',
@@ -327,7 +298,7 @@ export default class Runtime extends Component {
         }}
       >
         {
-          !frameless && this.renderExpandableHeadline(runtimeName, runtime, isOwner, appViewMode)
+          !frameless && this.renderExpandableHeadline(runtimeId, runtimeName, registry, isOwner, appViewMode)
         }
         <Sidebar.Pushable 
           as={Segment}
@@ -361,28 +332,32 @@ export default class Runtime extends Component {
             }}
             onClickCapture={e => readonly && e.stopPropagation()}
           >
+
           {
-            expanded &&
-            services && 
-            services.map((service, pos) => {
-              const serviceUi = readonly ? 
-                createPlaceholderUI(service) :
-                createServiceUI(boardName, service, runtimeId, userId)
-              return (
-                <div 
-                  key={`scene-frame-${service.uuid}`}
-                  style={{ display: 'flex', flexDirection: 'row' }}
-                >
-                  { pos === 0 && <DropBar index={0} onDrop={onDrop} /> }
-                  <ServiceFrame
-                    service={service}
-                    serviceUi={serviceUi}
-                    onAction={this.onServiceAction}
-                  />
-                  <DropBar index={pos+1} onDrop={onDrop} />
-                </div>
-              );
-            })
+            expanded && runtime && runtime.type === 'node' && (
+              <RemoteRuntime
+                board={boardName}
+                userId={userId}
+                services={services}
+                runtime={runtime}
+                readonly={readonly}
+                onDrop={onDrop}
+              />
+            )
+          }
+          {
+            expanded && runtime && runtime.type === 'browser' && (
+              <BrowserRuntime
+                board={boardName}
+                runtimeId={runtimeId}
+                runtimeName={runtimeName}
+                bundles={bundles}
+                user={user}
+                services={services}
+                readonly={readonly}
+                onDrop={onDrop}
+              />
+            )
           }
           { 
             services && services.length === 0 && (
@@ -396,24 +371,6 @@ export default class Runtime extends Component {
           }
           </div>
         </Sidebar.Pushable>
-        {
-          runtime && runtime.type === 'node' && (
-            <RemoteRuntime
-              board={boardName}
-              userId={userId}
-              services={services}
-              runtime={runtime}
-            />
-          )
-        }
-        {
-        /* 
-          runtime && runtime.type === 'browser' && (
-            // TODO: probably the same thing like RemoteRuntime
-            // should happen for Browser Runtime here
-          )  
-        */
-        }
       </div>
     );
   }

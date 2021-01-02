@@ -1,3 +1,4 @@
+import React, { Component } from 'react';
 import EventSource from 'eventsource';
 import { decode } from 'base64-arraybuffer';
 
@@ -5,8 +6,10 @@ import { request } from '../core/actions';
 import { parseResponse } from './MultiformParser';
 import { restoreToken } from '../core/Auth';
 import { serializeWebsocketBuffer } from '../core/format';
+import ServiceContainer from './ServiceContainer';
+
+//TODO: remove
 import defaultRegistry from './registry/Default';
-import { loadBundle } from './Bundles';
 
 function logInfo(msg) {
   // console.log(msg);
@@ -16,7 +19,7 @@ function serviceDataKey(uuid, key) {
   return `service-data-${uuid}-${key}`;
 }
 
-export default class BrowserRuntime {
+export default class BrowserRuntime extends Component {
   static async createInstance(runtime, { user, bundles, ...params } = {}) {
     const registry = await BrowserRuntime.registry(user, bundles);
     return new BrowserRuntime(runtime, { ...params, user, registry });
@@ -27,53 +30,10 @@ export default class BrowserRuntime {
     return a.find(s => serviceId === s.serviceId && s.createUI);
   }
 
-  static async loadBundles(bundles) {
-    if (bundles) {
-      const appendBundleServices = arr => arr.forEach(x => {
-        const exists = BrowserRuntime.__createdRegistry && 
-                      BrowserRuntime.__createdRegistry.find(
-                        s => x.serviceId === s.serviceId);
-        if (!exists) {
-          if (BrowserRuntime.__createdRegistry) {
-            BrowserRuntime.__createdRegistry.push(x);
-          } else {
-            BrowserRuntime.__createdRegistry = [x];
-          }
-        }
-      });
-      for (const bundleId of bundles) {
-        const bdl = await loadBundle(bundleId);
-        appendBundleServices(bdl);
-      }
-    }
-    return BrowserRuntime.__createdRegistry;
-  }
-
-  static async registry(user, bundles) {
-    if (!BrowserRuntime.__createdRegistry) {
-      BrowserRuntime.__createdRegistry = defaultRegistry;
-
-      // TODO: rename to user registry to user bundles
-      if (user && user.features && user.features.registry) {
-        const userBundles = JSON.parse(user.features.registry);
-        await BrowserRuntime.loadBundles(userBundles); 
-      }
-    }
-
-    if (bundles) {
-      await BrowserRuntime.loadBundles(bundles);
-    }
-
-    return BrowserRuntime.__createdRegistry;
-  }
-
-  constructor(runtime, { board, user, registry } = {}) {
-    this.registry = registry;
-    this.id = runtime.id;
-    this.name = runtime.name;
-    this.services = runtime.services || [];
+  componentDidMount() {
+    const that = this;
     this.app = {
-      next: this.next,
+      next: that.next,
       getServiceById: id => this.services.find(s => s.uuid === id),
       sendAction: action => {
         // the sandbox for example registers a listener 
@@ -98,21 +58,11 @@ export default class BrowserRuntime {
         }
       }
     }
-
-    if (board) {
-      this.board = board;
-    }
-
-    if (user) {
-      this.user = user;
-    }
-    
-    if (runtime.sendResult) {
-      this.sendResult = runtime.sendResult;
-    }
   }
 
   next = async (service, params, requestId=null, advanceBeforeProcess=true) => {
+    const { runtime } = this.pops;
+    
     const position = this.services.findIndex(s => s === service);
     if (position === -1) {
       return console.error('Called next() in browser but could not find current service', service);
@@ -125,14 +75,15 @@ export default class BrowserRuntime {
       result = await svc.process(params);
       params = result;
     }
-    await this.sendResult(svc.uuid, result, requestId);
+    const resultReceiver = runtime.sendResult || this.sendResult;
+    await resultReceiver(svc.uuid, result, requestId);
     return result;
   }
 
   connect(id) {
-    this.id = id; // TODO: do we need this? Already done in c'tor
-    const backendPath = `/api/${this.user.userId}/${this.board}/${id}`;
-    logInfo(`Connecting ${this.name} to ${backendPath}`);
+    const { board, user, runtimeName } = this.props;
+    const backendPath = `/api/${user.userId}/${board}/${id}`;
+    logInfo(`Connecting ${runtimeName} to ${backendPath}`);
     
     const useWebSockets = true;
     if (useWebSockets) {
@@ -146,6 +97,7 @@ export default class BrowserRuntime {
   }
 
   connectRuntimeViaWebSocket(backendHost, backendPath, secureConnection) {
+    const { runtimeId, runtimeName } = this.props;
     function rebuild(json, message) {
       return Object.keys(json).reduce(
         (acc, key) => {
@@ -173,21 +125,22 @@ export default class BrowserRuntime {
     this.websocket.onmessage = event => {
       const message = parseResponse(event.data);
       const action = message.json ? rebuild(message.json.payload, message) : JSON.parse(message);
-      logInfo(`BrowserRuntime ${this.id} (${this.name}) received: ${JSON.stringify(action)}`);
+      logInfo(`BrowserRuntime ${runtimeId} (${runtimeName}) received: ${JSON.stringify(action)}`);
       this.onMessage(action);
     };
     this.websocket.onclose = event => {
-      logInfo(`Closed WebSocket with ${this.id}`);
+      logInfo(`Closed WebSocket with ${runtimeId}`);
     };
     this.websocket.onerror = function(error) {
-      console.error(`WebSocket ${this.id} Error: `, error);
+      console.error(`WebSocket ${runtimeId} Error: `, error);
     };
     this.websocket.onopen = event => {
-      logInfo(`WebSocket to ${this.id} is open`);
+      logInfo(`WebSocket to ${runtimeId} is open`);
     }
   }
 
   connectRuntimeViaEventSource(backendPath) {
+    const { runtimeId } = this.props;
     this.eventSource = new EventSource(backendPath);
     
     const onMessage = e => this.onMessage(e.data ? JSON.parse(e.data) : e);
@@ -197,7 +150,7 @@ export default class BrowserRuntime {
         this.eventSource.removeEventListener('error', onError);
         this.eventSource = undefined;
         logInfo(`Reconnecting browser runtime ${error} - ${error.status}`);
-        setTimeout(() => this.connect(this.id), 1000);
+        setTimeout(() => this.connect(runtimeId), 1000);
         return;
       } else {
         console.error('Unknown error in BrowserRuntime', error);
@@ -231,7 +184,8 @@ export default class BrowserRuntime {
   }
 
   async sendResult(serviceUuid, data, requestId) {
-    if (!this.id) {
+    const { user, runtimeId } = this.props;
+    if (!runtimeId) {
       return console.error('Could not send result data, no backend is connected');
     }
 
@@ -240,7 +194,7 @@ export default class BrowserRuntime {
         data, 
         {
           board: this.board,
-          userId: this.user.userId,
+          userId: user.userId,
           serviceUuid,
           requestId,
         }
@@ -248,12 +202,13 @@ export default class BrowserRuntime {
       this.websocket.send(buffer);
       return null;
     } else { // ... or as post
-      return request(`${this.user.userId}/${this.board}/${this.id}/${requestId}`, 'POST', false, data);
+      return request(`${user.userId}/${this.board}/${runtimeId}/${requestId}`, 'POST', false, data);
     }
   }
 
   createService({ serviceId, serviceName, board }, id, initialConfig) {
-    const descriptor = this.registry.find(elem => elem.serviceId === serviceId);
+    const { registry } = this.props;
+    const descriptor = registry.find(elem => elem.serviceId === serviceId);
     if (descriptor) {
       const service = descriptor.create(this.app, board, descriptor, id);
       service.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };
@@ -263,7 +218,7 @@ export default class BrowserRuntime {
       this.services.push(service);
       return service;
     } else {
-      console.error('No browser service descriptor found for ', serviceId, this.registry)
+      console.error('No browser service descriptor found for ', serviceId, registry)
     }
   }
 
@@ -318,4 +273,13 @@ export default class BrowserRuntime {
     }
   }
 
+  render() {
+    const { services, ...props } = this.props;
+    return (
+      <ServiceContainer
+        {...props} 
+        services={services} 
+      />
+    );
+  }
 };
