@@ -262,37 +262,35 @@ export default class Welcome extends Component {
   render() {
     return (
       <AppConsumer>
-        {
-          appContext => (
-            <BoardContext
-              fetchData={!!appContext.user && !!appContext.user.username}
-            >
-              <div className="hero-image">
-                <BoardConsumer>
-                  {
-                    boardContext => 
-                      <Toolbar
-                        onAction={boardContext.onAction}
-                      />
-                  }
-                </BoardConsumer>
-                <div className={`hero-text ${this.state.page} fade-in-linear`}>
-                  { 
-                    this.renderContent(
-                      [
-                        { p: 'welcome', r: this.renderWelcome },
-                        { p: 'mission', r: this.renderMission },
-                        { p: 'intro', r: this.renderIntro },
-                        { p: 'visualisation', r: this.renderVisualisation },
-                      ]
-                    )
-                  }
-                </div>
-                <Footer />
+      {
+        appContext => (
+          <BoardContext
+            fetchData={!!appContext.user && !!appContext.user.username}
+          >
+            <div className="hero-image">
+              <BoardConsumer>
+              {
+                boardContext => 
+                  <Toolbar onAction={boardContext.onAction} />
+              }
+              </BoardConsumer>
+              <div className={`hero-text ${this.state.page} fade-in-linear`}>
+                { 
+                  this.renderContent(
+                    [
+                      { p: 'welcome', r: this.renderWelcome },
+                      { p: 'mission', r: this.renderMission },
+                      { p: 'intro', r: this.renderIntro },
+                      { p: 'visualisation', r: this.renderVisualisation },
+                    ]
+                  )
+                }
               </div>
-            </BoardContext> 
-          )
-        }
+              <Footer />
+            </div>
+          </BoardContext> 
+        )
+      }
       </AppConsumer>
     );
   }

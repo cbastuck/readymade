@@ -6,10 +6,7 @@ import { request } from '../core/actions';
 import { parseResponse } from './MultiformParser';
 import { restoreToken } from '../core/Auth';
 import { serializeWebsocketBuffer } from '../core/format';
-import ServiceContainer from './ServiceContainer';
-
-//TODO: remove
-import defaultRegistry from './registry/Default';
+import ServiceUiContainer from './ServiceUiContainer';
 
 function logInfo(msg) {
   // console.log(msg);
@@ -25,16 +22,17 @@ export default class BrowserRuntime extends Component {
     return new BrowserRuntime(runtime, { ...params, user, registry });
   }
 
-  static findServiceUi(serviceId) {
-    const a = BrowserRuntime.__createdRegistry || defaultRegistry;
-    return a.find(s => serviceId === s.serviceId && s.createUI);
-  }
+  serviceInstances = {};
 
-  componentDidMount() {
-    const that = this;
-    this.app = {
-      next: that.next,
-      getServiceById: id => this.services.find(s => s.uuid === id),
+  createApp = () => {
+    const { services } = this.props;
+    if (!services) {
+      return;
+    }
+
+    return {
+      next: this.next,
+      getServiceById: id => services.find(s => s.uuid === id),
       sendAction: action => {
         // the sandbox for example registers a listener 
         // for these kind of actions
@@ -61,28 +59,33 @@ export default class BrowserRuntime extends Component {
   }
 
   next = async (service, params, requestId=null, advanceBeforeProcess=true) => {
-    const { runtime } = this.pops;
+    const { 
+      onResult, 
+      services,
+    } = this.props;
     
-    const position = this.services.findIndex(s => s === service);
+    const position = services.findIndex(s => s.uuid === service.uuid);
     if (position === -1) {
       return console.error('Called next() in browser but could not find current service', service);
     }
 
-    let svc = this.services[position];
+    let svc = services[position];
     let result = params;
-    for (let i = advanceBeforeProcess ? position+1 : position; !!this.services[i]; ++i) {
-      svc = this.services[i];
-      result = await svc.process(params);
+    for (let i = advanceBeforeProcess ? position+1 : position; !!services[i]; ++i) {
+      svc = services[i];
+      const serviceInstance = this.serviceInstance(svc)
+      result = await serviceInstance.process(params);
       params = result;
     }
-    const resultReceiver = runtime.sendResult || this.sendResult;
+    const resultReceiver = onResult || this.sendResult;
     await resultReceiver(svc.uuid, result, requestId);
     return result;
   }
 
   connect(id) {
-    const { board, user, runtimeName } = this.props;
-    const backendPath = `/api/${user.userId}/${board}/${id}`;
+    const { userId, runtime, boardName } = this.props;
+    const { name: runtimeName } = runtime;
+    const backendPath = `/api/${userId}/${boardName}/${id}`;
     logInfo(`Connecting ${runtimeName} to ${backendPath}`);
     
     const useWebSockets = true;
@@ -97,7 +100,8 @@ export default class BrowserRuntime extends Component {
   }
 
   connectRuntimeViaWebSocket(backendHost, backendPath, secureConnection) {
-    const { runtimeId, runtimeName } = this.props;
+    const { runtime } = this.props;
+    const { id: runtimeId, name: runtimeName } = runtime;
     function rebuild(json, message) {
       return Object.keys(json).reduce(
         (acc, key) => {
@@ -140,7 +144,8 @@ export default class BrowserRuntime extends Component {
   }
 
   connectRuntimeViaEventSource(backendPath) {
-    const { runtimeId } = this.props;
+    const { runtime } = this.props;
+    const { id: runtimeId } = runtime;
     this.eventSource = new EventSource(backendPath);
     
     const onMessage = e => this.onMessage(e.data ? JSON.parse(e.data) : e);
@@ -168,8 +173,8 @@ export default class BrowserRuntime extends Component {
 
   onMessage(command) {
     switch (command.action) {
-      case 'create':
-        return this.createService(command.descriptor, command.uuid, command.initialConfig);
+      //case 'create':
+      //  return this.createService(command.descriptor, command.uuid, command.initialConfig);
       case 'config':
         return this.configureService(command.uuid, command.config);
       case 'process':
@@ -183,8 +188,15 @@ export default class BrowserRuntime extends Component {
     }
   }
 
-  async sendResult(serviceUuid, data, requestId) {
-    const { user, runtimeId } = this.props;
+  sendResult = async (serviceUuid, data, requestId) => {
+    const { userId, runtime, boardName } = this.props;
+    const { id: runtimeId } = runtime;
+
+    if (!userId) {
+      console.error('Can not send result without valid UserId', runtime, boardName)
+      return;
+    }
+
     if (!runtimeId) {
       return console.error('Could not send result data, no backend is connected');
     }
@@ -194,7 +206,7 @@ export default class BrowserRuntime extends Component {
         data, 
         {
           board: this.board,
-          userId: user.userId,
+          userId,
           serviceUuid,
           requestId,
         }
@@ -202,11 +214,12 @@ export default class BrowserRuntime extends Component {
       this.websocket.send(buffer);
       return null;
     } else { // ... or as post
-      return request(`${user.userId}/${this.board}/${runtimeId}/${requestId}`, 'POST', false, data);
+      return request(`${userId}/${boardName}/${runtimeId}/${requestId}`, 'POST', false, data);
     }
   }
 
   createService({ serviceId, serviceName, board }, id, initialConfig) {
+    console.error('WHY ARE YOU CALLING CREATESERVICE')
     const { registry } = this.props;
     const descriptor = registry.find(elem => elem.serviceId === serviceId);
     if (descriptor) {
@@ -223,17 +236,19 @@ export default class BrowserRuntime extends Component {
   }
 
   configureService(uuid, config) {
-    const service = this.services.find(s => s.uuid = uuid);
+    const { services } = this.props;
+    const service = services.find(s => s.uuid = uuid);
     if (!service) {
-      return console.error(`Could not find browser service to configure: ${uuid} in ${JSON.stringify(this.services)}`);
+      return console.error(`Could not find browser service to configure: ${uuid} in ${JSON.stringify(services)}`);
     }
     service.configure(config);
   }
 
   async processService(uuid, params, requestId) {
-    const position = (uuid === null) ? 0 : this.services.findIndex(s => s.uuid = uuid);
+    const { services } = this.props;
+    const position = (uuid === null) ? 0 : services.findIndex(s => s.uuid = uuid);
     if (position === -1) {
-      return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
+      return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(services)}`);
     }
     
     // if it's not an object it's a binary buffer base64 encoded
@@ -244,22 +259,24 @@ export default class BrowserRuntime extends Component {
       ) :
       params;
 
-    const service = this.services[position];
+    const service = services[position];
     if (service) {
       return this.next(service, data, requestId, false);
     }
   }
 
   destroyService(uuid) {
-    const service = this.services.find(s => s.uuid = uuid);
+    const { services } = this.props;
+    const service = services.find(s => s.uuid = uuid);
     if (!service) {
-      return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.services)}`);
+      return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(services)}`);
     }
     service.destroy && service.destroy();
   }
 
   getServiceById(uuid) {
-    return this.services.find(s => s.uuid === uuid);
+    const { services } = this.props;
+    return services.find(s => s.uuid === uuid);
   }
 
   destroyRuntime() {
@@ -273,12 +290,50 @@ export default class BrowserRuntime extends Component {
     }
   }
 
+  serviceInstance = service => {
+    const instance = this.serviceInstances[service.uuid];
+    if (instance) {
+      return instance;
+    }
+
+    if (!this.app) {
+      this.app = this.createApp();
+    }
+    
+    const { registry, boardName } = this.props;
+    const { serviceId, serviceName } = service;
+    const descriptor = registry.availableServices.find(elem => elem.serviceId === serviceId);
+    if (descriptor) {
+      const svc = descriptor.create(this.app, boardName, descriptor, service.uuid);
+      svc.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };
+      svc.configure(service);
+      this.serviceInstances[service.uuid] = svc;
+      return svc;
+    } 
+    console.error('No browser service descriptor found for ', serviceId, registry)
+    return service; // try not to crash
+  }
+
   render() {
-    const { services, ...props } = this.props;
+    const {
+      userId,
+      boardName,
+      runtime, 
+      readonly,
+      onArrangeService,
+      services: rawServices, 
+      registry,
+    } = this.props;
+    const services = rawServices && rawServices.map(svc => this.serviceInstance(svc));
     return (
-      <ServiceContainer
-        {...props} 
-        services={services} 
+      <ServiceUiContainer
+        boardName={boardName}
+        runtime={runtime}
+        readonly={readonly}
+        services={services}
+        registry={registry}
+        userId={userId}
+        onArrangeService={onArrangeService}
       />
     );
   }

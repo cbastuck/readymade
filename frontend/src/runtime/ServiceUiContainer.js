@@ -38,35 +38,40 @@ class DropBar extends Component {
   }
 }
 
-export default class ServiceContainer extends Component {
+export default class ServiceUiContainer extends Component {
   render() {
     const {
-      services=[], 
-      readonly=false,
-      boardName,
-      runtimeId,
       userId,
-      onDrop,
+      boardName,
+      runtime,
+      services,
+      registry,
+      onArrangeService,
+      readonly=false,
     } = this.props;
 
-    return services.map((service, pos) => {
-        const serviceUi = readonly ? 
-          createPlaceholderUI(service) :
-          createServiceUI(boardName, service, runtimeId, userId)
-        return (
-          <div 
-            key={`scene-frame-${service.uuid}`}
-            style={{ display: 'flex', flexDirection: 'row' }}
-          >
-            { pos === 0 && <DropBar index={0} onDrop={onDrop} /> }
-            <ServiceFrame
-              service={service}
-              serviceUi={serviceUi}
-              onAction={this.onServiceAction}
-            />
-            <DropBar index={pos+1} onDrop={onDrop} />
-          </div>
-        );
-      });
+    if (!services) {
+      return false;
+    }
+
+    return services && services.map((service, pos) => {
+      const serviceUi = readonly ? 
+        createPlaceholderUI(service) :
+        createServiceUI(registry, boardName, service, runtime.id, userId)
+      return (
+        <div 
+          key={`scene-frame-${service.uuid}`}
+          style={{ display: 'flex', flexDirection: 'row' }}
+        >
+          { pos === 0 && <DropBar index={0} onDrop={onArrangeService} /> }
+          <ServiceFrame
+            service={service}
+            serviceUi={serviceUi}
+            onAction={this.onServiceAction}
+          />
+          <DropBar index={pos+1} onDrop={onArrangeService} />
+        </div>
+      );
+    });
   }
 }

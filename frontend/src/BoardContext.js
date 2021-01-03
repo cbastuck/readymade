@@ -85,6 +85,9 @@ class BoardContext extends Component {
 
   fetchData = async () => {
     const { fetchData=this.fetchDataDefault } = this.props;
+    if (fetchData === false) {
+      return;
+    }
     const {
       board,
       services, 
@@ -120,6 +123,7 @@ class BoardContext extends Component {
 
     this.setState({
       board,
+      boardName: board && board.name,
       runtimes,
       registry,
       services,
@@ -238,7 +242,7 @@ class BoardContext extends Component {
     if (boardName) {
       const params = {};
       if (type === 'browser') {
-        params.registry = new BrowserRegistry([], user).availableServices;
+        params.registry = await BrowserRegistry.create([], user).availableServices;
         const browser = new UAParser().getBrowser();
         if (browser) {
           name = browser.name;

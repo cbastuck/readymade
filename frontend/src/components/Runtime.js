@@ -246,16 +246,15 @@ export default class Runtime extends Component {
     const { 
       style,
       runtime=null,
+      runtimeId=runtime && runtime.id,
       runtimeName=runtime ? runtime.name : 'Blank',
-      frameless=false,
       boardContext=null,
       services=boardContext && boardContext.services[runtime && runtime.id],
-      runtimeId=runtime && runtime.id,
-      user=boardContext && boardContext.user,
       userId=boardContext && boardContext.user && boardContext.user.userId,
       boardName=boardContext && boardContext.boardName,
       registry=boardContext && boardContext.registry[runtime && runtime.id],
-      bundles=[],
+      frameless=false,
+      onResult=undefined,
     } = this.props;
 
     const appViewMode = boardContext && boardContext.appViewMode;
@@ -279,7 +278,7 @@ export default class Runtime extends Component {
       } :
       {};
 
-    const onDrop = (serviceUuid, position) => boardContext.arrangeService(
+    const onArrangeService = (serviceUuid, position) => boardContext.arrangeService(
       runtime, serviceUuid, position
     );
 
@@ -332,30 +331,30 @@ export default class Runtime extends Component {
             }}
             onClickCapture={e => readonly && e.stopPropagation()}
           >
-
           {
             expanded && runtime && runtime.type === 'node' && (
               <RemoteRuntime
-                board={boardName}
                 userId={userId}
-                services={services}
+                boardName={boardName}
                 runtime={runtime}
+                services={services}
                 readonly={readonly}
-                onDrop={onDrop}
+                registry={registry}
+                onArrangeService={onArrangeService}
               />
             )
           }
           {
             expanded && runtime && runtime.type === 'browser' && (
               <BrowserRuntime
-                board={boardName}
-                runtimeId={runtimeId}
-                runtimeName={runtimeName}
-                bundles={bundles}
-                user={user}
+                userId={userId}
+                boardName={boardName}
+                runtime={runtime}
                 services={services}
                 readonly={readonly}
-                onDrop={onDrop}
+                registry={registry}
+                onArrangeService={onArrangeService}
+                onResult={onResult}
               />
             )
           }

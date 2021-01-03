@@ -2,12 +2,16 @@ import { loadBundle } from './Bundles';
 import defaultRegistry from './registry/Default';
 
 export default class BrowserRegistry {
-  constructor(bundles, user) {
-    this.availableServices = defaultRegistry;
-    const promise = bundles ? this.loadBundles(bundles) : Promise.resolve();
+  static async create(bundles, user) {
+    const registry = new BrowserRegistry();
+    registry.availableServices = defaultRegistry;
+    if (bundles) {
+      await registry.loadBundles(bundles);
+    } 
     if (user) {
-      promise.then(() => this.loadUserBundles(user));
+      await registry.loadUserBundles(user);
     }
+    return registry;
   }
 
   loadUserBundles = async user => {

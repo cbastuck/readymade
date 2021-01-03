@@ -16,9 +16,14 @@ import HTMLTemplatesUI from './components/services/HTMLTemplatesUI';
 import FileS3UI from './components/services/FileS3UI';
 import AggregatorUI from './components/services/AggregatorUI';
 */
-import OutputUI from './components/services/OutputUI';
 
-import BrowserRuntime from './runtime/BrowserRuntime';
+import OutputUI from './components/services/OutputUI';
+import defaultRegistry from './runtime/registry/Default';
+
+function findServiceUi(registry, serviceId) {
+  const a = registry ? registry.availableServices : defaultRegistry;
+  return a.find(s => serviceId === s.serviceId && s.createUI);
+}
 
 export function createPlaceholderUI(service) {
   return (
@@ -31,7 +36,7 @@ export function createPlaceholderUI(service) {
   );
 }
 
-export function createServiceUI(board, service, runtimeId, userId=undefined) {
+export function createServiceUI(registry, board, service, runtimeId, userId=undefined) {
   const serviceId = service.serviceId || service.__descriptor.serviceId;
   switch(serviceId) {
     case 'hookup.to/service/output': {
@@ -74,7 +79,7 @@ export function createServiceUI(board, service, runtimeId, userId=undefined) {
       break;
   }
 
-  const factory = BrowserRuntime.findServiceUi(serviceId);
+  const factory = findServiceUi(registry, serviceId);
   if (factory) {
     const props = {
       service, 

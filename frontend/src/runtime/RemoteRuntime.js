@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 
 import WebsocketChannel from './WebsocketChannel';
-import ServiceContainer from './ServiceContainer';
+import ServiceUiContainer from './ServiceUiContainer';
 
 function logInfo(msg) {
   // console.log(msg);
@@ -14,11 +14,18 @@ export default class RemoteRuntime extends Component {
   }
 
   connect = () => {
-    const { userId, board, runtime } = this.props;
-    const backendPath = `/api/${userId}/${board}/runtime/${runtime.id}`;
+    const { 
+      userId, 
+      boardName, 
+      runtime 
+    } = this.props;
+    const backendPath = `/api/${userId}/${boardName}/runtime/${runtime.id}`;
     logInfo(`Connecting ${runtime.name} to ${backendPath}`);
 
-    const { host: backendHost, protocol } = window.location; 
+    const { 
+      host: backendHost, 
+      protocol 
+    } = window.location; 
     const url = `${backendHost}${backendPath}`;
     if (this.remoteRuntimeWebsocket) {
       this.remoteRuntimeWebsocket.close();
@@ -43,6 +50,26 @@ export default class RemoteRuntime extends Component {
   }
 
   render() {
-    return <ServiceContainer {...this.props} />;
+    const { 
+      userId,
+      boardName,
+      services, 
+      runtime, 
+      readonly,
+      onArrangeService,
+      registry
+    } = this.props;
+
+    return (
+      <ServiceUiContainer 
+        userId={userId}
+        boardName={boardName}
+        runtime={runtime}
+        readonly={readonly}
+        services={services}
+        registry={registry}
+        onArrangeService={onArrangeService}
+      />
+    );
   }
 }

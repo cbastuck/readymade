@@ -6,32 +6,34 @@ import queryString from 'query-string';
 import Runtime from './components/Runtime';
 import BoardProvider, { BoardConsumer } from './BoardContext';
 import DragProvider from './DragContext';
-import BrowserRuntime from './runtime/BrowserRuntime';
+import BrowserRegistry from './runtime/BrowserRegistry';
 
 function extractRuntimeData(data) {
-    if (data.id && data.services) {
-      return data;
-    }
-
-    const runtimesInData = Object.keys(data);
-    const browserRuntimeIds = runtimesInData.filter(runtimeId => data[runtimeId].type === 'browser');
-    const firstBrowserRuntimeId = browserRuntimeIds[0];
-    if (!firstBrowserRuntimeId) {
-      return;
-    }
-
-    const firstBrowserRuntimeData = data[firstBrowserRuntimeId];
-    if (!firstBrowserRuntimeData || !firstBrowserRuntimeData.services) {
-      return;
-    }
-
-    firstBrowserRuntimeData.id = firstBrowserRuntimeId;
-    return firstBrowserRuntimeData;
+  if (data.id && data.services) {
+    return data;
   }
+
+  const runtimesInData = Object.keys(data);
+  const browserRuntimeIds = runtimesInData.filter(
+    runtimeId => data[runtimeId].type === 'browser'
+  );
+  const firstBrowserRuntimeId = browserRuntimeIds[0];
+  if (!firstBrowserRuntimeId) {
+    return;
+  }
+
+  const firstBrowserRuntimeData = data[firstBrowserRuntimeId];
+  if (!firstBrowserRuntimeData || !firstBrowserRuntimeData.services) {
+    return;
+  }
+
+  firstBrowserRuntimeData.id = firstBrowserRuntimeId;
+  return firstBrowserRuntimeData;
+}
 
 export default class Sandbox extends Component {
   state = {
-    data: '',
+    runtime: undefined,
     options: {
       frameless: true,
     }
@@ -64,9 +66,8 @@ export default class Sandbox extends Component {
   }
 
   configureService = (serviceId, config) => {
-    const { runtime } = this.state; // TODO: use ref to configure browser service inside the runtime
-    if (runtime) {
-      const service = runtime.app.getServiceById(serviceId);
+    if (this.runtime) {
+      const service = this.runtime.app.getServiceById(serviceId);
       if (service) {
         service.configure(config);
       }
@@ -96,13 +97,20 @@ export default class Sandbox extends Component {
       }
       return s;
     });
-      
-    this.setState({ data: firstBrowserRuntimeData});
-    
+    this.setState({ 
+      runtime: {
+        id: firstBrowserRuntimeData.id,
+        name: 'Sandbox',
+        type: firstBrowserRuntimeData.type,
+        bundles: firstBrowserRuntimeData.bundles
+      },
+      services: firstBrowserRuntimeData.services,
+    });
     return firstBrowserRuntimeData;
   }
 
   createBrowserRuntime = async (backendData, bundles) => {
+    /*
     const { onResult = (uuid, result) => {} } = this.props;
     const runtime = await BrowserRuntime.createInstance({ 
         id: `${backendData.id}-public`, 
@@ -117,29 +125,39 @@ export default class Sandbox extends Component {
       return svc;
     });
     return { runtime, createdServices };
+    */
+  }
+
+  fetchData = async () => {
+    const { boardName='Sandbox' } = this.props;
+    const { runtime, services } = this.state;
+    return {
+      board: { name: boardName },
+      runtimes: [ runtime ], 
+      services: {
+        [runtime.id]: services,
+      },
+      registry: {
+        [runtime.id]: await BrowserRegistry.create(runtime.bundles)
+      }
+    };
+  }
+
+  onResult = (serviceUuid, result) => {
+    console.log('Sandbox result', serviceUuid, result);
   }
 
   renderSandbox = boardContext => {
-    const {
-      runtime,
-      options,
-      createdServices,
-      data,
-    } = this.state;
-
-    const runtimeId = runtime ? runtime.id : 'anonymousRuntime';
+    const { options, runtime } = this.state;
     return (
-      <DragProvider key={`sandbox-drag-provider-${runtimeId}`}>
+      <DragProvider key={`sandbox-drag-provider-${runtime.id}`}>
         <Runtime
           style={{ marginBottom: 5 }}
-          runtime={{
-            runtimeName: 'Sandbox',
-            runtimeId,
-          }}
+          ref={runtime => this.runtime=runtime}
+          runtime={runtime}
           frameless={options && options.frameless}
-          services={createdServices}
           boardContext={boardContext}
-          bundles={data.bundles}
+          onResult={this.onResult}
         />
       </DragProvider>
     );
@@ -148,28 +166,29 @@ export default class Sandbox extends Component {
   render() {
     const { 
       boardContext,
-      boardName='Sandbox',
     } = this.props;
 
     const { runtime } = this.state;
+    if (!runtime) {
+      return false;
+    }
 
     return boardContext ? 
       this.renderSandbox(boardContext) : 
       (
         <BoardProvider
-          key={runtime && runtime.id}
-          boardName={boardName}
-          fetchData={false}
-          getCurrentBrowserRuntime={_ => runtime}
+          key={`sandbox-runtime-${runtime && runtime.id}`}
+          fetchData={this.fetchData}
+          getCurrentBrowserRuntime={_ => this.runtime}
         >
           <BoardConsumer>
-            { 
-              boardContext => 
-                this.renderSandbox({
-                  ...boardContext, 
-                  isRuntimeInScope: () => false 
-                })
-            }
+          { 
+            boardContext => 
+              this.renderSandbox({
+                ...boardContext, 
+                isRuntimeInScope: () => false 
+              })
+          }
           </BoardConsumer>
         </BoardProvider>
       )

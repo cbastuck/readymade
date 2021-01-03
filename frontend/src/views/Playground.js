@@ -13,8 +13,6 @@ const defaultBundles = [
   'hookup.to/registry/browser/Audio'
 ];
 
-const defaultRegistry = new BrowserRegistry(defaultBundles);
-
 export default class Playground extends Component {
   state = {
     persistBoard: false,
@@ -174,12 +172,16 @@ export default class Playground extends Component {
         services,
       });
     }
+    
+    if (!this.defaultRegistry) {
+      this.defaultRegistry = await BrowserRegistry.create(defaultBundles); 
+    }
 
     const data = {
       runtimes, 
       services, 
       registry: runtimes && runtimes.reduce(
-        (all, rt) => ({ ...all, [rt.id]: defaultRegistry.availableServices }), 
+        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
         {}
       ),
     };
