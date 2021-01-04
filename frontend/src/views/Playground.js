@@ -31,6 +31,8 @@ export default class Playground extends Component {
     { name: 'browser', args: 'browser' },
   ];
 
+  runtimeInstances = {};
+
   restoreBoard = () => {
     const data = localStorage.getItem('hkp-playground');
     return data ? JSON.parse(data) : {};
@@ -79,7 +81,7 @@ export default class Playground extends Component {
     }
 
     const svc = {
-      __descriptor: descriptor,
+      ...descriptor,
       uuid: uuid.v4(),
     };
     this.setState({
@@ -100,8 +102,7 @@ export default class Playground extends Component {
     const rt = {
       id: runtimeId,
       name: `Runtime-${runtimes ? runtimes.length + 1 : 1}`,
-      type: 'browser',
-      sendResult: this.onResult.bind(this, runtimeId),
+      type: 'browser'
     };
     this.setState({
       runtimes: runtimes.concat(rt),
@@ -115,7 +116,8 @@ export default class Playground extends Component {
   clearPlayground = () => {
     const { runtimes } = this.state;
     for (const runtime of runtimes) {
-      runtime.destroyRuntime();
+      const rt = this.runtimeInstances[runtime.id];
+      rt.destroyRuntime();
     }
     this.setState({ services: {}, runtimes: [] });
   }
@@ -145,13 +147,20 @@ export default class Playground extends Component {
     }
   }
 
-  onResult = (runtimeId, svcUuid, result) => {
-    const { runtimes } = this.state;
-    const pos = runtimes.findIndex(rt => rt.id === runtimeId);
+  onResult = (runtime, svcUuid, result) => {
+    const { runtimes, services } = this.state;
+    const pos = runtimes.findIndex(rt => rt.id === runtime.id);
     if (pos !== -1) {
       const nextRuntime = runtimes[pos + 1];
       if (nextRuntime) {
-        nextRuntime.processService(null, result);
+        const instance = this.runtimeInstances[nextRuntime.id];
+        if (instance) {
+          const nextServices = services[nextRuntime.id];
+          const first = nextServices[0];
+          if (first) {
+            instance.processService(first.uuid, result);
+          }
+        }
       }
     }
   }
@@ -178,10 +187,11 @@ export default class Playground extends Component {
     }
 
     const data = {
+      board: { name: 'Playground' },
       runtimes, 
       services, 
       registry: runtimes && runtimes.reduce(
-        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
+        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry }), 
         {}
       ),
     };
@@ -200,8 +210,10 @@ export default class Playground extends Component {
           >
             <Runtime
               key={`sandbox-playground-${runtime.id}`}
-              runtime={runtime}
+              ref={rt => this.runtimeInstances[runtime.id] = rt}
               boardContext={boardContext}
+              runtime={runtime}
+              onResult={this.onResult.bind(this, runtime)}
             />
           </DragProvider>
         )
@@ -235,7 +247,7 @@ export default class Playground extends Component {
               <div style={s(t.w100, t.tr)}>
                 <Checkbox 
                   style={s(t.uc, t.ls1, t.fs11, t.m(10, 20))}
-                  slider
+                  toggle
                   checked={persistBoard}
                   onChange={(_, { checked }) => 
                     this.setState(

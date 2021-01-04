@@ -209,10 +209,12 @@ export default class ServiceReference extends Component {
 
   renderServiceSandbox = (service, name) => {
     return (
-      <Sandbox
-        ref={sandbox => this.sandbox = sandbox}
-        data={getSandboxData(service, name)}
-      />
+      <div style={{ margin: 10 }}>
+        <Sandbox
+          ref={sandbox => this.sandbox = sandbox}
+          data={getSandboxData(service, name)}
+        />
+      </div>
     );
   }
 
@@ -222,26 +224,27 @@ export default class ServiceReference extends Component {
       return false;
     }
 
-    const headlineStyle = s(t.m(10, 0), t.fs14, t.uc, t.ls1);
+    const headlineStyle = s(t.m(10, 10), t.fs14, t.uc, t.ls1);
     return (
       <div style={s(t.fill, t.fs12)}>
-      <h1 style={headlineStyle}>About this documentation</h1>
-      <div style={s(t.m10, t.uc, t.ls1, { marginBottom: 20 })}>
-        <div>
-          The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{name}</span> service in different configurations and inject input data. The
+        <h1 style={headlineStyle}>About this documentation</h1>
+        <div style={s(t.m10, t.uc, t.ls1, { marginBottom: 20 })}>
+          <div>
+            The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{name}</span> service in different configurations and inject input data. The
+          </div>
+          <div>
+            The monitor service at the output shows how the injected data is processed.
+          </div>
         </div>
-        <div>
-          The monitor service at the output shows how the injected data is processed.
-        </div>
-      </div>
-      <h1 style={headlineStyle}>{name}-service in Action</h1>
-      { this.renderServiceSandbox(service, name) }
-      <h1 style={headlineStyle}>Detailed description</h1>
-      <ReferenceTemplate 
-        name={name}
-        url={`/serviceDocs/${service}.json`}
-        renderFetched={data => this.renderFetchedDocs(service, data)}
-      />
+        <h1 style={headlineStyle}>{name}-service in Action</h1>
+        { this.renderServiceSandbox(service, name) }
+        <h1 style={headlineStyle}>Detailed description</h1>
+        <ReferenceTemplate 
+          name={name}
+          url={`/serviceDocs/${service}.json`}
+          renderFetched={data => this.renderFetchedDocs(service, data)}
+        />
+        <div style={{ height: 10 }} />
       </div>
     );
   }

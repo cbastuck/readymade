@@ -20,7 +20,7 @@ export default class Welcome extends Component {
 
   componentDidMount() {
     setTimeout(() => {
-      this.setState({ page: 'welcome' });
+      this.setState({ page: 'visualisation' }); //'welcome' });
     }, 200);
   }
 

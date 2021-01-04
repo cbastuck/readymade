@@ -32,7 +32,7 @@ export default class BrowserRuntime extends Component {
 
     return {
       next: this.next,
-      getServiceById: id => services.find(s => s.uuid === id),
+      getServiceById: this.getServiceById,
       sendAction: action => {
         // the sandbox for example registers a listener 
         // for these kind of actions
@@ -241,12 +241,15 @@ export default class BrowserRuntime extends Component {
     if (!service) {
       return console.error(`Could not find browser service to configure: ${uuid} in ${JSON.stringify(services)}`);
     }
-    service.configure(config);
+    const svc = this.serviceInstance(service);
+    if (svc) {
+      svc.configure(config);
+    }
   }
 
   async processService(uuid, params, requestId) {
     const { services } = this.props;
-    const position = (uuid === null) ? 0 : services.findIndex(s => s.uuid = uuid);
+    const position = services.findIndex(s => s.uuid = uuid);
     if (position === -1) {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(services)}`);
     }
@@ -274,12 +277,15 @@ export default class BrowserRuntime extends Component {
     service.destroy && service.destroy();
   }
 
-  getServiceById(uuid) {
+  getServiceById = uuid => {
     const { services } = this.props;
-    return services.find(s => s.uuid === uuid);
+    const svc = services.find(s => s.uuid === uuid);
+    return this.serviceInstance(svc);
   }
 
-  destroyRuntime() {
+  destroyRuntime = () => {
+    const { services } = this.props;
+
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = undefined;
@@ -288,9 +294,16 @@ export default class BrowserRuntime extends Component {
       this.websocket.close();
       this.websocket = undefined;
     }
+    
+    for (const service of services) {
+      this.destroyService(service.uuid);
+    }
   }
 
   serviceInstance = service => {
+    if (!service) {
+      return;
+    }
     const instance = this.serviceInstances[service.uuid];
     if (instance) {
       return instance;
@@ -310,7 +323,7 @@ export default class BrowserRuntime extends Component {
       this.serviceInstances[service.uuid] = svc;
       return svc;
     } 
-    console.error('No browser service descriptor found for ', serviceId, registry)
+    console.error('No browser service descriptor found for ', service, registry)
     return service; // try not to crash
   }
 

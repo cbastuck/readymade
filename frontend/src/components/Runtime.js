@@ -77,9 +77,40 @@ export default class Runtime extends Component {
     }
   }
 
+  getServiceById = serviceUuid => {
+    const { boardContext, runtime } = this.props;
+    const services = boardContext.services[runtime.id];  
+    return (this.impl && this.impl.getServiceById) ? 
+      this.impl.getServiceById(serviceUuid) : 
+      services.find(svc => svc.uuid === serviceUuid);
+  }
+
+  processService = (serviceUuid, params) => {
+    const service = this.getServiceById(serviceUuid);
+    if (service) {
+      service.process(params);
+    } else {
+      console.error('Process service failed', serviceUuid);
+    }
+  }
+
+  configureService = (serviceUuid, config) => {
+    const service = this.getServiceById(serviceUuid);
+    if (service) {
+      service.configure(config);
+    } else {
+      console.error('Configuring service failed', serviceUuid);
+    }
+  }
+
+  destroyRuntime = () => {
+    return this.impl && this.impl.destroyRuntime && this.impl.destroyRuntime();
+  }
+
   renderServiceMenu(runtimeId, runtimeName, registry, appViewMode) {
     const wide = appViewMode === 'wide';
-    const options = registry.map(s => ({
+    const availableServices = registry.availableServices || [];
+    const options = availableServices.map(s => ({
       key: `${runtimeId}${s.serviceId}`, 
       value: s.serviceId, 
       text: s.serviceName,
@@ -105,9 +136,11 @@ export default class Runtime extends Component {
           selectOnBlur={false}
           onChange={(ev, { value }) => {
             if (value) {
-              const service = registry.find(s => s.serviceId === value);
-              this.onAddService(service);
-              this.dropdown.clearValue();
+              const service = availableServices.find(s => s.serviceId === value);
+              if (service) {
+                this.onAddService(service);
+                this.dropdown.clearValue();
+              }
             }
           }}
           compact={!wide}
@@ -246,17 +279,17 @@ export default class Runtime extends Component {
     const { 
       style,
       runtime=null,
-      runtimeId=runtime && runtime.id,
-      runtimeName=runtime ? runtime.name : 'Blank',
       boardContext=null,
-      services=boardContext && boardContext.services[runtime && runtime.id],
-      userId=boardContext && boardContext.user && boardContext.user.userId,
-      boardName=boardContext && boardContext.boardName,
-      registry=boardContext && boardContext.registry[runtime && runtime.id],
       frameless=false,
       onResult=undefined,
     } = this.props;
 
+    const runtimeId = runtime && runtime.id;
+    const runtimeName = runtime ? runtime.name : 'Blank';
+    const services = boardContext && boardContext.services[runtime && runtime.id];
+    const userId = boardContext && boardContext.user && boardContext.user.userId;
+    const boardName = boardContext && boardContext.boardName;
+    const registry = boardContext && boardContext.registry[runtime && runtime.id];
     const appViewMode = boardContext && boardContext.appViewMode;
     const wide = boardContext ? appViewMode === 'wide' : true;
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
@@ -334,6 +367,7 @@ export default class Runtime extends Component {
           {
             expanded && runtime && runtime.type === 'node' && (
               <RemoteRuntime
+                ref={rt => this.impl = rt}
                 userId={userId}
                 boardName={boardName}
                 runtime={runtime}
@@ -347,6 +381,7 @@ export default class Runtime extends Component {
           {
             expanded && runtime && runtime.type === 'browser' && (
               <BrowserRuntime
+                ref={rt => this.impl = rt}
                 userId={userId}
                 boardName={boardName}
                 runtime={runtime}

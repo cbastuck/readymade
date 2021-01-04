@@ -82,7 +82,7 @@ export default class ReferenceTemplate extends Component {
     const { state, data } = this.state;
     const { name, renderFetched } = this.props;
     return(
-      <div style={s(t.uc, t.ls1, t.f12, t.tc, t.m(10, 10), t.fill)}>
+      <div style={s(t.uc, t.ls1, t.f12, t.tc, t.m(10, 10))}>
       { 
           state === 'initial' ? false : (
             (state === 'fetching' && this.renderFetching())||

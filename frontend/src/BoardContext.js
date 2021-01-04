@@ -67,6 +67,7 @@ class BoardContext extends Component {
       savedBoards: [],
     };
 
+    // TODO: this must be removed!! lifetime is handled by react
     this.browserRuntimes = [];
   }
 
@@ -237,25 +238,28 @@ class BoardContext extends Component {
   addRuntime = async (type, name) => {
     const { user } = this.state;
     const { addRuntime=this.addRuntimeDefault } = this.props;
-
     const boardName = this.getBoardName();
-    if (boardName) {
-      const params = {};
-      if (type === 'browser') {
-        params.registry = await BrowserRegistry.create([], user).availableServices;
-        const browser = new UAParser().getBrowser();
-        if (browser) {
-          name = browser.name;
-        }
-      }
-      const desc = { 
-        type,
-        name,
-        params,
-      };      
-      await addRuntime(boardName, desc);
-      await this.fetchData();
+    if (!boardName) {
+      console.error('Board name missing for adding a runtime');
+      return;
     }
+
+    const params = {};
+    if (type === 'browser') {
+      params.registry = await BrowserRegistry.create([], user).availableServices;
+      const browser = new UAParser().getBrowser();
+      if (browser) {
+        name = browser.name;
+      }
+    }
+    const desc = { 
+      type,
+      name,
+      params,
+    };
+    await addRuntime(boardName, desc);
+    await this.fetchData();
+  
   }
 
   addRuntimeDefault = async (boardName, desc) => {

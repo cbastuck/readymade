@@ -65,12 +65,9 @@ export default class Sandbox extends Component {
     }
   }
 
-  configureService = (serviceId, config) => {
+  configureService = (serviceUuid, config) => {
     if (this.runtime) {
-      const service = this.runtime.app.getServiceById(serviceId);
-      if (service) {
-        service.configure(config);
-      }
+      this.runtime.configureService(serviceUuid, config);
     }
   }
 
@@ -109,25 +106,6 @@ export default class Sandbox extends Component {
     return firstBrowserRuntimeData;
   }
 
-  createBrowserRuntime = async (backendData, bundles) => {
-    /*
-    const { onResult = (uuid, result) => {} } = this.props;
-    const runtime = await BrowserRuntime.createInstance({ 
-        id: `${backendData.id}-public`, 
-        name: `${backendData.name}-public`,
-        sendResult: onResult,
-      },
-      { bundles }
-    );
-    const createdServices = backendData.services.map(s => {
-      const svc = runtime.createService(s, s.uuid || s.serviceUuid);
-      svc && svc.configure && svc.configure(s);
-      return svc;
-    });
-    return { runtime, createdServices };
-    */
-  }
-
   fetchData = async () => {
     const { boardName='Sandbox' } = this.props;
     const { runtime, services } = this.state;
@@ -144,7 +122,7 @@ export default class Sandbox extends Component {
   }
 
   onResult = (serviceUuid, result) => {
-    console.log('Sandbox result', serviceUuid, result);
+    // console.log('Sandbox result', serviceUuid, result);
   }
 
   renderSandbox = boardContext => {
@@ -164,10 +142,7 @@ export default class Sandbox extends Component {
   }
 
   render() {
-    const { 
-      boardContext,
-    } = this.props;
-
+    const { boardContext } = this.props;
     const { runtime } = this.state;
     if (!runtime) {
       return false;
