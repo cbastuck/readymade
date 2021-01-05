@@ -323,9 +323,7 @@ export default class Examples extends Component {
       <AppConsumer>
         {
           appContext => (
-            <BoardContext
-              fetchData={!!appContext.user && !!appContext.user.username}
-            >
+            <BoardContext>
               <BoardConsumer>
               {
                 boardContext => (

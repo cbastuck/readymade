@@ -16,9 +16,7 @@ export default class LoginFail extends Component {
       <AppConsumer>
         {
           appContext => (
-            <BoardContext
-              fetchData={!!appContext.user && !!appContext.user.username}
-            >
+            <BoardContext>
               <div className="hero-image">
                 <BoardConsumer>
                   {

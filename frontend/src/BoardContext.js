@@ -39,7 +39,7 @@ class BoardContext extends Component {
 
   constructor(props) {
     super(props);
-
+    
     this.state = {
       // API
       fetchData: this.fetchData,
@@ -59,8 +59,8 @@ class BoardContext extends Component {
       appViewMode: 'wide',
 
       user: props.user,
-      board: {},
-      boardName: props.boardName, // TODO: this is also part of board
+      board: {}, // TODO: should remove this property, it's not used
+      boardName: props.boardName,
       runtimes: [],
       services: {},
       registry: {},
@@ -76,19 +76,17 @@ class BoardContext extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    const { user, fetchData } = this.props;
-    if (prevProps.fetchData !== fetchData && !!fetchData) {
-      this.setState({ fetchData }, this.fetchData);
-    } else if (prevProps.user !== user) {
+    const { user, boardName } = this.props;
+    if (prevProps.user !== user) {
       this.setState({ user });
+    }
+    if (prevProps.boardName !== boardName) {
+      this.setState({ boardName });
     }
   }
 
-  fetchData = async () => {
+  async fetchData() {
     const { fetchData=this.fetchDataDefault } = this.props;
-    if (fetchData === false) {
-      return;
-    }
     const {
       board,
       services, 
@@ -122,9 +120,10 @@ class BoardContext extends Component {
       }
     }
 
+    const boardName = (board && board.name) || this.state.boardName;
     this.setState({
       board,
-      boardName: board && board.name,
+      boardName,
       runtimes,
       registry,
       services,
@@ -133,6 +132,10 @@ class BoardContext extends Component {
   }
 
   fetchDataDefault = async () => {
+    const { user } = this.props;
+    if (!user) {
+      return {};
+    }
     try {
       const board = await this.fetchBoard();
       const runtimes = await this.fetchRuntimes();
@@ -172,7 +175,9 @@ class BoardContext extends Component {
     if (runtimes) {
       for (const runtime of runtimes) {
         const runtimeRegistry = await getRuntimeRegistry(board, runtime.id);
-        registry[runtime.id] = runtimeRegistry;
+        registry[runtime.id] = (runtime.type === 'browser') ? 
+          await this.createBrowserRegistry() :  // TODO: prune registry - and warn on missing services
+          runtimeRegistry;
       }
     }
     return registry;
@@ -235,8 +240,13 @@ class BoardContext extends Component {
     console.log('TODO: BoardContext.arrangeService')
   }
 
+  createBrowserRegistry = async () => {
+    const { user } = this.state;
+    const registry = await BrowserRegistry.create([], user); 
+    return registry.availableServices;
+  }
+
   addRuntime = async (type, name) => {
-    const { user } = this.state;
     const { addRuntime=this.addRuntimeDefault } = this.props;
     const boardName = this.getBoardName();
     if (!boardName) {
@@ -246,7 +256,7 @@ class BoardContext extends Component {
 
     const params = {};
     if (type === 'browser') {
-      params.registry = await BrowserRegistry.create([], user).availableServices;
+      params.registry = await this.createBrowserRegistry();
       const browser = new UAParser().getBrowser();
       if (browser) {
         name = browser.name;
@@ -342,6 +352,7 @@ class BoardContext extends Component {
     }
   }
 
+  // TODO: should be removed, function below is doing the same
   getCurrentBrowserRuntime = runtimeId => {
     const board = this.getBoardName();
 
@@ -352,10 +363,13 @@ class BoardContext extends Component {
   }
 
   isRuntimeInScope = runtime => {
-    if (runtime.type === 'browser') {
-      return !!this.browserRuntimes.find(rt => rt.id === runtime.id);
-    } 
-    return true;
+    if (runtime.type !== 'browser') {
+      return true; // TODO: take user into account if shared
+    }
+
+    const board = this.getBoardName();
+    const ownedRuntimes = JSON.parse(localStorage.getItem(`runtimes-${board}`) || '[]');
+    return !!ownedRuntimes.find(runtimeId => runtimeId === runtime.id);
   }
 
   acquireRuntimeScope = (boardname, runtime) => {

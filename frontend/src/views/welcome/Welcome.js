@@ -20,7 +20,7 @@ export default class Welcome extends Component {
 
   componentDidMount() {
     setTimeout(() => {
-      this.setState({ page: 'visualisation' }); //'welcome' });
+      this.setState({ page: 'welcome' });
     }, 200);
   }
 
@@ -264,9 +264,7 @@ export default class Welcome extends Component {
       <AppConsumer>
       {
         appContext => (
-          <BoardContext
-            fetchData={!!appContext.user && !!appContext.user.username}
-          >
+          <BoardContext user={null}>
             <div className="hero-image">
               <BoardConsumer>
               {

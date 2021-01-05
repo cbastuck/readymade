@@ -109,6 +109,7 @@ export default class Sandbox extends Component {
   fetchData = async () => {
     const { boardName='Sandbox' } = this.props;
     const { runtime, services } = this.state;
+    const registry = await BrowserRegistry.create(runtime.bundles);
     return {
       board: { name: boardName },
       runtimes: [ runtime ], 
@@ -116,7 +117,7 @@ export default class Sandbox extends Component {
         [runtime.id]: services,
       },
       registry: {
-        [runtime.id]: await BrowserRegistry.create(runtime.bundles)
+        [runtime.id]: registry.availableServices,
       }
     };
   }
@@ -125,47 +126,43 @@ export default class Sandbox extends Component {
     // console.log('Sandbox result', serviceUuid, result);
   }
 
-  renderSandbox = boardContext => {
-    const { options, runtime } = this.state;
+  renderSandbox(options, runtime, onResult) {
     return (
-      <DragProvider key={`sandbox-drag-provider-${runtime.id}`}>
-        <Runtime
-          style={{ marginBottom: 5 }}
-          ref={runtime => this.runtime=runtime}
-          runtime={runtime}
-          frameless={options && options.frameless}
-          boardContext={boardContext}
-          onResult={this.onResult}
-        />
-      </DragProvider>
+      <BoardConsumer>
+        { 
+          boardContext => (            
+            <DragProvider key={`sandbox-drag-provider-${runtime.id}`}>
+              <Runtime
+                style={{ marginBottom: 5 }}
+                ref={runtime => this.runtime=runtime}
+                runtime={runtime}
+                frameless={options && options.frameless}
+                boardContext={boardContext}
+                onResult={onResult}
+              />
+            </DragProvider>
+          )
+        }
+      </BoardConsumer>
     );
-  }
+  } 
 
   render() {
-    const { boardContext } = this.props;
-    const { runtime } = this.state;
+    const { runtime, options } = this.state;
     if (!runtime) {
       return false;
     }
-
-    return boardContext ? 
-      this.renderSandbox(boardContext) : 
-      (
-        <BoardProvider
-          key={`sandbox-runtime-${runtime && runtime.id}`}
-          fetchData={this.fetchData}
-          getCurrentBrowserRuntime={_ => this.runtime}
-        >
-          <BoardConsumer>
-          { 
-            boardContext => 
-              this.renderSandbox({
-                ...boardContext, 
-                isRuntimeInScope: () => false 
-              })
-          }
-          </BoardConsumer>
-        </BoardProvider>
-      )
-  }
+    
+    return (
+      <BoardProvider
+        fetchData={this.fetchData}
+        getCurrentBrowserRuntime={_ => this.runtime}
+      >
+      {
+        this.renderSandbox(options, runtime, this.onResult) 
+      }  
+      </BoardProvider>
+    );
+  } 
 }
+

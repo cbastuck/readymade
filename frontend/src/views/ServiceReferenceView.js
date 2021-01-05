@@ -21,9 +21,7 @@ export default class ServiceReferenceView extends Component {
       <AppConsumer>
         {
           appContext => (
-            <BoardContext
-              fetchData={!!appContext.user && !!appContext.user.username}
-            >
+            <BoardContext>
               <div 
                 style={{
                   display: 'flex',

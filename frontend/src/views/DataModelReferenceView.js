@@ -16,9 +16,7 @@ export default class DataModelReferenceView extends Component {
       <AppConsumer>
         {
           appContext => (
-            <BoardContext
-              fetchData={!!appContext.user && !!appContext.user.username}
-            >
+            <BoardContext>
               <BoardConsumer>
               {
                 boardContext => (

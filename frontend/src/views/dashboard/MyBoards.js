@@ -120,9 +120,7 @@ export default class MyBoards extends Component {
       <AppConsumer>
         {
           appContext => (
-            <BoardContext
-              fetchData={!!appContext.user && !!appContext.user.username}
-            >
+            <BoardContext>
               <BoardConsumer>
               {
                 boardContext => (

@@ -21,7 +21,7 @@ import OutputUI from './components/services/OutputUI';
 import defaultRegistry from './runtime/registry/Default';
 
 function findServiceUi(registry, serviceId) {
-  const a = registry ? registry.availableServices : defaultRegistry;
+  const a = registry || defaultRegistry;
   return a.find(s => serviceId === s.serviceId && s.createUI);
 }
 

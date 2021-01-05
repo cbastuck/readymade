@@ -85,6 +85,11 @@ export default class Runtime extends Component {
       services.find(svc => svc.uuid === serviceUuid);
   }
 
+  processRuntime = params => {
+    // TODO: does this make sense for browser runtimes only?
+    this.impl.processRuntime && this.impl.processRuntime(params);
+  }
+
   processService = (serviceUuid, params) => {
     const service = this.getServiceById(serviceUuid);
     if (service) {
@@ -109,13 +114,11 @@ export default class Runtime extends Component {
 
   renderServiceMenu(runtimeId, runtimeName, registry, appViewMode) {
     const wide = appViewMode === 'wide';
-    const availableServices = registry.availableServices || [];
-    const options = availableServices.map(s => ({
+    const options = registry.map(s => ({
       key: `${runtimeId}${s.serviceId}`, 
       value: s.serviceId, 
       text: s.serviceName,
     }));
-
     return (
       <div
         id="service-dropdown"
@@ -136,7 +139,7 @@ export default class Runtime extends Component {
           selectOnBlur={false}
           onChange={(ev, { value }) => {
             if (value) {
-              const service = availableServices.find(s => s.serviceId === value);
+              const service = registry.find(s => s.serviceId === value);
               if (service) {
                 this.onAddService(service);
                 this.dropdown.clearValue();

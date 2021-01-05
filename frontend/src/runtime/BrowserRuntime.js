@@ -17,10 +17,12 @@ function serviceDataKey(uuid, key) {
 }
 
 export default class BrowserRuntime extends Component {
+  /*
   static async createInstance(runtime, { user, bundles, ...params } = {}) {
     const registry = await BrowserRuntime.registry(user, bundles);
     return new BrowserRuntime(runtime, { ...params, user, registry });
   }
+  */
 
   serviceInstances = {};
 
@@ -58,15 +60,18 @@ export default class BrowserRuntime extends Component {
     }
   }
 
+  processRuntime = params => 
+    this.next(null, params, null, false);
+  
+  // service parameter can be null, then starts with the first service
   next = async (service, params, requestId=null, advanceBeforeProcess=true) => {
     const { 
       onResult, 
       services,
     } = this.props;
-    
-    const position = services.findIndex(s => s.uuid === service.uuid);
+    const position = service === null ? 0 : services.findIndex(s => s.uuid ===  service.uuid);
     if (position === -1) {
-      return console.error('Called next() in browser but could not find current service', service);
+      return console.error('Called next() in browser but could not find current service', service, services);
     }
 
     let svc = services[position];
@@ -78,7 +83,7 @@ export default class BrowserRuntime extends Component {
       params = result;
     }
     const resultReceiver = onResult || this.sendResult;
-    await resultReceiver(svc.uuid, result, requestId);
+    await resultReceiver(svc && svc.uuid, result, requestId);
     return result;
   }
 
@@ -315,7 +320,7 @@ export default class BrowserRuntime extends Component {
     
     const { registry, boardName } = this.props;
     const { serviceId, serviceName } = service;
-    const descriptor = registry.availableServices.find(elem => elem.serviceId === serviceId);
+    const descriptor = registry.find(elem => elem.serviceId === serviceId);
     if (descriptor) {
       const svc = descriptor.create(this.app, boardName, descriptor, service.uuid);
       svc.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };

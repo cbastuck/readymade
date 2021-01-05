@@ -54,7 +54,7 @@ export default class Template extends Component {
       <AppConsumer>
         {
           appContext => (
-            <BoardContext fetchData={!!appContext.user && !!appContext.user.username}>
+            <BoardContext>
               <BoardConsumer>
               {
                 boardContext => (

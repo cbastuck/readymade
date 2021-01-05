@@ -147,23 +147,20 @@ export default class Playground extends Component {
     }
   }
 
-  onResult = (runtime, svcUuid, result) => {
-    const { runtimes, services } = this.state;
+  getNextRuntime = runtime => {
+    const { runtimes } = this.state;
     const pos = runtimes.findIndex(rt => rt.id === runtime.id);
-    if (pos !== -1) {
-      const nextRuntime = runtimes[pos + 1];
-      if (nextRuntime) {
-        const instance = this.runtimeInstances[nextRuntime.id];
-        if (instance) {
-          const nextServices = services[nextRuntime.id];
-          const first = nextServices[0];
-          if (first) {
-            instance.processService(first.uuid, result);
-          }
-        }
-      }
+    const nextRuntime = (pos !== -1) && runtimes[pos + 1];
+    return nextRuntime && this.runtimeInstances[nextRuntime.id];
+  }
+
+  onResult = (runtime, svcUuid, result) => {
+    const nextRuntime = this.getNextRuntime(runtime);
+    if (nextRuntime) {
+      nextRuntime.processRuntime(result);
     }
   }
+  
 
   fetchData = async () => {
     let runtimes = this.state.runtimes;
@@ -189,9 +186,9 @@ export default class Playground extends Component {
     const data = {
       board: { name: 'Playground' },
       runtimes, 
-      services, 
+      services,
       registry: runtimes && runtimes.reduce(
-        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry }), 
+        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
         {}
       ),
     };
