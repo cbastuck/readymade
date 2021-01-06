@@ -26,6 +26,14 @@ export default class BrowserRuntime extends Component {
 
   serviceInstances = {};
 
+  componentDidMount() {
+    const { runtime, userId } = this.props;
+    if (runtime && userId) {
+      // TODO: this should only happen when we have a backend
+      this.connect(runtime.id);
+    }
+  }
+
   createApp = () => {
     const { services } = this.props;
     if (!services) {
@@ -144,7 +152,7 @@ export default class BrowserRuntime extends Component {
       console.error(`WebSocket ${runtimeId} Error: `, error);
     };
     this.websocket.onopen = event => {
-      logInfo(`WebSocket to ${runtimeId} is open`);
+      logInfo(`BrowserRuntime ${runtimeId} WebSocket is open`);
     }
   }
 

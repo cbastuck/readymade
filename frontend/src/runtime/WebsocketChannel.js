@@ -44,7 +44,7 @@ export default class WebsocketChannel {
   };
 
   onOpen = event => {
-    console.log(`WebSocket to ${this.websocketId} is open`);
+    console.log(`WebsocketChannel ${this.websocketId} is open`);
     if (this.pendingOpenPromise) {
       this.pendingOpenPromise.resolve();
       this.pendingOpenPromise = null;

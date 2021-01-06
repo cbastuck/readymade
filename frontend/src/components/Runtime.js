@@ -296,6 +296,7 @@ export default class Runtime extends Component {
     const appViewMode = boardContext && boardContext.appViewMode;
     const wide = boardContext ? appViewMode === 'wide' : true;
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
+    
     const {
       wrapServices=!wide,
       showSettings,

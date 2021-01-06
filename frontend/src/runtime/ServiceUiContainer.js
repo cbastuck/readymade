@@ -53,7 +53,7 @@ export default class ServiceUiContainer extends Component {
     if (!services) {
       return false;
     }
-
+    
     return services && services.map((service, pos) => {
       const serviceUi = readonly ? 
         createPlaceholderUI(service) :

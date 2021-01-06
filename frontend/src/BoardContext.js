@@ -96,26 +96,16 @@ class BoardContext extends Component {
     } = await fetchData();
     
     for (const runtime of runtimes) {
-      if (runtime.type === 'browser') {
-        const createdServices = await this.restoreBrowserRuntimes(board, runtime, services);
-        if (createdServices) {
-          services[runtime.id] = createdServices;
-        }
-      } else if (runtime.type === 'node') {
-        // wrap the runtime services 
-        // TODO: Probably this should not happen here!
-        for (const svc of services) {
+      // ensure service.configure function exists
+      for (const svc of services[runtime.id]) {
+        if (!svc.configure){
           svc.configure = async config => {
             const resp = await configureService(board, svc, config);
             return resp.json();
           }
         }
-        services[runtime.id] = services;
-      } else {
-        console.error('Unknown runtime type', runtime);
       }
-
-      if (registry) {
+      if (registry && registry[runtime.id]) {
         runtime.registry = registry[runtime.id];
       }
     }

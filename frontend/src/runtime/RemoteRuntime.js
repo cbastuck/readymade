@@ -60,6 +60,8 @@ export default class RemoteRuntime extends Component {
       registry
     } = this.props;
 
+    console.log('REMOTE RUNTKME readonly', readonly, registry)
+
     return (
       <ServiceUiContainer 
         userId={userId}
