@@ -10,13 +10,6 @@ import AccountDropdown from './AccountDropdown';
 import './HeaderMenu.css';
 
 export default class HeaderMenu extends Component {
-  onAction = action => {
-    switch(action.type) {
-      default:
-        this.props.onAction(action);
-    }
-  }
-
   renderHomeIcon() {
     return (
       <div
@@ -82,7 +75,7 @@ export default class HeaderMenu extends Component {
     );
   }
 
-  renderBoardMenu(board) {
+  renderBoardMenu(board, boardContext) {
     const menuItemStyle= { 
       fontSize: 10, 
       textTransform: 'uppercase',
@@ -109,7 +102,7 @@ export default class HeaderMenu extends Component {
             </span>
           </Dropdown.Item>
           <Dropdown.Item
-            onClick={() => this.onAction({
+            onClick={() => boardContext.onAction({
               type: 'clearBoard'
             })}
             disabled={!board}
@@ -119,7 +112,7 @@ export default class HeaderMenu extends Component {
             </span>
           </Dropdown.Item>
           <Dropdown.Item
-            onClick={() => this.onAction({
+            onClick={() => boardContext.onAction({
               type: 'shareBoard',
             })}
             disabled={!board}
@@ -160,7 +153,7 @@ export default class HeaderMenu extends Component {
     );
   }
 
-  renderAccountMenu(appContext) {
+  renderAccountMenu(appContext, boardContext) {
     return (
       <AccountDropdown
         currentUser={appContext.user && appContext.user.username}
@@ -168,7 +161,7 @@ export default class HeaderMenu extends Component {
           if (action.type === 'logout') {
             appContext.logout();
           } else {
-            this.onAction(action)
+            boardContext.onAction(action);
           }
         }}
       />
@@ -197,7 +190,7 @@ export default class HeaderMenu extends Component {
                       this.renderHomeIcon() 
                     }
                     {
-                      appContext.user && this.renderBoardMenu(board)
+                      appContext.user && this.renderBoardMenu(board, boardContext)
                     }
                     {
                       availableRuntimes && this.renderRuntimeMenu(availableRuntimes, boardContext)
@@ -207,7 +200,7 @@ export default class HeaderMenu extends Component {
                         this.renderNavigation(appContext)
                     }
                     {
-                      appContext && this.renderAccountMenu(appContext)
+                      appContext && this.renderAccountMenu(appContext, boardContext)
                     }
                   </Menu>
                 )

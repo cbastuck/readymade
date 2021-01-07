@@ -137,6 +137,10 @@ class TriggerPad {
     this.padAssignments = {};
   }
 
+  destroy() {
+    console.log('Destroying TriggerPad')
+  }
+
   configure(config) { 
   }
 

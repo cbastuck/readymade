@@ -2,8 +2,6 @@ import React, { Component } from 'react';
 
 import HeaderMenu from './HeaderMenu';
 
-// import { clearBoard } from '../core/actions';
-
 export default class Toolbar extends Component {
   render() {
     const { 

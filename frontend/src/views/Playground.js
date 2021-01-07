@@ -137,16 +137,6 @@ export default class Playground extends Component {
     });
   }
 
-  onAction = command => {
-    const { type } = command;
-    switch (type) {
-      case 'clearBoard':
-        return this.clearPlayground();
-      default: 
-      console.log('Playground.onAction not implemented', type);
-    }
-  }
-
   getNextRuntime = runtime => {
     const { runtimes } = this.state;
     const pos = runtimes.findIndex(rt => rt.id === runtime.id);
@@ -229,14 +219,14 @@ export default class Playground extends Component {
         isRuntimeInScope={() => true}
         addRuntime={this.addRuntime}
         addService={this.addService}
-        arrangeService={this.arrangeService} 
+        clearBoard={this.clearPlayground}
+        arrangeService={this.arrangeService}
       >
         <BoardConsumer>
         {
           boardContext => (
             <div style={t.fill}>
               <Toolbar
-                onAction={this.onAction}
                 board={boardContext.boardName}
                 availableRuntimes={this.availableRuntimes}
               />

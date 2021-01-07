@@ -49,7 +49,6 @@ class BoardContext extends Component {
       removeService: this.removeService,
       removeAllServices: this.removeAllServices,
       onAction: props.onAction || this.onAction,
-      getCurrentBrowserRuntime: props.getCurrentBrowserRuntime || this.getCurrentBrowserRuntime,
       isRuntimeInScope: props.isRuntimeInScope || this.isRuntimeInScope,
       acquireRuntimeScope: this.acquireRuntimeScope,
       releaseRuntimeScope: this.releaseRuntimeScope,
@@ -66,9 +65,6 @@ class BoardContext extends Component {
       registry: {},
       savedBoards: [],
     };
-
-    // TODO: this must be removed!! lifetime is handled by react
-    this.browserRuntimes = [];
   }
 
   componentDidMount() {
@@ -195,16 +191,27 @@ class BoardContext extends Component {
     return boards;
   }
 
+  clearBoard = async () => {
+    const { clearBoard=this.clearBoardDefault } = this.props;
+    await clearBoard();
+    await this.fetchData();
+  }
+
+  clearBoardDefault = async () => {
+    const { runtimes } = this.state;
+    for (const runtime of runtimes) {
+      runtime.destroyRuntime && runtime.destroyRuntime();
+    }
+
+    const boardname = this.getBoardName();
+    await clearBoard(boardname);
+  }
+
   onAction = async action => {
     const boardname = this.getBoardName();
     switch (action.type) {
       case 'clearBoard':
-        await clearBoard(boardname);
-        for (const runtime of this.browserRuntimes) {
-          runtime.destroyRuntime();
-        }
-        this.browserRuntimes = [];
-        await this.fetchData();
+        await this.clearBoard();
         break;
       case 'saveBoard':
         const saveState = await saveBoard(boardname);
@@ -300,56 +307,6 @@ class BoardContext extends Component {
       }
     }
     await this.fetchData();
-  }
-
-  restoreBrowserRuntimes = async (board, runtime, services) => {
-    // is the given runtime one handled by this browser?
-    const localBoardRuntimes = JSON.parse(localStorage.getItem(`runtimes-${board}`) || '[]');
-    if (localBoardRuntimes.find(lrt => lrt === runtime.id)) {
-      const localBoardRuntimeId = runtime.id;
-      const exists = this.browserRuntimes.find(brt => brt.id === localBoardRuntimeId);
-      if (exists) {
-        return exists.services; // we already created it 
-      }
-      const createdBrowserServices = [];
-      const params = { 
-        ...runtime.params, 
-        board: this.state.boardName, 
-        user: this.state.user 
-      };
-      const browserRuntime = await BrowserRuntime.createInstance(
-        runtime,
-        params,
-      ); 
-      this.browserRuntimes.push(browserRuntime);
-      browserRuntime.connect(localBoardRuntimeId);
-      for (const service of services) {
-        const browserService = browserRuntime.createService(
-          {
-            serviceId: service.serviceId, 
-            board 
-          }, 
-          service.uuid,
-          service.initialConfig,
-        );
-        if (browserService) {
-          browserService.serviceId = service.serviceId;
-          browserService.serviceName = service.serviceName;
-          createdBrowserServices.push(browserService);
-        }
-      }
-      return createdBrowserServices;
-    }
-  }
-
-  // TODO: should be removed, function below is doing the same
-  getCurrentBrowserRuntime = runtimeId => {
-    const board = this.getBoardName();
-
-    const localRuntimes = JSON.parse(localStorage.getItem(`runtimes-${board}`) || '[]');
-    if (localRuntimes.find(lrt => lrt === runtimeId)) {
-      return this.browserRuntimes.find(rt => rt.id === runtimeId);
-    }
   }
 
   isRuntimeInScope = runtime => {

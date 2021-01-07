@@ -256,10 +256,9 @@ export default class BrowserRuntime extends Component {
   }
 
   destroyService(uuid) {
-    const { services } = this.props;
-    const service = services.find(s => s.uuid = uuid);
+    const service = this.getServiceById(uuid);
     if (!service) {
-      return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(services)}`);
+      return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.props.services)}`);
     }
     service.destroy && service.destroy();
   }

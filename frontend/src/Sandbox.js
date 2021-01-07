@@ -154,10 +154,7 @@ export default class Sandbox extends Component {
     }
     
     return (
-      <BoardProvider
-        fetchData={this.fetchData}
-        getCurrentBrowserRuntime={_ => this.runtime}
-      >
+      <BoardProvider fetchData={this.fetchData}>
       {
         this.renderSandbox(options, runtime, this.onResult) 
       }  

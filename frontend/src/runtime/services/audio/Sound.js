@@ -1,10 +1,8 @@
 import React, { Component } from 'react';
 import { Button } from 'semantic-ui-react';
-
 import * as Tone from 'tone';
 
 import ServiceUI from '../ServiceUI';
-
 import { s, t } from '../../../styles';
 
 const serviceId = 'hookup.to/service/sound';
@@ -19,28 +17,21 @@ class SoundUI extends Component {
     this.setState({ ...initialState });
   }
 
-  renderMain = () => {
+  renderMain = service => {
+    const { running } = this.state;
     return (
       <div>
         <Button 
           style={{ width: '100%' }}
           onClick={() => {
-            this.setState(
-              { running: !this.state.running },
-              () => {
-                if (this.state.running) {
-                  Tone.Transport.start();              
-                } else {
-                  Tone.Transport.stop();
-                }
-              }
-            );
+            const toggled = !running;
+            service.configure({ running: toggled });
+            this.setState({ running: toggled });
           }}
         >
           <span style={s(t.uc, t.ls1, t.fs11)}>
-            { 
-              this.state.running ? 
-                'Stop Audio' : 'Start Audio' 
+            {
+              running ? 'Stop Audio' : 'Start Audio' 
             }
           </span> 
         </Button>
@@ -68,22 +59,40 @@ class Sound {
     this.app = app;
   }
 
+  destroy() {
+    console.log('Destroying sound service')
+  }
+
   configure(config) {
-    const { generator } = config;
-    switch (generator) {
-      case 'synth':
-        this._synth = new Tone.Synth().toMaster();
-      break;
-      case 'sampler':
-        this._sampler = new Tone.Sampler({
-          urls: config.samplerUrls,
-          baseUrl: config.samplerBaseUrl,
-          onload: () => {
-          }
-        }).toMaster();
+    const { 
+      generator,
+      running,
+    } = config;
+
+    if (running !== undefined) {
+      if (running) {
+        Tone.Transport.start();              
+      } else {
+        Tone.Transport.stop();
+      }
+    }
+
+    if (generator !== undefined) {
+      switch (generator) {
+        case 'synth':
+          this._synth = new Tone.Synth().toMaster();
         break;
-      default: 
-        console.error(`Unknown generator: ${generator}`);
+        case 'sampler':
+          this._sampler = new Tone.Sampler({
+            urls: config.samplerUrls,
+            baseUrl: config.samplerBaseUrl,
+            onload: () => {
+            }
+          }).toMaster();
+          break;
+        default: 
+          console.error(`Unknown generator: ${generator}`);
+      }
     }
   }
 
