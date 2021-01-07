@@ -159,55 +159,58 @@ export default class Runtime extends Component {
     } = this.state;
 
     return (
+      <div 
+        style={{ 
+          width: '100%',
+          marginTop: 5,
+          marginLeft: 5,
+          display: 'flex',
+          flexDirection: 'row'
+        }}
+      >
+        <Icon 
+          name="bars"
+          style={{
+            margin: '10px 18px', 
+            cursor: 'pointer',
+            color: '#ddd' 
+          }}
+          onClick={() => this.setState({ 
+            showSettings: expanded && !showSettings,
+            expanded: !expanded ? !showSettings : expanded
+          })}
+        />
+        <div 
+          style={{
+            ...t.unselectable, 
+            fontSize: 12,
+            letterSpacing: 1,
+            textTransform: 'uppercase',
+            marginTop: 10,
+          }}
+          onDoubleClick={() => this.setState({
+              expanded: !expanded
+            })
+          }
+        > 
+          {name}
+        </div>
         <div 
           style={{ 
-            width: '100%',
-            marginTop: 5,
-            marginLeft: 5,
-            display: 'flex',
-            flexDirection: 'row'
-          }}
+            marginRight: 10, 
+            marginTop: 5, 
+            marginBottom: 10,
+            marginLeft: 'auto',
+            textAlign: 'right'
+          }} 
         >
-          <Icon 
-            name="bars"
-            style={{
-              margin: '10px 18px', 
-              cursor: 'pointer',
-              color: '#ddd' 
-            }}
-            onClick={() => this.setState({ 
-              showSettings: expanded && !showSettings,
-              expanded: !expanded ? !showSettings : expanded
-            })}
-          />
-          <div 
-            style={{
-              ...t.unselectable, 
-              fontSize: 12,
-              letterSpacing: 1,
-              textTransform: 'uppercase',
-              marginTop: 10,
-            }}
-          > 
-            {name} 
-          </div>
-          <div 
-            style={{ 
-              marginRight: 10, 
-              marginTop: 5, 
-              marginBottom: 10,
-              marginLeft: 'auto',
-              textAlign: 'right'
-            }} 
-          >
-            {
-              registry && 
-              isOwner && 
-              this.renderServiceMenu(id, name, registry, appViewMode) 
-            }
-          </div>
+          {
+            registry && 
+            isOwner && 
+            this.renderServiceMenu(id, name, registry, appViewMode) 
+          }
         </div>
-      
+      </div>
     );
   }
 
@@ -398,13 +401,8 @@ export default class Runtime extends Component {
             )
           }
           { 
-            services && services.length === 0 && (
-              <div style={{ height: 9 }} />  // just a placeholder for visual consistence
-            )
-          }
-          {
-            showSettings && (!isOwner || (services && services.length === 0)) && (
-              <div style={{ height: 180 }} />
+            ((services && services.length === 0) || !isOwner) && (
+              <div style={{ height: showSettings ? 180 : 10 }} />  // just a placeholder for visual consistence
             )
           }
           </div>

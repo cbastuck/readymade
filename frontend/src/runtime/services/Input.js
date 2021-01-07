@@ -6,6 +6,7 @@ import {
 } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
+import { s, t } from '../../styles';
 
 const serviceId = 'hookup.to/browser/input';
 const serviceName = 'Input';
@@ -30,28 +31,31 @@ class InputUI extends Component {
     return (
       <div
         style={{
-          textAlign: 'left',
           margin: 10,
         }}
       >       
-        <div> 
+        <div style={s(t.uc, t.ls1, t.fs12)}> 
           <InputField 
             label="URL"
             value={this.state.eventSourceURL}
             onChange={(_, { value }) => this.setState({ eventSourceURL: value })}
           />
         </div>
-        <div style={{ marginTop: 5 }}>
+        <div style={t.mt5}>
           <Button 
-            style={{ width: '100%' }}
+            style={s(t.uc, t.ls1, t.w100, t.fs12)}
             disabled={!this.state.eventSourceURL}
             onClick={() => service.configure({ eventSourceURL: this.state.eventSourceURL })}
           >
             Connect
           </Button>
         </div>
-        <div style={{ marginTop: 5 }}>
-          <Checkbox label="active" />
+        <div style={t.tl}>
+          <Checkbox 
+            style={s(t.mt5, t.uc, t.ls1, t.fs12)}
+            label="active"
+            toggle
+          />
         </div>
       </div>
     );
@@ -69,7 +73,7 @@ class InputUI extends Component {
         onTimer={this.onTimer.bind(this)}
         segments={[
           { name: 'Event Source', render: this.renderEventSourceTab },
-          { name: 'Board', render: this.renderBoardTab }
+          // { name: 'Board', render: this.renderBoardTab }
         ]}
       />
     );

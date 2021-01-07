@@ -17,13 +17,6 @@ function serviceDataKey(uuid, key) {
 }
 
 export default class BrowserRuntime extends Component {
-  /*
-  static async createInstance(runtime, { user, bundles, ...params } = {}) {
-    const registry = await BrowserRuntime.registry(user, bundles);
-    return new BrowserRuntime(runtime, { ...params, user, registry });
-  }
-  */
-
   serviceInstances = {};
 
   componentDidMount() {
@@ -186,8 +179,6 @@ export default class BrowserRuntime extends Component {
 
   onMessage(command) {
     switch (command.action) {
-      //case 'create':
-      //  return this.createService(command.descriptor, command.uuid, command.initialConfig);
       case 'config':
         return this.configureService(command.uuid, command.config);
       case 'process':
@@ -228,23 +219,6 @@ export default class BrowserRuntime extends Component {
       return null;
     } else { // ... or as post
       return request(`${userId}/${boardName}/${runtimeId}/${requestId}`, 'POST', false, data);
-    }
-  }
-
-  createService({ serviceId, serviceName, board }, id, initialConfig) {
-    console.error('WHY ARE YOU CALLING CREATESERVICE')
-    const { registry } = this.props;
-    const descriptor = registry.find(elem => elem.serviceId === serviceId);
-    if (descriptor) {
-      const service = descriptor.create(this.app, board, descriptor, id);
-      service.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };
-      if (initialConfig) {
-        service.configure(initialConfig);
-      }
-      this.services.push(service);
-      return service;
-    } else {
-      console.error('No browser service descriptor found for ', serviceId, registry)
     }
   }
 
@@ -357,7 +331,7 @@ export default class BrowserRuntime extends Component {
         runtime={runtime}
         readonly={readonly}
         services={services}
-        registry={registry}
+        uiRegistry={registry}
         userId={userId}
         onArrangeService={onArrangeService}
       />

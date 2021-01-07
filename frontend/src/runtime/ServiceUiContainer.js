@@ -45,7 +45,7 @@ export default class ServiceUiContainer extends Component {
       boardName,
       runtime,
       services,
-      registry,
+      uiRegistry,
       onArrangeService,
       readonly=false,
     } = this.props;
@@ -57,7 +57,7 @@ export default class ServiceUiContainer extends Component {
     return services && services.map((service, pos) => {
       const serviceUi = readonly ? 
         createPlaceholderUI(service) :
-        createServiceUI(registry, boardName, service, runtime.id, userId)
+        createServiceUI(uiRegistry, boardName, service, runtime.id, userId)
       return (
         <div 
           key={`scene-frame-${service.uuid}`}

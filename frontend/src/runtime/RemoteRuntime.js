@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 
 import WebsocketChannel from './WebsocketChannel';
 import ServiceUiContainer from './ServiceUiContainer';
+import defaultRegistry from './registry/Default';
 
 function logInfo(msg) {
   // console.log(msg);
@@ -60,8 +61,7 @@ export default class RemoteRuntime extends Component {
       registry
     } = this.props;
 
-    console.log('REMOTE RUNTKME readonly', readonly, registry)
-
+    const uiRegistry = registry.map(r => defaultRegistry.find(dr => r.serviceId === dr.serviceId));
     return (
       <ServiceUiContainer 
         userId={userId}
@@ -69,7 +69,7 @@ export default class RemoteRuntime extends Component {
         runtime={runtime}
         readonly={readonly}
         services={services}
-        registry={registry}
+        uiRegistry={uiRegistry}
         onArrangeService={onArrangeService}
       />
     );

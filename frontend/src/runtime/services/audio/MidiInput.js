@@ -25,46 +25,44 @@ class MidiInputUI extends Component {
     }
   }
 
-renderDevices = (service, devices) => {
-    return (
-      <div>
-        <ol>
-        { 
-          devices.map((device, idx) => {
-            const isActiveDevice = this.state.activeDevice && this.state.activeDevice.name === device.name;
-            return (
-              <li 
-                key={`midi-input-${idx}`}
+  renderDevices = (service, devices) => (
+    <div>
+      <ol>
+      { 
+        devices.map((device, idx) => {
+          const isActiveDevice = this.state.activeDevice && this.state.activeDevice.name === device.name;
+          return (
+            <li 
+              key={`midi-input-${idx}`}
+              style={{ 
+                textAlign: 'left',
+                color: isActiveDevice && '#4183c4',
+              }}
+            >
+              { device.name }
+              <Button
                 style={{ 
-                  textAlign: 'left',
-                  color: isActiveDevice && '#4183c4',
+                  width: 60, 
+                  height: 20, 
+                  padding: 0, 
+                  margin: '1px 10px', 
+                  textTransform: 'uppercase', 
+                  fontSize: 11,
                 }}
+                onClick={async () => {
+                  service.configure({ input: device.name });
+                }}
+                disabled={isActiveDevice}
               >
-                { device.name }
-                <Button
-                  style={{ 
-                    width: 60, 
-                    height: 20, 
-                    padding: 0, 
-                    margin: '1px 10px', 
-                    textTransform: 'uppercase', 
-                    fontSize: 11,
-                  }}
-                  onClick={async () => {
-                    service.configure({ input: device.name });
-                  }}
-                  disabled={isActiveDevice}
-                >
-                  Activate
-                </Button>
-              </li>
-            );
-          })
-        }
-        </ol>
-      </div>
-    );
-  }
+                Activate
+              </Button>
+            </li>
+          );
+        })
+      }
+      </ol>
+    </div>
+  );
 
   renderMain = service => {
     const { inputs } = this.state;
