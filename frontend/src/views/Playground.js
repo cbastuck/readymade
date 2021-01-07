@@ -124,7 +124,7 @@ export default class Playground extends Component {
 
   arrangeService = (runtime, serviceUuid, targetPosition) => {
     const { services: allServices } = this.state;
-    const services = allServices[runtime.id]
+    const services = allServices[runtime.id];
 
     const service = services.find(svc => serviceUuid === svc.uuid);
     const rearranged = services.filter(svc => serviceUuid !== svc.uuid);

@@ -2,8 +2,6 @@
 import React, { Component, createContext } from'react';
 import UAParser from 'ua-parser-js';
 
-// TODO: this should also go to Runtime like the RemoteRuntime
-import BrowserRuntime from './runtime/BrowserRuntime';
 import BrowserRegistry from './runtime/BrowserRegistry';
 import ResizeObserver from './ResizeObserver';
 
@@ -45,7 +43,7 @@ class BoardContext extends Component {
       fetchData: this.fetchData,
       addRuntime: this.addRuntime,
       addService: this.addService,
-      arrangeService: props.arrangeService || this.arrangeService,
+      arrangeService: this.arrangeService,
       removeService: this.removeService,
       removeAllServices: this.removeAllServices,
       onAction: props.onAction || this.onAction,
@@ -233,8 +231,14 @@ class BoardContext extends Component {
     }
   }
 
-  arrangeService(runtime, serviceUuid, position) {
-    console.log('TODO: BoardContext.arrangeService')
+  arrangeService = async (runtime, serviceUuid, targetPosition) => {
+    const { arrangeService=this.arrangeServiceDefault } = this.props;
+    await arrangeService(runtime, serviceUuid, targetPosition);
+    await this.fetchData();
+  }
+
+  arrangeServiceDefault = () => {
+
   }
 
   createBrowserRegistry = async () => {
