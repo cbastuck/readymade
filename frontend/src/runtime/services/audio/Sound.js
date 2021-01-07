@@ -10,7 +10,8 @@ const serviceName = 'Sound';
 
 class SoundUI extends Component {
   state = {
-    running: false
+    running: false,
+    generator: 'synth',
   };
 
   onInit = initialState => {
@@ -18,14 +19,17 @@ class SoundUI extends Component {
   }
 
   renderMain = service => {
-    const { running } = this.state;
+    const { running, generator } = this.state;
     return (
       <div>
         <Button 
           style={{ width: '100%' }}
           onClick={() => {
             const toggled = !running;
-            service.configure({ running: toggled });
+            service.configure({ 
+              running: toggled,
+              generator,
+            });
             this.setState({ running: toggled });
           }}
         >
@@ -69,17 +73,12 @@ class Sound {
       running,
     } = config;
 
-    if (running !== undefined) {
-      if (running) {
-        Tone.Transport.start();              
-      } else {
-        Tone.Transport.stop();
-      }
-    }
-
     if (generator !== undefined) {
       switch (generator) {
-        case 'synth':
+        case 'synth': 
+          if (this._synth) {
+            console.log('TODO: cleanup old synth');
+          }
           this._synth = new Tone.Synth().toMaster();
         break;
         case 'sampler':
@@ -92,6 +91,14 @@ class Sound {
           break;
         default: 
           console.error(`Unknown generator: ${generator}`);
+      }
+    }
+
+    if (running !== undefined) {
+      if (running) {
+        Tone.Transport.start();              
+      } else {
+        Tone.Transport.stop();
       }
     }
   }

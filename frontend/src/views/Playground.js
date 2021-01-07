@@ -127,8 +127,10 @@ export default class Playground extends Component {
     const services = allServices[runtime.id];
 
     const service = services.find(svc => serviceUuid === svc.uuid);
+    const oldPosition = services.indexOf(service);
     const rearranged = services.filter(svc => serviceUuid !== svc.uuid);
-    rearranged.splice(targetPosition, 0, service);
+    const offset = targetPosition < oldPosition ? 0 : 1; 
+    rearranged.splice(targetPosition - offset, 0, service);
     this.setState({
       services: {
         ...allServices,
