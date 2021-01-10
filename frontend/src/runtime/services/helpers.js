@@ -12,3 +12,13 @@ export function toArrayBuffer(blobOrFile) {
     }
   });
 }
+
+export function filterPrivateMembers(service) {
+  return service && Object.keys(service).reduce(
+    (res, cur) =>
+      (cur[0] === '_' || cur === 'app') ?
+        res :
+        { ...res, [cur]: service[cur] },
+    {}
+  );
+}

@@ -320,6 +320,7 @@ export default class BrowserRuntime extends Component {
       runtime, 
       readonly,
       onArrangeService,
+      onServiceAction,
       services: rawServices, 
       registry,
     } = this.props;
@@ -333,6 +334,7 @@ export default class BrowserRuntime extends Component {
         uiRegistry={registry}
         userId={userId}
         onArrangeService={onArrangeService}
+        onServiceAction={onServiceAction}
       />
     );
   }

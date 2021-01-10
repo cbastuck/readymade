@@ -108,6 +108,14 @@ export default class Runtime extends Component {
     }
   }
 
+  // TODO: this should not happen here. Is a command to the backend not the UI component
+  // Probably the boardContext should be the receiver
+  destroyService = service => {
+    return this.impl && this.impl.destroyService && this.impl.destroyService(service);
+  } 
+
+  // TODO: this should not happen here. Is a command to the backend not the UI component
+  // only makes sense for the BrowserRuntime as this hosts the real service not only the UI
   destroyRuntime = () => {
     return this.impl && this.impl.destroyRuntime && this.impl.destroyRuntime();
   }
@@ -215,15 +223,18 @@ export default class Runtime extends Component {
   }
 
   renderSettings = (runtime, onToggleOwnership, isOwner) => {
-    const itemStyle = { 
-      height: 40,
-      margin: 0,
-    };
     const { 
       expanded, 
       showSettings, 
       wrapServices,
     } = this.state;
+    const { boardContext } = this.props;
+    const { services: allServices = [] } = boardContext;
+    const services = allServices[runtime.id];
+    const itemStyle = { 
+      height: 40,
+      margin: 0,
+    };
     return (
       <Menu
         vertical
@@ -233,12 +244,13 @@ export default class Runtime extends Component {
        <Menu.Item
           as='a'
           style={itemStyle}
-          onClick={() => {
-            const { boardContext, runtime } = this.props;
-            return boardContext.removeAllServices(runtime)
-          }}
+          onClick={() => 
+            (services.length === 0) ? 
+              boardContext.removeRuntime(runtime) :
+              boardContext.removeAllServices(runtime)
+          }
         >
-          <Icon name='remove' />
+          <Icon name={(!services || services.length === 0) ? 'trash alternate outline' : 'remove'} />
         </Menu.Item>
         <Menu.Item
           as='a'
@@ -382,6 +394,7 @@ export default class Runtime extends Component {
                 readonly={readonly}
                 registry={registry}
                 onArrangeService={onArrangeService}
+                onServiceAction={this.onServiceAction}
               />
             )
           }
@@ -396,6 +409,7 @@ export default class Runtime extends Component {
                 readonly={readonly}
                 registry={registry}
                 onArrangeService={onArrangeService}
+                onServiceAction={this.onServiceAction}
                 onResult={onResult}
               />
             )

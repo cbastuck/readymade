@@ -11,6 +11,7 @@ import {
 import Modal from './Modal';
 import ServiceReference from './ServiceReference';
 import { s, t } from '../styles';
+import { filterPrivateMembers } from '../runtime/services/helpers';
 
 export default class ServiceFrame extends Component {
   state = {
@@ -33,7 +34,8 @@ export default class ServiceFrame extends Component {
       draggable
       onDragStart={ev => {
         const { service } = this.props;
-        ev.dataTransfer.setData('text/plain', JSON.stringify(service));
+        const publicService = filterPrivateMembers(service);
+        ev.dataTransfer.setData('text/plain', JSON.stringify(publicService));
       }}
     >
       <Header size='small'>

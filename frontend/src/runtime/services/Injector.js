@@ -273,7 +273,7 @@ class InjectorUI extends Component {
         segments={[
           { name: 'DragDrop', render: this.renderDragNDropInput },
           { name: 'Text', render: this.renderRawInput },
-          { name: 'JSON Data', render: this.renderStructuredData },
+          { name: 'JSON', render: this.renderStructuredData },
         ]}
       />
     )

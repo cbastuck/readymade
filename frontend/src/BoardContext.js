@@ -15,6 +15,7 @@ import {
   getRuntimes,
   getRuntimeRegistry,
   addRuntime,
+  removeRuntime,
   configureService,
   clearBoard,
 } from './core/actions';
@@ -45,6 +46,7 @@ class BoardContext extends Component {
       addService: this.addService,
       arrangeService: this.arrangeService,
       removeService: this.removeService,
+      removeRuntime: this.removeRuntime,
       removeAllServices: this.removeAllServices,
       onAction: props.onAction || this.onAction,
       isRuntimeInScope: props.isRuntimeInScope || this.isRuntimeInScope,
@@ -294,12 +296,29 @@ class BoardContext extends Component {
     return addService(boardName, descriptor, runtimeId);
   }
 
-  removeService = async (runtime, service) => {
+  removeService = async (runtime, service, fetchData=true) => {
+    const { removeService=this.removeServiceDefault } = this.props;
     const boardName = this.getBoardName();
-    if (boardName) {
-      await removeService(boardName, runtime.id, service.uuid);
-      await this.fetchServices();
+    
+    await removeService(boardName, runtime.id, service);
+    if (fetchData) {
+      await this.fetchData();
     }
+  }
+
+  removeServiceDefault = async (boardName, runtime, service) => 
+    removeService(boardName, runtime.id, service.uuid);
+
+  removeRuntime = async runtime => {
+    const { removeRuntime=this.removeRuntimeDefault } = this.props;
+    await removeRuntime(runtime);
+    await this.fetchData();
+  }
+
+  removeRuntimeDefault = async runtime => {
+    await this.removeAllServices(runtime);
+    await removeRuntime(runtime);
+    await this.fetchData();
   }
 
   removeAllServices = async runtime => {
@@ -307,7 +326,7 @@ class BoardContext extends Component {
     const boardName = this.getBoardName();
     if (boardName) {
       for (const service of services[runtime.id]) {
-        await removeService(boardName, runtime.id, service.uuid);
+       await this.removeService(runtime, service, false);
       }
     }
     await this.fetchData();

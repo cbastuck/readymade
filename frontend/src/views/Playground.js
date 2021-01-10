@@ -8,6 +8,7 @@ import Runtime from '../components/Runtime';
 import DragProvider from '../DragContext';
 import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
+import { filterPrivateMembers } from '../runtime/services/helpers';
 
 const defaultBundles = [
   'hookup.to/registry/browser/Audio'
@@ -37,49 +38,52 @@ export default class Playground extends Component {
     const data = localStorage.getItem('hkp-playground');
     return data ? JSON.parse(data) : {};
   }
-  
-  /*
-  restoreRuntimes = async runtimes => {
-    const created = [];
-    for (const runtime of runtimes) {
-      const rt = await this.addRuntime(runtime.id, runtime.name);
-      created.push(rt);
-    }
-    return created;
-  }
-
-  restoreServices = async (services, runtimes) => {
-    for (const runtime of runtimes) {
-      for (const service of services[runtime.id]) {
-        const { descriptor, config } = service;
-        const svc = this.addService(descriptor, runtime);
-        if (svc) {
-          await svc.configure(config);
-        }
-      }
-    }
-  }
-  */
 
   storeBoard = () => {
     const { runtimes=[], services={} } = this.state;
-    const data = JSON.stringify({ 
+
+    const data = { 
       runtimes: runtimes.map(rt => ({ 
         id: rt.id, name: rt.name, type: rt.type 
       })), 
-      services,
-    });
-    localStorage.setItem('hkp-playground', data);
+      services: Object.keys(services).reduce(
+        (all, runtimeId) => {
+          const rt = this.getRuntimeById(runtimeId);
+          return {
+            ...all,
+            [runtimeId]: services[runtimeId].map(
+              s => ({
+                ...filterPrivateMembers(
+                  rt.getServiceById(s.uuid)
+                ),
+                serviceId: s.serviceId,
+                serviceName: s.serviceName,
+              })
+            ),
+          };
+        }, 
+        {}
+      ),
+    };
+    localStorage.setItem('hkp-playground', JSON.stringify(data));
   }
 
-  addService = (boardName, descriptor, runtimeId) => {
-    const { runtimes=[], services={} } = this.state;
+  getRuntimeById = runtimeId => {
+    const { runtimes=[] } = this.state;
     const runtime = runtimes.find(rt => rt.id === runtimeId);
     if (!runtime) {
       console.error('Unknown runtime', runtimeId);
       return;
     }
+    return this.runtimeInstances[runtime.id];
+  }
 
+  addService = (boardName, descriptor, runtimeId) => {
+    const { services={} } = this.state;
+    const runtime = this.getRuntimeById(runtimeId);
+    if (!runtime) {
+      return;
+    }
     const svc = {
       ...descriptor,
       uuid: uuid.v4(),
@@ -96,6 +100,25 @@ export default class Playground extends Component {
     return svc;
   }
 
+  removeService = async (boardName, runtimeId, service) => {
+    const { services={} } = this.state;
+    const runtime = this.getRuntimeById(runtimeId);
+    if (!runtime) {
+      return;
+    }
+
+    await runtime.destroyService(service.uuid);
+    
+    const runtimeServices = services[runtimeId];
+    const updatedServices = runtimeServices.filter(svc => svc.uuid !== service.uuid);
+    this.setState({
+      services: {
+        ...services,
+        [runtimeId]: updatedServices,
+      }
+    });
+  }
+
   addRuntime = async (boardname, desc) => {
     const { runtimes=[], services={} } = this.state;
     const runtimeId = uuid.v4();
@@ -110,6 +133,25 @@ export default class Playground extends Component {
         ...services,
         [runtimeId]: []
       }
+    });
+  }
+
+  removeRuntime = async runtime => {
+    const rt = this.getRuntimeById(runtime.id);
+    if (!rt) {
+      return;
+    }
+
+    await rt.destroyRuntime();
+
+    const { runtimes=[], services={} } = this.state;
+    const updatedRuntimes = runtimes.filter(r => r.id !== runtime.id);
+    const updatedServices = Object.keys(services)
+        .filter(r => r.id !== runtime.id)
+        .reduce((all, key) => ({ ...all, [key]: services[key] }), {});
+    this.setState({
+      runtimes: updatedRuntimes,
+      services: updatedServices,
     });
   }
 
@@ -220,7 +262,9 @@ export default class Playground extends Component {
         fetchData={this.fetchData}
         isRuntimeInScope={() => true}
         addRuntime={this.addRuntime}
+        removeRuntime={this.removeRuntime}
         addService={this.addService}
+        removeService={this.removeService}
         clearBoard={this.clearPlayground}
         arrangeService={this.arrangeService}
       >

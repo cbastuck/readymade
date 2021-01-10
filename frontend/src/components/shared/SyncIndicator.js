@@ -15,7 +15,7 @@ export default class SyncIndicator extends Component {
     return typeof label === 'string' ? (
       <div
         style={{
-          width: labelWidth,
+          //minWidth: labelWidth,
           height: labelHeight,
         }}
       >
@@ -30,7 +30,7 @@ export default class SyncIndicator extends Component {
               letterSpacing: 1,
               textAlign: 'center',
               paddingTop: 10,
-              width: labelWidth,
+              minWidth: labelWidth,
               height: labelHeight,
               color: !inSync && 'red',
               cursor: !inSync ? 'pointer' : undefined,

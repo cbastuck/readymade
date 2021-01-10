@@ -20,7 +20,10 @@ class TriggerPadUI extends Component {
 
   onInit = service => {
     this.service = service;
-    this.setState({ armedPad: `${service.armedPad}` });
+    this.setState({ 
+      armedPad: `${service.armedPad}`,
+      assignments: service.padAssignments,
+    });    
   }
 
   onNotification = (service, notification) => {
@@ -138,10 +141,24 @@ class TriggerPad {
   }
 
   destroy() {
-    console.log('Destroying TriggerPad')
   }
 
   configure(config) { 
+    const { 
+      padAssignments,
+      armedPad,
+    } = config;
+
+    const notification = {};
+    if (padAssignments !== undefined) {
+      this.padAssignments = notification.assignments = padAssignments;
+    }
+
+    if (armedPad !== undefined) {
+      this.armedPad = notification.armedPad = armedPad;
+    }
+
+    this.app.notify(this, notification);
   }
 
   padAssignment(padIndex) {

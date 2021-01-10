@@ -58,6 +58,7 @@ export default class RemoteRuntime extends Component {
       runtime, 
       readonly,
       onArrangeService,
+      onServiceAction,
       registry
     } = this.props;
 
@@ -71,6 +72,7 @@ export default class RemoteRuntime extends Component {
         services={services}
         uiRegistry={uiRegistry}
         onArrangeService={onArrangeService}
+        onServiceAction={onServiceAction}
       />
     );
   }

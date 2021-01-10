@@ -61,7 +61,11 @@ export function getRuntimes(board) {
 }
 
 export function addRuntime(board, descriptor) {
-  return request(`board/${board}/runtimes`, 'POST', true, descriptor)
+  return request(`board/${board}/runtimes`, 'POST', true, descriptor);
+}
+
+export function removeRuntime(board, runtime) {
+  return request(`board/${board}/runtimes/${runtime.id}`, 'DELETE', true, runtime);
 }
 
 export function getServices(board, runtime) {

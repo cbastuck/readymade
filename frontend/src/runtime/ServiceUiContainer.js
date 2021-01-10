@@ -47,6 +47,7 @@ export default class ServiceUiContainer extends Component {
       services,
       uiRegistry,
       onArrangeService,
+      onServiceAction,
       readonly=false,
     } = this.props;
 
@@ -67,7 +68,7 @@ export default class ServiceUiContainer extends Component {
           <ServiceFrame
             service={service}
             serviceUi={serviceUi}
-            onAction={this.onServiceAction}
+            onAction={onServiceAction || this.onServiceAction}
           />
           <DropBar index={pos+1} onDrop={onArrangeService} />
         </div>

@@ -1,8 +1,11 @@
 import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
+import { 
+  Button,
+} from 'semantic-ui-react';
 import * as Tone from 'tone';
 
 import ServiceUI from '../ServiceUI';
+import SelectorField from '../../../components/shared/SelectorField';
 import { s, t } from '../../../styles';
 
 const serviceId = 'hookup.to/service/sound';
@@ -18,12 +21,32 @@ class SoundUI extends Component {
     this.setState({ ...initialState });
   }
 
+  renderGeneratorSynth = service => {
+
+  }
+
+  renderGeneratorSampler = service => {
+
+  }
+
   renderMain = service => {
     const { running, generator } = this.state;
+    const generatorOptions = {
+      synth: 'Sine Synth',
+      sampler: 'Sampler',
+    };
     return (
-      <div>
+      <div style={{ minWidth: 250 }}>
+        <SelectorField
+          label="Generator"
+          options={generatorOptions}
+          value={generator}
+          onChange={(_ev, { value: generator }) => this.setState({ generator })}
+        />
+        { generator === 'synth' && this.renderGeneratorSynth(service) }
+        { generator === 'sampler' && this.renderGeneratorSampler(service) }
         <Button 
-          style={{ width: '100%' }}
+          style={{ width: '100%', marginTop: 5 }}
           onClick={() => {
             const toggled = !running;
             service.configure({ 
@@ -64,7 +87,6 @@ class Sound {
   }
 
   destroy() {
-    console.log('Destroying sound service')
   }
 
   configure(config) {
@@ -79,7 +101,7 @@ class Sound {
           if (this._synth) {
             console.log('TODO: cleanup old synth');
           }
-          this._synth = new Tone.Synth().toMaster();
+          this._synth = new Tone.Synth().toDestination();
         break;
         case 'sampler':
           this._sampler = new Tone.Sampler({
@@ -87,7 +109,7 @@ class Sound {
             baseUrl: config.samplerBaseUrl,
             onload: () => {
             }
-          }).toMaster();
+          }).toDestination();
           break;
         default: 
           console.error(`Unknown generator: ${generator}`);
