@@ -80,7 +80,13 @@ export default class SelectorField extends Component {
             {
               Object.keys(options).map((key, idx) => 
                 <div 
-                  style={{ cursor: 'pointer' }}
+                  style={{ 
+                    cursor: 'pointer',
+                    fontSize: 13,
+                    borderBottom: 'solid 1px lightgray',
+                    padding: 5,
+                    marginLeft: 5,
+                  }}
                   key={`${label}.${key}.${idx}`}
                   onClick={ev => {
                     onChange(ev, { value: key });
