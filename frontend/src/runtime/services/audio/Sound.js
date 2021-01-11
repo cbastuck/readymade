@@ -15,12 +15,19 @@ const serviceName = 'Sound';
 class SoundUI extends Component {
   state = {
     running: false,
-    generator: 'synth',
+    generator: { type: 'synth' },
     sampleUrl: 'http://localhost/assets/audio/A1.mp3',
   };
 
   onInit = initialState => {
     this.setState({ ...initialState });
+  }
+
+  onNotification = (service, notification) => {    
+    const { running } = notification;
+    if (running !== this.state.running) {
+      this.setState({ running });
+    }
   }
 
   renderStartStopButton = (running, onClick) => {
@@ -40,7 +47,14 @@ class SoundUI extends Component {
 
   renderGeneratorSynth = service => {
     const { running } = this.state;
-    const onClick = () => { }
+    const onClick = () => {
+      const toggled = !running;
+      service.configure({ 
+        running: toggled,
+        generator: { type: 'synth' }
+      });
+      this.setState({ running: toggled });
+    }
     return this.renderStartStopButton(running, onClick);
   }
 
@@ -53,7 +67,6 @@ class SoundUI extends Component {
         generator: {
           type: 'sampler',
           urls: { A3:  sampleUrl },
-          onload: () => console.log('SAMPLES LOADED')
         }
       });
       this.setState({ running: toggled });
@@ -82,13 +95,18 @@ class SoundUI extends Component {
         <SelectorField
           label="Generator"
           options={generatorOptions}
-          value={generator}
+          value={generator && generator.type}
           onChange={async (_ev, { value: generator }) => {
-            this.setState({ generator });
+            const g = { type: generator };
+            await service.configure({ 
+              generator: g,
+              running: false,
+            });
+            this.setState({ generator: g });
           }}
         />
-        { generator === 'synth' && this.renderGeneratorSynth(service) }
-        { generator === 'sampler' && this.renderGeneratorSampler(service) }
+        { generator && generator.type === 'synth' && this.renderGeneratorSynth(service) }
+        { generator && generator.type === 'sampler' && this.renderGeneratorSampler(service) }
       </div>
     );
   }
@@ -97,7 +115,8 @@ class SoundUI extends Component {
     return (
       <ServiceUI 
         {...this.props} 
-        onInit={this.onInit.bind(this)}
+        onInit={this.onInit}
+        onNotification={this.onNotification}
         segments={[
           { name: 'Main', render: this.renderMain },
         ]}
@@ -112,7 +131,7 @@ class Sound {
     this.board = board;
     this.app = app;
 
-    this.generator = 'synth';
+    this.generator = { type: 'synth' };
   }
 
   destroy() {
@@ -133,11 +152,21 @@ class Sound {
     }
   }
 
-  configure(config) {
+  createSampler = params => {
+    return new Promise((resolve, reject) => {
+      const sampler = new Tone.Sampler({
+        ...params,
+        onload: () => resolve(sampler),
+      });
+    });
+  }
+
+  async configure(config) {
     const { 
       generator,
       running,
     } = config;
+
 
     if (generator !== undefined) {
       this.generator = generator;
@@ -149,11 +178,11 @@ class Sound {
         break;
         case 'sampler':
           this.cleanup();
-          this._sampler = new Tone.Sampler(generator);
-          this._sampler.toDestination();
+            this._sampler = await this.createSampler(generator);
+            this._sampler.toDestination();
           break;
         default: 
-          console.error(`Unknown generator: ${generator}`);
+          console.error(`Unknown generator: "${generator.type}"`);
       }
     }
 
@@ -163,6 +192,7 @@ class Sound {
       } else {
         Tone.Transport.stop();
       }
+      this.app.notify(this, { running });
     }
   }
 

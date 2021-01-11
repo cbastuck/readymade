@@ -74,20 +74,19 @@ export default class SelectorField extends Component {
               style={{
                 textAlign: 'left',
                 textTransform: 'uppercase',
-                backgroundColor: 'white'
+                backgroundColor: 'white',
               }}
             >
             {
               Object.keys(options).map((key, idx) => 
                 <div 
+                  key={`${label}.${key}.${idx}`}
                   style={{ 
                     cursor: 'pointer',
                     fontSize: 13,
                     borderBottom: 'solid 1px lightgray',
                     padding: 5,
-                    marginLeft: 5,
                   }}
-                  key={`${label}.${key}.${idx}`}
                   onClick={ev => {
                     onChange(ev, { value: key });
                     this.setState({ optionsVisible: false });
