@@ -8,6 +8,7 @@ import ServiceUI from '../ServiceUI';
 import SelectorField from '../../../components/shared/SelectorField';
 import InputField from '../../../components/shared/InputField';
 import { s, t } from '../../../styles';
+import { toAudioBuffer } from './audioHelper';
 
 const serviceId = 'hookup.to/service/sound';
 const serviceName = 'Sound';
@@ -165,7 +166,17 @@ class Sound {
     const { 
       generator,
       running,
+      sample,
     } = config;
+
+    if (sample !== undefined) {
+      this.cleanup();
+      const ab = await toAudioBuffer(sample); 
+      const p = { urls: { C4: ab } };
+      console.log('!!! configue', p);
+      this._sampler = await this.createSampler(p);
+      this._sampler.toDestination();
+    }
 
 
     if (generator !== undefined) {

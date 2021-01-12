@@ -1,3 +1,15 @@
+import { toArrayBuffer } from '../helpers';
+
+export function toAudioBuffer(blobOrFile, audioCtx=null) {
+  return new Promise(async (resolve, reject) => {
+    if (!audioCtx) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext; 
+      audioCtx = new AudioContext();
+    }
+    const ab = await toArrayBuffer(blobOrFile);
+    audioCtx.decodeAudioData(ab, resolve);
+  }); 
+}
 
 export function decodeBuffer(audioCtx, data) {
   return new Promise((resolve, reject) => 

@@ -228,7 +228,7 @@ export default class Runtime extends Component {
       showSettings, 
       wrapServices,
     } = this.state;
-    const { boardContext } = this.props;
+    const { boardContext, customItems=[] } = this.props;
     const { services: allServices = [] } = boardContext;
     const services = allServices[runtime.id];
     const itemStyle = { 
@@ -288,6 +288,18 @@ export default class Runtime extends Component {
               <Icon name={isOwner ? 'unlink' : 'linkify'} />
             </Menu.Item>
           )
+        }
+        { 
+          customItems.map((item, idx) => (
+            <Menu.Item
+              key={`custom-item-${item.key}-${idx}`}
+              as='a'
+              style={itemStyle}
+              onClick={item.onClick}
+            >
+              <Icon name={item.icon} />
+            </Menu.Item>
+          ))
         }
       </Menu>
     );

@@ -5,6 +5,7 @@ import uuid from 'uuid';
 import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Runtime from '../components/Runtime';
+import SidechainSelector from '../components/SidechainSelector';
 import DragProvider from '../DragContext';
 import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
@@ -17,6 +18,8 @@ const defaultBundles = [
 export default class Playground extends Component {
   state = {
     persistBoard: false,
+    showSidechainSelector: false,
+    sidechainRouting: {}
   };
 
   board = {
@@ -40,7 +43,7 @@ export default class Playground extends Component {
   }
 
   storeBoard = () => {
-    const { runtimes=[], services={} } = this.state;
+    const { runtimes=[], services={}, sidechainRouting={} } = this.state;
 
     const data = { 
       runtimes: runtimes.map(rt => ({ 
@@ -64,6 +67,7 @@ export default class Playground extends Component {
         }, 
         {}
       ),
+      sidechainRouting,
     };
     localStorage.setItem('hkp-playground', JSON.stringify(data));
   }
@@ -188,7 +192,16 @@ export default class Playground extends Component {
     return nextRuntime && this.runtimeInstances[nextRuntime.id];
   }
 
-  onResult = (runtime, svcUuid, result) => {
+  onResult = async (runtime, svcUuid, result) => {
+    const { sidechainRouting } = this.state;
+    const routing = sidechainRouting[runtime.id];
+    if (routing) {
+      for (const route of routing) {
+        const dst = this.runtimeInstances[route.runtimeId];
+        await dst.configureService(route.serviceUuid, result);
+      }
+      return; // runtimes with routing aren't further processed
+    }
     const nextRuntime = this.getNextRuntime(runtime);
     if (nextRuntime) {
       nextRuntime.processRuntime(result);
@@ -203,6 +216,7 @@ export default class Playground extends Component {
       const { 
         runtimes: restoredRuntimes, 
         services: restoredServices,
+        sidechainRouting  
       } = this.restoreBoard();
 
       runtimes = restoredRuntimes || [];
@@ -210,6 +224,7 @@ export default class Playground extends Component {
       this.setState({ 
         runtimes, 
         services,
+        sidechainRouting,
       });
     }
     
@@ -231,22 +246,50 @@ export default class Playground extends Component {
 
   renderRuntimes = boardContext => {
     const { runtimes } = boardContext;
+    const { 
+      showSidechainSelector, 
+      sidechainRouting, 
+      services,
+    } = this.state;
     return (
       <div style={s(t.w100)}>
       {
         runtimes.map(runtime => 
-          <DragProvider
-            key={`playground-drag-provider-${runtime.id}`}
-            style={{ marginBottom: 5 }}
-          >
-            <Runtime
-              key={`sandbox-playground-${runtime.id}`}
-              ref={rt => this.runtimeInstances[runtime.id] = rt}
-              boardContext={boardContext}
-              runtime={runtime}
-              onResult={this.onResult.bind(this, runtime)}
-            />
-          </DragProvider>
+          showSidechainSelector === runtime.id ? 
+            <SidechainSelector
+              key={`sidechain-selector-${runtime.id}`}
+              runtimes={runtimes}
+              services={services} 
+              onClose={() => this.setState({ showSidechainSelector: false })}
+              onSelect={routing => 
+                this.setState({ 
+                  sidechainRouting: {
+                    ...sidechainRouting,
+                    [runtime.id]: routing,
+                  },
+                })
+              }
+              routing={sidechainRouting[runtime.id]}
+            /> : 
+            <DragProvider
+              key={`playground-drag-provider-${runtime.id}`}
+              style={{ marginBottom: 5 }}
+            >
+              <Runtime
+                key={`sandbox-playground-${runtime.id}`}
+                ref={rt => this.runtimeInstances[runtime.id] = rt}
+                boardContext={boardContext}
+                runtime={runtime}
+                onResult={this.onResult.bind(this, runtime)}
+                customItems={[
+                  {
+                    key: `sidechain-option-${runtime.id}`,
+                    icon: 'location arrow',
+                    onClick: () => this.setState({ showSidechainSelector: runtime.id })
+                  }
+                ]}
+              />
+            </DragProvider>
         )
       }
       </div>
@@ -254,7 +297,9 @@ export default class Playground extends Component {
   }
 
   render() {
-    const { persistBoard } = this.state;
+    const { 
+      persistBoard, 
+    } = this.state;
     return (
       <BoardProvider
         user={this.user}

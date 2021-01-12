@@ -16,8 +16,11 @@ class MonitorUI extends Component {
   }
 
   onNotification = (service, params) => {
+    const isBlob = params instanceof Blob;
     this.setState({
-      message: JSON.stringify(params, null, 2),
+      message: isBlob ? 
+        `Blob (${params.type} ${params.size} bytes)` :
+        JSON.stringify(params, null, 2),
     });
   }
 
