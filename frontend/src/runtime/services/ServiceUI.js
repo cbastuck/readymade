@@ -12,10 +12,6 @@ export default class ServiceUI extends Component {
     currentSegmentName: undefined,
   };
 
-  componentDidMount() {
-   
-  }
-
   componentWillUnmount() {
     if (this.timer) {
       clearInterval(this.timer);

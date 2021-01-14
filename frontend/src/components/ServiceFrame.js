@@ -7,9 +7,9 @@ import {
   Header,
 } from 'semantic-ui-react';
 
-// import Resizable from './Resizable';
 import Modal from './Modal';
 import ServiceReference from './ServiceReference';
+import ConfigurationEditor from './ConfigurationEditor';
 import { s, t } from '../styles';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 
@@ -18,6 +18,7 @@ export default class ServiceFrame extends Component {
     menuVisible: false,
     frameCollapsed: false,
     modalReferenceService: undefined,
+    configVisible: false,
   };
 
   renderServiceName = name => (
@@ -144,6 +145,18 @@ export default class ServiceFrame extends Component {
         >
           <Icon name='help' />
         </Menu.Item>
+        <Menu.Item 
+          as='a'
+          style={itemStyle}
+          onClick={() => {
+            this.setState({ 
+              configVisible: true,
+              menuVisible: false,
+            });
+          }}
+        >
+          <Icon name='cogs' />
+        </Menu.Item>
       </Menu> 
     );
   }
@@ -222,8 +235,16 @@ export default class ServiceFrame extends Component {
   }
 
   render() {
-    const { modalReferenceService, menuVisible } = this.state;
-    const { serviceUi, service } = this.props;
+    const {
+      frameCollapsed,
+      modalReferenceService, 
+      menuVisible, 
+      configVisible 
+    } = this.state;
+    const { 
+      serviceUi, 
+      service,
+    } = this.props;
     const uuid = service && service.uuid;
     return (
       <div key={`service-frame-${uuid}`}>
@@ -244,7 +265,26 @@ export default class ServiceFrame extends Component {
             this.renderHeader(service)
           }
           {
-            !this.state.frameCollapsed && 
+            !frameCollapsed && 
+            configVisible && (
+              <ConfigurationEditor 
+                service={service} 
+                onClose={() => this.setState({ configVisible: false })}
+                onChange={async value => {
+                  try {
+                    const config = JSON.parse(value);
+                    await service.configure(config); // TODO: not here
+                    this.setState({ configVisible: false });
+                  } catch (err) {
+                    
+                  }
+                }}
+              />
+            )
+          }
+          {
+            !configVisible &&
+            !frameCollapsed &&
             this.renderServiceWithSidebar(serviceUi, menuVisible)
           }
           <Modal

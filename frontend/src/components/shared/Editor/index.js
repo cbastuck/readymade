@@ -43,7 +43,7 @@ export default class Editor extends Component {
 
   render() {
     const { monaco } = this.state;
-     const { 
+    const { 
       value='', 
       language='javascript',
       height=100,
