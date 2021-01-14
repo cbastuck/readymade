@@ -3,7 +3,7 @@ import {
   Input,
 } from 'semantic-ui-react';
 
-import evilEval from '../../evilEval';
+// import evilEval from '../../evilEval';
 import ServiceUI from './ServiceUI';
 
 const serviceId = 'hookup.to/service/filter-browser';
@@ -70,7 +70,12 @@ class Filter {
     const f = this.condition;
     const filter = x => {
       if (f && x) {
-        return !!evilEval(f, x);
+        // TODO remove by making this a shared service
+        // but clashes with frontend monitoring service 
+        // harmonize
+        // this is only used by sampling.json test
+        //return !!evilEval(f, x);
+        return false;
       }
       return false;
     };

@@ -10,7 +10,6 @@ import MapDescriptor, { 
   serviceId,
 } from 'services/Map';
 
-// import evilEval from '../../evilEval';
 import InputLabelValue from '../../components/shared/InputLabelValue';
 
 import ServiceUI from './ServiceUI';
@@ -134,80 +133,6 @@ class MapUI extends Component {
     );
   }
 }
-/*
-class Map {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-  }
-
-  configure(config) {
-    const { template, condition } = config;
-    if (template !== undefined) {
-      this.terms = {};
-      this.template = template;
-      this.properties = Object.keys(template).reduce(
-        (all, cur) => {
-          const value = template[cur];
-          if (cur[cur.length - 1] === '=') {
-            // treated as a dynamic term not a static property
-            this.terms[cur.substr(0, cur.length - 1)] = value;
-            return all;
-          } else {
-            return { ...all, [cur]: value };
-          }
-        }, 
-        {}
-      );
-      this.app.notify(this, { template });
-    }
-
-    if (condition !== undefined) {
-      this.condition = condition;
-    }
-  }
-
-  process(params) {
-    const mapper = x => {
-      if (this.condition) {
-        if (!evilEval(this.condition, x)) {
-          return x; // no map when condition present and failing
-        }
-      }
-      try {
-        const keys = Object.keys(this.terms);
-        // map to scalar value (not an object) if only an '=', i.e. empty string
-        if (keys.length === 1 && keys[0] === '') {
-          return evilEval(this.terms[keys[0]], x);
-        }
-        const evaluatedTerms = keys.reduce(
-          (p, key) => {
-            const y = evilEval(this.terms[key], x);
-            return { 
-              ...p, 
-              [key]: y,
-            };
-          },
-          {}
-        );
-        return {
-          ...this.properties,
-          ...evaluatedTerms,
-        }
-      } catch(error) {
-        return x; // do not map the input - there was an error
-      }
-    };
-
-    if (Array.isArray(params)) {
-      return params.map(mapper);
-    }
-    
-    return mapper(params);
-  }
-}
-*/
 
 const descriptor = {
   serviceName,
