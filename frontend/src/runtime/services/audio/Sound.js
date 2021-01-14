@@ -17,7 +17,9 @@ class SoundUI extends Component {
   state = {
     running: false,
     generator: { type: 'synth' },
-    sampleUrl: 'http://localhost/assets/audio/A1.mp3',
+    sampleMap: {
+      A3: 'http://localhost/assets/audio/A1.mp3',
+    }
   };
 
   onInit = initialState => {
@@ -25,9 +27,16 @@ class SoundUI extends Component {
   }
 
   onNotification = (service, notification) => {    
-    const { running } = notification;
+    const { 
+      running,
+      samples,
+    } = notification;
     if (running !== this.state.running) {
       this.setState({ running });
+    }
+
+    if (samples !== undefined) {
+      this.setState({ sampleMap: samples });
     }
   }
 
@@ -60,24 +69,30 @@ class SoundUI extends Component {
   }
 
   renderGeneratorSampler = service => {
-    const { running, sampleUrl } = this.state;
+    const { running, sampleMap } = this.state;
     const onClick = () => {
       const toggled = !running;
       service.configure({ 
         running: toggled,
         generator: {
           type: 'sampler',
-          urls: { A3:  sampleUrl },
+          urls: sampleMap,
         }
       });
       this.setState({ running: toggled });
     }
+    const mapping = Object.keys(sampleMap).map(key => ({ key, sample: sampleMap[key]}));
     return (
       <div>
-        <InputField
-          label="Sample URL"
-          value={sampleUrl}
-        />
+        {
+          mapping.map(m => (
+            <InputField
+              key={`sample-mapping-${m.key}`}
+              label={m.key}
+              value={m.sample}
+            />
+          ))
+        }
         {
           this.renderStartStopButton(running, onClick)
         }
@@ -153,12 +168,22 @@ class Sound {
     }
   }
 
-  createSampler = params => {
-    return new Promise((resolve, reject) => {
+  createSampler =  params => {
+    return new Promise(async (resolve, reject) => {
+      const { urls={} } = params;
+      const samples = {};
+      for (const key of Object.keys(urls)) {
+        const sample = urls[key];
+        samples[key] = sample instanceof Blob ?
+          await toAudioBuffer(sample) : 
+          sample;
+      }
       const sampler = new Tone.Sampler({
-        ...params,
+        urls: samples,
         onload: () => resolve(sampler),
       });
+
+      this.app.notify(this, { samples });
     });
   }
 
@@ -166,18 +191,7 @@ class Sound {
     const { 
       generator,
       running,
-      sample,
     } = config;
-
-    if (sample !== undefined) {
-      this.cleanup();
-      const ab = await toAudioBuffer(sample); 
-      const p = { urls: { C4: ab } };
-      console.log('!!! configue', p);
-      this._sampler = await this.createSampler(p);
-      this._sampler.toDestination();
-    }
-
 
     if (generator !== undefined) {
       this.generator = generator;
