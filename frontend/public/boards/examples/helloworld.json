@@ -21,7 +21,7 @@
             "family": "Helvetica Neue, sans-serif"
           },
           "color": "gray",
-          "text=": "`Hello World #${params.triggerCount}`"
+          "text=": "\"Hello World #\" + params.triggerCount"
         }
       },
       {

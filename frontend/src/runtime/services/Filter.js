@@ -3,11 +3,9 @@ import {
   Input,
 } from 'semantic-ui-react';
 
-// import evilEval from '../../evilEval';
-import ServiceUI from './ServiceUI';
+import { FilterDescriptor } from 'services';
 
-const serviceId = 'hookup.to/service/filter-browser';
-const serviceName = 'Filter';
+import ServiceUI from './ServiceUI';
 
 class FilterUI extends Component {
   state = {
@@ -50,49 +48,12 @@ class FilterUI extends Component {
   }
 }
 
-class Filter {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.condition = undefined;
-  }
-
-  configure(config) {
-    const { condition } = config;
-    if (condition !== undefined) {
-      this.condition = condition;
-    }
-  }
-
-  process(params) {
-    const f = this.condition;
-    const filter = x => {
-      if (f && x) {
-        // TODO remove by making this a shared service
-        // but clashes with frontend monitoring service 
-        // harmonize
-        // this is only used by sampling.json test
-        //return !!evilEval(f, x);
-        return false;
-      }
-      return false;
-    };
-
-    if (Array.isArray(params)) {
-      return params.filter(filter);
-    }
-    
-    return filter(params);
-  }
-}
 
 const descriptor = {
-  serviceName,
-  serviceId,
+  serviceName: FilterDescriptor.serviceName,
+  serviceId: FilterDescriptor.serviceId,
   create: (app, board, descriptor, id) =>
-    new Filter(app, board, descriptor, id),
+    new FilterDescriptor.service(app, board, descriptor, id),
   createUI: FilterUI
 };
 

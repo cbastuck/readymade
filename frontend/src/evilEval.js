@@ -1,3 +1,4 @@
+/*
 export default function evilEval(f, params) {
   if (f && params) {
     const scopedFunction = (term, params) => {
@@ -12,3 +13,4 @@ export default function evilEval(f, params) {
     return scopedFunction.call(null, f, params);
   }
 }
+*/

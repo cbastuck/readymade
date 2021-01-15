@@ -5,10 +5,7 @@ import {
   Checkbox,
 } from 'semantic-ui-react';
 
-import MapDescriptor, { 
-  serviceName, 
-  serviceId,
-} from 'services/Map';
+import { MapDescriptor } from 'services';
 
 import InputLabelValue from '../../components/shared/InputLabelValue';
 
@@ -135,8 +132,8 @@ class MapUI extends Component {
 }
 
 const descriptor = {
-  serviceName,
-  serviceId,
+  serviceName: MapDescriptor.serviceName,
+  serviceId:  MapDescriptor.serviceId,
   create: (app, board, descriptor, id) =>
     new MapDescriptor.service(app, board, descriptor, id),
   createUI: MapUI

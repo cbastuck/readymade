@@ -19,8 +19,8 @@
         "template": {
           "type": "text",
           "text": "🚶‍♀️",
-          "x=": "`${100 - params.triggerCount % 100}%`",
-          "y=": "`${Math.round(95 - Math.sin(params.triggerCount) * 2)}%`"
+          "x=": "100 - params.triggerCount % 100 + \"%\"",
+          "y=": "round(95 - sin(params.triggerCount) * 2) + \"%\""
         }
       },
       {
