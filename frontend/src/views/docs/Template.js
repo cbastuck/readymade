@@ -26,7 +26,7 @@ export default class Template extends Component {
           textAlign: 'left', 
           marginLeft: 5,
           marginTop: 15,
-          width: 300
+          width: 300,          
         }}
       >
         <Breadcrumb>
@@ -58,7 +58,7 @@ export default class Template extends Component {
               <BoardConsumer>
               {
                 boardContext => (
-                  <div style={{ height: '100%' }}>
+                  <div style={{ minHeight: '100%' }}>
                     <Toolbar 
                       onAction={boardContext.onAction}
                     />
@@ -86,6 +86,7 @@ export default class Template extends Component {
                 )
               }
               </BoardConsumer>
+              <div style={{ height: 5 }} />
               <Footer />
             </BoardContext> 
           )

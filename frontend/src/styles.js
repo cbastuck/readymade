@@ -7,6 +7,9 @@ export const t = {
   nc: { textTransform: 'none' },
   ul: { textDecoration: 'underline' },
   ls1: { letterSpacing: 1 },
+  ls2: { letterSpacing: 2 },
+  ls3: { letterSpacing: 3 },
+  ls4: { letterSpacing: 4 },
   lh1_5: { lineHeight: 1.5 },
   lh1_6: { lineHeight: 1.6 },
   lh1_7: { lineHeight: 1.7 },
@@ -15,11 +18,25 @@ export const t = {
   lh3: { lineHeight: 3 },
 
   fs: function(s) { return { fontSize: s}; },
+  fs20: { fontSize: 20 },
+  fs18: { fontSize: 18 },
+  fs17: { fontSize: 17 },
+  fs16: { fontSize: 16 },
+  fs15: { fontSize: 15 },
   fs14: { fontSize: 14 },
   fs13: { fontSize: 13 },
   fs12: { fontSize: 12 },
   fs11: { fontSize: 11 },
   fs10: { fontSize: 10 },
+  fs9: { fontSize: 9 },
+  fs8: { fontSize: 8 },
+  fs6: { fontSize: 6 },
+  fs4: { fontSize: 4 },
+
+  it: { fontStyle: 'italic' },
+  bo: { fontWeight: 'bold' },
+
+  nw: { whiteSpace: 'nowrap' },
 
   m: function(x, y){ return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` }; },
   m2: { margin: 2 },
@@ -74,5 +91,4 @@ export const t = {
     UserSelect: 'none',
     WebkitTapHighlightColor: 'rgba(0,0,0,0)'
   },
-
 }
