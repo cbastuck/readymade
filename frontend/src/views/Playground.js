@@ -315,10 +315,32 @@ export default class Playground extends Component {
     </div>
   )
 
-  render() {
+  renderPlayground = boardContext => {
     const { 
       persistBoard, 
     } = this.state;
+    return (
+      <div>
+        { this.renderRuntimes(boardContext) }
+        <div style={s(t.w100, t.tr)}>
+          <Checkbox
+            style={s(t.uc, t.ls1, t.fs11, t.m(10, 20))}
+            toggle
+            checked={persistBoard}
+            onChange={(_, { checked }) => 
+              this.setState(
+                { persistBoard: checked },
+                () => checked && this.storeBoard()
+              )
+            }
+            label="Store Board"
+          />
+        </div>
+      </div>
+    )
+  }
+
+  render() {
     return (
       <BoardProvider
         user={this.user}
@@ -344,27 +366,9 @@ export default class Playground extends Component {
                 boardContext && 
                 boardContext.runtimes && 
                 boardContext.runtimes.length === 0 ? 
-                  this.renderPlaceholder() : (
-                  <div>
-                    { this.renderRuntimes(boardContext) }
-                    <div style={s(t.w100, t.tr)}>
-                      <Checkbox
-                        style={s(t.uc, t.ls1, t.fs11, t.m(10, 20))}
-                        toggle
-                        checked={persistBoard}
-                        onChange={(_, { checked }) => 
-                          this.setState(
-                            { persistBoard: checked },
-                            () => checked && this.storeBoard()
-                          )
-                        }
-                        label="Store Board"
-                      />
-                    </div>
-                  </div>
-                )
+                  this.renderPlaceholder() : 
+                  this.renderPlayground(boardContext)
               }
-              
             </div>
           )
         }

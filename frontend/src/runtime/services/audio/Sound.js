@@ -31,7 +31,8 @@ class SoundUI extends Component {
       running,
       samples,
     } = notification;
-    if (running !== this.state.running) {
+    if (running !== undefined && 
+        running !== this.state.running) {
       this.setState({ running });
     }
 
@@ -168,7 +169,7 @@ class Sound {
     }
   }
 
-  createSampler =  params => {
+  createSampler = params => {
     return new Promise(async (resolve, reject) => {
       const { urls={} } = params;
       const samples = {};
@@ -203,8 +204,8 @@ class Sound {
         break;
         case 'sampler':
           this.cleanup();
-            this._sampler = await this.createSampler(generator);
-            this._sampler.toDestination();
+          this._sampler = await this.createSampler(generator);
+          this._sampler.toDestination();
           break;
         default: 
           console.error(`Unknown generator: "${generator.type}"`);
