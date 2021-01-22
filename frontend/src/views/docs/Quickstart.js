@@ -3,10 +3,9 @@ import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Item } from 'semantic-ui-react'
 
+import Sketch from './Sketch';
 import Template from './Template';
 import { s, t } from '../../styles';
-
-import './Quickstart.css';
 
 export default class Quickstart extends Component {
 
@@ -75,12 +74,23 @@ export default class Quickstart extends Component {
             color: '#454f6d'
           }}
         >
-        <a 
-          href={claim.link || '#'} 
-          target="blank"
-        > 
-          {claim.c}
-        </a>
+        { 
+          claim.link ? 
+            (
+               <a 
+                href={claim.link} 
+                target="blank"
+              > 
+                {claim.c}
+              </a>
+            ) : (
+              <span
+                style={{ color: '#4183c4', fontStyle: 'initial' }}
+              >
+                { claim.c }
+              </span>
+            )
+        }
         </span>
       </div>
     );
@@ -117,14 +127,19 @@ export default class Quickstart extends Component {
         <h2 style={{ ...sectionStyle, marginTop: 30, marginBottom: 20 }}>Stuff to know about</h2>
         <div style={s(t.uc, t.fs12, t.ls2, { textAlign: 'left' })}>
           <div style={{ marginBottom: 10 }}>
-            Start experimenting with logic. There are three "things" that your need to know about. They are
-            the basic building blocks, ordered by what consists of what: Board -> Runtime -> Service. 
+            There are three "things" that your need to know about. They are
+            the basic building blocks, ordered by what consists of what: Board - Runtime - Service.
+          </div>
+          <div style={{ margin: 5 }}>
+            <Sketch />
           </div>
           <div>
             Think 
             of Board a sheet of paper, a Runtime as a line on the paper and Services as the words a line
             consists of. Together the building blocks provide some behavior, comparable to a story that piece 
             of papar might tell.
+
+            Start experimenting with logic
           </div>
           <Item.Group link>
           { 
