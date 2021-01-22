@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Checkbox } from 'semantic-ui-react';
+import { Icon, Checkbox } from 'semantic-ui-react';
 import uuid from 'uuid';
 
 import BoardProvider, { BoardConsumer } from '../BoardContext';
@@ -296,6 +296,25 @@ export default class Playground extends Component {
     );
   }
 
+  renderPlaceholder = () => (
+    <div 
+      style={s(
+        t.fill, 
+        { 
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexDirection: 'column'
+        }
+      )}
+    >
+      <Icon name="leaf" size="massive" />
+      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 30))}>      
+        It's so empty here - Add a runtime to get going
+      </div>        
+    </div>
+  )
+
   render() {
     const { 
       persistBoard, 
@@ -321,21 +340,31 @@ export default class Playground extends Component {
                 board={boardContext.boardName}
                 availableRuntimes={this.availableRuntimes}
               />
-              { this.renderRuntimes(boardContext) }
-              <div style={s(t.w100, t.tr)}>
-                <Checkbox 
-                  style={s(t.uc, t.ls1, t.fs11, t.m(10, 20))}
-                  toggle
-                  checked={persistBoard}
-                  onChange={(_, { checked }) => 
-                    this.setState(
-                      { persistBoard: checked },
-                      () => checked && this.storeBoard()
-                    )
-                  }
-                  label="Store Board"
-                />
-              </div>
+              { 
+                boardContext && 
+                boardContext.runtimes && 
+                boardContext.runtimes.length === 0 ? 
+                  this.renderPlaceholder() : (
+                  <div>
+                    { this.renderRuntimes(boardContext) }
+                    <div style={s(t.w100, t.tr)}>
+                      <Checkbox
+                        style={s(t.uc, t.ls1, t.fs11, t.m(10, 20))}
+                        toggle
+                        checked={persistBoard}
+                        onChange={(_, { checked }) => 
+                          this.setState(
+                            { persistBoard: checked },
+                            () => checked && this.storeBoard()
+                          )
+                        }
+                        label="Store Board"
+                      />
+                    </div>
+                  </div>
+                )
+              }
+              
             </div>
           )
         }
