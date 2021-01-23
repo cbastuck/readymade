@@ -6,6 +6,28 @@ import MonitorDescriptor from 'services/Monitor';
 import { s, t } from '../../styles';
 import ServiceUI from './ServiceUI';
 
+function isObject(obj) {
+  return typeof obj === 'object' && obj !== null;
+}
+
+function unroll(params) {
+  const isBlob = params instanceof Blob;
+  if (isBlob) {
+    return `Blob (${params.type} ${params.size} bytes)`;
+  }
+  const isPrimitive = !isObject(params);
+  if (isPrimitive) {
+    return params;
+  }
+  return Object.keys(params).reduce(
+    (all, key) => ({
+      ...all,
+      [key]: unroll(params[key])
+    }),
+    {}
+  );
+}
+
 class MonitorUI extends Component {
   state = {
     message: ''
@@ -16,11 +38,11 @@ class MonitorUI extends Component {
   }
 
   onNotification = (service, params) => {
-    const isBlob = params instanceof Blob;
-    this.setState({
-      message: isBlob ? 
-        `Blob (${params.type} ${params.size} bytes)` :
-        JSON.stringify(params, null, 2),
+    const s = unroll(params);
+    this.setState({ 
+      message: isObject(s) ?
+        JSON.stringify(s, null, 2) :
+        s 
     });
   }
 
