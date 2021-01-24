@@ -295,7 +295,12 @@ export default class Runtime extends Component {
               key={`custom-item-${item.key}-${idx}`}
               as='a'
               style={itemStyle}
-              onClick={item.onClick}
+              onClick={ev => {
+                item.onClick(ev);
+                this.setState({
+                  showSettings: false
+                });
+              }}
             >
               <Icon name={item.icon} />
             </Menu.Item>
@@ -312,6 +317,7 @@ export default class Runtime extends Component {
       boardContext=null,
       frameless=false,
       onResult=undefined,
+      children=undefined,
     } = this.props;
 
     const runtimeId = runtime && runtime.id;
@@ -432,6 +438,19 @@ export default class Runtime extends Component {
             )
           }
           </div>
+          {
+            children && ( 
+              <div style={{ margin: '5px 20px' }}>
+                <div 
+                  style={{ 
+                    borderTop: 'solid 1px #ccc',
+                    marginBottom: 5,
+                  }} 
+                />
+                {children}
+              </div>
+            )
+          }
         </Sidebar.Pushable>
       </div>
     );

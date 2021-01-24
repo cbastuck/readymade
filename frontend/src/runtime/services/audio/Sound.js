@@ -41,6 +41,14 @@ class SoundUI extends Component {
     }
   }
 
+  createGeneratorOptions = generator => {
+    const { sampleMap } = this.state;
+    const params = generator === 'sampler' ? 
+      { urls: sampleMap} : 
+      { };
+    return { type: generator, ...params };
+  }
+
   renderStartStopButton = (running, onClick) => {
     return (
       <Button 
@@ -114,7 +122,7 @@ class SoundUI extends Component {
           options={generatorOptions}
           value={generator && generator.type}
           onChange={async (_ev, { value: generator }) => {
-            const g = { type: generator };
+            const g = this.createGeneratorOptions(generator);
             await service.configure({ 
               generator: g,
               running: false,

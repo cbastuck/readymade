@@ -15,11 +15,26 @@ const defaultBundles = [
   'hookup.to/registry/browser/Audio'
 ];
 
+const serviceWhitelist = [
+  'hookup.to/service/timer',
+  'hookup.to/service/monitor',
+  'hookup.to/service/canvas',
+  'hookup.to/service/map',
+  'hookup.to/service/camera',
+  'hookup.to/service/injector',
+  'hookup.to/service/trigger-pad',
+  'hookup.to/service/sound',
+  'hookup.to/service/mp3encoder',
+  'hookup.to/service/audio-output',
+  'hookup.to/service/microphone',
+];
+
 export default class Playground extends Component {
   state = {
     persistBoard: false,
     showSidechainSelector: false,
-    sidechainRouting: {}
+    sidechainRouting: {},
+    placeholderAnimationRunning: false,
   };
 
   board = {
@@ -232,12 +247,14 @@ export default class Playground extends Component {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles); 
     }
 
+    const availableServices = this.defaultRegistry.availableServices
+      .filter(s => serviceWhitelist.indexOf(s.serviceId) !== -1);
     const data = {
       board: { name: 'Playground' },
       runtimes, 
       services,
       registry: runtimes && runtimes.reduce(
-        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
+        (all, rt) => ({ ...all, [rt.id]: availableServices }), 
         {}
       ),
     };
@@ -255,65 +272,88 @@ export default class Playground extends Component {
       <div style={s(t.w100)}>
       {
         runtimes.map(runtime => 
-          showSidechainSelector === runtime.id ? 
-            <SidechainSelector
-              key={`sidechain-selector-${runtime.id}`}
-              runtimes={runtimes}
-              services={services} 
-              onClose={() => this.setState({ showSidechainSelector: false })}
-              onSelect={routing => 
-                this.setState({ 
-                  sidechainRouting: {
-                    ...sidechainRouting,
-                    [runtime.id]: routing,
-                  },
-                })
-              }
-              routing={sidechainRouting[runtime.id]}
-            /> : 
-            <DragProvider
-              key={`playground-drag-provider-${runtime.id}`}
-              style={{ marginBottom: 5 }}
+          <DragProvider
+            key={`playground-drag-provider-${runtime.id}`}
+            style={{ marginBottom: 10, marginTop: 10 }}
+          >
+            <Runtime
+              key={`sandbox-playground-${runtime.id}`}
+              ref={rt => this.runtimeInstances[runtime.id] = rt}
+              boardContext={boardContext}
+              runtime={runtime}
+              onResult={this.onResult.bind(this, runtime)}
+              customItems={[
+                {
+                  key: `sidechain-option-${runtime.id}`,
+                  icon: 'location arrow',
+                  onClick: () => this.setState({ showSidechainSelector: runtime.id })
+                }
+              ]}
             >
-              <Runtime
-                key={`sandbox-playground-${runtime.id}`}
-                ref={rt => this.runtimeInstances[runtime.id] = rt}
-                boardContext={boardContext}
-                runtime={runtime}
-                onResult={this.onResult.bind(this, runtime)}
-                customItems={[
-                  {
-                    key: `sidechain-option-${runtime.id}`,
-                    icon: 'location arrow',
-                    onClick: () => this.setState({ showSidechainSelector: runtime.id })
+            {
+              showSidechainSelector === runtime.id && (
+                <SidechainSelector
+                  key={`sidechain-selector-${runtime.id}`}
+                  runtimes={runtimes}
+                  services={services} 
+                  onClose={() => this.setState({ showSidechainSelector: false })}
+                  onSelect={routing => 
+                    this.setState({ 
+                      sidechainRouting: {
+                        ...sidechainRouting,
+                        [runtime.id]: routing,
+                      },
+                    })
                   }
-                ]}
-              />
-            </DragProvider>
+                  routing={sidechainRouting[runtime.id]}
+                />
+              )
+            }
+            </Runtime>
+          </DragProvider>
         )
       }
       </div>
     );
   }
 
-  renderPlaceholder = () => (
-    <div 
-      style={s(
-        t.fill, 
-        { 
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexDirection: 'column'
-        }
-      )}
-    >
-      <Icon name="leaf" size="massive" />
-      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 30))}>      
-        It's so empty here - Add a runtime to get going
-      </div>        
-    </div>
-  )
+  renderPlaceholder = () => {
+    const { placeholderAnimationRunning } = this.state;
+    if (!placeholderAnimationRunning) {
+      setTimeout(() => 
+        this.setState({ placeholderAnimationRunning: true }),
+        0
+      );
+    }
+    return (
+      <div 
+        style={s(
+          t.fill, 
+          { 
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexDirection: 'column'
+          },
+          { 
+            opacity: placeholderAnimationRunning ? 1 : 0,
+            transition: placeholderAnimationRunning && 'opacity 5s 1s'
+          }
+        )}
+      >
+        <Icon 
+          style={{ opacity: 0.6 }} 
+          name="leaf" 
+          size="massive" 
+          color="grey" 
+        />
+        <div 
+          style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}>      
+          It is empty here, add a runtime to get going ...
+        </div>        
+      </div>
+    );
+  }
 
   renderPlayground = boardContext => {
     const { 

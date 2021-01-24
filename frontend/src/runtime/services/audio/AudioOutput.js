@@ -5,7 +5,7 @@ import ServiceUI from '../ServiceUI';
 import { decodeBuffer } from './audioHelper';
 import { toArrayBuffer } from '../helpers';
 
-const serviceId = 'hookup.to/service/audio-output'; // TODO: change to audio-input
+const serviceId = 'hookup.to/service/audio-output';
 const serviceName = 'Audio Output';
 
 class AudioOutputUI extends Component {

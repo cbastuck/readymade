@@ -37,40 +37,44 @@ export default class Sketch extends Component {
     </div>
   )
 
-  renderArrow = () => (
+  renderArrow = yOffset => (
     <Icon
-      style={{ margin: 5, marginTop: 70 }}
+      style={{ margin: 5, marginTop: yOffset }}
       name="chevron right" 
-      size="big" 
+      size="large"
+      color="gray"
     />
   )
 
   renderRuntime = numServices => (
     <div style={flexRow}>
-      { this.renderArrow() }
+      { this.renderArrow(75) }
       <div 
         style={s(
           runtimeDim, 
           border, 
-          t.mb10
+          t.mb10,
+          t.p5
         )}
       >
         <div 
           style={s(
             caption,
             t.tc,
-            { marginLeft: 10, marginBottom: 0, marginTop: 5 },
+            { marginLeft: 10, marginBottom: 5, marginTop: 5 },
           )}
         >
           Runtime
         </div>
         <div style={s(flexRow, t.mb10)}>
           { this.renderService() }
+          { this.renderArrow(50) }
           { this.renderService() }
+          { numServices > 2 && this.renderArrow(50) }
           { numServices > 2 && this.renderService() }
         </div>
       </div>
-      { this.renderArrow() }
+      { this.renderArrow(75) }
     </div>
   )
 

@@ -68,24 +68,25 @@ export default class SidechainSelector extends Component {
       <div
         style={
           s(t.uc, t.fs12, t.ls1, {
-            height: 250,
-            border: 'solid 1px lightgray',
+            
             borderRadius: 3,
             backgroundColor: '#EEEEEE10',
-            padding: 20,
+            padding: '5px 0px' 
           })
         }
       >
-        <div>
-          Route the output of this runtime to <span style={{ textStyle: 'italic' }}>configure</span> services from these runtimes:
+        <div style={{ display: 'flex', flexDirection: 'row'}}>
+          <div style={{ paddingTop: 5 }}>
+            Route the output of this runtime to <span style={{ textStyle: 'italic' }}>configure</span> some of the following services:
+          </div>
+          <Button 
+            onClick={onClose}
+            style={s(t.uc, t.fs12, t.ls1, { width: 100, marginLeft: 'auto' })}
+          >
+            Close
+          </Button>
         </div>
         { this.renderTable(runtimes, services, routing || [], onSelect) }
-        <Button 
-          onClick={onClose}
-          style={s(t.uc, t.fs12, t.ls1)}
-        >
-          Close
-        </Button>
       </div>
     );
   }
