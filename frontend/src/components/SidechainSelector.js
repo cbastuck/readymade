@@ -9,6 +9,9 @@ import { s, t } from '../styles';
 
 export default class SidechainSelector extends Component {
   renderTable = (runtimes, services, routing, onSelect) => {
+    if (!services || !runtimes) {
+      return false;
+    }
     return (
       <Table definition>
         <Table.Body>
@@ -18,6 +21,7 @@ export default class SidechainSelector extends Component {
               <Table.Row key={`sidechain-row-${runtime.id}`}>
                 <Table.Cell>{runtime.name}</Table.Cell>
                 { 
+                  services[runtime.id] && 
                   services[runtime.id].map(service => {
                     return (
                       <Table.Cell key={`sidechain-col-${service.uuid}`}> 
