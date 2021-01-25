@@ -27,6 +27,7 @@ const serviceWhitelist = [
   'hookup.to/service/mp3encoder',
   'hookup.to/service/audio-output',
   'hookup.to/service/microphone',
+  'hookup.to/service/input',
 ];
 
 export default class Playground extends Component {
@@ -52,13 +53,46 @@ export default class Playground extends Component {
 
   runtimeInstances = {};
 
+  importBoard = async url => {
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      const runtimeIds = Object.keys(data);
+      return {
+        runtimes: runtimeIds.map((rid, ridx) => ({
+          id: rid,
+          type: data[rid].type,
+          name: data[rid].name || `Runtime ${ridx + 1}`,
+        })),
+        services: runtimeIds.reduce(
+          (all, rid) => ({
+            ...all,
+            [rid]: data[rid].services.map(svc => {
+              if (!svc.uuid) {
+                return { ...svc, uuid: uuid.v4() };
+              }
+              return svc;
+            })
+          }), 
+          {}
+        )
+      };
+    } catch (err) {
+      console.log('Import failed', err, url)
+    }
+  }
+
   restoreBoard = () => {
     const data = localStorage.getItem('hkp-playground');
     return data ? JSON.parse(data) : {};
   }
 
   storeBoard = () => {
-    const { runtimes=[], services={}, sidechainRouting={} } = this.state;
+    const { 
+      runtimes=[], 
+      services={}, 
+      sidechainRouting={} 
+    } = this.state;
 
     const data = { 
       runtimes: runtimes.map(rt => ({ 
@@ -209,7 +243,7 @@ export default class Playground extends Component {
 
   onResult = async (runtime, svcUuid, result) => {
     const { sidechainRouting } = this.state;
-    const routing = sidechainRouting[runtime.id];
+    const routing = sidechainRouting && sidechainRouting[runtime.id];
     if (routing) {
       for (const route of routing) {
         const dst = this.runtimeInstances[route.runtimeId];
@@ -228,12 +262,12 @@ export default class Playground extends Component {
     let runtimes = this.state.runtimes;
     let services = this.state.services;
     if (!runtimes) {
+      const src = new URLSearchParams(document.location.search).get('src');
       const { 
         runtimes: restoredRuntimes, 
         services: restoredServices,
         sidechainRouting  
-      } = this.restoreBoard();
-
+      } = src ? await this.importBoard(src) : this.restoreBoard();
       runtimes = restoredRuntimes || [];
       services = restoredServices || {};
       this.setState({ 
@@ -249,6 +283,7 @@ export default class Playground extends Component {
 
     const availableServices = this.defaultRegistry.availableServices
       .filter(s => serviceWhitelist.indexOf(s.serviceId) !== -1);
+
     const data = {
       board: { name: 'Playground' },
       runtimes, 

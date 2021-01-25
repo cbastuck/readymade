@@ -36,7 +36,7 @@
             },
             {
               "type": "text",
-              "text": "Best solutions merge from many minds",
+              "text": "Good solutions merge from many",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
@@ -51,7 +51,7 @@
           [
             {
               "type": "text",
-              "text": "The more contribute",
+              "text": "The more people contribute",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
@@ -64,7 +64,7 @@
             },
             {
               "type": "text",
-              "text": "the lower the risk to miss something",
+              "text": "the lower the risk to miss some",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
@@ -118,7 +118,7 @@
             },
             {
               "type": "text",
-              "text": "Extend the Narrative",
+              "text": "Reshape the Narrative",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {

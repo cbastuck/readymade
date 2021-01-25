@@ -77,7 +77,6 @@ export default class SelectorField extends Component {
                 textAlign: 'left',
                 textTransform: 'uppercase',
                 backgroundColor: 'white',
-                position: 'fixed',
               }}
             >
             {

@@ -112,7 +112,7 @@ class SoundUI extends Component {
   renderMain = service => {
     const { generator } = this.state;
     const generatorOptions = {
-      synth: 'Sine Synth',
+      synth: 'Synth',
       sampler: 'Sampler',
     };
     return (
@@ -196,6 +196,23 @@ class Sound {
     });
   }
 
+  createSynth = params => {
+    const { kind = 'sine' } = params;
+    switch (kind) {
+      case 'poly':
+        return new Tone.PolySynth();
+      case 'am':
+        return new Tone.AMSynth();
+      case 'fm':
+        return new Tone.FMSynth();
+      case 'noise':
+        return new Tone.NoiseSynth();
+      case 'sine': 
+      default:
+        return new Tone.Synth();
+    }
+  }
+
   async configure(config) {
     const { 
       generator,
@@ -207,7 +224,7 @@ class Sound {
       switch (generator.type) {
         case 'synth': 
           this.cleanup();
-          this._synth = new Tone.PolySynth(generator)
+          this._synth = this.createSynth(generator);
           this._synth.toDestination();
         break;
         case 'sampler':

@@ -2,13 +2,12 @@ import React, { Component } from 'react';
 import { 
   Input as InputField, 
   Checkbox,
-  Button,
 } from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 import { s, t } from '../../styles';
 
-const serviceId = 'hookup.to/browser/input';
+const serviceId = 'hookup.to/service/input';
 const serviceName = 'Input';
 
 class InputUI extends Component {
@@ -20,14 +19,23 @@ class InputUI extends Component {
     this.setState({ ...initialState });
   }
 
-  onTimer = service => {
-    const { eventSourceURL } = service;
+  onNotification = (service, notification) => {
+    const { 
+      eventSourceURL, 
+      running 
+    } = notification;
+    
     if (this.state.eventSourceURL !== eventSourceURL) {
       this.setState({ eventSourceURL });
+    }
+
+    if (this.state.running !== running) {
+      this.setState({ running });
     }
   }
 
   renderEventSourceTab = service => {
+    const { running } = this.state;
     return (
       <div
         style={{
@@ -38,23 +46,25 @@ class InputUI extends Component {
           <InputField 
             label="URL"
             value={this.state.eventSourceURL}
-            onChange={(_, { value }) => this.setState({ eventSourceURL: value })}
+            onChange={(_, { value }) => {
+              this.setState({ eventSourceURL: value });
+              service.configure({ eventSourceURL: value });
+            }}
           />
-        </div>
-        <div style={t.mt5}>
-          <Button 
-            style={s(t.uc, t.ls1, t.w100, t.fs12)}
-            disabled={!this.state.eventSourceURL}
-            onClick={() => service.configure({ eventSourceURL: this.state.eventSourceURL })}
-          >
-            Connect
-          </Button>
         </div>
         <div style={t.tl}>
           <Checkbox 
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}
             label="active"
             toggle
+            onChange={(_, { checked }) => {
+              if (checked) {
+                service.configure({ running: true });
+              } else {
+                service.configure({ running: false });
+              }
+            }}
+            checked={running}
           />
         </div>
       </div>
@@ -69,8 +79,8 @@ class InputUI extends Component {
     return (
       <ServiceUI 
         {...this.props} 
-        onInit={this.onInit.bind(this)}
-        onTimer={this.onTimer.bind(this)}
+        onInit={this.onInit}
+        onNotification={this.onNotification}
         segments={[
           { name: 'Event Source', render: this.renderEventSourceTab },
           // { name: 'Board', render: this.renderBoardTab }
@@ -87,20 +97,26 @@ class Input {
     this.app = app;
 
     this.parseEventsAsJSON = true;
+    this.running = false;
   }
 
   onEventSourceData(event) {
-    const { data } = event;
-    if (data) {
-      const params = (this.parseEventsAsJSON) ? 
-        JSON.parse(data) :
-        { raw: data };
-      this.app.next(this, params);
+    if (this.running) {
+      const { data } = event;
+      if (data) {
+        const params = (this.parseEventsAsJSON) ? 
+          JSON.parse(data) :
+          { raw: data };
+        this.app.next(this, params);
+      }
     }
   }
 
   configure(config) {
-    const { eventSourceURL } = config;
+    const { 
+      eventSourceURL,
+      running,
+    } = config;
     if (eventSourceURL !== undefined) {
       this.eventSource = new EventSource(eventSourceURL);
       this.eventSource.onopen = () => {
@@ -120,7 +136,14 @@ class Input {
           this.eventSource = null;
           this.closeEventSourceConnection = null;
         };
+
+        this.app.notify(this, { eventSourceURL });
       };
+    }
+
+    if (running !== undefined) {
+      this.running = running;
+      this.app.notify(this, { running });
     }
   }
 

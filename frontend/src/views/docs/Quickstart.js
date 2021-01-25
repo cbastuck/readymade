@@ -127,8 +127,8 @@ export default class Quickstart extends Component {
         <h2 style={{ ...sectionStyle, marginTop: 30, marginBottom: 20 }}>Stuff to know about</h2>
         <div style={s(t.uc, t.fs12, t.ls2, { textAlign: 'left' })}>
           <div style={{ marginBottom: 10 }}>
-            There are three "things" that you need to know. These are
-            the basic building blocks: Board - Runtime - Service (ordered by what consists of what).
+            There are three "things" you need to know about. They are
+            the basic building blocks that enable you to experiment with data and services: Board, Runtime, Service.
           </div>
           <div style={{ padding: '8px 0px' }}>
             <Sketch />

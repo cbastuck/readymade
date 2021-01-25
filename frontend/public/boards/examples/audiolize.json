@@ -6,9 +6,9 @@
     "services": [
       {
         "serviceName": "Input",
-        "serviceId": "hookup.to/browser/input",
+        "serviceId": "hookup.to/service/input",
         "eventSourceURL": "https://stream.wikimedia.org/v2/stream/recentchange",
-        "active": true
+        "running": true
       },
       {
         "serviceName": "Map",
@@ -20,7 +20,10 @@
       {
         "serviceName": "Sound",
         "serviceId": "hookup.to/service/sound",
-        "generator": "synth"
+        "generator": {
+          "type": "synth",
+          "kind": "sine"
+        }
       }
     ]
   }

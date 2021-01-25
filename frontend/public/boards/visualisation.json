@@ -88,24 +88,24 @@
           [ 
             {
               "type": "text",
-              "text": "Nature is beautiful",
+              "text": "In a way, nature appears",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "37%",
+                "size": "55%",
                 "family": "Helvetica Neue, sans-serif"
               },
               "y": "15%"
             },
             {
               "type": "text",
-              "text": "and kind-of an optimization framework",
+              "text": "like an optimization framework",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "77%",
+                "size": "75%",
                 "family": "Helvetica Neue, sans-serif"
               },
               "y": "84%"
@@ -189,7 +189,7 @@
           [ 
             {
               "type": "text",
-              "text": "driving towards an optimum somewhere",
+              "text": "driving towards an optimum - somewhere",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
@@ -243,12 +243,12 @@
             },
             {
               "type": "text",
-              "text": "Variety makes it evolve.",
+              "text": "Variance supports its evolution.",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "50%",
+                "size": "70%",
                 "family": "Helvetica Neue, sans-serif"
               },
               "y": "85%"
@@ -330,7 +330,7 @@
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "65%",
+                "size": "70%",
                 "family": "Helvetica Neue, sans-serif"
               },
               "y": "15%"
@@ -378,16 +378,15 @@
             {
               "type": "text",
               "id": "message",
-              "text": "variety explores the solution space",
+              "text": "variety explores the space",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "80%",
+                "size": "65%",
                 "family": "Helvetica Neue, sans-serif"
               },
               "y": "20%",
-              "x": "10%",
               "checkpoint": "@last-state"
             },
             {

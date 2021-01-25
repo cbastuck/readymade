@@ -267,6 +267,19 @@ export default class Examples extends Component {
         <div style={{ maxHeight: '20%' }}>
           { this.renderExplanation(currentExample.explanation) }
         </div>
+        <div
+          style={{
+            textAlign: 'right',
+            marginBottom: 5,
+          }}
+        >
+          <Link 
+            style={s(t.uc, t.ls1, t.fs12)}
+            to={`/playground?src=${currentExample.url}`}
+          >
+            In Playground
+          </Link>
+        </div>
         <iframe 
           title={currentExample.title}
           src={`sandbox?src=${currentExample.url}`}
@@ -301,17 +314,14 @@ export default class Examples extends Component {
           style={s(t.ls1, t.uc, t.fs12, t.tl)}
         >
           <p>
-            Usecases shown in this examples are a small fraction of the possibilities. 
-            Examples run in a Sandbox. Purpose of the Sandbox is to hookup 
-            workflows that rely on the current browser only and do not need external resources.
+            The examples here only show a fraction of the possibilities, as they 
+            run in a Sandbox. The purpose of the Sandbox is to allow building workflows that do not 
+            require a backend and therefore don't need a user account.
           </p>
 
           <p>
-            More magic happens when mixing persistent and volatile runtimes on multiple devices.
-          </p>
-
-          <p>
-            For these use-cases a login is needed, which is currently scoped to a closed group. 
+            More magic happens when mixing remote and local runtimes on on the same board.
+            Uses-cases that require a login are not publicly available at the moment. 
           </p>
         </Message>
       </div>
