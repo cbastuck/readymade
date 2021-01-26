@@ -62,26 +62,25 @@ export default class MonitorUI extends Component {
       padding: 10,
     };
     const { board, service } = this.props;
+    const { value, enabled } = this.state;
     return (
       <div>
-        <div
-          style={lineStyle}
-        >
+        <div style={lineStyle}>
           <TextArea
             style={{ width: '100%' }}
-            value={this.state.value}
+            value={value}
           />
            <Checkbox
-              label="active"
-              checked={this.state.enabled}
-              onChange={(_, { checked: enabled }) => 
-                this.setState(
-                  { enabled }, 
-                  () => configureService(
-                    board, service, { enabled: this.state.enabled }
-                  )
+            label="active"
+            checked={enabled}
+            onChange={(_, { checked }) => 
+              this.setState(
+                { enabled: checked }, 
+                () => configureService(
+                  board, service, { enabled: checked }
                 )
-              }
+              )
+            }
             />
         </div>
       </div>

@@ -79,7 +79,7 @@ export default class BrowserRuntime extends Component {
     let result = params;
     for (let i = advanceBeforeProcess ? position+1 : position; !!services[i]; ++i) {
       svc = services[i];
-      const serviceInstance = this.serviceInstance(svc)
+      const serviceInstance = this.serviceInstance(svc);
       result = await serviceInstance.process(params);
       params = result;
     }

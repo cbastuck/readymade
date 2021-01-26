@@ -12,7 +12,9 @@ import BrowserRegistry from '../runtime/BrowserRegistry';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 
 const defaultBundles = [
-  'hookup.to/registry/browser/Audio'
+  'hookup.to/registry/browser/Audio',
+  'hookup.to/registry/browser/Graphic',
+  'hookup.to/registry/browser/FileStorage'
 ];
 
 const serviceWhitelist = [
@@ -28,6 +30,9 @@ const serviceWhitelist = [
   'hookup.to/service/audio-output',
   'hookup.to/service/microphone',
   'hookup.to/service/input',
+  'hookup.to/service/gif-encoder',
+  'hookup.to/service/dropbox-sink',
+  'hookup.to/service/dropbox-source',
 ];
 
 export default class Playground extends Component {

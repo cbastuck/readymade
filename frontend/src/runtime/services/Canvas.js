@@ -49,7 +49,17 @@ class CanvasUI extends Component {
   clickHandlers = {};
 
   componentDidMount() {
-    document.body.onresize = ev => {
+    this.resizeObserver = new ResizeObserver(this.onResizeEvent);
+    this.resizeObserver.observe(document.body);
+  }
+
+  componentWillUnmount() {
+    this.resizeObserver.disconnect();
+  }
+
+  onResizeEvent = entries => {
+    const entry = entries && entries[0];
+    if (entry) {
       this.setState(
         {
           fullWidth: document.body.clientWidth,
@@ -57,7 +67,7 @@ class CanvasUI extends Component {
         },
         () => this.update(this.recentData || {})
       );
-    };
+    }
   }
 
   getCanvasDim = () => {

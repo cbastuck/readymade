@@ -12,7 +12,7 @@ import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
 import DataModelReference from '../../components/DataModelReference';
-
+import Sandbox from '../../Sandbox';
 import Modal from '../../components/Modal';
 import ServiceReference from '../../components/ServiceReference';
 import { s, t } from '../../styles';
@@ -262,34 +262,30 @@ export default class Examples extends Component {
     if (!currentExample) {
       return false;
     }
+    const useFrame = false;
     return (
       <div style={t.fill}>
         <div style={{ maxHeight: '20%' }}>
           { this.renderExplanation(currentExample.explanation) }
         </div>
-        <div
-          style={{
-            textAlign: 'right',
-            marginBottom: 5,
-          }}
-        >
-          <Link 
-            style={s(t.uc, t.ls1, t.fs12)}
-            to={`/playground?src=${currentExample.url}`}
-          >
-            In Playground
-          </Link>
-        </div>
-        <iframe 
-          title={currentExample.title}
-          src={`sandbox?src=${currentExample.url}`}
-          frameBorder="0"
-          style={{
-            width: '100%',
-            height: '80%',
-            border: 'none',
-          }}
-        />
+        {
+          useFrame ? (
+            <iframe 
+              title={currentExample.title}
+              src={`sandbox?src=${currentExample.url}`}
+              frameBorder="0"
+              style={{
+                width: '100%',
+                height: '80%',
+                border: 'none',
+              }}
+            /> 
+          ) : (
+            <Sandbox 
+              src={currentExample.url}
+            />
+          )
+        }
       </div>
     );
   }

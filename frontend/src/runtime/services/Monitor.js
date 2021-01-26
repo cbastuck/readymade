@@ -30,11 +30,14 @@ function unroll(params) {
 
 class MonitorUI extends Component {
   state = {
-    message: ''
+    message: '',
   };
 
   onInit = initialState => {
-    this.setState({ ...initialState, message: '' });
+    this.setState({ 
+      ...initialState, 
+      message: '',
+    });
   }
 
   onNotification = (service, params) => {

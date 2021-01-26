@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 
 import uuid from 'uuid';
 import queryString from 'query-string';
@@ -7,6 +8,8 @@ import Runtime from './components/Runtime';
 import BoardProvider, { BoardConsumer } from './BoardContext';
 import DragProvider from './DragContext';
 import BrowserRegistry from './runtime/BrowserRegistry';
+
+import { s, t } from './styles';
 
 function extractRuntimeData(data) {
   if (data.id && data.services) {
@@ -75,6 +78,7 @@ export default class Sandbox extends Component {
     const response = await fetch(src);
     try {
       const data = await response.json();
+      this.setState({ url: src });
       return this.parseData(data);
     } catch (err) {
       console.error('Fetched data is not valid JSON document', src, err);
@@ -127,6 +131,7 @@ export default class Sandbox extends Component {
   }
 
   renderSandbox(options, runtime, onResult) {
+    const { url } = this.state;
     return (
       <BoardConsumer>
         { 
@@ -140,6 +145,23 @@ export default class Sandbox extends Component {
                 boardContext={boardContext}
                 onResult={onResult}
               />
+              {
+                url && (
+                  <div
+                    style={{
+                      textAlign: 'right',
+                      marginBottom: 2,
+                    }}
+                  >
+                    <Link 
+                      style={s(t.uc, t.ls1, t.fs12)}
+                      to={`/playground?src=${url}`}
+                    >
+                      Open In Playground
+                    </Link>
+                  </div>
+                )
+              }
             </DragProvider>
           )
         }

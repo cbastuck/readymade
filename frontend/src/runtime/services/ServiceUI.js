@@ -13,9 +13,11 @@ export default class ServiceUI extends Component {
   };
 
   componentWillUnmount() {
+    const { service } = this.props;
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
+      service.__notificationTarget = null;
     }
   }
 
