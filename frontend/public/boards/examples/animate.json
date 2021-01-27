@@ -14,14 +14,31 @@
         "start": true
       },
       {
-        "serviceName": "Map",
-        "serviceId": "hookup.to/service/map",
-        "template": {
-          "type": "text",
-          "text": "🚶‍♀️",
-          "x=": "100 - params.triggerCount % 100 + \"%\"",
-          "y=": "round(95 - sin(params.triggerCount) * 2) + \"%\""
-        }
+        "serviceName": "Group",
+        "serviceId": "hookup.to/service/group",
+        "aggregator": "array",
+        "services": [
+          {
+            "serviceName": "Map",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "🌲",
+              "x=": "(params.triggerCount / 5) % 100 + \"%\"",
+              "y": "95%"
+            }
+          },
+          {
+            "serviceName": "Map",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "🚶‍♀️",
+              "x=": "100 - params.triggerCount % 100 + \"%\"",
+              "y=": "round(95 - sin(params.triggerCount) * 2) + \"%\""
+            }
+          }
+        ]
       },
       {
         "serviceName": "Monitor",
