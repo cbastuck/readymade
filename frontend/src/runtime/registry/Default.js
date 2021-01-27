@@ -24,6 +24,7 @@ import InjectorDescriptor from '../services/Injector';
 import TriggerPadDescriptor from '../services/TriggerPad';
 import FileSourceDescriptor from '../services/FileSource';
 import TimelineDescriptor from '../services/Timeline';
+import GroupDescriptor from '../services/Group';
 
 export default [
   timerDescriptor,
@@ -52,4 +53,5 @@ export default [
   TriggerPadDescriptor,
   FileSourceDescriptor,
   TimelineDescriptor,
+  GroupDescriptor,
 ];

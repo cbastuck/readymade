@@ -19,6 +19,10 @@ function unroll(params) {
   if (isPrimitive) {
     return params;
   }
+  const isArray = Array.isArray(params);
+  if (isArray) {
+    return params.map(x => unroll(x));
+  }
   return Object.keys(params).reduce(
     (all, key) => ({
       ...all,

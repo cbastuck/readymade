@@ -7,6 +7,7 @@ import { parseResponse } from './MultiformParser';
 import { restoreToken } from '../core/Auth';
 import { serializeWebsocketBuffer } from '../core/format';
 import ServiceUiContainer from './ServiceUiContainer';
+import { createServiceUI } from '../UIFactory';
 
 function logInfo(msg) {
   // console.log(msg);
@@ -28,7 +29,13 @@ export default class BrowserRuntime extends Component {
   }
 
   createApp = () => {
-    const { services } = this.props;
+    const { 
+      services,
+      registry,
+      boardName,
+      runtime,
+      userId,
+    } = this.props;
     if (!services) {
       return;
     }
@@ -57,7 +64,9 @@ export default class BrowserRuntime extends Component {
         if (service.__notificationTarget) {
           return service.__notificationTarget(service, notification);
         }
-      }
+      },
+      createService: this.createServiceInstance,
+      createServiceUI: svc => createServiceUI(registry, boardName, svc, runtime.id, userId),
     }
   }
 
@@ -286,6 +295,27 @@ export default class BrowserRuntime extends Component {
     }
   }
 
+  createServiceInstance = service => {
+    const { registry, boardName } = this.props;
+    const { serviceId, serviceName } = service;
+    const descriptor = registry.find(elem => elem.serviceId === serviceId);
+    if (!descriptor) {
+      return;
+    }
+
+    if (!this.app) {
+      this.app = this.createApp();
+    }
+
+    const svc = descriptor.create(this.app, boardName, descriptor, service.uuid);
+    if (!svc) {
+      console.error('Could not create service', descriptor);
+    }
+    svc.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };
+    svc.configure(service);
+    return svc;
+  }
+
   serviceInstance = service => {
     if (!service) {
       return;
@@ -294,22 +324,14 @@ export default class BrowserRuntime extends Component {
     if (instance) {
       return instance;
     }
-
-    if (!this.app) {
-      this.app = this.createApp();
-    }
-    
-    const { registry, boardName } = this.props;
-    const { serviceId, serviceName } = service;
-    const descriptor = registry.find(elem => elem.serviceId === serviceId);
-    if (descriptor) {
-      const svc = descriptor.create(this.app, boardName, descriptor, service.uuid);
-      svc.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };
-      svc.configure(service);
+   
+    const svc = this.createServiceInstance(service);
+    if (svc) {
       this.serviceInstances[service.uuid] = svc;
       return svc;
-    } 
-    console.error('No browser service descriptor found for ', service, registry)
+    }
+    
+    console.error('No browser service descriptor found for ', service, this.props.registry)
     return service; // try not to crash
   }
 
