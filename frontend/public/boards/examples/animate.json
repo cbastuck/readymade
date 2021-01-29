@@ -14,7 +14,7 @@
         "start": true
       },
       {
-        "serviceName": "Group",
+        "serviceName": "Stack",
         "serviceId": "hookup.to/service/group",
         "aggregator": "array",
         "services": [
@@ -23,9 +23,39 @@
             "serviceId": "hookup.to/service/map",
             "template": {
               "type": "text",
+              "text": "☀️",
+              "x=": "100 - (params.triggerCount / 50) % 100 + \"%\"",
+              "y": "20%"
+            }
+          },
+          {
+            "serviceName": "Map",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "☁️",
+              "x=": "-12 + (params.triggerCount / 20) % 150 + \"%\"",
+              "y": "15%"
+            }
+          },
+          {
+            "serviceName": "Map",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "🌳",
+              "x=": "-40 + (params.triggerCount / 7) % 150 + \"%\"",
+              "y": "65%"
+            }
+          },
+          {
+            "serviceName": "Map",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
               "text": "🌲",
-              "x=": "(params.triggerCount / 5) % 100 + \"%\"",
-              "y": "95%"
+              "x=": "-40 + (params.triggerCount / 2.5) % 150 + \"%\"",
+              "y": "90%"
             }
           },
           {
@@ -34,7 +64,8 @@
             "template": {
               "type": "text",
               "text": "🚶‍♀️",
-              "x=": "100 - params.triggerCount % 100 + \"%\"",
+              "x_": "50%",
+              "x=": "100 - min(params.triggerCount, 50) + \"%\"",
               "y=": "round(95 - sin(params.triggerCount) * 2) + \"%\""
             }
           }

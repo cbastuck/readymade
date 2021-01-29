@@ -1,4 +1,6 @@
 import React, { Component } from 'react';
+import { Accordion } from 'semantic-ui-react'
+
 import uuid from 'uuid';
 
 import ServiceUI from './ServiceUI';
@@ -26,12 +28,18 @@ class GroupUI extends Component {
 
   renderMain = service => {
     const { subservices=[] } = this.state;
+    const rootPanels = subservices.map(ssvc => ({
+      title: ssvc.__descriptor.serviceName,
+      key: ssvc.uuid,
+      content: { content: ssvc.__ui }
+    }));
     return (
-      <div>
-      {
-        subservices.map(ssvc => ssvc.__ui)
-      }
-      </div>
+      <Accordion 
+        defaultActiveIndex={0} 
+        panels={rootPanels} 
+        fluid 
+        styled 
+      />  
     );
   }
 
