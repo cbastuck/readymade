@@ -69,6 +69,7 @@ export default class ServiceUiContainer extends Component {
             service={service}
             serviceUi={serviceUi}
             onAction={onServiceAction || this.onServiceAction}
+            draggable={!!onArrangeService}
           />
           <DropBar index={pos+1} onDrop={onArrangeService} />
         </div>

@@ -33,6 +33,7 @@ const serviceWhitelist = [
   'hookup.to/service/gif-encoder',
   'hookup.to/service/dropbox-sink',
   'hookup.to/service/dropbox-source',
+  'hookup.to/service/stack',
 ];
 
 export default class Playground extends Component {

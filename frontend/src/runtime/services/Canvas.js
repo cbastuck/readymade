@@ -1,7 +1,6 @@
 import React, { Component } from 'react';
 
 import ServiceUI from './ServiceUI';
-import Resizable from '../../components/Resizable';
 
 const serviceId = 'hookup.to/service/canvas';
 const serviceName = 'Canvas';
@@ -508,27 +507,34 @@ class CanvasUI extends Component {
       >
       { 
         ({ service }) => (
-          <Resizable style={{ padding: 0, margin: 0 }}>
-          <canvas 
-            ref={canvas => this.canvas = canvas} 
-            style={{
-              position: (this.state.fullscreen || service.fullscreen) && 'fixed',
-              top: 0,
-              left: 0,
-              zIndex: this.state.fullscreen && 10
+          <div 
+            style={{ 
+              padding: 0, 
+              margin: 0, 
+              height: '100%', 
+              width: '100%' 
             }}
-            width={(this.state.fullscreen || service.fullscreen) ? this.state.fullWidth : 300}
-            height={(this.state.fullscreen || service.fullscreen) ? this.state.fullHeight : 150}
-            onDoubleClick={() => {
-              if (!service.noToggleFullscreenOnDblClick) {
-                const toggled = !this.state.fullscreen;
-                service.fullscreen = toggled;
-                this.setState({ fullscreen: toggled });
-              }
-            }}
-            onClick={this.onClick.bind(this, service)}
-          />
-          </Resizable>
+          >
+            <canvas 
+              ref={canvas => this.canvas = canvas} 
+              style={{
+                position: (this.state.fullscreen || service.fullscreen) && 'fixed',
+                top: 0,
+                left: 0,
+                zIndex: this.state.fullscreen && 10,
+              }}
+              width={(this.state.fullscreen || service.fullscreen) ? this.state.fullWidth : 250}
+              height={(this.state.fullscreen || service.fullscreen) ? this.state.fullHeight : 150}
+              onDoubleClick={() => {
+                if (!service.noToggleFullscreenOnDblClick) {
+                  const toggled = !this.state.fullscreen;
+                  service.fullscreen = toggled;
+                  this.setState({ fullscreen: toggled });
+                }
+              }}
+              onClick={this.onClick.bind(this, service)}
+            />
+          </div>
         )
       }
       </ServiceUI>

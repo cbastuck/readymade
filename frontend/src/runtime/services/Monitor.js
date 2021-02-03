@@ -54,6 +54,10 @@ class MonitorUI extends Component {
   }
 
   render() {
+    const { 
+      message,
+      enabled 
+    } = this.state;
     return (
       <ServiceUI 
         {...this.props}
@@ -64,32 +68,42 @@ class MonitorUI extends Component {
           ({ service }) => service && (
             <div
               style={{
-                textAlign: 'left',
-                margin: 10,
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >        
               <TextArea
-                style={{ 
-                  width: '100%', 
-                  minHeight: 150, 
-                  minWidth: 200,
+                style={{
+                  margin: 10,
                   fontFamily: 'monospace',
                   fontWeight: 'bold',
+                  resize: 'none',
+                  border: '1px solid lightgray',
+                  borderRadius: 5,
+                  flexGrow: 1
                 }}
-                value={this.state.message}
+                value={message}
               />
-              <div>
+              <div 
+                style={{ 
+                  marginBottom: 10,
+                  marginLeft: 10,
+                  textAlign: 'left' 
+                }}
+              >
                 <Checkbox
                   style={s(t.uc, t.fs12, t.m(0, 3))}
                   label="active"
-                  checked={this.state.enabled}
+                  checked={enabled}
+                  toggle
                   onChange={(_, { checked: enabled }) => 
                     this.setState(
                       { enabled }, 
                       () => service.configure({ enabled })
                     )
                   }
-                  toggle
                 />
               </div>
             </div> 

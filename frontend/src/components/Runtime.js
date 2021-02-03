@@ -318,6 +318,7 @@ export default class Runtime extends Component {
       frameless=false,
       onResult=undefined,
       children=undefined,
+      onArrangeService: onArrangeServiceCustom=undefined,
     } = this.props;
 
     const runtimeId = runtime && runtime.id;
@@ -348,9 +349,10 @@ export default class Runtime extends Component {
       } :
       {};
 
-    const onArrangeService = (serviceUuid, position) => boardContext.arrangeService(
+    const onArrangeServiceDefault = (serviceUuid, position) => boardContext.arrangeService(
       runtime, serviceUuid, position
     );
+    const onArrangeService = onArrangeServiceCustom !== undefined ?  onArrangeServiceCustom : onArrangeServiceDefault;
 
     const onToggleOwnership = () => 
       boardContext.isRuntimeInScope(runtime) ? 

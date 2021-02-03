@@ -40,6 +40,12 @@ export const t = {
   bold: { fontWeight: 'bold' },
 
   nw: { whiteSpace: 'nowrap' },
+  nowrap: { whiteSpace: 'nowrap' },
+
+  resizable: {
+    resize: 'both',
+    overflow: 'auto', // scroll
+  },
 
   m: function(x, y){ return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` }; },
   m2: { margin: 2 },

@@ -21,37 +21,41 @@ export default class ServiceFrame extends Component {
     configVisible: false,
   };
 
-  renderServiceName = name => (
-    <div 
-      style={{
-        textAlign: 'center',
-        width: '100%',
-        fontSize: 16,
-        fontWeight: 'lighter',
-        marginTop: 15,
-        marginLeft: 50,
-      }}
-      onDoubleClick={() => this.setState({ frameCollapsed: !this.state.frameCollapsed })}
-      draggable
-      onDragStart={ev => {
-        const { service } = this.props;
-        const publicService = filterPrivateMembers(service);
-        ev.dataTransfer.setData('text/plain', JSON.stringify(publicService));
-      }}
-    >
-      <Header size='small'>
-        <span 
-          style={{
-            fontSize: 12,
-            letterSpacing: 1,
-            textTransform: 'uppercase',
-          }}
-        >
-          {name}
-        </span>
-      </Header>
-    </div>
-  )
+  renderServiceName = name => {
+    const { draggable=true } = this.props;
+    return (
+      <div 
+        style={{
+          textAlign: 'center',
+          width: '100%',
+          fontSize: 16,
+          fontWeight: 'lighter',
+          marginTop: 15,
+          marginLeft: 50,
+        }}
+        onDoubleClick={() => this.setState({ frameCollapsed: !this.state.frameCollapsed })}
+        draggable={draggable}
+        onDragStart={ev => {
+          const { service } = this.props;
+          const publicService = filterPrivateMembers(service);
+          ev.dataTransfer.setData('text/plain', JSON.stringify(publicService));
+        }}
+      >
+        <Header size='small'>
+          <span 
+            style={{
+              fontSize: 12,
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {name}
+          </span>
+        </Header>
+      </div>
+    );
+  }
 
   renderHeader = service => {
     return (

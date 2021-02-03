@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 
 import { DragConsumer } from '../DragContext';
+import { s, t } from '../styles';
 
 class Triangle extends Component {
   render() {
@@ -37,6 +38,18 @@ export default class Resizable extends Component {
     initialScreenX: undefined,
     initialScreenY: undefined,
   };
+
+  componentDidMount() {
+    setTimeout(() => {
+      const rect = this.getRect();
+      if (rect) {
+        this.setState({ 
+          minWidth: rect.width,
+          minHeight: rect.height
+        })
+      }
+    }, 10); 
+  }
 
   getRect = () => {
     return this.root.getClientRects()[0];
@@ -94,7 +107,7 @@ export default class Resizable extends Component {
     });
   }
 
-  render() {
+  render_customResize() {
     const { children, style={} } = this.props;
     const { width, height } = this.state;
 
@@ -140,5 +153,42 @@ export default class Resizable extends Component {
         }
       </DragConsumer>
     )
+  }
+
+    render() {
+      const { children, style={} } = this.props;
+      const { 
+        minWidth,
+        minHeight,
+      } = this.state;
+      return (
+        <div
+          ref={root => this.root = root }
+          style={
+            s(t.resizable,
+              { 
+                position: 'relative',
+                minWidth: minWidth,
+                minHeight: minHeight,
+                ...style 
+              }
+            )
+          }
+        >
+          { children }
+          <div
+            style={{
+              position: 'absolute',
+              height: 15,
+              width: 12,
+              bottom: 0,
+              right: 0,
+              cursor: 'pointer'
+            }}
+          >
+            <Triangle width="12" height="12" /> 
+          </div>
+        </div>
+      );
   }
 }

@@ -64,7 +64,8 @@ export default class SelectorField extends Component {
                 width: '100%',
                 flexGrow: 3,
                 height: 33,
-                textAlign: 'left'
+                textAlign: 'left',
+                whiteSpace: 'nowrap',
               }}
               onClick={() => this.setState({ optionsVisible: true })}
             > 

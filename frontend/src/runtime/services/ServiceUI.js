@@ -4,6 +4,7 @@ import {
   Segment,
 } from 'semantic-ui-react';
 
+import { s } from '../../styles';
 import { BoardConsumer } from '../../BoardContext';
 import Resizable from '../../components/Resizable';
 
@@ -52,7 +53,7 @@ export default class ServiceUI extends Component {
       this.props.segments[0].name
   }
 
-  renderSegments = ({ service }, segments) => {
+  renderSegments = ({ service }, segments, resizable) => {
     if (!service) {
       return false;
     }
@@ -91,19 +92,45 @@ export default class ServiceUI extends Component {
           )
         }
         <Segment style={{ margin: '15px 20px', padding: 0 }}>
-          <Resizable style={{ padding: 14 }}>
-            { segment && segment.render(service) }
-          </Resizable>
+          {
+            resizable ? 
+              (
+                <Resizable style={s({ padding: 14 })}>
+                  { segment && segment.render(service) }
+                </Resizable>   
+              ) : 
+              (
+                <div style={s({ padding: 14 })}>
+                  { segment && segment.render(service) }
+                </div>
+              )
+          }
         </Segment>
       </div>
     );
+  }
+
+  renderSingleSegment = (boardContext, children) => {
+    const {
+      setup,
+      resizable=true,
+    } = this.props;
+
+    const c = children({ 
+      boardContext,
+      service: setup ? setup(boardContext, this.props) : this.setup(boardContext, this.props)
+    });
+    return resizable ? 
+      <Resizable> { c } </Resizable> : 
+      c;
   }
 
   render() {
     const { 
       children, 
       segments, 
-      setup 
+      setup,
+      resizable=true,
     } = this.props;
     return (
       <BoardConsumer>
@@ -115,12 +142,10 @@ export default class ServiceUI extends Component {
                   boardContext, 
                   service: setup ? setup(boardContext, this.props) : this.setup(boardContext, this.props),
                 }, 
-                segments
+                segments,
+                resizable
               ) : 
-              children({ 
-                boardContext,
-                service: setup ? setup(boardContext, this.props) : this.setup(boardContext, this.props)
-              })
+              this.renderSingleSegment(boardContext, children)
         }
       </BoardConsumer>
    ); 

@@ -138,12 +138,14 @@ export default class Sandbox extends Component {
           boardContext => (            
             <DragProvider key={`sandbox-drag-provider-${runtime.id}`}>
               <Runtime
+                key={`sandbox-runtime-${runtime.id}`}
                 style={{ marginBottom: 5 }}
                 ref={runtime => this.runtime=runtime}
                 runtime={runtime}
                 frameless={options && options.frameless}
                 boardContext={boardContext}
                 onResult={onResult}
+                onArrangeService={null}
               />
               {
                 url && (

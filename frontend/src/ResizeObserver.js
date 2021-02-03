@@ -16,11 +16,12 @@ export default class ResizeObserverComponent extends Component {
 
   onResizeEvent = entries => {
     const { viewportWidth } = this.state;
+    const { onChange } = this.props;
     const entry = entries && entries[0];
     if (entry) {
       const { width: newViewportWidth } = entry.contentRect;
       if (newViewportWidth !== viewportWidth) {
-        const { onChange } = this.props;
+        
         const newState = {
           viewportWidth: newViewportWidth,
           appViewMode: newViewportWidth > 400 ? 'wide' : 'narrow'  
