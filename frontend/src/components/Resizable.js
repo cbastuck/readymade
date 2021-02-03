@@ -48,7 +48,7 @@ export default class Resizable extends Component {
           minHeight: rect.height
         })
       }
-    }, 10); 
+    }, 500); 
   }
 
   getRect = () => {
@@ -163,15 +163,15 @@ export default class Resizable extends Component {
       } = this.state;
       return (
         <div
-          ref={root => this.root = root }
+          ref={root => this.root = root}
           style={
-            s(t.resizable,
-              { 
+            s({ 
                 position: 'relative',
                 minWidth: minWidth,
                 minHeight: minHeight,
                 ...style 
-              }
+              },
+              t.resizable
             )
           }
         >
@@ -183,7 +183,7 @@ export default class Resizable extends Component {
               width: 12,
               bottom: 0,
               right: 0,
-              cursor: 'pointer'
+              // cursor: 'pointer'
             }}
           >
             <Triangle width="12" height="12" /> 

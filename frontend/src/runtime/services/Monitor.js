@@ -85,6 +85,8 @@ class MonitorUI extends Component {
                   flexGrow: 1
                 }}
                 value={message}
+                rows={10}
+                cols={30}
               />
               <div 
                 style={{ 

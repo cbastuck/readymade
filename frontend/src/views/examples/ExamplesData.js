@@ -35,9 +35,9 @@ export default [
     url: '/boards/examples/triggerpad.json'
   },
   {
-    title: 'Animate',
+    title: 'GIF Animator',
     brief: 'Make a GIF',
-    description: 'Canvas has an output yeah',
+    description: 'Create a simple GIF animation with the output of the canvas service and a GIF recorder',
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/animate.json'
   }

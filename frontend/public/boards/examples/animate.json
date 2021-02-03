@@ -19,7 +19,7 @@
         "aggregator": "array",
         "services": [
           {
-            "serviceName": "Map",
+            "serviceName": "Sun",
             "serviceId": "hookup.to/service/map",
             "template": {
               "type": "text",
@@ -29,7 +29,7 @@
             }
           },
           {
-            "serviceName": "Map",
+            "serviceName": "Cloud",
             "serviceId": "hookup.to/service/map",
             "template": {
               "type": "text",
@@ -39,7 +39,7 @@
             }
           },
           {
-            "serviceName": "Map",
+            "serviceName": "distant Tree",
             "serviceId": "hookup.to/service/map",
             "template": {
               "type": "text",
@@ -49,7 +49,7 @@
             }
           },
           {
-            "serviceName": "Map",
+            "serviceName": "near Tree",
             "serviceId": "hookup.to/service/map",
             "template": {
               "type": "text",
@@ -59,7 +59,7 @@
             }
           },
           {
-            "serviceName": "Map",
+            "serviceName": "Walker",
             "serviceId": "hookup.to/service/map",
             "template": {
               "type": "text",

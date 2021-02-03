@@ -36,27 +36,46 @@ function revokeObjectURL(object) {
     window.webkitURL.revokeObjectURL(object);
 }
 
+const initialWidth = 300;
+const initialHeight = 180;
+
 class CanvasUI extends Component {
   state = {
     fullWidth: document.body.clientWidth,
     fullHeight: document.body.clientHeight,
     fullscreen: false,
     clearOnRedraw: true,
+    canvasWidth: initialWidth,
+    canvasHeight: initialHeight,
   };
 
   imageCache = {};
   clickHandlers = {};
 
   componentDidMount() {
-    this.resizeObserver = new ResizeObserver(this.onResizeEvent);
-    this.resizeObserver.observe(document.body);
+    this.resizeBodyObserver = new ResizeObserver(this.onResizeBodyEvent);
+    this.resizeBodyObserver.observe(document.body);
+
+    this.resizeCanvasObserver = new ResizeObserver(this.onResizeCanvasEvent);
+    this.resizeCanvasObserver.observe(this.canvas);
   }
 
   componentWillUnmount() {
-    this.resizeObserver.disconnect();
+    this.resizeBodyObserver.disconnect();
+    this.resizeCanvasObserver.disconnect();
   }
 
-  onResizeEvent = entries => {
+  onResizeCanvasEvent = entries => {
+    const entry = entries && entries[0];
+    if (entry) {
+      this.setState({ 
+        canvasWidth: entry.contentRect.width, 
+        canvasHeight: entry.contentRect.height 
+      });
+    }
+  } 
+
+  onResizeBodyEvent = entries => {
     const entry = entries && entries[0];
     if (entry) {
       this.setState(
@@ -494,6 +513,14 @@ class CanvasUI extends Component {
   }
 
   render() {
+    const { 
+      canvasWidth,
+      canvasHeight,
+      fullWidth,
+      fullHeight,
+      fullscreen,
+    } = this.state;
+
     return (
       <ServiceUI 
         {...this.props}
@@ -518,16 +545,20 @@ class CanvasUI extends Component {
             <canvas 
               ref={canvas => this.canvas = canvas} 
               style={{
-                position: (this.state.fullscreen || service.fullscreen) && 'fixed',
+                position: (fullscreen || service.fullscreen) && 'fixed',
                 top: 0,
                 left: 0,
-                zIndex: this.state.fullscreen && 10,
+                zIndex: fullscreen && 10,
+                height: '100%',
+                width: '100%',
+                minWidth: initialWidth,
+                minHeight: initialHeight,
               }}
-              width={(this.state.fullscreen || service.fullscreen) ? this.state.fullWidth : 250}
-              height={(this.state.fullscreen || service.fullscreen) ? this.state.fullHeight : 150}
+              width={(fullscreen || service.fullscreen) ? fullWidth : canvasWidth}
+              height={(fullscreen || service.fullscreen) ? fullHeight : canvasHeight}
               onDoubleClick={() => {
                 if (!service.noToggleFullscreenOnDblClick) {
-                  const toggled = !this.state.fullscreen;
+                  const toggled = !fullscreen;
                   service.fullscreen = toggled;
                   this.setState({ fullscreen: toggled });
                 }

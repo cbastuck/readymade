@@ -40,7 +40,7 @@ class StackUI extends Component {
       title: {
         children: (
         <div style={s(t.uc, t.fs12, t.ls1)}>
-          {ssvc.__descriptor.serviceName} [{idx}]
+          {ssvc.__descriptor.serviceName}
         </div>
         )
       },
