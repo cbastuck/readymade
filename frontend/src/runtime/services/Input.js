@@ -25,17 +25,22 @@ class InputUI extends Component {
       running 
     } = notification;
     
-    if (this.state.eventSourceURL !== eventSourceURL) {
+    if (eventSourceURL !== undefined && 
+        this.state.eventSourceURL !== eventSourceURL) {
       this.setState({ eventSourceURL });
     }
 
-    if (this.state.running !== running) {
+    if (running !== undefined && 
+        this.state.running !== running) {
       this.setState({ running });
     }
   }
 
   renderEventSourceTab = service => {
-    const { running } = this.state;
+    const { 
+      running,
+      eventSourceURL,
+    } = this.state;
     return (
       <div
         style={{
@@ -45,14 +50,14 @@ class InputUI extends Component {
         <div style={s(t.uc, t.ls1, t.fs12)}> 
           <InputField 
             label="URL"
-            value={this.state.eventSourceURL}
+            value={eventSourceURL}
             onChange={(_, { value }) => {
               this.setState({ eventSourceURL: value });
               service.configure({ eventSourceURL: value });
             }}
           />
         </div>
-        <div style={t.tl}>
+        <div style={s(t.tl, t.mt5)}>
           <Checkbox 
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}
             label="active"

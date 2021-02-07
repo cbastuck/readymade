@@ -35,8 +35,10 @@ class AggregatorUI extends Component {
           type="number"
           label="Interval"
           value={interval}
+          unit="ms"
           onChange={async (_, { value }) => {
-            console.log('Implement interval change')
+            await service.configure({ interval: value });
+            this.setState({ interval: value });
           }}
         />
       </div>
@@ -66,7 +68,7 @@ class Aggregator {
 
     this.interval = 100;
     this.property = 'unset';
-    this.reset();
+    this.aggregate = {};
   }
 
   configure(config) {
@@ -77,6 +79,7 @@ class Aggregator {
 
     if (interval !== undefined) {
       this.interval = interval;
+      this.reset();
     }
 
     if (property !== undefined) {
@@ -84,9 +87,22 @@ class Aggregator {
     }
   }
 
+  destroy = () => {
+    this.destroyTimer();
+  }
+
+  destroyTimer = () => {
+    if (this.__timer) {
+      clearInterval(this.__timer);
+    }
+  }
+
   reset = () => {
-    this.aggregate = {};
-    this.__timer = undefined;
+    this.destroyTimer();
+    this.__timer = setInterval(
+      this.doSubmit, 
+      this.interval
+    );
   }
 
   doAggregate = params => {
@@ -123,21 +139,18 @@ class Aggregator {
             value: this.aggregate[this.property][firstKey] 
           }
         );
-        const x = { 
-          [this.property]: winner.key
+        const nextParams = { 
+          [this.property]: winner.key,
+          aggregate: this.aggregate,
         };
-        this.app.next(this, x);
-        this.reset();
+        this.app.next(this, nextParams);
       }
     }
+    this.aggregate = {};
   }
 
   async process(params) {
-    if (!this.__timer) {
-      this.__timer = setTimeout(this.doSubmit, this.interval);
-    } else {
-      this.doAggregate(params);
-    }
+    this.doAggregate(params);
     return null;
   }
 }

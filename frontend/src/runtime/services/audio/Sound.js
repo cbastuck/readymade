@@ -257,7 +257,6 @@ class Sound {
   }
 
   process(params) {
-    console.log('WHY NULL!??', params)
     if (!params) {
       return params;
     }

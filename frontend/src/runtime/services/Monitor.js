@@ -35,17 +35,19 @@ function unroll(params) {
 class MonitorUI extends Component {
   state = {
     message: '',
+    enabled: true
   };
 
   onInit = initialState => {
     this.setState({ 
-      ...initialState, 
-      message: '',
+      ...initialState
     });
   }
 
   onNotification = (service, params) => {
-    const s = unroll(params);
+    const nil = params === null && '<null>';
+    const undef = params === undefined && '<undefined>';
+    const s = nil || undef || unroll(params);
     this.setState({ 
       message: isObject(s) ?
         JSON.stringify(s, null, 2) :
