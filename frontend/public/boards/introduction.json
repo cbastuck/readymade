@@ -23,7 +23,7 @@
           [
             {
               "type": "text",
-              "text": "If you know nothing",
+              "text": "If you know little about a problem",
               "textTransform": "uppercase-spacing-1",
               "color": "#454f6d",
               "font": {
