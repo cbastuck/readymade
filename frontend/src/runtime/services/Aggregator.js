@@ -108,6 +108,9 @@ class Aggregator {
   doAggregate = params => {
     for (const key of Object.keys(params)) {
       const value = params[key];
+      if (value === null) {
+        return;
+      }
       if (!this.aggregate[key]) {
         this.aggregate[key] = { [value]: 1 };
       } else {
@@ -129,7 +132,7 @@ class Aggregator {
       if (firstKey) {
         const winner = keys.reduce(
           (max, curKey) => {
-            const curValue = this.aggregate[curKey];
+            const curValue = aggregate[curKey];
             return (max.value < curValue) ? 
               ({ key: curKey, value: curValue }) :
               max;
@@ -142,6 +145,7 @@ class Aggregator {
         const nextParams = { 
           [this.property]: winner.key,
           aggregate: this.aggregate,
+          winner,
         };
         this.app.next(this, nextParams);
       }
@@ -150,7 +154,11 @@ class Aggregator {
   }
 
   async process(params) {
-    this.doAggregate(params);
+    if (Array.isArray(params)) {
+      params.forEach(this.doAggregate);
+    } else {
+      this.doAggregate(params);
+    }    
     return null;
   }
 }

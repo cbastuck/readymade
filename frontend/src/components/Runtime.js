@@ -41,6 +41,10 @@ export default class Runtime extends Component {
     }
   }
 
+  componentWillUnmount() {
+    this.destroyRuntime();
+  }
+
   onAddService(service) {
     const { 
       boardContext, 

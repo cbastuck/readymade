@@ -19,6 +19,7 @@ function serviceDataKey(uuid, key) {
 
 export default class BrowserRuntime extends Component {
   serviceInstances = {};
+  subservices = {};
 
   componentDidMount() {
     const { runtime, userId } = this.props;
@@ -65,21 +66,34 @@ export default class BrowserRuntime extends Component {
           return service.__notificationTarget(service, notification);
         }
       },
-      createService: this.createServiceInstance,
-      createServiceUI: svc => createServiceUI(registry, boardName, svc, runtime.id, userId),
+      createSubService: (parent, service) => {
+        const ssvc = this.createServiceInstance(service);
+        this.subservices[ssvc.uuid] = parent;
+        return ssvc;
+      },
+      createSubServiceUI: svc => createServiceUI(registry, boardName, svc, runtime.id, userId),
     }
   }
 
   processRuntime = params => 
     this.next(null, params, null, false);
   
+  findServiceIndex = service => {
+    const { 
+      services,
+    } = this.props;
+    const parent = this.subservices[service.uuid];
+    const searchUuid = parent ? parent.uuid : service.uuid;
+    return services.findIndex(s => s.uuid === searchUuid);
+  }
+
   // service parameter can be null, then starts with the first service
   next = async (service, params, requestId=null, advanceBeforeProcess=true) => {
     const { 
       onResult, 
       services,
     } = this.props;
-    const position = service === null ? 0 : services.findIndex(s => s.uuid ===  service.uuid);
+    const position = service === null ? 0 : this.findServiceIndex(service);
     if (position === -1) {
       return console.error('Called next() in browser but could not find current service', service, services);
     }

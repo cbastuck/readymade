@@ -256,6 +256,15 @@ class Sound {
     }
   }
 
+  triggerNote = (note, duration='4n') => {
+    if (this._sampler) {
+      this._sampler.triggerAttackRelease([note], duration);
+    }
+    if (this._synth) {
+      this._synth.triggerAttackRelease(note, duration);
+    }
+  }
+
   process(params) {
     if (!params) {
       return params;
@@ -265,13 +274,7 @@ class Sound {
       return params;
     }
     
-    if (this._sampler) {
-      this._sampler.triggerAttackRelease([note], duration);
-    }
-    if (this._synth) {
-      this._synth.triggerAttackRelease(note, duration);
-    }
-    
+    this.triggerNote(note, duration)
     return params;
   }
 }
