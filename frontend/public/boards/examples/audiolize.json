@@ -14,15 +14,29 @@
         "serviceName": "Map",
         "serviceId": "hookup.to/service/map",
         "template": {
-          "note=": "params.bot ? 'C4' : 'F5'" 
+          "note=": "params.bot ? 'D4' : 'C4'" 
         }
+      },
+      {
+        "serviceName": "Aggregate",
+        "serviceId": "hookup.to/service/aggregator",
+        "interval": "500",
+        "property": "note"
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor"
       },
       {
         "serviceName": "Sound",
         "serviceId": "hookup.to/service/sound",
         "generator": {
-          "type": "synth",
-          "kind": "sine"
+          "type": "sampler",
+          "urls": {
+            "C4": "/assets/audio/base.wav",
+            "D4": "/assets/audio/snare.wav",
+            "E4": "/assets/audio/hihat.wav"
+          }
         }
       }
     ]

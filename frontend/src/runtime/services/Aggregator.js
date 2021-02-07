@@ -1,0 +1,153 @@
+import React, { Component } from 'react';
+import {
+  Button,
+} from 'semantic-ui-react';
+
+import { List } from 'semantic-ui-react';
+import InputField from '../../components/shared/InputField';
+import { s, t } from '../../styles';
+
+import ServiceUI from './ServiceUI';
+
+const serviceId = 'hookup.to/service/aggregator';
+const serviceName = 'Aggregator';
+
+class AggregatorUI extends Component {
+  state = { 
+    interval: 0
+  };
+
+  onInit = initialState => {
+    this.setState({ interval: initialState.interval || 100 });
+  }
+
+  onNotification = async (service, notification) => {   
+   
+  }
+
+  renderMain = service => {
+    const { 
+      interval,
+    } = this.state;
+    return (
+      <div>
+        <InputField 
+          type="number"
+          label="Interval"
+          value={interval}
+          onChange={async (_, { value }) => {
+            console.log('Implement interval change')
+          }}
+        />
+      </div>
+    );
+  }
+
+  render() {
+    return (
+      <ServiceUI 
+        {...this.props} 
+        onInit={this.onInit}
+        onNotification={this.onNotification}
+        segments={[
+          { name: 'main', render: this.renderMain }
+        ]}
+      />
+    );
+  }
+}
+
+
+class Aggregator {
+  constructor(app, board, descriptor, id) {
+    this.uuid = id;
+    this.board = board;
+    this.app = app;
+
+    this.interval = 100;
+    this.property = 'unset';
+    this.reset();
+  }
+
+  configure(config) {
+    const { 
+      interval,
+      property,
+    } = config;
+
+    if (interval !== undefined) {
+      this.interval = interval;
+    }
+
+    if (property !== undefined) {
+      this.property = property;
+    }
+  }
+
+  reset = () => {
+    this.aggregate = {};
+    this.__timer = undefined;
+  }
+
+  doAggregate = params => {
+    for (const key of Object.keys(params)) {
+      const value = params[key];
+      if (!this.aggregate[key]) {
+        this.aggregate[key] = { [value]: 1 };
+      } else {
+        const aggValues = this.aggregate[key];
+        if (aggValues[value] !== undefined) {
+          ++aggValues[value]
+        } else {
+          aggValues[value] = 1;
+        }
+      }
+    }
+  }
+
+  doSubmit = () => {
+    const aggregate = this.aggregate[this.property];
+    if (aggregate) {
+      const keys = Object.keys(aggregate);
+      const firstKey = keys[0];
+      if (firstKey) {
+        const winner = keys.reduce(
+          (max, curKey) => {
+            const curValue = this.aggregate[curKey];
+            return (max.value < curValue) ? 
+              ({ key: curKey, value: curValue }) :
+              max;
+          },
+          { 
+            key: firstKey, 
+            value: this.aggregate[this.property][firstKey] 
+          }
+        );
+        const x = { 
+          [this.property]: winner.key
+        };
+        this.app.next(this, x);
+        this.reset();
+      }
+    }
+  }
+
+  async process(params) {
+    if (!this.__timer) {
+      this.__timer = setTimeout(this.doSubmit, this.interval);
+    } else {
+      this.doAggregate(params);
+    }
+    return null;
+  }
+}
+
+const descriptor = {
+  serviceName,
+  serviceId,
+  create: (app, board, descriptor, id) =>
+    new Aggregator(app, board, descriptor, id),
+  createUI: AggregatorUI
+};
+
+export default descriptor;

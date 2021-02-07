@@ -23,7 +23,14 @@ class SoundUI extends Component {
   };
 
   onInit = initialState => {
-    this.setState({ ...initialState });
+    const { generator } = initialState;
+    if (generator !== undefined) {
+      const { type, urls } = generator;
+      this.setState({
+        generator: { type },
+        sampleMap: urls,
+      });
+    }
   }
 
   onNotification = (service, notification) => {    
@@ -90,7 +97,9 @@ class SoundUI extends Component {
       });
       this.setState({ running: toggled });
     }
-    const mapping = Object.keys(sampleMap).map(key => ({ key, sample: sampleMap[key]}));
+    const mapping = Object.keys(sampleMap).map(
+      key => ({ key, sample: sampleMap[key]})
+    );
     return (
       <div>
         {
@@ -248,6 +257,10 @@ class Sound {
   }
 
   process(params) {
+    console.log('WHY NULL!??', params)
+    if (!params) {
+      return params;
+    }
     const { note = 'C4', duration = '4n' } = params || {};
     if (Tone.Transport.state !== 'started') {
       return params;

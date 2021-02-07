@@ -34,6 +34,7 @@ const serviceWhitelist = [
   'hookup.to/service/dropbox-sink',
   'hookup.to/service/dropbox-source',
   'hookup.to/service/stack',
+  'hookup.to/service/aggregator',
 ];
 
 export default class Playground extends Component {

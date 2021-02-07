@@ -25,6 +25,7 @@ import TriggerPadDescriptor from '../services/TriggerPad';
 import FileSourceDescriptor from '../services/FileSource';
 import TimelineDescriptor from '../services/Timeline';
 import StackDescriptor from '../services/Stack';
+import AggregatorDescriptor from '../services/Aggregator';
 
 export default [
   timerDescriptor,
@@ -54,4 +55,5 @@ export default [
   FileSourceDescriptor,
   TimelineDescriptor,
   StackDescriptor,
+  AggregatorDescriptor,
 ];
