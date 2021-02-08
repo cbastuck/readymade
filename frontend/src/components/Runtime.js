@@ -125,12 +125,18 @@ export default class Runtime extends Component {
   }
 
   renderServiceMenu(runtimeId, runtimeName, registry, appViewMode) {
+    const { allowedServices } = this.props;
     const wide = appViewMode === 'wide';
-    const options = registry.map(s => ({
-      key: `${runtimeId}${s.serviceId}`, 
-      value: s.serviceId, 
-      text: s.serviceName,
-    }));
+    const options = registry
+      .map(s => ({
+        key: `${runtimeId}${s.serviceId}`, 
+        value: s.serviceId, 
+        text: s.serviceName,
+      }))
+      .filter(s => 
+        !allowedServices || 
+        allowedServices.indexOf(s.value) !== -1
+      );
     return (
       <div
         id="service-dropdown"

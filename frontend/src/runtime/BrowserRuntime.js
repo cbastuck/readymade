@@ -68,7 +68,7 @@ export default class BrowserRuntime extends Component {
       },
       createSubService: (parent, service) => {
         const ssvc = this.createServiceInstance(service);
-        this.subservices[ssvc.uuid] = parent;
+        this.subservices[ssvc.uuid] = { service: ssvc, parent };
         return ssvc;
       },
       createSubServiceUI: svc => createServiceUI(registry, boardName, svc, runtime.id, userId),
@@ -82,7 +82,7 @@ export default class BrowserRuntime extends Component {
     const { 
       services,
     } = this.props;
-    const parent = this.subservices[service.uuid];
+    const { parent } = this.subservices[service.uuid] || {};
     const searchUuid = parent ? parent.uuid : service.uuid;
     return services.findIndex(s => s.uuid === searchUuid);
   }
@@ -283,7 +283,7 @@ export default class BrowserRuntime extends Component {
     if (!service) {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(this.props.services)}`);
     }
-    service.destroy && service.destroy();
+    return service.destroy && service.destroy();
   }
 
   getServiceById = uuid => {
@@ -292,7 +292,7 @@ export default class BrowserRuntime extends Component {
     return this.serviceInstance(svc);
   }
 
-  destroyRuntime = () => {
+  destroyRuntime = async () => {
     const { services } = this.props;
 
     if (this.eventSource) {
@@ -303,9 +303,16 @@ export default class BrowserRuntime extends Component {
       this.websocket.close();
       this.websocket = undefined;
     }
+
+    for (const ssvcUuid of Object.keys(this.subservices)) {
+      const ssvc = this.subservices[ssvcUuid];
+      if (ssvc.service.destroy) {
+        await ssvc.service.destroy();
+      }
+    }
     
     for (const service of services) {
-      this.destroyService(service.uuid);
+      await this.destroyService(service.uuid);
     }
   }
 

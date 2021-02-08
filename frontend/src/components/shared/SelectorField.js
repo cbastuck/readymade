@@ -89,6 +89,7 @@ export default class SelectorField extends Component {
                     cursor: 'pointer',
                     fontSize: 13,
                     padding: 5,
+                    whiteSpace: 'nowrap',
                   }}
                   onClick={ev => {
                     onChange(ev, { value: key });

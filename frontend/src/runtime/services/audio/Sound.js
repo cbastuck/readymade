@@ -252,8 +252,9 @@ class Sound {
       } else {
         Tone.Transport.stop();
       }
-      this.app.notify(this, { running });
     }
+
+    this.app.notify(this, { running: Tone.Transport.state === 'started' });
   }
 
   triggerNote = (note, duration='4n') => {

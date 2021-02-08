@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Accordion, Label, Checkbox } from 'semantic-ui-react'
+import { Accordion, Label } from 'semantic-ui-react'
 
 import uuid from 'uuid';
 
@@ -9,36 +9,44 @@ import { s, t } from '../../styles';
 
 const serviceId = 'hookup.to/service/stack';
 const serviceName = 'Stack';
-
+const defaultInput = 'multiplex';
+const defaultOutput = 'array';
 class StackUI extends Component {
   state = {
     subservices: [],
-    aggregator: 'array',
-    multiplexInput: false,
+    input: defaultInput,
+    output: defaultOutput,
   };
 
   onInit = initialState => {
     const { 
       subservices=[],
-      multiplexInput=false,
+      input=defaultInput,
+      output=defaultOutput,
     } = initialState;
     this.setState({ 
       subservices, 
-      multiplexInput 
+      input, 
+      output,
     });
   }
 
   onNotification = (service, notification) => {  
     const { 
       subservices,
-      multiplexInput,
+      input,
+      output,
     } = notification;
     if (subservices !== undefined) {
       this.setState({ subservices });
     }
 
-    if (multiplexInput !== undefined) {
-      this.setState({ multiplexInput });
+    if (input !== undefined) {
+      this.setState({ input });
+    }
+
+    if (output !== undefined) {
+      this.setState({ output });
     }
   }
 
@@ -46,8 +54,8 @@ class StackUI extends Component {
   renderMain = service => {
     const { 
       subservices=[],
-      aggregator,
-      multiplexInput,
+      output,
+      input,
     } = this.state;
 
     const rootPanels = subservices.map((ssvc, idx) => ({
@@ -61,27 +69,30 @@ class StackUI extends Component {
       key: ssvc.uuid,
       content: { content: service.createSubserviceUI(ssvc) }, // only possible in BrowserRuntime?
     }));
-    const options = { [aggregator]: aggregator };
+    const inputOptions = { multiplex: 'multiplex', lanes: 'lanes' };
+    const outputOptions = { array: 'array' };
     return (
       <div>
         <SelectorField
           style={t.mb3}
-          label="aggregator"
-          options={options}
-          value={aggregator}
-          onChange={async (_ev, { value }) => {}
-          }
+          label="input"
+          options={inputOptions}
+          value={input}
+          onChange={async (_ev, { value: input }) => {
+            await service.configure({ input });
+            this.setState({ input });
+          }}
         />
-        <div style={s(t.tl, t.m(0, 5) , t.uc, t.ls1, t.fs10)}>
-          <Checkbox 
-            toggle
-            label="Multiplex Input"
-            checked={multiplexInput}
-            onChange={(_, { checked }) => {
-              service.configure({ multiplexInput: checked });
-            }}
-          />
-        </div>
+        <SelectorField
+          style={t.mb3}
+          label="output"
+          options={outputOptions}
+          value={output}
+          onChange={async (_ev, { value: output }) => {
+            await service.configure({ output });
+            this.setState({ output });
+          }}
+        />
         <div style={t.tl}>
           <Label
             style={s(t.uc, t.fs11, t.ls1, { borderRadius: 0, padding: 10 })}
@@ -121,25 +132,19 @@ class Stack {
     this.app = app;
 
     this.subservices = [];
-    this.multiplexInput = false;
+    this.input = defaultInput;
+    this.output = defaultOutput;
   }
 
   createSubserviceUI(ssvc) {
     return this.app.createSubServiceUI(ssvc)
   }
 
-  async destroy() {
-    for (const svc of this.subservices) {
-      if (svc.destroy) {
-        await svc.destroy();
-      }
-    }
-  }
-
   async configure(config) {
     const { 
       services,
-      multiplexInput,
+      input,
+      output,
     } = config;
     if (services !== undefined) {
       const subservices = []
@@ -158,11 +163,14 @@ class Stack {
       });
     }
 
-    if (multiplexInput !== undefined) {
-      this.multiplexInput = multiplexInput;
-      this.app.notify({ 
-        multiplexInput,
-      });
+    if (input !== undefined) {
+      this.input = input;
+      this.app.notify({ input });
+    } 
+
+    if (output !== undefined) {
+      this.output = output;
+      this.app.notify({ output });
     } 
   }
 
@@ -176,23 +184,34 @@ class Stack {
     return notNull ? results : null;
   }
 
-  async processScalar(params) {
-    const results = [];
-    let allNull = true;
-    for (const ssvc of this.subservices) {
-      const r = await ssvc.process(params);
-      if (r !== null) {
-        allNull = false;
+  async processScalar(params, idx) {
+    if (idx !== undefined) {
+      const ssvc = this.subservices[idx];
+      if (ssvc) {
+        return ssvc.process(params);
       }
-      results.push(r);
+    } else {
+      const results = [];
+      let allNull = true;
+      for (const ssvc of this.subservices) {
+        const r = await ssvc.process(params);
+        if (r !== null) {
+          allNull = false;
+        }
+        results.push(r);
+      }
+      return allNull ? null : results;
     }
-    return allNull ? null : results;
   }
 
   process(params) {
     if (this.subservices.length > 0) {
-      if (Array.isArray(params)) {
-        return this.processArray(params);
+      if (this.input === 'lanes') {
+        if (Array.isArray(params)) {
+          return this.processArray(params);
+        } else {
+          return this.processScalar(params, 0);
+        }
       }
       return this.processScalar(params);
     }

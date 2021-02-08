@@ -1,11 +1,7 @@
 import React, { Component } from 'react';
-import {
-  Button,
-} from 'semantic-ui-react';
 
-import { List } from 'semantic-ui-react';
 import InputField from '../../components/shared/InputField';
-import { s, t } from '../../styles';
+import SelectorField from '../../components/shared/SelectorField';
 
 import ServiceUI from './ServiceUI';
 
@@ -14,11 +10,17 @@ const serviceName = 'Aggregator';
 
 class AggregatorUI extends Component {
   state = { 
-    interval: 0
+    interval: 0,
+    property: '',
+    aggregator: ''
   };
 
   onInit = initialState => {
-    this.setState({ interval: initialState.interval || 100 });
+    this.setState({ 
+      interval: initialState.interval || 100,
+      property: initialState.property || '',
+      aggregator: initialState.aggregator || 'val_max_occ',
+    });
   }
 
   onNotification = async (service, notification) => {   
@@ -28,9 +30,32 @@ class AggregatorUI extends Component {
   renderMain = service => {
     const { 
       interval,
+      property,
+      aggregator
     } = this.state;
+    const aggOptions = { 
+      val_max_occ: 'max value count',
+    }
     return (
       <div>
+        <InputField 
+          type="text"
+          label="Property"
+          value={property}
+          onChange={async (_, { value: property }) => {
+            await service.configure({ property });
+            this.setState({ property });
+          }}
+        />  
+        <SelectorField 
+          label="aggregator"
+          options={aggOptions}
+          value={aggregator}
+          onChange={async (_ev, { value: aggregator }) => {
+            await service.configure({ aggregator });
+            this.setState({ aggregator });
+          }}
+        />
         <InputField 
           type="number"
           label="Interval"
@@ -80,10 +105,12 @@ class Aggregator {
     if (interval !== undefined) {
       this.interval = interval;
       this.reset();
+      this.app.notify(this, { interval });
     }
 
     if (property !== undefined) {
       this.property = property;
+      this.app.notify(this, { property });
     }
   }
 
@@ -144,8 +171,8 @@ class Aggregator {
         );
         const nextParams = { 
           [this.property]: winner.key,
-          aggregate: this.aggregate,
-          winner,
+          //aggregate: this.aggregate,
+          //winner,
         };
         this.app.next(this, nextParams);
       }

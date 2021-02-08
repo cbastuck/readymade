@@ -16,7 +16,8 @@
       {
         "serviceName": "Stack",
         "serviceId": "hookup.to/service/stack",
-        "aggregator": "array",
+        "input": "multiplex",
+        "output": "array",
         "services": [
           {
             "serviceName": "Sun",

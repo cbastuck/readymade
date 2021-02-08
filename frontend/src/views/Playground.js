@@ -17,7 +17,7 @@ const defaultBundles = [
   'hookup.to/registry/browser/FileStorage'
 ];
 
-const serviceWhitelist = [
+const allowedServices = [
   'hookup.to/service/timer',
   'hookup.to/service/monitor',
   'hookup.to/service/canvas',
@@ -26,15 +26,9 @@ const serviceWhitelist = [
   'hookup.to/service/injector',
   'hookup.to/service/trigger-pad',
   'hookup.to/service/sound',
-  'hookup.to/service/mp3encoder',
   'hookup.to/service/audio-output',
   'hookup.to/service/microphone',
-  'hookup.to/service/input',
   'hookup.to/service/gif-encoder',
-  'hookup.to/service/dropbox-sink',
-  'hookup.to/service/dropbox-source',
-  'hookup.to/service/stack',
-  'hookup.to/service/aggregator',
 ];
 
 export default class Playground extends Component {
@@ -288,15 +282,12 @@ export default class Playground extends Component {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles); 
     }
 
-    const availableServices = this.defaultRegistry.availableServices
-      .filter(s => serviceWhitelist.indexOf(s.serviceId) !== -1);
-
     const data = {
       board: { name: 'Playground' },
       runtimes, 
       services,
       registry: runtimes && runtimes.reduce(
-        (all, rt) => ({ ...all, [rt.id]: availableServices }), 
+        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
         {}
       ),
     };
@@ -331,6 +322,7 @@ export default class Playground extends Component {
                   onClick: () => this.setState({ showSidechainSelector: runtime.id })
                 }
               ]}
+              allowedServices={allowedServices}
             >
             {
               showSidechainSelector === runtime.id && (

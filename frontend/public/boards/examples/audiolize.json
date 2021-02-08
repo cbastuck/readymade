@@ -13,7 +13,8 @@
       {
         "serviceName": "Stack",
         "serviceId": "hookup.to/service/stack",
-        "aggregator": "array",
+        "input": "multiplex",
+        "output": "array",
         "services": [
           {
             "serviceName": "Map Snare / Hihat",
@@ -34,14 +35,15 @@
       {
         "serviceName": "Stack",
         "serviceId": "hookup.to/service/stack",
-        "multiplexInput": true,
-        "aggregator": "array",
+        "input": "lanes",
+        "output": "array",
         "services": [
           {
             "serviceName": "Aggregate Snare / Hihat",
             "serviceId": "hookup.to/service/aggregator",
             "interval": "90",
-            "property": "note"
+            "property": "note",
+            "aggregator": "val_max_occ"
           },
           {
             "serviceName": "Aggregate Base",
