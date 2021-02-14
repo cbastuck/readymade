@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon, Checkbox } from 'semantic-ui-react';
+import { Icon } from 'semantic-ui-react';
 import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
 
@@ -463,9 +463,7 @@ export default class Playground extends Component {
     );
   }
 
-  renderPlayground = boardContext => {
-    return this.renderRuntimes(boardContext);
-  }
+  renderPlayground = boardContext => this.renderRuntimes(boardContext);
 
   render() {
     const { boardName } = this.state;

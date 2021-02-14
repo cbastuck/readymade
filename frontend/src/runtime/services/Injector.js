@@ -4,8 +4,10 @@ import {
   Checkbox,
   TextArea,
   Input,
+  Progress,
 } from 'semantic-ui-react';
  
+import { s, t } from '../../styles';
 import ServiceUI from './ServiceUI';
 import Editor from '../../components/shared/Editor/index';
 import DropZone from '../../components/shared/DropZone';
@@ -24,6 +26,7 @@ class InjectorUI extends Component {
     itemsSelection: [],
     rawText: '',
     singleLineRawText: true,
+    fileProgress: 0,
   };
 
   buttonStyle = {
@@ -265,6 +268,74 @@ class InjectorUI extends Component {
     );
   }
 
+  renderFileInput = service => {
+    const { 
+      file,
+      loadAsText,
+      fileProgress,
+    } = this.state;
+    return (
+      <div 
+        style={{ 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column' 
+        }}
+      >
+        <div style={t.m(0, 10)}>
+          <input 
+            style={s(t.uc, t.fs12)}
+            type="file" 
+            onChange={ev => this.setState({ file: ev.target.files[0] })}
+          />
+        </div>
+        <Checkbox
+          style={s(t.fs12, t.uc, t.ls1)}
+          label="read as text"
+          checked={loadAsText}
+          onChange={(_, { checked: loadAsText }) => this.setState({ loadAsText })}
+          toggle
+        />
+        <Button
+          style={this.buttonStyle}
+          disabled={!file}
+          onClick={() => {
+            const reader = new FileReader();
+            //reader.addEventListener('loadstart', ev => console.log('loadstart', reader.result));
+            //reader.addEventListener('load', ev => console.log('load', reader.result));
+            //reader.addEventListener('error', ev => console.log('error', reader.result));
+            //reader.addEventListener('abort', ev => console.log('abort', reader.result));
+            reader.addEventListener('loadend', ev => {
+              service.app.next(service, reader.result);
+              this.setState({ fileProgress: 0 });
+            });
+            reader.addEventListener('progress', ev => {
+              const fileProgress = Math.round((ev.loaded / ev.total) * 100);
+              this.setState({ fileProgress });
+            });
+            if (loadAsText) {
+              reader.readAsText(file);
+            } else {
+              reader.readAsArrayBuffer(file);
+            }
+          }}
+        >
+          Inject
+        </Button>
+        <div 
+          style={s(
+            t.m(0, 3), 
+            { display: fileProgress <= 0 && 'none'}
+          )}>
+          <Progress
+            progress="percent"
+            percent={fileProgress} 
+          />
+        </div>
+      </div>
+    );
+  }
+
   render() {
     return (
       <ServiceUI
@@ -274,6 +345,7 @@ class InjectorUI extends Component {
           { name: 'DragDrop', render: this.renderDragNDropInput },
           { name: 'Text', render: this.renderRawInput },
           { name: 'JSON', render: this.renderStructuredData },
+          { name: 'File', render: this.renderFileInput },
         ]}
       />
     )
