@@ -4,12 +4,13 @@ import UAParser from 'ua-parser-js';
 
 import BrowserRegistry from './runtime/BrowserRegistry';
 import ResizeObserver from './ResizeObserver';
+import { redirectTo } from './core/actions';
 
 import {
   getServices,
   addService,
   removeService,
-  saveBoard,
+  // saveBoard,
   loadBoard,
   getBoard,
   getRuntimes,
@@ -64,6 +65,7 @@ class BoardContext extends Component {
       services: {},
       registry: {},
       savedBoards: [],
+      disabledActions: props.disabledActions || [],
     };
   }
 
@@ -81,8 +83,10 @@ class BoardContext extends Component {
     }
   }
 
-  async fetchData() {
-    const { fetchData=this.fetchDataDefault } = this.props;
+  fetchData = async () => {
+    const { 
+      fetchData=this.fetchDataDefault 
+    } = this.props;
     const {
       board,
       services, 
@@ -190,6 +194,13 @@ class BoardContext extends Component {
             .map(key => key.substr(6));
     return boards;
   }
+  newBoard = () => {
+    if (this.props) {
+      this.props.newBoard();
+    } else {
+      redirectTo('/new');
+    }
+  }
 
   clearBoard = async () => {
     const { clearBoard=this.clearBoardDefault } = this.props;
@@ -207,16 +218,24 @@ class BoardContext extends Component {
     await clearBoard(boardname);
   }
 
+  saveBoard = () => {
+    const { saveBoard } = this.props;
+    if (saveBoard) {
+      saveBoard();
+    } 
+  }
+
   onAction = async action => {
     const boardname = this.getBoardName();
     switch (action.type) {
+      case 'newBoard': 
+        this.newBoard();
+        break;
       case 'clearBoard':
         await this.clearBoard();
         break;
       case 'saveBoard':
-        const saveState = await saveBoard(boardname);
-        localStorage.setItem(`board-${boardname}`, JSON.stringify(saveState));
-        await this.fetchUserBoards();
+        await this.saveBoard();
         break;
       case 'loadBoard':
         try {

@@ -39,23 +39,11 @@ export default class Resizable extends Component {
     initialScreenY: undefined,
   };
 
-  componentDidMount() {
-    setTimeout(() => {
-      const rect = this.getRect();
-      if (rect) {
-        this.setState({ 
-          minWidth: rect.width,
-          minHeight: rect.height
-        })
-      }
-    }, 500); 
-  }
-
   getRect = () => {
     return this.root.getClientRects()[0];
   }
 
-  onMove = ev => {
+  onMove = (ev, dragContext) => {
     const { 
       resizing,
       resizeStart,
@@ -71,6 +59,12 @@ export default class Resizable extends Component {
       const diffY = ev.screenY - resizeStart.y;
       const width = Math.max(rect.width + diffX, minWidth);
       const height = Math.max(rect.height + diffY, minHeight);
+
+      // TODO: use onMouseOut?
+      if (ev.buttons === 0) {
+        this.onEnd(ev, dragContext); // must have missed the up event
+        return;
+      }
       this.setState({
         width,
         height,
@@ -78,7 +72,7 @@ export default class Resizable extends Component {
           x: Math.max(ev.screenX, initialScreenX),
           y: Math.max(ev.screenY, initialScreenY),
         },
-      })
+      });
     }
   }
 
@@ -90,6 +84,7 @@ export default class Resizable extends Component {
         y: ev.screenY,
       }
     };
+
     if (hasInitialSize) {
       const rect = this.getRect();
       newState.minWidth = rect.width;
@@ -107,7 +102,7 @@ export default class Resizable extends Component {
     });
   }
 
-  render_customResize() {
+  render_manaual() {
     const { children, style={} } = this.props;
     const { width, height } = this.state;
 
@@ -125,7 +120,7 @@ export default class Resizable extends Component {
               ref={root => this.root = root}
               onMouseMove={this.onMove}
               onMouseUp={ev => {
-                this.onEnd(ev);
+                this.onEnd(ev, dragContext);
                 dragContext.clearResizable();
                 ev.stopPropagation();
               }}
@@ -138,10 +133,10 @@ export default class Resizable extends Component {
                   width: 12,
                   bottom: 0,
                   right: 0,
-                  cursor: 'pointer'
+                  cursor: 'se-resize'
                 }}
                 onMouseDown={ev => {
-                  this.onBegin(ev, width === undefined);
+                  this.onBegin(ev, this.state.initialScreenX === undefined) //width === undefined);
                   dragContext.setResizable(this);
                   ev.stopPropagation();
                 }}
@@ -155,27 +150,23 @@ export default class Resizable extends Component {
     )
   }
 
-    render() {
-      const { children, style={} } = this.props;
-      const { 
-        minWidth,
-        minHeight,
-      } = this.state;
-      return (
-        <div
-          ref={root => this.root = root}
-          style={
-            s({ 
-                position: 'relative',
-                minWidth: minWidth,
-                minHeight: minHeight,
-                ...style 
-              },
-              t.resizable
-            )
-          }
-        >
-          { children }
+  render() {
+    const { children, style={} } = this.props;
+    return (
+      <div
+        style={
+          s({ 
+              //position: 'relative',
+              minWidth: 100,
+              minHeight: 50,
+              ...style 
+            },
+            t.resizable,
+          )
+        }
+      >
+        { children }
+        {
           <div
             style={{
               position: 'absolute',
@@ -183,12 +174,12 @@ export default class Resizable extends Component {
               width: 12,
               bottom: 0,
               right: 0,
-              // cursor: 'pointer'
             }}
           >
             <Triangle width="12" height="12" /> 
-          </div>
-        </div>
-      );
+          </div>        
+        }
+      </div>
+    );
   }
 }

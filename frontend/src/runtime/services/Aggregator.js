@@ -37,7 +37,7 @@ class AggregatorUI extends Component {
       val_max_occ: 'max value count',
     }
     return (
-      <div>
+      <div style={{ overflow: 'auto' }}>
         <InputField 
           type="text"
           label="Property"
@@ -171,8 +171,6 @@ class Aggregator {
         );
         const nextParams = { 
           [this.property]: winner.key,
-          //aggregate: this.aggregate,
-          //winner,
         };
         this.app.next(this, nextParams);
       }

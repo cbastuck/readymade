@@ -1,7 +1,10 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import { Icon, Checkbox } from 'semantic-ui-react';
+import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
 
+import { redirectTo } from '../core/actions';
 import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Runtime from '../components/Runtime';
@@ -31,16 +34,16 @@ const allowedServices = [
   'hookup.to/service/gif-encoder',
 ];
 
+const defaultName = 'Playground';
+
 export default class Playground extends Component {
   state = {
-    persistBoard: false,
+    boardName: (this.props.match && this.props.match.params) ? this.props.match.params.board : defaultName,
     showSidechainSelector: false,
     sidechainRouting: {},
     placeholderAnimationRunning: false,
-  };
-
-  board = {
-    name: 'Playground',
+    runtimes: undefined,
+    services: undefined,
   };
 
   user = { 
@@ -54,12 +57,70 @@ export default class Playground extends Component {
 
   runtimeInstances = {};
 
+  componentDidUpdate(prevProps) {
+    const board = this.props.match.params.board; 
+    const prevBoard = prevProps.match.params.board; 
+    if (board !== prevBoard) {
+      if (board === undefined) {
+        this.setState({ 
+          boardName: defaultName, 
+          runtimes: undefined, 
+          services: undefined,
+          sidechainRouting: {}
+        });
+      } else {
+        this.setState({ boardName: board });
+      }
+    }
+  }
+
+  isInitialFetch = () => this.state.runtimes === undefined;
+
+  fetchData = async () => {
+    if (this.isInitialFetch()) {
+      await this.setInitialPlayground();
+    }
+    const { 
+      boardName='Playground',
+      runtimes=[], 
+      services={},
+    } = this.state;
+     
+    if (!this.defaultRegistry) {
+      this.defaultRegistry = await BrowserRegistry.create(defaultBundles); 
+    }
+
+    const data = {
+      board: { name: boardName },
+      runtimes, 
+      services,
+      registry: runtimes && runtimes.reduce(
+        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
+        {}
+      ),
+    };
+    return data;
+  }
+
+  setInitialPlayground = () => {
+    const { board } = this.props.match.params;
+    if (board) {
+      return this.restoreBoard(board);
+    } 
+    const queryParams = new URLSearchParams(document.location.search);
+    const src = queryParams.get('src');
+    if (src) {
+      this.importBoard(src)
+    }
+  }
+
   importBoard = async url => {
     try {
       const res = await fetch(url);
       const data = await res.json();
       const runtimeIds = Object.keys(data);
-      return {
+
+      this.setState({ 
         runtimes: runtimeIds.map((rid, ridx) => ({
           id: rid,
           type: data[rid].type,
@@ -77,22 +138,27 @@ export default class Playground extends Component {
           }), 
           {}
         )
-      };
+      });
     } catch (err) {
       console.log('Import failed', err, url)
     }
   }
 
-  restoreBoard = () => {
-    const data = localStorage.getItem('hkp-playground');
-    return data ? JSON.parse(data) : {};
+  restoreBoard = name => {
+    const storageName = name ? `hkp-playground-${name}` : 'hkp-playground';
+    const data = localStorage.getItem(storageName);
+    if (data) {
+      const state = JSON.parse(data);
+      this.setState(state);
+    } 
   }
 
   storeBoard = () => {
     const { 
       runtimes=[], 
       services={}, 
-      sidechainRouting={} 
+      sidechainRouting={},
+      boardName
     } = this.state;
 
     const data = { 
@@ -119,7 +185,7 @@ export default class Playground extends Component {
       ),
       sidechainRouting,
     };
-    localStorage.setItem('hkp-playground', JSON.stringify(data));
+    localStorage.setItem(`hkp-playground-${boardName}`, JSON.stringify(data));
   }
 
   getRuntimeById = runtimeId => {
@@ -130,6 +196,11 @@ export default class Playground extends Component {
       return;
     }
     return this.runtimeInstances[runtime.id];
+  }
+
+  newBoard = () => {
+    const name = generate('-').split('-').slice(1).join('-');
+    redirectTo(`/playground/${name}`);
   }
 
   addService = (boardName, descriptor, runtimeId) => {
@@ -258,40 +329,18 @@ export default class Playground extends Component {
     }
   }
   
-
-  fetchData = async () => {
-    let runtimes = this.state.runtimes;
-    let services = this.state.services;
-    if (!runtimes) {
-      const src = new URLSearchParams(document.location.search).get('src');
-      const { 
-        runtimes: restoredRuntimes, 
-        services: restoredServices,
-        sidechainRouting  
-      } = src ? await this.importBoard(src) : this.restoreBoard();
-      runtimes = restoredRuntimes || [];
-      services = restoredServices || {};
-      this.setState({ 
-        runtimes, 
-        services,
-        sidechainRouting,
-      });
+  getSavedBoards = () => {
+    const savedBoards = [];
+    const prefix = 'hkp-playground-';
+    for(const key in localStorage) {
+      if (key.startsWith(prefix)) {
+        savedBoards.push({
+          key: key.substr(prefix.length), 
+          value: localStorage.getItem(key)
+        })
+      }
     }
-    
-    if (!this.defaultRegistry) {
-      this.defaultRegistry = await BrowserRegistry.create(defaultBundles); 
-    }
-
-    const data = {
-      board: { name: 'Playground' },
-      runtimes, 
-      services,
-      registry: runtimes && runtimes.reduce(
-        (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
-        {}
-      ),
-    };
-    return data;
+    return savedBoards;
   }
 
   renderRuntimes = boardContext => {
@@ -351,7 +400,8 @@ export default class Playground extends Component {
     );
   }
 
-  renderPlaceholder = () => {
+  renderPlaceholder = (boardContext) => {
+    const { boardName } = this.state;
     const { placeholderAnimationRunning } = this.state;
     if (!placeholderAnimationRunning) {
       setTimeout(() => 
@@ -359,6 +409,7 @@ export default class Playground extends Component {
         0
       );
     }
+    const savedBoards = this.getSavedBoards();
     return (
       <div 
         style={s(
@@ -381,66 +432,73 @@ export default class Playground extends Component {
           size="massive" 
           color="grey" 
         />
-        <div 
-          style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}>      
-          It is empty here, add a runtime to get going ...
-        </div>        
+        {
+          (boardName !== defaultName || savedBoards.length === 0) ? 
+            (
+              <div style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}>      
+                It is empty here, add a runtime to get going ...
+              </div>        
+            ) : 
+            (
+              <div style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}> 
+                <div>Start building or restore a saved boards, like: </div>
+                {
+                  savedBoards.map((item, idx) => (
+                    <span
+                      style={{ color: '#4183c4', cursor: 'pointer' }}
+                      key={`stored-preset-${item.key}`}
+                    >
+                      <Link to={`/playground/${item.key}`}>
+                        {
+                          `${item.key}${idx+1 < savedBoards.length ? ', ' : ''}` 
+                        }
+                      </Link>
+                    </span>
+                  ))
+                }
+              </div>    
+            )
+        }
       </div>
     );
   }
 
   renderPlayground = boardContext => {
-    const { 
-      persistBoard, 
-    } = this.state;
-    return (
-      <div>
-        { this.renderRuntimes(boardContext) }
-        <div style={s(t.w100, t.tr)}>
-          <Checkbox
-            style={s(t.uc, t.ls1, t.fs11, t.m(10, 20))}
-            toggle
-            checked={persistBoard}
-            onChange={(_, { checked }) => 
-              this.setState(
-                { persistBoard: checked },
-                () => checked && this.storeBoard()
-              )
-            }
-            label="Store Board"
-          />
-        </div>
-      </div>
-    )
+    return this.renderRuntimes(boardContext);
   }
 
   render() {
+    const { boardName } = this.state;
     return (
       <BoardProvider
+        key={`playground-${boardName}`}
         user={this.user}
-        boardName={this.board.name}
+        boardName={boardName}
         fetchData={this.fetchData}
         isRuntimeInScope={() => true}
         addRuntime={this.addRuntime}
         removeRuntime={this.removeRuntime}
         addService={this.addService}
         removeService={this.removeService}
+        newBoard={this.newBoard}
         clearBoard={this.clearPlayground}
+        saveBoard={this.storeBoard}
         arrangeService={this.arrangeService}
+        disabledActions={['shareBoard']}
       >
         <BoardConsumer>
         {
           boardContext => (
             <div style={t.fill}>
               <Toolbar
-                board={boardContext.boardName}
+                board={boardName}
                 availableRuntimes={this.availableRuntimes}
               />
               { 
                 boardContext && 
                 boardContext.runtimes && 
                 boardContext.runtimes.length === 0 ? 
-                  this.renderPlaceholder() : 
+                  this.renderPlaceholder(boardContext) : 
                   this.renderPlayground(boardContext)
               }
             </div>

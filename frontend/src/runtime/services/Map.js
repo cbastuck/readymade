@@ -38,7 +38,14 @@ class MapUI extends Component {
   renderMapping = service => {
     const { template={} } = this.state;
     return (
-      <div>
+      <div 
+        style={{ 
+          width: '100%', 
+          overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
         {
           Object.keys(template)
             // TODO: support nested objects
@@ -62,33 +69,31 @@ class MapUI extends Component {
               />
             ))
         }
-        <div>
-          <Button
-            style={{ 
-              width: '100%', 
-              marginTop: 1,
-              fontSize: 12,
-              textTransform: 'uppercase',
-              letterSpacing: 1
-            }}
-            onClick={() => this.setState({ 
-                template: {
-                  ...this.state.template,
-                  ...newProperty,
-                }
-              })
-            }
-          >
-            Add Property
-          </Button>
-        </div>
+        <Button
+          style={{ 
+            marginTop: 1,
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+            width: '100%'
+          }}
+          onClick={() => this.setState({ 
+              template: {
+                ...this.state.template,
+                ...newProperty,
+              }
+            })
+          }
+        >
+          Add Property
+        </Button>
       </div>
     )
   }
 
   renderCondition = service => {
     return (
-      <div style={{ textAlign: 'left'}}>
+      <div style={{ textAlign: 'left' }}>
         <Checkbox
           label="Apply Condition"
           checked={this.state.conditionEnabled}

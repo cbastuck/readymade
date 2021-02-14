@@ -67,6 +67,7 @@ class App extends Component {
               <Route path="/docs" component={Quickstart} />
               <Route path="/serviceRedirect" component={ServiceRedirect} />
               <Route path="/join/:share" component={Join} />
+              <Route path="/playground/:board" component={Playground} />
               <Route path="/playground" component={Playground} />
               <Route path="/:board" component={BoardWithContext} />
             </Switch>

@@ -71,7 +71,7 @@ export default class BrowserRuntime extends Component {
         this.subservices[ssvc.uuid] = { service: ssvc, parent };
         return ssvc;
       },
-      createSubServiceUI: svc => createServiceUI(registry, boardName, svc, runtime.id, userId),
+      createSubServiceUI: svc => createServiceUI(registry, boardName, svc, runtime.id, userId, { resizable: false }),
     }
   }
 

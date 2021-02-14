@@ -72,7 +72,7 @@ class StackUI extends Component {
     const inputOptions = { multiplex: 'multiplex', lanes: 'lanes' };
     const outputOptions = { array: 'array' };
     return (
-      <div>
+      <div style={t.fill}>
         <SelectorField
           style={t.mb3}
           label="input"

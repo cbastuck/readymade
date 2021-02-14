@@ -47,6 +47,7 @@ export default class InputLabelValue extends Component {
         onChange={(_, { value: renamedLabelBuffer }) => this.setState({ renamedLabelBuffer })}
         onKeyDown={e => {
           switch(e.key) {
+            case 'Tab':
             case 'Enter':
               onCommit({ 
                 label: renamedLabelBuffer === null ? editLabel : renamedLabelBuffer, 

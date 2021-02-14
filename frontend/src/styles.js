@@ -44,7 +44,7 @@ export const t = {
 
   resizable: {
     resize: 'both',
-    overflow: 'auto', // scroll
+    overflow: 'auto',
   },
 
   m: function(x, y){ return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` }; },

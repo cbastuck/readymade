@@ -36,14 +36,14 @@ export function createPlaceholderUI(service) {
   );
 }
 
-export function createServiceUI(registry, board, service, runtimeId, userId=undefined) {
+export function createServiceUI(registry, board, service, runtimeId, userId=undefined, props={}) {
   const serviceId = service.__descriptor ? service.__descriptor.serviceId : service.serviceId;
   if (!serviceId) {
     console.error('UIFactory missing serviceId', service);
   }
   switch(serviceId) {
     case 'hookup.to/service/output': {
-      const params = { key: serviceId, id: serviceId, service, board, userId };
+      const params = { key: serviceId, id: serviceId, service, board, userId, ...props };
       return <OutputUI { ...params } />;
     }
     /*
@@ -84,15 +84,15 @@ export function createServiceUI(registry, board, service, runtimeId, userId=unde
 
   const factory = findServiceUi(registry, serviceId);
   if (factory) {
-    const props = {
-      service, 
-      board, 
-      runtimeId, 
-      key: `key-${service.uuid}`,
-    };
     return React.createElement(
       factory.createUI, 
-      props,
+       {
+         ...props,
+        service, 
+        board, 
+        runtimeId, 
+        key: `key-${service.uuid}`,
+      },
     );
   } else {
     console.warn('UIFactory create placeholder for', serviceId || service, 'in registry', registry);

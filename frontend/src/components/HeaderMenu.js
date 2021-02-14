@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Dropdown, Menu } from 'semantic-ui-react';
 import { Link } from 'react-router-dom';
 
-import { redirectTo } from '../core/actions';
 import { AppConsumer } from '../AppContext';
 import { BoardConsumer } from '../BoardContext';
 import AccountDropdown from './AccountDropdown';
@@ -81,6 +80,11 @@ export default class HeaderMenu extends Component {
       textTransform: 'uppercase',
       letterSpacing: 1,
     };
+    const isDisabled = action => {
+      return !!boardContext.disabledActions.find(a => 
+        a === action
+      )
+    }
     return (
       <Dropdown
         text={board ? board : 'Board'}
@@ -95,7 +99,10 @@ export default class HeaderMenu extends Component {
       >
         <Dropdown.Menu>
           <Dropdown.Item 
-            onClick={() => redirectTo('/new')}
+            onClick={() => 
+            boardContext.onAction({
+              type: 'newBoard'
+            })}
           >
             <span style={menuItemStyle}>
               New Board
@@ -105,7 +112,7 @@ export default class HeaderMenu extends Component {
             onClick={() => boardContext.onAction({
               type: 'clearBoard'
             })}
-            disabled={!board}
+            disabled={!board || isDisabled('clearBoard')}
           >
             <span style={menuItemStyle}>
               Clear Board
@@ -115,9 +122,17 @@ export default class HeaderMenu extends Component {
             onClick={() => boardContext.onAction({
               type: 'shareBoard',
             })}
-            disabled={!board}
+            disabled={!board || isDisabled('shareBoard')}
           >
             <span style={menuItemStyle}>Share Board</span>
+          </Dropdown.Item>
+          <Dropdown.Item
+            onClick={() => boardContext.onAction({
+              type: 'saveBoard',
+            })}
+            disabled={!board || isDisabled('saveBoard')}
+          >
+            <span style={menuItemStyle}>Save Board</span>
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>

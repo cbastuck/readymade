@@ -110,10 +110,9 @@ export default class ServiceUI extends Component {
     );
   }
 
-  renderSingleSegment = (boardContext, children) => {
+  renderSingleSegment = (boardContext, children, resizable) => {
     const {
       setup,
-      resizable=true,
     } = this.props;
 
     const c = children({ 
@@ -145,7 +144,7 @@ export default class ServiceUI extends Component {
                 segments,
                 resizable
               ) : 
-              this.renderSingleSegment(boardContext, children)
+              this.renderSingleSegment(boardContext, children, resizable)
         }
       </BoardConsumer>
    ); 
