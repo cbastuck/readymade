@@ -13,6 +13,7 @@ import DragProvider from '../DragContext';
 import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
 import { filterPrivateMembers } from '../runtime/services/helpers';
+import Prompt from '../components/Prompt';
 
 const defaultBundles = [
   'hookup.to/registry/browser/Audio',
@@ -332,11 +333,15 @@ export default class Playground extends Component {
     }
   }
   
-  saveBoard = () => {
-    // TODO: make to more beautiful
-    const name = prompt('Give it a name', generateRandomName());
-    if (name != null) {
-      this.storeBoard(name);
+  saveBoard = async () => {
+    if (this.prompt) {
+      const suggested = (this.props.match && this.props.match.params) ? 
+        this.props.match.params.board : 
+        generateRandomName();
+      const name = await this.prompt.getInput('Enter a name for the board', suggested);
+      if (name !== null) {
+        this.storeBoard(name);
+      }
     }
   }
 
@@ -348,7 +353,7 @@ export default class Playground extends Component {
         savedBoards.push({
           key: key.substr(prefix.length), 
           value: localStorage.getItem(key)
-        })
+        });
       }
     }
     return savedBoards;
@@ -412,7 +417,6 @@ export default class Playground extends Component {
   }
 
   renderPlaceholder = (boardContext) => {
-    const { boardName } = this.state;
     const { placeholderAnimationRunning } = this.state;
     if (!placeholderAnimationRunning) {
       setTimeout(() => 
@@ -457,9 +461,9 @@ export default class Playground extends Component {
                         key={`stored-preset-${item.key}`}
                       >
                         <Link to={`/playground/${item.key}`}>
-                          {
-                            `${item.key}${idx+1 < savedBoards.length ? ', ' : ''}` 
-                          }
+                        {
+                          `${item.key}${idx+1 < savedBoards.length ? ', ' : ''}` 
+                        }
                         </Link>
                       </span>
                     ))
@@ -473,7 +477,14 @@ export default class Playground extends Component {
     );
   }
 
-  renderPlayground = boardContext => this.renderRuntimes(boardContext);
+  renderPlayground = boardContext => {
+    return (
+      <div>
+        { this.renderRuntimes(boardContext) }
+        <Prompt ref={prompt => this.prompt = prompt} />
+      </div>
+    )
+  };
 
   isActionAvailable = action => {
     switch (action) {
