@@ -53,6 +53,7 @@ class BoardContext extends Component {
       isRuntimeInScope: props.isRuntimeInScope || this.isRuntimeInScope,
       acquireRuntimeScope: this.acquireRuntimeScope,
       releaseRuntimeScope: this.releaseRuntimeScope,
+      isActionAvailable: this.isActionAvailable,
 
       // data
       viewportWidth: undefined,
@@ -65,7 +66,6 @@ class BoardContext extends Component {
       services: {},
       registry: {},
       savedBoards: [],
-      disabledActions: props.disabledActions || [],
     };
   }
 
@@ -138,6 +138,21 @@ class BoardContext extends Component {
     }
   }
     
+
+  isActionAvailable = action => {
+    const { isActionAvailable=this.isActionAvailableDefaut } = this.props;
+    return isActionAvailable(action);
+  }
+
+  isActionAvailableDefaut = action => {
+    switch (action) {
+      case 'clearBoard':
+        return !!this.state.board;
+      default:
+        return true;
+    }
+  }
+
   getBoardName = () => {
     return this.state.boardName;
   }

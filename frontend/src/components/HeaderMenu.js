@@ -80,11 +80,7 @@ export default class HeaderMenu extends Component {
       textTransform: 'uppercase',
       letterSpacing: 1,
     };
-    const isDisabled = action => {
-      return !!boardContext.disabledActions.find(a => 
-        a === action
-      )
-    }
+    
     return (
       <Dropdown
         text={board ? board : 'Board'}
@@ -112,7 +108,7 @@ export default class HeaderMenu extends Component {
             onClick={() => boardContext.onAction({
               type: 'clearBoard'
             })}
-            disabled={!board || isDisabled('clearBoard')}
+            disabled={!boardContext.isActionAvailable('clearBoard')}
           >
             <span style={menuItemStyle}>
               Clear Board
@@ -122,7 +118,7 @@ export default class HeaderMenu extends Component {
             onClick={() => boardContext.onAction({
               type: 'shareBoard',
             })}
-            disabled={!board || isDisabled('shareBoard')}
+            disabled={!boardContext.isActionAvailable('shareBoard')}
           >
             <span style={menuItemStyle}>Share Board</span>
           </Dropdown.Item>
@@ -130,7 +126,7 @@ export default class HeaderMenu extends Component {
             onClick={() => boardContext.onAction({
               type: 'saveBoard',
             })}
-            disabled={!board || isDisabled('saveBoard')}
+            disabled={!boardContext.isActionAvailable('saveBoard')}
           >
             <span style={menuItemStyle}>Save Board</span>
           </Dropdown.Item>

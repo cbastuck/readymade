@@ -36,6 +36,10 @@ const allowedServices = [
 
 const defaultName = 'Playground';
 
+function generateRandomName() {
+  return generate('-').split('-').slice(1).join('-');
+}
+
 export default class Playground extends Component {
   state = {
     boardName: (this.props.match && this.props.match.params) ? this.props.match.params.board : defaultName,
@@ -153,12 +157,11 @@ export default class Playground extends Component {
     } 
   }
 
-  storeBoard = () => {
+  storeBoard = name => {
     const { 
       runtimes=[], 
       services={}, 
       sidechainRouting={},
-      boardName
     } = this.state;
 
     const data = { 
@@ -185,7 +188,7 @@ export default class Playground extends Component {
       ),
       sidechainRouting,
     };
-    localStorage.setItem(`hkp-playground-${boardName}`, JSON.stringify(data));
+    localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
   }
 
   getRuntimeById = runtimeId => {
@@ -199,7 +202,7 @@ export default class Playground extends Component {
   }
 
   newBoard = () => {
-    const name = generate('-').split('-').slice(1).join('-');
+    const name = generateRandomName();
     redirectTo(`/playground/${name}`);
   }
 
@@ -281,7 +284,7 @@ export default class Playground extends Component {
   }
 
   clearPlayground = () => {
-    const { runtimes } = this.state;
+    const { runtimes=[] } = this.state;
     for (const runtime of runtimes) {
       const rt = this.runtimeInstances[runtime.id];
       rt.destroyRuntime();
@@ -329,6 +332,14 @@ export default class Playground extends Component {
     }
   }
   
+  saveBoard = () => {
+    // TODO: make to more beautiful
+    const name = prompt('Give it a name', generateRandomName());
+    if (name != null) {
+      this.storeBoard(name);
+    }
+  }
+
   getSavedBoards = () => {
     const savedBoards = [];
     const prefix = 'hkp-playground-';
@@ -432,38 +443,49 @@ export default class Playground extends Component {
           size="massive" 
           color="grey" 
         />
-        {
-          (boardName !== defaultName || savedBoards.length === 0) ? 
-            (
-              <div style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}>      
-                It is empty here, add a runtime to get going ...
-              </div>        
-            ) : 
-            (
-              <div style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}> 
-                <div>Start building or restore a saved boards, like: </div>
-                {
-                  savedBoards.map((item, idx) => (
-                    <span
-                      style={{ color: '#4183c4', cursor: 'pointer' }}
-                      key={`stored-preset-${item.key}`}
-                    >
-                      <Link to={`/playground/${item.key}`}>
-                        {
-                          `${item.key}${idx+1 < savedBoards.length ? ', ' : ''}` 
-                        }
-                      </Link>
-                    </span>
-                  ))
-                }
-              </div>    
+        <div style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}>      
+          It is empty here, add a runtime to get going ...
+          {
+            savedBoards.length > 0 && (
+                <div>
+                  Or restore a saved boards, like:
+                  <div>
+                  {
+                    savedBoards.map((item, idx) => (
+                      <span
+                        style={{ color: '#4183c4', cursor: 'pointer' }}
+                        key={`stored-preset-${item.key}`}
+                      >
+                        <Link to={`/playground/${item.key}`}>
+                          {
+                            `${item.key}${idx+1 < savedBoards.length ? ', ' : ''}` 
+                          }
+                        </Link>
+                      </span>
+                    ))
+                  }
+                  </div>
+                </div>
             )
-        }
+          }
+        </div>
       </div>
     );
   }
 
   renderPlayground = boardContext => this.renderRuntimes(boardContext);
+
+  isActionAvailable = action => {
+    switch (action) {
+      case 'shareBoard':
+        return false;
+      case 'saveBoard':
+      case 'clearBoard':
+        return this.state.runtimes;
+      default:
+        return true;
+    }
+  }
 
   render() {
     const { boardName } = this.state;
@@ -480,9 +502,9 @@ export default class Playground extends Component {
         removeService={this.removeService}
         newBoard={this.newBoard}
         clearBoard={this.clearPlayground}
-        saveBoard={this.storeBoard}
+        saveBoard={this.saveBoard}
         arrangeService={this.arrangeService}
-        disabledActions={['shareBoard']}
+        isActionAvailable={this.isActionAvailable}
       >
         <BoardConsumer>
         {
