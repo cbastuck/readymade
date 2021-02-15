@@ -55,30 +55,28 @@ export default class Prompt extends Component {
           />
         </Modal.Content>
         <Modal.Actions>
-        <Button
-          style={s(t.fs12, t.ls1, t.uc)}
-          color='red' 
-          onClick={() => {
-            const { promise } = this.state;
-            const { resolve } = promise;
-            resolve(null);
-            this.setState({ open: false });
-          }}
-        >
-          Cancel
-        </Button>
-        <Button
-          style={s(t.uc, t.fs12, t.ls1)}
-          content="Save"
-          onClick={() => {
-            const { promise, value } = this.state;
-            const { resolve } = promise;
-            resolve(value);
-            this.setState({ open: false });
-          }}
-          positive
-        />
-      </Modal.Actions>
+          <Button
+            style={s(t.fs12, t.ls1, t.uc)}
+            onClick={() => {
+              const { promise } = this.state;
+              const { resolve } = promise;
+              resolve(null);
+              this.setState({ open: false });
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            style={s(t.uc, t.fs12, t.ls1)}
+            content="Save"
+            onClick={() => {
+              const { promise, value } = this.state;
+              const { resolve } = promise;
+              resolve(value);
+              this.setState({ open: false });
+            }}
+          />
+        </Modal.Actions>
       </Modal>
     );
   }

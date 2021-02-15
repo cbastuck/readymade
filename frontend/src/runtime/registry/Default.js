@@ -26,6 +26,8 @@ import FileSourceDescriptor from '../services/FileSource';
 import TimelineDescriptor from '../services/Timeline';
 import StackDescriptor from '../services/Stack';
 import AggregatorDescriptor from '../services/Aggregator';
+import ThrowerDescriptor from '../services/Thrower';
+import ReceiverDescriptor from '../services/Receiver';
 
 export default [
   timerDescriptor,
@@ -56,4 +58,6 @@ export default [
   TimelineDescriptor,
   StackDescriptor,
   AggregatorDescriptor,
+  ThrowerDescriptor,
+  ReceiverDescriptor,
 ];

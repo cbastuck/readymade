@@ -33,6 +33,8 @@ const allowedServices = [
   'hookup.to/service/audio-output',
   'hookup.to/service/microphone',
   'hookup.to/service/gif-encoder',
+  'hookup.to/service/thrower',
+  'hookup.to/service/receiver',
 ];
 
 const defaultName = 'Playground';
@@ -325,7 +327,7 @@ export default class Playground extends Component {
         const dst = this.runtimeInstances[route.runtimeId];
         await dst.configureService(route.serviceUuid, result);
       }
-      return; // runtimes with routing aren't further processed
+      return; // runtimes with routings aren't further processed
     }
     const nextRuntime = this.getNextRuntime(runtime);
     if (nextRuntime) {
@@ -341,6 +343,9 @@ export default class Playground extends Component {
       const name = await this.prompt.getInput('Enter a name for the board', suggested);
       if (name !== null) {
         this.storeBoard(name);
+      }
+      if (name !== suggested) {
+        redirectTo(`/playground/${name}`);
       }
     }
   }
