@@ -9,29 +9,38 @@ const serviceName = 'Thrower';
 
 class ThrowerUI extends Component {
   state = { 
-    wall: '',
+    pushUrl: '',
     id: ''
   };
 
   onInit = initial => {
-
+    const { pushUrl='' } = initial;
+    this.setState({
+      pushUrl
+    })
   }
 
   onNotification = (service, notification) => {
-    
+    const { pushUrl } = notification;
+    if (pushUrl !== undefined) {
+      this.setState({ pushUrl });
+    }
   }
 
-  renderMain = () => {
+  renderMain = service => {
     const { 
-      wall,
+      pushUrl,
       id,
     } = this.state;
     return (
       <div style={s(t.fill, {display: 'flex', flexDirection: 'column' })}>
         <InputField
-          label="Wall"
-          value={wall}
-          onChange={(ev, { value: wall }) => this.setState({ wall })}
+          label="URL"
+          value={pushUrl}
+          onChange={async (ev, { value: pushUrl }) => {
+            await service.configure({ pushUrl })
+            this.setState({ pushUrl });
+          }}
         />
         <InputField
           label="Id"
@@ -62,15 +71,31 @@ class Thrower {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.pushUrl = ''
   }
 
-  configure = (config) => {
+  configure = async config => {
+    const { pushUrl } = config;
+    if (pushUrl !== undefined) {
+      this.pushUrl = pushUrl;
+    }
   }
 
   destroy = () => {
   }
 
-  process(params) {
+  async process(params) {
+    if (this.pushUrl) {
+      // TODO: probably this should be runtime functionality
+      // because this way, without encoding the params, 
+      // it only works for text content
+      await fetch(
+        this.pushUrl, 
+        { method: 'POST', body: JSON.stringify(params) }
+      );
+    }
+    return params;
   }
 }
 

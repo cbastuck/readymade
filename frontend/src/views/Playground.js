@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon } from 'semantic-ui-react';
+import { Icon, Button } from 'semantic-ui-react';
 import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
 
@@ -9,6 +9,7 @@ import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Runtime from '../components/Runtime';
 import SidechainSelector from '../components/SidechainSelector';
+import BoardRouting from '../components/BoardRouting';
 import DragProvider from '../DragContext';
 import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
@@ -33,6 +34,7 @@ const allowedServices = [
   'hookup.to/service/audio-output',
   'hookup.to/service/microphone',
   'hookup.to/service/gif-encoder',
+  'hookup.to/service/input',
   'hookup.to/service/thrower',
   'hookup.to/service/receiver',
 ];
@@ -46,8 +48,9 @@ function generateRandomName() {
 export default class Playground extends Component {
   state = {
     boardName: (this.props.match && this.props.match.params) ? this.props.match.params.board : defaultName,
-    showSidechainSelector: false,
+    showRoutingOptions: false,
     sidechainRouting: {},
+    boardRouting: {},
     placeholderAnimationRunning: false,
     runtimes: undefined,
     services: undefined,
@@ -73,7 +76,8 @@ export default class Playground extends Component {
           boardName: defaultName, 
           runtimes: undefined, 
           services: undefined,
-          sidechainRouting: {}
+          sidechainRouting: {},
+          boardRouting: {},
         });
       } else {
         this.setState({ boardName: board });
@@ -165,6 +169,7 @@ export default class Playground extends Component {
       runtimes=[], 
       services={}, 
       sidechainRouting={},
+      boardRouting={}
     } = this.state;
 
     const data = { 
@@ -190,6 +195,7 @@ export default class Playground extends Component {
         {}
       ),
       sidechainRouting,
+      boardRouting,
     };
     localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
   }
@@ -367,8 +373,9 @@ export default class Playground extends Component {
   renderRuntimes = boardContext => {
     const { runtimes } = boardContext;
     const { 
-      showSidechainSelector, 
-      sidechainRouting, 
+      showRoutingOptions, 
+      sidechainRouting,
+      boardRouting, 
       services,
     } = this.state;
     return (
@@ -389,28 +396,47 @@ export default class Playground extends Component {
                 {
                   key: `sidechain-option-${runtime.id}`,
                   icon: 'location arrow',
-                  onClick: () => this.setState({ showSidechainSelector: runtime.id })
+                  onClick: () => this.setState({ showRoutingOptions: runtime.id })
                 }
               ]}
               allowedServices={allowedServices}
             >
             {
-              showSidechainSelector === runtime.id && (
-                <SidechainSelector
-                  key={`sidechain-selector-${runtime.id}`}
-                  runtimes={runtimes}
-                  services={services} 
-                  onClose={() => this.setState({ showSidechainSelector: false })}
-                  onSelect={routing => 
-                    this.setState({ 
-                      sidechainRouting: {
-                        ...sidechainRouting,
-                        [runtime.id]: routing,
-                      },
-                    })
-                  }
-                  routing={sidechainRouting[runtime.id]}
-                />
+              showRoutingOptions === runtime.id && (
+                <div 
+                  key={`routing-options-${runtime.id}`}
+                  style={{ 
+                    display: 'flex',
+                    flexDirection: 'column'
+                  }}
+                >
+                  <div style={{ display: 'flex', flexDirection: 'row'}}>
+                    <BoardRouting 
+                      key={`board-routing-${runtime.id}`}
+                      onChange={boardRouting => this.setState({ boardRouting })}
+                      routing={boardRouting}
+                    />
+                    <Button
+                      onClick={() => this.setState({ showRoutingOptions: false })}
+                      style={s(t.uc, t.fs12, t.ls1, { height: 28, width: 32, marginLeft: 'auto', borderRadius: 2 })}
+                      icon="close"
+                    />
+                  </div>
+                  <SidechainSelector
+                    key={`sidechain-selector-${runtime.id}`}
+                    runtimes={runtimes}
+                    services={services} 
+                    onSelect={routing => 
+                      this.setState({ 
+                        sidechainRouting: {
+                          ...sidechainRouting,
+                          [runtime.id]: routing,
+                        },
+                      })
+                    }
+                    routing={sidechainRouting[runtime.id]}
+                  />
+                </div>
               )
             }
             </Runtime>

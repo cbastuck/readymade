@@ -1,7 +1,6 @@
 import React from 'react';
 
 /*
-import IngressUI from './components/services/IngressUI';
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
 import FileExchangeUI from './components/services/FileExchangeUI';
 import WebsocketConsumer from './components/services/WebsocketConsumer';
@@ -17,6 +16,7 @@ import FileS3UI from './components/services/FileS3UI';
 import AggregatorUI from './components/services/AggregatorUI';
 */
 
+import IngressUI from './components/services/IngressUI';
 import OutputUI from './components/services/OutputUI';
 import defaultRegistry from './runtime/registry/Default';
 
@@ -41,16 +41,16 @@ export function createServiceUI(registry, board, service, runtimeId, userId=unde
   if (!serviceId) {
     console.error('UIFactory missing serviceId', service);
   }
+  const params = { key: serviceId, id: serviceId, service, board, userId, ...props };
   switch(serviceId) {
     case 'hookup.to/service/output': {
-      const params = { key: serviceId, id: serviceId, service, board, userId, ...props };
       return <OutputUI { ...params } />;
     }
+    case 'hookup.to/service/ingress':
+      return <IngressUI { ...params } />;
     /*
     case 'hookup.to/service/monitor':
       return <MonitorUI { ...params } />;
-    case 'hookup.to/service/ingress':
-      return <IngressUI { ...params } />;
     case 'hookup.to/service/html-filter':
       return <HTMLFilterUI { ...params } />;
     case 'hookup.to/service/file-exchange':

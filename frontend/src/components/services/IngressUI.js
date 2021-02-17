@@ -1,15 +1,12 @@
 import React, { Component } from 'react';
 import {
-  Dropdown,
-  Input,
-  Label,
   Checkbox
 } from 'semantic-ui-react';
 
-import {
-  configureService,
-  getServiceConfiguration
-} from '../../core/actions';
+import InputField from '../../components/shared/InputField';
+import SelectorField from '../../components/shared/SelectorField';
+import ServiceUI from '../../runtime/services/ServiceUI';
+// import { s, t } from '../../styles';
 
 export default class IngressUI extends Component {
   state = {
@@ -18,110 +15,74 @@ export default class IngressUI extends Component {
     redirect: ''
   };
 
-  componentDidMount() {
-    this.update();
-  }
-
-  update = async() => {
-    const { board, service } = this.props;
-    const conf = await getServiceConfiguration(board, service);
+  onInit = conf => {
     const op = conf && conf.op && conf.op.toUpperCase();
     const path = conf && conf.path;
     const query = conf && conf.selector && conf.selector.query;
     const active = conf && conf.active;
     const redirect = conf && conf.redirect;
     this.setState({
-      op: op,
-      path: path,
+      op: op || 'GET',
+      path: path || '',
       selector: {
         query: query
       },
       active,
-      redirect
+      redirect: redirect || '',
     });
   }
 
-  sendConfig = async () => {
-    const { board, service } = this.props;
-    await configureService(board, service, this.state);
-    this.update();
-  };
+  onNotification = (service, notification) => {
+    console.log('Ingress received a notification', notification);
+  }
 
-  render() {
-    const { service, userId } = this.props;
-    const lineStyle = {
-      textAlign: 'left',
-      margin: '8px 10px',
-    };
+  
+  renderMain = service => {
+    const { userId } = this.props;
+    const { 
+      op,
+      path,
+      redirect,
+      active
+    } = this.state;
 
     return (
-      <div
-        style={{ marginBottom: 15 }}
+      <div 
+        style={{ 
+          display: 'flex',
+          flexDirection: 'column'
+        }}
       >
-        <div style={lineStyle}>
-          <Label style={{ width: 70 }}>
-            Method
-          </Label>
-          <Dropdown
-            className="left"
-            style={{ marginLeft: 5 }}
-            placeholder='Operation'
-            options={[
-              { key: 'GET', value: 'GET', text: 'GET' },
-              { key: 'POST', value: 'POST', text: 'POST' },
-              { key: 'DELETE', value: 'DELETE', text: 'DELETE' },
-              { key: 'PUT', value: 'PUT', text: 'PUT' },
-            ]}
-            value={this.state.op}
-            onChange={
-              (_ev, data) => this.setState({ op: data.value, active: false })}
+        <SelectorField
+          label="Method"
+          options={{
+            GET: 'GET',
+            POST: 'POST',
+            DELETE: 'DELETE',
+            PUT: 'PUT',
+          }}
+          value={op}
+          onChange={(_ev, { value }) => 
+            this.setState({ op: value, active: false })
+          }
           />
-        </div>
-
-        <div
-          style={lineStyle}
-        >
-          <Label style={{ width: 70 }}>
-            Path
-          </Label>
-          <Input
-            placeholder='Path'
-            value={this.state.path || ''}
-            onChange={
-              (_, data) => this.setState({ path: data.value, active: false })
+          <InputField
+            label="Path"
+            value={path}
+            onChange={(_, {value}) => 
+              this.setState({ path: value, active: false })
             }
           />
-        </div>
-        <div
-          style={{
-            ...lineStyle,
-            textAlign: 'center',
-          }}
-        >
-          <Label
-            style={{ width: 70 }}
-          >
-            Redirect
-          </Label>
-          <Input
-            onChange={async (_, { value }) => {
+           <InputField
+            label="Redirect"
+            value={redirect}
+            onChange={(_, {value}) => 
               this.setState({ redirect: value, active: false })
-            }}
-            value={this.state.redirect || ''}
+            }
           />
-        </div>
-        <div
-          style={{
-            ...lineStyle,
-          }}
-        >
-          <Label
-            style={{ width: 70 }}
-          >
-            Active
-          </Label>
           <Checkbox
-            slider
+            toggle
+            label="Active"
             style={{ padding: '5px 5px' }}
             onChange={async (_, { checked }) => {
               this.setState(
@@ -132,16 +93,8 @@ export default class IngressUI extends Component {
             checked={this.state.active}
             disabled={!this.state.op || !this.state.path}
           />
-        </div>
-        {
-          this.state.active &&
-          this.state.op === 'GET' &&  (
-            <div
-              style={{
-                ...lineStyle,
-                textAlign: 'right',
-                margin: '10px 10px',
-            }}>
+          {
+            active && op === 'GET' &&  (
               <a
                 href={`/api/${userId}/${service.board}/${this.state.path}?key=value`}
                 target="blank"
@@ -152,10 +105,22 @@ export default class IngressUI extends Component {
               >
                 Click to test
               </a>
-            </div>
-          )
+            )
         }
-      </div>
+        </div>     
    );
+  }
+
+  render() {
+    return (
+      <ServiceUI 
+        {...this.props} 
+        onInit={this.onInit}
+        onNotification={this.onNotification}
+        segments={[
+          { name: 'main', render: this.renderMain }
+        ]}
+      />
+    );
   }
 }

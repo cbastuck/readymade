@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { 
-  Button, 
   Table, 
   Checkbox, 
 } from 'semantic-ui-react';
@@ -83,12 +82,6 @@ export default class SidechainSelector extends Component {
           <div style={{ paddingTop: 5 }}>
             Route the output of this runtime to <span style={{ textStyle: 'italic' }}>configure</span> some of the following services:
           </div>
-          <Button 
-            onClick={onClose}
-            style={s(t.uc, t.fs12, t.ls1, { width: 100, marginLeft: 'auto' })}
-          >
-            Close
-          </Button>
         </div>
         { this.renderTable(runtimes, services, routing || [], onSelect) }
       </div>

@@ -197,22 +197,22 @@ export default class HeaderMenu extends Component {
                       border: 'none',
                     }}
                   >
-                    { 
-                      this.renderHomeIcon() 
-                    }
-                    {
-                      appContext.user && this.renderBoardMenu(board, boardContext)
-                    }
-                    {
-                      availableRuntimes && this.renderRuntimeMenu(availableRuntimes, boardContext)
-                    }
-                    { 
-                      (!availableRuntimes || (boardContext.appViewMode === 'wide')) && 
-                        this.renderNavigation(appContext)
-                    }
-                    {
-                      appContext && this.renderAccountMenu(appContext, boardContext)
-                    }
+                  { 
+                    this.renderHomeIcon() 
+                  }
+                  {
+                    appContext.user && this.renderBoardMenu(board, boardContext)
+                  }
+                  {
+                    availableRuntimes && this.renderRuntimeMenu(availableRuntimes, boardContext)
+                  }
+                  { 
+                    (!availableRuntimes || (boardContext.appViewMode === 'wide')) && 
+                      this.renderNavigation(appContext)
+                  }
+                  {
+                    appContext && this.renderAccountMenu(appContext, boardContext)
+                  }
                   </Menu>
                 )
               }

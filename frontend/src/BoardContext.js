@@ -340,8 +340,8 @@ class BoardContext extends Component {
     }
   }
 
-  removeServiceDefault = async (boardName, runtime, service) => 
-    removeService(boardName, runtime.id, service.uuid);
+  removeServiceDefault = async (boardName, runtimeId, service) => 
+    removeService(boardName, runtimeId, service.uuid);
 
   removeRuntime = async runtime => {
     const { removeRuntime=this.removeRuntimeDefault } = this.props;

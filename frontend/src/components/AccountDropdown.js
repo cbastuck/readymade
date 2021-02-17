@@ -37,7 +37,12 @@ export default class AccountDropdown extends Component {
   render() {
     const { currentUser = ''} = this.props;
     const icon = (
-      <div>
+      <div 
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'row' 
+        }}
+      >
         <Icon name="user" style={{ margin: "0px 5px" }}/> 
         {currentUser}
       </div>
