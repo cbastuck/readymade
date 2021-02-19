@@ -451,14 +451,9 @@ export default class Runtime extends Component {
           }
           </div>
           {
-            children && ( 
-              <div style={{ margin: '5px 20px' }}>
-                <div 
-                  style={{ 
-                    borderTop: 'solid 1px #ccc',
-                    marginBottom: 5,
-                  }} 
-                />
+            children && (
+              <div style={{ margin: '5px', padding: 10, border: 'dashed 1px lightgray', borderRadius: 5 }}>
+                <div style={{ marginBottom: 5 }} />
                 {children}
               </div>
             )

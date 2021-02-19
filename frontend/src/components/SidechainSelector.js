@@ -61,7 +61,6 @@ export default class SidechainSelector extends Component {
   }
   render() {
     const { 
-      onClose,
       services,
       runtimes,
       routing,
@@ -79,7 +78,7 @@ export default class SidechainSelector extends Component {
         }
       >
         <div style={{ display: 'flex', flexDirection: 'row'}}>
-          <div style={{ paddingTop: 5 }}>
+          <div style={s(t.fs11, t.bold,{ paddingTop: 5})}>
             Route the output of this runtime to <span style={{ textStyle: 'italic' }}>configure</span> some of the following services:
           </div>
         </div>

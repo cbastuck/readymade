@@ -18,6 +18,7 @@ import AggregatorUI from './components/services/AggregatorUI';
 
 import IngressUI from './components/services/IngressUI';
 import OutputUI from './components/services/OutputUI';
+import WebsocketUI from './components/services/WebsocketUI';
 import defaultRegistry from './runtime/registry/Default';
 
 function findServiceUi(registry, serviceId) {
@@ -48,6 +49,8 @@ export function createServiceUI(registry, board, service, runtimeId, userId=unde
     }
     case 'hookup.to/service/ingress':
       return <IngressUI { ...params } />;
+    case 'hookup.to/service/websocket':
+      return <WebsocketUI {...params } />;
     /*
     case 'hookup.to/service/monitor':
       return <MonitorUI { ...params } />;

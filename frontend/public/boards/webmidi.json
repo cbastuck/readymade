@@ -3,11 +3,20 @@
     "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
     "name": "Chrome-78.0.3904.108 (0)",
     "type": "browser",
+    "bundles": ["hookup.to/registry/browser/Audio"],
     "services": [
       {
-        "serviceName": "TriggerPad",
-        "serviceId": "hookup.to/service/trigger-pad",
-        "enableMidiInput": "Akai APC40"
+        "serviceName": "Trigger Pad",
+        "serviceId": "hookup.to/service/trigger-pad"
+      },
+      {
+        "serviceName": "Timeline",
+        "serviceId": "hookup.to/service/timeline"
+      },
+      {
+        "serviceName": "Sound",
+        "serviceId": "hookup.to/service/sound",
+        "generator": "synth"
       }
     ]
   }

@@ -4,7 +4,7 @@ import { Icon, Button } from 'semantic-ui-react';
 import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
 
-import { redirectTo } from '../core/actions';
+import { redirectTo, request } from '../core/actions';
 import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Runtime from '../components/Runtime';
@@ -161,6 +161,17 @@ export default class Playground extends Component {
     if (data) {
       const state = JSON.parse(data);
       this.setState(state);
+      
+      // Restore input board routings
+      const { boardRouting } = state || {};
+      if (boardRouting) {
+        for (const runtimeId in boardRouting) {
+          const { inputUrl } = boardRouting[runtimeId];
+          if (inputUrl) {
+            this.connectRoutingInput(runtimeId, inputUrl);
+          }
+        }
+      }
     } 
   }
 
@@ -326,14 +337,27 @@ export default class Playground extends Component {
   }
 
   onResult = async (runtime, svcUuid, result) => {
-    const { sidechainRouting } = this.state;
-    const routing = sidechainRouting && sidechainRouting[runtime.id];
-    if (routing) {
-      for (const route of routing) {
+    const { 
+      sidechainRouting,
+      boardRouting,
+    } = this.state;
+    const sroute = sidechainRouting && sidechainRouting[runtime.id];
+    if (sroute) {
+      for (const route of sroute) {
         const dst = this.runtimeInstances[route.runtimeId];
         await dst.configureService(route.serviceUuid, result);
       }
       return; // runtimes with routings aren't further processed
+    }
+
+    const broute = boardRouting && boardRouting[runtime.id];
+    if (broute) {
+      const { outputUrl } = broute;
+      if (outputUrl) {
+        // TODO: URL is relative to /api
+        await request(outputUrl, 'POST', false, result);
+        return; // runtimes with outputs are not further processed as well
+      }
     }
     const nextRuntime = this.getNextRuntime(runtime);
     if (nextRuntime) {
@@ -368,6 +392,31 @@ export default class Playground extends Component {
       }
     }
     return savedBoards;
+  }
+
+  connectRoutingInput = (runtimeId, inputUrl) => {
+    const rt = this.getRuntimeById(runtimeId);
+    if (!rt) {
+      console.log('Could not yet connect, trying later again');
+      setTimeout(() => this.connectRoutingInput(runtimeId, inputUrl), 500);
+      return;
+    }
+    
+    console.log('!!!DOING SOME STUFF');
+    const secure = false; // TODO
+    rt.impl.connectRuntimeViaWebSocket(inputUrl, '', secure);
+    
+    /*
+    const socket = new WebSocket(`ws://${inputUrl}`);
+    if (socket) {
+      socket.onopen = event => {
+        console.log("OPPPPEN", event);
+      };
+      socket.onmessage = event => {
+        console.log("GOT A MESSS", event.data);
+      }
+    }
+    */
   }
 
   renderRuntimes = boardContext => {
@@ -413,8 +462,19 @@ export default class Playground extends Component {
                   <div style={{ display: 'flex', flexDirection: 'row'}}>
                     <BoardRouting 
                       key={`board-routing-${runtime.id}`}
-                      onChange={boardRouting => this.setState({ boardRouting })}
-                      routing={boardRouting}
+                      routing={boardRouting[runtime.id]}
+                      onChange={routing => {
+                        this.setState({ 
+                          boardRouting: {
+                            ...boardRouting,
+                            [runtime.id]: routing,
+                          }
+                        });
+                        const { inputUrl } = routing;
+                        if (inputUrl) {
+                          this.connectRoutingInput(runtime.id, inputUrl);
+                        }
+                      }}
                     />
                     <Button
                       onClick={() => this.setState({ showRoutingOptions: false })}
@@ -425,7 +485,8 @@ export default class Playground extends Component {
                   <SidechainSelector
                     key={`sidechain-selector-${runtime.id}`}
                     runtimes={runtimes}
-                    services={services} 
+                    services={services}
+                    routing={sidechainRouting[runtime.id]}
                     onSelect={routing => 
                       this.setState({ 
                         sidechainRouting: {
@@ -434,7 +495,6 @@ export default class Playground extends Component {
                         },
                       })
                     }
-                    routing={sidechainRouting[runtime.id]}
                   />
                 </div>
               )

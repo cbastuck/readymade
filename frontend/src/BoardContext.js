@@ -99,10 +99,8 @@ class BoardContext extends Component {
       // ensure service.configure function exists
       for (const svc of services[runtime.id]) {
         if (!svc.configure){
-          svc.configure = async config => {
-            const resp = await configureService(board, svc, config);
-            return resp.json();
-          }
+          svc.configure = async config => 
+            configureService(board.name, svc, config);
         }
       }
       if (registry && registry[runtime.id]) {

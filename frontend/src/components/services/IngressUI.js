@@ -36,7 +36,6 @@ export default class IngressUI extends Component {
     console.log('Ingress received a notification', notification);
   }
 
-  
   renderMain = service => {
     const { userId } = this.props;
     const { 
@@ -87,7 +86,7 @@ export default class IngressUI extends Component {
             onChange={async (_, { checked }) => {
               this.setState(
                 { active: checked },
-                this.sendConfig
+                () => service.configure(this.state)
               )
             }}
             checked={this.state.active}
