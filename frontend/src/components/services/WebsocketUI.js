@@ -16,6 +16,7 @@ export default class WebsocketUI extends Component {
   }
 
   onNotification = (service, notification) => {
+    console.log('On Notification ', notification)
   }
 
   renderMain = service => {

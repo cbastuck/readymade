@@ -259,7 +259,7 @@ export default class BrowserRuntime extends Component {
 
   async processService(uuid, params, requestId) {
     const { services } = this.props;
-    const position = services.findIndex(s => s.uuid = uuid);
+    const position = uuid === null ? 0 : services.findIndex(s => s.uuid = uuid);
     if (position === -1) {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(services)}`);
     }

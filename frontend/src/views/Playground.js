@@ -13,6 +13,7 @@ import BoardRouting from '../components/BoardRouting';
 import DragProvider from '../DragContext';
 import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
+import WebsocketChannel from '../runtime/WebsocketChannel';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 
@@ -66,6 +67,8 @@ export default class Playground extends Component {
   ];
 
   runtimeInstances = {};
+
+  externalInputs = {};
 
   componentDidUpdate(prevProps) {
     const board = this.props.match.params.board; 
@@ -215,7 +218,7 @@ export default class Playground extends Component {
     const { runtimes=[] } = this.state;
     const runtime = runtimes.find(rt => rt.id === runtimeId);
     if (!runtime) {
-      console.error('Unknown runtime', runtimeId);
+      console.error('Unknown runtime', runtimeId, runtimes);
       return;
     }
     return this.runtimeInstances[runtime.id];
@@ -284,13 +287,22 @@ export default class Playground extends Component {
     });
   }
 
-  removeRuntime = async runtime => {
+  destroyRuntime = runtime => {
     const rt = this.getRuntimeById(runtime.id);
     if (!rt) {
       return;
     }
 
-    await rt.destroyRuntime();
+    const externalInput = this.externalInputs[runtime.id];
+    if (externalInput) {
+      externalInput.close();
+      delete this.externalInputs[runtime.id];
+    }
+    return rt.destroyRuntime();
+  }
+
+  removeRuntime = async runtime => {
+    await this.destroyRuntime(runtime);
 
     const { runtimes=[], services={} } = this.state;
     const updatedRuntimes = runtimes.filter(r => r.id !== runtime.id);
@@ -303,11 +315,10 @@ export default class Playground extends Component {
     });
   }
 
-  clearPlayground = () => {
+  clearPlayground = async () => {
     const { runtimes=[] } = this.state;
     for (const runtime of runtimes) {
-      const rt = this.runtimeInstances[runtime.id];
-      rt.destroyRuntime();
+      await this.destroyRuntime(runtime);
     }
     this.setState({ services: {}, runtimes: [] });
   }
@@ -394,29 +405,35 @@ export default class Playground extends Component {
     return savedBoards;
   }
 
-  connectRoutingInput = (runtimeId, inputUrl) => {
-    const rt = this.getRuntimeById(runtimeId);
-    if (!rt) {
-      console.log('Could not yet connect, trying later again');
-      setTimeout(() => this.connectRoutingInput(runtimeId, inputUrl), 500);
-      return;
-    }
-    
-    console.log('!!!DOING SOME STUFF');
-    const secure = false; // TODO
-    rt.impl.connectRuntimeViaWebSocket(inputUrl, '', secure);
-    
-    /*
-    const socket = new WebSocket(`ws://${inputUrl}`);
-    if (socket) {
-      socket.onopen = event => {
-        console.log("OPPPPEN", event);
-      };
-      socket.onmessage = event => {
-        console.log("GOT A MESSS", event.data);
-      }
-    }
-    */
+  connectRoutingInput = (runtimeId, inputUrl) => {  
+    const { protocol } = window.location;
+    const secureConnection = protocol.indexOf('https') === 0;
+    const ws = new WebsocketChannel(
+      `external-input-${runtimeId}`,
+      params => {
+        const rt = this.getRuntimeById(runtimeId);
+        if (!rt) {
+          console.warn(`External runtime-input could not be processed, runtime not (yet) available: ${runtimeId}`)
+          return;
+        }
+        const { action } = params;
+        if (action) {
+          if (action === 'process') { // only inject process actions from another runtime
+            rt.impl.onMessage(action);
+          }
+        } else {
+          rt.impl.onMessage({
+            uuid: null,
+            action: 'process',
+            params
+          })
+        }
+        
+      },
+      secureConnection
+    );
+    this.externalInputs[runtimeId] = ws;
+    return ws.open(inputUrl);
   }
 
   renderRuntimes = boardContext => {

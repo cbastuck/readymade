@@ -30,7 +30,7 @@ export default class WebsocketChannel {
     }
 
     if (this.websocket) {
-      console.log('TODO: implement WebsocketChannel.close');
+      this.websocket.close();
     }
     return true;
   }
