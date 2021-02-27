@@ -34,7 +34,7 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
   }
 
   const queryParams = ''; //(method === 'GET') && generateQueryParams();
-  const url = `/api/${path}${queryParams ? queryParams : ''}`;
+  const url = path.absolute ? `${path.absolute}${queryParams ? queryParams : ''}` : `/api/${path}${queryParams ? queryParams : ''}`;
   const response = await fetch(url, {
     method,
     headers,

@@ -21,12 +21,15 @@ export default class WebsocketUI extends Component {
 
   renderMain = service => {
     const { url } = this.state;
+    const { protocol, host } = window.location;
+    const wsProtocol = protocol.indexOf('https') === 0 ? 'wss' : 'ws';
+    const full = `${wsProtocol}://${host}/api${url}`;
     return (
       <div>
         <InputField
           type="text"
-          label="Name"
-          value={url}
+          label="Url"
+          value={full}
         />
       </div>
     );

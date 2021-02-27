@@ -292,16 +292,17 @@ export default class Playground extends Component {
   }
 
   destroyRuntime = runtime => {
-    const rt = this.getRuntimeById(runtime.id);
-    if (!rt) {
-      return;
-    }
-
     const externalInput = this.externalInputs[runtime.id];
     if (externalInput) {
       externalInput.close();
       delete this.externalInputs[runtime.id];
     }
+
+    const rt = this.getRuntimeById(runtime.id);
+    if (!rt) {
+      return;
+    }
+
     return rt.destroyRuntime();
   }
 
@@ -374,8 +375,11 @@ export default class Playground extends Component {
     if (broute) {
       const { outputUrl, outputTopic } = broute;
       if (outputUrl) {
-        // TODO: URL is relative to /api
-        await request(outputUrl, 'POST', false, result, { 'hkp-runtime-topic': outputTopic });
+        try {
+          await request({ absolute: outputUrl }, 'POST', false, result, { 'hkp-runtime-topic': outputTopic });
+        } catch(err) {
+          console.error('Could not send result to runtime output', outputUrl, runtime.id);
+        }
         return; // runtimes with outputs are not further processed as well
       }
     }
@@ -446,8 +450,12 @@ export default class Playground extends Component {
       secureConnection
     );
     this.externalInputs[runtimeId] = ws;
-    await ws.open(inputUrl);
-    ws.send({ topic: inputTopic });
+    try {
+      await ws.open({ absolute: inputUrl });
+      ws.send({ topic: inputTopic });
+    } catch(err) {
+      console.error('Playground.connectRoutingInput() could not connect to runtime input', inputUrl, runtimeId);
+    }
   }
 
   renderRuntimes = boardContext => {

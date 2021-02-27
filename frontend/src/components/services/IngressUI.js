@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import {
-  Checkbox
+  Checkbox,
 } from 'semantic-ui-react';
 
 import InputField from '../../components/shared/InputField';
@@ -24,6 +24,7 @@ export default class IngressUI extends Component {
     const active = conf && conf.active;
     const redirect = conf && conf.redirect;
     const wrapHeaders = conf && conf.wrapHeaders;
+    const url = conf && conf.url;
     this.setState({
       op: op || 'GET',
       path: path || '',
@@ -32,12 +33,16 @@ export default class IngressUI extends Component {
       },
       active,
       redirect: redirect || '',
-      wrapHeaders
+      wrapHeaders,
+      url
     });
   }
 
   onNotification = (service, notification) => {
-    console.log('Ingress received a notification', notification);
+    const { url } = notification;
+    if (url !== undefined) {
+      this.setState({ url });
+    } 
   }
 
   renderMain = service => {
@@ -45,11 +50,13 @@ export default class IngressUI extends Component {
     const { 
       op,
       path,
-      redirect,
+      //redirect,
       active,
-      wrapHeaders
+      wrapHeaders,
+      url
     } = this.state;
 
+    const { protocol, host } = window.location;
     return (
       <div 
         style={{ 
@@ -77,6 +84,8 @@ export default class IngressUI extends Component {
               this.setState({ path: value, active: false })
             }
           />
+          {
+          /*
           <InputField
             label="Redirect"
             value={redirect}
@@ -84,9 +93,11 @@ export default class IngressUI extends Component {
               this.setState({ redirect: value, active: false })
             }
           />
+          */ 
+          }
           <div 
             style={{ 
-              marginTop: 10,
+              marginTop: 2,
               textAlign: 'left' 
             }}
           >
@@ -118,7 +129,7 @@ export default class IngressUI extends Component {
             />
           </div>
           {
-            active && op === 'GET' &&  (
+            active && op === 'GET' ?  (
               <a
                 href={`/api/${userId}/${service.board}/${this.state.path}?key=value`}
                 target="blank"
@@ -129,6 +140,12 @@ export default class IngressUI extends Component {
               >
                 Click to test
               </a>
+            ) : (
+              url && (
+                <div style={s(t.fs11, t.mt2, { userSelect: 'text', textAlign: 'left' })}>
+                  { `${protocol}://${host}/api${url}` }
+                </div>
+              )
             )
         }
         </div>     

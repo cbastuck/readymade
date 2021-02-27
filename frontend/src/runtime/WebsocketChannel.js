@@ -16,7 +16,8 @@ export default class WebsocketChannel {
       }
       this.pendingOpenPromise = { resolve, reject };
       const protocol = this.secureConnection ? 'wss' : 'ws';
-      this.websocket = new WebSocket(`${protocol}://${url}`, restoreToken());
+      const full = url.absolute ? url.absolute : `${protocol}://${url}`;
+      this.websocket = new WebSocket(full, restoreToken());
       this.websocket.binaryType = 'arraybuffer';
       this.websocket.onmessage = this.onMessage;
       this.websocket.onclose = this.onClose;

@@ -45,10 +45,11 @@ export default class BoardRouting extends Component {
     const { onChange } = this.props;
     const style = s(t.fs12, t.ls1, t.uc)
     return (
-      <div style={s(style, { display: 'flex', flexDirection: 'column', width: '50%' })}>
+      <div style={s(style, { display: 'flex', flexDirection: 'column', width: '93%' })}>
         <div style={s(t.mb5, t.fs11, t.bold)}>Board Routing</div>
         <div style={{ display: 'flex', flexDirection: 'row' }}>
           <InputField
+            style={t.w100}
             label="Input URL"
             value={inputUrl}
             onChange={(ev, { value: inputUrl }) => 
@@ -59,6 +60,7 @@ export default class BoardRouting extends Component {
             }
           />
           <InputField
+            style={t.w100}
             label="Input Topic"
             value={inputTopic}
             onChange={(ev, { value: inputTopic }) => 
