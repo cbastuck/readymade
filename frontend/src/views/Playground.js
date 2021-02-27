@@ -431,7 +431,6 @@ export default class Playground extends Component {
           return;
         }
         const { action } = params;
-        console.log('RUNTIME RECEIVED ', runtimeId, params,  action)
         if (action) {
           if (action === 'process') { // only inject process actions from another runtime
             rt.impl.onMessage(action);
