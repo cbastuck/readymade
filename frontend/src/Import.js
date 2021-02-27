@@ -4,7 +4,7 @@ import queryString from 'query-string';
 
 import { AppConsumer } from './AppContext';
 import BoardContext from './BoardContext';
-import BrowserRuntime from './runtime/BrowserRuntime';
+import BrowserRegistry from './runtime/BrowserRegistry';
 import {
   loadBoard,
   clearBoard,
@@ -38,7 +38,8 @@ export default class Import extends Component {
           // POST/PUT endpoint to set the registry for an existing runtime
           if (!rt.params.registry) {
             const { bundles=[] } = rt.params;
-            rt.params.registry = await BrowserRuntime.registry(context.user, bundles);
+            const browserRegistry = await BrowserRegistry.create(bundles, context.user); 
+            rt.params.registry = browserRegistry.availableServices
           }
           
           if (rt.params.leaveOwnership !== true) {

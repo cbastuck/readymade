@@ -1,6 +1,13 @@
 import jwtDecode from 'jwt-decode';
 import moment from 'moment';
 
+import { 
+  setCookie, 
+  removeCookie,
+  storeItem,
+  restoreItem,
+} from './storage';
+
 export function validateToken(token) {
   if (!token || token === 'undefined') {
     return {};
@@ -25,11 +32,11 @@ export function getUserId() {
 }
 
 export function restoreToken() {
-  return localStorage.getItem('token');
+  return restoreItem('token');
 }
 
 export function setToken(value) {
-  localStorage.setItem('token', value);
+  storeItem('token', value);
   setCookie('token', value);
 }
 
@@ -39,17 +46,6 @@ export function removeToken() {
   removeCookie('_session');
 }
 
-function setCookie(key, value, expCount=undefined, expUnit=undefined) {
-  if (value) {
-    const exp = (expCount && expUnit) && moment.utc().add(expCount, expUnit).toString();
-    const cookie = `${key}=${value}; ${exp ? `expires=${exp}` : '' }`;
-    document.cookie = cookie;
-  }
-}
-
-function removeCookie(key) {
-  setCookie(key, "removed", -100, 'y');
-}
 
 export function processToken(incomingToken) {
   const { token, decoded } = validateToken(incomingToken);

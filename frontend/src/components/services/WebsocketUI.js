@@ -7,12 +7,12 @@ import ServiceUI from '../../runtime/services/ServiceUI';
 
 export default class WebsocketUI extends Component {
   state = {
-    name: '',
+    url: '',
   };
 
   onInit = initial => {
-    const { name='' } = initial;
-    this.setState({ name });
+    const { url='' } = initial;
+    this.setState({ url });
   }
 
   onNotification = (service, notification) => {
@@ -20,17 +20,13 @@ export default class WebsocketUI extends Component {
   }
 
   renderMain = service => {
-    const { name } = this.state;
+    const { url } = this.state;
     return (
       <div>
         <InputField
           type="text"
           label="Name"
-          value={name}
-          onChange={async (_, { value: name }) => {
-            await service.configure({ name });
-            this.setState({ name });
-          }}
+          value={url}
         />
       </div>
     );

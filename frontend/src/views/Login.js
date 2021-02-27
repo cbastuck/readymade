@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Icon } from 'semantic-ui-react';
 import qs from 'querystring';
 
+import { restoreItem } from '../core/storage';
 import { redirectUri } from '../core/actions';
 import { s, t } from '../styles';
 
@@ -68,9 +69,8 @@ export default class Login extends Component {
   }
 
   render() {
-    const { search='' } = window.location;
-    const parsed = qs.parse(search.substr(1));
-    return parsed.login ? 
+    const login = restoreItem('__allowlogin');
+    return login ? 
       this.renderOpenIdLogin() : 
       this.renderPlaceholder();
   }

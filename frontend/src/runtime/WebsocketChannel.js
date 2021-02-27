@@ -3,6 +3,7 @@ import { restoreToken } from '../core/Auth';
 
 export default class WebsocketChannel {
   constructor(websocketId, onAction, secureConnection) {
+    this.websocket = null;
     this.websocketId = websocketId;
     this.onAction = onAction;
     this.secureConnection = secureConnection;
@@ -26,13 +27,20 @@ export default class WebsocketChannel {
 
   close = () => {
     if (this.pendingOpenPromise) {
-      return false;
+      this.pendingOpenPromise.reject('Socket was closed during opening');
+      this.pendingOpenPromise = null;
     }
 
     if (this.websocket) {
       this.websocket.close();
+      this.websocket = null;
     }
-    return true;
+  }
+
+  send(data) {
+    if (this.websocket) {
+      this.websocket.send(JSON.stringify(data));
+    }
   }
 
   onError = error => {
@@ -44,7 +52,6 @@ export default class WebsocketChannel {
   };
 
   onOpen = event => {
-    console.log(`WebsocketChannel ${this.websocketId} is open`);
     if (this.pendingOpenPromise) {
       this.pendingOpenPromise.resolve();
       this.pendingOpenPromise = null;

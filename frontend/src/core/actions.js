@@ -19,13 +19,14 @@ export function generateQueryParams() {
   return `?share=${shareId}`;
 }
 
-export async function request(path, method='GET', parseJSON=true, body=undefined) {
+export async function request(path, method='GET', parseJSON=true, body=undefined, additionalHeaders={}) {
   const { 
     body: serialisedBody, 
     contentType
   } = await serializeObject(body);
 
   const headers = {
+    ...additionalHeaders,
     'Authorization': restoreToken() || '',
   };
   if (contentType && contentType !== 'multipart/form-data') {

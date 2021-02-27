@@ -6,13 +6,15 @@ import {
 import InputField from '../../components/shared/InputField';
 import SelectorField from '../../components/shared/SelectorField';
 import ServiceUI from '../../runtime/services/ServiceUI';
-// import { s, t } from '../../styles';
+import { s, t } from '../../styles';
 
 export default class IngressUI extends Component {
   state = {
     op: '',
     path: '',
-    redirect: ''
+    redirect: '',
+    active: false,
+    wrapHeaders: false
   };
 
   onInit = conf => {
@@ -21,6 +23,7 @@ export default class IngressUI extends Component {
     const query = conf && conf.selector && conf.selector.query;
     const active = conf && conf.active;
     const redirect = conf && conf.redirect;
+    const wrapHeaders = conf && conf.wrapHeaders;
     this.setState({
       op: op || 'GET',
       path: path || '',
@@ -29,6 +32,7 @@ export default class IngressUI extends Component {
       },
       active,
       redirect: redirect || '',
+      wrapHeaders
     });
   }
 
@@ -42,7 +46,8 @@ export default class IngressUI extends Component {
       op,
       path,
       redirect,
-      active
+      active,
+      wrapHeaders
     } = this.state;
 
     return (
@@ -72,26 +77,46 @@ export default class IngressUI extends Component {
               this.setState({ path: value, active: false })
             }
           />
-           <InputField
+          <InputField
             label="Redirect"
             value={redirect}
             onChange={(_, {value}) => 
               this.setState({ redirect: value, active: false })
             }
           />
-          <Checkbox
-            toggle
-            label="Active"
-            style={{ padding: '5px 5px' }}
-            onChange={async (_, { checked }) => {
-              this.setState(
-                { active: checked },
-                () => service.configure(this.state)
-              )
+          <div 
+            style={{ 
+              marginTop: 10,
+              textAlign: 'left' 
             }}
-            checked={this.state.active}
-            disabled={!this.state.op || !this.state.path}
-          />
+          >
+            <Checkbox
+              toggle
+              label="Wrap Headers"
+              style={s(t.uc, t.fs12, t.m(0, 3))}
+              onChange={async (_, { checked: wrapHeaders }) => {
+                this.setState(
+                  { wrapHeaders },
+                  () => service.configure({ wrapHeaders })
+                )
+              }}
+              checked={wrapHeaders}
+              disabled={!op || !path}
+            />
+            <Checkbox
+              toggle
+              label="Active"
+              style={s(t.uc, t.fs12, t.m(0, 3))}
+              onChange={async (_, { checked: active }) => {
+                this.setState(
+                  { active },
+                  () => service.configure(this.state)
+                )
+              }}
+              checked={active}
+              disabled={!op || !path}
+            />
+          </div>
           {
             active && op === 'GET' &&  (
               <a

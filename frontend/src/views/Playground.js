@@ -88,6 +88,10 @@ export default class Playground extends Component {
     }
   }
 
+  componentWillUnmount() {
+    this.clearPlayground();
+  }
+
   isInitialFetch = () => this.state.runtimes === undefined;
 
   fetchData = async () => {
@@ -124,7 +128,7 @@ export default class Playground extends Component {
     const queryParams = new URLSearchParams(document.location.search);
     const src = queryParams.get('src');
     if (src) {
-      this.importBoard(src)
+      return this.importBoard(src);
     }
   }
 
@@ -158,7 +162,7 @@ export default class Playground extends Component {
     }
   }
 
-  restoreBoard = name => {
+  restoreBoard = async name => {
     const storageName = name ? `hkp-playground-${name}` : 'hkp-playground';
     const data = localStorage.getItem(storageName);
     if (data) {
@@ -169,9 +173,9 @@ export default class Playground extends Component {
       const { boardRouting } = state || {};
       if (boardRouting) {
         for (const runtimeId in boardRouting) {
-          const { inputUrl } = boardRouting[runtimeId];
+          const { inputUrl, inputTopic } = boardRouting[runtimeId];
           if (inputUrl) {
-            this.connectRoutingInput(runtimeId, inputUrl);
+            await this.connectRoutingInput(runtimeId, inputUrl, inputTopic);
           }
         }
       }
@@ -320,6 +324,11 @@ export default class Playground extends Component {
     for (const runtime of runtimes) {
       await this.destroyRuntime(runtime);
     }
+
+    for (const ext of Object.keys(this.externalInputs)) {
+      this.externalInputs[ext].close();
+    }
+    this.externalInputs = [];
     this.setState({ services: {}, runtimes: [] });
   }
 
@@ -363,10 +372,10 @@ export default class Playground extends Component {
 
     const broute = boardRouting && boardRouting[runtime.id];
     if (broute) {
-      const { outputUrl } = broute;
+      const { outputUrl, outputTopic } = broute;
       if (outputUrl) {
         // TODO: URL is relative to /api
-        await request(outputUrl, 'POST', false, result);
+        await request(outputUrl, 'POST', false, result, { 'hkp-runtime-topic': outputTopic });
         return; // runtimes with outputs are not further processed as well
       }
     }
@@ -405,7 +414,12 @@ export default class Playground extends Component {
     return savedBoards;
   }
 
-  connectRoutingInput = (runtimeId, inputUrl) => {  
+  connectRoutingInput = async (runtimeId, inputUrl, inputTopic) => {
+    if (this.externalInputs[runtimeId]) {
+      // close an existing connection if it exists
+      this.externalInputs[runtimeId].close();
+      delete this.externalInputs[runtimeId];
+    }
     const { protocol } = window.location;
     const secureConnection = protocol.indexOf('https') === 0;
     const ws = new WebsocketChannel(
@@ -417,6 +431,7 @@ export default class Playground extends Component {
           return;
         }
         const { action } = params;
+        console.log('RUNTIME RECEIVED ', runtimeId, params,  action)
         if (action) {
           if (action === 'process') { // only inject process actions from another runtime
             rt.impl.onMessage(action);
@@ -426,14 +441,14 @@ export default class Playground extends Component {
             uuid: null,
             action: 'process',
             params
-          })
+          });
         }
-        
       },
       secureConnection
     );
     this.externalInputs[runtimeId] = ws;
-    return ws.open(inputUrl);
+    await ws.open(inputUrl);
+    ws.send({ topic: inputTopic });
   }
 
   renderRuntimes = boardContext => {
@@ -487,9 +502,9 @@ export default class Playground extends Component {
                             [runtime.id]: routing,
                           }
                         });
-                        const { inputUrl } = routing;
+                        const { inputUrl, inputTopic } = routing;
                         if (inputUrl) {
-                          this.connectRoutingInput(runtime.id, inputUrl);
+                          this.connectRoutingInput(runtime.id, inputUrl, inputTopic);
                         }
                       }}
                     />
