@@ -33,7 +33,8 @@
           "serviceName": "Websocket",
           "serviceId": "hookup.to/service/websocket",
           "name": "out",
-          "keepAlive": true
+          "keepAlive": true,
+          "isPublic": true
         }
       ]
     }

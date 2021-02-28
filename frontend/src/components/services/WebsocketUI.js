@@ -1,8 +1,8 @@
 import React, { Component } from 'react';
 
-import InputField from '../../components/shared/InputField';
+// import InputField from '../../components/shared/InputField';
 
-//import { s, t } from '../../styles';
+import { s, t } from '../../styles';
 import ServiceUI from '../../runtime/services/ServiceUI';
 
 export default class WebsocketUI extends Component {
@@ -23,14 +23,16 @@ export default class WebsocketUI extends Component {
     const { url } = this.state;
     const { protocol, host } = window.location;
     const wsProtocol = protocol.indexOf('https') === 0 ? 'wss' : 'ws';
-    const full = `${wsProtocol}://${host}/api${url}`;
+    const full = `${wsProtocol}://${host}${url}`;
     return (
       <div>
-        <InputField
-          type="text"
-          label="Url"
-          value={full}
-        />
+      {
+        url && (
+                <div style={s(t.fs11, t.mt2, { userSelect: 'text', textAlign: 'left' })}>
+                  { `${full}` }
+                </div>
+              )
+      }
       </div>
     );
   }

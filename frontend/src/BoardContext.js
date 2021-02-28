@@ -349,7 +349,8 @@ class BoardContext extends Component {
 
   removeRuntimeDefault = async runtime => {
     await this.removeAllServices(runtime);
-    await removeRuntime(runtime);
+    const boardName = this.getBoardName();
+    await removeRuntime(boardName, runtime);
     await this.fetchData();
   }
 

@@ -66,7 +66,7 @@ export function addRuntime(board, descriptor) {
 }
 
 export function removeRuntime(board, runtime) {
-  return request(`board/${board}/runtimes/${runtime.id}`, 'DELETE', true, runtime);
+  return request(`board/${board}/runtime/${runtime.id}`, 'DELETE', false);
 }
 
 export function getServices(board, runtime) {

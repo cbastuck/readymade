@@ -100,33 +100,37 @@ export default class IngressUI extends Component {
               marginTop: 2,
               textAlign: 'left' 
             }}
-          >
-            <Checkbox
-              toggle
-              label="Wrap Headers"
-              style={s(t.uc, t.fs12, t.m(0, 3))}
-              onChange={async (_, { checked: wrapHeaders }) => {
-                this.setState(
-                  { wrapHeaders },
-                  () => service.configure({ wrapHeaders })
-                )
-              }}
-              checked={wrapHeaders}
-              disabled={!op || !path}
-            />
-            <Checkbox
-              toggle
-              label="Active"
-              style={s(t.uc, t.fs12, t.m(0, 3))}
-              onChange={async (_, { checked: active }) => {
-                this.setState(
-                  { active },
-                  () => service.configure(this.state)
-                )
-              }}
-              checked={active}
-              disabled={!op || !path}
-            />
+          > 
+            <div>
+              <Checkbox
+                toggle
+                label="Wrap Headers"
+                style={s(t.uc, t.fs12, t.m(0, 3))}
+                onChange={async (_, { checked: wrapHeaders }) => {
+                  this.setState(
+                    { wrapHeaders },
+                    () => service.configure({ wrapHeaders })
+                  )
+                }}
+                checked={wrapHeaders}
+                disabled={!op || !path}
+              />
+            </div>
+            <div>
+              <Checkbox
+                toggle
+                label="Active"
+                style={s(t.uc, t.fs12, t.m(0, 3))}
+                onChange={async (_, { checked: active }) => {
+                  this.setState(
+                    { active },
+                    () => service.configure(this.state)
+                  )
+                }}
+                checked={active}
+                disabled={!op || !path}
+              />
+            </div>
           </div>
           {
             active && op === 'GET' ?  (
@@ -143,7 +147,7 @@ export default class IngressUI extends Component {
             ) : (
               url && (
                 <div style={s(t.fs11, t.mt2, { userSelect: 'text', textAlign: 'left' })}>
-                  { `${protocol}://${host}/api${url}` }
+                  { `${protocol}//${host}${url}` }
                 </div>
               )
             )
