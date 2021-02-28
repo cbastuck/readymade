@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 
-// import InputField from '../../components/shared/InputField';
+import { Checkbox } from 'semantic-ui-react';
 
 import { s, t } from '../../styles';
+import Copyable from '../Copyable';
 import ServiceUI from '../../runtime/services/ServiceUI';
 
 export default class WebsocketUI extends Component {
@@ -11,8 +12,11 @@ export default class WebsocketUI extends Component {
   };
 
   onInit = initial => {
-    const { url='' } = initial;
-    this.setState({ url });
+    const { 
+      url='',
+      isPublic=false
+    } = initial;
+    this.setState({ url, isPublic });
   }
 
   onNotification = (service, notification) => {
@@ -20,19 +24,35 @@ export default class WebsocketUI extends Component {
   }
 
   renderMain = service => {
-    const { url } = this.state;
+    const { 
+      url, 
+      isPublic 
+    } = this.state;
     const { protocol, host } = window.location;
     const wsProtocol = protocol.indexOf('https') === 0 ? 'wss' : 'ws';
     const full = `${wsProtocol}://${host}${url}`;
     return (
-      <div>
-      {
-        url && (
-                <div style={s(t.fs11, t.mt2, { userSelect: 'text', textAlign: 'left' })}>
-                  { `${full}` }
-                </div>
-              )
-      }
+      <div style={{ textAlign: 'left' }}>
+        <Checkbox
+          toggle
+          label="Public"
+          style={s(t.uc, t.fs12, t.m(0, 3))}
+          onChange={async (_, { checked: isPublic }) => {
+            this.setState(
+              { isPublic },
+              () => service.configure({ isPublic })
+            )
+          }}
+          checked={isPublic}
+        />
+        {
+          url && (
+            <Copyable 
+              label="URL"
+              value={full}
+            />
+          )
+        }
       </div>
     );
   }

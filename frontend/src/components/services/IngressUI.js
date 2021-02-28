@@ -3,6 +3,7 @@ import {
   Checkbox,
 } from 'semantic-ui-react';
 
+import Copyable from '../../components/Copyable';
 import InputField from '../../components/shared/InputField';
 import SelectorField from '../../components/shared/SelectorField';
 import ServiceUI from '../../runtime/services/ServiceUI';
@@ -146,9 +147,10 @@ export default class IngressUI extends Component {
               </a>
             ) : (
               url && (
-                <div style={s(t.fs11, t.mt2, { userSelect: 'text', textAlign: 'left' })}>
-                  { `${protocol}//${host}${url}` }
-                </div>
+                <Copyable 
+                  label="URL"
+                  value={`${protocol}//${host}${url}`}
+                />
               )
             )
         }
