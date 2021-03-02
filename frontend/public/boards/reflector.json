@@ -15,7 +15,8 @@
           "path": "in",
           "op": "POST",
           "active": true,
-          "wrapHeaders": true
+          "wrapHeaders": true,
+          "isPublic": false
         },
         {
           "serviceName": "Map",

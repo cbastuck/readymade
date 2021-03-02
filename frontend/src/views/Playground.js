@@ -123,7 +123,7 @@ export default class Playground extends Component {
   setInitialPlayground = () => {
     const { board } = this.props.match.params;
     if (board) {
-      return this.restoreBoard(board);
+      return this.restoreBoardFromLocalStorage(board);
     } 
     const queryParams = new URLSearchParams(document.location.search);
     const src = queryParams.get('src');
@@ -162,24 +162,30 @@ export default class Playground extends Component {
     }
   }
 
-  restoreBoard = async name => {
+  restoreBoardFromLocalStorage = name => {
     const storageName = name ? `hkp-playground-${name}` : 'hkp-playground';
     const data = localStorage.getItem(storageName);
     if (data) {
-      const state = JSON.parse(data);
-      this.setState(state);
-      
-      // Restore input board routings
-      const { boardRouting } = state || {};
-      if (boardRouting) {
-        for (const runtimeId in boardRouting) {
-          const { inputUrl, inputTopic } = boardRouting[runtimeId];
-          if (inputUrl) {
-            await this.connectRoutingInput(runtimeId, inputUrl, inputTopic);
-          }
+      return this.restoreBoard(data);
+    } 
+  }
+
+  restoreBoard = async objOrString => {
+    const state = typeof objOrString === 'string' ? 
+      JSON.parse(objOrString) : 
+      objOrString;
+    this.setState(state);
+    
+    // Restore input board routings
+    const { boardRouting } = state || {};
+    if (boardRouting) {
+      for (const runtimeId in boardRouting) {
+        const { inputUrl, inputTopic } = boardRouting[runtimeId];
+        if (inputUrl) {
+          await this.connectRoutingInput(runtimeId, inputUrl, inputTopic);
         }
       }
-    } 
+    }
   }
 
   storeBoard = name => {
@@ -644,6 +650,7 @@ export default class Playground extends Component {
         newBoard={this.newBoard}
         clearBoard={this.clearPlayground}
         saveBoard={this.saveBoard}
+        shareBoard={this.shareBoard}
         arrangeService={this.arrangeService}
         isActionAvailable={this.isActionAvailable}
       >

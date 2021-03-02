@@ -15,7 +15,8 @@ export default class IngressUI extends Component {
     path: '',
     redirect: '',
     active: false,
-    wrapHeaders: false
+    wrapHeaders: false,
+    isPublic: false
   };
 
   onInit = conf => {
@@ -26,6 +27,7 @@ export default class IngressUI extends Component {
     const redirect = conf && conf.redirect;
     const wrapHeaders = conf && conf.wrapHeaders;
     const url = conf && conf.url;
+    const isPublic = conf && conf.isPublic;
     this.setState({
       op: op || 'GET',
       path: path || '',
@@ -35,15 +37,22 @@ export default class IngressUI extends Component {
       active,
       redirect: redirect || '',
       wrapHeaders,
-      url
+      url, 
+      isPublic
     });
   }
 
   onNotification = (service, notification) => {
-    const { url } = notification;
+    const { 
+      url,
+      isPublic
+    } = notification;
     if (url !== undefined) {
       this.setState({ url });
-    } 
+    }
+    if (isPublic !== undefined) {
+      this.setState({ isPublic });
+    }
   }
 
   renderMain = service => {
@@ -54,7 +63,8 @@ export default class IngressUI extends Component {
       //redirect,
       active,
       wrapHeaders,
-      url
+      url,
+      isPublic
     } = this.state;
 
     const { protocol, host } = window.location;
@@ -114,6 +124,21 @@ export default class IngressUI extends Component {
                   )
                 }}
                 checked={wrapHeaders}
+                disabled={!op || !path}
+              />
+            </div>
+            <div>
+              <Checkbox
+                toggle
+                label="Public"
+                style={s(t.uc, t.fs12, t.m(0, 3))}
+                onChange={async (_, { checked: isPublic }) => {
+                  this.setState(
+                    { isPublic },
+                    () => service.configure(this.state)
+                  )
+                }}
+                checked={isPublic}
                 disabled={!op || !path}
               />
             </div>

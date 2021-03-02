@@ -20,7 +20,10 @@ export default class WebsocketUI extends Component {
   }
 
   onNotification = (service, notification) => {
-    console.log('On Notification ', notification)
+    const { isPublic } = notification;
+    if (isPublic !== undefined) {
+      this.setState({ isPublic });
+    }
   }
 
   renderMain = service => {
