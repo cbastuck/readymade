@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, Button } from 'semantic-ui-react';
-import { generate } from 'unique-names-generator';
+import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
 
 import { redirectTo, request } from '../core/actions';
@@ -121,11 +121,17 @@ export default class Playground extends Component {
   }
 
   setInitialPlayground = () => {
+    const queryParams = new URLSearchParams(document.location.search);
     const { board } = this.props.match.params;
     if (board) {
-      return this.restoreBoardFromLocalStorage(board);
+      const template = queryParams.get('template');
+      if (template) {
+        return this.createBoardFromTemplate(template);
+      } else {
+        return this.restoreBoardFromLocalStorage(board);
+      }
     } 
-    const queryParams = new URLSearchParams(document.location.search);
+    
     const src = queryParams.get('src');
     if (src) {
       return this.importBoard(src);
@@ -159,6 +165,41 @@ export default class Playground extends Component {
       });
     } catch (err) {
       console.log('Import failed', err, url)
+    }
+  }
+
+  createBoardFromTemplate = async name => {
+    const resp = await fetch(`/boards/templates/${name}.json`);
+    if (resp && resp.ok) {
+      try {
+        const template = await resp.json();
+        const { 
+          runtimes, 
+          services, 
+          sidechainRouting, 
+          boardRouting 
+        } = template;
+        const patchedRuntimes = runtimes.map(rt => ({
+          ...rt, id: uuid.v4() 
+        }));
+        return this.restoreBoard({ 
+          runtimes: patchedRuntimes,
+          services: patchedRuntimes.reduce(
+            (all, rt, idx) => ({ ...all, [rt.id]: services[runtimes[idx].id] }),
+            {}
+          ),
+          sidechainRouting: patchedRuntimes.reduce(
+            (all, rt, idx) => ({ ...all, [rt.id]: sidechainRouting[runtimes[idx].id] }),
+            {}
+          ),
+          boardRouting: patchedRuntimes.reduce(
+            (all, rt, idx) => ({ ...all, [rt.id]: boardRouting[runtimes[idx].id] }),
+            {}
+          ),
+        });
+      } catch (err) {
+        console.error('Creating from template failed', name);
+      }      
     }
   }
 
@@ -604,6 +645,14 @@ export default class Playground extends Component {
                       </span>
                     ))
                   }
+                  </div>
+                  <div style={t.m(0, 10)}>
+                  Or create from a template:
+                    <div>
+                      <Link to={`/playground/${generateRandomName()}?template=reflected`}>
+                        Receiver
+                      </Link>
+                    </div>
                   </div>
                 </div>
             )

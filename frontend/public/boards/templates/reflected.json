@@ -1,0 +1,28 @@
+{
+  "runtimes": [
+    {
+      "id": "RT1",
+      "name": "Reflected",
+      "type": "browser"
+    }
+  ],
+  "services": {
+    "RT1": [
+      {
+        "enabled": true,
+        "logToConsole": false,
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  },
+  "sidechainRouting": {},
+  "boardRouting": {
+    "RT1": {
+      "inputUrl": "ws://localhost/api/1/reflector/runtime/0f4dfa37-ac5c-4a50-8abf-a7ded3f7f620/out",
+      "inputTopic": "secret-key",
+      "outputUrl": "",
+      "outputTopic": ""
+    }
+  }
+}

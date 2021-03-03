@@ -1,11 +1,13 @@
 import React, { Component } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   Button,
   Card,
   Image,
   Breadcrumb,
-} from 'semantic-ui-react'
+} from 'semantic-ui-react';
 
+import { s, t } from '../../styles';
 import { AppConsumer } from '../../AppContext';
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
@@ -128,7 +130,12 @@ export default class MyBoards extends Component {
                     <Toolbar 
                       onAction={boardContext.onAction}
                     />
-                    { this.renderMyBoardsContainer(appContext.user) }               
+                    { this.renderMyBoardsContainer(appContext.user) }
+                    <div 
+                      style={s(t.uc, t.fs11, t.ls1, t.m(15, 20))}
+                    >
+                      Alternatively sketch ideas on <Link to="/playground">Playground</Link>
+                    </div>
                   </div>
                 )
               }

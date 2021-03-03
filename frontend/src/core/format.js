@@ -5,6 +5,13 @@ export async function serializeObject(body) {
       body: undefined,
     };
   }
+
+  if (typeof body === 'string') {
+    return {
+      contentType: 'text/plain',
+      body,
+    }
+  }
   
   if (body instanceof Blob) {
     return {
