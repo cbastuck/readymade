@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import EventSource from 'eventsource';
-import { decode } from 'base64-arraybuffer';
+// TODO: remove dependency if not needed anymore (double check commented out code)
+// import { decode } from 'base64-arraybuffer';
 
 import { request } from '../core/actions';
 import { parseResponse } from './MultiformParser';
@@ -264,13 +265,17 @@ export default class BrowserRuntime extends Component {
       return console.error(`Could not find browser service to process: ${uuid} in ${JSON.stringify(services)}`);
     }
     
+    // TODO: this is not true since a long time, right?  
     // if it's not an object it's a binary buffer base64 encoded
+    /*
     const data = typeof params === 'string' ?
       new Blob(
         [decode(params)], 
         { type: 'application/octet-binary' }
       ) :
       params;
+      */
+    const data = params;
 
     const service = services[position];
     if (service) {

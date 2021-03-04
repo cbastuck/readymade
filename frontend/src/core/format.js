@@ -10,7 +10,7 @@ export async function serializeObject(body) {
     return {
       contentType: 'text/plain',
       body,
-    }
+    };
   }
   
   if (body instanceof Blob) {
