@@ -2,18 +2,18 @@ import React, { Component } from 'react';
 
 import ReferenceTemplate from './ReferenceTemplate';
 
-import { t } from '../styles';
+import { s, t } from '../styles';
 
 export default class DataModelReference extends Component {
   renderProp = (key, decription) => {
     return (
       <div key={`datamodel-property-${key}`}>
-        <span>
+        <span style={{ color: '#4183c4' }}>
           { key }
         </span> 
         : 
-        <span>
-          { decription }
+        <span style={t.uc}>
+          {` ${decription}`}
         </span>
       </div>
     );
@@ -25,8 +25,11 @@ export default class DataModelReference extends Component {
     }  
     const { properties } = data; 
     return (
-      <div style={t.fill}>
+      <div style={s(t.tl, t.fs13)}>
+        Properties of the data-model: <span style={t.bold}>{name}</span>
+        <div style={s(t.fill, t.fs12, t.nc, t.m(0, 10))}>
         { Object.keys(properties).map(key => this.renderProp(key, properties[key])) }
+        </div>
       </div>
     );
   }

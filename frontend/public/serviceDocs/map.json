@@ -42,7 +42,7 @@
     {
       "type": "todo",
       "brief": "Nesting",
-      "description": "Currently nested data structures are not supported for selection and manipulation."
+      "description": "Nesting works but must be documented (hint: use dot notation on key)"
     }
   ],
   "versions": []

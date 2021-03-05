@@ -58,9 +58,13 @@ export default class ServiceReference extends Component {
       <div>
         <h1 style={s(t.ul, t.fs12)}>{item.brief}</h1>
         <div> {item.description} </div>
-        <div style={t.right}>
-          <Button style={s(t.uc, t.ls1, t.fs11)}> Show Task </Button>
-        </div>
+        {
+          /*
+          <div style={t.right}>
+            <Button style={s(t.uc, t.ls1, t.fs11)}> Show Task </Button>
+          </div>
+          */
+        }
       </div>
     );
   }
@@ -186,7 +190,7 @@ export default class ServiceReference extends Component {
           { this.renderParagraphs(service, data.inputs) }
           { this.renderHeadline("output") }
           { this.renderParagraphs(service, data.outputs) }
-          { this.renderHeadline("open issues") }
+          { this.renderHeadline("state of progress") }
           { this.renderParagraphs(service, data.todos) }
         </div>
       </div>
@@ -230,10 +234,13 @@ export default class ServiceReference extends Component {
         <h1 style={headlineStyle}>About this documentation</h1>
         <div style={s(t.m10, t.uc, t.ls1, { marginBottom: 20 })}>
           <div>
-            The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{name}</span> service in different configurations and inject input data. The
+            The following sandbox allows you to try the <span style={{color: '#4284C4' }}>{service}</span> service in different configurations and inject input data. The
           </div>
           <div>
             The monitor service at the output shows how the injected data is processed.
+          </div>
+          <div style={t.m(0, 10)}>
+            So start playing with the service in the middle to get a feel for it.
           </div>
         </div>
         <h1 style={headlineStyle}>{name}-service in Action</h1>

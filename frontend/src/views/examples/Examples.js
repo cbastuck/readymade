@@ -19,6 +19,12 @@ import { s, t } from '../../styles';
 
 import examples from './ExamplesData';
 
+function assureArray(stringOrArray) {
+  return Array.isArray(stringOrArray) ? 
+    stringOrArray :
+    [stringOrArray];
+}
+
 function* tokenize(str) {
   if (!str) {
     return '';
@@ -28,7 +34,8 @@ function* tokenize(str) {
   while (spos < str.length) {
     const begin = str.indexOf('[', spos);
     if (begin === -1) {
-      return str.substr(spos);
+      yield str.substr(spos);
+      return;
     }
 
     if (begin > spos) {
@@ -48,7 +55,8 @@ function* tokenize(str) {
         }
       }
     } else { // syntax error: closing bracket missing
-      return str.substr(spos);
+      yield str.substr(spos);
+      return;
     }
     spos = end + 1;
   }
@@ -224,27 +232,33 @@ export default class Examples extends Component {
     return (
       <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10), t.lh1_5)}>
         {
-          Array.from(tokenize(explanation)).map((p, idx) => 
-              typeof p === 'string' ? (
-                <span 
-                  key={`example-explanation-part-${idx}`}
-                > 
-                  { p } 
-                </span>
-              ) : (
-                <span
-                  key={`example-explanation-part-${idx}`} 
-                  style={{ 
-                    color: '#4183c4', 
-                    cursor: 'pointer',
-                    fontStyle: 'italic',
-                  }}
-                  onClick={() => this.setState({ modalReferenceDatamodel: p })}
-                > 
-                  { ` ${p.name} ` }
-                </span>
+          assureArray(explanation).map(exp =>
+            <div style={t.mt5}> 
+            {
+              Array.from(tokenize(exp)).map((p, idx) => 
+                typeof p === 'string' ? (
+                  <span 
+                    key={`example-explanation-part-${idx}`}
+                  > 
+                    { p } 
+                  </span>
+                ) : (
+                  <span
+                    key={`example-explanation-part-${idx}`} 
+                    style={{ 
+                      color: '#4183c4', 
+                      cursor: 'pointer',
+                      fontStyle: 'italic',
+                    }}
+                    onClick={() => this.setState({ modalReferenceDatamodel: p })}
+                  > 
+                    { ` ${p.name} ` }
+                  </span>
+                )
               )
-          ) 
+            }
+            </div>
+          )
         }
         <Modal
           title={title}

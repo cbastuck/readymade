@@ -24,7 +24,9 @@ export default class DataModelReferenceView extends Component {
                     <Toolbar 
                       onAction={boardContext.onAction}
                     />
-                    <DataModelReference name={name} />
+                    <div style={{ marginTop: 20, padding: 10 }}>
+                      <DataModelReference datamodel={name} name={name} />
+                    </div>
                   </div>
                 )
               }

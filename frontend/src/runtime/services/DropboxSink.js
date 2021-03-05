@@ -8,6 +8,7 @@ import ServiceUI from './ServiceUI';
 import Dropbox from './Dropbox';
 import MessageReceiver from '../../MessageReceiver';
 import InputField from '../../components/shared/InputField';
+import { s, t } from '../../styles';
 
 const serviceId = 'hookup.to/service/dropbox-sink';
 const serviceName = 'Dropbox Sink';
@@ -65,7 +66,7 @@ class DropboxSinkUI extends Component {
           style={{ 
             width: '100%', 
             textTransform: 'uppercase', 
-            fontSize: 11 
+            fontSize: 12 
           }}
           onClick={() => this.onLogin(service)}
         >
@@ -80,29 +81,13 @@ class DropboxSinkUI extends Component {
       <div>
         <div
           style={{
-            margin: '10px 0px',
             textTransform: 'uppercase', 
             fontSize: 12,
             textAlign: 'left',
+            marginBottom: 5,
           }}
         >
-          User: { this.state.user.email }
-        </div>
-        <div
-          style={{
-            textAlign: 'left'
-          }}
-        >
-          <Checkbox
-            label="Upload Incoming"
-            checked={this.state.active}
-            onChange={(_, {checked}) => 
-              this.setState(
-                { active: checked }, 
-                () => service.uploadActive = checked
-              )
-            }
-          />
+          Login: { this.state.user.email }
         </div>
         <InputField
           label="filename"
@@ -113,15 +98,47 @@ class DropboxSinkUI extends Component {
             this.setState({ uploadFilename: value });
           }}
         />
-        <div>
-          <Button 
-            style={{ width: '100%' }}
-            onClick={() => service.finishUpload()}
-            disabled={!this.state.asyncUploadRunning}
-          >
-            Finish
-          </Button>
+        <div
+          style={s(
+            { textAlign: 'left' },
+            t.uc, t.ls1, t.mt5
+          )}
+        >
+          <Checkbox
+            style={t.fs12}
+            toggle
+            label="Upload Incoming"
+            checked={this.state.active}
+            onChange={(_, {checked}) => 
+              this.setState(
+                { active: checked }, 
+                () => service.uploadActive = checked
+              )
+            }
+          />
         </div>
+        {
+          this.state.asyncUploadRunning && (
+            <div>
+              <Button 
+                style={s({ width: '100%'} , t.uc, t.ls1, t.fs12, t.mt5)}
+                onClick={() => service.finishUpload()}
+              >
+                Finish
+              </Button>
+            </div>
+          )
+        }
+        <Button
+          style={s({ width: '100%'} , t.mt5,  t.uc, t.ls1, t.fs12)}
+          onClick={async () => {
+            await service.logout();
+            this.setState({ user: null });
+          }}
+        >
+          Logout
+        </Button>
+
       </div>
     );
   }

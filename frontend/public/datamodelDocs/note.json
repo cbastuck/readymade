@@ -1,0 +1,6 @@
+{
+  "properties": {
+    "note": "Pitch of the note event, e.g. C4",
+    "duration": "e.g. 4n"
+  }
+}

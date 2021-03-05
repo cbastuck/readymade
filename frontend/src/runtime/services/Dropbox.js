@@ -45,6 +45,14 @@ export default class Dropbox {
     }
   }
 
+  async logout() {
+    this.app.removeServiceData(this.uuid, 'accessToken');
+    if (this.dbx) {
+      await this.dbx.authTokenRevoke();
+      this.dbx = undefined;
+    }
+  }
+
   getAuthUrl(state) {
     return this.dbx.getAuthenticationUrl(redirectURI, state);
   }

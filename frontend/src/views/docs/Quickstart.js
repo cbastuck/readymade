@@ -127,28 +127,31 @@ export default class Quickstart extends Component {
         <h2 style={{ ...sectionStyle, marginTop: 30, marginBottom: 20 }}>Stuff to know about</h2>
         <div style={s(t.uc, t.fs12, t.ls2, { textAlign: 'left' })}>
           <div style={{ marginBottom: 10 }}>
-            There are three "things" you need to know about. They are
-            the basic building blocks that enable you to experiment with data and services: Board, Runtime, Service.
+            There are three "things" you need to know. 
+            They are the basic building blocks that enable experiments: 
+            <div style={s(t.bold, t.m(5, 0))}>
+              Board, Runtime and Service
+            </div>
           </div>
           <div style={{ padding: '8px 0px' }}>
             <Sketch />
           </div>
           <div>
             Think of a Board as a sheet of paper. Then, a Runtime is a single line on that paper and the Services are the words of a line. 
-            Together the blocks create a behavior. For the analogy compare this to the story a written text on a sheet of paper could tell.
+            Together the blocks tell a story or they create behavior.
           </div>
           <Item.Group link>
           { 
               this.renderGroupItem({
                 title: 'Board',
                 details: [
-                  'A Board is the topmost building block. Everything happens on a Board',
+                  'A Board is the topmost building block. Everything happens on a board',
                   'A Board is identified by a name',
-                  'A Board owns and manages an arbitrary number of Runtimes',
-                  'A Board can run inside of the browser, independent of a backend (Playground for example)',
-                  'A Board can be managed by a remote machine which persists its state and requires the notion of a user',                  
-                  'A Board defines the topology of the Runtimes: how they are organized and their order',
-                  'A Board is responsible for passing the output of a Runtime to the next Runtime',
+                  'A Board owns and manages an arbitrary number of runtimes',
+                  'A Board can run inside of the browser independently of a backend (Playground for example)',
+                  'A Board can also be managed by a remote backend which persists its state and requires the notion of a user',                  
+                  'A Board defines the topology of the runtimes: how they are organized and their order',
+                  'A Board is responsible for passing the output of a runtime to the next runtime',
                 ],
                 image: undefined,
                 bottomDivider: true
@@ -159,13 +162,13 @@ export default class Quickstart extends Component {
                 title: 'Runtime',
                 details: [
                   'A Runtime belongs to exactly one board',
-                  'A Runtime\'s lifetime ends with the lifetime of its parent Board',
+                  'A Runtime\'s lifetime ends with the lifetime of its parent board',
                   'A Runtime can run inside of the browser or on a remote machine',
-                  'Runtimes running in the browser can be mixed with remote runtimes on a Board',
+                  'Runtimes running in the browser can be mixed with remote runtimes on a single board',
                   'A Runtime owns and manages an arbitrary number of services',
-                  'A Runtime accepts data on its input, passes the data to its Services',
-                  'A Runtime provides the result of the last Service as its output',
-                  'A Runtime calls services in order from left to right propagating the incoming or previous service\'s data',
+                  'A Runtime accepts data on its input and passes it to its services',
+                  'A Runtime provides the result of the last service as its output',
+                  'A Runtime calls services in order from left to right propagating the incoming data',
                 ],
                 image: undefined, 
                 bottomDivider: true,
@@ -177,12 +180,12 @@ export default class Quickstart extends Component {
                 details: [
                   'Services are high level abstractions of complex logic',
                   'Services are supposed to feel simple and intuitive',
-                  'Services have an input and an output (JSON objects)',
+                  'Services have an input and an output',
                   'Services have a configuration that can be modified or retrieved at any time',
-                  'A Service configuration defines the mode of a Service',
+                  'A Service configuration defines the mode of a service',
                   'A Service behaves differently depending on its configuration',
                   'A Service can generate data spontaneously and thus trigger a chain reaction',
-                  'A Service can decide to stop further propagation and cancel further processing',
+                  'A Service can decide to stop further propagation',
                 ],
                 image: undefined,
               }) 
