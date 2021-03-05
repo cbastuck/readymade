@@ -243,7 +243,7 @@
             },
             {
               "type": "text",
-              "text": "Variance supports its evolution.",
+              "text": "Variance supports the evolution.",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
@@ -378,7 +378,7 @@
             {
               "type": "text",
               "id": "message",
-              "text": "variety explores the space",
+              "text": "variety explores spaces",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
