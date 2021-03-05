@@ -255,13 +255,13 @@ class Camera {
 
   registerUI(ui) {
     if (ui) {
-      this.ui = ui;
+      this._ui = ui;
     }
   }
 
   async process(params) {
-    if (this.ui) {
-      const image = await this.ui.triggerScreenshot();
+    if (this._ui) {
+      const image = await this._ui.triggerScreenshot();
       return this.captureAs ? 
         { 
           ...params, 
