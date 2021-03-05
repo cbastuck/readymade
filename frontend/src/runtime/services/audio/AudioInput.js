@@ -12,7 +12,7 @@ import HoldableButton from '../../../components/shared/HoldableButton';
 
 import { s, t } from '../../../styles';
 
-const serviceId = 'hookup.to/service/microphone'; // TODO: change to audio-input
+const serviceId = 'hookup.to/service/audio-input';
 const serviceName = 'Audio Input';
 
 class AudioInputUI extends Component {
@@ -37,11 +37,13 @@ class AudioInputUI extends Component {
     const { 
       isRecording=this.state.recording, 
       timeslice=this.state.timeslice,
+      availableDevices=this.state.devices
     } = notification;
 
     this.setState({ 
       recording: isRecording,
       timeslice: timeslice,
+      devices: availableDevices
     });
   }
 
@@ -69,7 +71,7 @@ class AudioInputUI extends Component {
                 }}
                 onClick={async () => {
                   await service.configure({ device });
-                  this.reInitVisualizer(service.stream);
+                  this.reInitVisualizer(service._stream);
                 }}
               >
                 Activate
@@ -127,7 +129,7 @@ class AudioInputUI extends Component {
              onChange={async (_, { checked }) => {
                 this.setState(
                   { visualize: checked },
-                  () => this.visualize(service.stream)
+                  () => this.visualize(service._stream)
                 );
              }}
             toggle
@@ -259,7 +261,7 @@ class AudioInput {
     this.recorder = undefined;
     this.isRecording = false;
     this.timeslice = 1000;
-    this.stream = undefined;
+    this._stream = undefined;
 
     this.prepareStream();
   }
@@ -281,10 +283,10 @@ class AudioInput {
   }
 
   async prepareStream(device) {
-    if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange) {
+    if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange !== undefined) {
       const updateDeviceList = async () => {
-        // TODO: send notification to UI
         this.availableDevices = await navigator.mediaDevices.enumerateDevices();
+        this.app.notify(this, { availableDevices: this.availableDevices });
       }  
       navigator.mediaDevices.ondevicechange = updateDeviceList;
       await updateDeviceList();
@@ -292,19 +294,19 @@ class AudioInput {
 
     if (navigator.mediaDevices) {
       if (!device) {
-        this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        this._stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       } else {
-        this.stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: device.deviceId }} });
+        this._stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: device.deviceId }} });
       }
     }
     
-    return this.stream;
+    return this._stream;
   }
 
   async startRecorder(timeslice) {
     try {
       if (!this.recorder) {
-        this.recorder = new MediaRecorder(this.stream);
+        this.recorder = new MediaRecorder(this._stream);
         this.recorder.addEventListener(
           'dataavailable', 
           e => this.app.next(this, e.data)
@@ -321,8 +323,8 @@ class AudioInput {
   stopRecorder() {
     if (this.recorder) {
       this.recorder.stop();
-      //this.stream.getAudioTracks()[0].stop();
-      //this.stream = this.recorder = undefined;
+      //this._stream.getAudioTracks()[0].stop();
+      //this._stream = this.recorder = undefined;
       this.isRecording = false;
       this.app.notify(this, { isRecording: false });
     }

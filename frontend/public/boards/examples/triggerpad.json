@@ -6,7 +6,7 @@
     "services": [
       {
         "serviceName": "Audio Input",
-        "serviceId": "hookup.to/service/microphone",
+        "serviceId": "hookup.to/service/audio-input",
         "timeslice": 2000
       },
       {

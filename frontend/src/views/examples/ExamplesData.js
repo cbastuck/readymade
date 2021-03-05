@@ -29,8 +29,8 @@ export default [
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/dropbox.json',
     explanation: [
-      'Produce material for a stop motion video by periodically making photos and upload them automatically into your dropbox folder',
-      'Log into your dropbox using the and after you enable the upload, the captured images will appear in a hkp-db folder of you dropbox (no other content is accessible by this board).'
+      'Produce material for a stop motion video by periodically making photos and automatically uploading them into your dropbox',
+      'Log into your dropbox by pressing the "Login" button. After you enable the upload toggle, incoming images will appear in a hkp-db folder of you dropbox (no other content is accessible by this board).'
     ]
   },
   {
@@ -38,7 +38,11 @@ export default [
     brief: 'Control the output',
     description: 'Record sounds in your environment, put them on a launchpad and start playing with them',
     image: '/assets/shutterstock_1196210650.png',
-    url: '/boards/examples/triggerpad.json'
+    url: '/boards/examples/triggerpad.json',
+    explanation: [
+      '[AudioInput](/service/audio-input) allows recording audio from an input device while holding a button, or constantly by creating audio slices based on time intervals.',
+      'An empty and armed pad of the [Trigger Pad](/service/trigger-pad) is highlighted with a blue border. Whenever a new event comes in, its data is stored inside of the armed pad and the following empty pad will be armed. Triggering a non-empty pad injects its content on the output. Here, this will playback the recorded sample.'
+    ]
   },
   {
     title: 'GIF Animator',

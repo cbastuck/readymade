@@ -230,10 +230,10 @@ export default class Examples extends Component {
     }
 
     return (
-      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10), t.lh1_5)}>
+      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10), t.lh1_5, { width: '95%' })}>
         {
-          assureArray(explanation).map(exp =>
-            <div style={t.mt5}> 
+          assureArray(explanation).map((exp, eidx) =>
+            <div key={`explanation-${eidx}`}> 
             {
               Array.from(tokenize(exp)).map((p, idx) => 
                 typeof p === 'string' ? (

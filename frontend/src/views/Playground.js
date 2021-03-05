@@ -33,7 +33,7 @@ const allowedServices = [
   'hookup.to/service/trigger-pad',
   'hookup.to/service/sound',
   'hookup.to/service/audio-output',
-  'hookup.to/service/microphone',
+  'hookup.to/service/audio-input',
   'hookup.to/service/gif-encoder',
   'hookup.to/service/input',
   'hookup.to/service/thrower',
