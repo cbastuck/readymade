@@ -186,7 +186,10 @@ export default class Playground extends Component {
         return this.restoreBoard({ 
           runtimes: patchedRuntimes,
           services: patchedRuntimes.reduce(
-            (all, rt, idx) => ({ ...all, [rt.id]: services[runtimes[idx].id] }),
+            (all, rt, idx) => ({ 
+              ...all, 
+              [rt.id]: services[runtimes[idx].id].map(svc => ({ uuid: uuid.v4(), ...svc }))
+            }),
             {}
           ),
           sidechainRouting: patchedRuntimes.reduce(
@@ -222,7 +225,7 @@ export default class Playground extends Component {
     const { boardRouting } = state || {};
     if (boardRouting) {
       for (const runtimeId in boardRouting) {
-        const { inputUrl, inputTopic } = boardRouting[runtimeId];
+        const { inputUrl, inputTopic } = boardRouting[runtimeId] || {};
         if (inputUrl) {
           await this.connectRoutingInput(runtimeId, inputUrl, inputTopic);
         }

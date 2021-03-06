@@ -608,9 +608,9 @@ class Canvas {
   }
 
   async process(params) {
-    const result = this.app.notify(this, { render: params });
+    const promise = this.app.notify(this, { render: params });
     if (this.capture) {
-      const blob = await result;
+      const blob = await promise;
       return blob;
     }
     

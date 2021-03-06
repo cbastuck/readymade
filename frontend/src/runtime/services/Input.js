@@ -137,7 +137,7 @@ class Input {
     const { protocol } = window.location;
     const { URL, topic } = this;
     const secureConnection = protocol.indexOf('https') === 0;
-    if (URL.startsWith('ws://' || URL.startsWith('wss://'))) {
+    if (URL.startsWith('ws://') || URL.startsWith('wss://')) {
       this.websocket = new WebsocketChannel(
         `input-service-${this.uuid}`,
         params => {
