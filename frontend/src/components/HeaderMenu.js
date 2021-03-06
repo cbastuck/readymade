@@ -108,7 +108,7 @@ export default class HeaderMenu extends Component {
             onClick={() => boardContext.onAction({
               type: 'clearBoard'
             })}
-            disabled={!boardContext.isActionAvailable('clearBoard')}
+            disabled={!boardContext || !boardContext.isActionAvailable('clearBoard')}
           >
             <span style={menuItemStyle}>
               Clear Board
@@ -118,7 +118,7 @@ export default class HeaderMenu extends Component {
             onClick={() => boardContext.onAction({
               type: 'shareBoard',
             })}
-            disabled={!boardContext.isActionAvailable('shareBoard')}
+            disabled={!boardContext || !boardContext.isActionAvailable('shareBoard')}
           >
             <span style={menuItemStyle}>Share Board</span>
           </Dropdown.Item>
@@ -126,7 +126,7 @@ export default class HeaderMenu extends Component {
             onClick={() => boardContext.onAction({
               type: 'saveBoard',
             })}
-            disabled={!boardContext.isActionAvailable('saveBoard')}
+            disabled={!boardContext || !boardContext.isActionAvailable('saveBoard')}
           >
             <span style={menuItemStyle}>Save Board</span>
           </Dropdown.Item>

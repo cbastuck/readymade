@@ -49,6 +49,10 @@ export default [
     brief: 'Make a GIF',
     description: 'Create a simple GIF animation with the output of the canvas service and a GIF recorder',
     image: '/assets/shutterstock_1196210650.png',
-    url: '/boards/examples/animate.json'
+    url: '/boards/examples/animate.json',
+    explanation: [
+      'Creates a simple parallax scrolling animation at 25fps. Route the output of the [canvas](/service/canvas) in capture mode to [GIF Recorder](/service/gif-recorder) service',
+      '[Stack](/service/stack) is configured to multiply the input data to the services inside of the stack and comine their output in an array of type [Renderable](/datamodel/renderable).'
+    ]
   }
 ];

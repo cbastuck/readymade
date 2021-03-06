@@ -42,48 +42,6 @@ export function createServiceUI(registry, board, service, runtimeId, userId=unde
   if (!serviceId) {
     console.error('UIFactory missing serviceId', service);
   }
-  const params = { key: serviceId, id: serviceId, service, board, userId, ...props };
-  switch(serviceId) {
-    case 'hookup.to/service/output': {
-      return <OutputUI { ...params } />;
-    }
-    case 'hookup.to/service/ingress':
-      return <IngressUI { ...params } />;
-    case 'hookup.to/service/websocket':
-      return <WebsocketUI {...params } />;
-    /*
-    case 'hookup.to/service/monitor':
-      return <MonitorUI { ...params } />;
-    case 'hookup.to/service/html-filter':
-      return <HTMLFilterUI { ...params } />;
-    case 'hookup.to/service/file-exchange':
-      return <FileExchangeUI { ...params } />;
-    case 'hookup.to/service/websocket-provider':
-      return <WebsocketConsumer { ...params } />;    
-    case 'hookup.to/service/input':
-      return <InputUI { ...params } />;
-    case 'hookup.to/service/filter':
-      return <FilterUI { ...params } />;
-    case 'hookup.to/resource/docker/mysql':
-      return <MySqlResourceUI { ...params } />;
-    case 'hookup.to/service/mysql':
-      return <MySqlServiceUI { ...params } />;
-    case 'hookup.to/service/timer':
-      return <TimerUI { ...params } />;
-    case 'hookup.to/service/web-get':
-      return <WebGetUI { ...params } />;
-    case 'hookup.to/service/data-injector':
-      return <DataInjectorUI { ...params } />;
-    case 'hookup.to/service/html-templates':
-      return <HTMLTemplatesUI { ...params } />;
-    case 'hookup.to/resource/file-s3':
-      return <FileS3UI { ...params } />;
-    case 'hookup.to/service/aggregator':
-      return <AggregatorUI { ...params } />
-      */
-    default:
-      break;
-  }
 
   const factory = findServiceUi(registry, serviceId);
   if (factory) {
@@ -98,7 +56,50 @@ export function createServiceUI(registry, board, service, runtimeId, userId=unde
       },
     );
   } else {
-    console.warn('UIFactory create placeholder for', serviceId || service, 'in registry', registry);
-    return createPlaceholderUI(service);
+    const params = { key: serviceId, id: serviceId, service, board, userId, ...props };
+    switch(serviceId) {
+      case 'hookup.to/service/output': {
+        return <OutputUI { ...params } />;
+      }
+      case 'hookup.to/service/ingress':
+        return <IngressUI { ...params } />;
+      case 'hookup.to/service/websocket':
+        return <WebsocketUI {...params } />;
+      /*
+      case 'hookup.to/service/monitor':
+        return <MonitorUI { ...params } />;
+      case 'hookup.to/service/html-filter':
+        return <HTMLFilterUI { ...params } />;
+      case 'hookup.to/service/file-exchange':
+        return <FileExchangeUI { ...params } />;
+      case 'hookup.to/service/websocket-provider':
+        return <WebsocketConsumer { ...params } />;    
+      case 'hookup.to/service/input':
+        return <InputUI { ...params } />;
+      case 'hookup.to/service/filter':
+        return <FilterUI { ...params } />;
+      case 'hookup.to/resource/docker/mysql':
+        return <MySqlResourceUI { ...params } />;
+      case 'hookup.to/service/mysql':
+        return <MySqlServiceUI { ...params } />;
+      case 'hookup.to/service/timer':
+        return <TimerUI { ...params } />;
+      case 'hookup.to/service/web-get':
+        return <WebGetUI { ...params } />;
+      case 'hookup.to/service/data-injector':
+        return <DataInjectorUI { ...params } />;
+      case 'hookup.to/service/html-templates':
+        return <HTMLTemplatesUI { ...params } />;
+      case 'hookup.to/resource/file-s3':
+        return <FileS3UI { ...params } />;
+      case 'hookup.to/service/aggregator':
+        return <AggregatorUI { ...params } />
+        */
+      default:
+        break;
+    }
   }
+
+  console.warn('UIFactory create placeholder for', serviceId || service, 'in registry', registry);
+  return createPlaceholderUI(service);
 }

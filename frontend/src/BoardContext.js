@@ -177,10 +177,9 @@ class BoardContext extends Component {
     const registry = {};
     if (runtimes) {
       for (const runtime of runtimes) {
-        const runtimeRegistry = await getRuntimeRegistry(board, runtime.id);
         registry[runtime.id] = (runtime.type === 'browser') ? 
           await this.createBrowserRegistry() :  // TODO: prune registry - and warn on missing services
-          runtimeRegistry;
+          await getRuntimeRegistry(board, runtime.id);
       }
     }
     return registry;

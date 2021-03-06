@@ -1,33 +1,37 @@
 import React, { Component } from 'react';
 import { 
-  Input as InputField, 
   Checkbox,
 } from 'semantic-ui-react';
 
+import InputField from '../../components/shared/InputField';
 import ServiceUI from './ServiceUI';
 import { s, t } from '../../styles';
+import WebsocketChannel from '../WebsocketChannel';
 
 const serviceId = 'hookup.to/service/input';
 const serviceName = 'Input';
 
 class InputUI extends Component {
   state = {
-    eventSourceURL: '',
+    URL: '',
   };
 
   onInit = initialState => {
-    this.setState({ ...initialState });
+    const { 
+      URL='', 
+      running=false 
+    } = initialState;
+    this.setState({ URL, running });
   }
 
   onNotification = (service, notification) => {
     const { 
-      eventSourceURL, 
+      URL, 
       running 
     } = notification;
     
-    if (eventSourceURL !== undefined && 
-        this.state.eventSourceURL !== eventSourceURL) {
-      this.setState({ eventSourceURL });
+    if (URL !== undefined && this.state.URL !== URL) {
+      this.setState({ URL });
     }
 
     if (running !== undefined && 
@@ -36,10 +40,10 @@ class InputUI extends Component {
     }
   }
 
-  renderEventSourceTab = service => {
+  renderMain = service => {
     const { 
       running,
-      eventSourceURL,
+      URL,
     } = this.state;
     return (
       <div
@@ -50,10 +54,10 @@ class InputUI extends Component {
         <div style={s(t.uc, t.ls1, t.fs12)}> 
           <InputField 
             label="URL"
-            value={eventSourceURL}
-            onChange={(_, { value }) => {
-              this.setState({ eventSourceURL: value });
-              service.configure({ eventSourceURL: value });
+            value={URL}
+            onChange={(_, { value: URL }) => {
+              this.setState({ URL });
+              service.configure({ URL });
             }}
           />
         </div>
@@ -62,22 +66,14 @@ class InputUI extends Component {
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}
             label="active"
             toggle
-            onChange={(_, { checked }) => {
-              if (checked) {
-                service.configure({ running: true });
-              } else {
-                service.configure({ running: false });
-              }
+            onChange={(_, { checked: running }) => {
+              service.configure({ running });
             }}
             checked={running}
           />
         </div>
       </div>
     );
-  }
-
-  renderBoardTab = () => {
-    return <div />;
   }
 
   render() {
@@ -87,8 +83,7 @@ class InputUI extends Component {
         onInit={this.onInit}
         onNotification={this.onNotification}
         segments={[
-          { name: 'Event Source', render: this.renderEventSourceTab },
-          // { name: 'Board', render: this.renderBoardTab }
+          { name: 'Main', render: this.renderMain },
         ]}
       />
     );
@@ -101,6 +96,7 @@ class Input {
     this.board = board;
     this.app = app;
 
+    this.URL = '';
     this.parseEventsAsJSON = true;
     this.running = false;
   }
@@ -117,33 +113,52 @@ class Input {
     }
   }
 
-  configure(config) {
+  async configure(config) {
     const { 
-      eventSourceURL,
+      URL,
       running,
     } = config;
-    if (eventSourceURL !== undefined) {
-      this.eventSource = new EventSource(eventSourceURL);
-      this.eventSource.onopen = () => {
-        this.eventSourceURL = eventSourceURL;
-        
-        const listener = this.onEventSourceData.bind(this);
-        this.eventSource.onmessage = listener;
-        this.eventSource.addEventListener(
-          'data',
-          listener,
+    if (URL !== undefined && URL) {
+      this.URL = URL;
+      if (URL.startsWith('ws://' || URL.startsWith('wss://'))) {
+        const { protocol } = window.location;
+        const secureConnection = protocol.indexOf('https') === 0;
+        this.websocket = new WebsocketChannel(
+          `input-service-${this.uuid}`,
+          params => {
+            if (this.running) {
+              const { action } = params;
+              if (action === 'ping') {
+                return;
+              }
+              this.app.next(this, params);
+            }
+          },
+          secureConnection
         );
-        
-        this.closeEventSourceConnection = () => {
-          this.eventSource.removeEventListener('data', listener);
-          //this.eventSource.removeEventListener('error', onError);
-          this.eventSource.close();
-          this.eventSource = null;
-          this.closeEventSourceConnection = null;
-        };
-
-        this.app.notify(this, { eventSourceURL });
-      };
+        await this.websocket.open({ absolute: URL });
+        const topic = 'secret-key';
+        this.websocket.send({ topic });
+      } else {
+        this.eventSource = new EventSource(URL);
+        this.eventSource.onopen = () => {          
+          const listener = this.onEventSourceData.bind(this);
+          this.eventSource.onmessage = listener;
+          this.eventSource.addEventListener(
+            'data',
+            listener,
+          );
+          
+          this.closeEventSourceConnection = () => {
+            this.eventSource.removeEventListener('data', listener);
+            //this.eventSource.removeEventListener('error', onError);
+            this.eventSource.close();
+            this.eventSource = null;
+            this.closeEventSourceConnection = null;
+          };
+        }
+      }
+      this.app.notify(this, { URL });
     }
 
     if (running !== undefined) {

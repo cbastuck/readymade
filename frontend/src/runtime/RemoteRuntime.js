@@ -62,7 +62,9 @@ export default class RemoteRuntime extends Component {
       registry
     } = this.props;
 
-    const uiRegistry = registry.map(r => defaultRegistry.find(dr => r.serviceId === dr.serviceId));
+    const uiRegistry = registry.map(r => 
+      defaultRegistry.find(dr => r.serviceId === dr.serviceId) || r
+    );
     return (
       <ServiceUiContainer 
         userId={userId}

@@ -20,14 +20,13 @@ import FetcherDesriptor from '../services/Fetcher';
 import CameraDesriptor from '../services/Camera';
 import DispatcherDesriptor from '../services/Dispatcher';
 import InputDescriptor from '../services/Input';
+import OutputDescriptor from '../services/Output';
 import InjectorDescriptor from '../services/Injector';
 import TriggerPadDescriptor from '../services/TriggerPad';
 import FileSourceDescriptor from '../services/FileSource';
 import TimelineDescriptor from '../services/Timeline';
 import StackDescriptor from '../services/Stack';
 import AggregatorDescriptor from '../services/Aggregator';
-import ThrowerDescriptor from '../services/Thrower';
-import ReceiverDescriptor from '../services/Receiver';
 
 export default [
   timerDescriptor,
@@ -52,12 +51,11 @@ export default [
   CameraDesriptor,
   DispatcherDesriptor,
   InputDescriptor,
+  OutputDescriptor,
   InjectorDescriptor,
   TriggerPadDescriptor,
   FileSourceDescriptor,
   TimelineDescriptor,
   StackDescriptor,
   AggregatorDescriptor,
-  ThrowerDescriptor,
-  ReceiverDescriptor,
 ];

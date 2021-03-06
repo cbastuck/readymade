@@ -36,6 +36,7 @@ const allowedServices = [
   'hookup.to/service/audio-input',
   'hookup.to/service/gif-encoder',
   'hookup.to/service/input',
+  'hookup.to/service/output',
   'hookup.to/service/thrower',
   'hookup.to/service/receiver',
 ];
@@ -628,35 +629,35 @@ export default class Playground extends Component {
           It is empty here, add a runtime to get going ...
           {
             savedBoards.length > 0 && (
+              <div>
+                Or restore a saved boards, like:
                 <div>
-                  Or restore a saved boards, like:
-                  <div>
-                  {
-                    savedBoards.map((item, idx) => (
-                      <span
-                        style={{ color: '#4183c4', cursor: 'pointer' }}
-                        key={`stored-preset-${item.key}`}
-                      >
-                        <Link to={`/playground/${item.key}`}>
-                        {
-                          `${item.key}${idx+1 < savedBoards.length ? ', ' : ''}` 
-                        }
-                        </Link>
-                      </span>
-                    ))
-                  }
-                  </div>
-                  <div style={t.m(0, 10)}>
-                  Or create from a template:
-                    <div>
-                      <Link to={`/playground/${generateRandomName()}?template=reflected`}>
-                        Receiver
+                {
+                  savedBoards.map((item, idx) => (
+                    <span
+                      style={{ color: '#4183c4', cursor: 'pointer' }}
+                      key={`stored-preset-${item.key}`}
+                    >
+                      <Link to={`/playground/${item.key}`}>
+                      {
+                        `${item.key}${idx+1 < savedBoards.length ? ', ' : ''}` 
+                      }
                       </Link>
-                    </div>
-                  </div>
+                    </span>
+                  ))
+                }
                 </div>
+              </div>
             )
           }
+          <div style={t.m(0, 10)}>
+            Or create from a template:
+            <div>
+              <Link to={`/playground/${generateRandomName()}?template=reflected`}>
+                Receiver
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
