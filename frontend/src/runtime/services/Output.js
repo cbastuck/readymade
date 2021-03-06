@@ -6,6 +6,7 @@ import {
 import ServiceUI from './ServiceUI';
 import { s, t } from '../../styles';
 import InputField from '../../components/shared/InputField';
+import SelectorField from '../../components/shared/SelectorField';
 import { request } from '../../core/actions';
 
 const serviceId = 'hookup.to/service/output';
@@ -17,14 +18,26 @@ class OutputUI extends Component {
   };
 
   onInit = initialState => {
-    const { URL='', running=false } = initialState;
-    this.setState({ URL, running });
+    const { 
+      URL='', 
+      running=false,
+      flow='cancel',
+      topic='secret-key'
+    } = initialState;
+    this.setState({ 
+      URL, 
+      running,
+      flow,
+      topic
+    });
   }
 
   onNotification = (service, notification) => {
-    const { 
+    const {
       URL, 
-      running 
+      running,
+      flow,
+      topic,
     } = notification;
     
     if (URL !== undefined && this.state.URL !== URL) {
@@ -34,12 +47,22 @@ class OutputUI extends Component {
     if (running !== undefined && this.state.running !== running) {
       this.setState({ running });
     }
+
+    if (flow !== undefined) {
+      this.setState({ flow });
+    }
+
+    if (topic !== undefined) {
+      this.setState({ topic });
+    }
   }
 
   renderMain = service => {
     const { 
       running,
       URL,
+      topic,
+      flow
     } = this.state;
     return (
       <div style={t.m10}>
@@ -53,6 +76,29 @@ class OutputUI extends Component {
             }}
           />
         </div>
+        <div style={s(t.uc, t.ls1, t.fs12)}> 
+          <InputField 
+            label="topic"
+            value={topic}
+            onChange={(_, { value: topic }) => {
+              this.setState({ topic });
+              service.configure({ topic });
+            }}
+          />
+        </div>
+        <SelectorField
+          label="flow"
+          style={t.mt3}
+          options={{
+            cancel: 'cancel',
+            pass: 'pass-through',
+          }}
+          value={flow}
+          onChange={async (_ev, { value: flow }) => {
+            await service.configure({ flow });
+            this.setState({ flow });
+          }}
+        />
         <div style={s(t.tl, t.mt5)}>
           <Checkbox 
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}
@@ -94,12 +140,16 @@ class Output {
 
     this.running = false;
     this.URL = '';
+    this.topic = 'secret-key';
+    this.flow = 'cancel';
   }
 
   configure(config) {
     const { 
       URL,
       running,
+      topic,
+      flow,
     } = config;
 
     if (running !== undefined) {
@@ -111,21 +161,36 @@ class Output {
       this.URL = URL;
       this.app.notify(this, { URL });
     }
-  }
 
-  destroy() {
-    
+    if (topic !== undefined) {
+      this.topic = topic;
+      this.app.notify(this, { topic });
+    }
+
+    if (flow !== undefined) {
+      this.flow = flow;
+      this.app.notify(this, { flow });
+    }
   }
 
   process(params) {
     const { URL, running } = this;
     if (URL && running) {
-      const topic = 'secret-key';
-      request({ absolute: URL }, 'POST', false, params, { 'hkp-runtime-topic': topic });
+      request(
+        { absolute: URL }, 
+        'POST', 
+        false, 
+        params, 
+        { 'hkp-runtime-topic': this.topic }
+      );
     }
 
-    // TODO support for different modes, stop propagation for now
-    return null; 
+    switch (this.flow) {
+      case 'cancel': 
+        return null;
+      default: 
+        return params;
+    }
   }
 }
 

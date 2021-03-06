@@ -14,29 +14,35 @@ const serviceName = 'Input';
 class InputUI extends Component {
   state = {
     URL: '',
+    topic: 'secret-key'
   };
 
   onInit = initialState => {
     const { 
       URL='', 
-      running=false 
+      running=false,
+      topic='secret-key',
     } = initialState;
-    this.setState({ URL, running });
+    this.setState({ URL, running, topic });
   }
 
   onNotification = (service, notification) => {
     const { 
       URL, 
-      running 
+      running,
+      topic
     } = notification;
     
     if (URL !== undefined && this.state.URL !== URL) {
       this.setState({ URL });
     }
 
-    if (running !== undefined && 
-        this.state.running !== running) {
+    if (running !== undefined && this.state.running !== running) {
       this.setState({ running });
+    }
+
+    if (topic !== undefined) {
+      this.setState({ topic });
     }
   }
 
@@ -44,6 +50,7 @@ class InputUI extends Component {
     const { 
       running,
       URL,
+      topic
     } = this.state;
     return (
       <div
@@ -58,6 +65,16 @@ class InputUI extends Component {
             onChange={(_, { value: URL }) => {
               this.setState({ URL });
               service.configure({ URL });
+            }}
+          />
+        </div>
+        <div style={s(t.uc, t.ls1, t.fs12)}> 
+          <InputField 
+            label="topic"
+            value={topic}
+            onChange={(_, { value: topic }) => {
+              this.setState({ topic });
+              service.configure({ topic });
             }}
           />
         </div>
@@ -99,6 +116,7 @@ class Input {
     this.URL = '';
     this.parseEventsAsJSON = true;
     this.running = false;
+    this.topic = 'secret-key';
   }
 
   onEventSourceData(event) {
@@ -113,57 +131,86 @@ class Input {
     }
   }
 
+  async doConnect() {
+    this.closeConection();
+
+    const { protocol } = window.location;
+    const { URL, topic } = this;
+    const secureConnection = protocol.indexOf('https') === 0;
+    if (URL.startsWith('ws://' || URL.startsWith('wss://'))) {
+      this.websocket = new WebsocketChannel(
+        `input-service-${this.uuid}`,
+        params => {
+          if (this.running) {
+            const { action } = params;
+            if (action === 'ping') {
+              return;
+            }
+            this.app.next(this, params);
+          }
+        },
+        secureConnection
+      );
+      await this.websocket.open({ absolute: URL });
+      this.websocket.send({ topic });
+    } else {
+      this.eventSource = new EventSource(URL);
+      this.eventSource.onopen = () => {          
+        const listener = this.onEventSourceData.bind(this);
+        this.eventSource.onmessage = listener;
+        this.eventSource.addEventListener(
+          'data',
+          listener,
+        );
+        
+        this.closeEventSourceConnection = () => {
+          this.eventSource.removeEventListener('data', listener);
+          //this.eventSource.removeEventListener('error', onError);
+          this.eventSource.close();
+          this.eventSource = null;
+          this.closeEventSourceConnection = null;
+        };
+      }
+    }
+  }
+
+  closeConection() {
+    if (this.websocket) {
+      this.websocket.close();
+      this.websocket = null;
+    }
+
+    if (this.closeEventSourceConnection) {
+      this.closeEventSourceConnection();
+    }
+  }
+
   async configure(config) {
     const { 
       URL,
       running,
+      topic,
     } = config;
+
+    let reconnet = false;
+    if (topic !== undefined) {
+      this.topic = topic;
+      reconnet = true;
+    }
+
     if (URL !== undefined && URL) {
       this.URL = URL;
-      if (URL.startsWith('ws://' || URL.startsWith('wss://'))) {
-        const { protocol } = window.location;
-        const secureConnection = protocol.indexOf('https') === 0;
-        this.websocket = new WebsocketChannel(
-          `input-service-${this.uuid}`,
-          params => {
-            if (this.running) {
-              const { action } = params;
-              if (action === 'ping') {
-                return;
-              }
-              this.app.next(this, params);
-            }
-          },
-          secureConnection
-        );
-        await this.websocket.open({ absolute: URL });
-        const topic = 'secret-key';
-        this.websocket.send({ topic });
-      } else {
-        this.eventSource = new EventSource(URL);
-        this.eventSource.onopen = () => {          
-          const listener = this.onEventSourceData.bind(this);
-          this.eventSource.onmessage = listener;
-          this.eventSource.addEventListener(
-            'data',
-            listener,
-          );
-          
-          this.closeEventSourceConnection = () => {
-            this.eventSource.removeEventListener('data', listener);
-            //this.eventSource.removeEventListener('error', onError);
-            this.eventSource.close();
-            this.eventSource = null;
-            this.closeEventSourceConnection = null;
-          };
-        }
-      }
+      reconnet = true;
       this.app.notify(this, { URL });
     }
 
     if (running !== undefined) {
       this.running = running;
       this.app.notify(this, { running });
+    }
+
+    if (reconnet) {
+      this.doConnect();
     }
   }
 
