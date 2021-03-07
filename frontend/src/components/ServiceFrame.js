@@ -32,6 +32,7 @@ export default class ServiceFrame extends Component {
           fontWeight: 'lighter',
           marginTop: 15,
           marginLeft: 50,
+          cursor: draggable && 'pointer'
         }}
         onDoubleClick={() => this.setState({ frameCollapsed: !this.state.frameCollapsed })}
         draggable={draggable}
@@ -47,7 +48,7 @@ export default class ServiceFrame extends Component {
               fontSize: 12,
               letterSpacing: 1,
               textTransform: 'uppercase',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
             }}
           >
             {name}

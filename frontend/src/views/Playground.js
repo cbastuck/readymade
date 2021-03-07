@@ -448,9 +448,9 @@ export default class Playground extends Component {
       const name = await this.prompt.getInput('Enter a name for the board', suggested);
       if (name !== null) {
         this.storeBoard(name);
-      }
-      if (name !== suggested) {
-        redirectTo(`/playground/${name}`);
+        if (name !== suggested) {
+          redirectTo(`/playground/${name}`);
+        }
       }
     }
   }

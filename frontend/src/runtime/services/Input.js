@@ -7,6 +7,11 @@ import InputField from '../../components/shared/InputField';
 import ServiceUI from './ServiceUI';
 import { s, t } from '../../styles';
 import WebsocketChannel from '../WebsocketChannel';
+import { 
+  replacePlaceholders, 
+  isWebsocket,
+  isSecureConnection
+} from '../../core/url';
 
 const serviceId = 'hookup.to/service/input';
 const serviceName = 'Input';
@@ -134,10 +139,8 @@ class Input {
   async doConnect() {
     this.closeConection();
 
-    const { protocol } = window.location;
     const { URL, topic } = this;
-    const secureConnection = protocol.indexOf('https') === 0;
-    if (URL.startsWith('ws://') || URL.startsWith('wss://')) {
+    if (isWebsocket(URL)) {
       this.websocket = new WebsocketChannel(
         `input-service-${this.uuid}`,
         params => {
@@ -149,7 +152,7 @@ class Input {
             this.app.next(this, params);
           }
         },
-        secureConnection
+        isSecureConnection()
       );
       await this.websocket.open({ absolute: URL });
       this.websocket.send({ topic });
@@ -199,7 +202,7 @@ class Input {
     }
 
     if (URL !== undefined && URL) {
-      this.URL = URL;
+      this.URL = replacePlaceholders(URL); ;
       reconnet = true;
       this.app.notify(this, { URL });
     }
