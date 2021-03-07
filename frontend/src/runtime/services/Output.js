@@ -8,6 +8,9 @@ import { s, t } from '../../styles';
 import InputField from '../../components/shared/InputField';
 import SelectorField from '../../components/shared/SelectorField';
 import { request } from '../../core/actions';
+import { 
+  replacePlaceholders,
+} from '../../core/url';
 
 const serviceId = 'hookup.to/service/output';
 const serviceName = 'Output';
@@ -15,6 +18,7 @@ const serviceName = 'Output';
 class OutputUI extends Component {
   state = {
     URL: '',
+    headers: {}
   };
 
   onInit = initialState => {
@@ -22,13 +26,13 @@ class OutputUI extends Component {
       URL='', 
       running=false,
       flow='cancel',
-      topic='secret-key'
+      headers={}
     } = initialState;
     this.setState({ 
       URL, 
       running,
       flow,
-      topic
+      headers
     });
   }
 
@@ -37,7 +41,7 @@ class OutputUI extends Component {
       URL, 
       running,
       flow,
-      topic,
+      headers
     } = notification;
     
     if (URL !== undefined && this.state.URL !== URL) {
@@ -52,8 +56,8 @@ class OutputUI extends Component {
       this.setState({ flow });
     }
 
-    if (topic !== undefined) {
-      this.setState({ topic });
+    if (headers !== undefined) {
+      this.setState({ headers });
     }
   }
 
@@ -61,8 +65,8 @@ class OutputUI extends Component {
     const { 
       running,
       URL,
-      topic,
-      flow
+      flow, 
+      headers
     } = this.state;
     return (
       <div style={t.m10}>
@@ -73,16 +77,6 @@ class OutputUI extends Component {
             onChange={(_, { value }) => {
               this.setState({ URL: value });
               service.configure({ URL: value });
-            }}
-          />
-        </div>
-        <div style={s(t.uc, t.ls1, t.fs12)}> 
-          <InputField 
-            label="topic"
-            value={topic}
-            onChange={(_, { value: topic }) => {
-              this.setState({ topic });
-              service.configure({ topic });
             }}
           />
         </div>
@@ -99,6 +93,25 @@ class OutputUI extends Component {
             this.setState({ flow });
           }}
         />
+        <div style={s(t.tl, t.uc, t.ls1, t.fs12, t.mt3)}>
+          <div>Additional Headers</div>
+          {
+            Object.keys(headers).map(key => (
+              <InputField
+                key={`output-header-${service.uuid}-${key}`}
+                label={key}
+                value={headers[key]}
+                onChange={async (_, { value: newValue }) => {
+                  const newHeaders = {
+                    ...this.state.headers,
+                    [key]: newValue,
+                  };
+                  await service.configure({ headers: newHeaders });
+                }}
+              />
+            ))
+          }
+        </div>
         <div style={s(t.tl, t.mt5)}>
           <Checkbox 
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}
@@ -140,16 +153,16 @@ class Output {
 
     this.running = false;
     this.URL = '';
-    this.topic = 'secret-key';
     this.flow = 'cancel';
+    this.headers = {};
   }
 
   configure(config) {
     const { 
       URL,
       running,
-      topic,
       flow,
+      headers
     } = config;
 
     if (running !== undefined) {
@@ -158,30 +171,33 @@ class Output {
     }
 
     if (URL !== undefined) {
-      this.URL = URL;
+      this.URL = replacePlaceholders(URL);
       this.app.notify(this, { URL });
-    }
-
-    if (topic !== undefined) {
-      this.topic = topic;
-      this.app.notify(this, { topic });
     }
 
     if (flow !== undefined) {
       this.flow = flow;
       this.app.notify(this, { flow });
     }
+
+    if (headers !== undefined) {
+      this.headers = headers;
+      this.app.notify(this, { headers });
+    }
   }
 
   process(params) {
-    const { URL, running } = this;
+    const { 
+      URL, 
+      running 
+    } = this;
     if (URL && running) {
       request(
         { absolute: URL }, 
         'POST', 
         false, 
         params, 
-        { 'hkp-runtime-topic': this.topic }
+        this.headers
       );
     }
 

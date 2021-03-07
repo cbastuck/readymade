@@ -618,7 +618,7 @@ export default class Playground extends Component {
           },
           { 
             opacity: placeholderAnimationRunning ? 1 : 0,
-            transition: placeholderAnimationRunning && 'opacity 5s 1s'
+            transition: placeholderAnimationRunning && 'opacity 4s 0s'
           }
         )}
       >
@@ -654,11 +654,20 @@ export default class Playground extends Component {
             )
           }
           <div style={t.m(0, 10)}>
-            Or create from a template:
+            Or use a reflector:
             <div>
-              <Link to={`/playground/${generateRandomName()}?template=reflected`}>
-                Receiver
-              </Link>
+            {
+              [ 
+                { name: 'Sender', template: 'reflector-sender' },
+                { name: 'Receiver', template: 'reflector-receiver' },
+              ].map((item, idx, self) => (
+                 <Link
+                  key={`template-${item.name}`}
+                  to={`/playground/${generateRandomName()}?template=${item.template}`}>
+                  {`${item.name}${(idx + 1 < self.length) ? ', ' : ''} `}
+                </Link>
+              ))
+            }
             </div>
           </div>
         </div>

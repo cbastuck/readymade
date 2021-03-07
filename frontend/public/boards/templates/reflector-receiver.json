@@ -2,7 +2,7 @@
   "runtimes": [
     {
       "id": "RT1",
-      "name": "Reflected",
+      "name": "Receive from Reflector",
       "type": "browser"
     }
   ],

@@ -45,13 +45,18 @@ export default class IngressUI extends Component {
   onNotification = (service, notification) => {
     const { 
       url,
-      isPublic
+      isPublic,
+      active
     } = notification;
+
     if (url !== undefined) {
       this.setState({ url });
     }
     if (isPublic !== undefined) {
       this.setState({ isPublic });
+    }
+    if (active !== undefined) {
+      this.setState({ active });
     }
   }
 

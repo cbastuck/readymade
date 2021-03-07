@@ -202,7 +202,7 @@ class Input {
     }
 
     if (URL !== undefined && URL) {
-      this.URL = replacePlaceholders(URL); ;
+      this.URL = replacePlaceholders(URL);
       reconnet = true;
       this.app.notify(this, { URL });
     }

@@ -209,6 +209,14 @@ class InjectorUI extends Component {
                 value={rawText}
                 onChange={(_, { value: rawText }) => this.setState({ rawText })}
                 placeholder="Enter text here"
+                onKeyUp={ev => {
+                  switch(ev.key) {
+                    case 'Enter':
+                      return service.inject(rawText);
+                    default:
+                      break;
+                  }
+                }}
               />
           }
           <Button
