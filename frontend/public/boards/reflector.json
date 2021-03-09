@@ -22,7 +22,7 @@
           "serviceName": "Map",
           "serviceId": "hookup.to/service/map",
           "template": {
-            "topic=": "params.headers['hkp-runtime-topic']",
+            "topic=": "params.headers['reflector-topic']",
             "data=": "params.data || params"
           }
         },

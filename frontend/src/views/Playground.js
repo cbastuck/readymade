@@ -4,16 +4,16 @@ import { Icon, Button } from 'semantic-ui-react';
 import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
 
-import { redirectTo, request } from '../core/actions';
+import { redirectTo } from '../core/actions';
 import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Runtime from '../components/Runtime';
 import SidechainSelector from '../components/SidechainSelector';
-import BoardRouting from '../components/BoardRouting';
+//import BoardRouting from '../components/BoardRouting';
 import DragProvider from '../DragContext';
 import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
-import WebsocketChannel from '../runtime/WebsocketChannel';
+//import WebsocketChannel from '../runtime/WebsocketChannel';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 
@@ -81,7 +81,7 @@ export default class Playground extends Component {
           runtimes: undefined, 
           services: undefined,
           sidechainRouting: {},
-          boardRouting: {},
+          //boardRouting: {},
         });
       } else {
         this.setState({ boardName: board });
@@ -178,7 +178,7 @@ export default class Playground extends Component {
           runtimes, 
           services, 
           sidechainRouting, 
-          boardRouting 
+          //boardRouting 
         } = template;
         const patchedRuntimes = runtimes.map(rt => ({
           ...rt, id: uuid.v4() 
@@ -195,11 +195,11 @@ export default class Playground extends Component {
           sidechainRouting: patchedRuntimes.reduce(
             (all, rt, idx) => ({ ...all, [rt.id]: sidechainRouting[runtimes[idx].id] }),
             {}
-          ),
+          ),/*
           boardRouting: patchedRuntimes.reduce(
             (all, rt, idx) => ({ ...all, [rt.id]: boardRouting[runtimes[idx].id] }),
             {}
-          ),
+          ),*/
         });
       } catch (err) {
         console.error('Creating from template failed', name);
@@ -222,6 +222,7 @@ export default class Playground extends Component {
     this.setState(state);
     
     // Restore input board routings
+    /*
     const { boardRouting } = state || {};
     if (boardRouting) {
       for (const runtimeId in boardRouting) {
@@ -231,6 +232,7 @@ export default class Playground extends Component {
         }
       }
     }
+    */
   }
 
   storeBoard = name => {
@@ -238,7 +240,7 @@ export default class Playground extends Component {
       runtimes=[], 
       services={}, 
       sidechainRouting={},
-      boardRouting={}
+      //boardRouting={}
     } = this.state;
 
     const data = { 
@@ -264,7 +266,7 @@ export default class Playground extends Component {
         {}
       ),
       sidechainRouting,
-      boardRouting,
+      //boardRouting,
     };
     localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
   }
@@ -411,7 +413,7 @@ export default class Playground extends Component {
   onResult = async (runtime, svcUuid, result) => {
     const { 
       sidechainRouting,
-      boardRouting,
+      //boardRouting,
     } = this.state;
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
     if (sroute) {
@@ -421,19 +423,20 @@ export default class Playground extends Component {
       }
       return; // runtimes with routings aren't further processed
     }
-
+/*
     const broute = boardRouting && boardRouting[runtime.id];
     if (broute) {
       const { outputUrl, outputTopic } = broute;
       if (outputUrl) {
         try {
-          await request({ absolute: outputUrl }, 'POST', false, result, { 'hkp-runtime-topic': outputTopic });
+          await request({ absolute: outputUrl }, 'POST', false, result, { 'reflector-topic': outputTopic });
         } catch(err) {
           console.error('Could not send result to runtime output', outputUrl, runtime.id);
         }
         return; // runtimes with outputs are not further processed as well
       }
     }
+  */
     const nextRuntime = this.getNextRuntime(runtime);
     if (nextRuntime) {
       nextRuntime.processRuntime(result);
@@ -469,6 +472,7 @@ export default class Playground extends Component {
     return savedBoards;
   }
 
+/*
   connectRoutingInput = async (runtimeId, inputUrl, inputTopic) => {
     if (this.externalInputs[runtimeId]) {
       // close an existing connection if it exists
@@ -508,13 +512,14 @@ export default class Playground extends Component {
       console.error('Playground.connectRoutingInput() could not connect to runtime input', inputUrl, runtimeId);
     }
   }
+  */
 
   renderRuntimes = boardContext => {
     const { runtimes } = boardContext;
     const { 
       showRoutingOptions, 
       sidechainRouting,
-      boardRouting, 
+      //boardRouting, 
       services,
     } = this.state;
     return (
@@ -550,6 +555,7 @@ export default class Playground extends Component {
                   }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'row'}}>
+                  {/*
                     <BoardRouting 
                       key={`board-routing-${runtime.id}`}
                       routing={boardRouting[runtime.id]}
@@ -566,6 +572,7 @@ export default class Playground extends Component {
                         }
                       }}
                     />
+                  */}
                     <Button
                       onClick={() => this.setState({ showRoutingOptions: false })}
                       style={s(t.uc, t.fs12, t.ls1, { height: 28, width: 32, marginLeft: 'auto', borderRadius: 2 })}

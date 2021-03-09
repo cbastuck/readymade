@@ -42,7 +42,7 @@ class InjectorUI extends Component {
   }
 
   getDroppedItemLabels = () => {
-    const { items } = this.state;
+    const { items } = this.state;
     if (!items) {
       return (
         <div
@@ -110,7 +110,7 @@ class InjectorUI extends Component {
   }
 
   renderDragNDropInput = service => {
-    const { items, itemsSelection } = this.state;
+    const { items, itemsSelection, blob, dropName } = this.state;
     return (
       <div style={{ width: '100%' }}>
         <h1
@@ -131,17 +131,21 @@ class InjectorUI extends Component {
             const blob = isArray ? 
                 Array.from(files):
                 files[0];
-            const dropName = isArray ? 'multiple files' : blob.name
+            const dropName = isArray ? 'multiple files' : blob.name;
             this.setState({ blob, dropName });
           }}
           onItems={items => this.setState({ items }) }
         />
         <Button
           style={this.buttonStyle}
-          onClick={() => service.inject(
-            itemsSelection.map(idx => items[idx]) 
-          )}
-          disabled={!itemsSelection.length}
+          onClick={() => {
+            if (blob) {
+              service.inject(blob);
+            } else {
+              service.inject(itemsSelection.map(idx => items[idx]));
+            }
+          }}
+          disabled={!itemsSelection.length && !(blob || dropName)}
         >
           Inject
         </Button>

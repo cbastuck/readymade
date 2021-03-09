@@ -1,0 +1,21 @@
+{
+  "version": "1.0",
+  "brief": "Connects to an input from: event-source or websocket",
+  "configuration": [
+    "Support protocols for the URL are http (https) and ws (wss).",
+    {
+      "type": "config",
+      "value": {
+        "url": "wss://echo.websocket.org",
+        "topic": "secret-string"
+      },
+      "description": "an arbitrary topic that is used to subscribe for websocket events. To be used with the backend websocket service."
+    }
+  ],
+  "inputs": [],
+  "outputs": [
+    "The data that arrives at the source or the input of the service as passed."
+  ],
+  "todos": [],
+  "versions": []
+}

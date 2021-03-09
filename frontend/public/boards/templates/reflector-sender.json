@@ -15,11 +15,11 @@
       {
         "serviceId": "hookup.to/service/output",
         "serviceName": "output",
-        "URL": "%http-host%/api/1/reflector/runtime/0f4dfa37-ac5c-4a50-8abf-a7ded3f7f620/in",
+        "url": "%http-host%/api/1/reflector/runtime/0f4dfa37-ac5c-4a50-8abf-a7ded3f7f620/in",
         "running": true,
         "topic": "secret-key",
         "headers": {
-          "hkp-runtime-topic": "secret-key"
+          "reflector-topic": "secret-key"
         }
       }
     ]

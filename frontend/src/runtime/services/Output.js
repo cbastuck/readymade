@@ -17,19 +17,19 @@ const serviceName = 'Output';
 
 class OutputUI extends Component {
   state = {
-    URL: '',
+    url: '',
     headers: {}
   };
 
   onInit = initialState => {
     const { 
-      URL='', 
+      url='', 
       running=false,
       flow='cancel',
       headers={}
     } = initialState;
     this.setState({ 
-      URL, 
+      url, 
       running,
       flow,
       headers
@@ -38,14 +38,14 @@ class OutputUI extends Component {
 
   onNotification = (service, notification) => {
     const {
-      URL, 
+      url, 
       running,
       flow,
       headers
     } = notification;
     
-    if (URL !== undefined && this.state.URL !== URL) {
-      this.setState({ URL });
+    if (url !== undefined && this.state.url !== url) {
+      this.setState({ url });
     }
 
     if (running !== undefined && this.state.running !== running) {
@@ -64,7 +64,7 @@ class OutputUI extends Component {
   renderMain = service => {
     const { 
       running,
-      URL,
+      url,
       flow, 
       headers
     } = this.state;
@@ -73,28 +73,15 @@ class OutputUI extends Component {
         <div style={s(t.uc, t.ls1, t.fs12)}> 
           <InputField 
             label="URL"
-            value={URL}
+            value={url}
             onChange={(_, { value }) => {
-              this.setState({ URL: value });
-              service.configure({ URL: value });
+              this.setState({ url: value });
+              service.configure({ url: value });
             }}
           />
         </div>
-        <SelectorField
-          label="flow"
-          style={t.mt3}
-          options={{
-            cancel: 'cancel',
-            pass: 'pass-through',
-          }}
-          value={flow}
-          onChange={async (_ev, { value: flow }) => {
-            await service.configure({ flow });
-            this.setState({ flow });
-          }}
-        />
         <div style={s(t.tl, t.uc, t.ls1, t.fs12, t.mt3)}>
-          <div>Additional Headers</div>
+          <div>Headers</div>
           {
             Object.keys(headers).map(key => (
               <InputField
@@ -112,10 +99,10 @@ class OutputUI extends Component {
             ))
           }
         </div>
-        <div style={s(t.tl, t.mt5)}>
+        <div style={t.tl}>
           <Checkbox 
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}
-            label="active"
+            label="output active"
             toggle
             onChange={(_, { checked }) => {
               if (checked) {
@@ -127,6 +114,19 @@ class OutputUI extends Component {
             checked={running}
           />
         </div>
+        <SelectorField
+          label="flow"
+          style={t.m(0, 10)}
+          options={{
+            cancel: 'cancel',
+            pass: 'pass-through',
+          }}
+          value={flow}
+          onChange={async (_ev, { value: flow }) => {
+            await service.configure({ flow });
+            this.setState({ flow });
+          }}
+        />
       </div>
     );
   }
@@ -152,14 +152,14 @@ class Output {
     this.app = app;
 
     this.running = false;
-    this.URL = '';
+    this.url = '';
     this.flow = 'cancel';
     this.headers = {};
   }
 
   configure(config) {
     const { 
-      URL,
+      url,
       running,
       flow,
       headers
@@ -170,9 +170,9 @@ class Output {
       this.app.notify(this, { running });
     }
 
-    if (URL !== undefined) {
-      this.URL = replacePlaceholders(URL);
-      this.app.notify(this, { URL });
+    if (url !== undefined) {
+      this.url = replacePlaceholders(url);
+      this.app.notify(this, { url });
     }
 
     if (flow !== undefined) {
@@ -188,12 +188,12 @@ class Output {
 
   process(params) {
     const { 
-      URL, 
+      url, 
       running 
     } = this;
-    if (URL && running) {
+    if (url && running) {
       request(
-        { absolute: URL }, 
+        { absolute: url }, 
         'POST', 
         false, 
         params, 

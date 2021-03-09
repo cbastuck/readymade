@@ -19,7 +19,7 @@ export default [
     explanation: [
       'Press "Start Audio" and listen to changes on wikipedia as kindof a drum beat.',
       'From Wikipedia\'s event stream we [map](/service/map) whether a change was made by a bot or a user and create drum sounds accordingly.',
-      'On bot changes we accumulate a snare event. On human changes we a hihat event. After [aggregating](/service/aggregate) for 90 milliseconds a snare or hihat [note-event](/datamodel/note) is passed to the [sampler](/service/sound), depending on what occurred more often. To make it more as a beatish, a base-drum event is randomly created with a human change'
+      'On bot changes we accumulate a snare event. On human changes we a hihat event. After [aggregating](/service/aggregate) for 90 milliseconds a snare or hihat [note-event](/datamodel/note) is passed to the [sampler](/service/sound) depending on what occurred more often. To make it more as a beatish, a base-drum event is randomly created on change from a user.'
     ]
   },
   {

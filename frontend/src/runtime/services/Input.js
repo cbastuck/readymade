@@ -18,28 +18,31 @@ const serviceName = 'Input';
 
 class InputUI extends Component {
   state = {
-    URL: '',
-    topic: 'secret-key'
+    url: '',
+    topic: 'secret-key',
+    isWebsocket: false
   };
 
   onInit = initialState => {
     const { 
-      URL='', 
+      url='', 
       running=false,
       topic='secret-key',
+      isWebsocket=false
     } = initialState;
-    this.setState({ URL, running, topic });
+    this.setState({url, running, topic, isWebsocket });
   }
 
   onNotification = (service, notification) => {
     const { 
-      URL, 
+      url, 
       running,
-      topic
+      topic,
+      isWebsocket
     } = notification;
     
-    if (URL !== undefined && this.state.URL !== URL) {
-      this.setState({ URL });
+    if (url !== undefined && this.state.url !== url) {
+      this.setState({ url });
     }
 
     if (running !== undefined && this.state.running !== running) {
@@ -49,13 +52,18 @@ class InputUI extends Component {
     if (topic !== undefined) {
       this.setState({ topic });
     }
+
+    if (isWebsocket !== undefined) {
+      this.setState({ isWebsocket });
+    }
   }
 
   renderMain = service => {
     const { 
       running,
-      URL,
-      topic
+      url,
+      topic,
+      isWebsocket
     } = this.state;
     return (
       <div
@@ -66,10 +74,10 @@ class InputUI extends Component {
         <div style={s(t.uc, t.ls1, t.fs12)}> 
           <InputField 
             label="URL"
-            value={URL}
-            onChange={(_, { value: URL }) => {
-              this.setState({ URL });
-              service.configure({ URL });
+            value={url}
+            onChange={(_, { value: url }) => {
+              this.setState({ url });
+              service.configure({ url });
             }}
           />
         </div>
@@ -81,12 +89,13 @@ class InputUI extends Component {
               this.setState({ topic });
               service.configure({ topic });
             }}
+            disabled={!isWebsocket}
           />
         </div>
         <div style={s(t.tl, t.mt5)}>
           <Checkbox 
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}
-            label="active"
+            label="input active"
             toggle
             onChange={(_, { checked: running }) => {
               service.configure({ running });
@@ -118,7 +127,7 @@ class Input {
     this.board = board;
     this.app = app;
 
-    this.URL = '';
+    this.url = '';
     this.parseEventsAsJSON = true;
     this.running = false;
     this.topic = 'secret-key';
@@ -139,9 +148,9 @@ class Input {
   async doConnect() {
     this.closeConection();
 
-    const { URL, topic } = this;
-    if (isWebsocket(URL)) {
-      this.websocket = new WebsocketChannel(
+    const { url, topic } = this;
+    if (isWebsocket(url)) {
+      this._websocket = new WebsocketChannel(
         `input-service-${this.uuid}`,
         params => {
           if (this.running) {
@@ -154,23 +163,23 @@ class Input {
         },
         isSecureConnection()
       );
-      await this.websocket.open({ absolute: URL });
-      this.websocket.send({ topic });
+      await this._websocket.open({ absolute: url });
+      this._websocket.send({ topic });
     } else {
-      this.eventSource = new EventSource(URL);
-      this.eventSource.onopen = () => {          
+      this._eventSource = new EventSource(url);
+      this._eventSource.onopen = () => {          
         const listener = this.onEventSourceData.bind(this);
-        this.eventSource.onmessage = listener;
-        this.eventSource.addEventListener(
+        this._eventSource.onmessage = listener;
+        this._eventSource.addEventListener(
           'data',
           listener,
         );
         
         this.closeEventSourceConnection = () => {
-          this.eventSource.removeEventListener('data', listener);
+          this._eventSource.removeEventListener('data', listener);
           //this.eventSource.removeEventListener('error', onError);
-          this.eventSource.close();
-          this.eventSource = null;
+          this._eventSource.close();
+          this._eventSource = null;
           this.closeEventSourceConnection = null;
         };
       }
@@ -178,9 +187,9 @@ class Input {
   }
 
   closeConection() {
-    if (this.websocket) {
-      this.websocket.close();
-      this.websocket = null;
+    if (this._websocket) {
+      this._websocket.close();
+      this._websocket = null;
     }
 
     if (this.closeEventSourceConnection) {
@@ -190,7 +199,7 @@ class Input {
 
   async configure(config) {
     const { 
-      URL,
+      url,
       running,
       topic,
     } = config;
@@ -201,10 +210,10 @@ class Input {
       reconnet = true;
     }
 
-    if (URL !== undefined && URL) {
-      this.URL = replacePlaceholders(URL);
+    if (url !== undefined && url) {
+      this.url = replacePlaceholders(url);
       reconnet = true;
-      this.app.notify(this, { URL });
+      this.app.notify(this, { url });
     }
 
     if (running !== undefined) {
@@ -214,6 +223,8 @@ class Input {
 
     if (reconnet) {
       this.doConnect();
+      this.isWebsocket = !!this._websocket;
+      this.app.notify(this, { isWebsocket: this.isWebsocket })
     }
   }
 

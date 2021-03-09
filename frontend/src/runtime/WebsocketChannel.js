@@ -1,5 +1,4 @@
 import { parseResponse } from './MultiformParser';
-import { restoreToken } from '../core/Auth';
 
 export default class WebsocketChannel {
   constructor(websocketId, onAction, secureConnection) {
@@ -9,7 +8,7 @@ export default class WebsocketChannel {
     this.secureConnection = secureConnection;
   }
 
-  open = url => {
+  open = (url, subprotocol) => {
     return new Promise((resolve, reject) => {
       if (this.websocket) {
         this.close();
@@ -17,7 +16,7 @@ export default class WebsocketChannel {
       this.pendingOpenPromise = { resolve, reject };
       const protocol = this.secureConnection ? 'wss' : 'ws';
       const full = url.absolute ? url.absolute : `${protocol}://${url}`;
-      this.websocket = new WebSocket(full, restoreToken());
+      this.websocket = new WebSocket(full, subprotocol);
       this.websocket.binaryType = 'arraybuffer';
       this.websocket.onmessage = this.onMessage;
       this.websocket.onclose = this.onClose;

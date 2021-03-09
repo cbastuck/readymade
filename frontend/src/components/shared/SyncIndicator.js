@@ -31,7 +31,7 @@ export default class SyncIndicator extends Component {
               textAlign: 'center',
               paddingTop: 10,
               minWidth: labelWidth,
-              height: labelHeight,
+              minHeight: labelHeight,
               color: !inSync && 'red',
               cursor: !inSync ? 'pointer' : undefined,
               overflow: 'hidden',

@@ -7,7 +7,7 @@
       {
         "serviceName": "Input",
         "serviceId": "hookup.to/service/input",
-        "eventSourceURL": "https://stream.wikimedia.org/v2/stream/recentchange",
+        "url": "https://stream.wikimedia.org/v2/stream/recentchange",
         "running": true
       },
       {

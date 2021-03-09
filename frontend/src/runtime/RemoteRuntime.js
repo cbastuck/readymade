@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 
 import WebsocketChannel from './WebsocketChannel';
+import { restoreToken } from '../core/Auth';
 import ServiceUiContainer from './ServiceUiContainer';
 import defaultRegistry from './registry/Default';
 
@@ -34,7 +35,7 @@ export default class RemoteRuntime extends Component {
     }
     const secureConnection = protocol.indexOf('https') === 0;
     this.remoteRuntimeWebsocket = new WebsocketChannel(runtime.id, this.onAction, secureConnection);
-    return this.remoteRuntimeWebsocket.open(url);
+    return this.remoteRuntimeWebsocket.open(url, restoreToken());
   }
 
   onAction = action => {

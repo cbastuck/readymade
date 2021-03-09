@@ -11,7 +11,7 @@
       {
         "serviceId": "hookup.to/service/input",
         "serviceName": "Input",
-        "URL": "%ws-host%/api/1/reflector/runtime/0f4dfa37-ac5c-4a50-8abf-a7ded3f7f620/out",
+        "url": "%ws-host%/api/1/reflector/runtime/0f4dfa37-ac5c-4a50-8abf-a7ded3f7f620/out",
         "running": true,
         "topic": "secret-key"
       },

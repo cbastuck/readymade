@@ -11,6 +11,9 @@ function utf8BufferToStr(buf) {
 const CRLF = '\r\n';
 
 export function parseResponse(arraybuf) {
+  if (typeof arraybuf === 'string') {
+    return arraybuf;
+  }
   const view = new DataView(arraybuf);
   const boundaryLength = view.getUint32(0); // BE
   if (boundaryLength === 0) { // no multipart-form data
