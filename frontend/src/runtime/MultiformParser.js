@@ -14,10 +14,15 @@ export function parseResponse(arraybuf) {
   const view = new DataView(arraybuf);
   const boundaryLength = view.getUint32(0); // BE
   if (boundaryLength === 0) { // no multipart-form data
-    const useUTF8 = true;
-    return useUTF8 ? 
-      utf8BufferToStr(arraybuf.slice(4)) : 
-      utf16leBufferToStr(arraybuf.slice(4));
+    const binary = view.getUint8(4) === 'b'.charCodeAt(0);
+    if (binary) {
+      return new Blob([arraybuf.slice(5)], { type: 'application/octet-stream' });
+    } else {
+      const useUTF8 = true;
+      return useUTF8 ? 
+        utf8BufferToStr(arraybuf.slice(5)) : 
+        utf16leBufferToStr(arraybuf.slice(5));
+    }
   }
   // the reponse is a multipart-form
   const boundaryBuf = arraybuf.slice(4, boundaryLength + 4);

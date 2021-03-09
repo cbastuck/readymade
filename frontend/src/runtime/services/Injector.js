@@ -314,7 +314,10 @@ class InjectorUI extends Component {
             //reader.addEventListener('error', ev => console.log('error', reader.result));
             //reader.addEventListener('abort', ev => console.log('abort', reader.result));
             reader.addEventListener('loadend', ev => {
-              service.app.next(service, reader.result);
+              const result = loadAsText ? 
+                reader.result : 
+                new Blob([reader.result], { type : 'application/octet-stream'});
+              service.app.next(service, result);
               this.setState({ fileProgress: 0 });
             });
             reader.addEventListener('progress', ev => {

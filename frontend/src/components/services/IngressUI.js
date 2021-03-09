@@ -13,7 +13,6 @@ export default class IngressUI extends Component {
   state = {
     op: '',
     path: '',
-    redirect: '',
     active: false,
     wrapHeaders: false,
     isPublic: false
@@ -24,7 +23,6 @@ export default class IngressUI extends Component {
     const path = conf && conf.path;
     const query = conf && conf.selector && conf.selector.query;
     const active = conf && conf.active;
-    const redirect = conf && conf.redirect;
     const wrapHeaders = conf && conf.wrapHeaders;
     const url = conf && conf.url;
     const isPublic = conf && conf.isPublic;
@@ -35,7 +33,6 @@ export default class IngressUI extends Component {
         query: query
       },
       active,
-      redirect: redirect || '',
       wrapHeaders,
       url, 
       isPublic
@@ -61,11 +58,9 @@ export default class IngressUI extends Component {
   }
 
   renderMain = service => {
-    const { userId } = this.props;
     const { 
       op,
       path,
-      //redirect,
       active,
       wrapHeaders,
       url,
@@ -100,17 +95,6 @@ export default class IngressUI extends Component {
               this.setState({ path: value, active: false })
             }
           />
-          {
-          /*
-          <InputField
-            label="Redirect"
-            value={redirect}
-            onChange={(_, {value}) => 
-              this.setState({ redirect: value, active: false })
-            }
-          />
-          */ 
-          }
           <div 
             style={{ 
               marginTop: 2,
@@ -163,28 +147,15 @@ export default class IngressUI extends Component {
               />
             </div>
           </div>
-          {
-            active && op === 'GET' ?  (
-              <a
-                href={`/api/${userId}/${service.board}/${this.state.path}?key=value`}
-                target="blank"
-                style={{
-                  color: 'black',
-                  padding: 5
-                }}
-              >
-                Click to test
-              </a>
-            ) : (
-              url && (
-                <Copyable 
-                  label="URL"
-                  value={`${protocol}//${host}${url}`}
-                />
-              )
-            )
+        {
+          active && url && (
+            <Copyable 
+              label="URL"
+              value={`${protocol}//${host}${url}`}
+            />
+          )
         }
-        </div>     
+      </div>     
    );
   }
 

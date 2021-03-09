@@ -69,10 +69,14 @@ export default class WebsocketChannel {
 
   onMessage = event => {
     const message = parseResponse(event.data);
+    if (message instanceof Blob) {
+      return this.onAction(message);
+    }
     const action = message.json ? 
-      rebuild(message.json.payload, message) : 
+      rebuild(message.json.payload, message) : // message is a multipart/form
       JSON.parse(message);
-    this.onAction(action);
+    
+    return this.onAction(action);
   };
 }
 
