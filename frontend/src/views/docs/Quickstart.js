@@ -128,19 +128,22 @@ export default class Quickstart extends Component {
         <div style={s(t.uc, t.fs12, t.ls2, { textAlign: 'left' })}>
           <div style={{ marginBottom: 10 }}>
             There are three "things" you need to know. 
-            They are the basic building blocks that enable experiments: 
-            <div style={s(t.bold, t.m(5, 0))}>
+            These are the basic building blocks that enable experiments: 
+            <span style={s(t.bold, t.m(5, 0))}>
               Board, Runtime and Service
-            </div>
-          </div>
-          <div style={{ padding: '8px 0px' }}>
-            <Sketch />
+            </span>
           </div>
           <div>
             Think of a Board as a sheet of paper. Then, a Runtime is a single line on that paper and the Services are the words of a line. 
             Together the blocks tell a story or they create behavior.
           </div>
-          <Item.Group link>
+          <div style={{ padding: '8px 0px' }}>
+            <Sketch />
+          </div>
+          <Item.Group 
+            link
+            style={{ marginTop: 0, marginBottom: 0 }}
+          >
           { 
               this.renderGroupItem({
                 title: 'Board',

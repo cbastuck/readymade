@@ -33,6 +33,13 @@ class DownloaderUI extends Component {
     });
   }
 
+  onNotification = (service, notification) => {
+    const { running } = notification;
+    if (running !== undefined) {
+      this.setState({ running });
+    }
+  }
+
   onClose = service => {
     if (service) {
       service.onClose();
@@ -70,7 +77,7 @@ class DownloaderUI extends Component {
       <ServiceUI
         {...this.props}
         onInit={this.onInit.bind(this)}
-        onTimer={service => this.setState({ running: service.running })}
+        onNotification={this.onNotification.bind(this)}
         segments={[ 
           { name: 'main', render: this.renderMain }
         ]}
@@ -110,6 +117,7 @@ class Downloader {
     this._fileStream = StreamSaver.createWriteStream(filename);
     this._writer = this._fileStream.getWriter();
     this.running = true;
+    this.app.notify(this, { running: this.running });
   }
 
   isOpen() {
@@ -123,6 +131,7 @@ class Downloader {
     this._fileStream = undefined;
     this._writer = undefined;
     this.running = false;
+    this.app.notify(this, { running: this.running });
   }
 
   async pump(reader, writer) {

@@ -39,6 +39,8 @@ const allowedServices = [
   'hookup.to/service/output',
   'hookup.to/service/thrower',
   'hookup.to/service/receiver',
+  'hookup.to/service/downloader',
+  'hookup.to/service/mp3encoder',
 ];
 
 const defaultName = 'Playground';

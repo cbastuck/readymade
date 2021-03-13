@@ -3,22 +3,31 @@ import React, { Component } from 'react';
 const isTouch = 'ontouchstart' in window;
 
 export default class HoldableButton extends Component {
+  state = {
+    isDown: false,
+  };
+
   onDown = ev => {
     const { onDown } = this.props;
     ev.stopPropagation();
+    this.setState({ isDown: true });
     onDown();
   }
 
   onUp = ev => {
     const { onUp } = this.props;
-    ev.stopPropagation();
-    onUp();
+    if (this.state.isDown) {
+      ev.stopPropagation();
+      onUp();
+      this.setState({ isDown: false });
+    }
   }
 
   onRightClick = ev => {
     const { onRightClick = () => {} } = this.props;
     ev.preventDefault();
     ev.stopPropagation();
+    this.setState({ isDown: true });
     onRightClick();
   }
 

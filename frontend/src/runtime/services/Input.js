@@ -70,7 +70,7 @@ class InputUI extends Component {
         style={{
           margin: 10,
         }}
-      >       
+      >
         <div style={s(t.uc, t.ls1, t.fs12)}> 
           <InputField 
             label="URL"
@@ -92,9 +92,9 @@ class InputUI extends Component {
             disabled={!isWebsocket}
           />
         </div>
-        <div style={s(t.tl, t.mt5)}>
+        <div style={t.tl}>
           <Checkbox 
-            style={s(t.mt5, t.uc, t.ls1, t.fs12)}
+            style={s(t.mt3, t.uc, t.ls1, t.fs12)}
             label="input active"
             toggle
             onChange={(_, { checked: running }) => {

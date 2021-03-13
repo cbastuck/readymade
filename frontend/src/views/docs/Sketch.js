@@ -4,7 +4,7 @@ import { Icon } from 'semantic-ui-react'
 import { s, t } from '../../styles';
 
 const flexRow = { display: 'flex', flexDirection: 'row' };
-const border = { border: 'solid 1px #444', borderRadius: 2 };
+const border = { border: 'solid 1px #AAA', borderRadius: 5 };
 const serviceDim = { width: '100%' };
 const runtimeDim = { width: '100%' };
 const text = s(t.uc, t.ls1, t.fs12);
@@ -19,7 +19,7 @@ export default class Sketch extends Component {
       )}
     >
       <Icon name="file outline" size="big" />
-      <div style={s(t.fs10, t.ls0, t.mt5)}>Configuration</div>
+      <div style={s(t.fs10, t.ls0, t.mt5, { color: '#333' })}>Configuration</div>
     </div>
   )
 

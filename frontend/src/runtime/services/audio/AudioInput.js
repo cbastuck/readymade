@@ -113,8 +113,8 @@ class AudioInputUI extends Component {
           <canvas 
             ref={canvas => {
               if (canvas) {
-                this.canvas = canvas;
-                this.canvasCtx = canvas.getContext('2d');
+                this._canvas = canvas;
+                this._canvasCtx = canvas.getContext('2d');
               }
             }}
             height={100}
@@ -136,7 +136,7 @@ class AudioInputUI extends Component {
           />
         </div>
         <HoldableButton
-          style={s(t.uc, t.ls1, t.bc('#e0e1e2'), t.p5, t.tc, t.fs11, t.br3)}
+          style={s(t.uc, t.ls1, t.bc('#e0e1e2'), t.p5, t.tc, t.fs11, t.br3, { width: '99.5%' })}
           onDown={onStartRecording}
           onUp={onStopRecording}
         >
@@ -160,7 +160,7 @@ class AudioInputUI extends Component {
             }}
           />
           <Button
-            style={{ ...buttonStyle }}
+            style={{ ...buttonStyle, height: 33 }}
             onClick={() => this.state.recording ? 
               service.stopRecorder() : 
               service.startRecorder(service.timeslice)
@@ -199,40 +199,40 @@ class AudioInputUI extends Component {
   }
 
   draw = () => {
-    if (!this.canvas || !this.state.visualize || !this._audioCtx) {
+    if (!this._canvas || !this.state.visualize || !this._audioCtx) {
       return;
     }
 
     // taken from here: https://github.com/mdn/web-dictaphone
     const bufferLength = this._analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
-    const width = this.canvas.width
-    const height = this.canvas.height;
+    const width = this._canvas.width
+    const height = this._canvas.height;
 
     this._analyser.getByteTimeDomainData(dataArray);
   
-    this.canvasCtx.fillStyle = 'white';
-    this.canvasCtx.fillRect(0, 0, width, height);
+    this._canvasCtx.fillStyle = 'white';
+    this._canvasCtx.fillRect(0, 0, width, height);
 
-    this.canvasCtx.lineWidth = 1;
-    this.canvasCtx.strokeStyle = 'gray';
+    this._canvasCtx.lineWidth = 1;
+    this._canvasCtx.strokeStyle = 'gray';
 
-    this.canvasCtx.beginPath();
+    this._canvasCtx.beginPath();
     const sliceWidth = width * 1.0 / bufferLength;
     for(let i = 0, x = 0; i < bufferLength; i++) {
       let v = dataArray[i] / 128.0;
       let y = v * height / 2;
 
       if(i === 0) {
-        this.canvasCtx.moveTo(x, y);
+        this._canvasCtx.moveTo(x, y);
       } else {
-        this.canvasCtx.lineTo(x, y);
+        this._canvasCtx.lineTo(x, y);
       }
 
       x += sliceWidth;
     }
-    this.canvasCtx.lineTo(width, height/2);
-    this.canvasCtx.stroke();
+    this._canvasCtx.lineTo(width, height/2);
+    this._canvasCtx.stroke();
 
     requestAnimationFrame(this.draw);
   }

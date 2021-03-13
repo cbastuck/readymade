@@ -13,12 +13,7 @@ export default class SyncIndicator extends Component {
       label, 
     } = this.props;
     return typeof label === 'string' ? (
-      <div
-        style={{
-          //minWidth: labelWidth,
-          height: labelHeight,
-        }}
-      >
+      <div>
         <Tooltip 
           text={label}
         >

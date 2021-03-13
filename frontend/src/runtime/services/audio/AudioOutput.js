@@ -1,31 +1,78 @@
 import React, { Component } from 'react';
+import {
+  Checkbox,
+} from 'semantic-ui-react';
 
 import ServiceUI from '../ServiceUI';
 
 import { decodeBuffer } from './audioHelper';
 import { toArrayBuffer } from '../helpers';
+import InputField from '../../../components/shared/InputField';
+import { s, t } from '../../../styles';
 
 const serviceId = 'hookup.to/service/audio-output';
 const serviceName = 'Audio Output';
 
 class AudioOutputUI extends Component {
+  state = {
+    fadeInEnabled: false,
+    fadeInTime: 0,
+  }
+
+  onInit = initialState => {
+    const {
+      fadeInTime=0,
+      fadeInEnabled=false
+    } = initialState;
+    this.setState({ fadeInTime, fadeInEnabled });
+  }
+
   renderMain = service => {
+    const { 
+      fadeInTime,
+      fadeInEnabled,  
+    } = this.state;
     return (
       <div
         style={{
           margin: '0px 5px',
-          textAlign: 'left'
+          textAlign: 'left',
+          display: 'flex',
+          flexDirection: 'column'
         }}
       >
         <canvas 
           ref={canvas => {
             if (canvas) {
-              service.canvas = canvas;
-              service.canvasCtx = canvas.getContext('2d');
+              service._canvas = canvas;
+              service._canvasCtx = canvas.getContext('2d');
               service.visualize();
             }
           }}
         />
+        <div style={{ marginTop: 8, marginBottom: 3 }}>
+          <Checkbox 
+            style={s(t.uc, t.fs11, t.ls1)}
+            label="Enable Fade-In/Out"
+            checked={fadeInEnabled}
+             onChange={async (_, { checked: fadeInEnabled }) => {
+                this.setState({ fadeInEnabled });
+                service.configure({ fadeInTime: fadeInEnabled ? fadeInTime : 0 });
+             }}
+            toggle
+          />
+        </div>
+        <InputField
+          type="number"
+          label="Fade-In/Out"
+          unit="msec"
+          value={`${fadeInTime}`}
+          onChange={(_, { value: fadeInTime }) => {
+            this.setState({ fadeInTime });
+            service.configure({ fadeInTime });
+          }}
+          disabled={!fadeInEnabled}
+        /> 
       </div>
     );
   }
@@ -33,7 +80,8 @@ class AudioOutputUI extends Component {
   render() {
     return (
       <ServiceUI
-        {...this.props} 
+        {...this.props}
+        onInit={this.onInit}
         segments={[
           { name: 'Main', render: this.renderMain }
         ]}
@@ -55,30 +103,35 @@ class AudioOutput {
     this.analyser.maxDecibels = -10;
     this.analyser.smoothingTimeConstant = 0.85;
     this.analyser.connect(this.audioCtx.destination);
+    this.fadeInTime = 0;
   }
 
   async configure(config) {
+    const { fadeInTime } = config;
+    if (fadeInTime !== undefined) {
+      this.fadeInTime = fadeInTime;
+    }
   }
 
   // taken from here: https://github.com/mdn/voice-change-o-matic
   visualize = () => {
-    if (!this.canvas) {
+    if (!this._canvas) {
       return;
     }
-    const WIDTH = this.canvas.width;
-    const HEIGHT = this.canvas.height;
+    const WIDTH = this._canvas.width;
+    const HEIGHT = this._canvas.height;
 
     this.analyser.fftSize = 256;
     const bufferLengthAlt = this.analyser.frequencyBinCount;
     const dataArrayAlt = new Uint8Array(bufferLengthAlt);
 
-    this.canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
+    this._canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
 
     const drawAlt = () => {
         this.analyser.getByteFrequencyData(dataArrayAlt);
 
-        this.canvasCtx.fillStyle = 'white';
-        this.canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+        this._canvasCtx.fillStyle = 'white';
+        this._canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
         const barWidth = (WIDTH / bufferLengthAlt) * 2.5;
         let barHeight;
@@ -87,8 +140,8 @@ class AudioOutput {
         for(let i = 0; i < bufferLengthAlt; i++) {
           barHeight = dataArrayAlt[i];
 
-          this.canvasCtx.fillStyle = `rgb(65, 131, ${barHeight+150})`;
-          this.canvasCtx.fillRect(x,HEIGHT-barHeight/2,barWidth,barHeight/2);
+          this._canvasCtx.fillStyle = `rgb(65, 131, ${barHeight+150})`;
+          this._canvasCtx.fillRect(x, HEIGHT-barHeight/2, barWidth, barHeight/2);
 
           x += barWidth + 1;
         }
@@ -111,8 +164,24 @@ class AudioOutput {
         source = this.audioCtx.createBufferSource();
         source.buffer = params;
       }
-      if (source) {
-        source.connect(this.analyser);
+      if (source) {      
+        if (this.fadeInTime > 0) {
+          const fadeInOut = this.fadeInTime / 1000;
+          const duration = source.buffer.duration;
+          const gainNode = this.audioCtx.createGain();
+          source.connect(gainNode);
+          gainNode.connect(this.analyser);
+          // fade in
+          gainNode.gain.linearRampToValueAtTime(0, 0);
+          gainNode.gain.linearRampToValueAtTime(1, this.audioCtx.currentTime + fadeInOut);
+          // fade out
+          gainNode.gain.linearRampToValueAtTime(1, this.audioCtx.currentTime + duration - fadeInOut);
+          gainNode.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + duration);
+        } else {
+          // fadein not needd - connect directly to analyser
+          source.connect(this.analyser);
+        }
+
         source.onended = () => source.disconnect();
         source.start();
       }

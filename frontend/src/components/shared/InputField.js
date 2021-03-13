@@ -53,9 +53,22 @@ export default class InputField extends Component {
       onFocus = () => {},
     } = this.props;
     return (
-      <div style={{ width: '50%', flexGrow: 3, display: 'flex', flexDirection: 'row' }}>
+      <div 
+        style={{ 
+          width: '50%', 
+          flexGrow: 3, 
+          display: 'flex', 
+          flexDirection: 'row' 
+        }}
+      >
         <Input 
-          style={{ fontSize, height: 33, flexGrow: 3 }}
+          style={{
+            fontSize, 
+            // height: 33, 
+            height: '90%',
+            width: '100%',
+            flexGrow: 3 
+          }}
           type={type}
           value={value || ''}
           onChange={(ev, { value }) => synced ? this.setState({ value }) : onChange(ev, { value })}

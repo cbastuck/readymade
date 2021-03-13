@@ -59,7 +59,7 @@ class SoundUI extends Component {
   renderStartStopButton = (running, onClick) => {
     return (
       <Button 
-        style={{ width: '100%', marginTop: 5 }}
+        style={{ width: '100%' }}
         onClick={onClick}
       >
         <span style={s(t.uc, t.ls1, t.fs11)}>
@@ -125,7 +125,9 @@ class SoundUI extends Component {
       sampler: 'Sampler',
     };
     return (
-      <div style={{ minWidth: 250 }}>
+      <div 
+        style={{ minWidth: 250 }}
+      >
         <SelectorField
           label="Generator"
           options={generatorOptions}
