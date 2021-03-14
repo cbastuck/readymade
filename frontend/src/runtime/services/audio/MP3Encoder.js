@@ -1,10 +1,7 @@
 import React, { Component } from 'react';
-import {
-  Button,
-  Input,
-} from 'semantic-ui-react';
 
 import ServiceUI from '../ServiceUI';
+import SelectorField from '../../../components/shared/SelectorField';
 
 import { Mp3Encoder, WavHeader } from 'lamejs';
 
@@ -12,14 +9,31 @@ const serviceId = 'hookup.to/service/mp3encoder';
 const serviceName = 'MP3Encoder';
 
 class MP3EncoderUI extends Component {
+  state = {};
+  
   onInit = initialState => {
-
+    const { 
+      bitrate='128',
+    } = initialState;
+    this.setState({ bitrate });
   }
 
   renderMain = service => {
+    const { bitrate } = this.state;
     return (
       <div>
-      Hier entsteht ein neuer Mediamarkt
+        <SelectorField 
+          label="Bitrate"
+          value={bitrate}
+          options={{
+            '128': '128',
+            '64': '64',
+            '32': '32',
+          }}
+          onChange={(_ev, { value: bitrate }) => 
+            this.setState({ bitrate })
+          }
+        />
       </div>
     );
   }

@@ -20,31 +20,38 @@ class AudioInputUI extends Component {
     recording: false,
     visualize: true,
     devices: [],
+    timeslice: 1000,
   };
 
   onInit = async service => {
-    if (this.state.visualize) {
-      const stream = await service.prepareStream();
-      this.visualize(stream);
-      this.setState({ 
-        devices: service.availableDevices,
-        timeslice: service.timeslice,
-      });
-    }
+    const { timeslice, availableDevices } = service
+    this.setState({ 
+      devices: availableDevices,
+      timeslice,
+    });
+    // input stream visualization
+    const stream = await service.prepareStream();
+    this.visualize(stream);
   }
 
   onNotification = (service, notification) => {
     const { 
-      isRecording=this.state.recording, 
-      timeslice=this.state.timeslice,
-      availableDevices=this.state.devices
+      isRecording, 
+      timeslice,
+      availableDevices
     } = notification;
 
-    this.setState({ 
-      recording: isRecording,
-      timeslice: timeslice,
-      devices: availableDevices
-    });
+    if (isRecording !== undefined) {
+      this.setState({ recording: isRecording });
+    }
+
+    if (timeslice !== undefined) {
+      this.setState({ timeslice});
+    }
+
+    if (availableDevices !== undefined) {
+      this.setState({ devices: availableDevices });
+    }
   }
 
   renderDevices = service => {
@@ -99,6 +106,10 @@ class AudioInputUI extends Component {
       service.stopRecorder();
       this.setState({ pushRecording: false });
     };
+    const { 
+      recording, 
+      timeslice 
+    } = this.state;
     return (
       <div
         style={{
@@ -152,21 +163,21 @@ class AudioInputUI extends Component {
           <InputField 
             type="number"
             label="timeslice"
-            value={this.state.timeslice}
+            value={timeslice}
+            unit="msec"
             onChange={(_, { value }) => {
               const timeslice = Number(value);
-              service.timeslice = timeslice; 
-              this.setState({ timeslice: timeslice });
+              service.configure({ timeslice });
             }}
           />
           <Button
-            style={{ ...buttonStyle, height: 33 }}
-            onClick={() => this.state.recording ? 
+            style={{ ...buttonStyle, height: 33, marginLeft: 5 }}
+            onClick={() => recording ? 
               service.stopRecorder() : 
               service.startRecorder(service.timeslice)
             }
           >
-            { this.state.recording ? 'Stop' : 'Record' }
+            { recording ? 'Stop' : 'Record' }
           </Button>
         </div>
       </div>
@@ -185,17 +196,19 @@ class AudioInputUI extends Component {
   }
 
   visualize = stream => {
-    if (!this._audioCtx && stream) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext; 
-      this._audioCtx = new AudioContext();
-      // taken from here: https://github.com/mdn/web-dictaphone
-      const source = this._audioCtx.createMediaStreamSource(stream);
-      this._analyser = this._audioCtx.createAnalyser();
-      this._analyser.fftSize = 2048;
-      source.connect(this._analyser);
-    }
+    if (this.state.visualize) {
+      if (!this._audioCtx && stream) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext; 
+        this._audioCtx = new AudioContext();
+        // taken from here: https://github.com/mdn/web-dictaphone
+        const source = this._audioCtx.createMediaStreamSource(stream);
+        this._analyser = this._audioCtx.createAnalyser();
+        this._analyser.fftSize = 2048;
+        source.connect(this._analyser);
+      }
 
-    this.draw();
+      this.draw();
+    }
   }
 
   draw = () => {
@@ -275,6 +288,9 @@ class AudioInput {
     if (timeslice !== undefined) {
       this.timeslice = timeslice;
       this.app.notify(this, { timeslice });
+      if (this.isRecording) {
+        this.startRecorder(timeslice);
+      }
     }
 
     if (device !== undefined) {
@@ -304,27 +320,35 @@ class AudioInput {
   }
 
   async startRecorder(timeslice) {
+    if (this.isRecording) {
+      this.stopRecorder();
+    }
+
     try {
       if (!this.recorder) {
         this.recorder = new MediaRecorder(this._stream);
         this.recorder.addEventListener(
           'dataavailable', 
-          e => this.app.next(this, e.data)
+          e => {
+            // TODO: there is a threshold there is only header data 
+            // without content (44), using 100 as a buffer
+            if (e.data && e.data.size > 100) { 
+              this.app.next(this, e.data);
+            }
+          }
         );
       }
-      this.recorder.start(timeslice);
-      this.isRecording = true;
-      this.app.notify(this, { isRecording: true });
     } catch (err) {
-      console.error('AudioInput error', err);
+      console.error('Unexpected error in AudioInput service:', err);
     }
+    this.recorder.start(timeslice);
+    this.isRecording = true;
+    this.app.notify(this, { isRecording: true });
   }
 
   stopRecorder() {
     if (this.recorder) {
       this.recorder.stop();
-      //this._stream.getAudioTracks()[0].stop();
-      //this._stream = this.recorder = undefined;
       this.isRecording = false;
       this.app.notify(this, { isRecording: false });
     }

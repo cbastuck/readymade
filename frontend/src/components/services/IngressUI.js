@@ -87,66 +87,66 @@ export default class IngressUI extends Component {
           onChange={(_ev, { value }) => 
             this.setState({ op: value, active: false })
           }
-          />
-          <InputField
-            label="Path"
-            value={path}
-            onChange={(_, {value}) => 
-              this.setState({ path: value, active: false })
-            }
-          />
-          <div 
-            style={{ 
-              marginTop: 2,
-              textAlign: 'left' 
-            }}
-          > 
-            <div>
-              <Checkbox
-                toggle
-                label="Wrap Headers"
-                style={s(t.uc, t.fs12, t.m(0, 3))}
-                onChange={async (_, { checked: wrapHeaders }) => {
-                  this.setState(
-                    { wrapHeaders },
-                    () => service.configure({ wrapHeaders })
-                  )
-                }}
-                checked={wrapHeaders}
-                disabled={!op || !path}
-              />
-            </div>
-            <div>
-              <Checkbox
-                toggle
-                label="Public"
-                style={s(t.uc, t.fs12, t.m(0, 3))}
-                onChange={async (_, { checked: isPublic }) => {
-                  this.setState(
-                    { isPublic },
-                    () => service.configure(this.state)
-                  )
-                }}
-                checked={isPublic}
-                disabled={!op || !path}
-              />
-            </div>
-            <div>
-              <Checkbox
-                toggle
-                label="Active"
-                style={s(t.uc, t.fs12, t.m(0, 3))}
-                onChange={async (_, { checked: active }) => {
-                  this.setState(
-                    { active },
-                    () => service.configure(this.state)
-                  )
-                }}
-                checked={active}
-                disabled={!op || !path}
-              />
-            </div>
+        />
+        <InputField
+          label="Path"
+          value={path}
+          onChange={(_, {value}) => 
+            this.setState({ path: value, active: false })
+          }
+        />
+        <div 
+          style={{ 
+            marginTop: 2,
+            textAlign: 'left' 
+          }}
+        > 
+          <div>
+            <Checkbox
+              toggle
+              label="Wrap Headers"
+              style={s(t.uc, t.fs12, t.m(0, 3))}
+              onChange={async (_, { checked: wrapHeaders }) => {
+                this.setState(
+                  { wrapHeaders },
+                  () => service.configure({ wrapHeaders })
+                )
+              }}
+              checked={wrapHeaders}
+              disabled={!op || !path}
+            />
           </div>
+          <div>
+            <Checkbox
+              toggle
+              label="Public"
+              style={s(t.uc, t.fs12, t.m(0, 3))}
+              onChange={async (_, { checked: isPublic }) => {
+                this.setState(
+                  { isPublic },
+                  () => service.configure(this.state)
+                )
+              }}
+              checked={isPublic}
+              disabled={!op || !path}
+            />
+          </div>
+          <div>
+            <Checkbox
+              toggle
+              label="Active"
+              style={s(t.uc, t.fs12, t.m(0, 3))}
+              onChange={async (_, { checked: active }) => {
+                this.setState(
+                  { active },
+                  () => service.configure(this.state)
+                )
+              }}
+              checked={active}
+              disabled={!op || !path}
+            />
+          </div>
+        </div>
         {
           active && url && (
             <Copyable 

@@ -68,6 +68,7 @@ class OutputUI extends Component {
       flow, 
       headers
     } = this.state;
+    const headerKeys = Object.keys(headers);
     return (
       <div style={t.m10}>
         <div style={s(t.uc, t.ls1, t.fs12)}> 
@@ -80,25 +81,29 @@ class OutputUI extends Component {
             }}
           />
         </div>
-        <div style={s(t.tl, t.uc, t.ls1, t.fs12, t.mt3)}>
-          <div>Headers</div>
-          {
-            Object.keys(headers).map(key => (
-              <InputField
-                key={`output-header-${service.uuid}-${key}`}
-                label={key}
-                value={headers[key]}
-                onChange={async (_, { value: newValue }) => {
-                  const newHeaders = {
-                    ...this.state.headers,
-                    [key]: newValue,
-                  };
-                  await service.configure({ headers: newHeaders });
-                }}
-              />
-            ))
-          }
-        </div>
+        {
+          headerKeys.length > 0 && (
+            <div style={s(t.tl, t.uc, t.ls1, t.fs12, t.mt3)}>
+              <div>Headers</div>
+              {
+                headerKeys.map(key => (
+                  <InputField
+                    key={`output-header-${service.uuid}-${key}`}
+                    label={key}
+                    value={headers[key]}
+                    onChange={async (_, { value: newValue }) => {
+                      const newHeaders = {
+                        ...this.state.headers,
+                        [key]: newValue,
+                      };
+                      await service.configure({ headers: newHeaders });
+                    }}
+                  />
+                ))
+              }
+            </div>
+          )
+        }
         <div style={t.tl}>
           <Checkbox 
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}

@@ -4,16 +4,14 @@ import {
   Sidebar,
   Segment,
   Menu,
-  Dropdown,
 } from 'semantic-ui-react';
 
 import { openTab, getServiceConfiguration } from '../core/actions';
 import RemoteRuntime from '../runtime/RemoteRuntime';
 import BrowserRuntime from '../runtime/BrowserRuntime';
+import ServiceDropdown from './ServiceDropdown';
 
 import { t } from '../styles';
-
-import './Runtime.css';
 
 export default class Runtime extends Component {
   state = {
@@ -138,35 +136,16 @@ export default class Runtime extends Component {
         allowedServices.indexOf(s.value) !== -1
       );
     return (
-      <div
-        id="service-dropdown"
-        style={{
-          fontSize: 12,
-          letterSpacing: 1,
-          textTransform: 'uppercase',
-          marginRight: 10
+      <ServiceDropdown 
+        options={options}
+        wide={wide}
+        onSelected={value => {
+          const service = registry.find(s => s.serviceId === value);
+          if (service) {
+            this.onAddService(service);
+          }
         }}
-      >
-        <Dropdown
-          ref={dropdown => this.dropdown = dropdown }
-          deburr
-          options={options}
-          placeholder={wide ? 'Add Service' : 'Service'}
-          search
-          selection
-          selectOnBlur={false}
-          onChange={(ev, { value }) => {
-            if (value) {
-              const service = registry.find(s => s.serviceId === value);
-              if (service) {
-                this.onAddService(service);
-                this.dropdown.clearValue();
-              }
-            }
-          }}
-          compact={!wide}
-        />
-      </div>
+      />
     );
   }
 

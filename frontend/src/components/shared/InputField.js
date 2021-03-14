@@ -71,7 +71,12 @@ export default class InputField extends Component {
           }}
           type={type}
           value={value || ''}
-          onChange={(ev, { value }) => synced ? this.setState({ value }) : onChange(ev, { value })}
+          onChange={(ev, { value: rawValue }) => {
+            const value = type === 'number' ? Number(rawValue) : rawValue;
+            synced ? 
+              this.setState({ value }) : 
+              onChange(ev, { value })
+          }}
           onKeyUp={ev => {
             switch(ev.key) {
               case 'Enter':

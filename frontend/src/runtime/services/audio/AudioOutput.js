@@ -22,7 +22,7 @@ class AudioOutputUI extends Component {
   onInit = initialState => {
     const {
       fadeInTime=0,
-      fadeInEnabled=false
+      fadeInEnabled=fadeInTime !== 0,
     } = initialState;
     this.setState({ fadeInTime, fadeInEnabled });
   }
@@ -156,8 +156,15 @@ class AudioOutput {
       let source;
       if (params instanceof Blob || params instanceof File) {
         const ab = await toArrayBuffer(params);
-        source = this.audioCtx.createBufferSource();
-        source.buffer = await decodeBuffer(this.audioCtx, ab);
+        if (ab.byteLength > 0) {
+          try {
+            const buffer = await decodeBuffer(this.audioCtx, ab);
+            source = this.audioCtx.createBufferSource();
+            source.buffer = buffer;
+          } catch(err) {
+            console.error('AudioOutput decodeBuffer() failed', ab, ab.byteLength > 0, ab.byteLength)
+          }
+        }
       }
       // TODO: do we want to allow multiple formats? Especially one that is non streamable?
       if (params instanceof AudioBuffer) {

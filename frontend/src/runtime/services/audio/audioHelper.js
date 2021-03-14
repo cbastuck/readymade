@@ -7,18 +7,18 @@ export function toAudioBuffer(blobOrFile, audioCtx=null) {
       audioCtx = new AudioContext();
     }
     const ab = await toArrayBuffer(blobOrFile);
-    audioCtx.decodeAudioData(ab, resolve);
+    audioCtx.decodeAudioData(ab, resolve, reject);
   }); 
 }
 
 export function decodeBuffer(audioCtx, data) {
-  return new Promise((resolve, reject) => 
-    audioCtx.decodeAudioData(
-      data, 
-      buffer => resolve(buffer),
-      e => reject(e)
-    )
-  );
+  return new Promise((resolve, reject) => {
+      audioCtx.decodeAudioData(
+        data, 
+        resolve,
+        reject,
+      );
+  });
 }
 
 export function combineChannels(audioBuffer) {
