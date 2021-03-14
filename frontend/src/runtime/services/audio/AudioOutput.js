@@ -27,6 +27,14 @@ class AudioOutputUI extends Component {
     this.setState({ fadeInTime, fadeInEnabled });
   }
 
+  onNotification = (service, notification) => {
+    const { fadeInTime } = notification;
+
+    if (fadeInTime !== undefined) {
+      this.setState({ fadeInTime });
+    }
+  }
+
   renderMain = service => {
     const { 
       fadeInTime,
@@ -57,7 +65,9 @@ class AudioOutputUI extends Component {
             checked={fadeInEnabled}
              onChange={async (_, { checked: fadeInEnabled }) => {
                 this.setState({ fadeInEnabled });
-                service.configure({ fadeInTime: fadeInEnabled ? fadeInTime : 0 });
+                service.configure({ 
+                  fadeInTime: fadeInEnabled ? (fadeInTime || 1) : 0,
+                });
              }}
             toggle
           />
@@ -82,6 +92,7 @@ class AudioOutputUI extends Component {
       <ServiceUI
         {...this.props}
         onInit={this.onInit}
+        onNotification={this.onNotification}
         segments={[
           { name: 'Main', render: this.renderMain }
         ]}
@@ -106,10 +117,11 @@ class AudioOutput {
     this.fadeInTime = 0;
   }
 
-  async configure(config) {
+  configure(config) {
     const { fadeInTime } = config;
     if (fadeInTime !== undefined) {
       this.fadeInTime = fadeInTime;
+      this.app.notify(this, { fadeInTime });
     }
   }
 

@@ -148,9 +148,9 @@ export default class Welcome extends Component {
         >
         {
           [
-            { q: 'What', a: 'An approach to play and improvise with technology; make it personal' },
-            { q: 'Why', a: 'Technology is an enabler for creativity, inspiration and thinking' },
-            { q: 'How', a: 'Being able to creatively connect data, logic, devices and services' },
+            { q: 'What', a: 'An approach to lower access barriers and improvise with technology' },
+            { q: 'Why', a: 'Technology is an enabler for creativity, inspiration and thinking for us all' },
+            { q: 'How', a: 'Find abstractions to creatively connect data, logic, devices and services' },
             { 
               a: (
               <button
