@@ -66,15 +66,19 @@ export default class Imprint extends Component {
             { this.renderAddress() }
             <Separator />
             <h3 className="imprint-text">
-              Sources of the used images and graphics
+              Credits, Sources for images and graphics
             </h3>
-            <div className="imprint-text">
-              Background Image on Startpage
-              <a href="https://www.shutterstock.com/image-vector/grunge-background-abstract-geometric-pattern-squares-1196210650"> (here) </a>
-            </div>
-            <div className="imprint-text">
-              Icons are coming from 
-              <a href="https://fontawesome.com/license/free"> Font Awesome </a>
+            <div style={{ textAlign: 'left' }} className="imprint-text">
+              <div className="imprint-item">
+                <a href="https://www.shutterstock.com/image-vector/grunge-background-abstract-geometric-pattern-squares-1196210650"> Background image </a> on Startpage
+              </div>
+              <div className="imprint-item">
+                Icons are coming from 
+                <a href="https://fontawesome.com/license/free"> Font Awesome </a>
+              </div>
+              <div className="imprint-item">
+                <a href="https://react.semantic-ui.com/">React Semantic-UI </a> is used
+              </div>
             </div>
           </div>
         </div>

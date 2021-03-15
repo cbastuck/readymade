@@ -42,7 +42,7 @@ export default class Quickstart extends Component {
                     fontSize: 11,
                     letterSpacing: 1,
                     textTransform: 'uppercase',
-                    // margin: '5px 0px',
+                    cursor: 'default',
                   }}
                 > 
                   {detail} 
@@ -134,8 +134,8 @@ export default class Quickstart extends Component {
             </span>
           </div>
           <div>
-            Think of a Board as a sheet of paper. Then, a Runtime is a single line on that paper and the Services are the words of a line. 
-            Together the blocks tell a story or they create behavior.
+            Think of a Board as a sheet of paper. Then, a Runtime is a single line on that paper and the Services are the words on a line. 
+            Together they tell a story or they create behavior.
           </div>
           <div style={{ padding: '8px 0px' }}>
             <Sketch />
@@ -167,7 +167,7 @@ export default class Quickstart extends Component {
                   'A Runtime belongs to exactly one board',
                   'A Runtime\'s lifetime ends with the lifetime of its parent board',
                   'A Runtime can run inside of the browser or on a remote machine',
-                  'Runtimes running in the browser can be mixed with remote runtimes on a single board',
+                  'Runtimes running in the browser can be mixed with remote runtimes on the same board',
                   'A Runtime owns and manages an arbitrary number of services',
                   'A Runtime accepts data on its input and passes it to its services',
                   'A Runtime provides the result of the last service as its output',
@@ -181,14 +181,14 @@ export default class Quickstart extends Component {
               this.renderGroupItem({
                 title: 'Service',
                 details: [
-                  'Services are high level abstractions of complex logic',
+                  'Services are (high level) abstractions of (complex) logic',
                   'Services are supposed to feel simple and intuitive',
                   'Services have an input and an output',
-                  'Services have a configuration that can be modified or retrieved at any time',
-                  'A Service configuration defines the mode of a service',
-                  'A Service behaves differently depending on its configuration',
-                  'A Service can generate data spontaneously and thus trigger a chain reaction',
-                  'A Service can decide to stop further propagation',
+                  'Services need a configuration that can be modified or retrieved at any time',
+                  'A Service configuration defines the mode of the service',
+                  'Services behave differently depending on their configuration',
+                  'A Service can generate data spontaneously and trigger a chain reaction',
+                  'A Service can also decide to stop further propagation',
                 ],
                 image: undefined,
               }) 

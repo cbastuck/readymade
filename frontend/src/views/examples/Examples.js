@@ -321,17 +321,24 @@ export default class Examples extends Component {
     return (
       <div style={{ marginBottom: 30 }}>
         <Message
-          style={s(t.ls1, t.uc, t.fs12, t.tl)}
+          //style={s(t.nc, t.fs14, t.it, { fontFamily: 'monospace' })}
+          style={s(t.nc, t.fs13, t.uc, t.ls1, { color: '#555' })}
         >
           <p>
-            The examples here only show a fraction of the possibilities, as they 
-            run in a Sandbox. The purpose of the Sandbox is to allow building workflows that do not 
-            require a backend and therefore don't need a user account.
+            Following examples show a fraction of the possibilities. They 
+            run in a Sandbox which is intended for building flows that run mostly locally and 
+            accordingly do not require a login on the backend.
           </p>
 
           <p>
-            More magic happens when mixing remote and local runtimes on on the same board.
-            Uses-cases that require a login are not publicly available at the moment. 
+            More is possible when mixing remote and local runtimes on the same board.
+            But a registration and login is not available as a public feature. 
+          </p>
+          
+          <p>
+            Instead start playing with multiple local runtimes using the <a href="/playground">playground</a>. 
+            A public reflector can be used to hookup different playgrounds.
+            More on this soon.
           </p>
         </Message>
       </div>

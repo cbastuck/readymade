@@ -9,11 +9,9 @@ import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
 import Runtime from '../components/Runtime';
 import SidechainSelector from '../components/SidechainSelector';
-//import BoardRouting from '../components/BoardRouting';
 import DragProvider from '../DragContext';
 import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
-//import WebsocketChannel from '../runtime/WebsocketChannel';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 
@@ -83,7 +81,6 @@ export default class Playground extends Component {
           runtimes: undefined, 
           services: undefined,
           sidechainRouting: {},
-          //boardRouting: {},
         });
       } else {
         this.setState({ boardName: board });
@@ -180,7 +177,6 @@ export default class Playground extends Component {
           runtimes, 
           services, 
           sidechainRouting, 
-          //boardRouting 
         } = template;
         const patchedRuntimes = runtimes.map(rt => ({
           ...rt, id: uuid.v4() 
@@ -197,11 +193,7 @@ export default class Playground extends Component {
           sidechainRouting: patchedRuntimes.reduce(
             (all, rt, idx) => ({ ...all, [rt.id]: sidechainRouting[runtimes[idx].id] }),
             {}
-          ),/*
-          boardRouting: patchedRuntimes.reduce(
-            (all, rt, idx) => ({ ...all, [rt.id]: boardRouting[runtimes[idx].id] }),
-            {}
-          ),*/
+          ),
         });
       } catch (err) {
         console.error('Creating from template failed', name);
@@ -222,19 +214,6 @@ export default class Playground extends Component {
       JSON.parse(objOrString) : 
       objOrString;
     this.setState(state);
-    
-    // Restore input board routings
-    /*
-    const { boardRouting } = state || {};
-    if (boardRouting) {
-      for (const runtimeId in boardRouting) {
-        const { inputUrl, inputTopic } = boardRouting[runtimeId] || {};
-        if (inputUrl) {
-          await this.connectRoutingInput(runtimeId, inputUrl, inputTopic);
-        }
-      }
-    }
-    */
   }
 
   storeBoard = name => {
@@ -425,20 +404,7 @@ export default class Playground extends Component {
       }
       return; // runtimes with routings aren't further processed
     }
-/*
-    const broute = boardRouting && boardRouting[runtime.id];
-    if (broute) {
-      const { outputUrl, outputTopic } = broute;
-      if (outputUrl) {
-        try {
-          await request({ absolute: outputUrl }, 'POST', false, result, { 'reflector-topic': outputTopic });
-        } catch(err) {
-          console.error('Could not send result to runtime output', outputUrl, runtime.id);
-        }
-        return; // runtimes with outputs are not further processed as well
-      }
-    }
-  */
+
     const nextRuntime = this.getNextRuntime(runtime);
     if (nextRuntime) {
       nextRuntime.processRuntime(result);
@@ -473,48 +439,6 @@ export default class Playground extends Component {
     }
     return savedBoards;
   }
-
-/*
-  connectRoutingInput = async (runtimeId, inputUrl, inputTopic) => {
-    if (this.externalInputs[runtimeId]) {
-      // close an existing connection if it exists
-      this.externalInputs[runtimeId].close();
-      delete this.externalInputs[runtimeId];
-    }
-    const { protocol } = window.location;
-    const secureConnection = protocol.indexOf('https') === 0;
-    const ws = new WebsocketChannel(
-      `external-input-${runtimeId}`,
-      params => {
-        const rt = this.getRuntimeById(runtimeId);
-        if (!rt) {
-          console.warn(`External runtime-input could not be processed, runtime not (yet) available: ${runtimeId}`)
-          return;
-        }
-        const { action } = params;
-        if (action) {
-          if (action === 'process') { // only inject process actions from another runtime
-            rt.impl.onMessage(action);
-          }
-        } else {
-          rt.impl.onMessage({
-            uuid: null,
-            action: 'process',
-            params
-          });
-        }
-      },
-      secureConnection
-    );
-    this.externalInputs[runtimeId] = ws;
-    try {
-      await ws.open({ absolute: inputUrl });
-      ws.send({ topic: inputTopic });
-    } catch(err) {
-      console.error('Playground.connectRoutingInput() could not connect to runtime input', inputUrl, runtimeId);
-    }
-  }
-  */
 
   renderRuntimes = boardContext => {
     const { runtimes } = boardContext;
@@ -557,24 +481,6 @@ export default class Playground extends Component {
                   }}
                 >
                   <div style={{ display: 'flex', flexDirection: 'row'}}>
-                  {/*
-                    <BoardRouting 
-                      key={`board-routing-${runtime.id}`}
-                      routing={boardRouting[runtime.id]}
-                      onChange={routing => {
-                        this.setState({ 
-                          boardRouting: {
-                            ...boardRouting,
-                            [runtime.id]: routing,
-                          }
-                        });
-                        const { inputUrl, inputTopic } = routing;
-                        if (inputUrl) {
-                          this.connectRoutingInput(runtime.id, inputUrl, inputTopic);
-                        }
-                      }}
-                    />
-                  */}
                     <Button
                       onClick={() => this.setState({ showRoutingOptions: false })}
                       style={s(t.uc, t.fs12, t.ls1, { height: 28, width: 32, marginLeft: 'auto', borderRadius: 2 })}
@@ -638,11 +544,11 @@ export default class Playground extends Component {
           color="grey" 
         />
         <div style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}>      
-          It is empty here, add a runtime to get going ...
+          It's so empty here ... Add a runtime to get going!
           {
             savedBoards.length > 0 && (
-              <div>
-                Or restore a saved boards, like:
+              <div style={t.m(0, 10)}>
+                Alternatively restore a saved boards. Following boards were saved in this browser:
                 <div>
                 {
                   savedBoards.map((item, idx) => (
@@ -663,7 +569,7 @@ export default class Playground extends Component {
             )
           }
           <div style={t.m(0, 10)}>
-            Or use a reflector:
+            Hookup with a reflector?
             <div>
             {
               [ 
