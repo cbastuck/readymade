@@ -201,6 +201,7 @@ export default class ServiceFrame extends Component {
             right: 0,
             top: 0,
             overflowY: 'auto',
+            overflowX: 'hidden',
             zIndex: 2000002,
             transition: 'width 0.3s ease',
           }}

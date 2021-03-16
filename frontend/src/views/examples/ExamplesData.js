@@ -17,9 +17,10 @@ export default [
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/audiolize.json',
     explanation: [
-      'Press "Start Audio" and listen to changes on wikipedia as kindof a drum beat.',
-      'From Wikipedia\'s event stream we [map](/service/map) whether a change was made by a bot or a user and create drum sounds accordingly.',
-      'On bot changes we accumulate a snare event. On human changes we a hihat event. After [aggregating](/service/aggregate) for 90 milliseconds a snare or hihat [note-event](/datamodel/note) is passed to the [sampler](/service/sound) depending on what occurred more often. To make it more as a beatish, a base-drum event is randomly created on change from a user.'
+      'Press "Start Audio" for listening to changes on wikipedia as a "beat".',
+      'From Wikipedia\'s event stream of recent changes the flow [maps](/service/map) whether a change was made from a bot or a user.',
+      'Changes from a bot are translated into a snare note. User changes become hihat notes. After [aggregating](/service/aggregate) for 90 milliseconds and depending on what event occurred more often a [note-event](/datamodel/note) is passed to the [sampler](/service/sound).',
+      'Just to make it more beat\'ish a base-drum event is randomly created on a change from a user.'
     ]
   },
   {

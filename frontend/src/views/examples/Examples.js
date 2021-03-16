@@ -233,7 +233,7 @@ export default class Examples extends Component {
       <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10), t.lh1_5, { width: '95%' })}>
         {
           assureArray(explanation).map((exp, eidx) =>
-            <div key={`explanation-${eidx}`}> 
+            <div key={`explanation-${eidx}`} style={{ marginTop: 3 }}> 
             {
               Array.from(tokenize(exp)).map((p, idx) => 
                 typeof p === 'string' ? (
