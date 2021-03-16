@@ -5,7 +5,15 @@
   padding: 50px;
 }
 
+.imprint-item {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  font-size: 12px;
+  margin-left: 15px;
+}
+
 .imprint-text {
+  text-transform: uppercase;
   width: 30%;
   margin: auto;
   margin-top: 10px;

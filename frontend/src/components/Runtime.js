@@ -268,7 +268,7 @@ export default class Runtime extends Component {
           <Icon name='keyboard' />
         </Menu.Item>
         {
-          runtime && runtime.type === 'browser' && (
+          false && runtime && runtime.type === 'browser' && (
             <Menu.Item
               as='a'
               style={itemStyle}

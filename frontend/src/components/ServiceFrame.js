@@ -113,12 +113,16 @@ export default class ServiceFrame extends Component {
         >
           <Icon name='compress' />
         </Menu.Item>
+        {
+        /*
         <Menu.Item
           as='a'
           style={itemStyle}
         >
           <Icon name='clone outline' />
         </Menu.Item>
+        */
+        }
         <Menu.Item 
           as='a'
           style={itemStyle}
@@ -189,54 +193,22 @@ export default class ServiceFrame extends Component {
           )
         }
         { serviceUi } 
-        {
-          menuVisible && (
-            <div
-              style={{
-                position: 'absolute',
-                height: '100%',
-                width: 59,
-                right: 0,
-                top: 0,
-                overflowY: 'auto',
-                zIndex: 2000002
-              }}
-            >
-              { this.renderMenu() }
-            </div>
-          )
-        }
-      </div>
-    );
-  }
-
-  renderServiceWithSidebarOld = (serviceUi, menuVisible) => {
-    return (
-      <Sidebar.Pushable as={Segment.Group} raised
-        style={{
-          border: 'none',
-          boxShadow: 'none',
-          margin: 0,
-          // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
-          // without it, the fullscreen is not working, eg. canvas service
-          transform: 'none',
-        }}
-      >
-        <Sidebar
-          animation='overlay'
-          direction='right'
-          width='very thin'
-          visible={menuVisible}
-          style={{ 
-            overflowX: 'hidden',
-            boxShadow: '0 0 2px rgba(34,36,38,.15)',
+        <div
+          style={{
+            position: 'absolute',
+            height: '100%',
+            width: menuVisible ? 59 : 0, 
+            right: 0,
+            top: 0,
+            overflowY: 'auto',
+            zIndex: 2000002,
+            transition: 'width 0.3s ease',
           }}
         >
           { this.renderMenu() }
-        </Sidebar>
-        { serviceUi } 
-      </Sidebar.Pushable>
-    )
+        </div>
+      </div>
+    );
   }
 
   render() {
