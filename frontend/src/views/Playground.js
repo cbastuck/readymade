@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import { Icon, Button } from 'semantic-ui-react';
+import { 
+  Icon, 
+  Button,
+  Message,
+} from 'semantic-ui-react';
 import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
 
@@ -56,6 +60,7 @@ export default class Playground extends Component {
     placeholderAnimationRunning: false,
     runtimes: undefined,
     services: undefined,
+    description: ''
   };
 
   user = { 
@@ -81,6 +86,7 @@ export default class Playground extends Component {
           runtimes: undefined, 
           services: undefined,
           sidechainRouting: {},
+          description: ''
         });
       } else {
         this.setState({ boardName: board });
@@ -177,6 +183,7 @@ export default class Playground extends Component {
           runtimes, 
           services, 
           sidechainRouting, 
+          description
         } = template;
         const patchedRuntimes = runtimes.map(rt => ({
           ...rt, id: uuid.v4() 
@@ -194,6 +201,7 @@ export default class Playground extends Component {
             (all, rt, idx) => ({ ...all, [rt.id]: sidechainRouting[runtimes[idx].id] }),
             {}
           ),
+          description
         });
       } catch (err) {
         console.error('Creating from template failed', name);
@@ -512,7 +520,48 @@ export default class Playground extends Component {
     );
   }
 
-  renderPlaceholder = (boardContext) => {
+  renderDescription = boardContext => {
+    const { description } = this.state;
+    if (description) {
+      const arr = Array.isArray(description) ? description : [description];
+      const renderItem = (item, idx) => {
+        const key = `template-description-item-${idx}`;
+        if (item.type === 'headline') { 
+          return (
+            <h1 
+              key={key}
+              style={s(t.fs14, t.uc, t.ls1, t.tc)}
+            >
+              {item.text}
+            </h1>
+          );
+        }
+        return (
+          <div 
+            key={key}
+            style={s(t.uc, t.fs12, t.ls1)}
+          >
+            {item}
+          </div>
+        );
+      }
+      return (
+        <div style={{ margin: '10px 0' }}>
+          <Message 
+            style={{ 
+              padding: '15px 30px',
+              color: '#555', 
+              backgroundColor: 'rgba(172, 200, 229, 0.01)',
+            }}
+          >
+            { arr.map(renderItem) }
+          </Message>
+        </div>
+      );
+    }
+  }
+
+  renderPlaceholder = boardContext => {
     const { placeholderAnimationRunning } = this.state;
     if (!placeholderAnimationRunning) {
       setTimeout(() => 
@@ -529,12 +578,13 @@ export default class Playground extends Component {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            padding: '0px 20px'
           },
           { 
             opacity: placeholderAnimationRunning ? 1 : 0,
             transition: placeholderAnimationRunning && 'opacity 4s 0s'
-          }
+          },
         )}
       >
         <Icon 
@@ -543,7 +593,9 @@ export default class Playground extends Component {
           size="massive" 
           color="grey" 
         />
-        <div style={s(t.uc, t.fs13, t.ls1, t.m(0, 30))}>      
+        <div 
+          style={s(t.uc, t.fs13, t.ls1, t.m(0, 50))}
+        >      
           It's so empty here ... Add a runtime to get going!
           {
             savedBoards.length > 0 && (
@@ -594,6 +646,7 @@ export default class Playground extends Component {
     return (
       <div>
         { this.renderRuntimes(boardContext) }
+        { this.renderDescription(boardContext) }
         <Prompt ref={prompt => this.prompt = prompt} />
       </div>
     )

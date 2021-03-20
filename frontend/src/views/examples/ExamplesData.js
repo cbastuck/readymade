@@ -3,8 +3,8 @@ export default [
     title: 'Hello World',
     brief: 'The mother of examples',
     description: [
-      'This example is showing the basic structure of a workflow',
-      'Try double-clicking the canvas to see that this service is used in the quick pitch and the thought-experiment on the start-page'
+      'Shows the basic structure of a flow',
+      'Say the words using that canvas that is used throughout presentations on this site'
     ],
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/helloworld.json',
@@ -13,14 +13,14 @@ export default [
   {
     title: 'Audiolize',
     brief: 'Visualizaton for the ear',
-    description: [ 'Listen to changes on Wikipedia. Hear a sound whenever someone makes an to an article. You hear different sound whether a bit or a human makes the change.' ],
+    description: [ 'Listen to changes on Wikipedia. Whenever an article is changed, whether from a bot or a user, this leads to a sounds as part of a beat' ],
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/audiolize.json',
     explanation: [
       'Press "Start Audio" for listening to changes on wikipedia as a "beat".',
       'From Wikipedia\'s event stream of recent changes the flow [maps](/service/map) whether a change was made from a bot or a user.',
       'Changes from a bot are translated into a snare note. User changes become hihat notes. After [aggregating](/service/aggregate) for 90 milliseconds and depending on what event occurred more often a [note-event](/datamodel/note) is passed to the [sampler](/service/sound).',
-      'Just to make it more beat\'ish a base-drum event is randomly created on a change from a user.'
+      'To make it sound like a beat a base-drum is created randomly on a change from a user.'
     ]
   },
   {
@@ -48,7 +48,7 @@ export default [
   {
     title: 'GIF Animator',
     brief: 'Make a GIF',
-    description: 'Create a simple GIF animation with the output of the canvas service and a GIF recorder',
+    description: 'Create a simple GIF animation with the a GIF recorder behind the output of a canvas',
     image: '/assets/shutterstock_1196210650.png',
     url: '/boards/examples/animate.json',
     explanation: [

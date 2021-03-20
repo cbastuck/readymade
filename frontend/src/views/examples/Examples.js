@@ -71,15 +71,15 @@ export default class Examples extends Component {
   renderCard = example => {
     const fontStyle = s(t.ls1, t.uc, t.fs12, t.tc);
     return (
-      <Link
-        key={`example-link-${example.title}`}
-        style={s(t.m10, { flex: 1, width: 0, minWidth: 200 })}
-        to={`/examples?url=${example.url}`}
-      >       
+      <div style={s(t.m10, { flex: 1, width: 0, minWidth: 200 })}>
         <Card 
           key={`example-card-${example.title}`}
-          style={{ ...fontStyle, minHeight: 250 }}
+          style={{ ...fontStyle, minHeight: 250, padding: 10 }}
         >
+         <Link
+            key={`example-link-${example.title}`}
+            to={`/examples?url=${example.url}`}
+          > 
           <Card.Content>
             <Image
               floated="right"
@@ -90,12 +90,12 @@ export default class Examples extends Component {
             <Card.Header
               style={{ marginTop: 3, textAlign: 'left', color: '#4183c4' }}
             >
-              {example.title}
+              <h1 style={t.fs15}>{example.title}</h1>
             </Card.Header>
             <Card.Meta style={{ margin: '5px 0px', textAlign: 'left' }}>
               {example.brief}
             </Card.Meta>
-            <Card.Description style={{ marginTop: 10 }}>
+            <Card.Description style={{ marginTop: 10, color: 'rgb(84 84 84)' }}>
               <div style={t.tl}>
                 {
                   Array.isArray(example.description) ? 
@@ -111,8 +111,9 @@ export default class Examples extends Component {
               </div>
             </Card.Description>
           </Card.Content>
+          </Link>
         </Card>
-      </Link>
+      </div>
     );
   }
 
@@ -282,9 +283,10 @@ export default class Examples extends Component {
         <div style={{ maxHeight: '20%' }}>
           { this.renderExplanation(currentExample.explanation) }
         </div>
+        <div style={{ marginTop: 15 }}>
         {
           useFrame ? (
-            <iframe 
+            <iframe
               title={currentExample.title}
               src={`sandbox?src=${currentExample.url}`}
               frameBorder="0"
@@ -300,6 +302,7 @@ export default class Examples extends Component {
             />
           )
         }
+        </div>
       </div>
     );
   }
@@ -318,26 +321,30 @@ export default class Examples extends Component {
   }
 
   renderDisclaimer = () => {
-    return (
+    const p = { marginBottom: 3 };
+     return (
       <div style={{ marginBottom: 30 }}>
         <Message
-          //style={s(t.nc, t.fs14, t.it, { fontFamily: 'monospace' })}
-          style={s(t.nc, t.fs13, t.uc, t.ls1, { color: '#555' })}
+          style={s(
+            t.nc, t.fs13, t.uc, t.ls1, 
+            { color: '#555', backgroundColor: 'rgba(172, 200, 229, 0.01)' },
+            { padding: 10 }
+          )}
         >
-          <p>
+          <p style={p}>
             Following examples show a fraction of the possibilities. They 
-            run in a Sandbox which is intended for building flows that run mostly locally and 
-            accordingly do not require a login on the backend.
+            run in a Sandbox, intended for building flows that run mostly locally and 
+            do not require a login.
           </p>
 
-          <p>
-            More is possible when mixing remote and local runtimes on the same board.
-            But a registration and login is not available as a public feature. 
+          <p style={p}>
+            Much more is possible when mixing remote and local runtimes on the same board.
+            But registration and login is not yet a public feature. 
           </p>
           
-          <p>
+          <p style={p}>
             Instead start playing with multiple local runtimes using the <a href="/playground">playground</a>. 
-            A public reflector can be used to hookup different playgrounds.
+            Use the public <span style={s(t.bold, t.it)}>reflector</span> to hookup different playgrounds.
             More on this soon.
           </p>
         </Message>
@@ -359,6 +366,7 @@ export default class Examples extends Component {
                       onAction={boardContext.onAction}
                     />
                     { this.renderExamplesContainer() }
+                    <div style={{ height: 15 }} />
                   </div>
                 )
               }

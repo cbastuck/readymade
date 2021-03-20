@@ -217,7 +217,11 @@ export default class Runtime extends Component {
       showSettings, 
       wrapServices,
     } = this.state;
-    const { boardContext, customItems=[] } = this.props;
+    const { 
+      boardContext, 
+      customItems=[],
+      disabledItems=[]
+    } = this.props;
     const { services: allServices = [] } = boardContext;
     const services = allServices[runtime.id];
     const itemStyle = { 
@@ -238,6 +242,7 @@ export default class Runtime extends Component {
               boardContext.removeRuntime(runtime) :
               boardContext.removeAllServices(runtime)
           }
+          disabled={disabledItems.indexOf('remove') !== -1}
         >
           <Icon name={(!services || services.length === 0) ? 'trash alternate outline' : 'remove'} />
         </Menu.Item>
@@ -260,13 +265,17 @@ export default class Runtime extends Component {
             name={ wrapServices ? 'exchange' : 'sort amount down' }
           />
         </Menu.Item>
-        <Menu.Item
-          as='a'
-          style={itemStyle}
-          onClick={() => {}}
-        >
-          <Icon name='keyboard' />
-        </Menu.Item>
+        {
+          false && (
+            <Menu.Item
+              as='a'
+              style={itemStyle}
+              onClick={() => {}}
+            >
+              <Icon name='keyboard' />
+            </Menu.Item>
+          )
+        }
         {
           false && runtime && runtime.type === 'browser' && (
             <Menu.Item

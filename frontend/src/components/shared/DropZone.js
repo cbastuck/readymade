@@ -54,15 +54,16 @@ export default class DropZone extends Component {
   }
 
   render() {
-    const { label } = this.props;
+    const { label, style } = this.props;
     return (
       <div
         style={{
+          ...style,
           border: 'solid 1px lightgray',
           borderRadius: 5,
           backgroundColor: this.state.dragZoneOpen ? 'lightgreen' : '#4183c4',
           color: 'white',
-          textAlign: 'center'
+          textAlign: 'center',
         }}
         onDragOver={this.onDragOver}
         onDrop={this.onDrop}

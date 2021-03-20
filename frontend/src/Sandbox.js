@@ -146,6 +146,7 @@ export default class Sandbox extends Component {
                 boardContext={boardContext}
                 onResult={onResult}
                 onArrangeService={null}
+                disabledItems={['remove']}
               />
               {
                 url && (

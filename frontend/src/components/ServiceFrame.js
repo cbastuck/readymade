@@ -2,8 +2,6 @@ import React, { Component } from 'react';
 import {
   Icon,
   Menu,
-  Sidebar,
-  Segment,
   Header,
 } from 'semantic-ui-react';
 

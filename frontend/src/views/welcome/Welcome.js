@@ -184,7 +184,17 @@ export default class Welcome extends Component {
                 className={`fade-in-${xi}`}
               >
                 { x.q && <h1 style={{ fontSize: 19, color: '454f6d' }}> {x.q} </h1> }
-                <div style={{ marginTop: 10, fontSize: 15, fontWeight: 'lighter', color: '#505050' }}> {x.a} </div>
+                <div 
+                  className="home-title"
+                  style={{ 
+                    marginTop: 10, 
+                    fontSize: 16, 
+                    fontWeight: 'lighter', 
+                    color: '#777',
+                  }}
+                > 
+                  {x.a} 
+                </div>
               </div>
             </div>
           )) 

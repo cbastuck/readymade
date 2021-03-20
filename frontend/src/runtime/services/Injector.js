@@ -25,7 +25,7 @@ class InjectorUI extends Component {
     items: null,
     itemsSelection: [],
     rawText: '',
-    singleLineRawText: true,
+    multirow: false,
     fileProgress: 0,
   };
 
@@ -42,7 +42,7 @@ class InjectorUI extends Component {
   }
 
   getDroppedItemLabels = () => {
-    const { items } = this.state;
+    const { items, dropName } = this.state;
     if (!items) {
       return (
         <div
@@ -56,7 +56,7 @@ class InjectorUI extends Component {
             fontWeight: 'bold',
           }}
         >
-          Drop Zone
+          { dropName ? dropName : 'Drop Zone' }
           </div>
       );
     }
@@ -112,7 +112,15 @@ class InjectorUI extends Component {
   renderDragNDropInput = service => {
     const { items, itemsSelection, blob, dropName } = this.state;
     return (
-      <div style={{ width: '100%' }}>
+      <div 
+        style={s(
+          t.fill,
+          { 
+            display: 'flex',
+            flexDirection: 'column'
+          }
+        )}
+      >
         <h1
           style={{
             fontSize: 12,
@@ -124,7 +132,8 @@ class InjectorUI extends Component {
         >
           Drop something below 
         </h1>
-        <DropZone 
+        <DropZone
+          style={{ flexGrow: 2 }} 
           label={this.getDroppedItemLabels()}
           onFiles={files => {
             const isArray = files.length > 1;
@@ -132,7 +141,7 @@ class InjectorUI extends Component {
                 Array.from(files):
                 files[0];
             const dropName = isArray ? 'multiple files' : blob.name;
-            this.setState({ blob, dropName });
+            this.setState({ blob, dropName, items: null });
           }}
           onItems={items => this.setState({ items }) }
         />
@@ -140,7 +149,8 @@ class InjectorUI extends Component {
           style={this.buttonStyle}
           onClick={() => {
             if (blob) {
-              service.inject(blob);
+              console.log('Injecting blob', blob)
+              this.readFile(service, blob, false)
             } else {
               service.inject(itemsSelection.map(idx => items[idx]));
             }
@@ -154,7 +164,7 @@ class InjectorUI extends Component {
   }
 
   renderRawInput = service => {
-    const { singleLineRawText, rawText } = this.state;
+    const { multirow, rawText } = this.state;
     return (
       <div 
         style={{ 
@@ -164,47 +174,36 @@ class InjectorUI extends Component {
           flexDirection: 'column' 
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'row' }}>
-          <h1
-            style={{
-              fontSize: 12,
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-              textAlign: 'left',
-              margin: '4px 0px',
-            }}
-          >
-            {
-              singleLineRawText ? 
-                'Enter single line below' : 
-                'Enter multi row text below'
-            }
-          </h1>
-          <div style={{ marginLeft: 'auto' }}>
-            <Checkbox
-              style={{ marginLeft: 10 }}
-              toggle
-              checked={singleLineRawText}
-              onChange={(_, { checked: singleLineRawText }) => this.setState({ singleLineRawText })}
-            />
-          </div>
-        </div>
+        <h1
+          style={{
+            fontSize: 12,
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+            textAlign: 'left',
+            margin: '4px 0px',
+          }}
+        >
+          Enter plain text
+        </h1>    
         <div 
           style={{ 
             flexGrow: 2, 
-            display: 'flex', 
-            flexDirection: 'column' 
-            }}
-          >
+            height: '100%',
+            display: 'flex',
+            flexDirection: 'column'
+          }}
+        >
           { 
-            !singleLineRawText ? 
-              <TextArea 
+            multirow ? 
+              <TextArea
                 style={{
                   flexGrow: 2,
                   width: '100%',
                   padding: 10,
                   resize: 'none',
+                  border: 'solid 1px #ccc'
                 }}
+                cols="20"
                 value={rawText}
                 onChange={(_, { value: rawText }) => this.setState({ rawText })}
               /> : 
@@ -223,6 +222,15 @@ class InjectorUI extends Component {
                 }}
               />
           }
+          <div style={s(t.tl, t.mt3)}>
+            <Checkbox
+              style={s(t.fs12, t.uc, t.ls1, { margin: '5px 0px' })}
+              toggle
+              checked={multirow}
+              onChange={(_, { checked: multirow }) => this.setState({ multirow })}
+              label="Multirow"
+            />
+          </div>  
           <Button
             style={{ ...this.buttonStyle }}
             onClick={() => service.inject(rawText)}
@@ -280,6 +288,30 @@ class InjectorUI extends Component {
     );
   }
 
+  readFile = (service, file, loadAsText) => {
+    const reader = new FileReader();
+    //reader.addEventListener('loadstart', ev => console.log('loadstart', reader.result));
+    //reader.addEventListener('load', ev => console.log('load', reader.result));
+    //reader.addEventListener('error', ev => console.log('error', reader.result));
+    //reader.addEventListener('abort', ev => console.log('abort', reader.result));
+    reader.addEventListener('loadend', ev => {
+      const result = loadAsText ? 
+        reader.result : 
+        new Blob([reader.result], { type : 'application/octet-stream'});
+      service.app.next(service, result);
+      this.setState({ fileProgress: 0 });
+    });
+    reader.addEventListener('progress', ev => {
+      const fileProgress = Math.round((ev.loaded / ev.total) * 100);
+      this.setState({ fileProgress });
+    });
+    if (loadAsText) {
+      reader.readAsText(file);
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
+  }
+
   renderFileInput = service => {
     const { 
       file,
@@ -291,7 +323,8 @@ class InjectorUI extends Component {
         style={{ 
           height: '100%', 
           display: 'flex', 
-          flexDirection: 'column' 
+          flexDirection: 'column',
+          textAlign: 'left'
         }}
       >
         <div style={t.m(0, 10)}>
@@ -311,29 +344,7 @@ class InjectorUI extends Component {
         <Button
           style={this.buttonStyle}
           disabled={!file}
-          onClick={() => {
-            const reader = new FileReader();
-            //reader.addEventListener('loadstart', ev => console.log('loadstart', reader.result));
-            //reader.addEventListener('load', ev => console.log('load', reader.result));
-            //reader.addEventListener('error', ev => console.log('error', reader.result));
-            //reader.addEventListener('abort', ev => console.log('abort', reader.result));
-            reader.addEventListener('loadend', ev => {
-              const result = loadAsText ? 
-                reader.result : 
-                new Blob([reader.result], { type : 'application/octet-stream'});
-              service.app.next(service, result);
-              this.setState({ fileProgress: 0 });
-            });
-            reader.addEventListener('progress', ev => {
-              const fileProgress = Math.round((ev.loaded / ev.total) * 100);
-              this.setState({ fileProgress });
-            });
-            if (loadAsText) {
-              reader.readAsText(file);
-            } else {
-              reader.readAsArrayBuffer(file);
-            }
-          }}
+          onClick={() => this.readFile(service, file, loadAsText)}
         >
           Inject
         </Button>
@@ -357,10 +368,10 @@ class InjectorUI extends Component {
         {...this.props} 
         onInit={this.onInit.bind(this)}
         segments={[
-          { name: 'DragDrop', render: this.renderDragNDropInput },
           { name: 'Text', render: this.renderRawInput },
           { name: 'JSON', render: this.renderStructuredData },
           { name: 'File', render: this.renderFileInput },
+          { name: 'Drop', render: this.renderDragNDropInput },
         ]}
       />
     )
@@ -372,15 +383,9 @@ class Injector {
     this.uuid = id;
     this.board = board;
     this.app = app;
-
-    this.mode='dragndrop';
   }
 
-  configure(config) { 
-    const { mode } = config;
-    if (mode !== undefined) {
-      this.mode = mode;
-    }
+  configure(config) {
   }
 
   inject(data) {

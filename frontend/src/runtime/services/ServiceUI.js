@@ -70,7 +70,10 @@ export default class ServiceUI extends Component {
             <Menu 
               compact 
               pointing 
-              style={{  marginTop: 10 }}
+              style={{
+                marginTop: 10, 
+                overflow: 'hidden',
+              }}
             >
             { 
               segments.map(
