@@ -292,12 +292,16 @@ class InjectorUI extends Component {
     const reader = new FileReader();
     //reader.addEventListener('loadstart', ev => console.log('loadstart', reader.result));
     //reader.addEventListener('load', ev => console.log('load', reader.result));
-    //reader.addEventListener('error', ev => console.log('error', reader.result));
+    reader.addEventListener('error', ev => {
+      console.log('error while READONG', reader.error)
+    });
     //reader.addEventListener('abort', ev => console.log('abort', reader.result));
     reader.addEventListener('loadend', ev => {
       const result = loadAsText ? 
         reader.result : 
         new Blob([reader.result], { type : 'application/octet-stream'});
+
+      console.log('Injecting file', reader, result)
       service.app.next(service, result);
       this.setState({ fileProgress: 0 });
     });

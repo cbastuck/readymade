@@ -71,9 +71,11 @@ export default class Examples extends Component {
   renderCard = example => {
     const fontStyle = s(t.ls1, t.uc, t.fs12, t.tc);
     return (
-      <div style={s(t.m10, { flex: 1, width: 0, minWidth: 200 })}>
-        <Card 
-          key={`example-card-${example.title}`}
+      <div 
+        key={`example-card-${example.title}`}
+        style={s(t.m10, { flex: 1, width: 0, minWidth: 200 })}
+      >
+        <Card
           style={{ ...fontStyle, minHeight: 250, padding: 10 }}
         >
          <Link
@@ -366,7 +368,6 @@ export default class Examples extends Component {
                       onAction={boardContext.onAction}
                     />
                     { this.renderExamplesContainer() }
-                    <div style={{ height: 15 }} />
                   </div>
                 )
               }

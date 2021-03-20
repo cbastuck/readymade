@@ -11,6 +11,7 @@ import uuid from 'uuid';
 import { redirectTo } from '../core/actions';
 import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
+import Footer from '../components/Footer';
 import Runtime from '../components/Runtime';
 import SidechainSelector from '../components/SidechainSelector';
 import DragProvider from '../DragContext';
@@ -699,6 +700,7 @@ export default class Playground extends Component {
                   this.renderPlaceholder(boardContext) : 
                   this.renderPlayground(boardContext)
               }
+              <Footer />
             </div>
           )
         }

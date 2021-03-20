@@ -32,15 +32,27 @@ export default class Footer extends Component {
         }}
         >
           <div style={{ 
-            marginTop: 10, 
+            marginTop: 5, 
             marginLeft: 10,
             marginBottom: 5,
+            display: 'flex',
+            flexDirection: 'row',
+            
           }}>
             <Link to="/about"> about </Link>
             {' ‧ '}
             <Link to="/imprint"> imprint </Link>
             {' ‧ '}
             <Link to="/contact"> contact </Link>
+            <div 
+              style={{ 
+                marginLeft: 'auto', 
+                marginRight: 10,
+                color: '#555',
+                fontSize: 10
+              }}>
+                © 2021 cbastuck
+              </div>
           </div>
         </div>
       </div>

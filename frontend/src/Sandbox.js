@@ -162,6 +162,7 @@ export default class Sandbox extends Component {
                     >
                       Open In Playground
                     </Link>
+                    <div style={{ height: 50 }} />
                   </div>
                 )
               }

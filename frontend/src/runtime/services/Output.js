@@ -8,9 +8,10 @@ import { s, t } from '../../styles';
 import InputField from '../../components/shared/InputField';
 import SelectorField from '../../components/shared/SelectorField';
 import { request } from '../../core/actions';
-import { 
-  replacePlaceholders,
-} from '../../core/url';
+import { isWebsocket, isSecureConnection} from '../../core/url';
+import WebsocketChannel from '../WebsocketChannel';
+// import { serializeWebsocketBuffer } from '../../core/format';
+import { replacePlaceholders } from '../../core/url';
 
 const serviceId = 'hookup.to/service/output';
 const serviceName = 'Output';
@@ -191,19 +192,52 @@ class Output {
     }
   }
 
-  process(params) {
+  destroy() {
+    if (this._websocket) {
+      this._websocket.close();
+      this._websocket = null;
+    }
+  }
+
+  connectWebsocket = async url => {
+    const ws = new WebsocketChannel(
+      `output-service-${this.uuid}`,
+      params => {
+        console.log('RECEIVED SOMETHING ON OUTPUT WS', params)
+      },
+      isSecureConnection()
+    );
+    await ws.open({ absolute: url });
+    return ws;
+  }
+
+  async process(params) {
     const { 
       url, 
       running 
     } = this;
+
     if (url && running) {
-      request(
-        { absolute: url }, 
-        'POST', 
-        false, 
-        params, 
-        this.headers
-      );
+      if (isWebsocket(url)) {
+        /*
+        if (!this._websocket) {
+          this._websocket = await this.connectWebsocket(url);
+        }
+         const buffer = await serializeWebsocketBuffer(
+            params, 
+            {}
+          );
+        this._websocket.send(buffer);
+        */
+      } else {
+        request(
+          { absolute: url }, 
+          'POST', 
+          false, 
+          params, 
+          this.headers
+        );
+      }
     }
 
     switch (this.flow) {
