@@ -1,0 +1,7 @@
+.holdable-button {
+  box-shadow: none;
+  border: solid 1px lightgray;
+}
+.holdable-button:focus {
+  outline: 0;
+}

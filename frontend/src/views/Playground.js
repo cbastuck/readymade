@@ -19,6 +19,7 @@ import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
+import VSpacer from '../components/shared/VSpacer';
 
 const defaultBundles = [
   'hookup.to/registry/browser/Audio',
@@ -649,6 +650,7 @@ export default class Playground extends Component {
         { this.renderRuntimes(boardContext) }
         { this.renderDescription(boardContext) }
         <Prompt ref={prompt => this.prompt = prompt} />
+        <VSpacer />
       </div>
     )
   };

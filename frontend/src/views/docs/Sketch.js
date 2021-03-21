@@ -66,7 +66,7 @@ export default class Sketch extends Component {
         >
           Runtime
         </div>
-        <div style={s(flexRow, t.mb10)}>
+        <div style={s(flexRow, t.mb10, { overflowX: 'auto' })}>
           { this.renderService() }
           { this.renderArrow(50) }
           { this.renderService() }
@@ -96,6 +96,7 @@ export default class Sketch extends Component {
         border,
         t.m(10),
         t.p(10),
+        { overflowX: 'auto' }
       )}
     >
       <div style={s(t.tc)}>
@@ -117,8 +118,9 @@ export default class Sketch extends Component {
     return (
       <div 
         style={{ 
-          width: '70%', 
+          width: '95%', 
           margin: 'auto',
+          marginTop: 20
         }}
       >
         { this.renderBoard() }

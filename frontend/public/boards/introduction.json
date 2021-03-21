@@ -136,7 +136,8 @@
         "serviceName": "Canvas",
         "serviceId": "hookup.to/service/canvas",
         "uuid": "a7b62ea7-38bb-4535-8c61-f0a8dfeb213b",
-        "fullscreen": true
+        "fullscreen": true,
+        "noToggleFullscreenOnDblClick": true
       }
     ],
     "params": {

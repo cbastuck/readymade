@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 
+import './HoldableButton.css';
+
 const isTouch = 'ontouchstart' in window;
 
 export default class HoldableButton extends Component {
@@ -34,7 +36,8 @@ export default class HoldableButton extends Component {
   render() {
     const { style, children } = this.props;
     return (
-      <div
+      <button
+        className="holdable-button"
         style={style}
         onTouchStart={isTouch ? this.onDown : undefined}
         onTouchEnd={isTouch ? this.onUp : undefined}
@@ -42,10 +45,10 @@ export default class HoldableButton extends Component {
         onMouseDown={!isTouch ? this.onDown : undefined}
         onMouseUp={!isTouch ? this.onUp : undefined}
         onMouseLeave={!isTouch ? this.onUp : undefined}
-        onContextMenu={this.onRightClick}
+        onContextMenu={!isTouch ? this.onRightClick : ev => { ev.preventDefault(); ev.stopPropagation(); } }
       >
       { children ? children : false }
-      </div>
+      </button>
     )
   }
 }

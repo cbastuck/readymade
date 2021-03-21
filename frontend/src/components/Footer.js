@@ -17,8 +17,8 @@ export default class Footer extends Component {
           position: !flex && 'fixed',
           marginTop: flex && 'auto',
           width: '100%',
-          height: flex ? 45 : 30,
-          bottom: !flex && 0,
+          // height: flex ? 45 : 30,
+          bottom: !flex & 0,
           left: !flex && 0,
         }}
       >
@@ -26,18 +26,19 @@ export default class Footer extends Component {
           ...fontStyle,
           marginTop: flex && 10,
           marginBottom: flex && 0,
-          paddingBottom: flex && 0,
+          //paddingBottom: flex && 0,
           borderTop: '1px solid rgba(34,36,38,.15)',
           backgroundColor: 'rgba(255, 255, 255, 0.95)',
         }}
         >
           <div style={{ 
-            marginTop: 5, 
+            //marginTop: 5, 
             marginLeft: 10,
-            marginBottom: 5,
+            //marginBottom: 5,
+            paddingTop: 3,
+            paddingBottom: 3,
             display: 'flex',
             flexDirection: 'row',
-            
           }}>
             <Link to="/about"> about </Link>
             {' ‧ '}

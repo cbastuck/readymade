@@ -128,7 +128,7 @@ export default class Quickstart extends Component {
         <div style={s(t.uc, t.fs12, t.ls2, { textAlign: 'left' })}>
           <div style={{ marginBottom: 10 }}>
             There are three "things" you need to know. 
-            These are the basic building blocks that enable experiments: 
+            These are the basic building blocks that enable experimentation: 
             <span style={s(t.bold, t.m(5, 0))}>
               Board, Runtime and Service
             </span>
@@ -170,8 +170,8 @@ export default class Quickstart extends Component {
                   'Runtimes running in the browser can be mixed with remote runtimes on the same board',
                   'A Runtime owns and manages an arbitrary number of services',
                   'A Runtime accepts data on its input and passes it to its services',
-                  'A Runtime provides the result of the last service as its output',
                   'A Runtime calls services in order from left to right propagating the incoming data',
+                  'A Runtime provides the result of the last service as its output',
                 ],
                 image: undefined, 
                 bottomDivider: true,

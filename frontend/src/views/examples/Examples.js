@@ -16,6 +16,7 @@ import Sandbox from '../../Sandbox';
 import Modal from '../../components/Modal';
 import ServiceReference from '../../components/ServiceReference';
 import { s, t } from '../../styles';
+import VSpacer from '../../components/shared/VSpacer';
 
 import examples from './ExamplesData';
 
@@ -201,12 +202,13 @@ export default class Examples extends Component {
             height: '100%',
           }}
         >
-        { !currentExample && this.renderDisclaimer() }
-        {
-          currentExample ? 
-            this.renderCurrentExample() : 
-            this.renderExamples()
-        }
+          { !currentExample && this.renderDisclaimer() }
+          {
+            currentExample ? 
+              this.renderCurrentExample() : 
+              this.renderExamples()
+          }
+          <VSpacer height={40} />
         </div>
       </div>
     );
@@ -282,7 +284,7 @@ export default class Examples extends Component {
     const useFrame = false;
     return (
       <div style={t.fill}>
-        <div style={{ maxHeight: '20%' }}>
+        <div style={{ maxHeight: '20%', overflowY: 'auto' }}>
           { this.renderExplanation(currentExample.explanation) }
         </div>
         <div style={{ marginTop: 15 }}>

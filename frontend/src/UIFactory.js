@@ -100,6 +100,5 @@ export function createServiceUI(registry, board, service, runtimeId, userId=unde
     }
   }
 
-  console.warn('UIFactory create placeholder for', serviceId || service, 'in registry', registry);
   return createPlaceholderUI(service);
 }

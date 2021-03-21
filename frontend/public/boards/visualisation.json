@@ -311,7 +311,7 @@
             },
             {
               "type": "text",
-              "text": "or we're stuck with a solution",
+              "text": "or stuck with a local optimum",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
@@ -325,12 +325,12 @@
           [
             {
               "type": "text",
-              "text": "Further progress requires fortune and time",
+              "text": "Variance issues?",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
                 "weight": "lighter",
-                "size": "70%",
+                "size": "60%",
                 "family": "Helvetica Neue, sans-serif"
               },
               "y": "15%"
@@ -363,7 +363,7 @@
             },
             {
               "type": "text",
-              "text": "Wait or restart?",
+              "text": "Try again?",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {

@@ -147,7 +147,7 @@ class AudioInputUI extends Component {
           />
         </div>
         <HoldableButton
-          style={s(t.uc, t.ls1, t.bc('#e0e1e2'), t.p5, t.tc, t.fs11, t.br3, { width: '99.5%' })}
+          style={s(t.uc, t.ls1, t.bc('#e0e1e2'), t.p5, t.tc, t.fs11, t.br3, { width: '99.5%', height: 30 })}
           onDown={onStartRecording}
           onUp={onStopRecording}
         >
