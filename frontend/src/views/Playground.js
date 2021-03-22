@@ -20,6 +20,7 @@ import BrowserRegistry from '../runtime/BrowserRegistry';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 import VSpacer from '../components/shared/VSpacer';
+import { replacePlaceholders } from '../core/url';
 
 const defaultBundles = [
   'hookup.to/registry/browser/Audio',
@@ -528,24 +529,42 @@ export default class Playground extends Component {
       const arr = Array.isArray(description) ? description : [description];
       const renderItem = (item, idx) => {
         const key = `template-description-item-${idx}`;
-        if (item.type === 'headline') { 
-          return (
-            <h1 
-              key={key}
-              style={s(t.fs14, t.uc, t.ls1, t.tc)}
-            >
-              {item.text}
-            </h1>
-          );
+        switch (item.type) {
+          case 'headline':
+            return (
+              <h1 
+                key={key}
+                style={s(t.fs14, t.uc, t.ls1, t.tc)}
+              >
+                {item.text}
+              </h1>
+            );
+          case 'check': {
+            const { url: rawUrl, text } = item;
+            const url = replacePlaceholders(rawUrl);
+            const urlKey = `check-${url}`;
+            const checkPassed = this.state[urlKey];
+            if (checkPassed  === undefined) {
+              fetch(url)
+                .then(resp => this.setState({ [urlKey]: resp.ok }))
+                .catch(err => this.setState({ [urlKey]: false }));
+            }
+            return (
+              <div style={s(t.uc, t.fs12, t.ls1)}>
+                { text }  { checkPassed ? '✅' : '❌' }
+              </div>
+            );
+          }
+          default: 
+            return (
+              <div 
+                key={key}
+                style={s(t.uc, t.fs12, t.ls1)}
+              >
+                {item}
+              </div>
+            );
         }
-        return (
-          <div 
-            key={key}
-            style={s(t.uc, t.fs12, t.ls1)}
-          >
-            {item}
-          </div>
-        );
       }
       return (
         <div style={{ margin: '10px 0' }}>
