@@ -94,20 +94,22 @@ class BoardContext extends Component {
       registry,
       runtimes=[],
     } = await fetchData();
-    
-    for (const runtime of runtimes) {
-      // ensure service.configure function exists
-      for (const svc of services[runtime.id]) {
-        if (!svc.configure){
-          svc.configure = async config => 
-            configureService(board.name, svc, config);
+
+    if (runtimes) {
+      for (const runtime of runtimes) {
+        // ensure service.configure function exists
+        for (const svc of services[runtime.id]) {
+          if (!svc.configure){
+            svc.configure = async config => 
+              configureService(board.name, svc, config);
+          }
+        }
+        if (registry && registry[runtime.id]) {
+          runtime.registry = registry[runtime.id];
         }
       }
-      if (registry && registry[runtime.id]) {
-        runtime.registry = registry[runtime.id];
-      }
     }
-
+    
     const boardName = (board && board.name) || this.state.boardName;
     this.setState({
       board,
@@ -133,6 +135,7 @@ class BoardContext extends Component {
       return { board, runtimes, registry, services, userBoards };
     } catch(error) {
       console.log('Fetching data failed', error);
+      return {};
     }
   }
     
@@ -222,8 +225,10 @@ class BoardContext extends Component {
 
   clearBoardDefault = async () => {
     const { runtimes } = this.state;
-    for (const runtime of runtimes) {
-      runtime.destroyRuntime && runtime.destroyRuntime();
+    if (runtimes) {
+      for (const runtime of runtimes) {
+        runtime.destroyRuntime && runtime.destroyRuntime();
+      }
     }
 
     const boardname = this.getBoardName();

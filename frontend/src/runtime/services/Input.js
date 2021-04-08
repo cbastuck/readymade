@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { 
   Checkbox,
+  Button,
 } from 'semantic-ui-react';
 
 import InputField from '../../components/shared/InputField';
@@ -20,7 +21,8 @@ class InputUI extends Component {
   state = {
     url: '',
     topic: 'secret-key',
-    isWebsocket: false
+    isWebsocket: false,
+    canFetch: undefined
   };
 
   onInit = initialState => {
@@ -38,7 +40,8 @@ class InputUI extends Component {
       url, 
       running,
       topic,
-      isWebsocket
+      isWebsocket,
+      canFetch
     } = notification;
     
     if (url !== undefined && this.state.url !== url) {
@@ -56,6 +59,10 @@ class InputUI extends Component {
     if (isWebsocket !== undefined) {
       this.setState({ isWebsocket });
     }
+
+    if (canFetch !== undefined) {
+      this.setState({ canFetch });
+    }
   }
 
   renderMain = service => {
@@ -63,7 +70,9 @@ class InputUI extends Component {
       running,
       url,
       topic,
-      isWebsocket
+      isWebsocket,
+      canFetch,
+      fetchPending
     } = this.state;
     return (
       <div
@@ -81,28 +90,46 @@ class InputUI extends Component {
             }}
           />
         </div>
-        <div style={s(t.uc, t.ls1, t.fs12)}> 
-          <InputField 
-            label="topic"
-            value={topic}
-            onChange={(_, { value: topic }) => {
-              this.setState({ topic });
-              service.configure({ topic });
-            }}
-            disabled={!isWebsocket}
-          />
-        </div>
-        <div style={t.tl}>
-          <Checkbox 
-            style={s(t.mt3, t.uc, t.ls1, t.fs12)}
-            label="input active"
-            toggle
-            onChange={(_, { checked: running }) => {
-              service.configure({ running });
-            }}
-            checked={running}
-          />
-        </div>
+        {
+          isWebsocket && (
+            <div style={s(t.uc, t.ls1, t.fs12)}> 
+              <InputField 
+                label="topic"
+                value={topic}
+                onChange={(_, { value: topic }) => {
+                  this.setState({ topic });
+                  service.configure({ topic });
+                }}
+              />
+            </div>
+          )
+        }
+        {
+          canFetch === true && (
+            <Button
+              style={s(t.w100, t.uc, t.ls1, t.fs12, { marginTop: 0 })}
+              onClick={() => service.configure({ fetch: url })}
+              disabled={fetchPending}
+            >
+              Fetch
+            </Button>
+          )
+        }
+        {
+          canFetch === false && (
+            <div style={t.tl}>
+              <Checkbox 
+                style={s(t.mt1, t.uc, t.ls1, t.fs12)}
+                label="input active"
+                toggle
+                onChange={(_, { checked: running }) => {
+                  service.configure({ running });
+                }}
+                checked={running}
+              />
+            </div>
+          )
+        }
       </div>
     );
   }
@@ -148,7 +175,10 @@ class Input {
   async doConnect() {
     this.closeConection();
 
-    const { url, topic } = this;
+    const { 
+      url, 
+      topic 
+    } = this;
     if (isWebsocket(url)) {
       this._websocket = new WebsocketChannel(
         `input-service-${this.uuid}`,
@@ -166,23 +196,54 @@ class Input {
       await this._websocket.open({ absolute: url });
       this._websocket.send({ topic });
     } else {
-      this._eventSource = new EventSource(url);
-      this._eventSource.onopen = () => {          
-        const listener = this.onEventSourceData.bind(this);
-        this._eventSource.onmessage = listener;
-        this._eventSource.addEventListener(
-          'data',
-          listener,
-        );
-        
-        this.closeEventSourceConnection = () => {
-          this._eventSource.removeEventListener('data', listener);
-          //this.eventSource.removeEventListener('error', onError);
-          this._eventSource.close();
-          this._eventSource = null;
-          this.closeEventSourceConnection = null;
-        };
+      const resp = await fetch(url);
+      const contentType = resp.headers.get('content-type');
+      if (contentType.indexOf('text/event-stream') !== -1) {
+        this.app.notify(this, { canFetch: false });
+        return this.openEventSource(url);
       }
+
+      this.app.notify(this, { canFetch: true });
+      this.onFetchResponse(resp);
+    }
+  }
+
+  onFetchResponse = async resp => {
+    const contentType = resp.headers.get('content-type');
+    if (contentType.indexOf('application/json') !== -1) {
+      const json = await resp.json();
+      this.app.next(this, json);
+      return;
+    }
+
+    if (contentType.indexOf('text/plain')) {
+      const text = await resp.text();
+      this.app.next(this, text);
+      return;
+    }
+
+    // TOOD: .arrayBuffer() 
+
+    const blob = await resp.blob();
+    this.app.next(this, blob);
+  }
+
+  openEventSource = url => {
+    this._eventSource = new EventSource(url);
+    this._eventSource.onopen = () => {       
+      const listener = this.onEventSourceData.bind(this);
+      this._eventSource.onmessage = listener;
+      this._eventSource.addEventListener(
+        'data',
+        listener,
+      );
+      
+      this.closeEventSourceConnection = () => {
+        this._eventSource.removeEventListener('data', listener);
+        this._eventSource.close();
+        this._eventSource = null;
+        this.closeEventSourceConnection = null;
+      };
     }
   }
 
@@ -202,6 +263,7 @@ class Input {
       url,
       running,
       topic,
+      fetch: fetchUrl,
     } = config;
 
     let reconnet = false;
@@ -221,11 +283,16 @@ class Input {
       this.app.notify(this, { running });
     }
 
+    if (fetchUrl !== undefined) {
+      const resp = await fetch(fetchUrl);
+      this.onFetchResponse(resp);
+    }
+
     if (reconnet) {
       this.doConnect();
       this.isWebsocket = !!this._websocket;
       this.app.notify(this, { isWebsocket: this.isWebsocket })
-    }
+    }   
   }
 
   destroy() {

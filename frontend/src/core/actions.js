@@ -12,11 +12,8 @@ export function generateQueryParams() {
   if (!parsed) {
     return;
   }
-  const shareId = parsed.share;
-  if (!shareId) {
-    return;
-  }
-  return `?share=${shareId}`;
+  
+  return `?${Object.keys(parsed).map(k => `${k}=${parsed[k]}`).join('&')}`;
 }
 
 export async function request(path, method='GET', parseJSON=true, body=undefined, additionalHeaders={}) {
@@ -33,7 +30,7 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
     headers['Content-Type'] = contentType;
   }
 
-  const queryParams = ''; //(method === 'GET') && generateQueryParams();
+  const queryParams = (method === 'GET') && generateQueryParams();
   const url = path.absolute ? `${path.absolute}${queryParams ? queryParams : ''}` : `/api/${path}${queryParams ? queryParams : ''}`;
   const response = await fetch(url, {
     method,
@@ -58,7 +55,12 @@ export function getBoard(board) {
 
 export function getRuntimes(board) {
   return request(`board/${board}/runtimes`)
-    .then(res => (res && res.status === 404) ? [] : res);
+    .then(res => {
+      if (res.ok !== undefined && res.ok === false) {
+        return [];
+      } 
+      return res;
+    })
 }
 
 export function addRuntime(board, descriptor) {

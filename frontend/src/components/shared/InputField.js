@@ -64,8 +64,8 @@ export default class InputField extends Component {
         <Input 
           style={{
             fontSize, 
-            // height: 33, 
-            height: '90%',
+            height: 33, 
+            // height: '90%',
             width: '100%',
             flexGrow: 3 
           }}
@@ -121,7 +121,7 @@ export default class InputField extends Component {
           width: '100%',
           display: 'flex',
           flexDirection: 'row',
-          margin: '2px 0px',
+          margin: '0px 0px',
           ...style, 
         }}
       >  
