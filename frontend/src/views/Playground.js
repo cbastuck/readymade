@@ -47,6 +47,7 @@ const allowedServices = [
   'hookup.to/service/downloader',
   'hookup.to/service/mp3encoder',
   'hookup.to/service/reduce',
+  'hookup.to/service/chart',
 ];
 
 const defaultName = 'Playground';

@@ -20,6 +20,7 @@ import IngressUI from './components/services/IngressUI';
 import OutputUI from './components/services/OutputUI';
 import WebsocketUI from './components/services/WebsocketUI';
 import defaultRegistry from './runtime/registry/Default';
+import PlaceholderUI from './PlaceholderUI';
 
 function findServiceUi(registry, serviceId) {
   const a = registry || defaultRegistry;
@@ -27,14 +28,7 @@ function findServiceUi(registry, serviceId) {
 }
 
 export function createPlaceholderUI(service) {
-  return (
-    <div 
-      key={service.uuid} 
-      id={service.uuid} 
-      service={service} 
-      style={{ minWidth: 200 }} 
-    />
-  );
+  return <PlaceholderUI service={service} />;
 }
 
 export function createServiceUI(registry, board, service, runtimeId, userId=undefined, props={}) {

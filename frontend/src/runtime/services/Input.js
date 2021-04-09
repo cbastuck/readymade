@@ -209,6 +209,9 @@ class Input {
   }
 
   onFetchResponse = async resp => {
+    if (!resp.ok) {
+      return;
+    }
     const contentType = resp.headers.get('content-type');
     if (contentType.indexOf('application/json') !== -1) {
       const json = await resp.json();

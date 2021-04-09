@@ -1,10 +1,10 @@
-import PlotterDescriptor from '../services/Plotter';
+import ChartDescriptor from '../services/Chart';
 import ThreeViewersDescriptor from '../services/ThreeViewer';
 import GIFEncoderDescriptor from '../services/GIFEncoder';
 
 export default function () {
   return [
-    PlotterDescriptor,
+    ChartDescriptor,
     ThreeViewersDescriptor,
     GIFEncoderDescriptor,
   ];

@@ -22,3 +22,7 @@ export function filterPrivateMembers(service) {
     {}
   );
 }
+
+export function isObject(x) {
+  return Object.prototype.toString.call(x) === '[object Object]';
+}
