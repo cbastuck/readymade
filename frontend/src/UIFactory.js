@@ -20,7 +20,7 @@ import IngressUI from './components/services/IngressUI';
 import OutputUI from './components/services/OutputUI';
 import WebsocketUI from './components/services/WebsocketUI';
 import defaultRegistry from './runtime/registry/Default';
-import PlaceholderUI from './PlaceholderUI';
+import PlaceholderUI from './runtime/services/PlaceholderUI';
 
 function findServiceUi(registry, serviceId) {
   const a = registry || defaultRegistry;

@@ -77,15 +77,23 @@ class ChartUI extends Component {
         }
       ]
     };
-    this.setState({ data: updated });
+    this.setState({ data: updated, values });
   
   }
 
   renderMain = service => {
-    const { data } = this.state;
+    const { data, values } = this.state;
     return (
       <Line 
-        data={data} 
+        data={data}
+        onElementsClick={elems => {
+          const elem = elems[0];
+          if (elem) {
+            const keys = Object.keys(values);
+            const clickedKey = keys[elem._index];
+            service.app.next(service, values[clickedKey]); // TODO: not here
+          }
+        }}
       />
     );
   }

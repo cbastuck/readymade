@@ -33,6 +33,7 @@ const allowedServices = [
   'hookup.to/service/monitor',
   'hookup.to/service/canvas',
   'hookup.to/service/map',
+  'hookup.to/service/filter',
   'hookup.to/service/camera',
   'hookup.to/service/injector',
   'hookup.to/service/trigger-pad',

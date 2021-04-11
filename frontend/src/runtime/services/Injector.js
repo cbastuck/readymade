@@ -37,8 +37,12 @@ class InjectorUI extends Component {
     marginTop: 5,
   };
 
-  onInit = service => {
-    this.service = service;
+  onInit = initialState => {
+    const { rawText } = initialState;
+    
+    if (rawText !== undefined) {
+      this.setState({ rawText });
+    }
   }
 
   getDroppedItemLabels = () => {
@@ -205,7 +209,10 @@ class InjectorUI extends Component {
                 }}
                 cols="20"
                 value={rawText}
-                onChange={(_, { value: rawText }) => this.setState({ rawText })}
+                onChange={(_, { value: rawText }) => {
+                  service.configure({ rawText });
+                  this.setState({ rawText })
+                }}
               /> : 
               <Input 
                 style={{ width: '100%' }}
@@ -390,6 +397,11 @@ class Injector {
   }
 
   configure(config) {
+    const { rawText } = config;
+
+    if (rawText !== undefined) {
+      this.rawText = rawText;
+    }
   }
 
   inject(data) {

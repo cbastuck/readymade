@@ -1,45 +1,5 @@
-import React, { Component } from 'react';
-import { 
-  Checkbox,
-} from 'semantic-ui-react';
-
-import InputField from '../../components/shared/InputField';
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
-
 const serviceId = 'hookup.to/service/reduce';
 const serviceName = 'Reduce';
-
-class ReduceUI extends Component {
-  onInit = initialConfig => {
-
-  }
-
-  onNotification = (service, notification) => {
-
-  }
-
-  renderMain = service => {
-    return (
-      <div>
-        Reduce
-      </div>
-    );
-  }
-
-  render() {
-    return (
-      <ServiceUI 
-        {...this.props} 
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
-      />
-    );
-  }
-}
 
 class ReducedValues {
   collect(item, skip=[]) {
@@ -69,26 +29,30 @@ class Reduce {
   }
 
   configure(config) {
+    const { reduceKey } = config;
 
+    if (reduceKey !== undefined) {
+      this.reduceKey = reduceKey;
+      this.app.notify(this, { reduceKey });
+    }
   }
 
   process(params) {
-    if (!Array.isArray(params)) {
+    if (!Array.isArray(params) || !this.reduceKey) {
       return params;
     }
     
-    const reduceKey = 'date';
     return params
       .reduce(
         (reducedParams, paramsItem) => {
           if (!paramsItem) {
             return reducedParams;
           }
-          const reduceKeyValue = paramsItem[reduceKey];
+          const reduceKeyValue = paramsItem[this.reduceKey];
           const reducedValues = reducedParams[reduceKeyValue] || new ReducedValues();
           return { 
             ...reducedParams, 
-            [reduceKeyValue]: reducedValues.collect(paramsItem, [reduceKey]),
+            [reduceKeyValue]: reducedValues.collect(paramsItem, [this.reduceKey]),
           };
         }, 
         {}
@@ -101,7 +65,6 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new Reduce(app, board, descriptor, id),
-  createUI: ReduceUI
 };
 
 export default descriptor;
