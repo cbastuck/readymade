@@ -1,28 +1,45 @@
 import React, { Component } from 'react';
-import { Line } from 'react-chartjs-2';
-import { isObject } from './helpers';
+import { Line, Doughnut, Bar } from 'react-chartjs-2';
 
+import { isObject } from './helpers';
+import SelectorField from '../../components/shared/SelectorField';
 import ServiceUI from './ServiceUI';
+import { t } from '../../styles';
 
 const serviceId = 'hookup.to/service/chart';
 const serviceName = 'Chart';
 
-function reduce(obj) {
+function reduce(obj, selector='*') {
   return Object.keys(obj)
-    .reduce((acc, key) => {
-      const value = obj[key];
-      const n = isObject(value) ? 
-        reduce(value) : 
-        Number(value);
-      return acc + n;
-    },
-    0 
-  );
+    .filter(key => selector === '*' || key === selector)
+    .reduce(
+      (acc, key) => {
+        const value = obj[key];
+        const n = isObject(value) ? 
+          reduce(value) : // TODO: apply selector only on first level
+          Number(value);
+        return acc + n;
+      },
+      0 
+    );
 }
 
-function createData(data) {
+const palette = {};
+function getColorFor(val) {
+  const existingCol = palette[val];
+  if (existingCol) {
+    return existingCol;
+  }
+  const rnd = () => Math.round(Math.random() * 255);
+  const newCol = `rgb(${rnd()},${rnd()},${rnd()})`;
+  palette[val] = newCol;
+  return newCol;
+}
+
+
+function createDataset(data=[], selector='*') {
   return {
-    label: 'Incoming Data',
+    label: selector,
     fill: false,
     lineTension: 0.1,
     backgroundColor: 'rgba(75,192,192,0.4)',
@@ -40,23 +57,23 @@ function createData(data) {
     pointHoverBorderWidth: 2,
     pointRadius: 1,
     pointHitRadius: 10,
-    data
+    data,
   };
 }
 
 class ChartUI extends Component {
   state = {
-    propertyX: '',
-    propertyY: '',
     data: {
       labels: [],
       datasets: [
-        createData()
+        createDataset()
       ]
-    }
+    },
+    selector: '*'
   }
 
-  onInit = initialConfig => {}
+  onInit = initialConfig => {
+  }
 
   onNotification = (service, config) => {
     const { params } = config;
@@ -65,36 +82,144 @@ class ChartUI extends Component {
     }
   }
 
-  updateData(data) {
-    const values = Object.keys(data).map(date => reduce(data[date]));
+  updateData = (data, selector) => {
+    const dataKeys = Object.keys(data);
+    const values = dataKeys.map(key => reduce(data[key], selector || this.state.selector));
+    const firstValueKeys = dataKeys[0] ? Object.keys(data[dataKeys[0]]) : [];
+    const selectorOptions = firstValueKeys.reduce(
+      (acc, cur) => ({ ...acc, [cur]: cur }), 
+      { '*': '* [all]' }
+    );
     const labels = Object.keys(data);
     const updated = {
       labels,
-      datasets: [
-        {
-          ...this.state.data.datasets[0],
-          data: values
-        }
+      datasets: [ 
+        createDataset(values,  selector)
       ]
     };
-    this.setState({ data: updated, values });
-  
+    this.setState({ 
+      data: updated, 
+      rawData: data,
+      selectorOptions,
+    });
   }
 
-  renderMain = service => {
-    const { data, values } = this.state;
+  renderLine = service => {
+    const { data, rawData } = this.state;
     return (
       <Line 
         data={data}
         onElementsClick={elems => {
           const elem = elems[0];
           if (elem) {
-            const keys = Object.keys(values);
+            const keys = Object.keys(rawData);
             const clickedKey = keys[elem._index];
-            service.app.next(service, values[clickedKey]); // TODO: not here
+            service.app.next(service, { [clickedKey]: rawData[clickedKey] }); // TODO: not here
           }
         }}
       />
+    );
+  }
+
+  renderDoughnut = service => {
+    const { rawData, selector } = this.state;
+    const rawKeys = Object.keys(rawData);
+    const scalarData = rawData[rawKeys[0]];
+    const labels = Object.keys(scalarData[selector] || {});
+    const data = labels.map(key => scalarData[selector][key]);
+    return (
+      <Doughnut
+        options={{
+         legend: {
+            display: labels.length < 10
+          }
+        }}
+        data={{
+          labels,
+          datasets: [
+            { 
+              label: selector,
+              data,
+              backgroundColor: [
+                'rgb(255, 99, 132)',
+                'rgb(54, 162, 235)',
+                'rgb(255, 205, 86)'
+              ],
+            }
+          ]
+        }}
+      />
+    );
+  }
+
+  renderStackedBar = service => {
+    const { rawData, selector } = this.state;
+    if (selector === '*') {
+      return <div>Make a selection</div>;
+    }
+    const labels = rawData ? Object.keys(rawData) : [];
+    const values = labels.map(key => rawData[key]);
+    const selected = values.map(val => val[selector]);
+    const distinct = selected.reduce(
+      (all, cur) => {
+        const newKeys = Object.keys(cur).filter(k => all.indexOf(k) === -1);
+        return [...all, ...newKeys];
+      }, 
+      []
+    );
+    
+    const datasets = distinct.map(val => ({ 
+      label: val,
+      data: labels.map(key => rawData[key][selector][val] || 0),
+      backgroundColor: getColorFor(val),
+    }));
+    return (
+      <Bar
+        onElementsClick={elems => {
+          const idx = elems[0]._index;
+          const value = { [labels[idx]]: values[idx] };
+          service.inject(value); // TODO
+        }}
+        options={{
+          scales: {
+            xAxes: [{ stacked: true }],
+            yAxes: [{ stacked: true }]
+          },
+          legend: {
+            display: distinct.length < 10
+          }
+        }}
+        data={{
+          labels,
+          datasets,
+        }}
+      />
+    );
+  }
+
+  renderMain = service => {
+    const { rawData, selector, selectorOptions } = this.state;
+    const isScalar = rawData && Object.keys(rawData).length === 1;
+    return (
+      <div style={t.fill}>
+        <SelectorField
+          style={t.mb5}
+          label="Selector"
+          options={selectorOptions}
+          value={selector}
+          onChange={(ev, { value: selector }) => {
+            this.setState(
+              { selector },
+              () => this.updateData(rawData, selector)
+            );
+          }}
+        />
+        {
+          !isScalar ? 
+            this.renderStackedBar(service) : 
+            this.renderDoughnut(service)
+        }
+      </div>
     );
   }
 
@@ -130,6 +255,9 @@ class Chart {
 
   }
 
+  inject(params) {
+    this.app.next(this, params);
+  }
 
   async process(params) {
     this.app.notify(this, { params });

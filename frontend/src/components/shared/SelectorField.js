@@ -28,13 +28,14 @@ export default class SelectorField extends Component {
       label, 
       onChange, 
       value: syncedValue,
-      options,
+      options={},
       style={}
     } = this.props;
     const text = options[value];
     const fontSize = 11;
     return (
-      <div 
+      <div
+        ref={root => this.root = root}
         style={{ 
           ...style,
           width: '100%',
@@ -54,7 +55,8 @@ export default class SelectorField extends Component {
         />
         { 
           !this.state.optionsVisible ? (
-            <div 
+            <div
+              ref={container => this.optionsContainer = container}
               style={{ 
                 textTransform: 'uppercase', 
                 fontSize: 12,
@@ -78,6 +80,10 @@ export default class SelectorField extends Component {
                 textAlign: 'left',
                 textTransform: 'uppercase',
                 backgroundColor: 'white',
+                position: 'absolute',
+                left: (this.optionsContainer && this.root) ? 
+                  this.optionsContainer.getBoundingClientRect().left - this.root.getBoundingClientRect().left + 20: 
+                  0
               }}
             >
             {
