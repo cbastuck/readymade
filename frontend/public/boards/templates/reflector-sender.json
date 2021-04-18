@@ -15,7 +15,7 @@
       {
         "serviceId": "hookup.to/service/output",
         "serviceName": "output",
-        "url": "%http-host%/api/1/reflector/runtime/0f4dfa37-ac5c-4a50-8abf-a7ded3f7f620/in",
+        "url": "%http-host%/api/1/reflector/runtime/0f4dfa37-ac5c-4a50-8abf-a7ded3f7f620/967d5610-40f2-41fd-a1eb-236fc4d2fd7c/in",
         "running": true,
         "topic": "secret-key",
         "headers": {

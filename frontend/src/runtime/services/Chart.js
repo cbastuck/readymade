@@ -61,7 +61,7 @@ const defaultChartStyle = {
 
 class ChartUI extends Component {
   state = {
-    graphType: 'bar',
+    graphType: 'line',
     selector: '*',
     data: {
       labels: [],
