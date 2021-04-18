@@ -44,7 +44,7 @@ export default class SelectorField extends Component {
         }}
       >
         <SyncIndicator 
-          onClick={ev => onChange(ev, { value })}
+          onClick={ev => onChange && onChange(ev, { value })}
           inSync={value === syncedValue}
           label={label}
           style={{
@@ -98,7 +98,7 @@ export default class SelectorField extends Component {
                     whiteSpace: 'nowrap',
                   }}
                   onClick={ev => {
-                    onChange(ev, { value: key });
+                    onChange && onChange(ev, { value: key });
                     this.setState({ optionsVisible: false });
                   }}
                 >

@@ -10,13 +10,16 @@ export default class PlaceholderUI extends Component {
   };
 
   extractProperties = service => {
-    return Object.keys(filterPrivateMembers(service)).reduce(
-      (all, key) => ({
-        ...all,
-        [key]: service[key],
-      }),
-      {}
-    ); 
+    const additionalFiters = ['uuid', 'board'];
+    return Object.keys(filterPrivateMembers(service))
+      .filter(x => additionalFiters.indexOf(x) === -1)
+      .reduce(
+        (all, key) => ({
+          ...all,
+          [key]: service[key],
+        }),
+        {}
+      ); 
   }
 
   onInit = initialState => {

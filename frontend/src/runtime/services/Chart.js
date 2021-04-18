@@ -4,19 +4,29 @@ import { Line, Doughnut, Bar } from 'react-chartjs-2';
 import { isObject } from './helpers';
 import SelectorField from '../../components/shared/SelectorField';
 import ServiceUI from './ServiceUI';
-import { t } from '../../styles';
+import { s, t } from '../../styles';
+import { p } from './colorpalette';
 
 const serviceId = 'hookup.to/service/chart';
 const serviceName = 'Chart';
 
-function reduce(obj, selector='*') {
+
+function firstKey(x) {
+  return Object.keys(x)[0];
+}
+
+function elementBehindFirstKey(x) {
+  return x[firstKey(x)];
+} 
+
+function reduce(obj, selector) {
   return Object.keys(obj)
-    .filter(key => selector === '*' || key === selector)
+    .filter(key => !selector || key === selector)
     .reduce(
       (acc, key) => {
         const value = obj[key];
         const n = isObject(value) ? 
-          reduce(value) : // TODO: apply selector only on first level
+          reduce(value) : // TODO: apply selector on first level only
           Number(value);
         return acc + n;
       },
@@ -24,97 +34,100 @@ function reduce(obj, selector='*') {
     );
 }
 
-const palette = {};
-function getColorFor(val) {
-  const existingCol = palette[val];
-  if (existingCol) {
-    return existingCol;
-  }
-  const rnd = () => Math.round(Math.random() * 255);
-  const newCol = `rgb(${rnd()},${rnd()},${rnd()})`;
-  palette[val] = newCol;
-  return newCol;
+function createColor(idx) {
+  const ci = idx % p.length;
+  return `#${p[ci]}`;
 }
 
-
-function createDataset(data=[], selector='*') {
-  return {
-    label: selector,
-    fill: false,
-    lineTension: 0.1,
-    backgroundColor: 'rgba(75,192,192,0.4)',
-    borderColor: 'rgba(75,192,192,1)',
-    borderCapStyle: 'butt',
-    borderDash: [],
-    borderDashOffset: 0.0,
-    borderJoinStyle: 'miter',
-    pointBorderColor: 'rgba(75,192,192,1)',
-    pointBackgroundColor: '#fff',
-    pointBorderWidth: 1,
-    pointHoverRadius: 5,
-    pointHoverBackgroundColor: 'rgba(75,192,192,1)',
-    pointHoverBorderColor: 'rgba(220,220,220,1)',
-    pointHoverBorderWidth: 2,
-    pointRadius: 1,
-    pointHitRadius: 10,
-    data,
-  };
+const defaultChartStyle = {
+  fill: false,
+  lineTension: 0.1,
+  backgroundColor: 'rgba(75,192,192,0.4)',
+  borderColor: 'rgba(75,192,192,1)',
+  borderCapStyle: 'butt',
+  borderDash: [],
+  borderDashOffset: 0.0,
+  borderJoinStyle: 'miter',
+  pointBorderColor: 'rgba(75,192,192,1)',
+  pointBackgroundColor: '#fff',
+  pointBorderWidth: 1,
+  pointHoverRadius: 5,
+  pointHoverBackgroundColor: 'rgba(75,192,192,1)',
+  pointHoverBorderColor: 'rgba(220,220,220,1)',
+  pointHoverBorderWidth: 2,
+  pointRadius: 1,
+  pointHitRadius: 10,
 }
 
 class ChartUI extends Component {
   state = {
+    graphType: 'bar',
+    selector: '*',
     data: {
       labels: [],
-      datasets: [
-        createDataset()
-      ]
+      datasets: []
     },
-    selector: '*'
   }
 
   onInit = initialConfig => {
+    const { selector='*' } = initialConfig;
+    this.setState({ selector });
   }
 
-  onNotification = (service, config) => {
-    const { params } = config;
-    if(params !== undefined) {
-      this.updateData(params);
+  onNotification = (service, notification) => {
+    const { 
+      data,
+      selector,
+    } = notification;
+
+    if (selector !== undefined) {
+      this.setState({ selector });
+    }
+
+    if (data !== undefined) {
+      const { labels, values } = data;
+      this.updateData(labels, values, selector || this.state.selector);
     }
   }
 
-  updateData = (data, selector) => {
-    const dataKeys = Object.keys(data);
-    const values = dataKeys.map(key => reduce(data[key], selector || this.state.selector));
-    const firstValueKeys = dataKeys[0] ? Object.keys(data[dataKeys[0]]) : [];
+  updateData = (labels, values, selector) => {
+    const firstValueKeys = Object.keys(values[0] || {});
     const selectorOptions = firstValueKeys.reduce(
       (acc, cur) => ({ ...acc, [cur]: cur }), 
-      { '*': '* [all]' }
+      {}
     );
-    const labels = Object.keys(data);
-    const updated = {
-      labels,
-      datasets: [ 
-        createDataset(values,  selector)
-      ]
-    };
-    this.setState({ 
-      data: updated, 
-      rawData: data,
+
+    this.setState({  
+      labels, 
+      values,
       selectorOptions,
     });
   }
 
   renderLine = service => {
-    const { data, rawData } = this.state;
+    const { labels, values, selector } = this.state;
+    if (!labels || !values) {
+      return false;
+    }
+    const data = values.map(val => reduce(val, selector));
     return (
-      <Line 
-        data={data}
+      <Line
+        options={{ legend: { display: false } }}
+        data={{
+          labels,
+          datasets: [
+            {
+              ...defaultChartStyle,
+              data,
+            }
+          ]
+        }}
         onElementsClick={elems => {
           const elem = elems[0];
           if (elem) {
-            const keys = Object.keys(rawData);
-            const clickedKey = keys[elem._index];
-            service.app.next(service, { [clickedKey]: rawData[clickedKey] }); // TODO: not here
+            const clickedKey = labels[elem._index];
+            const clickedValue = values[elem._index]
+            service.app.next(service, { [clickedKey]: clickedValue }); // TODO: not here
           }
         }}
       />
@@ -122,63 +135,63 @@ class ChartUI extends Component {
   }
 
   renderDoughnut = service => {
-    const { rawData, selector } = this.state;
-    const rawKeys = Object.keys(rawData);
-    const scalarData = rawData[rawKeys[0]];
-    const labels = Object.keys(scalarData[selector] || {});
-    const data = labels.map(key => scalarData[selector][key]);
+    const { labels: rl, values: rv, selector } = this.state;
+    const labels = rv.length === 1 ? 
+      Object.keys(rv[0][selector]) : 
+      rl;
+
+    const values = rv.length === 1 ?
+      Object.keys(rv[0][selector]).map(k => rv[0][selector][k]) : 
+      rv.map(v => reduce(v, selector));
+    
     return (
       <Doughnut
         options={{
          legend: {
-            display: labels.length < 10
+            display: labels.length < 7
           }
         }}
         data={{
           labels,
           datasets: [
-            { 
-              label: selector,
-              data,
-              backgroundColor: [
-                'rgb(255, 99, 132)',
-                'rgb(54, 162, 235)',
-                'rgb(255, 205, 86)'
-              ],
+            {
+              data: values,
+              backgroundColor: values.map((_, idx) => createColor(idx)),
             }
-          ]
+          ],
         }}
       />
     );
   }
 
   renderStackedBar = service => {
-    const { rawData, selector } = this.state;
-    if (selector === '*') {
-      return <div>Make a selection</div>;
-    }
-    const labels = rawData ? Object.keys(rawData) : [];
-    const values = labels.map(key => rawData[key]);
-    const selected = values.map(val => val[selector]);
-    const distinct = selected.reduce(
+    const { 
+      labels=[], 
+      values=[],
+      selector,
+    } = this.state;
+  
+    const selectedValues = values.map(val => val[selector]);
+    const distinctValues = selectedValues.reduce(
       (all, cur) => {
         const newKeys = Object.keys(cur).filter(k => all.indexOf(k) === -1);
         return [...all, ...newKeys];
       }, 
       []
     );
-    
-    const datasets = distinct.map(val => ({ 
-      label: val,
-      data: labels.map(key => rawData[key][selector][val] || 0),
-      backgroundColor: getColorFor(val),
+    const datasets = distinctValues.map((distinctValue, di) => ({ 
+      label: distinctValue,
+      data: values.map(value => value[selector][distinctValue] || 0),
+      backgroundColor: createColor(di),
     }));
+
     return (
       <Bar
         onElementsClick={elems => {
-          const idx = elems[0]._index;
-          const value = { [labels[idx]]: values[idx] };
-          service.inject(value); // TODO
+          if (elems && elems[0]) {
+            const idx = elems[0]._index;
+            service.inject({ [labels[idx]]: values[idx] }); // TODO
+          }
         }}
         options={{
           scales: {
@@ -186,7 +199,7 @@ class ChartUI extends Component {
             yAxes: [{ stacked: true }]
           },
           legend: {
-            display: distinct.length < 10
+            display: distinctValues.length < 10
           }
         }}
         data={{
@@ -198,48 +211,56 @@ class ChartUI extends Component {
   }
 
   renderMain = service => {
-    const { rawData, selector, selectorOptions } = this.state;
-    const isScalar = rawData && Object.keys(rawData).length === 1;
+    const {
+      labels=[],
+      values=[], 
+      selector, 
+      selectorOptions,
+      graphType,
+    } = this.state;
     return (
-      <div style={t.fill}>
+      <div style={s(t.fill, { minWidth: 400, minHeight: 250 })}>
         <SelectorField
-          style={t.mb5}
-          label="Selector"
+          label="Select"
           options={selectorOptions}
           value={selector}
           onChange={(ev, { value: selector }) => {
             this.setState(
               { selector },
-              () => this.updateData(rawData, selector)
+              () => this.updateData(labels, values, selector)
             );
           }}
         />
-        {
-          !isScalar ? 
-            this.renderStackedBar(service) : 
-            this.renderDoughnut(service)
-        }
+        <SelectorField
+          style={t.mb5}
+          label="Type"
+          options={{
+            line: 'line',
+            pie: 'pie',
+            bar: 'bar'
+          }}
+          value={graphType}
+          onChange={(ev, { value: graphType }) => {
+            this.setState({ graphType });
+          }}
+        />
+        { graphType === 'line' && this.renderLine(service) }
+        { graphType === 'pie' && this.renderDoughnut(service) }
+        { graphType === 'bar' && this.renderStackedBar(service) }
       </div>
     );
   }
 
   render() {
     return (
-      <div
-        style={{
-          width: 500,
-          height: 300
-        }}
-      >
-        <ServiceUI
-          {...this.props}
-          onInit={this.onInit}
-          onNotification={this.onNotification}
-          segments={[
-            { name: 'main', render: this.renderMain },
-          ]}
-        />
-      </div>
+      <ServiceUI
+        {...this.props}
+        onInit={this.onInit}
+        onNotification={this.onNotification}
+        segments={[
+          { name: 'main', render: this.renderMain },
+        ]}
+      />
     );
   }
 }
@@ -249,18 +270,44 @@ class Chart {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.selector = undefined;
   }
 
   configure(config) {
-
   }
 
   inject(params) {
     this.app.next(this, params);
   }
 
-  async process(params) {
-    this.app.notify(this, { params });
+  deduceSelector(params) {
+    const firstElement = Array.isArray(params) ? 
+      params[0] : 
+      elementBehindFirstKey(params); // element behind first reduced key 
+    const firstElementKeys = firstElement && Object.keys(firstElement);
+    const selector = firstElementKeys && firstElementKeys[0]
+    if (selector) {
+      this.selector = selector;
+      this.app.notify(this, { selector });
+    }
+  }
+
+  process(params) {
+    if (!this.selector) {
+      this.deduceSelector(params);
+    }
+    if (this.selector) {
+      if (Array.isArray(params)) {
+        const labels = params.map(param => firstKey(param));
+        const values = params.map(param => param[firstKey(param)][this.selector]);
+        this.app.notify(this, { data: { labels, values } });
+      } else {
+        const labels = Object.keys(params);
+        const values = labels.map(key => params[key]);
+        this.app.notify(this, { data: { labels, values } });
+      }
+    }
     return params;
   }
 }

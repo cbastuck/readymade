@@ -6,13 +6,12 @@ import InputField from '../../components/shared/InputField';
 import SelectorField from '../../components/shared/SelectorField';
 
 import { FilterDescriptor } from 'services';
-import { parseExpression, evalExpression } from 'services/eval';
+//import { parseExpression, evalExpression } from 'services/eval';
 
 import ServiceUI from './ServiceUI';
 
 class FilterUI extends Component {
-  state = {
-  };
+  state = {};
 
   onInit(initialState) {
     const { 
@@ -68,7 +67,7 @@ class FilterUI extends Component {
        {
           conditions && conditions.length > 1 && (
             <SelectorField 
-              label="aggregator"
+              label="Op"
               options={{ and: 'and', or: 'or' }}
               value={aggregator}
               onChange={(_ev, { value: aggregator }) => {
@@ -102,7 +101,7 @@ class FilterUI extends Component {
     );
   }
 }
-
+/*
 class Filter {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
@@ -161,14 +160,14 @@ class Filter {
     return filter(params);
   }
 }
-
+*/
 
 const descriptor = {
   serviceName: FilterDescriptor.serviceName,
   serviceId: FilterDescriptor.serviceId,
   create: (app, board, descriptor, id) =>
-    //new FilterDescriptor.service(app, board, descriptor, id),
-    new Filter(app, board, descriptor, id),
+    new FilterDescriptor.service(app, board, descriptor, id),
+    //new Filter(app, board, descriptor, id),
   createUI: FilterUI
 };
 
