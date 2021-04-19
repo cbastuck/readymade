@@ -13,6 +13,10 @@ export default class PlaceholderUI extends Component {
     const additionalFiters = ['uuid', 'board'];
     return Object.keys(filterPrivateMembers(service))
       .filter(x => additionalFiters.indexOf(x) === -1)
+      .filter(x => {
+        const t = typeof service[x];
+        return t === 'string' || t === 'number';
+      })
       .reduce(
         (all, key) => ({
           ...all,

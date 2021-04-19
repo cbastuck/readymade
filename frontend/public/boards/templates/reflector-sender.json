@@ -32,6 +32,6 @@
     "You are responsible for the data you sent. Do not inject copyrighted or illegal material in text or binary form.",
     "Injected data is just reflected to receivers listening on the same topic. It is flowing through and not stored on the backend!",
     "Still the reflector creates a hash of the incoming data and stores this with the used IP. Again, you are responsible when violating these rules!",
-    { "type": "check", "text": "Public reflector is currently online?", "url": "%http-host%/api/ready" }
+    { "type": "check", "text": "Reflector is currently online?", "url": "%http-host%/api/ready" }
   ]
 }
