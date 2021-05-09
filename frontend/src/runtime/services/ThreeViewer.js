@@ -1,13 +1,13 @@
-import React, { Component } from 'react';
+const serviceId = 'hookup.to/service/three-viewer';
+const serviceName = 'ThreeViewer';
 
+/*
+import React, { Component } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { ConvexBufferGeometry } from 'three/examples/jsm/geometries/ConvexGeometry.js';
 
 import ServiceUI from './ServiceUI';
-
-const serviceId = 'hookup.to/service/three-viewer';
-const serviceName = 'ThreeViewer';
 
 class ThreeViewerUI extends Component {
   componentDidMount() {
@@ -133,7 +133,7 @@ class ThreeViewerUI extends Component {
     );
   }
 }
-
+*/
 class ThreeViewer {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
@@ -164,7 +164,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new ThreeViewer(app, board, descriptor, id),
-  createUI: ThreeViewerUI
+  //createUI: ThreeViewerUI
 };
 
 export default descriptor;

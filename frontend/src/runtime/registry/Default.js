@@ -29,7 +29,7 @@ import StackDescriptor from '../services/Stack';
 import AggregatorDescriptor from '../services/Aggregator';
 import ReduceDescriptor from '../services/Reduce';
 
-export default [
+const defaultRegistry = [
   timerDescriptor,
   monitorDescriptor,
   playbackDescriptor,
@@ -61,3 +61,5 @@ export default [
   AggregatorDescriptor,
   ReduceDescriptor
 ];
+
+export default defaultRegistry;

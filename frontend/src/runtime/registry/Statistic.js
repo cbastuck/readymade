@@ -1,6 +1,6 @@
 import SamplingDescriptor from '../services/Sampling';
 
-export default function () {
+export default function statisticRegistry() {
   return [
     SamplingDescriptor,
   ];

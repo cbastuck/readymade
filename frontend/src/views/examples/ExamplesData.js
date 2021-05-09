@@ -1,4 +1,4 @@
-export default [
+const examplesData = [
   {
     title: 'Hello World',
     brief: 'The mother of examples',
@@ -57,3 +57,5 @@ export default [
     ]
   }
 ];
+
+export default examplesData;

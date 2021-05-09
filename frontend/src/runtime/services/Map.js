@@ -5,7 +5,7 @@ import {
   Checkbox,
 } from 'semantic-ui-react';
 
-import { MapDescriptor } from 'services';
+import { MapDescriptor } from 'services';  
 
 import InputLabelValue from '../../components/shared/InputLabelValue';
 

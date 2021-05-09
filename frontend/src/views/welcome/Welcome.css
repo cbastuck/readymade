@@ -3,7 +3,7 @@ body, html {
 }
 
 .hero-image {
-  background-image: url("/assets/shutterstock_1196210650.png");
+  background-image: url("./shutterstock_1196210650.png");
   height: 100%;
   background-position: center;
   background-repeat: no-repeat;
