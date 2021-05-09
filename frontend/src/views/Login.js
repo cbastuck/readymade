@@ -11,6 +11,8 @@ export default class Login extends Component {
   renderOpenIdLogin() {
     const { board } = this.props;
     const query = qs.stringify({
+      code_challenge: 'z4M-tHmoTnqj1xb0khmX8VoEUo8xpvhddSpYSyiNJ-k',
+      code_challenge_method: 'S256', 
       client_id: 'hookup',
       response_type: 'code',
       scope: 'openid profile permissions features email',

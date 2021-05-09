@@ -42,7 +42,8 @@ export default class AuthRedirect extends Component {
            client_secret: 'hkp',
            redirect_uri: redirectUri(),
            grant_type: 'authorization_code',
-           code: code,
+           code,
+           code_verifier: 'abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij'
           }
         )
       }
