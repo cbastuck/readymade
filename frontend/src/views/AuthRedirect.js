@@ -32,20 +32,19 @@ export default class AuthRedirect extends Component {
     const response = await fetch(
       `/openid/token`,
       {
-         method: 'POST',
-         headers: {
-           'Content-Type': 'application/x-www-form-urlencoded',
-           'Cache-Control': 'no-cache',
-         },
-         body: qs.stringify({
-           client_id: clientId,
-           client_secret: 'hkp',
-           redirect_uri: redirectUri(),
-           grant_type: 'authorization_code',
-           code,
-           code_verifier: 'abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij'
-          }
-        )
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Cache-Control': 'no-cache',
+        },
+        body: qs.stringify({
+          client_id: clientId,
+          client_secret: 'hkp',
+          redirect_uri: redirectUri(),
+          grant_type: 'authorization_code',
+          code,
+          code_verifier: 'abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij'
+        })
       }
     );
     const result = await response.json();
