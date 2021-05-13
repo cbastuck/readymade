@@ -8,6 +8,22 @@ export function setCookie(key, value, expCount=undefined, expUnit=undefined) {
   }
 }
 
+export function getCookie(key) {
+  const cookies = document.cookie.split(';').reduce(
+    (acc, kv) => {
+      if (!kv) {
+        return acc;
+      }
+      const [key, value] = kv.split('=');
+      return (key && value) ? 
+        { ...acc, [key.trim()]: value } :
+        acc;
+    },
+    {}
+  );
+  return cookies[key];
+}
+
 export function removeCookie(key) {
   setCookie(key, "removed", -100, 'y');
 }

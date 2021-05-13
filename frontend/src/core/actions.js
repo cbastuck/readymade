@@ -1,7 +1,7 @@
 import qs from 'querystring';
 
 import {
-  removeToken,
+  logout,
   restoreToken
 } from './Auth';
 import { serializeObject } from './format';
@@ -39,7 +39,7 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
   });
   const status = response.status;
   if (status === 401) {
-    removeToken();
+    logout();
     return;
   }
   if (parseJSON && response.ok) {

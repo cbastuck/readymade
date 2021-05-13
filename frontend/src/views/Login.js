@@ -17,7 +17,7 @@ export default class Login extends Component {
       response_type: 'code',
       scope: 'openid profile permissions features email',
       redirect_uri: redirectUri(),
-      state: board || ''
+      state: board || '',
     });
     return (
       <div

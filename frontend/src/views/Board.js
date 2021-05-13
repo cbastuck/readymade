@@ -107,9 +107,7 @@ export default class Board extends Component {
               />
               {
                 !appContext.token && (
-                  <Login 
-                    board={boardContext.boardName}
-                  />
+                  <Login board={boardContext.boardName} />
                 )
               }
               {

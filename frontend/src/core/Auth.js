@@ -4,8 +4,9 @@ import moment from 'moment';
 import { 
   setCookie, 
   removeCookie,
-  storeItem,
-  restoreItem,
+  getCookie,
+  // storeItem,
+  // restoreItem,
 } from './storage';
 
 export function validateToken(token) {
@@ -32,25 +33,27 @@ export function getUserId() {
 }
 
 export function restoreToken() {
-  return restoreItem('token');
+  return getCookie('token');
 }
 
 export function setToken(value) {
-  storeItem('token', value);
   setCookie('token', value);
 }
 
-export function removeToken() {
-  localStorage.removeItem('token');
-  removeCookie('token');
-  removeCookie('_session');
+export function logout() {
+  removeAuthCookies();
 }
 
+function removeAuthCookies() {
+  removeCookie('token');
+  removeCookie('_session.legacy.sig');
+  removeCookie('_session.legacy');
+}
 
 export function processToken(incomingToken) {
   const { token, decoded } = validateToken(incomingToken);
   if (!token && restoreToken()) {
-    removeToken(); // the stored token token is not valid anymore
+    removeAuthCookies(); // the stored token token is not valid anymore
     return {};
   }
 
