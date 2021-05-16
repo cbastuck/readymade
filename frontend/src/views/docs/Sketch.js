@@ -42,7 +42,7 @@ export default class Sketch extends Component {
       style={{ margin: 5, marginTop: yOffset }}
       name="chevron right" 
       size="large"
-      color="gray"
+      color="grey"
     />
   )
 

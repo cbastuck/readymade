@@ -22,10 +22,13 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
     contentType
   } = await serializeObject(body);
 
-  const headers = {
-    ...additionalHeaders,
-    'Authorization': restoreToken() || '',
-  };
+  const headers = { ...additionalHeaders };
+  const token = restoreToken();
+  if (token) {
+    headers['Authorization'] = token;
+  }
+
+  // multipart form content type contains the boundary which is generated automatically
   if (contentType && contentType !== 'multipart/form-data') {
     headers['Content-Type'] = contentType;
   }
@@ -56,7 +59,7 @@ export function getBoard(board) {
 export function getRuntimes(board) {
   return request(`board/${board}/runtimes`)
     .then(res => {
-      if (res.ok !== undefined && res.ok === false) {
+      if (!res || (res.ok !== undefined && res.ok === false)) {
         return [];
       } 
       return res;

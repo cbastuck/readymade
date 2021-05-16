@@ -35,3 +35,13 @@ export function storeItem(key, value) {
 export function restoreItem(key) {
   return localStorage.getItem(key);
 }
+
+export function removeItem(key) {
+  return localStorage.removeItem(key);
+}
+
+export function popItem(key) {
+  const value = restoreItem(key);
+  removeItem(key);
+  return value;
+}

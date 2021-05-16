@@ -73,7 +73,7 @@ class MP3Encoder {
 
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
-      fr.addEventListener('error', error => reject(console.error('ERROR!!!', error)));
+      fr.addEventListener('error', error => reject(console.error('Error in MP3Encoder service: ', error)));
       fr.onload = () => resolve(fr.result);
       fr.readAsArrayBuffer(blob);
     });

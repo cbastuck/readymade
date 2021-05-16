@@ -109,7 +109,6 @@ class ThreeViewerUI extends Component {
       // vertices[ i ].add(randomPoint().multiplyScalar( 2 )); // wiggle the points
     }
 
-    console.log('!!!!', vertices);
     return vertices;
   }
 

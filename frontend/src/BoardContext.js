@@ -1,4 +1,3 @@
-
 import React, { Component, createContext } from'react';
 import UAParser from 'ua-parser-js';
 

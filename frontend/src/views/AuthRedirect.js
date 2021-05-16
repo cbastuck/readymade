@@ -3,14 +3,16 @@ import { Redirect } from 'react-router-dom';
 import qs from 'querystring';
 
 import { AppConsumer } from '../AppContext'
-import {
-  redirectUri,
-} from '../core/actions';
+import { redirectUri } from '../core/actions';
+import { popItem } from '../core/storage';
 
 export default class AuthRedirect extends Component {
   constructor(props) {
     super(props);
-    this.state = {};
+    this.state = {
+      tokenUpdated: false,
+      token: null
+    };
 
     // TODO: this checks if we're in an iframe and
     // if so delegates the request to the parent.
@@ -29,8 +31,9 @@ export default class AuthRedirect extends Component {
 
   exchangeCodeForToken = async code => {
     const clientId = 'hookup';
+    const pkceVerifier = popItem('pkce_verifier');
     const response = await fetch(
-      `/openid/token`,
+      '/openid/token',
       {
         method: 'POST',
         headers: {
@@ -43,10 +46,11 @@ export default class AuthRedirect extends Component {
           redirect_uri: redirectUri(),
           grant_type: 'authorization_code',
           code,
-          code_verifier: 'abcdefghijabcdefghijabcdefghijabcdefghijabcdefghij'
+          code_verifier: pkceVerifier,
         })
       }
     );
+    
     const result = await response.json();
     if (result && result.id_token) {
       this.setState({ token: result.id_token });
@@ -69,7 +73,11 @@ export default class AuthRedirect extends Component {
       );
     }
 
-    const token = this.state && this.state.token;
+    const { 
+      token, 
+      tokenUpdated 
+    } = this.state;
+
     if (!token) {
       return false;
     }
@@ -78,10 +86,15 @@ export default class AuthRedirect extends Component {
       <AppConsumer>
         {
           appContext => {
-            appContext.updateToken(this.state.token);
-            return this.queryParams.state ?
-              <Redirect to={`/${this.queryParams.state}`}/>  :
-              <Redirect to="/" />
+            if (!tokenUpdated) {
+              appContext.updateToken(token)
+                .then(() => this.setState({ tokenUpdated: true }));
+                return false;
+            } else {
+              return this.queryParams.state ?
+                <Redirect to={`/${this.queryParams.state}`}/>  :
+                <Redirect to="/" />;
+            }            
           }
         }
       </AppConsumer>

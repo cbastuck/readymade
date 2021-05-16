@@ -3,15 +3,23 @@ import { Link } from 'react-router-dom';
 import { Icon } from 'semantic-ui-react';
 import qs from 'querystring';
 
-import { restoreItem } from '../core/storage';
 import { redirectUri } from '../core/actions';
 import { s, t } from '../styles';
 
+import { restoreItem, storeItem } from '../core/storage';
+import { createChallengeAndVerifier } from '../core/pkce';
+
 export default class Login extends Component {
-  renderOpenIdLogin() {
+  state = {};
+ 
+  componentDidMount() {
+    this.generatePkceChallenge();
+  }
+
+  renderOpenIdLogin(pkceChallenge, pkceVerifier) {
     const { board } = this.props;
     const query = qs.stringify({
-      code_challenge: 'z4M-tHmoTnqj1xb0khmX8VoEUo8xpvhddSpYSyiNJ-k',
+      code_challenge: pkceChallenge,
       code_challenge_method: 'S256', 
       client_id: 'hookup',
       response_type: 'code',
@@ -19,6 +27,7 @@ export default class Login extends Component {
       redirect_uri: redirectUri(),
       state: board || '',
     });
+    storeItem('pkce_verifier', pkceVerifier);
     return (
       <div
         style={{
@@ -70,10 +79,29 @@ export default class Login extends Component {
     );
   }
 
+  async generatePkceChallenge() {
+    if (this.state.pkceChallenge) {
+      return;
+    }
+
+    const { challenge, verifier } = await createChallengeAndVerifier();
+    this.setState({
+      pkceChallenge: challenge,
+      pkceVerifier: verifier,
+    });
+  }
+
   render() {
-    const login = restoreItem('__allowlogin');
-    return login ? 
-      this.renderOpenIdLogin() : 
-      this.renderPlaceholder();
+    const loginEnabled = restoreItem('__allowlogin');
+    if (!loginEnabled) {
+      return this.renderPlaceholder();
+    }  
+
+    const { pkceChallenge, pkceVerifier } = this.state;
+    if (!pkceChallenge || !pkceVerifier) {
+      return false;
+    }
+    
+    return this.renderOpenIdLogin(pkceChallenge, pkceVerifier);
   }
 }

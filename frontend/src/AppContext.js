@@ -5,7 +5,6 @@ import {
   restoreToken,
   processToken,
   setToken,
-//   getUserId,
 } from './core/Auth';
 import { redirectTo } from './core/actions';
 

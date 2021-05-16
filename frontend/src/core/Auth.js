@@ -5,8 +5,6 @@ import {
   setCookie, 
   removeCookie,
   getCookie,
-  // storeItem,
-  // restoreItem,
 } from './storage';
 
 export function validateToken(token) {

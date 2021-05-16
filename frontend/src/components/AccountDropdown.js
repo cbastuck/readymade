@@ -40,7 +40,7 @@ export default class AccountDropdown extends Component {
       <div 
         style={{ 
           display: 'flex', 
-          flexDirection: 'row' 
+          flexDirection: 'row',
         }}
       >
         <Icon name="user" style={{ margin: "0px 5px" }}/> 
