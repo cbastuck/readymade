@@ -43,12 +43,12 @@ export default class AccountDropdown extends Component {
           flexDirection: 'row',
         }}
       >
-        <Icon name="user" style={{ margin: "0px 5px" }}/> 
-        {currentUser}
+        <Icon name="user" style={{ margin: "0px 5px" }}/>
+        <div style={s(t.uc, t.fs10, t.ls1, t.mt1)}>{currentUser}</div>
       </div>
     );
     return (
-      <div style={{ width: currentUser ? 130 : undefined }}>
+      <div style={{ /*width: currentUser ? 130 : undefined*/ }}>
         <Dropdown
           icon={icon}
           className='link item right'

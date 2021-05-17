@@ -57,6 +57,7 @@ export const t = {
   m9: { margin: 9 },
   m10: { margin: 10 },
   mt: function(x){ return { marginTop: x }; },
+  mt1: { marginTop: 1 },
   mt2: { marginTop: 2 },
   mt3: { marginTop: 3 },
   mt5: { marginTop: 5 },
