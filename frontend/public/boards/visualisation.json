@@ -311,7 +311,7 @@
             },
             {
               "type": "text",
-              "text": "or stuck with a local optimum",
+              "text": "or got stuck in a local optimum",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
@@ -363,7 +363,7 @@
             },
             {
               "type": "text",
-              "text": "Try again?",
+              "text": "Try again",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {

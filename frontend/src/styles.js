@@ -66,6 +66,8 @@ export const t = {
   mt8: { marginTop: 8 },
   mt9: { marginTop: 9 },
   mt10: { marginTop: 10 }, 
+  mt20: { marginTop: 20 }, 
+  mt30: { marginTop: 30 }, 
   mb: function(x){ return { marginBottom: x }; },
   mb2: { marginBottom: 2 },
   mb3: { marginBottom: 3 },
@@ -75,6 +77,8 @@ export const t = {
   mb8: { marginBottom: 8 },
   mb9: { marginBottom: 9 },
   mb10: { marginBottom: 10 },
+  mb20: { marginBottom: 20 },
+  mb30: { marginBottom: 30 },
   mv: function(x){ return { marginTop: x, marginBottom: x }},
   mh: function(x){ return { marginLeft: x, marginRight: x }},
 

@@ -20,6 +20,8 @@ import BrowserRegistry from '../runtime/BrowserRegistry';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 import VSpacer from '../components/shared/VSpacer';
+import StoredPlaygrounds from '../components/StoredPlaygrounds';
+
 import { replacePlaceholders } from '../core/url';
 
 const defaultBundles = [
@@ -57,6 +59,20 @@ function generateRandomName() {
   return generate('-').split('-').slice(1).join('-');
 }
 
+function getSavedBoards() {
+  const savedBoards = [];
+  const prefix = 'hkp-playground-';
+  for(const key in localStorage) {
+    if (key.startsWith(prefix)) {
+      savedBoards.push({
+        key: key.substr(prefix.length), 
+        value: localStorage.getItem(key)
+      });
+    }
+  }
+  return savedBoards;
+}
+ 
 export default class Playground extends Component {
   state = {
     boardName: (this.props.match && this.props.match.params) ? this.props.match.params.board : defaultName,
@@ -66,7 +82,9 @@ export default class Playground extends Component {
     placeholderAnimationRunning: false,
     runtimes: undefined,
     services: undefined,
-    description: ''
+    description: '',
+    initialFetched: false,
+    savedBoards: getSavedBoards(),
   };
 
   user = { 
@@ -92,10 +110,14 @@ export default class Playground extends Component {
           runtimes: undefined, 
           services: undefined,
           sidechainRouting: {},
-          description: ''
+          description: '',
+          initialFetched: false,
         });
       } else {
-        this.setState({ boardName: board });
+        this.setState({ 
+          boardName: board,
+          initialFetched: false,
+        });
       }
     }
   }
@@ -104,17 +126,13 @@ export default class Playground extends Component {
     this.clearPlayground();
   }
 
-  isInitialFetch = () => this.state.runtimes === undefined;
-
   fetchData = async () => {
-    if (this.isInitialFetch()) {
-      await this.setInitialPlayground();
-    }
-    const { 
+    const {
       boardName='Playground',
       runtimes=[], 
       services={},
-    } = this.state;
+      description='',
+    } = this.state.initialFetched ? this.state : await this.setInitialPlayground();
      
     if (!this.defaultRegistry) {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles); 
@@ -122,13 +140,14 @@ export default class Playground extends Component {
 
     const data = {
       board: { name: boardName },
-      runtimes, 
+      runtimes,
       services,
       registry: runtimes && runtimes.reduce(
         (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
         {}
       ),
     };
+    this.setState({ ...data, initialFetched: true, description });
     return data;
   }
 
@@ -148,6 +167,8 @@ export default class Playground extends Component {
     if (src) {
       return this.importBoard(src);
     }
+
+    return {};
   }
 
   importBoard = async url => {
@@ -155,8 +176,7 @@ export default class Playground extends Component {
       const res = await fetch(url);
       const data = await res.json();
       const runtimeIds = Object.keys(data);
-
-      this.setState({ 
+      return { 
         runtimes: runtimeIds.map((rid, ridx) => ({
           id: rid,
           type: data[rid].type,
@@ -174,7 +194,7 @@ export default class Playground extends Component {
           }), 
           {}
         )
-      });
+      };
     } catch (err) {
       console.log('Import failed', err, url)
     }
@@ -223,11 +243,10 @@ export default class Playground extends Component {
     } 
   }
 
-  restoreBoard = async objOrString => {
-    const state = typeof objOrString === 'string' ? 
+  restoreBoard = objOrString => {
+    return typeof objOrString === 'string' ? 
       JSON.parse(objOrString) : 
       objOrString;
-    this.setState(state);
   }
 
   storeBoard = name => {
@@ -440,20 +459,6 @@ export default class Playground extends Component {
     }
   }
 
-  getSavedBoards = () => {
-    const savedBoards = [];
-    const prefix = 'hkp-playground-';
-    for(const key in localStorage) {
-      if (key.startsWith(prefix)) {
-        savedBoards.push({
-          key: key.substr(prefix.length), 
-          value: localStorage.getItem(key)
-        });
-      }
-    }
-    return savedBoards;
-  }
-
   renderRuntimes = boardContext => {
     const { runtimes } = boardContext;
     const { 
@@ -526,7 +531,7 @@ export default class Playground extends Component {
     );
   }
 
-  renderDescription = boardContext => {
+  renderDescription = () => {
     const { description } = this.state;
     if (description) {
       const arr = Array.isArray(description) ? description : [description];
@@ -553,7 +558,7 @@ export default class Playground extends Component {
                 .catch(err => this.setState({ [urlKey]: false }));
             }
             return (
-              <div style={s(t.uc, t.fs12, t.ls1)}>
+              <div key={key} style={s(t.uc, t.fs12, t.ls1)}>
                 { text }  { checkPassed ? '✅' : '❌' }
               </div>
             );
@@ -586,82 +591,54 @@ export default class Playground extends Component {
   }
 
   renderPlaceholder = boardContext => {
-    const { placeholderAnimationRunning } = this.state;
-    if (!placeholderAnimationRunning) {
-      setTimeout(() => 
-        this.setState({ placeholderAnimationRunning: true }),
-        0
-      );
-    }
-    const savedBoards = this.getSavedBoards();
+    const { savedBoards=[] } = this.state;
+    const headlineStyle = t.fs14;
     return (
-      <div 
-        style={s(
-          t.fill, 
-          { 
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            flexDirection: 'column',
-            padding: '0px 20px'
-          },
-          { 
-            opacity: placeholderAnimationRunning ? 1 : 0,
-            transition: placeholderAnimationRunning && 'opacity 4s 0s'
-          },
-        )}
-      >
-        <Icon 
-          style={{ opacity: 0.6 }} 
-          name="leaf" 
-          size="massive" 
-          color="grey" 
-        />
-        <div 
-          style={s(t.uc, t.fs13, t.ls1, t.m(0, 50))}
-        >      
-          It's so empty here ... Add a runtime to get going!
+      <div style={t.fill}>
+        <div style={s(t.uc, t.fs13, t.ls1, t.m(20))}>
+          <h1 style={headlineStyle}> Sketch something new </h1>
+          <div style={s(t.tc, t.mt30, t.mb30)}>
+            <Icon 
+              style={{ opacity: 0.6 , marginTop: 30, marginBottom: 30 }} 
+              name="leaf" 
+              size="massive" 
+              color="grey" 
+            />
+          </div>
+          <div style={t.tc}>
+            This is an empty playground - add a runtime to get going!
+          </div>
+          <div style={t.m(0, 40)}>
+            <h1 style={headlineStyle}> Hookup a reflector </h1>
+            <div>
+              {
+                [ 
+                  { name: 'Sender', template: 'reflector-sender' },
+                  { name: 'Receiver', template: 'reflector-receiver' },
+                ].map((item, idx, self) => (
+                  <Link
+                    key={`template-${item.name}`}
+                    to={`/playground/${generateRandomName()}?template=${item.template}`}>
+                    {`${item.name}${(idx + 1 < self.length) ? ', ' : ''} `}
+                  </Link>
+                ))
+              }
+            </div>
+          </div>
           {
             savedBoards.length > 0 && (
-              <div style={t.m(0, 10)}>
-                Alternatively restore a saved boards. Following boards were saved in this browser:
-                <div>
-                {
-                  savedBoards.map((item, idx) => (
-                    <span
-                      style={{ color: '#4183c4', cursor: 'pointer' }}
-                      key={`stored-preset-${item.key}`}
-                    >
-                      <Link to={`/playground/${item.key}`}>
-                      {
-                        `${item.key}${idx+1 < savedBoards.length ? ', ' : ''}` 
-                      }
-                      </Link>
-                    </span>
-                  ))
-                }
-                </div>
+              <div style={s(t.mt20)}>
+                <h1 style={headlineStyle}> Following boards were saved in this browser</h1>
+                <StoredPlaygrounds 
+                  style={{ height: 250, width: '100%', marginRight: 20 }}
+                  url={name => `/playground/${name}`} 
+                  savedBoards={savedBoards}
+                />
               </div>
             )
           }
-          <div style={t.m(0, 10)}>
-            Hookup with a reflector?
-            <div>
-            {
-              [ 
-                { name: 'Sender', template: 'reflector-sender' },
-                { name: 'Receiver', template: 'reflector-receiver' },
-              ].map((item, idx, self) => (
-                 <Link
-                  key={`template-${item.name}`}
-                  to={`/playground/${generateRandomName()}?template=${item.template}`}>
-                  {`${item.name}${(idx + 1 < self.length) ? ', ' : ''} `}
-                </Link>
-              ))
-            }
-            </div>
-          </div>
         </div>
+        <VSpacer />
       </div>
     );
   }
@@ -670,7 +647,7 @@ export default class Playground extends Component {
     return (
       <div>
         { this.renderRuntimes(boardContext) }
-        { this.renderDescription(boardContext) }
+        { this.renderDescription() }
         <Prompt ref={prompt => this.prompt = prompt} />
         <VSpacer />
       </div>
@@ -687,6 +664,26 @@ export default class Playground extends Component {
       default:
         return true;
     }
+  }
+
+  renderContent = boardContext => {
+    if (!this.state.initialFetched) {
+      return (
+        <div style={s(t.uc, t.ls1, { 
+            position: 'absolute',
+            left: '50%',
+            top: '50%',
+          })}
+        >
+          Loading ...
+        </div>
+      );
+    }
+    return (boardContext && 
+            boardContext.runtimes && 
+            boardContext.runtimes.length === 0) ? 
+              this.renderPlaceholder(boardContext) : 
+              this.renderPlayground(boardContext);
   }
 
   render() {
@@ -717,13 +714,7 @@ export default class Playground extends Component {
                 board={boardName}
                 availableRuntimes={this.availableRuntimes}
               />
-              { 
-                boardContext && 
-                boardContext.runtimes && 
-                boardContext.runtimes.length === 0 ? 
-                  this.renderPlaceholder(boardContext) : 
-                  this.renderPlayground(boardContext)
-              }
+              { this.renderContent(boardContext) }
               <Footer />
             </div>
           )

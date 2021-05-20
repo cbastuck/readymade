@@ -4,7 +4,6 @@ import {
   Button,
   Card,
   Image,
-  Breadcrumb,
 } from 'semantic-ui-react';
 
 import { s, t } from '../../styles';
@@ -12,6 +11,7 @@ import { AppConsumer } from '../../AppContext';
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
+import StoredPlaygrounds from '../../components/StoredPlaygrounds';
 
 export default class MyBoards extends Component {
   state = {
@@ -57,35 +57,6 @@ export default class MyBoards extends Component {
     </Card.Group>
   );
 
-  renderBreadcrumbs = () => {
-    return (
-      <div 
-        style={{ 
-          textAlign: 'left', 
-          marginLeft: 5,
-        }}
-      >
-        <Breadcrumb>
-          <Breadcrumb.Section 
-            link
-            onClick={() => console.log('Selected breadcrumb')}
-          >
-            <span 
-              style={{
-                letterSpacing: 1,
-                textTransform: 'uppercase',
-                fontSize: 10,
-              }}
-            >
-              Available Boards
-            </span>
-          </Breadcrumb.Section>
-          <Breadcrumb.Divider />
-        </Breadcrumb>
-      </div>
-    );
-  }
-
   renderMyBoardsContainer = user => {
     return (
       <div className="my-boards-container">
@@ -96,7 +67,7 @@ export default class MyBoards extends Component {
             marginBottom: 20
           }}
         >
-          <h1  
+          <h1
             style={{ 
               fontSize: 16, 
               margin: '20px 0px',
@@ -107,7 +78,6 @@ export default class MyBoards extends Component {
           > 
             {user ? `${user.username}'s` : 'My'} Boards
           </h1>
-          { this.renderBreadcrumbs() }
         </div>
         <div className="my-boards-list">
           { this.renderMyBoards() }
@@ -115,7 +85,6 @@ export default class MyBoards extends Component {
       </div>
     );
   }
-
 
   render() {
     return (
@@ -130,11 +99,19 @@ export default class MyBoards extends Component {
                     <Toolbar 
                       onAction={boardContext.onAction}
                     />
-                    { this.renderMyBoardsContainer(appContext.user) }
-                    <div 
-                      style={s(t.uc, t.fs11, t.ls1, t.m(15, 20))}
-                    >
-                      Alternatively sketch ideas on <Link to="/playground">Playground</Link>
+                    <div style={s(t.uc, t.fs12, t.ls1, t.m(25, 20))}>
+                      <h1 style={s(t.mt10, t.fs14)}>
+                        Locally stored Playgrounds
+                      </h1> 
+                      <StoredPlaygrounds
+                        style={{ height: 350, width: '100%' }} 
+                        url={name => `/playground/${name}`}
+                        savedBoards={[]}
+                      />
+                      <h1 style={s(t.mt20, t.fs14)}>Sketch a new idea</h1>
+                      <div style={t.mt10}>
+                        go to <Link to="/playground">Playground</Link>
+                      </div>
                     </div>
                   </div>
                 )

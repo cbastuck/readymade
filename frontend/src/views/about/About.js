@@ -63,7 +63,7 @@ export default class About extends Component {
               }}
             >
               <p><span style={amp}>Enable</span> <span style={{ fontStyle: 'italic' }}>everybody</span> to play with technical concepts</p>
-              <p>Seed <span style={amp}>Inspiration</span> and <span style={amp}>Curiousity</span> </p>
+              <p>Seed <span style={amp}>Inspiration</span> and <span style={amp}>Curiosity</span> </p>
               <p>Spawn <span style={amp}>Creativity</span></p>
               <p><span style={amp}>Improvise</span> with complexity.</p>
             </div>
