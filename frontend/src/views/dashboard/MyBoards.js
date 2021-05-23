@@ -11,7 +11,7 @@ import { AppConsumer } from '../../AppContext';
 import BoardContext, { BoardConsumer } from '../../BoardContext';
 import Toolbar from '../../components/Toolbar';
 import Footer from '../../components/Footer';
-import StoredPlaygrounds from '../../components/StoredPlaygrounds';
+import BoardCollection from '../../components/BoardCollection';
 
 export default class MyBoards extends Component {
   state = {
@@ -103,7 +103,7 @@ export default class MyBoards extends Component {
                       <h1 style={s(t.mt10, t.fs14)}>
                         Locally stored Playgrounds
                       </h1> 
-                      <StoredPlaygrounds
+                      <BoardCollection
                         style={{ height: 350, width: '100%' }} 
                         url={name => `/playground/${name}`}
                         savedBoards={[]}

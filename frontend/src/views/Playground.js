@@ -20,7 +20,7 @@ import BrowserRegistry from '../runtime/BrowserRegistry';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 import VSpacer from '../components/shared/VSpacer';
-import StoredPlaygrounds from '../components/StoredPlaygrounds';
+import BoardCollection from '../components/BoardCollection';
 
 import { replacePlaceholders } from '../core/url';
 
@@ -629,7 +629,7 @@ export default class Playground extends Component {
             savedBoards.length > 0 && (
               <div style={s(t.mt20)}>
                 <h1 style={headlineStyle}> Following boards were saved in this browser</h1>
-                <StoredPlaygrounds 
+                <BoardCollection 
                   style={{ height: 250, width: '100%', marginRight: 20 }}
                   url={name => `/playground/${name}`} 
                   savedBoards={savedBoards}

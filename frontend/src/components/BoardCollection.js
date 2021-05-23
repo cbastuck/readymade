@@ -7,11 +7,11 @@ import {
 
 import { s, t } from '../styles';
 
-export default class StoredPlaygrounds extends Component {
+export default class BoardCollection extends Component {
   renderCard = item => {
     const { url } = this.props;
     return (
-      <Card 
+      <Card
         style={s(t.p10)}
         key={`board-card-${item.key}`}
       >
