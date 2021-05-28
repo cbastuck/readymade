@@ -21,6 +21,7 @@ import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 import VSpacer from '../components/shared/VSpacer';
 import BoardCollection from '../components/BoardCollection';
+import Peers from '../components/shared/Peers';
 
 import { replacePlaceholders } from '../core/url';
 
@@ -159,7 +160,11 @@ export default class Playground extends Component {
       if (template) {
         return this.createBoardFromTemplate(template);
       } else {
-        return this.restoreBoardFromLocalStorage(board);
+        const localBoard = this.restoreBoardFromLocalStorage(board);
+        if (localBoard) {
+          return localBoard;
+        }
+        return this.state; // use initial state 
       }
     } 
     
@@ -240,7 +245,7 @@ export default class Playground extends Component {
     const data = localStorage.getItem(storageName);
     if (data) {
       return this.restoreBoard(data);
-    } 
+    }
   }
 
   restoreBoard = objOrString => {
@@ -441,6 +446,9 @@ export default class Playground extends Component {
     const nextRuntime = this.getNextRuntime(runtime);
     if (nextRuntime) {
       nextRuntime.processRuntime(result);
+    } else {
+      // TODO: !!! not so!
+      this.peers.sendData(result)
     }
   }
   
@@ -591,12 +599,15 @@ export default class Playground extends Component {
   }
 
   renderPlaceholder = boardContext => {
-    const { savedBoards=[] } = this.state;
+    const { savedBoards=[], boardName } = this.state;
     const headlineStyle = t.fs14;
     return (
       <div style={t.fill}>
         <div style={s(t.uc, t.fs13, t.ls1, t.m(20))}>
-          <h1 style={headlineStyle}> Sketch something new </h1>
+          { 
+            !boardName && 
+            <h1 style={headlineStyle}> Sketch something new </h1>
+          } 
           <div style={s(t.tc, t.mt30, t.mb30)}>
             <Icon 
               style={{ opacity: 0.6 , marginTop: 30, marginBottom: 30 }} 
@@ -608,32 +619,38 @@ export default class Playground extends Component {
           <div style={t.tc}>
             This is an empty playground - add a runtime to get going!
           </div>
-          <div style={t.m(0, 40)}>
-            <h1 style={headlineStyle}> Hookup a reflector </h1>
-            <div>
-              {
-                [ 
-                  { name: 'Sender', template: 'reflector-sender' },
-                  { name: 'Receiver', template: 'reflector-receiver' },
-                ].map((item, idx, self) => (
-                  <Link
-                    key={`template-${item.name}`}
-                    to={`/playground/${generateRandomName()}?template=${item.template}`}>
-                    {`${item.name}${(idx + 1 < self.length) ? ', ' : ''} `}
-                  </Link>
-                ))
-              }
-            </div>
-          </div>
-          {
-            savedBoards.length > 0 && (
-              <div style={s(t.mt20)}>
-                <h1 style={headlineStyle}> Following boards were saved in this browser</h1>
-                <BoardCollection 
-                  style={{ height: 250, width: '100%', marginRight: 20 }}
-                  url={name => `/playground/${name}`} 
-                  savedBoards={savedBoards}
-                />
+          { 
+            !boardName && (
+              <div> 
+                <div style={t.m(0, 40)}>
+                  <h1 style={headlineStyle}> Hookup a reflector </h1>
+                  <div>
+                    {
+                      [ 
+                        { name: 'Sender', template: 'reflector-sender' },
+                        { name: 'Receiver', template: 'reflector-receiver' },
+                      ].map((item, idx, self) => (
+                        <Link
+                          key={`template-${item.name}`}
+                          to={`/playground/${generateRandomName()}?template=${item.template}`}>
+                          {`${item.name}${(idx + 1 < self.length) ? ', ' : ''} `}
+                        </Link>
+                      ))
+                    }
+                  </div>
+                </div>
+                {
+                  savedBoards.length > 0 && (
+                    <div style={s(t.mt20)}>
+                      <h1 style={headlineStyle}> Following boards were saved in this browser</h1>
+                      <BoardCollection 
+                        style={{ height: 250, width: '100%', marginRight: 20 }}
+                        url={name => `/playground/${name}`} 
+                        savedBoards={savedBoards}
+                      />
+                    </div>
+                  )
+                }
               </div>
             )
           }
@@ -688,6 +705,7 @@ export default class Playground extends Component {
 
   render() {
     const { boardName } = this.state;
+    const peerName = boardName;
     return (
       <BoardProvider
         key={`playground-${boardName}`}
@@ -713,6 +731,16 @@ export default class Playground extends Component {
               <Toolbar
                 board={boardName}
                 availableRuntimes={this.availableRuntimes}
+              />
+              <Peers 
+                ref={peers => this.peers = peers } 
+                name={peerName} 
+                onData={data => {
+                  const { runtimes } = this.state;
+                  const first = runtimes[0];
+                  const rt = first && this.getRuntimeById(first.id);
+                  rt && rt.processRuntime(data);
+                }}
               />
               { this.renderContent(boardContext) }
               <Footer />
