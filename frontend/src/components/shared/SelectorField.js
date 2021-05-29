@@ -23,7 +23,10 @@ export default class SelectorField extends Component {
   }
 
   render() {
-    const { value } = this.state;
+    const { 
+      value,
+      optionsVisible
+    } = this.state;
     const { 
       label, 
       onChange, 
@@ -35,7 +38,6 @@ export default class SelectorField extends Component {
     const fontSize = 11;
     return (
       <div
-        ref={root => this.root = root}
         style={{ 
           ...style,
           width: '100%',
@@ -52,63 +54,60 @@ export default class SelectorField extends Component {
             letterSpacing: 1,
             fontSize,
           }}
-        />
-        { 
-          !this.state.optionsVisible ? (
-            <div
-              ref={container => this.optionsContainer = container}
-              style={{ 
-                textTransform: 'uppercase', 
-                fontSize: 12,
-                padding: 8,
-                border: 'solid 1px #DDD',
-                borderRadius: 3,
-                width: '100%',
-                flexGrow: 3,
-                height: 33,
-                textAlign: 'left',
-                whiteSpace: 'nowrap',
-              }}
-              onClick={() => this.setState({ optionsVisible: true })}
-            > 
-              { text }
-              <span style={{ marginLeft: 5 }}> ⬇ </span>
-            </div>
-          ) : (
-            <div
-              style={{
-                textAlign: 'left',
-                textTransform: 'uppercase',
-                backgroundColor: 'white',
-                position: 'absolute',
-                left: (this.optionsContainer && this.root) ? 
-                  this.optionsContainer.getBoundingClientRect().left - this.root.getBoundingClientRect().left + 20: 
-                  0
-              }}
-            >
-            {
-              Object.keys(options).map((key, idx) => 
-                <div 
-                  key={`${label}.${key}.${idx}`}
-                  className="selector-field-option"
-                  style={{ 
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    padding: 5,
-                    whiteSpace: 'nowrap',
-                  }}
-                  onClick={ev => {
-                    onChange && onChange(ev, { value: key });
-                    this.setState({ optionsVisible: false });
-                  }}
-                >
-                  { options[key] }
-                </div>
-              )
-            } 
-            </div>
-          )
-        }
+        />          
+        <div
+          style={{ 
+            textTransform: 'uppercase', 
+            fontSize: 12,
+            padding: 8,
+            border: 'solid 1px #DDD',
+            borderRadius: 3,
+            flexGrow: 3,
+            height: 33,
+            textAlign: 'left',
+            whiteSpace: 'nowrap',
+            position: 'relative',
+            left: -5
+          }}
+          onClick={() => this.setState({ optionsVisible: !optionsVisible })}
+        > 
+          { text }
+          <span style={{ marginLeft: 5 }}> ⬇ </span>
+          {
+            optionsVisible && (
+              <div
+                style={{
+                  textAlign: 'left',
+                  textTransform: 'uppercase',
+                  backgroundColor: 'white',
+                  position: 'absolute',
+                  zIndex: 2000003,
+                }}
+              >
+              {
+                Object.keys(options).map((key, idx) => 
+                  <div 
+                    key={`${label}.${key}.${idx}`}
+                    className="selector-field-option"
+                    style={{ 
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 'bold',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onClick={ev => {
+                      onChange && onChange(ev, { value: key });
+                      this.setState({ optionsVisible: false });
+                    }}
+                  >
+                    { options[key] }
+                  </div>
+                )
+              }
+              </div>
+            )
+          }
+          </div>
       </div>
     );
   }
