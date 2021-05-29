@@ -317,6 +317,7 @@ export default class Runtime extends Component {
       onResult=undefined,
       children=undefined,
       onArrangeService: onArrangeServiceCustom=undefined,
+      routing,
     } = this.props;
 
     const runtimeId = runtime && runtime.id;
@@ -418,18 +419,27 @@ export default class Runtime extends Component {
           }
           {
             expanded && runtime && runtime.type === 'browser' && (
-              <BrowserRuntime
-                ref={rt => this.impl = rt}
-                userId={userId}
-                boardName={boardName}
-                runtime={runtime}
-                services={services}
-                readonly={readonly}
-                registry={registry}
-                onArrangeService={onArrangeService}
-                onServiceAction={this.onServiceAction}
-                onResult={onResult}
-              />
+              <div 
+                style={{ 
+                  display: 'flex', 
+                  flexDirection: 'row', 
+                  width: '100%',
+                }}
+              >
+                <BrowserRuntime
+                  ref={rt => this.impl = rt}
+                  userId={userId}
+                  boardName={boardName}
+                  runtime={runtime}
+                  services={services}
+                  readonly={readonly}
+                  registry={registry}
+                  onArrangeService={onArrangeService}
+                  onServiceAction={this.onServiceAction}
+                  onResult={onResult}
+                />
+                {  routing ? <div style={{ marginLeft: 'auto' }}>{routing}</div> : false }
+              </div>
             )
           }
           { 
@@ -437,6 +447,7 @@ export default class Runtime extends Component {
               <div style={{ height: showSettings ? 180 : 10 }} />  // just a placeholder for visual consistence
             )
           }
+
           </div>
           {
             children && (

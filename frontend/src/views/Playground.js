@@ -448,7 +448,9 @@ export default class Playground extends Component {
       nextRuntime.processRuntime(result);
     } else {
       // TODO: !!! not so!
-      this.peers.sendData(result)
+      if (this.peers) {
+        this.peers.sendData(result);
+      }
     }
   }
   
@@ -474,6 +476,7 @@ export default class Playground extends Component {
       sidechainRouting,
       //boardRouting, 
       services,
+      boardName
     } = this.state;
     return (
       <div style={s(t.w100)}>
@@ -497,6 +500,19 @@ export default class Playground extends Component {
                 }
               ]}
               allowedServices={allowedServices}
+              routing={
+                <Peers 
+                  ref={peers => this.peers = peers } 
+                  name={boardName} 
+                  onData={data => {
+                    console.log('RECEIVED', data)
+                    const { runtimes } = this.state;
+                    const first = runtimes[0];
+                    const rt = first && this.getRuntimeById(first.id);
+                    rt && rt.processRuntime(data);
+                  }}
+                />
+              }
             >
             {
               showRoutingOptions === runtime.id && (
@@ -705,7 +721,6 @@ export default class Playground extends Component {
 
   render() {
     const { boardName } = this.state;
-    const peerName = boardName;
     return (
       <BoardProvider
         key={`playground-${boardName}`}
@@ -731,16 +746,6 @@ export default class Playground extends Component {
               <Toolbar
                 board={boardName}
                 availableRuntimes={this.availableRuntimes}
-              />
-              <Peers 
-                ref={peers => this.peers = peers } 
-                name={peerName} 
-                onData={data => {
-                  const { runtimes } = this.state;
-                  const first = runtimes[0];
-                  const rt = first && this.getRuntimeById(first.id);
-                  rt && rt.processRuntime(data);
-                }}
               />
               { this.renderContent(boardContext) }
               <Footer />

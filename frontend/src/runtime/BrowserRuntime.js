@@ -374,16 +374,16 @@ export default class BrowserRuntime extends Component {
     } = this.props;
     const services = rawServices && rawServices.map(svc => this.serviceInstance(svc));
     return (
-      <ServiceUiContainer
-        boardName={boardName}
-        runtime={runtime}
-        readonly={readonly}
-        services={services}
-        uiRegistry={registry}
-        userId={userId}
-        onArrangeService={onArrangeService}
-        onServiceAction={onServiceAction}
-      />
+        <ServiceUiContainer
+          boardName={boardName}
+          runtime={runtime}
+          readonly={readonly}
+          services={services}
+          uiRegistry={registry}
+          userId={userId}
+          onArrangeService={onArrangeService}
+          onServiceAction={onServiceAction}
+        />
     );
   }
 };
