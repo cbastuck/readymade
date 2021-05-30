@@ -52,7 +52,7 @@ export default class Editor extends Component {
 
      if (!monaco) { 
       return (
-        <div style={{ width }}>
+        <div style={{ width, minHeight: 100 }}>
           <Dimmer active inverted>
             <Loader
               style={{ 

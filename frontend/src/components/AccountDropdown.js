@@ -54,9 +54,7 @@ export default class AccountDropdown extends Component {
           className='link item right'
         >
           <Dropdown.Menu>
-            {
-              this.renderLogin()
-            }
+            { this.renderLogin() }
           </Dropdown.Menu>
         </Dropdown>
       </div>

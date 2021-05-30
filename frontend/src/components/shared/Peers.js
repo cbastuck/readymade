@@ -7,6 +7,7 @@ import SelectorField from './SelectorField';
 
 const none = 'none';
 const peerHost = `${window.location.host}`;
+const isHTTPS = window.location.protocol === 'https:';
 
 export default class Peers extends Component {
   state = {
@@ -30,7 +31,7 @@ export default class Peers extends Component {
     } = this.props;
     this.peer = new Peer(name, {
       host: peerHost,
-      port: 80,
+      port: isHTTPS ? 443 : 80,
       path: '/peers',
     });
     this.peer.on('open', this.retrievePeers);
