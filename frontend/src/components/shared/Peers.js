@@ -98,6 +98,7 @@ export default class Peers extends Component {
           t.uc, t.ls1, t.fs12, 
           { 
             height: '90%',
+            minHeight: 140,
             marginTop: 10,
           },
           {   
@@ -113,13 +114,15 @@ export default class Peers extends Component {
           }
         )}
       >
-      <button 
-        style={{ 
-          height: '100%', 
+      <button
+        style={{
+          height: '100%',
           border: 'none',
           textAlign: 'center',
         }}
-        onClick={() => this.setState({ expanded: !expanded })}
+        onClick={() => { 
+          this.setState({ expanded: !expanded });
+        }}
       >
         <div
           style={
@@ -129,10 +132,11 @@ export default class Peers extends Component {
                 transform: 'rotate(-90deg)',
                 marginTop: 30,
                 width: 8,
+                marginLeft: expanded ? -20 : 0
               },
             )}
         >
-          Routing
+          { !expanded && 'Routing' }
         </div>
       </button>
       { expanded && this.renderExpanded() }

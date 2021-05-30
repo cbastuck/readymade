@@ -1,3 +1,9 @@
+const hasArrayBuffer = typeof ArrayBuffer === 'function';
+
+export function isArrayBuffer(value) {
+  return hasArrayBuffer && (value instanceof ArrayBuffer || toString.call(value) === '[object ArrayBuffer]');
+}
+
 export function toArrayBuffer(blobOrFile) {
   if (blobOrFile.arrayBuffer) {
     return blobOrFile.arrayBuffer();
@@ -25,4 +31,23 @@ export function filterPrivateMembers(service) {
 
 export function isObject(x) {
   return Object.prototype.toString.call(x) === '[object Object]';
+}
+
+export function createObjectURL(object, type) {
+  const b = isArrayBuffer(object) ?  
+    new Blob([ object ], type) :
+    object;
+  try {
+    return window.URL ? 
+      window.URL.createObjectURL(b) : 
+      window.webkitURL.createObjectURL(b);
+  } catch (err) {
+    console.warn(`Can not create data url from: ${b}`);    
+  }
+}
+
+export function revokeObjectURL(object) {
+  return window.URL ? 
+    window.URL.revokeObjectURL(object) : 
+    window.webkitURL.revokeObjectURL(object);
 }

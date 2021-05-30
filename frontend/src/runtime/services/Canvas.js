@@ -1,6 +1,10 @@
 import React, { Component } from 'react';
 
 import ServiceUI from './ServiceUI';
+import { 
+  createObjectURL,
+  revokeObjectURL
+} from './helpers';
 
 const serviceId = 'hookup.to/service/canvas';
 const serviceName = 'Canvas';
@@ -18,22 +22,6 @@ function toAbsolute(value, upper) {
     }
   }
   return value;
-}
-
-function createObjectURL(object) {
-  try {
-    return window.URL ? 
-      window.URL.createObjectURL(object) : 
-      window.webkitURL.createObjectURL(object);
-  } catch (err) {
-    console.warn(`Can not create data url from: ${object}`);    
-  }
-}
-
-function revokeObjectURL(object) {
-  return window.URL ? 
-    window.URL.revokeObjectURL(object) : 
-    window.webkitURL.revokeObjectURL(object);
 }
 
 const initialWidth = 300;
