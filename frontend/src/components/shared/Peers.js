@@ -41,7 +41,7 @@ export default class Peers extends Component {
       });
     });
     this.peer.on('error', err => {
-      console.log('Error', err);
+      console.log('Error - Going to disconnect', err);
       this.peer.disconnect();
       this.peer = undefined;
       setTimeout(this.initPeer, 0);
@@ -57,14 +57,29 @@ export default class Peers extends Component {
   sendData = data => {
     const { selected } = this.state;
     if (selected && selected !== none) {
+      if (this.connection) {
+        if (this.connection.peer === selected) {
+          this.connection.send(data);
+          return;
+        } else { // selected a different peer, close existing and reconnect
+          this.connection.close();
+          this.connection = undefined;
+        }
+      }
       const connection = this.peer.connect(selected);
       if (connection) {
         connection.on('open', () => {
           console.log('Connection to peer opened', selected);
-          console.log('Sending data', data);
           connection.send(data);
+          this.connection = connection;
+        });
+        connection.on('close', () => {
+          console.log('Connection closed from remote');
+          this.connection = undefined;
         });
       } else {
+        console.log('Connection to peer that is not reachable anymore', selected);
+        this.connection = undefined;
         this.retrievePeers();
       }
     }
@@ -78,20 +93,26 @@ export default class Peers extends Component {
     return (
       <div style={{ padding: 10 }}>
         <h1 style={s(t.tc, t.fs11)}>Routing</h1>
-          <SelectorField
-          label="Peer"
-          options={peers.reduce((a, c) => ({ ...a, [c]: c}), { none })}
-          value={selected}
-          onChange={(_ev, { value: selected }) => 
-            this.setState({ selected })
-          }
-        />
+        <SelectorField
+        label="Peer"
+        options={peers.reduce((a, c) => ({ ...a, [c]: c}), { none })}
+        value={selected}
+        onChange={(_ev, { value: selected }) => 
+          this.setState({ selected })
+        }
+      />
       </div>
     );
   }
 
   render() {
-    const { expanded } = this.state;
+    const { 
+      expanded, 
+    } = this.state;
+    const { 
+      onExpand,
+      onCollapse 
+    } = this.props;
     return (
       <div 
         style={s(
@@ -119,9 +140,19 @@ export default class Peers extends Component {
           height: '100%',
           border: 'none',
           textAlign: 'center',
+          backgroundColor: 'lightgray'
         }}
         onClick={() => { 
-          this.setState({ expanded: !expanded });
+          this.setState(
+            { expanded: !expanded }, 
+            () => {
+              if (expanded) {
+                onCollapse && onCollapse();
+              } else {
+                onExpand && onExpand();
+              }
+            }
+          );
         }}
       >
         <div
@@ -132,11 +163,10 @@ export default class Peers extends Component {
                 transform: 'rotate(-90deg)',
                 marginTop: 30,
                 width: 8,
-                marginLeft: expanded ? -20 : 0
               },
             )}
         >
-          { !expanded && 'Routing' }
+          Routing
         </div>
       </button>
       { expanded && this.renderExpanded() }

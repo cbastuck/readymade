@@ -308,6 +308,15 @@ export default class Runtime extends Component {
     );
   }
   
+  scrollRuntimeContainerBy = (x, y) => {
+    if (this.runtimeContainer) {
+      this.runtimeContainer.scroll(
+        this.runtimeContainer.scrollLeft + x, 
+        this.runtimeContainer.scrollTop + y
+      );
+    }
+  }
+
   render() {
     const { 
       style,
@@ -394,6 +403,7 @@ export default class Runtime extends Component {
             { this.renderSettings(runtime, onToggleOwnership, isOwner) }
           </Sidebar>
           <div
+            ref={c => this.runtimeContainer = c}
             style={{
               display: 'flex',
               flexFlow: wrapServices  ? 'row wrap' : 'row nowrap',

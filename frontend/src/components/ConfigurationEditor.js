@@ -1,12 +1,31 @@
 import React, { Component } from 'react';
-import { Button, Segment } from 'semantic-ui-react';
+import { Button, Segment, TextArea } from 'semantic-ui-react';
 
 import Resizable from './Resizable';
 import Editor from './shared/Editor/index';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 import { s, t } from '../styles';
+import { detectBrowserIOS } from '../runtime/services/helpers';
 
 export default class ConfigurationEditor extends Component {
+
+  renderConfigAsTextArea = filteredService => {
+    const textAreaData = this.state && this.state.textAreaData;
+    if (!textAreaData) {
+      this.setState({ textAreaData: JSON.stringify(filteredService, null, 2) })
+      return;
+    }
+    return (
+      <TextArea 
+        style={t.fill}
+        value={textAreaData}
+        onChange={(_, { value: textAreaData }) => 
+          this.setState({ textAreaData })
+        }
+      />
+    )
+  }
+
   render() {
     const { 
       service,
@@ -15,6 +34,7 @@ export default class ConfigurationEditor extends Component {
     } = this.props;
     const { uuid, board, ...filteredService } = filterPrivateMembers(service);
     const buttonStyle = s(t.uc, t.fs12, t.ls1, { flexGrow: 1});
+    const useEditor = !detectBrowserIOS(); // TODO: does not work on iOS iPad
     return (
       <Resizable>
         <div
@@ -34,11 +54,15 @@ export default class ConfigurationEditor extends Component {
               flexGrow: 1,
             }}
           >
-            <Editor 
-              ref={editor => this.editor = editor}
-              value={JSON.stringify(filteredService, null, 2)}
-              language="json"
-            />
+            { 
+              useEditor ? 
+                <Editor 
+                  ref={editor => this.editor = editor}
+                  value={JSON.stringify(filteredService, null, 2)}
+                  language="json"
+                /> : 
+                this.renderConfigAsTextArea(filteredService)               
+            }
           </Segment>
           <div 
             style={{ 
@@ -55,7 +79,7 @@ export default class ConfigurationEditor extends Component {
             </Button>
             <Button 
               style={buttonStyle} 
-              onClick={() => onChange(this.editor.getValue())}
+              onClick={() => onChange(this.editor ? this.editor.getValue() : this.state.textAreaData)}
             >
               Update
             </Button>

@@ -505,12 +505,21 @@ export default class Playground extends Component {
                   ref={peers => this.peers = peers } 
                   name={boardName} 
                   onData={data => {
-                    console.log('RECEIVED', data)
                     const { runtimes } = this.state;
-                    const first = runtimes[0];
+                    const first = runtimes[0]; // TODO: the first?
                     const rt = first && this.getRuntimeById(first.id);
-                    rt && rt.processRuntime(data);
+                    if (rt) {
+                      rt.processRuntime(data);
+                    } 
                   }}
+                  onExpand={() => {
+                    const { runtimes } = this.state;
+                    const first = runtimes[0]; // TODO: the first?
+                    const rt = first && this.getRuntimeById(first.id);
+                    if (rt) {
+                      rt.scrollRuntimeContainerBy(300, 0); // TODO: 300 is hardcoded
+                    }}
+                  }
                 />
               }
             >
