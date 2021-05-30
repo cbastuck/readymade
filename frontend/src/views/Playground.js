@@ -517,7 +517,7 @@ export default class Playground extends Component {
                     const first = runtimes[0]; // TODO: the first?
                     const rt = first && this.getRuntimeById(first.id);
                     if (rt) {
-                      rt.scrollRuntimeContainerBy(300, 0); // TODO: 300 is hardcoded
+                      rt.scrollRuntimeContainerToRight();
                     }}
                   }
                 />

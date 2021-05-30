@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import {Button } from 'semantic-ui-react';
 import Peer from 'peerjs';
 
 import { s, t } from '../../styles';
@@ -32,14 +33,12 @@ export default class Peers extends Component {
       port: 80,
       path: '/peers',
     });
-    this.peer.on('open', id => this.retrievePeers());
-    this.peer.on('connection', connection => {
-      const peer = connection.peer;
-      console.log('Peer connected', peer);
-      connection.on('data', data => {
-        onData(data)
-      });
-    });
+    this.peer.on('open', this.retrievePeers);
+    this.peer.on('connection', connection => 
+      connection.on('data', data => 
+        onData(data, connection.peer)
+      )
+    );
     this.peer.on('error', err => {
       console.log('Error - Going to disconnect', err);
       this.peer.disconnect();
@@ -49,8 +48,9 @@ export default class Peers extends Component {
   }
 
   retrievePeers = () => {
+    const { name } = this.props;
     this.peer.listAllPeers(peers => {
-      this.setState({ peers });
+      this.setState({ peers: peers.filter(p => p!== name) });
     });
   }
 
@@ -69,7 +69,6 @@ export default class Peers extends Component {
       const connection = this.peer.connect(selected);
       if (connection) {
         connection.on('open', () => {
-          console.log('Connection to peer opened', selected);
           connection.send(data);
           this.connection = connection;
         });
@@ -101,6 +100,12 @@ export default class Peers extends Component {
           this.setState({ selected })
         }
       />
+      <Button
+        style={s(t.uc, t.fs11, t.ls1, t.mt2)}
+        onClick={this.retrievePeers}
+      >
+        Update Peers
+      </Button>
       </div>
     );
   }
@@ -120,6 +125,7 @@ export default class Peers extends Component {
           { 
             height: '90%',
             minHeight: 140,
+            minWidth: expanded && 200,
             marginTop: 10,
           },
           {   
@@ -140,7 +146,7 @@ export default class Peers extends Component {
           height: '100%',
           border: 'none',
           textAlign: 'center',
-          backgroundColor: 'lightgray'
+          backgroundColor: expanded ? 'gray' : '#efefef'
         }}
         onClick={() => { 
           this.setState(
@@ -163,6 +169,7 @@ export default class Peers extends Component {
                 transform: 'rotate(-90deg)',
                 marginTop: 30,
                 width: 8,
+                color: expanded ? 'white' : '#333'
               },
             )}
         >

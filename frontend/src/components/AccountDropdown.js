@@ -48,7 +48,7 @@ export default class AccountDropdown extends Component {
       </div>
     );
     return (
-      <div style={{ /*width: currentUser ? 130 : undefined*/ }}>
+      <div style={{ marginLeft: 'auto' }}>
         <Dropdown
           icon={icon}
           className='link item right'

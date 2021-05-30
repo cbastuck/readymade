@@ -307,13 +307,19 @@ export default class Runtime extends Component {
       </Menu>
     );
   }
-  
-  scrollRuntimeContainerBy = (x, y) => {
+
+  scrollRuntimeContainerToRight = () => {
     if (this.runtimeContainer) {
-      this.runtimeContainer.scroll(
-        this.runtimeContainer.scrollLeft + x, 
-        this.runtimeContainer.scrollTop + y
+      this.scrollRuntimeContainerTo(
+        this.runtimeContainer.scrollWidth, 
+        0
       );
+    }
+  }
+  
+  scrollRuntimeContainerTo = (x, y) => {
+    if (this.runtimeContainer) {
+      this.runtimeContainer.scroll(x, y);
     }
   }
 

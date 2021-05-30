@@ -67,7 +67,7 @@ export default class SelectorField extends Component {
             textAlign: 'left',
             whiteSpace: 'nowrap',
             position: 'relative',
-            left: -5
+            left: -2
           }}
           onClick={() => this.setState({ optionsVisible: !optionsVisible })}
         > 
@@ -82,6 +82,7 @@ export default class SelectorField extends Component {
                   backgroundColor: 'white',
                   position: 'absolute',
                   zIndex: 2000003,
+                  margin: '0px -5px',
                 }}
               >
               {
@@ -94,6 +95,7 @@ export default class SelectorField extends Component {
                       fontSize: 13,
                       fontWeight: 'bold',
                       whiteSpace: 'nowrap',
+                      padding: '3px 10px',
                     }}
                     onClick={ev => {
                       onChange && onChange(ev, { value: key });

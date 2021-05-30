@@ -17,7 +17,7 @@ export default class ConfigurationEditor extends Component {
     }
     return (
       <TextArea 
-        style={t.fill}
+        style={s(t.fill, { resize: 'none', border: 'none' })}
         value={textAreaData}
         onChange={(_, { value: textAreaData }) => 
           this.setState({ textAreaData })
@@ -34,7 +34,7 @@ export default class ConfigurationEditor extends Component {
     } = this.props;
     const { uuid, board, ...filteredService } = filterPrivateMembers(service);
     const buttonStyle = s(t.uc, t.fs12, t.ls1, { flexGrow: 1});
-    const useEditor = !detectBrowserIOS(); // TODO: does not work on iOS iPad
+    const useEditor = !detectBrowserIOS();
     return (
       <Resizable>
         <div
@@ -48,7 +48,6 @@ export default class ConfigurationEditor extends Component {
           <h1 style={s(t.uc, t.fs13, t.ls1)}>Service Configuration</h1>
           <Segment 
             style={{
-              minHeight: 180,
               height: '100%', 
               margin: 5,
               flexGrow: 1,
