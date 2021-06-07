@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
 import { 
-  Icon, 
+  Icon,
   Button,
   Message,
 } from 'semantic-ui-react';
@@ -21,7 +21,8 @@ import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 import VSpacer from '../components/shared/VSpacer';
 import BoardCollection from '../components/BoardCollection';
-import IOSelector from '../components/shared/IOSelector';
+import OutputSelector from '../components/shared/OutputSelector';
+import InputSelector from '../components/shared/InputSelector';
 import PeersContext, { PeersConsumer } from '../PeersContext';
 import Peer from '../components/Peer';
 
@@ -455,7 +456,7 @@ export default class Playground extends Component {
         const { runtimes } = this.state;
         const rtidx = runtimes.indexOf(runtime);
         const peerName = `${boardName}-${rtidx}`
-        this.peerContext.sendData(peerName, result);
+        this.peerContext.sendData(peerName, this.state.selectedOutput, result);
       }
     }
   }
@@ -493,12 +494,10 @@ export default class Playground extends Component {
               key={`playground-peer-${runtime.id}`}
               name={`${boardName}-${rtidx}`}
               onData={data => {
-                /*
                 const rt = this.getRuntimeById(runtime.id);
                 if (rt) {
                   rt.processRuntime(data);
-                } */
-                console.log('Incoming data for a runtime');
+                }
               }}
             >
               <DragProvider
@@ -518,8 +517,8 @@ export default class Playground extends Component {
                     }
                   ]}
                   allowedServices={allowedServices}
-                  routing={                    
-                    <IOSelector
+                  outputs={                    
+                    <OutputSelector
                       items={peers.peerNames}
                       onExpand={() => {
                         const rt = this.getRuntimeById(runtime.id);
@@ -527,6 +526,20 @@ export default class Playground extends Component {
                           rt.scrollRuntimeContainerToRight();
                         }
                       }}
+                      onSelect={selectedOutput => this.setState({ selectedOutput })}
+                      onUpdate={peers.updatePeers}
+                    />
+                  }
+                  inputs={
+                    <InputSelector 
+                      items={peers.peerNames}
+                      onExpand={() => {
+                        const rt = this.getRuntimeById(runtime.id);
+                        if (rt) {
+                          rt.scrollRuntimeContainerToRight();
+                        }
+                      }}
+                      onUpdate={peers.updatePeers}
                     />
                   }
                 >

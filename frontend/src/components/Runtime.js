@@ -332,7 +332,8 @@ export default class Runtime extends Component {
       onResult=undefined,
       children=undefined,
       onArrangeService: onArrangeServiceCustom=undefined,
-      routing,
+      outputs,
+      inputs,
     } = this.props;
 
     const runtimeId = runtime && runtime.id;
@@ -443,13 +444,13 @@ export default class Runtime extends Component {
                 }}
               >
               {
-                routing ? ( 
+                inputs ? ( 
                   <div 
                     style={{
                       marginBottom: 15
                     }}
                   >
-                    {routing}
+                    {inputs}
                   </div>) : 
                   false
                 }
@@ -477,14 +478,14 @@ export default class Runtime extends Component {
                   )
                 }
                 {
-                  routing ? ( 
+                  outputs ? ( 
                     <div 
                       style={{ 
                         marginLeft: 'auto',
                         marginBottom: 15
                       }}
                     >
-                      {routing}
+                      {outputs}
                     </div>) : 
                     false
                 }

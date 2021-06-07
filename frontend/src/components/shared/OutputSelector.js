@@ -6,7 +6,7 @@ import SelectorField from './SelectorField';
 
 const none = 'none';
 
-export default class IOSelector extends Component {
+export default class OutputSelector extends Component {
   state = {
     selected: none,
     expanded: false,
@@ -14,25 +14,28 @@ export default class IOSelector extends Component {
 
   renderExpanded = () => {
     const { selected } = this.state;
-    const { items } = this.props;
+    const { items, onSelect, onUpdate } = this.props;
     const peerOptions = items.reduce((a, c) => (
       { ...a, [c]: c}), 
       { none }
     );
     return (
       <div style={{ padding: 10 }}>
-        <h1 style={s(t.tc, t.fs11)}>Connect to/from</h1>
+        <h1 style={s(t.tc, t.fs11)}>Route to</h1>
         <SelectorField
-          label="Input/Output"
+          label="Output"
           options={peerOptions}
           value={selected}
-          onChange={(_ev, { value: selected }) => 
-            this.setState({ selected })
-          }
+          onChange={(ev, { value: selected }) => {
+            this.setState(
+              { selected },
+              () => onSelect(selected)
+            );
+          }}
         />
       <Button
         style={s(t.uc, t.fs11, t.ls1, t.mt2)}
-        onClick={this.retrievePeers}
+        onClick={() => onUpdate()}
       >
         Update Peers
       </Button>
@@ -101,7 +104,7 @@ export default class IOSelector extends Component {
               },
             )}
         >
-          Routing
+          Outputs 
         </div>
       </button>
       { expanded && this.renderExpanded() }

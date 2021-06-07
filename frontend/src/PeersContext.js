@@ -9,6 +9,7 @@ class PeersContext extends Component {
       connections: {},
       peerNames: [],
       onPeer: this.onPeer,
+      updatePeers: this.updatePeers,
     }
   }
 
@@ -24,10 +25,22 @@ class PeersContext extends Component {
       }
     });
     
+    this.updatePeers(peer);
+  }
+
+  updatePeers = peer => {
+    if (!peer) {
+      const firstPeer = Object.keys(this.state.peers)[0];
+      peer = firstPeer && this.state.peers[firstPeer];
+      if (!peer) {
+        console.error('PeersContext how could this happen');
+        return;
+      }
+    }
     peer.listAllPeers(peerNames => this.setState({ peerNames }));
   }
 
-  sendData = (src, dst, data) => {
+  sendData = (src, dst, data) => { 
     const connectID = `${src}-${dst}`;
     let connection = this.state.connections[connectID];
     if (connection) {
@@ -36,7 +49,7 @@ class PeersContext extends Component {
     }
     const srcPeer = this.state.peers[src];
     if (!srcPeer) {
-      console.error('Can not send data form this peer', src);
+      console.warn('Trying to send data from an unregistered peer', src, JSON.stringify(this.state.peers));
       return;
     }
     connection = srcPeer.connect(dst);
