@@ -58,13 +58,14 @@ class AppContext extends Component {
   }
 
   render() {
+    const { children } = this.props;
     return (
       <Provider
         value={{
           ...this.state
         }}
       >
-        { this.props.children }
+        { children }
       </Provider>
     );
   }

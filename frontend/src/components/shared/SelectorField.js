@@ -67,7 +67,8 @@ export default class SelectorField extends Component {
             textAlign: 'left',
             whiteSpace: 'nowrap',
             position: 'relative',
-            left: -2
+            left: -2,
+            cursor: 'pointer'
           }}
           onClick={() => this.setState({ optionsVisible: !optionsVisible })}
         > 

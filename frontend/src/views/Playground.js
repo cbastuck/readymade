@@ -21,7 +21,9 @@ import { filterPrivateMembers } from '../runtime/services/helpers';
 import Prompt from '../components/Prompt';
 import VSpacer from '../components/shared/VSpacer';
 import BoardCollection from '../components/BoardCollection';
-import Peers from '../components/shared/Peers';
+import IOSelector from '../components/shared/IOSelector';
+import PeersContext, { PeersConsumer } from '../PeersContext';
+import Peer from '../components/Peer';
 
 import { replacePlaceholders } from '../core/url';
 
@@ -433,6 +435,7 @@ export default class Playground extends Component {
     const { 
       sidechainRouting,
       //boardRouting,
+      boardName,
     } = this.state;
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
     if (sroute) {
@@ -448,8 +451,11 @@ export default class Playground extends Component {
       nextRuntime.processRuntime(result);
     } else {
       // TODO: !!! not so!
-      if (this.peers) {
-        this.peers.sendData(result);
+      if (this.peerContext) {
+        const { runtimes } = this.state;
+        const rtidx = runtimes.indexOf(runtime);
+        const peerName = `${boardName}-${rtidx}`
+        this.peerContext.sendData(peerName, result);
       }
     }
   }
@@ -480,86 +486,90 @@ export default class Playground extends Component {
     } = this.state;
     return (
       <div style={s(t.w100)}>
-      {
-        runtimes.map(runtime => 
-          <DragProvider
-            key={`playground-drag-provider-${runtime.id}`}
-            style={{ marginBottom: 10, marginTop: 10 }}
-          >
-            <Runtime
-              key={`sandbox-playground-${runtime.id}`}
-              ref={rt => this.runtimeInstances[runtime.id] = rt}
-              boardContext={boardContext}
-              runtime={runtime}
-              onResult={this.onResult.bind(this, runtime)}
-              customItems={[
-                {
-                  key: `sidechain-option-${runtime.id}`,
-                  icon: 'location arrow',
-                  onClick: () => this.setState({ showRoutingOptions: runtime.id })
-                }
-              ]}
-              allowedServices={allowedServices}
-              routing={
-                <Peers 
-                  ref={peers => this.peers = peers } 
-                  name={boardName} 
-                  onData={data => {
-                    const { runtimes } = this.state;
-                    const first = runtimes[0]; // TODO: the first?
-                    const rt = first && this.getRuntimeById(first.id);
-                    if (rt) {
-                      rt.processRuntime(data);
-                    } 
-                  }}
-                  onExpand={() => {
-                    const { runtimes } = this.state;
-                    const first = runtimes[0]; // TODO: the first?
-                    const rt = first && this.getRuntimeById(first.id);
-                    if (rt) {
-                      rt.scrollRuntimeContainerToRight();
-                    }}
-                  }
-                />
-              }
+        <PeersContext ref={ctx => this.peerContext = ctx}>
+        <PeersConsumer> 
+        { peers => runtimes.map((runtime, rtidx) =>
+            <Peer 
+              key={`playground-peer-${runtime.id}`}
+              name={`${boardName}-${rtidx}`}
+              onData={data => {
+                /*
+                const rt = this.getRuntimeById(runtime.id);
+                if (rt) {
+                  rt.processRuntime(data);
+                } */
+                console.log('Incoming data for a runtime');
+              }}
             >
-            {
-              showRoutingOptions === runtime.id && (
-                <div 
-                  key={`routing-options-${runtime.id}`}
-                  style={{ 
-                    display: 'flex',
-                    flexDirection: 'column'
-                  }}
-                >
-                  <div style={{ display: 'flex', flexDirection: 'row'}}>
-                    <Button
-                      onClick={() => this.setState({ showRoutingOptions: false })}
-                      style={s(t.uc, t.fs12, t.ls1, { height: 28, width: 32, marginLeft: 'auto', borderRadius: 2 })}
-                      icon="close"
-                    />
-                  </div>
-                  <SidechainSelector
-                    key={`sidechain-selector-${runtime.id}`}
-                    runtimes={runtimes}
-                    services={services}
-                    routing={sidechainRouting[runtime.id]}
-                    onSelect={routing => 
-                      this.setState({ 
-                        sidechainRouting: {
-                          ...sidechainRouting,
-                          [runtime.id]: routing,
-                        },
-                      })
+              <DragProvider
+                style={{ marginBottom: 10, marginTop: 10 }}
+              >
+                <Runtime
+                  key={`sandbox-playground-${runtime.id}`}
+                  ref={rt => this.runtimeInstances[runtime.id] = rt}
+                  boardContext={boardContext}
+                  runtime={runtime}
+                  onResult={this.onResult.bind(this, runtime)}
+                  customItems={[
+                    {
+                      key: `sidechain-option-${runtime.id}`,
+                      icon: 'location arrow',
+                      onClick: () => this.setState({ showRoutingOptions: runtime.id })
                     }
-                  />
-                </div>
-              )
-            }
-            </Runtime>
-          </DragProvider>
-        )
-      }
+                  ]}
+                  allowedServices={allowedServices}
+                  routing={                    
+                    <IOSelector
+                      items={peers.peerNames}
+                      onExpand={() => {
+                        const rt = this.getRuntimeById(runtime.id);
+                        if (rt) {
+                          rt.scrollRuntimeContainerToRight();
+                        }
+                      }}
+                    />
+                  }
+                >
+                {
+                  showRoutingOptions === runtime.id && (
+                    <div 
+                      key={`routing-options-${runtime.id}`}
+                      style={{ 
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}
+                    >
+                      <div style={{ display: 'flex', flexDirection: 'row'}}>
+                        <Button
+                          onClick={() => this.setState({ showRoutingOptions: false })}
+                          style={s(t.uc, t.fs12, t.ls1, { height: 28, width: 32, marginLeft: 'auto', borderRadius: 2 })}
+                          icon="close"
+                        />
+                      </div>
+                      <SidechainSelector
+                        key={`sidechain-selector-${runtime.id}`}
+                        runtimes={runtimes}
+                        services={services}
+                        routing={sidechainRouting[runtime.id]}
+                        onSelect={routing => 
+                          this.setState({ 
+                            sidechainRouting: {
+                              ...sidechainRouting,
+                              [runtime.id]: routing,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  )
+                }
+                </Runtime>
+              </DragProvider>
+            </Peer>
+          )
+        }
+        </PeersConsumer>
+        </PeersContext>
       </div>
     );
   }

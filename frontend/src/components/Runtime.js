@@ -11,7 +11,7 @@ import RemoteRuntime from '../runtime/RemoteRuntime';
 import BrowserRuntime from '../runtime/BrowserRuntime';
 import ServiceDropdown from './ServiceDropdown';
 
-import { t } from '../styles';
+import { s, t } from '../styles';
 
 export default class Runtime extends Component {
   state = {
@@ -442,6 +442,17 @@ export default class Runtime extends Component {
                   width: '100%',
                 }}
               >
+              {
+                routing ? ( 
+                  <div 
+                    style={{
+                      marginBottom: 15
+                    }}
+                  >
+                    {routing}
+                  </div>) : 
+                  false
+                }
                 <BrowserRuntime
                   ref={rt => this.impl = rt}
                   userId={userId}
@@ -454,7 +465,29 @@ export default class Runtime extends Component {
                   onServiceAction={this.onServiceAction}
                   onResult={onResult}
                 />
-                {  routing ? <div style={{ marginLeft: 'auto' }}>{routing}</div> : false }
+                {
+                  services && services.length === 0 && (
+                    <div style={{ width: '100%', margin: 'auto', textAlign: 'center' }}>
+                      <div 
+                        style={s(t.uc, t.fs13, t.ls1)}
+                      >
+                        This is an empty runtime, add services
+                      </div>
+                    </div>
+                  )
+                }
+                {
+                  routing ? ( 
+                    <div 
+                      style={{ 
+                        marginLeft: 'auto',
+                        marginBottom: 15
+                      }}
+                    >
+                      {routing}
+                    </div>) : 
+                    false
+                }
               </div>
             )
           }
