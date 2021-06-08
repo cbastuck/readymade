@@ -1,4 +1,7 @@
 import React, { Component, createContext } from 'react';
+
+import { removeKeyFromObject } from './runtime/services/helpers';
+
 const PeersCtx = createContext();
 
 class PeersContext extends Component {
@@ -9,6 +12,7 @@ class PeersContext extends Component {
       connections: {},
       peerNames: [],
       onPeer: this.onPeer,
+      onPeerRemoved: this.onPeerRemoved,
       updatePeers: this.updatePeers,
     }
   }
@@ -18,6 +22,8 @@ class PeersContext extends Component {
       console.log('Error - Going to disconnect', err);
     });
 
+    peer.on('close', peer => console.log('CLOSED PEER', peer))
+
     this.setState({ 
       peers: {
         ...this.state.peers,
@@ -26,6 +32,17 @@ class PeersContext extends Component {
     });
     
     this.updatePeers(peer);
+  }
+
+  onPeerRemoved = peerName => {
+    const { 
+      peers, 
+      peerNames, 
+    } = this.state;
+    this.setState({ 
+      peers: removeKeyFromObject(peers, peerName),
+      peerNames: peerNames.filter(x => x !== peerName),
+    });
   }
 
   updatePeers = peer => {
@@ -40,14 +57,15 @@ class PeersContext extends Component {
     peer.listAllPeers(peerNames => this.setState({ peerNames }));
   }
 
-  sendData = (src, dst, data) => { 
-    const connectID = `${src}-${dst}`;
-    let connection = this.state.connections[connectID];
+  sendData = (src, dst, data) => {
+    const { connections, peers } = this.state;
+    const srcConnections = connections[src] || {};
+    let connection = srcConnections[dst];
     if (connection) {
       connection.send(data);
       return;
     }
-    const srcPeer = this.state.peers[src];
+    const srcPeer = peers[src];
     if (!srcPeer) {
       console.warn('Trying to send data from an unregistered peer', src, JSON.stringify(this.state.peers));
       return;
@@ -58,22 +76,25 @@ class PeersContext extends Component {
         connection.send(data);
         this.setState({ 
           connections: {
-            ...this.state.connections,
-            [connectID]: connection,
+            ...connections,
+            [src]: {
+              ...srcConnections,
+              [dst]: connection,
+            },
           }
         });
       });
       connection.on('close', () => {
-        console.log('Connection closed from remote');
+        console.log('Connection closed from', src, 'to', dst);
         this.setState({ 
-          connections: Object.keys(this.state.connections).reduce(
-            (acc, k) => k === connectID ? acc : { ...acc, [k]: this.state.connections[k]},
-            {}
-          )
+          connections: {
+            ...srcConnections,
+            [src]: removeKeyFromObject(srcConnections, dst),
+          }
         });
       });
     } else {
-      console.log('Connection to peer that is not reachable anymore', connectID);
+      console.log('Connection is not available anymore', src, dst);
       this.retrievePeers();
     }
   }

@@ -18,6 +18,10 @@ export default class Peer extends Component {
     if (this.peer) {
       this.peer.disconnect();
     }
+
+    const { onPeerRemoved } = this.context;
+    const { name } = this.props;
+    onPeerRemoved(name);
   }
 
   initPeer = () => {
@@ -25,7 +29,7 @@ export default class Peer extends Component {
       name = 'unnamed-peer',
       onData,
     } = this.props;
-    const { 
+    const {
       onPeer,
     } = this.context;
     const peer = new Peerjs(

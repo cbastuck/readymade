@@ -23,7 +23,7 @@ import VSpacer from '../components/shared/VSpacer';
 import BoardCollection from '../components/BoardCollection';
 import OutputSelector from '../components/shared/OutputSelector';
 import InputSelector from '../components/shared/InputSelector';
-import PeersContext, { PeersConsumer } from '../PeersContext';
+import PeersProvider, { PeersConsumer } from '../PeersContext';
 import Peer from '../components/Peer';
 
 import { replacePlaceholders } from '../core/url';
@@ -82,7 +82,7 @@ export default class Playground extends Component {
     boardName: (this.props.match && this.props.match.params) ? this.props.match.params.board : defaultName,
     showRoutingOptions: false,
     sidechainRouting: {},
-    boardRouting: {},
+    //boardRouting: {},
     placeholderAnimationRunning: false,
     runtimes: undefined,
     services: undefined,
@@ -452,11 +452,14 @@ export default class Playground extends Component {
       nextRuntime.processRuntime(result);
     } else {
       // TODO: !!! not so!
-      if (this.peerContext) {
-        const { runtimes } = this.state;
-        const rtidx = runtimes.indexOf(runtime);
-        const peerName = `${boardName}-${rtidx}`
-        this.peerContext.sendData(peerName, this.state.selectedOutput, result);
+      const outputRouting = this.state.outputRouting || {};
+      const dst = outputRouting[runtime.id];
+      if (dst && this.peerContext) {
+        this.peerContext.sendData(
+          `${boardName}-${runtime.name}`, 
+          dst,
+          result
+        );
       }
     }
   }
@@ -476,113 +479,126 @@ export default class Playground extends Component {
     }
   }
 
-  renderRuntimes = boardContext => {
-    const { runtimes } = boardContext;
+  renderOutputs = (peers, runtime) => (
+    <OutputSelector
+      items={peers.peerNames}
+      onExpand={() => {
+        const rt = this.getRuntimeById(runtime.id);
+        if (rt) {
+          rt.scrollRuntimeContainerToRight();
+        }
+      }}
+      onSelect={value => this.setState({ 
+        outputRouting: {
+          ...this.state.outputRouting,
+          [runtime.id]: value
+        }
+      })}
+      onUpdate={peers.updatePeers}
+    />
+  );
+
+  renderInputs = peers => (
+    <InputSelector 
+      items={peers.peerNames}
+      onUpdate={peers.updatePeers}
+    />
+  );
+
+  renderRuntime = (boardContext, runtime, peers) => {
     const { 
       showRoutingOptions, 
       sidechainRouting,
       //boardRouting, 
       services,
-      boardName
     } = this.state;
+
     return (
-      <div style={s(t.w100)}>
-        <PeersContext ref={ctx => this.peerContext = ctx}>
-        <PeersConsumer> 
-        { peers => runtimes.map((runtime, rtidx) =>
-            <Peer 
-              key={`playground-peer-${runtime.id}`}
-              name={`${boardName}-${rtidx}`}
-              onData={data => {
-                const rt = this.getRuntimeById(runtime.id);
-                if (rt) {
-                  rt.processRuntime(data);
-                }
+      <DragProvider
+        style={{ marginBottom: 10, marginTop: 10 }}
+      >
+        <Runtime
+          key={`sandbox-playground-${runtime.id}`}
+          ref={rt => this.runtimeInstances[runtime.id] = rt}
+          boardContext={boardContext}
+          runtime={runtime}
+          onResult={this.onResult.bind(this, runtime)}
+          customItems={[
+            {
+              key: `sidechain-option-${runtime.id}`,
+              icon: 'location arrow',
+              onClick: () => this.setState({ showRoutingOptions: runtime.id })
+            }
+          ]}
+          allowedServices={allowedServices}
+          outputs={this.renderOutputs(peers, runtime)}
+          inputs={this.renderInputs(peers)}
+        >
+        {
+          showRoutingOptions === runtime.id && (
+            <div 
+              key={`routing-options-${runtime.id}`}
+              style={{ 
+                display: 'flex',
+                flexDirection: 'column'
               }}
             >
-              <DragProvider
-                style={{ marginBottom: 10, marginTop: 10 }}
-              >
-                <Runtime
-                  key={`sandbox-playground-${runtime.id}`}
-                  ref={rt => this.runtimeInstances[runtime.id] = rt}
-                  boardContext={boardContext}
-                  runtime={runtime}
-                  onResult={this.onResult.bind(this, runtime)}
-                  customItems={[
-                    {
-                      key: `sidechain-option-${runtime.id}`,
-                      icon: 'location arrow',
-                      onClick: () => this.setState({ showRoutingOptions: runtime.id })
-                    }
-                  ]}
-                  allowedServices={allowedServices}
-                  outputs={                    
-                    <OutputSelector
-                      items={peers.peerNames}
-                      onExpand={() => {
-                        const rt = this.getRuntimeById(runtime.id);
-                        if (rt) {
-                          rt.scrollRuntimeContainerToRight();
-                        }
-                      }}
-                      onSelect={selectedOutput => this.setState({ selectedOutput })}
-                      onUpdate={peers.updatePeers}
-                    />
-                  }
-                  inputs={
-                    <InputSelector 
-                      items={peers.peerNames}
-                      onExpand={() => {
-                        const rt = this.getRuntimeById(runtime.id);
-                        if (rt) {
-                          rt.scrollRuntimeContainerToRight();
-                        }
-                      }}
-                      onUpdate={peers.updatePeers}
-                    />
-                  }
-                >
-                {
-                  showRoutingOptions === runtime.id && (
-                    <div 
-                      key={`routing-options-${runtime.id}`}
-                      style={{ 
-                        display: 'flex',
-                        flexDirection: 'column'
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'row'}}>
-                        <Button
-                          onClick={() => this.setState({ showRoutingOptions: false })}
-                          style={s(t.uc, t.fs12, t.ls1, { height: 28, width: 32, marginLeft: 'auto', borderRadius: 2 })}
-                          icon="close"
-                        />
-                      </div>
-                      <SidechainSelector
-                        key={`sidechain-selector-${runtime.id}`}
-                        runtimes={runtimes}
-                        services={services}
-                        routing={sidechainRouting[runtime.id]}
-                        onSelect={routing => 
-                          this.setState({ 
-                            sidechainRouting: {
-                              ...sidechainRouting,
-                              [runtime.id]: routing,
-                            },
-                          })
-                        }
-                      />
-                    </div>
-                  )
+              <div style={{ display: 'flex', flexDirection: 'row'}}>
+                <Button
+                  onClick={() => this.setState({ showRoutingOptions: false })}
+                  style={s(t.uc, t.fs12, t.ls1, { height: 28, width: 32, marginLeft: 'auto', borderRadius: 2 })}
+                  icon="close"
+                />
+              </div>
+              <SidechainSelector
+                key={`sidechain-selector-${runtime.id}`}
+                runtimes={boardContext.runtimes}
+                services={services}
+                routing={sidechainRouting[runtime.id]}
+                onSelect={routing => 
+                  this.setState({ 
+                    sidechainRouting: {
+                      ...sidechainRouting,
+                      [runtime.id]: routing,
+                    },
+                  })
                 }
-                </Runtime>
-              </DragProvider>
-            </Peer>
+              />
+            </div>
           )
         }
-        </PeersConsumer>
-        </PeersContext>
+        </Runtime>
+      </DragProvider>
+    );
+  }
+
+  renderRuntimes = boardContext => {
+    const { runtimes } = boardContext;
+    const { boardName } = this.state;
+    return (
+      <div style={s(t.w100)}>
+        <PeersProvider ref={ctx => this.peerContext = ctx}>
+          <PeersConsumer> 
+          { 
+            peers => runtimes.map((runtime, rtidx) => {
+              return (
+                <Peer 
+                  key={`playground-peer-${runtime.id}`}
+                  name={`${boardName}-${runtime.name}`}
+                  onData={data => {
+                    const rt = this.getRuntimeById(runtime.id);
+                    if (rt) {
+                      rt.processRuntime(data);
+                    }
+                  }}
+                >
+                  { this.renderRuntime(boardContext, runtime, peers) }
+                </Peer>
+              )
+            })
+          } 
+          </PeersConsumer>
+        </PeersProvider>
       </div>
     );
   }

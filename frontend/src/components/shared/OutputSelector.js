@@ -4,37 +4,37 @@ import {Button } from 'semantic-ui-react';
 import { s, t } from '../../styles';
 import SelectorField from './SelectorField';
 
-const none = 'none';
+const none = 'No routing';
 
 export default class OutputSelector extends Component {
   state = {
-    selected: none,
+    selected: 'none',
     expanded: false,
-  } 
+  };
 
   renderExpanded = () => {
     const { selected } = this.state;
     const { items, onSelect, onUpdate } = this.props;
-    const peerOptions = items.reduce((a, c) => (
-      { ...a, [c]: c}), 
-      { none }
+    const peerOptions = items.reduce(
+      (a, c) => ({ ...a, [c]: c}), 
+      { 'none': none },
     );
     return (
       <div style={{ padding: 10 }}>
         <h1 style={s(t.tc, t.fs11)}>Route to</h1>
         <SelectorField
-          label="Output"
+          label="Peer"
           options={peerOptions}
           value={selected}
           onChange={(ev, { value: selected }) => {
             this.setState(
               { selected },
-              () => onSelect(selected)
+              () => onSelect(selected === none ? null : selected)
             );
           }}
         />
       <Button
-        style={s(t.uc, t.fs11, t.ls1, t.mt2)}
+        style={s(t.uc, t.fs11, t.ls1, t.mt2, t.w100)}
         onClick={() => onUpdate()}
       >
         Update Peers
