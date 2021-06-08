@@ -89,6 +89,8 @@ export default class Playground extends Component {
     description: '',
     initialFetched: false,
     savedBoards: getSavedBoards(),
+    inputRouting: {},
+    outputRouting: {}
   };
 
   user = { 
@@ -479,40 +481,52 @@ export default class Playground extends Component {
     }
   }
 
-  renderOutputs = (peers, runtime) => (
-    <OutputSelector
-      items={peers.peerNames}
-      onExpand={() => {
-        const rt = this.getRuntimeById(runtime.id);
-        if (rt) {
-          rt.scrollRuntimeContainerToRight();
-        }
-      }}
-      onSelect={value => this.setState({ 
-        outputRouting: {
-          ...this.state.outputRouting,
-          [runtime.id]: value
-        }
-      })}
-      onUpdate={peers.updatePeers}
-    />
-  );
+  renderOutputs = (peers, runtime, onUpdatePeers) => {
+    return (
+      <OutputSelector
+        items={peers}
+        onExpand={() => {
+          const rt = this.getRuntimeById(runtime.id);
+          if (rt) {
+            rt.scrollRuntimeContainerToRight();
+          }
+        }}
+        onSelect={value => this.setState({ 
+          outputRouting: {
+            ...this.state.outputRouting,
+            [runtime.id]: value
+          }
+        })}
+        onUpdate={onUpdatePeers}
+      />
+    );
+  }
 
-  renderInputs = peers => (
+  renderInputs = (peers, runtime, onUpdatePeers) => (
     <InputSelector 
-      items={peers.peerNames}
-      onUpdate={peers.updatePeers}
+      items={peers}
+      onUpdate={onUpdatePeers}
+      onSelect={value => this.setState({ 
+          inputRouting: {
+            ...this.state.inputRouting,
+            [runtime.id]: value
+          }
+        })
+      }
     />
   );
 
   renderRuntime = (boardContext, runtime, peers) => {
-    const { 
+    const {
+      boardName,
       showRoutingOptions, 
       sidechainRouting,
       //boardRouting, 
       services,
     } = this.state;
 
+    const ownPeers = boardContext.runtimes.map(rt => `${boardName}-${rt.name}`);
+    const filteredPeers = peers.peerNames.filter(x => ownPeers.indexOf(x) === -1);
     return (
       <DragProvider
         style={{ marginBottom: 10, marginTop: 10 }}
@@ -531,8 +545,8 @@ export default class Playground extends Component {
             }
           ]}
           allowedServices={allowedServices}
-          outputs={this.renderOutputs(peers, runtime)}
-          inputs={this.renderInputs(peers)}
+          outputs={this.renderOutputs(filteredPeers, runtime, peers.updatePeers)}
+          inputs={this.renderInputs(filteredPeers, runtime, peers.updatePeers)}
         >
         {
           showRoutingOptions === runtime.id && (
@@ -585,10 +599,16 @@ export default class Playground extends Component {
                 <Peer 
                   key={`playground-peer-${runtime.id}`}
                   name={`${boardName}-${runtime.name}`}
-                  onData={data => {
-                    const rt = this.getRuntimeById(runtime.id);
-                    if (rt) {
-                      rt.processRuntime(data);
+                  onData={envelope => {
+                    const { sender, data } = envelope;
+                    const input = this.state.inputRouting[runtime.id];
+                    if (input) { 
+                      if (input === '*' || input ===  sender) {
+                        const rt = this.getRuntimeById(runtime.id);
+                        if (rt) {
+                          rt.processRuntime(data);
+                        }
+                      }
                     }
                   }}
                 >

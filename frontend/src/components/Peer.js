@@ -16,7 +16,7 @@ export default class Peer extends Component {
 
   componentWillUnmount() {
     if (this.peer) {
-      this.peer.disconnect();
+      this.peer.destroy();
     }
 
     const { onPeerRemoved } = this.context;

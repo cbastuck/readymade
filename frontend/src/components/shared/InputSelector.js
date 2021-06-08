@@ -4,20 +4,21 @@ import {Button } from 'semantic-ui-react';
 import { s, t } from '../../styles';
 import SelectorField from './SelectorField';
 
-const none = 'none';
+const none = 'No Input';
+const all = 'All Peers';
 
 export default class InputSelector extends Component {
   state = {
-    selected: none,
+    selected: 'none',
     expanded: false,
   } 
 
   renderExpanded = () => {
     const { selected } = this.state;
-    const { items, onSelect, onUpdate } = this.props;
+    const { items, onSelect, onUpdate } = this.props;
     const peerOptions = items.reduce((a, c) => (
       { ...a, [c]: c}), 
-      { none }
+      { none: none, all: all }
     );
     return (
       <div style={{ padding: 10 }}> 
@@ -29,7 +30,19 @@ export default class InputSelector extends Component {
           onChange={(_ev, { value: selected }) => 
             this.setState(
               { selected },
-              () => onSelect(selected)
+              () => {
+                switch (selected) {
+                  case 'none':
+                    onSelect(null);
+                  break;
+                  case 'all':
+                    onSelect('*');
+                  break;
+                  default:
+                    onSelect(selected);
+                  break;
+                }
+              }
             )
           }
         />

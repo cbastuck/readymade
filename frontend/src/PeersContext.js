@@ -19,10 +19,10 @@ class PeersContext extends Component {
 
   onPeer = (peerName, peer) => {
     peer.on('error', err => {
-      console.log('Error - Going to disconnect', err);
+      console.error('PeersContext peer.onError', err);
     });
 
-    peer.on('close', peer => console.log('CLOSED PEER', peer))
+    peer.on('close', () => this.onPeerRemoved(peerName)); 
 
     this.setState({ 
       peers: {
@@ -60,9 +60,13 @@ class PeersContext extends Component {
   sendData = (src, dst, data) => {
     const { connections, peers } = this.state;
     const srcConnections = connections[src] || {};
+    const envelope = {
+      sender: src,
+      data
+    }
     let connection = srcConnections[dst];
     if (connection) {
-      connection.send(data);
+      connection.send(envelope);
       return;
     }
     const srcPeer = peers[src];
@@ -73,7 +77,7 @@ class PeersContext extends Component {
     connection = srcPeer.connect(dst);
     if (connection) {
       connection.on('open', () => {
-        connection.send(data);
+        connection.send(envelope);
         this.setState({ 
           connections: {
             ...connections,
