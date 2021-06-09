@@ -106,6 +106,8 @@ export default class Playground extends Component {
 
   externalInputs = {};
 
+  inputSelectors = {};
+
   componentDidUpdate(prevProps) {
     const board = this.props.match.params.board; 
     const prevBoard = prevProps.match.params.board; 
@@ -503,7 +505,8 @@ export default class Playground extends Component {
   }
 
   renderInputs = (peers, runtime, onUpdatePeers) => (
-    <InputSelector 
+    <InputSelector
+      ref={selector => this.inputSelectors[runtime.id] = selector}
       items={peers}
       onUpdate={onUpdatePeers}
       onSelect={value => this.setState({ 
@@ -602,12 +605,15 @@ export default class Playground extends Component {
                   onData={envelope => {
                     const { sender, data } = envelope;
                     const input = this.state.inputRouting[runtime.id];
-                    if (input) { 
-                      if (input === '*' || input ===  sender) {
-                        const rt = this.getRuntimeById(runtime.id);
-                        if (rt) {
-                          rt.processRuntime(data);
-                        }
+                    if (input === '*' || input === sender) {
+                      const rt = this.getRuntimeById(runtime.id);
+                      if (rt) {
+                        rt.processRuntime(data);
+                      }                      
+                    } else {
+                      const selector = this.inputSelectors[runtime.id];
+                      if (selector) {
+                        selector.signalIncoming();
                       }
                     }
                   }}

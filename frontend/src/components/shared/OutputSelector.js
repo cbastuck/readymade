@@ -12,13 +12,27 @@ export default class OutputSelector extends Component {
     expanded: false,
   };
 
-  renderExpanded = () => {
-    const { selected } = this.state;
-    const { items, onSelect, onUpdate } = this.props;
-    const peerOptions = items.reduce(
+  componentDidUpdate(prevProps) {
+    if (this.props.items !== prevProps.items) {
+      const options = this.getSelectorOptions();
+      if (!options[this.state.selected]) { 
+        this.setState({ selected: 'none' });
+      }
+    }
+  }
+
+  getSelectorOptions = () => {
+    const { items } = this.props;
+    return items.reduce(
       (a, c) => ({ ...a, [c]: c}), 
       { 'none': none },
     );
+  }
+  
+  renderExpanded = () => {
+    const { selected } = this.state;
+    const { onSelect, onUpdate } = this.props;
+    const peerOptions = this.getSelectorOptions();
     return (
       <div style={{ padding: 10 }}>
         <h1 style={s(t.tc, t.fs11)}>Route to</h1>

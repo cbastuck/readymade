@@ -11,15 +11,43 @@ export default class InputSelector extends Component {
   state = {
     selected: 'none',
     expanded: false,
-  } 
+    incoming: false,
+  }
 
-  renderExpanded = () => {
-    const { selected } = this.state;
-    const { items, onSelect, onUpdate } = this.props;
-    const peerOptions = items.reduce((a, c) => (
+  componentDidUpdate(prevProps) {
+    if (this.props.items !== prevProps.items) {
+      const options = this.getSelectorOptions();
+      if (!options[this.state.selected]) {
+        this.setState({ selected: 'none' });
+      }
+    }
+  }
+
+  getSelectorOptions = () => {
+    const { items } = this.props; 
+    return items.reduce((a, c) => (
       { ...a, [c]: c}), 
       { none: none, all: all }
     );
+  }
+
+  signalIncoming = () => {
+    if (!this.state.incoming) {
+      this.setState(
+        { incoming: true },
+        () => setTimeout(this.resetIncoming, 1000)
+      );
+    }
+  }
+
+  resetIncoming = () => {
+    this.setState({ incoming: false });
+  }
+
+  renderExpanded = () => {
+    const { selected } = this.state;
+    const { onSelect, onUpdate } = this.props;
+    const peerOptions = this.getSelectorOptions();
     return (
       <div style={{ padding: 10 }}> 
         <h1 style={s(t.tc, t.fs11)}>Allow Connection</h1>
@@ -57,7 +85,10 @@ export default class InputSelector extends Component {
   }
 
   render() {
-    const { expanded } = this.state;
+    const { 
+      expanded,
+      incoming,
+    } = this.state;
     const { 
       onExpand,
       onCollapse,
@@ -91,7 +122,12 @@ export default class InputSelector extends Component {
           height: '100%',
           border: 'none',
           textAlign: 'center',
-          backgroundColor: expanded ? 'gray' : '#efefef'
+          backgroundColor: incoming ? 
+            '#8aa1b7' : ( // signal color 
+            expanded ? 
+              'gray' : 
+              '#efefef'
+            )
         }}
         onClick={() => { 
           this.setState(
