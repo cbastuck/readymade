@@ -603,7 +603,7 @@ export default class Playground extends Component {
                   key={`playground-peer-${runtime.id}`}
                   name={`${boardName}-${runtime.name}`}
                   onData={envelope => {
-                    const { sender, data } = envelope;
+                    const { sender, data } = envelope;
                     const input = this.state.inputRouting[runtime.id];
                     if (input === '*' || input === sender) {
                       const rt = this.getRuntimeById(runtime.id);
@@ -613,7 +613,7 @@ export default class Playground extends Component {
                     } else {
                       const selector = this.inputSelectors[runtime.id];
                       if (selector) {
-                        selector.signalIncoming();
+                        selector.signalIncoming(sender);
                       }
                     }
                   }}

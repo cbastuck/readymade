@@ -31,21 +31,21 @@ export default class InputSelector extends Component {
     );
   }
 
-  signalIncoming = () => {
+  signalIncoming = sender => {
     if (!this.state.incoming) {
       this.setState(
-        { incoming: true },
+        { incoming: sender },
         () => setTimeout(this.resetIncoming, 1000)
       );
     }
   }
 
   resetIncoming = () => {
-    this.setState({ incoming: false });
+    this.setState({ incoming: undefined });
   }
 
   renderExpanded = () => {
-    const { selected } = this.state;
+    const { selected, incoming } = this.state;
     const { onSelect, onUpdate } = this.props;
     const peerOptions = this.getSelectorOptions();
     return (
@@ -54,6 +54,7 @@ export default class InputSelector extends Component {
         <SelectorField
           label="From"
           options={peerOptions}
+          highlight={incoming}
           value={selected}
           onChange={(_ev, { value: selected }) => 
             this.setState(
@@ -73,13 +74,8 @@ export default class InputSelector extends Component {
               }
             )
           }
+          onOptions={() => onUpdate()}
         />
-      <Button
-        style={s(t.uc, t.fs11, t.ls1, t.mt2)}
-        onClick={() => onUpdate()}
-      >
-        Update Peers
-      </Button>
       </div>
     );
   }

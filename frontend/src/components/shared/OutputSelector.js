@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import {Button } from 'semantic-ui-react';
 
 import { s, t } from '../../styles';
 import SelectorField from './SelectorField';
@@ -46,13 +45,8 @@ export default class OutputSelector extends Component {
               () => onSelect(selected === none ? null : selected)
             );
           }}
+          onOptions={() => onUpdate()}
         />
-      <Button
-        style={s(t.uc, t.fs11, t.ls1, t.mt2, t.w100)}
-        onClick={() => onUpdate()}
-      >
-        Update Peers
-      </Button>
       </div>
     );
   }

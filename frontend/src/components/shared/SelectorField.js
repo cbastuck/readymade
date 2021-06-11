@@ -16,10 +16,61 @@ export default class SelectorField extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    const { value } = this.props;
+    const { 
+      value, 
+      highlight,
+    } = this.props;
     if (value !== prevProps.value) {
       this.setState({ value });
     }
+
+    if (highlight !== prevProps.highlight) {
+      this.setState({ highlight });
+    }
+  }
+
+  renderOptions = () => {
+    const { 
+      label, 
+      onChange, 
+      options={},
+      highlight,
+    } = this.props;
+    return (
+      <div
+        style={{
+          textAlign: 'left',
+          textTransform: 'uppercase',
+          backgroundColor: 'white',
+          position: 'absolute',
+          zIndex: 2000003,
+          margin: '0px -5px',
+        }}
+      >
+      {
+        Object.keys(options).map((key, idx) => 
+          <div 
+            key={`${label}.${key}.${idx}`}
+            className="selector-field-option"
+            style={{ 
+              cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: 'bold',
+              whiteSpace: 'nowrap',
+              padding: '3px 10px',
+              backgroundColor: highlight === key && '#8aa1b733'
+            }}
+            onClick={ev => {
+              onChange && onChange(ev, { value: key });
+              this.setState({ optionsVisible: false });
+            }}
+          >
+            { options[key] }
+          </div>
+        )
+      }
+      </div>
+    )
   }
 
   render() {
@@ -29,7 +80,8 @@ export default class SelectorField extends Component {
     } = this.state;
     const { 
       label, 
-      onChange, 
+      onChange,
+      onOptions,
       value: syncedValue,
       options={},
       style={}
@@ -70,47 +122,15 @@ export default class SelectorField extends Component {
             left: -2,
             cursor: 'pointer'
           }}
-          onClick={() => this.setState({ optionsVisible: !optionsVisible })}
+          onClick={() => this.setState(
+            { optionsVisible: !optionsVisible },
+            () => onOptions && onOptions(options)
+          )}
         > 
           { text }
           <span style={{ marginLeft: 5 }}> ⬇ </span>
-          {
-            optionsVisible && (
-              <div
-                style={{
-                  textAlign: 'left',
-                  textTransform: 'uppercase',
-                  backgroundColor: 'white',
-                  position: 'absolute',
-                  zIndex: 2000003,
-                  margin: '0px -5px',
-                }}
-              >
-              {
-                Object.keys(options).map((key, idx) => 
-                  <div 
-                    key={`${label}.${key}.${idx}`}
-                    className="selector-field-option"
-                    style={{ 
-                      cursor: 'pointer',
-                      fontSize: 13,
-                      fontWeight: 'bold',
-                      whiteSpace: 'nowrap',
-                      padding: '3px 10px',
-                    }}
-                    onClick={ev => {
-                      onChange && onChange(ev, { value: key });
-                      this.setState({ optionsVisible: false });
-                    }}
-                  >
-                    { options[key] }
-                  </div>
-                )
-              }
-              </div>
-            )
-          }
-          </div>
+          { optionsVisible && this.renderOptions() }
+        </div>
       </div>
     );
   }
