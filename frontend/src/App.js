@@ -30,7 +30,7 @@ import Sandbox from './Sandbox';
 import Import from './Import';
 import Join from './Join';
 import ServiceRedirect from './views/ServiceRedirect';
-import MessageReceiver from './MessageReceiver';
+import MessageDispatcher from './MessageDispatcher';
 
 import './App.css';
 
@@ -73,7 +73,7 @@ class App extends Component {
             </Switch>
           </div>
         </Router>
-        <MessageReceiver />
+        <MessageDispatcher />
       </AppContext>
     );
   }

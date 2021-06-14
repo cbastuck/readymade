@@ -86,3 +86,24 @@ export function removeKeyFromObject(obj, key) {
     {}
   );
 }
+
+export function makeQueryString(obj) {
+  return Object.keys(obj).reduce(
+    (str, key) => 
+      obj[key] ? 
+        (
+          str.length ? 
+          `${str}&${key}=${obj[key]}` : 
+          `${key}=${obj[key]}`
+        ) :
+      str,
+    ''
+  ); 
+}
+
+export class RequestError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}

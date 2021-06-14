@@ -42,15 +42,24 @@ export default class ServiceUI extends Component {
   }
 
   getCurrentSegmentName = () => {
-    if (this.state.currentSegmentName) {
-      return this.state.currentSegmentName;
+    const { 
+      segments,
+      initialSegment
+    } = this.props;
+    const { currentSegmentName } = this.state;
+    if (currentSegmentName) {
+      return currentSegmentName;
     }
-    if (this.props.initialSegment) {
-      return this.props.initialSegment();
+
+    if (initialSegment) {
+      return initialSegment();
     }
-    return this.props.segments && 
-      this.props.segments[0] && 
-      this.props.segments[0].name
+    
+    for (const segment of segments) {
+      if (segment && !segment.disabled) {
+        return segment.name;
+      }
+    } 
   }
 
   renderSegments = ({ service }, segments, resizable) => {
@@ -88,6 +97,7 @@ export default class ServiceUI extends Component {
                       fontSize: 11,
                       letterSpacing: 1,
                     }}
+                    disabled={segment.disabled}
                   />
               )
             }

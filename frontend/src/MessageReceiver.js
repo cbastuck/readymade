@@ -1,27 +1,20 @@
 import { Component } from 'react';
 
-export default class MessageReceiver extends Component {
-  static redirects = {};
+import MessageDispatcher from './MessageDispatcher';
 
-  static registerRedirect(state, callback) {
-    MessageReceiver.redirects[state] = callback;
-  }
+export default class MessageReceiver extends Component {
 
   componentDidMount() {
-    const onMsgReceived = ev => {
-      try{ 
-        const data = ev.data && typeof ev.data === 'string' && JSON.parse(ev.data);
-        if (data.state) {
-          const callback = MessageReceiver.redirects[data.state];
-          if (callback) {
-            callback(data);
-          }
-        }
-      } catch (err) {
-        // console.log(`MessageReceiver: string message is not a valid JSON: ${ev.data}`)
-      }
-    };
-    window.addEventListener('message', onMsgReceived, false);
+    const { state, onData } = this.props;
+    MessageDispatcher.registerRedirect(
+      state,
+      onData
+    );
+  }
+
+  componentWillUnmount() {
+    const { state } = this.props;
+    MessageDispatcher.unregisterRedirect(state);
   }
 
   render() {

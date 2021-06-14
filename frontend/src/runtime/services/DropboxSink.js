@@ -21,18 +21,6 @@ class DropboxSinkUI extends Component {
     user: undefined,
   };
 
-  componentDidMount() {
-    MessageReceiver.registerRedirect(
-      loginStateId,
-      async data => {
-        const accessToken = data.access_token;
-        this.service.configure({ accessToken });
-        const user = await this.service.getUserAccount();
-        this.setState({ user });
-      }
-    );
-  }
-
   retrieveUserAccount = async service => {
     const user = await service.getUserAccount();
     if (user) {
@@ -72,6 +60,15 @@ class DropboxSinkUI extends Component {
         >
           Login
         </Button>
+        <MessageReceiver
+          state={loginStateId}
+          onData={async data => {
+            const accessToken = data.access_token;
+            this.service.configure({ accessToken });
+            const user = await this.service.getUserAccount();
+            this.setState({ user });
+          }}
+        />
       </div>
     ); 
   }
@@ -138,7 +135,6 @@ class DropboxSinkUI extends Component {
         >
           Logout
         </Button>
-
       </div>
     );
   }

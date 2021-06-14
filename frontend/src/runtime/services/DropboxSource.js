@@ -16,17 +16,6 @@ class DropboxSourceUI extends Component {
     user: undefined,
   };
 
-  componentDidMount() {
-    MessageReceiver.registerRedirect(
-      loginStateId,
-      async data => {
-        const accessToken = data.access_token;
-        this.service.configure({ accessToken });
-        this.retrieveUserAccount(this.service);
-      }
-    );
-  }
-
   retrieveUserAccount = async service => {
     const user = await service.getUserAccount();
     if (user) {
@@ -54,6 +43,14 @@ class DropboxSourceUI extends Component {
         >
           Login
         </Button>
+        <MessageReceiver
+          state={loginStateId}
+          onData={async data => {
+            const accessToken = data.access_token;
+            this.service.configure({ accessToken });
+            this.retrieveUserAccount(this.service);
+          }}
+        />
       </div>
     ); 
   }
@@ -68,7 +65,7 @@ class DropboxSourceUI extends Component {
           }}
         onClick={() => service.trigger({ file })}
       > 
-        { file.name } 
+        { file.name }
       </div>
     );
   }

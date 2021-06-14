@@ -28,6 +28,8 @@ import TimelineDescriptor from '../services/Timeline';
 import StackDescriptor from '../services/Stack';
 import AggregatorDescriptor from '../services/Aggregator';
 import ReduceDescriptor from '../services/Reduce';
+import SpotifyDescriptor from '../services/Spotify';
+import GithubDescriptor from '../services/Github';
 
 const defaultRegistry = [
   timerDescriptor,
@@ -59,7 +61,9 @@ const defaultRegistry = [
   TimelineDescriptor,
   StackDescriptor,
   AggregatorDescriptor,
-  ReduceDescriptor
+  ReduceDescriptor,
+  SpotifyDescriptor,
+  GithubDescriptor,
 ];
 
 export default defaultRegistry;
