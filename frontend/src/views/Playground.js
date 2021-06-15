@@ -56,7 +56,8 @@ const allowedServices = [
   'hookup.to/service/reduce',
   'hookup.to/service/chart',
   'hookup.to/service/spotify',
-  'hookup.to/service/github',
+  'hookup.to/service/github-source',
+  'hookup.to/service/github-sink',
 ];
 
 const defaultName = 'Playground';

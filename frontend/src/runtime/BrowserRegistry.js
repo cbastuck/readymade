@@ -34,8 +34,8 @@ export default class BrowserRegistry {
   __appendBundleServices = arr => {
     arr.forEach(x => {
       const exists = this.availableServices && 
-                      this.availableServices.find(
-                      s => x.serviceId === s.serviceId);
+                      this.availableServices.find( 
+                      s => x && (x.serviceId === s.serviceId));
       if (!exists) {
         if (this.availableServices) {
           this.availableServices.push(x);

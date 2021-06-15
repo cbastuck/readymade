@@ -31,10 +31,10 @@ export default class SelectorField extends Component {
 
   renderOptions = () => {
     const { 
-      label, 
-      onChange, 
+      label='', 
+      onChange=undefined, 
       options={},
-      highlight,
+      highlight=undefined,
     } = this.props;
     return (
       <div

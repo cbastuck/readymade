@@ -1,20 +1,4 @@
-import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
-
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
-import InputField from '../../components/shared/InputField';
-import MessageReceiver from '../../MessageReceiver';
 import { makeQueryString, RequestError } from './helpers';
-
-const serviceId = 'hookup.to/service/github';
-const serviceName = 'Github';
-
-const clientID = 'f2b34053a831baa056e8';
-const clientSecret = '';
-const redirectURI = `${window.location.origin}/serviceRedirect`;
-const scopes = [];
-const loginStateId = 'github-login';
 
 async function makeRequest(token, url, qp={}) {
   const queryParams = { ...qp, };
@@ -30,117 +14,7 @@ async function makeRequest(token, url, qp={}) {
   return await resp.json();
 }
 
-
-class GithubUI extends Component {
-  state = {};
-
-  onInit = initialState => {
-    const { 
-      token,
-    } = initialState;
-    this.setState({ token });
-  }
-
-  onNotification = (service, notification) => {
-    const { token } = notification;
-    if (token) {
-      this.setState({ token });
-    }
-  }
-
-  onLogin = () => {
-    const baseURL = 'https://github.com/login/oauth/authorize';
-    const state = loginStateId;
-    const url = `${baseURL}?client_id=${clientID}&response_type=token&redirect_uri=${encodeURI(redirectURI)}&scope=${scopes.join(',')}&state=${state}`;
-    window.open(url, 'blank');
-  }
-
-  renderLoginPanel = service => 
-    clientSecret ? 
-    (
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column'
-        }}
-      >
-        <Button
-          style={s(t.uc, t.ls1, t.fs12)}
-          onClick={this.onLogin}
-        >
-        Login
-      </Button>
-      <MessageReceiver
-        state={loginStateId}
-        onData={async data => {
-          const { code } = data;
-          if (code) {
-            fetch(
-              'https://github.com/login/oauth/access_token',
-              { 
-                method: 'POST',
-                body: JSON.stringify({
-                  client_id: clientID,
-                  client_secret: clientSecret,
-                  code: data.code,
-                  redirect_uri: redirectURI,
-                })
-              }
-            );
-            data.access_token && 
-            service.configure({ token: data.access_token })
-          }
-        }}
-      />
-      </div>
-    ) : 
-    this.renderBasicAuth()
-    
-
-  renderGithubPanel = service => (
-    <div>
-      <Button
-        style={s(t.uc, t.ls1, t.fs12)}
-        onClick={() => service.configure({ action: 'getUser' })}
-      >
-        Get User
-      </Button>
-    </div>
-  )
-
-  renderBasicAuth = service => {
-    const { token } = this.state;
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <InputField 
-          label="Token"
-          value={token}
-          onChange={(_, { value: token }) => 
-            service.configure({ token })
-          }
-        />
-      </div>
-    )
-  }
-
-  render() {
-    const { token } = this.state;
-    const segments=[
-      { name: 'Login', render: this.renderLoginPanel },
-      { name: 'Github', render: this.renderGithubPanel, disabled: !token },
-    ];
-    return (
-      <ServiceUI 
-        {...this.props} 
-        onInit={this.onInit.bind(this)}
-        onNotification={this.onNotification.bind(this)}
-        segments={segments}
-      />
-    )
-  }
-}
-
-class Github {
+export default class Github {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
@@ -149,7 +23,55 @@ class Github {
     this.token = ''; //this.app.restoreServiceData(this.uuid, loginStateId);
   }
 
-  destroy() {
+  async configure(config) { 
+    const {
+      token,
+      action,
+    } = config;
+    if (token !== undefined) {
+      this.token = token;
+      // this.app.storeServiceData(this.uuid, loginStateId, token);
+      this.app.notify(this, { token });
+    }
+    
+    if (action !== undefined) {
+      switch (action) {
+        case 'getUser':
+          const user = await this.getUser();
+          return this.app.notify(this, { user });
+        case 'getRepos': 
+          const repos = await this.getRepos(config.owner);
+          return this.app.notify(this, { repos });
+        case 'login':
+          return this.getAuthUrl(action);
+        case 'exchangeCode':
+          return this.exchangeCode(action);
+        default:
+          break;
+      }
+    }
+  }
+
+  destroy() { }
+
+  getAuthURL({ clientID, clientSecret, scopes, redirectURI, state }) {
+    const baseURL = 'https://github.com/login/oauth/authorize';
+    return `${baseURL}?client_id=${clientID}&response_type=token&redirect_uri=${encodeURI(redirectURI)}&scope=${scopes.join(',')}&state=${state}`;
+  }
+
+  exchangeCode({ clientID, clientSecret, code, redirectURI}) {
+    fetch(
+      'https://github.com/login/oauth/access_token',
+      { 
+        method: 'POST',
+        body: JSON.stringify({
+          client_id: clientID,
+          client_secret: clientSecret,
+          code,
+          redirect_uri: redirectURI,
+        })
+      }
+    );
   }
 
   async getUser(n) {
@@ -157,6 +79,10 @@ class Github {
       this.token, 
       '/user',
     );
+  }
+
+  getRepos(owner) {
+    return makeRequest(this.token, `/users/${owner}/repos`);
   }
 
   async commit(params) {
@@ -261,39 +187,8 @@ class Github {
     resp = await resp.json();     
   }
 
-  async configure(config) { 
-    const {
-      token,
-      action,
-    } = config;
-    if (token !== undefined) {
-      this.token = token;
-      // this.app.storeServiceData(this.uuid, loginStateId, token);
-      this.app.notify(this, { token });
-    }
-    
-    if (action !== undefined) {
-      switch (action) {
-        case 'getUser':
-          const user = await this.getUser();
-          return this.app.next(this, user);
-        default:
-          break;
-      }
-    }
-  }
-
   async process(params) {
     return await this.commit(params);
   }
 }
 
-const descriptor = {
-  serviceName,
-  serviceId,
-  create: (app, board, descriptor, id) =>
-    new Github(app, board, descriptor, id),
-  createUI: GithubUI,
-};
-
-export default descriptor;
