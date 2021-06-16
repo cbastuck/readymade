@@ -1,19 +1,18 @@
 
 
 import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
 
-import Github from './Github';
-import { GithubUser, GithubObject } from './GithubComponents';
 import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
 import InputField from '../../components/shared/InputField';
-import MessageReceiver from '../../MessageReceiver';
+import {
+  GithubUser, 
+  GithubObject, 
+  GithubOAuth 
+} from './GithubComponents';
+import { commit } from './GithubAPI';
 
 const serviceId = 'hookup.to/service/github-sink';
 const serviceName = 'Github Sink';
-
-const loginStateId = 'github-login';
 
 const clientID = 'f2b34053a831baa056e8';
 const clientSecret = '';
@@ -26,14 +25,22 @@ class GithubSinkUI extends Component {
   onInit = initialState => {
     const { 
       token,
+      owner,
+      repo,
+      branch,
+      file,
     } = initialState;
-    this.setState({ token });
+    this.setState({ token, owner, repo, branch, file });
   }
 
   onNotification = (service, notification) => {
     const { 
       token, 
       user,
+      owner,
+      repo,
+      branch,
+      file,
     } = notification;
     if (token) {
       this.setState({ token });
@@ -42,19 +49,21 @@ class GithubSinkUI extends Component {
     if (user !== undefined) {
       this.setState({ user });
     }
-  }
 
-  onLogin = service => {
-    const url = service.configure({ 
-      action: 'login',
-      clientID,
-      clientSecret,
-      scopes,
-      redirectURI,
-      state: loginStateId,
-    });
-    if (url) {
-      window.open(url, 'blank');
+    if (owner !== undefined) {
+      this.setState({ owner })
+    }
+
+    if (repo !== undefined) {
+      this.setState({ repo });
+    }
+
+    if (branch !== undefined) {
+      this.setState({ branch })
+    }
+
+    if (file !== undefined) {
+      this.setState({ file });
     }
   }
 
@@ -64,40 +73,15 @@ class GithubSinkUI extends Component {
       return <GithubUser token={token} />;
     }
     return clientSecret ? 
-      this.renderOAuthFlow(service) : 
+      <GithubOAuth
+        clientID={clientID}
+        clientSecret={clientSecret}
+        redirectURI={redirectURI}
+        scopes={scopes}
+        onToken={token => this.setState({ token })}
+      /> : 
       this.renderBasicAuth(service)
   }
-
-  renderOAuthFlow = service => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      <Button
-        style={s(t.uc, t.ls1, t.fs12)}
-        onClick={() => this.onLogin(service)}
-      >
-        Login
-      </Button>
-      <MessageReceiver
-        state={loginStateId}
-        onData={async data => {
-          const { code } = data;
-          if (code) {
-            service.configure({ 
-              action: 'exchangeCode',
-              clientID, 
-              clientSecret,
-              code,
-              redirectURI,
-            })
-          }
-        }}
-      />
-    </div>
-  )
 
   renderBasicAuth = service => {
     const { token } = this.state;
@@ -113,11 +97,26 @@ class GithubSinkUI extends Component {
   }
 
   renderObjectSelector = service => {
-    const { token } = this.state;
+    const { 
+      token,
+      owner,
+      repo,
+      branch,
+      file,
+    } = this.state;
     if (!token) {
       return false;
     }
-    return <GithubObject token={token} />;
+    return (
+      <GithubObject 
+        token={token}
+        owner={owner}
+        repo={repo}
+        branch={branch}
+        file={file}
+        onChange={kv => service.configure(kv)}
+      />
+    );
   }
 
   render() {
@@ -137,11 +136,68 @@ class GithubSinkUI extends Component {
   }
 }
 
+class GithubSink {
+  constructor(app, board, descriptor, id) {
+    this.uuid = id;
+    this.board = board;
+    this.app = app;
+
+    this.token = ''; //this.app.restoreServiceData(this.uuid, loginStateId);
+    this.owner = '';
+    this.repo = '';
+    this.branch = '';
+    this.file = '';
+  }
+
+  async configure(config) { 
+    const { 
+      token,
+      owner,
+      repo,
+      branch, 
+      file
+    } = config;
+    if (token !== undefined) {
+      this.token = token;
+      // this.app.storeServiceData(this.uuid, loginStateId, token);
+      this.app.notify(this, { token });
+    }
+
+    if (owner !== undefined) {
+      this.owner = owner;
+      this.app.notify(this, { owner });
+    }
+
+    if (repo !== undefined) {
+      this.repo = repo;
+      this.app.notify(this, { repo });
+    }
+
+    if (branch !== undefined) {
+      this.branch = branch;
+      this.app.notify(this, { branch });
+    }
+
+    if (file !== undefined) {
+      this.file = file;
+      this.app.notify(this, { file });
+    }
+  }
+
+  destroy() { }
+
+  async process(params) {
+    if (this.token) {
+      return await commit(this.token, params);
+    }
+  }
+}
+
 const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
-    new Github(app, board, descriptor, id),
+    new GithubSink(app, board, descriptor, id),
   createUI: GithubSinkUI,
 };
 

@@ -15,6 +15,27 @@ async function makeRequest(token, url, qp={}) {
   return await resp.json();
 }
 
+export function getAuthURL({ clientID, clientSecret, scopes, redirectURI, state }) {
+  const authBase = 'https://github.com/login/oauth/authorize';
+  return `${authBase}?client_id=${clientID}&response_type=token&redirect_uri=${encodeURI(redirectURI)}&scope=${scopes.join(',')}&state=${state}`;
+}
+
+export async function exchangeCode({ clientID, clientSecret, code, redirectURI}) {
+  const response = await fetch(
+    'https://github.com/login/oauth/access_token',
+    { 
+      method: 'POST',
+      body: JSON.stringify({
+        client_id: clientID,
+        client_secret: clientSecret,
+        code,
+        redirect_uri: redirectURI,
+      })
+    }
+  );
+  return response.json();
+}
+
 export async function getUser(token) {
     return await makeRequest(token, '/user');
   }

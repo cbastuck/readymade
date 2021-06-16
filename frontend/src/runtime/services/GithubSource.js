@@ -3,7 +3,6 @@
 import React, { Component } from 'react';
 import { Button } from 'semantic-ui-react';
 
-import Github from './Github';
 import ServiceUI from './ServiceUI';
 import { s, t } from '../../styles';
 import InputField from '../../components/shared/InputField';
@@ -129,11 +128,40 @@ class GithubSourceUI extends Component {
   }
 }
 
+class GithubSource {
+  constructor(app, board, descriptor, id) {
+    this.uuid = id;
+    this.board = board;
+    this.app = app;
+
+    this.token = ''; //this.app.restoreServiceData(this.uuid, loginStateId);
+    this.owner = '';
+    this.repo = '';
+    this.branch = '';
+    this.file = '';
+  }
+
+  async configure(config) { 
+    const { token } = config;
+    if (token !== undefined) {
+      this.token = token;
+      // this.app.storeServiceData(this.uuid, loginStateId, token);
+      this.app.notify(this, { token });
+    }
+  }
+
+  destroy() { }
+
+  async process(params) {
+    return params
+  }
+}
+
 const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
-    new Github(app, board, descriptor, id),
+    new GithubSource(app, board, descriptor, id),
   createUI: GithubSourceUI,
 };
 

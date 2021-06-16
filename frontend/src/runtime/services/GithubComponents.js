@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Button, Card, Icon, Image } from 'semantic-ui-react';
 
+import MessageReceiver from '../../MessageReceiver';
 import SelectorField from '../../components/shared/SelectorField';
 import InputField from '../../components/shared/InputField';
 import { s, t } from '../../styles';
@@ -9,7 +10,11 @@ import {
   getRepos,
   getBranches,
   getTree,
+  getAuthURL,
+  exchangeCode,
 } from './GithubAPI'; 
+
+const loginStateId = 'github-login';
 
 export class GithubUser extends Component {
   state = { user: null };
@@ -73,17 +78,35 @@ export class GithubObject extends Component {
   state = {};
 
   componentDidMount() {
-    const { token } = this.props;
-    getUser(token)
-      .then(user => {
-        this.setState({ user });
-        return getRepos(token, user.login);
-      })
-      .then(repos => this.setState({ repos }));
+    this.init();
+  }
+  
+  async init() {
+    const { 
+      token,
+      owner,
+      repo,
+      branch,
+      file: filename,
+    } = this.props;
+    const user = await getUser(token);
+    const repos = await getRepos(token, owner || user.login);
+    const branches = repo ? await getBranches(token, owner || user.login, repo) : [];
+    const tree = branches ? await getTree(token, owner || user.login, repo, branch) : [];
+    this.setState({
+      user,
+      owner: owner || user.login,
+      repos,
+      repo,
+      branch,
+      branches,
+      tree,
+      filename,
+    });
   }
 
   renderPanel = service => {
-    const { token } = this.props
+    const { token, onChange } = this.props
     const {
       user,
       owner = user ? user.login : '',
@@ -102,12 +125,16 @@ export class GithubObject extends Component {
     const repositoryOptions = repos.reduce(
       (all, cur) => ({...all, [cur.name]: cur.name}), {}
     );
-    const branchOptions = branches && branches.reduce(
-      (all, cur) => ({ ...all, [cur.name]: cur.name }), {}
-    );
-    const filesOptions = tree && tree.reduce(
-      (all, cur) => ({...all, [cur.path]: cur.path}), {}
-    );
+    const branchOptions = branches ? 
+      branches.reduce(
+        (all, cur) => ({ ...all, [cur.name]: cur.name }), {}
+      ) : 
+      {};
+    const filesOptions = tree ? 
+      tree.reduce(
+        (all, cur) => ({...all, [cur.path]: cur.path}), {}
+      ) : 
+      {};
 
     return (
       <div>
@@ -118,8 +145,15 @@ export class GithubObject extends Component {
             this.setState(
               { owner },
               () => getRepos(token, owner)
-                .then(repos => this.setState({ repos }))
-            )
+                .then(repos => this.setState({ 
+                  repos,
+                  branches: [],
+                  branch: null,
+                  tree: null,
+                  filename: ''
+                }))
+            );
+            onChange({ owner });
           }}
         />
         <SelectorField
@@ -131,7 +165,8 @@ export class GithubObject extends Component {
               { repo },
               () => getBranches(token, owner, repo)
                 .then(branches => this.setState({ branches }))
-            )
+            );
+            onChange({ repo });
           }}
         />
         <SelectorField
@@ -144,13 +179,15 @@ export class GithubObject extends Component {
               () => getTree(token, owner, repo, branch)
                 .then(tree => this.setState({ tree }))
             );
+            onChange({ branch });
           }}
         />
         <SelectorField 
           label="file"
-          onChange={(_, { value: filename }) => 
-            this.setState({ filename })
-          }
+          onChange={(_, { value: filename }) => {
+            this.setState({ filename });
+            onChange({ file: filename });
+          }}
           value={filename}
           options={filesOptions}
         />
@@ -163,3 +200,59 @@ export class GithubObject extends Component {
     return this.renderPanel(service);
   }
 }
+
+export class GithubOAuth extends Component {
+  render() {
+    const { 
+      onToken,
+      clientID,
+      clientSecret,
+      redirectURI,
+      scopes
+    } = this.props;
+    return (
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <Button
+          style={s(t.uc, t.ls1, t.fs12)}
+          onClick={() => {
+            const url = getAuthURL({ 
+              clientID,
+              clientSecret,
+              scopes,
+              redirectURI,
+              state: loginStateId,
+            });
+            if (url) {
+              window.open(url, 'blank');
+            }
+          }}
+        >
+          Login
+        </Button>
+        <MessageReceiver
+          state={loginStateId}
+          onData={async data => {
+            const { code } = data;
+            if (code) {
+              const token = await exchangeCode({ 
+                clientID, 
+                clientSecret,
+                code,
+                redirectURI,
+              });
+              if (token) {
+                onToken(token);
+              }
+            }
+          }}
+        />
+      </div>
+    )
+  }
+}
+
