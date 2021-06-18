@@ -1,10 +1,10 @@
-import { makeQueryString, RequestError } from './helpers';
+import { RequestError } from './helpers';
+import { encodeBlobBase64 } from './helpers';
 
 const baseURL = 'https://api.github.com';
 
-async function makeRequest(token, url, qp={}) {
-  const queryParams = { ...qp, };
-  const fullURL = `${baseURL}${url}?${makeQueryString(queryParams)}`;
+async function makeRequest(token, url) {
+  const fullURL = `${baseURL}${url}`;
   const resp = await fetch(
     fullURL,
     { headers: { 'Authorization': 'token ' + token } },
@@ -36,122 +36,119 @@ export async function exchangeCode({ clientID, clientSecret, code, redirectURI})
   return response.json();
 }
 
-export async function getUser(token) {
-    return await makeRequest(token, '/user');
+export function getUser(token) {
+    return makeRequest(token, '/user');
   }
 
-export async function getRepos(token, owner) {
+export function getRepos(token, owner) {
     return makeRequest(token, `/users/${owner}/repos`);
   }
 
-export async function getBranches(token, owner, repo) {
+export function getBranches(token, owner, repo) {
     return makeRequest(token, `/repos/${owner}/${repo}/branches`);
   }
 
+export function getRef(token, owner, repo, branch) {
+  const ref = `heads/${branch}`;
+  return makeRequest(token, `/repos/${owner}/${repo}/git/ref/${ref}`);
+}
+
 export async function getTree(token, owner, repo, branch) {
-    const ref = `heads/${branch}`;
-    const { object } = await makeRequest(token,  `/repos/${owner}/${repo}/git/ref/${ref}`);
+  const head = await getRef(token, owner, repo, branch);
+  const { object } = head;
+  const { tree } = await makeRequest(token, `/repos/${owner}/${repo}/git/trees/${object.sha}`);
+  return tree;
+}
 
-    const { tree } = await makeRequest(token, `/repos/${owner}/${repo}/git/trees/${object.sha}`);
-    return tree;
-  }
+export async function createTree(token, owner, repo, parentSha, filename, blob) {
+  const resp = await fetch(
+    `${baseURL}/repos/${owner}/${repo}/git/trees`,
+    { 
+      method: 'POST',
+      headers: { 
+        accept: 'application/vnd.github.v3+json',
+        Authorization: 'token ' + token,
+      },
+      body: JSON.stringify({
+        'base_tree': parentSha,
+        tree: [
+          {
+            'path': filename,
+            'mode': '100644',
+            'type': 'blob',
+            'sha': blob.sha,
+          }
+        ]
+      })
+    }
+  );
+  return resp.json();
+}
 
-export async function commit(token, params) {
-    // http://www.levibotelho.com/development/commit-a-file-with-the-github-api/
-    const repo = 'hkp';
-    const owner = 'cbastuck';
-    const filename = 'spotify.json';
+export async function createBlob(token, owner, repo, data) {
+  const isBlob = data instanceof Blob; 
+  const encoding = isBlob ? 'base64' : 'utf-8';
+  const content = isBlob ? await encodeBlobBase64(data) : data;
+  const resp = await fetch(
+    `${baseURL}/repos/${owner}/${repo}/git/blobs`,
+    { 
+      method: 'POST',
+      headers: { 
+        accept: 'application/vnd.github.v3+json',
+        Authorization: 'token ' + token,
+      },
+      body: JSON.stringify({ 
+        content,
+        encoding
+      }),
+    }
+  );
+  return resp.json();
+}
 
-    const branch = 'master';
-    const ref = `heads/${branch}`;
-    const refURL = `/repos/${owner}/${repo}/git/ref/${ref}`;
-    let resp = await makeRequest(token, refURL);
+export async function createCommit(token, owner, repo, parentSha, tree, message) {
+  const resp = await fetch(
+    `${baseURL}/repos/${owner}/${repo}/git/commits`,
+    { 
+      method: 'POST',
+      headers: { 
+        accept: 'application/vnd.github.v3+json',
+        Authorization: 'token ' + token,
+      },
+      body: JSON.stringify({
+        message,
+        parents: [parentSha],
+        tree: tree.sha
+      })
+    }
+  );
+  return resp.json();
+}
 
-    const { url: headURL, sha: headSHA } = resp.object;
-    resp = await fetch(headURL);
-    resp = await resp.json();
-    
-    const { sha: headSHA2, tree } = resp;
-    const { sha: treeSHA, url: treeURL } = tree;
+export async function updateHead(token, owner, repo, branch, commit) {
+  const ref = `heads/${branch}`;
+  const resp = await fetch(
+    `${baseURL}/repos/${owner}/${repo}/git/refs/${ref}`,
+    { 
+      method: 'PATCH',
+      headers: { 
+        accept: 'application/vnd.github.v3+json',
+        Authorization: 'token ' + token,
+      },
+      body: JSON.stringify({
+        sha: commit.sha,
+      })
+    }
+  );
+  return resp.json();     
+}
 
-    resp = await fetch(
-      `${baseURL}/repos/${owner}/${repo}/git/blobs`,
-      { 
-        method: 'POST',
-        headers: { 
-          accept: 'application/vnd.github.v3+json',
-          Authorization: 'token ' + token,
-        },
-        body: JSON.stringify({
-          'content': JSON.stringify(params)
-        })
-      }
-    );
-    resp = await resp.json();
-    const { sha: blobSHA, url: blobURL } = resp;
-
-/*
-    resp = await fetch(treeURL);
-    resp = await resp.json();
-    console.log('TREE GET', resp);
-*/
-
-
-    resp = await fetch(
-      `${baseURL}/repos/${owner}/${repo}/git/trees`,
-      { 
-        method: 'POST',
-        headers: { 
-          accept: 'application/vnd.github.v3+json',
-          Authorization: 'token ' + token,
-        },
-        body: JSON.stringify({
-          'base_tree': treeSHA,
-          tree: [
-            {
-              'path': filename,
-              'mode': '100644',
-              'type': 'blob',
-              'sha': blobSHA,
-            }
-          ]
-        })
-      }
-    );
-    resp = await resp.json();
-    const { sha: createdTreeSHA, url: createdTreeURL } = resp;
-
-   
-    resp = await fetch(
-      `${baseURL}/repos/${owner}/${repo}/git/commits`,
-      { 
-        method: 'POST',
-        headers: { 
-          accept: 'application/vnd.github.v3+json',
-          Authorization: 'token ' + token,
-        },
-        body: JSON.stringify({
-          message: 'commit message',
-          parents: [headSHA],
-          tree: createdTreeSHA
-        })
-      }
-    );
-    resp = await resp.json(); 
-    const { sha: commitSHA, url: commitURL } = resp;
-
-    resp = await fetch(
-      `${baseURL}/repos/${owner}/${repo}/git/refs/${ref}`,
-      { 
-        method: 'PATCH',
-        headers: { 
-          accept: 'application/vnd.github.v3+json',
-          Authorization: 'token ' + token,
-        },
-        body: JSON.stringify({
-          sha: commitSHA,
-        })
-      }
-    );
-    resp = await resp.json();     
-  }
+export async function commit(token, owner, repo, branch, filename, data, message) {
+  const ref = await getRef(token, owner, repo, branch);
+  const parent = ref.object.sha;
+  const blob = await createBlob(token, owner, repo, data);
+  const tree = await createTree(token, owner, repo, parent, filename, blob);
+  const commit = await createCommit(token, owner, repo, parent, tree, message);
+  const result = await updateHead(token, owner, repo, branch, commit);
+  return result;
+}

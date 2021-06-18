@@ -1,5 +1,3 @@
-
-
 import React, { Component } from 'react';
 
 import ServiceUI from './ServiceUI';
@@ -188,7 +186,19 @@ class GithubSink {
 
   async process(params) {
     if (this.token) {
-      return await commit(this.token, params);
+      const isBlob = params instanceof Blob;
+      const data = isBlob ? 
+        params : 
+        JSON.stringify(params, null, 2);
+      return await commit(
+        this.token, 
+        'cbastuck', 
+        this.repo, 
+        this.branch, 
+        'test.json', 
+        data,
+        'from the flow'
+      );
     }
   }
 }

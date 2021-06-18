@@ -19,6 +19,15 @@ export function toArrayBuffer(blobOrFile) {
   });
 }
 
+export function encodeBlobBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob); 
+  });
+}
+
 export function filterPrivateMembers(service) {
   return service && Object.keys(service).reduce(
     (res, cur) =>
