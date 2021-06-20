@@ -1,5 +1,11 @@
 import React, { Component } from 'react';
-import { Button, Card, Icon, Image } from 'semantic-ui-react';
+import { 
+  Button, 
+  Card, 
+  Icon, 
+  Image,
+  Checkbox,
+} from 'semantic-ui-react';
 
 import MessageReceiver from '../../MessageReceiver';
 import SelectorField from '../../components/shared/SelectorField';
@@ -21,8 +27,18 @@ export class GithubUser extends Component {
 
   componentDidMount() {
     const { token } = this.props;
-    getUser(token)
-      .then(user => this.setState({ user }));
+    this.init(token);
+  }
+
+  init = async token => {
+    const user = await getUser(token);
+    const { onUser } = this.props;
+    if (user) {
+      this.setState({ user });
+      if (onUser) {
+        onUser(user);
+      }
+    }
   }
 
   render() {
@@ -92,7 +108,7 @@ export class GithubObject extends Component {
     const user = await getUser(token);
     const repos = await getRepos(token, owner || user.login);
     const branches = repo ? await getBranches(token, owner || user.login, repo) : [];
-    const tree = branches ? await getTree(token, owner || user.login, repo, branch) : [];
+    const tree = (branch && repo) ? await getTree(token, owner || user.login, repo, branch) : [];
     this.setState({
       user,
       owner: owner || user.login,
@@ -106,7 +122,11 @@ export class GithubObject extends Component {
   }
 
   renderPanel = service => {
-    const { token, onChange } = this.props
+    const { 
+      token, 
+      onChange,
+      disableNewFiles,
+    } = this.props;
     const {
       user,
       owner = user ? user.login : '',
@@ -116,6 +136,7 @@ export class GithubObject extends Component {
       branches,
       tree,
       filename,
+      toggleNew,
     } = this.state;
 
     if (!repos) {
@@ -135,7 +156,7 @@ export class GithubObject extends Component {
         (all, cur) => ({...all, [cur.path]: cur.path}), {}
       ) : 
       {};
-
+    const insertNewFilename = !disableNewFiles && (toggleNew || (filename && !filesOptions[filename]));
     return (
       <div>
         <InputField 
@@ -182,15 +203,46 @@ export class GithubObject extends Component {
             onChange({ branch });
           }}
         />
-        <SelectorField 
-          label="file"
-          onChange={(_, { value: filename }) => {
-            this.setState({ filename });
-            onChange({ file: filename });
-          }}
-          value={filename}
-          options={filesOptions}
-        />
+        <div style={t.tl}>
+          {
+            insertNewFilename ? (
+              <InputField 
+                label="file"
+                value={filename}
+                onChange={(_, { value: filename }) => {
+                  this.setState({ filename });
+                  onChange({ file: filename });
+                }}
+              />
+            ) : ( 
+              <SelectorField 
+                label="file"
+                onChange={(_, { value: filename }) => {
+                  this.setState({ filename });
+                  onChange({ file: filename });
+                }}
+                value={filename}
+                options={filesOptions}
+              />
+            )
+          }
+          { 
+            !disableNewFiles && (
+              <Checkbox
+                toggle
+                label="Insert New File"
+                style={s(t.uc, t.fs12, t.m(0, 1))}
+                checked={!!insertNewFilename}
+                onChange={async (_, { checked: toggleNew }) => 
+                  this.setState({ 
+                    toggleNew,
+                    filename: ''
+                  })
+                }
+              />
+            )
+          }
+        </div>
       </div>
     );
     }

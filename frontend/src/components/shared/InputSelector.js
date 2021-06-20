@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-import {Button } from 'semantic-ui-react';
 
 import { s, t } from '../../styles';
 import SelectorField from './SelectorField';
@@ -150,7 +149,7 @@ export default class InputSelector extends Component {
               },
             )}
         >
-          Inputs
+          Input
         </div>
       </button>
       </div>

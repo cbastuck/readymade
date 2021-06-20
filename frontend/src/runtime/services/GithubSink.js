@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import moment from 'moment';
 
 import ServiceUI from './ServiceUI';
 import InputField from '../../components/shared/InputField';
@@ -68,7 +69,18 @@ class GithubSinkUI extends Component {
   renderLoginPanel = service => {
     const { token } = this.state;
     if (token) {
-      return <GithubUser token={token} />;
+      return (
+        <GithubUser 
+          token={token}
+          onUser={user => {
+            if (!this.state.owner) {
+              const owner = user.login;
+              this.setState({ owner });
+              service.configure({ owner });
+            }
+          }}
+        />
+      );
     }
     return clientSecret ? 
       <GithubOAuth
@@ -192,12 +204,12 @@ class GithubSink {
         JSON.stringify(params, null, 2);
       return await commit(
         this.token, 
-        'cbastuck', 
+        this.owner, 
         this.repo, 
-        this.branch, 
-        'test.json', 
+        this.branch,
+        this.file, 
         data,
-        'from the flow'
+        `${this.board} - ${moment().toISOString()}`
       );
     }
   }

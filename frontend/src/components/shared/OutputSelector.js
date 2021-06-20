@@ -112,7 +112,7 @@ export default class OutputSelector extends Component {
               },
             )}
         >
-          Outputs 
+          Output 
         </div>
       </button>
       { expanded && this.renderExpanded() }

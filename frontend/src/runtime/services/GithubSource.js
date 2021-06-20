@@ -1,23 +1,26 @@
-
-
 import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
+import { 
+  Button, 
+} from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
 import InputField from '../../components/shared/InputField';
-import MessageReceiver from '../../MessageReceiver';
+import {
+  GithubUser, 
+  GithubObject, 
+  GithubOAuth 
+} from './GithubComponents';
+import { getFile } from './GithubAPI';
+import { s, t } from '../../styles';
+
 
 const serviceId = 'hookup.to/service/github-source';
 const serviceName = 'Github Source';
-
-const loginStateId = 'github-login';
 
 const clientID = 'f2b34053a831baa056e8';
 const clientSecret = '';
 const redirectURI = `${window.location.origin}/serviceRedirect`;
 const scopes = [];
-
 
 class GithubSourceUI extends Component {
   state = {};
@@ -25,65 +28,74 @@ class GithubSourceUI extends Component {
   onInit = initialState => {
     const { 
       token,
+      owner,
+      repo,
+      branch,
+      file,
     } = initialState;
-    this.setState({ token });
+    this.setState({ token, owner, repo, branch, file });
   }
 
   onNotification = (service, notification) => {
-    const { token } = notification;
+    const { 
+      token, 
+      user,
+      owner,
+      repo,
+      branch,
+      file,
+    } = notification;
     if (token) {
       this.setState({ token });
     }
-  }
 
-  onLogin = service => {
-    const url = service.configure({ 
-      action: 'login',
-      clientID,
-      clientSecret,
-      scopes,
-      redirectURI,
-      state: loginStateId,
-    });
-    if (url) {
-      window.open(url, 'blank');
+    if (user !== undefined) {
+      this.setState({ user });
+    }
+
+    if (owner !== undefined) {
+      this.setState({ owner })
+    }
+
+    if (repo !== undefined) {
+      this.setState({ repo });
+    }
+
+    if (branch !== undefined) {
+      this.setState({ branch })
+    }
+
+    if (file !== undefined) {
+      this.setState({ file });
     }
   }
 
-  renderLoginPanel = service => clientSecret ? 
-    this.renderOAuthFlow(service) : 
-    this.renderBasicAuth(service)
-
-  renderOAuthFlow = service => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      <Button
-        style={s(t.uc, t.ls1, t.fs12)}
-        onClick={() => this.onLogin(service)}
-      >
-        Login
-      </Button>
-      <MessageReceiver
-        state={loginStateId}
-        onData={async data => {
-          const { code } = data;
-          if (code) {
-            service.configure({ 
-              action: 'exchangeCode',
-              clientID, 
-              clientSecret,
-              code,
-              redirectURI,
-            })
-          }
-        }}
-      />
-    </div>
-  )
+  renderLoginPanel = service => {
+    const { token } = this.state;
+    if (token) {
+      return (
+        <GithubUser 
+          token={token}
+          onUser={user => {
+            if (!this.state.owner) {
+              const owner = user.login;
+              this.setState({ owner });
+              service.configure({ owner });
+            }
+          }}
+        />
+      );
+    }
+    return clientSecret ? 
+      <GithubOAuth
+        clientID={clientID}
+        clientSecret={clientSecret}
+        redirectURI={redirectURI}
+        scopes={scopes}
+        onToken={token => this.setState({ token })}
+      /> : 
+      this.renderBasicAuth(service)
+  }
 
   renderBasicAuth = service => {
     const { token } = this.state;
@@ -92,30 +104,63 @@ class GithubSourceUI extends Component {
         <InputField 
           label="Token"
           value={token}
-          onChange={(_, { value: token }) => 
-            service.configure({ token })
-          }
+          onChange={(_, { value: token }) => service.configure({ token })}
         />
       </div>
     )
   }
 
-  renderGithubPanel = service => (
-    <div>
-      <Button
-        style={s(t.uc, t.ls1, t.fs12)}
-        onClick={() => service.configure({ action: 'getUser' })}
-      >
-        Get User
-      </Button>
-    </div>
-  )
+  renderObjectSelector = service => {
+    const { 
+      token,
+      owner,
+      repo,
+      branch,
+      file,
+    } = this.state;
+    if (!token) {
+      return false;
+    }
+    return (
+      <div>
+        <GithubObject
+          token={token}
+          owner={owner}
+          repo={repo}
+          branch={branch}
+          file={file}
+          disableNewFiles={true}
+          onChange={kv => service.configure(kv)}
+        />
+        <Button
+          style={s(t.uc, t.ls1, t.fs12, t.w100)}
+          onClick={() => this.inject(service)}
+        >
+          Inject
+        </Button>
+      </div>
+    );
+  }
+
+  inject = async service => {
+    const {
+      token,
+      owner, 
+      repo,
+      branch,
+      file
+    } = this.state;
+    const content = await getFile(token, owner, repo, branch, file);
+    if (content) {
+      service.inject(content);
+    }
+  }
 
   render() {
     const { token } = this.state;
     const segments=[
-      { name: 'Login', render: this.renderLoginPanel },
-      { name: 'Github', render: this.renderGithubPanel, disabled: !token },
+      { name: 'User', render: this.renderLoginPanel },
+      { name: 'Select', render: this.renderObjectSelector, disabled: !token },
     ];
     return (
       <ServiceUI 
@@ -142,18 +187,47 @@ class GithubSource {
   }
 
   async configure(config) { 
-    const { token } = config;
+    const { 
+      token,
+      owner,
+      repo,
+      branch, 
+      file
+    } = config;
     if (token !== undefined) {
       this.token = token;
-      // this.app.storeServiceData(this.uuid, loginStateId, token);
       this.app.notify(this, { token });
     }
-  }
 
+    if (owner !== undefined) {
+      this.owner = owner;
+      this.app.notify(this, { owner });
+    }
+
+    if (repo !== undefined) {
+      this.repo = repo;
+      this.app.notify(this, { repo });
+    }
+
+    if (branch !== undefined) {
+      this.branch = branch;
+      this.app.notify(this, { branch });
+    }
+
+    if (file !== undefined) {
+      this.file = file;
+      this.app.notify(this, { file });
+    }
+  }
+  
   destroy() { }
 
-  async process(params) {
-    return params
+  inject(params) {
+    return this.app.next(this, params);
+  }
+
+  process(params) {
+    return params;
   }
 }
 

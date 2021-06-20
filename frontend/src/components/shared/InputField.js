@@ -67,7 +67,7 @@ export default class InputField extends Component {
             height: 33, 
             // height: '90%',
             width: '100%',
-            flexGrow: 3 
+            flexGrow: 3
           }}
           type={type}
           value={value || ''}

@@ -106,6 +106,13 @@ export async function createBlob(token, owner, repo, data) {
   return resp.json();
 }
 
+export function getBlob(token, owner, repo, sha) {
+  return makeRequest(
+    token, 
+    `/repos/${owner}/${repo}/git/blobs/${sha}`
+  );
+}
+
 export async function createCommit(token, owner, repo, parentSha, tree, message) {
   const resp = await fetch(
     `${baseURL}/repos/${owner}/${repo}/git/commits`,
@@ -141,6 +148,19 @@ export async function updateHead(token, owner, repo, branch, commit) {
     }
   );
   return resp.json();     
+}
+
+export async function getFile(token, owner, repo, branch, filename) {
+  const tree = await getTree(token, owner, repo, branch);
+  const file = tree && tree.find(x => x.path === filename);
+  const blob = file && await getBlob(token, owner, repo, file.sha);
+  if (blob) {
+    const { encoding, content } = blob;
+    if (encoding === 'base64') {
+      return atob(content);
+    }
+    return content;
+  }
 }
 
 export async function commit(token, owner, repo, branch, filename, data, message) {
