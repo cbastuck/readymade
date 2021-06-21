@@ -10,6 +10,7 @@ import {
 import MessageReceiver from '../../MessageReceiver';
 import SelectorField from '../../components/shared/SelectorField';
 import InputField from '../../components/shared/InputField';
+import Tree from '../../components/shared/Tree';
 import { s, t } from '../../styles';
 import {
   getUser,
@@ -204,34 +205,12 @@ export class GithubObject extends Component {
           }}
         />
         <div style={t.tl}>
-          {
-            insertNewFilename ? (
-              <InputField 
-                label="file"
-                value={filename}
-                onChange={(_, { value: filename }) => {
-                  this.setState({ filename });
-                  onChange({ file: filename });
-                }}
-              />
-            ) : ( 
-              <SelectorField 
-                label="file"
-                onChange={(_, { value: filename }) => {
-                  this.setState({ filename });
-                  onChange({ file: filename });
-                }}
-                value={filename}
-                options={filesOptions}
-              />
-            )
-          }
           { 
             !disableNewFiles && (
               <Checkbox
                 toggle
-                label="Insert New File"
-                style={s(t.uc, t.fs12, t.m(0, 1))}
+                label={!insertNewFilename ? 'Select File' : 'Enter Filename'}
+                style={s(t.uc, t.fs12, t.mt5, t.mb3)}
                 checked={!!insertNewFilename}
                 onChange={async (_, { checked: toggleNew }) => 
                   this.setState({ 
@@ -242,11 +221,62 @@ export class GithubObject extends Component {
               />
             )
           }
+          {
+            insertNewFilename ? 
+              this.renderFileInput(filename, onChange) : 
+              this.renderFileSelector(filename, filesOptions, onChange)
+          }
         </div>
       </div>
     );
-    }
+  }
+
+  renderFileTree = (filename, filesOptions, onChange) => {
+    return (
+      <Tree
+        selected={filename}
+        values={filesOptions}
+        onChange={onChange}
+      />
+    );
+  }
   
+  renderFileSelector = (filename, filesOptions, onChange) => {
+    const renderAsTree = true;
+    if (renderAsTree) {
+      return this.renderFileTree(
+        filename, 
+        filesOptions, 
+        (_, { selected: filename }) => {
+          this.setState({ filename });
+          onChange({ file: filename });
+        }
+      )
+    }
+    return (
+      <SelectorField 
+        label="file"
+        onChange={(_, { value: filename }) => {
+          this.setState({ filename });
+          onChange({ file: filename });
+        }}
+        value={filename}
+        options={filesOptions}
+      />
+    );
+  }
+
+  renderFileInput = (filename, onChange) => (
+    <InputField 
+      label="file"
+      value={filename}
+      onChange={(_, { value: filename }) => {
+        this.setState({ filename });
+        onChange({ file: filename });
+      }}
+    />
+  )
+
   render() {
     const { service } = this.props;
     return this.renderPanel(service);

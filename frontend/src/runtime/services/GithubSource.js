@@ -219,7 +219,7 @@ class GithubSource {
       this.app.notify(this, { file });
     }
   }
-  
+
   destroy() { }
 
   inject(params) {
