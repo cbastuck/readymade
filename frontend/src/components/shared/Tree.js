@@ -4,39 +4,46 @@ import { List } from 'semantic-ui-react'
 export class Tree extends Component {
   renderFile = (file, selected, onChange) => {
     const isSelected = file.name === selected;
+    const spacing = {
+      padding: '1px 2px'
+    }
     return (
       <List.Item 
         key={file.name} // TODO - include path
         style={{ cursor: 'pointer' }}
         onClick={ev => onChange(ev, { selected: file.name })} 
       >
-        <List.Icon name='file' />
+        <List.Icon name='file' style={spacing} />
         <List.Content>
-          <List.Header style={{ backgroundColor: isSelected && '#4183c4' }}>
+          <List.Header 
+            style={{ 
+              backgroundColor: isSelected && '#4183c4',
+              ...spacing
+            }}
+          >
             <span style={{ color: isSelected && 'white' }}> 
               {file.name} 
             </span>
           </List.Header>
-          <List.Description>no description available</List.Description>
+          <List.Description style={spacing}>
+            no description available
+          </List.Description>
         </List.Content>
       </List.Item>
     );
   }
 
-  renderFolder = (item, selected, onChange) => (
-    <List.Item>
+  renderFolder = (folder, selected, onChange) => (
+    <List.Item key={folder.name}>
       <List.Icon name='folder' />
       <List.Content>
         <List.Header>dist</List.Header>
         <List.Description>Compiled CSS and JS files</List.Description>
         <List.List>
           <List.Item>
-            <List.Icon name='folder' />
+            <List.Icon name='plus square outline' />
             <List.Content>
-              <List.Header>components</List.Header>
-              <List.Description>
-                Individual component CSS and JS
-              </List.Description>
+              <List.Header>Click to enter</List.Header>
             </List.Content>
           </List.Item>
         </List.List>
@@ -57,18 +64,18 @@ export class Tree extends Component {
 
   render() {
     const {
-      values,
+      values: files,
       selected,
       onChange,
     } = this.props;
-    const files = Object.keys(values).map(x => ({ name: x, type: 'file' }));
     return (
       <div
         style={{ 
           border: 'solid 1px lightgray',
           borderRadius: 5,
           padding: 5,
-          overflow: 'auto'
+          overflow: 'auto',
+          maxHeight: 200,
         }}
       >
         { this.renderItems(files, selected, onChange) }

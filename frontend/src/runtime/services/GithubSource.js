@@ -135,6 +135,7 @@ class GithubSourceUI extends Component {
         <Button
           style={s(t.uc, t.ls1, t.fs12, t.w100)}
           onClick={() => this.inject(service)}
+          disabled={!file}
         >
           Inject
         </Button>
