@@ -41,8 +41,8 @@ export function getUser(token) {
   }
 
 export function getRepos(token, owner) {
-    return makeRequest(token, `/users/${owner}/repos`);
-  }
+  return makeRequest(token, `/users/${owner}/repos`);
+}
 
 export function getBranches(token, owner, repo) {
     return makeRequest(token, `/repos/${owner}/${repo}/branches`);
@@ -53,10 +53,14 @@ export function getRef(token, owner, repo, branch) {
   return makeRequest(token, `/repos/${owner}/${repo}/git/ref/${ref}`);
 }
 
-export async function getTree(token, owner, repo, branch) {
+export async function getBranch(token, owner, repo, branch) {
   const head = await getRef(token, owner, repo, branch);
   const { object } = head;
-  const { tree } = await makeRequest(token, `/repos/${owner}/${repo}/git/trees/${object.sha}`);
+  return getTree(token, owner, repo, object.sha);
+}
+
+export async function getTree(token, owner, repo, sha) {
+  const { tree } = await makeRequest(token, `/repos/${owner}/${repo}/git/trees/${sha}`);
   return tree;
 }
 
@@ -150,8 +154,14 @@ export async function updateHead(token, owner, repo, branch, commit) {
   return resp.json();     
 }
 
-export async function getFile(token, owner, repo, branch, filename) {
-  const tree = await getTree(token, owner, repo, branch);
+export async function getFileFromBranch(token, owner, repo, branch, filename) {
+  const { object } = await getRef(token, owner, repo, branch);
+  return getFile(token, owner, repo, object.sha, filename);
+}
+
+export async function getFile(token, owner, repo, treeSHA, absoluteFn) {
+  const filename = absoluteFn.split('/').slice(-1)[0];
+  const tree = await getTree(token, owner, repo, treeSHA);
   const file = tree && tree.find(x => x.path === filename);
   const blob = file && await getBlob(token, owner, repo, file.sha);
   if (blob) {

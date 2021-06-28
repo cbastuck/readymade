@@ -1,17 +1,18 @@
 import React, { Component } from 'react';
-import { List } from 'semantic-ui-react'
+import { List, Breadcrumb } from 'semantic-ui-react';
 
 export class Tree extends Component {
   renderFile = (file, selected, onChange) => {
-    const isSelected = file.name === selected;
-    const spacing = {
-      padding: '1px 2px'
-    }
+    const { path } = this.props;
+    // TODO: the slice is hacky
+    const absoluteFn = path.slice(1).concat(file.name).join('/');
+    const isSelected = absoluteFn === selected;
+    const spacing = { padding: '1px 2px' };
     return (
       <List.Item 
-        key={file.name} // TODO - include path
+        key={absoluteFn}
         style={{ cursor: 'pointer' }}
-        onClick={ev => onChange(ev, { selected: file.name })} 
+        onClick={ev => onChange(ev, { selected: absoluteFn })}
       >
         <List.Icon name='file' style={spacing} />
         <List.Content>
@@ -25,28 +26,26 @@ export class Tree extends Component {
               {file.name} 
             </span>
           </List.Header>
-          <List.Description style={spacing}>
-            no description available
-          </List.Description>
+          {/*
+            <List.Description style={spacing}>
+              no description available
+            </List.Description>
+          */}
         </List.Content>
       </List.Item>
     );
   }
 
   renderFolder = (folder, selected, onChange) => (
-    <List.Item key={folder.name}>
+    <List.Item 
+      key={folder.name}
+      style={{ cursor: 'pointer' }}
+      onClick={() => this.props.onExpand(folder)}
+    >
       <List.Icon name='folder' />
       <List.Content>
-        <List.Header>dist</List.Header>
-        <List.Description>Compiled CSS and JS files</List.Description>
-        <List.List>
-          <List.Item>
-            <List.Icon name='plus square outline' />
-            <List.Content>
-              <List.Header>Click to enter</List.Header>
-            </List.Content>
-          </List.Item>
-        </List.List>
+        <List.Header>{folder.name}</List.Header>
+        {/*<List.Description>no description available</List.Description>*/}
       </List.Content>
     </List.Item>
   )
@@ -61,6 +60,31 @@ export class Tree extends Component {
       }     
     </List>
   )
+
+  renderBreadcrumbs = () => {
+    const { 
+      path=[],
+      onPath,
+    } = this.props;
+
+    return path.length > 0 && (
+       <Breadcrumb>
+        { 
+          path.map(part => (
+            <span key={`tree-breadcrumb-${part}`}>
+              <Breadcrumb.Section 
+                link
+                onClick={() => onPath(part)}
+              >
+                {part}
+              </Breadcrumb.Section>
+              { part !== '/' && <Breadcrumb.Divider /> }
+            </span>
+          ))
+        }
+      </Breadcrumb>
+    );
+  }
 
   render() {
     const {
@@ -78,6 +102,7 @@ export class Tree extends Component {
           maxHeight: 200,
         }}
       >
+        { this.renderBreadcrumbs() }
         { this.renderItems(files, selected, onChange) }
       </div>
     );

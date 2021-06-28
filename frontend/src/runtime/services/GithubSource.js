@@ -10,9 +10,8 @@ import {
   GithubObject, 
   GithubOAuth 
 } from './GithubComponents';
-import { getFile } from './GithubAPI';
+import { getFile, getFileFromBranch } from './GithubAPI';
 import { s, t } from '../../styles';
-
 
 const serviceId = 'hookup.to/service/github-source';
 const serviceName = 'Github Source';
@@ -148,10 +147,12 @@ class GithubSourceUI extends Component {
       token,
       owner, 
       repo,
-      branch,
-      file
+      file,
+      branch
     } = this.state;
-    const content = await getFile(token, owner, repo, branch, file);
+    const content = file.treeSHA ? 
+      await getFile(token, owner, repo, file.treeSHA, file.name) :
+      await getFileFromBranch(token, owner, repo, branch, file.name);
     if (content) {
       service.inject(content);
     }
@@ -184,7 +185,7 @@ class GithubSource {
     this.owner = '';
     this.repo = '';
     this.branch = '';
-    this.file = '';
+    this.file = null;
   }
 
   async configure(config) { 

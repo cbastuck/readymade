@@ -16,6 +16,7 @@ import {
   getUser,
   getRepos,
   getBranches,
+  getBranch,
   getTree,
   getAuthURL,
   exchangeCode,
@@ -24,7 +25,9 @@ import {
 const loginStateId = 'github-login';
 
 export class GithubUser extends Component {
-  state = { user: null };
+  state = { 
+    user: null,
+  };
 
   componentDidMount() {
     const { token } = this.props;
@@ -92,7 +95,9 @@ export class GithubUser extends Component {
 }
 
 export class GithubObject extends Component {
-  state = {};
+  state = {
+    path: [],
+  };
 
   componentDidMount() {
     this.init();
@@ -132,7 +137,7 @@ export class GithubObject extends Component {
     const user = await getUser(token);
     const repos = await getRepos(token, owner || user.login);
     const branches = repo ? await getBranches(token, owner || user.login, repo) : [];
-    const tree = (branch && repo) ? await getTree(token, owner || user.login, repo, branch) : [];
+    const tree = (branch && repo) ? await getBranch(token, owner || user.login, repo, branch) : [];
     this.setState({
       user,
       owner: owner || user.login,
@@ -167,19 +172,22 @@ export class GithubObject extends Component {
     } = this.props;
     const branches = await getBranches(token, owner, repo);
     if (branches.find(b => b.name === branch)) { // same branch-name exists in new repo
-      const tree = await getTree(token, owner, repo, branch);
+      const tree = await getBranch(token, owner, repo, branch);
       this.setState({ 
         branches, 
         tree,
       });
-      onChange({ file: '' });
+      onChange({ file: null });
     } else {
       this.setState({ 
         branches, 
         tree: null,
       });
       const first = branches && branches[0];
-      onChange({ branch: first ? first.name : '', file: '' });
+      onChange({ 
+        branch: first ? first.name : '', 
+        file: null, 
+      });
     }
   }
 
@@ -192,9 +200,9 @@ export class GithubObject extends Component {
     } = this.props;
 
     this.setState({ 
-      tree: branch ? await getTree(token, owner, repo, branch) : null,
+      tree: branch ? await getBranch(token, owner, repo, branch) : null,
     });
-    onChange({ file: '' });
+    onChange({ file: null });
   }
 
   onFileChanged = async file => {
@@ -272,7 +280,7 @@ export class GithubObject extends Component {
                 onChange={async (_, { checked: renderAsFileInputToggle }) => {
                   this.setState({ renderAsFileInputToggle });
                   if (!isFilenameInTree) {
-                    onChange({ file: '' });
+                    onChange({ file: null });
                   }
                 }}
               />
@@ -289,50 +297,85 @@ export class GithubObject extends Component {
   }
 
   renderFileTree = (file, tree, onChange) => {
+    const { path } = this.state;
+    const { 
+      token,
+      owner,
+      repo,
+      branch,
+    } = this.props;
     const dict = {
       blob: 'file',
       tree: 'folder',
     };
-    const items = tree.map(x => ({ name: x.path, type: dict[x.type] }));
+    const items = tree.map(x => ({ name: x.path, type: dict[x.type], sha: x.sha }));
     return (
       <Tree
-        selected={file}
+        selected={file.name}
         values={items}
         onChange={onChange}
+        onExpand={async folder => {
+          const tree = await getTree(token, owner, repo, folder.sha);
+          this.setState({ 
+            tree,
+            path: path.concat({ sha: folder.sha, name: folder.name })
+          });
+        }}
+        onPath={async part => {
+          const pos = path.findIndex(x => x.name === part);
+          if (pos !== -1) {
+            const tree = await getTree(token, owner, repo, path[pos].sha);
+            const diff = (path.length-1) - pos;
+            if (diff > 0) {
+              this.setState({
+                tree,
+                path: path.slice(0, -diff),
+              });
+            }
+          } else {
+            const tree = await getBranch(token, owner, repo, branch);
+            this.setState({ 
+              path: [],
+              tree
+            });
+          }
+        }}
+        // TODO: THE ROOT HERE IS HACKY
+        path={['/'].concat(path.map(x => x.name))}
       />
     );
   }
   
   renderFileSelector = (file, tree, onChange) => {
-    const renderAsTree = true;
-    if (renderAsTree) {
-      return this.renderFileTree(
-        file, 
-        tree, 
-        (_, { selected: file }) => onChange({ file })
-      )
-    }
-
-    const filesOptions = tree ? 
-      tree.reduce(
-        (all, cur) => ({...all, [cur.path]: cur.path }), {}
-      ) : 
-      {};
-    return (
-      <SelectorField 
-        label="file"
-        onChange={(_, { value: file }) => onChange({ file })}
-        value={file}
-        options={filesOptions}
-      />
+    return this.renderFileTree(
+      file, 
+      tree,
+      (_, { selected: filename }) => {
+        const { path } = this.state;
+        const parent = path.slice(-1)[0];
+        const treeSHA = parent ? parent.sha : undefined;
+        onChange({ 
+          file: {
+            name: filename,
+            treeSHA
+          } 
+        });
+      }
     );
   }
 
   renderFileInput = (file, onChange) => (
     <InputField 
       label="file"
-      value={file}
-      onChange={(_, { value: file }) => onChange({ file })}
+      value={file ? file.name : ''}
+      onChange={(_, { value: filename }) => 
+        onChange({ 
+          file: { 
+            name: filename, 
+            treeSHA: null 
+          }
+        })
+      }
     />
   )
 
