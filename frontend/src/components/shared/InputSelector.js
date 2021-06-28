@@ -13,6 +13,8 @@ export default class InputSelector extends Component {
     incoming: false,
   }
 
+  static updatePeersAction = 'update-peers';
+
   componentDidUpdate(prevProps) {
     if (this.props.items !== prevProps.items) {
       const options = this.getSelectorOptions();
@@ -45,13 +47,16 @@ export default class InputSelector extends Component {
 
   renderExpanded = () => {
     const { selected, incoming } = this.state;
-    const { onSelect, onUpdate } = this.props;
+    const { 
+      onSelect, 
+      onAction, 
+    } = this.props;
     const peerOptions = this.getSelectorOptions();
     return (
       <div style={{ padding: 10 }}> 
-        <h1 style={s(t.tc, t.fs11)}>Allow Connection</h1>
+        <h1 style={s(t.tc, t.fs11)}>Allow From</h1>
         <SelectorField
-          label="From"
+          label="Peer"
           options={peerOptions}
           highlight={incoming}
           value={selected}
@@ -73,7 +78,7 @@ export default class InputSelector extends Component {
               }
             )
           }
-          onOptions={() => onUpdate()}
+          onOpen={() => onAction({type: InputSelector.updatePeersAction })}
         />
       </div>
     );

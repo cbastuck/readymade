@@ -128,13 +128,11 @@ export class GithubObject extends Component {
       owner,
       repo,
       branch,
-      file: filename,
     } = this.props;
     const user = await getUser(token);
     const repos = await getRepos(token, owner || user.login);
     const branches = repo ? await getBranches(token, owner || user.login, repo) : [];
     const tree = (branch && repo) ? await getTree(token, owner || user.login, repo, branch) : [];
-    // TODO: check that filename exists in tree
     this.setState({
       user,
       owner: owner || user.login,
@@ -143,7 +141,6 @@ export class GithubObject extends Component {
       branch,
       branches,
       tree,
-      filename,
     });
   }
 
@@ -157,7 +154,6 @@ export class GithubObject extends Component {
       repos,
       branches: [],
       tree: null,
-      filename: ''
     });
     onChange({ owner });
   }
@@ -175,14 +171,12 @@ export class GithubObject extends Component {
       this.setState({ 
         branches, 
         tree,
-        filename: ''
       });
       onChange({ file: '' });
     } else {
       this.setState({ 
         branches, 
         tree: null,
-        filename: ''
       });
       const first = branches && branches[0];
       onChange({ branch: first ? first.name : '', file: '' });
@@ -199,22 +193,20 @@ export class GithubObject extends Component {
 
     this.setState({ 
       tree: branch ? await getTree(token, owner, repo, branch) : null,
-      filename: '',
     });
     onChange({ file: '' });
   }
 
-  onFileChanged = async filename => {
-    this.setState({ filename });
+  onFileChanged = async file => {
   }
 
   renderPanel = service => {
     const {
       onChange,
-      disableNewFiles,
+      disableFileInput,
       branch,
       repo,
-      file: filename,
+      file,
     } = this.props; // selections come from props
     const {
       user,
@@ -222,7 +214,7 @@ export class GithubObject extends Component {
       repos,
       branches,
       tree,
-      toggleNew,
+      renderAsFileInputToggle=true
     } = this.state; // options come from state
 
     if (!repos) {
@@ -238,7 +230,18 @@ export class GithubObject extends Component {
       ) : 
       {};
 
-    const insertNewFilename = !disableNewFiles && (toggleNew || (filename && !filesOptions[filename]));
+    const isFilenameInTree = !!tree.find(x => x.path === file);
+    const renderAsFileInput = disableFileInput ? 
+      false :
+      (
+        isFilenameInTree ? 
+          renderAsFileInputToggle : 
+          (
+            file ? 
+              true : 
+              renderAsFileInputToggle
+          )
+      );
     return (
       <div>
         <InputField 
@@ -260,32 +263,32 @@ export class GithubObject extends Component {
         />
         <div style={t.tl}>
           { 
-            !disableNewFiles && (
+            !disableFileInput && (
               <Checkbox
                 toggle
-                label={!insertNewFilename ? 'Select File' : 'Enter Filename'}
+                label={renderAsFileInputToggle ? 'Enter Filename' : 'Select File'}
                 style={s(t.uc, t.fs12, t.mt5, t.mb3)}
-                checked={!!insertNewFilename}
-                onChange={async (_, { checked: toggleNew }) => 
-                  this.setState({ 
-                    toggleNew,
-                    filename: ''
-                  })
-                }
+                checked={!!renderAsFileInputToggle}
+                onChange={async (_, { checked: renderAsFileInputToggle }) => {
+                  this.setState({ renderAsFileInputToggle });
+                  if (!isFilenameInTree) {
+                    onChange({ file: '' });
+                  }
+                }}
               />
             )
           }
           {
-            insertNewFilename ? 
-              this.renderFileInput(filename, onChange) : 
-              this.renderFileSelector(filename, tree, onChange)
+            renderAsFileInput ? 
+              this.renderFileInput(file, onChange) : 
+              this.renderFileSelector(file, tree, onChange)
           }
         </div>
       </div>
     );
   }
 
-  renderFileTree = (filename, tree, onChange) => {
+  renderFileTree = (file, tree, onChange) => {
     const dict = {
       blob: 'file',
       tree: 'folder',
@@ -293,43 +296,43 @@ export class GithubObject extends Component {
     const items = tree.map(x => ({ name: x.path, type: dict[x.type] }));
     return (
       <Tree
-        selected={filename}
+        selected={file}
         values={items}
         onChange={onChange}
       />
     );
   }
   
-  renderFileSelector = (filename, tree, onChange) => {
+  renderFileSelector = (file, tree, onChange) => {
     const renderAsTree = true;
     if (renderAsTree) {
       return this.renderFileTree(
-        filename, 
+        file, 
         tree, 
-        (_, { selected: filename }) => onChange({ file: filename })
+        (_, { selected: file }) => onChange({ file })
       )
     }
 
     const filesOptions = tree ? 
       tree.reduce(
-        (all, cur) => ({...all, [cur.path]: cur.path}), {}
+        (all, cur) => ({...all, [cur.path]: cur.path }), {}
       ) : 
       {};
     return (
       <SelectorField 
         label="file"
-        onChange={(_, { value: filename }) => onChange({ file: filename })}
-        value={filename}
+        onChange={(_, { value: file }) => onChange({ file })}
+        value={file}
         options={filesOptions}
       />
     );
   }
 
-  renderFileInput = (filename, onChange) => (
+  renderFileInput = (file, onChange) => (
     <InputField 
       label="file"
-      value={filename}
-      onChange={(_, { value: filename }) => onChange({ file: filename })}
+      value={file}
+      onChange={(_, { value: file }) => onChange({ file })}
     />
   )
 

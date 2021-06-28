@@ -81,7 +81,7 @@ export default class SelectorField extends Component {
     const { 
       label, 
       onChange,
-      onOptions,
+      onOpen,
       value: syncedValue,
       options={},
       style={}
@@ -124,7 +124,7 @@ export default class SelectorField extends Component {
           }}
           onClick={() => this.setState(
             { optionsVisible: !optionsVisible },
-            () => onOptions && onOptions(options)
+            () => onOpen && onOpen(options)
           )}
         > 
           { text }

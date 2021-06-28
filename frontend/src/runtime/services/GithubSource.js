@@ -129,7 +129,7 @@ class GithubSourceUI extends Component {
           repo={repo}
           branch={branch}
           file={file}
-          disableNewFiles={true}
+          disableFileInput={true}
           onChange={kv => service.configure(kv)}
         />
         <Button

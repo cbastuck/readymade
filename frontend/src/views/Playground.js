@@ -444,6 +444,7 @@ export default class Playground extends Component {
       sidechainRouting,
       //boardRouting,
       boardName,
+      outputRouting={},
     } = this.state;
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
     if (sroute) {
@@ -453,21 +454,21 @@ export default class Playground extends Component {
       }
       return; // runtimes with routings aren't further processed
     }
-
-    const nextRuntime = this.getNextRuntime(runtime);
-    if (nextRuntime) {
-      nextRuntime.processRuntime(result);
-    } else {
-      // TODO: !!! not so!
-      const outputRouting = this.state.outputRouting || {};
-      const dst = outputRouting[runtime.id];
-      if (dst && this.peerContext) {
-        this.peerContext.sendData(
-          `${boardName}-${runtime.name}`, 
-          dst,
-          result
-        );
+    const runtimeOutput = outputRouting[runtime.id] || {};
+    const flow = (runtimeOutput &&  runtimeOutput.flow) || 'pass';
+    if (flow === 'pass') {
+      const nextRuntime = this.getNextRuntime(runtime);
+      if (nextRuntime) {
+        nextRuntime.processRuntime(result);
       }
+    } 
+     
+    if (runtimeOutput.peer && this.peerContext) {
+      this.peerContext.sendData(
+        `${boardName}-${runtime.name}`, 
+        runtimeOutput.peer,
+        result
+      );
     }
   }
   
@@ -487,6 +488,7 @@ export default class Playground extends Component {
   }
 
   renderOutputs = (peers, runtime, onUpdatePeers) => {
+    const outputRouting = this.state.outputRouting[runtime.id] || {};
     return (
       <OutputSelector
         items={peers}
@@ -496,13 +498,34 @@ export default class Playground extends Component {
             rt.scrollRuntimeContainerToRight();
           }
         }}
-        onSelect={value => this.setState({ 
+        onSelect={peer => this.setState({ 
           outputRouting: {
             ...this.state.outputRouting,
-            [runtime.id]: value
+            [runtime.id]: {
+              ...outputRouting,
+              peer
+            }
           }
         })}
-        onUpdate={onUpdatePeers}
+        onAction={action => {
+          switch (action.type) { 
+            case OutputSelector.updatePeersAction: 
+              return onUpdatePeers();
+            case OutputSelector.flowChanged:
+              return this.setState({
+                outputRouting: {
+                  ...this.state.outputRouting,
+                  [runtime.id]: {
+                    ...outputRouting,
+                    flow: action.flow
+                  }
+                }
+              });
+            default:
+              break;
+          }
+        }}
+        flow={outputRouting.flow}
       />
     );
   }
@@ -511,7 +534,14 @@ export default class Playground extends Component {
     <InputSelector
       ref={selector => this.inputSelectors[runtime.id] = selector}
       items={peers}
-      onUpdate={onUpdatePeers}
+      onAction={action => {
+        switch (action.type) {
+          case InputSelector.updatePeersAction:
+            return onUpdatePeers();
+          default:
+            break;
+        }
+      }}
       onSelect={value => this.setState({ 
           inputRouting: {
             ...this.state.inputRouting,
@@ -735,7 +765,7 @@ export default class Playground extends Component {
                 {
                   savedBoards.length > 0 && (
                     <div style={s(t.mt20)}>
-                      <h1 style={headlineStyle}> Following boards were saved in this browser</h1>
+                      <h1 style={headlineStyle}> Following boards were saved on this browser</h1>
                       <BoardCollection 
                         style={{ height: 250, width: '100%', marginRight: 20 }}
                         url={name => `/playground/${name}`} 

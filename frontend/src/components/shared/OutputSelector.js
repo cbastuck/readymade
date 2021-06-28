@@ -11,6 +11,9 @@ export default class OutputSelector extends Component {
     expanded: false,
   };
 
+  static updatePeersAction = 'update-peers';
+  static flowChanged = 'flow-changed';
+
   componentDidUpdate(prevProps) {
     if (this.props.items !== prevProps.items) {
       const options = this.getSelectorOptions();
@@ -28,27 +31,64 @@ export default class OutputSelector extends Component {
     );
   }
   
-  renderExpanded = () => {
-    const { selected } = this.state;
-    const { onSelect, onUpdate } = this.props;
-    const peerOptions = this.getSelectorOptions();
+  renderOptions = (label, selector) => {
     return (
-      <div style={{ padding: 10 }}>
-        <h1 style={s(t.tc, t.fs11)}>Route to</h1>
-        <SelectorField
-          label="Peer"
-          options={peerOptions}
-          value={selected}
-          onChange={(ev, { value: selected }) => {
-            this.setState(
-              { selected },
-              () => onSelect(selected === none ? null : selected)
-            );
-          }}
-          onOptions={() => onUpdate()}
-        />
+      <div style={s(t.p10)}>
+        <h1 style={s(t.tl, t.fs11, t.pt0, t.mb5)}>
+          {label}
+        </h1>
+        {selector}
       </div>
     );
+  }
+
+  renderPeerOptions = () => {
+    const { selected } = this.state;
+    const { 
+      onSelect, 
+      onAction,
+    } = this.props;
+    const peerOptions = this.getSelectorOptions();
+    return this.renderOptions(
+      'Route to', 
+      <SelectorField
+        label="Peer"
+        options={peerOptions}
+        value={selected}
+        onChange={(ev, { value: selected }) => {
+          this.setState(
+            { selected },
+            () => onSelect(selected === none ? null : selected)
+          );
+        }}
+        onOpen={() => onAction({type: OutputSelector.updatePeersAction })}
+      />
+    );
+  }
+
+  renderFlowOptions = () => {
+    const { 
+      onAction,
+      flow='pass'
+    } = this.props;
+    return this.renderOptions(
+      'Flow', 
+      <SelectorField
+        label="Flow"
+        options={{ pass: 'pass', stop: 'stop', stopIf: 'stop-if' }}
+        value={flow}
+        onChange={(ev, { value: flow }) => onAction({ type: OutputSelector.flowChanged, flow })}
+      />
+    );
+  }
+
+  renderExpanded = () => {
+    return (
+      <div style={t.p3}>
+        { this.renderFlowOptions() }
+        { this.renderPeerOptions() }        
+      </div>
+    ) 
   }
 
   render() {
