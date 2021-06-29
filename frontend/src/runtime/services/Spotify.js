@@ -76,12 +76,11 @@ class SpotifyUI extends Component {
         <Card>
           {
             image && (
-              <div style={s(t.tc, { padding: 10 })}> 
+              <div style={s(t.tc, t.w100, t.p10)}> 
                 <Image
-                  wrapped
+                  style={{ width: 160, height: 150, overflow:'hidden', margin: 'auto' }}
+                  src={image.url}
                   circular
-                  size="small"
-                  src={image.url} 
                 />
               </div>
             )

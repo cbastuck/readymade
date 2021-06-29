@@ -85,7 +85,6 @@ export default class Playground extends Component {
     boardName: (this.props.match && this.props.match.params) ? this.props.match.params.board : defaultName,
     showRoutingOptions: false,
     sidechainRouting: {},
-    //boardRouting: {},
     placeholderAnimationRunning: false,
     runtimes: undefined,
     services: undefined,
@@ -143,6 +142,8 @@ export default class Playground extends Component {
       runtimes=[], 
       services={},
       description='',
+      outputRouting,
+      inputRouting,
     } = this.state.initialFetched ? this.state : await this.setInitialPlayground();
      
     if (!this.defaultRegistry) {
@@ -157,6 +158,8 @@ export default class Playground extends Component {
         (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
         {}
       ),
+      outputRouting,
+      inputRouting
     };
     this.setState({ ...data, initialFetched: true, description });
     return data;
@@ -229,7 +232,7 @@ export default class Playground extends Component {
         const patchedRuntimes = runtimes.map(rt => ({
           ...rt, id: uuid.v4() 
         }));
-        return this.restoreBoard({ 
+        return { 
           runtimes: patchedRuntimes,
           services: patchedRuntimes.reduce(
             (all, rt, idx) => ({ 
@@ -242,8 +245,8 @@ export default class Playground extends Component {
             (all, rt, idx) => ({ ...all, [rt.id]: sidechainRouting[runtimes[idx].id] }),
             {}
           ),
-          description
-        });
+          description,
+        };
       } catch (err) {
         console.error('Creating from template failed', name);
       }      
@@ -254,14 +257,8 @@ export default class Playground extends Component {
     const storageName = name ? `hkp-playground-${name}` : 'hkp-playground';
     const data = localStorage.getItem(storageName);
     if (data) {
-      return this.restoreBoard(data);
+      return JSON.parse(data);
     }
-  }
-
-  restoreBoard = objOrString => {
-    return typeof objOrString === 'string' ? 
-      JSON.parse(objOrString) : 
-      objOrString;
   }
 
   storeBoard = name => {
@@ -269,7 +266,8 @@ export default class Playground extends Component {
       runtimes=[], 
       services={}, 
       sidechainRouting={},
-      //boardRouting={}
+      outputRouting={},
+      inputRouting={}
     } = this.state;
 
     const data = { 
@@ -295,7 +293,8 @@ export default class Playground extends Component {
         {}
       ),
       sidechainRouting,
-      //boardRouting,
+      outputRouting,
+      inputRouting,
     };
     localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
   }
@@ -442,7 +441,6 @@ export default class Playground extends Component {
   onResult = async (runtime, svcUuid, result) => {
     const { 
       sidechainRouting,
-      //boardRouting,
       boardName,
       outputRouting={},
     } = this.state;
@@ -557,7 +555,6 @@ export default class Playground extends Component {
       boardName,
       showRoutingOptions, 
       sidechainRouting,
-      //boardRouting, 
       services,
     } = this.state;
 
