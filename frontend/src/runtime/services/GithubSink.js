@@ -189,8 +189,10 @@ class GithubSink {
     }
 
     if (file !== undefined) {
-      this.file = file;
-      this.app.notify(this, { file });
+      this.file = typeof file === 'string' ? 
+        { name: file } : 
+        file; 
+      this.app.notify(this, { file: this.file });
     }
   }
 
@@ -207,7 +209,7 @@ class GithubSink {
         this.owner, 
         this.repo, 
         this.branch,
-        this.file, 
+        this.file.name, 
         data,
         `${this.board} - ${moment().toISOString()}`
       );

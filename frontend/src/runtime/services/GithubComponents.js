@@ -311,7 +311,7 @@ export class GithubObject extends Component {
     const items = tree.map(x => ({ name: x.path, type: dict[x.type], sha: x.sha }));
     return (
       <Tree
-        selected={file.name}
+        selected={file && file.name}
         values={items}
         onChange={onChange}
         onExpand={async folder => {
@@ -336,12 +336,11 @@ export class GithubObject extends Component {
             const tree = await getBranch(token, owner, repo, branch);
             this.setState({ 
               path: [],
-              tree
+              tree,
             });
           }
         }}
-        // TODO: THE ROOT HERE IS HACKY
-        path={['/'].concat(path.map(x => x.name))}
+        path={path.map(x => x.name)}
       />
     );
   }
@@ -364,20 +363,25 @@ export class GithubObject extends Component {
     );
   }
 
-  renderFileInput = (file, onChange) => (
-    <InputField 
-      label="file"
-      value={file ? file.name : ''}
-      onChange={(_, { value: filename }) => 
-        onChange({ 
-          file: { 
-            name: filename, 
-            treeSHA: null 
-          }
-        })
-      }
-    />
-  )
+  renderFileInput = (file, onChange) => {
+    const value = (typeof file === 'string') ?
+      file :
+      (file && file.name);
+    return (
+      <InputField 
+        label="file"
+        value={value}
+        onChange={(_, { value: filename }) => 
+          onChange({ 
+            file: { 
+              name: filename, 
+              treeSHA: null 
+            }
+          })
+        }
+      />
+    );
+  }
 
   render() {
     const { service } = this.props;

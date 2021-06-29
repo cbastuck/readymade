@@ -1,41 +1,30 @@
 import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
+import { 
+  Button,
+  Card, 
+  Icon, 
+  Image,
+} from 'semantic-ui-react';
 
 import ServiceUI from './ServiceUI';
 import { s, t } from '../../styles';
-import MessageReceiver from '../../MessageReceiver';
-import { makeQueryString, RequestError } from './helpers';
+import SelectorField from '../../components/shared/SelectorField';
+import { SpotifyOAuth } from './SpotifyComponents';
+import { 
+  getMySavedSongs,
+  getUserProfile,
+  getRecentSongs,
+} from './SpotifyAPI';
 
 const serviceId = 'hookup.to/service/spotify';
 const serviceName = 'Spotify';
 
-const clientID = 'e91207fc5f2e4a5db1ca562954e4c23e';
-const redirectURI = `${window.location.origin}/serviceRedirect`;
-const scopes = ['user-library-read', 'playlist-read-private', 'user-read-recently-played'];
-
 const loginStateId = 'spotify-login';
 
-async function makeRequest(token, url, qp={}) {
-  const queryParams = {
-    offset: 0,
-    limit: 50,
-    ...qp,
-  };
-  const baseURL = 'https://api.spotify.com';
-  const fullURL = `${baseURL}${url}?${makeQueryString(queryParams)}`;
-  const resp = await fetch(
-    fullURL,
-    { headers: { 'Authorization': 'Bearer ' + token } },
-  );
-  if (!resp.ok) {
-    throw new RequestError(`GET ${fullURL}`, resp.status)
-  }
-  return await resp.json();
-}
-
-
 class SpotifyUI extends Component {
-  state = {};
+  state = {
+    selectedAction: 'injectSavedSongs',
+  };
 
   onInit = initialState => {
     const { token } = initialState;
@@ -45,59 +34,100 @@ class SpotifyUI extends Component {
   }
 
   onNotification = (service, notification) => {
-    const { token } = notification;
+    const { 
+      token,
+      profile,
+    } = notification;
     if (token !== undefined) {
       this.setState({ token });
     }
+
+    if (profile !== undefined) {
+      this.setState({ profile });
+    }
   }
 
-  onLogin = () => {
-    const baseURL = 'https://accounts.spotify.com/authorize';
-    const state = loginStateId;
-    const url = `${baseURL}?client_id=${clientID}&response_type=token&redirect_uri=${encodeURI(redirectURI)}&scope=${scopes.join(',')}&state=${state}`;
-    window.open(url, 'blank');
+  renderUser = service => {
+    const { 
+      token,
+      profile,
+    } = this.state;
+    if (!token) {
+      return (
+        <SpotifyOAuth 
+          onToken={token => service.configure({ token })}
+          state={loginStateId}
+        />
+      );
+    }
+
+    if (!profile) {
+      service.configure({ action: 'getProfile' });
+      return <div style={s(t.uc, t.ls1, t.fs12)}>Loading profile</div>;
+    }
+    const { 
+      display_name: name,
+      followers, 
+      images: allImages,
+    } = profile;
+    const image = allImages[0];
+    return (
+      <div style={s(t.uc, t.fs12, t.ls1)}>
+        <Card>
+          {
+            image && (
+              <div style={s(t.tc, { padding: 10 })}> 
+                <Image
+                  wrapped
+                  circular
+                  size="small"
+                  src={image.url} 
+                />
+              </div>
+            )
+          }
+          <Card.Content>
+            <Card.Header>{name}</Card.Header>
+          </Card.Content>
+          <Card.Content extra>
+            <Icon name='user' />
+             Followers {followers.total}
+          </Card.Content>
+        </Card>
+        <Button 
+          style={s(t.uc, t.fs12, t.ls1, t.w100)}
+          onClick={() => {}}
+        >
+          Logout
+        </Button>
+      </div>
+    )
   }
 
-  renderLoginPanel = service => (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column'
-      }}
-    >
-      <Button
-        style={s(t.uc, t.ls1, t.fs12)}
-        onClick={this.onLogin}
-      >
-      Login
-    </Button>
-    <MessageReceiver
-      state={loginStateId}
-      onData={data => data.access_token && 
-        service.configure({ token: data.access_token })
-      }
-    />
-    </div>
-  );
-
-  renderSpotifyPanel = service => (
-    <div>
-      <Button
-        style={s(t.uc, t.ls1, t.fs12)}
-        onClick={() => service.configure({ action: 'injectSavedSongs' })}
-      >
-        Saved songs
-      </Button>
-    </div>
-  )
-
-  renderMain = service => {
-    const { token } = this.state;
-    return token ?
-      this.renderSpotifyPanel(service) : 
-      this.renderLoginPanel(service);
+  renderActions = service => {
+    const { selectedAction } = this.state;
+    const actions = {
+      injectSavedSongs: 'Get liked songs',
+      injectRecentSongs: 'Get recent songs',
+    };
+    return (
+      <div>
+        <SelectorField
+          label="Action"
+          options={actions}
+          value={selectedAction}
+          onChange={(_, { value: selectedAction }) => this.setState({ selectedAction })}
+        />
+        <Button
+          style={s(t.uc, t.ls1, t.fs12, t.w100)}
+          onClick={() => service.configure({ action: selectedAction })}
+        >
+          Do it
+        </Button>
+      </div>
+    );
   }
-
+    
   render() {
     return (
       <ServiceUI 
@@ -105,10 +135,11 @@ class SpotifyUI extends Component {
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
         segments={[
-          { name: 'Main', render: this.renderMain },
+          { name: 'User', render: this.renderUser },
+          { name: 'Actions', render: this.renderActions },
         ]}
       />
-    )
+    );
   }
 }
 
@@ -124,41 +155,6 @@ class Spotify {
   destroy() {
   }
 
-  async getMySavedSongs(n) {
-    let finished = false;
-    let result = [];
-    let offset = 0;
-    while (!finished) {
-      const limit = n || 50;
-      try {
-        const songs = await makeRequest(
-          this.token, 
-          '/v1/me/tracks', { offset, limit }
-        );  
-        if (songs.items.length > 0) {
-          offset += limit;
-          result = result.concat(songs.items);
-        } else {
-          finished = true;
-        }
-        if (result.length >= n) {
-          finished = true;
-        }
-      } catch (err) {
-        switch (err.status) {
-          case 401:
-            this.app.removeServiceData(this.uuid, loginStateId);
-            this.app.notify(this, { token: '' });
-            return;
-          default:
-            console.log('Unhandled error', err);
-            return;
-        }
-      }
-    }
-    return result;
-  }
-
   async configure(config) { 
     const { 
       token,
@@ -170,13 +166,37 @@ class Spotify {
       this.app.notify(this, { token });
     }
     if (action !== undefined) {
-      switch (action) {
-        case 'injectSavedSongs':
-          const songs = await this.getMySavedSongs();
-          return songs && this.app.next(this, songs);
-        default:
-          break;
-      }
+      this.dispatchAction(action);
+    }
+  }
+
+  onRequestFail = err => {
+    switch (err.status) {
+      case 401:
+        this.token = '';
+        this.app.removeServiceData(this.uuid, loginStateId);
+        this.app.notify(this, { token: '' });
+        return;
+      default:
+        console.log('Unhandled error', err);
+        return;
+    }
+  }
+  
+  async dispatchAction(action) {
+    switch (action) {
+      case 'injectSavedSongs':
+        const liked = await getMySavedSongs(this.token).catch(this.onRequestFail);
+        return liked && this.app.next(this, liked);
+      case 'injectRecentSongs':
+        const recents = await getRecentSongs(this.token).catch(this.onRequestFail);
+        return recents && this.app.next(this, recents);
+      case 'getProfile':
+        const profile = await getUserProfile(this.token).catch(this.onRequestFail);
+        this.app.notify(this, { profile });
+      break;
+      default:
+        break;
     }
   }
 

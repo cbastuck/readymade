@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import { List, Breadcrumb } from 'semantic-ui-react';
 
+import { t } from '../../styles';
+
 export class Tree extends Component {
   renderFile = (file, selected, onChange) => {
     const { path } = this.props;
-    // TODO: the slice is hacky
-    const absoluteFn = path.slice(1).concat(file.name).join('/');
+    const absoluteFn = path.concat(file.name).join('/');
     const isSelected = absoluteFn === selected;
     const spacing = { padding: '1px 2px' };
     return (
@@ -67,9 +68,16 @@ export class Tree extends Component {
       onPath,
     } = this.props;
 
-    return path.length > 0 && (
-       <Breadcrumb>
-        { 
+    return (
+      <Breadcrumb>
+        <Breadcrumb.Section 
+          style={t.m(3, 0)}
+          link
+          onClick={() => onPath(null)}
+        >
+          /
+        </Breadcrumb.Section>
+        {
           path.map(part => (
             <span key={`tree-breadcrumb-${part}`}>
               <Breadcrumb.Section 
