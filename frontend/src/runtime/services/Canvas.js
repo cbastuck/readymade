@@ -449,9 +449,18 @@ class CanvasUI extends Component {
   onNotification = (service, notification) => {
     const { render } = notification;
     if (render) {
+      const { captureMime, frameID } = notification;
       this.update(render);
-      if (service.capture && this.canvas) {
-        return new Promise(resolve => this.canvas.toBlob(resolve, service.capture));
+      if (captureMime && this.canvas) {
+        this.canvas.toBlob(
+          blob => service.configure({ 
+            capturedFrame: {
+              frameID,
+              blob
+            }
+          }), 
+          captureMime
+        );
       }
     }
   }
@@ -569,6 +578,8 @@ class Canvas {
     
     this.fullscreen = false;
     this.clearOnRedraw = true;
+    this.frameID = 0;
+    this.pending = {};
   }
 
   configure(config) {
@@ -577,6 +588,7 @@ class Canvas {
       clearOnRedraw,
       noToggleFullscreenOnDblClick,
       capture,
+      capturedFrame,
     } = config || {};
     if (fullscreen !== undefined) {
       this.fullscreen = fullscreen;
@@ -593,13 +605,41 @@ class Canvas {
     if (capture !== undefined) {
       this.capture = capture;
     }
+
+    if (capturedFrame !== undefined) {
+      this.resolveCapturedFrame(capturedFrame);
+    }
+  }
+
+  resolveCapturedFrame({ blob, frameID }){
+    const { resolve, reject } = this.pending[frameID];
+    delete this.pending[frameID];
+    if (this.pending[frameID+1]) {
+      reject(frameID); // next frame already scheduled
+    } else {
+      resolve(blob);
+    }
+  }
+
+  waitForCapturedFrame(frameID) {
+    return new Promise((resolve, reject) => {
+      this.pending[frameID] = { resolve, reject };
+    });
   }
 
   async process(params) {
-    const promise = this.app.notify(this, { render: params });
+    const frameID = this.frameID++;
+    this.app.notify(
+      this, 
+      { 
+        render: params, 
+        frameID,
+        captureMime: this.capture,
+      }
+    );
     if (this.capture) {
-      const blob = await promise;
-      return blob;
+      return await this.waitForCapturedFrame(frameID)
+        .catch((/*rejectFrameID*/) => null); // null stops further propagation of droppped frames
     }
     
     return params;

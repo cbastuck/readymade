@@ -11,6 +11,10 @@ import ConfigurationEditor from './ConfigurationEditor';
 import { s, t } from '../styles';
 import { filterPrivateMembers } from '../runtime/services/helpers';
 
+function getNotificationID(service) {
+  return `service-frame-${service.uuid}`;
+}
+
 export default class ServiceFrame extends Component {
   state = {
     menuVisible: false,
@@ -18,6 +22,24 @@ export default class ServiceFrame extends Component {
     modalReferenceService: undefined,
     configVisible: false,
   };
+
+  componentDidMount() {
+    const { service } = this.props;
+    service.__notificationTargets.register(
+      getNotificationID(service), 
+      (_, notification) => {
+        const { bypass } = notification;
+        if (bypass !== undefined) {
+          this.setState({ bypass });
+        }
+      }
+    );
+  }
+
+  componentWillUnmount() {
+    const { service } = this.props;
+    service.__notificationTargets.unregister(getNotificationID(service));
+  }
 
   renderServiceName = name => {
     const { draggable=true } = this.props;
@@ -28,8 +50,7 @@ export default class ServiceFrame extends Component {
           width: '100%',
           fontSize: 16,
           fontWeight: 'lighter',
-          marginTop: 15,
-          marginLeft: 50,
+          marginTop: 15, 
           cursor: draggable && 'pointer'
         }}
         onDoubleClick={() => this.setState({ frameCollapsed: !this.state.frameCollapsed })}
@@ -57,35 +78,58 @@ export default class ServiceFrame extends Component {
   }
 
   renderHeader = service => {
+    const { bypass=service.bypass } = this.state;
+    const serviceName = service.__descriptor ? 
+      service.__descriptor.serviceName : 
+      service.serviceName;
     return (
-      <Menu
-        borderless={true}
-        style={{
-          boxShadow: 'none',
-          border: 'none',
-          margin: 0,
+      <div 
+        style={{ 
+          display: 'flex',
+          flexDirection: 'row'
         }}
       >
-        { 
-          this.renderServiceName(
-            service.__descriptor ? 
-              service.__descriptor.serviceName : 
-              service.serviceName 
-          ) 
-        }
-        <Menu.Item
-          position="right"
-          onClick={() => this.setState({ 
-            menuVisible: !this.state.menuVisible,
-            frameCollapsed: this.state.frameCollapsed && !this.state.menuVisible,
-          })}
-        >
-          <Icon 
-            name='bars' 
-            style={{ color: '#ddd', margin: 5, }}
+        <div style={t.p(15, 13)}>
+          <Icon
+            style={{ 
+              cursor: 'pointer',
+              opacity: 0.5,
+            }}
+            name="power off" 
+            color={bypass ? 'red' : 'grey'}
+            onClick={() => service.configure({ bypass: !bypass })}
           />
-        </Menu.Item>
-      </Menu>
+        </div>
+        <div 
+          style={{ 
+            flexGrow: 2, 
+            textAlign: 'center'
+          }}
+        >
+          { this.renderServiceName(serviceName) }
+        </div>
+        <Menu
+          borderless={true}
+          style={{
+            boxShadow: 'none',
+            border: 'none',
+            margin: 0,
+          }}
+        >  
+          <Menu.Item
+            position="right"
+            onClick={() => this.setState({ 
+              menuVisible: !this.state.menuVisible,
+              frameCollapsed: this.state.frameCollapsed && !this.state.menuVisible,
+            })}
+          >
+            <Icon 
+              name='bars' 
+              style={{ color: '#ddd', margin: 5, }}
+            />
+          </Menu.Item>
+        </Menu>
+      </div>
     )
   }
 

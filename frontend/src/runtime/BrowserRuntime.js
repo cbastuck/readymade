@@ -63,8 +63,9 @@ export default class BrowserRuntime extends Component {
         localStorage.removeItem(serviceDataKey(serviceUuid, key));
       },
       notify: (service, notification) => {
-        if (service.__notificationTarget) {
-          return service.__notificationTarget(service, notification);
+        if (service.__notificationTargets) {
+          // TODO: the return value does not work with multiple listeners anymore
+          return service.__notificationTargets.notify(service, notification);
         }
       },
       createSubService: (parent, service) => {
@@ -104,8 +105,10 @@ export default class BrowserRuntime extends Component {
     for (let i = advanceBeforeProcess ? position+1 : position ; !!services[i] && result !== null; ++i) {
       svc = services[i];
       const serviceInstance = this.serviceInstance(svc);
-      result = await serviceInstance.process(params);
-      params = result;
+      if (!serviceInstance.bypass) {
+        result = await serviceInstance.process(params);
+        params = result;
+      }
     }
     const resultReceiver = onResult || this.sendResult;
     await resultReceiver(svc && svc.uuid, result, requestId);
@@ -338,6 +341,15 @@ export default class BrowserRuntime extends Component {
       console.error('Could not create service', descriptor);
     }
     svc.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };
+    const configure = svc.configure.bind(svc);
+    svc.configure = config => { // monkey wire configure
+      const { bypass } = config;
+      if (bypass !== undefined) {
+        svc.bypass = bypass;
+        this.app.notify(svc, { bypass });
+      }    
+      return configure && configure(config);
+    };
     svc.configure(service);
     return svc;
   }

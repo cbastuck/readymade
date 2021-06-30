@@ -274,7 +274,7 @@ export class GithubObject extends Component {
             !disableFileInput && (
               <Checkbox
                 toggle
-                label={renderAsFileInputToggle ? 'Enter Filename' : 'Select File'}
+                label={renderAsFileInputToggle ? 'New File' : 'Select File'}
                 style={s(t.uc, t.fs12, t.mt5, t.mb3)}
                 checked={!!renderAsFileInputToggle}
                 onChange={async (_, { checked: renderAsFileInputToggle }) => {

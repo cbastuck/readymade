@@ -48,7 +48,6 @@ class MapUI extends Component {
       >
         {
           Object.keys(template)
-            // TODO: support nested objects
             .filter(key => typeof template[key] !== 'object')
             .map((key, idx) => (
               <InputLabelValue
@@ -69,24 +68,26 @@ class MapUI extends Component {
               />
             ))
         }
-        <Button
-          style={{ 
-            marginTop: 1,
-            fontSize: 12,
-            textTransform: 'uppercase',
-            letterSpacing: 1,
-            width: '100%'
-          }}
-          onClick={() => this.setState({ 
-              template: {
-                ...this.state.template,
-                ...newProperty,
-              }
-            })
-          }
-        >
-          Add Property
-        </Button>
+        <div>
+          <Button
+            style={{ 
+              fontSize: 12,
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              textAlign: 'center',
+              width: '99%',
+            }}
+            onClick={() => this.setState({ 
+                template: {
+                  ...this.state.template,
+                  ...newProperty,
+                }
+              })
+            }
+          >
+            Add Property
+          </Button>
+        </div>
       </div>
     )
   }

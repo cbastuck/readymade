@@ -45,8 +45,8 @@ export default class RemoteRuntime extends Component {
     if (type === 'notification') {
       const { serviceUuid, notification } = action;
       const service = services.find(s => s.uuid === serviceUuid);
-      if (service && service.__notificationTarget) {
-        service.__notificationTarget(service, notification);
+      if (service && service.__notificationTargets) {
+        service.__notificationTargets.notify(service, notification);
       }
     }
   }

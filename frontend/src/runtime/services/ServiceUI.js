@@ -8,17 +8,48 @@ import { s } from '../../styles';
 import { BoardConsumer } from '../../BoardContext';
 import Resizable from '../../components/Resizable';
 
+function getNotificationID(service) {
+  return `service-ui-${service.uuid}`;
+}
+
+class Notifications {
+  constructor() {
+    this.callbacks = {};
+  }
+
+  register(id, callback) {
+    this.callbacks[id] = callback;
+  }
+
+  unregister(id) {
+    delete this.callbacks[id];
+  }
+
+  notify(service, notification) {
+    for (const id in this.callbacks) {
+      this.callbacks[id](service, notification);
+    }
+  }
+}
+
 export default class ServiceUI extends Component {
   state = {
     currentSegmentName: undefined,
   };
 
+  constructor(props) {
+    super(props);
+    const { service } = props;
+    service.__notificationTargets = new Notifications();
+  }
+
   componentWillUnmount() {
     const { service } = this.props;
+    service.__notificationTargets.unregister(getNotificationID(service));
+
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
-      service.__notificationTarget = null;
     }
   }
 
@@ -34,7 +65,7 @@ export default class ServiceUI extends Component {
           this.timer = setInterval(() => onTimer(service), 1000);
         }
         if (onNotification) {
-          service.__notificationTarget = onNotification;
+          service.__notificationTargets.register(getNotificationID(service), onNotification);
         }
       }      
     }

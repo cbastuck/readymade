@@ -1,9 +1,8 @@
 import React, { Component } from 'react';
-import { TextArea, Checkbox } from 'semantic-ui-react';
+import { TextArea } from 'semantic-ui-react';
 
 import MonitorDescriptor from 'services/Monitor';
 
-import { s, t } from '../../styles';
 import ServiceUI from './ServiceUI';
 
 function isObject(obj) {
@@ -34,8 +33,7 @@ function unroll(params) {
 
 class MonitorUI extends Component {
   state = {
-    message: '',
-    enabled: true
+    message: ''
   };
 
   onInit = initialState => {
@@ -48,6 +46,12 @@ class MonitorUI extends Component {
     const nil = params === null && '<null>';
     const undef = params === undefined && '<undefined>';
     const s = nil || undef || unroll(params);
+    
+    const { bypass } = params;
+    if (bypass !== undefined) {
+      return;
+    }
+
     this.setState({ 
       message: isObject(s) ?
         JSON.stringify(s, null, 2) :
@@ -57,8 +61,7 @@ class MonitorUI extends Component {
 
   render() {
     const { 
-      message,
-      enabled 
+      message
     } = this.state;
     return (
       <ServiceUI 
@@ -90,26 +93,6 @@ class MonitorUI extends Component {
                 rows={10}
                 cols={30}
               />
-              <div 
-                style={{ 
-                  marginBottom: 10,
-                  marginLeft: 10,
-                  textAlign: 'left' 
-                }}
-              >
-                <Checkbox
-                  style={s(t.uc, t.fs12, t.m(0, 3))}
-                  label="active"
-                  checked={enabled}
-                  toggle
-                  onChange={(_, { checked: enabled }) => 
-                    this.setState(
-                      { enabled }, 
-                      () => service.configure({ enabled })
-                    )
-                  }
-                />
-              </div>
             </div> 
           )
         }
