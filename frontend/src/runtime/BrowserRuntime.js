@@ -64,8 +64,7 @@ export default class BrowserRuntime extends Component {
       },
       notify: (service, notification) => {
         if (service.__notificationTargets) {
-          // TODO: the return value does not work with multiple listeners anymore
-          return service.__notificationTargets.notify(service, notification);
+          service.__notificationTargets.notify(service, notification);
         }
       },
       createSubService: (parent, service) => {
