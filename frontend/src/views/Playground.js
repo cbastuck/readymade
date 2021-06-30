@@ -82,7 +82,7 @@ function getSavedBoards() {
  
 export default class Playground extends Component {
   state = {
-    boardName: (this.props.match && this.props.match.params) ? this.props.match.params.board : defaultName,
+    boardName: (this.props.match && this.props.match.params && this.props.match.params.board) || defaultName,
     showRoutingOptions: false,
     sidechainRouting: {},
     placeholderAnimationRunning: false,
@@ -138,12 +138,12 @@ export default class Playground extends Component {
 
   fetchData = async () => {
     const {
-      boardName='Playground',
+      boardName=defaultName,
       runtimes=[], 
       services={},
       description='',
-      outputRouting,
-      inputRouting,
+      outputRouting={},
+      inputRouting={},
     } = this.state.initialFetched ? this.state : await this.setInitialPlayground();
      
     if (!this.defaultRegistry) {
@@ -431,6 +431,14 @@ export default class Playground extends Component {
     });
   }
 
+  setRuntimeName = (runtimeId, newName) => {
+    this.setState({
+      runtimes: this.state.runtimes.map(rt => 
+        rt.id === runtimeId ? ({ ...rt, name: newName }) : rt
+      )
+    });
+  }
+
   getNextRuntime = runtime => {
     const { runtimes } = this.state;
     const pos = runtimes.findIndex(rt => rt.id === runtime.id);
@@ -561,9 +569,7 @@ export default class Playground extends Component {
     const ownPeers = boardContext.runtimes.map(rt => `${boardName}-${rt.name}`);
     const filteredPeers = peers.peerNames.filter(x => ownPeers.indexOf(x) === -1);
     return (
-      <DragProvider
-        style={{ marginBottom: 10, marginTop: 10 }}
-      >
+      <DragProvider style={{ marginBottom: 10, marginTop: 10 }}>
         <Runtime
           key={`sandbox-playground-${runtime.id}`}
           ref={rt => this.runtimeInstances[runtime.id] = rt}
@@ -621,7 +627,7 @@ export default class Playground extends Component {
 
   renderRuntimes = boardContext => {
     const { runtimes } = boardContext;
-    const { boardName } = this.state;
+    const { boardName } = this.state;
     return (
       <div style={s(t.w100)}>
         <PeersProvider ref={ctx => this.peerContext = ctx}>
@@ -842,6 +848,7 @@ export default class Playground extends Component {
         shareBoard={this.shareBoard}
         arrangeService={this.arrangeService}
         isActionAvailable={this.isActionAvailable}
+        setRuntimeName={this.setRuntimeName}
       >
         <BoardConsumer>
         {

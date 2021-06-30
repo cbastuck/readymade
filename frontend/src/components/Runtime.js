@@ -4,6 +4,8 @@ import {
   Sidebar,
   Segment,
   Menu,
+  Input,
+  Button
 } from 'semantic-ui-react';
 
 import { openTab, getServiceConfiguration } from '../core/actions';
@@ -153,6 +155,7 @@ export default class Runtime extends Component {
     const { 
       expanded, 
       showSettings,
+      runtimeNameEditBuffer='',
     } = this.state;
 
     return (
@@ -185,12 +188,41 @@ export default class Runtime extends Component {
             textTransform: 'uppercase',
             marginTop: 10,
           }}
-          onDoubleClick={() => this.setState({
-              expanded: !expanded
-            })
+          onDoubleClick={() => !runtimeNameEditBuffer && this.setState({ expanded: !expanded })}
+          onClick={() => !runtimeNameEditBuffer && this.setState({ runtimeNameEditBuffer: name })}
+        >
+          {
+            runtimeNameEditBuffer ? (
+              <Input
+                ref={elem => elem && elem.focus()}
+                style={{ marginTop: -5 }}
+                icon={
+                  <button
+                    style={{ border: 'none'}}
+                    onClick={() => this.setState({ runtimeNameEditBuffer: '' })}
+                  > 
+                    <Icon name="close" color="grey" />
+                  </button>
+                }
+                value={runtimeNameEditBuffer} 
+                onChange={(ev, { value: runtimeNameEditBuffer }) => 
+                  this.setState({ runtimeNameEditBuffer })
+                }
+                onKeyUp={ev => {
+                  if (ev.key === 'Enter') {
+                    this.props.boardContext.setRuntimeName(id, runtimeNameEditBuffer);
+                    this.setState({ runtimeNameEditBuffer: '' });
+                  } else if (ev.key === 'Escape') {
+                    this.setState({ runtimeNameEditBuffer: '' });
+                  }
+                }}
+              /> 
+            ) : ( 
+              <span style={{ cursor: 'text' }}>
+                {name}
+              </span>
+            )
           }
-        > 
-          {name}
         </div>
         <div 
           style={{ 

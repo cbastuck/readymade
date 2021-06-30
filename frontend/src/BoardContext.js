@@ -9,7 +9,6 @@ import {
   getServices,
   addService,
   removeService,
-  // saveBoard,
   loadBoard,
   getBoard,
   getRuntimes,
@@ -53,6 +52,7 @@ class BoardContext extends Component {
       acquireRuntimeScope: this.acquireRuntimeScope,
       releaseRuntimeScope: this.releaseRuntimeScope,
       isActionAvailable: this.isActionAvailable,
+      setRuntimeName: this.setRuntimeName,
 
       // data
       viewportWidth: undefined,
@@ -137,7 +137,16 @@ class BoardContext extends Component {
       return {};
     }
   }
-    
+  
+  setRuntimeName = async (runtimeId, newName) => {
+    const { setRuntimeName=this.setRuntimeNameDefault} = this.props;
+    await setRuntimeName(runtimeId, newName);
+    await this.fetchData();
+  }
+
+  setRuntimeNameDefault = (runtimeId, newName) => {
+    console.log('Implement setRuntimeNameDefault for remote services');
+  }
 
   isActionAvailable = action => {
     const { isActionAvailable=this.isActionAvailableDefaut } = this.props;
@@ -307,7 +316,6 @@ class BoardContext extends Component {
     };
     await addRuntime(boardName, desc);
     await this.fetchData();
-  
   }
 
   addRuntimeDefault = async (boardName, desc) => {
