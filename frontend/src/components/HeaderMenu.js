@@ -136,6 +136,7 @@ export default class HeaderMenu extends Component {
   }
 
   renderRuntimeMenu(availableRuntimes, boardContext) {
+    const { showRuntimeMenuHighlighted=false } = this.state || {};
     const wideViewMode = boardContext.appViewMode === 'wide';
     const options = availableRuntimes.map(o => ({ key: o.name, value: o.args, text: o.name }));
     return (
@@ -145,9 +146,14 @@ export default class HeaderMenu extends Component {
           marginLeft: 10,
           marginTop: 3,
         }}
+        onClick={ev => {
+          this.setState({ showRuntimeMenuHighlighted: true });
+          this.dropdown.open(ev);
+        }}
       >
         <Dropdown
           compact={!wideViewMode}
+          style={{ border:  showRuntimeMenuHighlighted && 'solid 2px #4284C4' }}
           ref={dropdown => this.dropdown = dropdown}
           options={options}
           placeholder={wideViewMode ? 'Add Runtime' : 'Runtime'}
@@ -157,6 +163,7 @@ export default class HeaderMenu extends Component {
             if (value) {
               boardContext.addRuntime(...value.split(','));
               this.dropdown.clearValue();
+              this.setState({ showRuntimeMenuHighlighted: false });
             }
           }}
         />

@@ -7,6 +7,13 @@ export default class ServiceDropdown extends Component {
   state = {
     value: ''
   };
+
+  open = ev => {
+    if (this.dropdown) {
+      this.dropdown.open(ev);
+    }
+  }
+
   render() {
     const { 
       options, 

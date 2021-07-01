@@ -7,7 +7,6 @@ import { PeersCtx } from '../PeersContext';
 const peerHost = `${window.location.host}`;
 const isHTTPS = window.location.protocol === 'https:';
 
-
 export default class Peer extends Component {
   componentDidMount() {
     this.initPeer();

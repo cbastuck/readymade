@@ -5,7 +5,6 @@ import {
   Segment,
   Menu,
   Input,
-  Button
 } from 'semantic-ui-react';
 
 import { openTab, getServiceConfiguration } from '../core/actions';
@@ -138,7 +137,8 @@ export default class Runtime extends Component {
         allowedServices.indexOf(s.value) !== -1
       );
     return (
-      <ServiceDropdown 
+      <ServiceDropdown
+        ref={dropdown => this.dropdown = dropdown}
         options={options}
         wide={wide}
         onSelected={value => {
@@ -504,7 +504,18 @@ export default class Runtime extends Component {
                       <div 
                         style={s(t.uc, t.fs13, t.ls1)}
                       >
-                        This is an empty runtime, add services
+                        This is an empty runtime - 
+                        <span
+                          style={{ cursor: 'pointer', color: '#4284C4'}}
+                          onClick={ev => {
+                            if (this.dropdown) {
+                              this.dropdown.open(ev);
+                            }
+                          }}
+                        >
+                          { ' add services ' }
+                        </span> 
+                        to start
                       </div>
                     </div>
                   )

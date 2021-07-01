@@ -92,7 +92,7 @@ export default class Playground extends Component {
     initialFetched: false,
     savedBoards: getSavedBoards(),
     inputRouting: {},
-    outputRouting: {}
+    outputRouting: {},
   };
 
   user = { 
@@ -727,12 +727,13 @@ export default class Playground extends Component {
   renderPlaceholder = boardContext => {
     const { savedBoards=[], boardName } = this.state;
     const headlineStyle = t.fs14;
+    const showLoadPanel = boardName === defaultName;
     return (
       <div style={t.fill}>
         <div style={s(t.uc, t.fs13, t.ls1, t.m(20))}>
           { 
-            !boardName && 
-            <h1 style={headlineStyle}> Sketch something new </h1>
+            showLoadPanel && 
+              <h1 style={headlineStyle}> Sketch something new </h1>
           } 
           <div style={s(t.tc, t.mt30, t.mb30)}>
             <Icon 
@@ -743,10 +744,23 @@ export default class Playground extends Component {
             />
           </div>
           <div style={t.tc}>
-            This is an empty playground - add a runtime to get going!
+            This is an empty playground - 
+            <span 
+              style={{ cursor: 'pointer', color: '#4284C4'}}
+              onClick={() => {
+                const selector = document.getElementById('runtime-dropdown');
+                if (selector) {
+                  selector.focus();
+                  selector.click();
+                }
+              }}
+            > 
+              { ' add a runtime ' } 
+            </span> 
+            to get going!
           </div>
           { 
-            !boardName && (
+            showLoadPanel && (
               <div> 
                 <div style={t.m(0, 40)}>
                   <h1 style={headlineStyle}> Hookup a reflector </h1>
