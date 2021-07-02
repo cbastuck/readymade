@@ -746,7 +746,7 @@ export default class Playground extends Component {
           <div style={t.tc}>
             This is an empty playground - 
             <span 
-              style={{ cursor: 'pointer', color: '#4284C4'}}
+              style={{ cursor: 'help', color: '#4284C4'}}
               onClick={() => {
                 const selector = document.getElementById('runtime-dropdown');
                 if (selector) {

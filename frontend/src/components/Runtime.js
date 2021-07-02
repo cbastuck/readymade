@@ -506,7 +506,7 @@ export default class Runtime extends Component {
                       >
                         This is an empty runtime - 
                         <span
-                          style={{ cursor: 'pointer', color: '#4284C4'}}
+                          style={{ cursor: 'help', color: '#4284C4'}}
                           onClick={ev => {
                             if (this.dropdown) {
                               this.dropdown.open(ev);
