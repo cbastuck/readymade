@@ -125,6 +125,11 @@ class AudioOutput {
     }
   }
 
+  destroy() {
+    this.audioCtx.close();
+    this.audioCtx = null;
+  }
+
   // taken from here: https://github.com/mdn/voice-change-o-matic
   visualize = () => {
     if (!this._canvas) {
@@ -140,27 +145,27 @@ class AudioOutput {
     this._canvasCtx.clearRect(0, 0, WIDTH, HEIGHT);
 
     const drawAlt = () => {
-        this.analyser.getByteFrequencyData(dataArrayAlt);
+      this.analyser.getByteFrequencyData(dataArrayAlt);
 
-        this._canvasCtx.fillStyle = 'white';
-        this._canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
+      this._canvasCtx.fillStyle = 'white';
+      this._canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
-        const barWidth = (WIDTH / bufferLengthAlt) * 2.5;
-        let barHeight;
-        let x = 0;
+      const barWidth = (WIDTH / bufferLengthAlt) * 2.5;
+      let barHeight;
+      let x = 0;
 
-        for(let i = 0; i < bufferLengthAlt; i++) {
-          barHeight = dataArrayAlt[i];
+      for(let i = 0; i < bufferLengthAlt; i++) {
+        barHeight = dataArrayAlt[i];
 
-          this._canvasCtx.fillStyle = `rgb(65, 131, ${barHeight+150})`;
-          this._canvasCtx.fillRect(x, HEIGHT-barHeight/2, barWidth, barHeight/2);
+        this._canvasCtx.fillStyle = `rgb(65, 131, ${barHeight+150})`;
+        this._canvasCtx.fillRect(x, HEIGHT-barHeight/2, barWidth, barHeight/2);
 
-          x += barWidth + 1;
-        }
-        requestAnimationFrame(drawAlt);
-      };
+        x += barWidth + 1;
+      }
+      requestAnimationFrame(drawAlt);
+    };
 
-      drawAlt();
+    drawAlt();
   }
 
   async process(params) {

@@ -23,22 +23,27 @@ class AudioInputUI extends Component {
     timeslice: 1000,
   };
 
-  onInit = async service => {
+  componentWillUnmount() {
+    if (this._audioCtx) {
+      this._audioCtx.close();
+      this._audioCtx = undefined;
+    }
+  }
+
+  init = async service => {
     const { timeslice, availableDevices } = service
     this.setState({ 
       devices: availableDevices,
       timeslice,
     });
-    // input stream visualization
-    const stream = await service.prepareStream();
-    this.visualize(stream);
   }
 
   onNotification = (service, notification) => {
     const { 
       isRecording, 
       timeslice,
-      availableDevices
+      availableDevices,
+      stream,
     } = notification;
 
     if (isRecording !== undefined) {
@@ -51,6 +56,11 @@ class AudioInputUI extends Component {
 
     if (availableDevices !== undefined) {
       this.setState({ devices: availableDevices });
+    }
+
+    if (stream !== undefined) {
+      // input stream visualization
+      this.visualize(stream);
     }
   }
 
@@ -254,7 +264,7 @@ class AudioInputUI extends Component {
     return (
       <ServiceUI
         {...this.props} 
-        onInit={this.onInit.bind(this)}
+        onInit={this.init}
         onNotification={this.onNotification.bind(this)}
         segments={[
           { name: 'Main', render: this.renderMain },
@@ -298,6 +308,14 @@ class AudioInput {
     }
   }
 
+  destroy() {
+    this.stopRecorder();
+    if (this._stream) {
+      const tracks = this._stream ? this._stream.getTracks() : [];
+      tracks.forEach(track => track.stop());
+    }
+  }
+
   async prepareStream(device) {
     if (navigator.mediaDevices && navigator.mediaDevices.ondevicechange !== undefined) {
       const updateDeviceList = async () => {
@@ -314,9 +332,10 @@ class AudioInput {
       } else {
         this._stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: { exact: device.deviceId }} });
       }
+      if (this._stream) {
+        this.app.notify(this, { stream: this._stream });
+      }
     }
-    
-    return this._stream;
   }
 
   async startRecorder(timeslice) {
