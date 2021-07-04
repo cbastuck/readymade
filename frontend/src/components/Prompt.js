@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { 
-  Input, 
   Modal, 
   Button,
 } from 'semantic-ui-react';
@@ -10,34 +9,29 @@ import { s, t } from '../styles';
 export default class Prompt extends Component {
   state = {
     open: false,
-    headline: '',
-    value: '',
   };
 
-  getInput = (headline, initial) => {
+  getInput = () => {
     return new Promise((resolve, reject) => {
       this.setState({ 
-        headline, 
         open: true, 
         promise: { resolve, reject },
-        value: initial,
       });
     })
   }
 
   render() {
-    const { 
-      open, 
-      headline,
-      value,
-    } = this.state;
+    const { open } = this.state;
+    const {
+      children=false,
+      headline='Headline missing'
+    } = this.props;
     return (
       <Modal
         onClose={() => {
           this.setState({ 
             open: false, 
-            promise: null, 
-            value: ''
+            promise: null,
           });
         }}
         onOpen={() => this.setState({ open: true })}
@@ -48,11 +42,7 @@ export default class Prompt extends Component {
           {headline}
         </Modal.Header>
         <Modal.Content>
-          <Input
-            style={s(t.w100)}
-            value={value}
-            onChange={(ev, { value }) => this.setState({ value })}
-          />
+          { children }
         </Modal.Content>
         <Modal.Actions>
           <Button
@@ -60,22 +50,23 @@ export default class Prompt extends Component {
             onClick={() => {
               const { promise } = this.state;
               const { resolve } = promise;
-              resolve(null);
               this.setState({ open: false });
+              resolve(null);
             }}
           >
             Cancel
           </Button>
           <Button
             style={s(t.uc, t.fs12, t.ls1)}
-            content="Save"
             onClick={() => {
-              const { promise, value } = this.state;
+              const { promise } = this.state;
               const { resolve } = promise;
-              resolve(value);
+              resolve();
               this.setState({ open: false });
             }}
-          />
+          >
+            OK
+          </Button>
         </Modal.Actions>
       </Modal>
     );

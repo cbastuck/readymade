@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
+//import { Link } from 'react-router-dom';
 import { 
   Icon,
   Button,
   Message,
+  Loader, 
 } from 'semantic-ui-react';
 import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
@@ -18,7 +19,7 @@ import DragProvider from '../DragContext';
 import { s, t } from '../styles';
 import BrowserRegistry from '../runtime/BrowserRegistry';
 import { filterPrivateMembers } from '../runtime/services/helpers';
-import Prompt from '../components/Prompt';
+import SaveBoardPrompt from '../components/SaveBoardPrompt';
 import VSpacer from '../components/shared/VSpacer';
 import BoardCollection from '../components/BoardCollection';
 import OutputSelector from '../components/shared/OutputSelector';
@@ -72,8 +73,8 @@ function getSavedBoards() {
   for(const key in localStorage) {
     if (key.startsWith(prefix)) {
       savedBoards.push({
-        key: key.substr(prefix.length), 
-        value: localStorage.getItem(key)
+        name: key.substr(prefix.length), 
+        value: JSON.parse(localStorage.getItem(key))
       });
     }
   }
@@ -218,8 +219,8 @@ export default class Playground extends Component {
     }
   }
 
-  createBoardFromTemplate = async name => {
-    const resp = await fetch(`/boards/templates/${name}.json`);
+  createBoardFromTemplate = async templateUrl => {
+    const resp = await fetch(templateUrl);
     if (resp && resp.ok) {
       try {
         const template = await resp.json();
@@ -232,7 +233,7 @@ export default class Playground extends Component {
         const patchedRuntimes = runtimes.map(rt => ({
           ...rt, id: uuid.v4() 
         }));
-        return { 
+        return {
           runtimes: patchedRuntimes,
           services: patchedRuntimes.reduce(
             (all, rt, idx) => ({ 
@@ -248,7 +249,7 @@ export default class Playground extends Component {
           description,
         };
       } catch (err) {
-        console.error('Creating from template failed', name);
+        console.error('Creating from template failed', templateUrl);
       }      
     }
   }
@@ -261,7 +262,7 @@ export default class Playground extends Component {
     }
   }
 
-  storeBoard = name => {
+  storeBoard = (name, description) => {
     const { 
       runtimes=[], 
       services={}, 
@@ -269,8 +270,7 @@ export default class Playground extends Component {
       outputRouting={},
       inputRouting={}
     } = this.state;
-
-    const data = { 
+    const data = {
       runtimes: runtimes.map(rt => ({ 
         id: rt.id, name: rt.name, type: rt.type 
       })), 
@@ -295,6 +295,7 @@ export default class Playground extends Component {
       sidechainRouting,
       outputRouting,
       inputRouting,
+      description,
     };
     localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
   }
@@ -483,9 +484,10 @@ export default class Playground extends Component {
       const suggested = (this.props.match && this.props.match.params) ? 
         this.props.match.params.board : 
         generateRandomName();
-      const name = await this.prompt.getInput('Enter a name for the board', suggested);
-      if (name !== null) {
-        this.storeBoard(name);
+      const value = await this.prompt.getInput(suggested);
+      if (value !== null) {
+        const { name, description } = value;
+        this.storeBoard(name, description);
         if (name !== suggested) {
           redirectTo(`/playground/${name}`);
         }
@@ -724,17 +726,10 @@ export default class Playground extends Component {
     }
   }
 
-  renderPlaceholder = boardContext => {
-    const { savedBoards=[], boardName } = this.state;
-    const headlineStyle = t.fs14;
-    const showLoadPanel = boardName === defaultName;
+  renderSketchOption = () => {
     return (
-      <div style={t.fill}>
-        <div style={s(t.uc, t.fs13, t.ls1, t.m(20))}>
-          { 
-            showLoadPanel && 
-              <h1 style={headlineStyle}> Sketch something new </h1>
-          } 
+      <div>
+        <h1 key="playground-options-hl-2" style={t.fs14}> 1. Sketch something new </h1>
           <div style={s(t.tc, t.mt30, t.mb30)}>
             <Icon 
               style={{ opacity: 0.6 , marginTop: 30, marginBottom: 30 }} 
@@ -759,41 +754,79 @@ export default class Playground extends Component {
             </span> 
             to get going!
           </div>
-          { 
-            showLoadPanel && (
-              <div> 
-                <div style={t.m(0, 40)}>
-                  <h1 style={headlineStyle}> Hookup a reflector </h1>
-                  <div>
-                    {
-                      [ 
-                        { name: 'Sender', template: 'reflector-sender' },
-                        { name: 'Receiver', template: 'reflector-receiver' },
-                      ].map((item, idx, self) => (
-                        <Link
-                          key={`template-${item.name}`}
-                          to={`/playground/${generateRandomName()}?template=${item.template}`}>
-                          {`${item.name}${(idx + 1 < self.length) ? ', ' : ''} `}
-                        </Link>
-                      ))
-                    }
-                  </div>
+      </div>
+    )    
+  }
+
+  renderUsecases = () => {
+    const { usecases } = this.state;
+    if (!usecases) {
+      const url = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
+      fetch(url)
+        .then(resp => resp.json())
+        .then(usecases => this.setState({ usecases:
+          usecases.map(item => ({
+            ...item, 
+            url: `/playground/${generateRandomName()}?template=${item.template}`,
+            metadata: 'use case'
+          }))
+         }))
+    }
+    return (
+      <div style={t.m(0, 40)}>
+        <h1 style={t.fs14}> 2. Select a use-case </h1>
+        {
+          usecases ? (
+            <BoardCollection
+              style={{ height: 150, width: '100%', marginRight: 20 }}
+              items={usecases}
+            />
+          ) : (
+            <div style={s(t.m(0, 20), t.tc)}>
+              <Loader active inline>
+                Loading Usecases ...
+              </Loader>
+            </div>
+          )
+        }
+       
+      </div>
+    );
+  }
+
+  renderStoredBoards = savedBoards => {
+    const items = savedBoards.map(item => ({ 
+      ...item, 
+      url: `/playground/${item.name}`,
+      description: item.value.description
+    }));
+    return items.length > 0 && (
+      <div style={s(t.mt20)}>
+        <h1 style={t.fs14}> 3. Following boards were saved on this browser</h1>
+        <BoardCollection
+          style={{ height: 250, width: '100%', marginRight: 20 }}
+          items={items}
+        />
+      </div>
+    )
+  }
+
+  renderPlaceholder = boardContext => {
+    const { savedBoards=[], boardName } = this.state;
+    const showLoadPanel = boardName === defaultName;
+    return (
+      <div style={t.fill}>
+        <div style={s(t.uc, t.fs13, t.ls1, t.m(20), t.tc)}>
+          <h1 style={s(t.fs16, t.m(0, 18))}> Welcome to the playground - Pick an option </h1>
+            {
+              showLoadPanel && (
+                <div style={t.tl}>
+                  { this.renderSketchOption() }
+                  { this.renderUsecases() }
+                  { this.renderStoredBoards(savedBoards) }
                 </div>
-                {
-                  savedBoards.length > 0 && (
-                    <div style={s(t.mt20)}>
-                      <h1 style={headlineStyle}> Following boards were saved on this browser</h1>
-                      <BoardCollection 
-                        style={{ height: 250, width: '100%', marginRight: 20 }}
-                        url={name => `/playground/${name}`} 
-                        savedBoards={savedBoards}
-                      />
-                    </div>
-                  )
-                }
-              </div>
-            )
-          }
+              )
+            }
         </div>
         <VSpacer />
       </div>
@@ -805,7 +838,7 @@ export default class Playground extends Component {
       <div>
         { this.renderRuntimes(boardContext) }
         { this.renderDescription() }
-        <Prompt ref={prompt => this.prompt = prompt} />
+        <SaveBoardPrompt ref={prompt => this.prompt = prompt} />
         <VSpacer />
       </div>
     )
@@ -828,11 +861,13 @@ export default class Playground extends Component {
       return (
         <div style={s(t.uc, t.ls1, { 
             position: 'absolute',
-            left: '50%',
-            top: '50%',
+            left: '45%',
+            top: '45%',
           })}
         >
-          Loading ...
+          <Loader active inline>
+            Loading Playground
+          </Loader>
         </div>
       );
     }

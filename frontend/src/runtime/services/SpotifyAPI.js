@@ -22,8 +22,9 @@ export function getUserProfile(token) {
   return makeRequest(token, '/v1/me');
 }
 
-export function getRecentSongs(token) {
-  return makeRequest(token, '/v1/me/player/recently-played');
+export async function getRecentSongs(token) {
+  const recents = await makeRequest(token, '/v1/me/player/recently-played');
+  return recents.items;
 }
 
 export async function getMySavedSongs(token, n) {

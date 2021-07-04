@@ -105,8 +105,7 @@ export default class MyBoards extends Component {
                       </h1> 
                       <BoardCollection
                         style={{ height: 350, width: '100%' }} 
-                        url={name => `/playground/${name}`}
-                        savedBoards={[]}
+                        items={[]}
                       />
                       <h1 style={s(t.mt20, t.fs14)}>Sketch a new idea</h1>
                       <div style={t.mt10}>

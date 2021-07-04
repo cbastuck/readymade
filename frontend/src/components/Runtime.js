@@ -218,7 +218,7 @@ export default class Runtime extends Component {
                 }}
               /> 
             ) : ( 
-              <span style={{ cursor: 'text' }}>
+              <span style={{ cursor: 'pointer' }}>
                 {name}
               </span>
             )

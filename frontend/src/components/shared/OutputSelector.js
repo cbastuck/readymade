@@ -75,7 +75,11 @@ export default class OutputSelector extends Component {
       'Flow', 
       <SelectorField
         label="Flow"
-        options={{ pass: 'pass', stop: 'stop', stopIf: 'stop-if' }}
+        options={{ 
+          pass: 'pass', 
+          stop: 'stop', 
+          // stopIf: 'stop-if' 
+        }}
         value={flow}
         onChange={(ev, { value: flow }) => onAction({ type: OutputSelector.flowChanged, flow })}
       />

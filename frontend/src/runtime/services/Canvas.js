@@ -233,6 +233,7 @@ class CanvasUI extends Component {
     const cy = centerY ? 
       (toAbsolute(centerY, canvasHeight) - scaledHeight / 2) : 
       (canvasCenterY - img.height / 2);
+
     const imgX = x === undefined ? cx : toAbsolute(x, canvasWidth);
     const imgY = y === undefined ? cy : toAbsolute(y, canvasHeight);
     const rect = {
