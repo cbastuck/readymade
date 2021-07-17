@@ -50,7 +50,7 @@ class PeersContext extends Component {
       const firstPeer = Object.keys(this.state.peers)[0];
       peer = firstPeer && this.state.peers[firstPeer];
       if (!peer) {
-        console.error('PeersContext how could this happen');
+        console.error('PeerContext.updatePeers no peers available');
         return;
       }
     }
@@ -99,7 +99,7 @@ class PeersContext extends Component {
       });
     } else {
       console.log('Connection is not available anymore', src, dst);
-      this.retrievePeers();
+      this.updatePeers();
     }
   }
 

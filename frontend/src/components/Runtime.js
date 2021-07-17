@@ -213,14 +213,14 @@ export default class Runtime extends Component {
                 <Button
                   compact
                   negative
-                  style={{ marginLeft: 2, width: 30 }}
+                  style={{ width: 30 }}
                   onClick={() => this.setState({ runtimeNameEditBuffer: '' })}
                   icon="close"
                 />
                 <Button
                   compact
                   positive
-                  style={{ marginLeft: 2, width: 30 }}
+                  style={{ width: 30 }}
                   disabled={runtimeNameEditBuffer === name}
                   onClick={() => {
                     this.props.boardContext.setRuntimeName(id, runtimeNameEditBuffer);
