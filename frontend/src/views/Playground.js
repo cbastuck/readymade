@@ -726,11 +726,21 @@ export default class Playground extends Component {
     }
   }
 
-  renderSketchOption = () => {
+  renderSketchOption = headline => {
+    const { boardName } = this.state;
+    const isDefaultBoard = boardName === defaultName;
     return (
       <div>
-        <h1 key="playground-options-hl-2" style={t.fs14}> 1. Sketch something new </h1>
-          <div style={s(t.tc, t.mt30, t.mb30)}>
+        { headline && <h1 style={s(t.fs14, t.tc, t.m(0, 4))}> —{headline}— </h1> }
+        <div 
+          style={{ 
+            // backgroundColor: headline && '#fefefe',
+            borderRadius: 3,
+            border: headline && 'solid 1px lightgray',
+            padding: headline && '20px 0px',
+          }}
+        >
+          <div style={s(t.tc, t.mt0, t.mb30)}>
             <Icon 
               style={{ opacity: 0.6 , marginTop: 30, marginBottom: 30 }} 
               name="leaf" 
@@ -739,7 +749,11 @@ export default class Playground extends Component {
             />
           </div>
           <div style={t.tc}>
-            This is an empty playground - 
+            { 
+              isDefaultBoard ? 
+                'This is an empty playground - ' : 
+                (<span>Playground <span style={t.italic}>{boardName}</span> looks empty - </span>)
+            }
             <span 
               style={{ cursor: 'help', color: '#4284C4'}}
               onClick={() => {
@@ -754,6 +768,7 @@ export default class Playground extends Component {
             </span> 
             to get going!
           </div>
+        </div>
       </div>
     )    
   }
@@ -774,11 +789,11 @@ export default class Playground extends Component {
     }
     return (
       <div style={t.m(0, 40)}>
-        <h1 style={t.fs14}> 2. Select a use-case </h1>
+        <h1 style={s(t.fs14, t.m(0, 4))}> —Pick a usecase— </h1>
         {
           usecases ? (
             <BoardCollection
-              style={{ height: 150, width: '100%', marginRight: 20 }}
+              style={{ height: 170, width: '100%', marginRight: 20 }}
               items={usecases}
             />
           ) : (
@@ -802,7 +817,7 @@ export default class Playground extends Component {
     }));
     return items.length > 0 && (
       <div style={s(t.mt20)}>
-        <h1 style={t.fs14}> 3. Following boards were saved on this browser</h1>
+        <h1 style={s(t.fs14, t.m(0, 4))}> —Restore a board— </h1>
         <BoardCollection
           style={{ height: 250, width: '100%', marginRight: 20 }}
           items={items}
@@ -816,17 +831,19 @@ export default class Playground extends Component {
     const showLoadPanel = boardName === defaultName;
     return (
       <div style={t.fill}>
-        <div style={s(t.uc, t.fs13, t.ls1, t.m(20), t.tc)}>
-          <h1 style={s(t.fs16, t.m(0, 18))}> Welcome to the playground - Pick an option </h1>
-            {
-              showLoadPanel && (
-                <div style={t.tl}>
-                  { this.renderSketchOption() }
-                  { this.renderUsecases() }
-                  { this.renderStoredBoards(savedBoards) }
-                </div>
-              )
-            }
+        <div style={s(t.uc, t.fs13, t.ls1, t.tc, { width: '99%', margin: 'auto' })}>
+          <h1 style={s(t.fs20, { margin: 0, marginTop: showLoadPanel ? 25 : 40 })}> Welcome to Playground</h1>
+          { showLoadPanel && <h2 style={s(t.fs13, t.m(0, 0))}> Pick an option </h2> }
+          { !showLoadPanel && this.renderSketchOption() }
+          {
+            showLoadPanel && (
+              <div style={t.m(0, 30)}>
+                { this.renderSketchOption('Sketch something new') }
+                { this.renderUsecases() }
+                { this.renderStoredBoards(savedBoards) }
+              </div>
+            )
+          }
         </div>
         <VSpacer />
       </div>

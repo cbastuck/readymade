@@ -67,9 +67,9 @@ export default class BoardCollection extends Component {
       style={} 
     } = this.props;
     return (
-      <div style={s(t.mt10, t.mb10)}>
+      <div>
         <Card.Group 
-          style={{ 
+          style={{
             display: 'flex', 
             justifyContent: 'space-between',
             width: '90%',

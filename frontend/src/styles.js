@@ -20,6 +20,7 @@ export const t = {
 
   fs: function(s) { return { fontSize: s}; },
   fs20: { fontSize: 20 },
+  fs19: { fontSize: 19 },
   fs18: { fontSize: 18 },
   fs17: { fontSize: 17 },
   fs16: { fontSize: 16 },
