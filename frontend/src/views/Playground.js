@@ -62,6 +62,7 @@ const allowedServices = [
 ];
 
 const defaultName = 'Playground';
+const headlineSpace = 6;
 
 function generateRandomName() {
   return generate('-').split('-').slice(1).join('-');
@@ -80,7 +81,7 @@ function getSavedBoards() {
   }
   return savedBoards;
 }
- 
+
 export default class Playground extends Component {
   state = {
     boardName: (this.props.match && this.props.match.params && this.props.match.params.board) || defaultName,
@@ -731,7 +732,7 @@ export default class Playground extends Component {
     const isDefaultBoard = boardName === defaultName;
     return (
       <div>
-        { headline && <h1 style={s(t.fs14, t.tc, t.m(0, 4))}> —{headline}— </h1> }
+        { headline && <h1 style={s(t.fs14, t.tc, t.m(0, headlineSpace))}> —{headline}— </h1> }
         <div 
           style={{ 
             // backgroundColor: headline && '#fefefe',
@@ -752,7 +753,7 @@ export default class Playground extends Component {
             { 
               isDefaultBoard ? 
                 'This is an empty playground - ' : 
-                (<span>Playground <span style={t.italic}>{boardName}</span> looks empty - </span>)
+                (<span>Playground <span style={t.italic}>{boardName}</span> is empty - </span>)
             }
             <span 
               style={{ cursor: 'help', color: '#4284C4'}}
@@ -789,7 +790,7 @@ export default class Playground extends Component {
     }
     return (
       <div style={t.m(0, 40)}>
-        <h1 style={s(t.fs14, t.m(0, 4))}> —Pick a usecase— </h1>
+        <h1 style={s(t.fs14, t.m(0, headlineSpace))}> —Pick a usecase— </h1>
         {
           usecases ? (
             <BoardCollection
@@ -817,7 +818,7 @@ export default class Playground extends Component {
     }));
     return items.length > 0 && (
       <div style={s(t.mt20)}>
-        <h1 style={s(t.fs14, t.m(0, 4))}> —Restore a board— </h1>
+        <h1 style={s(t.fs14, t.m(0, headlineSpace))}> —Restore a board— </h1>
         <BoardCollection
           style={{ height: 250, width: '100%', marginRight: 20 }}
           items={items}

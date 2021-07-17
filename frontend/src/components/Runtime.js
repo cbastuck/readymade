@@ -5,6 +5,7 @@ import {
   Segment,
   Menu,
   Input,
+  Button,
 } from 'semantic-ui-react';
 
 import { openTab, getServiceConfiguration } from '../core/actions';
@@ -193,30 +194,41 @@ export default class Runtime extends Component {
         >
           {
             runtimeNameEditBuffer ? (
-              <Input
-                ref={elem => elem && elem.focus()}
-                style={{ marginTop: -5 }}
-                icon={
-                  <button
-                    style={{ border: 'none'}}
-                    onClick={() => this.setState({ runtimeNameEditBuffer: '' })}
-                  > 
-                    <Icon name="close" color="grey" />
-                  </button>
-                }
-                value={runtimeNameEditBuffer} 
-                onChange={(ev, { value: runtimeNameEditBuffer }) => 
-                  this.setState({ runtimeNameEditBuffer })
-                }
-                onKeyUp={ev => {
-                  if (ev.key === 'Enter') {
+              <div style={{ display: 'flex', flexDirection: 'row', marginTop: -5 }}>
+                <Input
+                  ref={elem => elem && elem.focus()}
+                  value={runtimeNameEditBuffer} 
+                  onChange={(ev, { value: runtimeNameEditBuffer }) => 
+                    this.setState({ runtimeNameEditBuffer })
+                  }
+                  onKeyUp={ev => {
+                    if (ev.key === 'Enter') {
+                      this.props.boardContext.setRuntimeName(id, runtimeNameEditBuffer);
+                      this.setState({ runtimeNameEditBuffer: '' });
+                    } else if (ev.key === 'Escape') {
+                      this.setState({ runtimeNameEditBuffer: '' });
+                    }
+                  }}
+                /> 
+                <Button
+                  compact
+                  negative
+                  style={{ marginLeft: 2, width: 30 }}
+                  onClick={() => this.setState({ runtimeNameEditBuffer: '' })}
+                  icon="close"
+                />
+                <Button
+                  compact
+                  positive
+                  style={{ marginLeft: 2, width: 30 }}
+                  disabled={runtimeNameEditBuffer === name}
+                  onClick={() => {
                     this.props.boardContext.setRuntimeName(id, runtimeNameEditBuffer);
                     this.setState({ runtimeNameEditBuffer: '' });
-                  } else if (ev.key === 'Escape') {
-                    this.setState({ runtimeNameEditBuffer: '' });
-                  }
-                }}
-              /> 
+                  }}
+                  icon="check"
+                /> 
+              </div>
             ) : ( 
               <span style={{ cursor: 'pointer' }}>
                 {name}
