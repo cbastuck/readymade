@@ -15,6 +15,15 @@ export default class InputSelector extends Component {
 
   static updatePeersAction = 'update-peers';
 
+  componentDidMount() {
+    const { initialValue } = this.props;
+    if (initialValue !== undefined) {
+      this.setState({ 
+        selected: initialValue === '*' ? 'all' : initialValue
+      });
+    }
+  }
+
   componentDidUpdate(prevProps) {
     if (this.props.items !== prevProps.items) {
       const options = this.getSelectorOptions();

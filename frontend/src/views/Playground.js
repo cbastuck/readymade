@@ -551,6 +551,7 @@ export default class Playground extends Component {
       <InputSelector
         ref={selector => this.inputSelectors[runtime.id] = selector}
         items={peers}
+        initialValue={this.state.inputRouting && this.state.inputRouting[runtime.id]}
         onAction={action => {
           switch (action.type) {
             case InputSelector.updatePeersAction:
