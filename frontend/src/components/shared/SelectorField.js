@@ -82,9 +82,10 @@ export default class SelectorField extends Component {
       label, 
       onChange,
       onOpen,
+      disabled=false,
       value: syncedValue,
       options={},
-      style={}
+      style={},
     } = this.props;
     const text = options[value];
     const fontSize = 11;
@@ -120,9 +121,11 @@ export default class SelectorField extends Component {
             whiteSpace: 'nowrap',
             position: 'relative',
             left: -2,
-            cursor: 'pointer'
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            backgroundColor: disabled && 'lightgray',            
+            color: disabled && 'darkgray'
           }}
-          onClick={() => this.setState(
+          onClick={() => !disabled && this.setState(
             { optionsVisible: !optionsVisible },
             () => onOpen && onOpen(options)
           )}

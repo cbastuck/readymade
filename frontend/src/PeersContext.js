@@ -12,7 +12,7 @@ class PeersContext extends Component {
       connections: {},
       peerNames: [],
       onPeer: this.onPeer,
-      onPeerRemoved: this.onPeerRemoved,
+      onPeerClosed: this.onPeerClosed,
       updatePeers: this.updatePeers,
     }
   }
@@ -22,7 +22,7 @@ class PeersContext extends Component {
       console.error('PeersContext peer.onError', err);
     });
 
-    peer.on('close', () => this.onPeerRemoved(peerName)); 
+    peer.on('close', () => this.onPeerClosed(peerName)); 
 
     this.setState({ 
       peers: {
@@ -34,7 +34,7 @@ class PeersContext extends Component {
     this.updatePeers(peer);
   }
 
-  onPeerRemoved = peerName => {
+  onPeerClosed = peerName => {
     const { 
       peers, 
       peerNames, 
@@ -49,12 +49,13 @@ class PeersContext extends Component {
     if (!peer) {
       const firstPeer = Object.keys(this.state.peers)[0];
       peer = firstPeer && this.state.peers[firstPeer];
-      if (!peer) {
-        console.error('PeerContext.updatePeers no peers available');
-        return;
-      }
     }
-    peer.listAllPeers(peerNames => this.setState({ peerNames }));
+
+    if (peer) {
+      peer.listAllPeers(peerNames => this.setState({ peerNames })); 
+    } else {
+      console.warn('PeerContext.updatePeers no peers available');
+    }
   }
 
   sendData = (src, dst, data) => {

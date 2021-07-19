@@ -49,7 +49,9 @@ export default class InputSelector extends Component {
     const { selected, incoming } = this.state;
     const { 
       onSelect, 
-      onAction, 
+      onAction,
+      children,
+      disabled
     } = this.props;
     const peerOptions = this.getSelectorOptions();
     return (
@@ -60,6 +62,7 @@ export default class InputSelector extends Component {
           options={peerOptions}
           highlight={incoming}
           value={selected}
+          disabled={disabled}
           onChange={(_ev, { value: selected }) => 
             this.setState(
               { selected },
@@ -80,6 +83,7 @@ export default class InputSelector extends Component {
           }
           onOpen={() => onAction({type: InputSelector.updatePeersAction })}
         />
+        { children ? children : false }
       </div>
     );
   }

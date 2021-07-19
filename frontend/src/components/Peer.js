@@ -9,7 +9,10 @@ const isHTTPS = window.location.protocol === 'https:';
 
 export default class Peer extends Component {
   componentDidMount() {
-    this.initPeer();
+    const { active } = this.props;
+    if (active !== undefined && active) {
+      this.initPeer();
+    }
   }
 
   componentWillUnmount() {
@@ -17,10 +20,19 @@ export default class Peer extends Component {
   }
 
   componentDidUpdate(prevProps) {
-    const { name } = this.props;
+    const { 
+      name,
+      active,
+    } = this.props;
     if (name !== prevProps.name) {
       this.closePeer(prevProps.name);
       this.initPeer();
+    }
+    if (active !== undefined && active !== prevProps.active) {
+      this.closePeer();
+      if (active) {
+        this.initPeer();
+      }
     }
   }
 
@@ -44,6 +56,7 @@ export default class Peer extends Component {
     peer.on('open', () => {
       if (this.peer) {
         console.warn('Peer peer opened but the previous peer did not shutdown');
+        this.closePeer();
       }
       this.peer = peer;
       onPeer(name, peer);
@@ -58,9 +71,10 @@ export default class Peer extends Component {
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
+
+      const { onPeerClosed } = this.context;
+      onPeerClosed(name || this.props.name);
     }
-    const { onPeerRemoved } = this.context;
-    onPeerRemoved(name || this.props.name);
   }
 
   render() {

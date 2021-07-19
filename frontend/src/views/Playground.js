@@ -82,6 +82,10 @@ function getSavedBoards() {
   return savedBoards;
 }
 
+function getActivationId(runtimeId) {
+  return `peer-${runtimeId}-active`;
+}
+
 export default class Playground extends Component {
   state = {
     boardName: (this.props.match && this.props.match.params && this.props.match.params.board) || defaultName,
@@ -519,7 +523,8 @@ export default class Playground extends Component {
         onAction={action => {
           switch (action.type) { 
             case OutputSelector.updatePeersAction: 
-              return onUpdatePeers();
+              this.setState({ [getActivationId(runtime.id)]: true });
+            break;
             case OutputSelector.flowChanged:
               return this.setState({
                 outputRouting: {
@@ -539,27 +544,44 @@ export default class Playground extends Component {
     );
   }
 
-  renderInputs = (peers, runtime, onUpdatePeers) => (
-    <InputSelector
-      ref={selector => this.inputSelectors[runtime.id] = selector}
-      items={peers}
-      onAction={action => {
-        switch (action.type) {
-          case InputSelector.updatePeersAction:
-            return onUpdatePeers();
-          default:
-            break;
-        }
-      }}
-      onSelect={value => this.setState({ 
-          inputRouting: {
-            ...this.state.inputRouting,
-            [runtime.id]: value
+  renderInputs = (peers, runtime, onUpdatePeers) => {
+    const activationId = getActivationId(runtime.id);
+    const isPeerActive = !!this.state[activationId];
+    return (
+      <InputSelector
+        ref={selector => this.inputSelectors[runtime.id] = selector}
+        items={peers}
+        onAction={action => {
+          switch (action.type) {
+            case InputSelector.updatePeersAction:
+              return onUpdatePeers();
+            default:
+              break;
           }
-        })
-      }
-    />
-  );
+        }}
+        onSelect={value => this.setState({ 
+            inputRouting: {
+              ...this.state.inputRouting,
+              [runtime.id]: value
+            }
+          })
+        }
+        disabled={!isPeerActive}
+      >
+        <div 
+          style={{ 
+            color: '#4183c4',
+            cursor: 'pointer',
+          }}
+          onClick={() => this.setState({ 
+            [activationId]: true
+          })}
+        >
+          { !isPeerActive ? 'Click to enable' : false }
+        </div>
+      </InputSelector>
+    )
+  };
 
   renderRuntime = (boardContext, runtime, peers) => {
     const {
@@ -656,6 +678,7 @@ export default class Playground extends Component {
                       }
                     }
                   }}
+                  active={!!this.state[getActivationId(runtime.id)]}
                 >
                   { this.renderRuntime(boardContext, runtime, peers) }
                 </Peer>
