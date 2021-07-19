@@ -34,10 +34,11 @@ export default class InputSelector extends Component {
   }
 
   getSelectorOptions = () => {
-    const { items } = this.props; 
+    const { items, initialValue } = this.props;
+    const initial = initialValue ? { [initialValue]: initialValue } : {};
     return items.reduce((a, c) => (
       { ...a, [c]: c}), 
-      { none: none, all: all }
+      { none: none, all: all, ...initial }
     );
   }
 

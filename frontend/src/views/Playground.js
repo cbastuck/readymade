@@ -547,11 +547,12 @@ export default class Playground extends Component {
   renderInputs = (peers, runtime, onUpdatePeers) => {
     const activationId = getActivationId(runtime.id);
     const isPeerActive = !!this.state[activationId];
+    const inputRouting = this.state.inputRouting && this.state.inputRouting[runtime.id];
     return (
       <InputSelector
         ref={selector => this.inputSelectors[runtime.id] = selector}
         items={peers}
-        initialValue={this.state.inputRouting && this.state.inputRouting[runtime.id]}
+        initialValue={inputRouting}
         onAction={action => {
           switch (action.type) {
             case InputSelector.updatePeersAction:
@@ -573,6 +574,7 @@ export default class Playground extends Component {
           style={{ 
             color: '#4183c4',
             cursor: 'pointer',
+            textAlign: 'center'
           }}
           onClick={() => this.setState({ 
             [activationId]: true
