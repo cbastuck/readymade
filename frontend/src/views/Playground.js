@@ -61,6 +61,7 @@ const allowedServices = [
   'hookup.to/service/github-sink',
 ];
 
+const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
 const defaultName = 'Playground';
 const headlineSpace = 6;
 
@@ -700,6 +701,16 @@ export default class Playground extends Component {
       const arr = Array.isArray(description) ? description : [description];
       const renderItem = (item, idx) => {
         const key = `template-description-item-${idx}`;
+        if (typeof item === 'string') {
+          return <span style={s(t.uc, t.fs12)}> { item } </span>;
+        }
+        if (Array.isArray(item)) {
+          return (
+            <div style={{ display: 'flex', flexDirection: 'row' }}>
+              { item.map((x, y) => renderItem(x, `${idx}.${y}`)) }
+            </div>
+          );
+        }
         switch (item.type) {
           case 'headline':
             return (
@@ -723,7 +734,23 @@ export default class Playground extends Component {
             return (
               <div key={key} style={s(t.uc, t.fs12, t.ls1)}>
                 { text }  { checkPassed ? '✅' : '❌' }
+                <span>&nbsp;</span>
               </div>
+            );
+          }
+          case 'link': {
+            const {
+              text='text property missing', 
+              href='#' 
+            } = item;
+            return (
+              <a 
+                href={href} 
+                target="_blank" rel="noreferrer"
+                style={s(t.uc, t.fs12, t.ls1)}
+              > 
+                { text }<span>&nbsp;</span>
+              </a>
             );
           }
           default: 
@@ -732,7 +759,7 @@ export default class Playground extends Component {
                 key={key}
                 style={s(t.uc, t.fs12, t.ls1)}
               >
-                {item}
+                { JSON.stringify(item) }
               </div>
             );
         }
@@ -815,20 +842,20 @@ export default class Playground extends Component {
   renderUsecases = () => {
     const { usecases } = this.state;
     if (!usecases) {
-      const url = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
-      fetch(url)
+      fetch(usecasesUrl)
         .then(resp => resp.json())
         .then(usecases => this.setState({ usecases:
           usecases.map(item => ({
             ...item, 
             url: `/playground/${generateRandomName()}?template=${item.template}`,
-            metadata: 'use case'
+            metadata: 'use case',
+            repo: item.repo,
           }))
          }))
     }
     return (
       <div style={t.m(0, 40)}>
-        <h1 style={s(t.fs14, t.m(0, headlineSpace))}> —Pick a usecase— </h1>
+        <h1 style={s(t.fs14, t.m(0, headlineSpace))}> —Launch a Usecase— </h1>
         {
           usecases ? (
             <BoardCollection

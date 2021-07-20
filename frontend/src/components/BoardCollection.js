@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { 
   Card,
   Image,
+  Icon,
 } from 'semantic-ui-react';
 
 import { s, t } from '../styles';
@@ -14,28 +15,39 @@ export default class BoardCollection extends Component {
       name,
       description,
       metadata,
-      image='/assets/shutterstock_1196210650.png',
+      image,
+      repo
     } = item;
     return (
       <Card
         style={s(t.p10)}
         key={`board-card-${name}`}
       >
-        <Link
-          key={`board-card-link-${name}`}
-          to={url}
-        > 
-          <Card.Content>
-            {
-              image && (
-                <Image
-                  floated="right"
-                  size="mini"
-                  src={image}
-                  style={{ marginTop: 3 }}
-                />
-              )
-            }
+        <Card.Content>
+          {
+            !repo ? (
+              <Image
+                floated="right"
+                size="mini"
+                src={image || '/assets/shutterstock_1196210650.png'}
+                style={{ marginTop: 3 }}
+              />
+            ) : (
+              <Image 
+                floated="right"
+                size="mini"
+                style={{ marginTop: 3 }}
+              >
+                <a href={repo} target="_blank" rel="noreferrer">
+                  <Icon size="large" name="github" />
+                </a>
+              </Image>
+            )
+          }
+          <Link
+            key={`board-card-link-${name}`}
+            to={url}
+          > 
             <Card.Header style={{ marginTop: 3, textAlign: 'left', color: '#4183c4' }}>
               <h1 style={t.fs15}>{name}</h1>
             </Card.Header>
@@ -55,8 +67,8 @@ export default class BoardCollection extends Component {
                 </Card.Description>
               )
             }
-          </Card.Content>
-        </Link>
+          </Link>
+        </Card.Content>
       </Card>
     );
   }
