@@ -762,8 +762,9 @@ export default class Playground extends Component {
         <div 
           style={{ 
             // backgroundColor: headline && '#fefefe',
-            borderRadius: 3,
-            border: headline && 'solid 1px lightgray',
+            
+            // borderRadius: 3,
+            // border: headline && 'solid 1px lightgray',
             padding: headline && '20px 0px',
           }}
         >
@@ -795,6 +796,17 @@ export default class Playground extends Component {
             </span> 
             to get going!
           </div>
+          {
+            headline && (
+              <hr 
+                style={{
+                  marginTop: 30,
+                  width: '99%', 
+                  borderTop: '1px solid lightgray' 
+                }} 
+              />
+            )
+          }
         </div>
       </div>
     )    
@@ -858,7 +870,7 @@ export default class Playground extends Component {
     const showLoadPanel = boardName === defaultName;
     return (
       <div style={t.fill}>
-        <div style={s(t.uc, t.fs13, t.ls1, t.tc, { width: '99%', margin: 'auto' })}>
+        <div style={s(t.uc, t.fs13, t.ls1, t.tc, { width: '99%', margin: 'auto', marginTop: !showLoadPanel && '15%' })}>
           <h1 style={s(t.fs20, { margin: 0, marginTop: showLoadPanel ? 25 : 40 })}> Welcome to Playground</h1>
           { showLoadPanel && <h2 style={s(t.fs13, t.m(0, 0))}> Pick an option </h2> }
           { !showLoadPanel && this.renderSketchOption() }

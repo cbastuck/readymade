@@ -69,10 +69,8 @@ export default class BoardCollection extends Component {
     return (
       <div>
         <Card.Group 
+          itemsPerRow={4}
           style={{
-            display: 'flex', 
-            justifyContent: 'space-between',
-            width: '90%',
             height, 
             overflowY: 'auto',
             margin: 'auto',

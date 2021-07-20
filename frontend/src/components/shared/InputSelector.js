@@ -35,7 +35,9 @@ export default class InputSelector extends Component {
 
   getSelectorOptions = () => {
     const { items, initialValue } = this.props;
-    const initial = initialValue ? { [initialValue]: initialValue } : {};
+    const initial = (initialValue && initialValue !== '*') ? 
+      { [initialValue]: initialValue } : 
+      {};
     return items.reduce((a, c) => (
       { ...a, [c]: c}), 
       { none: none, all: all, ...initial }
