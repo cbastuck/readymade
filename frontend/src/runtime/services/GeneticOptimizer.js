@@ -100,10 +100,20 @@ class GeneticOptimizer {
       }
     );
 
-    return probabilities.reduce(
-      (a, p) => a + p,
-      0
-    ) / probabilities.length;
+    function mean(arr) {
+      return arr.reduce(
+        (a, c) => a + c,
+        0
+      ) / arr.length;
+    }
+
+    const meanP = mean(probabilities);
+    const pAboveMeanP = probabilities.filter(p => p > meanP);
+    const meanAboveMeanP = mean(pAboveMeanP);
+
+    const ratio = pAboveMeanP.length / probabilities.length;
+    console.log('RATIO', ratio, 'partitioned mean', meanAboveMeanP, probabilities)
+    return ratio * meanAboveMeanP;
   }
 
   applySelection(population, fitness) {
@@ -120,6 +130,7 @@ class GeneticOptimizer {
     ) / fitness.length;
     const stdFitness = Math.sqrt(varFitness);
     const minFitness = meanFitness - stdFitness;
+    console.log('FITNESSES', fitness, stdFitness, minFitness)
     return population.filter((g, idx) => {
       const ttl = g[0].ttl - 1;
       const f = fitness[idx];
@@ -161,13 +172,10 @@ class GeneticOptimizer {
     // generate shapes out of population
     const annotations = this.annotations || {};
     return survivors
-      .map(
-        (genome, idx) => {
-          return {
-            ...annotations,
-            genome,
-          };
-        }
+      .map((genome, idx) => ({
+          ...annotations,
+          genome,
+        })
       )
       .concat(params);
   }

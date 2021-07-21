@@ -1,5 +1,4 @@
 import React, { Component } from 'react';
-//import { Link } from 'react-router-dom';
 import { 
   Icon,
   Button,
@@ -8,6 +7,7 @@ import {
 } from 'semantic-ui-react';
 import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
+import qs from 'query-string';
 
 import { redirectTo } from '../core/actions';
 import BoardProvider, { BoardConsumer } from '../BoardContext';
@@ -202,9 +202,9 @@ export default class Playground extends Component {
     const queryParams = new URLSearchParams(document.location.search);
     const { board } = this.props.match.params;
     if (board) {
-      const template = queryParams.get('template');
-      if (template) {
-        return this.createBoardFromTemplate(template);
+      const params = qs.parse(document.location.search);
+      if (params.template) {
+        return this.createBoardFromTemplate(params.template, params);
       } else {
         const localBoard = this.restoreBoardFromLocalStorage(board);
         if (localBoard) {
@@ -251,7 +251,7 @@ export default class Playground extends Component {
     }
   }
 
-  createBoardFromTemplate = async templateUrl => {
+  createBoardFromTemplate = async (templateUrl, params) => {
     const resp = await fetch(templateUrl);
     if (resp && resp.ok) {
       try {
@@ -284,13 +284,19 @@ export default class Playground extends Component {
             {},
           inputRouting: inputRouting ? 
             patchedRuntimes.reduce(
-              (all, rt, idx) => ({ ...all, [rt.id]: inputRouting[runtimes[idx].id] }),
+              (all, rt, idx) => ({ ...all, [rt.id]: replacePlaceholders(inputRouting[runtimes[idx].id], params) }),
               {}
             ) : 
             undefined,
           outputRouting: outputRouting ? 
             patchedRuntimes.reduce(
-              (all, rt, idx) => ({ ...all, [rt.id]: outputRouting[runtimes[idx].id] }),
+              (all, rt, idx) => ({ 
+                ...all,
+                [rt.id]: {
+                  ...outputRouting[runtimes[idx].id],
+                  peer: replacePlaceholders(outputRouting[runtimes[idx].id].peer, params)
+                } 
+              }),
               {}
             ) :
             undefined,
@@ -891,17 +897,19 @@ export default class Playground extends Component {
 
   renderUsecases = () => {
     const { usecases } = this.state;
+    const injectorBoard = generateRandomName();
+    const canvasBoard = generateRandomName();
     const internalUsecases = [
       {
-        name: 'sideshow-canvas',
-        url: `/playground/${generateRandomName()}?template=/boards/templates/sideshow-canvas.json`,
+        name: 'slideshow-sender',
+        url: `/playground/${injectorBoard}?template=/boards/templates/slideshow-sender.json&${qs.stringify({ 'canvas-board': canvasBoard })}`,
         metadata: 'use case'
       },
       {
-        name: 'sideshow-sender',
-        url: `/playground/${generateRandomName()}?template=/boards/templates/sideshow-sender.json`,
+        name: 'slideshow-canvas',
+        url: `/playground/${canvasBoard}?template=/boards/templates/slideshow-canvas.json&${qs.stringify({ 'injector-board': injectorBoard })}`,
         metadata: 'use case'
-      }
+      },
     ];
     if (!usecases) {
       fetch(usecasesUrl)
@@ -922,7 +930,7 @@ export default class Playground extends Component {
         {
           usecases ? (
             <BoardCollection
-              style={{ height: 210, width: '100%', marginRight: 20 }}
+              style={{ height: 250, width: '100%', marginRight: 20 }}
               items={usecases}
             />
           ) : (

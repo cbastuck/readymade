@@ -2,7 +2,7 @@
   "runtimes": [
     {
       "id": "RT1",
-      "name": "sideshow canvas",
+      "name": "slideshow canvas",
       "type": "browser"
     }
   ],
@@ -20,5 +20,5 @@
     ]
   },
   "sidechainRouting": {},
-  "inputRouting": { "RT1": "turquoise-squid-sideshow sender" }
+  "inputRouting": { "RT1": "%injector-board%-slideshow sender" }
 }
