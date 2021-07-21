@@ -25,7 +25,6 @@
     ]
   },
   "sidechainRouting": {},
-  "boardRouting": {},
   "description": [
     { "type": "headline", "text": "Important Note" },
     "By sending data to the reflector you implicitly accept to the following rules, terms and conditions:",

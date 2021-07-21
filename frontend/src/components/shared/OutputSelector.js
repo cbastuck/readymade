@@ -14,6 +14,15 @@ export default class OutputSelector extends Component {
   static updatePeersAction = 'update-peers';
   static flowChanged = 'flow-changed';
 
+componentDidMount() {
+    const { initialValue } = this.props;
+    if (initialValue !== undefined) {
+      this.setState({ 
+        selected: initialValue
+      });
+    }
+  }
+
   componentDidUpdate(prevProps) {
     if (this.props.items !== prevProps.items) {
       const options = this.getSelectorOptions();
@@ -24,10 +33,13 @@ export default class OutputSelector extends Component {
   }
 
   getSelectorOptions = () => {
-    const { items } = this.props;
+    const { items, initialValue } = this.props;
+    const initial = initialValue ? 
+      { [initialValue]: initialValue } : 
+      {};
     return items.reduce(
       (a, c) => ({ ...a, [c]: c}), 
-      { 'none': none },
+      { 'none': none, ...initial },
     );
   }
   

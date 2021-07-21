@@ -20,7 +20,7 @@ export default class BoardCollection extends Component {
     } = item;
     return (
       <Card
-        style={s(t.p10)}
+        style={s(t.p10, { maxWidth: 300 })}
         key={`board-card-${name}`}
       >
         <Card.Content>
@@ -58,15 +58,11 @@ export default class BoardCollection extends Component {
                 </Card.Meta>
               )
             }
-            {
-               description && (
-                <Card.Description style={{ marginTop: 10, color: 'rgb(84 84 84)' }}>
-                  <div style={t.tl}>
-                    { description }
-                  </div>
-                </Card.Description>
-              )
-            }
+            <Card.Description style={{ marginTop: 10, color: 'rgb(84 84 84)' }}>
+              <div style={t.tl}>
+                { description || 'No description available' }
+              </div>
+            </Card.Description>
           </Link>
         </Card.Content>
       </Card>
@@ -81,7 +77,7 @@ export default class BoardCollection extends Component {
     return (
       <div>
         <Card.Group 
-          itemsPerRow={4}
+          itemsPerRow={2}
           style={{
             height, 
             overflowY: 'auto',

@@ -70,7 +70,7 @@ export default class InputField extends Component {
             flexGrow: 3
           }}
           type={type}
-          value={value || ''}
+          value={value === undefined ? '' : value}
           onChange={(ev, { value: rawValue }) => {
             const value = type === 'number' ? Number(rawValue) : rawValue;
             synced ? 

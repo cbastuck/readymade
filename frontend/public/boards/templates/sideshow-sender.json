@@ -1,0 +1,32 @@
+{
+  "runtimes": [
+    {
+      "id": "RT1",
+      "name": "sideshow sender",
+      "type": "browser"
+    }
+  ],
+  "services": {
+    "RT1": [
+      {
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Injector"
+      },
+      {
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map",
+        "template": {
+          "type": "image",
+          "y": 0,
+          "height": "100%",
+          "data=": "params"
+        }
+      }
+    ]
+  },
+  "outputRouting": {
+    "RT1": {
+      "peer": "lavender-wildebeest-sideshow canvas"
+    }
+  }
+}

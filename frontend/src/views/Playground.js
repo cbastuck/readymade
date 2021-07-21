@@ -157,6 +157,26 @@ export default class Playground extends Component {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles); 
     }
 
+    const inputActivationIds = inputRouting ? 
+      Object.keys(inputRouting).reduce(
+        (a, c) => ({
+          ...a,
+          [getActivationId(c)]: true
+        }),
+        {}
+      ) : 
+      {};
+
+    const outputActivationIds = outputRouting ? 
+      Object.keys(outputRouting).reduce(
+        (a, c) => ({
+          ...a,
+          [getActivationId(c)]: true
+        }),
+        {}
+      ) : 
+      {};
+
     const data = {
       board: { name: boardName },
       runtimes,
@@ -166,9 +186,15 @@ export default class Playground extends Component {
         {}
       ),
       outputRouting,
-      inputRouting
+      inputRouting,
     };
-    this.setState({ ...data, initialFetched: true, description });
+    this.setState({ 
+      ...data, 
+      ...inputActivationIds,
+      ...outputActivationIds,
+      initialFetched: true, 
+      description,
+    });
     return data;
   }
 
@@ -234,7 +260,9 @@ export default class Playground extends Component {
           runtimes, 
           services, 
           sidechainRouting, 
-          description
+          description,
+          inputRouting,
+          outputRouting,
         } = template;
         const patchedRuntimes = runtimes.map(rt => ({
           ...rt, id: uuid.v4() 
@@ -248,14 +276,28 @@ export default class Playground extends Component {
             }),
             {}
           ),
-          sidechainRouting: patchedRuntimes.reduce(
-            (all, rt, idx) => ({ ...all, [rt.id]: sidechainRouting[runtimes[idx].id] }),
-            {}
-          ),
+          sidechainRouting: sidechainRouting ? 
+            patchedRuntimes.reduce(
+              (all, rt, idx) => ({ ...all, [rt.id]: sidechainRouting[runtimes[idx].id] }),
+              {}
+            ) : 
+            {},
+          inputRouting: inputRouting ? 
+            patchedRuntimes.reduce(
+              (all, rt, idx) => ({ ...all, [rt.id]: inputRouting[runtimes[idx].id] }),
+              {}
+            ) : 
+            undefined,
+          outputRouting: outputRouting ? 
+            patchedRuntimes.reduce(
+              (all, rt, idx) => ({ ...all, [rt.id]: outputRouting[runtimes[idx].id] }),
+              {}
+            ) :
+            undefined,
           description,
         };
       } catch (err) {
-        console.error('Creating from template failed', templateUrl);
+        console.error('Creating from template failed', templateUrl, err);
       }      
     }
   }
@@ -474,7 +516,7 @@ export default class Playground extends Component {
       if (nextRuntime) {
         nextRuntime.processRuntime(result);
       }
-    } 
+    }
      
     if (runtimeOutput.peer && this.peerContext) {
       this.peerContext.sendData(
@@ -506,6 +548,7 @@ export default class Playground extends Component {
     return (
       <OutputSelector
         items={peers}
+        initialValue={outputRouting.peer}
         onExpand={() => {
           const rt = this.getRuntimeById(runtime.id);
           if (rt) {
@@ -523,9 +566,15 @@ export default class Playground extends Component {
         })}
         onAction={action => {
           switch (action.type) { 
-            case OutputSelector.updatePeersAction: 
-              this.setState({ [getActivationId(runtime.id)]: true });
-            break;
+            case OutputSelector.updatePeersAction: {
+              const activationId = getActivationId(runtime.id);
+              if (!this.state[activationId]) {
+                this.setState({ [activationId]: true });
+              } else {
+                onUpdatePeers();
+              }
+              break;
+            }
             case OutputSelector.flowChanged:
               return this.setState({
                 outputRouting: {
@@ -663,6 +712,7 @@ export default class Playground extends Component {
           <PeersConsumer> 
           { 
             peers => runtimes.map((runtime, rtidx) => {
+              const isPeerActive = !!this.state[getActivationId(runtime.id)];
               return (
                 <Peer 
                   key={`playground-peer-${runtime.id}`}
@@ -682,7 +732,7 @@ export default class Playground extends Component {
                       }
                     }
                   }}
-                  active={!!this.state[getActivationId(runtime.id)]}
+                  active={isPeerActive}
                 >
                   { this.renderRuntime(boardContext, runtime, peers) }
                 </Peer>
@@ -702,12 +752,12 @@ export default class Playground extends Component {
       const renderItem = (item, idx) => {
         const key = `template-description-item-${idx}`;
         if (typeof item === 'string') {
-          return <span style={s(t.uc, t.fs12)}> { item } </span>;
+          return <span key={key} style={s(t.uc, t.fs12)}> {item} </span>;
         }
         if (Array.isArray(item)) {
           return (
-            <div style={{ display: 'flex', flexDirection: 'row' }}>
-              { item.map((x, y) => renderItem(x, `${idx}.${y}`)) }
+            <div key={key} style={{ display: 'flex', flexDirection: 'row' }}>
+              { item.reduce((a, c) => [...a, c, <span>&nbsp;</span>], []).map((x, y) => renderItem(x, `${idx}.${y}`)) }
             </div>
           );
         }
@@ -734,7 +784,6 @@ export default class Playground extends Component {
             return (
               <div key={key} style={s(t.uc, t.fs12, t.ls1)}>
                 { text }  { checkPassed ? '✅' : '❌' }
-                <span>&nbsp;</span>
               </div>
             );
           }
@@ -745,11 +794,12 @@ export default class Playground extends Component {
             } = item;
             return (
               <a 
+                key={key}
                 href={href} 
                 target="_blank" rel="noreferrer"
                 style={s(t.uc, t.fs12, t.ls1)}
               > 
-                { text }<span>&nbsp;</span>
+                { text }
               </a>
             );
           }
@@ -759,7 +809,7 @@ export default class Playground extends Component {
                 key={key}
                 style={s(t.uc, t.fs12, t.ls1)}
               >
-                { JSON.stringify(item) }
+                { item }
               </div>
             );
         }
@@ -841,29 +891,42 @@ export default class Playground extends Component {
 
   renderUsecases = () => {
     const { usecases } = this.state;
+    const internalUsecases = [
+      {
+        name: 'sideshow-canvas',
+        url: `/playground/${generateRandomName()}?template=/boards/templates/sideshow-canvas.json`,
+        metadata: 'use case'
+      },
+      {
+        name: 'sideshow-sender',
+        url: `/playground/${generateRandomName()}?template=/boards/templates/sideshow-sender.json`,
+        metadata: 'use case'
+      }
+    ];
     if (!usecases) {
       fetch(usecasesUrl)
         .then(resp => resp.json())
-        .then(usecases => this.setState({ usecases:
-          usecases.map(item => ({
-            ...item, 
-            url: `/playground/${generateRandomName()}?template=${item.template}`,
-            metadata: 'use case',
-            repo: item.repo,
-          }))
-         }))
+        .then(usecases => this.setState({ 
+          usecases: usecases.map(item => ({
+              ...item, 
+              url: `/playground/${generateRandomName()}?template=${item.template}`,
+              metadata: 'use case',
+              repo: item.repo,
+            })
+          ).concat(internalUsecases)
+        }))
     }
     return (
-      <div style={t.m(0, 40)}>
+      <div style={t.tc}>
         <h1 style={s(t.fs14, t.m(0, headlineSpace))}> —Launch a Usecase— </h1>
         {
           usecases ? (
             <BoardCollection
-              style={{ height: 170, width: '100%', marginRight: 20 }}
+              style={{ height: 210, width: '100%', marginRight: 20 }}
               items={usecases}
             />
           ) : (
-            <div style={s(t.m(0, 20), t.tc)}>
+            <div>
               <Loader active inline>
                 Loading Usecases ...
               </Loader>

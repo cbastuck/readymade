@@ -1,0 +1,24 @@
+{
+  "runtimes": [
+    {
+      "id": "RT1",
+      "name": "sideshow canvas",
+      "type": "browser"
+    }
+  ],
+  "services": {
+    "RT1": [
+      {
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor",
+        "logToConsole": false
+      },
+      {
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas"
+      }
+    ]
+  },
+  "sidechainRouting": {},
+  "inputRouting": { "RT1": "turquoise-squid-sideshow sender" }
+}

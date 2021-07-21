@@ -8,6 +8,10 @@ export default class Tooltip extends Component {
   };
   scheduledTimer = null;
 
+  componentWillUnmount() {
+    this.clearTimer();
+  }
+
   showTooltip = () => {
     if (!this.scheduledTimer) {
       this.scheduledTimer = setTimeout(
@@ -22,11 +26,15 @@ export default class Tooltip extends Component {
     }
   }
   
-  hideTooltip = () => {
+  clearTimer = () => {
     if (this.scheduledTimer) {
       clearTimeout(this.scheduledTimer);
       this.scheduledTimer = null;
     }
+  }
+
+  hideTooltip = () => {
+    this.clearTimer();
     this.setState({ visible: false });
   }
 
