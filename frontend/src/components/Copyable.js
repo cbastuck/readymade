@@ -17,18 +17,21 @@ export default class Copyable extends Component {
   render() {
     const {
       label,
-      value
+      value, 
+      style
     } = this.props;
     return (
-      <div style={s({ display: 'flex', flexDirection: 'row', width: '100%' }, t.mt5)}>
-        <div style={s(t.mt9, t.fs12)}>{label}</div>
+      <div style={s({ display: 'flex', flexDirection: 'row', width: '100%' })}>
+        <div style={s(t.mt9, t.fs12, t.uc, t.ls1)}>{label}</div>
         <input
           ref={input => this.input = input}
           style={s(
-            t.m(5, 0), 
-            t.p2, 
+            t.m(5, 0),
+            t.p2,
             { border: 'solid 1px lightgray' },
-            { color: 'darkgray' }
+            { color: 'darkgray' },
+            { flexGrow: 2 },
+            style
           )} 
           value={value}
           onChange={() => {}}

@@ -5,7 +5,6 @@ import {
   Message,
   Loader, 
 } from 'semantic-ui-react';
-import { generate } from 'unique-names-generator';
 import uuid from 'uuid';
 import qs from 'query-string';
 
@@ -26,8 +25,11 @@ import OutputSelector from '../components/shared/OutputSelector';
 import InputSelector from '../components/shared/InputSelector';
 import PeersProvider, { PeersConsumer } from '../PeersContext';
 import Peer from '../components/Peer';
+import QR from '../components/QR';
+import Copyable from '../components/Copyable';
 
 import { replacePlaceholders } from '../core/url';
+import { generateRandomName } from '../core/board';
 
 const defaultBundles = [
   'hookup.to/registry/browser/Audio',
@@ -65,9 +67,7 @@ const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/useca
 const defaultName = 'Playground';
 const headlineSpace = 6;
 
-function generateRandomName() {
-  return generate('-').split('-').slice(1).join('-');
-}
+
 
 function getSavedBoards() {
   const savedBoards = [];
@@ -752,13 +752,13 @@ export default class Playground extends Component {
   }
 
   renderDescription = () => {
-    const { description } = this.state;
+    const { description, boardName } = this.state;
     if (description) {
       const arr = Array.isArray(description) ? description : [description];
       const renderItem = (item, idx) => {
         const key = `template-description-item-${idx}`;
         if (typeof item === 'string') {
-          return <span key={key} style={s(t.uc, t.fs12)}> {item} </span>;
+          return <div key={key} style={s(t.uc, t.fs12)}> {item} </div>;
         }
         if (Array.isArray(item)) {
           return (
@@ -809,7 +809,40 @@ export default class Playground extends Component {
               </a>
             );
           }
-          default: 
+          case 'vspace': {
+            const { size } = item;
+            return <div key={key} style={{ height: size }} />;
+          }
+          case 'qr': {
+            const { href='#' } = item;
+            const params = qs.parse(document.location.search);
+            const url = replacePlaceholders(href, { board: boardName, ...params });
+            return (
+              <div key={key} style={{ margin: 'auto', textAlign: 'center' }}>
+                <QR url={url} />
+                <div style={{ width: '60%', margin: 'auto' }}>
+                  <Copyable
+                    label="url"
+                    value={url}
+                  />
+                </div>
+              </div>
+            );
+          }
+          case 'text':
+            const { 
+              value,
+              alignment='left',
+            } = item;
+            const alig = alignment === 'left' ? 
+              t.tl : 
+              (alignment === 'center' ? 
+                t.tc :
+                t.tr
+              );
+            return <div key={key} style={s(t.uc, t.fs12, alig)}> {value} </div>;
+          default:
+            console.error('Unsupported description type', item);
             return (
               <div 
                 key={key}
@@ -901,15 +934,10 @@ export default class Playground extends Component {
     const canvasBoard = generateRandomName();
     const internalUsecases = [
       {
-        name: 'slideshow-sender',
-        url: `/playground/${injectorBoard}?template=/boards/templates/slideshow-sender.json&${qs.stringify({ 'canvas-board': canvasBoard })}`,
-        metadata: 'use case'
-      },
-      {
-        name: 'slideshow-canvas',
+        name: 'Slideshow',
         url: `/playground/${canvasBoard}?template=/boards/templates/slideshow-canvas.json&${qs.stringify({ 'injector-board': injectorBoard })}`,
         metadata: 'use case'
-      },
+      }
     ];
     if (!usecases) {
       fetch(usecasesUrl)

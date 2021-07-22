@@ -19,6 +19,11 @@
       }
     ]
   },
-  "sidechainRouting": {},
-  "inputRouting": { "RT1": "%injector-board%-slideshow sender" }
+  "inputRouting": { "RT1": "%injector-board%-slideshow sender" },
+  "description": [
+    { "type": "headline", "text": "How to connect" },
+    { "type": "text", "value": "Open the board by copying the URL below the QR code, or directly scan the code with your smartphone and inject photos or images from there.", "alignment": "center" },
+    { "type": "text", "value": "Remember you can double-click the canvas to enter full-screen mode!", "alignment": "center" },
+    { "type": "qr", "href": "%http-host%/playground/%injector-board%?template=/boards/templates/slideshow-sender.json&canvas-board=%board%" }
+  ]
 }
