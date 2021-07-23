@@ -2,12 +2,22 @@
   "runtimes": [
     {
       "id": "RT1",
-      "name": "slideshow canvas",
+      "name": "slideshow",
       "type": "browser"
     }
   ],
   "services": {
     "RT1": [
+      {
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map",
+        "template": {
+          "type": "image",
+          "y": 0,
+          "height": "100%",
+          "data=": "params"
+        }
+      },
       {
         "serviceId": "hookup.to/service/monitor",
         "serviceName": "Monitor",
@@ -19,11 +29,11 @@
       }
     ]
   },
-  "inputRouting": { "RT1": "%injector-board%-slideshow sender" },
+  "inputRouting": { "RT1": "%sender-board%-injector-runtime" },
   "description": [
     { "type": "headline", "text": "How to connect" },
     { "type": "text", "value": "Open the board by copying the URL below the QR code, or directly scan the code with your smartphone and inject photos or images from there.", "alignment": "center" },
     { "type": "text", "value": "Remember you can double-click the canvas to enter full-screen mode!", "alignment": "center" },
-    { "type": "qr", "href": "%http-host%/playground/%injector-board%?template=/boards/templates/slideshow-sender.json&canvas-board=%board%" }
+    { "type": "qr", "href": "%http-host%/playground/%sender-board%?template=/boards/templates/injector.json&receiver-board=%board%" }
   ]
 }

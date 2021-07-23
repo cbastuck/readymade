@@ -876,13 +876,7 @@ export default class Playground extends Component {
       <div>
         { headline && <h1 style={s(t.fs14, t.tc, t.m(0, headlineSpace))}> —{headline}— </h1> }
         <div 
-          style={{ 
-            // backgroundColor: headline && '#fefefe',
-            
-            // borderRadius: 3,
-            // border: headline && 'solid 1px lightgray',
-            padding: headline && '20px 0px',
-          }}
+          style={{ padding: headline && '20px 0px' }}
         >
           <div style={s(t.tc, t.mt0, t.mb30)}>
             <Icon 
@@ -930,26 +924,25 @@ export default class Playground extends Component {
 
   renderUsecases = () => {
     const { usecases } = this.state;
-    const injectorBoard = generateRandomName();
-    const canvasBoard = generateRandomName();
     const internalUsecases = [
       {
         name: 'Slideshow',
-        url: `/playground/${canvasBoard}?template=/boards/templates/slideshow-canvas.json&${qs.stringify({ 'injector-board': injectorBoard })}`,
-        metadata: 'use case'
+        url: `/playground/${generateRandomName()}?template=/boards/templates/slideshow-canvas.json&${qs.stringify({ 'sender-board': generateRandomName() })}`,
+        metadata: 'use case',
+        description: 'Display photos coming from a peer injector board'
       }
     ];
     if (!usecases) {
       fetch(usecasesUrl)
         .then(resp => resp.json())
         .then(usecases => this.setState({ 
-          usecases: usecases.map(item => ({
+          usecases: internalUsecases.concat(usecases.map(item => ({
               ...item, 
               url: `/playground/${generateRandomName()}?template=${item.template}`,
               metadata: 'use case',
               repo: item.repo,
             })
-          ).concat(internalUsecases)
+          ))
         }))
     }
     return (
