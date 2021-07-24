@@ -11,6 +11,7 @@ import { s, t } from '../../styles';
 import ServiceUI from './ServiceUI';
 import Editor from '../../components/shared/Editor/index';
 import DropZone from '../../components/shared/DropZone';
+import { Debouncer } from './helpers';
 
 const serviceId = 'hookup.to/service/injector';
 const serviceName = 'Injector';
@@ -37,11 +38,22 @@ class InjectorUI extends Component {
     marginTop: 5,
   };
 
+  componentDidMount() {
+    this.debouncer = new Debouncer(100);
+  }
+
+  componentWillUnmount() {
+    this.debouncer.clear();
+  }
+
   onInit = initialState => {
     const { rawText } = initialState;
     
     if (rawText !== undefined) {
-      this.setState({ rawText });
+      this.setState({ 
+        rawText,
+        initialCode: rawText,
+      });
     }
   }
 
@@ -275,6 +287,11 @@ class InjectorUI extends Component {
           ref={editor => this.editor = editor}
           value={initialCode}
           language="json"
+          onChange={
+            () => this.editor && this.debouncer.f(
+              () => service.configure({ rawText: this.editor.getValue() })
+            )
+          }
         />
         <Button
           style={this.buttonStyle}
@@ -374,7 +391,7 @@ class InjectorUI extends Component {
     return (
       <ServiceUI
         {...this.props} 
-        onInit={this.onInit.bind(this)}
+        onInit={this.onInit}
         segments={[
           { name: 'Text', render: this.renderRawInput },
           { name: 'JSON', render: this.renderStructuredData },
@@ -394,7 +411,7 @@ class Injector {
   }
 
   configure(config) {
-    const { rawText } = config;
+    const { rawText } = config;
 
     if (rawText !== undefined) {
       this.rawText = rawText;

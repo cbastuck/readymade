@@ -116,3 +116,30 @@ export class RequestError extends Error {
     this.status = status;
   }
 }
+
+export class Debouncer {
+  constructor(time=100) {
+    this.deferTime = time;
+  }
+
+  f(c) {
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = null;
+    }
+    this.timeout = setTimeout(c, this.deferTime);
+  }
+
+  clear() {
+    if (this.timeout) {
+      clearTimeout(this.timeout);
+      this.timeout = null;
+    }
+  }
+}
+
+export function sleep(t) {
+  return new Promise(resolve => {
+    setTimeout(resolve, t);
+  });
+}

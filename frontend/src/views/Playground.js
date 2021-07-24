@@ -61,6 +61,7 @@ const allowedServices = [
   'hookup.to/service/spotify',
   'hookup.to/service/github-source',
   'hookup.to/service/github-sink',
+  'hookup.to/service/cache',
 ];
 
 const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
@@ -947,11 +948,15 @@ export default class Playground extends Component {
     }
     return (
       <div style={t.tc}>
-        <h1 style={s(t.fs14, t.m(0, headlineSpace))}> —Launch a Usecase— </h1>
         {
           usecases ? (
             <BoardCollection
-              style={{ height: 250, width: '100%', marginRight: 20 }}
+              style={{ 
+                height: 220, 
+                width: '100%', 
+                marginRight: 20,
+              }}
+              headline="—Launch a Usecase—"
               items={usecases}
             />
           ) : (
@@ -975,9 +980,9 @@ export default class Playground extends Component {
     }));
     return items.length > 0 && (
       <div style={s(t.mt20)}>
-        <h1 style={s(t.fs14, t.m(0, headlineSpace))}> —Restore a board— </h1>
         <BoardCollection
           style={{ height: 250, width: '100%', marginRight: 20 }}
+          headline="—Restore a board—"
           items={items}
         />
       </div>

@@ -4,11 +4,13 @@ import {
   Card,
   Image,
   Icon,
+  Input,
 } from 'semantic-ui-react';
 
 import { s, t } from '../styles';
 
 export default class BoardCollection extends Component {
+  state = { filter: '' };
   renderCard = item => {
     const {
       url,
@@ -74,28 +76,47 @@ export default class BoardCollection extends Component {
       height=120,
       style={} 
     } = this.props;
+    const { filter } = this.state;
     return (
-      <div>
-        <Card.Group 
-          itemsPerRow={2}
-          style={{
-            height, 
-            overflowY: 'auto',
-            margin: 'auto',
-            border: 'solid 1px #ccc',
-            borderRadius: 3,
-            padding: 10,
-            ...style
-          }}
-        >
-          { items.map(this.renderCard) }
-        </Card.Group>
-      </div>
+      <Card.Group 
+        itemsPerRow={2}
+        style={{
+          height, 
+          overflowY: 'auto',
+          margin: 'auto',
+          padding: 10,
+          ...style
+        }}
+      >
+        {
+          items.filter(x => !filter || x.name.toLowerCase().indexOf(filter) !== -1)
+            .map(this.renderCard) 
+        }
+      </Card.Group>
     );
   }
 
   render() {
-    const { items } = this.props;
-    return items.length > 0 && this.renderBoards(items);
+    const { 
+      items, 
+      headline,
+    } = this.props;
+    const { filter } = this.state;
+    return items.length > 0 && (
+      <div style={{ border: 'solid 1px #ccc', borderRadius: 3 }}>
+        <h1 style={s(t.mt15, t.tc, t.fs14, t.p(0, 0))}> 
+          {headline} 
+        </h1>
+        <div style={t.tr}>
+          <Input
+            icon='search'
+            style={{ marginRight: 20 }}
+            value={filter}
+            onChange={(_, { value }) => this.setState({ filter: value.toLowerCase() })}
+          />
+        </div>
+        { this.renderBoards(items) }
+      </div>
+    )
   }
 }

@@ -31,6 +31,7 @@ import ReduceDescriptor from '../services/Reduce';
 import SpotifyDescriptor from '../services/Spotify';
 import GithubSourceDescriptor from '../services/GithubSource';
 import GithubSinkDescriptor from '../services/GithubSink';
+import CacheDescriptor from '../services/Cache';
 
 const defaultRegistry = [
   timerDescriptor,
@@ -66,6 +67,7 @@ const defaultRegistry = [
   SpotifyDescriptor,
   GithubSourceDescriptor,
   GithubSinkDescriptor,
+  CacheDescriptor,
 ];
 
 export default defaultRegistry;

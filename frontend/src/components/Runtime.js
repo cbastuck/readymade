@@ -212,14 +212,12 @@ export default class Runtime extends Component {
                 /> 
                 <Button
                   compact
-                  negative
-                  style={{ width: 30 }}
+                  style={{ width: 30, marginLeft: 3 }}
                   onClick={() => this.setState({ runtimeNameEditBuffer: '' })}
                   icon="close"
                 />
                 <Button
                   compact
-                  positive
                   style={{ width: 30 }}
                   disabled={runtimeNameEditBuffer === name}
                   onClick={() => {
@@ -230,9 +228,10 @@ export default class Runtime extends Component {
                 /> 
               </div>
             ) : ( 
-              <span style={{ cursor: 'pointer' }}>
+              <div style={{ cursor: 'pointer' }}>
                 {name}
-              </span>
+                <Icon style={t.m(5, 0)} name="pencil" color="grey" size="small" />
+              </div>
             )
           }
         </div>

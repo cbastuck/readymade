@@ -37,6 +37,12 @@ export default class Editor extends Component {
     initialize().then(monaco => this.setState({ monaco }));
   }
 
+  componentWillUnmount() {
+    if (this.registeredEvent) {
+      this.registeredEvent.dispose();
+    }
+  }
+
   getValue = () => {
     return this.editor.getValue();
   }
@@ -48,6 +54,7 @@ export default class Editor extends Component {
       language='javascript',
       height=100,
       width=350,
+      onChange,
     } = this.props;
 
      if (!monaco) { 
@@ -82,6 +89,9 @@ export default class Editor extends Component {
                   automaticLayout: true
                 }
               );
+              if (this.editor && onChange) {
+                this.registeredEvent = this.editor.onDidChangeModelContent(onChange);
+              }
             }
           }}
           style={{
