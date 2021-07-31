@@ -1060,6 +1060,12 @@ export default class Playground extends Component {
 
   render() {
     const { boardName } = this.state;
+    const { pathname } = window.location;
+    const lastPathItem = pathname.split('/').slice(-1)[0];
+    if (lastPathItem === 'src') {
+      const src = this.restoreBoardFromLocalStorage(boardName);
+      return <pre> { JSON.stringify(src, null, 2) } </pre>;
+    } 
     return (
       <BoardProvider
         key={`playground-${boardName}`}

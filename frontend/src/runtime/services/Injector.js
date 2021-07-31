@@ -20,7 +20,7 @@ class InjectorUI extends Component {
   state = {
     files: [],
     user: undefined,
-    initialCode: JSON.stringify({ key: "value" }, null, 2),
+    recentCode: JSON.stringify({ key: "value" }, null, 2),
     blob: null,
     dropName: undefined,
     items: null,
@@ -47,13 +47,17 @@ class InjectorUI extends Component {
   }
 
   onInit = initialState => {
-    const { rawText } = initialState;
+    const { 
+      rawText,
+      recentCode,
+    } = initialState;
     
     if (rawText !== undefined) {
-      this.setState({ 
-        rawText,
-        initialCode: rawText,
-      });
+      this.setState({ rawText });
+    }
+
+    if (recentCode !== undefined) {
+      this.setState({ recentCode });
     }
   }
 
@@ -262,7 +266,7 @@ class InjectorUI extends Component {
   }
 
   renderStructuredData = service => {
-    const { initialCode } = this.state;
+    const { recentCode } = this.state;
     return (
       <div 
         style={{ 
@@ -285,11 +289,13 @@ class InjectorUI extends Component {
         </h1>
         <Editor 
           ref={editor => this.editor = editor}
-          value={initialCode}
+          value={recentCode}
           language="json"
           onChange={
             () => this.editor && this.debouncer.f(
-              () => service.configure({ rawText: this.editor.getValue() })
+              () => service.configure({ 
+                recentCode: this.editor.getValue() 
+              })
             )
           }
         />
@@ -411,10 +417,17 @@ class Injector {
   }
 
   configure(config) {
-    const { rawText } = config;
+    const { 
+      rawText,
+      recentCode,
+    } = config;
 
     if (rawText !== undefined) {
       this.rawText = rawText;
+    }
+
+    if (recentCode !== undefined) {
+      this.recentCode = recentCode;
     }
   }
 

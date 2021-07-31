@@ -230,7 +230,7 @@ export default class Runtime extends Component {
             ) : ( 
               <div style={{ cursor: 'pointer' }}>
                 {name}
-                <Icon style={t.m(5, 0)} name="pencil" color="grey" size="small" />
+                <Icon style={s(t.m(5, 0))} name="pencil" color="grey" size="small" />
               </div>
             )
           }
