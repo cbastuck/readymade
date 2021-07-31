@@ -13,7 +13,8 @@ class Cache {
   destroy() {
   }
 
-  configure(config) { 
+  configure(config) {
+    this.cached = config;
   }
 
   async process(params) {

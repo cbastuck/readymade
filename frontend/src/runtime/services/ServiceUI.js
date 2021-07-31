@@ -39,9 +39,13 @@ export default class ServiceUI extends Component {
 
   constructor(props) {
     super(props);
-    const { service } = props;
+    const { service, initialSegment } = props;
     service.__notificationTargets = new Notifications();
-  }
+
+    if (initialSegment) {
+      this.state.currentSegmentName = initialSegment(service);
+    }
+  } 
 
   componentWillUnmount() {
     const { service } = this.props;
@@ -75,15 +79,10 @@ export default class ServiceUI extends Component {
   getCurrentSegmentName = () => {
     const { 
       segments,
-      initialSegment
     } = this.props;
     const { currentSegmentName } = this.state;
     if (currentSegmentName) {
       return currentSegmentName;
-    }
-
-    if (initialSegment) {
-      return initialSegment();
     }
     
     for (const segment of segments) {
@@ -100,11 +99,7 @@ export default class ServiceUI extends Component {
     const currentSegmentName = this.getCurrentSegmentName();
     const segment = segments.find(segment => segment.name === currentSegmentName);
     return (
-      <div 
-        style={{ 
-          margin: '5px 5px', 
-        }}
-      >
+      <div style={{ margin: '5px 5px' }}>
         {
           segments.length > 1 && (
             <Menu 

@@ -579,8 +579,8 @@ class Canvas {
     
     this.fullscreen = false;
     this.clearOnRedraw = true;
-    this.frameID = 0;
-    this.pending = {};
+    this._frameID = 0;
+    this._pending = {};
   }
 
   configure(config) {
@@ -613,9 +613,9 @@ class Canvas {
   }
 
   resolveCapturedFrame({ blob, frameID }){
-    const { resolve, reject } = this.pending[frameID];
-    delete this.pending[frameID];
-    if (this.pending[frameID+1]) {
+    const { resolve, reject } = this._pending[frameID];
+    delete this._pending[frameID];
+    if (this._pending[frameID+1]) {
       reject(frameID); // next frame already scheduled
     } else {
       resolve(blob);
@@ -624,12 +624,12 @@ class Canvas {
 
   waitForCapturedFrame(frameID) {
     return new Promise((resolve, reject) => {
-      this.pending[frameID] = { resolve, reject };
+      this._pending[frameID] = { resolve, reject };
     });
   }
 
   async process(params) {
-    const frameID = this.frameID++;
+    const frameID = this._frameID++;
     this.app.notify(
       this, 
       { 

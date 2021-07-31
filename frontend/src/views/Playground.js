@@ -8,6 +8,7 @@ import {
 import uuid from 'uuid';
 import qs from 'query-string';
 
+import Editor from '../components/shared/Editor/index';
 import { redirectTo } from '../core/actions';
 import BoardProvider, { BoardConsumer } from '../BoardContext';
 import Toolbar from '../components/Toolbar';
@@ -130,6 +131,8 @@ export default class Playground extends Component {
           sidechainRouting: {},
           description: '',
           initialFetched: false,
+          outputRouting: {},
+          inputRouting: {},
         });
       } else {
         this.setState({ 
@@ -150,6 +153,7 @@ export default class Playground extends Component {
       runtimes=[], 
       services={},
       description='',
+      sidechainRouting={},
       outputRouting={},
       inputRouting={},
     } = this.state.initialFetched ? this.state : await this.setInitialPlayground();
@@ -186,6 +190,7 @@ export default class Playground extends Component {
         (all, rt) => ({ ...all, [rt.id]: this.defaultRegistry.availableServices }), 
         {}
       ),
+      sidechainRouting,
       outputRouting,
       inputRouting,
     };
@@ -514,7 +519,7 @@ export default class Playground extends Component {
         const dst = this.runtimeInstances[route.runtimeId];
         await dst.configureService(route.serviceUuid, result);
       }
-      return; // runtimes with routings aren't further processed
+      // return; // runtimes with routings aren't further processed
     }
     const runtimeOutput = outputRouting[runtime.id] || {};
     const flow = (runtimeOutput &&  runtimeOutput.flow) || 'pass';
@@ -548,6 +553,11 @@ export default class Playground extends Component {
         }
       }
     }
+  }
+
+  closeSourceView = () => {
+    const { pathname } = window.location;
+    redirectTo(pathname.split('/').slice(0, -1).join('/'));
   }
 
   renderOutputs = (peers, runtime, onUpdatePeers) => {
@@ -1036,6 +1046,60 @@ export default class Playground extends Component {
     }
   }
 
+  renderSourceCode = boardName => {
+    const { editSourceCode } = this.state;
+    const src = this.restoreBoardFromLocalStorage(boardName) || '';
+    if (editSourceCode) {
+      return (
+        <div style={{ height: '100%'}}>
+          <Button 
+            style={s(t.m5, t.uc, t.ls1, t.fs12)}
+            onClick={() => {
+              const src = this.editor.getValue();
+              localStorage.setItem(`hkp-playground-${boardName}`, src);
+              this.closeSourceView();
+            }}
+          >
+            Save
+          </Button>
+          <Button 
+            style={s(t.m5, t.uc, t.ls1, t.fs12)}
+            onClick={this.closeSourceView}
+          >
+            Close
+          </Button>
+          <Editor
+            ref={editor => this.editor = editor}
+            language="json"
+            value={JSON.stringify(src, null, 2)}
+          />
+        </div>
+      )
+    }
+    return (
+      <div>
+        <div style={{ position: 'sticky', top: 0, width: '100%', backgroundColor: 'white' }}>
+          <Button
+            style={s(t.mt10, t.mh(5), t.uc, t.ls1, t.fs12)}
+            onClick={() => this.setState({ editSourceCode: true })}
+          >
+            Edit
+          </Button>
+          <Button 
+            style={s(t.m5, t.uc, t.ls1, t.fs12)}
+            onClick={this.closeSourceView}
+          >
+            Close
+          </Button>
+          <hr style={{ borderTop: '1px solid lightgray' }}/>
+        </div>
+        <div style={{ fontFamily: 'monospace', margin: 5 }}>    
+          <pre> { JSON.stringify(src, null, 2) } </pre>
+        </div>
+      </div>
+    );
+  }
+
   renderContent = boardContext => {
     if (!this.state.initialFetched) {
       return (
@@ -1063,8 +1127,7 @@ export default class Playground extends Component {
     const { pathname } = window.location;
     const lastPathItem = pathname.split('/').slice(-1)[0];
     if (lastPathItem === 'src') {
-      const src = this.restoreBoardFromLocalStorage(boardName);
-      return <pre> { JSON.stringify(src, null, 2) } </pre>;
+      return this.renderSourceCode(boardName);
     } 
     return (
       <BoardProvider

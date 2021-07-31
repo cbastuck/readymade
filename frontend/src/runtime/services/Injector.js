@@ -404,6 +404,7 @@ class InjectorUI extends Component {
           { name: 'File', render: this.renderFileInput },
           { name: 'Drop', render: this.renderDragNDropInput },
         ]}
+        initialSegment={service => service.recentCode ? 'JSON' : 'Text'}
       />
     )
   }

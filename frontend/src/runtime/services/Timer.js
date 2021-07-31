@@ -156,7 +156,7 @@ class TimerUI extends Component {
           { name: 'one-shot', render: this.renderOneShot },
           // { name: 'counter', render: this.renderCounter },
         ]}
-        initialSegment={() => this.state.periodic ? 'periodic' : 'one-shot'}
+        initialSegment={service => service.periodic ? 'periodic' : 'one-shot'}
       />
     );
   }
