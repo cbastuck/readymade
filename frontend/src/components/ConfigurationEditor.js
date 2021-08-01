@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Button, Segment, TextArea } from 'semantic-ui-react';
+import { Button, TextArea } from 'semantic-ui-react';
 
 import Resizable from './Resizable';
 import Editor from './shared/Editor/index';
@@ -42,11 +42,11 @@ export default class ConfigurationEditor extends Component {
             width: '100%',
             height: '100%',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
           }}
         >
           <h1 style={s(t.uc, t.fs13, t.ls1)}>Service Configuration</h1>
-          <Segment 
+          <div 
             style={{
               height: '100%', 
               margin: 5,
@@ -62,7 +62,7 @@ export default class ConfigurationEditor extends Component {
                 /> : 
                 this.renderConfigAsTextArea(filteredService)               
             }
-          </Segment>
+          </div>
           <div 
             style={{ 
               display: 'flex', 

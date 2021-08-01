@@ -1,6 +1,9 @@
-const hasArrayBuffer = typeof ArrayBuffer === 'function';
+export function isFunction(functionToCheck) {
+ return functionToCheck && {}.toString.call(functionToCheck) === '[object Function]';
+}
 
 export function isArrayBuffer(value) {
+  const hasArrayBuffer = typeof ArrayBuffer === 'function';
   return hasArrayBuffer && (value instanceof ArrayBuffer || toString.call(value) === '[object ArrayBuffer]');
 }
 
@@ -32,7 +35,7 @@ export function filterPrivateMembers(service) {
   return service && Object.keys(service).reduce(
     (res, cur) =>
       (cur[0] === '_' || cur === 'app') ?
-        res :
+        res : 
         { ...res, [cur]: service[cur] },
     {}
   );

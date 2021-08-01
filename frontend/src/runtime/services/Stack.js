@@ -11,6 +11,7 @@ const serviceId = 'hookup.to/service/stack';
 const serviceName = 'Stack';
 const defaultInput = 'multiplex';
 const defaultOutput = 'array';
+
 class StackUI extends Component {
   state = {
     subservices: [],
@@ -20,12 +21,12 @@ class StackUI extends Component {
 
   onInit = initialState => {
     const { 
-      subservices=[],
+      _subservices=[],
       input=defaultInput,
       output=defaultOutput,
     } = initialState;
     this.setState({ 
-      subservices, 
+      subservices: _subservices, 
       input, 
       output,
     });
@@ -131,7 +132,7 @@ class Stack {
     this.board = board;
     this.app = app;
 
-    this.subservices = [];
+    this._subservices = [];
     this.input = defaultInput;
     this.output = defaultOutput;
   }
@@ -147,6 +148,7 @@ class Stack {
       output,
     } = config;
     if (services !== undefined) {
+      this.services = services;
       const subservices = []
       for (const svc of services) {
         if (!svc.uuid) {
@@ -157,10 +159,8 @@ class Stack {
           subservices.push(ssvc);
         }
       }
-      this.subservices = subservices;
-      this.app.notify({ 
-        subservices,
-      });
+      this._subservices = subservices;
+      this.app.notify({ subservices });
     }
 
     if (input !== undefined) {
@@ -176,7 +176,7 @@ class Stack {
 
   async processArray(params) {
     const results = await Promise.all(
-      this.subservices.map((ssvc, idx) => 
+      this._subservices.map((ssvc, idx) => 
         ssvc.process(params[idx])
       )
     );
@@ -186,14 +186,14 @@ class Stack {
 
   async processScalar(params, idx) {
     if (idx !== undefined) {
-      const ssvc = this.subservices[idx];
+      const ssvc = this._subservices[idx];
       if (ssvc) {
         return ssvc.process(params);
       }
     } else {
       const results = [];
       let allNull = true;
-      for (const ssvc of this.subservices) {
+      for (const ssvc of this._subservices) {
         const r = await ssvc.process(params);
         if (r !== null) {
           allNull = false;
@@ -205,7 +205,7 @@ class Stack {
   }
 
   process(params) {
-    if (this.subservices.length > 0) {
+    if (this._subservices.length > 0) {
       if (this.input === 'lanes') {
         if (Array.isArray(params)) {
           return this.processArray(params);

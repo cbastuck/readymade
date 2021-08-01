@@ -107,7 +107,7 @@ export default class BoardCollection extends Component {
         <h1 style={s(t.mt15, t.tc, t.fs14, t.p(0, 0))}> 
           {headline} 
         </h1>
-        <div style={t.tr}>
+        <div style={s(t.tr, t.mb5)}>
           <Input
             icon='search'
             style={{ marginRight: 20 }}

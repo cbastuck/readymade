@@ -58,15 +58,15 @@ class BufferUI extends Component {
     return (
       <div>
         <InputField
-            type="number"
-            value={this.state.capacity}
-            onChange={(_, { value }) => {
-              const capacity = value !== '' && Number(value);
-              service.configure({ capacity });
-              this.setState({ capacity });
-            }}
-            label="Capacity"
-            unit="items"
+          type="number"
+          value={this.state.capacity}
+          onChange={(_, { value }) => {
+            const capacity = value !== '' && Number(value);
+            service.configure({ capacity });
+            this.setState({ capacity });
+          }}
+          label="Capacity"
+          unit="items"
           />
         <Button
           style={s(t.w100, t.mt5, t.uc, t.ls1, t.fs11)}

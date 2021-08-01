@@ -1057,7 +1057,7 @@ export default class Playground extends Component {
             onClick={() => {
               const src = this.editor.getValue();
               localStorage.setItem(`hkp-playground-${boardName}`, src);
-              this.closeSourceView();
+              // this.closeSourceView();
             }}
           >
             Save

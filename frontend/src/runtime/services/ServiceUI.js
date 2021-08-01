@@ -99,7 +99,7 @@ export default class ServiceUI extends Component {
     const currentSegmentName = this.getCurrentSegmentName();
     const segment = segments.find(segment => segment.name === currentSegmentName);
     return (
-      <div style={{ margin: '5px 5px' }}>
+      <Resizable hideHandle={!resizable}>
         {
           segments.length > 1 && (
             <Menu 
@@ -130,30 +130,19 @@ export default class ServiceUI extends Component {
             </Menu>
           )
         }
-        <Segment style={{ margin: '15px 20px', padding: 0 }}>
-          {
-            resizable ? 
-              (
-                <Resizable style={s({ padding: 14 })}>
-                  { segment && segment.render(service) }
-                </Resizable>   
-              ) : 
-              (
-                <div style={s({ padding: 14 })}>
-                  { segment && segment.render(service) }
-                </div>
-              )
-          }
-        </Segment>
-      </div>
+        <div>
+          <Segment style={{ margin: '15px 20px', padding: 0, height: '100%' }}>
+            <div style={s({ padding: 14, height: '100%' })}>
+              { segment && segment.render(service) }
+            </div>
+          </Segment>
+        </div>
+      </Resizable>
     );
   }
 
   renderSingleSegment = (boardContext, children, resizable) => {
-    const {
-      setup,
-    } = this.props;
-
+    const { setup } = this.props;
     const c = children({ 
       boardContext,
       service: setup ? setup(boardContext, this.props) : this.setup(boardContext, this.props)

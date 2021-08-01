@@ -7,22 +7,30 @@ class Cache {
     this.board = board;
     this.app = app;
 
-    this.cached = {};
+    this.update = 'config';
   }
 
   destroy() {
   }
 
   configure(config) {
-    this.cached = config;
+    const { initial } = config;
+    if (initial !== undefined) {
+      this.initial = initial;
+    } else {
+      this.values = { ...this.values, ...config };
+    }
+    this.app.notify(this, this.values);
   }
 
   async process(params) {
-    this.cached = {
-      ...this.cached,
-      ...params,
+    const values = (this.values === undefined) ?
+        { ...(this.initial || {}), ...params } : 
+        { ...this.values, ...params };
+    if (this.update === 'process') { // process updates cache
+      this.values = values;
     }
-    return this.cached;
+    return values;
   }
 }
 
