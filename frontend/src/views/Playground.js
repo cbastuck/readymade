@@ -273,18 +273,35 @@ export default class Playground extends Component {
         const patchedRuntimes = runtimes.map(rt => ({
           ...rt, id: uuid.v4() 
         }));
+        const patchedServices = patchedRuntimes.reduce((all, rt, idx) => ({ 
+            ...all, 
+            [rt.id]: services[runtimes[idx].id].map(svc => ({ uuid: uuid.v4(), ...svc }))
+          }),
+          {}
+        );
         return {
           runtimes: patchedRuntimes,
-          services: patchedRuntimes.reduce(
-            (all, rt, idx) => ({ 
-              ...all, 
-              [rt.id]: services[runtimes[idx].id].map(svc => ({ uuid: uuid.v4(), ...svc }))
-            }),
-            {}
-          ),
+          services: patchedServices,
           sidechainRouting: sidechainRouting ? 
             patchedRuntimes.reduce(
-              (all, rt, idx) => ({ ...all, [rt.id]: sidechainRouting[runtimes[idx].id] }),
+              (all, rt, idx) => {
+                const entries = sidechainRouting[runtimes[idx].id];
+                const entry = entries && entries[0]; // TODO: we're only take the first HOTFIX
+                if (!entry) {
+                  return all;
+                }
+                const origRTIndex = runtimes.findIndex(r => r.id === entry.runtimeId);
+                const origSvcIndex = services[runtimes[idx].id].findIndex(svc => svc.uuid === entry.serviceUuid);
+                return { 
+                  ...all, 
+                  [rt.id]: [ // TODO: we're only taking the first sidechain entry HOTFIX
+                    {
+                      runtimeId: patchedRuntimes[origRTIndex].id,
+                      serviceUuid: patchedServices[rt.id][origSvcIndex].uuid,
+                    }
+                  ]
+                }
+              },
               {}
             ) : 
             {},
@@ -296,13 +313,18 @@ export default class Playground extends Component {
             undefined,
           outputRouting: outputRouting ? 
             patchedRuntimes.reduce(
-              (all, rt, idx) => ({ 
-                ...all,
-                [rt.id]: {
-                  ...outputRouting[runtimes[idx].id],
-                  peer: replacePlaceholders(outputRouting[runtimes[idx].id].peer, params)
-                } 
-              }),
+              (all, rt, idx) => {
+                const routing = outputRouting[runtimes[idx].id];
+                return routing ? 
+                  {
+                    ...all,
+                    [rt.id]: {
+                      ...routing,
+                      peer: replacePlaceholders(routing.peer, params)
+                    } 
+                  } : 
+                  all
+              },
               {}
             ) :
             undefined,
@@ -517,9 +539,12 @@ export default class Playground extends Component {
     if (sroute) {
       for (const route of sroute) {
         const dst = this.runtimeInstances[route.runtimeId];
-        await dst.configureService(route.serviceUuid, result);
+        if (dst) {
+          await dst.configureService(route.serviceUuid, result);
+        } else {
+          console.error('Playground.onResult() sidechain destination not found', route.runtimeId, this.runtimeInstances);
+        }
       }
-      // return; // runtimes with routings aren't further processed
     }
     const runtimeOutput = outputRouting[runtime.id] || {};
     const flow = (runtimeOutput &&  runtimeOutput.flow) || 'pass';
@@ -936,6 +961,7 @@ export default class Playground extends Component {
   renderUsecases = () => {
     const { usecases } = this.state;
     const internalUsecases = [
+      // TODO: out it on github
       {
         name: 'Slideshow',
         url: `/playground/${generateRandomName()}?template=/boards/templates/slideshow-canvas.json&${qs.stringify({ 'sender-board': generateRandomName() })}`,

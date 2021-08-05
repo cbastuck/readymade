@@ -1,4 +1,8 @@
 export function replacePlaceholders(url, params) {
+  if (!url) {
+    return;
+  }
+
   const secure = isSecureConnection();
   const { host } = window.location;
   let rep = url.replace('%ws-host%', secure ? `wss://${host}` : `ws://${host}`);
@@ -6,6 +10,7 @@ export function replacePlaceholders(url, params) {
   if (params) {
     Object.keys(params).forEach(key => rep = rep.replace(`%${key}%`, params[key]));
   }
+
   return rep;
 }
 
