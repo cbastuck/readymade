@@ -909,8 +909,20 @@ export default class Playground extends Component {
     const { boardName } = this.state;
     const isDefaultBoard = boardName === defaultName;
     return (
-      <div>
-        { headline && <h1 style={s(t.fs14, t.tc, t.m(0, headlineSpace))}> —{headline}— </h1> }
+      <div 
+        style={{ 
+          border: headline && 'solid 1px lightgray',
+          borderRadius: headline && 3,
+          margin: headline && '15px 0px',
+        }}
+      >
+        { 
+          headline && (
+            <div style={{ marginTop: 20 }}>
+              <h1 style={s(t.fs14, t.tc, t.m(0, headlineSpace))}> —{headline}— </h1> 
+            </div>
+          )
+        }
         <div 
           style={{ padding: headline && '20px 0px' }}
         >
@@ -942,17 +954,6 @@ export default class Playground extends Component {
             </span> 
             to get going!
           </div>
-          {
-            headline && (
-              <hr 
-                style={{
-                  marginTop: 30,
-                  width: '99%', 
-                  borderTop: '1px solid lightgray' 
-                }} 
-              />
-            )
-          }
         </div>
       </div>
     )    
@@ -961,13 +962,6 @@ export default class Playground extends Component {
   renderUsecases = () => {
     const { usecases } = this.state;
     const internalUsecases = [
-      // TODO: out it on github
-      {
-        name: 'Slideshow',
-        url: `/playground/${generateRandomName()}?template=/boards/templates/slideshow-canvas.json&${qs.stringify({ 'sender-board': generateRandomName() })}`,
-        metadata: 'use case',
-        description: 'Display photos coming from a peer injector board'
-      }
     ];
     if (!usecases) {
       fetch(usecasesUrl)
@@ -975,7 +969,7 @@ export default class Playground extends Component {
         .then(usecases => this.setState({ 
           usecases: internalUsecases.concat(usecases.map(item => ({
               ...item, 
-              url: `/playground/${generateRandomName()}?template=${item.template}`,
+              url: replacePlaceholders(`/playground/${generateRandomName()}?template=${item.template}`),
               metadata: 'use case',
               repo: item.repo,
             })
