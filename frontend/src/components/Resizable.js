@@ -29,17 +29,6 @@ class Triangle extends Component {
 */
 
 export default class Resizable extends Component {
-  state = {
-    resizing: false,
-    resizeStart: {},
-    width: undefined,
-    height: undefined,
-    minWidth: undefined,
-    minHeight: undefined,
-    initialScreenX: undefined,
-    initialScreenY: undefined,
-  };
-
   render() {
     const { 
       children, 
@@ -51,8 +40,8 @@ export default class Resizable extends Component {
       <div
         style={
           s({ 
-              minWidth: 100,
-              minHeight: 50,
+              minWidth: 200,
+              minHeight: 100,
               overflow: 'auto', 
               ...style 
             },

@@ -47,6 +47,7 @@ export const t = {
     resize: 'both',
     overflow: 'auto',
   },
+  foreground: 2000003,
 
   m: function(x, y){ return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` }; },
   m0: { margin: 0 },

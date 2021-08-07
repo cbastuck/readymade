@@ -153,7 +153,7 @@ export default class ServiceUI extends Component {
   }
 
   render() {
-    const { 
+    const {
       children, 
       segments, 
       setup,
