@@ -962,6 +962,12 @@ export default class Playground extends Component {
   renderUsecases = () => {
     const { usecases } = this.state;
     const internalUsecases = [
+      /*{
+        name: 'GameInternal',
+        url: `/playground/${generateRandomName()}?template=/boards/templates/game.json&${qs.stringify({ 'sender-board': generateRandomName() })}`,
+        metadata: 'use case',
+        description: 'GAMEMEME'
+      }*/
     ];
     if (!usecases) {
       fetch(usecasesUrl)

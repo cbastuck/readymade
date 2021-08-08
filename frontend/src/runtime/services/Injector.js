@@ -57,7 +57,10 @@ class InjectorUI extends Component {
     }
 
     if (recentCode !== undefined) {
-      this.setState({ recentCode });
+      const code = typeof recentCode === 'string' ? 
+        recentCode : 
+        JSON.stringify(recentCode);
+      this.setState({ recentCode: code });
     }
   }
 
