@@ -11,6 +11,26 @@ import { s, t } from '../styles';
 
 export default class BoardCollection extends Component {
   state = { filter: '' };
+
+  renderDescription = (usecase, description) => {
+    if (!description) { 
+      return 'No description available' 
+    }
+
+    const d = Array.isArray(description) ? description : [ description ];
+    return (
+      <div>
+       { 
+        d.map((content, idx) => (
+          <div key={`usecase-${usecase}-description-${idx}`} style={t.mt5}>
+            {content}
+          </div>
+        ))
+      }
+      </div>
+    );
+  }
+
   renderCard = item => {
     const {
       url,
@@ -62,7 +82,7 @@ export default class BoardCollection extends Component {
             }
             <Card.Description style={{ marginTop: 10, color: 'rgb(84 84 84)' }}>
               <div style={t.tl}>
-                { description || 'No description available' }
+                {this.renderDescription(name, description) }
               </div>
             </Card.Description>
           </Link>
@@ -73,7 +93,7 @@ export default class BoardCollection extends Component {
 
   renderBoards = items => {
     const { 
-      height=120,
+      height='100%',
       style={} 
     } = this.props;
     const { filter } = this.state;
@@ -108,7 +128,7 @@ export default class BoardCollection extends Component {
       borderRadius: 3 
     } : {};
     return items.length > 0 && (
-      <div style={borderStyle}>
+      <div style={{...borderStyle, height: '100%'}}>
         <h1 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0))}> 
           {headline} 
         </h1>

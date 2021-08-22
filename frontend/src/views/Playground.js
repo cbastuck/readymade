@@ -978,7 +978,6 @@ export default class Playground extends Component {
           usecases ? (
             <BoardCollection
               style={{ 
-                height: 350, 
                 width: '100%', 
                 marginRight: 20,
               }}
@@ -1008,7 +1007,7 @@ export default class Playground extends Component {
     return items.length > 0 && (
       <div style={s(t.mt20)}>
         <BoardCollection
-          style={{ height: 350, width: '100%', marginRight: 20 }}
+          style={{ width: '100%', marginRight: 20 }}
           headline="Saved boards in this browser"
           items={items}
           renderBorder={false}
