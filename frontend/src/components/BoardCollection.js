@@ -100,11 +100,16 @@ export default class BoardCollection extends Component {
     const { 
       items, 
       headline,
+      renderBorder=true,
     } = this.props;
     const { filter } = this.state;
+    const borderStyle = renderBorder ? { 
+      border: 'solid 1px #ccc', 
+      borderRadius: 3 
+    } : {};
     return items.length > 0 && (
-      <div style={{ border: 'solid 1px #ccc', borderRadius: 3 }}>
-        <h1 style={s(t.mt15, t.tc, t.fs14, t.p(0, 0))}> 
+      <div style={borderStyle}>
+        <h1 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0))}> 
           {headline} 
         </h1>
         <div style={s(t.tr, t.mb5)}>

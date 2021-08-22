@@ -83,6 +83,7 @@ export default class HeaderMenu extends Component {
     
     return (
       <Dropdown
+        id="board-dropdown"
         text={board ? board : 'Board'}
         className='link item'
         style={{ 

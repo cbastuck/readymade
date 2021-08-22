@@ -289,16 +289,20 @@ export default class Runtime extends Component {
         >
           <Icon name={(!services || services.length === 0) ? 'trash alternate outline' : 'remove'} />
         </Menu.Item>
-        <Menu.Item
-          as='a'
-          style={itemStyle}
-          onClick={() => this.setState({
-            expanded: !expanded,
-            showSettings: showSettings && !expanded
-          })}
-        >
-          <Icon name='compress' />
-        </Menu.Item>
+        { 
+          runtime.type !== 'browser' && (
+            <Menu.Item
+              as='a'
+              style={itemStyle}
+              onClick={() => this.setState({
+                expanded: !expanded,
+                showSettings: showSettings && !expanded
+              })}
+            >
+              <Icon name='compress' />
+            </Menu.Item>
+          )
+        }
         <Menu.Item
           as='a'
           style={itemStyle}

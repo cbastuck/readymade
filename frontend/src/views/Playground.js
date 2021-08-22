@@ -3,7 +3,8 @@ import {
   Icon,
   Button,
   Message,
-  Loader, 
+  Loader,
+  Tab,
 } from 'semantic-ui-react';
 import uuid from 'uuid';
 import qs from 'query-string';
@@ -67,9 +68,6 @@ const allowedServices = [
 
 const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
 const defaultName = 'Playground';
-const headlineSpace = 6;
-
-
 
 function getSavedBoards() {
   const savedBoards = [];
@@ -905,21 +903,18 @@ export default class Playground extends Component {
     }
   }
 
-  renderSketchOption = headline => {
+  renderSketchOption = ()  => {
     const { boardName } = this.state;
     const isDefaultBoard = boardName === defaultName;
+    const headline = isDefaultBoard ? 
+      'It\'s an empty playground' : 
+      (<span>Playground <span style={t.italic}>{boardName}</span> is empty </span>);
     return (
-      <div 
-        style={{ 
-          border: headline && 'solid 1px lightgray',
-          borderRadius: headline && 3,
-          margin: headline && '15px 0px',
-        }}
-      >
+      <div style={{ margin: headline && '15px 0px' }}>
         { 
           headline && (
             <div style={{ marginTop: 20 }}>
-              <h1 style={s(t.fs14, t.tc, t.m(0, headlineSpace))}> —{headline}— </h1> 
+              <h1 style={s(t.fs16, t.tc, t.m(0, 6))}> {headline} </h1> 
             </div>
           )
         }
@@ -935,11 +930,6 @@ export default class Playground extends Component {
             />
           </div>
           <div style={t.tc}>
-            { 
-              isDefaultBoard ? 
-                'This is an empty playground - ' : 
-                (<span>Playground <span style={t.italic}>{boardName}</span> is empty - </span>)
-            }
             <span 
               style={{ cursor: 'help', color: '#4284C4'}}
               onClick={() => {
@@ -988,12 +978,13 @@ export default class Playground extends Component {
           usecases ? (
             <BoardCollection
               style={{ 
-                height: 220, 
+                height: 350, 
                 width: '100%', 
                 marginRight: 20,
               }}
-              headline="—Launch a Usecase—"
+              headline="Available Usecases"
               items={usecases}
+              renderBorder={false}
             />
           ) : (
             <div>
@@ -1017,29 +1008,64 @@ export default class Playground extends Component {
     return items.length > 0 && (
       <div style={s(t.mt20)}>
         <BoardCollection
-          style={{ height: 250, width: '100%', marginRight: 20 }}
-          headline="—Restore a board—"
+          style={{ height: 350, width: '100%', marginRight: 20 }}
+          headline="Saved boards in this browser"
           items={items}
+          renderBorder={false}
         />
       </div>
     )
   }
 
-  renderPlaceholder = boardContext => {
+  renderPlaceholderOrPlayground = boardContext => {
     const { savedBoards=[], boardName } = this.state;
     const showLoadPanel = boardName === defaultName;
+    const menuItem = value => ({ 
+      key: `playgound-tab-item-${value}`, 
+      content: value, 
+      style: s(t.uc, t.fs12, t.ls1) 
+    });
+    const isPlaygroundEmpty = boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
+    const content = isPlaygroundEmpty ? this.renderSketchOption() : this.renderPlayground(boardContext);
+    const saveReminder = !isPlaygroundEmpty && (
+      <div style={s(t.fs12, t.mb10)}>
+        Remember you can 
+        <span 
+          style={{ cursor: 'help', color: '#4284C4'}}
+          onClick={() => {
+            const selector = document.getElementById('board-dropdown');
+            if (selector) {
+              selector.focus();
+              selector.click();
+            }
+          }}
+        >
+         { " save this board " } 
+        </span> 
+        to continue later
+      </div>
+    );
     return (
       <div style={t.fill}>
-        <div style={s(t.uc, t.fs13, t.ls1, t.tc, { width: '99%', margin: 'auto', marginTop: !showLoadPanel && '15%' })}>
-          <h1 style={s(t.fs20, { margin: 0, marginTop: showLoadPanel ? 25 : 40 })}> Welcome to Playground</h1>
-          { showLoadPanel && <h2 style={s(t.fs13, t.m(0, 0))}> Pick an option </h2> }
-          { !showLoadPanel && this.renderSketchOption() }
-          {
-            showLoadPanel && (
-              <div style={t.m(0, 30)}>
-                { this.renderSketchOption('Sketch something new') }
-                { this.renderUsecases() }
-                { this.renderStoredBoards(savedBoards) }
+        <div style={{ width: '99%', margin: 'auto' }}>
+          { 
+            showLoadPanel ? (
+              <div style={s(t.uc, t.fs16, t.ls1, t.tc)}>
+                <h1 style={s(t.fs20, { margin: 0, marginTop: showLoadPanel ? 25 : 40 })}> Welcome to Playground</h1>
+                <h2 style={s(t.fs13, t.m(0, 10))}> Pick an option </h2>
+                <Tab 
+                  style={s(t.m(0, 30), t.tc)}
+                  menu={{ attached: 'top', widths: 3, pointing: true }}
+                  panes={[
+                    { menuItem: menuItem('Sketch board'), render: () => <Tab.Pane> {content} {saveReminder}</Tab.Pane> },
+                    { menuItem: menuItem('Launch Usecase'), render: () => <Tab.Pane> {this.renderUsecases()}</Tab.Pane> },
+                    { menuItem: menuItem('Restore board'), render: () => <Tab.Pane> {this.renderStoredBoards(savedBoards)}</Tab.Pane> },
+                  ]}
+                />
+              </div> 
+            ) : (
+              <div style={{ marginTop: isPlaygroundEmpty && '15%' }}>
+                {content} 
               </div>
             )
           }
@@ -1127,7 +1153,8 @@ export default class Playground extends Component {
   }
 
   renderContent = boardContext => {
-    if (!this.state.initialFetched) {
+    const { initialFetched } = this.state;
+    if (!initialFetched) {
       return (
         <div style={s(t.uc, t.ls1, { 
             position: 'absolute',
@@ -1141,11 +1168,7 @@ export default class Playground extends Component {
         </div>
       );
     }
-    return (boardContext && 
-            boardContext.runtimes && 
-            boardContext.runtimes.length === 0) ? 
-              this.renderPlaceholder(boardContext) : 
-              this.renderPlayground(boardContext);
+    return this.renderPlaceholderOrPlayground(boardContext);
   }
 
   render() {
@@ -1177,7 +1200,7 @@ export default class Playground extends Component {
         <BoardConsumer>
         {
           boardContext => (
-            <div style={t.fill}>
+            <div id="playground-root" style={t.fill}>
               <Toolbar
                 board={boardName}
                 availableRuntimes={this.availableRuntimes}
