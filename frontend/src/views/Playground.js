@@ -117,6 +117,11 @@ export default class Playground extends Component {
 
   inputSelectors = {};
 
+  componentDidMount()  {
+    const { hash='#sketch' } = window && window.location;
+    this.setState({ initialTabLocation: hash });
+  }
+
   componentDidUpdate(prevProps) {
     const board = this.props.match.params.board; 
     const prevBoard = prevProps.match.params.board; 
@@ -1017,7 +1022,7 @@ export default class Playground extends Component {
   }
 
   renderPlaceholderOrPlayground = boardContext => {
-    const { savedBoards=[], boardName } = this.state;
+    const { savedBoards=[], boardName, initialTabLocation } = this.state;
     const showLoadPanel = boardName === defaultName;
     const menuItem = value => ({ 
       key: `playgound-tab-item-${value}`, 
@@ -1044,6 +1049,7 @@ export default class Playground extends Component {
         to continue later
       </div>
     );
+    const initialIndex = initialTabLocation === '#usecase' ? 1 : 0;
     return (
       <div style={t.fill}>
         <div style={{ width: '99%', margin: 'auto' }}>
@@ -1060,6 +1066,7 @@ export default class Playground extends Component {
                     { menuItem: menuItem('Launch Usecase'), render: () => <Tab.Pane> {this.renderUsecases()}</Tab.Pane> },
                     { menuItem: menuItem('Restore board'), render: () => <Tab.Pane> {this.renderStoredBoards(savedBoards)}</Tab.Pane> },
                   ]}
+                  defaultActiveIndex={initialIndex}
                 />
               </div> 
             ) : (
