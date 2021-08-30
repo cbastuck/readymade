@@ -46,8 +46,8 @@ class MonitorUI extends Component {
     const nil = params === null && '<null>';
     const undef = params === undefined && '<undefined>';
     const s = nil || undef || unroll(params);
-    
-    const { bypass } = params;
+
+    const { bypass } = params || {};
     if (bypass !== undefined) {
       return;
     }

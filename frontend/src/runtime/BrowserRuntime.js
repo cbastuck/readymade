@@ -342,12 +342,12 @@ export default class BrowserRuntime extends Component {
     svc.__descriptor = { ...descriptor, serviceName: serviceName || descriptor.serviceName };
     const configure = svc.configure.bind(svc);
     svc.configure = config => { // monkey wire configure
-      const { bypass } = config;
+      const { bypass } = config || {};
       if (bypass !== undefined) {
         svc.bypass = bypass;
         this.app.notify(svc, { bypass });
       }    
-      return configure && configure(config);
+      return configure && configure(config || {});
     };
     svc.configure(service);
     return svc;

@@ -30,7 +30,7 @@ export default class PlaceholderUI extends Component {
   onInit = initialState => {
     this.setState(
       { properties: this.extractProperties(initialState) }
-    )
+    );
   }
 
   onNotification = (service, notification) => {

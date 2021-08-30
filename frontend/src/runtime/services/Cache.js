@@ -14,19 +14,29 @@ class Cache {
   }
 
   configure(config) {
-    const { initial } = config;
+    const { initial, update } = config;
     if (initial !== undefined) {
       this.initial = initial;
     } else {
       this.values = { ...this.values, ...config };
     }
+    if (update !== undefined) {
+      this.update = update;
+    }
     this.app.notify(this, this.values);
   }
 
-  async process(params) {
-    const values = (this.values === undefined) ?
+  merge = p => {
+    const params = Object.keys(p)
+      .filter(x => p[x] !== undefined) // TODO: maybe the cached value could be undefined? define a way to invalidate the cache
+      .reduce((a, c) => ({ ...a, [c]: p[c] }), {});
+    return (this.values === undefined) ?
         { ...(this.initial || {}), ...params } : 
         { ...this.values, ...params };
+  }
+
+  async process(params) {
+    const values = this.merge(params);
     if (this.update === 'process') { // process updates cache
       this.values = values;
     }

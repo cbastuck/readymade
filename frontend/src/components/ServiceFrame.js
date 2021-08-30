@@ -28,7 +28,7 @@ export default class ServiceFrame extends Component {
     service.__notificationTargets.register(
       getNotificationID(service), 
       (_, notification) => {
-        const { bypass } = notification;
+        const { bypass } = notification || {};
         if (bypass !== undefined) {
           this.setState({ bypass });
         }
@@ -78,7 +78,7 @@ export default class ServiceFrame extends Component {
   }
 
   renderHeader = service => {
-    const { bypass=service.bypass } = this.state;
+    const { bypass=service && service.bypass } = this.state;
     const serviceName = service.__descriptor ? 
       service.__descriptor.serviceName : 
       service.serviceName;

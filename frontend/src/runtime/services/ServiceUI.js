@@ -27,7 +27,8 @@ class Notifications {
 
   notify(service, notification) {
     for (const id in this.callbacks) {
-      this.callbacks[id](service, notification);
+      const cb = this.callbacks[id];
+      cb(service, notification);
     }
   }
 }

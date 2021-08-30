@@ -32,6 +32,7 @@ import SpotifyDescriptor from '../services/Spotify';
 import GithubSourceDescriptor from '../services/GithubSource';
 import GithubSinkDescriptor from '../services/GithubSink';
 import CacheDescriptor from '../services/Cache';
+import KeyHandlerDescriptor from '../services/KeyHandler';
 
 const defaultRegistry = [
   timerDescriptor,
@@ -68,6 +69,7 @@ const defaultRegistry = [
   GithubSourceDescriptor,
   GithubSinkDescriptor,
   CacheDescriptor,
+  KeyHandlerDescriptor,
 ];
 
 export default defaultRegistry;

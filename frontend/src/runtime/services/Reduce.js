@@ -1,70 +1,68 @@
+import {
+  parseExpression, 
+  evalExpression,
+} from 'services';
+
 const serviceId = 'hookup.to/service/reduce';
 const serviceName = 'Reduce';
-
-class ReducedValues {
-  collect(item, skip=[]) {
-    Object.keys(item).forEach(key => {
-      if (skip.indexOf(key) === -1) {
-        if (this[key] === undefined) {
-          this[key] = {};
-        }
-        const entry = this[key];
-        const value = item[key];
-        if (entry[value] === undefined) {
-          entry[value] = 1;
-        } else {
-          ++entry[value];
-        }
-      }
-    });
-    return this;
-  }
-}
 
 class Reduce {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.reducer = "";
+    this.property = "";
+    this.reducedState = undefined;
+    this._reduceExpression = undefined;
   }
 
   configure(config) {
-    const { reduceKey } = config;
+    const { 
+      initialState, 
+      reducer,
+      property,
+    } = config;
 
-    if (reduceKey !== undefined) {
-      this.reduceKey = reduceKey;
-      this.app.notify(this, { reduceKey });
+    if (initialState !== undefined) {
+      this.reducedState = initialState;
+      this.app.notify(this, { reducedState: this.reducedState });
+    }
+
+    if (reducer !== undefined) {
+      this._reduceExpression = parseExpression(reducer);
+      this.app.notify(this, { reducer });
+    }
+
+    if (property !== undefined) {
+      this.property = property
+      this.app.notify(this, { property });
     }
   }
 
-  process(params) {
-    if (!Array.isArray(params) || !this.reduceKey) {
-      return params;
+  process(_params) {
+    if (!this._reduceExpression) {
+      return _params;
     }
-    
-    return params
-      .reduce(
-        (reducedParams, paramsItem) => {
-          if (!paramsItem) {
-            return reducedParams;
-          }
-          const reduceKeyValue = paramsItem[this.reduceKey];
-          const reducedValues = reducedParams[reduceKeyValue] || new ReducedValues();
-          return { 
-            ...reducedParams, 
-            [reduceKeyValue]: reducedValues.collect(paramsItem, [this.reduceKey]),
-          };
-        }, 
-        {}
-      );
-  } 
+    const params = { params: { value: _params, acc: this.reducedState } };
+    this.reducedState = evalExpression(this._reduceExpression, params);
+    if (!this.property) {
+      return this.reducedState;
+    }
+    return {
+      [this.property]: this.reducedState
+    };
+  }
 }
 
-const descriptor = {  
-  serviceName,
-  serviceId,
+
+const descriptor = {
+  serviceName: serviceName,
+  serviceId: serviceId,
   create: (app, board, descriptor, id) =>
     new Reduce(app, board, descriptor, id),
+  createUI: undefined
 };
 
 export default descriptor;
