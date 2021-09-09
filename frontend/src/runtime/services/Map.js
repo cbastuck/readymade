@@ -5,11 +5,13 @@ import {
   Checkbox,
 } from 'semantic-ui-react';
 
-import { MapDescriptor } from 'services';  
+import { MapDescriptor } from 'services';
 
 import InputLabelValue from '../../components/shared/InputLabelValue';
+import SelectorField from '../../components/shared/SelectorField';
 
 import ServiceUI from './ServiceUI';
+import { s, t } from '../../styles';
 
 const newProperty = { key: 'value' };
 
@@ -20,23 +22,33 @@ class MapUI extends Component {
   };
 
   onInit(initialState) {
-    const { template, condition } = initialState;
+    const { template, condition, mode } = initialState;
     this.setState({
       template,
       condition,
       conditionEnabled: !!condition,
+      mode
     });
   }
 
   onNotification = (service, notification) => {
-    const { template } = notification;
+    const { template, mode } = notification;
     if (template !== undefined) {
       this.setState({ template });
+    }
+
+    if (mode !== undefined) {
+      this.setState({ mode });
     }
   }
 
   renderMapping = service => {
-    const { template={} } = this.state;
+    const { template={}, mode } = this.state;
+    const modeOptions = {
+      replace: 'replace',
+      add: 'add',
+      overwrite: 'overwrite',
+    };
     return (
       <div 
         style={{ 
@@ -46,47 +58,66 @@ class MapUI extends Component {
           flexDirection: 'column'
         }}
       >
-        {
-          Object.keys(template)
-            .filter(key => typeof template[key] !== 'object')
-            .map((key, idx) => (
-              <InputLabelValue
-                key={`${service.uuid}-${key}-${idx}`}
-                label={key}
-                labelPosition="left"
-                value={template[key]}
-                onCommit={({ label: newKey, value }) => { 
-                  const updatedTemplate = Object.keys(template).reduce(
-                    (all, cur) => (cur !== key) ? 
-                        { ...all, [cur]: template[cur] } : // this is the input that changed
-                        (newKey !== '' ? { ...all, [newKey]: value } : all), // empty key means deleting the item
-                    {}
-                  );
-                  service.configure({ template: updatedTemplate });
-                  this.setState({ template: updatedTemplate });
-                }}
-              />
-            ))
-        }
-        <div>
-          <Button
-            style={{ 
-              fontSize: 12,
-              textTransform: 'uppercase',
-              letterSpacing: 1,
-              textAlign: 'center',
-              width: '99%',
-            }}
-            onClick={() => this.setState({ 
-                template: {
-                  ...this.state.template,
-                  ...newProperty,
-                }
-              })
-            }
-          >
-            Add Property
-          </Button>
+        <SelectorField
+          label="Mode"
+          options={modeOptions}
+          value={mode}
+          onChange={async (_, { value: mode }) => {
+            await service.configure({ mode });
+            this.setState({ mode })
+          }}
+        />
+        <div style={s(t.tl, t.uc, t.ls1, t.fs12)}>Template</div>
+        <div 
+          style={{ 
+            border: 'solid 1px lightgray', 
+            borderRadius: 3, 
+            padding: 5, 
+            marginBottom: 5 
+          }}
+        >
+          {
+            Object.keys(template)
+              .filter(key => typeof template[key] !== 'object')
+              .map((key, idx) => (
+                <InputLabelValue
+                  key={`${service.uuid}-${key}-${idx}`}
+                  label={key}
+                  labelPosition="left"
+                  value={template[key]}
+                  onCommit={({ label: newKey, value }) => { 
+                    const updatedTemplate = Object.keys(template).reduce(
+                      (all, cur) => (cur !== key) ? 
+                          { ...all, [cur]: template[cur] } : // this is the input that changed
+                          (newKey !== '' ? { ...all, [newKey]: value } : all), // empty key means deleting the item
+                      {}
+                    );
+                    service.configure({ template: updatedTemplate });
+                    this.setState({ template: updatedTemplate });
+                  }}
+                />
+              ))
+          }
+          <div>
+            <Button
+              style={{ 
+                fontSize: 12,
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                textAlign: 'center',
+                width: '99%',
+              }}
+              onClick={() => this.setState({ 
+                  template: {
+                    ...this.state.template,
+                    ...newProperty,
+                  }
+                })
+              }
+            >
+              Add Property
+            </Button>
+          </div>
         </div>
       </div>
     )

@@ -12,6 +12,7 @@ class Reduce {
     this.board = board;
     this.app = app;
 
+    this.initialState = undefined;
     this.reducer = "";
     this.property = "";
     this.reducedState = undefined;
@@ -23,9 +24,11 @@ class Reduce {
       initialState, 
       reducer,
       property,
+      resetReducer=false,
     } = config;
 
     if (initialState !== undefined) {
+      this.initialState = initialState;
       this.reducedState = initialState;
       this.app.notify(this, { reducedState: this.reducedState });
     }
@@ -38,6 +41,10 @@ class Reduce {
     if (property !== undefined) {
       this.property = property
       this.app.notify(this, { property });
+    }
+
+    if (resetReducer) {
+      this.reducedState = this.initialState;
     }
   }
 

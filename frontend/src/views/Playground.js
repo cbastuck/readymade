@@ -67,7 +67,8 @@ const allowedServices = [
   'hookup.to/service/key-handler'
 ];
 
-const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
+//const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
+const usecasesUrl = '/boards/usecases/index.json';
 const defaultName = 'Playground';
 
 function getSavedBoards() {
@@ -119,8 +120,8 @@ export default class Playground extends Component {
   inputSelectors = {};
 
   componentDidMount()  {
-    const { hash='#sketch' } = window && window.location;
-    this.setState({ initialTabLocation: hash });
+    const { hash } = window && window.location;
+    this.setState({ initialTabLocation: hash || '#usecase' });
   }
 
   componentDidUpdate(prevProps) {
@@ -289,21 +290,26 @@ export default class Playground extends Component {
           sidechainRouting: sidechainRouting ? 
             patchedRuntimes.reduce(
               (all, rt, idx) => {
-                const entries = sidechainRouting[runtimes[idx].id];
-                const entry = entries && entries[0]; // TODO: we're only take the first HOTFIX
-                if (!entry) {
-                  return all;
-                }
-                const origRTIndex = runtimes.findIndex(r => r.id === entry.runtimeId);
-                const origSvcIndex = services[runtimes[idx].id].findIndex(svc => svc.uuid === entry.serviceUuid);
+                const originalRt = runtimes[idx];
+                const originalRuntimeSidechain = sidechainRouting[originalRt.id] || [];
+                const patchedRuntimeSidechain = originalRuntimeSidechain.map(entry => {
+                  const origRTIndex = runtimes.findIndex(r => r.id === entry.runtimeId);
+                  if (origRTIndex === -1) {
+                    console.error("createBoardFromTemplate(): could not find runtime", entry, runtimes);
+                  }
+                  const origSvcIndex = services[entry.runtimeId].findIndex(svc => svc.uuid === entry.serviceUuid);
+                  if (origSvcIndex === -1) {
+                    console.error("createBoardFromTemplate(): could not find service", entry, services[originalRt.id]);
+                  }
+                  const patchedRuntimeId = patchedRuntimes[origRTIndex].id;
+                  return {
+                    runtimeId: patchedRuntimeId,
+                    serviceUuid: patchedServices[patchedRuntimeId][origSvcIndex].uuid,
+                  };
+                });
                 return { 
                   ...all, 
-                  [rt.id]: [ // TODO: we're only taking the first sidechain entry HOTFIX
-                    {
-                      runtimeId: patchedRuntimes[origRTIndex].id,
-                      serviceUuid: patchedServices[rt.id][origSvcIndex].uuid,
-                    }
-                  ]
+                  [rt.id]: patchedRuntimeSidechain
                 }
               },
               {}

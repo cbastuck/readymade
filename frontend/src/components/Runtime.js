@@ -108,7 +108,7 @@ export default class Runtime extends Component {
     if (service) {
       service.configure(config);
     } else {
-      console.error('Configuring service failed', serviceUuid);
+      console.error('configureService() Can not find service by id: ', serviceUuid, this.props.boardContext.services, this.props.runtime);
     }
   }
 

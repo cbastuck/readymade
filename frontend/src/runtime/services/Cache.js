@@ -14,16 +14,24 @@ class Cache {
   }
 
   configure(config) {
-    const { initial, update } = config;
+    const { 
+      initial, 
+      update,
+      triggerProcess=false,
+    } = config;
     if (initial !== undefined) {
       this.initial = initial;
     } else {
-      this.values = { ...this.values, ...config };
+      this.values = { ...this.values, ...config }; // TODO: never take the whole config as cache
     }
     if (update !== undefined) {
       this.update = update;
     }
     this.app.notify(this, this.values);
+
+    if (triggerProcess) {
+      this.app.next(this, this.values);
+    }
   }
 
   merge = p => {

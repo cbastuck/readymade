@@ -55,7 +55,17 @@ const examplesData = [
       'Creates a simple parallax scrolling animation at 25fps. Route the output of the [canvas](/service/canvas) in capture mode to [GIF Recorder](/service/gif-recorder) service',
       '[Stack](/service/stack) is configured to multiply the input data to the services inside of the stack and comine their output in an array of type [Renderable](/datamodel/renderable).'
     ]
-  }
+  }, /*
+  {
+    title: 'Spotify2Github',
+    brief: 'Preserve your liked songs on Github ',
+    description: '',
+    image: '/assets/shutterstock_1196210650.png',
+    url: '/boards/examples/spotify.json',
+    explanation: [
+      'Spotify scenario'
+    ]
+  }*/
 ];
 
 export default examplesData;
