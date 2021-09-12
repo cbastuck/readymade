@@ -8,6 +8,7 @@ class Cache {
     this.app = app;
 
     this.update = 'config';
+    this.triggerProcess = false;
   }
 
   destroy() {
@@ -19,16 +20,28 @@ class Cache {
       update,
       triggerProcess=false,
     } = config;
+
     if (initial !== undefined) {
       this.initial = initial;
-    } else {
-      this.values = { ...this.values, ...config }; // TODO: never take the whole config as cache
-    }
+    } 
+
     if (update !== undefined) {
       this.update = update;
     }
-    this.app.notify(this, this.values);
+    
+    const cachePlus = config.['cache+'];
+    if ( cachePlus !== undefined) {
+      this.values = this.merge(cachePlus);
+    }
 
+    const cachePropertiesPlus = config['cacheProperties+'];
+    if (cachePropertiesPlus !== undefined) {
+      const add = cachePropertiesPlus.reduce((all, cur) => ({ ...all, [cur]: config[cur] }), {});
+      this.values = this.merge(add);
+    }
+
+    this.app.notify(this, this.values);
+    
     if (triggerProcess) {
       this.app.next(this, this.values);
     }
@@ -44,11 +57,12 @@ class Cache {
   }
 
   async process(params) {
-    const values = this.merge(params);
     if (this.update === 'process') { // process updates cache
-      this.values = values;
+      this.configure({ 'cache+': params });
+      return this.values;
+    } else {
+      return this.merge(params);
     }
-    return values;
   }
 }
 

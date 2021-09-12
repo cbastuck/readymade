@@ -490,7 +490,7 @@ class CanvasUI extends Component {
     }
 
     for (const data of dataArray) {
-      switch (data.type) {
+      switch (data && data.type) {
         case 'image':
           this.drawImage(ctx, data);
           break;

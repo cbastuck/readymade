@@ -67,7 +67,8 @@
           "dX=": "(params.ballX + params.dX >= 290) || (params.ballX + params.dX * 1.1 < 5) ? min(params.dX * -1.1, 5) : params.dX",
           "dY=": "((params.ballY < 190 && params.ballY + params.dY >= 190 && params.ballX >= params.barX && params.ballX <= params.barX+70) || (params.ballY+params.dY < 20)) ? params.dY * -1 : params.dY",
           "ballX=": "params.triggerCount ? params.ballX + params.dX : params.ballX",
-          "ballY=": "params.ballY > 200 ? 50 : (params.triggerCount ? params.ballY + params.dY : params.ballY)"
+          "ballY=": "params.ballY > 200 ? 50 : (params.triggerCount ? params.ballY + params.dY : params.ballY)",
+          "cacheProperties+": ["ballX", "ballY", "barX", "dX", "dY"]
         },
         "serviceId": "hookup.to/service/map",
         "serviceName": "Map"
@@ -142,6 +143,6 @@
   "description": [
     { "type": "headline", "text": "How to connect" },
     "Connect another device as the input controller, using following injector board",
-    { "type": "qr", "href": "%http-host%/playground/%sender-board%?template=/boards/templates/game-injector.json&receiver-board=%board%" }
+    { "type": "qr", "href": "%http-host%/playground/%sender-board%?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game-injector.json&receiver-board=%board%" }
   ]
 } 

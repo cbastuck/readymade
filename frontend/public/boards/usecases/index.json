@@ -34,7 +34,7 @@
     "repo": "https://github.com/cbastuck/hkp/blob/master/usecases/reflector-receiver.json"
   },
   {
-    "name": "Multiplication Practise",
+    "name": "Multiplication Rows",
     "template": "/boards/usecases/multiplication.json",
     "description": "Learning multiplication rows for elementary school"
   }
