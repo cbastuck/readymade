@@ -69,6 +69,7 @@ export default class PlaceholderUI extends Component {
                 service.configure({ [prop]: value });
               }}
               type={t === 'string' ? 'text' : t}
+              disabled={true}
             />
           );
         })

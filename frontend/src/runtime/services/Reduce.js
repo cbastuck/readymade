@@ -14,7 +14,6 @@ class Reduce {
 
     this.initialState = undefined;
     this.reducer = "";
-    this.property = "";
     this.reducedState = undefined;
     this._reduceExpression = undefined;
   }
@@ -23,28 +22,29 @@ class Reduce {
     const { 
       initialState, 
       reducer,
-      property,
       resetReducer=false,
     } = config;
 
+    let reducedStateChanged = false;
     if (initialState !== undefined) {
       this.initialState = initialState;
       this.reducedState = initialState;
-      this.app.notify(this, { reducedState: this.reducedState });
+      reducedStateChanged = true;
     }
 
     if (reducer !== undefined) {
+      this.reducer = reducer;
       this._reduceExpression = parseExpression(reducer);
       this.app.notify(this, { reducer });
     }
 
-    if (property !== undefined) {
-      this.property = property
-      this.app.notify(this, { property });
-    }
-
     if (resetReducer) {
       this.reducedState = this.initialState;
+      reducedStateChanged = true;
+    }
+
+    if (reducedStateChanged) {
+      this.app.notify(this, { reducedState: this.reducedState });
     }
   }
 
@@ -54,12 +54,8 @@ class Reduce {
     }
     const params = { params: { value: _params, acc: this.reducedState } };
     this.reducedState = evalExpression(this._reduceExpression, params);
-    if (!this.property) {
-      return this.reducedState;
-    }
-    return {
-      [this.property]: this.reducedState
-    };
+    this.app.notify(this, { reducedState: this.reducedState });
+    return this.reducedState;
   }
 }
 
