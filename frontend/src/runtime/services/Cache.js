@@ -7,8 +7,7 @@ class Cache {
     this.board = board;
     this.app = app;
 
-    this.update = 'config';
-    this.triggerProcess = false;
+    this.updateTrigger = 'config'; // alternatively: process
   }
 
   destroy() {
@@ -17,16 +16,16 @@ class Cache {
   configure(config) {
     const { 
       initial, 
-      update,
-      triggerProcess=false,
+      updateTrigger,
+      cacheMeta={},
     } = config;
 
     if (initial !== undefined) {
       this.initial = initial;
     } 
 
-    if (update !== undefined) {
-      this.update = update;
+    if (updateTrigger !== undefined) { // what action updates the cache
+      this.updateTrigger = updateTrigger; 
     }
     
     const cachePlus = config.['cache+'];
@@ -41,7 +40,8 @@ class Cache {
     }
 
     this.app.notify(this, this.values);
-    
+
+    const { triggerProcess } = cacheMeta;
     if (triggerProcess) {
       this.app.next(this, this.values);
     }
@@ -57,12 +57,11 @@ class Cache {
   }
 
   async process(params) {
-    if (this.update === 'process') { // process updates cache
+    if (this.updateTrigger === 'process') { // in this case, process updates cache
       this.configure({ 'cache+': params });
       return this.values;
-    } else {
-      return this.merge(params);
     }
+    return this.merge(params);
   }
 }
 

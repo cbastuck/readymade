@@ -29,34 +29,30 @@
         "serviceName": "Timer"
       },
       {
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Dice",
         "uuid": "72d59f3a-64b5-485e-9091-f80151090436",
         "template": {
           "left=": "params.triggerCount === 1 ? round(rand() * 10) : undefined",
           "right=": "params.triggerCount === 1 ? round(rand() * 10) : undefined",
-          "score=": "max(11 - params.triggerCount, 0)"
-        },
-        "serviceId": "hookup.to/service/map",
-        "serviceName": "Dice"
+          "score=": "max(11 - params.triggerCount, 0)",
+          "answer=": "params.triggerCount === 1 ? '' : params.answer"
+        }
       },
       {
         "uuid": "a4aa5ec8-a16b-44dd-93a4-9dbda020e25d",
-        "update": "process",
         "serviceId": "hookup.to/service/cache",
-        "serviceName": "Cache"
+        "serviceName": "Cache",
+        "updateTrigger": "process"
       },
       {
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Evaluate",
         "uuid": "c097bb61-d381-46a9-80de-8fd2669a1ac6",
         "mode": "add",
         "template": {
           "correct=": "params.answer && (number(params.answer) === params.left * params.right)"
-        },
-        "serviceId": "hookup.to/service/map",
-        "serviceName": "Evaluate"
-      },
-      {
-        "logToConsole": false,
-        "serviceId": "hookup.to/service/monitor",
-        "serviceName": "Monitor"
+        }
       },
       {
         "uuid": "f6705989-539c-4576-bde6-a8888e269c4b",
@@ -66,7 +62,6 @@
         "template": {
           "restart=": "params.correct",
           "resetReducer=": "params.correct",
-          "answer=": "params.correct ? '' : params.answer",
           "overallScore=": "params.correct ? ((params.overallScore || 0) + params.score) : (params.overallScore || 0)",
           "numGames=": "params.correct ? (params.numGames || 0) + 1 : (params.numGames || 0)",
           "cacheProperties+": ["answer", "overallScore", "numGames"]
@@ -75,6 +70,8 @@
     ],
     "80db90a7-4a8a-43cd-a934-09e9d57f594c": [
       {
+        "serviceId": "hookup.to/service/stack",
+        "serviceName": "Stack",
         "input": "multiplex",
         "output": "array",
         "services": [
@@ -145,6 +142,7 @@
               "y": "60%",
               "x": "65%",
               "text=": "params.answer || ''",
+              "color=": "params.correct ? 'green' : 'black'",
               "font": {
                 "weight": "lighter",
                 "size": "10em"
@@ -177,9 +175,7 @@
               "color": "gray"
             }
           }
-        ],
-        "serviceId": "hookup.to/service/stack",
-        "serviceName": "Stack"
+        ]
       },
       {
         "uuid": "c8026059-a2aa-4e3b-bb45-13e1786dcccf",
@@ -209,7 +205,7 @@
         "serviceName": "Map",
         "template": {
           "cache+.answer=": "params",
-          "triggerProcess": true
+          "cacheMeta.triggerProcess": true
         }
       },
       {
