@@ -36,6 +36,9 @@
   {
     "name": "Multiplication Rows",
     "template": "/boards/usecases/multiplication.json",
-    "description": "Learning multiplication rows for elementary school"
+    "description": [
+      "A small game I made for my son to practice multiplication rows in elementary school",
+      "Just temporarily 'parked' here, until I find a dedicated place for these boards, I made just for fun and that aren't real use cases 😅"
+    ]
   }
 ]
