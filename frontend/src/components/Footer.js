@@ -52,7 +52,7 @@ export default class Footer extends Component {
                 color: '#555',
                 fontSize: 10
               }}>
-                © 2021 cbastuck
+                © 2018-2021 cbastuck
               </div>
           </div>
         </div>

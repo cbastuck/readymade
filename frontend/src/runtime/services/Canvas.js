@@ -516,7 +516,7 @@ class CanvasUI extends Component {
     }
   }
 
-  renderMain = service => {
+  renderMain = ({ service }) => {
     const { 
       canvasWidth,
       canvasHeight,
