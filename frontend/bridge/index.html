@@ -1,0 +1,12 @@
+<html>
+  <head>
+    <script src="/dist/index.js"> </script>
+    <script>
+      window.hookupTo(
+        'bla', 
+        (name,peer) => peer.listAllPeers(peers => console.log('!!!', peers)), 
+        (data, peer) => console.log('Received Data', data, peer)
+      )
+    </script>
+  </head>
+</html>
