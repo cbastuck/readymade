@@ -1,15 +1,16 @@
 import Peerjs from '../node_modules/peerjs/dist/peerjs.js';
 
-function hookupTo(name, onPeer, onData) {
+const { host, protocol } = window.location;
+
+function to(name, onPeer, onData) {
     const peer = new Peerjs(
       name, 
       {
-        host:"hookup.to",
-        port: 443,
+        host,
+        port: protocol === 'https:' ? 443 : 80,
         path: '/peers',
       }
     );
-    
     peer.on('open', () => {
       onPeer(name, peer);
     });
@@ -19,4 +20,4 @@ function hookupTo(name, onPeer, onData) {
     );
 }
 
-window.hookupTo = hookupTo;
+window.hookup = { to };
