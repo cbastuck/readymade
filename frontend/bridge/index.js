@@ -1,8 +1,8 @@
 import Peerjs from '../node_modules/peerjs/dist/peerjs.js';
 
-const { host, protocol } = window.location;
-
-function to(name, onPeer, onData) {
+const { host: thisHost, protocol } = window.location;
+const empty =() => {};
+function to(name, { host=thisHost, onPeer=empty, onData=empty }) {
     const peer = new Peerjs(
       name, 
       {
@@ -11,6 +11,7 @@ function to(name, onPeer, onData) {
         path: '/peers',
       }
     );
+
     peer.on('open', () => {
       onPeer(name, peer);
     });
