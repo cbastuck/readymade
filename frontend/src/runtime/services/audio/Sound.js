@@ -75,6 +75,9 @@ class SoundUI extends Component {
     const { running } = this.state;
     const onClick = () => {
       const toggled = !running;
+      if (toggled) {
+        Tone.start();
+      }
       service.configure({ 
         running: toggled,
         generator: { type: 'synth' }
@@ -88,6 +91,9 @@ class SoundUI extends Component {
     const { running, sampleMap } = this.state;
     const onClick = () => {
       const toggled = !running;
+      if (toggled) {
+        Tone.start();
+      }
       service.configure({ 
         running: toggled,
         generator: {
@@ -250,7 +256,7 @@ class Sound {
 
     if (running !== undefined) {
       if (running) {
-        Tone.Transport.start();              
+        Tone.Transport.start();
       } else {
         Tone.Transport.stop();
       }
