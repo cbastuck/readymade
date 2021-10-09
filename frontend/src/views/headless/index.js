@@ -1,36 +1,79 @@
 import React, { Component } from "react";
 
 import Runtime from "../../components/Runtime";
+import BrowserRegistry from "../../runtime/BrowserRegistry";
 
-export default class HeadlessPlayground extends Component {
-  onResult = (runtime, data) => {
-    console.log("on result", runtime, data);
+const defaultBundles = [
+  "hookup.to/registry/browser/Audio",
+  "hookup.to/registry/browser/Graphic",
+  "hookup.to/registry/browser/FileStorage",
+];
+
+export default class Headless extends Component {
+  state = {};
+
+  constructor(props) {
+    super(props);
+    BrowserRegistry.create(defaultBundles).then((defaultRegistry) =>
+      this.setState({ defaultRegistry })
+    );
+  }
+
+  onResult = (runtimeId, data) => {
+    const { callback } = this.props;
+    if (callback) {
+      callback(data);
+    } else {
+      console.log("No callback set, printing result from:", runtimeId, data);
+    }
   };
 
-  renderPlayground = (boardContext, runtime) => {
-    return <div></div>;
-  };
-
-  render() {
-    const boardContext = {};
-    const runtime = {
-      services: [
-        {
-          serviceId: "hookup.to/service/timer",
-          serviceName: "Timer",
-          uuid: "fb58b71d-dccd-4bfe-afac-5d52b9bc1a9e",
-          running: true,
-        },
-      ],
-    };
+  renderRuntime(boardContext, runtime) {
     return (
       <Runtime
-        key={`headless-playground-${runtime.id}`}
         ref={(rt) => (this.runtime = rt)}
         boardContext={boardContext}
         runtime={runtime}
-        onResult={this.onResult.bind(this, runtime)}
+        onResult={this.onResult}
       />
     );
   }
+
+  render() {
+    const { runtimeId, runtimeName, services } = this.props;
+    const { defaultRegistry } = this.state;
+    if (!defaultRegistry) {
+      return false;
+    }
+
+    const runtime = { id: runtimeId, name: runtimeName };
+    const boardContext = {
+      board: { name: "headless-board" },
+      runtimes: [runtimeId],
+      services: {
+        [runtimeId]: services,
+      },
+      registry: {
+        [runtimeId]: defaultRegistry.availableServices,
+      },
+      isRuntimeInScope: () => true,
+    };
+    return this.renderRuntime(boardContext, runtime);
+  }
 }
+
+Headless.defaultProps = {
+  runtimeId: "d5a48a72-b077-4d1e-83de-4be8f64bc3e8",
+  runtimeName: "Headless runtime",
+  services: [
+    {
+      serviceId: "hookup.to/service/timer",
+      serviceName: "Timer",
+      uuid: "fb58b71d-dccd-4bfe-afac-5d52b9bc1a9e",
+      running: true,
+      periodic: true,
+      periodicValue: 1,
+      periodicUnit: "s",
+    },
+  ],
+};

@@ -27,6 +27,7 @@ import Import from "./Import";
 import Join from "./Join";
 import ServiceRedirect from "./views/ServiceRedirect";
 import MessageDispatcher from "./MessageDispatcher";
+import Headless from "./views/headless";
 
 import "./App.css";
 
@@ -71,6 +72,7 @@ class App extends Component {
               <Route path="/join/:share" component={Join} />
               <Route path="/playground/:board" component={Playground} />
               <Route path="/playground" component={Playground} />
+              <Route path="/headless" component={Headless} />
               <Route path="/:board" component={BoardWithContext} />
             </Switch>
           </div>

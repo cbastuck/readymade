@@ -40,7 +40,7 @@
       },
       {
         "serviceName": "Filter",
-        "serviceId": "hookup.to/service/filter-browser",
+        "serviceId": "hookup.to/service/filter",
         "condition": "params.sample && params.source"
       },
       {
