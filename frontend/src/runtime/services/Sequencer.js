@@ -1,57 +1,53 @@
-import React, { Component } from 'react';
-import { 
-  Input, 
-  Checkbox,
-  TextArea,
-  Button,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Input, Checkbox, TextArea, Button } from "semantic-ui-react";
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
-const serviceId = 'hookup.to/service/sequencer';
-const serviceName = 'Sequencer';
+const serviceId = "hookup.to/service/sequencer";
+const serviceName = "Sequencer";
 
 function resolveTransferItem(dataTransferItem) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     const { kind, type } = dataTransferItem;
-    dataTransferItem.getAsString(str => resolve({
-      type,
-      kind,
-      data: str
-    }))
+    dataTransferItem.getAsString((str) =>
+      resolve({
+        type,
+        kind,
+        data: str,
+      })
+    );
   });
 }
 
 class Step extends Component {
-  allowDrop = ev => true; // TODO: allow everything
+  allowDrop = (ev) => true; // TODO: allow everything
 
-  onDrop = async ev => {
-    for(let i=0; i<ev.dataTransfer.items.length; ++i) {
+  onDrop = async (ev) => {
+    for (let i = 0; i < ev.dataTransfer.items.length; ++i) {
       const item = ev.dataTransfer.items[i];
       return await resolveTransferItem(item); // TODO: returning the first item
     }
     return true;
-  }
+  };
 
   render() {
     const { active, onClick, onData } = this.props;
     return (
       <div
         style={{
-          backgroundColor: active ? 'lightgray' : 'white',
-          border: active ? 'solid 1px white' : 'solid 1px gray',
+          backgroundColor: active ? "lightgray" : "white",
+          border: active ? "solid 1px white" : "solid 1px gray",
           width: 50,
-          height: 50
+          height: 50,
         }}
         onClick={onClick}
-        onDragOver={ev => this.allowDrop(ev) && ev.preventDefault()}
-        onDrop={async ev => {
+        onDragOver={(ev) => this.allowDrop(ev) && ev.preventDefault()}
+        onDrop={async (ev) => {
           ev.preventDefault();
           const data = await this.onDrop(ev);
           onData(data);
         }}
-      >
-      </div>
+      ></div>
     );
   }
 }
@@ -59,21 +55,21 @@ class Step extends Component {
 class SequencerUI extends Component {
   state = {
     currentStep: 0,
-    numSteps: '',
+    numSteps: "",
     repeat: false,
-    editBuffer: '',
-    editBufferStep: 0
-  }
+    editBuffer: "",
+    editBufferStep: 0,
+  };
 
-  onInit = initialState => {
+  onInit = (initialState) => {
     this.setState({
       currentStep: initialState.currentStep,
       numSteps: initialState.steps.length,
       repeat: initialState.repeat,
       editBuffer: JSON.stringify(initialState.steps[initialState.currentStep]),
-      editBufferStep: initialState.currentStep
+      editBufferStep: initialState.currentStep,
     });
-  }
+  };
 
   update = (service, { currentStep, finished }) => {
     if (currentStep !== undefined) {
@@ -85,105 +81,111 @@ class SequencerUI extends Component {
     } else {
       const step = service.steps[currentStep];
       // checkpoints should be the first element of array steps
-      const checkpoint = Array.isArray(step) ? step[0].checkpoint : step.checkpoint;
+      const checkpoint = Array.isArray(step)
+        ? step[0].checkpoint
+        : step.checkpoint;
       if (checkpoint) {
         service.app.sendAction({ checkpoint });
-      }      
+      }
     }
-  }
+  };
 
-  renderSteps = service => {
-    return service && service.register(this.update.bind(this, service)) && (
-      <div>
-        { this.renderStepBar(service) }
-        <div>
-          <Input 
-            type="number"
-            label="Steps"
-            value={this.state.numSteps}
-            onChange={(_, { value }) => {
-              this.setState({ numSteps: value });
-            }}
-            onBlur={() => {
-              const numSteps = Number(this.state.numSteps);
-              if (!Number.isNaN(numSteps)) {
-                service.configure({ numSteps });
-              }
-            }}
-          />
-        </div>
-        <div style={{ marginTop: 10 }}>
-          <Checkbox
-            label="Repeat"
-            checked={this.state.repeat}
-            onChange={(_, { checked }) => 
-              this.setState(
-                { repeat: checked }, 
-                () => service.configure({ repeat: checked })
-              )
-            }
-          />
-        </div>
-      </div>
-    )
-  }
-
-  renderStepBar = service => {
+  renderSteps = (service) => {
     return (
-      <div 
-        style={{ 
-          display: 'flex',
-          flexDirection: 'row',
-          marginBottom: 10
+      service &&
+      service.register(this.update.bind(this, service)) && (
+        <div>
+          {this.renderStepBar(service)}
+          <div>
+            <Input
+              type="number"
+              label="Steps"
+              value={this.state.numSteps}
+              onChange={(_, { value }) => {
+                this.setState({ numSteps: value });
+              }}
+              onBlur={() => {
+                const numSteps = Number(this.state.numSteps);
+                if (!Number.isNaN(numSteps)) {
+                  service.configure({ numSteps });
+                }
+              }}
+            />
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <Checkbox
+              label="Repeat"
+              checked={this.state.repeat}
+              onChange={(_, { checked }) =>
+                this.setState({ repeat: checked }, () =>
+                  service.configure({ repeat: checked })
+                )
+              }
+            />
+          </div>
+        </div>
+      )
+    );
+  };
+
+  renderStepBar = (service) => {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          marginBottom: 10,
         }}
       >
-      {
-        this.state.numSteps !== '' && 
-        new Array(Number(this.state.numSteps)).fill({}).map((stepData, idx) => (
-          <Step
-            key={`step-${idx}`}
-            data={stepData}
-            position={idx}
-            active={this.state.currentStep === idx}
-            onClick={() => {
-              service.setCurrentStep(idx);
-              this.setState({
-                editBuffer: JSON.stringify(service.steps[idx]),
-                editBufferStep: idx,
-              });
-            }}
-            onData={data => service.setStepData(idx, data)}
-          />
-        ))
-      }
+        {this.state.numSteps !== "" &&
+          new Array(Number(this.state.numSteps))
+            .fill({})
+            .map((stepData, idx) => (
+              <Step
+                key={`step-${idx}`}
+                data={stepData}
+                position={idx}
+                active={this.state.currentStep === idx}
+                onClick={() => {
+                  service.setCurrentStep(idx);
+                  this.setState({
+                    editBuffer: JSON.stringify(service.steps[idx]),
+                    editBufferStep: idx,
+                  });
+                }}
+                onData={(data) => service.setStepData(idx, data)}
+              />
+            ))}
       </div>
     );
-  }
+  };
 
-  renderStepConfig = service => {
+  renderStepConfig = (service) => {
     return (
       <div>
-        { this.renderStepBar(service) }
+        {this.renderStepBar(service)}
         <TextArea
-          style={{ width: '100%' }}
+          style={{ width: "100%" }}
           value={this.state.editBuffer}
-          onChange={(_, data) => 
-            this.setState({ 
-              editBuffer: data.value 
+          onChange={(_, data) =>
+            this.setState({
+              editBuffer: data.value,
             })
           }
         />
-        <Button 
-          style={{ width: '100%', marginTop: 10 }}
+        <Button
+          style={{ width: "100%", marginTop: 10 }}
           onClick={() => {
-            service.steps[this.state.editBufferStep] = JSON.parse(this.state.editBuffer);
+            service.steps[this.state.editBufferStep] = JSON.parse(
+              this.state.editBuffer
+            );
           }}
         >
           Update Step
         </Button>
       </div>
     );
-  }
+  };
 
   render() {
     return (
@@ -191,11 +193,11 @@ class SequencerUI extends Component {
         {...this.props}
         onInit={this.onInit.bind(this)}
         segments={[
-          { name: 'Steps', render: this.renderSteps },
-          { name: 'Edit', render: this.renderStepConfig },
+          { name: "Steps", render: this.renderSteps },
+          { name: "Edit", render: this.renderStepConfig },
         ]}
       />
-    )
+    );
   }
 }
 
@@ -205,7 +207,7 @@ class Sequencer {
     this.board = board;
     this.app = app;
 
-    this.steps = [{step: 1},{step: 2}, {step: 3}];
+    this.steps = [{ step: 1 }, { step: 2 }, { step: 3 }];
     this.currentStep = 0;
     this.repeat = true;
   }
@@ -227,13 +229,7 @@ class Sequencer {
   }
 
   configure(config) {
-    const { 
-      numSteps, 
-      steps, 
-      repeat, 
-      conditions,
-      currentStep,
-    } = config || {};
+    const { numSteps, steps, repeat, conditions, currentStep } = config || {};
 
     if (steps !== undefined) {
       this.steps = steps;
@@ -267,9 +263,9 @@ class Sequencer {
     const value = input[condition.property];
     const referenceValue = condition.value;
     switch (op) {
-      case 'less':
+      case "less":
         return value < referenceValue;
-      case 'greater':
+      case "greater":
         return value > referenceValue;
       default:
         break;
@@ -284,12 +280,14 @@ class Sequencer {
       }
       return undefined;
     }
-    
+
     const n = this.currentStep % this.steps.length;
     if (this.conditions) {
       const condition = this.conditions[this.currentStep];
-      const nextNonWeakCondition = condition && condition.weak && this.conditions.find(
-        (next, nextIndex) => {
+      const nextNonWeakCondition =
+        condition &&
+        condition.weak &&
+        this.conditions.find((next, nextIndex) => {
           if (nextIndex <= this.currentStep) {
             return false;
           }
@@ -297,10 +295,21 @@ class Sequencer {
             return true; // unconditional (empty/undefined) steps are not weak
           }
           return !next.weak;
-        }
-      );
-      const conditionFulfilled = condition && this.checkCondition(condition.index !== undefined ? params[condition.index] : params, condition);
-      const nonWeakConditionFulfilled = nextNonWeakCondition && this.checkCondition(nextNonWeakCondition.index !== undefined ? params[nextNonWeakCondition.index] : params, nextNonWeakCondition);
+        });
+      const conditionFulfilled =
+        condition &&
+        this.checkCondition(
+          condition.index !== undefined ? params[condition.index] : params,
+          condition
+        );
+      const nonWeakConditionFulfilled =
+        nextNonWeakCondition &&
+        this.checkCondition(
+          nextNonWeakCondition.index !== undefined
+            ? params[nextNonWeakCondition.index]
+            : params,
+          nextNonWeakCondition
+        );
       if (nonWeakConditionFulfilled) {
         this.currentStep = this.conditions.indexOf(nextNonWeakCondition) + 1;
       } else if (conditionFulfilled) {
@@ -332,7 +341,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new Sequencer(app, board, descriptor, id),
-  createUI: SequencerUI
+  createUI: SequencerUI,
 };
 
 export default descriptor;

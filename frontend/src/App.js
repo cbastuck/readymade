@@ -1,38 +1,34 @@
-import React, { Component } from 'react';
-import {
-  BrowserRouter as Router,
-  Route,
-  Switch
-} from 'react-router-dom';
+import React, { Component } from "react";
+import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
 
-import AppContext from './AppContext';
+import AppContext from "./AppContext";
 
-import Welcome from './views/welcome/Welcome';
-import About from './views/about/About';
-import Imprint from './views/about/Imprint';
-import Contact from './views/about/Contact';
-import Examples from './views/examples/Examples';
-import Quickstart from './views/docs/Quickstart';
-import ServiceDocumentation from './views/docs/Service';
-import BoardDocumentation from './views/docs/Board';
-import RuntimeDocumentation from './views/docs/Runtime';
-import MyBoards from './views/dashboard/MyBoards';
-import BoardWithContext from './views/BoardWithContext';
-import BuildBoard from './views/BuildBoard';
-import AuthRedirect from './views/AuthRedirect';
-import AppHub from './views/AppHub';
-import Login from './views/Login';
-import LoginFail from './views/LoginFail';
-import ServiceReferenceView from './views/ServiceReferenceView';
-import DataModelReferenceView from './views/DataModelReferenceView';
-import Playground from './views/Playground';
-import Sandbox from './Sandbox';
-import Import from './Import';
-import Join from './Join';
-import ServiceRedirect from './views/ServiceRedirect';
-import MessageDispatcher from './MessageDispatcher';
+import Welcome from "./views/welcome/Welcome";
+import About from "./views/about/About";
+import Imprint from "./views/about/Imprint";
+import Contact from "./views/about/Contact";
+import Examples from "./views/examples/Examples";
+import Quickstart from "./views/docs/Quickstart";
+import ServiceDocumentation from "./views/docs/Service";
+import BoardDocumentation from "./views/docs/Board";
+import RuntimeDocumentation from "./views/docs/Runtime";
+import MyBoards from "./views/dashboard/MyBoards";
+import BoardWithContext from "./views/BoardWithContext";
+import BuildBoard from "./views/BuildBoard";
+import AuthRedirect from "./views/AuthRedirect";
+import AppHub from "./views/AppHub";
+import Login from "./views/Login";
+import LoginFail from "./views/LoginFail";
+import ServiceReferenceView from "./views/ServiceReferenceView";
+import DataModelReferenceView from "./views/DataModelReferenceView";
+import Playground from "./views/Playground";
+import Sandbox from "./Sandbox";
+import Import from "./Import";
+import Join from "./Join";
+import ServiceRedirect from "./views/ServiceRedirect";
+import MessageDispatcher from "./MessageDispatcher";
 
-import './App.css';
+import "./App.css";
 
 class App extends Component {
   render() {
@@ -41,8 +37,8 @@ class App extends Component {
         <Router>
           <div
             style={{
-              height: '100%',
-              width: '100%',
+              height: "100%",
+              width: "100%",
             }}
           >
             <Switch>
@@ -57,8 +53,14 @@ class App extends Component {
               <Route path="/loginFail" component={LoginFail} />
               <Route path="/auth2app" component={AuthRedirect} />
               <Route path="/:board/app" component={AppHub} />
-              <Route path="/service/:service" component={ServiceReferenceView} />
-              <Route path="/datamodel/:name" component={DataModelReferenceView} />
+              <Route
+                path="/service/:service"
+                component={ServiceReferenceView}
+              />
+              <Route
+                path="/datamodel/:name"
+                component={DataModelReferenceView}
+              />
               <Route path="/examples" component={Examples} />
               <Route path="/dashboard" component={MyBoards} />
               <Route path="/docs/service" component={ServiceDocumentation} />

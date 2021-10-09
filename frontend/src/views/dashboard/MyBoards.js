@@ -1,47 +1,34 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Button,
-  Card,
-  Image,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Link } from "react-router-dom";
+import { Button, Card, Image } from "semantic-ui-react";
 
-import { s, t } from '../../styles';
-import { AppConsumer } from '../../AppContext';
-import BoardContext, { BoardConsumer } from '../../BoardContext';
-import Toolbar from '../../components/Toolbar';
-import Footer from '../../components/Footer';
-import BoardCollection from '../../components/BoardCollection';
+import { s, t } from "../../styles";
+import { AppConsumer } from "../../AppContext";
+import BoardContext, { BoardConsumer } from "../../BoardContext";
+import Toolbar from "../../components/Toolbar";
+import Footer from "../../components/Footer";
+import BoardCollection from "../../components/BoardCollection";
 
 export default class MyBoards extends Component {
   state = {
     boards: [],
   };
 
-  renderCard = board => {
+  renderCard = (board) => {
     return (
-      <Card 
-        key={`my-board-card-${board.title}`} 
-        className="my-board-card"
-      >
+      <Card key={`my-board-card-${board.title}`} className="my-board-card">
         <Card.Content>
-          <Image
-            floated="right"
-            size="mini"
-            src={board.image}
-          />
+          <Image floated="right" size="mini" src={board.image} />
           <Card.Header>{board.title}</Card.Header>
           <Card.Meta>{board.brief}</Card.Meta>
-          <Card.Description>
-            {board.description}
-          </Card.Description>
+          <Card.Description>{board.description}</Card.Description>
         </Card.Content>
         <Card.Content extra>
           <div className="ui two buttons">
-            <Button 
-              basic 
+            <Button
+              basic
               color="grey"
-              onClick={() => console.log('Loading my board', board)}
+              onClick={() => console.log("Loading my board", board)}
             >
               Load
             </Button>
@@ -49,77 +36,67 @@ export default class MyBoards extends Component {
         </Card.Content>
       </Card>
     );
-  }
+  };
 
   renderMyBoards = () => (
-    <Card.Group>
-        { this.state.boards.map(b => this.renderCard(b)) }
-    </Card.Group>
+    <Card.Group>{this.state.boards.map((b) => this.renderCard(b))}</Card.Group>
   );
 
-  renderMyBoardsContainer = user => {
+  renderMyBoardsContainer = (user) => {
     return (
       <div className="my-boards-container">
-        <div 
-          style={{ 
-            margin: '10px 10px', 
-            textAlign: 'center' ,
-            marginBottom: 20
+        <div
+          style={{
+            margin: "10px 10px",
+            textAlign: "center",
+            marginBottom: 20,
           }}
         >
           <h1
-            style={{ 
-              fontSize: 16, 
-              margin: '20px 0px',
+            style={{
+              fontSize: 16,
+              margin: "20px 0px",
               padding: 0,
               letterSpacing: 1,
-              textTransform: 'uppercase',
+              textTransform: "uppercase",
             }}
-          > 
-            {user ? `${user.username}'s` : 'My'} Boards
+          >
+            {user ? `${user.username}'s` : "My"} Boards
           </h1>
         </div>
-        <div className="my-boards-list">
-          { this.renderMyBoards() }
-        </div>
+        <div className="my-boards-list">{this.renderMyBoards()}</div>
       </div>
     );
-  }
+  };
 
   render() {
     return (
       <AppConsumer>
-        {
-          appContext => (
-            <BoardContext>
-              <BoardConsumer>
-              {
-                boardContext => (
-                  <div style={{ height: '100%' }}>
-                    <Toolbar 
-                      onAction={boardContext.onAction}
+        {(appContext) => (
+          <BoardContext>
+            <BoardConsumer>
+              {(boardContext) => (
+                <div style={{ height: "100%" }}>
+                  <Toolbar onAction={boardContext.onAction} />
+                  <div style={s(t.uc, t.fs12, t.ls1, t.m(25, 20))}>
+                    <h1 style={s(t.mt10, t.fs14)}>
+                      Locally stored Playgrounds
+                    </h1>
+                    <BoardCollection
+                      style={{ height: 350, width: "100%" }}
+                      items={[]}
                     />
-                    <div style={s(t.uc, t.fs12, t.ls1, t.m(25, 20))}>
-                      <h1 style={s(t.mt10, t.fs14)}>
-                        Locally stored Playgrounds
-                      </h1> 
-                      <BoardCollection
-                        style={{ height: 350, width: '100%' }} 
-                        items={[]}
-                      />
-                      <h1 style={s(t.mt20, t.fs14)}>Sketch a new idea</h1>
-                      <div style={t.mt10}>
-                        go to <Link to="/playground">Playground</Link>
-                      </div>
+                    <h1 style={s(t.mt20, t.fs14)}>Sketch a new idea</h1>
+                    <div style={t.mt10}>
+                      go to <Link to="/playground">Playground</Link>
                     </div>
                   </div>
-                )
-              }
-              </BoardConsumer>
-              <Footer />
-            </BoardContext> 
-          )
-        }
+                </div>
+              )}
+            </BoardConsumer>
+            <Footer />
+          </BoardContext>
+        )}
       </AppConsumer>
     );
   }

@@ -1,13 +1,13 @@
-import React, { Component, createContext } from'react';
+import React, { Component, createContext } from "react";
 
-import { s, t } from './styles';
+import { s, t } from "./styles";
 
 const { Provider, Consumer: DragConsumer } = createContext();
 
 class DragContext extends Component {
   state = {
     // API
-    setResizable: resizeable => this.setState({ resizeable }),
+    setResizable: (resizeable) => this.setState({ resizeable }),
     clearResizable: () => this.setState({ resizeable: null }),
 
     // Data
@@ -18,19 +18,17 @@ class DragContext extends Component {
     const { resizeable, clearResizable } = this.state;
     const { children, style } = this.props;
     return (
-      <div 
+      <div
         style={s(style, t.fill)}
-        onMouseMove={ev => resizeable && resizeable.onMove(ev)}
-        onMouseUp={ev => {
+        onMouseMove={(ev) => resizeable && resizeable.onMove(ev)}
+        onMouseUp={(ev) => {
           if (resizeable) {
             resizeable.onEnd();
             clearResizable();
           }
         }}
       >
-        <Provider value={this.state}>
-          { children }
-        </Provider>
+        <Provider value={this.state}>{children}</Provider>
       </div>
     );
   }

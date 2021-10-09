@@ -1,5 +1,5 @@
-import React, { Component } from 'react';
-import joint from 'jointjs';
+import React, { Component } from "react";
+import joint from "jointjs";
 
 export default class Connection extends Component {
   componentDidMount() {

@@ -1,44 +1,38 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import InputField from '../../components/shared/InputField';
-import SelectorField from '../../components/shared/SelectorField';
+import InputField from "../../components/shared/InputField";
+import SelectorField from "../../components/shared/SelectorField";
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
-const serviceId = 'hookup.to/service/aggregator';
-const serviceName = 'Aggregator';
+const serviceId = "hookup.to/service/aggregator";
+const serviceName = "Aggregator";
 
 class AggregatorUI extends Component {
-  state = { 
+  state = {
     interval: 0,
-    property: '',
-    aggregator: ''
+    property: "",
+    aggregator: "",
   };
 
-  onInit = initialState => {
-    this.setState({ 
+  onInit = (initialState) => {
+    this.setState({
       interval: initialState.interval || 100,
-      property: initialState.property || '',
-      aggregator: initialState.aggregator || 'val_max_occ',
+      property: initialState.property || "",
+      aggregator: initialState.aggregator || "val_max_occ",
     });
-  }
+  };
 
-  onNotification = async (service, notification) => {   
-   
-  }
+  onNotification = async (service, notification) => {};
 
-  renderMain = service => {
-    const { 
-      interval,
-      property,
-      aggregator
-    } = this.state;
-    const aggOptions = { 
-      val_max_occ: 'max value count',
-    }
+  renderMain = (service) => {
+    const { interval, property, aggregator } = this.state;
+    const aggOptions = {
+      val_max_occ: "max value count",
+    };
     return (
-      <div style={{ overflow: 'auto' }}>
-        <InputField 
+      <div style={{ overflow: "auto" }}>
+        <InputField
           type="text"
           label="Property"
           value={property}
@@ -46,8 +40,8 @@ class AggregatorUI extends Component {
             await service.configure({ property });
             this.setState({ property });
           }}
-        />  
-        <SelectorField 
+        />
+        <SelectorField
           label="aggregator"
           options={aggOptions}
           value={aggregator}
@@ -56,7 +50,7 @@ class AggregatorUI extends Component {
             this.setState({ aggregator });
           }}
         />
-        <InputField 
+        <InputField
           type="number"
           label="Interval"
           value={interval}
@@ -68,22 +62,19 @@ class AggregatorUI extends Component {
         />
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'main', render: this.renderMain }
-        ]}
+        segments={[{ name: "main", render: this.renderMain }]}
       />
     );
   }
 }
-
 
 class Aggregator {
   constructor(app, board, descriptor, id) {
@@ -92,15 +83,12 @@ class Aggregator {
     this.app = app;
 
     this.interval = 100;
-    this.property = 'unset';
+    this.property = "unset";
     this.aggregate = {};
   }
 
   configure(config) {
-    const { 
-      interval,
-      property,
-    } = config;
+    const { interval, property } = config;
 
     if (interval !== undefined) {
       this.interval = interval;
@@ -116,23 +104,20 @@ class Aggregator {
 
   destroy = () => {
     this.destroyTimer();
-  }
+  };
 
   destroyTimer = () => {
     if (this.__timer) {
       clearInterval(this.__timer);
     }
-  }
+  };
 
   reset = () => {
     this.destroyTimer();
-    this.__timer = setInterval(
-      this.doSubmit, 
-      this.interval
-    );
-  }
+    this.__timer = setInterval(this.doSubmit, this.interval);
+  };
 
-  doAggregate = params => {
+  doAggregate = (params) => {
     for (const key of Object.keys(params)) {
       const value = params[key];
       if (value === null) {
@@ -143,13 +128,13 @@ class Aggregator {
       } else {
         const aggValues = this.aggregate[key];
         if (aggValues[value] !== undefined) {
-          ++aggValues[value]
+          ++aggValues[value];
         } else {
           aggValues[value] = 1;
         }
       }
     }
-  }
+  };
 
   doSubmit = () => {
     const aggregate = this.aggregate[this.property];
@@ -160,30 +145,30 @@ class Aggregator {
         const winner = keys.reduce(
           (max, curKey) => {
             const curValue = aggregate[curKey];
-            return (max.value < curValue) ? 
-              ({ key: curKey, value: curValue }) :
-              max;
+            return max.value < curValue
+              ? { key: curKey, value: curValue }
+              : max;
           },
-          { 
-            key: firstKey, 
-            value: this.aggregate[this.property][firstKey] 
+          {
+            key: firstKey,
+            value: this.aggregate[this.property][firstKey],
           }
         );
-        const nextParams = { 
+        const nextParams = {
           [this.property]: winner.key,
         };
         this.app.next(this, nextParams);
       }
     }
     this.aggregate = {};
-  }
+  };
 
   async process(params) {
     if (Array.isArray(params)) {
       params.forEach(this.doAggregate);
     } else {
       this.doAggregate(params);
-    }    
+    }
     return null;
   }
 }
@@ -193,7 +178,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new Aggregator(app, board, descriptor, id),
-  createUI: AggregatorUI
+  createUI: AggregatorUI,
 };
 
 export default descriptor;

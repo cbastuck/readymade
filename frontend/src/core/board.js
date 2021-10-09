@@ -1,5 +1,5 @@
-import { generate } from 'unique-names-generator';
+import { generate } from "unique-names-generator";
 
 export function generateRandomName() {
-  return generate('-').split('-').slice(1).join('-');
+  return generate("-").split("-").slice(1).join("-");
 }

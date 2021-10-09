@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
-const serviceId = 'hookup.to/service/remote-window';
-const serviceName = 'RemoteWindow';
+const serviceId = "hookup.to/service/remote-window";
+const serviceName = "RemoteWindow";
 
 /*
 function getRandomColor() {
@@ -18,57 +18,47 @@ function getRandomColor() {
 
 class RemoteWindowUI extends Component {
   componentDidMount() {
-    this.setState(
-      { window: window.open(undefined, 'remote', undefined, true) }
-    );
+    this.setState({
+      window: window.open(undefined, "remote", undefined, true),
+    });
   }
 
-  update = value => {
+  update = (value) => {
     const wdw = this.state.window;
     const doc = wdw.document;
     if (!doc.title) {
-      doc.title = 'Hookup Remote';  
+      doc.title = "Hookup Remote";
     }
-    
+
     /*
     doc.body.appendChild(
       doc.createTextNode('Hello Remote Window')
     );
     */
-    
+
     //doc.body.style.backgroundColor = getRandomColor();
 
-    if(!value.bot) {
+    if (!value.bot) {
       doc.body.appendChild(
-        doc.createElement('h1')
-          .appendChild(doc.createTextNode(value.user))
+        doc.createElement("h1").appendChild(doc.createTextNode(value.user))
           .parentNode
       );
-      const link = doc.createElement('a')
-        .appendChild(doc.createTextNode(value.meta.uri))
-        .parentNode;
-        link.setAttribute('href', value.meta.uri);
-        link.setAttribute('target', '_blank');
+      const link = doc
+        .createElement("a")
+        .appendChild(doc.createTextNode(value.meta.uri)).parentNode;
+      link.setAttribute("href", value.meta.uri);
+      link.setAttribute("target", "_blank");
       doc.body.appendChild(link);
     }
-
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
+      <ServiceUI
         {...this.props}
-        onInit={service => 
-          this.setState({ fullscreen: service.fullscreen })
-        }
+        onInit={(service) => this.setState({ fullscreen: service.fullscreen })}
       >
-      {
-        ({ service }) => (
-          service && service.register(this.update) && (
-            <div />
-          )
-        )
-      }
+        {({ service }) => service && service.register(this.update) && <div />}
       </ServiceUI>
     );
   }
@@ -86,8 +76,7 @@ class RemoteWindow {
     return true;
   }
 
-  configure(config) {
-  }
+  configure(config) {}
 
   process(params) {
     if (this.callback) {
@@ -102,7 +91,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new RemoteWindow(app, board, descriptor, id),
-  createUI: RemoteWindowUI
+  createUI: RemoteWindowUI,
 };
 
 export default descriptor;

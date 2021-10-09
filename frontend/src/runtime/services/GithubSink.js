@@ -1,46 +1,29 @@
-import React, { Component } from 'react';
-import moment from 'moment';
+import React, { Component } from "react";
+import moment from "moment";
 
-import ServiceUI from './ServiceUI';
-import InputField from '../../components/shared/InputField';
-import {
-  GithubUser, 
-  GithubObject, 
-  GithubOAuth 
-} from './GithubComponents';
-import { commit } from './GithubAPI';
+import ServiceUI from "./ServiceUI";
+import InputField from "../../components/shared/InputField";
+import { GithubUser, GithubObject, GithubOAuth } from "./GithubComponents";
+import { commit } from "./GithubAPI";
 
-const serviceId = 'hookup.to/service/github-sink';
-const serviceName = 'Github Sink';
+const serviceId = "hookup.to/service/github-sink";
+const serviceName = "Github Sink";
 
-const clientID = 'f2b34053a831baa056e8';
-const clientSecret = '';
+const clientID = "f2b34053a831baa056e8";
+const clientSecret = "";
 const redirectURI = `${window.location.origin}/serviceRedirect`;
 const scopes = [];
 
 class GithubSinkUI extends Component {
   state = {};
 
-  onInit = initialState => {
-    const { 
-      token,
-      owner,
-      repo,
-      branch,
-      file,
-    } = initialState;
+  onInit = (initialState) => {
+    const { token, owner, repo, branch, file } = initialState;
     this.setState({ token, owner, repo, branch, file });
-  }
+  };
 
   onNotification = (service, notification) => {
-    const { 
-      token, 
-      user,
-      owner,
-      repo,
-      branch,
-      file,
-    } = notification;
+    const { token, user, owner, repo, branch, file } = notification;
     if (token) {
       this.setState({ token });
     }
@@ -50,7 +33,7 @@ class GithubSinkUI extends Component {
     }
 
     if (owner !== undefined) {
-      this.setState({ owner })
+      this.setState({ owner });
     }
 
     if (repo !== undefined) {
@@ -58,21 +41,21 @@ class GithubSinkUI extends Component {
     }
 
     if (branch !== undefined) {
-      this.setState({ branch })
+      this.setState({ branch });
     }
 
     if (file !== undefined) {
       this.setState({ file });
     }
-  }
+  };
 
-  renderLoginPanel = service => {
+  renderLoginPanel = (service) => {
     const { token } = this.state;
     if (token) {
       return (
-        <GithubUser 
+        <GithubUser
           token={token}
-          onUser={user => {
+          onUser={(user) => {
             if (!this.state.owner) {
               const owner = user.login;
               this.setState({ owner });
@@ -82,67 +65,63 @@ class GithubSinkUI extends Component {
         />
       );
     }
-    return clientSecret ? 
+    return clientSecret ? (
       <GithubOAuth
         clientID={clientID}
         clientSecret={clientSecret}
         redirectURI={redirectURI}
         scopes={scopes}
-        onToken={token => this.setState({ token })}
-      /> : 
+        onToken={(token) => this.setState({ token })}
+      />
+    ) : (
       this.renderBasicAuth(service)
-  }
+    );
+  };
 
-  renderBasicAuth = service => {
+  renderBasicAuth = (service) => {
     const { token } = this.state;
     return (
-      <div style={{ display: 'flex', flexDirection: 'column' }}>
-        <InputField 
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        <InputField
           label="Token"
           value={token}
           onChange={(_, { value: token }) => service.configure({ token })}
         />
       </div>
-    )
-  }
+    );
+  };
 
-  renderObjectSelector = service => {
-    const { 
-      token,
-      owner,
-      repo,
-      branch,
-      file,
-    } = this.state;
+  renderObjectSelector = (service) => {
+    const { token, owner, repo, branch, file } = this.state;
     if (!token) {
       return false;
     }
     return (
-      <GithubObject 
+      <GithubObject
         token={token}
         owner={owner}
         repo={repo}
         branch={branch}
         file={file}
-        onChange={kv => service.configure(kv)}
+        onChange={(kv) => service.configure(kv)}
       />
     );
-  }
+  };
 
   render() {
     const { token } = this.state;
-    const segments=[
-      { name: 'User', render: this.renderLoginPanel },
-      { name: 'Select', render: this.renderObjectSelector, disabled: !token },
+    const segments = [
+      { name: "User", render: this.renderLoginPanel },
+      { name: "Select", render: this.renderObjectSelector, disabled: !token },
     ];
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
         segments={segments}
       />
-    )
+    );
   }
 }
 
@@ -152,21 +131,15 @@ class GithubSink {
     this.board = board;
     this.app = app;
 
-    this.token = ''; //this.app.restoreServiceData(this.uuid, loginStateId);
-    this.owner = '';
-    this.repo = '';
-    this.branch = '';
-    this.file = '';
+    this.token = ""; //this.app.restoreServiceData(this.uuid, loginStateId);
+    this.owner = "";
+    this.repo = "";
+    this.branch = "";
+    this.file = "";
   }
 
-  async configure(config) { 
-    const { 
-      token,
-      owner,
-      repo,
-      branch, 
-      file
-    } = config;
+  async configure(config) {
+    const { token, owner, repo, branch, file } = config;
     if (token !== undefined) {
       this.token = token;
       // this.app.storeServiceData(this.uuid, loginStateId, token);
@@ -189,27 +162,23 @@ class GithubSink {
     }
 
     if (file !== undefined) {
-      this.file = typeof file === 'string' ? 
-        { name: file } : 
-        file; 
+      this.file = typeof file === "string" ? { name: file } : file;
       this.app.notify(this, { file: this.file });
     }
   }
 
-  destroy() { }
+  destroy() {}
 
   async process(params) {
     if (this.token) {
       const isBlob = params instanceof Blob;
-      const data = isBlob ? 
-        params : 
-        JSON.stringify(params, null, 2);
+      const data = isBlob ? params : JSON.stringify(params, null, 2);
       return await commit(
-        this.token, 
-        this.owner, 
-        this.repo, 
+        this.token,
+        this.owner,
+        this.repo,
         this.branch,
-        this.file.name, 
+        this.file.name,
         data,
         `${this.board} - ${moment().toISOString()}`
       );

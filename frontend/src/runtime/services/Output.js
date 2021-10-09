@@ -1,50 +1,43 @@
-import React, { Component } from 'react';
-import { 
-  Checkbox,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Checkbox } from "semantic-ui-react";
 
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
-import InputField from '../../components/shared/InputField';
-import SelectorField from '../../components/shared/SelectorField';
-import { request } from '../../core/actions';
-import { isWebsocket, isSecureConnection} from '../../core/url';
-import WebsocketChannel from '../WebsocketChannel';
+import ServiceUI from "./ServiceUI";
+import { s, t } from "../../styles";
+import InputField from "../../components/shared/InputField";
+import SelectorField from "../../components/shared/SelectorField";
+import { request } from "../../core/actions";
+import { isWebsocket, isSecureConnection } from "../../core/url";
+import WebsocketChannel from "../WebsocketChannel";
 // import { serializeWebsocketBuffer } from '../../core/format';
-import { replacePlaceholders } from '../../core/url';
+import { replacePlaceholders } from "../../core/url";
 
-const serviceId = 'hookup.to/service/output';
-const serviceName = 'Output';
+const serviceId = "hookup.to/service/output";
+const serviceName = "Output";
 
 class OutputUI extends Component {
   state = {
-    url: '',
-    headers: {}
+    url: "",
+    headers: {},
   };
 
-  onInit = initialState => {
-    const { 
-      url='', 
-      running=false,
-      flow='cancel',
-      headers={}
+  onInit = (initialState) => {
+    const {
+      url = "",
+      running = false,
+      flow = "cancel",
+      headers = {},
     } = initialState;
-    this.setState({ 
-      url, 
+    this.setState({
+      url,
       running,
       flow,
-      headers
+      headers,
     });
-  }
+  };
 
   onNotification = (service, notification) => {
-    const {
-      url, 
-      running,
-      flow,
-      headers
-    } = notification;
-    
+    const { url, running, flow, headers } = notification;
+
     if (url !== undefined && this.state.url !== url) {
       this.setState({ url });
     }
@@ -60,20 +53,15 @@ class OutputUI extends Component {
     if (headers !== undefined) {
       this.setState({ headers });
     }
-  }
+  };
 
-  renderMain = service => {
-    const { 
-      running,
-      url,
-      flow, 
-      headers
-    } = this.state;
+  renderMain = (service) => {
+    const { running, url, flow, headers } = this.state;
     const headerKeys = Object.keys(headers);
     return (
       <div style={t.m10}>
-        <div style={s(t.uc, t.ls1, t.fs12)}> 
-          <InputField 
+        <div style={s(t.uc, t.ls1, t.fs12)}>
+          <InputField
             label="URL"
             value={url}
             onChange={(_, { value }) => {
@@ -82,31 +70,27 @@ class OutputUI extends Component {
             }}
           />
         </div>
-        {
-          headerKeys.length > 0 && (
-            <div style={s(t.tl, t.uc, t.ls1, t.fs12, t.mt3)}>
-              <div>Headers</div>
-              {
-                headerKeys.map(key => (
-                  <InputField
-                    key={`output-header-${service.uuid}-${key}`}
-                    label={key}
-                    value={headers[key]}
-                    onChange={async (_, { value: newValue }) => {
-                      const newHeaders = {
-                        ...this.state.headers,
-                        [key]: newValue,
-                      };
-                      await service.configure({ headers: newHeaders });
-                    }}
-                  />
-                ))
-              }
-            </div>
-          )
-        }
+        {headerKeys.length > 0 && (
+          <div style={s(t.tl, t.uc, t.ls1, t.fs12, t.mt3)}>
+            <div>Headers</div>
+            {headerKeys.map((key) => (
+              <InputField
+                key={`output-header-${service.uuid}-${key}`}
+                label={key}
+                value={headers[key]}
+                onChange={async (_, { value: newValue }) => {
+                  const newHeaders = {
+                    ...this.state.headers,
+                    [key]: newValue,
+                  };
+                  await service.configure({ headers: newHeaders });
+                }}
+              />
+            ))}
+          </div>
+        )}
         <div style={t.tl}>
-          <Checkbox 
+          <Checkbox
             style={s(t.mt5, t.uc, t.ls1, t.fs12)}
             label="output active"
             toggle
@@ -124,8 +108,8 @@ class OutputUI extends Component {
           label="flow"
           style={t.m(0, 10)}
           options={{
-            cancel: 'cancel',
-            pass: 'pass-through',
+            cancel: "cancel",
+            pass: "pass-through",
           }}
           value={flow}
           onChange={async (_ev, { value: flow }) => {
@@ -135,17 +119,15 @@ class OutputUI extends Component {
         />
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
     );
   }
@@ -158,18 +140,13 @@ class Output {
     this.app = app;
 
     this.running = false;
-    this.url = '';
-    this.flow = 'cancel';
+    this.url = "";
+    this.flow = "cancel";
     this.headers = {};
   }
 
   configure(config) {
-    const { 
-      url,
-      running,
-      flow,
-      headers
-    } = config;
+    const { url, running, flow, headers } = config;
 
     if (running !== undefined) {
       this.running = running;
@@ -188,7 +165,7 @@ class Output {
 
     if (headers !== undefined) {
       this.headers = headers;
-      this.app.notify(this, { headers });
+      this.app.notify(this, { headers });
     }
   }
 
@@ -199,23 +176,20 @@ class Output {
     }
   }
 
-  connectWebsocket = async url => {
+  connectWebsocket = async (url) => {
     const ws = new WebsocketChannel(
       `output-service-${this.uuid}`,
-      params => {
-        console.log('RECEIVED SOMETHING ON OUTPUT WS', params)
+      (params) => {
+        console.log("RECEIVED SOMETHING ON OUTPUT WS", params);
       },
       isSecureConnection()
     );
     await ws.open({ absolute: url });
     return ws;
-  }
+  };
 
   async process(params) {
-    const { 
-      url, 
-      running 
-    } = this;
+    const { url, running } = this;
 
     if (url && running) {
       if (isWebsocket(url)) {
@@ -230,31 +204,25 @@ class Output {
         this._websocket.send(buffer);
         */
       } else {
-        request(
-          { absolute: url }, 
-          'POST', 
-          false, 
-          params, 
-          this.headers
-        );
+        request({ absolute: url }, "POST", false, params, this.headers);
       }
     }
 
     switch (this.flow) {
-      case 'cancel': 
+      case "cancel":
         return null;
-      default: 
+      default:
         return params;
     }
   }
 }
 
-const descriptor = {  
+const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new Output(app, board, descriptor, id),
-  createUI: OutputUI
+  createUI: OutputUI,
 };
 
 export default descriptor;

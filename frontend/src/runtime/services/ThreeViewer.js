@@ -1,5 +1,5 @@
-const serviceId = 'hookup.to/service/three-viewer';
-const serviceName = 'ThreeViewer';
+const serviceId = "hookup.to/service/three-viewer";
+const serviceName = "ThreeViewer";
 
 /*
 import React, { Component } from 'react';
@@ -138,7 +138,7 @@ class ThreeViewer {
     this.uuid = id;
     this.board = board;
     this.app = app;
-    
+
     this.fullscreen = false;
   }
 
@@ -147,8 +147,7 @@ class ThreeViewer {
     return true;
   }
 
-  configure(config) {
-  }
+  configure(config) {}
 
   process(params) {
     if (this.callback) {

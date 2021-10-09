@@ -8,23 +8,26 @@ function utf8BufferToStr(buf) {
   return decoder.decode(buf);
 }
 
-const CRLF = '\r\n';
+const CRLF = "\r\n";
 
 export function parseResponse(arraybuf) {
-  if (typeof arraybuf === 'string') {
+  if (typeof arraybuf === "string") {
     return arraybuf;
   }
   const view = new DataView(arraybuf);
   const boundaryLength = view.getUint32(0); // BE
-  if (boundaryLength === 0) { // no multipart-form data
-    const binary = view.getUint8(4) === 'b'.charCodeAt(0);
+  if (boundaryLength === 0) {
+    // no multipart-form data
+    const binary = view.getUint8(4) === "b".charCodeAt(0);
     if (binary) {
-      return new Blob([arraybuf.slice(5)], { type: 'application/octet-stream' });
+      return new Blob([arraybuf.slice(5)], {
+        type: "application/octet-stream",
+      });
     } else {
       const useUTF8 = true;
-      return useUTF8 ? 
-        utf8BufferToStr(arraybuf.slice(5)) : 
-        utf16leBufferToStr(arraybuf.slice(5));
+      return useUTF8
+        ? utf8BufferToStr(arraybuf.slice(5))
+        : utf16leBufferToStr(arraybuf.slice(5));
     }
   }
   // the reponse is a multipart-form
@@ -35,18 +38,18 @@ export function parseResponse(arraybuf) {
 }
 
 function stringToCharCodes(str) {
-  return str.split('').map(c => c.charCodeAt(0));
+  return str.split("").map((c) => c.charCodeAt(0));
 }
 
-function findStringInView(searchString, view, startIndex=0) {
-  function finder(str, startIndex=0) {
+function findStringInView(searchString, view, startIndex = 0) {
+  function finder(str, startIndex = 0) {
     const arr = stringToCharCodes(str);
-    return function(element, index, view){
+    return function (element, index, view) {
       const n = arr.length - 1;
       if (index < n || index <= startIndex) {
         return false;
       }
-      for (let i=n, j=0; i >= 0; --i, ++j) {
+      for (let i = n, j = 0; i >= 0; --i, ++j) {
         if (arr[i] !== view[index - j]) {
           return false;
         }
@@ -62,23 +65,28 @@ function parsePartHeader(view, verifyBoundary) {
   const headers = {};
   for (let start = 0, end = 0; end !== -1; start = end) {
     end = findStringInView(CRLF, view, start);
-    if (end !== -1) { 
+    if (end !== -1) {
       const slice = view.slice(start, end);
       const line = utf8BufferToStr(slice);
       if (verifyBoundary && start === 0) {
-        if (line === `${verifyBoundary}--\r\n`) { // end of multipart
-          return { headers: {}, finished: true};
+        if (line === `${verifyBoundary}--\r\n`) {
+          // end of multipart
+          return { headers: {}, finished: true };
         }
         if (line !== `${verifyBoundary}\r\n`) {
-          throw new Error(`Boundary does not match \n${stringToCharCodes(line)} vs. \n${stringToCharCodes(verifyBoundary)}`);
+          throw new Error(
+            `Boundary does not match \n${stringToCharCodes(
+              line
+            )} vs. \n${stringToCharCodes(verifyBoundary)}`
+          );
         }
       }
-      const [key, value] = line.split(':').map(s => s.trim());
+      const [key, value] = line.split(":").map((s) => s.trim());
       if (key !== undefined && value !== undefined) {
         headers[key.toLowerCase()] = value;
       }
     }
-    if (end-start === CRLF.length) {
+    if (end - start === CRLF.length) {
       return { headers, end }; // header ends with empty CLCR
     }
   }
@@ -87,38 +95,49 @@ function parsePartHeader(view, verifyBoundary) {
 
 function assureEqual(view, start, end, expectedStr) {
   const expectedChars = stringToCharCodes(expectedStr);
-  for (let i=0, n=end-start; i<n; ++i) {
+  for (let i = 0, n = end - start; i < n; ++i) {
     if (view[start + i] !== expectedChars[i]) {
-      throw new Error(`Assertion failed: ${view[start + i]} vs. ${expectedChars[i]} at ${i}`);
+      throw new Error(
+        `Assertion failed: ${view[start + i]} vs. ${expectedChars[i]} at ${i}`
+      );
     }
   }
 }
 
-function readPart(fullView, boundary, startPos=0) {
+function readPart(fullView, boundary, startPos = 0) {
   if (startPos >= fullView.length) {
     return null;
   }
-  
+
   const view = fullView.slice(startPos);
-  const { headers, end: headerEndPos, finished } = parsePartHeader(view, boundary);
+  const {
+    headers,
+    end: headerEndPos,
+    finished,
+  } = parsePartHeader(view, boundary);
   if (finished) {
     return null;
   }
-  const contentLengthHeader = headers && headers['content-length'];
-  const contentLength = contentLengthHeader ? Number(contentLengthHeader) : undefined;
+  const contentLengthHeader = headers && headers["content-length"];
+  const contentLength = contentLengthHeader
+    ? Number(contentLengthHeader)
+    : undefined;
   if (contentLength === undefined) {
-    throw new Error('No content length in multipart - Searching for end-boundary not implemented');
+    throw new Error(
+      "No content length in multipart - Searching for end-boundary not implemented"
+    );
   }
   const payloadEndPos = headerEndPos + contentLength;
   const payload = view.slice(headerEndPos, payloadEndPos);
   assureEqual(view, payloadEndPos, payloadEndPos + 2, CRLF);
 
-  const contentType = headers['content-type'];
-  const isJSON = contentType && contentType === 'application/json';
-  
-  const contentDisposition = headers['content-disposition'];
-  const quotedPartName = contentDisposition && contentDisposition.split('name=')[1];
-  return { 
+  const contentType = headers["content-type"];
+  const isJSON = contentType && contentType === "application/json";
+
+  const contentDisposition = headers["content-disposition"];
+  const quotedPartName =
+    contentDisposition && contentDisposition.split("name=")[1];
+  return {
     headers,
     payload: isJSON ? JSON.parse(utf8BufferToStr(payload)) : payload,
     end: startPos + payloadEndPos + 2,
@@ -126,17 +145,18 @@ function readPart(fullView, boundary, startPos=0) {
   };
 }
 
-function parseMultipart(body, boundary) { 
+function parseMultipart(body, boundary) {
   const view = new Uint8Array(body);
-  let part, parts = {};
+  let part,
+    parts = {};
   do {
     part = readPart(view, boundary, part && part.end);
     if (part) {
-      parts[part.name] = { 
+      parts[part.name] = {
         headers: part.headers,
         payload: part.payload,
       };
     }
-  } while(part);
+  } while (part);
   return parts;
 }

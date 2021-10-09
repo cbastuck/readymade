@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import { BoardConsumer } from '../../BoardContext';
+import { BoardConsumer } from "../../BoardContext";
 
-const serviceId = 'hookup.to/service/playback';
-const serviceName = 'Playback';
+const serviceId = "hookup.to/service/playback";
+const serviceName = "Playback";
 
 class PlaybackUI extends Component {
   constructor(props) {
@@ -15,63 +15,59 @@ class PlaybackUI extends Component {
   encodeBlob(blob) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = e => {
+      reader.onload = (e) => {
         const dataurl = e.target.result;
-        return resolve(dataurl.substr(dataurl.indexOf(',')+1));
+        return resolve(dataurl.substr(dataurl.indexOf(",") + 1));
       };
-      reader.onerror = err => reject(err);
+      reader.onerror = (err) => reject(err);
       reader.readAsDataURL(blob);
     });
   }
 
   encodeBuffer(buf) {
-    const binstr = Array.prototype.map.call(buf, ch => 
-        String.fromCharCode(ch)
-    ).join('');
+    const binstr = Array.prototype.map
+      .call(buf, (ch) => String.fromCharCode(ch))
+      .join("");
     return btoa(binstr);
-}
+  }
 
   async process(data) {
     if (data instanceof Blob) {
       const base64Data = await this.encodeBlob(data);
       const buffer = `data:${data.type};base64,${base64Data}`;
       this.setState({ encodedBuffer: buffer });
-    } else if (data.type === 'Buffer' && data.data) {
+    } else if (data.type === "Buffer" && data.data) {
       // TODO: hardcoded to mime-type: audio/mp3
       const base64Data = await this.encodeBuffer(data.data);
       const buffer = `data:audio/mp3;base64,${base64Data}`;
       this.setState({ encodedBuffer: buffer });
-    }
-    else {
-      console.error('Processing non-blob data in Playback service', data, typeof data, typeof data.data);
+    } else {
+      console.error(
+        "Processing non-blob data in Playback service",
+        data,
+        typeof data,
+        typeof data.data
+      );
     }
   }
 
   render() {
     return (
       <BoardConsumer>
-      {
-        boardContext => (
+        {(boardContext) => (
           <div
             style={{
-              margin: 10
+              margin: 10,
             }}
           >
-            <audio 
-              controls 
-              src={this.state.encodedBuffer}
-            />
-            {
-              boardContext.getCurrentBrowserRuntime(this.props.runtimeId) &&
-              (
-                boardContext.getCurrentBrowserRuntime(this.props.runtimeId)
-                  .getServiceById(this.props.service.uuid)
-                  .setPlaybackFunc(this.process.bind(this))
-              )
-            }
+            <audio controls src={this.state.encodedBuffer} />
+            {boardContext.getCurrentBrowserRuntime(this.props.runtimeId) &&
+              boardContext
+                .getCurrentBrowserRuntime(this.props.runtimeId)
+                .getServiceById(this.props.service.uuid)
+                .setPlaybackFunc(this.process.bind(this))}
           </div>
-        )
-      }
+        )}
       </BoardConsumer>
     );
   }
@@ -84,14 +80,13 @@ class Playback {
     this.app = app;
   }
 
-  configure(config) {
-  }
+  configure(config) {}
 
   setPlaybackFunc(f) {
     this.playbackFunc = f;
   }
 
-  async process(params) {    
+  async process(params) {
     if (this.playbackFunc) {
       this.playbackFunc(params);
     }
@@ -100,12 +95,12 @@ class Playback {
   }
 }
 
-const descriptor = {  
+const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new Playback(app, board, descriptor, id),
-  createUI: PlaybackUI
+  createUI: PlaybackUI,
 };
 
 export default descriptor;

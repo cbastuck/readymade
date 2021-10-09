@@ -1,24 +1,22 @@
-import React, { Component } from 'react';
-import {
-  Checkbox,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Checkbox } from "semantic-ui-react";
 
-import Copyable from '../../components/Copyable';
-import InputField from '../../components/shared/InputField';
-import SelectorField from '../../components/shared/SelectorField';
-import ServiceUI from '../../runtime/services/ServiceUI';
-import { s, t } from '../../styles';
+import Copyable from "../../components/Copyable";
+import InputField from "../../components/shared/InputField";
+import SelectorField from "../../components/shared/SelectorField";
+import ServiceUI from "../../runtime/services/ServiceUI";
+import { s, t } from "../../styles";
 
 export default class IngressUI extends Component {
   state = {
-    op: '',
-    path: '',
+    op: "",
+    path: "",
     active: false,
     wrapHeaders: false,
-    isPublic: false
+    isPublic: false,
   };
 
-  onInit = conf => {
+  onInit = (conf) => {
     const op = conf && conf.op && conf.op.toUpperCase();
     const path = conf && conf.path;
     const query = conf && conf.selector && conf.selector.query;
@@ -27,24 +25,20 @@ export default class IngressUI extends Component {
     const url = conf && conf.url;
     const isPublic = conf && conf.isPublic;
     this.setState({
-      op: op || 'GET',
-      path: path || '',
+      op: op || "GET",
+      path: path || "",
       selector: {
-        query: query
+        query: query,
       },
       active,
       wrapHeaders,
-      url, 
-      isPublic
-    });
-  }
-
-  onNotification = (service, notification) => {
-    const { 
       url,
       isPublic,
-      active
-    } = notification;
+    });
+  };
+
+  onNotification = (service, notification) => {
+    const { url, isPublic, active } = notification;
 
     if (url !== undefined) {
       this.setState({ url });
@@ -55,62 +49,54 @@ export default class IngressUI extends Component {
     if (active !== undefined) {
       this.setState({ active });
     }
-  }
+  };
 
-  renderMain = service => {
-    const { 
-      op,
-      path,
-      active,
-      wrapHeaders,
-      url,
-      isPublic
-    } = this.state;
+  renderMain = (service) => {
+    const { op, path, active, wrapHeaders, url, isPublic } = this.state;
 
     const { protocol, host } = window.location;
     return (
-      <div 
-        style={{ 
-          display: 'flex',
-          flexDirection: 'column'
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <SelectorField
           label="Method"
           options={{
-            GET: 'GET',
-            POST: 'POST',
-            DELETE: 'DELETE',
-            PUT: 'PUT',
+            GET: "GET",
+            POST: "POST",
+            DELETE: "DELETE",
+            PUT: "PUT",
           }}
           value={op}
-          onChange={(_ev, { value }) => 
+          onChange={(_ev, { value }) =>
             this.setState({ op: value, active: false })
           }
         />
         <InputField
           label="Path"
           value={path}
-          onChange={(_, {value}) => 
+          onChange={(_, { value }) =>
             this.setState({ path: value, active: false })
           }
         />
-        <div 
-          style={{ 
+        <div
+          style={{
             marginTop: 2,
-            textAlign: 'left' 
+            textAlign: "left",
           }}
-        > 
+        >
           <div>
             <Checkbox
               toggle
               label="Wrap Headers"
               style={s(t.uc, t.fs12, t.m(0, 3))}
               onChange={async (_, { checked: wrapHeaders }) => {
-                this.setState(
-                  { wrapHeaders },
-                  () => service.configure({ wrapHeaders })
-                )
+                this.setState({ wrapHeaders }, () =>
+                  service.configure({ wrapHeaders })
+                );
               }}
               checked={wrapHeaders}
               disabled={!op || !path}
@@ -122,10 +108,9 @@ export default class IngressUI extends Component {
               label="Public"
               style={s(t.uc, t.fs12, t.m(0, 3))}
               onChange={async (_, { checked: isPublic }) => {
-                this.setState(
-                  { isPublic },
-                  () => service.configure(this.state)
-                )
+                this.setState({ isPublic }, () =>
+                  service.configure(this.state)
+                );
               }}
               checked={isPublic}
               disabled={!op || !path}
@@ -137,37 +122,27 @@ export default class IngressUI extends Component {
               label="Active"
               style={s(t.uc, t.fs12, t.m(0, 3))}
               onChange={async (_, { checked: active }) => {
-                this.setState(
-                  { active },
-                  () => service.configure(this.state)
-                )
+                this.setState({ active }, () => service.configure(this.state));
               }}
               checked={active}
               disabled={!op || !path}
             />
           </div>
         </div>
-        {
-          active && url && (
-            <Copyable 
-              label="URL"
-              value={`${protocol}//${host}${url}`}
-            />
-          )
-        }
-      </div>     
-   );
-  }
+        {active && url && (
+          <Copyable label="URL" value={`${protocol}//${host}${url}`} />
+        )}
+      </div>
+    );
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'main', render: this.renderMain }
-        ]}
+        segments={[{ name: "main", render: this.renderMain }]}
       />
     );
   }

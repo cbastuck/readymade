@@ -1,61 +1,59 @@
-import React, { Component } from 'react';
-import {
-  Button
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button } from "semantic-ui-react";
 
-import { BoardConsumer } from '../../BoardContext';
+import { BoardConsumer } from "../../BoardContext";
 
-const serviceId = 'hookup.to/service/file-provider';
-const serviceName = 'File Provider';
+const serviceId = "hookup.to/service/file-provider";
+const serviceName = "File Provider";
 
 class FileProviderUI extends Component {
   state = {
-    file: undefined
+    file: undefined,
   };
 
   processFile = (boardContext, file) => {
     const runtime = boardContext.getCurrentBrowserRuntime(this.props.runtimeId);
     if (runtime) {
-      const service = runtime.getServiceById(this.props.service.uuid)
+      const service = runtime.getServiceById(this.props.service.uuid);
       service && service.process({ file });
     } else {
-      console.error('FileProvider service/runtime not found');
+      console.error("FileProvider service/runtime not found");
     }
-  }
+  };
 
   render() {
     return (
       <BoardConsumer>
-      {
-        boardContext => (
+        {(boardContext) => (
           <div
             style={{
-              margin: 10
+              margin: 10,
             }}
           >
             <div>
-              <input 
+              <input
                 type="file"
-                onChange={e => 
-                  this.setState({ file: e.target && e.target.files && e.target.files[0] })
+                onChange={(e) =>
+                  this.setState({
+                    file: e.target && e.target.files && e.target.files[0],
+                  })
                 }
               />
             </div>
             <div>
-              <Button 
+              <Button
                 onClick={() => this.processFile(boardContext, this.state.file)}
                 disabled={!this.state.file}
-                style={{ 
-                  width: '100%',
-                  marginTop: 10
+                style={{
+                  width: "100%",
+                  marginTop: 10,
                 }}
               >
                 Process
               </Button>
             </div>
           </div>
-        )
-      }
+        )}
       </BoardConsumer>
     );
   }
@@ -81,50 +79,55 @@ class FileProvider {
     const { file } = params;
 
     if (!file) {
-      return console.error('Calling FileProvider process with invalid parameter', params);
+      return console.error(
+        "Calling FileProvider process with invalid parameter",
+        params
+      );
     }
 
     if (this.running) {
-      return console.error('Another file upload is in process - wait');
+      return console.error("Another file upload is in process - wait");
     }
 
     this.running = true;
 
     const onFinished = () => {
       this.running = false;
-    }
+    };
 
     const processingFileSize = file.size;
     const handleChunk = (callback, e) => {
       const contents = e.target.result;
-      const blob = new Blob(
-        [contents], 
-        { type: 'application/octet-stream' }
-      );
+      const blob = new Blob([contents], { type: "application/octet-stream" });
       this.app.next(this, blob);
       callback();
     };
 
-    const readChunk = offset => {
+    const readChunk = (offset) => {
       if (offset >= processingFileSize) {
         return onFinished();
       }
-      const blob = file.slice(offset, Math.min(offset + this.chunkSize, processingFileSize));
+      const blob = file.slice(
+        offset,
+        Math.min(offset + this.chunkSize, processingFileSize)
+      );
       const reader = new FileReader();
-      reader.onload = handleChunk.bind(this, () => readChunk(offset + this.chunkSize))
+      reader.onload = handleChunk.bind(this, () =>
+        readChunk(offset + this.chunkSize)
+      );
       reader.readAsArrayBuffer(blob);
-    }
+    };
 
     readChunk(0);
   }
 }
 
-const descriptor = {  
+const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new FileProvider(app, board, descriptor, id),
-  createUI: FileProviderUI
+  createUI: FileProviderUI,
 };
 
 export default descriptor;

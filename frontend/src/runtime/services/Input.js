@@ -1,49 +1,40 @@
-import React, { Component } from 'react';
-import { 
-  Checkbox,
-  Button,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Checkbox, Button } from "semantic-ui-react";
 
-import InputField from '../../components/shared/InputField';
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
-import WebsocketChannel from '../WebsocketChannel';
-import { 
-  replacePlaceholders, 
+import InputField from "../../components/shared/InputField";
+import ServiceUI from "./ServiceUI";
+import { s, t } from "../../styles";
+import WebsocketChannel from "../WebsocketChannel";
+import {
+  replacePlaceholders,
   isWebsocket,
-  isSecureConnection
-} from '../../core/url';
+  isSecureConnection,
+} from "../../core/url";
 
-const serviceId = 'hookup.to/service/input';
-const serviceName = 'Input';
+const serviceId = "hookup.to/service/input";
+const serviceName = "Input";
 
 class InputUI extends Component {
   state = {
-    url: '',
-    topic: 'secret-key',
+    url: "",
+    topic: "secret-key",
     isWebsocket: false,
-    canFetch: undefined
+    canFetch: undefined,
   };
 
-  onInit = initialState => {
-    const { 
-      url='', 
-      running=false,
-      topic='secret-key',
-      isWebsocket=false
+  onInit = (initialState) => {
+    const {
+      url = "",
+      running = false,
+      topic = "secret-key",
+      isWebsocket = false,
     } = initialState;
-    this.setState({url, running, topic, isWebsocket });
-  }
+    this.setState({ url, running, topic, isWebsocket });
+  };
 
   onNotification = (service, notification) => {
-    const { 
-      url, 
-      running,
-      topic,
-      isWebsocket,
-      canFetch
-    } = notification;
-    
+    const { url, running, topic, isWebsocket, canFetch } = notification;
+
     if (url !== undefined && this.state.url !== url) {
       this.setState({ url });
     }
@@ -63,25 +54,19 @@ class InputUI extends Component {
     if (canFetch !== undefined) {
       this.setState({ canFetch });
     }
-  }
+  };
 
-  renderMain = service => {
-    const { 
-      running,
-      url,
-      topic,
-      isWebsocket,
-      canFetch,
-      fetchPending
-    } = this.state;
+  renderMain = (service) => {
+    const { running, url, topic, isWebsocket, canFetch, fetchPending } =
+      this.state;
     return (
       <div
         style={{
           margin: 10,
         }}
       >
-        <div style={s(t.uc, t.ls1, t.fs12)}> 
-          <InputField 
+        <div style={s(t.uc, t.ls1, t.fs12)}>
+          <InputField
             label="URL"
             value={url}
             onChange={(_, { value: url }) => {
@@ -90,59 +75,51 @@ class InputUI extends Component {
             }}
           />
         </div>
-        {
-          isWebsocket && (
-            <div style={s(t.uc, t.ls1, t.fs12)}> 
-              <InputField 
-                label="topic"
-                value={topic}
-                onChange={(_, { value: topic }) => {
-                  this.setState({ topic });
-                  service.configure({ topic });
-                }}
-              />
-            </div>
-          )
-        }
-        {
-          canFetch === true && (
-            <Button
-              style={s(t.w100, t.uc, t.ls1, t.fs12, { marginTop: 0 })}
-              onClick={() => service.configure({ fetch: url })}
-              disabled={fetchPending}
-            >
-              Fetch
-            </Button>
-          )
-        }
-        {
-          canFetch === false && (
-            <div style={t.tl}>
-              <Checkbox 
-                style={s(t.mt1, t.uc, t.ls1, t.fs12)}
-                label="input active"
-                toggle
-                onChange={(_, { checked: running }) => {
-                  service.configure({ running });
-                }}
-                checked={running}
-              />
-            </div>
-          )
-        }
+        {isWebsocket && (
+          <div style={s(t.uc, t.ls1, t.fs12)}>
+            <InputField
+              label="topic"
+              value={topic}
+              onChange={(_, { value: topic }) => {
+                this.setState({ topic });
+                service.configure({ topic });
+              }}
+            />
+          </div>
+        )}
+        {canFetch === true && (
+          <Button
+            style={s(t.w100, t.uc, t.ls1, t.fs12, { marginTop: 0 })}
+            onClick={() => service.configure({ fetch: url })}
+            disabled={fetchPending}
+          >
+            Fetch
+          </Button>
+        )}
+        {canFetch === false && (
+          <div style={t.tl}>
+            <Checkbox
+              style={s(t.mt1, t.uc, t.ls1, t.fs12)}
+              label="input active"
+              toggle
+              onChange={(_, { checked: running }) => {
+                service.configure({ running });
+              }}
+              checked={running}
+            />
+          </div>
+        )}
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
     );
   }
@@ -154,19 +131,19 @@ class Input {
     this.board = board;
     this.app = app;
 
-    this.url = '';
+    this.url = "";
     this.parseEventsAsJSON = true;
     this.running = false;
-    this.topic = 'secret-key';
+    this.topic = "secret-key";
   }
 
   onEventSourceData(event) {
     if (this.running) {
       const { data } = event;
       if (data) {
-        const params = (this.parseEventsAsJSON) ? 
-          JSON.parse(data) :
-          { raw: data };
+        const params = this.parseEventsAsJSON
+          ? JSON.parse(data)
+          : { raw: data };
         this.app.next(this, params);
       }
     }
@@ -175,17 +152,14 @@ class Input {
   async doConnect() {
     this.closeConection();
 
-    const { 
-      url, 
-      topic 
-    } = this;
+    const { url, topic } = this;
     if (isWebsocket(url)) {
       this._websocket = new WebsocketChannel(
         `input-service-${this.uuid}`,
-        params => {
+        (params) => {
           if (this.running) {
-            const { action } = params;
-            if (action === 'ping') {
+            const { action } = params;
+            if (action === "ping") {
               return;
             }
             this.app.next(this, params);
@@ -197,8 +171,8 @@ class Input {
       this._websocket.send({ topic });
     } else {
       const resp = await fetch(url);
-      const contentType = resp.headers.get('content-type');
-      if (contentType.indexOf('text/event-stream') !== -1) {
+      const contentType = resp.headers.get("content-type");
+      if (contentType.indexOf("text/event-stream") !== -1) {
         this.app.notify(this, { canFetch: false });
         return this.openEventSource(url);
       }
@@ -208,47 +182,44 @@ class Input {
     }
   }
 
-  onFetchResponse = async resp => {
+  onFetchResponse = async (resp) => {
     if (!resp.ok) {
       return;
     }
-    const contentType = resp.headers.get('content-type');
-    if (contentType.indexOf('application/json') !== -1) {
+    const contentType = resp.headers.get("content-type");
+    if (contentType.indexOf("application/json") !== -1) {
       const json = await resp.json();
       this.app.next(this, json);
       return;
     }
 
-    if (contentType.indexOf('text/plain')) {
+    if (contentType.indexOf("text/plain")) {
       const text = await resp.text();
       this.app.next(this, text);
       return;
     }
 
-    // TOOD: .arrayBuffer() 
+    // TOOD: .arrayBuffer()
 
     const blob = await resp.blob();
     this.app.next(this, blob);
-  }
+  };
 
-  openEventSource = url => {
+  openEventSource = (url) => {
     this._eventSource = new EventSource(url);
-    this._eventSource.onopen = () => {       
+    this._eventSource.onopen = () => {
       const listener = this.onEventSourceData.bind(this);
       this._eventSource.onmessage = listener;
-      this._eventSource.addEventListener(
-        'data',
-        listener,
-      );
-      
+      this._eventSource.addEventListener("data", listener);
+
       this.closeEventSourceConnection = () => {
-        this._eventSource.removeEventListener('data', listener);
+        this._eventSource.removeEventListener("data", listener);
         this._eventSource.close();
         this._eventSource = null;
         this.closeEventSourceConnection = null;
       };
-    }
-  }
+    };
+  };
 
   closeConection() {
     if (this._websocket) {
@@ -262,12 +233,7 @@ class Input {
   }
 
   async configure(config) {
-    const { 
-      url,
-      running,
-      topic,
-      fetch: fetchUrl,
-    } = config;
+    const { url, running, topic, fetch: fetchUrl } = config;
 
     let reconnet = false;
     if (topic !== undefined) {
@@ -294,8 +260,8 @@ class Input {
     if (reconnet) {
       this.doConnect();
       this.isWebsocket = !!this._websocket;
-      this.app.notify(this, { isWebsocket: this.isWebsocket })
-    }   
+      this.app.notify(this, { isWebsocket: this.isWebsocket });
+    }
   }
 
   destroy() {
@@ -309,12 +275,11 @@ class Input {
   }
 }
 
-const descriptor = {  
+const descriptor = {
   serviceName,
   serviceId,
-  create: (app, board, descriptor, id) =>
-    new Input(app, board, descriptor, id),
-  createUI: InputUI
+  create: (app, board, descriptor, id) => new Input(app, board, descriptor, id),
+  createUI: InputUI,
 };
 
 export default descriptor;

@@ -1,12 +1,12 @@
-import React, { Component } from 'react';
-import { TextArea } from 'semantic-ui-react';
+import React, { Component } from "react";
+import { TextArea } from "semantic-ui-react";
 
-import MonitorDescriptor from 'services/Monitor';
+import MonitorDescriptor from "services/Monitor";
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
 function isObject(obj) {
-  return typeof obj === 'object' && obj !== null;
+  return typeof obj === "object" && obj !== null;
 }
 
 function unroll(params) {
@@ -20,12 +20,12 @@ function unroll(params) {
   }
   const isArray = Array.isArray(params);
   if (isArray) {
-    return params.map(x => unroll(x));
+    return params.map((x) => unroll(x));
   }
   return Object.keys(params).reduce(
     (all, key) => ({
       ...all,
-      [key]: unroll(params[key])
+      [key]: unroll(params[key]),
     }),
     {}
   );
@@ -33,18 +33,18 @@ function unroll(params) {
 
 class MonitorUI extends Component {
   state = {
-    message: ''
+    message: "",
   };
 
-  onInit = initialState => {
-    this.setState({ 
-      ...initialState
+  onInit = (initialState) => {
+    this.setState({
+      ...initialState,
     });
-  }
+  };
 
   onNotification = (service, params) => {
-    const nil = params === null && '<null>';
-    const undef = params === undefined && '<undefined>';
+    const nil = params === null && "<null>";
+    const undef = params === undefined && "<undefined>";
     const s = nil || undef || unroll(params);
 
     const { bypass } = params || {};
@@ -52,48 +52,44 @@ class MonitorUI extends Component {
       return;
     }
 
-    this.setState({ 
-      message: isObject(s) ?
-        JSON.stringify(s, null, 2) :
-        s 
+    this.setState({
+      message: isObject(s) ? JSON.stringify(s, null, 2) : s,
     });
-  }
+  };
 
   render() {
-    const { 
-      message
-    } = this.state;
+    const { message } = this.state;
     return (
-      <ServiceUI 
+      <ServiceUI
         {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
       >
-        {
-          ({ service }) => service && (
+        {({ service }) =>
+          service && (
             <div
               style={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                flexDirection: 'column'
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
               }}
-            >        
+            >
               <TextArea
                 style={{
                   margin: 10,
-                  fontFamily: 'monospace',
-                  fontWeight: 'bold',
-                  resize: 'none',
-                  border: '1px solid lightgray',
+                  fontFamily: "monospace",
+                  fontWeight: "bold",
+                  resize: "none",
+                  border: "1px solid lightgray",
                   borderRadius: 5,
-                  flexGrow: 1
+                  flexGrow: 1,
                 }}
                 value={message}
                 rows={10}
                 cols={30}
               />
-            </div> 
+            </div>
           )
         }
       </ServiceUI>
@@ -101,13 +97,13 @@ class MonitorUI extends Component {
   }
 }
 
-const { serviceName, serviceId, service: Monitor } = MonitorDescriptor;
-const descriptor = {  
+const { serviceName, serviceId, service: Monitor } = MonitorDescriptor;
+const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new Monitor(app, board, descriptor, id),
-  createUI: MonitorUI
+  createUI: MonitorUI,
 };
 
 export default descriptor;

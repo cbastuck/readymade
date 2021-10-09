@@ -7,6 +7,8 @@
     "base64-arraybuffer": "^0.2.0",
     "chart.js": "^2.9.1",
     "dropbox": "^5.2.1",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
     "eventsource": "^1.0.7",
     "gif.js": "^0.2.0",
     "jstat": "^1.9.2",
@@ -15,6 +17,7 @@
     "moment": "^2.22.2",
     "monaco-editor": "0.21.2",
     "peerjs": "^1.3.2",
+    "prettier": "^2.4.1",
     "qrcode": "^1.3.2",
     "query-string": "^6.9.0",
     "react": "16.13",
@@ -43,7 +46,8 @@
     "eject": "react-scripts eject",
     "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend",
     "push": "npm run build && docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend",
-    "parcel": "parcel build --out-dir public --out-file bridge.js bridge/index.js"
+    "parcel": "parcel build --out-dir public --out-file bridge.js bridge/index.js",
+    "prettier": "prettier --write \"src/**/*.js\""
   },
   "eslintConfig": {
     "extends": "react-app"

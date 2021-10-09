@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import WebsocketChannel from './WebsocketChannel';
-import { restoreToken } from '../core/Auth';
-import ServiceUiContainer from './ServiceUiContainer';
-import defaultRegistry from './registry/Default';
+import WebsocketChannel from "./WebsocketChannel";
+import { restoreToken } from "../core/Auth";
+import ServiceUiContainer from "./ServiceUiContainer";
+import defaultRegistry from "./registry/Default";
 
 function logInfo(msg) {
   // console.log(msg);
@@ -16,58 +16,59 @@ export default class RemoteRuntime extends Component {
   }
 
   connect = () => {
-    const { 
-      userId, 
-      boardName, 
-      runtime 
-    } = this.props;
+    const { userId, boardName, runtime } = this.props;
     const backendPath = `/api/${userId}/${boardName}/runtime/${runtime.id}`;
     logInfo(`Connecting ${runtime.name} to ${backendPath}`);
 
-    const { 
-      host: backendHost, 
-      protocol 
-    } = window.location; 
+    const { host: backendHost, protocol } = window.location;
     const url = `${backendHost}${backendPath}`;
     if (this.remoteRuntimeWebsocket) {
       this.remoteRuntimeWebsocket.close();
       this.remoteRuntimeWebsocket = null;
     }
-    const secureConnection = protocol.indexOf('https') === 0;
-    this.remoteRuntimeWebsocket = new WebsocketChannel(runtime.id, this.onAction, secureConnection);
+    const secureConnection = protocol.indexOf("https") === 0;
+    this.remoteRuntimeWebsocket = new WebsocketChannel(
+      runtime.id,
+      this.onAction,
+      secureConnection
+    );
     return this.remoteRuntimeWebsocket.open(url, restoreToken());
-  }
+  };
 
-  onAction = action => {
+  onAction = (action) => {
     const { services, runtime } = this.props;
-    const { type } = action;
-    logInfo(`RemoteRuntime ${runtime.id} (${runtime.name}) received: ${JSON.stringify(action)}` );
-    if (type === 'notification') {
-      const { serviceUuid, notification } = action;
-      const service = services.find(s => s.uuid === serviceUuid);
+    const { type } = action;
+    logInfo(
+      `RemoteRuntime ${runtime.id} (${runtime.name}) received: ${JSON.stringify(
+        action
+      )}`
+    );
+    if (type === "notification") {
+      const { serviceUuid, notification } = action;
+      const service = services.find((s) => s.uuid === serviceUuid);
       if (service && service.__notificationTargets) {
         service.__notificationTargets.notify(service, notification);
       }
     }
-  }
+  };
 
   render() {
-    const { 
+    const {
       userId,
       boardName,
-      services, 
-      runtime, 
+      services,
+      runtime,
       readonly,
       onArrangeService,
       onServiceAction,
-      registry
+      registry,
     } = this.props;
 
-    const uiRegistry = registry.map(r => 
-      defaultRegistry.find(dr => r.serviceId === dr.serviceId) || r
+    const uiRegistry = registry.map(
+      (r) => defaultRegistry.find((dr) => r.serviceId === dr.serviceId) || r
     );
     return (
-      <ServiceUiContainer 
+      <ServiceUiContainer
         userId={userId}
         boardName={boardName}
         runtime={runtime}

@@ -1,33 +1,26 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import InputField from '../../components/shared/InputField';
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
+import InputField from "../../components/shared/InputField";
+import ServiceUI from "./ServiceUI";
+import { s, t } from "../../styles";
 
-const serviceId = 'hookup.to/service/receiver';
-const serviceName = 'Receiver';
+const serviceId = "hookup.to/service/receiver";
+const serviceName = "Receiver";
 
 class ReceiverUI extends Component {
-  state = { 
-    wall: '',
-    id: ''
+  state = {
+    wall: "",
+    id: "",
   };
 
-  onInit = initial => {
+  onInit = (initial) => {};
 
-  }
-
-  onNotification = (service, notification) => {
-    
-  }
+  onNotification = (service, notification) => {};
 
   renderMain = () => {
-    const { 
-      wall,
-      id,
-    } = this.state;
+    const { wall, id } = this.state;
     return (
-      <div style={s(t.fill, {display: 'flex', flexDirection: 'column' })}>
+      <div style={s(t.fill, { display: "flex", flexDirection: "column" })}>
         <InputField
           label="Wall"
           value={wall}
@@ -40,22 +33,19 @@ class ReceiverUI extends Component {
         />
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'main', render: this.renderMain }
-        ]}
+        segments={[{ name: "main", render: this.renderMain }]}
       />
     );
   }
 }
-
 
 class Receiver {
   constructor(app, board, descriptor, id) {
@@ -64,23 +54,19 @@ class Receiver {
     this.app = app;
   }
 
-  configure = (config) => {
-  }
+  configure = (config) => {};
 
-  destroy = () => {
-  }
+  destroy = () => {};
 
-  process(params) {
-  }
+  process(params) {}
 }
-
 
 const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new Receiver(app, board, descriptor, id),
-  createUI: ReceiverUI
+  createUI: ReceiverUI,
 };
 
 export default descriptor;

@@ -3,9 +3,9 @@ export function s() {
 }
 
 export const t = {
-  uc: { textTransform: 'uppercase' },
-  nc: { textTransform: 'none' },
-  ul: { textDecoration: 'underline' },
+  uc: { textTransform: "uppercase" },
+  nc: { textTransform: "none" },
+  ul: { textDecoration: "underline" },
   ls0: { letterSpacing: 0 },
   ls1: { letterSpacing: 1 },
   ls2: { letterSpacing: 2 },
@@ -18,7 +18,9 @@ export const t = {
   lh2: { lineHeight: 2 },
   lh3: { lineHeight: 3 },
 
-  fs: function(s) { return { fontSize: s}; },
+  fs: function (s) {
+    return { fontSize: s };
+  },
   fs20: { fontSize: 20 },
   fs19: { fontSize: 19 },
   fs18: { fontSize: 18 },
@@ -35,21 +37,23 @@ export const t = {
   fs6: { fontSize: 6 },
   fs4: { fontSize: 4 },
 
-  it: { fontStyle: 'italic' },
-  italic: { fontStyle: 'italic' },  
-  bo: { fontWeight: 'bold' },
-  bold: { fontWeight: 'bold' },
+  it: { fontStyle: "italic" },
+  italic: { fontStyle: "italic" },
+  bo: { fontWeight: "bold" },
+  bold: { fontWeight: "bold" },
 
-  nw: { whiteSpace: 'nowrap' },
-  nowrap: { whiteSpace: 'nowrap' },
+  nw: { whiteSpace: "nowrap" },
+  nowrap: { whiteSpace: "nowrap" },
 
   resizable: {
-    resize: 'both',
-    overflow: 'auto',
+    resize: "both",
+    overflow: "auto",
   },
   foreground: 2000003,
 
-  m: function(x, y){ return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` }; },
+  m: function (x, y) {
+    return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` };
+  },
   m0: { margin: 0 },
   m1: { margin: 1 },
   m2: { margin: 2 },
@@ -60,7 +64,9 @@ export const t = {
   m8: { margin: 8 },
   m9: { margin: 9 },
   m10: { margin: 10 },
-  mt: function(x){ return { marginTop: x }; },
+  mt: function (x) {
+    return { marginTop: x };
+  },
   mt0: { marginTop: 0 },
   mt1: { marginTop: 1 },
   mt2: { marginTop: 2 },
@@ -70,13 +76,15 @@ export const t = {
   mt7: { marginTop: 7 },
   mt8: { marginTop: 8 },
   mt9: { marginTop: 9 },
-  mt10: { marginTop: 10 }, 
-  mt15: { marginTop: 15 }, 
-  mt20: { marginTop: 20 }, 
-  mt25: { marginTop: 25 }, 
-  mt30: { marginTop: 30 }, 
-  mt35: { marginTop: 35 }, 
-  mb: function(x){ return { marginBottom: x }; },
+  mt10: { marginTop: 10 },
+  mt15: { marginTop: 15 },
+  mt20: { marginTop: 20 },
+  mt25: { marginTop: 25 },
+  mt30: { marginTop: 30 },
+  mt35: { marginTop: 35 },
+  mb: function (x) {
+    return { marginBottom: x };
+  },
   mb0: { marginBottom: 0 },
   mb1: { marginBottom: 1 },
   mb2: { marginBottom: 2 },
@@ -89,15 +97,23 @@ export const t = {
   mb10: { marginBottom: 10 },
   mb20: { marginBottom: 20 },
   mb30: { marginBottom: 30 },
-  mv: function(x){ return { marginTop: x, marginBottom: x }},
-  mh: function(x){ return { marginLeft: x, marginRight: x }},
+  mv: function (x) {
+    return { marginTop: x, marginBottom: x };
+  },
+  mh: function (x) {
+    return { marginLeft: x, marginRight: x };
+  },
 
-  p: function(x, y){ return y === undefined ? { padding: x } : { padding: `${y}px ${x}px` }; },
+  p: function (x, y) {
+    return y === undefined ? { padding: x } : { padding: `${y}px ${x}px` };
+  },
   p2: { padding: 2 },
   p3: { padding: 3 },
   p5: { padding: 5 },
   p10: { padding: 10 },
-  pt: function(x){ return { paddingTop: x }; },
+  pt: function (x) {
+    return { paddingTop: x };
+  },
   pt1: { paddingTop: 1 },
   pt2: { paddingTop: 2 },
   pt3: { paddingTop: 3 },
@@ -106,10 +122,12 @@ export const t = {
   pt7: { paddingTop: 7 },
   pt8: { paddingTop: 8 },
   pt9: { paddingTop: 9 },
-  pt10: { paddingTop: 10 }, 
-  pt20: { paddingTop: 20 }, 
-  pt30: { paddingTop: 30 }, 
-  pb: function(x){ return { paddingBottom: x }; },
+  pt10: { paddingTop: 10 },
+  pt20: { paddingTop: 20 },
+  pt30: { paddingTop: 30 },
+  pb: function (x) {
+    return { paddingBottom: x };
+  },
   pb2: { paddingBottom: 2 },
   pb3: { paddingBottom: 3 },
   pb5: { paddingBottom: 5 },
@@ -121,33 +139,37 @@ export const t = {
   pb20: { paddingBottom: 20 },
   pb30: { paddingBottom: 30 },
 
-  w100: { width: '100%' },
-  h100: { height: '100%' },
+  w100: { width: "100%" },
+  h100: { height: "100%" },
   fill: {
-    width: '100%', 
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
 
-  tl: { textAlign: 'left' },
-  tc: { textAlign: 'center' },
-  tr: { textAlign: 'right' },
-  right: { width: '100%', textAlign: 'right' },
-  
-  bc: function (col) { return { backgroundColor: col }; },
-  borderCol: function(col) { return { border: `solid 1px ${col}`}; },
-  border: { border: 'solid 1px gray' },
+  tl: { textAlign: "left" },
+  tc: { textAlign: "center" },
+  tr: { textAlign: "right" },
+  right: { width: "100%", textAlign: "right" },
+
+  bc: function (col) {
+    return { backgroundColor: col };
+  },
+  borderCol: function (col) {
+    return { border: `solid 1px ${col}` };
+  },
+  border: { border: "solid 1px gray" },
   br2: { borderRadius: 2 },
   br3: { borderRadius: 3 },
   br5: { borderRadius: 5 },
   br10: { borderRadius: 10 },
 
   unselectable: {
-    WebkitTouchCallout: 'none',
-    WebkitUserSelect: 'none',
-    KhtmlUserSelect: 'none',
-    MozUserSelect: 'none',
-    MsUserSelect: 'none',
-    UserSelect: 'none',
-    WebkitTapHighlightColor: 'rgba(0,0,0,0)'
+    WebkitTouchCallout: "none",
+    WebkitUserSelect: "none",
+    KhtmlUserSelect: "none",
+    MozUserSelect: "none",
+    MsUserSelect: "none",
+    UserSelect: "none",
+    WebkitTapHighlightColor: "rgba(0,0,0,0)",
   },
-}
+};

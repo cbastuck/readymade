@@ -1,51 +1,45 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import ServiceUI from '../ServiceUI';
-import SelectorField from '../../../components/shared/SelectorField';
+import ServiceUI from "../ServiceUI";
+import SelectorField from "../../../components/shared/SelectorField";
 
-import { Mp3Encoder, WavHeader } from 'lamejs';
+import { Mp3Encoder, WavHeader } from "lamejs";
 
-const serviceId = 'hookup.to/service/mp3encoder';
-const serviceName = 'MP3Encoder';
+const serviceId = "hookup.to/service/mp3encoder";
+const serviceName = "MP3Encoder";
 
 class MP3EncoderUI extends Component {
   state = {};
-  
-  onInit = initialState => {
-    const { 
-      bitrate='128',
-    } = initialState;
-    this.setState({ bitrate });
-  }
 
-  renderMain = service => {
-    const { bitrate } = this.state;
+  onInit = (initialState) => {
+    const { bitrate = "128" } = initialState;
+    this.setState({ bitrate });
+  };
+
+  renderMain = (service) => {
+    const { bitrate } = this.state;
     return (
       <div>
-        <SelectorField 
+        <SelectorField
           label="Bitrate"
           value={bitrate}
           options={{
-            '128': '128',
-            '64': '64',
-            '32': '32',
+            128: "128",
+            64: "64",
+            32: "32",
           }}
-          onChange={(_ev, { value: bitrate }) => 
-            this.setState({ bitrate })
-          }
+          onChange={(_ev, { value: bitrate }) => this.setState({ bitrate })}
         />
       </div>
     );
-  }
+  };
 
   render() {
     return (
       <ServiceUI
         {...this.props}
         onInit={this.onInit.bind(this)}
-        segments={[ 
-          { name: 'main', render: this.renderMain }
-        ]}
+        segments={[{ name: "main", render: this.renderMain }]}
       />
     );
   }
@@ -73,7 +67,9 @@ class MP3Encoder {
 
     return new Promise((resolve, reject) => {
       const fr = new FileReader();
-      fr.addEventListener('error', error => reject(console.error('Error in MP3Encoder service: ', error)));
+      fr.addEventListener("error", (error) =>
+        reject(console.error("Error in MP3Encoder service: ", error))
+      );
       fr.onload = () => resolve(fr.result);
       fr.readAsArrayBuffer(blob);
     });
@@ -83,24 +79,25 @@ class MP3Encoder {
     if (params instanceof Blob) {
       const ab = await this.toArrayBuffer(params);
       const header = WavHeader.readHeader(new DataView(ab));
-      const encoder = new Mp3Encoder(header.channels, header.sampleRate, this.bitrate);
+      const encoder = new Mp3Encoder(
+        header.channels,
+        header.sampleRate,
+        this.bitrate
+      );
       const samples = new Int16Array(ab, header.dataOffset, header.dataLen / 2);
-      const mp3Data = [
-        encoder.encodeBuffer(samples),
-        encoder.flush()
-      ];
-      return new Blob(mp3Data, { type: 'audio/mp3' });
+      const mp3Data = [encoder.encodeBuffer(samples), encoder.flush()];
+      return new Blob(mp3Data, { type: "audio/mp3" });
     }
     return params;
   }
 }
 
-const descriptor = {  
+const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new MP3Encoder(app, board, descriptor, id),
-  createUI: MP3EncoderUI
+  createUI: MP3EncoderUI,
 };
 
 export default descriptor;

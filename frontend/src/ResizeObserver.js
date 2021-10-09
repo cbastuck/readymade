@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
 export default class ResizeObserverComponent extends Component {
   state = {
@@ -14,26 +14,24 @@ export default class ResizeObserverComponent extends Component {
     this.resizeObserver.disconnect();
   }
 
-  onResizeEvent = entries => {
+  onResizeEvent = (entries) => {
     const { viewportWidth } = this.state;
-    const { onChange } = this.props;
+    const { onChange } = this.props;
     const entry = entries && entries[0];
     if (entry) {
-      const { width: newViewportWidth } = entry.contentRect;
+      const { width: newViewportWidth } = entry.contentRect;
       if (newViewportWidth !== viewportWidth) {
-        
         const newState = {
           viewportWidth: newViewportWidth,
-          appViewMode: newViewportWidth > 400 ? 'wide' : 'narrow'  
+          appViewMode: newViewportWidth > 400 ? "wide" : "narrow",
         };
         this.setState(newState);
         onChange(newState);
       }
     }
-  }
+  };
 
   render() {
     return <div />;
   }
-
 }

@@ -1,17 +1,11 @@
-import React, { Component } from 'react';
-import {
-  Button,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button } from "semantic-ui-react";
 
-import {
-  configureService,
-  getServiceConfiguration
-} from '../../core/actions';
-import { debounce } from '../shared/util';
+import { configureService, getServiceConfiguration } from "../../core/actions";
+import { debounce } from "../shared/util";
 
 export default class AggregatorUI extends Component {
-  state = {
-  };
+  state = {};
 
   componentDidMount() {
     this.update();
@@ -21,7 +15,7 @@ export default class AggregatorUI extends Component {
     const { board, service } = this.props;
     const config = await getServiceConfiguration(board, service);
     this.setState({ selector: config.selector });
-  }
+  };
 
   sendConfig = debounce(async () => {
     const { board, service } = this.props;
@@ -32,20 +26,17 @@ export default class AggregatorUI extends Component {
   onReset = () => {
     const { board, service } = this.props;
     return configureService(board, service, { reset: true });
-  }
+  };
 
   render() {
     const lineStyle = {
-      textAlign: 'left',
-      margin: '8px 10px',
+      textAlign: "left",
+      margin: "8px 10px",
     };
     return (
       <div style={lineStyle}>
         <div style={{ marginBottom: 10 }}>
-          <Button
-            style={{ width: 160 }}
-            onClick={this.onReset}
-          >
+          <Button style={{ width: 160 }} onClick={this.onReset}>
             Reset
           </Button>
         </div>

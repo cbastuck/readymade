@@ -1,51 +1,41 @@
-import React, { Component } from 'react';
-import {
-  Input,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Input } from "semantic-ui-react";
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
-const serviceId = 'hookup.to/service/fetcher';
-const serviceName = 'Fetcher';
+const serviceId = "hookup.to/service/fetcher";
+const serviceName = "Fetcher";
 
 class FetcherUI extends Component {
-  state = { url: '' };
+  state = { url: "" };
 
   onInit(initialState) {
     this.setState({
-      ...initialState
+      ...initialState,
     });
   }
 
-  renderMain = service => {
-    return (
-      <Input
-        disabled
-        label="Fetching"
-        value={this.state.url}
-      />
-    );
-  }
+  renderMain = (service) => {
+    return <Input disabled label="Fetching" value={this.state.url} />;
+  };
 
   render() {
     return (
       <ServiceUI
-        {...this.props} 
+        {...this.props}
         onInit={this.onInit.bind(this)}
-        onTimer={service => 
-          service.fetchingURL !== this.state.url && 
-          this.setState({ url: service.fetchingURL || '' })
+        onTimer={(service) =>
+          service.fetchingURL !== this.state.url &&
+          this.setState({ url: service.fetchingURL || "" })
         }
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
     );
   }
 }
 
 class Fetcher {
-   constructor(app, board, descriptor, id) {
+  constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
     this.app = app;
@@ -53,19 +43,18 @@ class Fetcher {
     this.fetchingURL = undefined;
   }
 
-  configure(config) {
-  }
+  configure(config) {}
 
   getURL(params) {
     switch (typeof params) {
-      case 'string':
+      case "string":
         return params;
-      case 'object':
+      case "object":
         return params.url;
-      default: 
+      default:
         break;
     }
-  } 
+  }
 
   async process(params) {
     const url = params && this.getURL(params);
@@ -77,7 +66,7 @@ class Fetcher {
     const res = await fetch(url);
     const blob = await res.blob();
     this.fetchingURL = undefined;
-    return blob;  
+    return blob;
   }
 }
 
@@ -86,7 +75,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new Fetcher(app, board, descriptor, id),
-  createUI: FetcherUI
+  createUI: FetcherUI,
 };
 
 export default descriptor;

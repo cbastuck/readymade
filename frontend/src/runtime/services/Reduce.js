@@ -1,10 +1,7 @@
-import {
-  parseExpression, 
-  evalExpression,
-} from 'services';
+import { parseExpression, evalExpression } from "services";
 
-const serviceId = 'hookup.to/service/reduce';
-const serviceName = 'Reduce';
+const serviceId = "hookup.to/service/reduce";
+const serviceName = "Reduce";
 
 class Reduce {
   constructor(app, board, descriptor, id) {
@@ -19,11 +16,7 @@ class Reduce {
   }
 
   configure(config) {
-    const { 
-      initialState, 
-      reducer,
-      resetReducer=false,
-    } = config;
+    const { initialState, reducer, resetReducer = false } = config;
 
     let reducedStateChanged = false;
     if (initialState !== undefined) {
@@ -54,18 +47,17 @@ class Reduce {
     }
     const params = { params: { value: _params, acc: this.reducedState } };
     this.reducedState = evalExpression(this._reduceExpression, params);
-    this.app.notify(this, { reducedState: this.reducedState });
+    this.app.notify(this, { reducedState: this.reducedState });
     return this.reducedState;
   }
 }
-
 
 const descriptor = {
   serviceName: serviceName,
   serviceId: serviceId,
   create: (app, board, descriptor, id) =>
     new Reduce(app, board, descriptor, id),
-  createUI: undefined
+  createUI: undefined,
 };
 
 export default descriptor;

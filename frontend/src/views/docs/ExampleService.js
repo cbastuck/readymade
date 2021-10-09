@@ -1,30 +1,20 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import ServiceUI from '../../runtime/services/ServiceUI';
+import ServiceUI from "../../runtime/services/ServiceUI";
 
-const serviceId = 'hookup.to/service/example-service';
-const serviceName = 'Some Service';
+const serviceId = "hookup.to/service/example-service";
+const serviceName = "Some Service";
 
 export class ExampleServiceUI extends Component {
+  onInit(initialState) {}
 
-  onInit(initialState) {
-  }
+  renderMain = (service) => {
+    return <div>Main</div>;
+  };
 
-  renderMain = service => {
-    return (
-      <div>
-        Main
-      </div>
-    );
-  }
-
-  renderSettings = service => {
-    return (
-      <div>
-        Settings
-      </div>
-    );
-  }
+  renderSettings = (service) => {
+    return <div>Settings</div>;
+  };
 
   render() {
     return (
@@ -32,8 +22,8 @@ export class ExampleServiceUI extends Component {
         setup={this.props.setup}
         onInit={this.onInit.bind(this)}
         segments={[
-          { name: 'main', render: this.renderMain },
-          { name: 'settings', render: this.renderSettings }
+          { name: "main", render: this.renderMain },
+          { name: "settings", render: this.renderSettings },
         ]}
       />
     );
@@ -42,16 +32,15 @@ export class ExampleServiceUI extends Component {
 
 export class ExampleService {
   constructor() {
-    this.uuid = '123.45';
-    this.board = 'board';
+    this.uuid = "123.45";
+    this.board = "board";
     this.app = {};
 
     this.serviceId = serviceId;
     this.serviceName = serviceName;
   }
 
-  configure(config) {
-  }
+  configure(config) {}
 
   process(params) {
     return params;

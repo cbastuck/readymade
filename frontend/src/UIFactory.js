@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 /*
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
@@ -16,49 +16,62 @@ import FileS3UI from './components/services/FileS3UI';
 import AggregatorUI from './components/services/AggregatorUI';
 */
 
-import IngressUI from './components/services/IngressUI';
-import OutputUI from './components/services/OutputUI';
-import WebsocketUI from './components/services/WebsocketUI';
-import defaultRegistry from './runtime/registry/Default';
-import PlaceholderUI from './runtime/services/PlaceholderUI';
+import IngressUI from "./components/services/IngressUI";
+import OutputUI from "./components/services/OutputUI";
+import WebsocketUI from "./components/services/WebsocketUI";
+import defaultRegistry from "./runtime/registry/Default";
+import PlaceholderUI from "./runtime/services/PlaceholderUI";
 
 function findServiceUi(registry, serviceId) {
   const a = registry || defaultRegistry;
-  return a.find(s => serviceId === s.serviceId && s.createUI);
+  return a.find((s) => serviceId === s.serviceId && s.createUI);
 }
 
 export function createPlaceholderUI(service) {
   return <PlaceholderUI service={service} />;
 }
 
-export function createServiceUI(registry, board, service, runtimeId, userId=undefined, props={}) {
-  const serviceId = service.__descriptor ? service.__descriptor.serviceId : service.serviceId;
+export function createServiceUI(
+  registry,
+  board,
+  service,
+  runtimeId,
+  userId = undefined,
+  props = {}
+) {
+  const serviceId = service.__descriptor
+    ? service.__descriptor.serviceId
+    : service.serviceId;
   if (!serviceId) {
-    console.error('UIFactory missing serviceId', service);
+    console.error("UIFactory missing serviceId", service);
   }
 
   const factory = findServiceUi(registry, serviceId);
   if (factory) {
-    return React.createElement(
-      factory.createUI, 
-       {
-         ...props,
-        service, 
-        board, 
-        runtimeId, 
-        key: `key-${service.uuid}`,
-      },
-    );
+    return React.createElement(factory.createUI, {
+      ...props,
+      service,
+      board,
+      runtimeId,
+      key: `key-${service.uuid}`,
+    });
   } else {
-    const params = { key: serviceId, id: serviceId, service, board, userId, ...props };
-    switch(serviceId) {
-      case 'hookup.to/service/output': {
-        return <OutputUI { ...params } />;
+    const params = {
+      key: serviceId,
+      id: serviceId,
+      service,
+      board,
+      userId,
+      ...props,
+    };
+    switch (serviceId) {
+      case "hookup.to/service/output": {
+        return <OutputUI {...params} />;
       }
-      case 'hookup.to/service/ingress':
-        return <IngressUI { ...params } />;
-      case 'hookup.to/service/websocket':
-        return <WebsocketUI {...params } />;
+      case "hookup.to/service/ingress":
+        return <IngressUI {...params} />;
+      case "hookup.to/service/websocket":
+        return <WebsocketUI {...params} />;
       /*
       case 'hookup.to/service/monitor':
         return <MonitorUI { ...params } />;

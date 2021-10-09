@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
 export default class Switcher extends Component {
   state = {
@@ -8,7 +8,7 @@ export default class Switcher extends Component {
   componentDidMount() {
     this.interval = setInterval(() => {
       this.setState({ counter: this.state.counter + 1 });
-    }, 5000);  
+    }, 5000);
   }
 
   componentWillUnmount() {
@@ -23,12 +23,12 @@ export default class Switcher extends Component {
         style={{
           fontSize: 45,
           letterSpacing: 1,
-          textTransform: 'uppercase',
-          fontWeight: 'bold',
+          textTransform: "uppercase",
+          fontWeight: "bold",
           marginBottom: 50,
         }}
-      > 
-        {data[idx]} 
+      >
+         {data[idx]} 
       </div>
     );
   }

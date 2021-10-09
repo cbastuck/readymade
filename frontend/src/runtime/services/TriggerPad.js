@@ -1,10 +1,10 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import ServiceUI from './ServiceUI';
-import HoldableButton from '../../components/shared/HoldableButton';
+import ServiceUI from "./ServiceUI";
+import HoldableButton from "../../components/shared/HoldableButton";
 
-const serviceId = 'hookup.to/service/trigger-pad';
-const serviceName = 'Trigger Pad';
+const serviceId = "hookup.to/service/trigger-pad";
+const serviceName = "Trigger Pad";
 
 function makeIndex(rowIndex, colIndex) {
   return `${rowIndex * 4 + colIndex}`;
@@ -17,14 +17,13 @@ class TriggerPadUI extends Component {
     armedPad: undefined,
   };
 
-
-  onInit = service => {
+  onInit = (service) => {
     this.service = service;
-    this.setState({ 
+    this.setState({
       armedPad: `${service.armedPad}`,
       assignments: service.padAssignments,
-    });    
-  }
+    });
+  };
 
   onNotification = (service, notification) => {
     const { assignments, armedPad } = notification;
@@ -35,7 +34,7 @@ class TriggerPadUI extends Component {
     if (armedPad !== undefined) {
       this.setState({ armedPad: `${armedPad}` });
     }
-  }
+  };
 
   renderPad = (service, rowIndex, colIndex) => {
     const index = makeIndex(rowIndex, colIndex);
@@ -44,21 +43,21 @@ class TriggerPadUI extends Component {
     const isPadArmed = this.state.armedPad === index;
     const onPush = () => {
       service.triggerPad(index);
-      this.setState({ 
+      this.setState({
         triggeredPads: {
           ...this.state.triggeredPads,
-          [index]: true
-        }
+          [index]: true,
+        },
       });
       return true;
-    }
-    const onEnd = () => { 
+    };
+    const onEnd = () => {
       if (this.state.triggeredPads[index]) {
-        this.setState({ 
+        this.setState({
           triggeredPads: {
             ...this.state.triggeredPads,
-            [index]: false
-          }
+            [index]: false,
+          },
         });
       }
       return true;
@@ -69,64 +68,63 @@ class TriggerPadUI extends Component {
           width: 100,
           height: 100,
           margin: 2,
-          border: `solid 1px ${isPadArmed ? '#4183c4' : 'lightgray'}`,
-          backgroundColor: !isPadTriggered ? 
-            (isPadAssigned ? '#eff' : 'white') : 
-            '#4183c4'
+          border: `solid 1px ${isPadArmed ? "#4183c4" : "lightgray"}`,
+          backgroundColor: !isPadTriggered
+            ? isPadAssigned
+              ? "#eff"
+              : "white"
+            : "#4183c4",
         }}
         onDown={onPush}
         onUp={onEnd}
         onRightClick={() => {
           service.clearPad(index);
         }}
-      />  
-      
+      />
     );
-  }
+  };
 
   renderRow = (service, rowIndex) => {
     return (
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'row'
+          display: "flex",
+          flexDirection: "row",
         }}
       >
-        { this.renderPad(service, rowIndex, 0) }
-        { this.renderPad(service, rowIndex, 1) }
-        { this.renderPad(service, rowIndex, 2) }
-        { this.renderPad(service, rowIndex, 3) }
+        {this.renderPad(service, rowIndex, 0)}
+        {this.renderPad(service, rowIndex, 1)}
+        {this.renderPad(service, rowIndex, 2)}
+        {this.renderPad(service, rowIndex, 3)}
       </div>
     );
-  }
+  };
 
-  renderMain = service => {
+  renderMain = (service) => {
     return (
       <div
         style={{
-          display: 'flex',
-          flexDirection: 'column'
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        { this.renderRow(service, 0) }
-        { this.renderRow(service, 1) }
-        { this.renderRow(service, 2) }
-        { this.renderRow(service, 3) }        
+        {this.renderRow(service, 0)}
+        {this.renderRow(service, 1)}
+        {this.renderRow(service, 2)}
+        {this.renderRow(service, 3)}
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
-    )
+    );
   }
 }
 
@@ -140,14 +138,10 @@ class TriggerPad {
     this.padAssignments = {};
   }
 
-  destroy() {
-  }
+  destroy() {}
 
-  configure(config) { 
-    const { 
-      padAssignments,
-      armedPad,
-    } = config;
+  configure(config) {
+    const { padAssignments, armedPad } = config;
 
     const notification = {};
     if (padAssignments !== undefined) {
@@ -178,12 +172,15 @@ class TriggerPad {
     const idx = `${padIndex}`;
     this.padAssignments[idx] = undefined;
     this.armedPad = padIndex;
-    this.app.notify(this, { assignments: this.padAssignments, armedPad: this.armedPad });
+    this.app.notify(this, {
+      assignments: this.padAssignments,
+      armedPad: this.armedPad,
+    });
   }
 
   isMatch(params) {
     const isBlob = params instanceof Blob;
-    const isObject = typeof params === 'object' && params !== null;
+    const isObject = typeof params === "object" && params !== null;
     return isBlob || isObject;
   }
 

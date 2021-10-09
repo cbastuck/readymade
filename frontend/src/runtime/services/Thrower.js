@@ -1,44 +1,41 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import InputField from '../../components/shared/InputField';
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
+import InputField from "../../components/shared/InputField";
+import ServiceUI from "./ServiceUI";
+import { s, t } from "../../styles";
 
-const serviceId = 'hookup.to/service/thrower';
-const serviceName = 'Thrower';
+const serviceId = "hookup.to/service/thrower";
+const serviceName = "Thrower";
 
 class ThrowerUI extends Component {
-  state = { 
-    pushUrl: '',
-    id: ''
+  state = {
+    pushUrl: "",
+    id: "",
   };
 
-  onInit = initial => {
-    const { pushUrl='' } = initial;
+  onInit = (initial) => {
+    const { pushUrl = "" } = initial;
     this.setState({
-      pushUrl
-    })
-  }
+      pushUrl,
+    });
+  };
 
   onNotification = (service, notification) => {
-    const { pushUrl } = notification;
+    const { pushUrl } = notification;
     if (pushUrl !== undefined) {
       this.setState({ pushUrl });
     }
-  }
+  };
 
-  renderMain = service => {
-    const { 
-      pushUrl,
-      id,
-    } = this.state;
+  renderMain = (service) => {
+    const { pushUrl, id } = this.state;
     return (
-      <div style={s(t.fill, {display: 'flex', flexDirection: 'column' })}>
+      <div style={s(t.fill, { display: "flex", flexDirection: "column" })}>
         <InputField
           label="URL"
           value={pushUrl}
           onChange={async (ev, { value: pushUrl }) => {
-            await service.configure({ pushUrl })
+            await service.configure({ pushUrl });
             this.setState({ pushUrl });
           }}
         />
@@ -49,22 +46,19 @@ class ThrowerUI extends Component {
         />
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'main', render: this.renderMain }
-        ]}
+        segments={[{ name: "main", render: this.renderMain }]}
       />
     );
   }
 }
-
 
 class Thrower {
   constructor(app, board, descriptor, id) {
@@ -72,40 +66,38 @@ class Thrower {
     this.board = board;
     this.app = app;
 
-    this.pushUrl = ''
+    this.pushUrl = "";
   }
 
-  configure = async config => {
-    const { pushUrl } = config;
+  configure = async (config) => {
+    const { pushUrl } = config;
     if (pushUrl !== undefined) {
       this.pushUrl = pushUrl;
     }
-  }
+  };
 
-  destroy = () => {
-  }
+  destroy = () => {};
 
   async process(params) {
     if (this.pushUrl) {
       // TODO: probably this should be runtime functionality
-      // because this way, without encoding the params, 
+      // because this way, without encoding the params,
       // it only works for text content
-      await fetch(
-        this.pushUrl, 
-        { method: 'POST', body: JSON.stringify(params) }
-      );
+      await fetch(this.pushUrl, {
+        method: "POST",
+        body: JSON.stringify(params),
+      });
     }
     return params;
   }
 }
-
 
 const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new Thrower(app, board, descriptor, id),
-  createUI: ThrowerUI
+  createUI: ThrowerUI,
 };
 
 export default descriptor;

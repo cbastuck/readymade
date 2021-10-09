@@ -1,64 +1,61 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import Template from './Template'
+import Template from "./Template";
 
-import { ExampleService, ExampleServiceUI } from './ExampleService';
-import ServiceFrame from '../../components/ServiceFrame';
+import { ExampleService, ExampleServiceUI } from "./ExampleService";
+import ServiceFrame from "../../components/ServiceFrame";
 
 export default class ServiceDocumentation extends Component {
   renderExampleService = () => {
     const service = new ExampleService();
     const serviceUI = (
-      <ExampleServiceUI
-        service={service}
-        setup={() => service} 
-      />
+      <ExampleServiceUI service={service} setup={() => service} />
     );
     return (
-      <div 
-        style={{ 
+      <div
+        style={{
           marginTop: 20,
-          marginRight: 30, 
-          width: 300
+          marginRight: 30,
+          width: 300,
         }}
       >
         <ServiceFrame service={serviceUI} />
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <Template 
-        title="Service"
-      >
-        <div 
-          style={{ 
-            height: '100%',
-            display: 'flex',
-            flexDirecton: 'row',
+      <Template title="Service">
+        <div
+          style={{
+            height: "100%",
+            display: "flex",
+            flexDirecton: "row",
           }}
         >
-          <div 
-            style={{ 
-              margin: '30px 5px',
-              width: '80%',
-              textTransform: 'uppercase',
+          <div
+            style={{
+              margin: "30px 5px",
+              width: "80%",
+              textTransform: "uppercase",
               letterSpacing: 1,
               fontSize: 12,
             }}
-          > 
+          >
             Services consist of two components:
             <ul>
               <li>
-                one is the main and invisible component of the service implementing the logic.
+                one is the main and invisible component of the service
+                implementing the logic.
               </li>
               <li>
-                The other component is the user interface which allows to configure and interact with the service.
+                The other component is the user interface which allows to
+                configure and interact with the service.
               </li>
             </ul>
           </div>
-          { this.renderExampleService() }
+          {this.renderExampleService()}
         </div>
       </Template>
     );

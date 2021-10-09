@@ -1,16 +1,16 @@
-import React, { Component } from 'react';
-import { Accordion, Label } from 'semantic-ui-react'
+import React, { Component } from "react";
+import { Accordion, Label } from "semantic-ui-react";
 
-import uuid from 'uuid';
+import uuid from "uuid";
 
-import ServiceUI from './ServiceUI';
-import SelectorField from '../../components/shared/SelectorField';
-import { s, t } from '../../styles';
+import ServiceUI from "./ServiceUI";
+import SelectorField from "../../components/shared/SelectorField";
+import { s, t } from "../../styles";
 
-const serviceId = 'hookup.to/service/stack';
-const serviceName = 'Stack';
-const defaultInput = 'multiplex';
-const defaultOutput = 'array';
+const serviceId = "hookup.to/service/stack";
+const serviceName = "Stack";
+const defaultInput = "multiplex";
+const defaultOutput = "array";
 
 class StackUI extends Component {
   state = {
@@ -19,27 +19,23 @@ class StackUI extends Component {
     output: defaultOutput,
   };
 
-  onInit = initialState => {
-    const { 
-      _subservices=[],
-      input=defaultInput,
-      output=defaultOutput,
+  onInit = (initialState) => {
+    const {
+      _subservices = [],
+      input = defaultInput,
+      output = defaultOutput,
     } = initialState;
-    this.setState({ 
-      subservices: _subservices, 
-      input, 
-      output,
-    });
-  }
-
-  onNotification = (service, notification) => {  
-    const { 
-      subservices,
+    this.setState({
+      subservices: _subservices,
       input,
       output,
-    } = notification;
+    });
+  };
+
+  onNotification = (service, notification) => {
+    const { subservices, input, output } = notification;
     if (subservices !== undefined) {
-      this.setState({ subservices });
+      this.setState({ subservices });
     }
 
     if (input !== undefined) {
@@ -49,29 +45,24 @@ class StackUI extends Component {
     if (output !== undefined) {
       this.setState({ output });
     }
-  }
+  };
 
-
-  renderMain = service => {
-    const { 
-      subservices=[],
-      output,
-      input,
-    } = this.state;
+  renderMain = (service) => {
+    const { subservices = [], output, input } = this.state;
 
     const rootPanels = subservices.map((ssvc, idx) => ({
       title: {
         children: (
-        <div style={s(t.uc, t.fs12, t.ls1)}>
-          {ssvc.__descriptor.serviceName}
-        </div>
-        )
+          <div style={s(t.uc, t.fs12, t.ls1)}>
+            {ssvc.__descriptor.serviceName}
+          </div>
+        ),
       },
       key: ssvc.uuid,
       content: { content: service.createSubserviceUI(ssvc) }, // only possible in BrowserRuntime?
     }));
-    const inputOptions = { multiplex: 'multiplex', lanes: 'lanes' };
-    const outputOptions = { array: 'array' };
+    const inputOptions = { multiplex: "multiplex", lanes: "lanes" };
+    const outputOptions = { array: "array" };
     return (
       <div style={t.fill}>
         <SelectorField
@@ -102,27 +93,25 @@ class StackUI extends Component {
           </Label>
           <Accordion
             style={t.tc}
-            defaultActiveIndex={0} 
-            panels={rootPanels} 
-            fluid 
-            styled 
-          />  
+            defaultActiveIndex={0}
+            panels={rootPanels}
+            fluid
+            styled
+          />
         </div>
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
-    )
+    );
   }
 }
 
@@ -138,18 +127,14 @@ class Stack {
   }
 
   createSubserviceUI(ssvc) {
-    return this.app.createSubServiceUI(ssvc)
+    return this.app.createSubServiceUI(ssvc);
   }
 
   async configure(config) {
-    const { 
-      services,
-      input,
-      output,
-    } = config;
+    const { services, input, output } = config;
     if (services !== undefined) {
       this.services = services;
-      const subservices = []
+      const subservices = [];
       for (const svc of services) {
         if (!svc.uuid) {
           svc.uuid = uuid.v4();
@@ -166,21 +151,19 @@ class Stack {
     if (input !== undefined) {
       this.input = input;
       this.app.notify({ input });
-    } 
+    }
 
     if (output !== undefined) {
       this.output = output;
       this.app.notify({ output });
-    } 
+    }
   }
 
   async processArray(params) {
     const results = await Promise.all(
-      this._subservices.map((ssvc, idx) => 
-        ssvc.process(params[idx])
-      )
+      this._subservices.map((ssvc, idx) => ssvc.process(params[idx]))
     );
-    const notNull = results.some(r => r !== null);
+    const notNull = results.some((r) => r !== null);
     return notNull ? results : null;
   }
 
@@ -206,7 +189,7 @@ class Stack {
 
   process(params) {
     if (this._subservices.length > 0) {
-      if (this.input === 'lanes') {
+      if (this.input === "lanes") {
         if (Array.isArray(params)) {
           return this.processArray(params);
         } else {
@@ -222,8 +205,7 @@ class Stack {
 const descriptor = {
   serviceName,
   serviceId,
-  create: (app, board, descriptor, id) =>
-    new Stack(app, board, descriptor, id),
+  create: (app, board, descriptor, id) => new Stack(app, board, descriptor, id),
   createUI: StackUI,
 };
 

@@ -1,19 +1,16 @@
-import React, { Component } from 'react';
-import { 
-  Button,
-  Checkbox,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button, Checkbox } from "semantic-ui-react";
 
-import ServiceUI from './ServiceUI';
-import Dropbox from './Dropbox';
-import MessageReceiver from '../../MessageReceiver';
-import InputField from '../../components/shared/InputField';
-import { s, t } from '../../styles';
+import ServiceUI from "./ServiceUI";
+import Dropbox from "./Dropbox";
+import MessageReceiver from "../../MessageReceiver";
+import InputField from "../../components/shared/InputField";
+import { s, t } from "../../styles";
 
-const serviceId = 'hookup.to/service/dropbox-sink';
-const serviceName = 'Dropbox Sink';
+const serviceId = "hookup.to/service/dropbox-sink";
+const serviceName = "Dropbox Sink";
 
-const loginStateId = 'dropbox-sink-login';
+const loginStateId = "dropbox-sink-login";
 
 class DropboxSinkUI extends Component {
   state = {
@@ -21,40 +18,40 @@ class DropboxSinkUI extends Component {
     user: undefined,
   };
 
-  retrieveUserAccount = async service => {
+  retrieveUserAccount = async (service) => {
     const user = await service.getUserAccount();
     if (user) {
       this.setState({ user });
     }
-  }
+  };
 
-  onInit = service => {
-    service.configure({ mode: 'upload' });
+  onInit = (service) => {
+    service.configure({ mode: "upload" });
     this.service = service;
     this.retrieveUserAccount(service);
-    this.setState({ 
+    this.setState({
       uploadFilename: service.uploadFilename,
       active: service.uploadActive,
     });
-  }
+  };
 
-  onTimer = service => {
-    this.setState({ asyncUploadRunning: !!service.uploadSession })
-  }
+  onTimer = (service) => {
+    this.setState({ asyncUploadRunning: !!service.uploadSession });
+  };
 
-  onLogin = async service => {
+  onLogin = async (service) => {
     const authUrl = service.getAuthUrl(loginStateId);
-    window.open(authUrl, 'blank');
-  }
+    window.open(authUrl, "blank");
+  };
 
   renderLoginPanel(service) {
     return (
       <div>
-        <Button 
-          style={{ 
-            width: '100%', 
-            textTransform: 'uppercase', 
-            fontSize: 12 
+        <Button
+          style={{
+            width: "100%",
+            textTransform: "uppercase",
+            fontSize: 12,
           }}
           onClick={() => this.onLogin(service)}
         >
@@ -62,7 +59,7 @@ class DropboxSinkUI extends Component {
         </Button>
         <MessageReceiver
           state={loginStateId}
-          onData={async data => {
+          onData={async (data) => {
             const accessToken = data.access_token;
             this.service.configure({ accessToken });
             const user = await this.service.getUserAccount();
@@ -70,7 +67,7 @@ class DropboxSinkUI extends Component {
           }}
         />
       </div>
-    ); 
+    );
   }
 
   renderSinkPanel(service) {
@@ -78,13 +75,13 @@ class DropboxSinkUI extends Component {
       <div>
         <div
           style={{
-            textTransform: 'uppercase', 
+            textTransform: "uppercase",
             fontSize: 12,
-            textAlign: 'left',
+            textAlign: "left",
             marginBottom: 5,
           }}
         >
-          Login: { this.state.user.email }
+          Login: {this.state.user.email}
         </div>
         <InputField
           label="filename"
@@ -95,42 +92,35 @@ class DropboxSinkUI extends Component {
             this.setState({ uploadFilename: value });
           }}
         />
-        <div
-          style={s(
-            { textAlign: 'left' },
-            t.uc, t.ls1, t.mt5
-          )}
-        >
+        <div style={s({ textAlign: "left" }, t.uc, t.ls1, t.mt5)}>
           <Checkbox
             style={t.fs12}
             toggle
             label="Upload Incoming"
             checked={this.state.active}
-            onChange={(_, {checked}) => 
+            onChange={(_, { checked }) =>
               this.setState(
-                { active: checked }, 
-                () => service.uploadActive = checked
+                { active: checked },
+                () => (service.uploadActive = checked)
               )
             }
           />
         </div>
-        {
-          this.state.asyncUploadRunning && (
-            <div>
-              <Button 
-                style={s({ width: '100%'} , t.uc, t.ls1, t.fs12, t.mt5)}
-                onClick={() => service.finishUpload()}
-              >
-                Finish
-              </Button>
-            </div>
-          )
-        }
+        {this.state.asyncUploadRunning && (
+          <div>
+            <Button
+              style={s({ width: "100%" }, t.uc, t.ls1, t.fs12, t.mt5)}
+              onClick={() => service.finishUpload()}
+            >
+              Finish
+            </Button>
+          </div>
+        )}
         <Button
-          style={s({ width: '100%'} , t.mt5,  t.uc, t.ls1, t.fs12)}
+          style={s({ width: "100%" }, t.mt5, t.uc, t.ls1, t.fs12)}
           onClick={async () => {
             await service.logout();
-            this.setState({ user: null });
+            this.setState({ user: null });
           }}
         >
           Logout
@@ -139,27 +129,24 @@ class DropboxSinkUI extends Component {
     );
   }
 
-  renderMain = service => {
+  renderMain = (service) => {
     if (!this.state.user) {
-      return this.renderLoginPanel(service);     
+      return this.renderLoginPanel(service);
     }
     return this.renderSinkPanel(service);
-  }
+  };
 
   render() {
     return (
       <ServiceUI
-        {...this.props} 
+        {...this.props}
         onInit={this.onInit.bind(this)}
         onTimer={this.onTimer.bind(this)}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
     );
   }
 }
-
 
 const descriptor = {
   serviceName,

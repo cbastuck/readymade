@@ -1,26 +1,25 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import { AppConsumer } from '../../AppContext';
-import BoardContext, { BoardConsumer } from '../../BoardContext';
-import Toolbar from '../../components/Toolbar';
-import Footer from '../../components/Footer';
-import ProgressIndicator from '../../components/ProgressIndicator';
-import SandboxFrame from '../../components/SandboxFrame';
-import { redirectTo } from '../../core/actions';
+import { AppConsumer } from "../../AppContext";
+import BoardContext, { BoardConsumer } from "../../BoardContext";
+import Toolbar from "../../components/Toolbar";
+import Footer from "../../components/Footer";
+import ProgressIndicator from "../../components/ProgressIndicator";
+import SandboxFrame from "../../components/SandboxFrame";
+import { redirectTo } from "../../core/actions";
 
-import './Welcome.css';
-
+import "./Welcome.css";
 
 export default class Welcome extends Component {
   state = {
-    page: 'closed',
+    page: "closed",
     introFinished: false,
     visualisationFinished: false,
   };
 
   componentDidMount() {
     setTimeout(() => {
-      this.setState({ page: 'welcome' });
+      this.setState({ page: "welcome" });
     }, 200);
   }
 
@@ -28,24 +27,24 @@ export default class Welcome extends Component {
     <div className="fade-in">
       <h1>Welcome.</h1>
       <p className="hero-claim">
-        <span className="make">Make yourself</span> 
+        <span className="make">Make yourself</span>
         <span>at home</span>
       </p>
       <button
         className="button"
-        onClick={() => this.setState({ page: 'mission' }) }
-        style={{ 
-          fontSize: 11, 
-          textTransform: 'uppercase' 
+        onClick={() => this.setState({ page: "mission" })}
+        style={{
+          fontSize: 11,
+          textTransform: "uppercase",
         }}
       >
         What is this?
       </button>
     </div>
   );
-  
-  renderIntro = () => (
-    <div style={{ height: '100%' }}>
+
+  renderIntro = () => (
+    <div style={{ height: "100%" }}>
       <SandboxFrame
         title="Hookup Intro"
         src="/boards/introduction.json"
@@ -54,48 +53,42 @@ export default class Welcome extends Component {
         height="84%"
         width="100%"
         maxWidth={800}
-        onAction={
-          ({ checkpoint }) => {
-            if (checkpoint === '@last-slide') {
-              setTimeout(
-                () => this.setState({ introFinished: true }), 
-                500
-              );
-            } else if (checkpoint) {
-              this.progress && this.progress.triggerAnimation();
-            }
+        onAction={({ checkpoint }) => {
+          if (checkpoint === "@last-slide") {
+            setTimeout(() => this.setState({ introFinished: true }), 500);
+          } else if (checkpoint) {
+            this.progress && this.progress.triggerAnimation();
           }
-        }
+        }}
       />
-      <ProgressIndicator 
+      <ProgressIndicator
         durationInSec={7}
-        ref={progress => this.progress = progress}
+        ref={(progress) => (this.progress = progress)}
         visible={!this.state.introFinished}
       />
-      {
-        this.state.introFinished && (
-          <button
-            style={{ 
-              fontSize: 12,
-              textTransform: 'uppercase',
-            }}
-            className="button fade-in-linear" 
-            onClick={() => this.setState({ 
-              page: 'visualisation',
+      {this.state.introFinished && (
+        <button
+          style={{
+            fontSize: 12,
+            textTransform: "uppercase",
+          }}
+          className="button fade-in-linear"
+          onClick={() =>
+            this.setState({
+              page: "visualisation",
               introFinished: false,
-            })}
-          >
-            A thought experiment
-          </button>
-        )
-      }
+            })
+          }
+        >
+          A thought experiment
+        </button>
+      )}
     </div>
   );
 
-
   renderVisualisation = () => {
     return (
-      <div style={{ height: '100%' }}>
+      <div style={{ height: "100%" }}>
         <SandboxFrame
           title="Hookup Visualisation"
           src="/boards/visualisation.json"
@@ -109,162 +102,174 @@ export default class Welcome extends Component {
               this.setState({ page });
             }
             if (finished) {
-              redirectTo('/examples')
+              redirectTo("/examples");
             }
-            if (checkpoint === '@last-state' && !this.state.visualisationFinished) {
+            if (
+              checkpoint === "@last-state" &&
+              !this.state.visualisationFinished
+            ) {
               this.setState({ visualisationFinished: true });
             }
           }}
         />
-        {
-          this.state.visualisationFinished && (
-            <button
-              style={{  
-                fontSize: 12,
-                textTransform: 'uppercase', 
-              }}
-              className="button fade-in-linear" 
-              onClick={() => redirectTo('/examples')}
-            >
-              Examples
-            </button>
-          )
-        }
+        {this.state.visualisationFinished && (
+          <button
+            style={{
+              fontSize: 12,
+              textTransform: "uppercase",
+            }}
+            className="button fade-in-linear"
+            onClick={() => redirectTo("/examples")}
+          >
+            Examples
+          </button>
+        )}
       </div>
     );
-  }
+  };
 
   renderMission = () => {
     return (
-      <div className="fade-in-linear-slow" style={{ width: '100%', height: '100%' }}>
+      <div
+        className="fade-in-linear-slow"
+        style={{ width: "100%", height: "100%" }}
+      >
         <div
           style={{
-            height: '100%',
-            width: '80%',
-            marginLeft: '10%',
-            display: 'table',
-            tableLayout: 'fixed',
+            height: "100%",
+            width: "80%",
+            marginLeft: "10%",
+            display: "table",
+            tableLayout: "fixed",
           }}
         >
-        {
-          [
-            { q: 'What', a: 'An approach to lower access barriers and play with technology' },
-            { q: 'Why', a: 'Technology is an enabler for creativity, inspiration and thinking for y\'all' },
-            { q: 'How', a: 'Explore abstractions to creatively connect data, logic, devices and services' },
-            { 
+          {[
+            {
+              q: "What",
+              a: "An approach to lower access barriers and play with technology",
+            },
+            {
+              q: "Why",
+              a: "Technology is an enabler for creativity, inspiration and thinking for y'all",
+            },
+            {
+              q: "How",
+              a: "Explore abstractions to creatively connect data, logic, devices and services",
+            },
+            {
               a: (
-              <button
-                style={{ 
-                  fontSize: 11, 
-                  textTransform: 'uppercase' 
-                }}
-                className="button" 
-                onClick={() => this.setState({ page: 'intro' })}
-              >
-                Quick Pitch
-              </button>
+                <button
+                  style={{
+                    fontSize: 11,
+                    textTransform: "uppercase",
+                  }}
+                  className="button"
+                  onClick={() => this.setState({ page: "intro" })}
+                >
+                  Quick Pitch
+                </button>
               ),
-            }
+            },
           ].map((x, xi) => (
             <div
               key={xi}
               style={{
-                textAlign: 'center', 
-                display: 'table-row' 
+                textAlign: "center",
+                display: "table-row",
               }}
             >
               <div
                 style={{
-                  display: 'table-cell',
-                  verticalAlign: 'middle',
-                  textAlign: 'center',
+                  display: "table-cell",
+                  verticalAlign: "middle",
+                  textAlign: "center",
                   letterSpacing: 1,
-                  textTransform: 'uppercase',
+                  textTransform: "uppercase",
                 }}
                 className={`fade-in-${xi}`}
               >
-                { x.q && <h1 style={{ fontSize: 19, color: '454f6d' }}> {x.q} </h1> }
-                <div 
+                {x.q && (
+                  <h1 style={{ fontSize: 19, color: "454f6d" }}> {x.q} </h1>
+                )}
+                <div
                   className="home-title"
-                  style={{ 
-                    marginTop: 10, 
-                    fontSize: 16, 
-                    fontWeight: 'lighter', 
-                    color: '#777',
+                  style={{
+                    marginTop: 10,
+                    fontSize: 16,
+                    fontWeight: "lighter",
+                    color: "#777",
                   }}
-                > 
-                  {x.a} 
+                >
+                  {x.a}
                 </div>
               </div>
             </div>
-          )) 
-        }
+          ))}
         </div>
       </div>
     );
-  }
+  };
 
   renderConversion = () => {
     return (
       <div className="fade-in">
         <h1>You are early</h1>
         <p className="hero-claim">
-          <span className="make">come back later, please</span> 
+          <span className="make">come back later, please</span>
         </p>
-         <button
+        <button
           className="button"
-          onClick={() => this.setState({ page: 'welcome' }) }
+          onClick={() => this.setState({ page: "welcome" })}
         >
           Do it again
         </button>
       </div>
     );
-  }
+  };
 
   renderNavBar = (pages) => {
-    if (this.state.page === pages[0].p ||
-        this.state.visualisationFinished) {
+    if (this.state.page === pages[0].p || this.state.visualisationFinished) {
       return false;
     }
-     const renderBullet = (x, c) => (
+    const renderBullet = (x, c) => (
       <span
         key={x.p}
-        style={{ cursor: 'pointer', padding: 5 }}
-        onClick={() => this.setState({ 
-          page: x.p,
-          introFinished: false
-        })}
+        style={{ cursor: "pointer", padding: 5 }}
+        onClick={() =>
+          this.setState({
+            page: x.p,
+            introFinished: false,
+          })
+        }
       >
-        { c }
+        {c}
       </span>
     );
     return (
-      <div 
-        style={{ 
+      <div
+        style={{
           fontSize: 22,
           marginTop: 20,
         }}
-      > 
-        { 
-          pages.map(x => x.p === this.state.page ? 
-            renderBullet(x, '●') : 
-            renderBullet(x, '￮')) 
-        }
+      >
+        {pages.map((x) =>
+          x.p === this.state.page ? renderBullet(x, "●") : renderBullet(x, "￮")
+        )}
       </div>
     );
-  }
+  };
 
   renderContent(pages) {
-    const currentPage = pages.find(x => x.p === this.state.page);
+    const currentPage = pages.find((x) => x.p === this.state.page);
     return (
-      <div 
-        style={{ 
-          width: '100%', 
-          height: '95%',
+      <div
+        style={{
+          width: "100%",
+          height: "95%",
         }}
       >
-        { currentPage && currentPage.r() }
-        { this.renderNavBar(pages) }
+        {currentPage && currentPage.r()}
+        {this.renderNavBar(pages)}
       </div>
     );
   }
@@ -272,33 +277,24 @@ export default class Welcome extends Component {
   render() {
     return (
       <AppConsumer>
-      {
-        appContext => (
+        {(appContext) => (
           <BoardContext user={null}>
             <div className="hero-image">
               <BoardConsumer>
-              {
-                boardContext => 
-                  <Toolbar onAction={boardContext.onAction} />
-              }
+                {(boardContext) => <Toolbar onAction={boardContext.onAction} />}
               </BoardConsumer>
               <div className={`hero-text ${this.state.page} fade-in-linear`}>
-                { 
-                  this.renderContent(
-                    [
-                      { p: 'welcome', r: this.renderWelcome },
-                      { p: 'mission', r: this.renderMission },
-                      { p: 'intro', r: this.renderIntro },
-                      { p: 'visualisation', r: this.renderVisualisation },
-                    ]
-                  )
-                }
+                {this.renderContent([
+                  { p: "welcome", r: this.renderWelcome },
+                  { p: "mission", r: this.renderMission },
+                  { p: "intro", r: this.renderIntro },
+                  { p: "visualisation", r: this.renderVisualisation },
+                ])}
               </div>
               <Footer />
             </div>
-          </BoardContext> 
-        )
-      }
+          </BoardContext>
+        )}
       </AppConsumer>
     );
   }

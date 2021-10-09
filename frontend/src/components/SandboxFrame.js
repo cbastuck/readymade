@@ -1,37 +1,37 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
 export default class SandboxFrame extends Component {
   render() {
-    const { 
-      title, 
+    const {
+      title,
       src,
       onAction,
       maxWidth,
-      frameless='false', 
-      frameBorder='0',
-      height='100%',
-      width='100%',
+      frameless = "false",
+      frameBorder = "0",
+      height = "100%",
+      width = "100%",
     } = this.props;
     const style = {
       height,
-      width
+      width,
     };
     if (maxWidth) {
       style.maxWidth = maxWidth;
     }
-    
+
     if (!src) {
-      console.warn('Sandbox component without src');
+      console.warn("Sandbox component without src");
       return false;
     }
 
     return (
-      <iframe 
+      <iframe
         title={title}
-        src={`/sandbox?src=${src}&frameless=${frameless}`} 
+        src={`/sandbox?src=${src}&frameless=${frameless}`}
         frameBorder={frameBorder}
         style={style}
-        ref={frame => {
+        ref={(frame) => {
           if (frame && onAction) {
             frame.onAction = onAction;
           }

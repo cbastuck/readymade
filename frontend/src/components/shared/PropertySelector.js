@@ -1,26 +1,18 @@
-import React, { Component } from 'react';
-import {
-  Table,
-  Menu,
-  Icon,
-  Input,
-  Checkbox,
-} from 'semantic-ui-react';
-
+import React, { Component } from "react";
+import { Table, Menu, Icon, Input, Checkbox } from "semantic-ui-react";
 
 export default class PropertySelector extends Component {
-
   state = {
     currentPage: 0,
     numPropertiesPerPage: 5,
   };
 
-  renderCheckbox = key => {
+  renderCheckbox = (key) => {
     const { onCheckboxChanged } = this.props;
     return (
       <div
         style={{
-          textAlign: 'center'
+          textAlign: "center",
         }}
       >
         <Checkbox
@@ -30,10 +22,10 @@ export default class PropertySelector extends Component {
         />
       </div>
     );
-  }
+  };
 
   renderValue = (key, value) => {
-    const { onCheckboxChanged, onValueChanged} = this.props;
+    const { onCheckboxChanged, onValueChanged } = this.props;
     return (
       <Input
         value={value}
@@ -43,7 +35,7 @@ export default class PropertySelector extends Component {
         }}
       />
     );
-  }
+  };
 
   renderHeader = () => {
     return (
@@ -56,90 +48,80 @@ export default class PropertySelector extends Component {
         </Table.Row>
       </Table.Header>
     );
-  }
+  };
 
   renderBody = () => {
-    const { keys, values} = this.props;
+    const { keys, values } = this.props;
     const { currentPage, numPropertiesPerPage } = this.state;
     const startIdx = currentPage * numPropertiesPerPage;
     return (
       <Table.Body>
-        {
-          keys.slice(startIdx, startIdx + numPropertiesPerPage)
-            .map((key, idx) => (
-              <Table.Row key={key}>
-                <Table.Cell>{key}</Table.Cell>
-                <Table.Cell>Equals</Table.Cell>
-                <Table.Cell>{this.renderValue(keys[startIdx + idx], values[startIdx + idx])}</Table.Cell>
-                <Table.Cell>{this.renderCheckbox(keys[startIdx + idx])}</Table.Cell>
-              </Table.Row>
-            ))
-        }
+        {keys
+          .slice(startIdx, startIdx + numPropertiesPerPage)
+          .map((key, idx) => (
+            <Table.Row key={key}>
+              <Table.Cell>{key}</Table.Cell>
+              <Table.Cell>Equals</Table.Cell>
+              <Table.Cell>
+                {this.renderValue(keys[startIdx + idx], values[startIdx + idx])}
+              </Table.Cell>
+              <Table.Cell>
+                {this.renderCheckbox(keys[startIdx + idx])}
+              </Table.Cell>
+            </Table.Row>
+          ))}
       </Table.Body>
     );
-  }
+  };
 
   renderFooter = () => {
     const { keys } = this.props;
-    const numPages = keys ?
-      Math.ceil(keys.length / this.state.numPropertiesPerPage) :
-      0;
+    const numPages = keys
+      ? Math.ceil(keys.length / this.state.numPropertiesPerPage)
+      : 0;
 
     return (
       <Table.Footer>
         <Table.Row>
           <Table.HeaderCell colSpan={4}>
-            <Menu floated='right' pagination>
+            <Menu floated="right" pagination>
               <Menu.Item
-                as='a'
+                as="a"
                 icon
                 onClick={() => {
-                  this.setState(
-                    { currentPage: this.state.currentPage - 1}
-                  )
+                  this.setState({ currentPage: this.state.currentPage - 1 });
                 }}
                 disabled={this.state.currentPage < 1}
               >
-                <Icon name='chevron left' />
+                <Icon name="chevron left" />
               </Menu.Item>
-              {
-                numPages > 0 && (
-                  new Array(numPages)
-                    .fill(null)
-                    .map((_, idx) => (
-                      <Menu.Item
-                        key={idx}
-                        as='a'
-                        active={idx === this.state.currentPage}
-                        onClick={() =>
-                          this.setState(
-                            { currentPage: idx}
-                          )
-                        }
-                      >
-                        {idx}
-                      </Menu.Item>
-                    ))
-                )
-              }
+              {numPages > 0 &&
+                new Array(numPages).fill(null).map((_, idx) => (
+                  <Menu.Item
+                    key={idx}
+                    as="a"
+                    active={idx === this.state.currentPage}
+                    onClick={() => this.setState({ currentPage: idx })}
+                  >
+                    {idx}
+                  </Menu.Item>
+                ))}
               <Menu.Item
-                as='a'
+                as="a"
                 icon
                 onClick={() => {
-                  this.setState(
-                    { currentPage: this.state.currentPage + 1}
-                  )
+                  this.setState({ currentPage: this.state.currentPage + 1 });
                 }}
-                disabled={this.state.currentPage >= numPages -1}
+                disabled={this.state.currentPage >= numPages - 1}
               >
-                <Icon name='chevron right' />
+                <Icon name="chevron right" />
               </Menu.Item>
             </Menu>
           </Table.HeaderCell>
         </Table.Row>
       </Table.Footer>
     );
-  }
+  };
 
   render = () => {
     const { keys, values } = this.props;
@@ -151,14 +133,13 @@ export default class PropertySelector extends Component {
       <Table
         celled
         style={{
-          maxWidth: 100
+          maxWidth: 100,
         }}
       >
-        { this.renderHeader() }
-        { this.renderBody() }
-        { this.renderFooter() }
+        {this.renderHeader()}
+        {this.renderBody()}
+        {this.renderFooter()}
       </Table>
     );
-  }
-
+  };
 }

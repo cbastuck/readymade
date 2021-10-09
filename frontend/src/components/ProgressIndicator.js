@@ -1,50 +1,56 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import './ProgressIndicator.css';
+import "./ProgressIndicator.css";
 
 export default class ProgressIndicator extends Component {
   state = {
     animationStyle: {
-      animation: ''
-    }
-  };  
+      animation: "",
+    },
+  };
 
   triggerAnimation = () => {
     const { durationInSec } = this.props;
-    const setAnimation = () => 
+    const setAnimation = () =>
       setTimeout(
-        () => this.setState({
-          animationStyle: {
-            animation: `progress ${durationInSec}s ease-out forwards`
-          }
-        }),
+        () =>
+          this.setState({
+            animationStyle: {
+              animation: `progress ${durationInSec}s ease-out forwards`,
+            },
+          }),
         1
       );
-    this.setState(
-      { animationStyle: { animation: '' } },
-      setAnimation
-    );
-  }
+    this.setState({ animationStyle: { animation: "" } }, setAnimation);
+  };
 
   componentDidUpdate(prevProps) {
     const { visible } = this.props;
     if (prevProps.visible !== visible) {
       this.setState({ visible });
-    } 
+    }
   }
 
   render() {
     const { visible } = this.props;
     return (
-      <div className={`flex-wrapper ${visible ? 'fade-visible' : 'fade-invisible' }`}>
+      <div
+        className={`flex-wrapper ${
+          visible ? "fade-visible" : "fade-invisible"
+        }`}
+      >
         <div className="single-chart">
           <svg viewBox="0 0 36 36" className="circular-chart blue">
-            <path className="circle-bg"
+            <path
+              className="circle-bg"
               d="M18 2.0845
                 a 15.9155 15.9155 0 0 1 0 31.831
                 a 15.9155 15.9155 0 0 1 0 -31.831"
             />
-            <path id="progress-status-bar" style={this.state.animationStyle} className="circle"
+            <path
+              id="progress-status-bar"
+              style={this.state.animationStyle}
+              className="circle"
               strokeDasharray="100, 100"
               d="M18 2.0845
                 a 15.9155 15.9155 0 0 1 0 31.831

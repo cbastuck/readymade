@@ -1,19 +1,19 @@
-import React, { Component } from 'react'
-import { Button, Modal } from 'semantic-ui-react'
+import React, { Component } from "react";
+import { Button, Modal } from "semantic-ui-react";
 
-import { openTab } from '../core/actions';
+import { openTab } from "../core/actions";
 
 export default class ModalDialog extends Component {
   render() {
-    const { 
+    const {
       url,
       component,
       setOpen,
-      isOpen=false,
-      title='',
-      style={
-        height: '85%',
-        width: '90%'
+      isOpen = false,
+      title = "",
+      style = {
+        height: "85%",
+        width: "90%",
       },
     } = this.props;
     if (!isOpen || (!url && !component)) {
@@ -21,7 +21,7 @@ export default class ModalDialog extends Component {
     }
 
     const buttonStyle = {
-      textTransform: 'uppercase',
+      textTransform: "uppercase",
       letterSpacing: 1,
       fontSize: 12,
     };
@@ -33,48 +33,43 @@ export default class ModalDialog extends Component {
         style={style}
         dimmer="inverted"
       >
-        <Modal.Header 
-          style={{ 
-            textTransform: 'uppercase',
+        <Modal.Header
+          style={{
+            textTransform: "uppercase",
             letterSpacing: 2,
             fontSize: 14,
-            textAlign: 'center',
+            textAlign: "center",
           }}
         >
           {title}
         </Modal.Header>
-        <Modal.Content 
-          style={{ height: '100%' }}
-          scrolling 
-        >
-          { 
-            component ? 
-              component : 
-              <iframe 
-                title={title}
-                src={url} 
-                frameBorder="0"
-                style={{
-                  height: '100%',
-                  width: '100%',
-                }}
-              />
-          }
+        <Modal.Content style={{ height: "100%" }} scrolling>
+          {component ? (
+            component
+          ) : (
+            <iframe
+              title={title}
+              src={url}
+              frameBorder="0"
+              style={{
+                height: "100%",
+                width: "100%",
+              }}
+            />
+          )}
         </Modal.Content>
         <Modal.Actions>
-          { 
-            url && (
-              <Button 
-                style={buttonStyle}
-                onClick={() => {
-                  openTab(url);
-                  setOpen(false);
-                }}
-              >
-                Open in Tab
-              </Button>
-            )
-          }
+          {url && (
+            <Button
+              style={buttonStyle}
+              onClick={() => {
+                openTab(url);
+                setOpen(false);
+              }}
+            >
+              Open in Tab
+            </Button>
+          )}
           <Button
             content="Close"
             onClick={() => setOpen(false)}
@@ -82,7 +77,6 @@ export default class ModalDialog extends Component {
           />
         </Modal.Actions>
       </Modal>
-    )
+    );
   }
 }
-

@@ -1,6 +1,6 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import queryString from 'query-string';
+import queryString from "query-string";
 
 export default class ServiceRedirect extends Component {
   render() {
@@ -8,7 +8,7 @@ export default class ServiceRedirect extends Component {
     const qs = queryString.parse(window.location.search);
     const params = { ...qs, ...hs };
     window.opener.postMessage(JSON.stringify(params));
-    setTimeout(() => window.close(), 100); 
+    setTimeout(() => window.close(), 100);
     return <div> This will close ... </div>;
   }
 }

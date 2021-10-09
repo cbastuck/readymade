@@ -1,39 +1,36 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import Template from './Template'
-import { renderSceneExample } from './Runtime';
+import Template from "./Template";
+import { renderSceneExample } from "./Runtime";
 
 export default class BoardDocumentation extends Component {
-
   renderBoardExample = () => {
     return (
-      <div 
+      <div
         style={{
           marginTop: 20,
-          marginRight: 30, 
+          marginRight: 30,
           width: 300,
-          padding: 5
+          padding: 5,
         }}
       >
-        { renderSceneExample("Runtime A") }
+        {renderSceneExample("Runtime A")}
         <div />
-        { renderSceneExample("Runtime B") }
+        {renderSceneExample("Runtime B")}
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <Template
-        title="Board"
-      >
-        <div 
-          style={{ 
-            height: '100%', 
-            width: '100%',
+      <Template title="Board">
+        <div
+          style={{
+            height: "100%",
+            width: "100%",
           }}
         >
-         { this.renderBoardExample() }
+          {this.renderBoardExample()}
         </div>
       </Template>
     );

@@ -1,27 +1,26 @@
-import React, { Component } from 'react';
-import { Dimmer, Loader } from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Dimmer, Loader } from "semantic-ui-react";
 
 async function initialize() {
-  const monaco = await import('monaco-editor');
+  const monaco = await import("monaco-editor");
   //const require = await import('./loader.min');
 
   //const baseUrl = 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.21.2/min';
   const baseUrl = `${window.location.origin}/res/monaco-editor/0.21.2`;
-  require.config({ 
-    paths: { 
-      vs: `${baseUrl}/vs`
-    }
+  require.config({
+    paths: {
+      vs: `${baseUrl}/vs`,
+    },
   });
 
   window.MonacoEnvironment = {
-    getWorkerUrl: function(workerId, label) {
+    getWorkerUrl: function (workerId, label) {
       return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
         self.MonacoEnvironment = {
           baseUrl: '${baseUrl}/'
         };
-        importScripts('${baseUrl}/vs/base/worker/workerMain.js');`
-      )}`;
-    }
+        importScripts('${baseUrl}/vs/base/worker/workerMain.js');`)}`;
+    },
   };
 
   return monaco;
@@ -29,12 +28,12 @@ async function initialize() {
 
 export default class Editor extends Component {
   state = {
-    monaco: undefined
+    monaco: undefined,
   };
   editor = undefined;
 
   componentDidMount() {
-    initialize().then(monaco => this.setState({ monaco }));
+    initialize().then((monaco) => this.setState({ monaco }));
   }
 
   componentWillUnmount() {
@@ -45,66 +44,63 @@ export default class Editor extends Component {
 
   getValue = () => {
     return this.editor.getValue();
-  }
+  };
 
   render() {
     const { monaco } = this.state;
-    const { 
-      value='', 
-      language='javascript',
-      height=100,
-      width=350,
+    const {
+      value = "",
+      language = "javascript",
+      height = 100,
+      width = 350,
       onChange,
     } = this.props;
 
-     if (!monaco) { 
+    if (!monaco) {
       return (
         <div style={{ width, minHeight: 100 }}>
           <Dimmer active inverted>
             <Loader
-              style={{ 
-                textTransform: 'uppercase',
+              style={{
+                textTransform: "uppercase",
                 letterSpacing: 1,
-                fontSize: 12
+                fontSize: 12,
               }}
-              inverted 
-              content='Loading Editor' 
+              inverted
+              content="Loading Editor"
             />
           </Dimmer>
         </div>
       );
-    }   
+    }
 
     return (
-      <div style={{ height: '100%' }}>
+      <div style={{ height: "100%" }}>
         <div
-          ref={container => {
+          ref={(container) => {
             if (!this.root) {
               this.root = container;
-              this.editor = monaco.editor.create(
-                this.root, 
-                {
-                  value,
-                  language,
-                  automaticLayout: true
-                }
-              );
+              this.editor = monaco.editor.create(this.root, {
+                value,
+                language,
+                automaticLayout: true,
+              });
               if (this.editor && onChange) {
-                this.registeredEvent = this.editor.onDidChangeModelContent(onChange);
+                this.registeredEvent =
+                  this.editor.onDidChangeModelContent(onChange);
               }
             }
           }}
           style={{
-            border: 'solid 1px lightgray',
-            textAlign: 'left',
+            border: "solid 1px lightgray",
+            textAlign: "left",
             minWidth: width,
             minHeight: height,
-            width: '100%',
-            height: '100%',
+            width: "100%",
+            height: "100%",
           }}
         />
       </div>
     );
   }
 }
-   

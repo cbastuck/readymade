@@ -1,5 +1,5 @@
-const serviceId = 'hookup.to/service/key-handler';
-const serviceName = 'KeyHandler';
+const serviceId = "hookup.to/service/key-handler";
+const serviceName = "KeyHandler";
 
 class KeyHandler {
   constructor(app, board, descriptor, id) {
@@ -8,24 +8,20 @@ class KeyHandler {
     this.app = app;
   }
 
-  destroy() {
-  }
+  destroy() {}
 
-  onEvent = e => {
+  onEvent = (e) => {
     this.app.next(this, { key: e.key, code: e.keyCode });
-  }
+  };
 
   configure(config) {
-    const { eventType = 'keydown' } = config;
+    const { eventType = "keydown" } = config;
 
     if (this._registered) {
       document.removeEventListener(this._registered);
     }
 
-    this._registered = document.addEventListener(
-      eventType, 
-      this.onEvent
-    );
+    this._registered = document.addEventListener(eventType, this.onEvent);
   }
 
   process(params) {

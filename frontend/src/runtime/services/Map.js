@@ -1,19 +1,15 @@
-import React, { Component } from 'react';
-import {
-  Input,
-  Button,
-  Checkbox,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Input, Button, Checkbox } from "semantic-ui-react";
 
-import { MapDescriptor } from 'services';
+import { MapDescriptor } from "services";
 
-import InputLabelValue from '../../components/shared/InputLabelValue';
-import SelectorField from '../../components/shared/SelectorField';
+import InputLabelValue from "../../components/shared/InputLabelValue";
+import SelectorField from "../../components/shared/SelectorField";
 
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
+import ServiceUI from "./ServiceUI";
+import { s, t } from "../../styles";
 
-const newProperty = { key: 'value' };
+const newProperty = { key: "value" };
 
 class MapUI extends Component {
   state = {
@@ -27,7 +23,7 @@ class MapUI extends Component {
       template,
       condition,
       conditionEnabled: !!condition,
-      mode
+      mode,
     });
   }
 
@@ -40,22 +36,22 @@ class MapUI extends Component {
     if (mode !== undefined) {
       this.setState({ mode });
     }
-  }
+  };
 
-  renderMapping = service => {
-    const { template={}, mode } = this.state;
+  renderMapping = (service) => {
+    const { template = {}, mode } = this.state;
     const modeOptions = {
-      replace: 'replace',
-      add: 'add',
-      overwrite: 'overwrite',
+      replace: "replace",
+      add: "add",
+      overwrite: "overwrite",
     };
     return (
-      <div 
-        style={{ 
-          width: '100%', 
-          overflow: 'auto',
-          display: 'flex',
-          flexDirection: 'column'
+      <div
+        style={{
+          width: "100%",
+          overflow: "auto",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <SelectorField
@@ -64,54 +60,56 @@ class MapUI extends Component {
           value={mode}
           onChange={async (_, { value: mode }) => {
             await service.configure({ mode });
-            this.setState({ mode })
+            this.setState({ mode });
           }}
         />
         <div style={s(t.tl, t.uc, t.ls1, t.fs12)}>Template</div>
-        <div 
-          style={{ 
-            border: 'solid 1px lightgray', 
-            borderRadius: 3, 
-            padding: 5, 
-            marginBottom: 5 
+        <div
+          style={{
+            border: "solid 1px lightgray",
+            borderRadius: 3,
+            padding: 5,
+            marginBottom: 5,
           }}
         >
-          {
-            Object.keys(template)
-              .filter(key => typeof template[key] !== 'object')
-              .map((key, idx) => (
-                <InputLabelValue
-                  key={`${service.uuid}-${key}-${idx}`}
-                  label={key}
-                  labelPosition="left"
-                  value={template[key]}
-                  onCommit={({ label: newKey, value }) => { 
-                    const updatedTemplate = Object.keys(template).reduce(
-                      (all, cur) => (cur !== key) ? 
-                          { ...all, [cur]: template[cur] } : // this is the input that changed
-                          (newKey !== '' ? { ...all, [newKey]: value } : all), // empty key means deleting the item
-                      {}
-                    );
-                    service.configure({ template: updatedTemplate });
-                    this.setState({ template: updatedTemplate });
-                  }}
-                />
-              ))
-          }
+          {Object.keys(template)
+            .filter((key) => typeof template[key] !== "object")
+            .map((key, idx) => (
+              <InputLabelValue
+                key={`${service.uuid}-${key}-${idx}`}
+                label={key}
+                labelPosition="left"
+                value={template[key]}
+                onCommit={({ label: newKey, value }) => {
+                  const updatedTemplate = Object.keys(template).reduce(
+                    (all, cur) =>
+                      cur !== key
+                        ? { ...all, [cur]: template[cur] } // this is the input that changed
+                        : newKey !== ""
+                        ? { ...all, [newKey]: value }
+                        : all, // empty key means deleting the item
+                    {}
+                  );
+                  service.configure({ template: updatedTemplate });
+                  this.setState({ template: updatedTemplate });
+                }}
+              />
+            ))}
           <div>
             <Button
-              style={{ 
+              style={{
                 fontSize: 12,
-                textTransform: 'uppercase',
+                textTransform: "uppercase",
                 letterSpacing: 1,
-                textAlign: 'center',
-                width: '99%',
+                textAlign: "center",
+                width: "99%",
               }}
-              onClick={() => this.setState({ 
+              onClick={() =>
+                this.setState({
                   template: {
                     ...this.state.template,
                     ...newProperty,
-                  }
+                  },
                 })
               }
             >
@@ -120,47 +118,47 @@ class MapUI extends Component {
           </div>
         </div>
       </div>
-    )
-  }
+    );
+  };
 
-  renderCondition = service => {
+  renderCondition = (service) => {
     return (
-      <div style={{ textAlign: 'left' }}>
+      <div style={{ textAlign: "left" }}>
         <Checkbox
           label="Apply Condition"
           checked={this.state.conditionEnabled}
-          onChange={
-            (_, { checked: conditionEnabled }) => {
-              this.setState({ conditionEnabled });
-              service.configure({ condition: conditionEnabled ? this.state.condition : null });
-            }
-          }
+          onChange={(_, { checked: conditionEnabled }) => {
+            this.setState({ conditionEnabled });
+            service.configure({
+              condition: conditionEnabled ? this.state.condition : null,
+            });
+          }}
         />
         <Input
-          style={{ margin: "5px 0px", width: '100%' }}
+          style={{ margin: "5px 0px", width: "100%" }}
           type="text"
           disabled={!this.state.conditionEnabled}
-          value={this.state.condition || ''}
-          onChange={(_, { value }) => { 
-              this.setState({ condition: value })
+          value={this.state.condition || ""}
+          onChange={(_, { value }) => {
+            this.setState({ condition: value });
           }}
-          onKeyPress={
-            e => e.key === 'Enter' && 
+          onKeyPress={(e) =>
+            e.key === "Enter" &&
             service.configure({ condition: this.state.condition })
           }
         />
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
         segments={[
-          { name: 'Mapping', render: this.renderMapping },
+          { name: "Mapping", render: this.renderMapping },
           // { name: 'Condition', render: this.renderCondition }
         ]}
       />
@@ -169,11 +167,11 @@ class MapUI extends Component {
 }
 
 const descriptor = {
-  serviceName: MapDescriptor.serviceName,
-  serviceId:  MapDescriptor.serviceId,
+  serviceName: MapDescriptor.serviceName,
+  serviceId: MapDescriptor.serviceId,
   create: (app, board, descriptor, id) =>
     new MapDescriptor.service(app, board, descriptor, id),
-  createUI: MapUI
+  createUI: MapUI,
 };
 
 export default descriptor;

@@ -1,38 +1,35 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
-const serviceId = 'hookup.to/service/file-source';
-const serviceName = 'File Source';
+const serviceId = "hookup.to/service/file-source";
+const serviceName = "File Source";
 
 class FileSourceUI extends Component {
-  state = {
-  };
+  state = {};
 
-  renderMain = service => {
+  renderMain = (service) => {
     return (
       <div
         style={{
-          margin: '0px 5px',
-          textAlign: 'left'
+          margin: "0px 5px",
+          textAlign: "left",
         }}
       >
-        <input 
+        <input
           type="file"
-          onChange={ev => service.loadFiles(ev.target.files) }
+          onChange={(ev) => service.loadFiles(ev.target.files)}
           multiple
         />
       </div>
     );
-  }
+  };
 
   render() {
     return (
       <ServiceUI
-        {...this.props} 
-        segments={[
-          { name: 'Main', render: this.renderMain }
-        ]}
+        {...this.props}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
     );
   }
@@ -43,22 +40,22 @@ class FileSource {
     this.uuid = id;
     this.board = board;
     this.app = app;
-
   }
 
-  configure(config) {
-  }
+  configure(config) {}
 
   async loadFile(file) {
     return new Promise((resolve, reject) => {
       try {
         const reader = new FileReader();
-        reader.addEventListener('load', (event) => {
+        reader.addEventListener("load", (event) => {
           resolve(event.target.result);
         });
         //reader.readAsArrayBuffer(file);
         reader.readAsText(file);
-      } catch(err) { reject(err); }
+      } catch (err) {
+        reject(err);
+      }
     });
   }
 
@@ -75,12 +72,12 @@ class FileSource {
   }
 }
 
-const descriptor = {  
+const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new FileSource(app, board, descriptor, id),
-  createUI: FileSourceUI
+  createUI: FileSourceUI,
 };
 
 export default descriptor;

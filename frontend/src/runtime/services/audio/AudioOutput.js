@@ -1,74 +1,66 @@
-import React, { Component } from 'react';
-import {
-  Checkbox,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Checkbox } from "semantic-ui-react";
 
-import ServiceUI from '../ServiceUI';
+import ServiceUI from "../ServiceUI";
 
-import { decodeBuffer } from './audioHelper';
-import { toArrayBuffer } from '../helpers';
-import InputField from '../../../components/shared/InputField';
-import { s, t } from '../../../styles';
+import { decodeBuffer } from "./audioHelper";
+import { toArrayBuffer } from "../helpers";
+import InputField from "../../../components/shared/InputField";
+import { s, t } from "../../../styles";
 
-const serviceId = 'hookup.to/service/audio-output';
-const serviceName = 'Audio Output';
+const serviceId = "hookup.to/service/audio-output";
+const serviceName = "Audio Output";
 
 class AudioOutputUI extends Component {
   state = {
     fadeInEnabled: false,
     fadeInTime: 0,
-  }
+  };
 
-  onInit = initialState => {
-    const {
-      fadeInTime=0,
-      fadeInEnabled=fadeInTime !== 0,
-    } = initialState;
+  onInit = (initialState) => {
+    const { fadeInTime = 0, fadeInEnabled = fadeInTime !== 0 } = initialState;
     this.setState({ fadeInTime, fadeInEnabled });
-  }
+  };
 
   onNotification = (service, notification) => {
-    const { fadeInTime } = notification;
+    const { fadeInTime } = notification;
 
     if (fadeInTime !== undefined) {
       this.setState({ fadeInTime });
     }
-  }
+  };
 
-  renderMain = service => {
-    const { 
-      fadeInTime,
-      fadeInEnabled,  
-    } = this.state;
+  renderMain = (service) => {
+    const { fadeInTime, fadeInEnabled } = this.state;
     return (
       <div
         style={{
-          margin: '0px 5px',
-          textAlign: 'left',
-          display: 'flex',
-          flexDirection: 'column'
+          margin: "0px 5px",
+          textAlign: "left",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
-        <canvas 
-          ref={canvas => {
+        <canvas
+          ref={(canvas) => {
             if (canvas) {
               service._canvas = canvas;
-              service._canvasCtx = canvas.getContext('2d');
+              service._canvasCtx = canvas.getContext("2d");
               service.visualize();
             }
           }}
         />
         <div style={{ marginTop: 8, marginBottom: 3 }}>
-          <Checkbox 
+          <Checkbox
             style={s(t.uc, t.fs11, t.ls1)}
             label="Enable Fade-In/Out"
             checked={fadeInEnabled}
-             onChange={async (_, { checked: fadeInEnabled }) => {
-                this.setState({ fadeInEnabled });
-                service.configure({ 
-                  fadeInTime: fadeInEnabled ? (fadeInTime || 1) : 0,
-                });
-             }}
+            onChange={async (_, { checked: fadeInEnabled }) => {
+              this.setState({ fadeInEnabled });
+              service.configure({
+                fadeInTime: fadeInEnabled ? fadeInTime || 1 : 0,
+              });
+            }}
             toggle
           />
         </div>
@@ -82,10 +74,10 @@ class AudioOutputUI extends Component {
             service.configure({ fadeInTime });
           }}
           disabled={!fadeInEnabled}
-        /> 
+        />
       </div>
     );
-  }
+  };
 
   render() {
     return (
@@ -93,9 +85,7 @@ class AudioOutputUI extends Component {
         {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'Main', render: this.renderMain }
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
     );
   }
@@ -107,7 +97,7 @@ class AudioOutput {
     this.board = board;
     this.app = app;
 
-    const AudioContext = window.AudioContext || window.webkitAudioContext; 
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
     this.audioCtx = new AudioContext();
     this.analyser = this.audioCtx.createAnalyser();
     this.analyser.minDecibels = -90;
@@ -118,7 +108,7 @@ class AudioOutput {
   }
 
   configure(config) {
-    const { fadeInTime } = config;
+    const { fadeInTime } = config;
     if (fadeInTime !== undefined) {
       this.fadeInTime = fadeInTime;
       this.app.notify(this, { fadeInTime });
@@ -147,18 +137,23 @@ class AudioOutput {
     const drawAlt = () => {
       this.analyser.getByteFrequencyData(dataArrayAlt);
 
-      this._canvasCtx.fillStyle = 'white';
+      this._canvasCtx.fillStyle = "white";
       this._canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
 
       const barWidth = (WIDTH / bufferLengthAlt) * 2.5;
       let barHeight;
       let x = 0;
 
-      for(let i = 0; i < bufferLengthAlt; i++) {
+      for (let i = 0; i < bufferLengthAlt; i++) {
         barHeight = dataArrayAlt[i];
 
-        this._canvasCtx.fillStyle = `rgb(65, 131, ${barHeight+150})`;
-        this._canvasCtx.fillRect(x, HEIGHT-barHeight/2, barWidth, barHeight/2);
+        this._canvasCtx.fillStyle = `rgb(65, 131, ${barHeight + 150})`;
+        this._canvasCtx.fillRect(
+          x,
+          HEIGHT - barHeight / 2,
+          barWidth,
+          barHeight / 2
+        );
 
         x += barWidth + 1;
       }
@@ -166,20 +161,25 @@ class AudioOutput {
     };
 
     drawAlt();
-  }
+  };
 
   async process(params) {
     if (params) {
       let source;
-      if (params instanceof Blob || params instanceof File) {
+      if (params instanceof Blob || params instanceof File) {
         const ab = await toArrayBuffer(params);
         if (ab.byteLength > 0) {
           try {
             const buffer = await decodeBuffer(this.audioCtx, ab);
             source = this.audioCtx.createBufferSource();
             source.buffer = buffer;
-          } catch(err) {
-            console.error('AudioOutput decodeBuffer() failed', ab, ab.byteLength > 0, ab.byteLength)
+          } catch (err) {
+            console.error(
+              "AudioOutput decodeBuffer() failed",
+              ab,
+              ab.byteLength > 0,
+              ab.byteLength
+            );
           }
         }
       }
@@ -188,7 +188,7 @@ class AudioOutput {
         source = this.audioCtx.createBufferSource();
         source.buffer = params;
       }
-      if (source) {      
+      if (source) {
         if (this.fadeInTime > 0) {
           const fadeInOut = this.fadeInTime / 1000;
           const duration = source.buffer.duration;
@@ -197,10 +197,19 @@ class AudioOutput {
           gainNode.connect(this.analyser);
           // fade in
           gainNode.gain.linearRampToValueAtTime(0, 0);
-          gainNode.gain.linearRampToValueAtTime(1, this.audioCtx.currentTime + fadeInOut);
+          gainNode.gain.linearRampToValueAtTime(
+            1,
+            this.audioCtx.currentTime + fadeInOut
+          );
           // fade out
-          gainNode.gain.linearRampToValueAtTime(1, this.audioCtx.currentTime + duration - fadeInOut);
-          gainNode.gain.linearRampToValueAtTime(0, this.audioCtx.currentTime + duration);
+          gainNode.gain.linearRampToValueAtTime(
+            1,
+            this.audioCtx.currentTime + duration - fadeInOut
+          );
+          gainNode.gain.linearRampToValueAtTime(
+            0,
+            this.audioCtx.currentTime + duration
+          );
         } else {
           // fadein not needd - connect directly to analyser
           source.connect(this.analyser);
@@ -214,12 +223,12 @@ class AudioOutput {
   }
 }
 
-const descriptor = {  
+const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new AudioOutput(app, board, descriptor, id),
-  createUI: AudioOutputUI
+  createUI: AudioOutputUI,
 };
 
 export default descriptor;

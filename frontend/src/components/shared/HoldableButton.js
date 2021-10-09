@@ -1,37 +1,37 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import './HoldableButton.css';
+import "./HoldableButton.css";
 
-const isTouch = 'ontouchstart' in window;
+const isTouch = "ontouchstart" in window;
 
 export default class HoldableButton extends Component {
   state = {
     isDown: false,
   };
 
-  onDown = ev => {
+  onDown = (ev) => {
     const { onDown } = this.props;
     ev.stopPropagation();
-    this.setState({ isDown: true });
+    this.setState({ isDown: true });
     onDown();
-  }
+  };
 
-  onUp = ev => {
+  onUp = (ev) => {
     const { onUp } = this.props;
     if (this.state.isDown) {
       ev.stopPropagation();
       onUp();
       this.setState({ isDown: false });
     }
-  }
+  };
 
-  onRightClick = ev => {
+  onRightClick = (ev) => {
     const { onRightClick = () => {} } = this.props;
     ev.preventDefault();
     ev.stopPropagation();
-    this.setState({ isDown: true });
+    this.setState({ isDown: true });
     onRightClick();
-  }
+  };
 
   render() {
     const { style, children } = this.props;
@@ -45,10 +45,17 @@ export default class HoldableButton extends Component {
         onMouseDown={!isTouch ? this.onDown : undefined}
         onMouseUp={!isTouch ? this.onUp : undefined}
         onMouseLeave={!isTouch ? this.onUp : undefined}
-        onContextMenu={!isTouch ? this.onRightClick : ev => { ev.preventDefault(); ev.stopPropagation(); } }
+        onContextMenu={
+          !isTouch
+            ? this.onRightClick
+            : (ev) => {
+                ev.preventDefault();
+                ev.stopPropagation();
+              }
+        }
       >
-      { children ? children : false }
+        {children ? children : false}
       </button>
-    )
+    );
   }
 }

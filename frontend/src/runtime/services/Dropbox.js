@@ -1,6 +1,6 @@
-import { Dropbox as DBox } from 'dropbox';
+import { Dropbox as DBox } from "dropbox";
 
-const clientId = '1gederbui19m8pk';
+const clientId = "1gederbui19m8pk";
 const redirectURI = `${window.location.origin}/serviceRedirect`;
 
 export default class Dropbox {
@@ -9,26 +9,21 @@ export default class Dropbox {
     this.board = board;
     this.app = app;
 
-    this.mode = 'download';
-    this.uploadBehavior = 'async'; // can also be 'sync'
-    this.uploadFilename = 'unnamed upload';
+    this.mode = "download";
+    this.uploadBehavior = "async"; // can also be 'sync'
+    this.uploadFilename = "unnamed upload";
     this.uploadActive = false;
-    
+
     this.dbx = new DBox({ clientId, fetch });
-    const accessToken = this.app.restoreServiceData(this.uuid, 'accessToken');
+    const accessToken = this.app.restoreServiceData(this.uuid, "accessToken");
     this.configure({ accessToken });
   }
 
   configure(config) {
-    const { 
-      accessToken,
-      mode,
-      uploadBehavior,
-      uploadFilename,
-    } = config;
+    const { accessToken, mode, uploadBehavior, uploadFilename } = config;
 
     if (accessToken !== undefined) {
-      this.app.storeServiceData(this.uuid, 'accessToken', accessToken);
+      this.app.storeServiceData(this.uuid, "accessToken", accessToken);
       this.dbx.setAccessToken(accessToken);
     }
 
@@ -46,7 +41,7 @@ export default class Dropbox {
   }
 
   async logout() {
-    this.app.removeServiceData(this.uuid, 'accessToken');
+    this.app.removeServiceData(this.uuid, "accessToken");
     if (this.dbx) {
       await this.dbx.authTokenRevoke();
       this.dbx = undefined;
@@ -72,7 +67,7 @@ export default class Dropbox {
   }
 
   async retrieveFiles() {
-    const response = await this.dbx.filesListFolder({ path: '' });
+    const response = await this.dbx.filesListFolder({ path: "" });
     return response.entries;
   }
 
@@ -80,12 +75,12 @@ export default class Dropbox {
     if (err.status === 401) {
       return this.onTokenExpired();
     }
-    console.error('Dropbox Error:', err.status, err, this.uuid)
+    console.error("Dropbox Error:", err.status, err, this.uuid);
   }
 
   onTokenExpired() {
-    this.dbx.setAccessToken('');
-    this.app.removeServiceData(this.uuid, 'accessToken');
+    this.dbx.setAccessToken("");
+    this.app.removeServiceData(this.uuid, "accessToken");
   }
 
   async trigger(params) {
@@ -97,7 +92,7 @@ export default class Dropbox {
     let file = params && params.file;
     if (!file) {
       const files = await this.retrieveFiles();
-      file = files.find(f => f.path_lower === params);
+      file = files.find((f) => f.path_lower === params);
     }
     if (file) {
       return this.downloadFileByPath(file);
@@ -119,31 +114,28 @@ export default class Dropbox {
   }
 
   async processSyncUpload(filename, params) {
-    const { body } = this.paramsToBody(params);
+    const { body } = this.paramsToBody(params);
 
-    const args = { 
+    const args = {
       commit_info: {
         path: `/${filename}`,
-        autorename: true, 
-        mode: { '.tag': 'add' }
-      }
+        autorename: true,
+        mode: { ".tag": "add" },
+      },
     };
     const uploadLink = await this.dbx.filesGetTemporaryUploadLink(args);
-    return fetch(
-      uploadLink.link,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/octet-stream',
-        },
-        body
-      }
-    );
+    return fetch(uploadLink.link, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+      },
+      body,
+    });
   }
 
   finishUpload() {
     if (!this.uploadSession) {
-      console.log('There is no upload session active');
+      console.log("There is no upload session active");
       return;
     }
     this.dbx.filesUploadSessionFinish({
@@ -153,7 +145,7 @@ export default class Dropbox {
       },
       commit: {
         path: `/${this.uploadFilename}`,
-        mode: { '.tag': 'add' },
+        mode: { ".tag": "add" },
         autorename: true,
       },
     });
@@ -165,9 +157,9 @@ export default class Dropbox {
     const { body, length } = this.paramsToBody(params);
     if (!this.uploadSession) {
       this.uploadSession = await this.dbx.filesUploadSessionStart({
-				contents: body,
-				close: false,
-			});
+        contents: body,
+        close: false,
+      });
       this.uploadSessionOffset = length;
     } else {
       this.dbx.filesUploadSessionAppend({
@@ -184,18 +176,18 @@ export default class Dropbox {
       return params;
     }
 
-    if (this.mode === 'download') {
+    if (this.mode === "download") {
       return await this.downloadFileByName(params);
     }
-    
-    if (this.mode === 'upload' && this.uploadActive) {
-      if (this.uploadBehavior === 'async') {
+
+    if (this.mode === "upload" && this.uploadActive) {
+      if (this.uploadBehavior === "async") {
         await this.processAsyncUpload(this.uploadFilename, params);
       } else {
         await this.processSyncUpload(this.uploadFilename, params);
       }
     }
-  
+
     return params;
   }
 }

@@ -1,6 +1,6 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import { s, t } from '../styles';
+import { s, t } from "../styles";
 
 /*
 class Triangle extends Component {
@@ -30,26 +30,21 @@ class Triangle extends Component {
 
 export default class Resizable extends Component {
   render() {
-    const { 
-      children, 
-      style={}, 
-      hideHandle=false,
-    } = this.props;
+    const { children, style = {}, hideHandle = false } = this.props;
     const resizeableStyle = hideHandle ? {} : t.resizable;
     return (
       <div
-        style={
-          s({ 
-              minWidth: 200,
-              minHeight: 100,
-              overflow: 'auto', 
-              ...style 
-            },
-            resizeableStyle,
-          )
-        }
+        style={s(
+          {
+            minWidth: 200,
+            minHeight: 100,
+            overflow: "auto",
+            ...style,
+          },
+          resizeableStyle
+        )}
       >
-        { children }
+        {children}
       </div>
     );
   }

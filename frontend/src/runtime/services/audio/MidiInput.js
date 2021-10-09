@@ -1,12 +1,10 @@
-import React, { Component } from 'react';
-import {
-  Button,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button } from "semantic-ui-react";
 
-import ServiceUI from '../ServiceUI';
+import ServiceUI from "../ServiceUI";
 
-const serviceId = 'hookup.to/service/midi-input';
-const serviceName = 'Midi Input';
+const serviceId = "hookup.to/service/midi-input";
+const serviceName = "Midi Input";
 
 class MidiInputUI extends Component {
   state = {
@@ -21,32 +19,33 @@ class MidiInputUI extends Component {
     }
 
     if (activeDevice !== undefined) {
-      this.setState({ activeDevice })
+      this.setState({ activeDevice });
     }
-  }
+  };
 
   renderDevices = (service, devices) => (
     <div>
       <ol>
-      { 
-        devices.map((device, idx) => {
-          const isActiveDevice = this.state.activeDevice && this.state.activeDevice.name === device.name;
+        {devices.map((device, idx) => {
+          const isActiveDevice =
+            this.state.activeDevice &&
+            this.state.activeDevice.name === device.name;
           return (
-            <li 
+            <li
               key={`midi-input-${idx}`}
-              style={{ 
-                textAlign: 'left',
-                color: isActiveDevice && '#4183c4',
+              style={{
+                textAlign: "left",
+                color: isActiveDevice && "#4183c4",
               }}
             >
-              { device.name }
+              {device.name}
               <Button
-                style={{ 
-                  width: 60, 
-                  height: 20, 
-                  padding: 0, 
-                  margin: '1px 10px', 
-                  textTransform: 'uppercase', 
+                style={{
+                  width: 60,
+                  height: 20,
+                  padding: 0,
+                  margin: "1px 10px",
+                  textTransform: "uppercase",
                   fontSize: 11,
                 }}
                 onClick={async () => {
@@ -58,31 +57,24 @@ class MidiInputUI extends Component {
               </Button>
             </li>
           );
-        })
-      }
+        })}
       </ol>
     </div>
   );
 
-  renderMain = service => {
+  renderMain = (service) => {
     const { inputs } = this.state;
-    return (
-      <div>
-        { this.renderDevices(service, inputs) }
-      </div>
-    );
-  }
+    return <div>{this.renderDevices(service, inputs)}</div>;
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onNotification={this.onNotification.bind(this)}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
-    )
+    );
   }
 }
 
@@ -90,7 +82,7 @@ class MidiInput {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
-    this.app = app; 
+    this.app = app;
 
     this.activeDevice = undefined;
     this.devices = [];
@@ -108,7 +100,7 @@ class MidiInput {
     }
   }
 
-  async configure(config) { 
+  async configure(config) {
     if (!this.midi) {
       await this.init(); // make sure we're initialized
     }
@@ -136,32 +128,36 @@ class MidiInput {
       command: message.data[0] >> 4,
       channel: message.data[0] & 0xf,
       note: message.data[1],
-      velocity: message.data[2] / 127
+      velocity: message.data[2] / 127,
     };
     this.dispatchMidiMessage(msg);
   }
 
   dispatchMidiMessage(msg) {
-    const {command, channel, note, velocity} = msg
+    const { command, channel, note, velocity } = msg;
 
     const octave = note && Math.floor(note / 12) - 1;
-    const noteName = note && ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][note % 12];
+    const noteName =
+      note &&
+      ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"][
+        note % 12
+      ];
     const event = { command, velocity, channel, note, octave, noteName };
     switch (command) {
-      case 8: 
-        event.action = 'noteoff';
-      break;
+      case 8:
+        event.action = "noteoff";
+        break;
       case 9:
-        event.action = 'noteon';
-      break;
+        event.action = "noteon";
+        break;
       case 11:
-        event.action = 'poti';
-      break;
+        event.action = "poti";
+        break;
       case 14:
-        event.action = 'pitchbend';
-      break;
+        event.action = "pitchbend";
+        break;
       default:
-      break;
+        break;
     }
     this.app.next(this, event);
   }
@@ -172,7 +168,7 @@ class MidiInput {
         const idx = `${this.armedPad}`;
         this.padAssignments[idx] = params;
         this.armedPad = ++this.armedPad % 16;
-        this.app.notify(this, { assignments: this.padAssignments })
+        this.app.notify(this, { assignments: this.padAssignments });
       }
     }
     return params;

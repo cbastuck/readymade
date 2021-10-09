@@ -1,40 +1,44 @@
-import qs from 'querystring';
+import qs from "querystring";
 
-import {
-  logout,
-  restoreToken
-} from './Auth';
-import { serializeObject } from './format';
+import { logout, restoreToken } from "./Auth";
+import { serializeObject } from "./format";
 
 export function generateQueryParams() {
-  const { search='' } = window.location;
+  const { search = "" } = window.location;
   const parsed = qs.parse(search.substr(1));
   if (!parsed) {
     return;
   }
-  
-  return `?${Object.keys(parsed).map(k => `${k}=${parsed[k]}`).join('&')}`;
+
+  return `?${Object.keys(parsed)
+    .map((k) => `${k}=${parsed[k]}`)
+    .join("&")}`;
 }
 
-export async function request(path, method='GET', parseJSON=true, body=undefined, additionalHeaders={}) {
-  const { 
-    body: serialisedBody, 
-    contentType
-  } = await serializeObject(body);
+export async function request(
+  path,
+  method = "GET",
+  parseJSON = true,
+  body = undefined,
+  additionalHeaders = {}
+) {
+  const { body: serialisedBody, contentType } = await serializeObject(body);
 
   const headers = { ...additionalHeaders };
   const token = restoreToken();
   if (token) {
-    headers['Authorization'] = token;
+    headers["Authorization"] = token;
   }
 
   // multipart form content type contains the boundary which is generated automatically
-  if (contentType && contentType !== 'multipart/form-data') {
-    headers['Content-Type'] = contentType;
+  if (contentType && contentType !== "multipart/form-data") {
+    headers["Content-Type"] = contentType;
   }
 
-  const queryParams = (method === 'GET') && generateQueryParams();
-  const url = path.absolute ? `${path.absolute}${queryParams ? queryParams : ''}` : `/api/${path}${queryParams ? queryParams : ''}`;
+  const queryParams = method === "GET" && generateQueryParams();
+  const url = path.absolute
+    ? `${path.absolute}${queryParams ? queryParams : ""}`
+    : `/api/${path}${queryParams ? queryParams : ""}`;
   const response = await fetch(url, {
     method,
     headers,
@@ -52,87 +56,110 @@ export async function request(path, method='GET', parseJSON=true, body=undefined
 }
 
 export function getBoard(board) {
-  return request(`board/${board}`)
-    .then(res => (res && res.status === 404) ? [] : res);
+  return request(`board/${board}`).then((res) =>
+    res && res.status === 404 ? [] : res
+  );
 }
 
 export function getRuntimes(board) {
-  return request(`board/${board}/runtimes`)
-    .then(res => {
-      if (!res || (res.ok !== undefined && res.ok === false)) {
-        return [];
-      } 
-      return res;
-    })
+  return request(`board/${board}/runtimes`).then((res) => {
+    if (!res || (res.ok !== undefined && res.ok === false)) {
+      return [];
+    }
+    return res;
+  });
 }
 
 export function addRuntime(board, descriptor) {
-  return request(`board/${board}/runtimes`, 'POST', true, descriptor);
+  return request(`board/${board}/runtimes`, "POST", true, descriptor);
 }
 
 export function removeRuntime(board, runtime) {
-  return request(`board/${board}/runtime/${runtime.id}`, 'DELETE', false);
+  return request(`board/${board}/runtime/${runtime.id}`, "DELETE", false);
 }
 
 export function getServices(board, runtime) {
-  return request(`board/${board}/runtime/${runtime}/services`)
-    .then(res => (res && res.status === 404) ? [] : res);
+  return request(`board/${board}/runtime/${runtime}/services`).then((res) =>
+    res && res.status === 404 ? [] : res
+  );
 }
 
 export function addService(board, descriptor, runtimeId) {
   if (!runtimeId) {
     runtimeId = descriptor.runtime;
   }
-  return request(`board/${board}/runtime/${runtimeId}/services`, 'PUT', false, descriptor);
+  return request(
+    `board/${board}/runtime/${runtimeId}/services`,
+    "PUT",
+    false,
+    descriptor
+  );
 }
 
 export function removeService(board, runtimeId, serviceId) {
-  return request(`board/${board}/runtime/${runtimeId}/services/${serviceId}`, 'DELETE', false);
+  return request(
+    `board/${board}/runtime/${runtimeId}/services/${serviceId}`,
+    "DELETE",
+    false
+  );
 }
 
 export function clearBoard(board) {
-  return request(`board/${board}`, 'DELETE', false);
+  return request(`board/${board}`, "DELETE", false);
 }
 
 export function getRuntimeRegistry(board, runtimeName) {
   return request(`board/${board}/runtime/${runtimeName}/registry`);
 }
 
-export async function getServiceConfiguration(boardname, service, runtime=null) {
+export async function getServiceConfiguration(
+  boardname,
+  service,
+  runtime = null
+) {
   const rt = runtime !== null ? runtime.id : service.__descriptor.runtime;
-  return await request(`board/${boardname}/runtime/${rt}/service/${service.uuid}/config`);
+  return await request(
+    `board/${boardname}/runtime/${rt}/service/${service.uuid}/config`
+  );
 }
 
 export function configureService(board, service, config) {
-  return request(`board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config`, 'POST', false, config);
+  return request(
+    `board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config`,
+    "POST",
+    false,
+    config
+  );
 }
 
 export function loadBoard(board, state) {
-  return request(`board/${board}`, 'PUT', false, state);
+  return request(`board/${board}`, "PUT", false, state);
 }
 
 export function saveBoard(board) {
-  return request(`board/${board}`, 'GET', true);
+  return request(`board/${board}`, "GET", true);
 }
 
 export function importBoard(board, data) {
-  return request(`board/${board}/import`, 'POST', true, data);
+  return request(`board/${board}/import`, "POST", true, data);
 }
 
 export function shareBoard(board, data) {
-  return request(`share/${board}`, 'POST', true, data);
+  return request(`share/${board}`, "POST", true, data);
 }
 
 export function getShares(board) {
-  return request(`share/${board}`, 'GET', true);
+  return request(`share/${board}`, "GET", true);
 }
 
 export function removeShare(board, share) {
-  return request(`share/${board}`, 'DELETE', false, share);
+  return request(`share/${board}`, "DELETE", false, share);
 }
 
 export function joinBoard(shareId, connectedBoardname) {
-  return request(`join/${shareId}`, 'POST', false, { targetBoard: connectedBoardname });
+  return request(`join/${shareId}`, "POST", false, {
+    targetBoard: connectedBoardname,
+  });
 }
 
 export function redirectUri() {
@@ -141,13 +168,13 @@ export function redirectUri() {
 
 export function redirectTo(target, openAsPopup) {
   if (openAsPopup) {
-    window.open(target, 'login-popup', 'width=450,height=430')
+    window.open(target, "login-popup", "width=450,height=430");
   } else {
     window.location.href = target;
-  }  
+  }
   return false;
 }
 
 export function openTab(url) {
-  window.open(url, 'blank');
+  window.open(url, "blank");
 }

@@ -1,20 +1,17 @@
-import React, { Component } from 'react';
-import { 
-  Input,
-  Checkbox,
-} from 'semantic-ui-react';
-import jstat from 'jstat';
+import React, { Component } from "react";
+import { Input, Checkbox } from "semantic-ui-react";
+import jstat from "jstat";
 
-import ServiceUI from './ServiceUI';
-import Annotations from '../../components/shared/Annotations';
+import ServiceUI from "./ServiceUI";
+import Annotations from "../../components/shared/Annotations";
 
-const serviceId = 'hookup.to/service/sampling';
-const serviceName = 'Sampling';
+const serviceId = "hookup.to/service/sampling";
+const serviceName = "Sampling";
 
 function isJSON(x) {
   try {
     return JSON.parse(x);
-  } catch(err) {
+  } catch (err) {
     return undefined;
   }
 }
@@ -40,86 +37,92 @@ class SamplingUI extends Component {
       newState.root = root;
     }
 
-    this.setState({ 
-      ...newState, 
-      wrapSample: !!newState.root 
+    this.setState({
+      ...newState,
+      wrapSample: !!newState.root,
     });
   }
 
-  renderModel = service => {
+  renderModel = (service) => {
     const vspace = { marginBottom: 5 };
     return (
       <div>
         <Input
-          style={{ ...vspace, width: '100%' }}
+          style={{ ...vspace, width: "100%" }}
           type="text"
-          value={this.state.mean || ''}
+          value={this.state.mean || ""}
           label="Mean"
           labelPosition="left"
           onChange={(_, { value: mean }) => this.setState({ mean })}
-          onKeyPress={e => e.key === 'Enter' && (service.mean = isJSON(this.state.mean))}
+          onKeyPress={(e) =>
+            e.key === "Enter" && (service.mean = isJSON(this.state.mean))
+          }
         />
         <Input
-          style={{ ...vspace, width: '100%' }}
+          style={{ ...vspace, width: "100%" }}
           type="text"
-          value={this.state.std || ''}
+          value={this.state.std || ""}
           label="Std"
           labelPosition="left"
           onChange={(_, { value: std }) => this.setState({ std })}
-          onKeyPress={e => e.key === 'Enter' && (service.std = isJSON(this.state.std))}
+          onKeyPress={(e) =>
+            e.key === "Enter" && (service.std = isJSON(this.state.std))
+          }
         />
       </div>
-    )
-  }
+    );
+  };
 
-  renderWrapping = service => {
+  renderWrapping = (service) => {
     const vspace = { marginBottom: 5 };
     return (
-      <div style={{ margin: '10px 0px', textAlign: 'left' }}>
+      <div style={{ margin: "10px 0px", textAlign: "left" }}>
         <Checkbox
           label="Wrap sample in Object"
           checked={this.state.wrapSample}
           onChange={(_, { checked }) => {
             const root = !checked ? undefined : this.state.root;
             service.root = root;
-            this.setState({ wrapSample: checked, root })
+            this.setState({ wrapSample: checked, root });
           }}
         />
         <Input
-          style={{ ...vspace, width: '100%' }}
+          style={{ ...vspace, width: "100%" }}
           type="text"
-          value={this.state.root || ''}
+          value={this.state.root || ""}
           label="Root"
           labelPosition="left"
           onChange={(_, { value: root }) => this.setState({ root })}
-          onKeyPress={e => e.key === 'Enter' && (service.root = this.state.root)}
+          onKeyPress={(e) =>
+            e.key === "Enter" && (service.root = this.state.root)
+          }
         />
       </div>
     );
-  }
+  };
 
-  renderAnnotations = service => {
+  renderAnnotations = (service) => {
     return (
       <Annotations
         service={service}
         initial={this.state.annotations}
-        onCommit={annotations => {
+        onCommit={(annotations) => {
           this.setState({ annotations });
           service.annotations = annotations;
         }}
       />
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit.bind(this)}
         segments={[
-          { name: 'model', render: this.renderModel },
-          { name: 'wrapping', render: this.renderWrapping },
-          { name: 'annotate', render: this.renderAnnotations },
+          { name: "model", render: this.renderModel },
+          { name: "wrapping", render: this.renderWrapping },
+          { name: "annotate", render: this.renderAnnotations },
         ]}
       />
     );
@@ -162,7 +165,7 @@ class Sampling {
   }
 
   process(params) {
-    if (!this.mean || !this.std ) {
+    if (!this.mean || !this.std) {
       return params;
     }
 
@@ -171,15 +174,17 @@ class Sampling {
       return params;
     }
 
-    const sample = new Array(n).fill(0).map(
-      (_, idx) => this.sample(this.mean[idx], this.std[idx])
-    );
+    const sample = new Array(n)
+      .fill(0)
+      .map((_, idx) => this.sample(this.mean[idx], this.std[idx]));
 
     // wrap sample in object in case root or annotations are specified
-    const result = this.annotations ? 
-      { ...this.annotations, [this.root || 'sample']: sample } : 
-      (this.root ? { [this.root]: sample } : sample);
-    
+    const result = this.annotations
+      ? { ...this.annotations, [this.root || "sample"]: sample }
+      : this.root
+      ? { [this.root]: sample }
+      : sample;
+
     if (!params) {
       return result;
     }
@@ -197,7 +202,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new Sampling(app, board, descriptor, id),
-  createUI: SamplingUI
+  createUI: SamplingUI,
 };
 
 export default descriptor;

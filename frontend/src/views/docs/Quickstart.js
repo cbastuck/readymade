@@ -1,29 +1,28 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import { Link } from 'react-router-dom';
-import { Item } from 'semantic-ui-react'
+import { Link } from "react-router-dom";
+import { Item } from "semantic-ui-react";
 
-import Sketch from './Sketch';
-import Template from './Template';
-import { s, t } from '../../styles';
+import Sketch from "./Sketch";
+import Template from "./Template";
+import { s, t } from "../../styles";
 
 export default class Quickstart extends Component {
-
-  renderGroupItem = item => {
+  renderGroupItem = (item) => {
     const itemStyle = {
-      width: '100%',
+      width: "100%",
       marginBottom: 10,
       padding: 20,
-      borderBottom: item.bottomDivider ? 'solid 1px lightgray' : 'none',
+      borderBottom: item.bottomDivider ? "solid 1px lightgray" : "none",
     };
     return (
       <Item style={itemStyle}>
         {
-          <Item.Header 
-            style={{ 
+          <Item.Header
+            style={{
               fontSize: 14,
               letterSpacing: 4,
-              textTransform: 'uppercase',
+              textTransform: "uppercase",
               paddingTop: 9,
               marginLeft: 10,
               minWidth: 150,
@@ -32,185 +31,192 @@ export default class Quickstart extends Component {
             <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
           </Item.Header>
         }
-        <Item.Content style={{marginLeft: 10 }}>
+        <Item.Content style={{ marginLeft: 10 }}>
           <Item.Description>
-            {
-              item.details.map((detail, idx) => 
-                <div 
-                  key={`detail-${item.title}-${idx}`}
-                  style={{
-                    fontSize: 11,
-                    letterSpacing: 1,
-                    textTransform: 'uppercase',
-                    cursor: 'default',
-                  }}
-                > 
-                  {detail} 
-                </div>
-              )
-            }
+            {item.details.map((detail, idx) => (
+              <div
+                key={`detail-${item.title}-${idx}`}
+                style={{
+                  fontSize: 11,
+                  letterSpacing: 1,
+                  textTransform: "uppercase",
+                  cursor: "default",
+                }}
+              >
+                {detail}
+              </div>
+            ))}
           </Item.Description>
         </Item.Content>
       </Item>
     );
-  }
+  };
 
-  renderClaim = claim => {
+  renderClaim = (claim) => {
     return (
       <div
         style={{
           fontSize: 14,
-          textAlign: 'left',
-          margin: '5px 30px',
-          color: claim.c ? 'black' : '#454f6d',
+          textAlign: "left",
+          margin: "5px 30px",
+          color: claim.c ? "black" : "#454f6d",
           letterSpacing: 1,
-          textTransform: 'uppercase',
+          textTransform: "uppercase",
         }}
-      > 
-          {claim.s}{ claim.c ? ': ' : '' } 
+      >
+        {claim.s}
+        {claim.c ? ": " : ""}
         <span
           style={{
-            fontStyle: 'italic',
-            color: '#454f6d'
+            fontStyle: "italic",
+            color: "#454f6d",
           }}
         >
-        { 
-          claim.link ? 
-            (
-               <a 
-                href={claim.link} 
-                target="blank"
-              > 
-                {claim.c}
-              </a>
-            ) : (
-              <span
-                style={{ color: '#4183c4', fontStyle: 'initial' }}
-              >
-                { claim.c }
-              </span>
-            )
-        }
+          {claim.link ? (
+            <a href={claim.link} target="blank">
+              {claim.c}
+            </a>
+          ) : (
+            <span style={{ color: "#4183c4", fontStyle: "initial" }}>
+              {claim.c}
+            </span>
+          )}
         </span>
       </div>
     );
-  }
+  };
 
   renderQuickstart = () => {
-    const sectionStyle = { 
-      fontSize: 15, 
-      textAlign: 'left',
-      textTransform: 'uppercase',
+    const sectionStyle = {
+      fontSize: 15,
+      textAlign: "left",
+      textTransform: "uppercase",
       letterSpacing: 2,
     };
-    
+
     return (
       <div>
-        <h2 style={{ ...sectionStyle, margin: '30px 0px' }}>Etiquette</h2>
+        <h2 style={{ ...sectionStyle, margin: "30px 0px" }}>Etiquette</h2>
         <div style={{ marginBottom: 35 }}>
-          { this.renderClaim({ s: 'Please', c: 'Make stupid things!' }) }
-          { this.renderClaim({ s: 'In particular', c: '“Dance to all the wrong songs”', link: 'https://www.youtube.com/watch?v=NkAe30aEG5c', cite: 'D. Sandstrom, D. Lyxzen, K. Steen, J. Brannstrom' }) }
-          { this.renderClaim({ s: 'Because', c: '"Da fehlen Rebellen, da fehlen Dilettanten”', link: 'https://www.youtube.com/watch?v=58ShJinuHTg', cite: 'Kapelle Petra' }) }
-          { this.renderClaim({ s: 'Acknowledge', c: '“Wir können alles. Und Alles können wir sein”', link: 'https://www.youtube.com/watch?v=GLAHeIEzaC8', cite: 'R. Sczimarkowsi, J. Windmeier, C. Knopp, M. Ebsen, C. Peter' }) }
-          { this.renderClaim({ s: 'Understand', c: '“Nur weil es dumm aussieht, muss es das nicht sein”', link: 'https://www.youtube.com/watch?v=IIw1nP4KEHs', cite: ' K. Hamann, N. Kolodziej ' }) }
-          { this.renderClaim({ s: 'With respect', c: '"To want more than is given to you”', link: 'https://www.youtube.com/watch?v=xk2CvKcJnC4', cite: 'G. Moakes, K. Okereke,  M. Tong, R. Lissackj' }) }
-          { this.renderClaim({ s: 'Knowing', c: '"I can\'t do this all on my own”', link: 'https://www.youtube.com/watch?v=SBl2l3GIFD4', cite: 'Lazlo Bane' }) }
-        </div>  
-        <h1 style={s(t.tc, t.uc, t.ls1, t.fs12, t.it, { color: '#4183c4' })}>
-            <span style={t.fs16}>Do. </span> 
-            <span style={t.fs20}>Be curious!</span> 
-            <a href="https://cbastuck.de" target="blank">
-              <span style={t.fs9}> talk.</span>
-            </a>
+          {this.renderClaim({ s: "Please", c: "Make stupid things!" })}
+          {this.renderClaim({
+            s: "In particular",
+            c: "“Dance to all the wrong songs”",
+            link: "https://www.youtube.com/watch?v=NkAe30aEG5c",
+            cite: "D. Sandstrom, D. Lyxzen, K. Steen, J. Brannstrom",
+          })}
+          {this.renderClaim({
+            s: "Because",
+            c: '"Da fehlen Rebellen, da fehlen Dilettanten”',
+            link: "https://www.youtube.com/watch?v=58ShJinuHTg",
+            cite: "Kapelle Petra",
+          })}
+          {this.renderClaim({
+            s: "Acknowledge",
+            c: "“Wir können alles. Und Alles können wir sein”",
+            link: "https://www.youtube.com/watch?v=GLAHeIEzaC8",
+            cite: "R. Sczimarkowsi, J. Windmeier, C. Knopp, M. Ebsen, C. Peter",
+          })}
+          {this.renderClaim({
+            s: "Understand",
+            c: "“Nur weil es dumm aussieht, muss es das nicht sein”",
+            link: "https://www.youtube.com/watch?v=IIw1nP4KEHs",
+            cite: " K. Hamann, N. Kolodziej ",
+          })}
+          {this.renderClaim({
+            s: "With respect",
+            c: '"To want more than is given to you”',
+            link: "https://www.youtube.com/watch?v=xk2CvKcJnC4",
+            cite: "G. Moakes, K. Okereke,  M. Tong, R. Lissackj",
+          })}
+          {this.renderClaim({
+            s: "Knowing",
+            c: "\"I can't do this all on my own”",
+            link: "https://www.youtube.com/watch?v=SBl2l3GIFD4",
+            cite: "Lazlo Bane",
+          })}
+        </div>
+        <h1 style={s(t.tc, t.uc, t.ls1, t.fs12, t.it, { color: "#4183c4" })}>
+          <span style={t.fs16}>Do. </span>
+          <span style={t.fs20}>Be curious!</span>
+          <a href="https://cbastuck.de" target="blank">
+            <span style={t.fs9}> talk.</span>
+          </a>
         </h1>
-        
-        <h2 style={{ ...sectionStyle, marginTop: 30, marginBottom: 20 }}>Stuff to know about</h2>
-        <div style={s(t.uc, t.fs12, t.ls2, { textAlign: 'left' })}>
+
+        <h2 style={{ ...sectionStyle, marginTop: 30, marginBottom: 20 }}>
+          Stuff to know about
+        </h2>
+        <div style={s(t.uc, t.fs12, t.ls2, { textAlign: "left" })}>
           <div style={{ marginBottom: 10 }}>
-            There are three "things" you need to know. 
-            These are the basic building blocks that enable experimentation: 
-            <span style={s(t.bold, t.m(5, 0))}>
-              Board, Runtime and Service
-            </span>
+            There are three "things" you need to know. These are the basic
+            building blocks that enable experimentation:
+            <span style={s(t.bold, t.m(5, 0))}>Board, Runtime and Service</span>
           </div>
           <div>
-            Think of a Board as a sheet of paper. Then, a Runtime is a single line on that paper and the Services are the words on a line. 
+            Think of a Board as a sheet of paper. Then, a Runtime is a single
+            line on that paper and the Services are the words on a line.
             Together they tell a story or they create behavior.
           </div>
-          <div style={{ padding: '8px 0px' }}>
+          <div style={{ padding: "8px 0px" }}>
             <Sketch />
           </div>
-          <Item.Group 
-            link
-            style={{ marginTop: 0, marginBottom: 0 }}
-          >
-          { 
-              this.renderGroupItem({
-                title: 'Board',
-                details: [
-                  'A Board is the topmost building block. Everything happens on a board',
-                  'A Board is identified by a name',
-                  'A Board owns and manages an arbitrary number of runtimes',
-                  'A Board can run inside of the browser independently of a backend (Playground for example)',
-                  'A Board can also be managed by a remote backend which persists its state and requires the notion of a user',                  
-                  'A Board defines the topology of the runtimes: how they are organized and their order',
-                  'A Board is responsible for passing the output of a runtime to the next runtime',
-                ],
-                image: undefined,
-                bottomDivider: true
-              })
-            }
-            { 
-              this.renderGroupItem({
-                title: 'Runtime',
-                details: [
-                  'A Runtime belongs to exactly one board',
-                  'A Runtime\'s lifetime ends with the lifetime of its parent board',
-                  'A Runtime can run inside of the browser or on a remote machine',
-                  'Runtimes running in the browser can be mixed with remote runtimes on the same board',
-                  'A Runtime owns and manages an arbitrary number of services',
-                  'A Runtime accepts data on its input and passes it to its services',
-                  'A Runtime calls services in order from left to right propagating the incoming data',
-                  'A Runtime provides the result of the last service as its output',
-                ],
-                image: undefined, 
-                bottomDivider: true,
-              }) 
-            }
-            { 
-              this.renderGroupItem({
-                title: 'Service',
-                details: [
-                  'Services are (high level) abstractions of (complex) logic',
-                  'Services are supposed to feel simple and intuitive',
-                  'Services have an input and an output',
-                  'Services need a configuration that can be modified or retrieved at any time',
-                  'A Service configuration defines the mode of the service',
-                  'Services behave differently depending on their configuration',
-                  'A Service can generate data spontaneously and trigger a chain reaction',
-                  'A Service can also decide to stop further propagation',
-                ],
-                image: undefined,
-              }) 
-            }
+          <Item.Group link style={{ marginTop: 0, marginBottom: 0 }}>
+            {this.renderGroupItem({
+              title: "Board",
+              details: [
+                "A Board is the topmost building block. Everything happens on a board",
+                "A Board is identified by a name",
+                "A Board owns and manages an arbitrary number of runtimes",
+                "A Board can run inside of the browser independently of a backend (Playground for example)",
+                "A Board can also be managed by a remote backend which persists its state and requires the notion of a user",
+                "A Board defines the topology of the runtimes: how they are organized and their order",
+                "A Board is responsible for passing the output of a runtime to the next runtime",
+              ],
+              image: undefined,
+              bottomDivider: true,
+            })}
+            {this.renderGroupItem({
+              title: "Runtime",
+              details: [
+                "A Runtime belongs to exactly one board",
+                "A Runtime's lifetime ends with the lifetime of its parent board",
+                "A Runtime can run inside of the browser or on a remote machine",
+                "Runtimes running in the browser can be mixed with remote runtimes on the same board",
+                "A Runtime owns and manages an arbitrary number of services",
+                "A Runtime accepts data on its input and passes it to its services",
+                "A Runtime calls services in order from left to right propagating the incoming data",
+                "A Runtime provides the result of the last service as its output",
+              ],
+              image: undefined,
+              bottomDivider: true,
+            })}
+            {this.renderGroupItem({
+              title: "Service",
+              details: [
+                "Services are (high level) abstractions of (complex) logic",
+                "Services are supposed to feel simple and intuitive",
+                "Services have an input and an output",
+                "Services need a configuration that can be modified or retrieved at any time",
+                "A Service configuration defines the mode of the service",
+                "Services behave differently depending on their configuration",
+                "A Service can generate data spontaneously and trigger a chain reaction",
+                "A Service can also decide to stop further propagation",
+              ],
+              image: undefined,
+            })}
           </Item.Group>
         </div>
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <Template
-        title="Quickstarter"
-        isRoot={ true }
-      >
-        { this.renderQuickstart() } 
+      <Template title="Quickstarter" isRoot={true}>
+        {this.renderQuickstart()}
         <div style={s(t.tc)}>
-          <Link 
-            to="/playground"
-            style={s(t.uc, t.fs16, t.ls3, t.bo, t.nw)}
-          >
+          <Link to="/playground" style={s(t.uc, t.fs16, t.ls3, t.bo, t.nw)}>
             Visit Playground
           </Link>
         </div>

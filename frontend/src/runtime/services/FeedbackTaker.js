@@ -1,32 +1,28 @@
-import React, { Component } from 'react';
-import {
-  Checkbox,
-  Input,
-  Label,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Checkbox, Input, Label } from "semantic-ui-react";
 
-import ServiceUI from './ServiceUI';
-import {FeedbackProvider } from './FeedbackProvider';
+import ServiceUI from "./ServiceUI";
+import { FeedbackProvider } from "./FeedbackProvider";
 
-const serviceId = 'hookup.to/service/feedback-taker';
-const serviceName = 'Feedback Taker';
+const serviceId = "hookup.to/service/feedback-taker";
+const serviceName = "Feedback Taker";
 
 class FeedbackTakerUI extends Component {
   state = {
     feedbackUnconditional: false,
-    feedbackCondition: '',
-    channel: '',
+    feedbackCondition: "",
+    channel: "",
   };
 
-  onInit = initialState => {
+  onInit = (initialState) => {
     this.setState({
       feedbackCondition: initialState.feedbackCondition,
       feedbackUnconditional: initialState.feedbackUnconditional,
-      channel: initialState.channel || '',
+      channel: initialState.channel || "",
     });
-  }
+  };
 
-  renderRouting = service => {
+  renderRouting = (service) => {
     return (
       <Input
         style={{
@@ -38,49 +34,46 @@ class FeedbackTakerUI extends Component {
         disabled
       />
     );
-  }
+  };
 
-  renderCondition = service => (
-    <div style={{ textAlign: 'left' }}>
+  renderCondition = (service) => (
+    <div style={{ textAlign: "left" }}>
       <div style={{ marginBottom: 10 }}>
         <Label>Unconditional</Label>
         <Checkbox
           toggle
           style={{ marginLeft: 10 }}
           checked={this.state.feedbackUnconditional}
-          onChange={(_, { checked: feedbackUnconditional }) => 
-            this.setState(
-              { feedbackUnconditional }, 
-              () => service.configure({ feedbackUnconditional })
+          onChange={(_, { checked: feedbackUnconditional }) =>
+            this.setState({ feedbackUnconditional }, () =>
+              service.configure({ feedbackUnconditional })
             )
           }
         />
       </div>
-      <Input 
+      <Input
         label="While"
         disabled={this.state.feedbackUnconditional}
         value={this.state.feedbackCondition}
-        onChange={(_, { value: feedbackCondition }) => 
+        onChange={(_, { value: feedbackCondition }) =>
           this.setState({ feedbackCondition })
         }
-        onKeyPress={
-          e => e.key === 'Enter' && 
-          service.configure(
-            { feedbackCondition: this.state.feedbackCondition }
-          )
+        onKeyPress={(e) =>
+          e.key === "Enter" &&
+          service.configure({ feedbackCondition: this.state.feedbackCondition })
         }
       />
     </div>
-  )
+  );
 
   render() {
     return (
       <ServiceUI
-        {...this.props} 
+        {...this.props}
         onInit={this.onInit.bind(this)}
         segments={[
-          { name: 'routing', render: this.renderRouting },
-          { name: 'condition', render: this.renderCondition },
+          { name: "routing", render: this.renderRouting },
+          { name: "condition", render: this.renderCondition },
         ]}
       />
     );
@@ -111,7 +104,7 @@ class FeedbackTaker {
   process(params) {
     if (this.channel && this.feedbackUnconditional) {
       setTimeout(
-        () => FeedbackProvider.processFeedback(this.channel, params), 
+        () => FeedbackProvider.processFeedback(this.channel, params),
         0
       );
     }
@@ -124,8 +117,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new FeedbackTaker(app, board, descriptor, id),
-  createUI: FeedbackTakerUI
+  createUI: FeedbackTakerUI,
 };
 
 export default descriptor;
-

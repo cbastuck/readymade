@@ -1,24 +1,18 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
-const serviceId = 'hookup.to/service/dispatcher';
-const serviceName = 'Dispatcher';
+const serviceId = "hookup.to/service/dispatcher";
+const serviceName = "Dispatcher";
 
 class DispatcherUI extends Component {
-    render() {
+  render() {
     return (
       <ServiceUI {...this.props}>
-      {
-        ({ service }) => (
-          service && (
-            <div />
-          )
-        )
-      }
+        {({ service }) => service && <div />}
       </ServiceUI>
-      );
-    }
+    );
+  }
 }
 
 class Dispatcher {
@@ -27,13 +21,12 @@ class Dispatcher {
     this.board = board;
     this.app = app;
   }
-  
-  configure(config) {
-  }
+
+  configure(config) {}
 
   async dispatch(item) {
-    const { type, destinations } = item || {};    
-    if (!item || type !== 'dispatch' || !destinations) {
+    const { type, destinations } = item || {};
+    if (!item || type !== "dispatch" || !destinations) {
       return;
     }
 
@@ -43,7 +36,7 @@ class Dispatcher {
       if (service) {
         if (config) {
           await service.configure(config);
-        } 
+        }
         if (process) {
           return await service.process(process);
         }
@@ -53,7 +46,7 @@ class Dispatcher {
 
   async process(params) {
     if (Array.isArray(params)) {
-      await Promise.all(params.map(x => this.dispatch(x)))
+      await Promise.all(params.map((x) => this.dispatch(x)));
     } else {
       await this.dispatch(params);
     }
@@ -66,7 +59,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new Dispatcher(app, board, descriptor, id),
-  createUI: DispatcherUI
+  createUI: DispatcherUI,
 };
 
 export default descriptor;

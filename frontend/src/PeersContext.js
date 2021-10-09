@@ -1,6 +1,6 @@
-import React, { Component, createContext } from 'react';
+import React, { Component, createContext } from "react";
 
-import { removeKeyFromObject } from './runtime/services/helpers';
+import { removeKeyFromObject } from "./runtime/services/helpers";
 
 const PeersCtx = createContext();
 
@@ -14,57 +14,54 @@ class PeersContext extends Component {
       onPeer: this.onPeer,
       onPeerClosed: this.onPeerClosed,
       updatePeers: this.updatePeers,
-    }
+    };
   }
 
   onPeer = (peerName, peer) => {
-    peer.on('error', err => {
-      console.error('PeersContext peer.onError', err);
+    peer.on("error", (err) => {
+      console.error("PeersContext peer.onError", err);
     });
 
-    peer.on('close', () => this.onPeerClosed(peerName)); 
+    peer.on("close", () => this.onPeerClosed(peerName));
 
-    this.setState({ 
+    this.setState({
       peers: {
         ...this.state.peers,
         [peerName]: peer,
-      }
+      },
     });
-    
+
     this.updatePeers(peer);
-  }
+  };
 
-  onPeerClosed = peerName => {
-    const { 
-      peers, 
-      peerNames, 
-    } = this.state;
-    this.setState({ 
+  onPeerClosed = (peerName) => {
+    const { peers, peerNames } = this.state;
+    this.setState({
       peers: removeKeyFromObject(peers, peerName),
-      peerNames: peerNames.filter(x => x !== peerName),
+      peerNames: peerNames.filter((x) => x !== peerName),
     });
-  }
+  };
 
-  updatePeers = peer => {
+  updatePeers = (peer) => {
     if (!peer) {
       const firstPeer = Object.keys(this.state.peers)[0];
       peer = firstPeer && this.state.peers[firstPeer];
     }
 
     if (peer) {
-      peer.listAllPeers(peerNames => this.setState({ peerNames })); 
+      peer.listAllPeers((peerNames) => this.setState({ peerNames }));
     } else {
-      console.warn('PeerContext.updatePeers no peers available');
+      console.warn("PeerContext.updatePeers no peers available");
     }
-  }
+  };
 
   sendData = (src, dst, data) => {
     const { connections, peers } = this.state;
     const srcConnections = connections[src] || {};
     const envelope = {
       sender: src,
-      data
-    }
+      data,
+    };
     let connection = srcConnections[dst];
     if (connection) {
       connection.send(envelope);
@@ -72,52 +69,55 @@ class PeersContext extends Component {
     }
     const srcPeer = peers[src];
     if (!srcPeer) {
-      console.warn('Trying to send data from an unregistered peer', src, this.state.peers);
+      console.warn(
+        "Trying to send data from an unregistered peer",
+        src,
+        this.state.peers
+      );
       return;
     }
     connection = srcPeer.connect(dst);
     if (connection) {
-      connection.on('open', () => {
+      connection.on("open", () => {
         connection.send(envelope);
-        this.setState({ 
+        this.setState({
           connections: {
             ...connections,
             [src]: {
               ...srcConnections,
               [dst]: connection,
             },
-          }
+          },
         });
       });
-      connection.on('close', () => {
-        console.log('Connection closed from', src, 'to', dst);
-        this.setState({ 
+      connection.on("close", () => {
+        console.log("Connection closed from", src, "to", dst);
+        this.setState({
           connections: {
             ...srcConnections,
             [src]: removeKeyFromObject(srcConnections, dst),
-          }
+          },
         });
       });
     } else {
-      console.log('Connection is not available anymore', src, dst);
+      console.log("Connection is not available anymore", src, dst);
       this.updatePeers();
     }
-  }
+  };
 
   render() {
     const { children } = this.props;
     return (
       <PeersCtx.Provider
         value={{
-          ...this.state
+          ...this.state,
         }}
       >
-        { children }
+        {children}
       </PeersCtx.Provider>
     );
   }
 }
-
 
 const PeersConsumer = PeersCtx.Consumer;
 export { PeersConsumer, PeersCtx };

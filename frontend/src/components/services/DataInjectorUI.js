@@ -1,29 +1,24 @@
-import React, { Component } from 'react';
-import {
-  Button
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button } from "semantic-ui-react";
 
-import {
-  configureService,
-  getServiceConfiguration
-} from '../../core/actions';
-import { debounce } from  '../shared/util';
+import { configureService, getServiceConfiguration } from "../../core/actions";
+import { debounce } from "../shared/util";
 
-const testData = ['eins', 'zwei', 'drei'];
+const testData = ["eins", "zwei", "drei"];
 
 export default class DataInjectorUI extends Component {
   state = {
-    data: testData
+    data: testData,
   };
 
-  update = async() => {
+  update = async () => {
     const { board, service } = this.props;
     const config = await getServiceConfiguration(board, service);
     const { data } = config;
     this.setState({ data });
-  }
+  };
 
-  sendConfig = debounce(async() => {
+  sendConfig = debounce(async () => {
     const { board, service } = this.props;
     await configureService(board, service, this.state);
     this.update();
@@ -31,8 +26,8 @@ export default class DataInjectorUI extends Component {
 
   render() {
     const lineStyle = {
-      textAlign: 'left',
-      margin: '8px 10px',
+      textAlign: "left",
+      margin: "8px 10px",
     };
 
     return (
@@ -40,16 +35,13 @@ export default class DataInjectorUI extends Component {
         <div style={lineStyle}>
           <Button
             onClick={() => {
-              this.setState(
-                { data: testData },
-                this.sendConfig
-              )
+              this.setState({ data: testData }, this.sendConfig);
             }}
           >
             Inject Data
           </Button>
         </div>
       </div>
-   );
+    );
   }
 }

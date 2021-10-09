@@ -1,63 +1,65 @@
-import React, { Component } from 'react';
-import {
-  Button,
-  Input,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button, Input } from "semantic-ui-react";
 
 import { WritableStream } from "web-streams-polyfill/ponyfill";
-import StreamSaver from 'streamsaver';
+import StreamSaver from "streamsaver";
 
-import ServiceUI from './ServiceUI';
-import { s, t } from '../../styles';
+import ServiceUI from "./ServiceUI";
+import { s, t } from "../../styles";
 
-const serviceId = 'hookup.to/service/downloader';
-const serviceName = 'Downloader';
+const serviceId = "hookup.to/service/downloader";
+const serviceName = "Downloader";
 
 // Apply the polyfill if needed
 if (!StreamSaver.WritableStream) {
   StreamSaver.WritableStream = WritableStream;
 }
 
-
 class DownloaderUI extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      filename: undefined
+      filename: undefined,
     };
   }
 
-  onInit = initialState => {
+  onInit = (initialState) => {
     this.setState({
-      filename: initialState.filename
+      filename: initialState.filename,
     });
-  }
+  };
 
   onNotification = (service, notification) => {
-    const { running } = notification;
+    const { running } = notification;
     if (running !== undefined) {
       this.setState({ running });
     }
-  }
+  };
 
-  onClose = service => {
+  onClose = (service) => {
     if (service) {
       service.onClose();
       // service.configure({ autosense: false });
     }
-  }
+  };
 
-  renderMain = service => (
-    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-      <div style={s(t.uc, t.ls1, t.fs12)}>
-        Filename
-      </div>
+  renderMain = (service) => (
+    <div
+      style={{ display: "flex", flexDirection: "column", textAlign: "left" }}
+    >
+      <div style={s(t.uc, t.ls1, t.fs12)}>Filename</div>
       <div style={t.mt3}>
         <Input
           style={s(t.w100, { margin: 0 })}
           value={this.state.filename || service.filename}
           onChange={(_, { value }) => this.setState({ filename: value })}
-          onKeyUp={ev => ev.key === 'Enter' && service.configure({ filename: this.state.filename, autosense: true })}
+          onKeyUp={(ev) =>
+            ev.key === "Enter" &&
+            service.configure({
+              filename: this.state.filename,
+              autosense: true,
+            })
+          }
         />
       </div>
       <div style={t.mt3}>
@@ -78,9 +80,7 @@ class DownloaderUI extends Component {
         {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
-        segments={[ 
-          { name: 'main', render: this.renderMain }
-        ]}
+        segments={[{ name: "main", render: this.renderMain }]}
       />
     );
   }
@@ -94,7 +94,7 @@ class Downloader {
 
     this._fileStream = undefined;
     this._writer = undefined;
-    this.filename = 'incoming.txt'
+    this.filename = "incoming.txt";
     this.autosense = true;
     this.running = false;
   }
@@ -111,7 +111,7 @@ class Downloader {
   }
 
   openDestination(filename) {
-    console.log('Opening destination')
+    console.log("Opening destination");
     this.onClose();
     this.filename = filename;
     this._fileStream = StreamSaver.createWriteStream(filename);
@@ -137,7 +137,7 @@ class Downloader {
   async pump(reader, writer) {
     const res = await reader.read();
     if (!res.done) {
-      await writer.write(res.value)
+      await writer.write(res.value);
       this.pump(reader, writer);
     }
   }
@@ -146,24 +146,25 @@ class Downloader {
     if (!this.isOpen()) {
       if (!this.autosense) {
         return params;
-      } 
+      }
       this.openDestination(this.filename);
     }
-    const blob = (params instanceof Blob) ? params : new Blob([JSON.stringify(params)]);
+    const blob =
+      params instanceof Blob ? params : new Blob([JSON.stringify(params)]);
     const readableStream = blob.stream();
     const reader = readableStream.getReader();
     await this.pump(reader, this._writer);
-    
+
     return params;
   }
 }
 
-const descriptor = {  
+const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
     new Downloader(app, board, descriptor, id),
-  createUI: DownloaderUI
+  createUI: DownloaderUI,
 };
 
 export default descriptor;

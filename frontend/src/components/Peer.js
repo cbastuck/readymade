@@ -1,11 +1,11 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import Peerjs from 'peerjs';
+import Peerjs from "peerjs";
 
-import { PeersCtx } from '../PeersContext';
+import { PeersCtx } from "../PeersContext";
 
 const peerHost = `${window.location.host}`;
-const isHTTPS = window.location.protocol === 'https:';
+const isHTTPS = window.location.protocol === "https:";
 
 export default class Peer extends Component {
   componentDidMount() {
@@ -15,15 +15,12 @@ export default class Peer extends Component {
     }
   }
 
-  componentWillUnmount() {
+  componentWillUnmount() {
     this.closePeer();
   }
 
   componentDidUpdate(prevProps) {
-    const { 
-      name,
-      active,
-    } = this.props;
+    const { name, active } = this.props;
     if (name !== prevProps.name) {
       this.closePeer(prevProps.name);
       this.initPeer();
@@ -37,37 +34,29 @@ export default class Peer extends Component {
   }
 
   initPeer = () => {
-    const { 
-      name = 'unnamed-peer',
-      onData,
-    } = this.props;
-    const {
-      onPeer,
-    } = this.context;
-    const peer = new Peerjs(
-      name, 
-      {
-        host: peerHost,
-        port: isHTTPS ? 443 : 80,
-        path: '/peers',
-      }
-    );
-    
-    peer.on('open', () => {
+    const { name = "unnamed-peer", onData } = this.props;
+    const { onPeer } = this.context;
+    const peer = new Peerjs(name, {
+      host: peerHost,
+      port: isHTTPS ? 443 : 80,
+      path: "/peers",
+    });
+
+    peer.on("open", () => {
       if (this.peer) {
-        console.warn('Peer peer opened but the previous peer did not shutdown');
+        console.warn("Peer peer opened but the previous peer did not shutdown");
         this.closePeer();
       }
       this.peer = peer;
       onPeer(name, peer);
     });
 
-    peer.on('connection', connection => 
-      connection.on('data', data => onData(data, connection.peer))
+    peer.on("connection", (connection) =>
+      connection.on("data", (data) => onData(data, connection.peer))
     );
-  }
+  };
 
-  closePeer = name => {
+  closePeer = (name) => {
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
@@ -75,14 +64,10 @@ export default class Peer extends Component {
       const { onPeerClosed } = this.context;
       onPeerClosed(name || this.props.name);
     }
-  }
+  };
 
   render() {
-    return (
-      <div>
-        { this.props.children }
-      </div>
-    );
+    return <div>{this.props.children}</div>;
   }
 }
 

@@ -1,9 +1,9 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
 // import ServiceUI from './ServiceUI';
 
-const serviceId = 'hookup.to/service/switch';
-const serviceName = 'Switch';
+const serviceId = "hookup.to/service/switch";
+const serviceName = "Switch";
 
 class SwitchUI extends Component {
   render() {
@@ -18,8 +18,7 @@ class Switch {
     this.app = app;
   }
 
-  configure(config) {
-  }
+  configure(config) {}
 
   process(params) {
     return params;
@@ -31,7 +30,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new Switch(app, board, descriptor, id),
-  createUI: SwitchUI
+  createUI: SwitchUI,
 };
 
 export default descriptor;

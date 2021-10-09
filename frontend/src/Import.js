@@ -1,19 +1,16 @@
-import React, { Component } from 'react';
-import { Redirect } from 'react-router-dom';
-import queryString from 'query-string';
+import React, { Component } from "react";
+import { Redirect } from "react-router-dom";
+import queryString from "query-string";
 
-import { AppConsumer } from './AppContext';
-import BoardContext from './BoardContext';
-import BrowserRegistry from './runtime/BrowserRegistry';
-import {
-  loadBoard,
-  clearBoard,
-} from './core/actions';
+import { AppConsumer } from "./AppContext";
+import BoardContext from "./BoardContext";
+import BrowserRegistry from "./runtime/BrowserRegistry";
+import { loadBoard, clearBoard } from "./core/actions";
 
 export default class Import extends Component {
   state = { board: undefined };
-  
-  doImport = async context => {
+
+  doImport = async (context) => {
     if (this.isImporting) {
       return;
     }
@@ -25,23 +22,26 @@ export default class Import extends Component {
     if (src && board) {
       const response = await fetch(src);
       const data = await response.json();
-      const runtimes = data.version ? 
-        data.runtimes :
-        Object.keys(data).map(key => data[key]);
+      const runtimes = data.version
+        ? data.runtimes
+        : Object.keys(data).map((key) => data[key]);
 
       for (const rt of runtimes) {
-        if (rt.type === 'browser') {
+        if (rt.type === "browser") {
           rt.params = rt.params || {};
 
-          // TODO: this might not be the registry from the 
+          // TODO: this might not be the registry from the
           // browser runtime which assumes ownership
           // POST/PUT endpoint to set the registry for an existing runtime
           if (!rt.params.registry) {
-            const { bundles=[] } = rt.params;
-            const browserRegistry = await BrowserRegistry.create(bundles, context.user); 
-            rt.params.registry = browserRegistry.availableServices
+            const { bundles = [] } = rt.params;
+            const browserRegistry = await BrowserRegistry.create(
+              bundles,
+              context.user
+            );
+            rt.params.registry = browserRegistry.availableServices;
           }
-          
+
           if (rt.params.leaveOwnership !== true) {
             BoardContext.registerBrowserRuntime(board, rt.id);
           }
@@ -49,26 +49,21 @@ export default class Import extends Component {
       }
       await clearBoard(board);
       await loadBoard(board, data);
-      this.setState(
-        { board },
-        () => this.isImporting = false
-      );
+      this.setState({ board }, () => (this.isImporting = false));
     }
-  }
+  };
 
   render() {
     const { board } = this.state;
     if (!board) {
       return (
         <AppConsumer>
-          {
-            context => {
-              this.doImport(context);
-              return false;
-            }
-          }
+          {(context) => {
+            this.doImport(context);
+            return false;
+          }}
         </AppConsumer>
-      )
+      );
     }
     return <Redirect to={`/${board}`} />;
   }

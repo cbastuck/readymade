@@ -1,23 +1,20 @@
-import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button } from "semantic-ui-react";
 
-import { s, t } from '../../styles';
-import InputField from '../../components/shared/InputField';
-import SelectorField from '../../components/shared/SelectorField';
+import { s, t } from "../../styles";
+import InputField from "../../components/shared/InputField";
+import SelectorField from "../../components/shared/SelectorField";
 
-import { FilterDescriptor } from 'services';
+import { FilterDescriptor } from "services";
 //import { parseExpression, evalExpression } from 'services/eval';
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
 class FilterUI extends Component {
   state = {};
 
   onInit(initialState) {
-    const { 
-      conditions,
-      aggregator
-    } = initialState;
+    const { conditions, aggregator } = initialState;
 
     this.setState({
       conditions,
@@ -26,10 +23,7 @@ class FilterUI extends Component {
   }
 
   onNotification(service, notification) {
-    const { 
-      conditions,
-      aggregator
-    } = notification;
+    const { conditions, aggregator } = notification;
 
     if (conditions !== undefined) {
       this.setState({ conditions });
@@ -40,63 +34,55 @@ class FilterUI extends Component {
     }
   }
 
-  renderMain = service => {
-    const { 
-      conditions,
-      aggregator,
-    } = this.state;
+  renderMain = (service) => {
+    const { conditions, aggregator } = this.state;
     return (
-      <div className="filter-service" style={{ textAlign: 'left' }}>
-        {
-          conditions && conditions.map((condition, cidx) => (
+      <div className="filter-service" style={{ textAlign: "left" }}>
+        {conditions &&
+          conditions.map((condition, cidx) => (
             <InputField
-                key={`filter-condition-${service.uuuid}-${cidx}`}
-                type="text"
-                label={`C${cidx + 1}`}
-                value={condition || ''}
-                labelPosition="left"
-                onChange={(_, { value: condition }) => {
-                  const updated = condition ? 
-                    conditions.map((c, cci) => cci === cidx ? condition : c) :
-                    conditions.filter((c, cci) => cci !== cidx);
-                  service.configure({ conditions: updated });
-                }}
-              />
-          ))
-       }
-       {
-          conditions && conditions.length > 1 && (
-            <SelectorField 
-              label="Op"
-              options={{ and: 'and', or: 'or' }}
-              value={aggregator}
-              onChange={(_ev, { value: aggregator }) => {
-                service.configure({ aggregator });
+              key={`filter-condition-${service.uuuid}-${cidx}`}
+              type="text"
+              label={`C${cidx + 1}`}
+              value={condition || ""}
+              labelPosition="left"
+              onChange={(_, { value: condition }) => {
+                const updated = condition
+                  ? conditions.map((c, cci) => (cci === cidx ? condition : c))
+                  : conditions.filter((c, cci) => cci !== cidx);
+                service.configure({ conditions: updated });
               }}
             />
-          )
-        }
+          ))}
+        {conditions && conditions.length > 1 && (
+          <SelectorField
+            label="Op"
+            options={{ and: "and", or: "or" }}
+            value={aggregator}
+            onChange={(_ev, { value: aggregator }) => {
+              service.configure({ aggregator });
+            }}
+          />
+        )}
         <Button
           style={s(t.uc, t.fs12, t.ls1, t.w100)}
           onClick={() => {
-            service.configure({ conditions: [ ...conditions, '' ] });
+            service.configure({ conditions: [...conditions, ""] });
           }}
         >
           Add Condition
         </Button>
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
-        segments={[
-          { name: 'main', render: this.renderMain }
-        ]}
+        segments={[{ name: "main", render: this.renderMain }]}
       />
     );
   }
@@ -167,8 +153,8 @@ const descriptor = {
   serviceId: FilterDescriptor.serviceId,
   create: (app, board, descriptor, id) =>
     new FilterDescriptor.service(app, board, descriptor, id),
-    //new Filter(app, board, descriptor, id),
-  createUI: FilterUI
+  //new Filter(app, board, descriptor, id),
+  createUI: FilterUI,
 };
 
 export default descriptor;

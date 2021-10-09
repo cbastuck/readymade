@@ -1,12 +1,10 @@
-import React, { Component } from 'react';
-import {
-  Button,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button } from "semantic-ui-react";
 
-import ServiceUI from './ServiceUI';
+import ServiceUI from "./ServiceUI";
 
-const serviceId = 'hookup.to/service/timeline';
-const serviceName = 'Timeline';
+const serviceId = "hookup.to/service/timeline";
+const serviceName = "Timeline";
 
 class TimelineUI extends Component {
   state = {
@@ -14,74 +12,72 @@ class TimelineUI extends Component {
     capture: false,
   };
 
-  onInit = service => {
-    const { 
-      capture,
-      events,
-    } = service;
+  onInit = (service) => {
+    const { capture, events } = service;
     this.setState({ events, capture });
-  }
+  };
 
   onNotification = (service, notification) => {
-    const { events } = notification;
+    const { events } = notification;
     if (events !== undefined) {
       this.setState({ events });
     }
-  }
+  };
 
   renderEvent = (event, timelineStart, timelineEnd, index) => {
     const duration = timelineEnd - timelineStart;
-    const relPos = duration > 0 ? 
-      (event.timestamp - timelineStart) / duration : 
-      0;
+    const relPos =
+      duration > 0 ? (event.timestamp - timelineStart) / duration : 0;
     return (
-      <div 
+      <div
         key={`timeline-event-${event.timestamp}-${index}`}
-        style={{ 
-          position: 'absolute',
+        style={{
+          position: "absolute",
           left: `${Math.floor(relPos * 100)}%`,
-          height: '100%',
+          height: "100%",
           width: 1,
-          border: 'solid 1px #4183c4',
+          border: "solid 1px #4183c4",
         }}
       />
     );
-  }
+  };
 
-  renderEvents = events => {
+  renderEvents = (events) => {
     if (!events || events.length < 1) {
       return false;
     }
 
     const firstEvent = events[0];
     const lastEvent = events[events.length - 1];
-    return events.map((ev, index) => this.renderEvent(ev, firstEvent.timestamp, lastEvent.timestamp, index));   
-  }
+    return events.map((ev, index) =>
+      this.renderEvent(ev, firstEvent.timestamp, lastEvent.timestamp, index)
+    );
+  };
 
-  renderTimeline = events => {
+  renderTimeline = (events) => {
     return (
-      <div style={{ height: '100%' }}>
-        <div style={{ height: '50%' }} />
-        <div 
-          style={{ 
+      <div style={{ height: "100%" }}>
+        <div style={{ height: "50%" }} />
+        <div
+          style={{
             height: 1,
-            borderBottom: 'dashed 1px lightgray'
+            borderBottom: "dashed 1px lightgray",
           }}
         />
-        <div 
-          style={{ 
-            position: 'relative',
-            height: '50%',
-            transform: ' translateY(-50%)'
+        <div
+          style={{
+            position: "relative",
+            height: "50%",
+            transform: " translateY(-50%)",
           }}
         >
-          { this.renderEvents(events) }
+          {this.renderEvents(events)}
         </div>
       </div>
     );
-  }
+  };
 
-  renderMain = service => {
+  renderMain = (service) => {
     return (
       <div
         style={{
@@ -89,10 +85,10 @@ class TimelineUI extends Component {
           height: 100,
         }}
       >
-        <div style={{ height: '70%' }}>
-          { this.renderTimeline(service.events) }
+        <div style={{ height: "70%" }}>
+          {this.renderTimeline(service.events)}
         </div>
-        <div style={{ height: '30%', margin: 'auto' }}>
+        <div style={{ height: "30%", margin: "auto" }}>
           <Button
             onClick={() => {
               const capture = !this.state.capture;
@@ -100,24 +96,22 @@ class TimelineUI extends Component {
               this.setState({ capture });
             }}
           >
-            { this.state.capture ? 'Stop Capture' : 'Start Capture' }
+            {this.state.capture ? "Stop Capture" : "Start Capture"}
           </Button>
         </div>
       </div>
     );
-  }
+  };
 
   render() {
     return (
-      <ServiceUI 
-        {...this.props} 
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
-    )
+    );
   }
 }
 
@@ -125,7 +119,7 @@ class Timeline {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
-    this.app = app; 
+    this.app = app;
 
     this.events = [];
     this.capture = false;
@@ -134,14 +128,14 @@ class Timeline {
   configure(config) {
     const { command, capture } = config;
 
-    if (command === 'reset') {
+    if (command === "reset") {
       this.events = [];
     }
 
     if (capture !== undefined) {
-      this.capture = capture
+      this.capture = capture;
     }
-   }
+  }
 
   process(params) {
     if (this.capture) {

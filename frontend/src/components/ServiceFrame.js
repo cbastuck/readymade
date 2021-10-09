@@ -1,15 +1,11 @@
-import React, { Component } from 'react';
-import {
-  Icon,
-  Menu,
-  Header,
-} from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Icon, Menu, Header } from "semantic-ui-react";
 
-import Modal from './Modal';
-import ServiceReference from './ServiceReference';
-import ConfigurationEditor from './ConfigurationEditor';
-import { s, t } from '../styles';
-import { filterPrivateMembers } from '../runtime/services/helpers';
+import Modal from "./Modal";
+import ServiceReference from "./ServiceReference";
+import ConfigurationEditor from "./ConfigurationEditor";
+import { s, t } from "../styles";
+import { filterPrivateMembers } from "../runtime/services/helpers";
 
 function getNotificationID(service) {
   return `service-frame-${service.uuid}`;
@@ -24,11 +20,11 @@ export default class ServiceFrame extends Component {
   };
 
   componentDidMount() {
-    const { service } = this.props;
+    const { service } = this.props;
     service.__notificationTargets.register(
-      getNotificationID(service), 
+      getNotificationID(service),
       (_, notification) => {
-        const { bypass } = notification || {};
+        const { bypass } = notification || {};
         if (bypass !== undefined) {
           this.setState({ bypass });
         }
@@ -37,37 +33,39 @@ export default class ServiceFrame extends Component {
   }
 
   componentWillUnmount() {
-    const { service } = this.props;
+    const { service } = this.props;
     service.__notificationTargets.unregister(getNotificationID(service));
   }
 
-  renderServiceName = name => {
-    const { draggable=true } = this.props;
+  renderServiceName = (name) => {
+    const { draggable = true } = this.props;
     return (
-      <div 
+      <div
         style={{
-          textAlign: 'center',
-          width: '100%',
+          textAlign: "center",
+          width: "100%",
           fontSize: 16,
-          fontWeight: 'lighter',
-          marginTop: 15, 
-          cursor: draggable && 'pointer'
+          fontWeight: "lighter",
+          marginTop: 15,
+          cursor: draggable && "pointer",
         }}
-        onDoubleClick={() => this.setState({ frameCollapsed: !this.state.frameCollapsed })}
+        onDoubleClick={() =>
+          this.setState({ frameCollapsed: !this.state.frameCollapsed })
+        }
         draggable={draggable}
-        onDragStart={ev => {
+        onDragStart={(ev) => {
           const { service } = this.props;
           const publicService = filterPrivateMembers(service);
-          ev.dataTransfer.setData('text/plain', JSON.stringify(publicService));
+          ev.dataTransfer.setData("text/plain", JSON.stringify(publicService));
         }}
       >
-        <Header size='small'>
-          <span 
+        <Header size="small">
+          <span
             style={{
               fontSize: 12,
               letterSpacing: 1,
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
+              textTransform: "uppercase",
+              whiteSpace: "nowrap",
             }}
           >
             {name}
@@ -75,243 +73,224 @@ export default class ServiceFrame extends Component {
         </Header>
       </div>
     );
-  }
+  };
 
-  renderHeader = service => {
-    const { bypass=service && service.bypass } = this.state;
-    const serviceName = service.__descriptor ? 
-      service.__descriptor.serviceName : 
-      service.serviceName;
+  renderHeader = (service) => {
+    const { bypass = service && service.bypass } = this.state;
+    const serviceName = service.__descriptor
+      ? service.__descriptor.serviceName
+      : service.serviceName;
     return (
-      <div 
-        style={{ 
-          display: 'flex',
-          flexDirection: 'row'
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
         }}
       >
         <div style={t.p(15, 13)}>
           <Icon
-            style={{ 
-              cursor: 'pointer',
+            style={{
+              cursor: "pointer",
               opacity: 0.5,
             }}
-            name="power off" 
-            color={bypass ? 'red' : 'grey'}
+            name="power off"
+            color={bypass ? "red" : "grey"}
             onClick={() => service.configure({ bypass: !bypass })}
           />
         </div>
-        <div 
-          style={{ 
-            flexGrow: 2, 
-            textAlign: 'center'
+        <div
+          style={{
+            flexGrow: 2,
+            textAlign: "center",
           }}
         >
-          { this.renderServiceName(serviceName) }
+          {this.renderServiceName(serviceName)}
         </div>
         <Menu
           borderless={true}
           style={{
-            boxShadow: 'none',
-            border: 'none',
+            boxShadow: "none",
+            border: "none",
             margin: 0,
           }}
-        >  
+        >
           <Menu.Item
             position="right"
-            onClick={() => this.setState({ 
-              menuVisible: !this.state.menuVisible,
-              frameCollapsed: this.state.frameCollapsed && !this.state.menuVisible,
-            })}
+            onClick={() =>
+              this.setState({
+                menuVisible: !this.state.menuVisible,
+                frameCollapsed:
+                  this.state.frameCollapsed && !this.state.menuVisible,
+              })
+            }
           >
-            <Icon 
-              name='bars' 
-              style={{ color: '#ddd', margin: 5, }}
-            />
+            <Icon name="bars" style={{ color: "#ddd", margin: 5 }} />
           </Menu.Item>
         </Menu>
       </div>
-    )
-  }
+    );
+  };
 
   renderMenu = () => {
-    const itemStyle = { 
+    const itemStyle = {
       height: 40,
     };
     return (
-      <Menu
-        vertical
-        compact
-        style={{ minHeight: '100%' }}
-      >
+      <Menu vertical compact style={{ minHeight: "100%" }}>
         <Menu.Item
-          as='a'
-          onClick={() => 
-            this.setState({ 
+          as="a"
+          onClick={() =>
+            this.setState({
               frameCollapsed: !this.state.frameCollapsed,
-              menuVisible: false
+              menuVisible: false,
             })
           }
           style={itemStyle}
         >
-          <Icon name='compress' />
+          <Icon name="compress" />
         </Menu.Item>
-        {
-        /*
+        {/*
         <Menu.Item
           as='a'
           style={itemStyle}
         >
           <Icon name='clone outline' />
         </Menu.Item>
-        */
-        }
-        <Menu.Item 
-          as='a'
+        */}
+        <Menu.Item
+          as="a"
           style={itemStyle}
           onClick={() => {
             const { onAction, service } = this.props;
             if (onAction) {
-              onAction({ 
-                action: 'remove', 
+              onAction({
+                action: "remove",
                 service,
               });
             }
             this.setState({ menuVisible: false });
           }}
         >
-          <Icon name='trash alternate outline' />
+          <Icon name="trash alternate outline" />
         </Menu.Item>
-        <Menu.Item 
-          as='a'
+        <Menu.Item
+          as="a"
           style={itemStyle}
           onClick={() => {
             const { service } = this.props;
-            const serviceId = service.serviceId || service.__descriptor.serviceId;
-            const parts = serviceId.split('/');
-            this.setState({ 
+            const serviceId =
+              service.serviceId || service.__descriptor.serviceId;
+            const parts = serviceId.split("/");
+            this.setState({
               modalReferenceService: parts[parts.length - 1],
-              menuVisible: false
+              menuVisible: false,
             });
           }}
         >
-          <Icon name='help' />
+          <Icon name="help" />
         </Menu.Item>
-        <Menu.Item 
-          as='a'
+        <Menu.Item
+          as="a"
           style={itemStyle}
           onClick={() => {
-            this.setState({ 
+            this.setState({
               configVisible: true,
               menuVisible: false,
             });
           }}
         >
-          <Icon name='cogs' />
+          <Icon name="cogs" />
         </Menu.Item>
-      </Menu> 
+      </Menu>
     );
-  }
+  };
 
   renderServiceWithSidebar = (serviceUi, menuVisible) => {
     return (
       <div
         style={{
-          position: 'relative',
+          position: "relative",
         }}
       >
-        {
-          menuVisible && (
-            <div 
-              style={{
-                position: 'absolute',
-                height: '100%',
-                width: '100%',
-                backgroundColor: 'white',
-                opacity: 0.8,
-                zIndex: 2000001,
-              }}
-              onClick={() => this.setState({ menuVisible: false })}
-            />
-          )
-        }
-        { serviceUi } 
+        {menuVisible && (
+          <div
+            style={{
+              position: "absolute",
+              height: "100%",
+              width: "100%",
+              backgroundColor: "white",
+              opacity: 0.8,
+              zIndex: 2000001,
+            }}
+            onClick={() => this.setState({ menuVisible: false })}
+          />
+        )}
+        {serviceUi}
         <div
           style={{
-            position: 'absolute',
-            height: '100%',
-            width: menuVisible ? 59 : 0, 
+            position: "absolute",
+            height: "100%",
+            width: menuVisible ? 59 : 0,
             right: 0,
             top: 0,
-            overflowY: 'auto',
-            overflowX: 'hidden',
+            overflowY: "auto",
+            overflowX: "hidden",
             zIndex: 2000002,
-            transition: 'width 0.3s ease',
+            transition: "width 0.3s ease",
           }}
         >
-          { this.renderMenu() }
+          {this.renderMenu()}
         </div>
       </div>
     );
-  }
+  };
 
   render() {
     const {
       frameCollapsed,
-      modalReferenceService, 
-      menuVisible, 
-      configVisible 
-    } = this.state;
-    const { 
-      serviceUi, 
-      service,
-    } = this.props;
+      modalReferenceService,
+      menuVisible,
+      configVisible,
+    } = this.state;
+    const { serviceUi, service } = this.props;
     const uuid = service && service.uuid;
     return (
       <div key={`service-frame-${uuid}`}>
         <div
-          style={
-            s(t.unselectable, {
-              border: 'solid 1px lightgray',
-              borderRadius: 5,
-              textAlign: 'center',
-              backgroundColor: 'white',
-              margin: '10px 0px',
-              fontSize: 15,
-              color: 'black',
-            })
-          }
+          style={s(t.unselectable, {
+            border: "solid 1px lightgray",
+            borderRadius: 5,
+            textAlign: "center",
+            backgroundColor: "white",
+            margin: "10px 0px",
+            fontSize: 15,
+            color: "black",
+          })}
         >
-          {
-            this.renderHeader(service)
-          }
-          {
-            !frameCollapsed && 
-            configVisible && (
-              <ConfigurationEditor 
-                service={service} 
-                onClose={() => this.setState({ configVisible: false })}
-                onChange={async value => {
-                  try {
-                    const config = JSON.parse(value);
-                    await service.configure(config); // TODO: not here
-                    this.setState({ configVisible: false });
-                  } catch (err) {
-                    
-                  }
-                }}
-              />
-            )
-          }
-          {
-            !configVisible &&
+          {this.renderHeader(service)}
+          {!frameCollapsed && configVisible && (
+            <ConfigurationEditor
+              service={service}
+              onClose={() => this.setState({ configVisible: false })}
+              onChange={async (value) => {
+                try {
+                  const config = JSON.parse(value);
+                  await service.configure(config); // TODO: not here
+                  this.setState({ configVisible: false });
+                } catch (err) {}
+              }}
+            />
+          )}
+          {!configVisible &&
             !frameCollapsed &&
-            this.renderServiceWithSidebar(serviceUi, menuVisible)
-          }
+            this.renderServiceWithSidebar(serviceUi, menuVisible)}
           <Modal
             title="Service Documentation"
             component={<ServiceReference service={modalReferenceService} />}
             url={`/service/${modalReferenceService}`}
-            setOpen={open => !open && this.setState({ modalReferenceService: undefined })}
+            setOpen={(open) =>
+              !open && this.setState({ modalReferenceService: undefined })
+            }
             isOpen={!!modalReferenceService}
           />
         </div>

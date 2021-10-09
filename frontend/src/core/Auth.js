@@ -1,14 +1,10 @@
-import jwtDecode from 'jwt-decode';
-import moment from 'moment';
+import jwtDecode from "jwt-decode";
+import moment from "moment";
 
-import { 
-  setCookie, 
-  removeCookie,
-  getCookie,
-} from './storage';
+import { setCookie, removeCookie, getCookie } from "./storage";
 
 export function validateToken(token) {
-  if (!token || token === 'undefined') {
+  if (!token || token === "undefined") {
     return {};
   }
   const decoded = jwtDecode(token);
@@ -31,11 +27,11 @@ export function getUserId() {
 }
 
 export function restoreToken() {
-  return getCookie('token');
+  return getCookie("token");
 }
 
 export function setToken(value) {
-  setCookie('token', value);
+  setCookie("token", value);
 }
 
 export function logout() {
@@ -43,9 +39,9 @@ export function logout() {
 }
 
 function removeAuthCookies() {
-  removeCookie('token');
-  removeCookie('_session.legacy.sig');
-  removeCookie('_session.legacy');
+  removeCookie("token");
+  removeCookie("_session.legacy.sig");
+  removeCookie("_session.legacy");
 }
 
 export function processToken(incomingToken) {
@@ -55,10 +51,10 @@ export function processToken(incomingToken) {
     return {};
   }
 
-  return { 
-    token, 
+  return {
+    token,
     username: decoded && decoded.nickname,
     userId: decoded && decoded.sub,
-    features: decoded && JSON.parse(decoded.features || '{}'),
+    features: decoded && JSON.parse(decoded.features || "{}"),
   };
 }

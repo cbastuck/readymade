@@ -1,20 +1,20 @@
-const serviceId = 'hookup.to/service/state';
-const serviceName = 'State';
+const serviceId = "hookup.to/service/state";
+const serviceName = "State";
 
 class State {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
     this.app = app;
-    
-    this.state = {}; 
+
+    this.state = {};
   }
 
   configure(config) {
-    const { macros } = config || {};
+    const { macros } = config || {};
     if (macros) {
       this.macros = Object.keys(macros).reduce(
-        (all, macro) => ({ ...all, [macro]: macros[macro]}),
+        (all, macro) => ({ ...all, [macro]: macros[macro] }),
         {}
       );
     }
@@ -36,26 +36,34 @@ class State {
   }
 
   processMacros(input) {
-    return input 
-      .map(item => {
-        const type = item.type || '';
-        if (item.type && type.startsWith('macro:')) {
-          const name = type.split('macro:')[1];
+    return input
+      .map((item) => {
+        const type = item.type || "";
+        if (item.type && type.startsWith("macro:")) {
+          const name = type.split("macro:")[1];
           const macro = this.macros[name];
           if (!macro) {
-            console.error(`Could not find macro with name: ${name} in macros: ${JSON.stringify(this.macros)}`);
+            console.error(
+              `Could not find macro with name: ${name} in macros: ${JSON.stringify(
+                this.macros
+              )}`
+            );
             return undefined;
           }
           // set item to macro and replace variables
-          const templates = Array.isArray(macro.template) ? macro.template : [macro.template];
-          return templates.map(template => 
-            Object.keys(template).reduce(
-              (obj, key) => { 
-                const value = this.replaceMacroVariables(macro.variables, item, template, key);
-                return value !== undefined ? { ...obj, [key]: value } : obj;
-              }, 
-              {}
-            )
+          const templates = Array.isArray(macro.template)
+            ? macro.template
+            : [macro.template];
+          return templates.map((template) =>
+            Object.keys(template).reduce((obj, key) => {
+              const value = this.replaceMacroVariables(
+                macro.variables,
+                item,
+                template,
+                key
+              );
+              return value !== undefined ? { ...obj, [key]: value } : obj;
+            }, {})
           );
         }
         return item;
@@ -73,18 +81,18 @@ class State {
     }
 
     const preProcessed = this.processMacros(objectOrArray);
-    return preProcessed.map(item => {
+    return preProcessed.map((item) => {
       const id = item && item.id;
       const ref = item && item.ref;
       if (!id && !ref) {
         return item;
       }
-      
+
       if (id) {
         this.state[id] = item;
         return item;
-      } 
-      
+      }
+
       // item references the internal state
       const state = this.state[ref];
       if (!state) {
@@ -93,7 +101,7 @@ class State {
       }
 
       return Object.keys(item).reduce(
-        (all, key) => ({ ...all, [key]: item[key] }), 
+        (all, key) => ({ ...all, [key]: item[key] }),
         state
       );
     });
@@ -103,8 +111,7 @@ class State {
 const descriptor = {
   serviceName,
   serviceId,
-  create: (app, board, descriptor, id) =>
-    new State(app, board, descriptor, id),
+  create: (app, board, descriptor, id) => new State(app, board, descriptor, id),
 };
 
 export default descriptor;

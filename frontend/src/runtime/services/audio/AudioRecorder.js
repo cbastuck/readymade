@@ -1,28 +1,28 @@
-import React, { Component } from 'react';
-import { Button } from 'semantic-ui-react';
+import React, { Component } from "react";
+import { Button } from "semantic-ui-react";
 
-import ServiceUI from '../ServiceUI';
-import { decodeBuffer, combineChannels } from './audioHelper';
-import { toArrayBuffer } from '../helpers';
+import ServiceUI from "../ServiceUI";
+import { decodeBuffer, combineChannels } from "./audioHelper";
+import { toArrayBuffer } from "../helpers";
 
-import { s, t } from '../../../styles';
+import { s, t } from "../../../styles";
 
-const serviceId = 'hookup.to/service/audio-recorder';
-const serviceName = 'Audio Recorder';
+const serviceId = "hookup.to/service/audio-recorder";
+const serviceName = "Audio Recorder";
 
 class AudioRecorderUI extends Component {
   state = {
     recording: false,
-    rendered: false
+    rendered: false,
   };
 
-  onInit = service => {
+  onInit = (service) => {
     const { recording } = service;
-    this.setState({ 
+    this.setState({
       recording,
       rendered: service.renderedBuffer,
     });
-  }
+  };
 
   onNotification = async (service, notification) => {
     const { recording, rendered } = notification;
@@ -36,25 +36,28 @@ class AudioRecorderUI extends Component {
       }
       this.setState({ rendered });
     }
-  }
+  };
 
-  renderBuffer = buffer => {
+  renderBuffer = (buffer) => {
     const WIDTH = this.canvas.width;
     const HEIGHT = this.canvas.height;
-    this.canvasCtx.fillStyle = 'white';
+    this.canvasCtx.fillStyle = "white";
     this.canvasCtx.fillRect(0, 0, WIDTH, HEIGHT);
     this.canvasCtx.lineWidth = 1;
-    this.canvasCtx.strokeStyle = 'gray';
+    this.canvasCtx.strokeStyle = "gray";
     this.canvasCtx.beginPath();
 
-    const dataArray = buffer.numberOfChannels > 1 ? combineChannels(buffer) : buffer.getChannelData(0);
+    const dataArray =
+      buffer.numberOfChannels > 1
+        ? combineChannels(buffer)
+        : buffer.getChannelData(0);
     const bufferLength = dataArray.length;
     const sliceWidth = bufferLength / WIDTH;
     const halfHeight = HEIGHT / 2;
     for (let x = 0; x < WIDTH; ++x) {
       const idx = x * sliceWidth;
       const v = dataArray
-        .slice(idx, idx+sliceWidth)
+        .slice(idx, idx + sliceWidth)
         .reduce((sum, c) => sum + c, 0);
       const y = v * halfHeight + halfHeight;
       if (x === 0) {
@@ -66,29 +69,27 @@ class AudioRecorderUI extends Component {
 
     this.canvasCtx.lineTo(WIDTH, halfHeight);
     this.canvasCtx.stroke();
-  }
+  };
 
-  renderMain = service => {
+  renderMain = (service) => {
     const { recording, rendered } = this.state;
     return (
       <div style={s(t.fill)}>
         <Button
           style={s(t.uc, t.ls1, t.fs12, t.m(2))}
           onClick={() => {
-            recording ? 
-              service.doRender() : 
-              service.configure({ recording: true })
+            recording
+              ? service.doRender()
+              : service.configure({ recording: true });
           }}
         >
-          {
-            recording ? 'Stop Record' : 'Start Recording'
-          }
+          {recording ? "Stop Record" : "Start Recording"}
         </Button>
-        <canvas 
-          ref={canvas => {
+        <canvas
+          ref={(canvas) => {
             if (canvas && !this.canvas) {
               this.canvas = canvas;
-              this.canvasCtx = canvas.getContext('2d');
+              this.canvasCtx = canvas.getContext("2d");
             }
           }}
           style={{ height: 200, width: 300 }}
@@ -102,17 +103,15 @@ class AudioRecorderUI extends Component {
         </Button>
       </div>
     );
-  }
-  
+  };
+
   render() {
     return (
-      <ServiceUI 
-        { ...this.props }
+      <ServiceUI
+        {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[
-          { name: 'Main', render: this.renderMain },
-        ]}
+        segments={[{ name: "Main", render: this.renderMain }]}
       />
     );
   }
@@ -126,7 +125,7 @@ class AudioRecorder {
 
     this.recording = false;
     this.sampleRate = 44100;
-    this.duration = 5;    
+    this.duration = 5;
     this.offlineCtx = undefined;
     this.startTime = undefined;
   }
@@ -135,8 +134,13 @@ class AudioRecorder {
     const { recording } = config;
     if (recording !== undefined && this.recording !== recording) {
       if (recording) {
-        const OfflineAudioContext = window.OfflineAudioContext || window.webkitOfflineAudioContext;
-        this.offlineCtx = new OfflineAudioContext(2, this.sampleRate*this.duration, this.sampleRate);
+        const OfflineAudioContext =
+          window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        this.offlineCtx = new OfflineAudioContext(
+          2,
+          this.sampleRate * this.duration,
+          this.sampleRate
+        );
         this.startTime = undefined;
       }
       this.recording = recording;
@@ -151,32 +155,32 @@ class AudioRecorder {
       this.app.notify(this, { rendered: true });
       this.offlineCtx = null;
     }
-  }
+  };
 
   injectRecording = () => {
     if (this.renderedBuffer) {
       // TODO: should we encode it as Blob to have a common format?
       this.app.next(this, this.renderedBuffer);
     }
-  }
+  };
 
   async process(params) {
     if (this.recording) {
-      if (params && (params instanceof Blob || params instanceof File)) {
+      if (params && (params instanceof Blob || params instanceof File)) {
         const ab = await toArrayBuffer(params);
         const source = this.offlineCtx.createBufferSource();
         source.buffer = await decodeBuffer(this.offlineCtx, ab);
         source.connect(this.offlineCtx.destination);
 
         const now = Date.now() / 1000;
-        const pos = this.startTime ? (now - this.startTime) : 0;
+        const pos = this.startTime ? now - this.startTime : 0;
         if (!this.startTime) {
           this.startTime = now;
         }
         source.start(pos);
       }
     }
-    
+
     return params;
   }
 }
@@ -186,7 +190,7 @@ const descriptor = {
   serviceId,
   create: (app, board, descriptor, id) =>
     new AudioRecorder(app, board, descriptor, id),
-  createUI: AudioRecorderUI
+  createUI: AudioRecorderUI,
 };
 
 export default descriptor;

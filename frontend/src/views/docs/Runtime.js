@@ -1,28 +1,28 @@
-import React, { Component } from 'react';
+import React, { Component } from "react";
 
-import Template from './Template'
+import Template from "./Template";
 
-import { ExampleService, ExampleServiceUI } from './ExampleService';
-import Runtime from '../../components/Runtime';
+import { ExampleService, ExampleServiceUI } from "./ExampleService";
+import Runtime from "../../components/Runtime";
 
 export function renderSceneExample(runtimeName) {
   const service = new ExampleService();
-  const services =  [
+  const services = [
     <ExampleServiceUI
       key="example-service-1"
       service={service}
-      setup={() => service} 
-    />
-  ]
+      setup={() => service}
+    />,
+  ];
   const runtime = {
-    services
+    services,
   };
   return (
-    <div 
+    <div
       style={{
         marginTop: 20,
-        marginRight: 30, 
-        width: 300
+        marginRight: 30,
+        width: 300,
       }}
     >
       <Runtime
@@ -37,12 +37,8 @@ export function renderSceneExample(runtimeName) {
 export default class ServiceDocumentation extends Component {
   render() {
     return (
-      <Template 
-        title="Runtime"
-      >
-        <div style={{ height: '100%' }}>
-          { renderSceneExample() }
-        </div>
+      <Template title="Runtime">
+        <div style={{ height: "100%" }}>{renderSceneExample()}</div>
       </Template>
     );
   }
