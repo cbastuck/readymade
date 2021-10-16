@@ -17,9 +17,9 @@ export default class Runtime extends Component {
   };
 
   componentDidMount() {
-    const { readonly } = this.props;
+    const { readonly, expanded } = this.props;
     this.setState({
-      expanded: !readonly,
+      expanded: expanded !== undefined ? expanded : !readonly,
       readonly: readonly,
     });
   }
@@ -360,17 +360,127 @@ export default class Runtime extends Component {
     }
   };
 
+  renderRemoteRuntime = (
+    runtime,
+    expanded,
+    userId,
+    boardName,
+    services,
+    readonly,
+    registry,
+    onArrangeService
+  ) => {
+    if (expanded && runtime && runtime.type === "node") {
+      return (
+        <RemoteRuntime
+          ref={(rt) => (this.impl = rt)}
+          userId={userId}
+          boardName={boardName}
+          runtime={runtime}
+          services={services}
+          readonly={readonly}
+          registry={registry}
+          onArrangeService={onArrangeService}
+          onServiceAction={this.onServiceAction}
+        />
+      );
+    }
+    return false;
+  };
+
+  renderBrowserRuntime = (
+    runtime,
+    expanded,
+    userId,
+    boardName,
+    services,
+    readonly,
+    registry,
+    onArrangeService
+  ) => {
+    const { outputs, inputs, onResult = undefined } = this.props;
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+        }}
+      >
+        {inputs && expanded ? (
+          <div
+            style={{
+              marginBottom: 15,
+            }}
+          >
+            {inputs}
+          </div>
+        ) : (
+          false
+        )}
+        <BrowserRuntime
+          ref={(rt) => (this.impl = rt)}
+          collapsed={!expanded}
+          userId={userId}
+          boardName={boardName}
+          runtime={runtime}
+          services={services}
+          readonly={readonly}
+          registry={registry}
+          onArrangeService={onArrangeService}
+          onServiceAction={this.onServiceAction}
+          onResult={onResult}
+        />
+        {services && services.length === 0 && (
+          <div
+            style={{
+              width: "100%",
+              margin: "auto",
+              textAlign: "center",
+              minHeight: 220,
+            }}
+          >
+            <div style={s(t.uc, t.fs13, t.ls1, { marginTop: 90 })}>
+              This is an empty runtime -
+              <span
+                style={{ cursor: "help", color: "#4284C4" }}
+                onClick={(ev) => {
+                  if (this.dropdown) {
+                    this.dropdown.open(ev);
+                  }
+                }}
+              >
+                {" add services "}
+              </span>
+              to start
+            </div>
+          </div>
+        )}
+        {outputs && expanded ? (
+          <div
+            style={{
+              marginLeft: "auto",
+              marginBottom: 15,
+            }}
+          >
+            {outputs}
+          </div>
+        ) : (
+          false
+        )}
+      </div>
+    );
+  };
+
   render() {
     const {
       style,
       runtime = null,
       boardContext = null,
       frameless = false,
-      onResult = undefined,
       children = undefined,
       onArrangeService: onArrangeServiceCustom = undefined,
-      outputs,
-      inputs,
+      headless = false,
     } = this.props;
 
     const runtimeId = runtime && runtime.id;
@@ -412,6 +522,19 @@ export default class Runtime extends Component {
       boardContext.isRuntimeInScope(runtime)
         ? boardContext.releaseRuntimeScope(boardContext.boardName, runtime)
         : boardContext.acquireRuntimeScope(boardContext.boardName, runtime);
+
+    if (headless) {
+      return this.renderBrowserRuntime(
+        runtime,
+        expanded,
+        userId,
+        boardName,
+        services,
+        readonly,
+        registry,
+        onArrangeService
+      );
+    }
 
     return (
       <div
@@ -463,88 +586,26 @@ export default class Runtime extends Component {
             }}
             onClickCapture={(e) => readonly && e.stopPropagation()}
           >
-            {expanded && runtime && runtime.type === "node" && (
-              <RemoteRuntime
-                ref={(rt) => (this.impl = rt)}
-                userId={userId}
-                boardName={boardName}
-                runtime={runtime}
-                services={services}
-                readonly={readonly}
-                registry={registry}
-                onArrangeService={onArrangeService}
-                onServiceAction={this.onServiceAction}
-              />
+            {this.renderRemoteRuntime(
+              runtime,
+              expanded,
+              userId,
+              boardName,
+              services,
+              readonly,
+              registry,
+              onArrangeService
             )}
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "row",
-                width: "100%",
-              }}
-            >
-              {inputs && expanded ? (
-                <div
-                  style={{
-                    marginBottom: 15,
-                  }}
-                >
-                  {inputs}
-                </div>
-              ) : (
-                false
-              )}
-              <BrowserRuntime
-                ref={(rt) => (this.impl = rt)}
-                collapsed={!expanded}
-                userId={userId}
-                boardName={boardName}
-                runtime={runtime}
-                services={services}
-                readonly={readonly}
-                registry={registry}
-                onArrangeService={onArrangeService}
-                onServiceAction={this.onServiceAction}
-                onResult={onResult}
-              />
-              {services && services.length === 0 && (
-                <div
-                  style={{
-                    width: "100%",
-                    margin: "auto",
-                    textAlign: "center",
-                    minHeight: 220,
-                  }}
-                >
-                  <div style={s(t.uc, t.fs13, t.ls1, { marginTop: 90 })}>
-                    This is an empty runtime -
-                    <span
-                      style={{ cursor: "help", color: "#4284C4" }}
-                      onClick={(ev) => {
-                        if (this.dropdown) {
-                          this.dropdown.open(ev);
-                        }
-                      }}
-                    >
-                      {" add services "}
-                    </span>
-                    to start
-                  </div>
-                </div>
-              )}
-              {outputs && expanded ? (
-                <div
-                  style={{
-                    marginLeft: "auto",
-                    marginBottom: 15,
-                  }}
-                >
-                  {outputs}
-                </div>
-              ) : (
-                false
-              )}
-            </div>
+            {this.renderBrowserRuntime(
+              runtime,
+              expanded,
+              userId,
+              boardName,
+              services,
+              readonly,
+              registry,
+              onArrangeService
+            )}
             {((services && services.length === 0) || !isOwner) && (
               <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
             )}

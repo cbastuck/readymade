@@ -24,6 +24,7 @@
     "react-chartjs-2": "^2.8.0",
     "react-dom": "16.13",
     "react-router-dom": "5.2.0",
+    "rxjs": "^7.4.0",
     "semantic-ui-css": "^2.4.1",
     "semantic-ui-offline": "^2.4.1-1",
     "semantic-ui-react": "2.0.1",
@@ -46,7 +47,7 @@
     "eject": "react-scripts eject",
     "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend",
     "push": "npm run build && docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend",
-    "parcel": "parcel build --out-dir public/bridge --out-file bridge.js bridge/index.js",
+    "parcel": "parcel build --out-dir public/bridge --out-file bridge.js --public-url /bridge --no-source-maps --cache-dir ./parcel-cache --target browser bridge/index.js",
     "prettier": "prettier --write \"src/**/*.js\""
   },
   "eslintConfig": {

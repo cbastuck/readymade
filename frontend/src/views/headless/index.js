@@ -19,6 +19,16 @@ export default class Headless extends Component {
     );
   }
 
+  configure = (serviceId, config) => {
+    const svc = this.runtime.getServiceById(serviceId);
+    return svc.configure(config);
+  };
+
+  process = (serviceId, params) => {
+    const svc = this.runtime.getServiceById(serviceId);
+    return svc.process(params);
+  };
+
   onResult = (runtimeId, data) => {
     const { callback } = this.props;
     if (callback) {
@@ -29,12 +39,15 @@ export default class Headless extends Component {
   };
 
   renderRuntime(boardContext, runtime) {
+    const { expanded = false } = this.props;
     return (
       <Runtime
         ref={(rt) => (this.runtime = rt)}
         boardContext={boardContext}
         runtime={runtime}
         onResult={this.onResult}
+        expanded={expanded}
+        headless={!expanded}
       />
     );
   }
