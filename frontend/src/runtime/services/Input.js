@@ -170,15 +170,19 @@ class Input {
       await this._websocket.open({ absolute: url });
       this._websocket.send({ topic });
     } else {
-      const resp = await fetch(url);
-      const contentType = resp.headers.get("content-type");
-      if (contentType.indexOf("text/event-stream") !== -1) {
-        this.app.notify(this, { canFetch: false });
-        return this.openEventSource(url);
-      }
+      try {
+        const resp = await fetch(url);
+        const contentType = resp.headers.get("content-type");
+        if (contentType.indexOf("text/event-stream") !== -1) {
+          this.app.notify(this, { canFetch: false });
+          return this.openEventSource(url);
+        }
 
-      this.app.notify(this, { canFetch: true });
-      this.onFetchResponse(resp);
+        this.app.notify(this, { canFetch: true });
+        this.onFetchResponse(resp);
+      } catch (err) {
+        console.error("Input fetch failed with error: ", err);
+      }
     }
   }
 

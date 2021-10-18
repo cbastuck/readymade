@@ -33,6 +33,7 @@ import GithubSourceDescriptor from "../services/GithubSource";
 import GithubSinkDescriptor from "../services/GithubSink";
 import CacheDescriptor from "../services/Cache";
 import KeyHandlerDescriptor from "../services/KeyHandler";
+import ReactorDescriptor from "../services/Reactor";
 
 const defaultRegistry = [
   timerDescriptor,
@@ -70,6 +71,7 @@ const defaultRegistry = [
   GithubSinkDescriptor,
   CacheDescriptor,
   KeyHandlerDescriptor,
+  ReactorDescriptor,
 ];
 
 export default defaultRegistry;

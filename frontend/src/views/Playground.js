@@ -59,6 +59,7 @@ const allowedServices = [
   "hookup.to/service/github-sink",
   "hookup.to/service/cache",
   "hookup.to/service/key-handler",
+  "hookup.to/service/reactor",
 ];
 
 //const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
