@@ -336,7 +336,7 @@ export default class Examples extends Component {
 
           <p style={p}>
             Instead play with multiple local runtimes on{" "}
-            <a href="/playground">playground</a>. Use the public{" "}
+            <a href="/playground#sketch">playground</a>. Use the public{" "}
             <span style={s(t.bold, t.it)}>reflector</span> to hookup different
             playgrounds or connect to <span style={s(t.bold, t.it)}>peers</span>
             . More on both topics soon.

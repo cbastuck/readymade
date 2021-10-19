@@ -150,7 +150,7 @@ export default class Sandbox extends Component {
               >
                 <Link
                   style={s(t.uc, t.ls1, t.fs12)}
-                  to={`/playground?src=${url}`}
+                  to={`/playground?src=${url}#sketch`}
                 >
                   Open In Playground
                 </Link>

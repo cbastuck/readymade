@@ -101,6 +101,7 @@ export default class Playground extends Component {
     savedBoards: getSavedBoards(),
     inputRouting: {},
     outputRouting: {},
+    initialTabLocation: "#usecase",
   };
 
   user = {
