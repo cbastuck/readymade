@@ -116,8 +116,10 @@ class AudioOutput {
   }
 
   destroy() {
-    this.audioCtx.close();
-    this.audioCtx = null;
+    if (this.audioCtx) {
+      this.audioCtx.close();
+      this.audioCtx = null;
+    }
   }
 
   // taken from here: https://github.com/mdn/voice-change-o-matic
