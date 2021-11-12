@@ -21,7 +21,7 @@ import Login from "./views/Login";
 import LoginFail from "./views/LoginFail";
 import ServiceReferenceView from "./views/ServiceReferenceView";
 import DataModelReferenceView from "./views/DataModelReferenceView";
-import Playground from "./views/Playground";
+import Playground from "./views/playground/index";
 import Sandbox from "./Sandbox";
 import Import from "./Import";
 import Join from "./Join";

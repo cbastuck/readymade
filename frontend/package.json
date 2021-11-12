@@ -47,7 +47,8 @@
     "eject": "react-scripts eject",
     "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend",
     "push": "npm run build && docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend",
-    "parcel": "parcel build --out-dir public/bridge --out-file bridge.js --public-url /bridge --no-source-maps --cache-dir ./parcel-cache --target browser bridge/index.js",
+    "build-bridge": "parcel build --out-dir build-bridge --out-file index.js --public-url /bridge --no-source-maps --cache-dir ./parcel-cache --target browser bridge/index.js",
+    "deploy-bridge": "rsync -avz --progress --exclude node_modules build-bridge/* xeon:bridge",
     "prettier": "prettier --write \"src/**/*.js\""
   },
   "eslintConfig": {
