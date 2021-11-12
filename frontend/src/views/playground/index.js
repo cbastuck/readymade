@@ -194,8 +194,10 @@ export default class Playground extends Component {
     };
     this.setState({
       ...data,
-      ...inputActivationIds,
-      ...outputActivationIds,
+      peerActivation: {
+        ...inputActivationIds,
+        ...outputActivationIds,
+      },
       initialFetched: true,
       description,
     });
@@ -724,6 +726,7 @@ export default class Playground extends Component {
       sidechainRouting,
       outputRouting,
       inputRouting,
+      peerActivation,
     } = this.state;
     return (
       <Board
@@ -779,6 +782,12 @@ export default class Playground extends Component {
               ...this.state.sidechainRouting,
               [runtime.id]: routing,
             },
+          })
+        }
+        peerActivation={peerActivation}
+        onPeerActivationChanged={(peerActivation) =>
+          this.setState({
+            peerActivation,
           })
         }
       />

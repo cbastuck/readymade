@@ -70,9 +70,9 @@ class PeersContext extends Component {
     const srcPeer = peers[src];
     if (!srcPeer) {
       console.warn(
-        "Trying to send data from an unregistered peer",
-        src,
-        this.state.peers
+        `Trying to send data from an unregistered peer from: ${src} to: ${dst} know peers: ${JSON.stringify(
+          this.state.peers
+        )}`
       );
       return;
     }
