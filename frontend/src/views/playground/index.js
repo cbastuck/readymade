@@ -21,8 +21,6 @@ import Board from "./Board";
 import { replacePlaceholders } from "../../core/url";
 import { generateRandomName } from "../../core/board";
 
-import { getActivationId } from "./common";
-
 const defaultBundles = [
   "hookup.to/registry/browser/Audio",
   "hookup.to/registry/browser/Graphic",
@@ -155,26 +153,6 @@ export default class Playground extends Component {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
     }
 
-    const inputActivationIds = inputRouting
-      ? Object.keys(inputRouting).reduce(
-          (a, c) => ({
-            ...a,
-            [getActivationId(c)]: true,
-          }),
-          {}
-        )
-      : {};
-
-    const outputActivationIds = outputRouting
-      ? Object.keys(outputRouting).reduce(
-          (a, c) => ({
-            ...a,
-            [getActivationId(c)]: true,
-          }),
-          {}
-        )
-      : {};
-
     const data = {
       board: { name: boardName },
       runtimes,
@@ -194,10 +172,6 @@ export default class Playground extends Component {
     };
     this.setState({
       ...data,
-      peerActivation: {
-        ...inputActivationIds,
-        ...outputActivationIds,
-      },
       initialFetched: true,
       description,
     });
@@ -674,7 +648,6 @@ export default class Playground extends Component {
                   marginTop: showLoadPanel ? 25 : 40,
                 })}
               >
-                {" "}
                 Welcome to Playground
               </h1>
               <h2 style={s(t.fs13, t.m(0, 10))}> Pick an option </h2>
@@ -686,7 +659,6 @@ export default class Playground extends Component {
                     menuItem: menuItem("Sketch board"),
                     render: () => (
                       <Tab.Pane>
-                        {" "}
                         {content} {saveReminder}
                       </Tab.Pane>
                     ),
@@ -699,7 +671,6 @@ export default class Playground extends Component {
                     menuItem: menuItem("Restore board"),
                     render: () => (
                       <Tab.Pane>
-                        {" "}
                         {this.renderStoredBoards(savedBoards)}
                       </Tab.Pane>
                     ),
@@ -726,7 +697,6 @@ export default class Playground extends Component {
       sidechainRouting,
       outputRouting,
       inputRouting,
-      peerActivation,
     } = this.state;
     return (
       <Board
@@ -782,12 +752,6 @@ export default class Playground extends Component {
               ...this.state.sidechainRouting,
               [runtime.id]: routing,
             },
-          })
-        }
-        peerActivation={peerActivation}
-        onPeerActivationChanged={(peerActivation) =>
-          this.setState({
-            peerActivation,
           })
         }
       />

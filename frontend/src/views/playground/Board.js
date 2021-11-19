@@ -17,11 +17,58 @@ import { getActivationId } from "./common";
 export default class Board extends Component {
   state = {
     showRoutingOptions: false,
+    peerActivation: {},
   };
-
   runtimeInstances = {};
-
   inputSelectors = {};
+
+  componentDidMount() {
+    this.updatePeerActivation(
+      this.props.inputRouting,
+      this.props.outputRouting
+    );
+  }
+
+  componentDidUpdate(prevProps) {
+    if (
+      prevProps.inputRouting !== this.props.inputRouting ||
+      prevProps.outputRouting !== this.props.outputRouting
+    ) {
+      this.updatePeerActivation(
+        this.props.inputRouting,
+        this.props.outputRouting
+      );
+    }
+  }
+
+  updatePeerActivation = (inputRouting, outputRouting) => {
+    const inputActivationIds = inputRouting
+      ? Object.keys(inputRouting).reduce(
+          (a, c) => ({
+            ...a,
+            [getActivationId(c)]: true,
+          }),
+          {}
+        )
+      : {};
+
+    const outputActivationIds = outputRouting
+      ? Object.keys(outputRouting).reduce(
+          (a, c) => ({
+            ...a,
+            [getActivationId(c)]: true,
+          }),
+          {}
+        )
+      : {};
+
+    this.setState({
+      peerActivation: {
+        ...inputActivationIds,
+        ...outputActivationIds,
+      },
+    });
+  };
 
   getNextRuntime = (runtime) => {
     const { runtimes = [] } = this.props.boardContext;
@@ -76,7 +123,7 @@ export default class Board extends Component {
   };
 
   renderOutputs = (peers, runtime, onUpdatePeers) => {
-    const { peerActivation, onPeerActivationChanged } = this.props;
+    const { peerActivation } = this.state;
     const outputRouting = this.props.outputRouting[runtime.id] || {};
     return (
       <OutputSelector
@@ -94,9 +141,11 @@ export default class Board extends Component {
             case OutputSelector.updatePeersAction: {
               const activationId = getActivationId(runtime.id);
               if (!peerActivation[activationId]) {
-                onPeerActivationChanged({
-                  ...peerActivation,
-                  [activationId]: true,
+                this.setState({
+                  peerActivation: {
+                    ...peerActivation,
+                    [activationId]: true,
+                  },
                 });
               } else {
                 onUpdatePeers();
@@ -116,7 +165,7 @@ export default class Board extends Component {
   };
 
   renderInputs = (peers, runtime, onUpdatePeers) => {
-    const { peerActivation, onPeerActivationChanged } = this.props;
+    const { peerActivation } = this.state;
     const activationId = getActivationId(runtime.id);
     const isPeerActive = !!peerActivation[activationId];
     const inputRouting =
@@ -144,9 +193,11 @@ export default class Board extends Component {
             textAlign: "center",
           }}
           onClick={() =>
-            onPeerActivationChanged({
-              ...peerActivation,
-              [activationId]: true,
+            this.setState({
+              peerActivation: {
+                ...peerActivation,
+                [activationId]: true,
+              },
             })
           }
         >
@@ -232,8 +283,8 @@ export default class Board extends Component {
       boardName,
       allowedServices,
       inputRouting,
-      peerActivation,
     } = this.props;
+    const { peerActivation } = this.state;
     const { runtimes } = boardContext;
     return (
       <div>
