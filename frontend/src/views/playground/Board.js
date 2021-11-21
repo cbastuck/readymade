@@ -8,10 +8,10 @@ import SaveBoardPrompt from "../../components/SaveBoardPrompt";
 import Description from "./Description";
 import VSpacer from "../../components/shared/VSpacer";
 import Runtime from "../../components/Runtime";
-import SidechainSelector from "../../components/SidechainSelector";
+import SidechainSelector from "../../components/SidechainSelector"; // TODO: REMOvE
 import DragProvider from "../../DragContext";
-import OutputSelector from "../../components/shared/OutputSelector";
-import InputSelector from "../../components/shared/InputSelector";
+import OutputOptions from "../../components/shared/OutputOptions";
+import InputOptions from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
 
 export default class Board extends Component {
@@ -122,11 +122,15 @@ export default class Board extends Component {
     }
   };
 
-  renderOutputs = (peers, runtime, onUpdatePeers) => {
+  renderOutputs = (peers, runtime, onUpdatePeers, boardContext) => {
     const { peerActivation } = this.state;
     const outputRouting = this.props.outputRouting[runtime.id] || {};
+
+    const { sidechainRouting } = this.props;
+    const runtimeSidechainRouting =
+      sidechainRouting && sidechainRouting[runtime.id];
     return (
-      <OutputSelector
+      <OutputOptions
         items={peers}
         initialValue={outputRouting.peer}
         onExpand={() => {
@@ -138,7 +142,7 @@ export default class Board extends Component {
         onSelect={(peer) => this.props.onChangeOutputRouting(runtime, { peer })}
         onAction={(action) => {
           switch (action.type) {
-            case OutputSelector.updatePeersAction: {
+            case OutputOptions.updatePeersAction: {
               const activationId = getActivationId(runtime.id);
               if (!peerActivation[activationId]) {
                 this.setState({
@@ -152,7 +156,7 @@ export default class Board extends Component {
               }
               break;
             }
-            case OutputSelector.flowChanged:
+            case OutputOptions.flowChanged:
               this.props.onChangeOutputRouting(runtime, { flow: action.flow });
               return;
             default:
@@ -160,6 +164,11 @@ export default class Board extends Component {
           }
         }}
         flow={outputRouting.flow}
+        boardContext={boardContext}
+        sidechainRouting={runtimeSidechainRouting}
+        onSidechangeRouting={(routing) =>
+          this.props.onChangeSidechainRouting(runtime, routing)
+        }
       />
     );
   };
@@ -171,13 +180,13 @@ export default class Board extends Component {
     const inputRouting =
       this.props.inputRouting && this.props.inputRouting[runtime.id];
     return (
-      <InputSelector
+      <InputOptions
         ref={(selector) => (this.inputSelectors[runtime.id] = selector)}
         items={peers}
         initialValue={inputRouting}
         onAction={(action) => {
           switch (action.type) {
-            case InputSelector.updatePeersAction:
+            case InputOptions.updatePeersAction:
               return onUpdatePeers();
             default:
               break;
@@ -203,7 +212,7 @@ export default class Board extends Component {
         >
           {!isPeerActive ? "Click to enable" : false}
         </div>
-      </InputSelector>
+      </InputOptions>
     );
   };
 
@@ -236,7 +245,8 @@ export default class Board extends Component {
           outputs={this.renderOutputs(
             filteredPeers,
             runtime,
-            peers.updatePeers
+            peers.updatePeers,
+            boardContext
           )}
           inputs={this.renderInputs(filteredPeers, runtime, peers.updatePeers)}
         >

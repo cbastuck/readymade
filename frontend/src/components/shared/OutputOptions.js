@@ -2,10 +2,11 @@ import React, { Component } from "react";
 
 import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";
+import SidechainSelector from "./SidechainSelector";
 
 const none = "No routing";
 
-export default class OutputSelector extends Component {
+export default class OutputOptions extends Component {
   state = {
     selected: "none",
     expanded: false,
@@ -15,12 +16,10 @@ export default class OutputSelector extends Component {
   static flowChanged = "flow-changed";
 
   componentDidMount() {
-    const { initialValue } = this.props;
-    if (initialValue !== undefined) {
-      this.setState({
-        selected: initialValue,
-      });
-    }
+    const { initialValue = "none" } = this.props;
+    this.setState({
+      selected: initialValue,
+    });
   }
 
   componentDidUpdate(prevProps) {
@@ -65,7 +64,7 @@ export default class OutputSelector extends Component {
             onSelect(selected === none ? null : selected)
           );
         }}
-        onOpen={() => onAction({ type: OutputSelector.updatePeersAction })}
+        onOpen={() => onAction({ type: OutputOptions.updatePeersAction })}
       />
     );
   };
@@ -83,8 +82,24 @@ export default class OutputSelector extends Component {
         }}
         value={flow}
         onChange={(ev, { value: flow }) =>
-          onAction({ type: OutputSelector.flowChanged, flow })
+          onAction({ type: OutputOptions.flowChanged, flow })
         }
+      />
+    );
+  };
+
+  renderSidechainOptions = () => {
+    const {
+      boardContext,
+      sidechainRouting = [],
+      onSidechangeRouting,
+    } = this.props;
+    return this.renderOptions(
+      "Sidechaining",
+      <SidechainSelector
+        boardContext={boardContext}
+        values={sidechainRouting}
+        onChange={(routing) => onSidechangeRouting(routing)}
       />
     );
   };
@@ -94,6 +109,7 @@ export default class OutputSelector extends Component {
       <div style={t.p3}>
         {this.renderFlowOptions()}
         {this.renderPeerOptions()}
+        {this.renderSidechainOptions()}
       </div>
     );
   };

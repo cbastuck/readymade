@@ -6,7 +6,7 @@ import SelectorField from "./SelectorField";
 const none = "No Input";
 const all = "All Peers";
 
-export default class InputSelector extends Component {
+export default class InputOptions extends Component {
   state = {
     selected: "none",
     expanded: false,
@@ -86,7 +86,7 @@ export default class InputSelector extends Component {
               }
             })
           }
-          onOpen={() => onAction({ type: InputSelector.updatePeersAction })}
+          onOpen={() => onAction({ type: InputOptions.updatePeersAction })}
         />
         {children ? children : false}
       </div>
