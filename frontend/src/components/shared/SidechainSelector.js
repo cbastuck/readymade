@@ -19,7 +19,6 @@ export default function SidechainSelector({ boardContext, values, onChange }) {
   const mappedValues = values.map(
     (item) => `${item.runtimeId}.${item.serviceUuid}`
   );
-  console.log("MAPPED CALUES", mappedValues);
   return (
     <Dropdown
       style={{ maxWidth: 200 }}
@@ -33,7 +32,6 @@ export default function SidechainSelector({ boardContext, values, onChange }) {
           const pair = item.split(".");
           return { runtimeId: pair[0], serviceUuid: pair[1] };
         });
-        console.log("unmappedValues CALUES", unmappedValues);
         onChange(unmappedValues);
       }}
       value={mappedValues}

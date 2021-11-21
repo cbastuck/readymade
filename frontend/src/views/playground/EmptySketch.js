@@ -8,7 +8,7 @@ export default function EmptySketch({ defaultName, boardName }) {
   const headline = isDefaultBoard ? (
     "This is an empty playground"
   ) : (
-    <span>
+    <span style={s(t.tc, t.fs16, t.uc, t.ls1)}>
       Playground <span style={t.italic}>{boardName}</span> is empty{" "}
     </span>
   );
@@ -28,7 +28,7 @@ export default function EmptySketch({ defaultName, boardName }) {
             color="grey"
           />
         </div>
-        <div style={t.tc}>
+        <div style={s(t.uc, t.fs14, t.ls1, t.tc)}>
           <span
             style={{ cursor: "help", color: "#4284C4" }}
             onClick={() => {

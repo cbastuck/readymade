@@ -12,7 +12,7 @@ import Footer from "../../components/Footer";
 import { s, t } from "../../styles";
 import BrowserRegistry from "../../runtime/BrowserRegistry";
 import { filterPrivateMembers } from "../../runtime/services/helpers";
-
+import SaveBoardPrompt from "../../components/SaveBoardPrompt";
 import VSpacer from "../../components/shared/VSpacer";
 import BoardCollection from "../../components/BoardCollection";
 import EmptySketch from "./EmptySketch";
@@ -460,7 +460,7 @@ export default class Playground extends Component {
     const { runtimes = [], services = {} } = this.state;
     const updatedRuntimes = runtimes.filter((r) => r.id !== runtime.id);
     const updatedServices = Object.keys(services)
-      .filter((r) => r.id !== runtime.id)
+      .filter((rid) => rid !== runtime.id)
       .reduce((all, key) => ({ ...all, [key]: services[key] }), {});
     this.setState({
       runtimes: updatedRuntimes,
@@ -872,6 +872,7 @@ export default class Playground extends Component {
                 board={boardName}
                 availableRuntimes={this.availableRuntimes}
               />
+              <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
               {this.renderContent(boardContext)}
               <Footer />
             </div>

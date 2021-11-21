@@ -1,10 +1,8 @@
 import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
 
 import PeersProvider, { PeersConsumer } from "../../PeersContext";
 import Peer from "../../components/Peer";
 import { s, t } from "../../styles";
-import SaveBoardPrompt from "../../components/SaveBoardPrompt";
 import Description from "./Description";
 import VSpacer from "../../components/shared/VSpacer";
 import Runtime from "../../components/Runtime";
@@ -215,7 +213,7 @@ export default class Board extends Component {
   };
 
   renderRuntime = (boardContext, runtime, peers, allowedServices) => {
-    const { sidechainRouting, boardName } = this.props;
+    const { boardName } = this.props;
 
     const ownPeers = boardContext.runtimes.map(
       (rt) => `${boardName}-${rt.name}`
@@ -245,22 +243,15 @@ export default class Board extends Component {
   };
 
   render() {
-    const {
-      boardContext,
-      description,
-      boardName,
-      allowedServices,
-      inputRouting,
-    } = this.props;
+    const { description, boardName, allowedServices } = this.props;
     const { peerActivation } = this.state;
-    const { runtimes } = boardContext;
     return (
       <div>
         <div style={s(t.w100)}>
           <PeersProvider ref={(ctx) => (this.peerContext = ctx)}>
             <PeersConsumer>
               {(peers) =>
-                runtimes.map((runtime, rtidx) => {
+                this.props.boardContext.runtimes.map((runtime, rtidx) => {
                   const isPeerActive =
                     !!peerActivation[getActivationId(runtime.id)];
                   return (
@@ -269,7 +260,14 @@ export default class Board extends Component {
                       name={`${boardName}-${runtime.name}`}
                       onData={(envelope) => {
                         const { sender, data } = envelope;
-                        const input = inputRouting[runtime.id];
+                        const input = this.props.inputRouting[runtime.id];
+                        console.log(
+                          "GOT INPUT from ",
+                          sender,
+                          "to ",
+                          input,
+                          this.props.inputRouting
+                        );
                         if (input === "*" || input === sender) {
                           const rt = this.getRuntimeById(runtime.id);
                           if (rt) {
@@ -285,7 +283,7 @@ export default class Board extends Component {
                       active={isPeerActive}
                     >
                       {this.renderRuntime(
-                        boardContext,
+                        this.props.boardContext,
                         runtime,
                         peers,
                         allowedServices
@@ -298,7 +296,6 @@ export default class Board extends Component {
           </PeersProvider>
         </div>
         <Description description={description} boardName={boardName} />
-        <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
         <VSpacer />
       </div>
     );

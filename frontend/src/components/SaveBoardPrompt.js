@@ -35,7 +35,7 @@ export default class SaveBoardPrompt extends Component {
         <Label style={s(t.uc, t.fs12, t.ls1)}>Name</Label>
         <Input
           style={s(t.w100)}
-          value={name}
+          value={name || ""}
           onChange={(ev, { value: name }) => this.setState({ name })}
         />
         <Label style={s(t.uc, t.fs12, t.ls1, t.mt10)}>Description</Label>
@@ -44,7 +44,7 @@ export default class SaveBoardPrompt extends Component {
             border: "solid 1px lightgray",
             resize: "none",
           })}
-          value={description}
+          value={description || ""}
           onChange={(ev, { value: description }) =>
             this.setState({ description })
           }
