@@ -8,7 +8,6 @@ import SaveBoardPrompt from "../../components/SaveBoardPrompt";
 import Description from "./Description";
 import VSpacer from "../../components/shared/VSpacer";
 import Runtime from "../../components/Runtime";
-import SidechainSelectorLegacy from "../../components/SidechainSelectorLegacy"; // TODO: REMOvE
 import DragProvider from "../../DragContext";
 import OutputOptions from "../../components/shared/OutputOptions";
 import InputOptions from "../../components/shared/InputOptions";
@@ -16,7 +15,6 @@ import { getActivationId } from "./common";
 
 export default class Board extends Component {
   state = {
-    showRoutingOptions: false,
     peerActivation: {},
   };
   runtimeInstances = {};
@@ -218,7 +216,6 @@ export default class Board extends Component {
 
   renderRuntime = (boardContext, runtime, peers, allowedServices) => {
     const { sidechainRouting, boardName } = this.props;
-    const { showRoutingOptions } = this.state;
 
     const ownPeers = boardContext.runtimes.map(
       (rt) => `${boardName}-${rt.name}`
@@ -234,13 +231,6 @@ export default class Board extends Component {
           boardContext={boardContext}
           runtime={runtime}
           onResult={this.onResult.bind(this, runtime)}
-          customItems={[
-            {
-              key: `sidechain-option-${runtime.id}`,
-              icon: "location arrow",
-              onClick: () => this.setState({ showRoutingOptions: runtime.id }),
-            },
-          ]}
           allowedServices={allowedServices}
           outputs={this.renderOutputs(
             filteredPeers,
@@ -249,39 +239,7 @@ export default class Board extends Component {
             boardContext
           )}
           inputs={this.renderInputs(filteredPeers, runtime, peers.updatePeers)}
-        >
-          {showRoutingOptions === runtime.id && (
-            <div
-              key={`routing-options-${runtime.id}`}
-              style={{
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              <div style={{ display: "flex", flexDirection: "row" }}>
-                <Button
-                  onClick={() => this.setState({ showRoutingOptions: false })}
-                  style={s(t.uc, t.fs12, t.ls1, {
-                    height: 28,
-                    width: 32,
-                    marginLeft: "auto",
-                    borderRadius: 2,
-                  })}
-                  icon="close"
-                />
-              </div>
-              <SidechainSelectorLegacy
-                key={`sidechain-selector-${runtime.id}`}
-                runtimes={boardContext.runtimes}
-                services={boardContext.services}
-                routing={sidechainRouting[runtime.id]}
-                onSelect={(routing) =>
-                  this.props.onChangeSidechainRouting(runtime, routing)
-                }
-              />
-            </div>
-          )}
-        </Runtime>
+        />
       </DragProvider>
     );
   };
