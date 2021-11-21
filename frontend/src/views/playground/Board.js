@@ -8,7 +8,7 @@ import SaveBoardPrompt from "../../components/SaveBoardPrompt";
 import Description from "./Description";
 import VSpacer from "../../components/shared/VSpacer";
 import Runtime from "../../components/Runtime";
-import SidechainSelector from "../../components/SidechainSelector"; // TODO: REMOvE
+import SidechainSelectorLegacy from "../../components/SidechainSelectorLegacy"; // TODO: REMOvE
 import DragProvider from "../../DragContext";
 import OutputOptions from "../../components/shared/OutputOptions";
 import InputOptions from "../../components/shared/InputOptions";
@@ -270,7 +270,7 @@ export default class Board extends Component {
                   icon="close"
                 />
               </div>
-              <SidechainSelector
+              <SidechainSelectorLegacy
                 key={`sidechain-selector-${runtime.id}`}
                 runtimes={boardContext.runtimes}
                 services={boardContext.services}

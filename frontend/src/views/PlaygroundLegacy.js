@@ -9,7 +9,7 @@ import BoardProvider, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 import Runtime from "../components/Runtime";
-import SidechainSelector from "../components/SidechainSelector";
+import SidechainSelector from "../components/SidechainSelectorLegacy";
 import DragProvider from "../DragContext";
 import { s, t } from "../styles";
 import BrowserRegistry from "../runtime/BrowserRegistry";

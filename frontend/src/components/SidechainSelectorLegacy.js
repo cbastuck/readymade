@@ -3,7 +3,7 @@ import { Table, Checkbox } from "semantic-ui-react";
 
 import { s, t } from "../styles";
 
-export default class SidechainSelector extends Component {
+export default class SidechainSelectorLegacy extends Component {
   renderTable = (runtimes, services, routing, onSelect) => {
     if (!services || !runtimes) {
       return false;

@@ -708,32 +708,21 @@ export default class Playground extends Component {
         sidechainRouting={sidechainRouting}
         outputRouting={outputRouting}
         onChangeOutputRouting={(runtime, { peer, flow }) => {
-          const data = {
-            ...outputRouting,
+          const runtimeData = {
+            ...outputRouting[runtime.id],
           };
 
           if (peer) {
-            data.peer = peer;
+            runtimeData.peer = peer;
           }
 
           if (flow) {
-            data.flow = flow;
+            runtimeData.flow = flow;
           }
-
           this.setState({
             outputRouting: {
               ...this.state.outputRouting,
-              [runtime.id]: data,
-            },
-          });
-
-          this.setState({
-            outputRouting: {
-              ...this.state.outputRouting,
-              [runtime.id]: {
-                ...outputRouting,
-                peer,
-              },
+              [runtime.id]: runtimeData,
             },
           });
         }}
