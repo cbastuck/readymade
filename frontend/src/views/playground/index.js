@@ -17,6 +17,8 @@ import VSpacer from "../../components/shared/VSpacer";
 import BoardCollection from "../../components/BoardCollection";
 import EmptySketch from "./EmptySketch";
 import Board from "./Board";
+import PeerSync from "./PeerSync";
+import { syncBoard } from "../../core/sync";
 
 import { replacePlaceholders } from "../../core/url";
 import { generateRandomName } from "../../core/board";
@@ -170,8 +172,12 @@ export default class Playground extends Component {
       outputRouting,
       inputRouting,
     };
+
+    if (this.peerSync) {
+      this.peerSync.onSyncState(data);
+    }
     this.setState({
-      ...data,
+      ...data, // TOOO: doubling the state data, in BoardContext and here
       initialFetched: true,
       description,
     });
@@ -848,6 +854,7 @@ export default class Playground extends Component {
     }
     return (
       <BoardProvider
+        ref={(context) => (this.boardContextProvider = context)}
         key={`playground-${boardName}`}
         user={this.user}
         boardName={boardName}
@@ -871,6 +878,20 @@ export default class Playground extends Component {
               <Toolbar
                 board={boardName}
                 availableRuntimes={this.availableRuntimes}
+              />
+              <PeerSync
+                board={boardName}
+                ref={(peerSync) => (this.peerSync = peerSync)}
+                onData={(updatedBoardState) => {
+                  const syncedStateUpdate = syncBoard(
+                    this.state,
+                    updatedBoardState,
+                    this.defaultRegistry
+                  );
+                  if (syncedStateUpdate) {
+                    this.boardContextProvider.setState(syncedStateUpdate);
+                  }
+                }}
               />
               <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
               {this.renderContent(boardContext)}

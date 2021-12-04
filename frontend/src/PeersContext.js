@@ -4,7 +4,7 @@ import { removeKeyFromObject } from "./runtime/services/helpers";
 
 const PeersCtx = createContext();
 
-class PeersContext extends Component {
+class PeersProvider extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -19,7 +19,7 @@ class PeersContext extends Component {
 
   onPeer = (peerName, peer) => {
     peer.on("error", (err) => {
-      console.error("PeersContext peer.onError", err);
+      console.error("PeersProvider peer.onError", err);
     });
 
     peer.on("close", () => this.onPeerClosed(peerName));
@@ -70,9 +70,7 @@ class PeersContext extends Component {
     const srcPeer = peers[src];
     if (!srcPeer) {
       console.warn(
-        `Trying to send data from an unregistered peer from: ${src} to: ${dst} know peers: ${JSON.stringify(
-          this.state.peers
-        )}`
+        `Trying to send data from an unregistered peer from: ${src} to: ${dst} know peers: ${this.state.peers}`
       );
       return;
     }
@@ -121,4 +119,4 @@ class PeersContext extends Component {
 
 const PeersConsumer = PeersCtx.Consumer;
 export { PeersConsumer, PeersCtx };
-export default PeersContext;
+export default PeersProvider;
