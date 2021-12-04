@@ -3,7 +3,7 @@ export function syncBoard(
   updatedBoardState,
   defaultBrowserRegistry
 ) {
-  const { services, runtimes } = updatedBoardState.data;
+  const { services, runtimes } = updatedBoardState;
   const updatedState = {
     services,
     runtimes,
@@ -15,6 +15,5 @@ export function syncBoard(
       {}
     ),
   };
-
   return Object.keys(updatedState).length > 0 ? updatedState : undefined;
 }

@@ -222,7 +222,7 @@ export default class Board extends Component {
       (x) => ownPeers.indexOf(x) === -1
     );
     return (
-      <DragProvider style={{ marginBottom: 10, marginTop: 10 }}>
+      <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
         <Runtime
           key={`sandbox-playground-${runtime.id}`}
           ref={(rt) => (this.runtimeInstances[runtime.id] = rt)}
@@ -256,18 +256,11 @@ export default class Board extends Component {
                     !!peerActivation[getActivationId(runtime.id)];
                   return (
                     <Peer
-                      key={`playground-peer-${runtime.id}`}
+                      key={`${boardName}-runtime-peer-${runtime.id}`}
                       name={`${boardName}-${runtime.name}`}
                       onData={(envelope) => {
                         const { sender, data } = envelope;
                         const input = this.props.inputRouting[runtime.id];
-                        console.log(
-                          "GOT INPUT from ",
-                          sender,
-                          "to ",
-                          input,
-                          this.props.inputRouting
-                        );
                         if (input === "*" || input === sender) {
                           const rt = this.getRuntimeById(runtime.id);
                           if (rt) {

@@ -115,7 +115,7 @@ export default class InputField extends Component {
           width: "100%",
           display: "flex",
           flexDirection: "row",
-          margin: "0px 0px",
+          margin: "3px 0px",
           ...style,
         }}
       >

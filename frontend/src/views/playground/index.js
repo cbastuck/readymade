@@ -178,11 +178,8 @@ export default class Playground extends Component {
       inputRouting,
     };
 
-    if (this.peerSync) {
-      this.peerSync.syncState(data);
-    }
     this.setState({
-      ...data, // TOOO: doubling the state data, in BoardContext and here
+      ...data,
       initialFetched: true,
       description,
     });
@@ -612,9 +609,12 @@ export default class Playground extends Component {
     );
   };
 
+  showLoadPanel = () => {
+    return this.state.boardName === defaultName;
+  };
   renderPlaceholderOrPlayground = (boardContext) => {
     const { savedBoards = [], boardName, initialTabLocation } = this.state;
-    const showLoadPanel = boardName === defaultName;
+    const showLoadPanel = this.showLoadPanel();
     const menuItem = (value) => ({
       key: `playgound-tab-item-${value}`,
       content: value,
@@ -853,7 +853,6 @@ export default class Playground extends Component {
   renderPeerSync = (boardContext) => {
     return (
       <PeerSync
-        ref={(peerSync) => (this.peerSync = peerSync)}
         boardContext={boardContext}
         onUpdate={(update) => {
           this.setState(update);
@@ -871,6 +870,7 @@ export default class Playground extends Component {
     if (lastPathItem === "src") {
       return this.renderSourceCode(boardName);
     }
+    const showLoadPanel = this.showLoadPanel();
     return (
       <BoardProvider
         key={`playground-${boardName}`}
@@ -897,8 +897,8 @@ export default class Playground extends Component {
                 board={boardName}
                 availableRuntimes={this.availableRuntimes}
               />
-              {this.renderPeerSync(boardContext)}
               <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
+              {!showLoadPanel && this.renderPeerSync(boardContext)}
               {this.renderContent(boardContext)}
               <Footer />
             </div>

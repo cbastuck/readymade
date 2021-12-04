@@ -22,7 +22,7 @@ export default class SyncIndicator extends Component {
               minHeight: labelHeight,
               color: !inSync && "red",
               cursor: !inSync ? "pointer" : undefined,
-              overflow: "hidden",
+              // overflow: "hidden",
               textOverflow: "ellipsis",
               ...style,
             }}
