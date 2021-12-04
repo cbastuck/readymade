@@ -1,10 +1,10 @@
 export function syncBoard(
-  prevBoardState,
+  boardContext,
   updatedBoardState,
   defaultBrowserRegistry
 ) {
   const { services, runtimes } = updatedBoardState.data;
-  return {
+  const updatedState = {
     services,
     runtimes,
     registry: runtimes.reduce(
@@ -15,4 +15,6 @@ export function syncBoard(
       {}
     ),
   };
+
+  return Object.keys(updatedState).length > 0 ? updatedState : undefined;
 }

@@ -18,7 +18,6 @@ import BoardCollection from "../../components/BoardCollection";
 import EmptySketch from "./EmptySketch";
 import Board from "./Board";
 import PeerSync from "./PeerSync";
-import { syncBoard } from "../../core/sync";
 
 import { replacePlaceholders } from "../../core/url";
 import { generateRandomName } from "../../core/board";
@@ -140,7 +139,7 @@ export default class Playground extends Component {
 
   fetchData = async () => {
     const {
-      boardName = defaultName,
+      boardName = this.state.boardName || defaultName,
       runtimes = [],
       services = {},
       description = "",
@@ -174,7 +173,7 @@ export default class Playground extends Component {
     };
 
     if (this.peerSync) {
-      this.peerSync.onSyncState(data);
+      this.peerSync.syncState(data);
     }
     this.setState({
       ...data, // TOOO: doubling the state data, in BoardContext and here
@@ -398,6 +397,7 @@ export default class Playground extends Component {
       ...descriptor,
       uuid: uuid.v4(),
     };
+    console.log("ADD SERVICE", services);
     this.setState({
       services: {
         ...services,
@@ -845,6 +845,17 @@ export default class Playground extends Component {
     return this.renderPlaceholderOrPlayground(boardContext);
   };
 
+  renderPeerSync = (boardContext) => {
+    return (
+      <PeerSync
+        ref={(peerSync) => (this.peerSync = peerSync)}
+        boardContext={boardContext}
+        onUpdate={(update) => this.boardContextProvider.setState(update)}
+        defaultBrowserRegistry={this.defaultRegistry}
+      />
+    );
+  };
+
   render() {
     const { boardName } = this.state;
     const { pathname } = window.location;
@@ -879,20 +890,7 @@ export default class Playground extends Component {
                 board={boardName}
                 availableRuntimes={this.availableRuntimes}
               />
-              <PeerSync
-                board={boardName}
-                ref={(peerSync) => (this.peerSync = peerSync)}
-                onData={(updatedBoardState) => {
-                  const syncedStateUpdate = syncBoard(
-                    this.state,
-                    updatedBoardState,
-                    this.defaultRegistry
-                  );
-                  if (syncedStateUpdate) {
-                    this.boardContextProvider.setState(syncedStateUpdate);
-                  }
-                }}
-              />
+              {this.renderPeerSync(boardContext)}
               <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
               {this.renderContent(boardContext)}
               <Footer />
