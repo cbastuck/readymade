@@ -83,16 +83,22 @@ export default class Playground extends Component {
         this.props.match.params.board) ||
       defaultName,
     showRoutingOptions: false,
-    sidechainRouting: {},
     placeholderAnimationRunning: false,
-    runtimes: undefined,
-    services: undefined,
     description: "",
     initialFetched: false,
     savedBoards: getSavedBoards(),
+    initialTabLocation: "#usecase",
+
+    /*
+      this part of the state represents the board
+      state as available on the backend (which does not
+      exist in case of the playground)
+    */
+    runtimes: undefined,
+    services: undefined,
+    sidechainRouting: {},
     inputRouting: {},
     outputRouting: {},
-    initialTabLocation: "#usecase",
   };
 
   user = {
@@ -155,7 +161,7 @@ export default class Playground extends Component {
     }
 
     const data = {
-      board: { name: boardName },
+      boardName,
       runtimes,
       services,
       registry:
@@ -397,7 +403,6 @@ export default class Playground extends Component {
       ...descriptor,
       uuid: uuid.v4(),
     };
-    console.log("ADD SERVICE", services);
     this.setState({
       services: {
         ...services,
@@ -850,7 +855,10 @@ export default class Playground extends Component {
       <PeerSync
         ref={(peerSync) => (this.peerSync = peerSync)}
         boardContext={boardContext}
-        onUpdate={(update) => this.boardContextProvider.setState(update)}
+        onUpdate={(update) => {
+          this.setState(update);
+          boardContext.fetchData();
+        }}
         defaultBrowserRegistry={this.defaultRegistry}
       />
     );
@@ -865,7 +873,6 @@ export default class Playground extends Component {
     }
     return (
       <BoardProvider
-        ref={(context) => (this.boardContextProvider = context)}
         key={`playground-${boardName}`}
         user={this.user}
         boardName={boardName}

@@ -66,7 +66,6 @@ class BoardContext extends Component {
       appViewMode: "wide",
 
       user: props.user,
-      board: {}, // TODO: should remove this property, it's not used
       boardName: props.boardName,
       runtimes: [],
       services: {},
@@ -114,7 +113,7 @@ class BoardContext extends Component {
       }
     }
 
-    const boardName = (board && board.name) || this.state.boardName;
+    const boardName = this.getBoardName();
     this.setState({
       board,
       boardName,
@@ -161,7 +160,7 @@ class BoardContext extends Component {
   isActionAvailableDefaut = (action) => {
     switch (action) {
       case "clearBoard":
-        return !!this.state.board;
+        return true;
       default:
         return true;
     }
