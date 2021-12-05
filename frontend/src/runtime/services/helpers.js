@@ -1,7 +1,19 @@
+export function isObject(x) {
+  return Object.prototype.toString.call(x) === "[object Object]"; // strict JSON object check
+}
+
+export function isSomeObject(x) {
+  return typeof x === "object"; // not true for e.g. [object AnalyserNode], [object Blob], [object String] etc.
+}
+
 export function isFunction(functionToCheck) {
   return (
     functionToCheck && {}.toString.call(functionToCheck) === "[object Function]"
   );
+}
+
+export function isBlob(data) {
+  return data instanceof Blob;
 }
 
 export function isArrayBuffer(value) {
@@ -46,10 +58,6 @@ export function filterPrivateMembers(service) {
       {}
     )
   );
-}
-
-export function isObject(x) {
-  return Object.prototype.toString.call(x) === "[object Object]";
 }
 
 export function createObjectURL(object, type) {

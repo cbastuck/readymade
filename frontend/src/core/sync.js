@@ -1,3 +1,20 @@
+import { isBlob, isFunction, isSomeObject } from "../runtime/services/helpers";
+
+function reconstructData(incoming) {
+  return Object.keys(incoming).reduce((all, key) => {
+    const value = incoming[key];
+    if (isSomeObject(value)) {
+      return value.__typeTag === "blob"
+        ? {
+            ...all,
+            [key]: new Blob([value.value], { type: value.__mimetype }),
+          }
+        : { ...all, [key]: reconstructData(value) };
+    }
+    return { ...all, [key]: value };
+  }, {});
+}
+
 export function mergeBoardState(
   oldBoardState,
   updatedBoardState,
@@ -5,7 +22,13 @@ export function mergeBoardState(
 ) {
   const { services, runtimes } = updatedBoardState;
   const updatedState = {
-    services,
+    services: Object.keys(services).reduce(
+      (acc, runtimeId) => ({
+        ...acc,
+        [runtimeId]: services[runtimeId].map((svc) => reconstructData(svc)),
+      }),
+      {}
+    ),
     runtimes,
     registry: runtimes.reduce(
       (all, rt) => ({
@@ -21,11 +44,19 @@ export function mergeBoardState(
 function prepareData(obj) {
   return Object.keys(obj).reduce((all, key) => {
     const value = obj[key];
-    const valueType = typeof value;
-    if (valueType === "function") {
+    if (isFunction(value)) {
       return all;
-    } else if (valueType === "object") {
+    } else if (isSomeObject(value) && !isBlob(value)) {
       return { ...all, [key]: prepareData(value) };
+    } else if (isBlob(value)) {
+      return {
+        ...all,
+        [key]: {
+          __typeTag: "blob",
+          __mimetype: value.type,
+          value,
+        },
+      };
     }
     return { ...all, [key]: value };
   }, {});
