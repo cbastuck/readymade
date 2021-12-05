@@ -64,13 +64,15 @@ export default class Runtime extends Component {
       }
       case "getConfig": {
         return getServiceConfiguration(
+          // TODO: this should go through BoardContext
+          // This does not work for services in BeowserRuntimes
           boardContext.boardName,
           service,
           runtime
         );
       }
       default:
-        console.log("Scene processing unknown service action", action);
+        console.log("Runtime processing unknown service action", action);
     }
   };
 

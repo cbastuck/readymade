@@ -4,7 +4,7 @@ import { Button } from "semantic-ui-react";
 import Peer from "../../components/Peer";
 import PeersProvider, { PeersConsumer } from "../../PeersContext";
 import SelectorField from "../../components/shared/SelectorField";
-import { syncBoard } from "../../core/sync";
+import { mergeBoardState, extractSyncState } from "../../core/sync";
 
 import { s, t } from "../../styles";
 
@@ -16,43 +16,23 @@ export default class PeerSync extends Component {
     syncedPeer: undefined,
   };
 
-  syncState = (data) => {
+  syncBoard = async () => {
     const { syncedPeer } = this.state;
     if (syncedPeer && this.peersContext) {
-      const syncData = {
-        inputRouting: data.inputRouting,
-        outputRouting: data.outputRouting,
-        sidechainRouting: data.sidechainRouting,
-        runtimes: data.runtimes.map((rt) => ({
-          id: rt.id,
-          name: rt.name,
-          type: rt.type,
-          registry: undefined,
-        })),
-        services: Object.keys(data.services).reduce(
-          (all, runtimeId) => ({
-            ...all,
-            [runtimeId]: data.services[runtimeId].map((svc) => ({
-              serviceId: svc.serviceId,
-              serviceName: svc.serviceName,
-              uuid: svc.uuid,
-            })),
-          }),
-          {}
-        ),
-      };
+      const data = await this.props.boardContext.serializeBoard();
+      const syncData = extractSyncState(data);
       this.peersContext.sendData(this.getPeerName(), syncedPeer, syncData);
     }
   };
 
   onConnected = () => {
-    this.syncState(this.props.boardContext);
+    this.syncBoard();
   };
 
   onData = (updateMessage) => {
     const { boardContext, defaultBrowserRegistry, onUpdate } = this.props;
     const { data: updatedBoardState } = updateMessage;
-    const syncedStateUpdate = syncBoard(
+    const syncedStateUpdate = mergeBoardState(
       boardContext,
       updatedBoardState,
       defaultBrowserRegistry
@@ -78,7 +58,7 @@ export default class PeerSync extends Component {
               padding: 5,
             },
             t.uc,
-            t.fs12,
+            t.fs11,
             t.ls1
           )}
           onClick={() => this.setState({ expanded: true })}
@@ -115,8 +95,8 @@ export default class PeerSync extends Component {
                     }
                   />
                   <Button
-                    style={s(t.uc, t.fs12, t.ls1, { height: 33, width: 80 })}
-                    onClick={() => this.syncState(this.props.boardContext)}
+                    style={s(t.uc, t.fs11, t.ls1, { height: 33, width: 80 })}
+                    onClick={() => this.syncBoard()}
                   >
                     push
                   </Button>

@@ -352,7 +352,7 @@ export default class Playground extends Component {
     }
   };
 
-  storeBoard = (name, description) => {
+  serializeBoard = (name, description) => {
     const {
       runtimes = [],
       services = {},
@@ -383,6 +383,7 @@ export default class Playground extends Component {
       description,
     };
     localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
+    return data;
   };
 
   newBoard = () => {
@@ -523,10 +524,11 @@ export default class Playground extends Component {
       const value = await this.prompt.getInput(suggested);
       if (value !== null) {
         const { name, description } = value;
-        this.storeBoard(name, description);
+        const storedData = this.serializeBoard(name, description);
         if (name !== suggested) {
           redirectTo(`/playground/${name}`);
         }
+        return storedData;
       }
     }
   };
@@ -889,6 +891,7 @@ export default class Playground extends Component {
         arrangeService={this.arrangeService}
         isActionAvailable={this.isActionAvailable}
         setRuntimeName={this.setRuntimeName}
+        serializeBoard={this.serializeBoard}
       >
         <BoardConsumer>
           {(boardContext) => (

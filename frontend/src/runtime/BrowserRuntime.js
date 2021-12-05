@@ -30,6 +30,12 @@ export default class BrowserRuntime extends Component {
     }
   }
 
+  componentDidUpdate(prevProps) {
+    if (this.props.services !== prevProps.services) {
+      this.props.services.forEach((svc) => this.configureService(svc, svc));
+    }
+  }
+
   createApp = () => {
     const { services, registry, boardName, runtime, userId } = this.props;
     if (!services) {
@@ -216,7 +222,7 @@ export default class BrowserRuntime extends Component {
   onMessage(command) {
     switch (command.action) {
       case "config":
-        return this.configureService(command.uuid, command.config);
+        return this.configureServiceByUuid(command.uuid, command.config);
       case "process":
         return this.processService(
           command.uuid,
@@ -272,7 +278,7 @@ export default class BrowserRuntime extends Component {
     }
   };
 
-  configureService(uuid, config) {
+  configureServiceByUuid(uuid, config) {
     const { services } = this.props;
     const service = services.find((s) => (s.uuid = uuid));
     if (!service) {
@@ -282,11 +288,15 @@ export default class BrowserRuntime extends Component {
         )}`
       );
     }
+    this.configureService(service, config);
+  }
+
+  configureService = (service, config) => {
     const svc = this.serviceInstance(service);
     if (svc) {
       svc.configure(config);
     }
-  }
+  };
 
   async processService(uuid, params, requestId) {
     const { services } = this.props;

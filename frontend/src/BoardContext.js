@@ -60,17 +60,19 @@ class BoardContext extends Component {
       releaseRuntimeScope: this.releaseRuntimeScope,
       isActionAvailable: this.isActionAvailable,
       setRuntimeName: this.setRuntimeName,
+      serializeBoard: props.serializeBoard, // TODO: this must exist for PeerSync
 
-      // data
+      // UI/App data
       viewportWidth: undefined,
       appViewMode: "wide",
+      savedBoards: [],
 
+      // Board data
       user: props.user,
       boardName: props.boardName,
       runtimes: [],
       services: {},
       registry: {},
-      savedBoards: [],
     };
   }
 
@@ -103,6 +105,9 @@ class BoardContext extends Component {
         // ensure service.configure function exists
         for (const svc of services[runtime.id]) {
           if (!svc.configure) {
+            // TODO: for BrowserRuntimes this happens in BrowserRuntime
+            // this should be streamlined!
+            // This implementation is only true for services in RemoteRuntimes
             svc.configure = async (config) =>
               configureService(board.name, svc, config);
           }
@@ -254,7 +259,7 @@ class BoardContext extends Component {
   saveBoard = () => {
     const { saveBoard } = this.props;
     if (saveBoard) {
-      saveBoard();
+      return saveBoard();
     }
   };
 
