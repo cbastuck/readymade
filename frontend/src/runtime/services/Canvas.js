@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import ResizeObserver from "resize-observer-polyfill";
 
 import ServiceUI from "./ServiceUI";
 import { createObjectURL, revokeObjectURL } from "./helpers";

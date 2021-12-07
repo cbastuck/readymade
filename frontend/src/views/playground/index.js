@@ -1,9 +1,8 @@
 import React, { Component } from "react";
-import { Button, Loader, Tab } from "semantic-ui-react";
+import { Loader, Tab } from "semantic-ui-react";
 import uuid from "uuid";
 import qs from "query-string";
 
-import Editor from "../../components/shared/Editor/index";
 import { redirectTo } from "../../core/actions";
 import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
@@ -533,11 +532,6 @@ export default class Playground extends Component {
     }
   };
 
-  closeSourceView = () => {
-    const { pathname } = window.location;
-    redirectTo(pathname.split("/").slice(0, -1).join("/"));
-  };
-
   renderUsecases = () => {
     const { usecases } = this.state;
     const internalUsecases = [
@@ -772,66 +766,6 @@ export default class Playground extends Component {
     }
   };
 
-  renderSourceCode = (boardName) => {
-    const { editSourceCode } = this.state;
-    const src = this.restoreBoardFromLocalStorage(boardName) || "";
-    if (editSourceCode) {
-      return (
-        <div style={{ height: "100%" }}>
-          <Button
-            style={s(t.m5, t.uc, t.ls1, t.fs12)}
-            onClick={() => {
-              const src = this.editor.getValue();
-              localStorage.setItem(`hkp-playground-${boardName}`, src);
-            }}
-          >
-            Save
-          </Button>
-          <Button
-            style={s(t.m5, t.uc, t.ls1, t.fs12)}
-            onClick={this.closeSourceView}
-          >
-            Close
-          </Button>
-          <Editor
-            ref={(editor) => (this.editor = editor)}
-            language="json"
-            value={JSON.stringify(src, null, 2)}
-          />
-        </div>
-      );
-    }
-    return (
-      <div>
-        <div
-          style={{
-            position: "sticky",
-            top: 0,
-            width: "100%",
-            backgroundColor: "white",
-          }}
-        >
-          <Button
-            style={s(t.mt10, t.mh(5), t.uc, t.ls1, t.fs12)}
-            onClick={() => this.setState({ editSourceCode: true })}
-          >
-            Edit
-          </Button>
-          <Button
-            style={s(t.m5, t.uc, t.ls1, t.fs12)}
-            onClick={this.closeSourceView}
-          >
-            Close
-          </Button>
-          <hr style={{ borderTop: "1px solid lightgray" }} />
-        </div>
-        <div style={{ fontFamily: "monospace", margin: 5 }}>
-          <pre> {JSON.stringify(src, null, 2)} </pre>
-        </div>
-      </div>
-    );
-  };
-
   renderContent = (boardContext) => {
     const { initialFetched } = this.state;
     if (!initialFetched) {
@@ -867,11 +801,6 @@ export default class Playground extends Component {
 
   render() {
     const { boardName } = this.state;
-    const { pathname } = window.location;
-    const lastPathItem = pathname.split("/").slice(-1)[0];
-    if (lastPathItem === "src") {
-      return this.renderSourceCode(boardName);
-    }
     const showLoadPanel = this.showLoadPanel();
     return (
       <BoardProvider

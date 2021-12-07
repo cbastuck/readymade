@@ -1,5 +1,7 @@
 import React, { Component } from "react";
 
+import ResizeObserver from "resize-observer-polyfill";
+
 export default class ResizeObserverComponent extends Component {
   state = {
     viewportWidth: undefined,

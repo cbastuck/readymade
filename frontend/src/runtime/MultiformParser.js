@@ -1,3 +1,5 @@
+import TextDecoder from "./TextDecoderPolyfill";
+
 const decoder = new TextDecoder();
 
 function utf16leBufferToStr(buf) {
