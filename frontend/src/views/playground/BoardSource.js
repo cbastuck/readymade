@@ -13,7 +13,7 @@ function restoreBoardFromLocalStorage(name) {
   }
 }
 
-function toreBoardToLocalStorage(board, src) {
+function storeBoardToLocalStorage(board, src) {
   localStorage.setItem(`hkp-playground-${board}`, src);
 }
 
@@ -33,7 +33,7 @@ export default function Source({ editSourceCode = true, match: { params } }) {
           style={s(t.m5, t.uc, t.ls1, t.fs12)}
           onClick={() => {
             const src = editor.getValue();
-            toreBoardToLocalStorage(board, src);
+            storeBoardToLocalStorage(board, src);
           }}
         >
           Save
