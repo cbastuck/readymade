@@ -265,6 +265,12 @@ class BoardContext extends Component {
 
   onAction = async (action) => {
     const boardname = this.getBoardName();
+    const { onAction } = this.props;
+    if (onAction) {
+      if (onAction(action)) {
+        return;
+      }
+    }
     switch (action.type) {
       case "newBoard":
         this.newBoard();

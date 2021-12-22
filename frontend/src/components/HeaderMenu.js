@@ -136,6 +136,18 @@ export default class HeaderMenu extends Component {
           >
             <span style={menuItemStyle}>Save Board</span>
           </Dropdown.Item>
+          <Dropdown.Item
+            onClick={() =>
+              boardContext.onAction({
+                type: "enablePeerSync",
+              })
+            }
+            disabled={
+              !boardContext || !boardContext.isActionAvailable("enablePeerSync")
+            }
+          >
+            <span style={menuItemStyle}>Enable Sync</span>
+          </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
     );

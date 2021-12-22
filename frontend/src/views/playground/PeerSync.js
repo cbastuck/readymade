@@ -12,7 +12,6 @@ const SYNC_BOARD_PREFIX = "board-peer";
 
 export default class PeerSync extends Component {
   state = {
-    expanded: false,
     syncedPeer: undefined,
   };
 
@@ -45,6 +44,7 @@ export default class PeerSync extends Component {
   getPeerName = () =>
     `${SYNC_BOARD_PREFIX}-${this.props.boardContext.boardName}`;
 
+  /*
   renderCollapsed = () => {
     return (
       <div style={{ margin: "0px 3px", padding: 0 }}>
@@ -68,13 +68,18 @@ export default class PeerSync extends Component {
       </div>
     );
   };
+*/
 
   renderExpanded = () => {
     const peerName = this.getPeerName();
     return (
       <div style={{ margin: "0px 3px", padding: 0 }}>
         <PeersProvider ref={(context) => (this.peersContext = context)}>
-          <Peer name={peerName} active={true} onData={this.onData}>
+          <Peer
+            name={peerName}
+            active={!!this.props.active}
+            onData={this.onData}
+          >
             <PeersConsumer>
               {(peers) => (
                 <div style={{ display: "flex", flexDirection: "row" }}>
@@ -110,6 +115,6 @@ export default class PeerSync extends Component {
   };
 
   render() {
-    return this.state.expanded ? this.renderExpanded() : this.renderCollapsed();
+    return this.renderExpanded();
   }
 }

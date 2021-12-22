@@ -87,6 +87,7 @@ export default class Playground extends Component {
     initialFetched: false,
     savedBoards: getSavedBoards(),
     initialTabLocation: "#usecase",
+    peerSyncEnabled: false,
 
     /*
       this part of the state represents the board
@@ -761,6 +762,8 @@ export default class Playground extends Component {
       case "saveBoard":
       case "clearBoard":
         return this.state.runtimes;
+      case "enablePeerSync":
+        return true;
       default:
         return true;
     }
@@ -789,6 +792,7 @@ export default class Playground extends Component {
   renderPeerSync = (boardContext) => {
     return (
       <PeerSync
+        active={this.state.peerSyncEnabled}
         boardContext={boardContext}
         onUpdate={(update) => {
           this.setState(update);
@@ -800,13 +804,11 @@ export default class Playground extends Component {
   };
 
   render() {
-    const { boardName } = this.state;
-    const showLoadPanel = this.showLoadPanel();
     return (
       <BoardProvider
-        key={`playground-${boardName}`}
+        key={`playground-${this.state.boardName}`}
         user={this.user}
-        boardName={boardName}
+        boardName={this.state.boardName}
         fetchData={this.fetchData}
         isRuntimeInScope={() => true}
         addRuntime={this.addRuntime}
@@ -821,16 +823,22 @@ export default class Playground extends Component {
         isActionAvailable={this.isActionAvailable}
         setRuntimeName={this.setRuntimeName}
         serializeBoard={this.serializeBoard}
+        onAction={(action) => {
+          if (action.type === "enablePeerSync") {
+            this.setState({ peerSyncEnabled: true });
+            return true;
+          }
+        }}
       >
         <BoardConsumer>
           {(boardContext) => (
             <div id="playground-root" style={t.fill}>
               <Toolbar
-                board={boardName}
+                board={this.state.boardName}
                 availableRuntimes={this.availableRuntimes}
               />
               <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
-              {!showLoadPanel && this.renderPeerSync(boardContext)}
+              {this.state.peerSyncEnabled && this.renderPeerSync(boardContext)}
               {this.renderContent(boardContext)}
               <Footer />
             </div>
