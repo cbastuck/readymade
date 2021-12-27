@@ -54,7 +54,7 @@ class BoardContext extends Component {
       removeService: this.removeService,
       removeRuntime: this.removeRuntime,
       removeAllServices: this.removeAllServices,
-      onAction: props.onAction || this.onAction,
+      onAction: this.onAction,
       isRuntimeInScope: props.isRuntimeInScope || this.isRuntimeInScope,
       acquireRuntimeScope: this.acquireRuntimeScope,
       releaseRuntimeScope: this.releaseRuntimeScope,
