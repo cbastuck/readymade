@@ -86,9 +86,10 @@ export default class PeerSync extends Component {
                   <SelectorField
                     label="Peer Sync"
                     options={peers.peerNames
-                      .filter(
+                      // TODO: Probably need some filtering since list could be too long
+                      /*.filter(
                         (x) => x !== peerName && x.startsWith(SYNC_BOARD_PREFIX)
-                      )
+                      )*/
                       .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
                     value={this.state.syncedPeer}
                     disabled={false}
