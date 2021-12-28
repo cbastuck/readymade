@@ -36,6 +36,13 @@ export default class Editor extends Component {
     initialize().then((monaco) => this.setState({ monaco }));
   }
 
+  componentDidUpdate(prevProps) {
+    const { value } = this.props;
+    if (prevProps.value !== value) {
+      this.editor.setValue(value);
+    }
+  }
+
   componentWillUnmount() {
     if (this.registeredEvent) {
       this.registeredEvent.dispose();

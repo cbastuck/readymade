@@ -1,8 +1,10 @@
 import React, { Component } from "react";
-import { TextArea } from "semantic-ui-react";
+import { TextArea, Button } from "semantic-ui-react";
 
 import MonitorDescriptor from "services/Monitor";
 
+import Editor from "../../components/shared/Editor/index";
+import { s, t } from "../../styles";
 import ServiceUI from "./ServiceUI";
 
 function isObject(obj) {
@@ -34,6 +36,7 @@ function unroll(params) {
 class MonitorUI extends Component {
   state = {
     message: "",
+    renderTextEditor: true,
   };
 
   onInit = (initialState) => {
@@ -57,8 +60,56 @@ class MonitorUI extends Component {
     });
   };
 
+  clearEditor = () => this.setState({ message: "" });
+
+  switchEditor = () =>
+    this.setState({ renderTextEditor: !this.state.renderTextEditor });
+
+  renderEditor = () =>
+    this.state.renderTextEditor ? (
+      <TextArea
+        style={{
+          margin: "5px 10px",
+          fontFamily: "monospace",
+          fontWeight: "bold",
+          resize: "none",
+          border: "1px solid lightgray",
+          borderRadius: 5,
+          flexGrow: 1,
+        }}
+        value={this.state.message}
+        rows={10}
+        cols={30}
+      />
+    ) : (
+      <div style={s(t.m("5px 10px"), t.h100)}>
+        <Editor value={this.state.message} language="json" />
+      </div>
+    );
+
+  renderActionBar = () => (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        margin: "0px 10px",
+        marginBottom: 5,
+      }}
+    >
+      <Button style={s(t.uc, t.ls1, t.fs12, t.w100)} onClick={this.clearEditor}>
+        Clear
+      </Button>
+
+      <Button
+        style={s(t.uc, t.ls1, t.fs12, t.w100)}
+        onClick={this.switchEditor}
+      >
+        Switch
+      </Button>
+    </div>
+  );
+
   render() {
-    const { message } = this.state;
     return (
       <ServiceUI
         {...this.props}
@@ -75,20 +126,8 @@ class MonitorUI extends Component {
                 flexDirection: "column",
               }}
             >
-              <TextArea
-                style={{
-                  margin: 10,
-                  fontFamily: "monospace",
-                  fontWeight: "bold",
-                  resize: "none",
-                  border: "1px solid lightgray",
-                  borderRadius: 5,
-                  flexGrow: 1,
-                }}
-                value={message}
-                rows={10}
-                cols={30}
-              />
+              {this.renderEditor()}
+              {this.renderActionBar()}
             </div>
           )
         }

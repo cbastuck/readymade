@@ -8,24 +8,60 @@ import { mergeBoardState, extractSyncState } from "../../core/sync";
 
 import { s, t } from "../../styles";
 
-const SYNC_BOARD_PREFIX = "board-peer";
+const SYNC_BOARD_PREFIX = "board";
 
 export default class PeerSync extends Component {
-  state = {
-    syncedPeer: undefined,
-  };
+  componentDidUpdate(prevProps) {
+    const { active, syncedPeer } = this.props;
 
-  syncBoard = async () => {
-    const { syncedPeer } = this.state;
-    if (syncedPeer && this.peersContext) {
-      const data = await this.props.boardContext.serializeBoard();
-      const syncData = extractSyncState(data);
-      this.peersContext.sendData(this.getPeerName(), syncedPeer, syncData);
+    let doSync = false;
+    if (prevProps.syncedPeer !== syncedPeer) {
+      if (prevProps.syncedPeer && prevProps.active) {
+        this.onClose();
+      }
+
+      if (syncedPeer) {
+        doSync = true;
+      }
+    }
+
+    if (prevProps.active !== active) {
+      if (!!active) {
+        doSync = true;
+      } else if (prevProps.active === true) {
+        this.onClose();
+      }
+    }
+
+    if (doSync) {
+      this.syncBoard();
+    }
+  }
+
+  componentWillUnmount() {
+    const { active, syncedPeer, onClose } = this.props;
+
+    if (active && syncedPeer && onClose) {
+      onClose();
+    }
+  }
+
+  onClose = () => {
+    const { onClose } = this.props;
+    if (onClose) {
+      onClose();
     }
   };
 
-  onConnected = () => {
-    this.syncBoard();
+  syncBoard = async () => {
+    const { syncedPeer, active } = this.props;
+    if (active && syncedPeer && this.peersContext) {
+      const data = await this.props.boardContext.serializeBoard();
+      if (data !== null) {
+        const syncData = extractSyncState(data);
+        this.peersContext.sendData(this.getPeerName(), syncedPeer, syncData);
+      }
+    }
   };
 
   onData = (updateMessage) => {
@@ -44,32 +80,6 @@ export default class PeerSync extends Component {
   getPeerName = () =>
     `${SYNC_BOARD_PREFIX}-${this.props.boardContext.boardName}`;
 
-  /*
-  renderCollapsed = () => {
-    return (
-      <div style={{ margin: "0px 3px", padding: 0 }}>
-        <Button
-          style={s(
-            {
-              height: 25,
-              width: "100%",
-              backgroundColor: "white",
-              border: "solid 1px lightgray",
-              padding: 5,
-            },
-            t.uc,
-            t.fs11,
-            t.ls1
-          )}
-          onClick={() => this.setState({ expanded: true })}
-        >
-          Enable Peer Sync
-        </Button>
-      </div>
-    );
-  };
-*/
-
   renderExpanded = () => {
     const peerName = this.getPeerName();
     return (
@@ -79,6 +89,7 @@ export default class PeerSync extends Component {
             name={peerName}
             active={!!this.props.active}
             onData={this.onData}
+            onOpen={this.syncBoard}
           >
             <PeersConsumer>
               {(peers) => (
@@ -87,14 +98,15 @@ export default class PeerSync extends Component {
                     label="Peer Sync"
                     options={peers.peerNames
                       // TODO: Probably need some filtering since list could be too long
-                      /*.filter(
-                        (x) => x !== peerName && x.startsWith(SYNC_BOARD_PREFIX)
-                      )*/
+                      .filter(
+                        //(x) => x !== peerName && x.startsWith(SYNC_BOARD_PREFIX)
+                        (x) => x !== peerName
+                      )
                       .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
-                    value={this.state.syncedPeer}
+                    value={this.props.syncedPeer}
                     disabled={false}
-                    onChange={(_, { value: selected }) =>
-                      this.setState({ syncedPeer: selected }, this.onConnected)
+                    onChange={(_, { value: syncedPeer }) =>
+                      this.props.onSyncedPeerChanged(syncedPeer)
                     }
                     onOpen={() =>
                       this.peersContext && this.peersContext.updatePeers()

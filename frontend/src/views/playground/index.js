@@ -10,7 +10,7 @@ import Footer from "../../components/Footer";
 
 import { s, t } from "../../styles";
 import BrowserRegistry from "../../runtime/BrowserRegistry";
-import { filterPrivateMembers } from "../../runtime/services/helpers";
+import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
 import SaveBoardPrompt from "../../components/SaveBoardPrompt";
 import VSpacer from "../../components/shared/VSpacer";
 import BoardCollection from "../../components/BoardCollection";
@@ -87,7 +87,8 @@ export default class Playground extends Component {
     initialFetched: false,
     savedBoards: getSavedBoards(),
     initialTabLocation: "#usecase",
-    peerSyncEnabled: false,
+    syncedPeer: undefined,
+    boardSyncActive: false,
 
     /*
       this part of the state represents the board
@@ -352,7 +353,16 @@ export default class Playground extends Component {
     }
   };
 
-  serializeBoard = (name, description) => {
+  serializeBoard = async ({ name, description } = {}) => {
+    const maxRetries = 10;
+    for (let i = 0; i < maxRetries && !this.board; ++i) {
+      await sleep(10); // retry later
+      if (i + 1 === maxRetries) {
+        console.error("Could not serialize board within retries");
+        return null;
+      }
+    }
+
     const {
       runtimes = [],
       services = {},
@@ -382,7 +392,6 @@ export default class Playground extends Component {
       inputRouting,
       description,
     };
-    localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
     return data;
   };
 
@@ -521,14 +530,18 @@ export default class Playground extends Component {
         this.props.match && this.props.match.params
           ? this.props.match.params.board
           : generateRandomName();
-      const value = await this.prompt.getInput(suggested);
+      const value = await this.prompt.getInput(
+        suggested,
+        this.state.description
+      );
       if (value !== null) {
         const { name, description } = value;
-        const storedData = this.serializeBoard(name, description);
+        const data = await this.serializeBoard({ name, description });
+        localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
         if (name !== suggested) {
           redirectTo(`/playground/${name}`);
         }
-        return storedData;
+        return data;
       }
     }
   };
@@ -762,7 +775,7 @@ export default class Playground extends Component {
       case "saveBoard":
       case "clearBoard":
         return this.state.runtimes;
-      case "enablePeerSync":
+      case "togglePeerSync":
         return true;
       default:
         return true;
@@ -792,12 +805,15 @@ export default class Playground extends Component {
   renderPeerSync = (boardContext) => {
     return (
       <PeerSync
-        active={this.state.peerSyncEnabled}
+        active={this.state.boardSyncActive}
+        syncedPeer={this.state.syncedPeer}
+        onSyncedPeerChanged={(syncedPeer) => this.setState({ syncedPeer })}
         boardContext={boardContext}
         onUpdate={(update) => {
           this.setState(update);
           boardContext.fetchData();
         }}
+        onClose={() => this.setState({ syncedPeer: undefined })}
         defaultBrowserRegistry={this.defaultRegistry}
       />
     );
@@ -824,8 +840,8 @@ export default class Playground extends Component {
         setRuntimeName={this.setRuntimeName}
         serializeBoard={this.serializeBoard}
         onAction={(action) => {
-          if (action.type === "enablePeerSync") {
-            this.setState({ peerSyncEnabled: true });
+          if (action.type === "togglePeerSync") {
+            this.setState({ boardSyncActive: !this.state.boardSyncActive });
             return true;
           }
         }}
@@ -838,7 +854,7 @@ export default class Playground extends Component {
                 availableRuntimes={this.availableRuntimes}
               />
               <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
-              {this.state.peerSyncEnabled && this.renderPeerSync(boardContext)}
+              {this.state.boardSyncActive && this.renderPeerSync(boardContext)}
               {this.renderContent(boardContext)}
               <Footer />
             </div>

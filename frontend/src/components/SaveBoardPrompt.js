@@ -10,9 +10,10 @@ export default class SaveBoardPrompt extends Component {
     description: "",
   };
 
-  getInput = async (initial) => {
+  getInput = async (name, description) => {
     this.setState({
-      name: initial,
+      name,
+      description,
     });
     const res = await this.prompt.getInput();
     if (res === null) {

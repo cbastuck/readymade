@@ -49,6 +49,10 @@ export default class Peer extends Component {
       }
       this.peer = peer;
       onPeer(name, peer);
+
+      if (this.props.onOpen) {
+        this.props.onOpen();
+      }
     });
 
     peer.on("connection", (connection) =>
