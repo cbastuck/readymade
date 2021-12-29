@@ -3,9 +3,8 @@ import { Icon } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
 
-export default function EmptySketch({ defaultName, boardName }) {
-  const isDefaultBoard = boardName === defaultName;
-  const headline = isDefaultBoard ? (
+export default function EmptySketch({ boardName }) {
+  const headline = !boardName ? (
     "This is an empty playground"
   ) : (
     <span style={s(t.tc, t.fs16, t.uc, t.ls1)}>

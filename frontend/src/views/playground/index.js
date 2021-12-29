@@ -1,78 +1,35 @@
 import React, { Component } from "react";
-import { Loader, Tab } from "semantic-ui-react";
+import { Loader } from "semantic-ui-react";
 import uuid from "uuid";
 import qs from "query-string";
 
-import { redirectTo } from "../../core/actions";
 import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
-
-import { s, t } from "../../styles";
 import BrowserRegistry from "../../runtime/BrowserRegistry";
-import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
 import SaveBoardPrompt from "../../components/SaveBoardPrompt";
 import VSpacer from "../../components/shared/VSpacer";
-import BoardCollection from "../../components/BoardCollection";
 import EmptySketch from "./EmptySketch";
 import Board from "./Board";
-import PeerSync from "./PeerSync";
-
-import { replacePlaceholders } from "../../core/url";
+import BoardSync from "./BoardSync";
+import LoadPanel from "./LoadPanel";
 import { generateRandomName } from "../../core/board";
-
-const defaultBundles = [
-  "hookup.to/registry/browser/Audio",
-  "hookup.to/registry/browser/Graphic",
-  "hookup.to/registry/browser/FileStorage",
-];
-
-const allowedServices = [
-  "hookup.to/service/timer",
-  "hookup.to/service/monitor",
-  "hookup.to/service/canvas",
-  "hookup.to/service/map",
-  "hookup.to/service/filter",
-  "hookup.to/service/camera",
-  "hookup.to/service/injector",
-  "hookup.to/service/trigger-pad",
-  "hookup.to/service/sound",
-  "hookup.to/service/audio-output",
-  "hookup.to/service/audio-input",
-  "hookup.to/service/gif-encoder",
-  "hookup.to/service/input",
-  "hookup.to/service/output",
-  "hookup.to/service/thrower",
-  "hookup.to/service/receiver",
-  "hookup.to/service/downloader",
-  "hookup.to/service/mp3encoder",
-  "hookup.to/service/reduce",
-  "hookup.to/service/chart",
-  "hookup.to/service/spotify",
-  "hookup.to/service/github-source",
-  "hookup.to/service/github-sink",
-  "hookup.to/service/cache",
-  "hookup.to/service/key-handler",
-  "hookup.to/service/reactor",
-];
-
-//const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
-const usecasesUrl = "/boards/usecases/index.json";
-const defaultName = "Playground";
-
-function getSavedBoards() {
-  const savedBoards = [];
-  const prefix = "hkp-playground-";
-  for (const key in localStorage) {
-    if (key.startsWith(prefix)) {
-      savedBoards.push({
-        name: key.substr(prefix.length),
-        value: JSON.parse(localStorage.getItem(key)),
-      });
-    }
-  }
-  return savedBoards;
-}
+import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
+import { redirectTo } from "../../core/actions";
+import { s, t } from "../../styles";
+import {
+  localStoragePrefix,
+  defaultBundles,
+  allowedServices,
+  defaultName,
+  availableRuntimes,
+} from "./common";
+import {
+  importBoard,
+  createBoardFromTemplate,
+  reorderService,
+  renameRuntime,
+} from "./BoardActions";
 
 export default class Playground extends Component {
   state = {
@@ -85,7 +42,6 @@ export default class Playground extends Component {
     placeholderAnimationRunning: false,
     description: "",
     initialFetched: false,
-    savedBoards: getSavedBoards(),
     initialTabLocation: "#usecase",
     syncedPeer: undefined,
     boardSyncActive: false,
@@ -106,8 +62,6 @@ export default class Playground extends Component {
     username: "Anonymous",
     userId: undefined,
   };
-
-  availableRuntimes = [{ name: "browser", args: "browser" }];
 
   externalInputs = {};
 
@@ -198,7 +152,7 @@ export default class Playground extends Component {
     if (board) {
       const params = qs.parse(document.location.search);
       if (params.template) {
-        return this.createBoardFromTemplate(params.template, params);
+        return createBoardFromTemplate(params.template, params);
       } else {
         const localBoard = this.restoreBoardFromLocalStorage(board);
         if (localBoard) {
@@ -210,148 +164,16 @@ export default class Playground extends Component {
 
     const src = queryParams.get("src");
     if (src) {
-      return this.importBoard(src);
+      return importBoard(src);
     }
 
     return {};
   };
 
-  importBoard = async (url) => {
-    try {
-      const res = await fetch(url);
-      const data = await res.json();
-      const runtimeIds = Object.keys(data);
-      return {
-        runtimes: runtimeIds.map((rid, ridx) => ({
-          id: rid,
-          type: data[rid].type,
-          name: data[rid].name || `Runtime ${ridx + 1}`,
-        })),
-        services: runtimeIds.reduce(
-          (all, rid) => ({
-            ...all,
-            [rid]: data[rid].services.map((svc) => {
-              if (!svc.uuid) {
-                return { ...svc, uuid: uuid.v4() };
-              }
-              return svc;
-            }),
-          }),
-          {}
-        ),
-      };
-    } catch (err) {
-      console.log("Import failed", err, url);
-    }
-  };
-
-  createBoardFromTemplate = async (templateUrl, params) => {
-    const resp = await fetch(templateUrl);
-    if (resp && resp.ok) {
-      try {
-        const template = await resp.json();
-        const {
-          runtimes,
-          services,
-          sidechainRouting,
-          description,
-          inputRouting,
-          outputRouting,
-        } = template;
-        const patchedRuntimes = runtimes.map((rt) => ({
-          ...rt,
-          id: uuid.v4(),
-        }));
-        const patchedServices = patchedRuntimes.reduce(
-          (all, rt, idx) => ({
-            ...all,
-            [rt.id]: services[runtimes[idx].id].map((svc) => ({
-              uuid: uuid.v4(),
-              ...svc,
-            })),
-          }),
-          {}
-        );
-        return {
-          runtimes: patchedRuntimes,
-          services: patchedServices,
-          sidechainRouting: sidechainRouting
-            ? patchedRuntimes.reduce((all, rt, idx) => {
-                const originalRt = runtimes[idx];
-                const originalRuntimeSidechain =
-                  sidechainRouting[originalRt.id] || [];
-                const patchedRuntimeSidechain = originalRuntimeSidechain.map(
-                  (entry) => {
-                    const origRTIndex = runtimes.findIndex(
-                      (r) => r.id === entry.runtimeId
-                    );
-                    if (origRTIndex === -1) {
-                      console.error(
-                        "createBoardFromTemplate(): could not find runtime",
-                        entry,
-                        runtimes
-                      );
-                    }
-                    const origSvcIndex = services[entry.runtimeId].findIndex(
-                      (svc) => svc.uuid === entry.serviceUuid
-                    );
-                    if (origSvcIndex === -1) {
-                      console.error(
-                        "createBoardFromTemplate(): could not find service",
-                        entry,
-                        services[originalRt.id]
-                      );
-                    }
-                    const patchedRuntimeId = patchedRuntimes[origRTIndex].id;
-                    return {
-                      runtimeId: patchedRuntimeId,
-                      serviceUuid:
-                        patchedServices[patchedRuntimeId][origSvcIndex].uuid,
-                    };
-                  }
-                );
-                return {
-                  ...all,
-                  [rt.id]: patchedRuntimeSidechain,
-                };
-              }, {})
-            : {},
-          inputRouting: inputRouting
-            ? patchedRuntimes.reduce(
-                (all, rt, idx) => ({
-                  ...all,
-                  [rt.id]: replacePlaceholders(
-                    inputRouting[runtimes[idx].id],
-                    params
-                  ),
-                }),
-                {}
-              )
-            : undefined,
-          outputRouting: outputRouting
-            ? patchedRuntimes.reduce((all, rt, idx) => {
-                const routing = outputRouting[runtimes[idx].id];
-                return routing
-                  ? {
-                      ...all,
-                      [rt.id]: {
-                        ...routing,
-                        peer: replacePlaceholders(routing.peer, params),
-                      },
-                    }
-                  : all;
-              }, {})
-            : undefined,
-          description,
-        };
-      } catch (err) {
-        console.error("Creating from template failed", templateUrl, err);
-      }
-    }
-  };
-
   restoreBoardFromLocalStorage = (name) => {
-    const storageName = name ? `hkp-playground-${name}` : "hkp-playground";
+    const storageName = name
+      ? `${localStoragePrefix}${name}`
+      : "hkp-playground";
     const data = localStorage.getItem(storageName);
     if (data) {
       return JSON.parse(data);
@@ -508,15 +330,14 @@ export default class Playground extends Component {
     this.setState({ services: {}, runtimes: [] });
   };
 
-  arrangeService = (runtime, serviceUuid, targetPosition) => {
+  reorderService = (runtime, serviceUuid, targetPosition) => {
     const { services: allServices } = this.state;
-    const services = allServices[runtime.id];
-
-    const service = services.find((svc) => serviceUuid === svc.uuid);
-    const oldPosition = services.indexOf(service);
-    const rearranged = services.filter((svc) => serviceUuid !== svc.uuid);
-    const offset = targetPosition < oldPosition ? 0 : 1;
-    rearranged.splice(targetPosition - offset, 0, service);
+    const rearranged = reorderService(
+      allServices,
+      runtime,
+      serviceUuid,
+      targetPosition
+    );
     this.setState({
       services: {
         ...allServices,
@@ -526,11 +347,8 @@ export default class Playground extends Component {
   };
 
   setRuntimeName = (runtimeId, newName) => {
-    this.setState({
-      runtimes: this.state.runtimes.map((rt) =>
-        rt.id === runtimeId ? { ...rt, name: newName } : rt
-      ),
-    });
+    const runtimes = renameRuntime(this.state.runtimes, runtimeId, newName);
+    this.setState({ runtimes });
   };
 
   saveBoard = async () => {
@@ -546,7 +364,10 @@ export default class Playground extends Component {
       if (value !== null) {
         const { name, description } = value;
         const data = await this.serializeBoard({ name, description });
-        localStorage.setItem(`hkp-playground-${name}`, JSON.stringify(data));
+        localStorage.setItem(
+          `${localStoragePrefix}${name}`,
+          JSON.stringify(data)
+        );
         if (name !== suggested) {
           redirectTo(`/playground/${name}`);
         }
@@ -555,160 +376,43 @@ export default class Playground extends Component {
     }
   };
 
-  renderUsecases = () => {
-    const { usecases } = this.state;
-    const internalUsecases = [
-      /*{
-        name: 'GameInternal',
-        url: `/playground/${generateRandomName()}?template=/boards/templates/game.json&${qs.stringify({ 'sender-board': generateRandomName() })}`,
-        metadata: 'use case',
-        description: 'GAMEMEME'
-      }*/
-    ];
-    if (!usecases) {
-      fetch(usecasesUrl)
-        .then((resp) => resp.json())
-        .then((usecases) =>
-          this.setState({
-            usecases: internalUsecases.concat(
-              usecases.map((item) => ({
-                ...item,
-                url: replacePlaceholders(
-                  `/playground/${generateRandomName()}?template=${
-                    item.template
-                  }`
-                ),
-                metadata: "use case",
-                repo: item.repo,
-              }))
-            ),
-          })
-        );
+  isActionAvailable = (action) => {
+    switch (action) {
+      case "shareBoard":
+        return false;
+      case "saveBoard":
+      case "clearBoard":
+        return this.state.runtimes;
+      case "toggleBoardSync":
+        return true;
+      default:
+        return true;
     }
-    return (
-      <div style={t.tc}>
-        {usecases ? (
-          <BoardCollection
-            style={{
-              width: "100%",
-              marginRight: 20,
-            }}
-            headline="Available Usecases"
-            items={usecases}
-            renderBorder={false}
-          />
-        ) : (
-          <div>
-            <Loader active inline>
-              Loading Usecases ...
-            </Loader>
-          </div>
-        )}
-      </div>
-    );
   };
 
-  renderStoredBoards = (savedBoards) => {
-    const items = savedBoards.map((item) => ({
-      ...item,
-      url: `/playground/${item.name}`,
-      description: item.value.description,
-    }));
-    return (
-      items.length > 0 && (
-        <div style={s(t.mt20)}>
-          <BoardCollection
-            style={{ width: "100%", marginRight: 20 }}
-            headline="Saved boards in this browser"
-            items={items}
-            renderBorder={false}
-          />
-        </div>
-      )
-    );
-  };
-
-  showLoadPanel = () => {
-    return this.state.boardName === defaultName;
-  };
-  renderPlaceholderOrPlayground = (boardContext) => {
-    const { savedBoards = [], boardName, initialTabLocation } = this.state;
-    const showLoadPanel = this.showLoadPanel();
-    const menuItem = (value) => ({
-      key: `playgound-tab-item-${value}`,
-      content: value,
-      style: s(t.uc, t.fs12, t.ls1),
-    });
+  renderPlaceholderOrBoard = (boardContext) => {
+    const { boardName } = this.state;
     const isPlaygroundEmpty =
       boardContext &&
       boardContext.runtimes &&
       boardContext.runtimes.length === 0;
+    const isBoardUnnamed = boardName === defaultName;
+
     const content = isPlaygroundEmpty ? (
-      <EmptySketch defaultName={defaultName} boardName={boardName} />
+      <EmptySketch boardName={isBoardUnnamed ? undefined : boardName} />
     ) : (
-      this.renderPlayground(boardContext)
+      this.renderBoard(boardContext)
     );
-    const saveReminder = !isPlaygroundEmpty && (
-      <div style={s(t.fs12, t.mb10)}>
-        Remember you can
-        <span
-          style={{ cursor: "help", color: "#4284C4" }}
-          onClick={() => {
-            const selector = document.getElementById("board-dropdown");
-            if (selector) {
-              selector.focus();
-              selector.click();
-            }
-          }}
-        >
-          {" save this board "}
-        </span>
-        to continue later
-      </div>
-    );
-    const initialIndex = initialTabLocation === "#usecase" ? 1 : 0;
     return (
       <div style={t.fill}>
         <div style={{ width: "99%", margin: "auto" }}>
-          {showLoadPanel ? (
-            <div style={s(t.uc, t.fs16, t.ls1, t.tc)}>
-              <h1
-                style={s(t.fs20, {
-                  margin: 0,
-                  marginTop: showLoadPanel ? 25 : 40,
-                })}
-              >
-                Welcome to Playground
-              </h1>
-              <h2 style={s(t.fs13, t.m(0, 10))}> Pick an option </h2>
-              <Tab
-                style={s(t.m(0, 30), t.tc)}
-                menu={{ attached: "top", widths: 3, pointing: true }}
-                panes={[
-                  {
-                    menuItem: menuItem("Sketch board"),
-                    render: () => (
-                      <Tab.Pane>
-                        {content} {saveReminder}
-                      </Tab.Pane>
-                    ),
-                  },
-                  {
-                    menuItem: menuItem("Launch Usecase"),
-                    render: () => <Tab.Pane> {this.renderUsecases()}</Tab.Pane>,
-                  },
-                  {
-                    menuItem: menuItem("Restore board"),
-                    render: () => (
-                      <Tab.Pane>
-                        {this.renderStoredBoards(savedBoards)}
-                      </Tab.Pane>
-                    ),
-                  },
-                ]}
-                defaultActiveIndex={initialIndex}
-              />
-            </div>
+          {isBoardUnnamed ? (
+            <LoadPanel
+              showSaveReminder={!isPlaygroundEmpty}
+              initialTabLocation={this.state.initialTabLocation}
+            >
+              {content}
+            </LoadPanel>
           ) : (
             <div style={{ marginTop: isPlaygroundEmpty && "15%" }}>
               {content}
@@ -720,7 +424,7 @@ export default class Playground extends Component {
     );
   };
 
-  renderPlayground = (boardContext) => {
+  renderBoard = (boardContext) => {
     const {
       description,
       boardName,
@@ -777,43 +481,9 @@ export default class Playground extends Component {
     );
   };
 
-  isActionAvailable = (action) => {
-    switch (action) {
-      case "shareBoard":
-        return false;
-      case "saveBoard":
-      case "clearBoard":
-        return this.state.runtimes;
-      case "togglePeerSync":
-        return true;
-      default:
-        return true;
-    }
-  };
-
-  renderContent = (boardContext) => {
-    const { initialFetched } = this.state;
-    if (!initialFetched) {
-      return (
-        <div
-          style={s(t.uc, t.ls1, {
-            position: "absolute",
-            left: "45%",
-            top: "45%",
-          })}
-        >
-          <Loader active inline>
-            Loading Playground
-          </Loader>
-        </div>
-      );
-    }
-    return this.renderPlaceholderOrPlayground(boardContext);
-  };
-
-  renderPeerSync = (boardContext) => {
+  renderBoardSync = (boardContext) => {
     return (
-      <PeerSync
+      <BoardSync
         active={this.state.boardSyncActive}
         syncedPeer={this.state.syncedPeer}
         onSyncedPeerChanged={(syncedPeer) => this.setState({ syncedPeer })}
@@ -825,6 +495,22 @@ export default class Playground extends Component {
         onClose={() => this.setState({ syncedPeer: undefined })}
         defaultBrowserRegistry={this.defaultRegistry}
       />
+    );
+  };
+
+  renderLoadIndicator = () => {
+    return (
+      <div
+        style={s(t.uc, t.ls1, {
+          position: "absolute",
+          left: "45%",
+          top: "45%",
+        })}
+      >
+        <Loader active inline>
+          Loading Playground
+        </Loader>
+      </div>
     );
   };
 
@@ -844,12 +530,12 @@ export default class Playground extends Component {
         clearBoard={this.clearPlayground}
         saveBoard={this.saveBoard}
         shareBoard={this.shareBoard}
-        arrangeService={this.arrangeService}
+        arrangeService={this.reorderService}
         isActionAvailable={this.isActionAvailable}
         setRuntimeName={this.setRuntimeName}
         serializeBoard={this.serializeBoard}
         onAction={(action) => {
-          if (action.type === "togglePeerSync") {
+          if (action.type === "toggleBoardSync") {
             this.setState({ boardSyncActive: !this.state.boardSyncActive });
             return true;
           }
@@ -860,11 +546,13 @@ export default class Playground extends Component {
             <div id="playground-root" style={t.fill}>
               <Toolbar
                 board={this.state.boardName}
-                availableRuntimes={this.availableRuntimes}
+                availableRuntimes={availableRuntimes}
               />
               <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
-              {this.state.boardSyncActive && this.renderPeerSync(boardContext)}
-              {this.renderContent(boardContext)}
+              {this.state.boardSyncActive && this.renderBoardSync(boardContext)}
+              {this.state.initialFetched
+                ? this.renderPlaceholderOrBoard(boardContext)
+                : this.renderLoadIndicator()}
               <Footer />
             </div>
           )}

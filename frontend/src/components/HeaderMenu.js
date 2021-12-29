@@ -139,11 +139,12 @@ export default class HeaderMenu extends Component {
           <Dropdown.Item
             onClick={() =>
               boardContext.onAction({
-                type: "togglePeerSync",
+                type: "toggleBoardSync",
               })
             }
             disabled={
-              !boardContext || !boardContext.isActionAvailable("togglePeerSync")
+              !boardContext ||
+              !boardContext.isActionAvailable("toggleBoardSync")
             }
           >
             <span style={menuItemStyle}>Board Sync</span>

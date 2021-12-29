@@ -1,12 +1,13 @@
 import React from "react";
 import { Button } from "semantic-ui-react";
 
+import { localStoragePrefix } from "./common";
 import Editor from "../../components/shared/Editor/index";
 import { s, t } from "../../styles";
 import { redirectTo } from "../../core/actions";
 
 function restoreBoardFromLocalStorage(name) {
-  const storageName = name ? `hkp-playground-${name}` : "hkp-playground";
+  const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
   const data = localStorage.getItem(storageName);
   if (data) {
     return JSON.parse(data);
@@ -14,7 +15,7 @@ function restoreBoardFromLocalStorage(name) {
 }
 
 function storeBoardToLocalStorage(board, src) {
-  localStorage.setItem(`hkp-playground-${board}`, src);
+  localStorage.setItem(`${localStoragePrefix}${board}`, src);
 }
 
 function closeSourceView() {
@@ -22,7 +23,10 @@ function closeSourceView() {
   redirectTo(pathname.split("/").slice(0, -1).join("/"));
 }
 
-export default function Source({ editSourceCode = true, match: { params } }) {
+export default function BoardSource({
+  editSourceCode = true,
+  match: { params },
+}) {
   const { board } = params;
   const editor = React.useRef();
   const src = restoreBoardFromLocalStorage(board) || "";

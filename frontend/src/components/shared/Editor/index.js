@@ -38,7 +38,7 @@ export default class Editor extends Component {
 
   componentDidUpdate(prevProps) {
     const { value } = this.props;
-    if (prevProps.value !== value) {
+    if (prevProps.value !== value && this.editor) {
       this.editor.setValue(value);
     }
   }

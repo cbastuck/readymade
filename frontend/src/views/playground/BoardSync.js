@@ -10,7 +10,7 @@ import { s, t } from "../../styles";
 
 const SYNC_BOARD_PREFIX = "board";
 
-export default class PeerSync extends Component {
+export default class BoardSync extends Component {
   componentDidUpdate(prevProps) {
     const { active, syncedPeer } = this.props;
 
