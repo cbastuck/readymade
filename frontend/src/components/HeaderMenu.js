@@ -49,7 +49,6 @@ export default class HeaderMenu extends Component {
         }}
       >
         {/* <span style={navItemStyle}>Go to:</span> */}
-        <span> </span>
         {username && (
           <Link to="/dashboard" style={navItemStyle}>
             {/*appContext.user.username*/}Home

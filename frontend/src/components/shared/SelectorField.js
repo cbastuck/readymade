@@ -78,9 +78,11 @@ export default class SelectorField extends Component {
       value: syncedValue,
       options = {},
       style = {},
+      placeholder = "",
     } = this.props;
     const text = options[value];
     const fontSize = 11;
+    const useDefaultLabel = typeof label !== "object";
     return (
       <div
         style={{
@@ -90,16 +92,20 @@ export default class SelectorField extends Component {
           flexDirection: "row",
         }}
       >
-        <SyncIndicator
-          onClick={(ev) => onChange && onChange(ev, { value })}
-          inSync={value === syncedValue}
-          label={label}
-          style={{
-            textTransform: "uppercase",
-            letterSpacing: 1,
-            fontSize,
-          }}
-        />
+        {useDefaultLabel ? (
+          <SyncIndicator
+            onClick={(ev) => onChange && onChange(ev, { value })}
+            inSync={value === syncedValue}
+            label={label}
+            style={{
+              textTransform: "uppercase",
+              letterSpacing: 1,
+              fontSize,
+            }}
+          />
+        ) : (
+          label
+        )}
         <div
           style={{
             textTransform: "uppercase",
@@ -125,7 +131,7 @@ export default class SelectorField extends Component {
             )
           }
         >
-          {text}
+          {`${text || placeholder}`}
           <span style={{ marginLeft: 5 }}> ⬇ </span>
           {optionsVisible && this.renderOptions()}
         </div>

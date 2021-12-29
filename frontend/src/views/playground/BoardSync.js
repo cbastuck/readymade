@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
+import { Button, Dropdown } from "semantic-ui-react";
 
 import Peer from "../../components/Peer";
 import PeersProvider, { PeersConsumer } from "../../PeersContext";
@@ -119,15 +119,15 @@ export default class BoardSync extends Component {
         <div style={{ marginLeft: "auto", width: "100%" }}>
           <Button
             style={style}
-            onClick={() => {
+            onClick={() =>
               this.setState(
                 {
                   pendingConfirmation: undefined,
                   acceptedSenders: [...this.state.acceptedSenders, sender],
                 },
                 onAccept
-              );
-            }}
+              )
+            }
           >
             Accept
           </Button>
@@ -147,34 +147,67 @@ export default class BoardSync extends Component {
     );
   };
 
-  renderSelector = (peers, peerName) => {
+  renderSyncMenu = () => {
+    const menuItemStyle = {
+      fontSize: 10,
+      textTransform: "uppercase",
+      letterSpacing: 1,
+    };
     return (
-      <>
-        <SelectorField
-          label="Peer Sync"
-          options={peers.peerNames
-            // TODO: Probably need some filtering since list could be too long
-            .filter(
-              //(x) => x !== peerName && x.startsWith(SYNC_BOARD_PREFIX)
-              (x) => x !== peerName
-            )
-            .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
-          value={this.props.syncedPeer}
-          disabled={false}
-          onChange={(_, { value: syncedPeer }) =>
-            this.props.onSyncedPeerChanged(syncedPeer)
-          }
-          onOpen={() => this.peersContext && this.peersContext.updatePeers()}
-        />
-        <Button
-          style={s(t.uc, t.fs11, t.ls1, { height: 33, width: 80 })}
-          onClick={() => this.syncBoard()}
-        >
-          push
-        </Button>
-      </>
+      <Dropdown
+        text="Board Sync"
+        style={{
+          fontSize: 11,
+          letterSpacing: 1,
+          textTransform: "uppercase",
+          backgroundColor: "#E8E8E8",
+          borderRadius: 5,
+          padding: "6px 10px",
+          color: "#5c5d5c",
+          border: "solid 1ox gray",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <Dropdown.Menu>
+          <Dropdown.Item onClick={() => console.log("OK")}>
+            <span style={menuItemStyle}>Manage</span>
+          </Dropdown.Item>
+        </Dropdown.Menu>
+      </Dropdown>
     );
   };
+
+  renderSyncBar = (peers, peerName) => (
+    <>
+      <SelectorField
+        label={this.renderSyncMenu()}
+        options={peers.peerNames
+          // TODO: Probably need some filtering since list could be too long
+          .filter(
+            //(x) => x !== peerName && x.startsWith(SYNC_BOARD_PREFIX)
+            (x) => x !== peerName
+          )
+          .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
+        value={this.props.syncedPeer}
+        disabled={false}
+        onChange={(_, { value: syncedPeer }) =>
+          this.props.onSyncedPeerChanged(syncedPeer)
+        }
+        onOpen={() => this.peersContext && this.peersContext.updatePeers()}
+        placeholder="Select a sync target"
+      />
+      <Button
+        style={s(t.uc, t.fs11, t.ls1, {
+          height: 33,
+          width: 80,
+          color: "#5c5d5c",
+        })}
+        onClick={() => this.syncBoard()}
+      >
+        push
+      </Button>
+    </>
+  );
 
   render() {
     const peerName = this.getPeerName();
@@ -198,7 +231,7 @@ export default class BoardSync extends Component {
                 >
                   {this.state.pendingConfirmation
                     ? this.renderConfirmation()
-                    : this.renderSelector(peers, peerName)}
+                    : this.renderSyncBar(peers, peerName)}
                 </div>
               )}
             </PeersConsumer>
