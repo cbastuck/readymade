@@ -11,6 +11,11 @@ import { s, t } from "../../styles";
 const SYNC_BOARD_PREFIX = "board";
 
 export default class BoardSync extends Component {
+  state = {
+    acceptedSenders: [],
+    rejectedSenders: [],
+    pendingConfirmation: undefined,
+  };
   componentDidUpdate(prevProps) {
     const { active, syncedPeer } = this.props;
 
@@ -40,7 +45,6 @@ export default class BoardSync extends Component {
 
   componentWillUnmount() {
     const { active, syncedPeer, onClose } = this.props;
-
     if (active && syncedPeer && onClose) {
       onClose();
     }
@@ -66,19 +70,111 @@ export default class BoardSync extends Component {
 
   onData = (updateMessage) => {
     const { boardContext, defaultBrowserRegistry, onUpdate } = this.props;
-    const { data: updatedBoardState } = updateMessage;
+    const { data: updatedBoardState, sender } = updateMessage;
     const syncedStateUpdate = mergeBoardState(
       boardContext,
       updatedBoardState,
       defaultBrowserRegistry
     );
     if (syncedStateUpdate) {
-      onUpdate(syncedStateUpdate);
+      if (this.state.acceptedSenders.indexOf(sender) === -1) {
+        if (this.state.rejectedSenders.indexOf(sender) !== -1) {
+          return;
+        }
+        if (!this.state.pendingConfirmation) {
+          this.setState({
+            pendingConfirmation: {
+              sender,
+              onAccept: () => onUpdate(syncedStateUpdate),
+            },
+          });
+        }
+      } else {
+        onUpdate(syncedStateUpdate);
+      }
     }
   };
 
   getPeerName = () =>
     `${SYNC_BOARD_PREFIX}-${this.props.boardContext.boardName}`;
+
+  renderConfirmation = () => {
+    const style = s(t.uc, t.ls1, t.fs12);
+    const { sender, onAccept } = this.state.pendingConfirmation;
+    return (
+      <>
+        <div
+          style={{
+            ...style,
+            padding: "5px 10px",
+            marginRight: 5,
+            textAlign: "left",
+            width: "100%",
+            border: "solid 1px lightgray",
+            borderRadius: 2,
+          }}
+        >
+          Sync request from: {sender}
+        </div>
+        <div style={{ marginLeft: "auto", width: "100%" }}>
+          <Button
+            style={style}
+            onClick={() => {
+              this.setState(
+                {
+                  pendingConfirmation: undefined,
+                  acceptedSenders: [...this.state.acceptedSenders, sender],
+                },
+                onAccept
+              );
+            }}
+          >
+            Accept
+          </Button>
+          <Button
+            style={style}
+            onClick={() =>
+              this.setState({
+                pendingConfirmation: undefined,
+                rejectedSenders: [...this.state.rejectedSenders, sender],
+              })
+            }
+          >
+            Reject
+          </Button>
+        </div>
+      </>
+    );
+  };
+
+  renderSelector = (peers, peerName) => {
+    return (
+      <>
+        <SelectorField
+          label="Peer Sync"
+          options={peers.peerNames
+            // TODO: Probably need some filtering since list could be too long
+            .filter(
+              //(x) => x !== peerName && x.startsWith(SYNC_BOARD_PREFIX)
+              (x) => x !== peerName
+            )
+            .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
+          value={this.props.syncedPeer}
+          disabled={false}
+          onChange={(_, { value: syncedPeer }) =>
+            this.props.onSyncedPeerChanged(syncedPeer)
+          }
+          onOpen={() => this.peersContext && this.peersContext.updatePeers()}
+        />
+        <Button
+          style={s(t.uc, t.fs11, t.ls1, { height: 33, width: 80 })}
+          onClick={() => this.syncBoard()}
+        >
+          push
+        </Button>
+      </>
+    );
+  };
 
   render() {
     const peerName = this.getPeerName();
@@ -100,30 +196,9 @@ export default class BoardSync extends Component {
                     marginLeft: 2,
                   }}
                 >
-                  <SelectorField
-                    label="Peer Sync"
-                    options={peers.peerNames
-                      // TODO: Probably need some filtering since list could be too long
-                      .filter(
-                        //(x) => x !== peerName && x.startsWith(SYNC_BOARD_PREFIX)
-                        (x) => x !== peerName
-                      )
-                      .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
-                    value={this.props.syncedPeer}
-                    disabled={false}
-                    onChange={(_, { value: syncedPeer }) =>
-                      this.props.onSyncedPeerChanged(syncedPeer)
-                    }
-                    onOpen={() =>
-                      this.peersContext && this.peersContext.updatePeers()
-                    }
-                  />
-                  <Button
-                    style={s(t.uc, t.fs11, t.ls1, { height: 33, width: 80 })}
-                    onClick={() => this.syncBoard()}
-                  >
-                    push
-                  </Button>
+                  {this.state.pendingConfirmation
+                    ? this.renderConfirmation()
+                    : this.renderSelector(peers, peerName)}
                 </div>
               )}
             </PeersConsumer>
