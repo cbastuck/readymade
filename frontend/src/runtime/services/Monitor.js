@@ -104,7 +104,7 @@ class MonitorUI extends Component {
         style={s(t.uc, t.ls1, t.fs12, t.w100)}
         onClick={this.switchEditor}
       >
-        Switch
+        Edit
       </Button>
     </div>
   );

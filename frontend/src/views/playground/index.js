@@ -153,6 +153,9 @@ export default class Playground extends Component {
       sidechainRouting = {},
       outputRouting = {},
       inputRouting = {},
+      // playground specific board data
+      boardSyncActive = false,
+      syncedPeer = undefined,
     } = this.state.initialFetched
       ? this.state
       : await this.setInitialPlayground();
@@ -183,6 +186,8 @@ export default class Playground extends Component {
       ...data,
       initialFetched: true,
       description,
+      boardSyncActive,
+      syncedPeer,
     });
     return data;
   };
@@ -369,6 +374,8 @@ export default class Playground extends Component {
       sidechainRouting = {},
       outputRouting = {},
       inputRouting = {},
+      boardSyncActive = false,
+      syncedPeer = undefined,
     } = this.state;
     const data = {
       runtimes: runtimes.map((rt) => ({
@@ -391,6 +398,8 @@ export default class Playground extends Component {
       outputRouting,
       inputRouting,
       description,
+      boardSyncActive,
+      syncedPeer,
     };
     return data;
   };

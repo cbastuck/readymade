@@ -80,7 +80,7 @@ export default class PeerSync extends Component {
   getPeerName = () =>
     `${SYNC_BOARD_PREFIX}-${this.props.boardContext.boardName}`;
 
-  renderExpanded = () => {
+  render() {
     const peerName = this.getPeerName();
     return (
       <div style={{ margin: "0px 3px", padding: 0 }}>
@@ -93,7 +93,13 @@ export default class PeerSync extends Component {
           >
             <PeersConsumer>
               {(peers) => (
-                <div style={{ display: "flex", flexDirection: "row" }}>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    marginLeft: 2,
+                  }}
+                >
                   <SelectorField
                     label="Peer Sync"
                     options={peers.peerNames
@@ -125,9 +131,5 @@ export default class PeerSync extends Component {
         </PeersProvider>
       </div>
     );
-  };
-
-  render() {
-    return this.renderExpanded();
   }
 }
