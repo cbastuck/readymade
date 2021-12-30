@@ -114,6 +114,8 @@ export default class Playground extends Component {
       // playground specific board data
       boardSyncActive = false,
       syncedPeer = undefined,
+      acceptedSyncSenders = [],
+      rejectedSyncSenders = [],
     } = this.state.initialFetched
       ? this.state
       : await this.setInitialPlayground();
@@ -138,6 +140,8 @@ export default class Playground extends Component {
       sidechainRouting,
       outputRouting,
       inputRouting,
+      acceptedSyncSenders,
+      rejectedSyncSenders,
     };
 
     this.setState({
@@ -202,6 +206,8 @@ export default class Playground extends Component {
       inputRouting = {},
       boardSyncActive = false,
       syncedPeer = undefined,
+      acceptedSyncSenders = [],
+      rejectedSyncSenders = [],
     } = this.state;
     const data = {
       runtimes: runtimes.map((rt) => ({
@@ -226,6 +232,8 @@ export default class Playground extends Component {
       description,
       boardSyncActive,
       syncedPeer,
+      acceptedSyncSenders,
+      rejectedSyncSenders,
     };
     return data;
   };

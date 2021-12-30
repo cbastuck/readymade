@@ -61,7 +61,7 @@ export default function ManageSync({
                 size="small"
                 style={t.text}
                 onClick={() => onReject(accepted)}
-                disabled={rejected.length === 0}
+                disabled={accepted.length === 0}
               >
                 Reject All
               </Button>

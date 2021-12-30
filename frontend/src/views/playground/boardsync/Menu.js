@@ -28,7 +28,7 @@ export default function Menu({ actions, onChange, value }) {
       }}
     >
       <Dropdown.Menu>
-        <Dropdown.Item onClick={() => onChange(undefined)}>
+        <Dropdown.Item onClick={() => onChange(undefined)} disabled={!value}>
           <span style={menuItemStyle}>{mainEntry}</span>
         </Dropdown.Item>
 
