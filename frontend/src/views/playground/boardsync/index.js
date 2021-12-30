@@ -97,9 +97,7 @@ export default class BoardSync extends Component {
     }
   };
 
-  onError = (err) => {
-    this.setState({ errorNotification: err.message });
-  };
+  onError = (err) => this.setState({ errorNotification: err.message });
 
   getPeerName = () =>
     `${SYNC_BOARD_PREFIX}-${this.props.boardContext.boardName}`;

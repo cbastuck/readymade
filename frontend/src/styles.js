@@ -41,6 +41,7 @@ export const t = {
   italic: { fontStyle: "italic" },
   bo: { fontWeight: "bold" },
   bold: { fontWeight: "bold" },
+  normal: { fontWeight: "normal" },
 
   nw: { whiteSpace: "nowrap" },
   nowrap: { whiteSpace: "nowrap" },

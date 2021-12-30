@@ -15,16 +15,22 @@ export default function ConfirmationRequest({ sender, onAccept, onReject }) {
           textAlign: "left",
           width: "100%",
           border: "solid 1px lightgray",
-          borderRadius: 2,
+          borderRadius: 5,
         }}
       >
-        Sync request from: {sender}
+        <div>Sync request from: {sender}</div>
       </div>
-      <div style={{ marginLeft: "auto", width: "100%" }}>
-        <Button style={style} onClick={onAccept}>
+      <div
+        style={{
+          marginLeft: "auto",
+          width: "100%",
+          paddingTop: 3,
+        }}
+      >
+        <Button style={style} onClick={onAccept} positive compact>
           Accept
         </Button>
-        <Button style={style} onClick={onReject}>
+        <Button style={style} onClick={onReject} negative compact>
           Reject
         </Button>
       </div>

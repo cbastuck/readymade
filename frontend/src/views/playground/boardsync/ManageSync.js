@@ -18,13 +18,19 @@ export default function ManageSync({
         marginTop: 3,
       })}
     >
-      <Table style={s(t.text)} compact celled definition>
+      <Table compact celled definition style={t.text}>
         <Table.Header>
           <Table.Row>
             <Table.HeaderCell />
-            <Table.HeaderCell style={t.text}>Board Name</Table.HeaderCell>
-            <Table.HeaderCell style={t.text}>Request Date</Table.HeaderCell>
-            <Table.HeaderCell style={t.text}>Email address</Table.HeaderCell>
+            <Table.HeaderCell style={s(t.text, t.normal)}>
+              Board Name
+            </Table.HeaderCell>
+            <Table.HeaderCell style={s(t.text, t.normal)}>
+              Request Date
+            </Table.HeaderCell>
+            <Table.HeaderCell style={s(t.text, t.normal)}>
+              Email address
+            </Table.HeaderCell>
           </Table.Row>
         </Table.Header>
 
@@ -55,6 +61,7 @@ export default function ManageSync({
                 size="small"
                 style={t.text}
                 onClick={() => onReject(accepted)}
+                disabled={rejected.length === 0}
               >
                 Reject All
               </Button>
