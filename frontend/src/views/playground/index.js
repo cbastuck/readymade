@@ -11,7 +11,7 @@ import SaveBoardPrompt from "../../components/SaveBoardPrompt";
 import VSpacer from "../../components/shared/VSpacer";
 import EmptySketch from "./EmptySketch";
 import Board from "./Board";
-import BoardSync from "./BoardSync";
+import BoardSync from "./boardsync";
 import LoadPanel from "./LoadPanel";
 import { generateRandomName } from "../../core/board";
 import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
@@ -43,8 +43,12 @@ export default class Playground extends Component {
     description: "",
     initialFetched: false,
     initialTabLocation: "#usecase",
+
+    // BoardSync data
     syncedPeer: undefined,
     boardSyncActive: false,
+    acceptedSyncSenders: [],
+    rejectedSyncSenders: [],
 
     /*
       this part of the state represents the board
@@ -495,6 +499,12 @@ export default class Playground extends Component {
           }
         }}
         defaultBrowserRegistry={this.defaultRegistry}
+        acceptedSenders={this.state.acceptedSyncSenders}
+        rejectedSenders={this.state.rejectedSyncSenders}
+        onChange={({
+          acceptedSenders: acceptedSyncSenders = this.state.acceptedSyncSenders,
+          rejectedSenders: rejectedSyncSenders = this.state.rejectedSyncSenders,
+        }) => this.setState({ acceptedSyncSenders, rejectedSyncSenders })}
       />
     );
   };

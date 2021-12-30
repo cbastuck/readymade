@@ -1,9 +1,9 @@
 import React from "react";
 import { Button, Checkbox, Table } from "semantic-ui-react";
 
-import { s, t } from "../../styles";
+import { s, t } from "../../../styles";
 
-export default function BoardSyncManagement({
+export default function ManageSync({
   acceptedSenders: accepted,
   rejectedSenders: rejected,
   onAccept,
@@ -41,8 +41,8 @@ export default function BoardSyncManagement({
                 />
               </Table.Cell>
               <Table.Cell>{sender}</Table.Cell>
-              <Table.Cell>September 14, 2013</Table.Cell>
-              <Table.Cell>{sender}@yahoo.com</Table.Cell>
+              <Table.Cell>September 14, 2021</Table.Cell>
+              <Table.Cell>{sender}@email.com</Table.Cell>
             </Table.Row>
           ))}
         </Table.Body>

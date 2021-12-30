@@ -8,6 +8,9 @@ export function ErrorNotification({
   title = "",
   onClose = () => {},
 }) {
+  if (!message) {
+    return false;
+  }
   const content = (
     <div style={{ display: "flex", flexDirection: "row" }}>
       <div style={{ padding: "8px 5px" }}>{message}</div>
