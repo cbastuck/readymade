@@ -173,3 +173,6 @@ export const t = {
     WebkitTapHighlightColor: "rgba(0,0,0,0)",
   },
 };
+
+// composed classes
+t.text = s(t.uc, t.ls1, t.fs12);

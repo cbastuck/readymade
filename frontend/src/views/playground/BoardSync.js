@@ -4,6 +4,7 @@ import { Button, Dropdown } from "semantic-ui-react";
 import Peer from "../../components/Peer";
 import PeersProvider, { PeersConsumer } from "../../PeersContext";
 import { ErrorNotification } from "../../components/Notifications";
+import BoardSyncManagement from "./BoardSyncManagement";
 import SelectorField from "../../components/shared/SelectorField";
 import { mergeBoardState, extractSyncState } from "../../core/sync";
 
@@ -17,6 +18,7 @@ export default class BoardSync extends Component {
     rejectedSenders: [],
     pendingConfirmation: undefined,
     errorNotification: undefined,
+    subPanel: false,
   };
 
   componentDidUpdate(prevProps) {
@@ -160,9 +162,10 @@ export default class BoardSync extends Component {
       textTransform: "uppercase",
       letterSpacing: 1,
     };
+    const mainEntry = "Board Sync";
     return (
       <Dropdown
-        text="Board Sync"
+        text={this.state.subPanel ? this.state.subPanel.name : mainEntry}
         style={{
           fontSize: 11,
           letterSpacing: 1,
@@ -176,10 +179,21 @@ export default class BoardSync extends Component {
         }}
       >
         <Dropdown.Menu>
+          <Dropdown.Item onClick={() => this.setState({ subPanel: undefined })}>
+            <span style={menuItemStyle}>{mainEntry}</span>
+          </Dropdown.Item>
+
           <Dropdown.Item
-            onClick={() => console.log("Implement me - Manage senders")}
+            onClick={() =>
+              this.setState({
+                subPanel: {
+                  element: <BoardSyncManagement />,
+                  name: "Manage Sync",
+                },
+              })
+            }
           >
-            <span style={menuItemStyle}>Manage</span>
+            <span style={menuItemStyle}>Manage Sync</span>
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
@@ -264,6 +278,7 @@ export default class BoardSync extends Component {
           </Peer>
         </PeersProvider>
         {this.renderNotifications()}
+        {this.state.subPanel && this.state.subPanel.element}
       </div>
     );
   }
