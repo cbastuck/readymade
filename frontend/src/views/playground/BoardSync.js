@@ -3,6 +3,7 @@ import { Button, Dropdown } from "semantic-ui-react";
 
 import Peer from "../../components/Peer";
 import PeersProvider, { PeersConsumer } from "../../PeersContext";
+import { ErrorNotification } from "../../components/Notifications";
 import SelectorField from "../../components/shared/SelectorField";
 import { mergeBoardState, extractSyncState } from "../../core/sync";
 
@@ -15,26 +16,29 @@ export default class BoardSync extends Component {
     acceptedSenders: [],
     rejectedSenders: [],
     pendingConfirmation: undefined,
+    errorNotification: undefined,
   };
+
   componentDidUpdate(prevProps) {
     const { active, syncedPeer } = this.props;
 
     let doSync = false;
-    if (prevProps.syncedPeer !== syncedPeer) {
-      if (prevProps.syncedPeer && prevProps.active) {
-        this.onClose();
-      }
-
-      if (syncedPeer) {
-        doSync = true;
-      }
-    }
 
     if (prevProps.active !== active) {
       if (!!active) {
         doSync = true;
       } else if (prevProps.active === true) {
-        this.onClose();
+        this.onClose(prevProps.syncedPeer);
+      }
+    }
+
+    if (prevProps.syncedPeer !== syncedPeer) {
+      if (prevProps.syncedPeer && prevProps.active) {
+        this.onClose(prevProps.syncedPeer);
+      }
+
+      if (syncedPeer) {
+        doSync = true;
       }
     }
 
@@ -51,9 +55,8 @@ export default class BoardSync extends Component {
   }
 
   onClose = () => {
-    const { onClose } = this.props;
-    if (onClose) {
-      onClose();
+    if (this.props.onClose) {
+      this.props.onClose();
     }
   };
 
@@ -93,6 +96,10 @@ export default class BoardSync extends Component {
         onUpdate(syncedStateUpdate);
       }
     }
+  };
+
+  onError = (err) => {
+    this.setState({ errorNotification: err.message });
   };
 
   getPeerName = () =>
@@ -169,7 +176,9 @@ export default class BoardSync extends Component {
         }}
       >
         <Dropdown.Menu>
-          <Dropdown.Item onClick={() => console.log("OK")}>
+          <Dropdown.Item
+            onClick={() => console.log("Implement me - Manage senders")}
+          >
             <span style={menuItemStyle}>Manage</span>
           </Dropdown.Item>
         </Dropdown.Menu>
@@ -182,11 +191,7 @@ export default class BoardSync extends Component {
       <SelectorField
         label={this.renderSyncMenu()}
         options={peers.peerNames
-          // TODO: Probably need some filtering since list could be too long
-          .filter(
-            //(x) => x !== peerName && x.startsWith(SYNC_BOARD_PREFIX)
-            (x) => x !== peerName
-          )
+          .filter((x) => x !== peerName)
           .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
         value={this.props.syncedPeer}
         disabled={false}
@@ -202,23 +207,44 @@ export default class BoardSync extends Component {
           width: 80,
           color: "#5c5d5c",
         })}
-        onClick={() => this.syncBoard()}
+        onClick={this.syncBoard}
       >
         push
       </Button>
     </>
   );
 
+  renderNotifications = () => {
+    if (!this.state.errorNotification) {
+      return false;
+    }
+
+    return (
+      <ErrorNotification
+        message={this.state.errorNotification}
+        onClose={() => this.setState({ errorNotification: undefined })}
+      />
+    );
+  };
+
   render() {
     const peerName = this.getPeerName();
     return (
-      <div style={{ margin: "0px 3px", padding: 0 }}>
+      <div
+        style={{
+          margin: "0px 3px",
+          padding: 0,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <PeersProvider ref={(context) => (this.peersContext = context)}>
           <Peer
             name={peerName}
             active={!!this.props.active}
             onData={this.onData}
             onOpen={this.syncBoard}
+            onError={this.onError}
           >
             <PeersConsumer>
               {(peers) => (
@@ -237,6 +263,7 @@ export default class BoardSync extends Component {
             </PeersConsumer>
           </Peer>
         </PeersProvider>
+        {this.renderNotifications()}
       </div>
     );
   }

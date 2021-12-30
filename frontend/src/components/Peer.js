@@ -7,6 +7,10 @@ import { PeersCtx } from "../PeersContext";
 const peerHost = `${window.location.host}`;
 const isHTTPS = window.location.protocol === "https:";
 
+function logError(err) {
+  console.error("Error in <Peer />", err);
+}
+
 export default class Peer extends Component {
   componentDidMount() {
     const { active } = this.props;
@@ -34,7 +38,7 @@ export default class Peer extends Component {
   }
 
   initPeer = () => {
-    const { name = "unnamed-peer", onData } = this.props;
+    const { name = "unnamed-peer", onData, onError = logError } = this.props;
     const { onPeer } = this.context;
     const peer = new Peerjs(name, {
       host: peerHost,
@@ -58,6 +62,8 @@ export default class Peer extends Component {
     peer.on("connection", (connection) =>
       connection.on("data", (data) => onData(data, connection.peer))
     );
+
+    peer.on("error", (err) => onError && onError(err));
   };
 
   closePeer = (name) => {

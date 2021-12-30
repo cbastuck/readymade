@@ -489,7 +489,11 @@ export default class Playground extends Component {
         onSyncedPeerChanged={(syncedPeer) => this.setState({ syncedPeer })}
         boardContext={boardContext}
         onUpdate={(update) => this.setState(update, boardContext.fetchData)}
-        onClose={() => this.setState({ syncedPeer: undefined })}
+        onClose={(closedPeer) => {
+          if (closedPeer === this.state.syncedPeer) {
+            this.setState({ syncedPeer: undefined });
+          }
+        }}
         defaultBrowserRegistry={this.defaultRegistry}
       />
     );
