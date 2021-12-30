@@ -3,11 +3,18 @@ import { Button, Checkbox, Table } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
 
-export default function BoardSyncManagement() {
+export default function BoardSyncManagement({
+  acceptedSenders: accepted,
+  rejectedSenders: rejected,
+  onAccept,
+  onReject,
+}) {
+  const sorted = [...accepted, ...rejected].sort();
   return (
     <div
       style={s(t.borderCol("lightgray"), {
         borderTop: "none",
+        borderRadius: 5,
         marginTop: 3,
       })}
     >
@@ -22,37 +29,33 @@ export default function BoardSyncManagement() {
         </Table.Header>
 
         <Table.Body>
-          <Table.Row>
-            <Table.Cell collapsing>
-              <Checkbox slider />
-            </Table.Cell>
-            <Table.Cell>John Lilki</Table.Cell>
-            <Table.Cell>September 14, 2013</Table.Cell>
-            <Table.Cell>someone@example.com</Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell collapsing>
-              <Checkbox slider />
-            </Table.Cell>
-            <Table.Cell>Jamie Harington</Table.Cell>
-            <Table.Cell>January 11, 2014</Table.Cell>
-            <Table.Cell>someone@example.com</Table.Cell>
-          </Table.Row>
-          <Table.Row>
-            <Table.Cell collapsing>
-              <Checkbox slider />
-            </Table.Cell>
-            <Table.Cell>Jill Lewis</Table.Cell>
-            <Table.Cell>May 11, 2014</Table.Cell>
-            <Table.Cell>someone@example.com</Table.Cell>
-          </Table.Row>
+          {sorted.map((sender) => (
+            <Table.Row key={`sync-mgmt-sender-${sender}`}>
+              <Table.Cell collapsing>
+                <Checkbox
+                  toggle
+                  checked={accepted.indexOf(sender) !== -1}
+                  onChange={(_, { checked }) =>
+                    checked ? onAccept(sender) : onReject(sender)
+                  }
+                />
+              </Table.Cell>
+              <Table.Cell>{sender}</Table.Cell>
+              <Table.Cell>September 14, 2013</Table.Cell>
+              <Table.Cell>{sender}@yahoo.com</Table.Cell>
+            </Table.Row>
+          ))}
         </Table.Body>
 
         <Table.Footer fullWidth>
           <Table.Row>
             <Table.HeaderCell />
             <Table.HeaderCell colSpan="4">
-              <Button size="small" style={t.text}>
+              <Button
+                size="small"
+                style={t.text}
+                onClick={() => onReject(accepted)}
+              >
                 Reject All
               </Button>
               <Button disabled size="small" style={t.text}>

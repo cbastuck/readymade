@@ -163,6 +163,24 @@ export default class BoardSync extends Component {
       letterSpacing: 1,
     };
     const mainEntry = "Board Sync";
+    const onAccept = (sender) => {
+      const senders = Array.isArray(sender) ? sender : [sender];
+      this.setState({
+        rejectedSenders: this.state.rejectedSenders.filter(
+          (x) => senders.indexOf(x) === -1
+        ),
+        acceptedSenders: [...this.state.acceptedSenders, ...senders],
+      });
+    };
+    const onReject = (sender) => {
+      const senders = Array.isArray(sender) ? sender : [sender];
+      this.setState({
+        acceptedSenders: this.state.acceptedSenders.filter(
+          (x) => senders.indexOf(x) === -1
+        ),
+        rejectedSenders: [...this.state.rejectedSenders, ...senders],
+      });
+    };
     return (
       <Dropdown
         text={this.state.subPanel ? this.state.subPanel.name : mainEntry}
@@ -187,7 +205,12 @@ export default class BoardSync extends Component {
             onClick={() =>
               this.setState({
                 subPanel: {
-                  element: <BoardSyncManagement />,
+                  element: (
+                    <BoardSyncManagement
+                      onAccept={onAccept}
+                      onReject={onReject}
+                    />
+                  ),
                   name: "Manage Sync",
                 },
               })
@@ -278,7 +301,8 @@ export default class BoardSync extends Component {
           </Peer>
         </PeersProvider>
         {this.renderNotifications()}
-        {this.state.subPanel && this.state.subPanel.element}
+        {this.state.subPanel &&
+          React.cloneElement(this.state.subPanel.element, this.state)}
       </div>
     );
   }
