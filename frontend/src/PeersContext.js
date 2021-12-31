@@ -77,6 +77,8 @@ class PeersProvider extends Component {
     connection = srcPeer.connect(dst);
     if (connection) {
       connection.on("open", () => {
+        console.log("Opened connection from", src, "to", dst);
+        srcPeer.onConnectionOpened && srcPeer.onConnectionOpened(dst);
         connection.send(envelope);
         this.setState({
           connections: {
@@ -89,7 +91,8 @@ class PeersProvider extends Component {
         });
       });
       connection.on("close", () => {
-        console.log("Connection closed from", src, "to", dst);
+        console.log("Closed connection from", src, "to", dst);
+        srcPeer.onConnectionClosed && srcPeer.onConnectionClosed(dst);
         this.setState({
           connections: {
             ...srcConnections,
@@ -104,14 +107,9 @@ class PeersProvider extends Component {
   };
 
   render() {
-    const { children } = this.props;
     return (
-      <PeersCtx.Provider
-        value={{
-          ...this.state,
-        }}
-      >
-        {children}
+      <PeersCtx.Provider value={this.state}>
+        {this.props.children}
       </PeersCtx.Provider>
     );
   }

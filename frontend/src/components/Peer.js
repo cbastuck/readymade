@@ -38,8 +38,7 @@ export default class Peer extends Component {
   }
 
   initPeer = () => {
-    const { name = "unnamed-peer", onData, onError = logError } = this.props;
-    const { onPeer } = this.context;
+    const { name = "unnamed-peer", onData } = this.props;
     const peer = new Peerjs(name, {
       host: peerHost,
       port: isHTTPS ? 443 : 80,
@@ -48,31 +47,52 @@ export default class Peer extends Component {
 
     peer.on("open", () => {
       if (this.peer) {
-        console.warn("Peer peer opened but the previous peer did not shutdown");
+        console.warn(
+          "Peer opened but the previous peer with the same name did not shutdown - closing it"
+        );
         this.closePeer();
       }
-      this.peer = peer;
-      onPeer(name, peer);
 
+      // Allow PeerContext signaling connections to this instance
+      peer.onConnectionOpened = this.props.onConnectionOpened;
+      peer.onConnectionClosed = this.props.onConnectionClosed;
+      this.peer = peer;
+      this.context.onPeer(name, peer);
       if (this.props.onOpen) {
         this.props.onOpen();
       }
     });
 
-    peer.on("connection", (connection) =>
-      connection.on("data", (data) => onData(data, connection.peer))
-    );
+    peer.on("close", () => {
+      const { onClose = () => {} } = this.props;
+      onClose(name);
+    });
 
-    peer.on("error", (err) => onError && onError(err));
+    // called when a remote peer is connecting to this peer
+    peer.on("connection", (connection) => {
+      const { onConnectionOpened = () => {}, onConnectionClosed = () => {} } =
+        this.props;
+      connection.on("data", (data) => onData(data, connection.peer));
+      connection.on("close", () => onConnectionClosed(name));
+      onConnectionOpened(name, connection);
+    });
+
+    peer.on("disconnected", () => {
+      const { onDisconnect = () => {} } = this.props;
+      onDisconnect(name);
+    });
+
+    peer.on("error", (err) => {
+      const { onError = logError } = this.props;
+      onError(err);
+    });
   };
 
   closePeer = (name) => {
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
-
-      const { onPeerClosed } = this.context;
-      onPeerClosed(name || this.props.name);
+      this.context.onPeerClosed(name || this.props.name);
     }
   };
 

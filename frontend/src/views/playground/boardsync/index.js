@@ -219,6 +219,12 @@ export default class BoardSync extends Component {
             onData={this.onData}
             onOpen={this.syncBoard}
             onError={this.onError}
+            onConnectionOpened={(syncedPeer) =>
+              this.props.onSyncedPeerChanged(syncedPeer)
+            }
+            onConnectionClosed={(dst) =>
+              this.props.onSyncedPeerChanged(undefined)
+            }
           >
             <PeersConsumer>
               {(peers) => (
