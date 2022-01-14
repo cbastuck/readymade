@@ -56,7 +56,7 @@ export default class Footer extends Component {
                 fontSize: 10,
               }}
             >
-              © 2018-2021 cbastuck
+              © 2018-2022 cbastuck
             </div>
           </div>
         </div>

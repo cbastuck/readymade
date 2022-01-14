@@ -37,7 +37,7 @@ class XYPadUI extends Component {
 
   onPanEnd = () => {};
 
-  getPan = (e) => {
+  getPannedPosition = (e) => {
     const { clientX, clientY } = e.type.includes("drag")
       ? e
       : e.targetTouches[0];
@@ -51,14 +51,18 @@ class XYPadUI extends Component {
     if (e.clientX <= 0 || e.clientY <= 0) {
       return false;
     }
-    const pan = this.getPan(e);
-    this.setState(pan);
-    service.configure({
-      position: {
-        x: pan.x / this.parentSize.width,
-        y: pan.y / this.parentSize.height,
-      },
-    });
+    const pos = this.getPannedPosition(e);
+    const { x = null, y = null } = this.state;
+    if (pos.x !== x || pos.y !== y) {
+      this.setState(pos, () =>
+        service.configure({
+          position: {
+            x: pos.x / this.parentSize.width,
+            y: pos.y / this.parentSize.height,
+          },
+        })
+      );
+    }
   };
 
   renderMain = (service) => {
@@ -114,6 +118,7 @@ class XYPad {
   configure(config) {
     const { position } = config;
     if (position !== undefined) {
+      //      console.log("setting position ", position);
       this.app.next(this, position);
     }
   }

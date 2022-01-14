@@ -55,7 +55,18 @@ class PeersProvider extends Component {
     }
   };
 
-  sendData = (src, dst, data) => {
+  connectToPeer = (srcPeer, dst) => {
+    return new Promise((resolve, reject) => {
+      const connection = srcPeer.connect(dst);
+      if (connection) {
+        connection.on("open", () => resolve(connection));
+      } else {
+        return reject(); // TODO: connection.on("error", reject);
+      }
+    });
+  };
+
+  sendData = async (src, dst, data) => {
     const { connections, peers } = this.state;
     const srcConnections = connections[src] || {};
     const envelope = {
@@ -67,6 +78,7 @@ class PeersProvider extends Component {
       connection.send(envelope);
       return;
     }
+
     const srcPeer = peers[src];
     if (!srcPeer) {
       console.warn(
@@ -74,22 +86,30 @@ class PeersProvider extends Component {
       );
       return;
     }
-    connection = srcPeer.connect(dst);
-    if (connection) {
-      connection.on("open", () => {
-        console.log("Opened connection from", src, "to", dst);
-        srcPeer.onConnectionOpened && srcPeer.onConnectionOpened(dst);
-        connection.send(envelope);
-        this.setState({
-          connections: {
-            ...connections,
-            [src]: {
-              ...srcConnections,
-              [dst]: connection,
-            },
+    try {
+      const connectionId = `${src}.${dst}`;
+      if (this.pendingConnections && this.pendingConnections[connectionId]) {
+        return; // only try to establish a connection if none is pending
+      }
+      this.pendingConnections = {
+        ...(this.pendingConnections || {}),
+        [connectionId]: true,
+      };
+      const connection = await this.connectToPeer(srcPeer, dst);
+      delete this.pendingConnections[connectionId];
+      console.log("Opened connection from", src, "to", dst);
+      srcPeer.onConnectionOpened && srcPeer.onConnectionOpened(dst);
+      connection.send(envelope);
+      this.setState({
+        connections: {
+          ...connections,
+          [src]: {
+            ...srcConnections,
+            [dst]: connection,
           },
-        });
+        },
       });
+
       connection.on("close", () => {
         console.log("Closed connection from", src, "to", dst);
         srcPeer.onConnectionClosed && srcPeer.onConnectionClosed(dst);
@@ -100,7 +120,7 @@ class PeersProvider extends Component {
           },
         });
       });
-    } else {
+    } catch (err) {
       console.log("Connection is not available anymore", src, dst);
       this.updatePeers();
     }
