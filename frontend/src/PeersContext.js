@@ -55,11 +55,19 @@ class PeersProvider extends Component {
     }
   };
 
-  connectToPeer = (srcPeer, dst) => {
+  connectToPeer = (src, dst) => {
     return new Promise((resolve, reject) => {
+      const srcPeer = this.state.peers[src];
+      if (!srcPeer) {
+        console.warn(
+          `Trying to send data from an unregistered peer from: ${src} to: ${dst} know peers: ${this.state.peers}`
+        );
+        return reject();
+      }
+
       const connection = srcPeer.connect(dst);
       if (connection) {
-        connection.on("open", () => resolve(connection));
+        connection.on("open", () => resolve({ connection, srcPeer }));
       } else {
         return reject(); // TODO: connection.on("error", reject);
       }
@@ -67,27 +75,20 @@ class PeersProvider extends Component {
   };
 
   sendData = async (src, dst, data) => {
-    const { connections, peers } = this.state;
-    const srcConnections = connections[src] || {};
+    const connectionId = `${src}.${dst}`;
+    const { connections } = this.state;
     const envelope = {
       sender: src,
       data,
     };
-    let connection = srcConnections[dst];
+    const srcConnections = connections[src] || {};
+    let connection = srcConnections[dst]; // use connectionId
     if (connection) {
       connection.send(envelope);
       return;
     }
 
-    const srcPeer = peers[src];
-    if (!srcPeer) {
-      console.warn(
-        `Trying to send data from an unregistered peer from: ${src} to: ${dst} know peers: ${this.state.peers}`
-      );
-      return;
-    }
     try {
-      const connectionId = `${src}.${dst}`;
       if (this.pendingConnections && this.pendingConnections[connectionId]) {
         return; // only try to establish a connection if none is pending
       }
@@ -95,20 +96,10 @@ class PeersProvider extends Component {
         ...(this.pendingConnections || {}),
         [connectionId]: true,
       };
-      const connection = await this.connectToPeer(srcPeer, dst);
-      delete this.pendingConnections[connectionId];
+      const { connection, srcPeer } = await this.connectToPeer(src, dst);
+
       console.log("Opened connection from", src, "to", dst);
       srcPeer.onConnectionOpened && srcPeer.onConnectionOpened(dst);
-      connection.send(envelope);
-      this.setState({
-        connections: {
-          ...connections,
-          [src]: {
-            ...srcConnections,
-            [dst]: connection,
-          },
-        },
-      });
 
       connection.on("close", () => {
         console.log("Closed connection from", src, "to", dst);
@@ -120,10 +111,22 @@ class PeersProvider extends Component {
           },
         });
       });
+
+      connection.send(envelope);
+      this.setState({
+        connections: {
+          ...connections,
+          [src]: {
+            ...srcConnections,
+            [dst]: connection,
+          },
+        },
+      });
     } catch (err) {
       console.log("Connection is not available anymore", src, dst);
       this.updatePeers();
     }
+    delete this.pendingConnections[connectionId];
   };
 
   render() {
