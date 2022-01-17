@@ -136,7 +136,7 @@ export async function createBoardFromTemplate(templateUrl, params) {
   }
 }
 
-export function reorderService(
+export function reorderServiceOld(
   allServices,
   runtime,
   serviceUuid,
@@ -150,6 +150,26 @@ export function reorderService(
   const offset = targetPosition < oldPosition ? 0 : 1;
   rearranged.splice(targetPosition - offset, 0, service);
   return rearranged;
+}
+
+export function reorderService(
+  allServices,
+  runtime,
+  serviceUuid,
+  targetPosition
+) {
+  const services = allServices[runtime.id];
+  const service = services.find((svc) => serviceUuid === svc.uuid);
+  const fromIndex = services.indexOf(service);
+  const toIndex =
+    targetPosition > fromIndex
+      ? Math.max(targetPosition - 1, 0)
+      : targetPosition;
+
+  const newArr = [...services];
+  newArr.splice(fromIndex, 1);
+  newArr.splice(toIndex, 0, services[fromIndex]);
+  return newArr;
 }
 
 export function renameRuntime(runtimes, runtimeId, newName) {
