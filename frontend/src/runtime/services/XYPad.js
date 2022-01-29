@@ -110,7 +110,7 @@ class XYPadUI extends Component {
   };
 
   renderMain = (service) => {
-    const { x, y } = this.state;
+    const { x, y, dragging } = this.state;
     return (
       <div
         ref={(elem) => {
@@ -144,7 +144,8 @@ class XYPadUI extends Component {
             border: "solid 1px gray",
             borderRadius: "50%",
             cursor: "move",
-            opacity: this.state.dragging ? 0.1 : 1,
+            opacity: dragging ? 0.1 : 1,
+            touchAction: "none",
           }}
           draggable={true}
           onTouchStart={this.onPanStart}
