@@ -23,7 +23,10 @@ export default class BrowserRuntime extends Component {
   subservices = {};
 
   componentDidMount() {
-    const { runtime, userId } = this.props;
+    const { runtime, userId, services } = this.props;
+    if (services) {
+      services.forEach((svc) => this.configureService(svc, svc));
+    }
     if (runtime && userId) {
       // TODO: this should only happen when we have a backend
       this.connect(runtime.id);
@@ -405,7 +408,7 @@ export default class BrowserRuntime extends Component {
       }
       return configure && configure(config || {});
     };
-    svc.configure(service);
+    //svc.configure(service); // this happens in componentDidMount/Update hooks
     return svc;
   };
 
