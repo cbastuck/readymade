@@ -85,6 +85,8 @@ class XYPadUI extends Component {
       this.updateService(service, touchPos);
       this.lastPos = touchPos;
     }
+    e.preventDefault();
+    return false;
   };
 
   onDblClick = (e, service) => {
@@ -146,6 +148,8 @@ class XYPadUI extends Component {
           }}
           draggable={true}
           onTouchStart={this.onPanStart}
+          onTouchMove={(e) => this.onPan(e, service)}
+          onTouchEnd={this.onDragEnd}
           onDragStart={this.onPanStart}
           onDragEnd={this.onDragEnd}
         />
