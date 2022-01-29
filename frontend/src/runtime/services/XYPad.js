@@ -59,6 +59,10 @@ class XYPadUI extends Component {
     this.setState({ dragging: true });
   };
 
+  onDragEnd = () => {
+    this.setState({ dragging: false });
+  };
+
   onPanEnd = (e) => {
     const dropPos = this.getRelativePosition(e);
 
@@ -120,7 +124,12 @@ class XYPadUI extends Component {
           border: "solid 1px gray",
         }}
         onDoubleClick={(ev) => this.onDblClick(ev, service)}
-        // onDragOver={(e) => this.onDragOver(e, service)}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.onPan(e, service);
+        }}
+        onDrop={this.onPanEnd}
       >
         <div
           style={{
@@ -138,10 +147,7 @@ class XYPadUI extends Component {
           draggable={true}
           onTouchStart={this.onPanStart}
           onDragStart={this.onPanStart}
-          onDrag={(e) => this.onPan(e, service)}
-          onTouchMove={this.onPan}
-          onTouchEnd={this.onPanEnd}
-          onDragEnd={this.onPanEnd}
+          onDragEnd={this.onDragEnd}
         />
       </div>
     );
