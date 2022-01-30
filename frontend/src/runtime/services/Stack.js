@@ -140,6 +140,7 @@ class Stack {
           svc.uuid = uuid.v4();
         }
         const ssvc = await this.app.createSubService(this, svc);
+        ssvc.configure && (await ssvc.configure(svc));
         if (ssvc) {
           subservices.push(ssvc);
         }
