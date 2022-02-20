@@ -54,6 +54,9 @@ export default class HeaderMenu extends Component {
             {/*appContext.user.username*/}Home
           </Link>
         )}
+        <Link to="/docs" style={navItemStyle}>
+          Docs
+        </Link>
         {!username && (
           <Link to="/playground" style={navItemStyle}>
             Playground
@@ -61,9 +64,6 @@ export default class HeaderMenu extends Component {
         )}
         <Link to="/examples" style={navItemStyle}>
           Examples
-        </Link>
-        <Link to="/docs" style={navItemStyle}>
-          Docs
         </Link>
       </div>
     );

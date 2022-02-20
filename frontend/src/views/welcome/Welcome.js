@@ -7,6 +7,7 @@ import Footer from "../../components/Footer";
 import ProgressIndicator from "../../components/ProgressIndicator";
 import SandboxFrame from "../../components/SandboxFrame";
 import { redirectTo } from "../../core/actions";
+import News from "./News";
 
 import "./Welcome.css";
 
@@ -25,7 +26,17 @@ export default class Welcome extends Component {
 
   renderWelcome = () => (
     <div className="fade-in">
-      <h1>Welcome.</h1>
+      <h1
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "center",
+          marginLeft: 55,
+        }}
+      >
+        Welcome. <News />
+      </h1>
+
       <p className="hero-claim">
         <span className="make">Make yourself</span>
         <span>at home</span>

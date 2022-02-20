@@ -1,4 +1,5 @@
-body, html {
+body,
+html {
   height: 100%;
 }
 
@@ -22,8 +23,8 @@ body, html {
   padding-bottom: 25px;
   transform: translate(-50%, -50%);
   color: #454f6d;
-  border-top: 1px solid rgba(34,36,38,.15);
-  border-bottom: 1px solid rgba(34,36,38,.15);
+  border-top: 1px solid rgba(34, 36, 38, 0.15);
+  border-bottom: 1px solid rgba(34, 36, 38, 0.15);
   height: 250px;
   transition: height 0.5s linear;
 }
@@ -35,23 +36,37 @@ body, html {
 .fade-in-linear-slow {
   animation: opac-linear 2.2s;
 }
-@keyframes opac-linear{
-  0% {opacity: 0}
-  100%{opacity: 1}
+@keyframes opac-linear {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
-.fade-in{
+.fade-in {
   animation: opac 1s;
 }
-@keyframes opac{
-  0% {opacity: 0}
-  50% {opacity: 0}
-  100%{opacity: 1}
+@keyframes opac {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
-@keyframes opac-slow{
-  0% {opacity: 0}
-  100%{opacity: 1}
+@keyframes opac-slow {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 .fade-in-0 {
   animation: opac-slow 0.1s;
@@ -65,7 +80,6 @@ body, html {
 .fade-in-3 {
   animation: opac-slow 3s;
 }
-
 
 .closed {
   height: 0px;
@@ -103,25 +117,25 @@ body, html {
   color: #454f6d;
   font-size: large;
   padding: 0px;
-  margin-top: -5px
+  margin-top: -5px;
 }
 
 .button {
-    /* Positioning and sizing */
-    display: block;
-    width: 180px;
-    
-    /* Padding and margins */
-    padding: 1em;
-    margin-top: -5px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 12px;
-    
-    /* Border styles */
-    border: 1px solid darkgray;
-    color: white;
-    background-color: #454f6d;
+  /* Positioning and sizing */
+  display: block;
+  width: 180px;
+
+  /* Padding and margins */
+  padding: 1em;
+  margin-top: -5px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 12px;
+
+  /* Border styles */
+  border: 1px solid darkgray;
+  color: white;
+  background-color: #454f6d;
 }
 
 .back-button {

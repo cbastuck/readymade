@@ -118,7 +118,7 @@
             },
             {
               "type": "text",
-              "text": "Make a narrative",
+              "text": "Build a narrative",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
