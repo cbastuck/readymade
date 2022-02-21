@@ -19,7 +19,7 @@ export default class ServiceDocumentation extends Component {
           width: 300,
         }}
       >
-        <ServiceFrame service={serviceUI} />
+        <ServiceFrame service={service} serviceUi={serviceUI} />
       </div>
     );
   };

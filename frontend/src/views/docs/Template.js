@@ -21,7 +21,6 @@ export default class Template extends Component {
       <div
         style={{
           textAlign: "left",
-          marginLeft: 5,
           marginTop: 15,
           width: 300,
         }}
@@ -29,7 +28,7 @@ export default class Template extends Component {
         <Breadcrumb>
           <Breadcrumb.Section link>
             <Link to="/docs">
-              <span style={breadcrumpStyle}>Quickstarter</span>
+              <span style={breadcrumpStyle}>Docs</span>
             </Link>
           </Breadcrumb.Section>
           <Breadcrumb.Divider />

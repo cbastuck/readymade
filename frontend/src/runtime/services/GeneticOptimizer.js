@@ -120,7 +120,6 @@ class GeneticOptimizer {
       }, 0) / fitness.length;
     const stdFitness = Math.sqrt(varFitness);
     const minFitness = meanFitness - stdFitness;
-    console.log("FITNESSES", fitness, stdFitness, minFitness);
     return population.filter((g, idx) => {
       const ttl = g[0].ttl - 1;
       const f = fitness[idx];

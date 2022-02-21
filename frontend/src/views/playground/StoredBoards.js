@@ -9,7 +9,6 @@ function getLocalBoards(prefix) {
   for (const key in localStorage) {
     if (key.startsWith(prefix)) {
       const data = localStorage.getItem(key);
-      console.log("RESTORED DATA", data, prefix);
       savedBoards.push({
         name: key.substr(prefix.length),
         value: JSON.parse(data),

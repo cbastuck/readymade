@@ -179,9 +179,7 @@ class Output {
   connectWebsocket = async (url) => {
     const ws = new WebsocketChannel(
       `output-service-${this.uuid}`,
-      (params) => {
-        console.log("RECEIVED SOMETHING ON OUTPUT WS", params);
-      },
+      (params) => {},
       isSecureConnection()
     );
     await ws.open({ absolute: url });

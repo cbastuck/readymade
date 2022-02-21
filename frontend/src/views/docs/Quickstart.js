@@ -213,7 +213,7 @@ export default class Quickstart extends Component {
 
   render() {
     return (
-      <Template title="Quickstarter" isRoot={true}>
+      <Template title="Quickstarter" isRoot={false}>
         {this.renderQuickstart()}
         <div style={s(t.tc)}>
           <Link to="/playground" style={s(t.uc, t.fs16, t.ls3, t.bo, t.nw)}>

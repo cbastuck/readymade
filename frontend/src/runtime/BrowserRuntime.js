@@ -350,7 +350,7 @@ export default class BrowserRuntime extends Component {
   };
 
   destroyRuntime = async () => {
-    const { services } = this.props;
+    const { services = [] } = this.props;
 
     if (this.eventSource) {
       this.eventSource.close();

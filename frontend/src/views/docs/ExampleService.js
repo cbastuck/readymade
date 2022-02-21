@@ -6,7 +6,7 @@ const serviceId = "hookup.to/service/example-service";
 const serviceName = "Some Service";
 
 export class ExampleServiceUI extends Component {
-  onInit(initialState) {}
+  onInit = (initialState) => {};
 
   renderMain = (service) => {
     return <div>Main</div>;
@@ -19,6 +19,7 @@ export class ExampleServiceUI extends Component {
   render() {
     return (
       <ServiceUI
+        service={this.props.service}
         setup={this.props.setup}
         onInit={this.onInit.bind(this)}
         segments={[

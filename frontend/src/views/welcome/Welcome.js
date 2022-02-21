@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { Link } from "react-router-dom";
 
 import { AppConsumer } from "../../AppContext";
 import BoardContext, { BoardConsumer } from "../../BoardContext";
@@ -31,10 +32,11 @@ export default class Welcome extends Component {
           display: "flex",
           flexDirection: "row",
           justifyContent: "center",
-          marginLeft: 55,
+          marginLeft: 25,
         }}
       >
-        Welcome. <News />
+        Welcome
+        <News />
       </h1>
 
       <p className="hero-claim">
@@ -158,14 +160,17 @@ export default class Welcome extends Component {
             {
               q: "What",
               a: "An approach to lower access barriers and play with technology",
+              href: "/docs/pitch/what",
             },
             {
               q: "Why",
               a: "Technology is an enabler for creativity, inspiration and thinking for y'all",
+              href: "/docs/pitch/why",
             },
             {
               q: "How",
               a: "Explore abstractions to creatively connect data, logic, devices and services",
+              href: "/docs/pitch/how",
             },
             {
               a: (
@@ -212,6 +217,11 @@ export default class Welcome extends Component {
                   }}
                 >
                   {x.a}
+                  {x.href && (
+                    <Link to={x.href} style={{ fontSize: 10 }}>
+                      {" more..."}
+                    </Link>
+                  )}
                 </div>
               </div>
             </div>

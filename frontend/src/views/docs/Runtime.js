@@ -17,6 +17,11 @@ export function renderSceneExample(runtimeName) {
   const runtime = {
     services,
   };
+  const boardContext = {
+    services,
+    registry: [],
+    isRuntimeInScope: () => false,
+  };
   return (
     <div
       style={{
@@ -29,6 +34,7 @@ export function renderSceneExample(runtimeName) {
         runtime={runtime}
         runtimeName={runtimeName}
         services={services}
+        boardContext={boardContext}
       />
     </div>
   );
