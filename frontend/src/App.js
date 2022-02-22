@@ -13,6 +13,7 @@ export default function App() {
         style={{
           height: "100%",
           width: "100%",
+          overflow: "auto", // without this on iOS/responsive decvices they height corresponds the screen height, not the page height, so limit the height of the page to 100%
         }}
       >
         <Routes />
