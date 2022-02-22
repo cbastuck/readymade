@@ -54,7 +54,8 @@
     "push": "npm run build && docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend",
     "build-bridge": "parcel build --out-dir build-bridge --out-file index.js --public-url /bridge --no-source-maps --cache-dir ./parcel-cache --target browser bridge/index.js",
     "deploy-bridge": "rsync -avz --progress --exclude node_modules build-bridge/* xeon:bridge",
-    "prettier": "prettier --write \"src/**/*.js\""
+    "prettier": "prettier --write \"src/**/*.js\"",
+    "ssl": "HTTPS=true SSL_CRT_FILE=cert/server.crt SSL_KEY_FILE=cert/server.key npm start"
   },
   "eslintConfig": {
     "extends": "react-app"
