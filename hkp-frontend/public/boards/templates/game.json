@@ -1,0 +1,148 @@
+{
+  "runtimes": [
+    {
+      "id": "225f57b0-cb96-4ad0-be26-6e19610a1bc1",
+      "name": "Input",
+      "type": "browser"
+    },
+    {
+      "id": "278d4f08-5055-4b71-8886-09b8b05129be",
+      "name": "Logic",
+      "type": "browser"
+    },
+    {
+      "id": "130bf554-4c61-4c94-a6d4-943a6263bb4f",
+      "name": "Output",
+      "type": "browser"
+    }
+  ],
+  "services": {
+    "225f57b0-cb96-4ad0-be26-6e19610a1bc1": [
+      {
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Injector",
+        "uuid": "03226cae-1bc1-4000-bd89-f22996adac04",
+        "board": "Playground",
+        "recentCode": "{ \"moveX\": -10 }"
+      },
+      {
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Injector",
+        "uuid": "6b183589-560b-4946-b023-9c0fa60c3783",
+        "board": "Playground",
+        "recentCode": "{ \"moveX\": 10 }"
+      }
+    ],
+    "278d4f08-5055-4b71-8886-09b8b05129be": [
+      {
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "uuid": "5223e508-1aba-4332-a306-cd5725820fd6",
+        "board": "Playground",
+        "count": 0,
+        "periodic": true,
+        "periodicValue": 20,
+        "periodicUnit": "ms",
+        "oneShotDelay": 0,
+        "running": true
+      },
+      {
+        "serviceId": "hookup.to/service/cache",
+        "serviceName": "State-Cache",
+        "uuid": "ed09b116-f718-4d3d-aee4-3a2cfcfdd4db",
+        "board": "Playground",
+        "initial": {
+          "barX": 50,
+          "ballX": 10,
+          "ballY": 50,
+          "dX": 1,
+          "dY": 2
+        }
+      },
+      {
+        "uuid": "16309ca1-8cd2-4e13-aeba-c3a5487bbcb8",
+        "board": "Playground",
+        "template": {
+          "barX=": "params.barX + (params.moveX || 0)",
+          "dX=": "(params.ballX + params.dX >= 290) || (params.ballX + params.dX * 1.1 < 5) ? min(params.dX * -1.1, 5) : params.dX",
+          "dY=": "((params.ballY < 190 && params.ballY + params.dY >= 190 && params.ballX >= params.barX && params.ballX <= params.barX+70) || (params.ballY+params.dY < 20)) ? params.dY * -1 : params.dY",
+          "ballX=": "params.triggerCount ? params.ballX + params.dX : params.ballX",
+          "ballY=": "params.ballY > 200 ? 50 : (params.triggerCount ? params.ballY + params.dY : params.ballY)",
+          "cacheProperties+": ["ballX", "ballY", "barX", "dX", "dY"]
+        },
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map"
+      }
+    ],
+    "130bf554-4c61-4c94-a6d4-943a6263bb4f": [
+      {
+        "serviceId": "hookup.to/service/stack",
+        "serviceName": "Stack",
+        "board": "Playground",
+        "input": "multiplex",
+        "output": "array",
+        "services": [
+          {
+            "uuid": "248ada9b-1cc7-4ab8-abf9-2a704ea79465",
+            "board": "Playground",
+            "serviceName": "Ball",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "•",
+              "x=": "params.ballX",
+              "y=": "params.ballY",
+              "color": "#454f6d"
+            }
+          },
+          {
+            "serviceName": "Bar",
+            "serviceId": "hookup.to/service/map",
+            "uuid": "43807a2f-e9ac-48e0-9151-387b17f50e29",
+            "template": {
+              "type": "rect",
+              "x=": "params.barX",
+              "y": "98%",
+              "height": "10",
+              "width": "70",
+              "color": "#333"
+            }
+          }
+        ]
+      },
+      {
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor",
+        "uuid": "a27410b4-4f63-402e-a07b-d8a018c7be83",
+        "board": "Playground",
+        "logToConsole": false
+      },
+      {
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "uuid": "ae09df8a-442b-4a06-921b-3812d8ca0e1d",
+        "board": "Playground",
+        "fullscreen": false,
+        "clearOnRedraw": true,
+        "resizable": false
+      }
+    ]
+  },
+  "sidechainRouting": {
+    "278d4f08-5055-4b71-8886-09b8b05129be": [
+      {
+        "runtimeId": "278d4f08-5055-4b71-8886-09b8b05129be",
+        "serviceUuid": "ed09b116-f718-4d3d-aee4-3a2cfcfdd4db"
+      }
+    ]
+  },
+  "outputRouting": {},
+  "inputRouting": { 
+    "278d4f08-5055-4b71-8886-09b8b05129be": "%sender-board%-injector-runtime" 
+  },
+  "description": [
+    { "type": "headline", "text": "How to connect" },
+    "Connect another device as the input controller, using following injector board",
+    { "type": "qr", "href": "%http-host%/playground/%sender-board%?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game-injector.json&receiver-board=%board%" }
+  ]
+} 

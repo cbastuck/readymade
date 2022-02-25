@@ -1,0 +1,51 @@
+body, html {
+  height: 100%;
+}
+
+.about-text {
+  background-color: rgba(255, 255, 255, 0.95);
+  text-align: center;
+  position: absolute;
+  width: 100%;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #454f6d;
+  padding: 50px;
+}
+
+.about-text h1 {
+  font-size: 50px;
+}
+
+.about-text button {
+  /* Positioning and sizing */
+  display: block;
+  width: 200px;
+  
+  /* Padding and margins */
+  padding: 1em;
+  margin-top: 50px;
+  margin-left: auto;
+  margin-right: auto;
+  
+  /* Text styles */
+  color: darkgray;
+  text-decoration: none;
+  
+  /* Border styles */
+  border: 1px solid darkgray;
+}
+
+.about-text button:hover {
+background-color: #454f6d;
+border: 1px solid #454f6d;
+color: white;
+}
+
+
+.about-mission {
+  color: #454f6d;
+  font-size: 12pt;
+  font-weight: bold;
+}

@@ -1,0 +1,22 @@
+
+{
+  "ExampleRuntime": {
+    "bundles": ["hookup.to/registry/browser/Audio"],
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Audio Input",
+        "serviceId": "hookup.to/service/audio-input",
+        "timeslice": 2000
+      },
+      {
+        "serviceName": "Trigger Pad",
+        "serviceId": "hookup.to/service/trigger-pad"
+      },
+      {
+        "serviceName": "Audio Output",
+        "serviceId": "hookup.to/service/audio-output"
+      }
+    ]
+  }
+}

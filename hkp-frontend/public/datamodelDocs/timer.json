@@ -1,0 +1,5 @@
+{
+  "properties": {
+    "triggerCount": "A counter that is incremented each time the timer service emits an event"
+  }
+}

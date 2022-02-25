@@ -1,0 +1,56 @@
+{
+  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+    "name": "browser",
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/timer"
+      },
+      {
+        "serviceName": "Camera",
+        "serviceId": "hookup.to/service/camera"
+      },
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "=": "params.image"
+        }
+      }
+    ]
+  },
+  "2802ecf0-6684-4498-bde6-8a75f774786f": {
+    "name": "remote",
+    "type": "node",
+    "services": [
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "enabled": false,
+        "logToConsole": false
+      }
+    ]
+  },
+  "111305cb-f1fb-451b-b4e2-575e05864a4b": {
+    "name": "browser 2",
+    "type": "browser",
+    "services": [
+      {
+        "serviceName": "Map",
+        "serviceId": "hookup.to/service/map",
+        "template": {
+          "type": "image",
+          "data=": "params",
+          "height": "100%",
+          "centerX": "50%",
+          "centerY": "50%"
+        }
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas"
+      }
+    ]
+  }
+}

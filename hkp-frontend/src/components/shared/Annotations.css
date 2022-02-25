@@ -1,0 +1,7 @@
+.annotations .labeled .label {
+  min-width: 65px;
+}
+
+.annotation-header {
+  margin: 5px;
+}

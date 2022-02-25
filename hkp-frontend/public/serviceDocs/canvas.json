@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "brief": "Basically a canvas object that consumes renderable data models and draws them on a canvas.",
+  "configuration": [
+    {
+      "type": "config",
+      "value": {
+        "capture": true
+      },
+      "description": "In capture mode the canvas creates an image blob at its output for any incoming data."
+    }
+  ],
+  "inputs": ["renderable"],
+  "outputs": ["An image blob of the canvas currently shown if configured accordingly. Otherwise pass-through"],
+  "todos": [],
+  "versions": []
+}

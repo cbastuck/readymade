@@ -1,0 +1,27 @@
+{
+  "version": "2.0",
+  "topology": {
+    "type": "chain"
+  },
+  "runtimes": [
+    {
+      "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
+      "name": "Runtime",
+      "type": "browser",
+      "services": [
+        {
+          "serviceName": "AudioInput",
+          "serviceId": "hookup.to/service/audio-input",
+          "timeslice": 2000
+        },
+        {
+          "serviceName": "MP3 Encoder",
+          "serviceId": "hookup.to/service/mp3encoder"
+        }
+      ],
+      "params": {
+        "bundles": ["hookup.to/registry/browser/Audio"]
+      }
+    }
+  ]
+}

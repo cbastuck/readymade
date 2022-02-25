@@ -1,0 +1,32 @@
+{
+  "runtimes": [
+    {
+      "id": "RT1",
+      "name": "injector-runtime",
+      "type": "browser"
+    }
+  ],
+  "services": {
+    "RT1": [
+      {
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Injector",
+        "recentCode": {
+          "moveX": -10
+        }
+      },
+      {
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Injector",
+        "recentCode": {
+          "moveX": 10
+        }
+      }
+    ]
+  },
+  "outputRouting": {
+    "RT1": {
+      "peer": "%receiver-board%-Logic"
+    }
+  }
+}

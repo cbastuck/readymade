@@ -1,0 +1,89 @@
+{
+  "b73af90e-537b-46ba-b7aa-3870cfd2d958": {
+    "id": "b73af90e-537b-46ba-b7aa-3870cfd2d958",
+    "name": "Chrome-78.0.3904.108 (0)",
+    "type": "browser",
+    "bundles": ["hookup.to/registry/browser/Graphic"],
+    "services": [
+      {
+        "serviceName": "Timer",
+        "serviceId": "hookup.to/service/timer",
+        "periodic": true,
+        "periodicValue": 40,
+        "periodicUnit": "ms",
+        "start": true
+      },
+      {
+        "serviceName": "Stack",
+        "serviceId": "hookup.to/service/stack",
+        "input": "multiplex",
+        "output": "array",
+        "services": [
+          {
+            "serviceName": "Sun",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "☀️",
+              "x=": "100 - (params.triggerCount / 50) % 100 + \"%\"",
+              "y": "20%"
+            }
+          },
+          {
+            "serviceName": "Cloud",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "☁️",
+              "x=": "-12 + (params.triggerCount / 20) % 150 + \"%\"",
+              "y": "15%"
+            }
+          },
+          {
+            "serviceName": "distant Tree",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "🌳",
+              "x=": "-20 + (params.triggerCount / 7) % 150 + \"%\"",
+              "y": "65%"
+            }
+          },
+          {
+            "serviceName": "near Tree",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "🌲",
+              "x=": "-40 + (params.triggerCount / 2.5) % 150 + \"%\"",
+              "y": "85%"
+            }
+          },
+          {
+            "serviceName": "Walker",
+            "serviceId": "hookup.to/service/map",
+            "template": {
+              "type": "text",
+              "text": "🚶‍♀️",
+              "x=": "100 - min(params.triggerCount, 50) + \"%\"",
+              "y=": "round(95 - sin(params.triggerCount / 1.3) * 2) + \"%\""
+            }
+          }
+        ]
+      },
+      {
+        "serviceName": "Monitor",
+        "serviceId": "hookup.to/service/monitor"
+      },
+      {
+        "serviceName": "Canvas",
+        "serviceId": "hookup.to/service/canvas",
+        "capture": "image/png"
+      },
+      {
+        "serviceName": "GIF Recorder",
+        "serviceId": "hookup.to/service/gif-encoder"
+      }
+    ]
+  }
+}
