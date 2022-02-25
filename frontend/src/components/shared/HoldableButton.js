@@ -1,9 +1,9 @@
 import React, { Component } from "react";
 
+import { isTouchDevice } from "../../common";
 import "./HoldableButton.css";
 
-const isTouch = "ontouchstart" in window;
-
+const isTouch = isTouchDevice();
 export default class HoldableButton extends Component {
   state = {
     isDown: false,

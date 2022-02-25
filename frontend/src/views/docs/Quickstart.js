@@ -28,7 +28,10 @@ export default class Quickstart extends Component {
               minWidth: 150,
             }}
           >
-            <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
+            {/*<Link to={`/docs/${item.title.toLowerCase()}`}>
+            {item.title}</Link>
+            */}
+            {item.title}
           </Item.Header>
         }
         <Item.Content style={{ marginLeft: 10 }}>

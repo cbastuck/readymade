@@ -22,7 +22,8 @@ export default function News() {
             height="30"
             xmlns="http://www.w3.org/2000/svg"
           >
-            <polygon points="10,1 4,18 19,6 1,6 16,18" fill="#464F6D" />
+            <polygon points="10,1 4,18 19,6 1,6 16,18" fill="#464F6D40" />
+
             <text fontSize="7px" fontWeight="bold" fill="#464F6D" x="13" y="5">
               News
             </text>
