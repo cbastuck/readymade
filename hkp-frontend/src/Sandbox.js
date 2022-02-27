@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 
 import * as uuid from "uuid";
 
+import { withRouter } from "./common";
 import Runtime from "./components/Runtime";
 import BoardProvider, { BoardConsumer } from "./BoardContext";
 import DragProvider from "./DragContext";
@@ -33,7 +34,7 @@ function extractRuntimeData(data) {
   return firstBrowserRuntimeData;
 }
 
-export default class Sandbox extends Component {
+class Sandbox extends Component {
   state = {
     runtime: undefined,
     options: {
@@ -177,3 +178,5 @@ export default class Sandbox extends Component {
     );
   }
 }
+
+export default withRouter(Sandbox);

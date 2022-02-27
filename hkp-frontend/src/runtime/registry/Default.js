@@ -1,16 +1,21 @@
 import timerDescriptor from "../services/Timer";
 import monitorDescriptor from "../services/Monitor";
+import SequencerDescriptor from "../services/Sequencer";
+import GeneticDescriptor from "../services/Genetic";
+import CanvasDescriptor from "../services/Canvas";
+import StatsDescriptor from "../services/Stats";
+import DispatcherDesriptor from "../services/Dispatcher";
+
 /*
 import playbackDescriptor from "../services/Playback";
 import FileProviderDescriptor from "../services/FileProvider";
 import DownloaderDescriptor from "../services/Downloader";
-import SequencerDescriptor from "../services/Sequencer";
-import CanvasDescriptor from "../services/Canvas";
+
+
 import RemoteWindowDescriptor from "../services/RemoteWindow";
 import StateDescriptor from "../services/State";
-import GeneticDescriptor from "../services/Genetic";
 import GeneticOptimizerDescriptor from "../services/GeneticOptimizer";
-import StatsDescriptor from "../services/Stats";
+
 import SwitchDescriptor from "../services/Switch";
 import BufferDescriptor from "../services/Buffer";
 import MapDescriptor from "../services/Map";
@@ -19,7 +24,7 @@ import FeedbackProviderDesriptor from "../services/FeedbackProvider";
 import FeedbackTakerDesriptor from "../services/FeedbackTaker";
 import FetcherDesriptor from "../services/Fetcher";
 import CameraDesriptor from "../services/Camera";
-import DispatcherDesriptor from "../services/Dispatcher";
+
 import InputDescriptor from "../services/Input";
 import OutputDescriptor from "../services/Output";
 import InjectorDescriptor from "../services/Injector";
@@ -41,17 +46,21 @@ import XYPadDecriptor from "../services/XYPad";
 const defaultRegistry = [
   timerDescriptor,
   monitorDescriptor,
+  SequencerDescriptor,
+  GeneticDescriptor,
+  CanvasDescriptor,
+  StatsDescriptor,
+  DispatcherDesriptor,
   /*
   playbackDescriptor,
   FileProviderDescriptor,
   DownloaderDescriptor,
-  SequencerDescriptor,
-  CanvasDescriptor,
+  
   RemoteWindowDescriptor,
   StateDescriptor,
-  GeneticDescriptor,
+  
   GeneticOptimizerDescriptor,
-  StatsDescriptor,
+  
   SwitchDescriptor,
   BufferDescriptor,
   MapDescriptor,
@@ -60,7 +69,7 @@ const defaultRegistry = [
   FeedbackTakerDesriptor,
   FetcherDesriptor,
   CameraDesriptor,
-  DispatcherDesriptor,
+  
   InputDescriptor,
   OutputDescriptor,
   InjectorDescriptor,

@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes, useParams } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import Welcome from "./views/welcome/Welcome";
 import About from "./views/about/About";
@@ -8,10 +8,11 @@ import News from "./views/docs/News";
 import Contact from "./views/about/Contact";
 import Sandbox from "./Sandbox";
 import Playground from "./views/playground/index";
-
-/*
 import Examples from "./views/examples/Examples";
 import Quickstart from "./views/docs/Quickstart";
+import BoardSource from "./views/playground/BoardSource";
+
+/*
 import ServiceDocumentation from "./views/docs/Service";
 import BoardDocumentation from "./views/docs/Board";
 import RuntimeDocumentation from "./views/docs/Runtime";
@@ -25,7 +26,7 @@ import LoginFail from "./views/LoginFail";
 import ServiceReferenceView from "./views/ServiceReferenceView";
 import DataModelReferenceView from "./views/DataModelReferenceView";
 
-import BoardSource from "./views/playground/BoardSource";
+
 import Import from "./Import";
 import Join from "./Join";
 import ServiceRedirect from "./views/ServiceRedirect";
@@ -34,8 +35,6 @@ import WhatPitch from "./views/docs/pitch/What";
 import WhyPitch from "./views/docs/pitch/Why";
 import HowPitch from "./views/docs/pitch/How";
 */
-
-const PlaygroundWithParams = withParams(Playground);
 
 export default function AppRoutes() {
   return (
@@ -46,8 +45,11 @@ export default function AppRoutes() {
       <Route path="/contact" element={<Contact />} />
       <Route path="/imprint" element={<Imprint />} />
       <Route path="/sandbox" element={<Sandbox />} />
-      <Route path="/playground/:board" element={<PlaygroundWithParams />} />
-      <Route path="/playground/" element={<PlaygroundWithParams />} />
+      <Route path="/playground/:board/src" element={<BoardSource />} />
+      <Route path="/playground/:board" element={<Playground />} />
+      <Route path="/playground/" element={<Playground />} />
+      <Route path="/examples" element={<Examples />} />
+      <Route path="/docs" element={<Quickstart />} />
       {/* 
       <Route path="/import" element={<Import />} />
       <Route path="/new" exact element={<BuildBoard />} />
@@ -57,7 +59,7 @@ export default function AppRoutes() {
       <Route path="/:board/app" element={<AppHub />} />
       <Route path="/service/:service" element={<ServiceReferenceView />} />
       <Route path="/datamodel/:name" element={<DataModelReferenceView />} />
-      <Route path="/examples" element={<Examples />} />
+      
       <Route path="/dashboard" element={<MyBoards />} />
       <Route path="/docs/pitch/what" element={<WhatPitch />} />
       <Route path="/docs/pitch/why" element={<WhyPitch />} />
@@ -65,19 +67,13 @@ export default function AppRoutes() {
       <Route path="/docs/service" element={<ServiceDocumentation />} />
       <Route path="/docs/board" element={<BoardDocumentation />} />
       <Route path="/docs/runtime" element={<RuntimeDocumentation />} />
-      <Route path="/docs" element={<Quickstart />} />
+      
       <Route path="/serviceRedirect" element={<ServiceRedirect />} />
       <Route path="/join/:share" element={<Join />} />
-      <Route path="/playground/:board/src" element={<BoardSource />} />
+      
       
       <Route path="/headless" element={<Headless />} />
       <Route path="/:board" element={<BoardWithContext />} /> */}
     </Routes>
-  );
-}
-
-function withParams(Component) {
-  return (props) => (
-    <Component {...props} match={{ params: { ...useParams() } }} />
   );
 }
