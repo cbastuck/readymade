@@ -69,13 +69,11 @@ export default class Playground extends Component {
   externalInputs = {};
 
   componentDidMount() {
-    console.log("MOUNTED", this.props);
     const { hash } = window && window.location;
     this.setState({ initialTabLocation: hash || "#usecase" });
   }
 
   componentDidUpdate(prevProps) {
-    console.log("PROP!!S", this.props);
     const board = this.props.match.params.board;
     const prevBoard = prevProps.match.params.board;
     if (board !== prevBoard) {

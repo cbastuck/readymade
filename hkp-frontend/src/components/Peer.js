@@ -4,7 +4,7 @@ import Peerjs from "peerjs";
 
 import { PeersCtx } from "../PeersContext";
 
-const peerHost = `${window.location.host}`;
+const peerHost = window.location.hostname;
 const isHTTPS = window.location.protocol === "https:";
 
 function logError(err) {
