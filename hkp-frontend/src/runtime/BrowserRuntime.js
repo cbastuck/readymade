@@ -1,5 +1,6 @@
 import React, { Component } from "react";
-import EventSource from "eventsource";
+import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
+
 // TODO: remove dependency if not needed anymore (double check commented out code)
 // import { decode } from 'base64-arraybuffer';
 
@@ -9,6 +10,8 @@ import { restoreToken } from "../core/Auth";
 import { serializeWebsocketBuffer } from "../core/format";
 import ServiceUiContainer from "./ServiceUiContainer";
 import { createServiceUI } from "../UIFactory";
+
+const EventSource = NativeEventSource || EventSourcePolyfill;
 
 function logInfo(msg) {
   // console.log(msg);

@@ -1,7 +1,6 @@
 import React, { Component } from "react";
 import { Loader } from "semantic-ui-react";
-import uuid from "uuid";
-import qs from "query-string";
+import * as uuid from "uuid";
 
 import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
@@ -70,11 +69,13 @@ export default class Playground extends Component {
   externalInputs = {};
 
   componentDidMount() {
+    console.log("MOUNTED", this.props);
     const { hash } = window && window.location;
     this.setState({ initialTabLocation: hash || "#usecase" });
   }
 
   componentDidUpdate(prevProps) {
+    console.log("PROP!!S", this.props);
     const board = this.props.match.params.board;
     const prevBoard = prevProps.match.params.board;
     if (board !== prevBoard) {
@@ -158,7 +159,9 @@ export default class Playground extends Component {
     const queryParams = new URLSearchParams(document.location.search);
     const { board } = this.props.match.params;
     if (board) {
-      const params = qs.parse(document.location.search);
+      const params = Object.fromEntries(
+        new URLSearchParams(document.location.search)
+      );
       if (params.template) {
         return createBoardFromTemplate(params.template, params);
       } else {

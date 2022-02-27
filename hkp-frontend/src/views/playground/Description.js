@@ -1,6 +1,5 @@
 import React from "react";
 import { Message } from "semantic-ui-react";
-import qs from "query-string";
 
 import { s, t } from "../../styles";
 import Copyable from "../../components/Copyable";
@@ -74,7 +73,9 @@ export default function Description({ description, boardName }) {
       }
       case "qr": {
         const { href = "#" } = item;
-        const params = qs.parse(document.location.search);
+        const params = Object.fromEntries(
+          new URLSearchParams(document.location.search)
+        );
         const url = replacePlaceholders(href, {
           board: boardName,
           ...params,

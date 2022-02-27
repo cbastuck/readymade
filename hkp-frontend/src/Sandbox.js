@@ -1,8 +1,7 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
 
-import uuid from "uuid";
-import queryString from "query-string";
+import * as uuid from "uuid";
 
 import Runtime from "./components/Runtime";
 import BoardProvider, { BoardConsumer } from "./BoardContext";
@@ -44,7 +43,9 @@ export default class Sandbox extends Component {
 
   componentDidMount() {
     const { location } = this.props;
-    const values = location ? queryString.parse(location.search) : this.props;
+    const values = location
+      ? Object.fromEntries(new URLSearchParams(location.search))
+      : this.props;
 
     const { src, data, frameless = "false" } = values;
 

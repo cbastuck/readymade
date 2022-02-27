@@ -1,11 +1,14 @@
 import React from "react";
-import { Route, Routes } from "react-router-dom";
+import { Route, Routes, useParams } from "react-router-dom";
 
 import Welcome from "./views/welcome/Welcome";
 import About from "./views/about/About";
 import Imprint from "./views/about/Imprint";
 import News from "./views/docs/News";
 import Contact from "./views/about/Contact";
+import Sandbox from "./Sandbox";
+import Playground from "./views/playground/index";
+
 /*
 import Examples from "./views/examples/Examples";
 import Quickstart from "./views/docs/Quickstart";
@@ -21,10 +24,8 @@ import Login from "./views/Login";
 import LoginFail from "./views/LoginFail";
 import ServiceReferenceView from "./views/ServiceReferenceView";
 import DataModelReferenceView from "./views/DataModelReferenceView";
-import Playground from "./views/playground/index";
+
 import BoardSource from "./views/playground/BoardSource";
-//import Playground from "./views/PlaygroundLegacy";
-import Sandbox from "./Sandbox";
 import Import from "./Import";
 import Join from "./Join";
 import ServiceRedirect from "./views/ServiceRedirect";
@@ -34,6 +35,8 @@ import WhyPitch from "./views/docs/pitch/Why";
 import HowPitch from "./views/docs/pitch/How";
 */
 
+const PlaygroundWithParams = withParams(Playground);
+
 export default function AppRoutes() {
   return (
     <Routes>
@@ -42,8 +45,10 @@ export default function AppRoutes() {
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/imprint" element={<Imprint />} />
-      {/* 
       <Route path="/sandbox" element={<Sandbox />} />
+      <Route path="/playground/:board" element={<PlaygroundWithParams />} />
+      <Route path="/playground/" element={<PlaygroundWithParams />} />
+      {/* 
       <Route path="/import" element={<Import />} />
       <Route path="/new" exact element={<BuildBoard />} />
       <Route path="/login" element={<Login />} />
@@ -64,10 +69,15 @@ export default function AppRoutes() {
       <Route path="/serviceRedirect" element={<ServiceRedirect />} />
       <Route path="/join/:share" element={<Join />} />
       <Route path="/playground/:board/src" element={<BoardSource />} />
-      <Route path="/playground/:board" element={<Playground />} />
-      <Route path="/playground" element={<Playground />} />
+      
       <Route path="/headless" element={<Headless />} />
       <Route path="/:board" element={<BoardWithContext />} /> */}
     </Routes>
+  );
+}
+
+function withParams(Component) {
+  return (props) => (
+    <Component {...props} match={{ params: { ...useParams() } }} />
   );
 }
