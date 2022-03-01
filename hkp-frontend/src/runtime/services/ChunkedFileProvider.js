@@ -3,10 +3,10 @@ import { Button } from "semantic-ui-react";
 
 import { BoardConsumer } from "../../BoardContext";
 
-const serviceId = "hookup.to/service/file-provider";
-const serviceName = "File Provider";
+const serviceId = "hookup.to/service/chunked-file-provider";
+const serviceName = "Chunked File Provider";
 
-class FileProviderUI extends Component {
+class ChunkedFileProviderUI extends Component {
   state = {
     file: undefined,
   };
@@ -59,7 +59,7 @@ class FileProviderUI extends Component {
   }
 }
 
-class FileProvider {
+class ChunkedFileProvider {
   constructor(app, board, descriptor, id) {
     this.uuid = id;
     this.board = board;
@@ -126,8 +126,8 @@ const descriptor = {
   serviceName,
   serviceId,
   create: (app, board, descriptor, id) =>
-    new FileProvider(app, board, descriptor, id),
-  createUI: FileProviderUI,
+    new ChunkedFileProvider(app, board, descriptor, id),
+  createUI: ChunkedFileProviderUI,
 };
 
 export default descriptor;

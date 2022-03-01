@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Accordion, Label } from "semantic-ui-react";
 
-import uuid from "uuid";
+import * as uuid from "uuid";
 
 import ServiceUI from "./ServiceUI";
 import SelectorField from "../../components/shared/SelectorField";
