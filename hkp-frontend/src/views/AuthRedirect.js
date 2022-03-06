@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 import { AppConsumer } from "../AppContext";
 import { redirectUri } from "../core/actions";
@@ -39,14 +39,14 @@ export default class AuthRedirect extends Component {
         "Content-Type": "application/x-www-form-urlencoded",
         "Cache-Control": "no-cache",
       },
-      body: qs.stringify({
+      body: new URLSearchParams({
         client_id: clientId,
         client_secret: "hkp",
         redirect_uri: redirectUri(),
         grant_type: "authorization_code",
         code,
         code_verifier: pkceVerifier,
-      }),
+      }).toString(),
     });
 
     const result = await response.json();
@@ -62,7 +62,7 @@ export default class AuthRedirect extends Component {
 
     if (this.queryParams.error) {
       return (
-        <Redirect
+        <Navigate
           to={{
             pathname: "/loginFail",
             state: { errorMessage: this.queryParams.error },
@@ -87,9 +87,9 @@ export default class AuthRedirect extends Component {
             return false;
           } else {
             return this.queryParams.state ? (
-              <Redirect to={`/${this.queryParams.state}`} />
+              <Navigate to={`/${this.queryParams.state}`} />
             ) : (
-              <Redirect to="/" />
+              <Navigate to="/" />
             );
           }
         }}

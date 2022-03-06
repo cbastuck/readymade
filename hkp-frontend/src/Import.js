@@ -1,6 +1,5 @@
 import React, { Component } from "react";
-import { Redirect } from "react-router-dom";
-import queryString from "query-string";
+import { Navigate } from "react-router-dom";
 
 import { AppConsumer } from "./AppContext";
 import BoardContext from "./BoardContext";
@@ -17,7 +16,7 @@ export default class Import extends Component {
     this.isImporting = true;
 
     const { location } = this.props;
-    const values = queryString.parse(location.search);
+    const values = Object.fromEntries(new URLSearchParams(location.search));
     const { src, board } = values;
     if (src && board) {
       const response = await fetch(src);
@@ -65,6 +64,6 @@ export default class Import extends Component {
         </AppConsumer>
       );
     }
-    return <Redirect to={`/${board}`} />;
+    return <Navigate to={`/${board}`} />;
   }
 }

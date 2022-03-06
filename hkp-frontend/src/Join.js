@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Redirect } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 
 import { joinBoard } from "./core/actions";
 
@@ -26,6 +26,6 @@ export default class Join extends Component {
       return false;
     }
 
-    return <Redirect to={`/${boardname}`} />;
+    return <Navigate to={`/${boardname}`} />;
   }
 }

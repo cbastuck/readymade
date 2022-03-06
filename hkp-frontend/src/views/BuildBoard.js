@@ -1,11 +1,12 @@
 import React, { Component } from "react";
-import { Redirect } from "react-router-dom";
-import { generate } from "unique-names-generator";
+import { Navigate } from "react-router-dom";
+
+import { generateRandomName } from "../core/board";
 
 class BuildBoard extends Component {
   render() {
-    const name = generate("-").split("-").slice(1).join("-");
-    return <Redirect to={name} />;
+    const name = generateRandomName();
+    return <Navigate to={`/${name}`} />;
   }
 }
 export default BuildBoard;

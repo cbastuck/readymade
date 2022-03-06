@@ -1,11 +1,9 @@
 import React, { Component } from "react";
 
-import queryString from "query-string";
-
 export default class ServiceRedirect extends Component {
   render() {
-    const hs = queryString.parse(window.location.hash);
-    const qs = queryString.parse(window.location.search);
+    const hs = Object.fromEntries(new URLSearchParams(window.location.hash));
+    const qs = Object.fromEntries(new URLSearchParams(window.location.search));
     const params = { ...qs, ...hs };
     window.opener.postMessage(JSON.stringify(params));
     setTimeout(() => window.close(), 100);

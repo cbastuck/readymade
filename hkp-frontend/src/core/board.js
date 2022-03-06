@@ -1,13 +1,12 @@
 import {
   uniqueNamesGenerator,
   adjectives,
-  colors,
   animals,
 } from "unique-names-generator";
 const config = {
-  dictionaries: [adjectives, colors, animals],
+  dictionaries: [adjectives, animals],
   separator: "-",
-  length: 3,
+  length: 2,
 };
 
 export function generateRandomName() {
