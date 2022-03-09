@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { TextArea, Button } from "semantic-ui-react";
 
-import MonitorDescriptor from "services/Monitor";
+import { MonitorDescriptor } from "hkp-services";
 
 import Editor from "../../components/shared/Editor/index";
 import { s, t } from "../../styles";

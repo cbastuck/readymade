@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom";
 
-const { parseExpression, evalExpression } = require("services/eval");
+const { parseExpression, evalExpression } = require("hkp-services");
 
 const serviceId = "hookup.to/service/reactor";
 const serviceName = "Reactor";

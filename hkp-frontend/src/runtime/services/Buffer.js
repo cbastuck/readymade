@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Button } from "semantic-ui-react";
 
-import { serviceName, serviceId, Buffer } from "services/Buffer";
+import { BufferDescriptor } from "hkp-services";
 
 import { List } from "semantic-ui-react";
 import InputField from "../../components/shared/InputField";
@@ -80,10 +80,10 @@ class BufferUI extends Component {
 }
 
 const descriptor = {
-  serviceName,
-  serviceId,
+  serviceName: BufferDescriptor.serviceName,
+  serviceId: BufferDescriptor.serviceId,
   create: (app, board, descriptor, id) =>
-    new Buffer(app, board, descriptor, id),
+    new BufferDescriptor.Buffer(app, board, descriptor, id),
   createUI: BufferUI,
 };
 

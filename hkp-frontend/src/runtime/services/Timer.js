@@ -6,7 +6,7 @@ import InputField from "../../components/shared/InputField";
 import SelectorField from "../../components/shared/SelectorField";
 import { s, t } from "../../styles";
 
-import TimerDescriptor from "services/Timer";
+import { TimerDescriptor } from "hkp-services";
 
 class TimerUI extends Component {
   state = {
