@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { Loader } from "semantic-ui-react";
 import * as uuid from "uuid";
 
+import { withRouter } from "../../common";
 import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
@@ -30,7 +31,7 @@ import {
   renameRuntime,
 } from "./BoardActions";
 
-export default class Playground extends Component {
+class Playground extends Component {
   state = {
     boardName:
       (this.props.match &&
@@ -581,3 +582,5 @@ export default class Playground extends Component {
     );
   }
 }
+
+export default withRouter(Playground);

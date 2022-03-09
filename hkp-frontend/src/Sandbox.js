@@ -43,12 +43,14 @@ class Sandbox extends Component {
   };
 
   componentDidMount() {
-    const { location } = this.props;
-    const values = location
-      ? Object.fromEntries(new URLSearchParams(location.search))
-      : this.props;
-
-    const { src, data, frameless = "false" } = values;
+    const urlProps = Object.fromEntries(
+      new URLSearchParams(this.props.location.search)
+    );
+    const {
+      src = this.props.src,
+      data = this.props.data,
+      frameless = "false",
+    } = urlProps; // url props override internal props
 
     this.setState({
       options: {
@@ -61,6 +63,8 @@ class Sandbox extends Component {
     } else if (data) {
       const d = typeof data === "string" ? JSON.parse(data) : data;
       this.parseData(d);
+    } else {
+      console.error("Rendering sandbox without data source");
     }
   }
 

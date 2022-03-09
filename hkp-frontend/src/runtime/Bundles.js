@@ -1,9 +1,11 @@
 export async function loadBundle(bundleId) {
   switch (bundleId) {
-    /*
     case "hookup.to/registry/browser/Audio":
-      const { default: audioRegistry } = await import("./registry/Audio");
+      const { default: audioRegistry } = await import(
+        "audio-registry/src/index"
+      );
       return audioRegistry();
+    /*
     case "hookup.to/registry/browser/Graphic":
       const { default: graphicRegistry } = await import("./registry/Graphic");
       return graphicRegistry();

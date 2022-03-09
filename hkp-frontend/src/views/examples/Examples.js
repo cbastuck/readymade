@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { Card, Image, Breadcrumb, Message } from "semantic-ui-react";
 
+import { withRouter } from "../../common";
 import { AppConsumer } from "../../AppContext";
 import BoardContext, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
@@ -57,7 +58,7 @@ function* tokenize(str) {
   }
 }
 
-export default class Examples extends Component {
+class Examples extends Component {
   state = {
     currentExample: undefined,
     modalReferenceDatamodel: undefined,
@@ -270,6 +271,7 @@ export default class Examples extends Component {
     if (!currentExample) {
       return false;
     }
+
     const useFrame = false;
     return (
       <div style={t.fill}>
@@ -366,3 +368,5 @@ export default class Examples extends Component {
     );
   }
 }
+
+export default withRouter(Examples);

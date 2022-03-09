@@ -5,8 +5,7 @@ import { s, t } from "../../styles";
 import InputField from "../../components/shared/InputField";
 import SelectorField from "../../components/shared/SelectorField";
 
-import { FilterDescriptor } from "services";
-//import { parseExpression, evalExpression } from 'services/eval';
+import { FilterDescriptor } from "hkp-services";
 
 import ServiceUI from "./ServiceUI";
 
@@ -87,66 +86,6 @@ class FilterUI extends Component {
     );
   }
 }
-/*
-class Filter {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.aggregator = 'and';
-    this._parsedConditions = [];
-    this.conditions = [];
-  }
-
-  parseConditions(conditions) {
-    const arr = Array.isArray(conditions) ? conditions : [conditions];
-    this._parsedConditions = arr.map(cond => parseExpression(cond));
-    return arr;
-  }
-
-  configure(config) {
-    const { 
-      conditions,
-      aggregator
-    } = config;
-
-    if (conditions !== undefined) {
-      this.conditions = conditions;
-      const arr = this.parseConditions(conditions);
-      this.app.notify(this, { conditions: arr });
-    }
-
-    if (aggregator !== undefined) {
-      this.aggregator = aggregator;
-      this.app.notify(this, { aggregator });
-    }
-  }
-
-  process(params) {
-    const filter = x => {
-      if (this._parsedConditions.length > 0 && x) {
-        const results = this._parsedConditions.map(pc => !!evalExpression(pc, { params: x }))
-        switch(this.aggregator) {
-          case 'and':
-            return !results.some(r => !r);
-          case 'or':
-            return results.some(r => !!r);
-          default:
-            console.log(`Unknown filter aggregator: ${this.aggregator}`);
-        }
-      }
-      return false;
-    };
-
-    if (Array.isArray(params)) {
-      return params.filter(filter);
-    }
-    
-    return filter(params);
-  }
-}
-*/
 
 const descriptor = {
   serviceName: FilterDescriptor.serviceName,

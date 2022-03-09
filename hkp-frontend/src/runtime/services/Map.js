@@ -1,7 +1,7 @@
 import React, { Component } from "react";
 import { Input, Button, Checkbox } from "semantic-ui-react";
 
-import { MapDescriptor } from "services";
+import { MapDescriptor } from "hkp-services";
 
 import InputLabelValue from "../../components/shared/InputLabelValue";
 import SelectorField from "../../components/shared/SelectorField";
