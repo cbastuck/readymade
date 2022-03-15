@@ -5,10 +5,13 @@ export async function loadBundle(bundleId) {
         "audio-registry/src/index"
       );
       return audioRegistry();
-    /*
     case "hookup.to/registry/browser/Graphic":
-      const { default: graphicRegistry } = await import("./registry/Graphic");
+      const { default: graphicRegistry } = await import(
+        "graphic-registry/src/index"
+      );
       return graphicRegistry();
+
+    /*
     case "hookup.to/registry/browser/Statistic":
       const { default: statisticRegistry } = await import(
         "./registry/Statistic"
