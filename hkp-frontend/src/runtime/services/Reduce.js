@@ -1,3 +1,10 @@
 import { ReduceDescriptor } from "hkp-services";
 
-export default ReduceDescriptor;
+const descriptor = {
+  serviceName: ReduceDescriptor.serviceName,
+  serviceId: ReduceDescriptor.serviceId,
+  create: (app, board, descriptor, id) =>
+    new ReduceDescriptor.service(app, board, descriptor, id),
+};
+
+export default descriptor;
