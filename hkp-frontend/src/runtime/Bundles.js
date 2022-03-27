@@ -17,12 +17,14 @@ export async function loadBundle(bundleId) {
         "./registry/Statistic"
       );
       return statisticRegistry();
+*/
     case "hookup.to/registry/browser/FileStorage":
       const { default: fileStorageRegistry } = await import(
-        "./registry/FileStorage"
+        //"storage-registry/build/static/js/fileRegistry"
+        "storage-registry/src/index"
       );
       return fileStorageRegistry();
-      */
+
     default:
       console.error("Unknown registry-bundle", bundleId);
       return [];
