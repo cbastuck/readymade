@@ -15,7 +15,7 @@ module.exports = function override(config, env) {
     ? workspaces.map((ws) => path.resolve(`${paths.appPath}/../../${ws}`))
     : [];
 
-  console.log("Config ...", JSON.stringify(config, null, 2));
+  // console.log("Config ...", JSON.stringify(config, null, 2));
   const appCompile = config.module.rules[1].oneOf[3];
   config.module.rules[1].oneOf[3] = {
     ...appCompile,
