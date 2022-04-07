@@ -7,7 +7,7 @@
     },
     {
       "id": "80db90a7-4a8a-43cd-a934-09e9d57f594c",
-      "name": "Runtime-1",
+      "name": "Runtime-2",
       "type": "browser"
     },
     {
@@ -64,7 +64,11 @@
           "resetReducer=": "params.correct",
           "overallScore=": "params.correct ? ((params.overallScore || 0) + params.score) : (params.overallScore || 0)",
           "numGames=": "params.correct ? (params.numGames || 0) + 1 : (params.numGames || 0)",
-          "cacheProperties+": ["answer", "overallScore", "numGames"]
+          "cacheProperties+": [
+            "answer",
+            "overallScore",
+            "numGames"
+          ]
         }
       }
     ],
