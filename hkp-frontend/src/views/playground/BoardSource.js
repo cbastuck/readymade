@@ -6,6 +6,7 @@ import Editor from "../../components/shared/Editor/index";
 import { s, t } from "../../styles";
 import { redirectTo } from "../../core/actions";
 import { InfoNotification } from "../../components/Notifications";
+import { withRouter } from "../../common";
 
 function restoreBoardFromLocalStorage(name) {
   const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
@@ -24,10 +25,7 @@ function closeSourceView() {
   redirectTo(pathname.split("/").slice(0, -1).join("/"));
 }
 
-export default function BoardSource({
-  editSourceCode = true,
-  match: { params },
-}) {
+function BoardSource({ editSourceCode = true, match: { params } }) {
   const [notification, setNotification] = React.useState(undefined);
   const editor = React.useRef();
   const onSave = () => {
@@ -100,3 +98,5 @@ export default function BoardSource({
     </div>
   );
 }
+
+export default withRouter(BoardSource);

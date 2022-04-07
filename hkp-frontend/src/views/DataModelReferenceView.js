@@ -5,9 +5,10 @@ import BoardContext, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
+import { withRouter } from "../common";
 import DataModelReference from "../components/DataModelReference";
 
-export default class DataModelReferenceView extends Component {
+class DataModelReferenceView extends Component {
   render() {
     const { match } = this.props;
     const { params } = match || {};
@@ -33,3 +34,5 @@ export default class DataModelReferenceView extends Component {
     );
   }
 }
+
+export default withRouter(DataModelReferenceView);

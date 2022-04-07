@@ -3,8 +3,9 @@ import React, { Component } from "react";
 import { AppConsumer } from "../AppContext";
 import BoardProvider from "../BoardContext";
 import Board from "./Board";
+import { withRouter } from "../common";
 
-export default class BoardWithContext extends Component {
+class BoardWithContext extends Component {
   render() {
     const { match } = this.props;
     const { board: boardName } = match.params;
@@ -19,3 +20,5 @@ export default class BoardWithContext extends Component {
     );
   }
 }
+
+export default withRouter(BoardWithContext);

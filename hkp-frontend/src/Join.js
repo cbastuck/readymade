@@ -1,9 +1,10 @@
 import React, { Component } from "react";
 import { Navigate } from "react-router-dom";
 
+import { withRouter } from "./common";
 import { joinBoard } from "./core/actions";
 
-export default class Join extends Component {
+class Join extends Component {
   state = {
     boardname: "",
   };
@@ -29,3 +30,5 @@ export default class Join extends Component {
     return <Navigate to={`/${boardname}`} />;
   }
 }
+
+export default withRouter(Join);

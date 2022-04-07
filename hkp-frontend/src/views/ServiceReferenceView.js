@@ -5,8 +5,9 @@ import BoardContext, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 import ServiceReference from "../components/ServiceReference";
+import { withRouter } from "../common";
 
-export default class ServiceReferenceView extends Component {
+class ServiceReferenceView extends Component {
   getService = () => {
     const { match } = this.props;
     const { params } = match || {};
@@ -52,3 +53,5 @@ export default class ServiceReferenceView extends Component {
     );
   }
 }
+
+export default withRouter(ServiceReferenceView);
