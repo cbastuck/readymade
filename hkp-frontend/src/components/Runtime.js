@@ -597,17 +597,17 @@ export default class Runtime extends Component {
               readonly,
               registry,
               onArrangeService
-            )}
-            {this.renderBrowserRuntime(
-              runtime,
-              expanded,
-              userId,
-              boardName,
-              services,
-              readonly,
-              registry,
-              onArrangeService
-            )}
+            ) ||
+              this.renderBrowserRuntime(
+                runtime,
+                expanded,
+                userId,
+                boardName,
+                services,
+                readonly,
+                registry,
+                onArrangeService
+              )}
             {((services && services.length === 0) || !isOwner) && (
               <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
             )}

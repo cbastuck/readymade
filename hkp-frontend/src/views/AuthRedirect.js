@@ -1,11 +1,12 @@
 import React, { Component } from "react";
 import { Navigate } from "react-router-dom";
 
+import { withRouter } from "../common";
 import { AppConsumer } from "../AppContext";
 import { redirectUri } from "../core/actions";
 import { popItem } from "../core/storage";
 
-export default class AuthRedirect extends Component {
+class AuthRedirect extends Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -97,3 +98,5 @@ export default class AuthRedirect extends Component {
     );
   }
 }
+
+export default withRouter(AuthRedirect);
