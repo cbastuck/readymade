@@ -26,6 +26,7 @@ function getLocalBoards(prefix) {
 export default function StoredBoards({ prefix = "" }) {
   const [items, setSavedBoards] = useState([]);
   useEffect(() => setSavedBoards(getLocalBoards(prefix)), [prefix]);
+
   return (
     items.length > 0 && (
       <div style={s(t.mt20)}>

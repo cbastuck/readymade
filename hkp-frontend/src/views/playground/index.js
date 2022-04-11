@@ -42,7 +42,6 @@ class Playground extends Component {
     placeholderAnimationRunning: false,
     description: "",
     initialFetched: false,
-    initialTabLocation: "#usecase",
 
     // BoardSync data
     syncedPeer: undefined,
@@ -68,11 +67,6 @@ class Playground extends Component {
   };
 
   externalInputs = {};
-
-  componentDidMount() {
-    const { hash } = window && window.location;
-    this.setState({ initialTabLocation: hash || "#usecase" });
-  }
 
   componentDidUpdate(prevProps) {
     const board = this.props.match.params.board;
@@ -417,21 +411,51 @@ class Playground extends Component {
     ) : (
       this.renderBoard(boardContext)
     );
+    const saveReminder = (
+      <div style={s(t.fs12, t.mb10)}>
+        Remember you can
+        <span
+          style={{ cursor: "help", color: "#4284C4" }}
+          onClick={() => {
+            const selector = document.getElementById("board-dropdown");
+            if (selector) {
+              selector.focus();
+              selector.click();
+            }
+          }}
+        >
+          {" save this board "}
+        </span>
+        to continue later
+      </div>
+    );
     return (
       <div style={t.fill}>
         <div style={{ width: "99%", margin: "auto" }}>
-          {isBoardUnnamed ? (
-            <LoadPanel
-              showSaveReminder={!isPlaygroundEmpty}
-              initialTabLocation={this.state.initialTabLocation}
-            >
+          <div style={s(t.uc, t.fs16, t.ls1, t.tc)}>
+            {isPlaygroundEmpty && (
+              <h1
+                style={s(t.fs20, {
+                  margin: 0,
+                  marginTop: 25,
+                })}
+              >
+                Welcome to Playground
+              </h1>
+            )}
+            <div>
               {content}
-            </LoadPanel>
-          ) : (
-            <div style={{ marginTop: isPlaygroundEmpty && "15%" }}>
-              {content}
+              {!isPlaygroundEmpty ? saveReminder : false}
             </div>
-          )}
+            {isBoardUnnamed && isPlaygroundEmpty && (
+              <div>
+                <h2 style={s(t.fs13, t.m(10, 10))}>
+                  Or start from following options
+                </h2>
+                <LoadPanel>{content}</LoadPanel>
+              </div>
+            )}
+          </div>
         </div>
         <VSpacer />
       </div>

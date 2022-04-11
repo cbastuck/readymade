@@ -17,7 +17,7 @@ export default class BoardCollection extends Component {
       <div>
         {d.map((content, idx) => (
           <div key={`usecase-${usecase}-description-${idx}`} style={t.mt5}>
-            {content}
+            {typeof content === "string" ? content : ""}
           </div>
         ))}
       </div>
@@ -26,6 +26,7 @@ export default class BoardCollection extends Component {
 
   renderCard = (item) => {
     const { url, name, description, metadata, image, repo } = item;
+
     return (
       <Card style={s(t.p10, { maxWidth: 300 })} key={`board-card-${name}`}>
         <Card.Content>
@@ -95,6 +96,7 @@ export default class BoardCollection extends Component {
           borderRadius: 3,
         }
       : {};
+
     return (
       items.length > 0 && (
         <div style={{ ...borderStyle, height: "100%" }}>

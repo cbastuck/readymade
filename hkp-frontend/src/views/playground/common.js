@@ -42,4 +42,7 @@ export const allowedServices = [
 
 export const defaultName = "Playground";
 
-export const availableRuntimes = [{ name: "browser", args: "browser" }];
+export const availableRuntimes = [
+  { name: "browser", args: "browser" },
+  { name: "remote", args: "remote" },
+];

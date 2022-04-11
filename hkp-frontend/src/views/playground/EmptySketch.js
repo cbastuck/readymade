@@ -5,7 +5,7 @@ import { s, t } from "../../styles";
 
 export default function EmptySketch({ boardName }) {
   const headline = !boardName ? (
-    "This is an empty playground"
+    "It is empty in here"
   ) : (
     <span style={s(t.tc, t.fs16, t.uc, t.ls1)}>
       Playground <span style={t.italic}>{boardName}</span> is empty{" "}
@@ -40,7 +40,7 @@ export default function EmptySketch({ boardName }) {
           >
             {" add a runtime "}
           </span>
-          to get going!
+          and sketch an idea <Icon name="idea" />
         </div>
       </div>
     </div>

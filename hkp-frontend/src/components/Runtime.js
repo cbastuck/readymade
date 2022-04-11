@@ -372,7 +372,7 @@ export default class Runtime extends Component {
     registry,
     onArrangeService
   ) => {
-    if (expanded && runtime && runtime.type === "node") {
+    if (expanded) {
       return (
         <RemoteRuntime
           ref={(rt) => (this.impl = rt)}
@@ -588,26 +588,27 @@ export default class Runtime extends Component {
             }}
             onClickCapture={(e) => readonly && e.stopPropagation()}
           >
-            {this.renderRemoteRuntime(
-              runtime,
-              expanded,
-              userId,
-              boardName,
-              services,
-              readonly,
-              registry,
-              onArrangeService
-            ) ||
-              this.renderBrowserRuntime(
-                runtime,
-                expanded,
-                userId,
-                boardName,
-                services,
-                readonly,
-                registry,
-                onArrangeService
-              )}
+            {runtime && runtime.type === "node"
+              ? this.renderRemoteRuntime(
+                  runtime,
+                  expanded,
+                  userId,
+                  boardName,
+                  services,
+                  readonly,
+                  registry,
+                  onArrangeService
+                )
+              : this.renderBrowserRuntime(
+                  runtime,
+                  expanded,
+                  userId,
+                  boardName,
+                  services,
+                  readonly,
+                  registry,
+                  onArrangeService
+                )}
             {((services && services.length === 0) || !isOwner) && (
               <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
             )}

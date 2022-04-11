@@ -182,6 +182,7 @@ export default class HeaderMenu extends Component {
           selection
           selectOnBlur={false}
           onChange={(ev, { value }) => {
+            console.log("ON CHNAGE", value);
             if (value) {
               boardContext.addRuntime(...value.split(","));
               this.dropdown.clearValue();
