@@ -1,9 +1,0 @@
-{
-  "version": "1.0",
-  "brief": "An early version of a service that allows building multiple lanes inside of one flow. Currently it serves more the purpose of eperimentation, and this service is likely to change or be replaced by another abstraction that is being explored.",
-  "configuration": ["TODO"],
-  "inputs": ["An array: each item can be considered as a lane", "A single item: can be multiplexed as input for all hosted services and by this generating lanes on the output"],
-  "outputs": ["the outputs of the hosted services"],
-  "todos": [],
-  "versions": []
-}

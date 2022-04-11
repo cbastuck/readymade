@@ -1,9 +1,0 @@
-{
-  "version": "1.0",
-  "brief": "This is heavy work in progress things will change quickly. Please check the configuration of the module and start guessing for now.",
-  "configuration": [],
-  "inputs": ["note"],
-  "outputs": ["pass-through"],
-  "todos": [],
-  "versions": []
-}
