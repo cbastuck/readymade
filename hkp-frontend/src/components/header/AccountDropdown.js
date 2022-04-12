@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 import { Dropdown, Icon } from "semantic-ui-react";
 
-import { s, t } from "../styles";
+import { s, t } from "../../styles";
 
 export default class AccountDropdown extends Component {
   renderLogin() {

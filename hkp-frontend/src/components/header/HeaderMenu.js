@@ -2,9 +2,10 @@ import React, { Component } from "react";
 import { Dropdown, Menu } from "semantic-ui-react";
 import { Link } from "react-router-dom";
 
-import { AppConsumer } from "../AppContext";
-import { BoardConsumer } from "../BoardContext";
+import { AppConsumer } from "../../AppContext";
+import { BoardConsumer } from "../../BoardContext";
 import AccountDropdown from "./AccountDropdown";
+import RuntimeMenu from "./RuntimeMenu";
 
 import "./HeaderMenu.css";
 
@@ -153,47 +154,6 @@ export default class HeaderMenu extends Component {
     );
   }
 
-  renderRuntimeMenu(availableRuntimes, boardContext) {
-    const { showRuntimeMenuHighlighted = false } = this.state || {};
-    const wideViewMode = boardContext.appViewMode === "wide";
-    const options = availableRuntimes.map((o) => ({
-      key: o.name,
-      value: o.args,
-      text: o.name,
-    }));
-    return (
-      <div
-        id="runtime-dropdown"
-        style={{
-          marginLeft: 10,
-          marginTop: 3,
-        }}
-        onClick={(ev) => {
-          this.setState({ showRuntimeMenuHighlighted: true });
-          this.dropdown.open(ev);
-        }}
-      >
-        <Dropdown
-          compact={!wideViewMode}
-          style={{ border: showRuntimeMenuHighlighted && "solid 2px #4284C4" }}
-          ref={(dropdown) => (this.dropdown = dropdown)}
-          options={options}
-          placeholder={wideViewMode ? "Add Runtime" : "Runtime"}
-          selection
-          selectOnBlur={false}
-          onChange={(ev, { value }) => {
-            console.log("ON CHNAGE", value);
-            if (value) {
-              boardContext.addRuntime(...value.split(","));
-              this.dropdown.clearValue();
-              this.setState({ showRuntimeMenuHighlighted: false });
-            }
-          }}
-        />
-      </div>
-    );
-  }
-
   renderAccountMenu(appContext, boardContext) {
     return (
       <AccountDropdown
@@ -224,8 +184,12 @@ export default class HeaderMenu extends Component {
               >
                 {this.renderHomeIcon()}
                 {appContext.user && this.renderBoardMenu(board, boardContext)}
-                {availableRuntimes &&
-                  this.renderRuntimeMenu(availableRuntimes, boardContext)}
+                {availableRuntimes && (
+                  <RuntimeMenu
+                    availableRuntimes={availableRuntimes}
+                    boardContext={boardContext}
+                  />
+                )}
                 {(!availableRuntimes || boardContext.appViewMode === "wide") &&
                   this.renderNavigation(appContext)}
                 {appContext && this.renderAccountMenu(appContext, boardContext)}

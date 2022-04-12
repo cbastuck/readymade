@@ -448,10 +448,8 @@ class Playground extends Component {
               {!isPlaygroundEmpty ? saveReminder : false}
             </div>
             {isBoardUnnamed && isPlaygroundEmpty && (
-              <div>
-                <h2 style={s(t.fs13, t.m(10, 10))}>
-                  Or start from following options
-                </h2>
+              <div style={{ width: "90%", margin: "auto", marginTop: 25 }}>
+                <h2 style={s(t.fs15)}>Or start from following options</h2>
                 <LoadPanel>{content}</LoadPanel>
               </div>
             )}

@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 
-import HeaderMenu from "./HeaderMenu";
+import HeaderMenu from "./header/HeaderMenu";
 
 export default class Toolbar extends Component {
   render() {
