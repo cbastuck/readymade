@@ -3,6 +3,7 @@ import { Loader } from "semantic-ui-react";
 import * as uuid from "uuid";
 
 import { withRouter } from "../../common";
+import { AppConsumer } from "../../AppContext";
 import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
@@ -563,57 +564,64 @@ class Playground extends Component {
 
   render() {
     return (
-      <BoardProvider
-        key={`playground-${this.state.boardName}`}
-        user={this.user}
-        boardName={this.state.boardName}
-        fetchData={this.fetchData}
-        isRuntimeInScope={() => true}
-        addRuntime={this.addRuntime}
-        removeRuntime={this.removeRuntime}
-        addService={this.addService}
-        removeService={this.removeService}
-        newBoard={this.newBoard}
-        clearBoard={this.clearPlayground}
-        saveBoard={this.saveBoard}
-        shareBoard={this.shareBoard}
-        arrangeService={this.reorderService}
-        isActionAvailable={this.isActionAvailable}
-        setRuntimeName={this.setRuntimeName}
-        serializeBoard={this.serializeBoard}
-        onAction={(action) => {
-          if (action.type === "toggleBoardSync") {
-            this.setState({ boardSyncActive: !this.state.boardSyncActive });
-            return true;
-          }
-        }}
-        availableRuntimes={availableRuntimes.concat(restoredAvailableRuntimes)}
-      >
-        <BoardConsumer>
-          {(boardContext) => (
-            <div id="playground-root" style={t.fill}>
-              <Toolbar
-                board={this.state.boardName}
-                showRuntimeMenu={true}
-                onUpdateAvailableRuntimes={(runtimes) =>
-                  localStorage.setItem(
-                    "available-remote-runtimes",
-                    JSON.stringify(
-                      runtimes.filter((rt) => rt.type === "remote")
-                    )
-                  )
-                }
-              />
-              <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
-              {this.state.boardSyncActive && this.renderBoardSync(boardContext)}
-              {this.state.initialFetched
-                ? this.renderPlaceholderOrBoard(boardContext)
-                : this.renderLoadIndicator()}
-              <Footer />
-            </div>
-          )}
-        </BoardConsumer>
-      </BoardProvider>
+      <AppConsumer>
+        {(appContext) => (
+          <BoardProvider
+            key={`playground-${this.state.boardName}`}
+            user={(appContext && appContext.user) || this.user}
+            boardName={this.state.boardName}
+            fetchData={this.fetchData}
+            isRuntimeInScope={() => true}
+            addRuntime={this.addRuntime}
+            removeRuntime={this.removeRuntime}
+            addService={this.addService}
+            removeService={this.removeService}
+            newBoard={this.newBoard}
+            clearBoard={this.clearPlayground}
+            saveBoard={this.saveBoard}
+            shareBoard={this.shareBoard}
+            arrangeService={this.reorderService}
+            isActionAvailable={this.isActionAvailable}
+            setRuntimeName={this.setRuntimeName}
+            serializeBoard={this.serializeBoard}
+            onAction={(action) => {
+              if (action.type === "toggleBoardSync") {
+                this.setState({ boardSyncActive: !this.state.boardSyncActive });
+                return true;
+              }
+            }}
+            availableRuntimes={availableRuntimes.concat(
+              restoredAvailableRuntimes
+            )}
+          >
+            <BoardConsumer>
+              {(boardContext) => (
+                <div id="playground-root" style={t.fill}>
+                  <Toolbar
+                    board={this.state.boardName}
+                    showRuntimeMenu={true}
+                    onUpdateAvailableRuntimes={(runtimes) =>
+                      localStorage.setItem(
+                        "available-remote-runtimes",
+                        JSON.stringify(
+                          runtimes.filter((rt) => rt.type === "remote")
+                        )
+                      )
+                    }
+                  />
+                  <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
+                  {this.state.boardSyncActive &&
+                    this.renderBoardSync(boardContext)}
+                  {this.state.initialFetched
+                    ? this.renderPlaceholderOrBoard(boardContext)
+                    : this.renderLoadIndicator()}
+                  <Footer />
+                </div>
+              )}
+            </BoardConsumer>
+          </BoardProvider>
+        )}
+      </AppConsumer>
     );
   }
 }

@@ -96,13 +96,12 @@ class BoardContext extends Component {
   fetchData = async () => {
     const { fetchData = this.fetchDataDefault } = this.props;
     const {
-      board,
+      boardName = this.getBoardName(),
       services,
       savedBoards,
       registry,
       runtimes = [],
     } = await fetchData();
-
     if (runtimes) {
       for (const runtime of runtimes) {
         // ensure service.configure function exists
@@ -112,7 +111,7 @@ class BoardContext extends Component {
             // this should be streamlined!
             // This implementation is only true for services in RemoteRuntimes
             svc.configure = async (config) =>
-              configureService(board.name, svc, config);
+              configureService(boardName, svc, config);
           }
         }
         if (registry && registry[runtime.id]) {
@@ -121,9 +120,8 @@ class BoardContext extends Component {
       }
     }
 
-    const boardName = this.getBoardName();
     this.setState({
-      board,
+      //board,
       boardName,
       runtimes,
       registry,
@@ -234,7 +232,7 @@ class BoardContext extends Component {
     return boards;
   };
   newBoard = () => {
-    if (this.props) {
+    if (this.props && this.props.newBoard) {
       this.props.newBoard();
     } else {
       redirectTo("/new");
