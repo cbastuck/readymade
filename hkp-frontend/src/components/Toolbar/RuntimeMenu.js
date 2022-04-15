@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Dropdown, Input, Button, Icon } from "semantic-ui-react";
+import { Dropdown, Input, Button } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
 
