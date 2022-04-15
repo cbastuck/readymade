@@ -62,6 +62,7 @@ class BoardContext extends Component {
       setRuntimeName: this.setRuntimeName,
       availableRuntimes: props.availableRuntimes || [],
       addAvailableRuntime: this.addAvailableRuntime,
+      removeAvailableRuntime: this.removeAvailableRuntime,
       serializeBoard: props.serializeBoard, // TODO: this must exist for PeerSync
 
       // UI/App data
@@ -439,12 +440,22 @@ class BoardContext extends Component {
     }
   };
 
-  addAvailableRuntime = ({ name, url }) => {
+  addAvailableRuntime = ({ name, url, type }) => {
     const availableRuntimes = this.state.availableRuntimes.concat({
       name,
-      type: "remote",
+      type,
       url,
     });
+    this.setState({
+      availableRuntimes,
+    });
+    return availableRuntimes;
+  };
+
+  removeAvailableRuntime = ({ name, url, type }) => {
+    const availableRuntimes = this.state.availableRuntimes.filter(
+      (rt) => rt.name !== name
+    );
     this.setState({
       availableRuntimes,
     });

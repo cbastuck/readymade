@@ -134,6 +134,7 @@ export default class Runtime extends Component {
         key: `${runtimeId}${s.serviceId}`,
         value: s.serviceId,
         text: s.serviceName,
+        selected: false,
       }))
       .filter(
         (s) => !allowedServices || allowedServices.indexOf(s.value) !== -1

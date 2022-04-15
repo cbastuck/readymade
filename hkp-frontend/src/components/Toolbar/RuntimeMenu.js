@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Dropdown, Input, Button } from "semantic-ui-react";
+import { Dropdown, Input, Button, Icon } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
 
@@ -30,9 +30,31 @@ function RemoteRuntimeInput({ onCancel, onChange }) {
   );
 }
 
+function RuntimeItem({ name, type, url, onRemove }) {
+  return type === "remote" ? (
+    <div style={{ display: "flex", flexDirection: "row" }}>
+      <div>{name}</div>
+      <div style={{ padding: 0, marginLeft: "auto", width: 15 }}>
+        <Button
+          fluid
+          style={{ padding: 0, margin: 0 }}
+          icon="remove"
+          onClick={(ev) => {
+            onRemove();
+            ev.stopPropagation();
+          }}
+        />
+      </div>
+    </div>
+  ) : (
+    <div> {name} </div>
+  );
+}
+
 export default function RuntimeMenu({
   availableRuntimes,
   onAddAvailableRuntime,
+  onRemoveAvailableRuntime,
   onAddRuntime,
   isWideViewMode,
 }) {
@@ -40,10 +62,18 @@ export default function RuntimeMenu({
     useState(false);
   const [inputRemoteRuntime, setInputRemoteRuntime] = useState(false);
   const dropdown = useRef();
-  const options = availableRuntimes.map((o, idx) => ({
-    key: `${o.name}.${idx}`,
+  const options = availableRuntimes.map((rt, idx) => ({
+    key: `${rt.name}.${idx}`,
     value: `${idx}`,
-    text: o.name,
+    children: (
+      <RuntimeItem
+        {...rt}
+        onRemove={() => {
+          onRemoveAvailableRuntime(rt);
+        }}
+      />
+    ),
+    selected: false,
   }));
   return (
     <div

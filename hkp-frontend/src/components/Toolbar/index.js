@@ -7,7 +7,7 @@ import { BoardConsumer } from "../../BoardContext";
 import AccountDropdown from "./AccountDropdown";
 import RuntimeMenu from "./RuntimeMenu";
 
-import "./HeaderMenu.css";
+import "./index.css";
 
 export default class HeaderMenu extends Component {
   renderHomeIcon() {
@@ -202,6 +202,12 @@ export default class HeaderMenu extends Component {
                       availableRuntimes={boardContext.availableRuntimes}
                       onAddAvailableRuntime={(desc) => {
                         const runtimes = boardContext.addAvailableRuntime(desc);
+                        onUpdateAvailableRuntimes &&
+                          onUpdateAvailableRuntimes(runtimes);
+                      }}
+                      onRemoveAvailableRuntime={(desc) => {
+                        const runtimes =
+                          boardContext.removeAvailableRuntime(desc);
                         onUpdateAvailableRuntimes &&
                           onUpdateAvailableRuntimes(runtimes);
                       }}
