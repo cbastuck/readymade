@@ -30,13 +30,17 @@ function RemoteRuntimeInput({ onCancel, onChange }) {
   );
 }
 
-export default function RuntimeMenu({ boardContext }) {
+export default function RuntimeMenu({
+  availableRuntimes,
+  onAddAvailableRuntime,
+  onAddRuntime,
+  isWideViewMode,
+}) {
   const [showRuntimeMenuHighlighted, setShowRuntimeMenuHighlighted] =
     useState(false);
   const [inputRemoteRuntime, setInputRemoteRuntime] = useState(false);
   const dropdown = useRef();
-  const wideViewMode = boardContext.appViewMode === "wide";
-  const options = boardContext.availableRuntimes.map((o, idx) => ({
+  const options = availableRuntimes.map((o, idx) => ({
     key: `${o.name}.${idx}`,
     value: `${idx}`,
     text: o.name,
@@ -57,15 +61,15 @@ export default function RuntimeMenu({ boardContext }) {
     >
       {inputRemoteRuntime ? (
         <RemoteRuntimeInput
-          onChange={(host) => {
-            boardContext.addAvailableRuntime(host);
+          onChange={(desc) => {
+            onAddAvailableRuntime(desc);
             setInputRemoteRuntime(false);
           }}
           onCancel={() => setInputRemoteRuntime(false)}
         />
       ) : (
         <Dropdown
-          compact={!wideViewMode}
+          compact={!isWideViewMode}
           style={{ border: showRuntimeMenuHighlighted && "solid 2px #4284C4" }}
           ref={dropdown}
           options={options.concat({
@@ -73,17 +77,16 @@ export default function RuntimeMenu({ boardContext }) {
             value: "add-runtime",
             text: "<add remote>",
           })}
-          placeholder={wideViewMode ? "Add Runtime" : "Runtime"}
+          placeholder={isWideViewMode ? "Add Runtime" : "Runtime"}
           selection
           selectOnBlur={false}
           onChange={(ev, { value }) => {
             if (value === "add-runtime") {
               setInputRemoteRuntime(true);
             } else if (value) {
-              const selectedRuntime = boardContext.availableRuntimes[value];
+              const selectedRuntime = availableRuntimes[value];
               if (selectedRuntime) {
-                const { name, args, url } = selectedRuntime;
-                boardContext.addRuntime(args, name, url);
+                onAddRuntime(selectedRuntime);
               }
               dropdown.current.clearValue();
               setShowRuntimeMenuHighlighted(false);

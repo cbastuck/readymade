@@ -18,9 +18,7 @@ export default class LoginFail extends Component {
         {(appContext) => (
           <BoardContext>
             <div className="hero-image">
-              <BoardConsumer>
-                {(boardContext) => <Toolbar onAction={boardContext.onAction} />}
-              </BoardConsumer>
+              <BoardConsumer>{(boardContext) => <Toolbar />}</BoardConsumer>
               <div className="hero-text">
                 <h1>Login failed</h1>
                 {errorMessage && <div> {/*errorMessage*/} </div>}

@@ -109,7 +109,7 @@ export default class Playground extends Component {
     userId: undefined,
   };
 
-  availableRuntimes = [{ name: "browser", args: "browser" }];
+  availableRuntimes = [{ name: "browser", type: "browser" }];
 
   runtimeInstances = {};
 
@@ -1292,10 +1292,7 @@ export default class Playground extends Component {
         <BoardConsumer>
           {(boardContext) => (
             <div id="playground-root" style={t.fill}>
-              <Toolbar
-                board={boardName}
-                availableRuntimes={this.availableRuntimes}
-              />
+              <Toolbar board={boardName} />
               {this.renderContent(boardContext)}
               <Footer />
             </div>

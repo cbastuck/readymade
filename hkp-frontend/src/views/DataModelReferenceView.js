@@ -20,7 +20,7 @@ class DataModelReferenceView extends Component {
             <BoardConsumer>
               {(boardContext) => (
                 <div style={{ height: "100%" }}>
-                  <Toolbar onAction={boardContext.onAction} />
+                  <Toolbar />
                   <div style={{ marginTop: 20, padding: 10 }}>
                     <DataModelReference datamodel={name} name={name} />
                   </div>

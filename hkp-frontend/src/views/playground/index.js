@@ -31,6 +31,10 @@ import {
   renameRuntime,
 } from "./BoardActions";
 
+const restoredAvailableRuntimes = JSON.parse(
+  localStorage.getItem("available-remote-runtimes") || "{}"
+);
+
 class Playground extends Component {
   state = {
     boardName:
@@ -583,12 +587,23 @@ class Playground extends Component {
             return true;
           }
         }}
-        availableRuntimes={availableRuntimes}
+        availableRuntimes={availableRuntimes.concat(restoredAvailableRuntimes)}
       >
         <BoardConsumer>
           {(boardContext) => (
             <div id="playground-root" style={t.fill}>
-              <Toolbar board={this.state.boardName} />
+              <Toolbar
+                board={this.state.boardName}
+                showRuntimeMenu={true}
+                onUpdateAvailableRuntimes={(runtimes) =>
+                  localStorage.setItem(
+                    "available-remote-runtimes",
+                    JSON.stringify(
+                      runtimes.filter((rt) => rt.type === "remote")
+                    )
+                  )
+                }
+              />
               <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
               {this.state.boardSyncActive && this.renderBoardSync(boardContext)}
               {this.state.initialFetched

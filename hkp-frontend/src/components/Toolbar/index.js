@@ -170,27 +170,53 @@ export default class HeaderMenu extends Component {
   }
 
   render() {
-    const { board } = this.props;
+    const {
+      board,
+      showRuntimeMenu = false,
+      onUpdateAvailableRuntimes,
+    } = this.props;
     return (
       <AppConsumer>
         {(appContext) => (
           <BoardConsumer>
             {(boardContext) => (
-              <Menu
+              <div
                 style={{
-                  boxShadow: "none",
-                  border: "none",
+                  marginBottom: 5,
+                  textAlign: "left",
+                  borderBottom: "1px solid rgba(34,36,38,.15)",
                 }}
               >
-                {this.renderHomeIcon()}
-                {appContext.user && this.renderBoardMenu(board, boardContext)}
+                <Menu
+                  style={{
+                    boxShadow: "none",
+                    border: "none",
+                  }}
+                >
+                  {this.renderHomeIcon()}
+                  {appContext.user && this.renderBoardMenu(board, boardContext)}
 
-                <RuntimeMenu boardContext={boardContext} />
+                  {showRuntimeMenu && (
+                    <RuntimeMenu
+                      isWideViewMode={boardContext.appViewMode === "wide"}
+                      availableRuntimes={boardContext.availableRuntimes}
+                      onAddAvailableRuntime={(desc) => {
+                        const runtimes = boardContext.addAvailableRuntime(desc);
+                        onUpdateAvailableRuntimes &&
+                          onUpdateAvailableRuntimes(runtimes);
+                      }}
+                      onAddRuntime={({ name, type, url }) =>
+                        boardContext.addRuntime(type, name, url)
+                      }
+                    />
+                  )}
 
-                {boardContext.appViewMode === "wide" &&
-                  this.renderNavigation(appContext)}
-                {appContext && this.renderAccountMenu(appContext, boardContext)}
-              </Menu>
+                  {boardContext.appViewMode === "wide" &&
+                    this.renderNavigation(appContext)}
+                  {appContext &&
+                    this.renderAccountMenu(appContext, boardContext)}
+                </Menu>
+              </div>
             )}
           </BoardConsumer>
         )}

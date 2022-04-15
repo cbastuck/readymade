@@ -439,14 +439,16 @@ class BoardContext extends Component {
     }
   };
 
-  addAvailableRuntime = ({ url, name }) => {
-    this.setState({
-      availableRuntimes: this.state.availableRuntimes.concat({
-        name,
-        args: "remote",
-        url,
-      }),
+  addAvailableRuntime = ({ name, url }) => {
+    const availableRuntimes = this.state.availableRuntimes.concat({
+      name,
+      type: "remote",
+      url,
     });
+    this.setState({
+      availableRuntimes,
+    });
+    return availableRuntimes;
   };
 
   render() {

@@ -31,7 +31,7 @@ class ServiceReferenceView extends Component {
               <BoardConsumer>
                 {(boardContext) => (
                   <div style={{ height: "100%" }}>
-                    <Toolbar onAction={boardContext.onAction} />
+                    <Toolbar />
                     <div
                       style={{
                         height: "100%",

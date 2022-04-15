@@ -49,7 +49,7 @@ export default class Template extends Component {
             <BoardConsumer>
               {(boardContext) => (
                 <div style={{ minHeight: "100%" }}>
-                  <Toolbar onAction={boardContext.onAction} />
+                  <Toolbar />
                   <Container
                     style={{
                       marginTop: 20,

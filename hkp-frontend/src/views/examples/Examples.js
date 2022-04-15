@@ -356,7 +356,7 @@ class Examples extends Component {
             <BoardConsumer>
               {(boardContext) => (
                 <div style={t.h100}>
-                  <Toolbar onAction={boardContext.onAction} />
+                  <Toolbar />
                   {this.renderExamplesContainer()}
                 </div>
               )}

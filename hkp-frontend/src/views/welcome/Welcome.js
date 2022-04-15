@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 
 import { AppConsumer } from "../../AppContext";
-import BoardContext, { BoardConsumer } from "../../BoardContext";
+import BoardContext from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
 import ProgressIndicator from "../../components/ProgressIndicator";
@@ -301,9 +301,7 @@ export default class Welcome extends Component {
         {(appContext) => (
           <BoardContext user={null}>
             <div className="hero-image">
-              <BoardConsumer>
-                {(boardContext) => <Toolbar onAction={boardContext.onAction} />}
-              </BoardConsumer>
+              <Toolbar />
               <div className={`hero-text ${this.state.page} fade-in-linear`}>
                 {this.renderContent([
                   { p: "welcome", r: this.renderWelcome },

@@ -98,10 +98,7 @@ export default class Board extends Component {
               width: "100%",
             }}
           >
-            <Toolbar
-              onAction={this.onAction.bind(this, boardContext)}
-              board={boardContext.boardName}
-            />
+            <Toolbar board={boardContext.boardName} showRuntimeMenu={true} />
             {!appContext.token && <Login board={boardContext.boardName} />}
             {appContext.token &&
               boardContext &&

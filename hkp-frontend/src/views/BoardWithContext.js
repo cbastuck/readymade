@@ -10,8 +10,8 @@ class BoardWithContext extends Component {
     const { match } = this.props;
     const { board: boardName } = match.params;
     const availableRuntimes = [
-      { name: "browser", args: "browser" },
-      { name: "hookup", args: "node" },
+      { name: "browser", type: "browser" },
+      { name: "hookup", type: "node" },
     ];
     return (
       <AppConsumer>

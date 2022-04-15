@@ -77,7 +77,7 @@ export default class MyBoards extends Component {
             <BoardConsumer>
               {(boardContext) => (
                 <div style={{ height: "100%" }}>
-                  <Toolbar onAction={boardContext.onAction} />
+                  <Toolbar />
                   <div style={s(t.uc, t.fs12, t.ls1, t.m(25, 20))}>
                     <h1 style={s(t.mt10, t.fs14)}>
                       Locally stored Playgrounds
