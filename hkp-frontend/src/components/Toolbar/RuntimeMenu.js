@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Dropdown, Input, Button } from "semantic-ui-react";
+import { Dropdown, Input, Button, Icon } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
 
@@ -105,7 +105,12 @@ export default function RuntimeMenu({
           options={options.concat({
             key: "add-remote-runtime-item",
             value: "add-runtime",
-            text: "<add remote>",
+            children: (
+              <div>
+                <Icon name="plus" />
+                Add remote
+              </div>
+            ),
           })}
           placeholder={isWideViewMode ? "Add Runtime" : "Runtime"}
           selection
