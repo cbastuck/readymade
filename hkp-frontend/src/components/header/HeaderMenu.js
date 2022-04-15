@@ -170,7 +170,7 @@ export default class HeaderMenu extends Component {
   }
 
   render() {
-    const { availableRuntimes, board } = this.props;
+    const { board } = this.props;
     return (
       <AppConsumer>
         {(appContext) => (
@@ -184,13 +184,10 @@ export default class HeaderMenu extends Component {
               >
                 {this.renderHomeIcon()}
                 {appContext.user && this.renderBoardMenu(board, boardContext)}
-                {availableRuntimes && (
-                  <RuntimeMenu
-                    availableRuntimes={availableRuntimes}
-                    boardContext={boardContext}
-                  />
-                )}
-                {(!availableRuntimes || boardContext.appViewMode === "wide") &&
+
+                <RuntimeMenu boardContext={boardContext} />
+
+                {boardContext.appViewMode === "wide" &&
                   this.renderNavigation(appContext)}
                 {appContext && this.renderAccountMenu(appContext, boardContext)}
               </Menu>

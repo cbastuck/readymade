@@ -68,6 +68,12 @@ export const t = {
   mt: function (x) {
     return { marginTop: x };
   },
+  ml: function (x) {
+    return { marginLeft: x };
+  },
+  mr: function (x) {
+    return { marginRight: x };
+  },
   mt0: { marginTop: 0 },
   mt1: { marginTop: 1 },
   mt2: { marginTop: 2 },

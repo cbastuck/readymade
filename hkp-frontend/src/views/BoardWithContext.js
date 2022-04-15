@@ -9,10 +9,18 @@ class BoardWithContext extends Component {
   render() {
     const { match } = this.props;
     const { board: boardName } = match.params;
+    const availableRuntimes = [
+      { name: "browser", args: "browser" },
+      { name: "hookup", args: "node" },
+    ];
     return (
       <AppConsumer>
         {(appContext) => (
-          <BoardProvider user={appContext.user} boardName={boardName}>
+          <BoardProvider
+            user={appContext.user}
+            boardName={boardName}
+            availableRuntimes={appContext.token && availableRuntimes}
+          >
             <Board appContext={appContext} />
           </BoardProvider>
         )}

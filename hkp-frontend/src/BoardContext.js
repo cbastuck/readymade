@@ -60,6 +60,8 @@ class BoardContext extends Component {
       releaseRuntimeScope: this.releaseRuntimeScope,
       isActionAvailable: this.isActionAvailable,
       setRuntimeName: this.setRuntimeName,
+      availableRuntimes: props.availableRuntimes || [],
+      addAvailableRuntime: this.addAvailableRuntime,
       serializeBoard: props.serializeBoard, // TODO: this must exist for PeerSync
 
       // UI/App data
@@ -312,7 +314,7 @@ class BoardContext extends Component {
     return registry.availableServices;
   };
 
-  addRuntime = async (type, name) => {
+  addRuntime = async (type, name, url) => {
     const { addRuntime = this.addRuntimeDefault } = this.props;
     const boardName = this.getBoardName();
     if (!boardName) {
@@ -327,6 +329,9 @@ class BoardContext extends Component {
       if (browser) {
         name = browser.name;
       }
+    }
+    if (url) {
+      params.url = url;
     }
     const desc = {
       type,
@@ -432,6 +437,16 @@ class BoardContext extends Component {
       }
       this.fetchData();
     }
+  };
+
+  addAvailableRuntime = ({ url, name }) => {
+    this.setState({
+      availableRuntimes: this.state.availableRuntimes.concat({
+        name,
+        args: "remote",
+        url,
+      }),
+    });
   };
 
   render() {

@@ -284,8 +284,8 @@ class Playground extends Component {
     const runtimeId = uuid.v4();
     const rt = {
       id: runtimeId,
-      name: `Runtime-${runtimes ? runtimes.length + 1 : 1}`,
-      type: "browser",
+      name: `${desc.name}-${runtimes ? runtimes.length + 1 : 1}`,
+      type: desc.type,
     };
     this.setState({
       runtimes: runtimes.concat(rt),
@@ -583,14 +583,12 @@ class Playground extends Component {
             return true;
           }
         }}
+        availableRuntimes={availableRuntimes}
       >
         <BoardConsumer>
           {(boardContext) => (
             <div id="playground-root" style={t.fill}>
-              <Toolbar
-                board={this.state.boardName}
-                availableRuntimes={availableRuntimes}
-              />
+              <Toolbar board={this.state.boardName} />
               <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
               {this.state.boardSyncActive && this.renderBoardSync(boardContext)}
               {this.state.initialFetched
