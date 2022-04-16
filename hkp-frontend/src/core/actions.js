@@ -66,7 +66,11 @@ export function getRuntimes(board) {
 }
 
 export function addRuntime(board, descriptor) {
-  return request(`board/${board}/runtimes`, "POST", true, descriptor);
+  const { url: remoteUrl } = descriptor;
+  const url = remoteUrl
+    ? { absolute: `${remoteUrl}/board/${board}/runtimes` }
+    : `board/${board}/runtimes`;
+  return request(url, "POST", true, descriptor);
 }
 
 export function removeRuntime(board, runtime) {

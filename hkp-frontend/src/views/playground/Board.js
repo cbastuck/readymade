@@ -214,7 +214,6 @@ export default class Board extends Component {
 
   renderRuntime = (boardContext, runtime, peers, allowedServices) => {
     const { boardName } = this.props;
-
     const ownPeers = boardContext.runtimes.map(
       (rt) => `${boardName}-${rt.name}`
     );

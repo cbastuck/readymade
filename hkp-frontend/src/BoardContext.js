@@ -329,13 +329,11 @@ class BoardContext extends Component {
         name = browser.name;
       }
     }
-    if (url) {
-      params.url = url;
-    }
     const desc = {
       type,
       name,
       params,
+      url,
     };
     await addRuntime(boardName, desc);
     await this.fetchData();

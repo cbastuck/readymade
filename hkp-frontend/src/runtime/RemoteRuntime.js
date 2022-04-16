@@ -6,7 +6,7 @@ import ServiceUiContainer from "./ServiceUiContainer";
 import defaultRegistry from "./registry/Default";
 
 function logInfo(msg) {
-  // console.log(msg);
+  console.log(msg);
 }
 
 export default class RemoteRuntime extends Component {
@@ -17,22 +17,30 @@ export default class RemoteRuntime extends Component {
 
   connect = () => {
     const { userId, boardName, runtime } = this.props;
-    const backendPath = `/api/${userId}/${boardName}/runtime/${runtime.id}`;
-    logInfo(`Connecting ${runtime.name} to ${backendPath}`);
+    const backendPath = `${userId}/${boardName}/runtime/${runtime.id}`;
 
+    const [runtimeUrlProto, runtimeUrlWithoutProto] = runtime.url
+      ? runtime.url.split("://")
+      : [];
     const { host: backendHost, protocol } = window.location;
-    const url = `${backendHost}${backendPath}`;
+    const urlWithoutProtocol = runtime.url
+      ? `${runtimeUrlWithoutProto}/${backendPath}`
+      : `${backendHost}/api/${backendPath}`;
+
+    logInfo(`Connecting ${runtime.name} to ${urlWithoutProtocol}`);
+
     if (this.remoteRuntimeWebsocket) {
       this.remoteRuntimeWebsocket.close();
       this.remoteRuntimeWebsocket = null;
     }
-    const secureConnection = protocol.indexOf("https") === 0;
+    const secureConnection =
+      (runtimeUrlProto || protocol).indexOf("https") === 0;
     this.remoteRuntimeWebsocket = new WebsocketChannel(
       runtime.id,
       this.onAction,
       secureConnection
     );
-    return this.remoteRuntimeWebsocket.open(url, restoreToken());
+    return this.remoteRuntimeWebsocket.open(urlWithoutProtocol, restoreToken());
   };
 
   onAction = (action) => {

@@ -31,6 +31,7 @@ import {
   reorderService,
   renameRuntime,
 } from "./BoardActions";
+import { addRuntime } from "../../core/actions";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "{}"
@@ -127,6 +128,7 @@ class Playground extends Component {
       boardName,
       runtimes,
       services,
+      // TODO: not true for remote runtimes
       registry:
         runtimes &&
         runtimes.reduce(
@@ -287,11 +289,18 @@ class Playground extends Component {
   addRuntime = async (boardname, desc) => {
     const { runtimes = [], services = {} } = this.state;
     const runtimeId = uuid.v4();
+    const { name, type, url } = desc;
     const rt = {
       id: runtimeId,
-      name: `${desc.name}-${runtimes ? runtimes.length + 1 : 1}`,
-      type: desc.type,
+      name: `${name}-${runtimes ? runtimes.length + 1 : 1}`,
+      type,
+      url,
     };
+    if (type === "remote" || type === "node") {
+      // TODO: inform the remote instance about the board and runtime
+      const created = await addRuntime(boardname, { ...desc, runtimeId });
+      console.log("CREATED REMOTE RT", created, desc);
+    }
     this.setState({
       runtimes: runtimes.concat(rt),
       services: {

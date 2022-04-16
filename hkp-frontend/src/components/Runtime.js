@@ -589,7 +589,7 @@ export default class Runtime extends Component {
             }}
             onClickCapture={(e) => readonly && e.stopPropagation()}
           >
-            {runtime && runtime.type === "node"
+            {runtime && (runtime.type === "node" || runtime.type === "remote")
               ? this.renderRemoteRuntime(
                   runtime,
                   expanded,
