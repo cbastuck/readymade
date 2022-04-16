@@ -37,9 +37,9 @@ export default class WebsocketChannel {
     }
   };
 
-  send(data) {
+  send(data, raw = false) {
     if (this.websocket) {
-      this.websocket.send(JSON.stringify(data));
+      this.websocket.send(raw ? data : JSON.stringify(data));
     }
   }
 

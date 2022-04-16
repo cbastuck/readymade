@@ -122,13 +122,16 @@ export async function getServiceConfiguration(
   );
 }
 
-export function configureService(board, service, config) {
-  return request(
-    `board/${board}/runtime/${service.__descriptor.runtime}/service/${service.uuid}/config`,
-    "POST",
-    false,
-    config
-  );
+export function configureService(board, service, config, descriptor) {
+  console.log("CONFIGURE", descriptor);
+  const { url: remoteUrl, id: runtimeId } = descriptor;
+  const rt = descriptor ? runtimeId : service.__descriptor.runtime;
+  const url = remoteUrl
+    ? {
+        absolute: `${remoteUrl}/board/${board}/runtime/${rt}/service/${service.uuid}/config`,
+      }
+    : `board/${board}/runtime/${rt}/service/${service.uuid}/config`;
+  return request(url, "POST", false, config);
 }
 
 export function loadBoard(board, state) {

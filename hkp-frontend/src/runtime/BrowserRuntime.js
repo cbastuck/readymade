@@ -30,8 +30,7 @@ export default class BrowserRuntime extends Component {
     if (services) {
       services.forEach((svc) => this.configureService(svc, svc));
     }
-    if (runtime && userId) {
-      // TODO: this should only happen when we have a backend
+    if (runtime && userId && runtime.type !== "browser") {
       this.connect(runtime.id);
     }
   }

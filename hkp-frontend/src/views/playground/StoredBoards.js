@@ -19,7 +19,7 @@ function getLocalBoards(prefix) {
   return savedBoards.map((item) => ({
     ...item,
     url: `/playground/${item.name}`,
-    description: item.value.description,
+    description: item.value && item.value.description,
   }));
 }
 

@@ -85,7 +85,6 @@ export default class Runtime extends Component {
   };
 
   processRuntime = (params) => {
-    // TODO: does this make sense for browser runtimes only?
     this.impl.processRuntime && this.impl.processRuntime(params);
   };
 

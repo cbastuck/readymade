@@ -111,7 +111,7 @@ class BoardContext extends Component {
             // this should be streamlined!
             // This implementation is only true for services in RemoteRuntimes
             svc.configure = async (config) =>
-              configureService(boardName, svc, config);
+              configureService(boardName, svc, config, runtime);
           }
         }
         if (registry && registry[runtime.id]) {

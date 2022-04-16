@@ -31,7 +31,7 @@ import {
   reorderService,
   renameRuntime,
 } from "./BoardActions";
-import { addRuntime } from "../../core/actions";
+import { addRuntime, addService } from "../../core/actions";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "{}"
@@ -246,16 +246,26 @@ class Playground extends Component {
     redirectTo(`/playground/${name}`);
   };
 
-  addService = (boardName, descriptor, runtimeId) => {
-    const { services = {} } = this.state;
-    const runtime = this.board.getRuntimeById(runtimeId);
-    if (!runtime) {
-      return;
-    }
+  addService = (boardname, descriptor, runtimeId) => {
+    const { services = {}, runtimes } = this.state;
+
     const svc = {
       ...descriptor,
       uuid: uuid.v4(),
     };
+    const runtime = runtimes.find((rt) => rt.id === runtimeId);
+    if (runtime.type === "remote" || runtime.type === "node") {
+      console.log("ADDSERVICE", descriptor, runtime);
+      // TODO: inform the remote instance about the board and runtime
+      addService(boardname, svc, runtimeId).then((created) =>
+        console.log("CREATED SERVICE", created, svc)
+      );
+    } else {
+      if (!this.board.getRuntimeById(runtimeId)) {
+        console.warn("Could not find runtime for", runtimeId);
+        return;
+      }
+    }
     this.setState({
       services: {
         ...services,
@@ -451,7 +461,7 @@ class Playground extends Component {
               <h1
                 style={s(t.fs20, {
                   margin: 0,
-                  marginTop: 25,
+                  marginTop: isBoardUnnamed ? 25 : "10%",
                 })}
               >
                 Welcome to Playground

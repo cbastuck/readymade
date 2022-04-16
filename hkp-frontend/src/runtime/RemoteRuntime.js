@@ -1,12 +1,13 @@
 import React, { Component } from "react";
 
 import WebsocketChannel from "./WebsocketChannel";
+import { serializeWebsocketBuffer } from "../core/format";
 import { restoreToken } from "../core/Auth";
 import ServiceUiContainer from "./ServiceUiContainer";
 import defaultRegistry from "./registry/Default";
 
 function logInfo(msg) {
-  console.log(msg);
+  // console.log(msg);
 }
 
 export default class RemoteRuntime extends Component {
@@ -41,6 +42,14 @@ export default class RemoteRuntime extends Component {
       secureConnection
     );
     return this.remoteRuntimeWebsocket.open(urlWithoutProtocol, restoreToken());
+  };
+
+  processRuntime = async (params) => {
+    const buffer = await serializeWebsocketBuffer(params, {
+      board: this.board,
+      runtimeId: this.props.runtime.id,
+    });
+    this.remoteRuntimeWebsocket.send(buffer, true);
   };
 
   onAction = (action) => {
