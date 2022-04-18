@@ -31,7 +31,7 @@ import {
   reorderService,
   renameRuntime,
 } from "./BoardActions";
-import { addRuntime, addService } from "../../core/actions";
+import { addRuntime, addService, setRuntime } from "../../core/actions";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "{}"
@@ -155,7 +155,7 @@ class Playground extends Component {
     return data;
   };
 
-  setInitialPlayground = () => {
+  setInitialPlayground = async () => {
     const queryParams = new URLSearchParams(document.location.search);
     const { board } = this.props.match.params;
     if (board) {
@@ -165,7 +165,7 @@ class Playground extends Component {
       if (params.template) {
         return createBoardFromTemplate(params.template, params);
       } else {
-        const localBoard = this.restoreBoardFromLocalStorage(board);
+        const localBoard = await this.restoreBoardFromLocalStorage(board);
         if (localBoard) {
           return localBoard;
         }
@@ -181,13 +181,36 @@ class Playground extends Component {
     return {};
   };
 
-  restoreBoardFromLocalStorage = (name) => {
+  restoreBoardFromLocalStorage = async (name) => {
     const storageName = name
       ? `${localStoragePrefix}${name}`
       : "hkp-playground";
     const data = localStorage.getItem(storageName);
     if (data) {
-      return JSON.parse(data);
+      const board = JSON.parse(data);
+      if (board && board.runtimes) {
+        for (const runtime of board.runtimes) {
+          if (runtime.type === "remote") {
+            const { id: runtimeId, ...desc } = runtime;
+            const services = board.services[runtimeId];
+            const result = await setRuntime(
+              name,
+              {
+                ...desc,
+                runtimeId,
+                params: { name },
+              },
+              services
+            );
+            console.log(
+              "RESTORED REMOTE RUNTIME",
+              { ...desc, runtimeId },
+              result
+            );
+          }
+        }
+      }
+      return board;
     }
   };
 
@@ -248,14 +271,12 @@ class Playground extends Component {
 
   addService = (boardname, descriptor, runtimeId) => {
     const { services = {}, runtimes } = this.state;
-
     const svc = {
       ...descriptor,
       uuid: uuid.v4(),
     };
     const runtime = runtimes.find((rt) => rt.id === runtimeId);
     if (runtime.type === "remote" || runtime.type === "node") {
-      console.log("ADDSERVICE", descriptor, runtime);
       // TODO: inform the remote instance about the board and runtime
       addService(boardname, svc, runtimeId).then((created) =>
         console.log("CREATED SERVICE", created, svc)
@@ -309,7 +330,7 @@ class Playground extends Component {
     if (type === "remote" || type === "node") {
       // TODO: inform the remote instance about the board and runtime
       const created = await addRuntime(boardname, { ...desc, runtimeId });
-      console.log("CREATED REMOTE RT", created, desc);
+      console.log("CREATED REMOTE RT", created, { ...desc, runtimeId });
     }
     this.setState({
       runtimes: runtimes.concat(rt),

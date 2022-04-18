@@ -384,6 +384,7 @@ export default class Runtime extends Component {
           registry={registry}
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
+          onResult={this.props.onResult}
         />
       );
     }

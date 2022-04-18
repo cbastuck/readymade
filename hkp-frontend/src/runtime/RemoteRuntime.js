@@ -66,6 +66,12 @@ export default class RemoteRuntime extends Component {
       if (service && service.__notificationTargets) {
         service.__notificationTargets.notify(service, notification);
       }
+    } else if (type === "result") {
+      if (this.props.onResult) {
+        this.props.onResult(undefined, action.result);
+      } else {
+        console.log("RemoteRuntime.onAction onResult prop is not set");
+      }
     }
   };
 
