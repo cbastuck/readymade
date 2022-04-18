@@ -40,7 +40,7 @@ export default function EmptySketch({ boardName }) {
           >
             {" add a runtime "}
           </span>
-          and sketch an idea
+          to sketch an idea
           <Icon
             name="idea"
             style={{ marginTop: -20 }}

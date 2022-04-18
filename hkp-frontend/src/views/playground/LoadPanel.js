@@ -20,7 +20,7 @@ export default function LoadPanel({ children, showSaveReminder }) {
       menu={{ attached: "top", widths: 2, pointing: true }}
       panes={[
         {
-          menuItem: menuItem("Launch Usecase"),
+          menuItem: menuItem("Launch Showcase"),
           render: () => (
             <Tab.Pane>
               <Usecases />
@@ -28,7 +28,7 @@ export default function LoadPanel({ children, showSaveReminder }) {
           ),
         },
         {
-          menuItem: menuItem("Restore board"),
+          menuItem: menuItem("Restore a board"),
           render: () => (
             <Tab.Pane>
               <StoredBoards prefix={localStoragePrefix} />

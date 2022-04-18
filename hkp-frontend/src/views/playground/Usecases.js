@@ -44,14 +44,14 @@ export default function Usecases() {
             width: "100%",
             marginRight: 20,
           }}
-          headline="Available Usecases"
+          headline="Available Showcases"
           items={usecases}
           renderBorder={false}
         />
       ) : (
         <div>
           <Loader active inline>
-            Loading Usecases ...
+            Loading Showcases ...
           </Loader>
         </div>
       )}
