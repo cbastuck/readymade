@@ -173,7 +173,8 @@ export function joinBoard(shareId, connectedBoardname) {
 }
 
 export function redirectUri() {
-  return `${window.location.protocol}//${window.location.host}/auth2app`;
+  //return `${window.location.protocol}//${window.location.host}/auth2app`;
+  return `${window.location.protocol}//${window.location.host}/openid/hkp-redirect`;
 }
 
 export function redirectTo(target, openAsPopup) {
