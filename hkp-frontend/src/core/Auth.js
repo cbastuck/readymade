@@ -38,7 +38,7 @@ export function logout() {
   removeAuthCookies();
 }
 
-function removeAuthCookies() {
+export function removeAuthCookies() {
   removeCookie("token");
   removeCookie("_session.legacy.sig");
   removeCookie("_session.legacy");

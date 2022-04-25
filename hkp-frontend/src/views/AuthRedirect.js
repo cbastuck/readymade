@@ -5,6 +5,7 @@ import { withRouter } from "../common";
 import { AppConsumer } from "../AppContext";
 import { redirectUri } from "../core/actions";
 import { popItem } from "../core/storage";
+import LoginCheckMail from "./LoginCheckMails";
 
 class AuthRedirect extends Component {
   constructor(props) {
@@ -12,6 +13,7 @@ class AuthRedirect extends Component {
     this.state = {
       tokenUpdated: false,
       token: null,
+      step: "init",
     };
 
     // TODO: this checks if we're in an iframe and
@@ -27,6 +29,8 @@ class AuthRedirect extends Component {
       );
       if (this.queryParams.code) {
         this.exchangeCodeForToken(this.queryParams.code);
+      } else if (this.queryParams.step !== undefined) {
+        this.state.step = this.queryParams.step;
       }
     }
   }
@@ -72,7 +76,11 @@ class AuthRedirect extends Component {
       );
     }
 
-    const { token, tokenUpdated } = this.state;
+    const { token, tokenUpdated, step } = this.state;
+
+    if (step === "mailsent") {
+      return <LoginCheckMail />;
+    }
 
     if (!token) {
       return false;

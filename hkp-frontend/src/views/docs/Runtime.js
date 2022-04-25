@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 
-import Template from "./Template";
+import Template from "../Template";
 
 import { ExampleService, ExampleServiceUI } from "./ExampleService";
 import Runtime from "../../components/Runtime";

@@ -2,10 +2,10 @@ import React, { Component } from "react";
 import { Link } from "react-router-dom";
 import { Container, Breadcrumb } from "semantic-ui-react";
 
-import { AppConsumer } from "../../AppContext";
-import BoardContext, { BoardConsumer } from "../../BoardContext";
-import Toolbar from "../../components/Toolbar";
-import Footer from "../../components/Footer";
+import { AppConsumer } from "../AppContext";
+import BoardContext, { BoardConsumer } from "../BoardContext";
+import Toolbar from "../components/Toolbar";
+import Footer from "../components/Footer";
 
 export default class Template extends Component {
   renderBreadcrumbs = (title, isRoot) => {
@@ -42,6 +42,7 @@ export default class Template extends Component {
 
   render() {
     const { children, title, isRoot } = this.props;
+    const renderBreadcrumbs = !!title;
     return (
       <AppConsumer>
         {(appContext) => (
@@ -69,7 +70,7 @@ export default class Template extends Component {
                     >
                       {title}
                     </h1>
-                    {this.renderBreadcrumbs(title, isRoot)}
+                    {renderBreadcrumbs && this.renderBreadcrumbs(title, isRoot)}
                     {children}
                   </Container>
                 </div>

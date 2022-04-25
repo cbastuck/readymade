@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 
-import Template from "./Template";
+import Template from "../Template";
 import { renderSceneExample } from "./Runtime";
 
 export default class BoardDocumentation extends Component {

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { Item } from "semantic-ui-react";
 
 import Sketch from "./Sketch";
-import Template from "./Template";
+import Template from "../Template";
 import { s, t } from "../../styles";
 
 export default class Quickstart extends Component {
