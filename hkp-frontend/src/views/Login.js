@@ -5,7 +5,7 @@ import { Icon } from "semantic-ui-react";
 import { redirectUri } from "../core/actions";
 import { s, t } from "../styles";
 
-import { restoreItem, storeItem } from "../core/storage";
+import { storeItem } from "../core/storage";
 import { createChallengeAndVerifier } from "../core/pkce";
 
 export default class Login extends Component {
@@ -90,10 +90,11 @@ export default class Login extends Component {
   }
 
   render() {
+    /*
     const loginEnabled = restoreItem("__allowlogin");
     if (!loginEnabled) {
       return this.renderPlaceholder();
-    }
+    }*/
 
     const { pkceChallenge, pkceVerifier } = this.state;
     if (!pkceChallenge || !pkceVerifier) {

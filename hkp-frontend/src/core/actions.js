@@ -39,11 +39,13 @@ export async function request(
     headers,
     body: serialisedBody,
   });
+
   const status = response.status;
   if (status === 401) {
     logout();
-    return;
+    throw new Error("Unauthorized");
   }
+
   if (parseJSON && response.ok) {
     return response.json();
   }
@@ -131,7 +133,6 @@ export async function getServiceConfiguration(
 }
 
 export function configureService(board, service, config, descriptor) {
-  console.log("CONFIGURE", descriptor);
   const { url: remoteUrl, id: runtimeId } = descriptor;
   const rt = descriptor ? runtimeId : service.__descriptor.runtime;
   const url = remoteUrl

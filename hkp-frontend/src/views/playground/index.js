@@ -14,6 +14,7 @@ import EmptySketch from "./EmptySketch";
 import Board from "./Board";
 import BoardSync from "./boardsync";
 import LoadPanel from "./LoadPanel";
+import Login from "../Login";
 import { generateRandomName } from "../../core/board";
 import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
 import { redirectTo } from "../../core/actions";
@@ -31,7 +32,12 @@ import {
   reorderService,
   renameRuntime,
 } from "./BoardActions";
-import { addRuntime, addService, setRuntime } from "../../core/actions";
+import {
+  addRuntime,
+  addService,
+  setRuntime,
+  getRuntimeRegistry,
+} from "../../core/actions";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "{}"
@@ -48,6 +54,7 @@ class Playground extends Component {
     placeholderAnimationRunning: false,
     description: "",
     initialFetched: false,
+    requireLogin: false,
 
     // BoardSync data
     syncedPeer: undefined,
@@ -103,9 +110,13 @@ class Playground extends Component {
   }
 
   fetchData = async () => {
+    if (!this.defaultRegistry) {
+      this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
+    }
     const {
       boardName = this.state.boardName || defaultName,
       runtimes = [],
+      registry = undefined,
       services = {},
       description = "",
       sidechainRouting = {},
@@ -120,24 +131,23 @@ class Playground extends Component {
       ? this.state
       : await this.setInitialPlayground();
 
-    if (!this.defaultRegistry) {
-      this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
-    }
-
     const data = {
       boardName,
       runtimes,
       services,
-      // TODO: not true for remote runtimes
-      registry:
-        runtimes &&
-        runtimes.reduce(
-          (all, rt) => ({
-            ...all,
-            [rt.id]: this.defaultRegistry.availableServices,
-          }),
-          {}
-        ),
+      registry: registry // for backwards compatiblity: when we only had browser runtimes on the playground
+        ? registry
+        : runtimes &&
+          runtimes.reduce(
+            (all, rt) => ({
+              ...all,
+              [rt.id]:
+                rt.type === "browser"
+                  ? this.defaultRegistry.availableServices
+                  : [],
+            }),
+            {}
+          ),
       sidechainRouting,
       outputRouting,
       inputRouting,
@@ -188,25 +198,31 @@ class Playground extends Component {
     const data = localStorage.getItem(storageName);
     if (data) {
       const board = JSON.parse(data);
+      if (!board.registry) {
+        board.registry = {};
+      }
       if (board && board.runtimes) {
         for (const runtime of board.runtimes) {
-          if (runtime.type === "remote") {
+          if (runtime.type === "remote" || runtime.type === "node") {
             const { id: runtimeId, ...desc } = runtime;
             const services = board.services[runtimeId];
-            const result = await setRuntime(
-              name,
-              {
-                ...desc,
-                runtimeId,
-                params: { name },
-              },
-              services
-            );
-            console.log(
-              "RESTORED REMOTE RUNTIME",
-              { ...desc, runtimeId },
-              result
-            );
+            try {
+              await setRuntime(
+                name,
+                {
+                  ...desc,
+                  runtimeId,
+                  params: { name },
+                },
+                services
+              );
+            } catch (err) {
+              this.handleRequestError(err);
+            }
+            const registry = await getRuntimeRegistry(name, runtimeId);
+            board.registry[runtimeId] = registry;
+          } else if (runtime.type === "browser") {
+            board.registry[runtime.id] = this.defaultRegistry.availableServices;
           }
         }
       }
@@ -277,7 +293,6 @@ class Playground extends Component {
     };
     const runtime = runtimes.find((rt) => rt.id === runtimeId);
     if (runtime.type === "remote" || runtime.type === "node") {
-      // TODO: inform the remote instance about the board and runtime
       addService(boardname, svc, runtimeId).then((created) =>
         console.log("CREATED SERVICE", created, svc)
       );
@@ -443,6 +458,14 @@ class Playground extends Component {
     }
   };
 
+  handleRequestError = (err) => {
+    if (err.message === "Unauthorized") {
+      this.setState({ requireLogin: true });
+    } else {
+      console.error("Unkown requesr error", err);
+    }
+  };
+
   renderPlaceholderOrBoard = (boardContext) => {
     const { boardName } = this.state;
     const isPlaygroundEmpty =
@@ -476,13 +499,18 @@ class Playground extends Component {
     );
     return (
       <div style={t.fill}>
-        <div style={{ width: "99%", margin: "auto" }}>
+        <div
+          style={{
+            width: "99%",
+            margin: "auto",
+          }}
+        >
           <div style={s(t.uc, t.fs16, t.ls1, t.tc)}>
             {isPlaygroundEmpty && (
               <h1
                 style={s(t.fs20, {
                   margin: 0,
-                  marginTop: isBoardUnnamed ? 25 : "10%",
+                  marginTop: "6%",
                 })}
               >
                 Welcome to Playground
@@ -493,7 +521,7 @@ class Playground extends Component {
               {!isPlaygroundEmpty ? saveReminder : false}
             </div>
             {isBoardUnnamed && isPlaygroundEmpty && (
-              <div style={{ width: "90%", margin: "auto", marginTop: 25 }}>
+              <div style={{ width: "90%", margin: "auto", marginTop: "6%" }}>
                 <h2 style={s(t.fs15)}>Or start from following options</h2>
                 <LoadPanel>{content}</LoadPanel>
               </div>
@@ -603,6 +631,7 @@ class Playground extends Component {
   };
 
   render() {
+    const { requireLogin } = this.state;
     return (
       <AppConsumer>
         {(appContext) => (
@@ -649,12 +678,21 @@ class Playground extends Component {
                       )
                     }
                   />
-                  <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
-                  {this.state.boardSyncActive &&
-                    this.renderBoardSync(boardContext)}
-                  {this.state.initialFetched
-                    ? this.renderPlaceholderOrBoard(boardContext)
-                    : this.renderLoadIndicator()}
+                  {requireLogin ? (
+                    <Login board={`playground/${boardContext.boardName}`} />
+                  ) : (
+                    <>
+                      <SaveBoardPrompt
+                        ref={(prompt) => (this.prompt = prompt)}
+                      />
+                      {this.state.boardSyncActive &&
+                        this.renderBoardSync(boardContext)}
+                      {this.state.initialFetched
+                        ? this.renderPlaceholderOrBoard(boardContext)
+                        : this.renderLoadIndicator()}
+                    </>
+                  )}
+
                   <Footer />
                 </div>
               )}
