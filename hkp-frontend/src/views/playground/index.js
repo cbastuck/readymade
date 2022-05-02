@@ -510,10 +510,10 @@ class Playground extends Component {
               <h1
                 style={s(t.fs20, {
                   margin: 0,
-                  marginTop: "6%",
+                  marginTop: "5%",
                 })}
               >
-                Welcome to Playground
+                Hello Playground
               </h1>
             )}
             <div>
@@ -521,8 +521,10 @@ class Playground extends Component {
               {!isPlaygroundEmpty ? saveReminder : false}
             </div>
             {isBoardUnnamed && isPlaygroundEmpty && (
-              <div style={{ width: "90%", margin: "auto", marginTop: "6%" }}>
-                <h2 style={s(t.fs15)}>Or start from following options</h2>
+              <div style={{ width: "90%", margin: "auto" }}>
+                <div style={s(t.fs14)}>
+                  ... Or choose one of following options
+                </div>
                 <LoadPanel>{content}</LoadPanel>
               </div>
             )}

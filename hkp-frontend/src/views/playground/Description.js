@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import { Message } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
@@ -7,6 +7,7 @@ import { replacePlaceholders } from "../../core/url";
 import QR from "../../components/QR";
 
 export default function Description({ description, boardName }) {
+  const [resolvedURLs, setResolvedUrls] = useState({});
   if (!description) {
     return false;
   }
@@ -15,7 +16,7 @@ export default function Description({ description, boardName }) {
     const key = `template-description-item-${idx}`;
     if (typeof item === "string") {
       return (
-        <div key={key} style={s(t.uc, t.fs12)}>
+        <div key={key} style={s(t.uc, t.fs12, t.tl)}>
           {" "}
           {item}{" "}
         </div>
@@ -25,7 +26,14 @@ export default function Description({ description, boardName }) {
       return (
         <div key={key} style={{ display: "flex", flexDirection: "row" }}>
           {item
-            .reduce((a, c) => [...a, c, <span>&nbsp;</span>], [])
+            .reduce(
+              (a, c, idx) => [
+                ...a,
+                c,
+                <span key={`${key}-span-${idx}`}>&nbsp;</span>,
+              ],
+              []
+            )
             .map((x, y) => renderItem(x, `${idx}.${y}`))}
         </div>
       );
@@ -41,11 +49,15 @@ export default function Description({ description, boardName }) {
         const { url: rawUrl, text } = item;
         const url = replacePlaceholders(rawUrl);
         const urlKey = `check-${url}`;
-        const checkPassed = this.state[urlKey];
+        const checkPassed = resolvedURLs[urlKey];
         if (checkPassed === undefined) {
           fetch(url)
-            .then((resp) => this.setState({ [urlKey]: resp.ok }))
-            .catch((err) => this.setState({ [urlKey]: false }));
+            .then((resp) =>
+              setResolvedUrls({ ...resolvedURLs, [urlKey]: resp.ok })
+            )
+            .catch((err) =>
+              setResolvedUrls({ ...resolvedURLs, [urlKey]: false })
+            );
         }
         return (
           <div key={key} style={s(t.uc, t.fs12, t.ls1)}>
@@ -99,6 +111,9 @@ export default function Description({ description, boardName }) {
             {value}{" "}
           </div>
         );
+      case "span": {
+        return item;
+      }
       default:
         console.error("Unsupported description type", item);
         return (

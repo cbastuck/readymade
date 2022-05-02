@@ -117,8 +117,8 @@ export function clearBoard(board) {
   return request(`board/${board}`, "DELETE", false);
 }
 
-export function getRuntimeRegistry(board, runtimeName) {
-  return request(`board/${board}/runtime/${runtimeName}/registry`);
+export function getRuntimeRegistry(board, runtimeId) {
+  return request(`board/${board}/runtime/${runtimeId}/registry`);
 }
 
 export async function getServiceConfiguration(
