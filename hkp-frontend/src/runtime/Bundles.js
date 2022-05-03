@@ -20,10 +20,15 @@ export async function loadBundle(bundleId) {
 */
     case "hookup.to/registry/browser/FileStorage":
       const { default: fileStorageRegistry } = await import(
-        //"storage-registry/build/static/js/fileRegistry"
         "storage-registry/src/index"
       );
       return fileStorageRegistry();
+
+    case "hookup.to/registry/browser/Crypto":
+      const { default: cryptoRegistry } = await import(
+        "crypto-registry/src/index"
+      );
+      return cryptoRegistry();
 
     default:
       console.error("Unknown registry-bundle", bundleId);

@@ -5,7 +5,7 @@ import { s, t } from "../../styles";
 
 export default function EmptySketch({ boardName }) {
   const headline = !boardName ? (
-    "Feels boring here!"
+    "It's so boring here!"
   ) : (
     <span style={s(t.tc, t.fs16, t.uc, t.ls1)}>
       Playground <span style={t.italic}>{boardName}</span> is empty{" "}

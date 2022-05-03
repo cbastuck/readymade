@@ -7,6 +7,7 @@ const defaultBundles = [
   "hookup.to/registry/browser/Audio",
   "hookup.to/registry/browser/Graphic",
   "hookup.to/registry/browser/FileStorage",
+  "hookup.to/registry/browser/Crypto",
 ];
 
 export default class Headless extends Component {

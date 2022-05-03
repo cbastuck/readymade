@@ -67,6 +67,7 @@ class Playground extends Component {
       state as available on the backend (which does not
       exist in case of the playground)
     */
+    registry: undefined,
     runtimes: undefined,
     services: undefined,
     sidechainRouting: {},
@@ -342,16 +343,24 @@ class Playground extends Component {
       type,
       url,
     };
+    let registry;
     if (type === "remote" || type === "node") {
       // TODO: inform the remote instance about the board and runtime
       const created = await addRuntime(boardname, { ...desc, runtimeId });
       console.log("CREATED REMOTE RT", created, { ...desc, runtimeId });
+      registry = await getRuntimeRegistry(name, created.id);
+    } else {
+      registry = this.defaultRegistry.availableServices;
     }
     this.setState({
       runtimes: runtimes.concat(rt),
       services: {
         ...services,
         [runtimeId]: [],
+      },
+      registry: {
+        ...this.state.registry,
+        [runtimeId]: registry,
       },
     });
   };
@@ -518,12 +527,12 @@ class Playground extends Component {
             )}
             <div>
               {content}
-              {!isPlaygroundEmpty ? saveReminder : false}
+              {!isPlaygroundEmpty && isBoardUnnamed ? saveReminder : false}
             </div>
             {isBoardUnnamed && isPlaygroundEmpty && (
               <div style={{ width: "90%", margin: "auto" }}>
                 <div style={s(t.fs14)}>
-                  ... Or choose one of following options
+                  Or choose one of the following options
                 </div>
                 <LoadPanel>{content}</LoadPanel>
               </div>
