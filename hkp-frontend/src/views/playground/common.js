@@ -41,6 +41,7 @@ export const allowedServices = [
   "hookup.to/service/xy-pad",
   "hookup.to/service/encrypt",
   "hookup.to/service/decrypt",
+  "hookup.to/service/hash",
 ];
 
 export const defaultName = "Playground";
