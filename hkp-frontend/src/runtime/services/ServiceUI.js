@@ -134,7 +134,9 @@ export default class ServiceUI extends Component {
         <div>
           <Segment style={{ margin: "15px 20px", padding: 0, height: "100%" }}>
             <div style={s({ padding: 14, height: "100%" })}>
-              {segment && segment.render(service)}
+              {segment && segment.render && segment.render(service)}
+              {segment && segment.component && segment.component({ service })}
+              {segment && segment.element ? segment.element : null}
             </div>
           </Segment>
         </div>
