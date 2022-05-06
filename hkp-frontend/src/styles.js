@@ -184,18 +184,18 @@ export const t = {
 // composed classes
 t.text = s(t.uc, t.ls1, t.fs12);
 
-export function HStack({ style = {}, children }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "row", ...style }}>
-      {children}
-    </div>
-  );
+export function HStack({ gap = undefined, _style = {}, children }) {
+  const style = { display: "flex", flexDirection: "column", ..._style };
+  if (gap !== undefined) {
+    style.gap = gap;
+  }
+  return <div style={style}>{children}</div>;
 }
 
-export function VStack({ style = {}, children }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", ...style }}>
-      {children}
-    </div>
-  );
+export function VStack({ gap = undefined, _style = {}, children }) {
+  const style = { display: "flex", flexDirection: "column", ..._style };
+  if (gap !== undefined) {
+    style.gap = gap;
+  }
+  return <div style={style}>{children}</div>;
 }
