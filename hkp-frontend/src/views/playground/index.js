@@ -514,10 +514,10 @@ class Playground extends Component {
             margin: "auto",
           }}
         >
-          <div style={s(t.uc, t.fs16, t.ls1, t.tc)}>
+          <div style={s(t.fs16, t.ls1, t.tc)}>
             {isPlaygroundEmpty && (
               <h1
-                style={s(t.fs20, {
+                style={s(t.uc, t.fs20, {
                   margin: 0,
                   marginTop: "5%",
                 })}
@@ -530,10 +530,8 @@ class Playground extends Component {
               {!isPlaygroundEmpty && isBoardUnnamed ? saveReminder : false}
             </div>
             {isBoardUnnamed && isPlaygroundEmpty && (
-              <div style={{ width: "90%", margin: "auto" }}>
-                <div style={s(t.fs14)}>
-                  Or choose one of the following options
-                </div>
+              <div style={s(t.uc, { width: "90%", margin: "auto" })}>
+                <div style={t.fs14}>Or choose one of the following options</div>
                 <LoadPanel>{content}</LoadPanel>
               </div>
             )}

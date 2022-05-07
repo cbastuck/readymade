@@ -29,7 +29,7 @@ export default function StoredBoards({ prefix = "" }) {
 
   return (
     items.length > 0 && (
-      <div style={s(t.mt20)}>
+      <div style={s(t.mt20, t.uc)}>
         <BoardCollection
           style={{ width: "100%", marginRight: 20 }}
           headline="Saved boards in this browser"

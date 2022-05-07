@@ -26,7 +26,7 @@ export default class SelectorField extends Component {
     }
   }
 
-  renderOptions = () => {
+  renderOptions = (width) => {
     const {
       label = "",
       onChange = undefined,
@@ -78,6 +78,7 @@ export default class SelectorField extends Component {
       value: syncedValue,
       options = {},
       style = {},
+      minWidth = "100%",
       placeholder = "",
     } = this.props;
     const text = options[value];
@@ -90,6 +91,7 @@ export default class SelectorField extends Component {
           width: "100%",
           display: "flex",
           flexDirection: "row",
+          minWidth,
         }}
       >
         {useDefaultLabel ? (

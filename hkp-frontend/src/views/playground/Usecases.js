@@ -37,7 +37,7 @@ export default function Usecases() {
   const [usecases, setUsecases] = useState(undefined);
   useEffect(() => retrieveUsecases().then(setUsecases), []);
   return (
-    <div style={t.tc}>
+    <div style={(t.tc, t.uc)}>
       {usecases ? (
         <BoardCollection
           style={{

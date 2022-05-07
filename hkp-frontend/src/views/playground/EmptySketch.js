@@ -5,17 +5,17 @@ import { s, t } from "../../styles";
 
 export default function EmptySketch({ boardName }) {
   const headline = !boardName ? (
-    "It's so boring here!"
+    "this is an empty board"
   ) : (
-    <span style={s(t.tc, t.fs16, t.uc, t.ls1)}>
-      Playground <span style={t.italic}>{boardName}</span> is empty{" "}
+    <span style={s(t.tc, t.fs14, t.uc, t.ls1)}>
+      Board <span style={t.italic}>{boardName}</span> is empty
     </span>
   );
   return (
-    <div style={{ margin: headline && "15px 0px" }}>
+    <div style={s(t.uc, { margin: headline && "15px 0px" })}>
       {headline && (
         <div style={{ marginTop: 20 }}>
-          <h1 style={s(t.fs16, t.tc, t.m(0, 6))}> {headline} </h1>
+          <h1 style={s(t.fs14, t.tc, t.m(0, 6))}> {headline} </h1>
         </div>
       )}
       <div style={{ padding: headline && "20px 0px" }}>

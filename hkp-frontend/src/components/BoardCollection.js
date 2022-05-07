@@ -14,7 +14,7 @@ export default class BoardCollection extends Component {
 
     const d = Array.isArray(description) ? description : [description];
     return (
-      <div>
+      <div style={t.nc}>
         {d.map((content, idx) => (
           <div key={`usecase-${usecase}-description-${idx}`} style={t.mt5}>
             {typeof content === "string" ? content : ""}
@@ -56,7 +56,7 @@ export default class BoardCollection extends Component {
               </Card.Meta>
             )}
             <Card.Description style={{ marginTop: 10, color: "rgb(84 84 84)" }}>
-              <div style={t.tl}>
+              <div style={s(t.tl, t.nc)}>
                 {this.renderDescription(name, description)}
               </div>
             </Card.Description>
