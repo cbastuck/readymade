@@ -104,40 +104,50 @@ export default class ServiceUI extends Component {
     );
     return (
       <Resizable hideHandle={!resizable}>
-        {segments.length > 1 && (
-          <Menu
-            compact
-            pointing
+        <div
+          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+        >
+          {segments.length > 1 && (
+            <div>
+              <Menu
+                compact
+                pointing
+                style={{
+                  marginTop: 10,
+                  overflow: "hidden",
+                  height: "auto",
+                }}
+              >
+                {segments.map((segment, idx) => (
+                  <Menu.Item
+                    key={`${service.uuid}-${segment.name}-${idx}`}
+                    name={segment.name}
+                    active={currentSegmentName === segment.name}
+                    onClick={(_, { name: currentSegmentName }) =>
+                      this.setState({ currentSegmentName })
+                    }
+                    style={{
+                      textTransform: "uppercase",
+                      fontSize: 11,
+                      letterSpacing: 1,
+                    }}
+                    disabled={segment.disabled}
+                  />
+                ))}
+              </Menu>
+            </div>
+          )}
+
+          <Segment
             style={{
-              marginTop: 10,
-              overflow: "hidden",
+              padding: 14,
+              margin: "15px 20px",
+              height: "85%",
             }}
           >
-            {segments.map((segment, idx) => (
-              <Menu.Item
-                key={`${service.uuid}-${segment.name}-${idx}`}
-                name={segment.name}
-                active={currentSegmentName === segment.name}
-                onClick={(_, { name: currentSegmentName }) =>
-                  this.setState({ currentSegmentName })
-                }
-                style={{
-                  textTransform: "uppercase",
-                  fontSize: 11,
-                  letterSpacing: 1,
-                }}
-                disabled={segment.disabled}
-              />
-            ))}
-          </Menu>
-        )}
-        <div>
-          <Segment style={{ margin: "15px 20px", padding: 0, height: "100%" }}>
-            <div style={s({ padding: 14, height: "100%" })}>
-              {segment && segment.render && segment.render(service)}
-              {segment && segment.component && segment.component({ service })}
-              {segment && segment.element ? segment.element : null}
-            </div>
+            {segment && segment.render && segment.render(service)}
+            {segment && segment.component && segment.component({ service })}
+            {segment && segment.element ? segment.element : null}
           </Segment>
         </div>
       </Resizable>

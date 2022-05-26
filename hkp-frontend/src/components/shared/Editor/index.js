@@ -15,10 +15,12 @@ export default class Editor extends Component {
           border: "solid 1px lightgray",
           textAlign: "left",
           width: "100%",
+          minWidth: 400,
           height: "100%",
         }}
       >
         <MonacoEditor
+          width="100%"
           height={this.state.height}
           onMount={(editor) => {
             this.setState({ height: "100%" });

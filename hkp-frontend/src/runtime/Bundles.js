@@ -30,6 +30,11 @@ export async function loadBundle(bundleId) {
       );
       return cryptoRegistry();
 
+    case "hookup.to/registry/browser/TensorFlow":
+      const { default: tensorFlowRegistry } = await import(
+        "tensorflow-registry/src/index"
+      );
+      return tensorFlowRegistry();
     default:
       console.error("Unknown registry-bundle", bundleId);
       return [];

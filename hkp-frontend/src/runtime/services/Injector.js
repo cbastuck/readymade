@@ -14,12 +14,11 @@ class InjectorUI extends Component {
   state = {
     files: [],
     user: undefined,
-    recentCode: JSON.stringify({ key: "value" }, null, 2),
     blob: null,
     dropName: undefined,
     items: null,
     itemsSelection: [],
-    rawText: "",
+    recentInjection: "",
     multirow: false,
     fileProgress: 0,
   };
@@ -41,18 +40,20 @@ class InjectorUI extends Component {
   }
 
   onInit = (initialState) => {
-    const { rawText, recentCode } = initialState;
-
-    if (rawText !== undefined) {
-      this.setState({ rawText });
+    const { recentInjection } = initialState;
+    if (recentInjection !== undefined) {
+      const data =
+        typeof recentInjection === "string"
+          ? recentInjection
+          : JSON.stringify(recentInjection);
+      this.setState({ recentInjection: data });
     }
+  };
 
-    if (recentCode !== undefined) {
-      const code =
-        typeof recentCode === "string"
-          ? recentCode
-          : JSON.stringify(recentCode);
-      this.setState({ recentCode: code });
+  onNotification = (service, notification) => {
+    const { recentInjection } = notification;
+    if (recentInjection !== undefined) {
+      this.setState({ recentInjection });
     }
   };
 
@@ -157,7 +158,9 @@ class InjectorUI extends Component {
             if (blob) {
               this.readFile(service, blob, false);
             } else {
-              service.inject(itemsSelection.map((idx) => items[idx]));
+              service.configure({
+                inject: itemsSelection.map((idx) => items[idx]),
+              });
             }
           }}
           disabled={!itemsSelection.length && !(blob || dropName)}
@@ -169,7 +172,7 @@ class InjectorUI extends Component {
   };
 
   renderRawInput = (service) => {
-    const { multirow, rawText } = this.state;
+    const { multirow, recentInjection } = this.state;
     return (
       <div
         style={{
@@ -208,22 +211,23 @@ class InjectorUI extends Component {
                 border: "solid 1px #ccc",
               }}
               cols="20"
-              value={rawText}
-              onChange={(_, { value: rawText }) => {
-                service.configure({ rawText });
-                this.setState({ rawText });
+              value={recentInjection}
+              onChange={(_, { value: recentInjection }) => {
+                this.setState({ recentInjection });
               }}
             />
           ) : (
             <Input
               style={{ width: "100%" }}
-              value={rawText}
-              onChange={(_, { value: rawText }) => this.setState({ rawText })}
+              value={recentInjection}
+              onChange={(_, { value: recentInjection }) =>
+                this.setState({ recentInjection })
+              }
               placeholder="Enter text here"
               onKeyUp={(ev) => {
                 switch (ev.key) {
                   case "Enter":
-                    return service.inject(rawText);
+                    return service.configure({ inject: recentInjection });
                   default:
                     break;
                 }
@@ -243,8 +247,8 @@ class InjectorUI extends Component {
           </div>
           <Button
             style={{ ...this.buttonStyle }}
-            onClick={() => service.inject(rawText)}
-            disabled={!rawText}
+            onClick={() => service.configure({ inject: recentInjection })}
+            disabled={!recentInjection}
           >
             Inject
           </Button>
@@ -254,13 +258,13 @@ class InjectorUI extends Component {
   };
 
   renderStructuredData = (service) => {
-    const { recentCode } = this.state;
+    const { recentInjection } = this.state;
     return (
       <div
         style={{
-          height: "100%",
           display: "flex",
           flexDirection: "column",
+          height: "100%",
         }}
       >
         <h1
@@ -270,38 +274,48 @@ class InjectorUI extends Component {
             letterSpacing: 1,
             textAlign: "left",
             margin: "4px 0px",
-            width: "100%",
           }}
         >
           Input text below
         </h1>
+
         <Editor
           ref={(editor) => (this.editor = editor)}
-          value={recentCode}
+          value={recentInjection}
           language="json"
-          onChange={() =>
-            this.editor &&
-            this.debouncer.f(() =>
-              service.configure({
-                recentCode: this.editor.getValue(),
-              })
-            )
-          }
         />
-        <Button
-          style={this.buttonStyle}
-          onClick={() => {
-            const code = this.editor.getValue();
-            try {
-              const obj = JSON.parse(code);
-              service.inject(obj);
-            } catch (err) {
-              service.inject(code); // can we check of the text is valid JSON from the editor?
-            }
-          }}
-        >
-          Inject
-        </Button>
+
+        <div style={{ display: "flex", flexDirection: "row" }}>
+          <Button
+            style={this.buttonStyle}
+            onClick={() => {
+              const code = this.editor.getValue();
+              try {
+                const obj = JSON.parse(code);
+                service.configure({ inject: obj });
+              } catch (err) {
+                service.configure({ inject: code }); // can we check of the text is valid JSON from the editor?
+              }
+              this.setState({ recentInjection: code });
+            }}
+          >
+            Inject
+          </Button>
+          <Button
+            style={this.buttonStyle}
+            onClick={() => {
+              const code = this.editor.getValue();
+              try {
+                const obj = JSON.parse(code);
+                this.setState({
+                  recentInjection: JSON.stringify(obj, null, 2),
+                });
+              } catch (err) {}
+            }}
+          >
+            Prettify
+          </Button>
+        </div>
       </div>
     );
   };
@@ -378,13 +392,13 @@ class InjectorUI extends Component {
       <ServiceUI
         {...this.props}
         onInit={this.onInit}
+        onNotification={this.onNotification}
         segments={[
           { name: "Text", render: this.renderRawInput },
           { name: "JSON", render: this.renderStructuredData },
           { name: "File", render: this.renderFileInput },
           { name: "Drop", render: this.renderDragNDropInput },
         ]}
-        initialSegment={(service) => (service.recentCode ? "JSON" : "Text")}
       />
     );
   }
@@ -395,22 +409,21 @@ class Injector {
     this.uuid = id;
     this.board = board;
     this.app = app;
+
+    this.recentInjection = undefined;
   }
 
   configure(config) {
-    const { rawText, recentCode } = config;
+    const { inject, recentInjection } = config;
 
-    if (rawText !== undefined) {
-      this.rawText = rawText;
+    if (inject !== undefined) {
+      this.recentInjection = inject;
+      this.app.next(this, inject);
     }
 
-    if (recentCode !== undefined) {
-      this.recentCode = recentCode;
+    if (recentInjection !== undefined) {
+      this.recentInjection = recentInjection;
     }
-  }
-
-  inject(data) {
-    this.app.next(this, data);
   }
 
   process(params) {
