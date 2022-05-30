@@ -159,7 +159,7 @@ export default class Welcome extends Component {
           {[
             {
               q: "What",
-              a: "An approach to lower access barriers and play with technology",
+              a: "An attempt to lower access barriers and play with technology",
               href: "/docs/pitch/what",
             },
             {

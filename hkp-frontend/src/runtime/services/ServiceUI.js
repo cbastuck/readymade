@@ -1,33 +1,11 @@
 import React, { Component } from "react";
 import { Menu, Segment } from "semantic-ui-react";
 
-import { s } from "../../styles";
 import { BoardConsumer } from "../../BoardContext";
 import Resizable from "../../components/Resizable";
 
 function getNotificationID(service) {
   return `service-ui-${service.uuid}`;
-}
-
-class Notifications {
-  constructor() {
-    this.callbacks = {};
-  }
-
-  register(id, callback) {
-    this.callbacks[id] = callback;
-  }
-
-  unregister(id) {
-    delete this.callbacks[id];
-  }
-
-  notify(service, notification) {
-    for (const id in this.callbacks) {
-      const cb = this.callbacks[id];
-      cb(service, notification);
-    }
-  }
 }
 
 export default class ServiceUI extends Component {
@@ -185,5 +163,26 @@ export default class ServiceUI extends Component {
         }
       </BoardConsumer>
     );
+  }
+}
+
+class Notifications {
+  constructor() {
+    this.callbacks = {};
+  }
+
+  register(id, callback) {
+    this.callbacks[id] = callback;
+  }
+
+  unregister(id) {
+    delete this.callbacks[id];
+  }
+
+  notify(service, notification) {
+    for (const id in this.callbacks) {
+      const cb = this.callbacks[id];
+      cb(service, notification);
+    }
   }
 }
