@@ -9,10 +9,11 @@ import ProgressIndicator from "../../components/ProgressIndicator";
 import SandboxFrame from "../../components/SandboxFrame";
 import { redirectTo } from "../../core/actions";
 import News from "./News";
+import { withRouter } from "../../common";
 
 import "./Welcome.css";
 
-export default class Welcome extends Component {
+class Welcome extends Component {
   state = {
     page: "closed",
     introFinished: false,
@@ -20,8 +21,13 @@ export default class Welcome extends Component {
   };
 
   componentDidMount() {
+    const search = this.props.location && this.props.location.search;
+    const params = search
+      ? Object.fromEntries(new URLSearchParams(search))
+      : {};
+    const page = params.page || "welcome";
     setTimeout(() => {
-      this.setState({ page: "welcome" });
+      this.setState({ page });
     }, 200);
   }
 
@@ -318,3 +324,5 @@ export default class Welcome extends Component {
     );
   }
 }
+
+export default withRouter(Welcome);

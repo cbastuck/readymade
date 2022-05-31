@@ -9,31 +9,40 @@ export default function What() {
         style={{
           display: "flex",
           flexDirection: "column",
-          justifyContent: "center",
-          height: "100%",
-          alignItems: "center",
-          alignContent: "center",
+          gap: 10,
+          marginTop: 20,
         }}
       >
-        Explore ways to connect logic with a different mindset, more playful and
-        preferably with less code. Focus on ideas and prototypical solutions
-        that provide insights and most important lead to follow-up questions.
-        Iterate on aspects of centrality, connectivity, authority and scale. In
-        particular acknowledge small and indvidual spaces, ie. solutions that
-        matter to only a few of us, but maybe for problems relevant to most. The
-        more we spread the ability to analyze and decompose patterns around us,
-        even using technical terms, the more we set the odds for finding
-        apporpriate solutions, ideally before they are needed. In that picture,
-        this private project is an imperfect and naive thing in many ways. Sure,
-        this is an excuse, but also meant as a disclaimer to set expectations
-        towards three chords in contrast to a symphony. This project focuses on
-        exploration and little on delivery. It rather tells another story for
-        the interested, one that sounds unconventional, comes unpredictable and
-        leaves it's audience hopefully more puzzled and curious than before.
-        Imperfect solutions help to formulate the right question and identify
-        underlying problems. Upscale the number of people finding or
-        contributing to unknown solutions, not the machines executing known
-        solutions.
+        <div>
+          Explore ideas to build logic and computational behavior with a
+          different mindset than an engineering mindset. More playful and
+          preferably using less code. Focus on ideas and prototypical solutions
+          that provide insights and most important lead to follow-up questions.
+          Iterate on aspects of centrality, connectivity, authority and scale.
+          In particular acknowledge small and indvidual spaces, ie. solutions
+          that matter to only a few of us, but maybe to problems relevant to
+          most? The more we spread the ability to analyze and decompose patterns
+          around us, even using technical terms, the more we set the odds for
+          finding apporopriate solutions, ideally before we need them.
+        </div>
+        <div>
+          In this picture, this site can be seen as an imperfect and very naive
+          private attempt. Sure, that is an excuse, but also a disclaimer to set
+          expectations: you will hear three chords, not a symphony. This project
+          focuses on exploration and little on delivery. It rather tells a story
+          for the interested, one that sounds a bit unconventional, certainly
+          comes unpredictable and hopefully leaves the reader more puzzled and
+          curious than before. Even imperfect solutions can help formulating new
+          questions or even to identify underlying, hidden problems.
+        </div>
+        <div>
+          Automation and digitalisation are on the agenda, and so should be
+          upscaling the group of people finding the unknown problems and/or
+          solutions. Or contributing to both of them being found, instead of
+          upscaling the number of devices executing already known solutions to
+          acknowledged problems that rank high in demand or return of invest.
+        </div>
+        <a href="/?page=mission">back</a>
       </div>
     </Template>
   );
