@@ -1,6 +1,4 @@
-import React from "react";
-
-import Template from "../../Template";
+import Template, { BackButton } from "../../Template";
 
 export default function How() {
   return (
@@ -62,7 +60,7 @@ export default function How() {
             <a href="https://duckduckgo.com/">here</a>
           </li>
         </ul>
-        <a href="/?page=mission">back</a>
+        <BackButton />
       </div>
     </Template>
   );

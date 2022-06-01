@@ -1,6 +1,4 @@
-import React from "react";
-
-import Template from "../../Template";
+import Template, { BackButton } from "../../Template";
 
 export default function What() {
   return (
@@ -11,29 +9,38 @@ export default function What() {
           flexDirection: "column",
           gap: 10,
           marginTop: 20,
+          fontSize: 15,
         }}
       >
         <div>
           Explore ideas to build logic and computational behavior with a
           different mindset than an engineering mindset. More playful and
-          preferably using less code. Focus on ideas and prototypical solutions
-          that provide insights and most important lead to follow-up questions.
-          Iterate on aspects of centrality, connectivity, authority and scale.
-          In particular acknowledge small and indvidual spaces, ie. solutions
-          that matter to only a few of us, but maybe to problems relevant to
-          most? The more we spread the ability to analyze and decompose patterns
-          around us, even using technical terms, the more we set the odds for
-          finding apporopriate solutions, ideally before we need them.
+          preferably using less code.
         </div>
         <div>
-          In this picture, this site can be seen as an imperfect and very naive
-          private attempt. Sure, that is an excuse, but also a disclaimer to set
-          expectations: you will hear three chords, not a symphony. This project
-          focuses on exploration and little on delivery. It rather tells a story
-          for the interested, one that sounds a bit unconventional, certainly
-          comes unpredictable and hopefully leaves the reader more puzzled and
-          curious than before. Even imperfect solutions can help formulating new
-          questions or even to identify underlying, hidden problems.
+          Focus on ideas and prototypical solutions that provide insights and
+          most important lead to follow-up questions. Iterate on aspects of
+          centrality, connectivity, authority and scale. In particular
+          acknowledge small and indvidual spaces, ie. solutions that matter to
+          only a few of us, but maybe to problems relevant to most?{" "}
+        </div>
+        <div>
+          The more we spread the ability to analyze and decompose patterns
+          around us, even using technical terms, the more we set the odds for
+          finding appropriate solutions, ideally before we need them.
+        </div>
+        <div>
+          In this picture, this project can be understood as an imperfect and
+          naive private endeavour. Sure, that is an excuse, but also a
+          disclaimer to set expectations: you will hear three chords, not a
+          symphony. This project focuses on exploration and little on delivery.
+          It rather tells a story for the interested, one that sounds a bit
+          unconventional, certainly comes unpredictable and hopefully leaves the
+          reader more puzzled and curious than before.
+        </div>
+        <div>
+          Even imperfect solutions can help formulating new questions and
+          sometimes even identify underlying, hidden problems.
         </div>
         <div>
           Automation and digitalisation are on the agenda, and so should be
@@ -42,7 +49,7 @@ export default function What() {
           upscaling the number of devices executing already known solutions to
           acknowledged problems that rank high in demand or return of invest.
         </div>
-        <a href="/?page=mission">back</a>
+        <BackButton />
       </div>
     </Template>
   );

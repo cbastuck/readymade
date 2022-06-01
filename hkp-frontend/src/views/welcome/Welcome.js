@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { AppConsumer } from "../../AppContext";
 import BoardContext from "../../BoardContext";
@@ -13,6 +13,22 @@ import { withRouter } from "../../common";
 
 import "./Welcome.css";
 
+function NavigateButton({ destination, text }) {
+  const navigate = useNavigate();
+  return (
+    <button
+      className="button"
+      onClick={() => navigate(destination)}
+      style={{
+        fontSize: 11,
+        textTransform: "uppercase",
+      }}
+    >
+      {text}
+    </button>
+  );
+}
+
 class Welcome extends Component {
   state = {
     page: "closed",
@@ -21,6 +37,17 @@ class Welcome extends Component {
   };
 
   componentDidMount() {
+    this.navigateToPage();
+  }
+
+  componentDidUpdate(prevProps) {
+    const currentSearch = this.props.location && this.props.location.search;
+    if (currentSearch !== prevProps.location.search) {
+      this.navigateToPage();
+    }
+  }
+
+  navigateToPage = () => {
     const search = this.props.location && this.props.location.search;
     const params = search
       ? Object.fromEntries(new URLSearchParams(search))
@@ -29,7 +56,7 @@ class Welcome extends Component {
     setTimeout(() => {
       this.setState({ page });
     }, 200);
-  }
+  };
 
   renderWelcome = () => (
     <div className="fade-in">
@@ -49,16 +76,7 @@ class Welcome extends Component {
         <span className="make">Make yourself</span>
         <span>at home</span>
       </p>
-      <button
-        className="button"
-        onClick={() => this.setState({ page: "mission" })}
-        style={{
-          fontSize: 11,
-          textTransform: "uppercase",
-        }}
-      >
-        What is this?
-      </button>
+      <NavigateButton destination="/?page=mission" text="What is this?" />
     </div>
   );
 
@@ -86,21 +104,10 @@ class Welcome extends Component {
         visible={!this.state.introFinished}
       />
       {this.state.introFinished && (
-        <button
-          style={{
-            fontSize: 12,
-            textTransform: "uppercase",
-          }}
-          className="button fade-in-linear"
-          onClick={() =>
-            this.setState({
-              page: "visualisation",
-              introFinished: false,
-            })
-          }
-        >
-          A thought experiment
-        </button>
+        <NavigateButton
+          destination="/?page=visualisation"
+          text="A thought experiment"
+        />
       )}
     </div>
   );
@@ -180,16 +187,7 @@ class Welcome extends Component {
             },
             {
               a: (
-                <button
-                  style={{
-                    fontSize: 11,
-                    textTransform: "uppercase",
-                  }}
-                  className="button"
-                  onClick={() => this.setState({ page: "intro" })}
-                >
-                  Quick Pitch
-                </button>
+                <NavigateButton destination="/?page=intro" text="Quick Pitch" />
               ),
             },
           ].map((x, xi) => (
@@ -211,7 +209,11 @@ class Welcome extends Component {
                 className={`fade-in-${xi}`}
               >
                 {x.q && (
-                  <h1 style={{ fontSize: 19, color: "454f6d" }}> {x.q} </h1>
+                  <h1 style={{ fontSize: 19, color: "454f6d" }}>
+                    <Link to={x.href} style={{ fontSize: 17 }}>
+                      {x.q}
+                    </Link>
+                  </h1>
                 )}
                 <div
                   className="home-title"

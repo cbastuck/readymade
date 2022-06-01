@@ -1,6 +1,4 @@
-import React from "react";
-
-import Template from "../../Template";
+import Template, { BackButton } from "../../Template";
 
 export default function Why() {
   return (
@@ -47,7 +45,7 @@ export default function Why() {
           Well, the universe is infinte right? This is what we tell our programs
           as well. Hence, there seems enough space to explore.
         </div>
-        <a href="/?page=mission">back</a>
+        <BackButton />
       </div>
     </Template>
   );
