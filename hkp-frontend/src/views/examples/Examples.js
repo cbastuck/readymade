@@ -65,7 +65,7 @@ class Examples extends Component {
   };
 
   renderCard = (example) => {
-    const fontStyle = s(t.ls1, t.uc, t.fs12, t.tc);
+    const fontStyle = s(t.fs13, t.tc);
     return (
       <div
         key={`example-card-${example.title}`}
@@ -84,9 +84,14 @@ class Examples extends Component {
                 style={{ marginTop: 3 }}
               />
               <Card.Header
-                style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}
+                style={{
+                  marginTop: 3,
+                  textAlign: "left",
+                  color: "#4183c4",
+                  textTransform: "uppercase",
+                }}
               >
-                <h1 style={t.fs15}>{example.title}</h1>
+                <h1 style={t.fs14}>{example.title}</h1>
               </Card.Header>
               <Card.Meta style={{ margin: "5px 0px", textAlign: "left" }}>
                 {example.brief}
@@ -94,15 +99,10 @@ class Examples extends Component {
               <Card.Description
                 style={{ marginTop: 10, color: "rgb(84 84 84)" }}
               >
-                <div style={t.tl}>
+                <div style={s(t.tl, t.fs14)}>
                   {Array.isArray(example.description)
                     ? example.description.map((d, idx) => (
-                        <p
-                          key={`example-${example.title}-desc-${idx}`}
-                          style={t.lh1_7}
-                        >
-                          {d}
-                        </p>
+                        <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
                       ))
                     : example.description}
                 </div>
@@ -229,9 +229,7 @@ class Examples extends Component {
     }
 
     return (
-      <div
-        style={s(t.uc, t.fs12, t.ls1, t.m(0, 10), t.lh1_5, { width: "95%" })}
-      >
+      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10), { width: "95%" })}>
         {assureArray(explanation).map((exp, eidx) => (
           <div key={`explanation-${eidx}`} style={{ marginTop: 3 }}>
             {Array.from(tokenize(exp)).map((p, idx) =>
@@ -315,12 +313,10 @@ class Examples extends Component {
     const p = { marginBottom: 3 };
     return (
       <div style={{ marginBottom: 30 }}>
-        <Message
+        <div
           style={s(
             t.nc,
-            t.fs13,
-            t.uc,
-            t.ls1,
+            t.fs16,
             { color: "#555", backgroundColor: "rgba(172, 200, 229, 0.01)" },
             { padding: 10 }
           )}
@@ -328,22 +324,15 @@ class Examples extends Component {
           <p style={p}>
             Following examples show a fraction of the possibilities. They run in
             a Sandbox, intended for building flows that run mostly locally and
-            do not require a login.
-          </p>
-
-          <p style={p}>
-            Much more is possible when mixing remote and local runtimes on the
-            same board. But registration and login aren't public yet.
-          </p>
-
-          <p style={p}>
-            Instead play with multiple local runtimes on{" "}
+            do not require a login. More is possible when mixing remote and
+            local runtimes on the same board. But registration and login aren't
+            public yet. Instead play with multiple local runtimes on{" "}
             <a href="/playground#sketch">playground</a>. Use the public{" "}
             <span style={s(t.bold, t.it)}>reflector</span> to hookup different
             playgrounds or connect to <span style={s(t.bold, t.it)}>peers</span>
             . More on both topics soon.
           </p>
-        </Message>
+        </div>
       </div>
     );
   };
@@ -355,7 +344,7 @@ class Examples extends Component {
           <BoardContext>
             <BoardConsumer>
               {(boardContext) => (
-                <div style={t.h100}>
+                <div style={s(t.h100, { fontFamily: "Roboto" })}>
                   <Toolbar />
                   {this.renderExamplesContainer()}
                 </div>

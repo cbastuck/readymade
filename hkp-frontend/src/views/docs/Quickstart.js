@@ -1,14 +1,14 @@
-import React, { Component } from "react";
+import React from "react";
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Item } from "semantic-ui-react";
 
 import Sketch from "./Sketch";
 import Template from "../Template";
 import { s, t } from "../../styles";
 
-export default class Quickstart extends Component {
-  renderGroupItem = (item) => {
+export default function Quickstart() {
+  const renderGroupItem = (item) => {
     const itemStyle = {
       width: "100%",
       marginBottom: 10,
@@ -21,11 +21,11 @@ export default class Quickstart extends Component {
           <Item.Header
             style={{
               fontSize: 14,
-              letterSpacing: 4,
-              textTransform: "uppercase",
+              letterSpacing: 2,
               paddingTop: 9,
               marginLeft: 10,
               minWidth: 150,
+              textTransform: "uppercase",
             }}
           >
             <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
@@ -37,9 +37,7 @@ export default class Quickstart extends Component {
               <div
                 key={`detail-${item.title}-${idx}`}
                 style={{
-                  fontSize: 11,
-                  letterSpacing: 1,
-                  textTransform: "uppercase",
+                  fontSize: 15,
                   cursor: "default",
                 }}
               >
@@ -52,7 +50,7 @@ export default class Quickstart extends Component {
     );
   };
 
-  renderClaim = (claim) => {
+  const renderClaim = (claim) => {
     return (
       <div
         style={{
@@ -61,10 +59,10 @@ export default class Quickstart extends Component {
           margin: "5px 30px",
           color: claim.c ? "black" : "#454f6d",
           letterSpacing: 1,
-          textTransform: "uppercase",
+          lineHeight: 1.3,
         }}
       >
-        {claim.s}
+        <span style={{ textTransform: "uppercase" }}>{claim.s}</span>
         {claim.c ? ": " : ""}
         <span
           style={{
@@ -77,7 +75,11 @@ export default class Quickstart extends Component {
               {claim.c}
             </a>
           ) : (
-            <span style={{ color: "#4183c4", fontStyle: "initial" }}>
+            <span
+              style={{
+                color: "#4183c4",
+              }}
+            >
               {claim.c}
             </span>
           )}
@@ -86,7 +88,7 @@ export default class Quickstart extends Component {
     );
   };
 
-  renderQuickstart = () => {
+  const renderQuickstart = () => {
     const sectionStyle = {
       fontSize: 15,
       textAlign: "left",
@@ -98,38 +100,38 @@ export default class Quickstart extends Component {
       <div>
         <h2 style={{ ...sectionStyle, margin: "30px 0px" }}>Etiquette</h2>
         <div style={{ marginBottom: 35 }}>
-          {this.renderClaim({ s: "Please", c: "Make stupid things!" })}
-          {this.renderClaim({
+          {renderClaim({ s: "Please", c: "Make stupid things!" })}
+          {renderClaim({
             s: "In particular",
             c: "“Dance to all the wrong songs”",
             link: "https://www.youtube.com/watch?v=NkAe30aEG5c",
             cite: "D. Sandstrom, D. Lyxzen, K. Steen, J. Brannstrom",
           })}
-          {this.renderClaim({
+          {renderClaim({
             s: "Because",
             c: '"Da fehlen Rebellen, da fehlen Dilettanten”',
             link: "https://www.youtube.com/watch?v=58ShJinuHTg",
             cite: "Kapelle Petra",
           })}
-          {this.renderClaim({
+          {renderClaim({
             s: "Acknowledge",
             c: "“Wir können alles. Und Alles können wir sein”",
             link: "https://www.youtube.com/watch?v=GLAHeIEzaC8",
             cite: "R. Sczimarkowsi, J. Windmeier, C. Knopp, M. Ebsen, C. Peter",
           })}
-          {this.renderClaim({
+          {renderClaim({
             s: "Understand",
             c: "“Nur weil es dumm aussieht, muss es das nicht sein”",
             link: "https://www.youtube.com/watch?v=IIw1nP4KEHs",
             cite: " K. Hamann, N. Kolodziej ",
           })}
-          {this.renderClaim({
+          {renderClaim({
             s: "With respect",
             c: '"To want more than is given to you”',
             link: "https://www.youtube.com/watch?v=xk2CvKcJnC4",
             cite: "G. Moakes, K. Okereke,  M. Tong, R. Lissackj",
           })}
-          {this.renderClaim({
+          {renderClaim({
             s: "Knowing",
             c: "\"I can't do this all on my own”",
             link: "https://www.youtube.com/watch?v=SBl2l3GIFD4",
@@ -144,10 +146,22 @@ export default class Quickstart extends Component {
           </a>
         </h1>
 
-        <h2 style={{ ...sectionStyle, marginTop: 30, marginBottom: 20 }}>
+        <h2
+          style={{
+            ...sectionStyle,
+            marginTop: 30,
+            marginBottom: 20,
+          }}
+        >
           Stuff to know about
         </h2>
-        <div style={s(t.uc, t.fs12, t.ls2, { textAlign: "left" })}>
+        <div
+          style={s(t.uc, t.fs14, {
+            textAlign: "left",
+            fontFamily: "Roboto",
+            textTransform: "none",
+          })}
+        >
           <div style={{ marginBottom: 10 }}>
             There are three "things" you need to know. These are the basic
             building blocks that enable experimentation:
@@ -162,7 +176,7 @@ export default class Quickstart extends Component {
             <Sketch />
           </div>
           <Item.Group link style={{ marginTop: 0, marginBottom: 0 }}>
-            {this.renderGroupItem({
+            {renderGroupItem({
               title: "Board",
               details: [
                 "A Board is the topmost building block. Everything happens on a board",
@@ -176,7 +190,7 @@ export default class Quickstart extends Component {
               image: undefined,
               bottomDivider: true,
             })}
-            {this.renderGroupItem({
+            {renderGroupItem({
               title: "Runtime",
               details: [
                 "A Runtime belongs to exactly one board",
@@ -191,7 +205,7 @@ export default class Quickstart extends Component {
               image: undefined,
               bottomDivider: true,
             })}
-            {this.renderGroupItem({
+            {renderGroupItem({
               title: "Service",
               details: [
                 "Services are (high level) abstractions of (complex) logic",
@@ -211,16 +225,22 @@ export default class Quickstart extends Component {
     );
   };
 
-  render() {
-    return (
-      <Template title="Quickstarter" isRoot={false}>
-        {this.renderQuickstart()}
-        <div style={s(t.tc)}>
-          <Link to="/playground" style={s(t.uc, t.fs16, t.ls3, t.bo, t.nw)}>
-            Visit Playground
-          </Link>
-        </div>
-      </Template>
-    );
-  }
+  const navigate = useNavigate();
+  return (
+    <Template title="Quickstarter" isRoot={false}>
+      {renderQuickstart()}
+      <div style={s(t.tc)}>
+        <button
+          className="button"
+          onClick={() => navigate("/playground")}
+          style={{
+            fontSize: 11,
+            textTransform: "uppercase",
+          }}
+        >
+          Visit Playground
+        </button>
+      </div>
+    </Template>
+  );
 }

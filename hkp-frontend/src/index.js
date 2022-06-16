@@ -2,11 +2,14 @@ import React from "react";
 import ReactDOM from "react-dom";
 import { BrowserRouter as Router } from "react-router-dom";
 
+import App from "./App";
+import * as serviceWorker from "./serviceWorker";
+
 import "setimmediate";
 import "semantic-ui-css/semantic.min.css";
 
-import App from "./App";
-import * as serviceWorker from "./serviceWorker";
+import "./index.css";
+// import "./assets/fonts/Roboto/Roboto-Bold.ttf";
 
 ReactDOM.render(
   <Router>

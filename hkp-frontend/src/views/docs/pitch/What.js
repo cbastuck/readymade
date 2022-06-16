@@ -9,7 +9,9 @@ export default function What() {
           flexDirection: "column",
           gap: 10,
           marginTop: 20,
-          fontSize: 15,
+          fontSize: 16,
+          fontFamily: "Roboto",
+          letterSpacing: 1,
         }}
       >
         <div>

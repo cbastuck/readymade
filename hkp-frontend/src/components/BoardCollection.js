@@ -26,7 +26,6 @@ export default class BoardCollection extends Component {
 
   renderCard = (item) => {
     const { url, name, description, metadata, image, repo } = item;
-
     return (
       <Card style={s(t.p10, { maxWidth: 300 })} key={`board-card-${name}`}>
         <Card.Content>
@@ -48,10 +47,17 @@ export default class BoardCollection extends Component {
             <Card.Header
               style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}
             >
-              <h1 style={t.fs15}>{name}</h1>
+              <h1 style={t.fs14}>{name}</h1>
             </Card.Header>
             {metadata && (
-              <Card.Meta style={{ margin: "5px 0px", textAlign: "left" }}>
+              <Card.Meta
+                style={{
+                  margin: "5px 0px",
+                  textAlign: "left",
+                  fontSize: 13,
+                  textTransform: "capitalize",
+                }}
+              >
                 {metadata}
               </Card.Meta>
             )}
@@ -99,7 +105,7 @@ export default class BoardCollection extends Component {
 
     return (
       items.length > 0 && (
-        <div style={{ ...borderStyle, height: "100%" }}>
+        <div style={{ ...borderStyle, height: "100%", fontFamily: "Roboto" }}>
           <h1 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0))}>{headline}</h1>
           <div style={s(t.tr, t.mb5)}>
             <Input

@@ -227,7 +227,7 @@ class Welcome extends Component {
                   {x.a}
                   {x.href && (
                     <Link to={x.href} style={{ fontSize: 10 }}>
-                      {" more..."}
+                      {" tell me more ..."}
                     </Link>
                   )}
                 </div>
@@ -295,6 +295,8 @@ class Welcome extends Component {
         style={{
           width: "100%",
           height: "95%",
+          fontFamily: "Roboto",
+          fontSize: 15,
         }}
       >
         {currentPage && currentPage.r()}
