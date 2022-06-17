@@ -229,7 +229,13 @@ class Examples extends Component {
     }
 
     return (
-      <div style={s(t.uc, t.fs12, t.ls1, t.m(0, 10), { width: "95%" })}>
+      <div
+        style={s(t.uc, t.fs16, t.ls1, t.m(0, 10), {
+          width: "95%",
+          textTransform: "none",
+          lineHeight: 1.5,
+        })}
+      >
         {assureArray(explanation).map((exp, eidx) => (
           <div key={`explanation-${eidx}`} style={{ marginTop: 3 }}>
             {Array.from(tokenize(exp)).map((p, idx) =>
@@ -316,18 +322,18 @@ class Examples extends Component {
         <div
           style={s(
             t.nc,
-            t.fs18,
+            t.fs17,
             { color: "#555", backgroundColor: "rgba(172, 200, 229, 0.01)" },
-            { padding: 10 }
+            { padding: 0, lineHeight: 1.5 }
           )}
         >
           <p style={p}>
-            Following examples show a fraction of the possibilities. They run in
-            a Sandbox, intended for building flows that run mostly locally and
-            do not require a login. More is possible when mixing remote and
-            local runtimes on the same board. But registration and login aren't
-            public yet. Instead play with multiple local runtimes on{" "}
-            <a href="/playground#sketch">playground</a>. Use the public{" "}
+            Following examples show a fraction of the possibilities. All of them
+            run in a Sandbox, intended for building flows that run mostly
+            locally and do not require a login. More is possible when mixing
+            remote and local runtimes on the same board. But registration and
+            login aren't public yet. Instead play with multiple local runtimes
+            on <a href="/playground#sketch">playground</a>. Use the public{" "}
             <span style={s(t.bold, t.it)}>reflector</span> to hookup different
             playgrounds or connect to <span style={s(t.bold, t.it)}>peers</span>
             . More on both topics soon.

@@ -1,4 +1,4 @@
-import Template, { BackButton, NextButton } from "../../Template";
+import Template, { NavigateButton } from "../../Template";
 
 import { HStack } from "../../../styles";
 
@@ -11,20 +11,22 @@ export default function Why() {
           flexDirection: "column",
           gap: 10,
           marginTop: 20,
-          fontSize: 18,
+          fontSize: 16,
           fontFamily: "Roboto",
           letterSpacing: 1,
-          lineHeight: 1.7,
+          lineHeight: 1.5,
         }}
       >
         <div>
-          I believe - within reason - the ability to understand logic, technical
-          components and the flow and shape of data, is comparable to the
-          ability to read written text. Accordingly, as much as being able to
-          read, does not necessarily turn you into a professional author,
-          learning to understand technical components and data flows - on a
-          maybe visual and more tangible level alone - is different from
-          becoming a professional software engineer.
+          In my opinion, the ability to understand logic, technical components
+          and the flow and shape of data, is to some extend comparable with the
+          ability to read.
+        </div>
+        <div>
+          As much as being able to read, does not necessarily turn you into a
+          professional author, learning to understand technical components and
+          data flows - on a maybe visual and more tangible level alone - is
+          different from becoming a professional software engineer.
         </div>
         <div>
           However, the ability to read books, stories, recipies, etc. can be
@@ -52,8 +54,8 @@ export default function Why() {
           as well. Hence, there seems enough space to explore.
         </div>
         <HStack style={{ marginTop: 10 }}>
-          <BackButton />
-          <NextButton to="/docs/pitch/how" />
+          <NavigateButton to="/docs/pitch/what" label="< what?" />
+          <NavigateButton to="/docs/pitch/how" label="how? >" />
         </HStack>
       </div>
     </Template>

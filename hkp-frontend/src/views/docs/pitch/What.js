@@ -1,4 +1,4 @@
-import Template, { BackButton, NextButton } from "../../Template";
+import Template, { NavigateButton } from "../../Template";
 
 import { HStack } from "../../../styles";
 
@@ -11,10 +11,10 @@ export default function What() {
           flexDirection: "column",
           gap: 10,
           marginTop: 20,
-          fontSize: 18,
+          fontSize: 16,
           fontFamily: "Roboto",
           letterSpacing: 1,
-          lineHeight: 1.7,
+          lineHeight: 1.5,
         }}
       >
         <div>
@@ -55,8 +55,7 @@ export default function What() {
           acknowledged problems that rank high in demand or return of invest.
         </div>
         <HStack style={{ marginTop: 10 }}>
-          <BackButton />
-          <NextButton to="/docs/pitch/why" />
+          <NavigateButton to="/docs/pitch/why" label="why? >" />
         </HStack>
       </div>
     </Template>

@@ -20,7 +20,7 @@ export default function Quickstart() {
         {
           <Item.Header
             style={{
-              fontSize: 14,
+              fontSize: 16,
               letterSpacing: 2,
               paddingTop: 9,
               marginLeft: 10,
@@ -39,6 +39,7 @@ export default function Quickstart() {
                 style={{
                   fontSize: 15,
                   cursor: "default",
+                  lineHeight: 1.5,
                 }}
               >
                 {detail}
@@ -54,12 +55,12 @@ export default function Quickstart() {
     return (
       <div
         style={{
-          fontSize: 14,
+          fontSize: 16,
           textAlign: "left",
           margin: "5px 30px",
           color: claim.c ? "black" : "#454f6d",
           letterSpacing: 1,
-          lineHeight: 1.3,
+          lineHeight: 1.5,
         }}
       >
         <span style={{ textTransform: "uppercase" }}>{claim.s}</span>
@@ -68,6 +69,7 @@ export default function Quickstart() {
           style={{
             fontStyle: "italic",
             color: "#454f6d",
+            letterSpacing: 1.3,
           }}
         >
           {claim.link ? (
@@ -90,7 +92,7 @@ export default function Quickstart() {
 
   const renderQuickstart = () => {
     const sectionStyle = {
-      fontSize: 15,
+      fontSize: 16,
       textAlign: "left",
       textTransform: "uppercase",
       letterSpacing: 2,
@@ -156,10 +158,11 @@ export default function Quickstart() {
           Stuff to know about
         </h2>
         <div
-          style={s(t.uc, t.fs14, {
+          style={s(t.uc, t.fs16, {
             textAlign: "left",
             fontFamily: "Roboto",
             textTransform: "none",
+            lineHeight: 1.5,
           })}
         >
           <div style={{ marginBottom: 10 }}>
@@ -229,7 +232,7 @@ export default function Quickstart() {
   return (
     <Template title="Quickstarter" isRoot={false}>
       {renderQuickstart()}
-      <div style={s(t.tc)}>
+      <div style={s(t.tc, t.mt10)}>
         <button
           className="button"
           onClick={() => navigate("/playground")}

@@ -66,7 +66,7 @@ export default class Template extends Component {
                         textAlign: "center",
                         letterSpacing: 8,
                         textTransform: "uppercase",
-                        padding: "10px 0px",
+                        padding: "20px 0px",
                       }}
                     >
                       {title}
@@ -86,28 +86,7 @@ export default class Template extends Component {
   }
 }
 
-export function BackButton() {
-  const navigate = useNavigate();
-  return (
-    <div style={{ textAlign: "center", width: "100%" }}>
-      <Button
-        style={{
-          marginTop: 10,
-          textTransform: "uppercase",
-          fontSize: 12,
-          border: "1px solid darkgray",
-          color: "white",
-          backgroundColor: "#454f6d",
-        }}
-        onClick={() => navigate(-1)}
-      >
-        Back
-      </Button>
-    </div>
-  );
-}
-
-export function NextButton({ to, label }) {
+export function NavigateButton({ to, label }) {
   const navigate = useNavigate();
   return (
     <div style={{ textAlign: "center", width: "100%" }}>

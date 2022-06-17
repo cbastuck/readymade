@@ -192,7 +192,7 @@ export function HStack({ gap = undefined, style: _style = {}, children }) {
   return <div style={style}>{children}</div>;
 }
 
-export function VStack({ gap = undefined, _style = {}, children }) {
+export function VStack({ gap = undefined, style: _style = {}, children }) {
   const style = { display: "flex", flexDirection: "column", ..._style };
   if (gap !== undefined) {
     style.gap = gap;
