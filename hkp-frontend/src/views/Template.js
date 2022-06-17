@@ -106,3 +106,24 @@ export function BackButton() {
     </div>
   );
 }
+
+export function NextButton({ to, label }) {
+  const navigate = useNavigate();
+  return (
+    <div style={{ textAlign: "center", width: "100%" }}>
+      <Button
+        style={{
+          marginTop: 10,
+          textTransform: "uppercase",
+          fontSize: 12,
+          border: "1px solid darkgray",
+          color: "white",
+          backgroundColor: "#454f6d",
+        }}
+        onClick={() => navigate(to)}
+      >
+        {label ? label : "Next"}
+      </Button>
+    </div>
+  );
+}

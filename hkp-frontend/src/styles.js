@@ -184,8 +184,8 @@ export const t = {
 // composed classes
 t.text = s(t.uc, t.ls1, t.fs12);
 
-export function HStack({ gap = undefined, _style = {}, children }) {
-  const style = { display: "flex", flexDirection: "column", ..._style };
+export function HStack({ gap = undefined, style: _style = {}, children }) {
+  const style = { display: "flex", flexDirection: "row", ..._style };
   if (gap !== undefined) {
     style.gap = gap;
   }

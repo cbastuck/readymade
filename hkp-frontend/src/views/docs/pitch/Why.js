@@ -1,4 +1,6 @@
-import Template, { BackButton } from "../../Template";
+import Template, { BackButton, NextButton } from "../../Template";
+
+import { HStack } from "../../../styles";
 
 export default function Why() {
   return (
@@ -9,6 +11,10 @@ export default function Why() {
           flexDirection: "column",
           gap: 10,
           marginTop: 20,
+          fontSize: 18,
+          fontFamily: "Roboto",
+          letterSpacing: 1,
+          lineHeight: 1.7,
         }}
       >
         <div>
@@ -45,7 +51,10 @@ export default function Why() {
           Well, the universe is infinte right? This is what we tell our programs
           as well. Hence, there seems enough space to explore.
         </div>
-        <BackButton />
+        <HStack style={{ marginTop: 10 }}>
+          <BackButton />
+          <NextButton to="/docs/pitch/how" />
+        </HStack>
       </div>
     </Template>
   );

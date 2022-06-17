@@ -1,4 +1,6 @@
-import Template, { BackButton } from "../../Template";
+import Template, { BackButton, NextButton } from "../../Template";
+
+import { HStack } from "../../../styles";
 
 export default function How() {
   return (
@@ -9,6 +11,10 @@ export default function How() {
           flexDirection: "column",
           gap: 10,
           marginTop: 20,
+          fontSize: 18,
+          fontFamily: "Roboto",
+          letterSpacing: 1,
+          lineHeight: 1.7,
         }}
       >
         <div>
@@ -60,7 +66,10 @@ export default function How() {
             <a href="https://duckduckgo.com/">here</a>
           </li>
         </ul>
-        <BackButton />
+        <HStack style={{ marginTop: 10 }}>
+          <BackButton />
+          <NextButton to="/examples" label="examples" />
+        </HStack>
       </div>
     </Template>
   );

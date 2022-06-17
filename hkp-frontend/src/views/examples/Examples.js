@@ -1,6 +1,6 @@
 import React, { Component } from "react";
 import { Link } from "react-router-dom";
-import { Card, Image, Breadcrumb, Message } from "semantic-ui-react";
+import { Card, Image, Breadcrumb } from "semantic-ui-react";
 
 import { withRouter } from "../../common";
 import { AppConsumer } from "../../AppContext";
@@ -173,7 +173,7 @@ class Examples extends Component {
               style={{
                 letterSpacing: 8,
                 textTransform: "uppercase",
-                fontSize: 18,
+                fontSize: 20,
                 marginTop: 15,
               }}
             >
@@ -316,7 +316,7 @@ class Examples extends Component {
         <div
           style={s(
             t.nc,
-            t.fs16,
+            t.fs18,
             { color: "#555", backgroundColor: "rgba(172, 200, 229, 0.01)" },
             { padding: 10 }
           )}
