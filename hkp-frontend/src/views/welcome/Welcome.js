@@ -177,7 +177,7 @@ class Welcome extends Component {
             },
             {
               q: "Why",
-              a: "Technology is an enabler for creativity, inspiration and thinking for y'all",
+              a: "Technology is an enabler for creativity, inspiration and thinking",
               href: "/docs/pitch/why",
             },
             {
@@ -209,7 +209,9 @@ class Welcome extends Component {
                 className={`fade-in-${xi}`}
               >
                 {x.q && (
-                  <h1 style={{ fontSize: 19, color: "454f6d" }}>
+                  <h1
+                    style={{ fontSize: 19, color: "454f6d", paddingBottom: 5 }}
+                  >
                     <Link to={x.href} style={{ fontSize: 17 }}>
                       {x.q}
                     </Link>
@@ -218,16 +220,26 @@ class Welcome extends Component {
                 <div
                   className="home-title"
                   style={{
-                    marginTop: 10,
-                    fontSize: 16,
-                    fontWeight: "lighter",
+                    paddingTop: 2,
+                    paddingLeft: 2,
+                    fontSize: 18,
                     color: "#777",
+                    textTransform: "none",
+                    fontFamily: "roboto",
+                    letterSpacing: 2,
                   }}
                 >
                   {x.a}
                   {x.href && (
-                    <Link to={x.href} style={{ fontSize: 10 }}>
-                      {" tell me more ..."}
+                    <Link
+                      to={x.href}
+                      style={{
+                        fontSize: 10,
+                        textTransform: "capitalize",
+                        fontFamily: "Lato",
+                      }}
+                    >
+                      {" - show more"}
                     </Link>
                   )}
                 </div>

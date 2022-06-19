@@ -1,11 +1,5 @@
 @font-face {
   font-family: 'Roboto';
   src: local("Roboto"),
-   url("./assets/fonts/Roboto/Roboto-Thin.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: 'Inter';
-  src: local("Inter"),
-   url("./assets/fonts/Inter/static/Inter-Light.ttf") format("truetype");
+   url("./assets/fonts/Roboto/Roboto-Light.ttf") format("truetype");
 }
