@@ -35,24 +35,27 @@ export default function Why() {
           entertaining, or help you to understand things better. Things like:
           yourself, your environment, our world. It can be an ingredient to find
           your place and contribute to whatever you chose to find important in
-          your life or the life of your peers - according your preferences,
-          abilities and choices.
+          your life or the life of your peers.
         </div>
         <div>
-          From experience I can see myself supporting anyone deciding against
-          being a professional engineer. Some arguments might be personal, some
-          cultural, some may be superficial. At the same time, the ability to
-          understand and later produce technical parts that create computational
-          behavior, visual appearances, sonic experiences, entertaining moments
-          and creativity in general, formed this thinking that different
-          abstractions and approaches to technology and logic are desirable. The
-          possibilities to express yourself by building and/or using tools that
-          are a product of technology, should not be restricted to a specialized
-          group of people with certain traits, matching stereotypes an industry
-          itself (re-)produces. Otherwise - in technical terms - we could be
-          climbing fast, following a steep gradient, but only towards a local
-          optimum. Well, the universe is infinte right? This is what we tell our
-          programs as well. Hence, there seems enough space to explore.
+          From experience, I can understand people not wanting to become an
+          engineer. Arguments can be personal, some target the culture, some may
+          even be superficial - all valid. Still, the ability to first
+          understand and later produce software to create computational
+          behavior, visual effects, audio experiences, entertaining moments or
+          creativity in general, reassured my desire for different and broader
+          abstractions and approaches to technology.
+        </div>
+        <div>
+          The possibilities to express yourself by building or using tools as a
+          product of technology, should not be restricted to a specialized group
+          of people with certain traits, matching stereotypes an industry
+          reproduces. Otherwise, we could follow a steep slope along the
+          gradient, but merely towards a local optimum.
+        </div>
+        <div>
+          So, the universe is infinte, right? This is what we tell our programs
+          too. To me, this sounds like there is a lot of space to explore.
         </div>
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/what" label="< what?" />
