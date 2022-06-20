@@ -89,17 +89,27 @@ class Examples extends Component {
                   textAlign: "left",
                   color: "#4183c4",
                   textTransform: "uppercase",
+                  letterSpacing: 1,
                 }}
               >
                 <h1 style={t.fs14}>{example.title}</h1>
               </Card.Header>
-              <Card.Meta style={{ margin: "5px 0px", textAlign: "left" }}>
+              <Card.Meta
+                style={{
+                  margin: "5px 0px",
+                  textAlign: "left",
+                  letterSpacing: 0.5,
+                }}
+              >
                 {example.brief}
               </Card.Meta>
               <Card.Description
-                style={{ marginTop: 10, color: "rgb(84 84 84)" }}
+                style={{
+                  marginTop: 10,
+                  color: "rgb(84 84 84)",
+                }}
               >
-                <div style={s(t.tl, t.fs14)}>
+                <div style={s(t.tl, t.fs14, { letterSpacing: 1 })}>
                   {Array.isArray(example.description)
                     ? example.description.map((d, idx) => (
                         <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
@@ -322,9 +332,9 @@ class Examples extends Component {
         <div
           style={s(
             t.nc,
-            t.fs17,
+            t.fs16,
             { color: "#555", backgroundColor: "rgba(172, 200, 229, 0.01)" },
-            { padding: 0, lineHeight: 1.5 }
+            { padding: 0, lineHeight: 1.5, letterSpacing: 1 }
           )}
         >
           <p style={p}>

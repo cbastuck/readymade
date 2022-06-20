@@ -19,43 +19,49 @@ export default function Why() {
       >
         <div>
           In my opinion, the ability to understand logic and technical
-          components, including the flow and shape of data is - to some extend -
-          comparable to the ability to read.
+          components including data in its shape and flow, is comparable to the
+          ability to read.
         </div>
         <div>
-          As being able to read, does not immediately turn you into an author,
-          learning to understand technical components and data flows does not
-          determine anyone for being or becoming a software engineer. Both
-          abilitities are a prerequisite for the latter, not more. At least on a
-          professional level. Looking at the context of that person's life in
-          general, it's a different story.
+          Being able to read, doesn't immediately turn you into an author.
+          Similar learning to understand technical components and data flows
+          does not determine anyone to be or become a software engineer. Both
+          abilitities are only prerequisites for the latter, not more. At least
+          on a professional level. Looking at it from the perspective of that
+          person's life in general, it might be a different story.
         </div>
         <div>
-          The ability to read books, stories, recipies, etc. can be
-          entertaining, or help you to understand things better. Things like:
-          yourself, your environment, our world. It can be an ingredient to find
-          your place and contribute to whatever you chose to find important in
-          your life or the life of your peers.
+          For example, the ability to read books, stories, recipies, etc. can
+          entertain yourself and help you understanding things better. Things
+          like: yourself, your environment, our world. Sometimes it's one
+          ingredient to discover your self, your place or to contribute to
+          whatever you chose to find important in your life - or your peers'
+          life.
         </div>
         <div>
-          From experience, I can understand people not wanting to become an
-          engineer. Arguments can be personal, some target the culture, some may
-          even be superficial - all valid. Still, the ability to first
-          understand and later produce software to create computational
-          behavior, visual effects, audio experiences, entertaining moments or
-          creativity in general, reassured my desire for different and broader
-          abstractions and approaches to technology.
+          From experience, I understand anyone not wanting to get into
+          professional software development. Arguments could be personal, target
+          its culture, or be somewhat superficial. Certainly it's good to look
+          and think for your own.
         </div>
         <div>
-          The possibilities to express yourself by building or using tools as a
-          product of technology, should not be restricted to a specialized group
-          of people with certain traits, matching stereotypes an industry
-          reproduces. Otherwise, we could follow a steep slope along the
-          gradient, but merely towards a local optimum.
+          But regardless, the ability to understand and produce software to
+          create computational behavior, visual effects, audio experiences,
+          entertaining moments or creativity in general, reassure my wish for
+          abstractions and approaches to technology, that feel more
+          approachable.
         </div>
         <div>
-          So, the universe is infinte, right? This is what we tell our programs
-          too. To me, this sounds like there is a lot of space to explore.
+          The possibilities to express yourself through artifacts made with
+          technology, should not be restricted to a specialized group with
+          certain traits, matching stereotypes an industry alone produces and
+          sometimes even reproduces. Otherwise, we could follow a steep slope
+          along the gradient, but merely towards a local optimum.
+        </div>
+        <div>
+          They say the universe is infinite. That's what we tell our software
+          programs as well. Why this matters? I think, this sounds like there is
+          a lot of space to explore.
         </div>
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/what" label="< what?" />

@@ -37,9 +37,10 @@ export default function Quickstart() {
               <div
                 key={`detail-${item.title}-${idx}`}
                 style={{
-                  fontSize: 15,
+                  fontSize: 16,
                   cursor: "default",
                   lineHeight: 1.5,
+                  letterSpacing: 1,
                 }}
               >
                 {detail}
@@ -55,7 +56,7 @@ export default function Quickstart() {
     return (
       <div
         style={{
-          fontSize: 16,
+          fontSize: 17,
           textAlign: "left",
           margin: "5px 30px",
           color: claim.c ? "black" : "#454f6d",
@@ -163,6 +164,7 @@ export default function Quickstart() {
             fontFamily: "Roboto",
             textTransform: "none",
             lineHeight: 1.5,
+            letterSpacing: 1,
           })}
         >
           <div style={{ marginBottom: 10 }}>
