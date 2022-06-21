@@ -26,6 +26,8 @@ export default function Quickstart() {
               marginLeft: 10,
               minWidth: 150,
               textTransform: "uppercase",
+              fontFamily: "Lato",
+              fontWeight: "thin",
             }}
           >
             <Link to={`/docs/${item.title.toLowerCase()}`}>{item.title}</Link>
@@ -39,7 +41,7 @@ export default function Quickstart() {
                 style={{
                   fontSize: 16,
                   cursor: "default",
-                  lineHeight: 1.5,
+                  lineHeight: 1.8,
                   letterSpacing: 1,
                 }}
               >

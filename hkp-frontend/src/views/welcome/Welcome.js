@@ -234,12 +234,13 @@ class Welcome extends Component {
                     <Link
                       to={x.href}
                       style={{
-                        fontSize: 10,
+                        fontSize: 11,
                         textTransform: "capitalize",
                         fontFamily: "Lato",
+                        paddingLeft: 3,
                       }}
                     >
-                      {" - show more"}
+                      {" show more"}
                     </Link>
                   )}
                 </div>

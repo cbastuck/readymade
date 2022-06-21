@@ -24,38 +24,39 @@ export default function What() {
         </div>
         <div>
           Focus on ideas and prototypical solutions that provide insights and
-          generate followup questions; and again - prototypes.
+          generate more questions; and again - prototypes.
         </div>
         <div>
           Iterate on aspects of centrality, connectivity, authority and scale.
           In particular acknowledge small or individual spaces. It could be
-          solutions that matter to only a few people - yet, as some problems
-          could still be relevant to many.
+          solutions that matter to only a few people - yet some problems might
+          be relevant to many.
         </div>
         <div>
           The more we spread the ability to analyze and decompose patterns
-          around us, also using technical terms, the more we set the odds for
-          finding appropriate solutions, before we need them.
+          around us, also using technical terms, the more we set the odds to
+          find appropriate solutions before we need them.
         </div>
         <div>
           This project - Hookup - is an imperfect and naive private endeavour!
           This is an excuse and a disclaimer to set expectations: you will hear
-          three chords, not a symphony, in case you decide to continue.
+          three chords, not a symphony.
         </div>
         <div>
-          Hookup focuses on exploration and less on delivering solutions. It
-          should rather tell a story for the interested, one that comes
-          unconventional and unpredictable; and hopefully leaves the listener
-          puzzled, curious and most important: recognizing possibilties
+          I want focus on exploration and less on delivering solutions. I rather
+          would like to tell a story for the interested, than repeat the usual
+          tech talk. Tell a story that comes unconventional and unpredictable;
+          and hopefully leaves the audience puzzled, curious and most important:
+          with an awareness of new possibilties
         </div>
         <div>
-          Imperfect solutions can help in formulating new questions. Sometimes
-          these become the root thought for identifying the underlying and
-          hidden problems.
+          Imperfect solutions can help to formulate new questions. Sometimes
+          these questions become a root thought for identifying the actual
+          underlying and so far hidden problems.
         </div>
         <div>
-          Automation and digitalisation are already on the agenda. Well, and so
-          should be upscaling the group of people finding unknown solutions and
+          Automation and digitalisation are on the agenda. Well, and so should
+          be upscaling the group of people finding unknown solutions and
           problems, instead of upscaling the number of devices executing known
           solutions to acknowledged problems that rank high in demand and thus
           return of invest.
