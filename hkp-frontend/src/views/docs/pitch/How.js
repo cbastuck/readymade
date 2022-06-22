@@ -40,8 +40,8 @@ export default function How() {
         </div>
         <div>
           Some years later, this common pattern drove my decision to apply at
-          Native Instruments. From my mentioned experience, I was convinced that
-          any instrument they release would be a low-level code compositions of
+          Native Instruments. From my mentioned experience I was convinced that
+          any instrument they release would be low-level code compositions of
           <a href="https://en.wikipedia.org/wiki/Reaktor" target="blank">
             {" Reaktor "}
           </a>
@@ -64,8 +64,9 @@ export default function How() {
         Why saddle up Rosinante, when perfection seems condemned in advance?
         <ul>
           <li>
-            It's fun, building abstractions, then understanding, then pushing
-            the limits from multiple ends: the runtime, the module, the data
+            It's fun building abstractions, see them working, watch them fail,
+            then understand and start pushing the limits by iterating on
+            multiple ends: the runtime, the module, the data.
           </li>
           <li>Partial correctness outweighs having no clue.</li>
         </ul>

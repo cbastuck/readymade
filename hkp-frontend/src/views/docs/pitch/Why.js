@@ -45,20 +45,20 @@ export default function Why() {
           But still, the ability to understand and produce software to create
           computational behavior, visual effects, audio experiences,
           entertaining moments and creativity in general, reassure my interest
-          for abstractions and approaches to technology, that feel more
+          for abstractions and approaches to technology that feel more
           approachable.
         </div>
         <div>
-          The possibilities to express yourself through artifacts made
-          with technology, should not be restricted to a specialized group with
+          The possibilities to express yourself through artifacts made with
+          technology, should not be restricted to a specialized group with
           certain traits, matching stereotypes an industry alone produces and
           sometimes even reproduces. Otherwise, we could follow a steep slope
           along the gradient, but merely towards a local optimum.
         </div>
         <div>
           They say the universe is infinite. That's what we tell our software
-          programs about space as well, every time demands grow. Why this
-          matters? I think, this sounds like there is a lot of space to explore.
+          programs about space as well while demand and growth accelerates. Why
+          this matters? I think it sounds like there is a lot to explore.
         </div>
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/what" label="< what?" />

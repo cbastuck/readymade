@@ -43,7 +43,7 @@ export default function What() {
           three chords, not a symphony.
         </div>
         <div>
-          I want focus on exploration and less on delivering solutions. I rather
+          I focus on exploration and less on delivering solutions. I rather
           would like to tell a story for the interested, than repeat the usual
           tech talk. Tell a story that comes unconventional and unpredictable;
           and hopefully leaves the audience puzzled, curious and most important:
