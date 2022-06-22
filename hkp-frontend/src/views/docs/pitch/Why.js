@@ -19,7 +19,7 @@ export default function Why() {
       >
         <div>
           In my opinion, the ability to understand logic and technical
-          components including data in its shape and flow, is comparable to the
+          components including data in its shape and flow is comparable to the
           ability to read.
         </div>
         <div>
@@ -28,15 +28,14 @@ export default function Why() {
           does not determine anyone to be or become a software engineer. Both
           abilitities are only prerequisites for the latter, not more. At least
           on a professional level. Looking at it from the perspective of an
-          indivuidual's life in general, it's probably different.
+          indivuidual's life in general, it's different.
         </div>
         <div>
-          For example, the ability to read books, stories, recipies, etc. can
-          entertain yourself and help you to understand things better. Things
-          like: your self, your environment, our world. Sometimes it's one
-          ingredient to discover abilities, interests, your position, your place
-          or to contribute to whatever you chose to find important in your life
-          - or your peers' life.
+          For example, the ability to read stories, recipies, history, poetry,
+          etc. can entertain and help to understand things better. Things like:
+          your self, your environment, our world. Sometimes it's one ingredient
+          to discover abilities, interests, your position or place or whatever
+          you chose to find important in your life and the life of your peers.
         </div>
         <div>
           From experience, I understand anyone not wanting to get into
@@ -45,12 +44,12 @@ export default function Why() {
         <div>
           But still, the ability to understand and produce software to create
           computational behavior, visual effects, audio experiences,
-          entertaining moments or creativity in general, reassure my wish for
-          abstractions and approaches to technology, that feel more approachable
-          at any time.
+          entertaining moments and creativity in general, reassure my interest
+          for abstractions and approaches to technology, that feel more
+          approachable.
         </div>
         <div>
-          I think the possibilities to express yourself through artifacts made
+          The possibilities to express yourself through artifacts made
           with technology, should not be restricted to a specialized group with
           certain traits, matching stereotypes an industry alone produces and
           sometimes even reproduces. Otherwise, we could follow a steep slope
@@ -58,8 +57,8 @@ export default function Why() {
         </div>
         <div>
           They say the universe is infinite. That's what we tell our software
-          programs as well. Why this matters? I think, this sounds like there is
-          a lot of space to explore.
+          programs about space as well, every time demands grow. Why this
+          matters? I think, this sounds like there is a lot of space to explore.
         </div>
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/what" label="< what?" />

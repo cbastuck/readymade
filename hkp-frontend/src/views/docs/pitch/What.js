@@ -24,7 +24,7 @@ export default function What() {
         </div>
         <div>
           Focus on ideas and prototypical solutions that provide insights and
-          generate more questions; and again - prototypes.
+          generate new questions and again new prototypes.
         </div>
         <div>
           Iterate on aspects of centrality, connectivity, authority and scale.
@@ -47,19 +47,18 @@ export default function What() {
           would like to tell a story for the interested, than repeat the usual
           tech talk. Tell a story that comes unconventional and unpredictable;
           and hopefully leaves the audience puzzled, curious and most important:
-          with an awareness of new possibilties
+          with an awareness for new possibilties
         </div>
         <div>
-          Imperfect solutions can help to formulate new questions. Sometimes
-          these questions become a root thought for identifying the actual
+          In my opinion imperfect solutions can create understanding and lead to
+          new, improved ideas. Some might become a root thought to identify
           underlying and so far hidden problems.
         </div>
         <div>
-          Automation and digitalisation are on the agenda. Well, and so should
-          be upscaling the group of people finding unknown solutions and
-          problems, instead of upscaling the number of devices executing known
-          solutions to acknowledged problems that rank high in demand and thus
-          return of invest.
+          Automation and digitalisation are on a public agenda. And so should be
+          upscaling the group of people finding unknown solutions and problems,
+          instead of only upscaling the number of devices executing known
+          solutions to acknowledged problems.
         </div>
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/why" label="why? >" />

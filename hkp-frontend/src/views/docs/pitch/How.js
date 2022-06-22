@@ -20,56 +20,54 @@ export default function How() {
         }}
       >
         <div>
-          Following story: When my professional engineering life started, soon I
-          felt like repeating work: implementing a concept a second time. Back
-          then, we worked on approaches that would mimick the sensation of music
-          simlilarity as perceived by the human. We created processing
-          pipelines, graphs eventually: connected processing units that accept
-          an audio stream on the input, extract similarity features from the
-          audio signal, select the most important ones, train classification
-          models, validate those models, and persist them so they could be used
-          in subsequent queries from a frontend.
+          Following story: When my professional life as an engineer began, soon
+          I felt like repeating work I did before. Back then, we worked on
+          approaches that would mimick the sensation of music simlilarity as
+          perceived by humans. We created processing pipelines, graphs
+          eventually: connected logical units, each with a clear resposibility.
+          Chained units would accept an audio stream on the input, next extract
+          similarity features from the audio signal, then select the most
+          important ones, train classification models, validate those models,
+          and finally persist them so models could be used in subsequent queries
+          from a frontend.
         </div>
         <div>
           Something similar we did at university, where we fed raw volumetric
-          data from CT scans to processing units in pipelines that transform,
-          project, select, map and eventually visualize resulting data as
+          data from CT scans to processing units in pipelines to transform,
+          project, select, map and eventually visualize the resulting data as
           semi-transparent, textured rectangles, ordererd and blended over
           another.
         </div>
         <div>
           Some years later, this common pattern drove my decision to apply at
-          Native Instruments. From my mentioned experience I was convinced, that
-          any instrument they release, would be a low-level code compositions of
+          Native Instruments. From my mentioned experience, I was convinced that
+          any instrument they release would be a low-level code compositions of
           <a href="https://en.wikipedia.org/wiki/Reaktor" target="blank">
             {" Reaktor "}
           </a>
           modules. That conviction did not hold long after I started, also some
-          core assumptions were wrong. But, the sense of repetition stayed: once
-          convenient abstractions were found a big part of core functionality
-          became nested functions triggering continuations of nested functions
-          while propagating data, and so on.
+          of my core assumptions were wrong. But, the sense of repetition
+          stayed: once convenient abstractions were found a big part of core
+          functionality became nested functions triggering continuations of
+          nested functions while propagating data, and so on.
         </div>
         <div>
           To make it short, it's hard to keep complexity and its exponential
-          growth somehow in balance. If you're looking for perfection, I think
-          it's impossible. But if you look careful I think that there are great
-          implementations of the basic idea:{" "}
+          growth in balance. If you're looking for perfection, I think it's an
+          almost impossible task. But if you look careful there are great
+          implementations of the basic idea I think:{" "}
           <Link to="https://nodered.org/">NodeRed</Link>,{" "}
           <Link to="https://www.knime.com/">Knime</Link>,{" "}
           <Link to="https://puredata.info/">PureData</Link>,{" "}
           <Link to="https://vvvv.org/">vvvv</Link>, etc.
         </div>
-        Why saddle up the Rosinante, when its perfection seems comcondemned in
-        advance?
+        Why saddle up Rosinante, when perfection seems condemned in advance?
         <ul>
           <li>
-            It's fun, building abstractions and then understanding and pushing
-            their limits from multiple ends: the runtime, the module, the data
+            It's fun, building abstractions, then understanding, then pushing
+            the limits from multiple ends: the runtime, the module, the data
           </li>
-          <li>
-            Partial correctness ultimately outweighs not having a clue at all.
-          </li>
+          <li>Partial correctness outweighs having no clue.</li>
         </ul>
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/why" label="< why?" />
