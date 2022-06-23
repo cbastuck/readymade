@@ -46,16 +46,16 @@ export default function How() {
             {" Reaktor "}
           </a>
           modules. That conviction did not hold long after I started, also some
-          of my core assumptions were wrong. But, the sense of repetition
-          stayed: once convenient abstractions were found a big part of core
+          of my core assumptions were wrong. But the sense of repetition stayed;
+          once convenient abstractions were found, a big part of core
           functionality became nested functions triggering continuations of
           nested functions while propagating data, and so on.
         </div>
         <div>
           To make it short, it's hard to keep complexity and its exponential
           growth in balance. If you're looking for perfection, I think it's an
-          almost impossible task. But if you look careful there are great
-          implementations of the basic idea I think:{" "}
+          almost impossible task. But if you look with a different pair of
+          glasses, I think there are great examples of such idea:{" "}
           <Link to="https://nodered.org/">NodeRed</Link>,{" "}
           <Link to="https://www.knime.com/">Knime</Link>,{" "}
           <Link to="https://puredata.info/">PureData</Link>,{" "}
@@ -66,7 +66,8 @@ export default function How() {
           <li>
             It's fun building abstractions, see them working, watch them fail,
             then understand and start pushing the limits by iterating on
-            multiple ends: the runtime, the module, the data.
+            multiple ends: the runtime, the module, the data, the topology of
+            connections.
           </li>
           <li>Partial correctness outweighs having no clue.</li>
         </ul>

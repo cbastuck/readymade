@@ -46,8 +46,8 @@ export default function What() {
           I focus on exploration and less on delivering solutions. I rather
           would like to tell a story for the interested, than repeat the usual
           tech talk. Tell a story that comes unconventional and unpredictable;
-          and hopefully leaves the audience puzzled, curious and most important:
-          with an awareness for new possibilties
+          and hopefully leaves the audience puzzled, curious and most important
+          with an awareness for new possibilties.
         </div>
         <div>
           In my opinion imperfect solutions can create understanding and lead to
