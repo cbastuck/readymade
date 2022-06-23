@@ -63,7 +63,7 @@ export default function How() {
         </div>
         Why saddle up Rosinante, when perfection seems condemned in advance?
         <ul>
-          <li>
+          <li style={{ marginBottom: 5 }}>
             It's fun building abstractions, see them working, watch them fail,
             then understand and start pushing the limits by iterating on
             multiple ends: the runtime, the module, the data, the topology of
@@ -71,7 +71,7 @@ export default function How() {
           </li>
           <li>Partial correctness outweighs having no clue.</li>
         </ul>
-        <HStack style={{ marginTop: 10 }}>
+        <HStack>
           <NavigateButton to="/docs/pitch/why" label="< why?" />
           <NavigateButton to="/examples" label="examples >>" />
         </HStack>

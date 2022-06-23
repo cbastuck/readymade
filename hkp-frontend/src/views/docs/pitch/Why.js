@@ -28,7 +28,7 @@ export default function Why() {
           does not determine anyone to be or become a software engineer. Both
           abilitities are only prerequisites for the latter, not more. At least
           on a professional level. Looking at it from the perspective of an
-          indivuidual's life in general, it's different.
+          individual's life in general, it's different.
         </div>
         <div>
           For example, the ability to read stories, recipies, history, poetry,

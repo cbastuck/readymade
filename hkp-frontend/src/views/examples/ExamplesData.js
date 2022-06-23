@@ -35,7 +35,7 @@ const examplesData = [
     url: "/boards/examples/dropbox.json",
     explanation: [
       "Produce material for a stop motion video by periodically making photos and automatically uploading them into your dropbox",
-      'Log into your dropbox by pressing the "Login" button. After you enable the upload toggle, incoming images will appear in a hkp-db folder of you dropbox (no other content is accessible by this board).',
+      'Log into your dropbox by pressing the "Login" button. After you enable the upload toggle, incoming images will appear in a hkp-db folder of your dropbox drive (no other content is accessible by this board).',
     ],
   },
   {

@@ -489,7 +489,7 @@ class Playground extends Component {
       this.renderBoard(boardContext)
     );
     const saveReminder = (
-      <div style={s(t.fs12, t.mb10)}>
+      <div style={s(t.fs14, t.mb10, { fontFamily: "Lato" })}>
         Remember you can
         <span
           style={{ cursor: "help", color: "#4284C4" }}

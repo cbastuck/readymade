@@ -89,10 +89,9 @@ export default class Template extends Component {
 export function NavigateButton({ to, label }) {
   const navigate = useNavigate();
   return (
-    <div style={{ textAlign: "center", width: "100%" }}>
+    <div style={{ textAlign: "center", width: "100%", margin: "10px 0px" }}>
       <Button
         style={{
-          marginTop: 10,
           textTransform: "uppercase",
           fontSize: 12,
           border: "1px solid darkgray",
@@ -103,6 +102,7 @@ export function NavigateButton({ to, label }) {
       >
         {label ? label : "Next"}
       </Button>
+      <div style={{ height: 10 }} />
     </div>
   );
 }

@@ -205,6 +205,7 @@ class Welcome extends Component {
                   textAlign: "center",
                   letterSpacing: 1,
                   textTransform: "uppercase",
+                  fontFamily: "Lato",
                 }}
                 className={`fade-in-${xi}`}
               >

@@ -18,8 +18,8 @@ export default function What() {
         }}
       >
         <div>
-          Explore ideas to combine logic and create computational behavior with
-          a different mindset than strictly an engineering mindset: more playful
+          Explore ideas to combine logic and create computed behavior with a
+          different mindset than strictly an engineering mindset: more playful
           and preferably using less code.
         </div>
         <div>
@@ -33,9 +33,9 @@ export default function What() {
           be relevant to many.
         </div>
         <div>
-          The more we spread the ability to analyze and decompose patterns
-          around us, also using technical terms, the more we set the odds to
-          find appropriate solutions before we need them.
+          I think the more we spread the ability to analyze and decompose
+          patterns around us, also using technical terms, the more we set the
+          odds to find appropriate solutions before we need them.
         </div>
         <div>
           This project - Hookup - is an imperfect and naive private endeavour!
@@ -43,11 +43,11 @@ export default function What() {
           three chords, not a symphony.
         </div>
         <div>
-          I focus on exploration and less on delivering solutions. I rather
-          would like to tell a story for the interested, than repeat the usual
-          tech talk. Tell a story that comes unconventional and unpredictable;
-          and hopefully leaves the audience puzzled, curious and most important
-          with an awareness for new possibilties.
+          Hookup focuses on exploration and less on delivering solutions. I
+          rather would like to tell a story for the interested, than repeat the
+          usual tech talk. A story that comes unconventional and less
+          predictable; and hopefully leaves the audience puzzled, curious and
+          most important with an awareness for new possibilties.
         </div>
         <div>
           In my opinion imperfect solutions can create understanding and lead to
@@ -61,6 +61,7 @@ export default function What() {
           solutions to acknowledged problems.
         </div>
         <HStack style={{ marginTop: 10 }}>
+          <NavigateButton to="/?page=mission" label="overview" />
           <NavigateButton to="/docs/pitch/why" label="why? >" />
         </HStack>
       </div>

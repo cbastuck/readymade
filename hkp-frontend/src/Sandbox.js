@@ -155,7 +155,7 @@ class Sandbox extends Component {
                 }}
               >
                 <Link
-                  style={s(t.uc, t.ls1, t.fs12)}
+                  style={s(t.uc, t.ls1, t.fs12, { fontFamily: "Lato" })}
                   to={`/playground?src=${url}#sketch`}
                 >
                   Open In Playground
