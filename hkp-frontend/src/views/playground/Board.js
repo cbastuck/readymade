@@ -235,6 +235,7 @@ export default class Board extends Component {
             peers.updatePeers,
             boardContext
           )}
+          expanded={!runtime.params || !runtime.params.minimized}
           inputs={this.renderInputs(filteredPeers, runtime, peers.updatePeers)}
         />
       </DragProvider>

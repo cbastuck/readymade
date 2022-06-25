@@ -8,15 +8,12 @@ import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
 export default class Template extends Component {
-  renderBreadcrumbs = (title, isRoot) => {
+  renderBreadcrumbs = (title, parent) => {
     const breadcrumpStyle = {
       letterSpacing: 1,
       textTransform: "uppercase",
       fontSize: 11,
     };
-    if (isRoot) {
-      return false;
-    }
     return (
       <div
         style={{
@@ -32,6 +29,14 @@ export default class Template extends Component {
             </Link>
           </Breadcrumb.Section>
           <Breadcrumb.Divider />
+          {parent && (
+            <>
+              <Breadcrumb.Section>
+                <span style={breadcrumpStyle}>{parent}</span>
+              </Breadcrumb.Section>
+              <Breadcrumb.Divider />
+            </>
+          )}
           <Breadcrumb.Section link>
             <span style={breadcrumpStyle}>{title}</span>
           </Breadcrumb.Section>
@@ -41,8 +46,8 @@ export default class Template extends Component {
   };
 
   render() {
-    const { children, title, isRoot } = this.props;
-    const renderBreadcrumbs = !!title;
+    const { children, title, isRoot, parent } = this.props;
+    const renderBreadcrumbs = !!title && (!isRoot || !!parent);
     return (
       <AppConsumer>
         {(appContext) => (
@@ -71,7 +76,7 @@ export default class Template extends Component {
                     >
                       {title}
                     </h1>
-                    {renderBreadcrumbs && this.renderBreadcrumbs(title, isRoot)}
+                    {renderBreadcrumbs && this.renderBreadcrumbs(title, parent)}
                     {children}
                     <div style={{ height: 10 }} />
                   </Container>

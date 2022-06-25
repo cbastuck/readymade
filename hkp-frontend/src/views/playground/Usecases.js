@@ -33,7 +33,10 @@ async function retrieveUsecases() {
   );
 }
 
-export default function Usecases() {
+export default function Usecases({
+  headline = "Available Showcases",
+  renderSearch = true,
+}) {
   const [usecases, setUsecases] = useState(undefined);
   useEffect(() => retrieveUsecases().then(setUsecases), []);
   return (
@@ -44,9 +47,10 @@ export default function Usecases() {
             width: "100%",
             marginRight: 20,
           }}
-          headline="Available Showcases"
+          headline={headline}
           items={usecases}
           renderBorder={false}
+          renderSearch={renderSearch}
         />
       ) : (
         <div>

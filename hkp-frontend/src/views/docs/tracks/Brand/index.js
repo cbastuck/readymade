@@ -1,33 +1,39 @@
 import Template from "../../../Template";
 
 import { ReactComponent as HkpLogo } from "./assets/hkp-dots-round.svg";
+import { ReactComponent as HkpLogoFill } from "./assets/hkp-dots-small-spaced.svg";
 
 export default function Brand() {
   return (
-    <Template title="Brand and Identity" isRoot={false}>
+    <Template title="Brand and Identity" parent="side tracks">
       <div style={{ margin: "40px 0px" }}>
         <Section title="Logo">
           <Logo />
           <Logo size="50%" />
           <Logo size="25%" />
+          <Logo size="4%" filled={true} />
+        </Section>
+        <Section title="Interpretation">
           <Text>
             <Paragraph brief="Three dots symbolise ...">
               <ListItem>
-                communication in texting and thus a connection
+                communication while texting and thus a connection
               </ListItem>
               <ListItem>
                 logical continuation in the sense of what came before
               </ListItem>
-              <ListItem>endless composition</ListItem>
-            </Paragraph>
-            <Paragraph brief="Abbreviation of term Hookup because  ...">
               <ListItem>
-                leaving out vocals, as they carry informatiom mostly for
-                pronunciation, less for understanding
+                endless composition, there is more than currently visible
+              </ListItem>
+            </Paragraph>
+            <Paragraph brief="Removing the vocals ...">
+              <ListItem>
+                as they carry informatiom mostly for pronunciation, less for
+                understanding
               </ListItem>
               <ListItem>
-                the odds are that Hookup is already taken for being used in this
-                context.
+                as the odds are that Hookup is already taken for being used in
+                this context.
               </ListItem>
             </Paragraph>
           </Text>
@@ -46,10 +52,10 @@ function Paragraph({ children, brief }) {
   );
 }
 
-function Logo({ size = "100%" }) {
+function Logo({ size = "100%", filled = false }) {
   return (
     <div style={{ width: size, margin: "20px auto" }}>
-      <HkpLogo />
+      {filled ? <HkpLogoFill /> : <HkpLogo />}
     </div>
   );
 }

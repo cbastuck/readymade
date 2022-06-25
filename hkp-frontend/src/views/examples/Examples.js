@@ -13,6 +13,7 @@ import Modal from "../../components/Modal";
 import ServiceReference from "../../components/ServiceReference";
 import { s, t } from "../../styles";
 import VSpacer from "../../components/shared/VSpacer";
+import Showcases from "../playground/Usecases";
 
 import examples from "./ExamplesData";
 
@@ -167,8 +168,8 @@ class Examples extends Component {
     return (
       <div
         style={{
-          marginTop: 20,
           height: currentExample && "100%",
+          marginTop: 20,
         }}
       >
         <div
@@ -198,9 +199,11 @@ class Examples extends Component {
             height: "100%",
           }}
         >
+          <h2 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0), t.uc)}>
+            Sandbox based
+          </h2>
           {!currentExample && this.renderDisclaimer()}
           {currentExample ? this.renderCurrentExample() : this.renderExamples()}
-          <VSpacer height={40} />
         </div>
       </div>
     );
@@ -353,6 +356,32 @@ class Examples extends Component {
     );
   };
 
+  renderShowcases = () => {
+    return (
+      <div style={{ margin: 30 }}>
+        <h2 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0), t.uc)}>
+          Playground based
+        </h2>
+        <div
+          style={{
+            margin: "10px 20px",
+            fontFamily: "Roboto",
+            fontSize: 16,
+            color: "rgb(85, 85, 85)",
+            lineHeight: 1.5,
+            letterSpacing: 1,
+          }}
+        >
+          Following show-cases run on playground. They consist of multiple
+          runtimes connected to another. With this setup you can do much more
+          than with the sandbox, still the real potential comes when bringing
+          remote runtimes to the board.
+        </div>
+        <Showcases headline="" renderSearch={false} />
+      </div>
+    );
+  };
+
   render() {
     return (
       <AppConsumer>
@@ -363,6 +392,8 @@ class Examples extends Component {
                 <div style={s(t.h100, { fontFamily: "Roboto" })}>
                   <Toolbar />
                   {this.renderExamplesContainer()}
+                  {this.renderShowcases()}
+                  <VSpacer height={40} />
                 </div>
               )}
             </BoardConsumer>

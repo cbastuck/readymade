@@ -11,13 +11,12 @@ export default function What() {
   return (
     <Template title="Documentation" isRoot={true}>
       <Article to="/docs/quickstart">Quickstarter</Article>
-      <Article
-        to={["/docs/pitch/what", "/docs/pitch/why", "/docs/pitch/how"]}
-        separator="-"
-      >
-        {["What", "Why", "How"]}
-      </Article>
-      <Chapter name="side tracks" details="current work in progress">
+      <Chapter name="Project Scope">
+        <Article to="/docs/pitch/what">What</Article>
+        <Article to="/docs/pitch/why">Why</Article>
+        <Article to="/docs/pitch/how">How</Article>
+      </Chapter>
+      <Chapter name="Side tracks" details="topics work in progress">
         <Article to="/docs/tracks/brand">brand and identity</Article>
       </Chapter>
     </Template>

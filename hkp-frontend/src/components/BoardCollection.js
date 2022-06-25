@@ -93,9 +93,29 @@ export default class BoardCollection extends Component {
     );
   };
 
-  render() {
-    const { items, headline, renderBorder = true } = this.props;
+  renderSearch = () => {
     const { filter } = this.state;
+    return (
+      <div style={s(t.tr, t.mb5)}>
+        <Input
+          icon="search"
+          style={{ marginRight: 20 }}
+          value={filter}
+          onChange={(_, { value }) =>
+            this.setState({ filter: value.toLowerCase() })
+          }
+        />
+      </div>
+    );
+  };
+
+  render() {
+    const {
+      items,
+      headline,
+      renderBorder = true,
+      renderSearch = true,
+    } = this.props;
     const borderStyle = renderBorder
       ? {
           border: "solid 1px #ccc",
@@ -106,17 +126,10 @@ export default class BoardCollection extends Component {
     return (
       items.length > 0 && (
         <div style={{ ...borderStyle, height: "100%", fontFamily: "Roboto" }}>
-          <h1 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0))}>{headline}</h1>
-          <div style={s(t.tr, t.mb5)}>
-            <Input
-              icon="search"
-              style={{ marginRight: 20 }}
-              value={filter}
-              onChange={(_, { value }) =>
-                this.setState({ filter: value.toLowerCase() })
-              }
-            />
-          </div>
+          {headline && (
+            <h1 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0))}>{headline}</h1>
+          )}
+          {renderSearch && this.renderSearch()}
           {this.renderBoards(items)}
         </div>
       )

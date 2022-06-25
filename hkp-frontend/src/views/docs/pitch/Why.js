@@ -4,7 +4,7 @@ import { HStack } from "../../../styles";
 
 export default function Why() {
   return (
-    <Template title="Why does it matter" isRoot={false}>
+    <Template title="Why does it matter" parent="project scope">
       <div
         style={{
           display: "flex",
