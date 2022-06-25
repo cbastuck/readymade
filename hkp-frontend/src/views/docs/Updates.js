@@ -9,6 +9,16 @@ export default function Updates() {
     <Template title="Updates">
       <List divided relaxed>
         <NewsItem
+          date="25.6.2022"
+          content={
+            <div>
+              <Link to="/docs"> Documentation</Link>,{" "}
+              <Link to="/docs/tracks/brand">Brand</Link> side-track and merge
+              <Link to="/examples"> Examples </Link> with showcases
+            </div>
+          }
+        />
+        <NewsItem
           date="24.6.2022"
           content={
             <div>

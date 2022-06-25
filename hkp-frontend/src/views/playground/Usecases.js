@@ -13,7 +13,7 @@ const internalUsecases = [
   /*{
       name: 'GameInternal',
       url: `/playground/${generateRandomName()}?template=/boards/templates/game.json&${qs.stringify({ 'sender-board': generateRandomName() })}`,
-      metadata: 'use case',
+      metadata: 'showcase',
       description: 'GAMEMEME'
     }*/
 ];
@@ -27,7 +27,7 @@ async function retrieveUsecases() {
       url: replacePlaceholders(
         `/playground/${generateRandomName()}?template=${item.template}`
       ),
-      metadata: "use case",
+      metadata: "showcase",
       repo: item.repo,
     }))
   );

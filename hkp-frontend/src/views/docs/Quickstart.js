@@ -239,13 +239,13 @@ export default function Quickstart() {
       <div style={s(t.tc, t.mt10)}>
         <button
           className="button"
-          onClick={() => navigate("/playground")}
+          onClick={() => navigate("/examples")}
           style={{
             fontSize: 11,
             textTransform: "uppercase",
           }}
         >
-          Visit Playground
+          Examples
         </button>
       </div>
     </Template>
