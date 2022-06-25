@@ -40,7 +40,7 @@ import {
 } from "../../core/actions";
 
 const restoredAvailableRuntimes = JSON.parse(
-  localStorage.getItem("available-remote-runtimes") || "{}"
+  localStorage.getItem("available-remote-runtimes") || "[]"
 );
 
 class Playground extends Component {
@@ -686,6 +686,7 @@ class Playground extends Component {
                         )
                       )
                     }
+                    isCompact={boardContext.appViewMode !== "wide"}
                   />
                   {requireLogin ? (
                     <Login board={`playground/${boardContext.boardName}`} />

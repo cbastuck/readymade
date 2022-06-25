@@ -58,6 +58,7 @@ export default function RuntimeMenu({
   onAddRuntime,
   isWideViewMode,
 }) {
+  console.log("AVAILABLe RUNTIMES", availableRuntimes);
   const [showRuntimeMenuHighlighted, setShowRuntimeMenuHighlighted] =
     useState(false);
   const [inputRemoteRuntime, setInputRemoteRuntime] = useState(false);

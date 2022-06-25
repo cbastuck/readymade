@@ -32,13 +32,12 @@ export default class HeaderMenu extends Component {
     );
   }
 
-  renderNavigation(appContext) {
+  renderNavigation(appContext, isCompact) {
     const navItemStyle = {
       margin: 8,
       fontSize: 11,
       textTransform: "uppercase",
     };
-
     const username = appContext && appContext.user && appContext.user.username;
     return (
       <div
@@ -58,14 +57,16 @@ export default class HeaderMenu extends Component {
         <Link to="/docs" style={navItemStyle}>
           Docs
         </Link>
-        {!username && (
+        {!username && !isCompact && (
           <Link to="/playground" style={navItemStyle}>
             Playground
           </Link>
         )}
-        <Link to="/examples" style={navItemStyle}>
-          Examples
-        </Link>
+        {!isCompact && (
+          <Link to="/examples" style={navItemStyle}>
+            Examples
+          </Link>
+        )}
       </div>
     );
   }
@@ -172,8 +173,9 @@ export default class HeaderMenu extends Component {
   render() {
     const {
       board,
-      showRuntimeMenu = false,
       onUpdateAvailableRuntimes,
+      showRuntimeMenu = false,
+      isCompact = false,
     } = this.props;
     return (
       <AppConsumer>
@@ -217,8 +219,7 @@ export default class HeaderMenu extends Component {
                     />
                   )}
 
-                  {boardContext.appViewMode === "wide" &&
-                    this.renderNavigation(appContext)}
+                  {this.renderNavigation(appContext, isCompact)}
                   {appContext &&
                     this.renderAccountMenu(appContext, boardContext)}
                 </Menu>
