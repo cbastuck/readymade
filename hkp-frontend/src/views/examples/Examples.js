@@ -199,9 +199,6 @@ class Examples extends Component {
             height: "100%",
           }}
         >
-          <h2 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0), t.uc)}>
-            Sandbox based
-          </h2>
           {!currentExample && this.renderDisclaimer()}
           {currentExample ? this.renderCurrentExample() : this.renderExamples()}
         </div>
@@ -359,12 +356,9 @@ class Examples extends Component {
   renderShowcases = () => {
     return (
       <div style={{ margin: 30 }}>
-        <h2 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0), t.uc)}>
-          Playground based
-        </h2>
         <div
           style={{
-            margin: "10px 20px",
+            margin: "10px 10px",
             fontFamily: "Roboto",
             fontSize: 16,
             color: "rgb(85, 85, 85)",
@@ -372,10 +366,10 @@ class Examples extends Component {
             letterSpacing: 1,
           }}
         >
-          Following show-cases run on playground. They consist of multiple
-          runtimes connected to another. With this setup you can do much more
-          than with the sandbox, still the real potential comes when bringing
-          remote runtimes to the board.
+          Following show-cases run on <Link to="/playground">Playground</Link>.
+          They consist of multiple runtimes connected to another. With this
+          setup you can do much more than with a sandbox. Still the real
+          potential comes with adding remote runtimes to the board.
         </div>
         <Showcases headline="" renderSearch={false} />
       </div>

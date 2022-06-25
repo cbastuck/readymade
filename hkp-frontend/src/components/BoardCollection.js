@@ -82,7 +82,6 @@ export default class BoardCollection extends Component {
           height,
           overflowY: "auto",
           margin: "auto",
-          padding: 10,
           ...style,
         }}
       >
