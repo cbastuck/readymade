@@ -26,7 +26,7 @@ export default class Template extends Component {
         }}
       >
         <Breadcrumb>
-          <Breadcrumb.Section link>
+          <Breadcrumb.Section>
             <Link to="/docs">
               <span style={breadcrumpStyle}>Docs</span>
             </Link>
@@ -73,6 +73,7 @@ export default class Template extends Component {
                     </h1>
                     {renderBreadcrumbs && this.renderBreadcrumbs(title, isRoot)}
                     {children}
+                    <div style={{ height: 10 }} />
                   </Container>
                 </div>
               )}

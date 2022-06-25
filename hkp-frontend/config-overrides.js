@@ -20,6 +20,10 @@ module.exports = function override(config, env) {
   config.module.rules[1].oneOf[3] = {
     ...appCompile,
     include: [appCompile.include, ...workspacePaths],
+    options: {
+      ...appCompile.options,
+      sourceType: "unambiguous",
+    },
   };
   config.resolve = {
     ...config.resolve,

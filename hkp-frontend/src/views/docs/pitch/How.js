@@ -6,7 +6,7 @@ import { HStack } from "../../../styles";
 
 export default function How() {
   return (
-    <Template title="How could it work" isRoot={true}>
+    <Template title="How could it work" isRoot={false}>
       <div
         style={{
           display: "flex",

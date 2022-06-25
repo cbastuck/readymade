@@ -4,12 +4,13 @@ import { Route, Routes } from "react-router-dom";
 import Welcome from "./views/welcome/Welcome";
 import About from "./views/about/About";
 import Imprint from "./views/about/Imprint";
-import News from "./views/docs/News";
+import Updates from "./views/docs/Updates";
 import Contact from "./views/about/Contact";
 import Sandbox from "./Sandbox";
 import Playground from "./views/playground/index";
 import Examples from "./views/examples/Examples";
 import Quickstart from "./views/docs/Quickstart";
+import Docs from "./views/docs";
 import BoardSource from "./views/playground/BoardSource";
 import BuildBoard from "./views/BuildBoard";
 import AuthRedirect from "./views/AuthRedirect";
@@ -29,6 +30,7 @@ import HowPitch from "./views/docs/pitch/How";
 import BoardDocumentation from "./views/docs/Board";
 import RuntimeDocumentation from "./views/docs/Runtime";
 import ServiceRedirect from "./views/ServiceRedirect";
+import Brand from "./views/docs/tracks/Brand/index";
 
 /*
 import AppHub from "./views/AppHub";
@@ -38,7 +40,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" exact element={<Welcome />} />
-      <Route path="/news" exact element={<News />} />
+      <Route path="/updates" exact element={<Updates />} />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/imprint" element={<Imprint />} />
@@ -47,7 +49,8 @@ export default function AppRoutes() {
       <Route path="/playground/:board" element={<Playground />} />
       <Route path="/playground/" element={<Playground />} />
       <Route path="/examples" element={<Examples />} />
-      <Route path="/docs" element={<Quickstart />} />
+      <Route path="/docs/quickstart" element={<Quickstart />} />
+      <Route path="/docs" element={<Docs />} />
       <Route path="/new" exact element={<BuildBoard />} />
       <Route path="/auth2app" element={<AuthRedirect />} />
       <Route path="/import" element={<Import />} />
@@ -60,6 +63,7 @@ export default function AppRoutes() {
       <Route path="/docs/pitch/what" element={<WhatPitch />} />
       <Route path="/docs/pitch/why" element={<WhyPitch />} />
       <Route path="/docs/pitch/how" element={<HowPitch />} />
+      <Route path="/docs/tracks/brand" element={<Brand />} />
       <Route path="/docs/board" element={<BoardDocumentation />} />
       <Route path="/docs/runtime" element={<RuntimeDocumentation />} />
       <Route path="/dashboard" element={<MyBoards />} />

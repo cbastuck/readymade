@@ -8,7 +8,7 @@ import Footer from "../../components/Footer";
 import ProgressIndicator from "../../components/ProgressIndicator";
 import SandboxFrame from "../../components/SandboxFrame";
 import { redirectTo } from "../../core/actions";
-import News from "./News";
+import UpdatesButton from "./UpdatesButton";
 import { withRouter } from "../../common";
 
 import "./Welcome.css";
@@ -69,7 +69,7 @@ class Welcome extends Component {
         }}
       >
         Welcome
-        <News />
+        <UpdatesButton />
       </h1>
 
       <p className="hero-claim">

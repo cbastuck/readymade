@@ -4,7 +4,7 @@ import { HStack } from "../../../styles";
 
 export default function What() {
   return (
-    <Template title="What's the point" isRoot={true}>
+    <Template title="What's the point" isRoot={false}>
       <div
         style={{
           display: "flex",
