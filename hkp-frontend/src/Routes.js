@@ -30,7 +30,8 @@ import HowPitch from "./views/docs/pitch/How";
 import BoardDocumentation from "./views/docs/Board";
 import RuntimeDocumentation from "./views/docs/Runtime";
 import ServiceRedirect from "./views/ServiceRedirect";
-import Brand from "./views/docs/tracks/Brand/index";
+import Track from "./views/docs/tracks";
+import Prototypes from "./views/docs/prototypes";
 
 /*
 import AppHub from "./views/AppHub";
@@ -63,9 +64,12 @@ export default function AppRoutes() {
       <Route path="/docs/pitch/what" element={<WhatPitch />} />
       <Route path="/docs/pitch/why" element={<WhyPitch />} />
       <Route path="/docs/pitch/how" element={<HowPitch />} />
-      <Route path="/docs/tracks/brand" element={<Brand />} />
+      <Route path="/docs/tracks/:track" element={<Track />} />
       <Route path="/docs/board" element={<BoardDocumentation />} />
       <Route path="/docs/runtime" element={<RuntimeDocumentation />} />
+
+      <Route path="/docs/proto/:name" element={<Prototypes />} />
+
       <Route path="/dashboard" element={<MyBoards />} />
       <Route path="/serviceRedirect" element={<ServiceRedirect />} />
 

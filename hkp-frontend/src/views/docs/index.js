@@ -16,48 +16,68 @@ export default function What() {
         <Article to="/docs/pitch/why">Why</Article>
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
-      <Chapter name="Side tracks" details="topics work in progress">
+
+      <Chapter
+        name="Side tracks"
+        details="topics work in progress"
+        style={{ marginTop: 20 }}
+      >
         <Article to="/docs/tracks/brand">brand and identity</Article>
+        <Article to="/docs/tracks/remotes" details="TODO">
+          remote runtimes
+        </Article>
+      </Chapter>
+
+      <Chapter
+        name="Proto Log"
+        details="personal prototypes and ideas"
+        style={{ marginTop: 20 }}
+      >
+        <Article to="/docs/proto/spotty" detail="Spotify Sync">
+          Spotty
+        </Article>
       </Chapter>
     </Template>
   );
 }
 
-function Chapter({ name, children, details }) {
+const detailStyle = { fontSize: 11, textTransform: "none", paddingLeft: 10 };
+
+function Chapter({ name, children, details, style: passedStyle = {} }) {
   const style = {
     ...fontStyle,
     marginLeft: 8,
     textTransform: "uppercase",
+    ...passedStyle,
   };
   return (
     <div style={style}>
       {name}
-      {details ? (
-        <span style={{ fontSize: 11, textTransform: "none", paddingLeft: 10 }}>
-          [{details || ""}]
-        </span>
-      ) : null}
+      {details ? <span style={detailStyle}>[{details || ""}]</span> : null}
       <div style={{ paddingLeft: 10 }}>{children}</div>
     </div>
   );
 }
 
-function Article({ children, to, separator = "" }) {
+function Article({ children, to, separator = "", details = "" }) {
   return (
     <div>
       <div style={{ margin: "8px 0px" }}>
-        {Array.isArray(to) ? (
-          <>
-            {to.map((dst, idx) => (
-              <span key={`article-${dst}`}>
-                <ChapterLink to={dst} title={children[idx]} />
-                {idx < to.length - 1 ? <span>{separator}</span> : ""}
-              </span>
-            ))}
-          </>
-        ) : (
-          <ChapterLink to={to} title={children} />
-        )}
+        <>
+          {Array.isArray(to) ? (
+            <>
+              {to.map((dst, idx) => (
+                <span key={`article-${dst}`}>
+                  <ChapterLink to={dst} title={children[idx]} />
+                  {idx < to.length - 1 ? <span>{separator}</span> : ""}
+                </span>
+              ))}
+            </>
+          ) : (
+            <ChapterLink to={to} title={children} />
+          )}
+          {details && <span style={detailStyle}>[{details}]</span>}
+        </>
       </div>
     </div>
   );
