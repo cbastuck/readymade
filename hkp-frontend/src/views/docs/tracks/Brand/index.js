@@ -4,16 +4,25 @@ import { Section, Paragraph, ListItem, Text } from "../../Elements";
 
 import { ReactComponent as HkpLogo } from "./assets/hkp-dots-round.svg";
 import { ReactComponent as HkpLogoFill } from "./assets/hkp-dots-small-spaced.svg";
+import { ReactComponent as HkpLogoNoLetters } from "./assets/hkp-dots-chain-v1.svg";
 
 export default function Brand() {
   return (
     <Template title="Brand and Identity" parent="side tracks">
       <div style={{ margin: "40px 0px" }}>
         <Section title="Logo">
-          <Logo />
-          <Logo size="50%" />
-          <Logo size="25%" />
-          <Logo size="4%" filled={true} />
+          <Text>
+            <Paragraph brief="With letters">
+              <Logo />
+              <Logo size="50%" />
+              <Logo size="25%" />
+            </Paragraph>
+            <Paragraph brief="Without letters">
+              <Logo size="15%" letters={false} />
+              <Logo size="10%" letters={false} />
+              <Logo size="5%" letters={false} />
+            </Paragraph>
+          </Text>
         </Section>
         <Section title="Interpretation">
           <Text>
@@ -45,10 +54,10 @@ export default function Brand() {
   );
 }
 
-function Logo({ size = "100%", filled = false }) {
+function Logo({ size = "100%", filled = false, letters = true }) {
   return (
     <div style={{ width: size, margin: "20px auto" }}>
-      {filled ? <HkpLogoFill /> : <HkpLogo />}
+      {filled ? <HkpLogoFill /> : letters ? <HkpLogo /> : <HkpLogoNoLetters />}
     </div>
   );
 }
