@@ -33,7 +33,7 @@ export default function What() {
         details="personal prototypes and ideas"
         style={{ marginTop: 20 }}
       >
-        <Article to="/docs/proto/spotty" detail="Spotify Sync">
+        <Article to="/docs/proto/Spotty" detail="Spotify Sync">
           Spotty
         </Article>
       </Chapter>

@@ -62,6 +62,7 @@ class GithubSinkUI extends Component {
               service.configure({ owner });
             }
           }}
+          onLogout={() => this.setState({ owner: null, token: null })}
         />
       );
     }

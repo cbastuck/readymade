@@ -63,6 +63,7 @@ class GithubSourceUI extends Component {
               service.configure({ owner });
             }
           }}
+          onLogout={() => this.setState({ owner: null })}
         />
       );
     }

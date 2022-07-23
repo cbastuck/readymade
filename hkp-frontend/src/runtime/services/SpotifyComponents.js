@@ -1,4 +1,3 @@
-import React, { Component } from "react";
 import { Button } from "semantic-ui-react";
 
 import { getAuthURL } from "./SpotifyAPI";
@@ -13,36 +12,36 @@ const scopesDefault = [
   "user-read-recently-played",
 ];
 
-export class SpotifyOAuth extends Component {
-  render() {
-    const {
-      onToken,
-      clientID = clientIDDefault,
-      redirectURI = redirectURIDefault,
-      scopes = scopesDefault,
-      state: loginStateId,
-    } = this.props;
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
+export function SpotifyOAuth({
+  onToken,
+  clientID = clientIDDefault,
+  redirectURI = redirectURIDefault,
+  scopes = scopesDefault,
+  state: loginStateId,
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Button
+        style={s(t.uc, t.ls1, t.fs12)}
+        onClick={() => {
+          const url = getAuthURL(clientID, redirectURI, scopes, loginStateId);
+          window.open(url, "blank");
         }}
       >
-        <Button
-          style={s(t.uc, t.ls1, t.fs12)}
-          onClick={() => {
-            const url = getAuthURL(clientID, redirectURI, scopes, loginStateId);
-            window.open(url, "blank");
-          }}
-        >
-          Login
-        </Button>
-        <MessageReceiver
-          state={loginStateId}
-          onData={(data) => data.access_token && onToken(data.access_token)}
-        />
-      </div>
-    );
-  }
+        Login
+      </Button>
+      <MessageReceiver
+        state={loginStateId}
+        onData={(data) => {
+          const key = "#access_token";
+          data[key] && onToken(data[key]);
+        }}
+      />
+    </div>
+  );
 }

@@ -40,7 +40,9 @@ class SpotifyUI extends Component {
     if (!token) {
       return (
         <SpotifyOAuth
-          onToken={(token) => service.configure({ token })}
+          onToken={(token) => {
+            service.configure({ token });
+          }}
           state={loginStateId}
         />
       );
@@ -77,7 +79,13 @@ class SpotifyUI extends Component {
             Followers {followers.total}
           </Card.Content>
         </Card>
-        <Button style={s(t.uc, t.fs12, t.ls1, t.w100)} onClick={() => {}}>
+        <Button
+          style={s(t.uc, t.fs12, t.ls1, t.w100)}
+          onClick={() => {
+            service.configure({ action: "logout" });
+            this.setState({ token: null });
+          }}
+        >
           Logout
         </Button>
       </div>
@@ -101,7 +109,7 @@ class SpotifyUI extends Component {
           }
         />
         <Button
-          style={s(t.uc, t.ls1, t.fs12, t.w100)}
+          style={s(t.uc, t.ls1, t.fs12, t.w100, t.mt5)}
           onClick={() => service.configure({ action: selectedAction })}
         >
           Do it
@@ -178,6 +186,9 @@ class Spotify {
           this.onRequestFail
         );
         this.app.notify(this, { profile });
+        break;
+      case "logout":
+        this.app.removeServiceData(this.uuid, loginStateId);
         break;
       default:
         break;
