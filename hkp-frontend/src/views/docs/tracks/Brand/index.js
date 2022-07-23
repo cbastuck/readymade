@@ -3,8 +3,8 @@ import Template from "../../../Template";
 import { Section, Paragraph, ListItem, Text } from "../../Elements";
 
 import { ReactComponent as HkpLogo } from "./assets/hkp-dots-round.svg";
-import { ReactComponent as HkpLogoFill } from "./assets/hkp-dots-small-spaced.svg";
 import { ReactComponent as HkpLogoNoLetters } from "./assets/hkp-dots-plait-linkedin.svg"; //"./assets/hkp-dots-chain-v1.svg";
+import { ReactComponent as HkpSingleEdgy } from "./assets/hkp-single-dot-second-trial-edgy.svg";
 
 export default function Brand() {
   return (
@@ -13,14 +13,17 @@ export default function Brand() {
         <Section title="Logo">
           <Text>
             <Paragraph brief="Initial draft: render three dots with vowels of the project name">
-              <Logo />
-              <Logo size="50%" />
-              <Logo size="25%" />
+              <Logo svg={<HkpLogo />} />
+              <Logo svg={<HkpLogo />} size="50%" />
+              <Logo svg={<HkpLogo />} size="25%" />
             </Paragraph>
             <Paragraph brief="Alternative: renders better in the size of an icon">
-              <Logo size="15%" letters={false} />
-              <Logo size="10%" letters={false} />
-              <Logo size="5%" letters={false} />
+              <Logo size="15%" letters={false} svg={<HkpLogoNoLetters />} />
+              <Logo size="10%" letters={false} svg={<HkpLogoNoLetters />} />
+              <Logo size="5%" letters={false} svg={<HkpLogoNoLetters />} />
+            </Paragraph>
+            <Paragraph brief="Single dot as symbol">
+              <Logo svg={<HkpSingleEdgy />} size="30px" />
             </Paragraph>
           </Text>
         </Section>
@@ -60,10 +63,6 @@ export default function Brand() {
   );
 }
 
-function Logo({ size = "100%", filled = false, letters = true }) {
-  return (
-    <div style={{ width: size, margin: "20px auto" }}>
-      {filled ? <HkpLogoFill /> : letters ? <HkpLogo /> : <HkpLogoNoLetters />}
-    </div>
-  );
+function Logo({ size = "100%", filled = false, letters = true, svg = null }) {
+  return <div style={{ width: size, margin: "20px auto" }}>{svg}</div>;
 }

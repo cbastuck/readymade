@@ -8,6 +8,11 @@ import AccountDropdown from "./AccountDropdown";
 import RuntimeMenu from "./RuntimeMenu";
 
 import "./index.css";
+//import { ReactComponent as Icon } from "./assets/hkp-dots-plait-linkedin.svg";
+//import Icon from "./assets/hkp-single-dot-abbrev4.png";
+
+//import Icon from "./assets/hkp-single-dot-second-trial.png";
+import Icon from "./assets/hkp-single-dot-second-trial-edgy.png";
 
 export default class HeaderMenu extends Component {
   renderHomeIcon() {
@@ -15,18 +20,24 @@ export default class HeaderMenu extends Component {
       <div
         style={{
           paddingTop: 7,
-          paddingLeft: 4,
+          paddingLeft: 1,
           paddingRight: 1,
           marginLeft: 4,
           marginRight: 1,
         }}
       >
         <Link to="/">
-          <img
-            height={25}
-            src="/assets/shutterstock_1196210650.png"
-            alt="Hookup"
-          />
+          {true ? (
+            <img
+              style={{ margin: "2px" }}
+              height={22}
+              //src="/assets/shutterstock_1196210650.png"
+              src={Icon}
+              alt="Hookup"
+            />
+          ) : (
+            <Icon height={25} />
+          )}
         </Link>
       </div>
     );
