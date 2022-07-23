@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Divider } from "semantic-ui-react";
 
 import Template from "../Template";
 
@@ -28,11 +29,8 @@ export default function What() {
         </Article>
       </Chapter>
 
-      <Chapter
-        name="Proto Log"
-        details="personal prototypes and ideas"
-        style={{ marginTop: 20 }}
-      >
+      <Divider />
+      <Chapter name="Prototypes" details="private prototypes and ideas">
         <Article to="/docs/proto/Spotty" detail="Spotify Sync">
           Spotty
         </Article>

@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { AppConsumer } from "../../AppContext";
 import BoardContext from "../../BoardContext";
@@ -10,24 +10,9 @@ import SandboxFrame from "../../components/SandboxFrame";
 import { redirectTo } from "../../core/actions";
 import UpdatesButton from "./UpdatesButton";
 import { withRouter } from "../../common";
+import NavigateButton from "../NavigateButton";
 
 import "./Welcome.css";
-
-function NavigateButton({ destination, text }) {
-  const navigate = useNavigate();
-  return (
-    <button
-      className="button"
-      onClick={() => navigate(destination)}
-      style={{
-        fontSize: 11,
-        textTransform: "uppercase",
-      }}
-    >
-      {text}
-    </button>
-  );
-}
 
 class Welcome extends Component {
   state = {
