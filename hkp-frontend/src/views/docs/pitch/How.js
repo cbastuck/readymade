@@ -1,5 +1,3 @@
-import { Link } from "react-router-dom";
-
 import Template, { NavigateButton } from "../../Template";
 
 import { HStack } from "../../../styles";
@@ -56,10 +54,22 @@ export default function How() {
           growth in balance. If you're looking for perfection, I think it's an
           almost impossible task. But if you look with a different pair of
           glasses, I think there are great examples of such idea:{" "}
-          <Link to="https://nodered.org/">NodeRed</Link>,{" "}
-          <Link to="https://www.knime.com/">Knime</Link>,{" "}
-          <Link to="https://puredata.info/">PureData</Link>,{" "}
-          <Link to="https://vvvv.org/">vvvv</Link>, etc.
+          <a href="https://nodered.org" target="_blank" rel="noreferrer">
+            NodeRed
+          </a>
+          ,{" "}
+          <a href="https://www.knime.com/" target="_blank" rel="noreferrer">
+            Knime
+          </a>
+          ,{" "}
+          <a href="https://puredata.info/" target="_blank" rel="noreferrer">
+            PureData
+          </a>
+          ,{" "}
+          <a href="https://vvvv.org/" target="_blank" rel="noreferrer">
+            vvvv
+          </a>
+          , etc.
         </div>
         Why saddle up Rosinante, when perfection seems condemned in advance?
         <ul>
