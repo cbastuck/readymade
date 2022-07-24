@@ -1,6 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { List } from "semantic-ui-react";
+import { List, Icon } from "semantic-ui-react";
 
 import Template from "../Template";
 
@@ -8,6 +8,21 @@ export default function Updates() {
   return (
     <Template title="Updates">
       <List divided relaxed>
+        <NewsItem
+          date="24.7.2022"
+          content={
+            <div>
+              <div>
+                <Link to="/docs/proto/Spotty"> Spotty</Link> old, internal
+                prototype, still a good example to hookup external services
+              </div>
+              <div>
+                Favicon and{" "}
+                <Link to="/docs/tracks/brand"> single dot symbol</Link> (wip)
+              </div>
+            </div>
+          }
+        />
         <NewsItem
           date="25.6.2022"
           content={
@@ -45,11 +60,7 @@ function NewsItem({ content, date }) {
   return (
     <List.Item style={{ margin: "5px 0px" }}>
       <List.Icon size="large" verticalAlign="middle">
-        <img
-          height={25}
-          src="/assets/shutterstock_1196210650.png"
-          alt="Hookup"
-        />
+        <Icon name="circle outline" size="small" />
       </List.Icon>
       <List.Content>
         <List.Header>{content}</List.Header>

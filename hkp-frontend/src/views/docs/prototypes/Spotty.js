@@ -8,20 +8,21 @@ export default function Spotty() {
     <Template title="Spotty" parent="prototypes">
       <div style={{ margin: "40px 0px" }}>
         <Text>
-          <Section title="Store your favorites from Spotify to your Github">
+          <Section title="Store favorites from Spotify on Github">
             <Paragraph brief="Motivation">
-              The fear when realizing the amount of songs that by now I
-              discovered on Spotify and added as favorites there. What if some
-              of them would disappear from day to the next, accidentally or due
-              to some updated deals and terms with some labels.? Maybe I
-              wouldn't notice, or simply too late. Compared to the bands I know
-              from youth, artists that first showed up on Spotify in the
-              streaming era take longer to find their place in my mind to be
-              remembered. Around the time a second or third song is added from a
-              new artist roughly. A bit more due diligence would not hurt for
-              stuff that matters as much as for instance good music.
+              Over the time I discovered a large number of songs on Spotify and
+              added them there as favorites. What if all, or some of them would
+              disappear from one day to the other? Maybe due to an accident or
+              updated terms between Spotify and some smaller labels? Maybe I
+              wouldn't notice, or too late. Compared to the bands I know from
+              youth, artists that appeared for me first on Spotify since the
+              streaming days, take longer to find their place in my mind. Mostly
+              I start recognizing their names and pay more attention after a
+              second or third song was liked and thus added to my favorites.
+              More due diligence would not hurt for stuff that matters, such as
+              good music.
             </Paragraph>
-            <Paragraph brief="Seqeuence">
+            <Paragraph brief="First runtime - service sequence">
               <Paragraph brief="1. Spotify">
                 The first module connects to Spotify, first you need to login
                 with your credentials using{" "}
@@ -75,6 +76,13 @@ export default function Spotty() {
                 to grant the board access to your account and public
                 repositories. You're in control of that token, again it's not
                 used in any communication to hookup services.
+              </Paragraph>
+              <Paragraph brief="Second runtime">
+                The second runtime was added for testing whether the first
+                runtime worked as expected. Authorization for the Github Source
+                service is identical to the sink service mentioned above. After
+                Login select a public repository and file to be retrieved. Its
+                content is printed as data flows through the Monitor service.
               </Paragraph>
               <NavigateButton
                 destination="/playground/spotty?template=/boards/protos/spotty.json"

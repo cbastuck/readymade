@@ -15,7 +15,7 @@ export default function UpdatesButton() {
           transformOrigin: "center",
         }}
       >
-        <Link to="/updates">
+        <Link to="/docs/updates">
           <svg
             viewBox="0 0 40 40"
             width="40"

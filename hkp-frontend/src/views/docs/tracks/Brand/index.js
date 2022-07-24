@@ -22,7 +22,7 @@ export default function Brand() {
               <Logo size="10%" letters={false} svg={<HkpLogoNoLetters />} />
               <Logo size="5%" letters={false} svg={<HkpLogoNoLetters />} />
             </Paragraph>
-            <Paragraph brief="Single dot as symbol">
+            <Paragraph brief="Single dot as symbol and favicon (WIP)">
               <Logo svg={<HkpSingleEdgy />} size="30px" />
             </Paragraph>
           </Text>
@@ -53,7 +53,7 @@ export default function Brand() {
               </ListItem>
               <ListItem>
                 as the odds are that Hookup is already taken for being used in
-                this context.
+                such context.
               </ListItem>
             </Paragraph>
           </Text>

@@ -41,7 +41,6 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" exact element={<Welcome />} />
-      <Route path="/updates" exact element={<Updates />} />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/imprint" element={<Imprint />} />
@@ -50,6 +49,7 @@ export default function AppRoutes() {
       <Route path="/playground/:board" element={<Playground />} />
       <Route path="/playground/" element={<Playground />} />
       <Route path="/examples" element={<Examples />} />
+      <Route path="/docs/updates" element={<Updates />} />
       <Route path="/docs/quickstart" element={<Quickstart />} />
       <Route path="/docs" element={<Docs />} />
       <Route path="/new" exact element={<BuildBoard />} />

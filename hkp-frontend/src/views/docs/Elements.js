@@ -2,7 +2,7 @@ export function Paragraph({ children, brief }) {
   return (
     <div style={{ margin: "20px 0px" }}>
       {brief}
-      <div style={{ marginLeft: 25 }}>{children}</div>
+      <div style={{ marginLeft: 20 }}>{children}</div>
     </div>
   );
 }

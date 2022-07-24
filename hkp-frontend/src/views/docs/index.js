@@ -18,6 +18,8 @@ export default function What() {
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
 
+      <Divider />
+
       <Chapter
         name="Side tracks"
         details="topics work in progress"
@@ -35,6 +37,9 @@ export default function What() {
           Spotty
         </Article>
       </Chapter>
+      <Divider />
+
+      <Article to="/docs/updates">Updates</Article>
     </Template>
   );
 }
