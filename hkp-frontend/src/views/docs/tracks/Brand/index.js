@@ -3,7 +3,7 @@ import Template from "../../../Template";
 import { Section, Paragraph, ListItem, Text } from "../../Elements";
 
 import { ReactComponent as HkpLogo } from "./assets/hkp-dots-round.svg";
-import { ReactComponent as HkpLogoNoLetters } from "./assets/hkp-dots-plait-linkedin.svg"; //"./assets/hkp-dots-chain-v1.svg";
+import { ReactComponent as HkpBraidLogo } from "./assets/hkp-dots-plait-linkedin.svg";
 import { ReactComponent as HkpSingleEdgy } from "./assets/hkp-single-dot-second-trial-edgy.svg";
 
 export default function Brand() {
@@ -18,9 +18,9 @@ export default function Brand() {
               <Logo svg={<HkpLogo />} size="25%" />
             </Paragraph>
             <Paragraph brief="Alternative: renders better in the size of an icon">
-              <Logo size="15%" letters={false} svg={<HkpLogoNoLetters />} />
-              <Logo size="10%" letters={false} svg={<HkpLogoNoLetters />} />
-              <Logo size="5%" letters={false} svg={<HkpLogoNoLetters />} />
+              <Logo size="15%" letters={false} svg={<HkpBraidLogo />} />
+              <Logo size="10%" letters={false} svg={<HkpBraidLogo />} />
+              <Logo size="5%" letters={false} svg={<HkpBraidLogo />} />
             </Paragraph>
             <Paragraph brief="Single dot as symbol and favicon (WIP)">
               <Logo svg={<HkpSingleEdgy />} size="30px" />

@@ -8,10 +8,8 @@ import AccountDropdown from "./AccountDropdown";
 import RuntimeMenu from "./RuntimeMenu";
 
 import "./index.css";
-//import { ReactComponent as Icon } from "./assets/hkp-dots-plait-linkedin.svg";
-//import Icon from "./assets/hkp-single-dot-abbrev4.png";
 
-//import Icon from "./assets/hkp-single-dot-second-trial.png";
+import { ReactComponent as IconSvg } from "./assets/hkp-single-dot-second-trial-edgy.svg";
 import Icon from "./assets/hkp-single-dot-second-trial-edgy.png";
 
 export default class HeaderMenu extends Component {
@@ -27,16 +25,17 @@ export default class HeaderMenu extends Component {
         }}
       >
         <Link to="/">
-          {true ? (
+          {false ? (
             <img
               style={{ margin: "2px" }}
               height={22}
-              //src="/assets/shutterstock_1196210650.png"
               src={Icon}
               alt="Hookup"
             />
           ) : (
-            <Icon height={25} />
+            <div style={{ padding: "2px" }}>
+              <IconSvg width={22} />
+            </div>
           )}
         </Link>
       </div>

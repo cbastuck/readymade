@@ -11,6 +11,7 @@ import { redirectTo } from "../../core/actions";
 import UpdatesButton from "./UpdatesButton";
 import { withRouter } from "../../common";
 import NavigateButton from "../NavigateButton";
+import { ReactComponent as HkpBraidLogo } from "./hkp-dots-braid.svg";
 
 import "./Welcome.css";
 
@@ -309,7 +310,8 @@ class Welcome extends Component {
       <AppConsumer>
         {(appContext) => (
           <BoardContext user={null}>
-            <div className="hero-image">
+            <div>
+              <BackgroundImage />
               <Toolbar />
               <div className={`hero-text ${this.state.page} fade-in-linear`}>
                 {this.renderContent([
@@ -329,3 +331,20 @@ class Welcome extends Component {
 }
 
 export default withRouter(Welcome);
+
+function BackgroundImage() {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        height: "100%",
+        width: "100%",
+        zIndex: -100,
+      }}
+    >
+      <div style={{ width: "40%", height: "100%", margin: "auto" }}>
+        <HkpBraidLogo />
+      </div>
+    </div>
+  );
+}

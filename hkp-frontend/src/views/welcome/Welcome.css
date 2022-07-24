@@ -3,15 +3,6 @@ html {
   height: 100%;
 }
 
-.hero-image {
-  background-image: url("./shutterstock_1196210650.png");
-  height: 100%;
-  background-position: center;
-  background-repeat: no-repeat;
-  background-size: contain;
-  position: relative;
-}
-
 .hero-text {
   background-color: rgba(255, 255, 255, 1);
   text-align: center;
