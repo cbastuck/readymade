@@ -33,9 +33,8 @@ export default function What() {
 
       <Divider />
       <Chapter name="Prototypes" details="private prototypes and ideas">
-        <Article to="/docs/proto/Spotty" detail="Spotify Sync">
-          Spotty
-        </Article>
+        <Article to="/docs/proto/Spotty">Spotty</Article>
+        <Article to="/docs/proto/Multiplication">Multiplication rows</Article>
       </Chapter>
       <Divider />
 
