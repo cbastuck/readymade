@@ -60,6 +60,7 @@ export default function Why() {
           programs about space as well while demand and growth accelerates. Why
           this matters? I think it sounds like there is a lot to explore.
         </div>
+        <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/what" label="< what?" />
           <NavigateButton to="/docs/pitch/how" label="how? >" />

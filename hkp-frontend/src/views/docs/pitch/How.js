@@ -81,6 +81,7 @@ export default function How() {
           </li>
           <li>Partial correctness outweighs having no clue.</li>
         </ul>
+        <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>
         <HStack>
           <NavigateButton to="/docs/pitch/why" label="< why?" />
           <NavigateButton to="/examples" label="examples >>" />
