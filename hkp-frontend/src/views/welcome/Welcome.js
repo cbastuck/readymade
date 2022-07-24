@@ -340,9 +340,11 @@ function BackgroundImage() {
         height: "100%",
         width: "100%",
         zIndex: -100,
+        overflowY: "hidden",
       }}
+      className="fade-in-linear-slow"
     >
-      <div style={{ width: "40%", height: "100%", margin: "auto" }}>
+      <div style={{ height: "200%", width: "250%", marginLeft: "0%" }}>
         <HkpBraidLogo />
       </div>
     </div>
