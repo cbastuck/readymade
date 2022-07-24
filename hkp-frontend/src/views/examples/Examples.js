@@ -80,9 +80,8 @@ class Examples extends Component {
             <Card.Content>
               <Image
                 floated="right"
-                size="mini"
                 src={example.image}
-                style={{ marginTop: 3 }}
+                style={{ marginTop: 3, marginRight: 15, width: 20 }}
               />
               <Card.Header
                 style={{

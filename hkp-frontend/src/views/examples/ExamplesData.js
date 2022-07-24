@@ -6,7 +6,7 @@ const examplesData = [
       "Shows the basic structure of a flow",
       "Say the words using that canvas that is used throughout presentations on this site",
     ],
-    image: "/assets/shutterstock_1196210650.png",
+    image: "/assets/hkp-single-dot.png",
     url: "/boards/examples/helloworld.json",
     explanation:
       "In this basic example a [Timer](/service/timer) emits [time-data](/datamodel/timer) every second. This is [mapped](/service/map) to a [Renderable](/datamodel/renderable) data-object, which is visualized using the [canvas](/service/canvas) service.",
@@ -17,7 +17,7 @@ const examplesData = [
     description: [
       "Listen to changes on Wikipedia. Whenever an article is changed, whether from a bot or a user, this leads to a sounds as part of a beat",
     ],
-    image: "/assets/shutterstock_1196210650.png",
+    image: "/assets/hkp-single-dot.png",
     url: "/boards/examples/audiolize.json",
     explanation: [
       'Press "Start Audio" for listening to changes on wikipedia as a "beat".',
@@ -31,7 +31,7 @@ const examplesData = [
     brief: "Stop motion to Dropbox",
     description:
       "Every 10 seconds make a picture with the camera and upload it into your Dropbox (once authorized and granted access)",
-    image: "/assets/shutterstock_1196210650.png",
+    image: "/assets/hkp-single-dot.png",
     url: "/boards/examples/dropbox.json",
     explanation: [
       "Produce material for a stop motion video by periodically making photos and automatically uploading them into your dropbox",
@@ -43,7 +43,7 @@ const examplesData = [
     brief: "Control the output",
     description:
       "Record sounds in your environment, put them on a launchpad and start playing with them",
-    image: "/assets/shutterstock_1196210650.png",
+    image: "/assets/hkp-single-dot.png",
     url: "/boards/examples/triggerpad.json",
     explanation: [
       "[AudioInput](/service/audio-input) allows recording audio from an input device while holding a button, or constantly by creating audio slices based on time intervals.",
@@ -55,7 +55,7 @@ const examplesData = [
     brief: "Make a GIF",
     description:
       "Create a simple GIF animation with the a GIF recorder behind the output of a canvas",
-    image: "/assets/shutterstock_1196210650.png",
+    image: "/assets/hkp-single-dot.png",
     url: "/boards/examples/animate.json",
     explanation: [
       "Creates a simple parallax scrolling animation at 25fps. Route the output of the [canvas](/service/canvas) in capture mode to [GIF Recorder](/service/gif-recorder) service",

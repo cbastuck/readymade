@@ -41,12 +41,6 @@ export default function EmptySketch({ boardName }) {
             {" add a runtime "}
           </span>
           to sketch an idea
-          <Icon
-            name="idea"
-            style={{ marginTop: -20 }}
-            color="grey"
-            size="big"
-          />
         </div>
       </div>
     </div>
