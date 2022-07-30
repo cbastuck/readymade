@@ -34,32 +34,36 @@ export default function Why() {
           For example, the ability to read stories, recipies, history, poetry,
           etc. can entertain and help to understand things better. Things like:
           your self, your environment, our world. Sometimes it's one ingredient
-          to discover abilities, interests, your position or place or whatever
-          you chose to find important in your life and the life of your peers.
+          to discover abilities, interests, your position, place or whatever you
+          chose to find important in your life and the life of your peers.
         </div>
         <div>
-          From experience, I understand anyone not wanting to get into
-          professional software development.
-        </div>
-        <div>
-          But still, the ability to understand and produce software to create
-          computational behavior, visual effects, audio experiences,
-          entertaining moments and creativity in general, reassure my interest
-          for abstractions and approaches to technology that feel more
-          approachable.
+          From experience, I can understand anyone not wanting to get into
+          professional software development. But still, the ability to
+          understand and produce software to create computational behavior,
+          visual effects, audio experiences, entertaining moments and creativity
+          in general, reassure my interest for abstractions and approaches to
+          technology that are more approachable.
         </div>
         <div>
           The possibilities to express yourself through artifacts made with
-          technology, should not be restricted to a specialized group with
-          certain traits, matching stereotypes an industry alone produces and
+          technology, should not be restricted to a specialized group of people
+          with certain traits, matching stereotypes an industry produces and
           sometimes even reproduces. Otherwise, we could follow a steep slope
           along the gradient, but merely towards a local optimum.
         </div>
         <div>
-          They say the universe is infinite. That's what we tell our software
-          programs about space as well while demand and growth accelerates. Why
-          this matters? I think it sounds like there is a lot to explore.
+          I think that imperfect solutions in any case create understanding.
+          Further they lead to new, improved ideas. Some might become a root
+          thought to identify underlying and so far hidden problems.
         </div>
+        <div>
+          Automation and digitalisation are on a public agenda. And so should be
+          upscaling the group of people finding unknown solutions and problems,
+          instead of only upscaling the number of devices executing known
+          solutions to acknowledged problems.
+        </div>
+
         <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/what" label="< what?" />

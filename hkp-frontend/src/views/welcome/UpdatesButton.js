@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { Icon } from "semantic-ui-react";
 
 import "./UpdatesButton.css";
 
@@ -16,18 +17,12 @@ export default function UpdatesButton() {
         }}
       >
         <Link to="/docs/updates">
-          <svg
-            viewBox="0 0 40 40"
-            width="40"
-            height="40"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <polygon points="10,1 4,18 19,6 1,6 16,18" fill="#464F6D40" />
-
-            <text fontSize="7px" fontWeight="bold" fill="#464F6D" x="13" y="5">
-              Updates
-            </text>
-          </svg>
+          <div className="update-bar">
+            <Icon name="star outline" size="mini" />
+            <div style={{ fontSize: 7, marginTop: -54, marginLeft: -3 }}>
+              UPDATES
+            </div>
+          </div>
         </Link>
       </div>
     </div>

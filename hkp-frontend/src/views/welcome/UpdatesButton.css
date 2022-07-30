@@ -9,3 +9,15 @@
     transform: rotate(359deg);
   }
 }
+
+
+.update-bar {
+  margin-left: -8px;
+  margin-top: -40px;
+  color: #afafaf;
+  transform: scale(0.8, 0.8);
+}
+
+.update-bar:hover {
+  color: #454F6D
+}

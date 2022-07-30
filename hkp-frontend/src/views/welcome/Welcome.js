@@ -58,10 +58,10 @@ class Welcome extends Component {
         <UpdatesButton />
       </h1>
 
-      <p className="hero-claim">
+      <div className="hero-claim">
         <span className="make">Make yourself</span>
         <span style={{ paddingLeft: 3 }}>at home</span>
-      </p>
+      </div>
       <NavigateButton destination="/?page=mission" text="What is this?" />
     </div>
   );

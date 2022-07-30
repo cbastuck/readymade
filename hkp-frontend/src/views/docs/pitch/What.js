@@ -44,21 +44,10 @@ export default function What() {
         </div>
         <div>
           Hookup focuses on exploration and less on delivering solutions. I
-          rather would like to tell a story for the interested, than repeat the
+          would rather like to tell a story for the interested than repeat the
           usual tech talk. A story that comes unconventional and less
           predictable; and hopefully leaves the audience puzzled, curious and
           most important with an awareness for new possibilties.
-        </div>
-        <div>
-          In my opinion imperfect solutions can create understanding and lead to
-          new, improved ideas. Some might become a root thought to identify
-          underlying and so far hidden problems.
-        </div>
-        <div>
-          Automation and digitalisation are on a public agenda. And so should be
-          upscaling the group of people finding unknown solutions and problems,
-          instead of only upscaling the number of devices executing known
-          solutions to acknowledged problems.
         </div>
         <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>
         <HStack style={{ marginTop: 10 }}>

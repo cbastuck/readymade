@@ -9,11 +9,15 @@ import RuntimeMenu from "./RuntimeMenu";
 
 import "./index.css";
 
-import { ReactComponent as IconSvg } from "./assets/hkp-single-dot-second-trial-edgy.svg";
+//import { ReactComponent as IconOld } from "./assets/hkp-single-dot-second-trial-edgy.svg";
+import { ReactComponent as IconH } from "./assets/hkp-single-dot-h.svg";
+//import { ReactComponent as IconK } from "./assets/hkp-single-dot-k.svg";
+//import { ReactComponent as IconP } from "./assets/hkp-single-dot-p.svg";
 import Icon from "./assets/hkp-single-dot-second-trial-edgy.png";
 
 export default class HeaderMenu extends Component {
   renderHomeIcon() {
+    const IconSvg = IconH;
     return (
       <div
         style={{

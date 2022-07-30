@@ -28,7 +28,7 @@ export default function EmptySketch({ boardName }) {
               }}
             >
               <h1 style={s(t.fs14, t.tc, t.m(0, 6))}> {headline} </h1>
-              <div style={{ width: 120, margin: "30px auto" }}>
+              <div style={{ width: 250, margin: "30px auto" }}>
                 <Logo />
               </div>
               <div style={s(t.uc, t.fs14, t.ls1, t.tc)}>
