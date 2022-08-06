@@ -41,17 +41,18 @@ export default function How() {
           Native Instruments. From my experience I felt convinced that any
           instrument they release would be low-level code compositions of
           Reaktor modules. That conviction did not hold long after I started.
-          But questions stayed because for many problem the following was true:
-          as soon as convenient abstractions were established, a big part of
-          core functionality became nested functions triggering continuations of
-          nested functions while propagating data, and so on.
+          Questions stayed because to many problem the following seemed true: as
+          soon as convenient abstractions were found and established, a big part
+          of maby core functionalities became nested functions triggering
+          continuations of nested functions while propagating data, and so on.
         </div>
         <div>
-          That's <i>how</i> it could work. Sure, complexity and its exponential
-          growth are tough. Especially when applying this pattern to arbitrary
-          domains and use-cases. Sometimes it feels impossible when looking for
-          perfection and avoid having code in the end again. However, if you
-          look with a different pair of glasses, you can see great examples:{" "}
+          That's <i>how</i> it could work in general. Sure, complexity and its
+          exponential growth are tough. Especially when applying this pattern to
+          arbitrary domains and use-cases. Sometimes it feels impossible when
+          looking for perfection and avoid having code in the end again.
+          However, if you look with a different pair of glasses, you can see
+          great examples:{" "}
           <a href="https://nodered.org" target="_blank" rel="noreferrer">
             NodeRed
           </a>
