@@ -59,8 +59,7 @@ class Welcome extends Component {
       </h1>
 
       <div className="hero-claim">
-        <span className="make">Make yourself</span>
-        <span style={{ paddingLeft: 3 }}>at home</span>
+        <span className="make"> and make it your way </span>
       </div>
       <NavigateButton destination="/?page=mission" text="What is this?" />
     </div>

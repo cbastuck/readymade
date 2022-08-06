@@ -24,7 +24,7 @@ export default function Why() {
         </div>
         <div>
           Being able to read, doesn't immediately turn you into an author.
-          Similar, learning to understand technical components and data flows
+          Similarly, learning to understand technical components and data flows
           does not determine anyone to be or become a software engineer. Both
           abilitities are only prerequisites for the latter, not more. At least
           on a professional level. Looking at it from the perspective of an
@@ -53,15 +53,15 @@ export default function Why() {
           along the gradient, but merely towards a local optimum.
         </div>
         <div>
-          I think that imperfect solutions in any case create understanding.
-          Further they lead to new, improved ideas. Some might become a root
-          thought to identify underlying and so far hidden problems.
+          Even imperfect solutions create understanding. Further they lead to
+          new, improved ideas. One might become a root thought to identify
+          underlying and so far hidden problems.
         </div>
         <div>
           Automation and digitalisation are on a public agenda. And so should be
           upscaling the group of people finding unknown solutions and problems,
-          instead of only upscaling the number of devices executing known
-          solutions to acknowledged problems.
+          instead of focusing only on upscaling the number of devices executing
+          known solutions to acknowledged problems.
         </div>
 
         <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>

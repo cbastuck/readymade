@@ -28,26 +28,26 @@ export default function What() {
         </div>
         <div>
           Iterate on aspects of centrality, connectivity, authority and scale.
-          In particular acknowledge small or individual spaces. It could be
+          In particular acknowledge small and individual spaces. It could be
           solutions that matter to only a few people - yet some problems might
           be relevant to many.
         </div>
         <div>
-          I think the more we spread the ability to analyze and decompose
+          I think, the more we spread the ability to analyze and decompose
           patterns around us, also using technical terms, the more we set the
           odds to find appropriate solutions before we need them.
         </div>
         <div>
-          This project - Hookup - is an imperfect and naive private endeavour!
+          This project - Hookup - is an imperfect and naïve private endeavour!
           This is an excuse and a disclaimer to set expectations: you will hear
           three chords, not a symphony.
         </div>
         <div>
-          Hookup focuses on exploration and less on delivering solutions. I
-          would rather like to tell a story for the interested than repeat the
-          usual tech talk. A story that comes unconventional and less
-          predictable; and hopefully leaves the audience puzzled, curious and
-          most important with an awareness for new possibilties.
+          Hookup focuses on exploration and comparatively little on delivering
+          solutions. I'd rather like to tell a story for the interested than
+          repeat common tech talk. Stories that come unconventional and less
+          predictable; and hopefully leaves someone puzzled, curious and most
+          important with an awareness of new possibilties.
         </div>
         <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>
         <HStack style={{ marginTop: 10 }}>
