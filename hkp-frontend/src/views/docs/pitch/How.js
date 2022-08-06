@@ -1,6 +1,7 @@
 import Template, { NavigateButton } from "../../Template";
 
 import { HStack } from "../../../styles";
+import Date from "../../../components/Date";
 
 export default function How() {
   return (
@@ -82,9 +83,9 @@ export default function How() {
           <li>
             Improving versatility is an interesting problem. Failure is an
             option, still the likelihood a dice produces the desired outcome at
-            least once grows with the number of trials. Thus, tackling a problem
-            from different perspectives and angles seems reasonable. Small
-            algorithmic deviations can have a huge impact.
+            least once, grows with the number of trials. Thus, tackling a
+            problem from different perspectives and angles seems reasonable.
+            Small algorithmic deviations can have a huge impact.
           </li>
           <li>
             They say the universe is infinite. That's what we tell our software
@@ -93,7 +94,7 @@ export default function How() {
             there is a lot to explore.
           </li>
         </ul>
-        <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>
+        <Date month="June" day="24" year="2022" />
         <HStack>
           <NavigateButton to="/docs/pitch/why" label="< why?" />
           <NavigateButton to="/examples" label="examples >>" />

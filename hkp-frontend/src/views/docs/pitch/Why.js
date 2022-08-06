@@ -1,6 +1,7 @@
 import Template, { NavigateButton } from "../../Template";
 
 import { HStack } from "../../../styles";
+import Date from "../../../components/Date";
 
 export default function Why() {
   return (
@@ -64,7 +65,7 @@ export default function Why() {
           known solutions to acknowledged problems.
         </div>
 
-        <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>
+        <Date month="June" day="24" year="2022" />
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/docs/pitch/what" label="< what?" />
           <NavigateButton to="/docs/pitch/how" label="how? >" />

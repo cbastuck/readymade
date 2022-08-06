@@ -1,6 +1,7 @@
 import Template, { NavigateButton } from "../../Template";
 
 import { HStack } from "../../../styles";
+import Date from "../../../components/Date";
 
 export default function What() {
   return (
@@ -49,7 +50,7 @@ export default function What() {
           predictable; and hopefully leaves someone puzzled, curious and most
           important with an awareness of new possibilties.
         </div>
-        <div style={{ textAlign: "right", fontSize: 11 }}>June, 24 2022</div>
+        <Date month="June" day="24" year="2022" />
         <HStack style={{ marginTop: 10 }}>
           <NavigateButton to="/?page=mission" label="overview" />
           <NavigateButton to="/docs/pitch/why" label="why? >" />

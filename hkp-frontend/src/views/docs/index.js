@@ -25,8 +25,9 @@ export default function What() {
         details="topics work in progress"
         style={{ marginTop: 20 }}
       >
-        <Article to="/docs/tracks/brand">brand and identity</Article>
-        <Article to="/docs/tracks/remotes" details="TODO">
+        <Article to="/docs/tracks/branding">brand and identity</Article>
+        <Article to="/docs/tracks/bridge">the bridge</Article>
+        <Article to="/docs/tracks/remote" details="TODO">
           remote runtimes
         </Article>
       </Chapter>
@@ -38,7 +39,9 @@ export default function What() {
       </Chapter>
       <Divider />
 
-      <Article to="/docs/updates">Updates</Article>
+      <Article to="/docs/updates" details="very brief changelog">
+        Updates
+      </Article>
     </Template>
   );
 }

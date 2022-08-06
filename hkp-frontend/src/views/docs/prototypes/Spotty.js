@@ -2,6 +2,7 @@ import Template from "../../Template";
 
 import { Section, Text, Paragraph } from "../Elements";
 import NavigateButton from "../../NavigateButton";
+import Date from "../../../components/Date";
 
 export default function Spotty() {
   return (
@@ -91,6 +92,7 @@ export default function Spotty() {
               />
             </Paragraph>
           </Section>
+          <Date month="July" day="24" year="2022" />
         </Text>
       </div>
     </Template>
