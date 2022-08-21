@@ -8,6 +8,7 @@ const defaultBundles = [
   "hookup.to/registry/browser/Graphic",
   "hookup.to/registry/browser/FileStorage",
   "hookup.to/registry/browser/Crypto",
+  "hookup.to/registry/browser/Fileformat",
 ];
 
 export default class Headless extends Component {

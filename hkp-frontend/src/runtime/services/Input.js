@@ -192,21 +192,28 @@ class Input {
     }
     const contentType = resp.headers.get("content-type");
     if (contentType.indexOf("application/json") !== -1) {
+      console.log("JSON CONTENT TYPE", contentType);
       const json = await resp.json();
       this.app.next(this, json);
       return;
     }
 
-    if (contentType.indexOf("text/plain")) {
+    if (contentType.indexOf("text/plain") !== -1) {
+      console.log("TEXT CONTENT TYPE", contentType);
       const text = await resp.text();
       this.app.next(this, text);
       return;
     }
 
-    // TOOD: .arrayBuffer()
-
-    const blob = await resp.blob();
-    this.app.next(this, blob);
+    if (true) {
+      // TODO: when is it an array buffer when a blob?
+      // -> configure?
+      const arrayBuffer = await resp.arrayBuffer();
+      this.app.next(this, arrayBuffer);
+    } else {
+      const blob = await resp.blob();
+      this.app.next(this, blob);
+    }
   };
 
   openEventSource = (url) => {

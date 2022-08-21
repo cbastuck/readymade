@@ -10,6 +10,7 @@ export const defaultBundles = [
   "hookup.to/registry/browser/FileStorage",
   "hookup.to/registry/browser/Crypto",
   "hookup.to/registry/browser/TensorFlow",
+  "hookup.to/registry/browser/Fileformat",
 ];
 
 export const allowedServices = [
@@ -45,6 +46,7 @@ export const allowedServices = [
   "hookup.to/service/hash",
   "hookup.to/service/sign",
   "hookup.to/service/linear-regression",
+  "hookup.to/service/xlsl",
 ];
 
 export const defaultName = "Playground";

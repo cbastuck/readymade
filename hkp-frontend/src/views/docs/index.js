@@ -18,8 +18,6 @@ export default function What() {
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
 
-      <Divider />
-
       <Chapter
         name="Side tracks"
         details="topics work in progress"
@@ -32,7 +30,6 @@ export default function What() {
         </Article>
       </Chapter>
 
-      <Divider />
       <Chapter name="Prototypes" details="private prototypes and ideas">
         <Article to="/docs/proto/Spotty">Spotty</Article>
         <Article to="/docs/proto/Multiplication">Multiplication rows</Article>

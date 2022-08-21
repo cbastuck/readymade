@@ -9,7 +9,7 @@ export default function Spotty() {
     <Template title="Spotty" parent="prototypes">
       <div style={{ margin: "40px 0px" }}>
         <Text>
-          <Section title="Store favorites from Spotify on Github">
+          <Section title="Store Spotify favorites on Github">
             <Paragraph brief="Motivation">
               Over the time I discovered many songs on Spotify and added them as
               favorites. What if all, or some of them would disappear from one
@@ -19,8 +19,8 @@ export default function Spotty() {
               for me on Spotify first take longer to find their place in my
               mind. Mostly I start recognizing artist names and give more
               attention after a second or third song was added to my favorites.
-              More due diligence would not hurt for stuff that matters, such as
-              good music.
+              More due diligence does not hurt for stuff that truly matters,
+              such as good music.
             </Paragraph>
             <Paragraph brief="First runtime - service sequence">
               <Paragraph brief="1. Spotify">

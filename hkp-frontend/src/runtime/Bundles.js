@@ -35,6 +35,13 @@ export async function loadBundle(bundleId) {
         "tensorflow-registry/src/index"
       );
       return tensorFlowRegistry();
+
+    case "hookup.to/registry/browser/Fileformat":
+      const { default: fileformatRegistry } = await import(
+        "fileformat-registry/src/index"
+      );
+      return fileformatRegistry();
+
     default:
       console.error("Unknown registry-bundle", bundleId);
       return [];
