@@ -13,6 +13,7 @@ import Modal from "../../components/Modal";
 import ServiceReference from "../../components/ServiceReference";
 import { s, t } from "../../styles";
 import VSpacer from "../../components/shared/VSpacer";
+import WipTag from "../../components/WipTag";
 import Showcases from "../playground/Usecases";
 
 import examples from "./ExamplesData";
@@ -112,8 +113,8 @@ class Examples extends Component {
                 <div style={s(t.tl, t.fs14, { letterSpacing: 1 })}>
                   {Array.isArray(example.description)
                     ? example.description.map((d, idx) => (
-                        <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
-                      ))
+                      <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
+                    ))
                     : example.description}
                 </div>
               </Card.Description>
@@ -375,6 +376,44 @@ class Examples extends Component {
     );
   };
 
+  renderPrototypes = () => {
+    return (
+      <div style={{ margin: 30 }}>
+        <div
+          style={{
+            margin: "10px 10px",
+            fontFamily: "Roboto",
+            fontSize: 16,
+            color: "rgb(85, 85, 85)",
+            lineHeight: 1.5,
+            letterSpacing: 1,
+            display: 'flex'
+
+          }}
+        >
+
+          Following private prototypes show creative ways to connect services and make things with Hookup that became relevant on a personal level
+
+          <WipTag />
+        </div>
+        <div
+          style={{
+            margin: "10px 10px",
+          }}>
+          <div style={{
+            fontSize: 16,
+            letterSpacing: 1,
+            marginLeft: 20,
+            lineHeight: 2,
+          }}>
+            <div><Link to="/docs/proto/Spotty">Spotty</Link></div>
+            <div><Link to="/docs/proto/Multiplication">Multiplication rows</Link></div>
+          </div>
+        </div >
+      </div >
+    );
+  }
+
   render() {
     return (
       <AppConsumer>
@@ -386,6 +425,7 @@ class Examples extends Component {
                   <Toolbar />
                   {this.renderExamplesContainer()}
                   {this.renderShowcases()}
+                  {this.renderPrototypes()}
                   <VSpacer height={40} />
                 </div>
               )}

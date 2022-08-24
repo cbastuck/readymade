@@ -27,10 +27,12 @@ html {
 .fade-in-linear-slow {
   animation: opac-linear 2.2s;
 }
+
 @keyframes opac-linear {
   0% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
@@ -39,13 +41,16 @@ html {
 .fade-in {
   animation: opac 1s;
 }
+
 @keyframes opac {
   0% {
     opacity: 0;
   }
+
   50% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
@@ -55,19 +60,24 @@ html {
   0% {
     opacity: 0;
   }
+
   100% {
     opacity: 1;
   }
 }
+
 .fade-in-0 {
   animation: opac-slow 0.1s;
 }
+
 .fade-in-1 {
   animation: opac-slow 1s;
 }
+
 .fade-in-2 {
   animation: opac-slow 2s;
 }
+
 .fade-in-3 {
   animation: opac-slow 3s;
 }
@@ -144,8 +154,8 @@ html {
 }
 
 .make {
-  font-weight: lighter;
-  font-style: italic;
+  font-weight: bold;
+  font-style: normal;
+  padding: 0px 2px;
   /*border: solid 1px #454f6d;*/
-  padding: 2px;
 }
