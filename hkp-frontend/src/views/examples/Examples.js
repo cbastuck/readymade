@@ -113,8 +113,8 @@ class Examples extends Component {
                 <div style={s(t.tl, t.fs14, { letterSpacing: 1 })}>
                   {Array.isArray(example.description)
                     ? example.description.map((d, idx) => (
-                      <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
-                    ))
+                        <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
+                      ))
                     : example.description}
                 </div>
               </Card.Description>
@@ -387,32 +387,37 @@ class Examples extends Component {
             color: "rgb(85, 85, 85)",
             lineHeight: 1.5,
             letterSpacing: 1,
-            display: 'flex'
-
+            display: "flex",
           }}
         >
-
-          Following private prototypes show creative ways to connect services and make things with Hookup that became relevant on a personal level
-
+          Following private prototypes show creative ways to connect services
+          and make things with Hookup that became relevant on a personal level
           <WipTag />
         </div>
         <div
           style={{
             margin: "10px 10px",
-          }}>
-          <div style={{
-            fontSize: 16,
-            letterSpacing: 1,
-            marginLeft: 20,
-            lineHeight: 2,
-          }}>
-            <div><Link to="/docs/proto/Spotty">Spotty</Link></div>
-            <div><Link to="/docs/proto/Multiplication">Multiplication rows</Link></div>
+          }}
+        >
+          <div
+            style={{
+              fontSize: 16,
+              letterSpacing: 1,
+              marginLeft: 20,
+              lineHeight: 2,
+            }}
+          >
+            <div>
+              <Link to="/docs/proto/Spotty">Spotty</Link>
+            </div>
+            <div>
+              <Link to="/docs/proto/Multiplication">Multiplication rows</Link>
+            </div>
           </div>
-        </div >
-      </div >
+        </div>
+      </div>
     );
-  }
+  };
 
   render() {
     return (
