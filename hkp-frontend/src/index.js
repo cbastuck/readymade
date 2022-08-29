@@ -9,7 +9,6 @@ import "setimmediate";
 import "semantic-ui-css/semantic.min.css";
 
 import "./index.css";
-// import "./assets/fonts/Roboto/Roboto-Bold.ttf";
 
 ReactDOM.render(
   <Router>

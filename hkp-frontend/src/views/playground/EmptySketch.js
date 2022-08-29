@@ -21,7 +21,7 @@ export default function EmptySketch({ boardName }) {
             <div
               style={{
                 border: "dashed 1px lightgray",
-                padding: 20,
+                padding: "90px 20px",
                 width: "90%",
                 margin: "auto",
                 borderRadius: 5,

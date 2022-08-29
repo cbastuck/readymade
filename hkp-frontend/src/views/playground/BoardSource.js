@@ -33,6 +33,11 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
     storeBoardToLocalStorage(board, src);
     setNotification("Saved Successfully");
   };
+  const onCreateLink = () => {
+    const src = editor.current.getValue();
+    const encoded = btoa(src);
+    console.log(encoded);
+  };
   React.useEffect(() => {
     const keyListener = (e) => {
       if (
@@ -56,6 +61,9 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
         </Button>
         <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={closeSourceView}>
           Close
+        </Button>
+        <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={onCreateLink}>
+          Link
         </Button>
         <InfoNotification
           style={{ marginBottom: 5 }}

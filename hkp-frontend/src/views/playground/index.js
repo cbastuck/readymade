@@ -522,7 +522,7 @@ class Playground extends Component {
                   marginTop: "5%",
                 })}
               >
-                Hello Playground
+                Welcome to Playground
               </h1>
             )}
             <div>
@@ -531,7 +531,6 @@ class Playground extends Component {
             </div>
             {isBoardUnnamed && isPlaygroundEmpty && (
               <div style={s(t.uc, { width: "90%", margin: "auto" })}>
-                <div style={t.fs14}>Or choose one of the following options</div>
                 <LoadPanel>{content}</LoadPanel>
               </div>
             )}

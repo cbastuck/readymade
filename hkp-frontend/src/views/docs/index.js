@@ -18,6 +18,10 @@ export default function What() {
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
 
+      <Article to="/docs/updates" details="very brief changelog">
+        What's new
+      </Article>
+
       <Chapter
         name="Side tracks"
         details="topics work in progress"
@@ -29,16 +33,6 @@ export default function What() {
           remote runtimes
         </Article>
       </Chapter>
-
-      <Chapter name="Prototypes" details="private prototypes and ideas">
-        <Article to="/docs/proto/Spotty">Spotty</Article>
-        <Article to="/docs/proto/Multiplication">Multiplication rows</Article>
-      </Chapter>
-      <Divider />
-
-      <Article to="/docs/updates" details="very brief changelog">
-        Updates
-      </Article>
     </Template>
   );
 }

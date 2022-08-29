@@ -55,3 +55,22 @@ export const availableRuntimes = [
   { name: "browser", type: "browser" },
   // { name: "hookup", type: "node" },
 ];
+
+export function getLocalBoards(prefix) {
+  const savedBoards = [];
+  for (const key in localStorage) {
+    if (key.startsWith(prefix)) {
+      const data = localStorage.getItem(key);
+      savedBoards.push({
+        name: key.substr(prefix.length),
+        value: JSON.parse(data),
+      });
+    }
+  }
+
+  return savedBoards.map((item) => ({
+    ...item,
+    url: `/playground/${item.name}`,
+    description: item.value && item.value.description,
+  }));
+}

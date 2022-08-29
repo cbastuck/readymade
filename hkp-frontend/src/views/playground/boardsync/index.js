@@ -129,28 +129,30 @@ export default class BoardSync extends Component {
   renderSyncBar = (peers, peerName) => {
     return (
       <>
-        <SelectorField
-          label={
-            <Menu
-              actions={{
-                onAccept: this.onAcceptSenders,
-                onReject: this.onRejectSenders,
-              }}
-              value={this.state.subPanel}
-              onChange={(subPanel) => this.setState({ subPanel })}
-            />
-          }
-          options={peers.peerNames
-            .filter((x) => x !== peerName)
-            .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
-          value={this.props.syncedPeer}
-          disabled={false}
-          onChange={(_, { value: syncedPeer }) =>
-            this.props.onSyncedPeerChanged(syncedPeer)
-          }
-          onOpen={() => this.peersContext && this.peersContext.updatePeers()}
-          placeholder="Select a sync target"
-        />
+        <div style={{ width: "100%" }}>
+          <SelectorField
+            label={
+              <Menu
+                actions={{
+                  onAccept: this.onAcceptSenders,
+                  onReject: this.onRejectSenders,
+                }}
+                value={this.state.subPanel}
+                onChange={(subPanel) => this.setState({ subPanel })}
+              />
+            }
+            options={peers.peerNames
+              .filter((x) => x !== peerName)
+              .reduce((all, cur) => ({ ...all, [cur]: cur }), {})}
+            value={this.props.syncedPeer}
+            disabled={false}
+            onChange={(_, { value: syncedPeer }) =>
+              this.props.onSyncedPeerChanged(syncedPeer)
+            }
+            onOpen={() => this.peersContext && this.peersContext.updatePeers()}
+            placeholder="Select a sync target"
+          />
+        </div>
         <Button
           style={s(t.uc, t.fs11, t.ls1, {
             height: 33,

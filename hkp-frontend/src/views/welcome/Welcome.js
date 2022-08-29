@@ -59,10 +59,10 @@ class Welcome extends Component {
       </h1>
 
       <div className="hero-claim">
-        <span>connect</span>
-        <span className="make">and</span>make
+        <span className="thin"></span>
+        <span className="make">make your own tech</span>
       </div>
-      <NavigateButton destination="/?page=mission" text="What is this?" />
+      <NavigateButton destination="/?page=mission" text="What's that?" />
     </div>
   );
 

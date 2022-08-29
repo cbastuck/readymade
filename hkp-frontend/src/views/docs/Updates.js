@@ -6,19 +6,38 @@ import Template from "../Template";
 
 export default function Updates() {
   return (
-    <Template title="Updates">
+    <Template title="What's new">
       <List divided relaxed>
+        <NewsItem
+          date="25.8.2022"
+          content={
+            <div>
+              <div>
+                <Link to="/docs/tracks/bridge"> The Bridge </Link>
+                <div>
+                  Integrate board into external html documents, like in this{" "}
+                  <a href="/bridge.html" target="_blank">
+                    Example
+                  </a>
+                </div>
+              </div>
+            </div>
+          }
+        />
         <NewsItem
           date="24.7.2022"
           content={
             <div>
               <div>
-                <Link to="/docs/proto/Spotty"> Spotty</Link> old, internal
-                prototype, still a good example to hookup external services
+                <Link to="/docs/proto/Spotty"> Spotty</Link>
+                <div>
+                  An early, unplublished, internal prototype. Still, a good
+                  example for hooking up with external services.
+                </div>
               </div>
               <div>
-                Favicon and{" "}
-                <Link to="/docs/tracks/brand"> single dot symbol</Link> (wip)
+                Added <Link to="/docs/tracks/brand"> single dot symbol</Link> as
+                favicon and smallest logo version.
               </div>
             </div>
           }

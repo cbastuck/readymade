@@ -154,8 +154,12 @@ html {
 }
 
 .make {
-  font-weight: bold;
-  font-style: normal;
-  padding: 0px 2px;
+  font-weight: lighter;
+  font-style: italic;
+  padding-left: 5px;
   /*border: solid 1px #454f6d;*/
+}
+
+.thin {
+  font-weight: lighter;
 }

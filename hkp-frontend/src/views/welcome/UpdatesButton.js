@@ -19,8 +19,8 @@ export default function UpdatesButton() {
         <Link to="/docs/updates">
           <div className="update-bar">
             <Icon name="star outline" size="mini" />
-            <div style={{ fontSize: 7, marginTop: -55, marginLeft: -3 }}>
-              UPDATES
+            <div style={{ fontSize: 7, marginTop: -57, marginLeft: -3 }}>
+              What's new?
             </div>
           </div>
         </Link>
