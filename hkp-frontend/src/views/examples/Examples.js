@@ -199,6 +199,7 @@ class Examples extends Component {
             height: "100%",
           }}
         >
+          {!currentExample && <Headline>Basic</Headline>}
           {!currentExample && this.renderDisclaimer()}
           {currentExample ? this.renderCurrentExample() : this.renderExamples()}
         </div>
@@ -355,10 +356,10 @@ class Examples extends Component {
 
   renderShowcases = () => {
     return (
-      <div style={{ margin: 30 }}>
+      <div style={{ margin: "10px 40px" }}>
+        <Headline>Showcases</Headline>
         <div
           style={{
-            margin: "10px 10px",
             fontFamily: "Roboto",
             fontSize: 16,
             color: "rgb(85, 85, 85)",
@@ -378,10 +379,10 @@ class Examples extends Component {
 
   renderPrototypes = () => {
     return (
-      <div style={{ margin: 30 }}>
+      <div style={{ margin: "10px 40px" }}>
+        <Headline>Private Prototypes</Headline>
         <div
           style={{
-            margin: "10px 10px",
             fontFamily: "Roboto",
             fontSize: 16,
             color: "rgb(85, 85, 85)",
@@ -421,26 +422,34 @@ class Examples extends Component {
 
   render() {
     return (
-      <AppConsumer>
-        {(appContext) => (
-          <BoardContext>
-            <BoardConsumer>
-              {(boardContext) => (
-                <div style={s(t.h100, { fontFamily: "Roboto" })}>
-                  <Toolbar />
-                  {this.renderExamplesContainer()}
-                  {this.renderShowcases()}
-                  {this.renderPrototypes()}
-                  <VSpacer height={40} />
-                </div>
-              )}
-            </BoardConsumer>
-            <Footer />
-          </BoardContext>
-        )}
-      </AppConsumer>
+      <>
+        <div style={s(t.h100, { fontFamily: "Roboto" })}>
+          <Toolbar />
+
+          {this.renderExamplesContainer()}
+          {this.renderShowcases()}
+          {this.renderPrototypes()}
+          <VSpacer height={40} />
+        </div>
+        <Footer />
+      </>
     );
   }
 }
 
 export default withRouter(Examples);
+
+function Headline({ children }) {
+  return (
+    <h1
+      style={{
+        letterSpacing: 4,
+        textTransform: "uppercase",
+        fontSize: 14,
+        marginTop: 15,
+      }}
+    >
+      {children}
+    </h1>
+  );
+}
