@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { Divider } from "semantic-ui-react";
 
 import Template from "../Template";
 
@@ -11,28 +10,21 @@ const fontStyle = {
 export default function What() {
   return (
     <Template title="Documentation" isRoot={true}>
-      <Article to="/docs/quickstart">Quickstarter</Article>
-      <Chapter name="Project Scope">
+      <Article to="/docs/quickstart">1. Quickstarter</Article>
+      <Chapter name="2. Project Scope">
         <Article to="/docs/pitch/what">What</Article>
         <Article to="/docs/pitch/why">Why</Article>
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
 
-      <Article to="/docs/updates" details="very brief changelog">
-        What's new
-      </Article>
+      <Article to="/docs/updates">3. What's new</Article>
 
-      <Chapter
-        name="Side tracks"
-        details="topics work in progress"
-        style={{ marginTop: 20 }}
-      >
+      <Chapter name="4. Side tracks" details="topics work in progress">
         <Article to="/docs/tracks/branding">brand and identity</Article>
         <Article to="/docs/tracks/bridge">the bridge</Article>
-        <Article to="/docs/tracks/remote" details="TODO">
-          remote runtimes
-        </Article>
+        <Article to="/docs/tracks/remote">remote runtimes</Article>
       </Chapter>
+      <br />
     </Template>
   );
 }
@@ -44,6 +36,7 @@ function Chapter({ name, children, details, style: passedStyle = {} }) {
     ...fontStyle,
     marginLeft: 8,
     textTransform: "uppercase",
+
     ...passedStyle,
   };
   return (

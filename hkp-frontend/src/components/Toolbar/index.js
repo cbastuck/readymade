@@ -198,9 +198,11 @@ export default class HeaderMenu extends Component {
             {(boardContext) => (
               <div
                 style={{
+                  marginTop: 0,
                   marginBottom: 5,
                   textAlign: "left",
                   borderBottom: "1px solid rgba(34,36,38,.15)",
+                  borderTop: "1px solid #ddd",
                 }}
               >
                 <Menu

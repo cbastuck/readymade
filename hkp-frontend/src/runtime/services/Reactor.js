@@ -1,4 +1,5 @@
 import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import ReactDOM from "react-dom";
 
 const { parseExpression, evalExpression } = require("hkp-services");
@@ -13,10 +14,11 @@ class Reactor {
     this.app = app;
 
     this.elements = [];
+    this.template = null;
   }
 
   configure(config) {
-    const { targetId, elements } = config;
+    const { targetId, elements, template } = config;
 
     if (targetId !== undefined) {
       this.target = document.getElementById(targetId);
@@ -24,6 +26,10 @@ class Reactor {
 
     if (elements !== undefined) {
       this.elements = elements;
+    }
+
+    if (template !== undefined) {
+      this.template = template;
     }
   }
 
@@ -57,11 +63,23 @@ class Reactor {
     );
   };
 
+  applyToTemplate = (params, template) => {
+    const param = Array.isArray(params) ? params[0] : params;
+    const keys = Object.keys(param);
+    return keys.reduce(
+      (acc, cur) => acc.split(`[[${cur}]]`).join(param[cur]),
+      template
+    );
+  };
+
   process(params) {
     if (this.target) {
       ReactDOM.render(this.buildComponent(params), this.target);
+    } else if (this.template !== null) {
+      return this.applyToTemplate(params, this.template);
+    } else {
+      return renderToStaticMarkup(this.buildComponent(params));
     }
-    return params;
   }
 }
 

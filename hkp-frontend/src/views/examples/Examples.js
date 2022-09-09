@@ -3,8 +3,6 @@ import { Link } from "react-router-dom";
 import { Card, Image, Breadcrumb } from "semantic-ui-react";
 
 import { withRouter } from "../../common";
-import { AppConsumer } from "../../AppContext";
-import BoardContext, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
 import DataModelReference from "../../components/DataModelReference";

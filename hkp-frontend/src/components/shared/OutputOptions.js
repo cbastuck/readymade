@@ -8,7 +8,7 @@ const none = "No routing";
 
 export default class OutputOptions extends Component {
   state = {
-    selected: "none",
+    selected: none,
     expanded: false,
   };
 
@@ -16,7 +16,7 @@ export default class OutputOptions extends Component {
   static flowChanged = "flow-changed";
 
   componentDidMount() {
-    const { initialValue = "none" } = this.props;
+    const { initialValue = none } = this.props;
     this.setState({
       selected: initialValue,
     });
@@ -26,7 +26,7 @@ export default class OutputOptions extends Component {
     if (this.props.items !== prevProps.items) {
       const options = this.getSelectorOptions();
       if (!options[this.state.selected]) {
-        this.setState({ selected: "none" });
+        this.setState({ selected: none });
       }
     }
   }
