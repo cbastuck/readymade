@@ -84,8 +84,9 @@ export default class Runtime extends Component {
       : services.find((svc) => svc.uuid === serviceUuid);
   };
 
-  processRuntime = (params) => {
-    this.impl.processRuntime && this.impl.processRuntime(params);
+  processRuntime = (params, serviceId) => {
+    const svc = serviceId ? this.getServiceById(serviceId) : null;
+    this.impl.processRuntime && this.impl.processRuntime(params, svc);
   };
 
   processService = (serviceUuid, params) => {

@@ -86,7 +86,7 @@ export default class BrowserRuntime extends Component {
     };
   };
 
-  processRuntime = (params) => this.next(null, params, null, false);
+  processRuntime = (params, svc = null) => this.next(svc, params, null, false);
 
   findServiceIndex = (service) => {
     const { services } = this.props;

@@ -1,3 +1,5 @@
+import { isArrayBuffer } from "./helpers";
+
 const serviceId = "hookup.to/service/cache";
 const serviceName = "Cache";
 
@@ -47,6 +49,10 @@ class Cache {
   }
 
   merge = (p) => {
+    if (isArrayBuffer(p)) {
+      this.values = p; // no merge with array buffers
+      return this.values;
+    }
     const params = Object.keys(p)
       .filter((x) => p[x] !== undefined) // TODO: maybe the cached value could be undefined? define a way to invalidate the cache
       .reduce((a, c) => ({ ...a, [c]: p[c] }), {});
@@ -57,10 +63,12 @@ class Cache {
 
   async process(params) {
     if (this.updateTrigger === "process") {
-      // in this case, process updates cache
-      this.configure({ "cache+": params });
+      if (params !== undefined) {
+        this.configure({ "cache+": params }); // in this case, process updates cache
+      }
       return this.values;
     }
+
     return this.merge(params);
   }
 }

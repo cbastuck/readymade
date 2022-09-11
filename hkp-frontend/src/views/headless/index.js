@@ -36,7 +36,8 @@ export default class Headless extends Component {
     return svc.process(params);
   };
 
-  process = (params) => this.runtime.processRuntime(params);
+  process = (params, serviceId) =>
+    this.runtime.processRuntime(params, serviceId);
 
   onResult = (runtimeId, data) => {
     const { callback } = this.props;
