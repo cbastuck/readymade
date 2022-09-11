@@ -16,8 +16,9 @@ import MapDescriptor from "../services/Map";
 import FilterDescriptor from "../services/Filter";
 import ReduceDescriptor from "../services/Reduce";
 import StatsDescriptor from "../services/Stats";
+import SelectDescriptor from "../services/Select";
 
-// Accumulators
+// Data  Accumulators
 import AggregatorDescriptor from "../services/Aggregator";
 import BufferDescriptor from "../services/Buffer";
 import CacheDescriptor from "../services/Cache";
@@ -69,11 +70,14 @@ const defaultRegistry = [
   // Actor
   CanvasDescriptor,
 
+  // Analysis
   MapDescriptor,
   FilterDescriptor,
   ReduceDescriptor,
   StatsDescriptor,
+  SelectDescriptor,
 
+  // Accumulation
   BufferDescriptor,
   AggregatorDescriptor,
   CacheDescriptor,

@@ -26,7 +26,7 @@ export function getCookie(key) {
 }
 
 export function removeCookie(key) {
-  setCookie(key, "removed", -100, "y");
+  setCookie(key, "", -100, "y");
 }
 
 export function storeItem(key, value) {

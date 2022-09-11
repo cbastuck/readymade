@@ -135,6 +135,7 @@ class Input {
     this.parseEventsAsJSON = true;
     this.running = false;
     this.topic = "secret-key";
+    this.fetchOnProcess = false;
   }
 
   onEventSourceData(event) {
@@ -179,7 +180,8 @@ class Input {
         }
 
         this.app.notify(this, { canFetch: true });
-        this.onFetchResponse(resp);
+        const data = await this.onFetchResponse(resp);
+        this.app.next(this, data); // inject the data
       } catch (err) {
         console.error("Input fetch failed with error: ", err);
       }
@@ -192,27 +194,19 @@ class Input {
     }
     const contentType = resp.headers.get("content-type");
     if (contentType.indexOf("application/json") !== -1) {
-      console.log("JSON CONTENT TYPE", contentType);
-      const json = await resp.json();
-      this.app.next(this, json);
-      return;
+      return resp.json();
     }
 
     if (contentType.indexOf("text/plain") !== -1) {
-      console.log("TEXT CONTENT TYPE", contentType);
-      const text = await resp.text();
-      this.app.next(this, text);
-      return;
+      return resp.text();
     }
 
     if (true) {
       // TODO: when is it an array buffer when a blob?
       // -> configure?
-      const arrayBuffer = await resp.arrayBuffer();
-      this.app.next(this, arrayBuffer);
+      return resp.arrayBuffer();
     } else {
-      const blob = await resp.blob();
-      this.app.next(this, blob);
+      return resp.blob();
     }
   };
 
@@ -244,17 +238,17 @@ class Input {
   }
 
   async configure(config) {
-    const { url, running, topic, fetch: fetchUrl } = config;
+    const { url, running, topic, fetch: fetchUrl, fetchOnProcess } = config;
 
-    let reconnet = false;
+    let reconnect = false;
     if (topic !== undefined) {
       this.topic = topic;
-      reconnet = true;
+      reconnect = true;
     }
 
     if (url !== undefined && url) {
       this.url = replacePlaceholders(url);
-      reconnet = true;
+      reconnect = true;
       this.app.notify(this, { url });
     }
 
@@ -264,16 +258,29 @@ class Input {
     }
 
     if (fetchUrl !== undefined) {
-      const resp = await fetch(fetchUrl);
-      this.onFetchResponse(resp);
+      this.url = fetchUrl;
+      const data = await this.doFetch(true);
+      this.app.next(this, data); // inject the data
     }
 
-    if (reconnet) {
+    if (reconnect) {
       this.doConnect();
       this.isWebsocket = !!this._websocket;
       this.app.notify(this, { isWebsocket: this.isWebsocket });
     }
+
+    if (fetchOnProcess !== undefined) {
+      this.fetchOnProcess = fetchOnProcess;
+    }
   }
+
+  doFetch = async () => {
+    if (this.url) {
+      const resp = await fetch(this.url);
+      return this.onFetchResponse(resp);
+    }
+    console.warn("Input doFetch() without url configured");
+  };
 
   destroy() {
     if (this.closeEventSourceConnection) {
@@ -281,7 +288,10 @@ class Input {
     }
   }
 
-  process(params) {
+  async process(params) {
+    if (this.fetchOnProcess) {
+      return this.doFetch();
+    }
     return params;
   }
 }

@@ -47,6 +47,7 @@ export const allowedServices = [
   "hookup.to/service/sign",
   "hookup.to/service/linear-regression",
   "hookup.to/service/xlsl",
+  "hookup.to/service/select",
 ];
 
 export const defaultName = "Playground";
