@@ -6,7 +6,7 @@ import Date from "../../../components/Date";
 
 export default function Spotty() {
   return (
-    <Template title="Spotty" parent="prototypes">
+    <Template title="Spotty" isRoot={true}>
       <div style={{ margin: "40px 0px" }}>
         <Text>
           <Section title="Store Spotify favorites on Github">

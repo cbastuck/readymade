@@ -5,7 +5,7 @@ import NavigateButton from "../../NavigateButton";
 
 export default function Multiplication() {
   return (
-    <Template title="Multiplication" parent="prototypes">
+    <Template title="Multiplication" isRoot={true}>
       <div style={{ margin: "40px 0px" }}>
         <Text>
           <Section title="Practise multiplication rows">
