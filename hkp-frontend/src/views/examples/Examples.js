@@ -353,6 +353,10 @@ class Examples extends Component {
   };
 
   renderShowcases = () => {
+    const currentExample = this.getCurrentExample();
+    if (currentExample) {
+      return null;
+    }
     return (
       <div style={{ margin: "10px 40px" }}>
         <Headline>Showcases</Headline>
@@ -376,6 +380,10 @@ class Examples extends Component {
   };
 
   renderPrototypes = () => {
+    const currentExample = this.getCurrentExample();
+    if (currentExample) {
+      return null;
+    }
     return (
       <div style={{ margin: "10px 40px" }}>
         <Headline>Private Prototypes</Headline>
@@ -423,7 +431,6 @@ class Examples extends Component {
       <>
         <div style={s(t.h100, { fontFamily: "Roboto" })}>
           <Toolbar />
-
           {this.renderExamplesContainer()}
           {this.renderShowcases()}
           {this.renderPrototypes()}
