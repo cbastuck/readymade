@@ -4,7 +4,7 @@ const path = require("path");
 module.exports = function override(config, env) {
   const paths = {
     appPath:
-      //"/Users/cbastuck/Development/Projects/hookup.to/packages/hkp-frontend", // TODO
+      //"/Users/cbastuck/Development/Projects/hookup/packages/hkp-frontend", // TODO
       config.plugins[2].appPath,
   };
 
