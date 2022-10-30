@@ -9,16 +9,21 @@ export default function Updates() {
     <Template title="What's new">
       <List divided relaxed>
         <NewsItem
-          date="25.8.2022"
+          date="30.10.2022"
           content={
             <div>
               <div>
-                <Link to="/docs/tracks/bridge"> The Bridge </Link>
+                <Link to="/docs/tracks/bridge">Bridge </Link>
                 <div>
-                  Integrate board into external html documents, like in this{" "}
-                  <a href="/bridge.html" target="_blank">
-                    Example
-                  </a>
+                  Use a Google spreadsheet as content provider for a simple{" "}
+                  <a
+                    href={`${window.location.protocol}//bridge.${window.location.hostname}/`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    example
+                  </a>{" "}
+                  demonstrating the Bridge API.
                 </div>
               </div>
             </div>
@@ -82,7 +87,7 @@ function NewsItem({ content, date }) {
         <Icon name="circle outline" size="small" />
       </List.Icon>
       <List.Content>
-        <List.Header>{content}</List.Header>
+        <List.Header style={{ fontWeight: "normal" }}>{content}</List.Header>
         <List.Description>{date}</List.Description>
       </List.Content>
     </List.Item>

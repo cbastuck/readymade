@@ -37,8 +37,6 @@
     "eject": "react-app-rewired eject",
     "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend",
     "push": "npm run build && docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend",
-    "build-bridge": "parcel build --out-dir build-bridge --out-file index.js --public-url /bridge --no-source-maps --cache-dir ./parcel-cache --target browser bridge/index.js",
-    "deploy-bridge": "rsync -avz --progress --exclude node_modules build-bridge/* xeon:bridge",
     "prettier": "prettier --write \"src/**/*.js\"",
     "ssl": "HTTPS=true SSL_CRT_FILE=cert/server.crt SSL_KEY_FILE=cert/server.key npm start"
   },

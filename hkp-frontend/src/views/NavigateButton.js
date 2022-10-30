@@ -1,7 +1,7 @@
 import { Button } from "semantic-ui-react";
 import { useNavigate } from "react-router-dom";
 
-export default function NavigateButton({ destination, text }) {
+export default function NavigateButton({ destination, text, width }) {
   const navigate = useNavigate();
   return (
     <Button
@@ -13,6 +13,8 @@ export default function NavigateButton({ destination, text }) {
         whiteSpace: "nowrap",
         border: "solid 1px white",
         color: "black",
+        padding: 10,
+        width: width ? width : "initial",
       }}
     >
       {text}

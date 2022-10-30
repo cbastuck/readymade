@@ -3,9 +3,8 @@ const path = require("path");
 
 module.exports = function override(config, env) {
   const paths = {
-    appPath:
-      //"/Users/cbastuck/Development/Projects/hookup/packages/hkp-frontend", // TODO
-      config.plugins[2].appPath,
+    appPath: process.cwd(), //config.plugins[2].appPath,
+    //"/Users/cbastuck/Development/Projects/hookup/packages/hkp-frontend", // TODO
   };
 
   const wsPackageFn = path.resolve(`${paths.appPath}/../../package.json`);

@@ -114,7 +114,6 @@ html {
   margin: 0px;
 }
 
-
 .button {
   /* Positioning and sizing */
   display: block;
@@ -149,7 +148,7 @@ html {
 .hero-claim {
   color: #454f6d;
   font-size: large;
-  margin-bottom: 15px;
+  margin-bottom: 3px;
 }
 
 .claim-make-yours {
@@ -157,14 +156,14 @@ html {
   font-style: normal;
   text-transform: uppercase;
   font-size: 15px;
-  letter-spacing: 10px;
+  letter-spacing: 4px;
 }
 
 .claim-it {
   font-style: normal;
   font-weight: bold;
-  background-color: #757a80;
+  background-color: #454f6e;
   color: white;
-  padding-left: 6px;
-  padding-right: 0px;
+  padding-left: 9px;
+  padding-right: 5px;
 }

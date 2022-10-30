@@ -1,6 +1,11 @@
-export function Paragraph({ children, brief }) {
+export function Paragraph({ children, brief, headline }) {
+  const headlineStyle = {
+    textTransform: "uppercase",
+    fontSize: 12,
+  };
   return (
     <div style={{ margin: "20px 0px" }}>
+      {headline && <h1 style={headlineStyle}> {headline}</h1>}
       {brief}
       <div style={{ marginLeft: 20 }}>{children}</div>
     </div>

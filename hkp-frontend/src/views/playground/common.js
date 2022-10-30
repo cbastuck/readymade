@@ -62,10 +62,15 @@ export function getLocalBoards(prefix) {
   for (const key in localStorage) {
     if (key.startsWith(prefix)) {
       const data = localStorage.getItem(key);
-      savedBoards.push({
-        name: key.substr(prefix.length),
-        value: JSON.parse(data),
-      });
+      try {
+        const value = JSON.parse(data);
+        savedBoards.push({
+          name: key.substr(prefix.length),
+          value,
+        });
+      } catch (err) {
+        console.warn("Could not restore local board", key, err);
+      }
     }
   }
 

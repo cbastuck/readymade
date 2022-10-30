@@ -9,7 +9,7 @@ export default function Date({ month, day, year }) {
   };
   return (
     <div style={style}>
-      {month}, {day}. {year}
+      {month}, {day}.{year}
     </div>
   );
 }

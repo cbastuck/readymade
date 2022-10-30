@@ -86,6 +86,7 @@ export default function Spotty() {
                 be retrieved. The subesequent Montitor displays the data flowing
                 through.
               </Paragraph>
+
               <NavigateButton
                 destination="/playground/spotty?template=/boards/protos/spotty.json"
                 text="Show on Playground"
