@@ -19,36 +19,21 @@ export default function What() {
         }}
       >
         <div>
-          Explore ideas to combine logic and create computed behavior with a
-          different mindset than strictly an engineering mindset: more playful
-          and preferably using less code.
+          Explore ideas to combine logic blocks and create computational
+          behavior with a curious mindset: more playful and preferably using
+          less code.
         </div>
         <div>
-          Focus on ideas and prototypical solutions that provide insights and
-          generate new questions and again new prototypes.
+          Focus on ideas and prototypical solutions which provide insights and
+          lead to new questions and new prototypes eventually. Especially in the
+          domains of: centrality, connectivity, authority and scale while
+          acknowledging small or individual spaces.
         </div>
         <div>
-          Iterate on aspects of centrality, connectivity, authority and scale.
-          In particular acknowledge small and individual spaces. It could be
-          solutions that matter to only a few people - yet some problems might
-          be relevant to many.
-        </div>
-        <div>
-          I think, the more we spread the ability to analyze and decompose
-          patterns around us, also using technical terms, the more we set the
-          odds to find appropriate solutions before we need them.
-        </div>
-        <div>
-          This project - Hookup - is an imperfect and naïve private endeavour!
-          This is an excuse and a disclaimer to set expectations: you will hear
-          three chords, not a symphony.
-        </div>
-        <div>
-          Hookup focuses on exploration and comparatively little on delivering
-          solutions. I'd rather like to tell a story for the interested than
-          repeat common tech talk. Stories that come unconventional and less
-          predictable; and hopefully leaves someone puzzled, curious and most
-          important with an awareness of new possibilties.
+          Hookup is about exploration and little about delivering concrete
+          solutions. I build it to help my personal thought process and to tell
+          unconventional stories that ideally create an awareness of new
+          possibilties.
         </div>
         <Date month="June" day="24" year="2022" />
         <HStack style={{ marginTop: 10 }}>

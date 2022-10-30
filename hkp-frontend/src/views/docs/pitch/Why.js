@@ -19,50 +19,35 @@ export default function Why() {
         }}
       >
         <div>
-          In my opinion, the ability to understand logic and technical
-          components including data in its shape and flow is comparable to the
-          ability to read.
+          I think the ability to understand technical components and data-flows
+          is comparable to the ability to read.
         </div>
         <div>
-          Being able to read, doesn't immediately turn you into an author.
-          Similarly, learning to understand technical components and data flows
-          does not determine anyone to be or become a software engineer. Both
-          abilitities are only prerequisites for the latter, not more. At least
-          on a professional level. Looking at it from the perspective of an
-          individual's life in general, it's different.
+          This ability doesn't immediately turn you into an author. Similarly, a
+          basic understanding of technical components and data does not turn you
+          into a software engineer. Both abilitities are only prerequisites for
+          the latter, nothing more.
         </div>
         <div>
-          For example, the ability to read stories, recipies, history, poetry,
-          etc. can entertain and help to understand things better. Things like:
-          your self, your environment, our world. Sometimes it's one ingredient
-          to discover abilities, interests, your position, place or whatever you
-          chose to find important in your life and the life of your peers.
+          Reading stories, recipies, history, poetry, etc. can be entertaining
+          and lead to a deeper understanding of: your self, your environment,
+          our world, etc. It could be a source to discover unknown abilities,
+          interests, places, meaning or whatever someone finds important in
+          their life.
         </div>
         <div>
-          From experience, I can understand anyone not wanting to get into
-          professional software development. But still, the ability to
-          understand and produce software to create computational behavior,
-          visual effects, audio experiences, entertaining moments and creativity
-          in general, reassure my interest for abstractions and approaches to
-          technology that are more approachable.
+          Being a software engineer can be challenging and there are good
+          reasons to decide against this path. But nevertheless, the ability to
+          use tech to create and express yourself, can be mind changing and
+          should not be restricted to a specialized group of people with certain
+          traits, matching stereotypes an industry produces and sometimes even
+          reproduces. Otherwise, we could follow a steep slope along the
+          gradient, but merely towards a local optimum.
         </div>
         <div>
-          The possibilities to express yourself through artifacts made with
-          technology, should not be restricted to a specialized group of people
-          with certain traits, matching stereotypes an industry produces and
-          sometimes even reproduces. Otherwise, we could follow a steep slope
-          along the gradient, but merely towards a local optimum.
-        </div>
-        <div>
-          Even imperfect solutions create understanding. Further they lead to
-          new, improved ideas. One might become a root thought to identify
-          underlying and so far hidden problems.
-        </div>
-        <div>
-          Automation and digitalisation are on a public agenda. And so should be
-          upscaling the group of people finding unknown solutions and problems,
-          instead of focusing only on upscaling the number of devices executing
-          known solutions to acknowledged problems.
+          Automation and digitalisation are part of a public discourse. So
+          should be upscaling the amount of people finding new solutions and
+          unknown problems.
         </div>
 
         <Date month="June" day="24" year="2022" />
