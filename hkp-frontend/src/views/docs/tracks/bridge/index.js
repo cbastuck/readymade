@@ -56,9 +56,31 @@ export default function Bridge() {
               >
                 {`${window.location.protocol}//bridge.${window.location.host}`}
               </a>{" "}
-              for a demo showing different combinations of text, photo and songs
-              media types, showing the basic principles of using a Bridge.
-            </Paragraph>{" "}
+              for a basic example.
+            </Paragraph>
+            <Paragraph>
+              The idea of this demo is to tell a story by combining three media
+              elements: text,{" "}
+              <a href="https://unsplash.com" target="_black" rel="noreferrer">
+                image
+              </a>
+              ,{" "}
+              <a href="https://spotify.com" target="_black" rel="noreferrer">
+                music
+              </a>
+              . Taken individually, these elements are not connected to each
+              other in any way. Putting them together creates a new context,
+              which might be interesting, funny, inspiring or anything else
+              depending on the observer.
+            </Paragraph>
+            <Paragraph>
+              The combination (rows) of media elements (columns) are collected
+              in a spreadsheet using the Excel format. Every row of this table
+              gets selected, converted to JSON and passed as input data to a
+              HTML template, where template variables are replaced with the
+              value of their corresponding column. You can step through the rows
+              by clicking somewhere on the image, or using the arrow keys.
+            </Paragraph>
           </Section>
           <Section title="Description">
             <Paragraph headline="Template Runtime">

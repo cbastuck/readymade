@@ -7,17 +7,20 @@ const fontStyle = {
   letterSpacing: 1,
 };
 
-export default function What() {
+export default function Docs() {
   return (
     <Template title="Documentation" isRoot={true}>
-      <Article to="/docs/quickstart">1. Quickstarter</Article>
-      <Chapter name="2. Project Scope">
+      <Article to="/docs/updates" details="feature log">
+        1. What's new
+      </Article>
+
+      <Article to="/docs/quickstart">2. Quickstarter</Article>
+
+      <Chapter name="3. Project Scope">
         <Article to="/docs/pitch/what">What</Article>
         <Article to="/docs/pitch/why">Why</Article>
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
-
-      <Article to="/docs/updates">3. What's new</Article>
 
       <Chapter name="4. Side tracks" details="topics work in progress">
         <Article to="/docs/tracks/branding">brand and identity</Article>
@@ -29,7 +32,12 @@ export default function What() {
   );
 }
 
-const detailStyle = { fontSize: 11, textTransform: "none", paddingLeft: 10 };
+const detailStyle = {
+  fontSize: 11,
+  textTransform: "none",
+  paddingLeft: 10,
+  letterSpacing: 1,
+};
 
 function Chapter({ name, children, details, style: passedStyle = {} }) {
   const style = {

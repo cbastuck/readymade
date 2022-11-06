@@ -71,14 +71,16 @@ export default class HeaderMenu extends Component {
         <Link to="/docs" style={navItemStyle}>
           Docs
         </Link>
-        {!username && !isCompact && (
-          <Link to="/playground" style={navItemStyle}>
-            Playground
-          </Link>
-        )}
+
         {!isCompact && (
           <Link to="/examples" style={navItemStyle}>
             Examples
+          </Link>
+        )}
+
+        {!username && !isCompact && (
+          <Link to="/playground" style={navItemStyle}>
+            Playground
           </Link>
         )}
       </div>

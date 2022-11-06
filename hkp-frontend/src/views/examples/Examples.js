@@ -415,6 +415,9 @@ class Examples extends Component {
             }}
           >
             <div>
+              <Link to="/docs/tracks/bridge">The Bridge</Link>
+            </div>
+            <div>
               <Link to="/docs/proto/Spotty">Spotty</Link>
             </div>
             <div>

@@ -19,21 +19,27 @@ export default function What() {
         }}
       >
         <div>
-          Explore ideas to combine logic blocks and create computational
-          behavior with a curious mindset: more playful and preferably using
-          less code.
+          With this project, I explore ideas to combine logic blocks to create
+          computational behavior with a curious mindset: more playful and
+          preferably using less code. I focus on ideas and prototypical
+          solutions within following domains: centrality, connectivity,
+          authority and scale.
         </div>
         <div>
-          Focus on ideas and prototypical solutions which provide insights and
-          lead to new questions and new prototypes eventually. Especially in the
-          domains of: centrality, connectivity, authority and scale while
-          acknowledging small or individual spaces.
+          Prototypes are modular and composed of versatile, reusable blocks.
+          Even if it complicates things at times, the modular approach exhibits
+          interdependencies in the logic. This makes algorithms almost tangible,
+          creates insights and leads to new questions and eventually new
+          prototypes exhibiting different characteristics inherent to the
+          solution - or sometimes even the problem. With respect to scale, I
+          acknowledge small or individual spaces.
         </div>
         <div>
           Hookup is about exploration and little about delivering concrete
-          solutions. I build it to help my personal thought process and to tell
-          unconventional stories that ideally create an awareness of new
-          possibilties.
+          solutions. I make it, because it helps my thought process and enables
+          to tell unconventional stories. Stories that should create an
+          awareness for new possibilties and hidden abilities that one might
+          have.
         </div>
         <Date month="June" day="24" year="2022" />
         <HStack style={{ marginTop: 10 }}>

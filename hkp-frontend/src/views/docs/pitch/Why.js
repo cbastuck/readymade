@@ -19,35 +19,36 @@ export default function Why() {
         }}
       >
         <div>
-          I think the ability to understand technical components and data-flows
-          is comparable to the ability to read.
+          In my humble opinion, the ability to understand technical components
+          and data-flows is somewhat comparable to the ability to read.
         </div>
         <div>
-          This ability doesn't immediately turn you into an author. Similarly, a
-          basic understanding of technical components and data does not turn you
-          into a software engineer. Both abilitities are only prerequisites for
-          the latter, nothing more.
+          Reading doesn't turn you into an author. Similarly, a basic
+          understanding of technical components and data does not turn you into
+          a software engineer. Both abilitities are prerequisites for the
+          latter.
         </div>
         <div>
-          Reading stories, recipies, history, poetry, etc. can be entertaining
-          and lead to a deeper understanding of: your self, your environment,
-          our world, etc. It could be a source to discover unknown abilities,
-          interests, places, meaning or whatever someone finds important in
-          their life.
+          When reading stories, recipies, history, poetry, etc. it can be
+          entertaining and lead to a deeper understanding of many things: your
+          self, your environment, our world, etc. Maybe you discover unknown
+          abilities, interests, places, meaning or something you can't even
+          imagine right now.
         </div>
         <div>
-          Being a software engineer can be challenging and there are good
-          reasons to decide against this path. But nevertheless, the ability to
-          use tech to create and express yourself, can be mind changing and
-          should not be restricted to a specialized group of people with certain
-          traits, matching stereotypes an industry produces and sometimes even
-          reproduces. Otherwise, we could follow a steep slope along the
-          gradient, but merely towards a local optimum.
+          Similarily the ability to use technology to create and express
+          yourself can be mind changing. Development is a challenging task. Also
+          there are good reasons to decide against a professional path. Still,
+          the ability to use tech for your individual purpose, should not be
+          restricted to a specialized group of people with certain traits
+          matching shallow stereotypes and sometimes even reproducing them.
+          Technically speaking, otherwise we could walk a steep slope along the
+          gradient to find a local optimum.
         </div>
         <div>
-          Automation and digitalisation are part of a public discourse. So
-          should be upscaling the amount of people finding new solutions and
-          unknown problems.
+          Automation and digitalisation are part of a public discourse and
+          agenda. According this reasoning, so should be upscaling the amount of
+          people finding new solutions and discover yet unknown problems.
         </div>
 
         <Date month="June" day="24" year="2022" />

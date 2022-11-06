@@ -19,41 +19,38 @@ export default function How() {
         }}
       >
         <div>
-          A brief story as an intro. When my professional life as an engineer
-          began, soon I felt like repeating work I did before. Back then, we
-          worked on approaches that would mimick music simlilarity as perceived
-          by humans. We created processing pipelines, graphs eventually:
-          connected logical units, each with a clear resposibility. Chained
-          units would accept an audio stream on the input, next extract
-          similarity features from the audio signal, then select the most
-          important ones, train classification models, validate those models,
-          and finally persist them so models could be used in subsequent queries
-          from a frontend.
+          A brief story. When my life as a professional engineer began, I soon
+          felt like repeating work I did before. We worked on approaches that
+          would mimick music simlilarity as perceived by humans. We created
+          processing pipelines, graphs eventually: connected logical units, each
+          with a clear resposibility. Sequentially linked units that would
+          accept audio on the input, then extract similarity features from the
+          audio signal, then select the most important ones, then train
+          classification models, then validate these models, and finally persist
+          them, so they could be used for queries.
         </div>
         <div>
-          Something similar we did at university. We fed raw volumetric data
-          from CT scans to processing units in pipelines for being transformed,
-          projected, selected, mapped and eventually visualized as
-          semi-transparent, textured rectangles, ordererd and blended over each
-          other.
+          A similar pattern we applied at university in the domain of
+          visualisation. We fed raw volumetric data from CT scans to processing
+          units. Again, these were organised in pipelines. The units
+          transformed, projected, selected, mapped and eventually visualized the
+          input data as semi-transparent, textured rectangles, ordererd and
+          blended over each other.
         </div>
         <div>
-          Some years later, this common pattern drove the decision to apply to
-          Native Instruments. From my experience I felt convinced that any
-          instrument they release would be low-level code compositions of
-          Reaktor modules. That conviction did not hold long after I started.
-          Questions stayed because to many problem the following seemed true: as
-          soon as convenient abstractions were found and established, a big part
-          of maby core functionalities became nested functions triggering
-          continuations of nested functions while propagating data, and so on.
+          Years later, I was working for the company that built the music tool
+          Reaktor. Actually, this product was one of the reasons, why I applied.
+          From my experience, I "felt" convinced that any instrument they
+          release would be low-level code compositions of Reaktor modules. That
+          conviction did not hold long after I started - still the pipeline
+          pattern re-occured multiple times again. So much for the <i>how</i>.
         </div>
         <div>
-          That's <i>how</i> it could work in general. Sure, complexity and its
-          exponential growth are tough. Especially when applying this pattern to
-          arbitrary domains and use-cases. Sometimes it feels impossible when
-          looking for perfection and avoid having code in the end again.
-          However, if you look with a different pair of glasses, you can see
-          great examples:{" "}
+          I know, complexity and its exponential growth are non-negotiable. In
+          particular, when applying this pattern to arbitrary domains and
+          use-cases. Perfection might be impossible in terms of not coding in
+          the end again. But when I look with an optimistic pair of glasses, I
+          notice many good solutions in this area :{" "}
           <a href="https://nodered.org" target="_blank" rel="noreferrer">
             NodeRed
           </a>
@@ -71,33 +68,28 @@ export default function How() {
           </a>
           , etc.
         </div>
-        Why another approach?
-        <ul>
-          <li style={{ marginBottom: 5 }}>
-            It's fun building abstractions, see them work, watch them fail, then
-            understand and start pushing the limits by iterating on multiple
-            ends: the runtime, the module, the data, the topology of
-            connections. Personally, Hookup as a vehicle allows me to try any
-            hat I'd like to wear in a product's lifecycle from time to time.
-          </li>
-          <li>
-            Improving versatility is an interesting problem. Failure is an
-            option, still the likelihood a dice produces the desired outcome at
-            least once, grows with the number of trials. Thus, tackling a
-            problem from different perspectives and angles seems reasonable.
-            Small algorithmic deviations can have a huge impact.
-          </li>
-          <li>
-            They say the universe is infinite. That's what we tell our software
-            programs about space as well while demand and growth accelerate. Why
-            this matters in this context? Coincidence or not, it sounds like
-            there is a lot to explore.
-          </li>
-        </ul>
+        <div>
+          So then, why Hookup? Honestly, sometimes it feels like I don't have a
+          choice. It's fun building abstractions, see them work, watch them
+          fail, then understand and start pushing the limits by iterating on
+          multiple ends: the runtime, the module, the data, the topology of
+          connections.
+        </div>
+        <div>
+          Hookup allows me to try many hats, that I would like to wear in a
+          product's lifecycle. I consider this as one root to grow.
+        </div>
+        <div>
+          Last but not least: curiosity and naivity. "They say the universe is
+          infinite. Funny, that's what we tell our software about space as well,
+          while demand and growth accelerate." Why this matters here? I think,
+          it sounds like there is a lot to explore - in general.
+        </div>
         <Date month="June" day="24" year="2022" />
         <HStack>
           <NavigateButton to="/docs/pitch/why" label="< why?" />
-          <NavigateButton to="/examples" label="examples >>" />
+          <NavigateButton to="/docs" label="docs" />
+          <NavigateButton to="/examples" label="examples >" />
         </HStack>
       </div>
     </Template>
