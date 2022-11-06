@@ -50,7 +50,7 @@ export default function How() {
           particular, when applying this pattern to arbitrary domains and
           use-cases. Perfection might be impossible in terms of not coding in
           the end again. But when I look with an optimistic pair of glasses, I
-          notice many good solutions in this area :{" "}
+          notice a vibrant dynamic in this area:{" "}
           <a href="https://nodered.org" target="_blank" rel="noreferrer">
             NodeRed
           </a>
@@ -76,14 +76,14 @@ export default function How() {
           connections.
         </div>
         <div>
-          Hookup allows me to try many hats, that I would like to wear in a
-          product's lifecycle. I consider this as one root to grow.
+          Hookup allows me to try many hats, in a product's lifecycle. I
+          consider this as one root to grow.
         </div>
         <div>
-          Last but not least: curiosity and naivity. "They say the universe is
-          infinite. Funny, that's what we tell our software about space as well,
-          while demand and growth accelerate." Why this matters here? I think,
-          it sounds like there is a lot to explore - in general.
+          One last important aspect: curiosity and naivity. "They say the
+          universe is infinite. Funny, that's what we tell our software about
+          space as well, while demand and growth accelerate." Why this matters
+          here? I think, it sounds like there is a lot to explore - in general.
         </div>
         <Date month="June" day="24" year="2022" />
         <HStack>

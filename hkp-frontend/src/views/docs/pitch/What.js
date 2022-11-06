@@ -31,7 +31,7 @@ export default function What() {
           interdependencies in the logic. This makes algorithms almost tangible,
           creates insights and leads to new questions and eventually new
           prototypes exhibiting different characteristics inherent to the
-          solution - or sometimes even the problem. With respect to scale, I
+          solution - or sometimes even to the problem. With respect to scale, I
           acknowledge small or individual spaces.
         </div>
         <div>

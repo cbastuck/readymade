@@ -386,7 +386,7 @@ class Examples extends Component {
     }
     return (
       <div style={{ margin: "10px 40px" }}>
-        <Headline>Private Prototypes</Headline>
+        <Headline>My Prototypes</Headline>
         <div
           style={{
             fontFamily: "Roboto",
@@ -415,7 +415,11 @@ class Examples extends Component {
             }}
           >
             <div>
-              <Link to="/docs/tracks/bridge">The Bridge</Link>
+              <a
+                href={`${window.location.protocol}//bridge.${window.location.host}`}
+              >
+                Bridge Pitch
+              </a>
             </div>
             <div>
               <Link to="/docs/proto/Spotty">Spotty</Link>
