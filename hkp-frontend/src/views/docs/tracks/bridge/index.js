@@ -42,7 +42,7 @@ export default function Bridge() {
               Any board is just a JSON document and playground boards run in the
               browser only (in case no dependencies to external remote
               runtimes). Therefore, runtimes from playground boards can
-              seamlessly run on any website where it extecutes on the visitor's
+              seamlessly run on any website where they execute on the visitor's
               device.
             </Paragraph>
           </Section>
