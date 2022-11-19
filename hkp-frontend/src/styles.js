@@ -179,13 +179,28 @@ export const t = {
     UserSelect: "none",
     WebkitTapHighlightColor: "rgba(0,0,0,0)",
   },
+
+  selectable: {
+    WebkitTouchCallout: "initial",
+    WebkitUserSelect: "initial",
+    KhtmlUserSelect: "initial",
+    MozUserSelect: "initial",
+    MsUserSelect: "initial",
+    UserSelect: "initial",
+    WebkitTapHighlightColor: "initial",
+  },
 };
 
 // composed classes
 t.text = s(t.uc, t.ls1, t.fs12);
 
 export function HStack({ gap = undefined, style: _style = {}, children }) {
-  const style = { display: "flex", flexDirection: "row", ..._style };
+  const style = {
+    display: "flex",
+    flexDirection: "row",
+    width: "100%",
+    ..._style,
+  };
   if (gap !== undefined) {
     style.gap = gap;
   }

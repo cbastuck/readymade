@@ -1,5 +1,6 @@
 import { Component } from "react";
 import MonacoEditor from "@monaco-editor/react";
+import { t } from "../../../styles";
 
 const initialHeight = "100px";
 
@@ -17,6 +18,7 @@ export default class Editor extends Component {
           width: "100%",
           minWidth: 400,
           height: "100%",
+          ...t.selectable,
         }}
       >
         <MonacoEditor

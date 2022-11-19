@@ -85,7 +85,7 @@
         "uuid": "ae8defbd-40f8-4da5-9f72-a68270097bb9",
         "repeat": false,
         "steps": [
-          [ 
+          [
             {
               "type": "text",
               "text": "In a way, nature appears",
@@ -155,7 +155,7 @@
             {
               "type": "explainer",
               "text": "Press to Run",
-              "font":  {
+              "font": {
                 "weight": "lighter",
                 "size": "7pt",
                 "family": "Helvetica Neue, sans-serif"
@@ -186,7 +186,7 @@
               "direction": "right-to-left"
             }
           ],
-          [ 
+          [
             {
               "type": "text",
               "text": "driving towards an optimum - somewhere",
@@ -243,7 +243,7 @@
             },
             {
               "type": "text",
-              "text": "Variance supports the evolution.",
+              "text": "Variance supports life.",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {
@@ -350,7 +350,7 @@
                       "config": {
                         "reset": true
                       }
-                    }, 
+                    },
                     {
                       "serviceUuid": "ae8defbd-40f8-4da5-9f72-a68270097bb9",
                       "config": {
@@ -452,7 +452,7 @@
             "value": 300,
             "weak": true
           },
-          { 
+          {
             "index": 0,
             "operation": "greater",
             "property": "mean",

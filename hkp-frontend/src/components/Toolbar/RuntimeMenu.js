@@ -47,7 +47,7 @@ function RuntimeItem({ name, type, url, onRemove }) {
       </div>
     </div>
   ) : (
-    <div> {name} </div>
+    <div> Add {name} </div>
   );
 }
 
@@ -66,12 +66,15 @@ export default function RuntimeMenu({
     key: `${rt.name}.${idx}`,
     value: `${idx}`,
     children: (
-      <RuntimeItem
-        {...rt}
-        onRemove={() => {
-          onRemoveAvailableRuntime(rt);
-        }}
-      />
+      <div style={{ display: "flex", flexDirection: "row" }}>
+        <Icon name="plus" />
+        <RuntimeItem
+          {...rt}
+          onRemove={() => {
+            onRemoveAvailableRuntime(rt);
+          }}
+        />
+      </div>
     ),
     selected: false,
   }));
