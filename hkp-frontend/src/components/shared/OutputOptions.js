@@ -4,11 +4,11 @@ import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";
 import SidechainSelector from "./SidechainSelector";
 
-const none = "No routing";
+const none = "No Output";
 
 export default class OutputOptions extends Component {
   state = {
-    selected: none,
+    selected: undefined,
     expanded: false,
   };
 
@@ -35,7 +35,7 @@ export default class OutputOptions extends Component {
     const { items, initialValue } = this.props;
     const initial = initialValue ? { [initialValue]: initialValue } : {};
     return items.reduce((a, c) => ({ ...a, [c]: c }), {
-      none: none,
+      [none]: none,
       ...initial,
     });
   };
@@ -58,7 +58,7 @@ export default class OutputOptions extends Component {
       <SelectorField
         label="Peer"
         options={peerOptions}
-        value={selected}
+        value={selected || none}
         onChange={(ev, { value: selected }) => {
           this.setState({ selected }, () =>
             onSelect(selected === none ? null : selected)
@@ -95,7 +95,7 @@ export default class OutputOptions extends Component {
       onSidechangeRouting,
     } = this.props;
     return this.renderOptions(
-      "Sidechaining",
+      "Sidechain",
       <SidechainSelector
         boardContext={boardContext}
         values={sidechainRouting}
@@ -105,11 +105,17 @@ export default class OutputOptions extends Component {
   };
 
   renderExpanded = () => {
+    const { disabled } = this.props;
     return (
       <div style={t.p3}>
         {this.renderFlowOptions()}
-        {this.renderPeerOptions()}
         {this.renderSidechainOptions()}
+
+        {disabled ? (
+          <div style={{ ...t.p(10, 25) }}>{this.props.children} </div>
+        ) : (
+          this.renderPeerOptions()
+        )}
       </div>
     );
   };

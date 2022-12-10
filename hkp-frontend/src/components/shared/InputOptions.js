@@ -64,31 +64,35 @@ export default class InputOptions extends Component {
     const peerOptions = this.getSelectorOptions();
     return (
       <div style={{ padding: 10 }}>
-        <h1 style={s(t.tc, t.fs11)}>Allow From</h1>
-        <SelectorField
-          label="Peer"
-          options={peerOptions}
-          highlight={incoming}
-          value={selected}
-          disabled={disabled}
-          onChange={(_ev, { value: selected }) =>
-            this.setState({ selected }, () => {
-              switch (selected) {
-                case "none":
-                  onSelect(null);
-                  break;
-                case "all":
-                  onSelect("*");
-                  break;
-                default:
-                  onSelect(selected);
-                  break;
-              }
-            })
-          }
-          onOpen={() => onAction({ type: InputOptions.updatePeersAction })}
-        />
         {children ? children : false}
+        {!disabled && (
+          <>
+            <h1 style={s(t.tc, t.fs11)}>Allow From</h1>
+            <SelectorField
+              label="Peer"
+              options={peerOptions}
+              highlight={incoming}
+              value={selected}
+              disabled={disabled}
+              onChange={(_ev, { value: selected }) =>
+                this.setState({ selected }, () => {
+                  switch (selected) {
+                    case "none":
+                      onSelect(null);
+                      break;
+                    case "all":
+                      onSelect("*");
+                      break;
+                    default:
+                      onSelect(selected);
+                      break;
+                  }
+                })
+              }
+              onOpen={() => onAction({ type: InputOptions.updatePeersAction })}
+            />
+          </>
+        )}
       </div>
     );
   };

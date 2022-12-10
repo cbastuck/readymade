@@ -10,10 +10,30 @@ import DragProvider from "../../DragContext";
 import OutputOptions from "../../components/shared/OutputOptions";
 import InputOptions from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
+import SelectorField from "../../components/shared/SelectorField";
+
+const availablePeers = [
+  {
+    host: `peers.${window.location.hostname}`,
+    port: 80,
+    path: "/",
+  },
+];
+
+if (availablePeers[0].host !== "peers.hookup.to") {
+  availablePeers.push({
+    host: "peers.hookup.to",
+    port: 80,
+    path: "/",
+  });
+}
+
+const usePeerOverHTTPS = window.location.protocol === "https:";
 
 export default class Board extends Component {
   state = {
     peerActivation: {},
+    selectedDiscoveryServer: availablePeers[0],
   };
   runtimeInstances = {};
   inputSelectors = {};
@@ -120,8 +140,10 @@ export default class Board extends Component {
 
   renderOutputs = (peers, runtime, onUpdatePeers, boardContext) => {
     const { peerActivation } = this.state;
-    const outputRouting = this.props.outputRouting[runtime.id] || {};
+    const activationId = getActivationId(runtime.id);
+    const isPeerActive = activationId && !!peerActivation[activationId];
 
+    const outputRouting = this.props.outputRouting[runtime.id] || {};
     const { sidechainRouting } = this.props;
     const runtimeSidechainRouting =
       sidechainRouting && sidechainRouting[runtime.id];
@@ -139,17 +161,7 @@ export default class Board extends Component {
         onAction={(action) => {
           switch (action.type) {
             case OutputOptions.updatePeersAction: {
-              const activationId = getActivationId(runtime.id);
-              if (!peerActivation[activationId]) {
-                this.setState({
-                  peerActivation: {
-                    ...peerActivation,
-                    [activationId]: true,
-                  },
-                });
-              } else {
-                onUpdatePeers();
-              }
+              onUpdatePeers();
               break;
             }
             case OutputOptions.flowChanged:
@@ -165,14 +177,18 @@ export default class Board extends Component {
         onSidechangeRouting={(routing) =>
           this.props.onChangeSidechainRouting(runtime, routing)
         }
-      />
+        disabled={!isPeerActive}
+      >
+        {!isPeerActive && this.renderPeersActivator(activationId)}
+      </OutputOptions>
     );
   };
 
   renderInputs = (peers, runtime, onUpdatePeers) => {
     const { peerActivation } = this.state;
     const activationId = getActivationId(runtime.id);
-    const isPeerActive = !!peerActivation[activationId];
+    const isPeerActive = activationId && !!peerActivation[activationId];
+
     const inputRouting =
       this.props.inputRouting && this.props.inputRouting[runtime.id];
     return (
@@ -191,8 +207,45 @@ export default class Board extends Component {
         onSelect={(value) => this.props.onChangeInputRouting(runtime, value)}
         disabled={!isPeerActive}
       >
+        {!isPeerActive && this.renderPeersActivator(activationId)}
+      </InputOptions>
+    );
+  };
+
+  renderPeersActivator = (activationId) => {
+    const { peerActivation, selectedDiscoveryServer } = this.state;
+    const { host: peerHost } = selectedDiscoveryServer;
+    const discoveryOptions = availablePeers.reduce(
+      (acc, { host }) => ({
+        ...acc,
+        [host]: host,
+      }),
+      {}
+    );
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          textAlign: "left",
+        }}
+      >
+        <div style={{ width: 250, paddingBottom: 5 }}>
+          Receive or send data from or to a peer runtime. Activate peer
+          discovery via:
+        </div>
+        <SelectorField
+          label="URL"
+          value={peerHost}
+          options={discoveryOptions}
+          onChange={(_ev, { value }) =>
+            this.setState({ op: value, active: false })
+          }
+        />
         <div
           style={{
+            marginTop: "3px",
             color: "#4183c4",
             cursor: "pointer",
             textAlign: "center",
@@ -206,9 +259,9 @@ export default class Board extends Component {
             })
           }
         >
-          {!isPeerActive ? "Click to enable" : false}
+          Click to enable
         </div>
-      </InputOptions>
+      </div>
     );
   };
 
@@ -244,7 +297,12 @@ export default class Board extends Component {
 
   render() {
     const { description, boardName, allowedServices } = this.props;
-    const { peerActivation } = this.state;
+    const { peerActivation, selectedDiscoveryServer } = this.state;
+    const {
+      host: peerHost,
+      port: usePeerPort,
+      path: usePeerRoutePath,
+    } = selectedDiscoveryServer;
     return (
       <div>
         <div style={s(t.w100)}>
@@ -274,6 +332,10 @@ export default class Board extends Component {
                         }
                       }}
                       active={isPeerActive}
+                      peerHost={peerHost}
+                      usePeerPort={usePeerPort}
+                      usePeerRoutePath={usePeerRoutePath}
+                      usePeerOverHTTPS={usePeerOverHTTPS}
                     >
                       {this.renderRuntime(
                         this.props.boardContext,

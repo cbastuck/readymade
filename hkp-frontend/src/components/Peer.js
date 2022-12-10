@@ -4,9 +4,6 @@ import Peerjs from "peerjs";
 
 import { PeersCtx } from "../PeersContext";
 
-const peerHost = window.location.hostname;
-const isHTTPS = window.location.protocol === "https:";
-
 function logError(err) {
   console.error("Error in <Peer />", err);
 }
@@ -38,11 +35,18 @@ export default class Peer extends Component {
   }
 
   initPeer = () => {
-    const { name = "unnamed-peer", onData } = this.props;
+    const {
+      name = "unnamed-peer",
+      onData,
+      peerHost,
+      usePeerPort,
+      usePeerRoutePath,
+      usePeerOverHTTPS,
+    } = this.props;
     const peer = new Peerjs(name, {
       host: peerHost,
-      port: isHTTPS ? 443 : 80,
-      path: "/peers",
+      port: usePeerPort ? usePeerPort : usePeerOverHTTPS ? 443 : 80,
+      path: usePeerRoutePath ? usePeerRoutePath : "/peers",
     });
 
     peer.on("open", () => {
