@@ -26,18 +26,19 @@ export default class SelectorField extends Component {
     }
   }
 
-  renderOptions = (width) => {
+  renderOptions = () => {
     const {
       label = "",
       onChange = undefined,
       options = {},
       highlight = undefined,
+      uppercaseValues = true,
     } = this.props;
     return (
       <div
         style={{
           textAlign: "left",
-          textTransform: "uppercase",
+          textTransform: uppercaseValues ? "uppercase" : "initial",
           backgroundColor: "white",
           position: "absolute",
           zIndex: 2000003,
@@ -80,6 +81,7 @@ export default class SelectorField extends Component {
       style = {},
       minWidth = "100%",
       placeholder = "",
+      uppercaseValues = true,
     } = this.props;
     const text = options[value];
     const fontSize = 11;
@@ -110,7 +112,7 @@ export default class SelectorField extends Component {
         )}
         <div
           style={{
-            textTransform: "uppercase",
+            textTransform: uppercaseValues ? "uppercase" : "initial",
             fontSize: 12,
             padding: 8,
             border: "solid 1px #DDD",

@@ -98,7 +98,6 @@ export default class BoardCollection extends Component {
       <div style={s(t.tr, t.mb5)}>
         <Input
           icon="search"
-          style={{ marginRight: 20 }}
           value={filter}
           onChange={(_, { value }) =>
             this.setState({ filter: value.toLowerCase() })
@@ -125,10 +124,22 @@ export default class BoardCollection extends Component {
     return (
       items.length > 0 && (
         <div style={{ ...borderStyle, height: "100%", fontFamily: "Roboto" }}>
-          {headline && (
-            <h1 style={s(t.mt15, t.tc, t.fs16, t.p(0, 0))}>{headline}</h1>
-          )}
-          {renderSearch && this.renderSearch()}
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              width: "100%",
+              borderTop: "1px dotted lightgray",
+              paddingTop: 15,
+            }}
+          >
+            {headline && (
+              <h1 style={s(t.mt15, t.tc, t.fs16, t.w100)}>{headline}</h1>
+            )}
+          </div>
+          <div style={{ marginTop: -30 }}>
+            {renderSearch && this.renderSearch()}
+          </div>
           {this.renderBoards(items)}
         </div>
       )

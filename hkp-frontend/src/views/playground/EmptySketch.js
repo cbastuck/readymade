@@ -8,8 +8,9 @@ export default function EmptySketch({ boardName }) {
   const headline = !boardName ? (
     "this is an empty board"
   ) : (
-    <span style={s(t.tc, t.fs14, t.uc, t.ls1)}>
-      Board <span style={t.italic}>{boardName}</span> is empty
+    <span style={s(t.tc, t.fs15, t.uc, t.ls1)}>
+      Board <span style={s(t.italic, { color: "#1e70bf" })}>{boardName}</span>{" "}
+      is empty
     </span>
   );
   return (

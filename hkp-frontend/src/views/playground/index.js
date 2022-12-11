@@ -82,6 +82,12 @@ class Playground extends Component {
 
   externalInputs = {};
 
+  componentDidMount() {
+    if (this.isBoardUnnamed()) {
+      this.newBoard();
+    }
+  }
+
   componentDidUpdate(prevProps) {
     const board = this.props.match.params.board;
     const prevBoard = prevProps.match.params.board;
@@ -475,13 +481,17 @@ class Playground extends Component {
     }
   };
 
+  isBoardUnnamed = () => {
+    return this.state.boardName === defaultName;
+  };
+
   renderPlaceholderOrBoard = (boardContext) => {
     const { boardName } = this.state;
     const isPlaygroundEmpty =
       boardContext &&
       boardContext.runtimes &&
       boardContext.runtimes.length === 0;
-    const isBoardUnnamed = boardName === defaultName;
+    const isBoardUnnamed = this.isBoardUnnamed();
 
     const content = isPlaygroundEmpty ? (
       <EmptySketch boardName={isBoardUnnamed ? undefined : boardName} />
@@ -529,7 +539,7 @@ class Playground extends Component {
               {content}
               {!isPlaygroundEmpty && isBoardUnnamed ? saveReminder : false}
             </div>
-            {isBoardUnnamed && isPlaygroundEmpty && (
+            {isPlaygroundEmpty && (
               <div style={s(t.uc, { width: "90%", margin: "auto" })}>
                 <LoadPanel>{content}</LoadPanel>
               </div>
