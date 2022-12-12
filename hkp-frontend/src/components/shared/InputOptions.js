@@ -15,24 +15,6 @@ export default class InputOptions extends Component {
 
   static updatePeersAction = "update-peers";
 
-  componentDidMount() {
-    const { initialValue } = this.props;
-    if (initialValue !== undefined) {
-      this.setState({
-        selected: initialValue === "*" ? "all" : initialValue,
-      });
-    }
-  }
-
-  componentDidUpdate(prevProps) {
-    if (this.props.items !== prevProps.items) {
-      const options = this.getSelectorOptions();
-      if (!options[this.state.selected]) {
-        this.setState({ selected: "none" });
-      }
-    }
-  }
-
   getSelectorOptions = () => {
     const { items, initialValue } = this.props;
     const initial =
@@ -59,9 +41,15 @@ export default class InputOptions extends Component {
   };
 
   renderExpanded = () => {
-    const { selected, incoming } = this.state;
-    const { onSelect, onAction, children, disabled } = this.props;
+    const { incoming } = this.state;
+    const { value, onSelect, onAction, children, disabled } = this.props;
     const peerOptions = this.getSelectorOptions();
+
+    const selected = !peerOptions[value]
+      ? "none"
+      : value === "*"
+      ? "all"
+      : value;
     return (
       <div style={{ padding: 10 }}>
         {children ? children : false}

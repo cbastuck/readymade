@@ -600,7 +600,7 @@ class Playground extends Component {
             ...outputRouting[runtime.id],
           };
 
-          if (peer) {
+          if (peer || peer === null) {
             runtimeData.peer = peer;
           }
 

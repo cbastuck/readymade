@@ -21,7 +21,7 @@ export default function SidechainSelector({ boardContext, values, onChange }) {
   );
   return (
     <Dropdown
-      style={{ maxWidth: 200 }}
+      style={{ width: "100%" }}
       placeholder="Targets"
       fluid
       multiple

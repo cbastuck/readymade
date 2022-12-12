@@ -77,7 +77,9 @@ export default class Peer extends Component {
       const { onConnectionOpened = () => {}, onConnectionClosed = () => {} } =
         this.props;
       connection.on("data", (data) => onData(data, connection.peer));
-      connection.on("close", () => onConnectionClosed(name));
+      connection.on("close", () => {
+        onConnectionClosed(name);
+      });
       onConnectionOpened(name, connection);
     });
 

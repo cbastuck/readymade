@@ -32,7 +32,7 @@ const availablePeers = [
 export default class Board extends Component {
   state = {
     peerActivation: {},
-    selectedDiscoveryServer: availablePeers[0],
+    selectedDiscoveryServer: availablePeers[1], // TODO: should be 0
   };
   runtimeInstances = {};
   inputSelectors = {};
@@ -149,7 +149,7 @@ export default class Board extends Component {
     return (
       <OutputOptions
         items={peers}
-        initialValue={outputRouting.peer}
+        value={outputRouting.peer}
         onExpand={() => {
           const rt = this.getRuntimeById(runtime.id);
           if (rt) {
@@ -194,7 +194,7 @@ export default class Board extends Component {
       <InputOptions
         ref={(selector) => (this.inputSelectors[runtime.id] = selector)}
         items={peers}
-        initialValue={inputRouting}
+        value={inputRouting}
         onAction={(action) => {
           switch (action.type) {
             case InputOptions.updatePeersAction:
@@ -237,8 +237,8 @@ export default class Board extends Component {
           label="URL"
           value={formatHostAndPort(selectedDiscoveryServer)}
           options={discoveryOptions}
-          onChange={(_ev, { value }) =>
-            this.setState({ op: value, active: false })
+          onChange={(_ev, { _, index }) =>
+            this.setState({ selectedDiscoveryServer: availablePeers[index] })
           }
           uppercaseValues={false}
         />
@@ -308,13 +308,14 @@ export default class Board extends Component {
           <PeersProvider ref={(ctx) => (this.peerContext = ctx)}>
             <PeersConsumer>
               {(peers) =>
-                this.props.boardContext.runtimes.map((runtime, rtidx) => {
+                this.props.boardContext.runtimes.map((runtime) => {
                   const isPeerActive =
                     !!peerActivation[getActivationId(runtime.id)];
+                  const peerName = `${boardName}-${runtime.name}`;
                   return (
                     <Peer
                       key={`${boardName}-runtime-peer-${runtime.id}`}
-                      name={`${boardName}-${runtime.name}`}
+                      name={peerName}
                       onData={(envelope) => {
                         const { sender, data } = envelope;
                         const input = this.props.inputRouting[runtime.id];
@@ -329,6 +330,14 @@ export default class Board extends Component {
                             selector.signalIncoming(sender);
                           }
                         }
+                      }}
+                      onConnectionClosed={() => {
+                        this.props.onChangeOutputRouting(runtime, {
+                          peer: null,
+                        });
+                        this.props.onChangeInputRouting(runtime, {
+                          peer: null,
+                        });
                       }}
                       active={isPeerActive}
                       peerHost={peerHost}

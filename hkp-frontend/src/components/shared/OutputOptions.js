@@ -7,36 +7,15 @@ import SidechainSelector from "./SidechainSelector";
 const none = "No Output";
 
 export default class OutputOptions extends Component {
-  state = {
-    selected: undefined,
-    expanded: false,
-  };
+  state = { expanded: false };
 
   static updatePeersAction = "update-peers";
   static flowChanged = "flow-changed";
 
-  componentDidMount() {
-    const { initialValue = none } = this.props;
-    this.setState({
-      selected: initialValue,
-    });
-  }
-
-  componentDidUpdate(prevProps) {
-    if (this.props.items !== prevProps.items) {
-      const options = this.getSelectorOptions();
-      if (!options[this.state.selected]) {
-        this.setState({ selected: none });
-      }
-    }
-  }
-
   getSelectorOptions = () => {
-    const { items, initialValue } = this.props;
-    const initial = initialValue ? { [initialValue]: initialValue } : {};
+    const { items } = this.props;
     return items.reduce((a, c) => ({ ...a, [c]: c }), {
       [none]: none,
-      ...initial,
     });
   };
 
@@ -50,19 +29,16 @@ export default class OutputOptions extends Component {
   };
 
   renderPeerOptions = () => {
-    const { selected } = this.state;
-    const { onSelect, onAction } = this.props;
+    const { onSelect, onAction, value } = this.props;
     const peerOptions = this.getSelectorOptions();
     return this.renderOptions(
       "Route to",
       <SelectorField
         label="Peer"
         options={peerOptions}
-        value={selected || none}
+        value={value || none}
         onChange={(ev, { value: selected }) => {
-          this.setState({ selected }, () =>
-            onSelect(selected === none ? null : selected)
-          );
+          onSelect(selected === none ? null : selected);
         }}
         onOpen={() => onAction({ type: OutputOptions.updatePeersAction })}
       />

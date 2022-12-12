@@ -58,7 +58,7 @@ export default class SelectorField extends Component {
               backgroundColor: highlight === key && "#8aa1b733",
             }}
             onClick={(ev) => {
-              onChange && onChange(ev, { value: key });
+              onChange && onChange(ev, { value: key, index: idx });
               this.setState({ optionsVisible: false });
             }}
           >
