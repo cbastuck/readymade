@@ -3,7 +3,7 @@ import { Loader } from "semantic-ui-react";
 import * as uuid from "uuid";
 
 import { withRouter } from "../../common";
-import { AppConsumer } from "../../AppContext";
+import { AppCtx } from "../../AppContext";
 import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
@@ -82,7 +82,18 @@ class Playground extends Component {
 
   externalInputs = {};
 
+  onKey = (e) => {
+    if (
+      (window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) &&
+      e.keyCode === 83
+    ) {
+      e.preventDefault();
+      this.saveBoard(false);
+    }
+  };
+
   componentDidMount() {
+    document.addEventListener("keydown", this.onKey, false);
     if (this.isBoardUnnamed()) {
       this.newBoard();
     }
@@ -114,6 +125,7 @@ class Playground extends Component {
 
   componentWillUnmount() {
     this.clearPlayground();
+    document.removeEventListener("keydown", this.onKey);
   }
 
   fetchData = async () => {
@@ -353,7 +365,6 @@ class Playground extends Component {
     if (type === "remote" || type === "node") {
       // TODO: inform the remote instance about the board and runtime
       const created = await addRuntime(boardname, { ...desc, runtimeId });
-      console.log("CREATED REMOTE RT", created, { ...desc, runtimeId });
       registry = await getRuntimeRegistry(name, created.id);
     } else {
       registry = this.defaultRegistry.availableServices;
@@ -434,8 +445,8 @@ class Playground extends Component {
     this.setState({ runtimes });
   };
 
-  saveBoard = async () => {
-    if (this.prompt) {
+  saveBoard = async (showDialog = true) => {
+    if (this.prompt && showDialog) {
       const suggested =
         this.props.match && this.props.match.params
           ? this.props.match.params.board
@@ -456,6 +467,22 @@ class Playground extends Component {
         }
         return data;
       }
+    } else if (this.state.boardName) {
+      const { boardName: name, description } = this.state;
+      const data = await this.serializeBoard({ name, description });
+      localStorage.setItem(
+        `${localStoragePrefix}${name}`,
+        JSON.stringify(data)
+      );
+      this.context.pushNotification({
+        type: "info",
+        message: "Board was saved",
+      });
+    } else {
+      this.context.pushNotification({
+        type: "error",
+        message: "Saving board failed",
+      });
     }
   };
 
@@ -650,77 +677,72 @@ class Playground extends Component {
 
   render() {
     const { requireLogin } = this.state;
+    const appContext = this.context;
     return (
-      <AppConsumer>
-        {(appContext) => (
-          <BoardProvider
-            key={`playground-${this.state.boardName}`}
-            user={(appContext && appContext.user) || this.user}
-            boardName={this.state.boardName}
-            fetchData={this.fetchData}
-            isRuntimeInScope={() => true}
-            addRuntime={this.addRuntime}
-            removeRuntime={this.removeRuntime}
-            addService={this.addService}
-            removeService={this.removeService}
-            newBoard={this.newBoard}
-            clearBoard={this.clearPlayground}
-            saveBoard={this.saveBoard}
-            shareBoard={this.shareBoard}
-            arrangeService={this.reorderService}
-            isActionAvailable={this.isActionAvailable}
-            setRuntimeName={this.setRuntimeName}
-            serializeBoard={this.serializeBoard}
-            onAction={(action) => {
-              if (action.type === "toggleBoardSync") {
-                this.setState({ boardSyncActive: !this.state.boardSyncActive });
-                return true;
-              }
-            }}
-            availableRuntimes={availableRuntimes.concat(
-              restoredAvailableRuntimes
-            )}
-          >
-            <BoardConsumer>
-              {(boardContext) => (
-                <div id="playground-root" style={t.fill}>
-                  <Toolbar
-                    board={this.state.boardName}
-                    showRuntimeMenu={true}
-                    onUpdateAvailableRuntimes={(runtimes) =>
-                      localStorage.setItem(
-                        "available-remote-runtimes",
-                        JSON.stringify(
-                          runtimes.filter((rt) => rt.type === "remote")
-                        )
-                      )
-                    }
-                    isCompact={boardContext.appViewMode !== "wide"}
-                  />
-                  {requireLogin ? (
-                    <Login board={`playground/${boardContext.boardName}`} />
-                  ) : (
-                    <>
-                      <SaveBoardPrompt
-                        ref={(prompt) => (this.prompt = prompt)}
-                      />
-                      {this.state.boardSyncActive &&
-                        this.renderBoardSync(boardContext)}
-                      {this.state.initialFetched
-                        ? this.renderPlaceholderOrBoard(boardContext)
-                        : this.renderLoadIndicator()}
-                    </>
-                  )}
-
-                  <Footer />
-                </div>
+      <BoardProvider
+        key={`playground-${this.state.boardName}`}
+        user={(appContext && appContext.user) || this.user}
+        boardName={this.state.boardName}
+        fetchData={this.fetchData}
+        isRuntimeInScope={() => true}
+        addRuntime={this.addRuntime}
+        removeRuntime={this.removeRuntime}
+        addService={this.addService}
+        removeService={this.removeService}
+        newBoard={this.newBoard}
+        clearBoard={this.clearPlayground}
+        saveBoard={this.saveBoard}
+        shareBoard={this.shareBoard}
+        arrangeService={this.reorderService}
+        isActionAvailable={this.isActionAvailable}
+        setRuntimeName={this.setRuntimeName}
+        serializeBoard={this.serializeBoard}
+        onAction={(action) => {
+          if (action.type === "toggleBoardSync") {
+            this.setState({ boardSyncActive: !this.state.boardSyncActive });
+            return true;
+          }
+        }}
+        availableRuntimes={availableRuntimes.concat(restoredAvailableRuntimes)}
+      >
+        <BoardConsumer>
+          {(boardContext) => (
+            <div id="playground-root" style={t.fill}>
+              <Toolbar
+                board={this.state.boardName}
+                showRuntimeMenu={true}
+                onUpdateAvailableRuntimes={(runtimes) =>
+                  localStorage.setItem(
+                    "available-remote-runtimes",
+                    JSON.stringify(
+                      runtimes.filter((rt) => rt.type === "remote")
+                    )
+                  )
+                }
+                isCompact={boardContext.appViewMode !== "wide"}
+              />
+              {requireLogin ? (
+                <Login board={`playground/${boardContext.boardName}`} />
+              ) : (
+                <>
+                  <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
+                  {this.state.boardSyncActive &&
+                    this.renderBoardSync(boardContext)}
+                  {this.state.initialFetched
+                    ? this.renderPlaceholderOrBoard(boardContext)
+                    : this.renderLoadIndicator()}
+                </>
               )}
-            </BoardConsumer>
-          </BoardProvider>
-        )}
-      </AppConsumer>
+
+              <Footer />
+            </div>
+          )}
+        </BoardConsumer>
+      </BoardProvider>
     );
   }
 }
+
+Playground.contextType = AppCtx;
 
 export default withRouter(Playground);

@@ -12,23 +12,22 @@ import InputOptions from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
 import SelectorField from "../../components/shared/SelectorField";
 
+const usePeerOverHTTPS = window.location.protocol === "https:";
+
 const availablePeers = [
   {
-    host: `peers.${window.location.hostname}`,
-    port: 80,
+    host: "peers.hookup.to",
+    port: usePeerOverHTTPS ? 443 : 80,
     path: "/",
+    protocol: usePeerOverHTTPS ? "wss" : "ws",
+  },
+  {
+    host: `peers.${window.location.hostname}`,
+    port: usePeerOverHTTPS ? 443 : 80,
+    path: "/",
+    protocol: usePeerOverHTTPS ? "wss" : "ws",
   },
 ];
-
-if (availablePeers[0].host !== "peers.hookup.to") {
-  availablePeers.push({
-    host: "peers.hookup.to",
-    port: 80,
-    path: "/",
-  });
-}
-
-const usePeerOverHTTPS = window.location.protocol === "https:";
 
 export default class Board extends Component {
   state = {
@@ -214,14 +213,13 @@ export default class Board extends Component {
 
   renderPeersActivator = (activationId) => {
     const { peerActivation, selectedDiscoveryServer } = this.state;
-    const { host: peerHost } = selectedDiscoveryServer;
-    const discoveryOptions = availablePeers.reduce(
-      (acc, { host }) => ({
+    const discoveryOptions = availablePeers.reduce((acc, availablePeer) => {
+      const hostAndPort = formatHostAndPort(availablePeer);
+      return {
         ...acc,
-        [host]: host,
-      }),
-      {}
-    );
+        [hostAndPort]: hostAndPort,
+      };
+    }, {});
 
     return (
       <div
@@ -237,11 +235,12 @@ export default class Board extends Component {
         </div>
         <SelectorField
           label="URL"
-          value={peerHost}
+          value={formatHostAndPort(selectedDiscoveryServer)}
           options={discoveryOptions}
           onChange={(_ev, { value }) =>
             this.setState({ op: value, active: false })
           }
+          uppercaseValues={false}
         />
         <div
           style={{
@@ -355,4 +354,9 @@ export default class Board extends Component {
       </div>
     );
   }
+}
+
+function formatHostAndPort(availablePeer) {
+  const { host, port, protocol } = availablePeer;
+  return `${protocol}://${host}:${port}`;
 }

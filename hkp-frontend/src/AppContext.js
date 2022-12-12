@@ -3,7 +3,8 @@ import React, { Component, createContext } from "react";
 import { restoreToken, processToken, setToken } from "./core/Auth";
 import { redirectTo } from "./core/actions";
 
-const { Provider, Consumer: AppConsumer } = createContext();
+const AppCtx = createContext();
+const { Provider, Consumer: AppConsumer } = AppCtx;
 
 class AppContext extends Component {
   constructor(props) {
@@ -18,6 +19,13 @@ class AppContext extends Component {
         userId,
         features,
       },
+      notifications: [],
+      pushNotification: (notification) =>
+        this.setState({
+          notifications: [notification, ...this.state.notifications],
+        }),
+      popNotification: () =>
+        this.setState({ notifications: this.state.notifications.slice(1) }),
       // modifying functions
       updateToken: this.updateToken,
       logout: this.logout,
@@ -65,5 +73,5 @@ class AppContext extends Component {
   }
 }
 
-export { AppConsumer };
+export { AppConsumer, AppCtx };
 export default AppContext;
