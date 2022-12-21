@@ -589,6 +589,7 @@ class Playground extends Component {
     return (
       <Board
         ref={(board) => (this.board = board)}
+        appContext={this.context}
         boardContext={boardContext}
         allowedServices={allowedServices}
         description={description}

@@ -38,7 +38,8 @@
     "deploy": "rsync -avz --progress --exclude node_modules build/* xeon:frontend",
     "push": "npm run build && docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend",
     "prettier": "prettier --write \"src/**/*.js\"",
-    "ssl": "HTTPS=true SSL_CRT_FILE=cert/server.crt SSL_KEY_FILE=cert/server.key npm start"
+    "ssl": "HTTPS=true SSL_CRT_FILE=cert/server.crt SSL_KEY_FILE=cert/server.key npm start",
+    "audit": "npm audit --production"
   },
   "eslintConfig": {
     "extends": [

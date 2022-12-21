@@ -14,8 +14,25 @@ class PeersProvider extends Component {
       onPeer: this.onPeer,
       onPeerClosed: this.onPeerClosed,
       updatePeers: this.updatePeers,
+      closeConnection: this.closeConnection,
     };
   }
+
+  closeConnection = (srcPeerName, dstPeerName) => {
+    const { peers, connections } = this.state;
+    const srcPeer = peers[srcPeerName];
+    srcPeer.onConnectionClosed && srcPeer.onConnectionClosed(dstPeerName);
+    const srcConnections = connections[srcPeerName] || {};
+    this.setState(
+      {
+        connections: {
+          ...srcConnections,
+          [srcPeerName]: removeKeyFromObject(srcConnections, dstPeerName),
+        },
+      },
+      () => console.log("PeersContext: Updated connections", this.state)
+    );
+  };
 
   onPeer = (peerName, peer) => {
     peer.on("error", (err) => {
@@ -98,19 +115,10 @@ class PeersProvider extends Component {
       };
       const { connection, srcPeer } = await this.connectToPeer(src, dst);
 
-      console.log("Opened connection from", src, "to", dst);
+      console.log("PeersContext: Opened connection from", src, "to", dst);
       srcPeer.onConnectionOpened && srcPeer.onConnectionOpened(dst);
 
-      connection.on("close", () => {
-        console.log("Closed connection from", src, "to", dst);
-        srcPeer.onConnectionClosed && srcPeer.onConnectionClosed(dst);
-        this.setState({
-          connections: {
-            ...srcConnections,
-            [src]: removeKeyFromObject(srcConnections, dst),
-          },
-        });
-      });
+      connection.on("close", () => this.closeConnection(src, dst));
 
       connection.send(envelope);
       this.setState({

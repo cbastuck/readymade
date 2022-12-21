@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { Icon } from "semantic-ui-react";
 
 import PeersProvider, { PeersConsumer } from "../../PeersContext";
 import Peer from "../../components/Peer";
@@ -137,7 +138,7 @@ export default class Board extends Component {
     }
   };
 
-  renderOutputs = (peers, runtime, onUpdatePeers, boardContext) => {
+  renderOutputs = (peers, runtime, peersContext, boardContext) => {
     const { peerActivation } = this.state;
     const activationId = getActivationId(runtime.id);
     const isPeerActive = activationId && !!peerActivation[activationId];
@@ -156,11 +157,25 @@ export default class Board extends Component {
             rt.scrollRuntimeContainerToRight();
           }
         }}
-        onSelect={(peer) => this.props.onChangeOutputRouting(runtime, { peer })}
+        onSelect={(peer) => {
+          if (outputRouting.peer) {
+            const srcPeer = this.getPeerName(runtime);
+            const dstPeer = outputRouting.peer;
+            console.log(
+              "Board.OutputOptions.onSelect from ",
+              srcPeer,
+              "to",
+              dstPeer
+            );
+            peersContext.closeConnection(srcPeer, dstPeer);
+          }
+
+          this.props.onChangeOutputRouting(runtime, { peer });
+        }}
         onAction={(action) => {
           switch (action.type) {
             case OutputOptions.updatePeersAction: {
-              onUpdatePeers();
+              peersContext.updatePeers();
               break;
             }
             case OutputOptions.flowChanged:
@@ -183,7 +198,7 @@ export default class Board extends Component {
     );
   };
 
-  renderInputs = (peers, runtime, onUpdatePeers) => {
+  renderInputs = (peers, runtime, peersContext) => {
     const { peerActivation } = this.state;
     const activationId = getActivationId(runtime.id);
     const isPeerActive = activationId && !!peerActivation[activationId];
@@ -198,7 +213,7 @@ export default class Board extends Component {
         onAction={(action) => {
           switch (action.type) {
             case InputOptions.updatePeersAction:
-              return onUpdatePeers();
+              return peersContext.updatePeers();
             default:
               break;
           }
@@ -264,12 +279,12 @@ export default class Board extends Component {
     );
   };
 
-  renderRuntime = (boardContext, runtime, peers, allowedServices) => {
+  renderRuntime = (boardContext, runtime, peersContext, allowedServices) => {
     const { boardName } = this.props;
     const ownPeers = boardContext.runtimes.map(
       (rt) => `${boardName}-${rt.name}`
     );
-    const filteredPeers = peers.peerNames.filter(
+    const filteredPeers = peersContext.peerNames.filter(
       (x) => ownPeers.indexOf(x) === -1
     );
     return (
@@ -284,15 +299,17 @@ export default class Board extends Component {
           outputs={this.renderOutputs(
             filteredPeers,
             runtime,
-            peers.updatePeers,
+            peersContext,
             boardContext
           )}
           expanded={!runtime.params || !runtime.params.minimized}
-          inputs={this.renderInputs(filteredPeers, runtime, peers.updatePeers)}
+          inputs={this.renderInputs(filteredPeers, runtime, peersContext)}
         />
       </DragProvider>
     );
   };
+
+  getPeerName = (runtime) => `${this.props.boardName}-${runtime.name}`;
 
   render() {
     const { description, boardName, allowedServices } = this.props;
@@ -307,11 +324,11 @@ export default class Board extends Component {
         <div style={s(t.w100)}>
           <PeersProvider ref={(ctx) => (this.peerContext = ctx)}>
             <PeersConsumer>
-              {(peers) =>
+              {(peersContext) =>
                 this.props.boardContext.runtimes.map((runtime) => {
                   const isPeerActive =
                     !!peerActivation[getActivationId(runtime.id)];
-                  const peerName = `${boardName}-${runtime.name}`;
+                  const peerName = this.getPeerName(runtime);
                   return (
                     <Peer
                       key={`${boardName}-runtime-peer-${runtime.id}`}
@@ -331,12 +348,46 @@ export default class Board extends Component {
                           }
                         }
                       }}
-                      onConnectionClosed={() => {
-                        this.props.onChangeOutputRouting(runtime, {
-                          peer: null,
-                        });
-                        this.props.onChangeInputRouting(runtime, {
-                          peer: null,
+                      onConnectionClosed={(closedPeer) => {
+                        // the connection between peers was closed by either side
+                        const isInputConnection = closedPeer === peerName;
+
+                        let reconnectCallback;
+                        if (isInputConnection) {
+                          const closedInputRouting =
+                            this.props.inputRouting[runtime.id];
+                          this.props.onChangeInputRouting(runtime, null);
+                          reconnectCallback = (onClose) => {
+                            this.props.onChangeInputRouting(
+                              runtime,
+                              closedInputRouting
+                            );
+                            onClose();
+                          };
+                        } else {
+                          const closedOutputRouting =
+                            this.props.outputRouting[runtime.id].peer;
+                          this.props.onChangeOutputRouting(runtime, {
+                            peer: null,
+                          });
+                          reconnectCallback = (onClose) => {
+                            this.props.onChangeOutputRouting(runtime, {
+                              peer: closedOutputRouting,
+                            });
+                            onClose();
+                          };
+                        }
+
+                        this.props.appContext.pushNotification({
+                          type: "info",
+                          message: `Connection in runtime "${runtime.name}" to peer "${closedPeer}" was closed`,
+                          ctas: [
+                            {
+                              icon: <Icon name="redo" />,
+                              positive: true,
+                              callback: reconnectCallback,
+                            },
+                          ],
                         });
                       }}
                       active={isPeerActive}
@@ -348,7 +399,7 @@ export default class Board extends Component {
                       {this.renderRuntime(
                         this.props.boardContext,
                         runtime,
-                        peers,
+                        peersContext,
                         allowedServices
                       )}
                     </Peer>

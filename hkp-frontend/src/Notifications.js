@@ -8,7 +8,7 @@ export default function Notifications() {
       style={{
         position: "sticky",
         bottom: 40,
-        width: "50%",
+        width: "80%",
         margin: "auto",
       }}
     >
