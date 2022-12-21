@@ -336,7 +336,10 @@ export default class Board extends Component {
                       onData={(envelope) => {
                         const { sender, data } = envelope;
                         const input = this.props.inputRouting[runtime.id];
-                        if (input === "*" || input === sender) {
+                        if (
+                          input === InputOptions.allInputsWildcard ||
+                          input === sender
+                        ) {
                           const rt = this.getRuntimeById(runtime.id);
                           if (rt) {
                             rt.processRuntime(data);
@@ -356,7 +359,14 @@ export default class Board extends Component {
                         if (isInputConnection) {
                           const closedInputRouting =
                             this.props.inputRouting[runtime.id];
-                          this.props.onChangeInputRouting(runtime, null);
+
+                          if (
+                            closedInputRouting !==
+                            InputOptions.allInputsWildcard
+                          ) {
+                            this.props.onChangeInputRouting(runtime, null);
+                          }
+
                           reconnectCallback = (onClose) => {
                             this.props.onChangeInputRouting(
                               runtime,

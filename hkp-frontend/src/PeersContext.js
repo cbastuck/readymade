@@ -21,12 +21,19 @@ class PeersProvider extends Component {
   closeConnection = (srcPeerName, dstPeerName) => {
     const { peers, connections } = this.state;
     const srcPeer = peers[srcPeerName];
-    srcPeer.onConnectionClosed && srcPeer.onConnectionClosed(dstPeerName);
+    if (srcPeer && srcPeer.onConnectionClosed) {
+      srcPeer.onConnectionClosed(dstPeerName);
+    }
+
     const srcConnections = connections[srcPeerName] || {};
+    const closedConnection = srcConnections[dstPeerName];
+    if (closedConnection) {
+      closedConnection.close();
+    }
     this.setState(
       {
         connections: {
-          ...srcConnections,
+          ...connections,
           [srcPeerName]: removeKeyFromObject(srcConnections, dstPeerName),
         },
       },

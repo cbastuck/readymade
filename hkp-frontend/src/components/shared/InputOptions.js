@@ -14,12 +14,13 @@ export default class InputOptions extends Component {
   };
 
   static updatePeersAction = "update-peers";
+  static allInputsWildcard = "*";
 
   getSelectorOptions = () => {
     const { items } = this.props;
     return items.reduce((a, c) => ({ ...a, [c]: c }), {
       none,
-      "*": all,
+      [InputOptions.allInputsWildcard]: all,
     });
   };
 
