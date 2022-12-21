@@ -161,12 +161,6 @@ export default class Board extends Component {
           if (outputRouting.peer) {
             const srcPeer = this.getPeerName(runtime);
             const dstPeer = outputRouting.peer;
-            console.log(
-              "Board.OutputOptions.onSelect from ",
-              srcPeer,
-              "to",
-              dstPeer
-            );
             peersContext.closeConnection(srcPeer, dstPeer);
           }
 
@@ -194,6 +188,7 @@ export default class Board extends Component {
         disabled={!isPeerActive}
       >
         {!isPeerActive && this.renderPeersActivator(activationId)}
+        {isPeerActive && this.renderPeersDeactivator(activationId)}
       </OutputOptions>
     );
   };
@@ -222,6 +217,7 @@ export default class Board extends Component {
         disabled={!isPeerActive}
       >
         {!isPeerActive && this.renderPeersActivator(activationId)}
+        {isPeerActive && this.renderPeersDeactivator(activationId)}
       </InputOptions>
     );
   };
@@ -275,6 +271,24 @@ export default class Board extends Component {
         >
           Click to enable
         </div>
+      </div>
+    );
+  };
+
+  renderPeersDeactivator = (activationId) => {
+    return (
+      <div
+        style={{ cursor: "pointer", color: "#1e70bf" }}
+        onClick={() =>
+          this.setState({
+            peerActivation: {
+              ...this.state.peerActivation,
+              [activationId]: false,
+            },
+          })
+        }
+      >
+        Click to disable
       </div>
     );
   };

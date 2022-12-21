@@ -31,17 +31,22 @@ export default class OutputOptions extends Component {
   renderPeerOptions = () => {
     const { onSelect, onAction, value } = this.props;
     const peerOptions = this.getSelectorOptions();
-    return this.renderOptions(
-      "Route to",
-      <SelectorField
-        label="Peer"
-        options={peerOptions}
-        value={value || none}
-        onChange={(ev, { value: selected }) => {
-          onSelect(selected === none ? null : selected);
-        }}
-        onOpen={() => onAction({ type: OutputOptions.updatePeersAction })}
-      />
+    return (
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {this.renderOptions(
+          "Route to",
+          <SelectorField
+            label="Peer"
+            options={peerOptions}
+            value={value || none}
+            onChange={(ev, { value: selected }) => {
+              onSelect(selected === none ? null : selected);
+            }}
+            onOpen={() => onAction({ type: OutputOptions.updatePeersAction })}
+          />
+        )}
+        <div style={{ paddingBottom: 20 }}>{this.props.children}</div>
+      </div>
     );
   };
 

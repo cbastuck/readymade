@@ -42,7 +42,6 @@ export default class InputOptions extends Component {
     const peerOptions = this.getSelectorOptions();
     return (
       <div style={{ padding: 10 }}>
-        {children ? children : false}
         {!disabled && (
           <>
             <h1 style={s(t.tc, t.fs11)}>Allow From</h1>
@@ -61,6 +60,7 @@ export default class InputOptions extends Component {
             />
           </>
         )}
+        <div style={{ paddingTop: 10 }}>{children ? children : false}</div>
       </div>
     );
   };
