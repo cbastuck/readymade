@@ -16,15 +16,10 @@ export default class InputOptions extends Component {
   static updatePeersAction = "update-peers";
 
   getSelectorOptions = () => {
-    const { items, initialValue } = this.props;
-    const initial =
-      initialValue && initialValue !== "*"
-        ? { [initialValue]: initialValue }
-        : {};
+    const { items } = this.props;
     return items.reduce((a, c) => ({ ...a, [c]: c }), {
-      none: none,
-      all: all,
-      ...initial,
+      none,
+      "*": all,
     });
   };
 
@@ -44,12 +39,6 @@ export default class InputOptions extends Component {
     const { incoming } = this.state;
     const { value, onSelect, onAction, children, disabled } = this.props;
     const peerOptions = this.getSelectorOptions();
-
-    const selected = !peerOptions[value]
-      ? "none"
-      : value === "*"
-      ? "all"
-      : value;
     return (
       <div style={{ padding: 10 }}>
         {children ? children : false}
@@ -60,22 +49,12 @@ export default class InputOptions extends Component {
               label="Peer"
               options={peerOptions}
               highlight={incoming}
-              value={selected}
+              value={value === null ? "none" : value}
               disabled={disabled}
               onChange={(_ev, { value: selected }) =>
-                this.setState({ selected }, () => {
-                  switch (selected) {
-                    case "none":
-                      onSelect(null);
-                      break;
-                    case "all":
-                      onSelect("*");
-                      break;
-                    default:
-                      onSelect(selected);
-                      break;
-                  }
-                })
+                this.setState({ selected }, () =>
+                  onSelect(selected === "none" ? null : selected)
+                )
               }
               onOpen={() => onAction({ type: InputOptions.updatePeersAction })}
             />
