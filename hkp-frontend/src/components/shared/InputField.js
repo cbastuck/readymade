@@ -67,13 +67,20 @@ export default class InputField extends Component {
           type={type}
           value={value === undefined ? "" : value}
           onChange={(ev, { value: rawValue }) => {
-            const value = type === "number" ? Number(rawValue) : rawValue;
+            const value =
+              type === "number"
+                ? rawValue === ""
+                  ? ""
+                  : Number(rawValue)
+                : rawValue;
             synced ? this.setState({ value }) : onChange(ev, { value });
           }}
           onKeyUp={(ev) => {
             switch (ev.key) {
               case "Enter":
-                return onChange(ev, { value });
+                if (value !== "") {
+                  return onChange(ev, { value });
+                }
               case "Escape":
                 return onEscape && onEscape(ev, { value });
               default:
