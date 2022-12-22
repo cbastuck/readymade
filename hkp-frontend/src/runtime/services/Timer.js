@@ -31,7 +31,7 @@ class TimerUI extends Component {
     }
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (_, notification) => {
     const { running, counter } = notification;
     const updatedState = {};
     if (running !== undefined) {
@@ -138,7 +138,13 @@ class TimerUI extends Component {
         type="number"
         label="Counter"
         value={this.state.counter}
-        onChange={(_, { value: count }) => service.configure({ count })}
+        onChange={(_, { value: counter }) => {
+          service.configure({
+            counter,
+            periodic: false,
+            start: true,
+          });
+        }}
       />
       <Button
         style={s(t.w100, t.uc, t.ls1, t.fs12)}
