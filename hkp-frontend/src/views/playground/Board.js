@@ -412,6 +412,7 @@ export default class Board extends Component {
                               callback: reconnectCallback,
                             },
                           ],
+                          tag: "peers",
                         });
                       }}
                       active={isPeerActive}

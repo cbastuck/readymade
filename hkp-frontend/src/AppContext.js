@@ -20,10 +20,23 @@ class AppContext extends Component {
         features,
       },
       notifications: [],
-      pushNotification: (notification) =>
-        this.setState({
-          notifications: [notification, ...this.state.notifications],
-        }),
+      pushNotification: (notification) => {
+        const { tag } = notification;
+        const pos = this.state.notifications.findIndex((cur) =>
+          cur.tag === tag ? notification : cur
+        );
+        if (!tag || pos === -1) {
+          this.setState({
+            notifications: [notification, ...this.state.notifications],
+          });
+        } else {
+          // replace an existing notification with the same tag
+          const notifications = this.state.notifications.map((cur, idx) =>
+            idx === pos ? notification : cur
+          );
+          this.setState({ notifications });
+        }
+      },
       popNotification: () =>
         this.setState({ notifications: this.state.notifications.slice(1) }),
       // modifying functions

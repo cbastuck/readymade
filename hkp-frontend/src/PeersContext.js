@@ -59,10 +59,19 @@ class PeersProvider extends Component {
   };
 
   onPeerClosed = (peerName) => {
-    const { peers, peerNames } = this.state;
+    const { peers, peerNames, connections } = this.state;
     this.setState({
       peers: removeKeyFromObject(peers, peerName),
       peerNames: peerNames.filter((x) => x !== peerName),
+      connections: Object.keys(connections).reduce((acc, cur) => {
+        if (cur === peerName) {
+          return acc;
+        }
+        return {
+          ...acc,
+          [cur]: removeKeyFromObject(connections[cur], peerName),
+        };
+      }, {}),
     });
   };
 
