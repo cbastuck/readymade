@@ -83,7 +83,11 @@ export default class ServiceUI extends Component {
     return (
       <Resizable hideHandle={!resizable}>
         <div
-          style={{ display: "flex", flexDirection: "column", height: "100%" }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+          }}
         >
           {segments.length > 1 && (
             <div>
@@ -121,6 +125,8 @@ export default class ServiceUI extends Component {
               padding: 14,
               margin: "15px 20px",
               height: "85%",
+
+              overflow: "hidden",
             }}
           >
             {segment && segment.render && segment.render(service)}

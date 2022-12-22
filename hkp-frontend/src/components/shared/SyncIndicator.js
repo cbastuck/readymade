@@ -8,7 +8,7 @@ export default class SyncIndicator extends Component {
   render() {
     const { style, inSync, onClick, label } = this.props;
     return typeof label === "string" ? (
-      <div>
+      <div style={{ width: "auto" }}>
         <Tooltip text={label}>
           <Label
             style={{
@@ -22,7 +22,6 @@ export default class SyncIndicator extends Component {
               minHeight: labelHeight,
               color: !inSync && "red",
               cursor: !inSync ? "pointer" : undefined,
-              // overflow: "hidden",
               textOverflow: "ellipsis",
               ...style,
             }}
@@ -34,22 +33,6 @@ export default class SyncIndicator extends Component {
       </div>
     ) : (
       label
-    );
-  }
-
-  renderOld() {
-    const { inSync, onClick } = this.props;
-    return (
-      <div
-        style={{
-          width: 18,
-          height: 18,
-          margin: "8px 10px",
-          backgroundColor: inSync ? "green" : "yellow",
-          cursor: !inSync ? "pointer" : undefined,
-        }}
-        onClick={(ev) => !inSync && onClick(ev)}
-      />
     );
   }
 }

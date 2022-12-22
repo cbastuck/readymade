@@ -59,23 +59,25 @@ export default class Board extends Component {
 
   updatePeerActivation = (inputRouting, outputRouting) => {
     const inputActivationIds = inputRouting
-      ? Object.keys(inputRouting).reduce(
-          (a, c) => ({
-            ...a,
-            [getActivationId(c)]: true,
-          }),
-          {}
-        )
+      ? Object.keys(inputRouting).reduce((all, activationKey) => {
+          const activationId = getActivationId(activationKey);
+          return {
+            ...all,
+            [activationId]: !!inputRouting[activationKey],
+          };
+        }, {})
       : {};
 
     const outputActivationIds = outputRouting
-      ? Object.keys(outputRouting).reduce(
-          (a, c) => ({
-            ...a,
-            [getActivationId(c)]: true,
-          }),
-          {}
-        )
+      ? Object.keys(outputRouting).reduce((all, activationKey) => {
+          const activationId = getActivationId(activationKey);
+          const routing = outputRouting[activationKey];
+          return {
+            ...all,
+            [activationId]:
+              inputActivationIds[activationId] || (routing && !!routing.peer),
+          };
+        }, {})
       : {};
 
     this.setState({
@@ -147,6 +149,7 @@ export default class Board extends Component {
     const { sidechainRouting } = this.props;
     const runtimeSidechainRouting =
       sidechainRouting && sidechainRouting[runtime.id];
+
     return (
       <OutputOptions
         items={peers}
@@ -188,7 +191,7 @@ export default class Board extends Component {
         disabled={!isPeerActive}
       >
         {!isPeerActive && this.renderPeersActivator(activationId)}
-        {isPeerActive && this.renderPeersDeactivator(activationId)}
+        {isPeerActive && this.renderPeersDeactivator(activationId, runtime)}
       </OutputOptions>
     );
   };
@@ -217,7 +220,7 @@ export default class Board extends Component {
         disabled={!isPeerActive}
       >
         {!isPeerActive && this.renderPeersActivator(activationId)}
-        {isPeerActive && this.renderPeersDeactivator(activationId)}
+        {isPeerActive && this.renderPeersDeactivator(activationId, runtime)}
       </InputOptions>
     );
   };
@@ -275,18 +278,24 @@ export default class Board extends Component {
     );
   };
 
-  renderPeersDeactivator = (activationId) => {
+  renderPeersDeactivator = (activationId, runtime) => {
     return (
       <div
         style={{ cursor: "pointer", color: "#1e70bf" }}
-        onClick={() =>
-          this.setState({
-            peerActivation: {
-              ...this.state.peerActivation,
-              [activationId]: false,
+        onClick={() => {
+          this.setState(
+            {
+              peerActivation: {
+                ...this.state.peerActivation,
+                [activationId]: false,
+              },
             },
-          })
-        }
+            () => {
+              this.props.onChangeInputRouting(runtime, null);
+              this.props.onChangeOutputRouting(runtime, { peer: null });
+            }
+          );
+        }}
       >
         Click to disable
       </div>

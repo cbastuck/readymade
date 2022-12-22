@@ -15,7 +15,7 @@ class TimerUI extends Component {
     periodicValue: 1,
     periodicUnit: "s",
     oneShotDelay: 0,
-    resetCounterValue: 0,
+    counter: 0,
   };
 
   onInit = (initialState) => {
@@ -26,15 +26,21 @@ class TimerUI extends Component {
         periodicUnit: initialState.periodicUnit,
         oneShotDelay: initialState.oneShotDelay,
         timerIsRunning: initialState.running,
+        counter: initialState.counter,
       });
     }
   };
 
   onNotification = (service, notification) => {
-    const { running } = notification;
+    const { running, counter } = notification;
+    const updatedState = {};
     if (running !== undefined) {
-      this.setState({ timerIsRunning: running });
+      updatedState.timerIsRunning = running;
     }
+    if (counter !== undefined) {
+      updatedState.counter = counter;
+    }
+    this.setState(updatedState);
   };
 
   renderPeriodic = (service) => {
@@ -94,11 +100,12 @@ class TimerUI extends Component {
   };
 
   renderOneShot = (service) => (
-    <div>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
       <InputField
         type="number"
         label="delay"
         unit="msec"
+        style={{ marginBottom: 3 }}
         value={this.state.oneShotDelay || "0"}
         onChange={async (_, { value: oneShotDelay }) => {
           await service.configure({ oneShotDelay });
@@ -106,7 +113,7 @@ class TimerUI extends Component {
         }}
       />
       <Button
-        style={s(t.w100, t.uc, t.ls1, t.fs12, t.mt2)}
+        style={s(t.w100, t.uc, t.ls1, t.fs12)}
         onClick={() =>
           service.configure({
             periodic: false,
@@ -120,25 +127,24 @@ class TimerUI extends Component {
   );
 
   renderCounter = (service) => (
-    <div>
-      <Input
-        style={{ marginBottom: 10 }}
-        label="Counter"
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      <InputField
         type="number"
-        value={this.state.resetCounterValue || 0}
-        onChange={(_, { value: resetCounterValue }) =>
-          this.setState({ resetCounterValue })
-        }
+        style={{ marginBottom: 3 }}
+        label="Counter"
+        value={this.state.counter}
+        onChange={(_, { value: count }) => service.configure({ count })}
       />
       <Button
-        style={{ width: "100%" }}
+        style={s(t.w100, t.uc, t.ls1, t.fs12)}
         onClick={() =>
           service.configure({
-            counter: this.state.resetCounterValue,
+            periodic: false,
+            start: true,
           })
         }
       >
-        Reset
+        Trigger
       </Button>
     </div>
   );
@@ -152,7 +158,7 @@ class TimerUI extends Component {
         segments={[
           { name: "periodic", render: this.renderPeriodic },
           { name: "one-shot", render: this.renderOneShot },
-          // { name: 'counter', render: this.renderCounter },
+          { name: "counter", render: this.renderCounter },
         ]}
         initialSegment={(service) =>
           service.periodic ? "periodic" : "one-shot"

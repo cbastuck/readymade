@@ -53,8 +53,7 @@ export default class InputField extends Component {
     return (
       <div
         style={{
-          width: "50%",
-          flexGrow: 3,
+          width: "100%",
           display: "flex",
           flexDirection: "row",
         }}
@@ -63,9 +62,7 @@ export default class InputField extends Component {
           style={{
             fontSize,
             height: 33,
-            // height: '90%',
             width: "100%",
-            flexGrow: 3,
           }}
           type={type}
           value={value === undefined ? "" : value}
@@ -87,7 +84,13 @@ export default class InputField extends Component {
           disabled={disabled}
         />
         {unit && (
-          <div style={s(t.uc, t.ls1, t.fs11, { marginLeft: 5, marginTop: 6 })}>
+          <div
+            style={s(t.uc, t.ls1, t.fs11, {
+              marginLeft: 5,
+              marginTop: 6,
+              textAlign: "left",
+            })}
+          >
             {unit}
           </div>
         )}
