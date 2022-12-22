@@ -596,24 +596,36 @@ class Playground extends Component {
         boardName={boardName}
         sidechainRouting={sidechainRouting}
         outputRouting={outputRouting}
-        onChangeOutputRouting={(runtime, { peer, flow }) => {
-          const runtimeData = {
-            ...outputRouting[runtime.id],
-          };
+        onChangeOutputRouting={(runtime, value) => {
+          if (value === null) {
+            this.setState({
+              outputRouting: {
+                ...this.state.outputRouting,
+                [runtime.id]: null,
+              },
+            });
+          } else {
+            const { peer, flow, ...rest } = value;
+            const runtimeData = {
+              ...outputRouting[runtime.id],
+              ...rest,
+            };
 
-          if (peer || peer === null) {
-            runtimeData.peer = peer;
-          }
+            if (peer || peer === null) {
+              runtimeData.peer = peer;
+            }
 
-          if (flow) {
-            runtimeData.flow = flow;
+            if (flow) {
+              runtimeData.flow = flow;
+            }
+
+            this.setState({
+              outputRouting: {
+                ...this.state.outputRouting,
+                [runtime.id]: runtimeData,
+              },
+            });
           }
-          this.setState({
-            outputRouting: {
-              ...this.state.outputRouting,
-              [runtime.id]: runtimeData,
-            },
-          });
         }}
         inputRouting={inputRouting}
         onChangeInputRouting={(runtime, value) =>

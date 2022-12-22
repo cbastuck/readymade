@@ -35,6 +35,12 @@ export default class Peer extends Component {
   }
 
   initPeer = () => {
+    if (this.peer) {
+      console.warn(
+        "Peer.initPeer previous peer did not shutdown - closing now"
+      );
+      this.closePeer();
+    }
     const {
       name = "unnamed-peer",
       onData,
@@ -50,13 +56,6 @@ export default class Peer extends Component {
     });
 
     peer.on("open", () => {
-      if (this.peer) {
-        console.warn(
-          "Peer opened but the previous peer with the same name did not shutdown - closing it"
-        );
-        this.closePeer();
-      }
-
       // Allow PeerContext signaling connections to this instance
       peer.onConnectionOpened = this.props.onConnectionOpened;
       peer.onConnectionClosed = this.props.onConnectionClosed;

@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Input, Button } from "semantic-ui-react";
+import { Button } from "semantic-ui-react";
 
 import ServiceUI from "./ServiceUI";
 import InputField from "../../components/shared/InputField";
@@ -100,12 +100,18 @@ class TimerUI extends Component {
   };
 
   renderOneShot = (service) => (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        paddingBottom: 3,
+      }}
+    >
       <InputField
         type="number"
         label="delay"
         unit="msec"
-        style={{ marginBottom: 3 }}
         value={this.state.oneShotDelay || "0"}
         onChange={async (_, { value: oneShotDelay }) => {
           await service.configure({ oneShotDelay });
@@ -127,10 +133,9 @@ class TimerUI extends Component {
   );
 
   renderCounter = (service) => (
-    <div style={{ display: "flex", flexDirection: "column" }}>
+    <div style={{ display: "flex", flexDirection: "column", paddingBottom: 3 }}>
       <InputField
         type="number"
-        style={{ marginBottom: 3 }}
         label="Counter"
         value={this.state.counter}
         onChange={(_, { value: count }) => service.configure({ count })}

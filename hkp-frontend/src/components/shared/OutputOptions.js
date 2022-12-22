@@ -12,6 +12,12 @@ export default class OutputOptions extends Component {
   static updatePeersAction = "update-peers";
   static flowChanged = "flow-changed";
 
+  componentDidUpdate(_, prevState) {
+    if (prevState.expanded !== this.state.expanded) {
+      this.props.onAction({ type: OutputOptions.updatePeersAction });
+    }
+  }
+
   getSelectorOptions = () => {
     const { items } = this.props;
     return items.reduce((a, c) => ({ ...a, [c]: c }), {
@@ -91,7 +97,6 @@ export default class OutputOptions extends Component {
       <div style={t.p3}>
         {this.renderFlowOptions()}
         {this.renderSidechainOptions()}
-
         {disabled ? (
           <div style={{ ...t.p(10, 25) }}>{this.props.children} </div>
         ) : (
