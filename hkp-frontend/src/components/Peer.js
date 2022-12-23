@@ -90,6 +90,11 @@ export default class Peer extends Component {
     peer.on("error", (err) => {
       const { onError = logError } = this.props;
       onError(err);
+
+      /*
+      if (this.peer) {
+        this.peer.reconnect();
+      }*/
     });
   };
 

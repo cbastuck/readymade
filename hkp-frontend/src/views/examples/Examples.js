@@ -358,21 +358,24 @@ class Examples extends Component {
       return null;
     }
     return (
-      <div style={{ margin: "10px 40px" }}>
-        <Headline>Showcases</Headline>
-        <div
-          style={{
-            fontFamily: "Roboto",
-            fontSize: 16,
-            color: "rgb(85, 85, 85)",
-            lineHeight: 1.5,
-            letterSpacing: 1,
-          }}
-        >
-          Following show-cases run on <Link to="/playground">Playground</Link>.
-          They consist of multiple runtimes connected to another. With this
-          setup you can do much more than with a sandbox. Still the real
-          potential comes with adding remote runtimes to the board.
+      <div style={{ margin: "10px 20px" }}>
+        <div style={{ margin: "0px 20px" }}>
+          <Headline>Showcases</Headline>
+          <div
+            style={{
+              fontFamily: "Roboto",
+              fontSize: 16,
+              color: "rgb(85, 85, 85)",
+              lineHeight: 1.5,
+              letterSpacing: 1,
+              marginBottom: 20,
+            }}
+          >
+            Following show-cases run on <Link to="/playground">Playground</Link>
+            . They consist of multiple runtimes connected to another. With this
+            setup you can do much more than with a sandbox. Still the real
+            potential comes with adding remote runtimes to the board.
+          </div>
         </div>
         <Showcases headline="" renderSearch={false} />
       </div>

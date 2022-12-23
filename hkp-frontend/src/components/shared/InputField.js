@@ -81,6 +81,7 @@ export default class InputField extends Component {
                 if (value !== "") {
                   return onChange(ev, { value });
                 }
+                break;
               case "Escape":
                 return onEscape && onEscape(ev, { value });
               default:

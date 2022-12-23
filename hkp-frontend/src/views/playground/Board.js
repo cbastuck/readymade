@@ -30,7 +30,7 @@ const availablePeers = [
   },
 ];
 
-const defaultDiscoveryPeer = availablePeers[1];
+const defaultDiscoveryPeer = availablePeers[0];
 
 export default class Board extends Component {
   state = {
@@ -59,9 +59,20 @@ export default class Board extends Component {
     const peerInputActivation = inputRouting
       ? Object.keys(inputRouting).reduce((all, runtimeId) => {
           const activationId = getActivationId(runtimeId);
+          const runtimeInputRouting =
+            typeof inputRouting[runtimeId] === "string" // compatibility - was a string with peername
+              ? { peer: inputRouting[runtimeId] }
+              : inputRouting[runtimeId];
+
           return {
             ...all,
-            [activationId]: inputRouting[runtimeId],
+            [activationId]:
+              runtimeInputRouting === null
+                ? null
+                : {
+                    ...defaultDiscoveryPeer,
+                    ...runtimeInputRouting,
+                  },
           };
         }, {})
       : {};
@@ -73,9 +84,16 @@ export default class Board extends Component {
     const peerOutputActivation = outputRouting
       ? Object.keys(outputRouting).reduce((all, runtimeId) => {
           const activationId = getActivationId(runtimeId);
+          const runtimeOutputRouting = outputRouting[runtimeId];
           return {
             ...all,
-            [activationId]: outputRouting[runtimeId],
+            [activationId]:
+              runtimeOutputRouting === null
+                ? null
+                : {
+                    ...defaultDiscoveryPeer,
+                    ...runtimeOutputRouting,
+                  },
           };
         }, {})
       : {};
@@ -406,16 +424,18 @@ export default class Board extends Component {
                                 };
                         } else {
                           const closedOutputRouting =
-                            this.props.outputRouting[runtime.id].peer;
+                            this.props.outputRouting[runtime.id]?.peer;
                           this.props.onChangeOutputRouting(runtime, {
                             peer: null,
                           });
-                          reconnectCallback = (onClose) => {
-                            this.props.onChangeOutputRouting(runtime, {
-                              peer: closedOutputRouting,
-                            });
-                            onClose();
-                          };
+                          reconnectCallback = closedOutputRouting
+                            ? (onClose) => {
+                                this.props.onChangeOutputRouting(runtime, {
+                                  peer: closedOutputRouting,
+                                });
+                                onClose();
+                              }
+                            : null;
                         }
                         this.props.appContext.pushNotification({
                           type: "info",

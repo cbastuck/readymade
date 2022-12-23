@@ -13,6 +13,7 @@ class CameraUI extends Component {
     recording: false,
     width: 320,
     height: 200,
+    captureFormat: "image/png",
   };
 
   componentWillUnmount() {
@@ -25,6 +26,13 @@ class CameraUI extends Component {
       ...service,
     });
   }
+
+  onNotification = (service, notification) => {
+    const { captureFormat } = notification;
+    if (captureFormat !== undefined) {
+      this.setState({ captureFormat });
+    }
+  };
 
   initVideo = async (videoElement) => {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -129,7 +137,7 @@ class CameraUI extends Component {
       }
       const ctx = this.canvas.getContext("2d");
       ctx.drawImage(this.videoElement, 0, 0, width, height);
-      this.canvas.toBlob(resolve);
+      this.canvas.toBlob(resolve, this.state.captureFormat);
     });
   }
 
@@ -236,12 +244,18 @@ class Camera {
     this.app = app;
 
     this.captureAs = "image";
+    this.captureFormat = "image/png";
   }
 
   configure(config) {
-    const { captureAs } = config;
+    const { captureAs, captureFormat } = config;
     if (captureAs !== undefined) {
       this.captureAs = captureAs;
+    }
+
+    if (captureFormat !== undefined) {
+      this.captureFormat = captureFormat;
+      this.app.notify(this, { captureFormat });
     }
   }
 
