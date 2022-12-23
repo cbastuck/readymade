@@ -129,7 +129,7 @@ export default class BoardCollection extends Component {
               display: "flex",
               flexDirection: "row",
               width: "100%",
-              borderTop: "1px dotted lightgray",
+
               paddingTop: 15,
             }}
           >
