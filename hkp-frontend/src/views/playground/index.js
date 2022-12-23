@@ -477,6 +477,7 @@ class Playground extends Component {
       this.context.pushNotification({
         type: "info",
         message: "Board was saved",
+        tag: "save",
       });
     } else {
       this.context.pushNotification({
@@ -544,7 +545,7 @@ class Playground extends Component {
       </div>
     );
     return (
-      <div style={t.fill}>
+      <div style={t.w100}>
         <div
           style={{
             width: "99%",
