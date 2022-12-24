@@ -47,12 +47,13 @@ export default class Peer extends Component {
       peerHost,
       usePeerPort,
       usePeerRoutePath,
-      usePeerOverHTTPS,
+      isSecure,
     } = this.props;
     const peer = new Peerjs(name, {
       host: peerHost,
-      port: usePeerPort ? usePeerPort : usePeerOverHTTPS ? 443 : 80,
+      port: usePeerPort ? usePeerPort : isSecure ? 443 : 80,
       path: usePeerRoutePath ? usePeerRoutePath : "/peers",
+      secure: isSecure,
     });
 
     peer.on("open", () => {

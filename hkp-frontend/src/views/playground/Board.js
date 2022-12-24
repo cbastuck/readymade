@@ -13,20 +13,19 @@ import InputOptions from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
 import SelectorField from "../../components/shared/SelectorField";
 
-const usePeerOverHTTPS = window.location.protocol === "https:";
-
+const isSecureConnection = window.location.protocol === "https:";
 const availablePeers = [
   {
     host: "peers.hookup.to",
-    port: usePeerOverHTTPS ? 443 : 80,
+    port: 443,
     path: "/",
-    protocol: usePeerOverHTTPS ? "wss" : "ws",
+    secure: true,
   },
   {
     host: `peers.${window.location.hostname}`,
-    port: usePeerOverHTTPS ? 443 : 80,
+    port: isSecureConnection ? 443 : 80,
     path: "/",
-    protocol: usePeerOverHTTPS ? "wss" : "ws",
+    secure: isSecureConnection,
   },
 ];
 
@@ -456,7 +455,7 @@ export default class Board extends Component {
                       usePeerRoutePath={
                         runtimeActivation && runtimeActivation.path
                       }
-                      usePeerOverHTTPS={usePeerOverHTTPS}
+                      isSecure={runtimeActivation && runtimeActivation.secure}
                     >
                       {this.renderRuntime(
                         this.props.boardContext,
@@ -479,6 +478,7 @@ export default class Board extends Component {
 }
 
 function formatHostAndPort(availablePeer) {
-  const { host, port, protocol } = availablePeer;
+  const { host, port, secure } = availablePeer;
+  const protocol = secure ? "wss" : "ws";
   return `${protocol}://${host}:${port}`;
 }
