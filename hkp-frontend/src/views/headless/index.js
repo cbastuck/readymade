@@ -3,6 +3,8 @@ import React, { Component } from "react";
 import Runtime from "../../components/Runtime";
 import BrowserRegistry from "../../runtime/BrowserRegistry";
 
+import build from "../../buildNumber.json";
+
 const defaultBundles = [
   "hookup.to/registry/browser/Audio",
   "hookup.to/registry/browser/Graphic",
@@ -13,6 +15,10 @@ const defaultBundles = [
 
 export default class Headless extends Component {
   state = {};
+
+  static buildVersion() {
+    return build.version;
+  }
 
   constructor(props) {
     super(props);
