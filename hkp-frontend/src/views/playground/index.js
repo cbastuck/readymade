@@ -95,7 +95,7 @@ class Playground extends Component {
   componentDidMount() {
     document.addEventListener("keydown", this.onKey, false);
     if (this.isBoardUnnamed()) {
-      this.newBoard();
+      this.newBoard(document.location.search);
     }
   }
 
@@ -185,14 +185,16 @@ class Playground extends Component {
   };
 
   setInitialPlayground = async () => {
-    const queryParams = new URLSearchParams(document.location.search);
     const { board } = this.props.match.params;
     if (board) {
       const params = Object.fromEntries(
         new URLSearchParams(document.location.search)
       );
+
       if (params.template) {
         return createBoardFromTemplate(params.template, params);
+      } else if (params.src) {
+        return importBoard(params.src);
       } else {
         const localBoard = await this.restoreBoardFromLocalStorage(board);
         if (localBoard) {
@@ -201,13 +203,6 @@ class Playground extends Component {
         return this.state; // use initial state
       }
     }
-
-    const src = queryParams.get("src");
-    if (src) {
-      return importBoard(src);
-    }
-
-    return {};
   };
 
   restoreBoardFromLocalStorage = async (name) => {
@@ -299,9 +294,9 @@ class Playground extends Component {
     return data;
   };
 
-  newBoard = () => {
+  newBoard = (searchParams = "") => {
     const name = generateRandomName();
-    redirectTo(`/playground/${name}`);
+    redirectTo(`/playground/${name}${searchParams}`);
   };
 
   addService = (boardname, descriptor, runtimeId) => {
