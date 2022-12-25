@@ -62,7 +62,7 @@ export default class Footer extends Component {
               <span
                 style={{ color: "gray", padding: 5, textTransform: "none" }}
               >
-                v.{build.version}
+                v{build.version}
               </span>
             </div>
           </div>
