@@ -111,7 +111,7 @@ export default function RuntimeMenu({
           style={{
             border: showRuntimeMenuHighlighted && "solid 2px #4284C4",
             whiteSpace: "nowrap",
-            minWidth: !isWideViewMode ? 100 : undefined,
+            minWidth: !isWideViewMode ? 120 : undefined,
           }}
           ref={dropdown}
           options={options.concat({
@@ -124,7 +124,7 @@ export default function RuntimeMenu({
               </div>
             ),
           })}
-          placeholder={isWideViewMode ? "Add Runtime" : "Runtime"}
+          placeholder={"Add Runtime"}
           selection
           selectOnBlur={false}
           onChange={(ev, { value }) => {

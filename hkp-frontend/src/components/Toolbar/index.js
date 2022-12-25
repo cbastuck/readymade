@@ -46,6 +46,38 @@ export default class Toolbar extends Component {
     );
   }
 
+  renderCompactNav = (navItemStyle) => {
+    return (
+      <div>
+        <Dropdown text="" icon="bars" pointing="right">
+          <Dropdown.Menu>
+            <Dropdown.Item>
+              <Link to="/docs" style={navItemStyle}>
+                Docs
+              </Link>
+            </Dropdown.Item>
+            <Dropdown.Item>
+              <Link to="/examples" style={navItemStyle}>
+                Examples
+              </Link>
+            </Dropdown.Item>
+            <Dropdown.Item>
+              <Link to="/playground" style={navItemStyle}>
+                Playground
+              </Link>
+            </Dropdown.Item>
+
+            <Dropdown.Item>
+              <Link to="/new" style={navItemStyle}>
+                Login
+              </Link>
+            </Dropdown.Item>
+          </Dropdown.Menu>
+        </Dropdown>
+      </div>
+    );
+  };
+
   renderNavigation(appContext, isCompact) {
     const navItemStyle = {
       margin: 8,
@@ -68,29 +100,7 @@ export default class Toolbar extends Component {
             {/*appContext.user.username*/}Home
           </Link>
         )}
-        {isCompact && (
-          <div style={{ marginRight: 3 }}>
-            <Dropdown simple text="">
-              <Dropdown.Menu>
-                <Dropdown.Item>
-                  <Link to="/docs" style={navItemStyle}>
-                    Docs
-                  </Link>
-                </Dropdown.Item>
-                <Dropdown.Item>
-                  <Link to="/examples" style={navItemStyle}>
-                    Examples
-                  </Link>
-                </Dropdown.Item>
-                <Dropdown.Item>
-                  <Link to="/playground" style={navItemStyle}>
-                    Playground
-                  </Link>
-                </Dropdown.Item>
-              </Dropdown.Menu>
-            </Dropdown>
-          </div>
-        )}
+        {isCompact && this.renderCompactNav(navItemStyle)}
         {!isCompact && (
           <Link to="/docs" style={navItemStyle}>
             Docs
@@ -274,6 +284,7 @@ export default class Toolbar extends Component {
 
                     {this.renderNavigation(appContext, isCompact)}
                     {appContext &&
+                      !isCompact &&
                       this.renderAccountMenu(appContext, boardContext)}
                   </Menu>
                 </div>

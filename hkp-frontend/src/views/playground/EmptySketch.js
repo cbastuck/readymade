@@ -26,6 +26,7 @@ export default function EmptySketch({ boardName }) {
                 width: "90%",
                 margin: "auto",
                 borderRadius: 5,
+                backgroundColor: "#fafafa55",
               }}
             >
               <h1 style={s(t.fs14, t.tc, t.m(0, 6))}> {headline} </h1>
