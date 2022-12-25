@@ -68,16 +68,39 @@ export default class Toolbar extends Component {
             {/*appContext.user.username*/}Home
           </Link>
         )}
-        <Link to="/docs" style={navItemStyle}>
-          Docs
-        </Link>
-
+        {isCompact && (
+          <div style={{ marginRight: 3 }}>
+            <Dropdown simple text="">
+              <Dropdown.Menu>
+                <Dropdown.Item>
+                  <Link to="/docs" style={navItemStyle}>
+                    Docs
+                  </Link>
+                </Dropdown.Item>
+                <Dropdown.Item>
+                  <Link to="/examples" style={navItemStyle}>
+                    Examples
+                  </Link>
+                </Dropdown.Item>
+                <Dropdown.Item>
+                  <Link to="/playground" style={navItemStyle}>
+                    Playground
+                  </Link>
+                </Dropdown.Item>
+              </Dropdown.Menu>
+            </Dropdown>
+          </div>
+        )}
+        {!isCompact && (
+          <Link to="/docs" style={navItemStyle}>
+            Docs
+          </Link>
+        )}
         {!isCompact && (
           <Link to="/examples" style={navItemStyle}>
             Examples
           </Link>
         )}
-
         {!username && !isCompact && (
           <Link to="/playground" style={navItemStyle}>
             Playground
@@ -164,7 +187,9 @@ export default class Toolbar extends Component {
               !boardContext.isActionAvailable("toggleBoardSync")
             }
           >
-            <span style={menuItemStyle}>Board Sync</span>
+            <span style={menuItemStyle}>
+              {this.props.boardSyncActive ? "Disable Sync" : "Board Sync"}
+            </span>
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>

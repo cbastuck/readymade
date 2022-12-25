@@ -66,7 +66,12 @@ export default function RuntimeMenu({
     key: `${rt.name}.${idx}`,
     value: `${idx}`,
     children: (
-      <div style={{ display: "flex", flexDirection: "row" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+        }}
+      >
         <Icon name="plus" />
         <RuntimeItem
           {...rt}
@@ -103,13 +108,17 @@ export default function RuntimeMenu({
       ) : (
         <Dropdown
           compact={!isWideViewMode}
-          style={{ border: showRuntimeMenuHighlighted && "solid 2px #4284C4" }}
+          style={{
+            border: showRuntimeMenuHighlighted && "solid 2px #4284C4",
+            whiteSpace: "nowrap",
+            minWidth: !isWideViewMode ? 100 : undefined,
+          }}
           ref={dropdown}
           options={options.concat({
             key: "add-remote-runtime-item",
             value: "add-runtime",
             children: (
-              <div>
+              <div style={{ display: "flex", flexDirection: "row" }}>
                 <Icon name="plus" />
                 Add remote
               </div>

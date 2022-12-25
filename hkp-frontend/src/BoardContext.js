@@ -235,7 +235,7 @@ class BoardContext extends Component {
     if (this.props && this.props.newBoard) {
       this.props.newBoard();
     } else {
-      redirectTo("/new");
+      redirectTo("/playground"); // TODO: consolidate with remote boards
     }
   };
 

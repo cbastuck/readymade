@@ -12,24 +12,9 @@ import OutputOptions from "../../components/shared/OutputOptions";
 import InputOptions from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
 import SelectorField from "../../components/shared/SelectorField";
+import { availableDiscoveryPeerHosts } from "./common";
 
-const isSecureConnection = window.location.protocol === "https:";
-const availablePeers = [
-  {
-    host: "peers.hookup.to",
-    port: 443,
-    path: "/",
-    secure: true,
-  },
-  {
-    host: `peers.${window.location.hostname}`,
-    port: isSecureConnection ? 443 : 80,
-    path: "/",
-    secure: isSecureConnection,
-  },
-];
-
-const defaultDiscoveryPeer = availablePeers[0];
+const defaultDiscoveryPeer = availableDiscoveryPeerHosts[0];
 
 export default class Board extends Component {
   state = {
@@ -242,13 +227,16 @@ export default class Board extends Component {
     if (!!runtimeActivation) {
       return null;
     }
-    const discoveryOptions = availablePeers.reduce((acc, availablePeer) => {
-      const hostAndPort = formatHostAndPort(availablePeer);
-      return {
-        ...acc,
-        [hostAndPort]: hostAndPort,
-      };
-    }, {});
+    const discoveryOptions = availableDiscoveryPeerHosts.reduce(
+      (acc, availablePeer) => {
+        const hostAndPort = formatHostAndPort(availablePeer);
+        return {
+          ...acc,
+          [hostAndPort]: hostAndPort,
+        };
+      },
+      {}
+    );
 
     const selectedDiscoveryServer = runtimeActivation || defaultDiscoveryPeer;
     return (
@@ -272,7 +260,10 @@ export default class Board extends Component {
           }
           options={discoveryOptions}
           onChange={(_ev, { _, index }) =>
-            this.props.onChangeOutputRouting(runtime, availablePeers[index])
+            this.props.onChangeOutputRouting(
+              runtime,
+              availableDiscoveryPeerHosts[index]
+            )
           }
           uppercaseValues={false}
         />

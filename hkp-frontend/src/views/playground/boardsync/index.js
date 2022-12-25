@@ -9,6 +9,9 @@ import { mergeBoardState, extractSyncState } from "../../../core/sync";
 import ConfirmationRequest from "./ConfirmationRequest";
 import Menu from "./Menu";
 import { s, t } from "../../../styles";
+import { availableDiscoveryPeerHosts } from "../common";
+
+const defaultDiscoveryPeer = availableDiscoveryPeerHosts[0];
 
 const SYNC_BOARD_PREFIX = "board";
 
@@ -218,6 +221,10 @@ export default class BoardSync extends Component {
           <Peer
             name={peerName}
             active={!!this.props.active}
+            peerHost={defaultDiscoveryPeer.host}
+            usePeerPort={defaultDiscoveryPeer.port}
+            usePeerRoutePath={defaultDiscoveryPeer.path}
+            isSecure={defaultDiscoveryPeer.secure}
             onData={this.onData}
             onOpen={this.syncBoard}
             onError={this.onError}

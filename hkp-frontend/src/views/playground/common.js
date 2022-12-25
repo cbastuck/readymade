@@ -80,3 +80,20 @@ export function getLocalBoards(prefix) {
     description: item.value && item.value.description,
   }));
 }
+
+const isSecureConnection = window.location.protocol === "https:";
+
+export const availableDiscoveryPeerHosts = [
+  {
+    host: "peers.hookup.to",
+    port: 443,
+    path: "/",
+    secure: true,
+  },
+  {
+    host: `peers.${window.location.hostname}`,
+    port: isSecureConnection ? 443 : 80,
+    path: "/",
+    secure: isSecureConnection,
+  },
+];

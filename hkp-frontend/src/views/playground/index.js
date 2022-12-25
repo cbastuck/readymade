@@ -736,6 +736,7 @@ class Playground extends Component {
                   )
                 }
                 isCompact={boardContext.appViewMode !== "wide"}
+                boardSyncActive={this.state.boardSyncActive}
               />
               {requireLogin ? (
                 <Login board={`playground/${boardContext.boardName}`} />
