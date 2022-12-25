@@ -6,8 +6,9 @@ export default function Notifications() {
   return (
     <div
       style={{
-        position: "sticky",
+        position: "fixed",
         bottom: 40,
+        left: "5%",
         width: "80%",
         margin: "auto",
       }}

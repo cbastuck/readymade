@@ -15,7 +15,7 @@ import { ReactComponent as IconH } from "./assets/hkp-single-dot-h.svg";
 //import { ReactComponent as IconP } from "./assets/hkp-single-dot-p.svg";
 import Icon from "./assets/hkp-single-dot-second-trial-edgy.png";
 
-export default class HeaderMenu extends Component {
+export default class Toolbar extends Component {
   renderHomeIcon() {
     const IconSvg = IconH;
     return (
@@ -200,47 +200,58 @@ export default class HeaderMenu extends Component {
             {(boardContext) => (
               <div
                 style={{
-                  marginTop: 0,
-                  marginBottom: 5,
-                  textAlign: "left",
-                  borderBottom: "1px solid rgba(34,36,38,.15)",
-                  borderTop: "1px solid #ddd",
+                  position: "sticky",
+                  left: 0,
+                  top: 0,
+                  zIndex: 100,
                 }}
               >
-                <Menu
+                <div
                   style={{
-                    boxShadow: "none",
-                    border: "none",
+                    marginTop: 0,
+                    marginBottom: 5,
+                    textAlign: "left",
+                    borderBottom: "1px solid rgba(34,36,38,.15)",
+                    borderTop: "1px solid #ddd",
                   }}
                 >
-                  {this.renderHomeIcon()}
-                  {appContext.user && this.renderBoardMenu(board, boardContext)}
+                  <Menu
+                    style={{
+                      boxShadow: "none",
+                      border: "none",
+                    }}
+                  >
+                    {this.renderHomeIcon()}
+                    {appContext.user &&
+                      this.renderBoardMenu(board, boardContext)}
 
-                  {showRuntimeMenu && (
-                    <RuntimeMenu
-                      isWideViewMode={boardContext.appViewMode === "wide"}
-                      availableRuntimes={boardContext.availableRuntimes}
-                      onAddAvailableRuntime={(desc) => {
-                        const runtimes = boardContext.addAvailableRuntime(desc);
-                        onUpdateAvailableRuntimes &&
-                          onUpdateAvailableRuntimes(runtimes);
-                      }}
-                      onRemoveAvailableRuntime={(desc) => {
-                        const runtimes =
-                          boardContext.removeAvailableRuntime(desc);
-                        onUpdateAvailableRuntimes &&
-                          onUpdateAvailableRuntimes(runtimes);
-                      }}
-                      onAddRuntime={({ name, type, url }) =>
-                        boardContext.addRuntime(type, name, url)
-                      }
-                    />
-                  )}
+                    {showRuntimeMenu && (
+                      <RuntimeMenu
+                        isWideViewMode={boardContext.appViewMode === "wide"}
+                        availableRuntimes={boardContext.availableRuntimes}
+                        onAddAvailableRuntime={(desc) => {
+                          const runtimes =
+                            boardContext.addAvailableRuntime(desc);
+                          onUpdateAvailableRuntimes &&
+                            onUpdateAvailableRuntimes(runtimes);
+                        }}
+                        onRemoveAvailableRuntime={(desc) => {
+                          const runtimes =
+                            boardContext.removeAvailableRuntime(desc);
+                          onUpdateAvailableRuntimes &&
+                            onUpdateAvailableRuntimes(runtimes);
+                        }}
+                        onAddRuntime={({ name, type, url }) =>
+                          boardContext.addRuntime(type, name, url)
+                        }
+                      />
+                    )}
 
-                  {this.renderNavigation(appContext, isCompact)}
-                  {appContext &&
-                    this.renderAccountMenu(appContext, boardContext)}
-                </Menu>
+                    {this.renderNavigation(appContext, isCompact)}
+                    {appContext &&
+                      this.renderAccountMenu(appContext, boardContext)}
+                  </Menu>
+                </div>
               </div>
             )}
           </BoardConsumer>

@@ -97,6 +97,7 @@ export default class BoardCollection extends Component {
     return (
       <div style={s(t.tr, t.mb5)}>
         <Input
+          style={{ width: 180 }}
           icon="search"
           value={filter}
           onChange={(_, { value }) =>

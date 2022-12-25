@@ -102,6 +102,9 @@ class Playground extends Component {
   componentDidUpdate(prevProps) {
     const board = this.props.match.params.board;
     const prevBoard = prevProps.match.params.board;
+    if (this.isBoardUnnamed()) {
+      return this.newBoard(document.location.search);
+    }
     if (board !== prevBoard) {
       if (board === undefined) {
         this.setState({
@@ -500,12 +503,16 @@ class Playground extends Component {
     if (err.message === "Unauthorized") {
       this.setState({ requireLogin: true });
     } else {
-      console.error("Unkown requesr error", err);
+      console.error("Unkown request error", err);
     }
   };
 
   isBoardUnnamed = () => {
-    return this.state.boardName === defaultName;
+    return (
+      !this.props.match ||
+      !this.props.match.params ||
+      !this.props.match.params.board
+    );
   };
 
   renderPlaceholderOrBoard = (boardContext) => {
