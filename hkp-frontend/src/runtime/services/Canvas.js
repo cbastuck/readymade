@@ -4,6 +4,7 @@ import ResizeObserver from "resize-observer-polyfill";
 import ServiceUI from "./ServiceUI";
 import { createObjectURL, revokeObjectURL } from "./helpers";
 import { t } from "../../styles";
+import InputField from "../../components/shared/InputField";
 
 const serviceId = "hookup.to/service/canvas";
 const serviceName = "Canvas";
@@ -457,6 +458,40 @@ class CanvasUI extends Component {
     });
   };
 
+  drawArray2d = (ctx, params) => {
+    const { data, cols: nCols, rows: nRows } = params;
+    const n = Math.min(data.length, nRows * nCols);
+
+    const normaliseValues = false;
+    const slice = data.slice(0, n);
+    const min = normaliseValues ? Math.min(...slice) : undefined;
+    const max = normaliseValues ? Math.max(...slice) : undefined;
+    const range = normaliseValues ? max - min : undefined;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const cellWidth = rect.width / nCols;
+    const cellHeight = rect.height / nRows;
+    for (let i = 0; i < n; ++i) {
+      const value = data[i];
+      const valueHex = value.toString(16);
+      const row = Math.floor(i / nCols);
+      const col = i % nCols;
+      if (normaliseValues) {
+        ctx.fillStyle = `rgb(${((value - min) / range) * 255}, 0, 0)`;
+        ctx.strokeStyle = `rgb(${((value - min) / range) * 255}, 0, 0)`;
+      } else {
+        ctx.fillStyle = `#${valueHex}${valueHex}${valueHex}`;
+        ctx.strokeStyle = `#${valueHex}${valueHex}${valueHex}`;
+      }
+      const x = col * cellWidth;
+      const y = row * cellHeight;
+      ctx.beginPath();
+      ctx.rect(x, y, cellWidth, cellHeight);
+      ctx.stroke();
+      ctx.fillRect(x, y, cellWidth, cellHeight);
+    }
+  };
+
   onNotification = (service, notification) => {
     const { render } = notification;
     if (render) {
@@ -486,9 +521,10 @@ class CanvasUI extends Component {
 
     this.clickHandlers = {};
 
-    const dataArray = Array.isArray(objectOrArray)
-      ? objectOrArray
-      : [objectOrArray];
+    const dataArray =
+      Array.isArray(objectOrArray) || ArrayBuffer.isView(objectOrArray)
+        ? objectOrArray
+        : [objectOrArray];
     const ctx = this.canvas.getContext("2d");
     if (this.state.clearOnRedraw) {
       ctx.fillStyle = "#FFF";
@@ -496,29 +532,37 @@ class CanvasUI extends Component {
       ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     }
 
+    //const isPureNumberArray = !dataArray.some((x) => isNaN(Number(x)));
+    //if (isPureNumberArray) {
+    //  this.drawArray2d(ctx, dataArray);
+    //}
     for (const data of dataArray) {
-      switch (data && data.type) {
-        case "image":
-          this.drawImage(ctx, data);
-          break;
-        case "text":
-          this.drawText(ctx, data);
-          break;
-        case "circle":
-          this.drawCircle(ctx, data);
-          break;
-        case "rect":
-        case "square":
-          this.drawRect(ctx, data);
-          break;
-        case "video":
-          this.drawVideo(ctx, data);
-          break;
-        case "explainer":
-          this.drawExplainer(ctx, data);
-          break;
-        default:
-          break;
+      if (data) {
+        switch (data.type) {
+          case "image":
+            this.drawImage(ctx, data);
+            break;
+          case "text":
+            this.drawText(ctx, data);
+            break;
+          case "circle":
+            this.drawCircle(ctx, data);
+            break;
+          case "rect":
+          case "square":
+            this.drawRect(ctx, data);
+            break;
+          case "video":
+            this.drawVideo(ctx, data);
+            break;
+          case "explainer":
+            this.drawExplainer(ctx, data);
+            break;
+          case "array2d":
+            this.drawArray2d(ctx, data);
+          default:
+            break;
+        }
       }
     }
   };

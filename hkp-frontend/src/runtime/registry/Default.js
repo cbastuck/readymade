@@ -2,6 +2,10 @@
 import TimerDescriptor from "../services/Timer";
 import MonitorDescriptor from "../services/Monitor";
 
+// Script
+import ConsideredHacker from "../services/ConsideredHacker";
+import DangerousHacker from "../services/DangerousHacker";
+
 // Data I/O
 import InputDescriptor from "../services/Input";
 import OutputDescriptor from "../services/Output";
@@ -96,6 +100,10 @@ const defaultRegistry = [
   SpotifyDescriptor,
   GithubSourceDescriptor,
   GithubSinkDescriptor,
+
+  // Scripting
+  DangerousHacker,
+  ConsideredHacker,
 
   // emerging
   KeyHandlerDescriptor,

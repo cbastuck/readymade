@@ -122,8 +122,17 @@ export default class BrowserRuntime extends Component {
       svc = services[i];
       const serviceInstance = this.serviceInstance(svc);
       if (!serviceInstance.bypass) {
-        result = await serviceInstance.process(params);
-        params = result;
+        try {
+          result = await serviceInstance.process(params);
+          params = result;
+        } catch (err) {
+          /*console.error(
+            `Seriously: service ${JSON.stringify(
+              serviceInstance
+            )} caused error: `,
+            err
+          );*/
+        }
       }
     }
     const resultReceiver = onResult || this.sendResult;

@@ -8,7 +8,7 @@ export default class Editor extends Component {
   state = { height: initialHeight };
 
   render() {
-    const { value } = this.props;
+    const { value, onChange, language = "json", style = {} } = this.props;
 
     return (
       <div
@@ -19,6 +19,7 @@ export default class Editor extends Component {
           minWidth: 400,
           height: "100%",
           ...t.selectable,
+          ...style,
         }}
       >
         <MonacoEditor
@@ -28,7 +29,8 @@ export default class Editor extends Component {
             this.setState({ height: "100%" });
             this.editor = editor;
           }}
-          defaultLanguage="json"
+          onChange={onChange}
+          defaultLanguage={language}
           value={value}
         />
       </div>

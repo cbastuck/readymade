@@ -27,7 +27,7 @@ export default class BoardCollection extends Component {
   renderCard = (item) => {
     const { url, name, description, metadata, image, repo } = item;
     return (
-      <Card style={s(t.p10, { maxWidth: 300 })} key={`board-card-${name}`}>
+      <Card style={s(t.p10, { width: "30%" })} key={`board-card-${name}`}>
         <Card.Content>
           {!repo ? (
             <Image
@@ -77,7 +77,6 @@ export default class BoardCollection extends Component {
     const { filter } = this.state;
     return (
       <Card.Group
-        itemsPerRow={2}
         style={{
           height,
           overflowY: "auto",

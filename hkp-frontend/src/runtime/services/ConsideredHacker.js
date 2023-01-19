@@ -1,0 +1,23 @@
+import { Hacker, HackerUI } from "./Hacker";
+
+import { parseExpression, evalExpression } from "hkp-services/eval";
+
+const serviceId = "hookup.to/service/hacker/considered";
+const serviceName = "Considered Hacker";
+
+class ConsideredHacker extends Hacker {
+  async process(params) {
+    const exp = parseExpression(this.buffer);
+    return evalExpression(exp, params);
+  }
+}
+
+const descriptor = {
+  serviceName,
+  serviceId,
+  create: (app, board, descriptor, id) =>
+    new ConsideredHacker(app, board, descriptor, id),
+  createUI: HackerUI,
+};
+
+export default descriptor;

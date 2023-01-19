@@ -21,9 +21,9 @@ export default function LoadPanel() {
 
 function SavedBoards({ items }) {
   return (
-    <div style={s(t.mt20, t.uc)}>
+    <div style={s(t.mt20, t.uc, { marginLeft: "2%" })}>
       <BoardCollection
-        style={{ width: "100%", marginRight: 20 }}
+        style={{ width: "100%" }}
         headline="Saved on this browser"
         items={items}
         renderBorder={false}

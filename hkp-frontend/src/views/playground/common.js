@@ -48,6 +48,8 @@ export const allowedServices = [
   "hookup.to/service/linear-regression",
   "hookup.to/service/xlsl",
   "hookup.to/service/select",
+  "hookup.to/service/hacker/considered",
+  "hookup.to/service/hacker/dangerous",
 ];
 
 export const defaultName = "Playground";

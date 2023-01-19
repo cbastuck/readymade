@@ -3,6 +3,7 @@ import { Checkbox, Button } from "semantic-ui-react";
 
 import ServiceUI from "./ServiceUI";
 import { s, t } from "../../styles";
+import InputField from "../../components/shared/InputField";
 
 const serviceId = "hookup.to/service/camera";
 const serviceName = "Camera";
@@ -132,9 +133,9 @@ class CameraUI extends Component {
       const { width, height } = this.state;
       if (!this.canvas) {
         this.canvas = document.createElement("canvas");
-        this.canvas.width = width;
-        this.canvas.height = height;
       }
+      this.canvas.width = width;
+      this.canvas.height = height;
       const ctx = this.canvas.getContext("2d");
       ctx.drawImage(this.videoElement, 0, 0, width, height);
       this.canvas.toBlob(resolve, this.state.captureFormat);
@@ -171,12 +172,7 @@ class CameraUI extends Component {
           height={this.state.height}
           autoPlay
         />
-        <div
-          style={{
-            textAlign: "left",
-            marginBottom: 5,
-          }}
-        >
+        <div style={{ textAlign: "left", marginBottom: 5, width: "100%" }}>
           <Checkbox
             style={s(t.uc, t.fs11)}
             label="Mirror"
@@ -188,17 +184,47 @@ class CameraUI extends Component {
           style={{
             display: "flex",
             flexDirection: "row",
+            width: "100%",
+          }}
+        >
+          <InputField
+            label="width"
+            value={this.state.width}
+            onChange={(ev, { value }) => {
+              const width = Number(value);
+              if (!isNaN(width)) {
+                this.setState({ width });
+              }
+            }}
+          />
+          <InputField
+            label="height"
+            value={this.state.height}
+            onChange={(ev, { value }) => {
+              const height = Number(value);
+              if (!isNaN(height)) {
+                this.setState({ height });
+              }
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            width: "100%",
           }}
         >
           <Button
-            style={s(t.uc, t.fs12)}
+            style={s(t.uc, t.fs12, t.w100)}
             disabled={!!this.state.stream && !!this.videoElement}
             onClick={() => this.startVideo(this.videoElement)}
           >
             Start
           </Button>
           <Button
-            style={s(t.uc, t.fs12)}
+            style={s(t.uc, t.fs12, t.w100)}
             disabled={!this.state.stream}
             onClick={() => this.stopVideo()}
           >

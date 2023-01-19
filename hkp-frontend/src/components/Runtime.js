@@ -586,6 +586,7 @@ export default class Runtime extends Component {
               display: "flex",
               flexFlow: wrapServices ? "row wrap" : "row nowrap",
               overflow: "auto",
+              overscrollBehaviorX: "none",
               ...readonlyStyle,
             }}
             onClickCapture={(e) => readonly && e.stopPropagation()}

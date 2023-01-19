@@ -15,7 +15,7 @@ export default function EmptySketch({ boardName }) {
   );
   return (
     <div style={s(t.uc, { margin: headline && "15px 0px" })}>
-      {headline && <div style={{ marginTop: 20 }}></div>}
+      {headline && <div style={{ marginTop: 20 }} />}
       <div style={{ padding: headline && "20px 0px" }}>
         <div style={s(t.tc, t.mt0, t.mb30)}>
           {true ? (
@@ -26,7 +26,6 @@ export default function EmptySketch({ boardName }) {
                 width: "90%",
                 margin: "auto",
                 borderRadius: 5,
-                backgroundColor: "#fafafa55",
               }}
             >
               <h1 style={s(t.fs14, t.tc, t.m(0, 6))}> {headline} </h1>

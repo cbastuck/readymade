@@ -58,7 +58,7 @@ export default class Footer extends Component {
                 fontSize: 10,
               }}
             >
-              © 2018-2022 cbastuck -
+              © 2018-2023 cbastuck -
               <span
                 style={{ color: "gray", padding: 5, textTransform: "none" }}
               >
