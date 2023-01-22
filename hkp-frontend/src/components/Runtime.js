@@ -400,7 +400,8 @@ export default class Runtime extends Component {
     services,
     readonly,
     registry,
-    onArrangeService
+    onArrangeService,
+    wrapServices
   ) => {
     const { outputs, inputs, onResult = undefined } = this.props;
     return (
@@ -409,6 +410,7 @@ export default class Runtime extends Component {
           display: "flex",
           flexDirection: "row",
           width: "100%",
+          flexFlow: wrapServices ? "wrap" : "row nowrap",
         }}
       >
         {inputs && expanded ? (
@@ -584,9 +586,7 @@ export default class Runtime extends Component {
             ref={(c) => (this.runtimeContainer = c)}
             style={{
               display: "flex",
-              flexFlow: wrapServices ? "row wrap" : "row nowrap",
               overflow: "auto",
-              overscrollBehaviorX: "none",
               ...readonlyStyle,
             }}
             onClickCapture={(e) => readonly && e.stopPropagation()}
@@ -610,7 +610,8 @@ export default class Runtime extends Component {
                   services,
                   readonly,
                   registry,
-                  onArrangeService
+                  onArrangeService,
+                  wrapServices
                 )}
             {((services && services.length === 0) || !isOwner) && (
               <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence

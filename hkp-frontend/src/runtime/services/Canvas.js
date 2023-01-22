@@ -4,25 +4,11 @@ import ResizeObserver from "resize-observer-polyfill";
 import ServiceUI from "./ServiceUI";
 import { createObjectURL, revokeObjectURL } from "./helpers";
 import { t } from "../../styles";
-import InputField from "../../components/shared/InputField";
 
 const serviceId = "hookup.to/service/canvas";
 const serviceName = "Canvas";
 
 const TWO_PI = 2 * Math.PI;
-
-function toAbsolute(value, upper) {
-  if (value === undefined || upper === undefined) {
-    return 0;
-  }
-  if (typeof value === "string") {
-    const components = value.split("%");
-    if (components.length > 1) {
-      return (Number(components[0]) / 100) * upper;
-    }
-  }
-  return value;
-}
 
 const initialWidth = 300;
 const initialHeight = 180;
@@ -458,14 +444,39 @@ class CanvasUI extends Component {
     });
   };
 
+  drawArray = (ctx, params) => {
+    const { data } = params;
+    const n = data.length;
+
+    const min = minArrayElem(data);
+    const max = maxArrayElem(data);
+
+    const rect = this.canvas.getBoundingClientRect();
+    const halfHeight = rect.height / 2;
+
+    const binWidth = rect.width / n;
+    ctx.strokeStyle = `gray`;
+    for (let i = 0; i < n; ++i) {
+      const v = data[i];
+      ctx.beginPath();
+      ctx.moveTo(i * binWidth, halfHeight);
+      if (v > 0) {
+        ctx.lineTo(i * binWidth, halfHeight - halfHeight * (v / max));
+      } else {
+        ctx.lineTo(i * binWidth, halfHeight + halfHeight * (v / min));
+      }
+      ctx.stroke();
+    }
+  };
+
   drawArray2d = (ctx, params) => {
     const { data, cols: nCols, rows: nRows } = params;
     const n = Math.min(data.length, nRows * nCols);
 
     const normaliseValues = false;
     const slice = data.slice(0, n);
-    const min = normaliseValues ? Math.min(...slice) : undefined;
-    const max = normaliseValues ? Math.max(...slice) : undefined;
+    const min = normaliseValues ? minArrayElem(slice) : undefined;
+    const max = normaliseValues ? maxArrayElem(slice) : undefined;
     const range = normaliseValues ? max - min : undefined;
 
     const rect = this.canvas.getBoundingClientRect();
@@ -560,6 +571,10 @@ class CanvasUI extends Component {
             break;
           case "array2d":
             this.drawArray2d(ctx, data);
+            break;
+          case "array":
+            this.drawArray(ctx, data);
+            break;
           default:
             break;
         }
@@ -712,6 +727,27 @@ class Canvas {
 
     return params;
   }
+}
+
+function maxArrayElem(arr) {
+  return arr.reduce((max, cur) => (cur > max ? cur : max), arr[0]);
+}
+
+function minArrayElem(arr) {
+  return arr.reduce((min, cur) => (cur < min ? cur : min), arr[0]);
+}
+
+function toAbsolute(value, upper) {
+  if (value === undefined || upper === undefined) {
+    return 0;
+  }
+  if (typeof value === "string") {
+    const components = value.split("%");
+    if (components.length > 1) {
+      return (Number(components[0]) / 100) * upper;
+    }
+  }
+  return value;
 }
 
 const descriptor = {

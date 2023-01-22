@@ -6,12 +6,17 @@ import Editor from "../../components/shared/Editor/index";
 export function HackerUI(props) {
   const [buffer, setBuffer] = useState("");
   const [healthStatus, setHealthStatus] = useState(true);
+  const [size, setSize] = useState([300, 150]);
   const editorRef = useRef(null);
 
   const onInit = (service) => {
-    const { buffer } = service;
+    const { buffer, size } = service;
     if (buffer !== undefined) {
       setBuffer(buffer);
+    }
+
+    if (size !== undefined) {
+      setSize([size[0], size[1]]);
     }
   };
 
@@ -22,12 +27,19 @@ export function HackerUI(props) {
     }
   };
 
+  const onResize = (service, { width, height }) => {
+    const resized = { size: [width, height] };
+    setSize(resized);
+    service.configure(resized);
+  };
+
   return (
     <ServiceUI
       {...props}
       onNotification={onNotification}
       onInit={onInit}
       resizable={true}
+      onResize={onResize}
     >
       {({ boardContext, service }) => (
         <div
@@ -87,6 +99,8 @@ export function HackerUI(props) {
             value={buffer}
             language="javascript"
             onChange={(buffer) => service.configure({ buffer })}
+            width={size[0]}
+            height={size[1]}
           />
         </div>
       )}
@@ -136,12 +150,16 @@ export class Hacker {
   };
 
   configure = (config) => {
-    const { buffer } = config;
+    const { buffer, size } = config;
     if (buffer !== undefined) {
       this.buffer = buffer;
       if (this.healthStatus.error) {
         this.resetHealthStatus(true);
       }
+    }
+
+    if (size !== undefined) {
+      this.size = size;
     }
   };
 }

@@ -173,7 +173,7 @@ class Welcome extends Component {
             },
             {
               q: "How",
-              a: "Explore abstractions to creatively connect data, logic, devices and services",
+              a: "Build abstractions that seamlessly connect data, logic, devices and services",
               href: "/docs/pitch/how",
             },
             {

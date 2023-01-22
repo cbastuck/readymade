@@ -72,7 +72,7 @@ export default class ServiceUI extends Component {
     }
   };
 
-  renderSegments = ({ service }, segments, resizable) => {
+  renderSegments = ({ service }, segments, resizable, onResize) => {
     if (!service) {
       return false;
     }
@@ -81,7 +81,10 @@ export default class ServiceUI extends Component {
       (segment) => segment.name === currentSegmentName
     );
     return (
-      <Resizable hideHandle={!resizable}>
+      <Resizable
+        hideHandle={!resizable}
+        onResize={onResize ? (size) => onResize(this.service, size) : undefined}
+      >
         <div
           style={{
             display: "flex",
@@ -138,7 +141,7 @@ export default class ServiceUI extends Component {
     );
   };
 
-  renderSingleSegment = (boardContext, children, resizable) => {
+  renderSingleSegment = (boardContext, children, resizable, onResize) => {
     const { setup } = this.props;
     const c = children({
       boardContext,
@@ -146,11 +149,25 @@ export default class ServiceUI extends Component {
         ? setup(boardContext, this.props)
         : this.setup(boardContext, this.props),
     });
-    return resizable ? <Resizable> {c} </Resizable> : c;
+    return resizable ? (
+      <Resizable
+        onResize={onResize ? (size) => onResize(this.service, size) : undefined}
+      >
+        {c}
+      </Resizable>
+    ) : (
+      c
+    );
   };
 
   render() {
-    const { children, segments, setup, resizable = true } = this.props;
+    const {
+      children,
+      segments,
+      setup,
+      resizable = true,
+      onResize,
+    } = this.props;
     return (
       <BoardConsumer>
         {(boardContext) =>
@@ -163,9 +180,15 @@ export default class ServiceUI extends Component {
                     : this.setup(boardContext, this.props),
                 },
                 segments,
-                resizable
+                resizable,
+                onResize
               )
-            : this.renderSingleSegment(boardContext, children, resizable)
+            : this.renderSingleSegment(
+                boardContext,
+                children,
+                resizable,
+                onResize
+              )
         }
       </BoardConsumer>
     );

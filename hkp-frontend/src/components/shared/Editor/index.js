@@ -2,22 +2,30 @@ import { Component } from "react";
 import MonacoEditor from "@monaco-editor/react";
 import { t } from "../../../styles";
 
-const initialHeight = "100px";
+const initialHeight = "150px";
 
 export default class Editor extends Component {
   state = { height: initialHeight };
 
   render() {
-    const { value, onChange, language = "json", style = {} } = this.props;
+    const {
+      value,
+      onChange,
+      width,
+      height,
+      language = "json",
+      style = {},
+      initialWidth = 300,
+    } = this.props;
 
     return (
       <div
         style={{
           border: "solid 1px lightgray",
           textAlign: "left",
-          width: "100%",
-          minWidth: 400,
-          height: "100%",
+          width: width || "100%",
+          minWidth: initialWidth,
+          height: height || "100%",
           ...t.selectable,
           ...style,
         }}
@@ -26,7 +34,7 @@ export default class Editor extends Component {
           width="100%"
           height={this.state.height}
           onMount={(editor) => {
-            this.setState({ height: "100%" });
+            setTimeout(() => this.setState({ height: "100%" }), 10);
             this.editor = editor;
           }}
           onChange={onChange}
@@ -36,5 +44,6 @@ export default class Editor extends Component {
       </div>
     );
   }
+
   getValue = () => this.editor && this.editor.getValue();
 }

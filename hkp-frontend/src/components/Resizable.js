@@ -2,38 +2,37 @@ import React, { Component } from "react";
 
 import { s, t } from "../styles";
 
-/*
-class Triangle extends Component {
-  render() {
-    const { 
-      height=10,
-      width=10
-    } = this.props;
-    return (
-      <svg 
-        height={height}
-        width={width}
-      >
-        <polygon 
-          points={`0,${height} ${width},${height} ${width},0`}
-          style={{ 
-            fill:'#efefef',
-            stroke:'lightgray',
-            strokeWidth: 1
-          }} 
-        />
-      </svg>
-    );
-  }
-}
-*/
-
 export default class Resizable extends Component {
+  componentDidMount() {
+    this.resizableObserver = new ResizeObserver(this.onResize);
+  }
+  componentWillUnmount() {
+    this.resetObserver();
+  }
+
+  resetObserver = () => {
+    if (this.resizableObserver) {
+      this.resizableObserver.disconnect();
+    }
+  };
+
+  onResize = debounce((ev) => {
+    if (this.props.onResize) {
+      this.props.onResize(ev[0].contentRect);
+    }
+  }, 300);
+
   render() {
     const { children, style = {}, hideHandle = false } = this.props;
     const resizeableStyle = hideHandle ? {} : t.resizable;
     return (
       <div
+        ref={(ref) => {
+          this.resetObserver();
+          if (ref && this.resizableObserver) {
+            this.resizableObserver.observe(ref);
+          }
+        }}
         style={s(
           {
             minWidth: 200,
@@ -48,4 +47,14 @@ export default class Resizable extends Component {
       </div>
     );
   }
+}
+
+function debounce(func, timeout = 300) {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      func.apply(this, args);
+    }, timeout);
+  };
 }

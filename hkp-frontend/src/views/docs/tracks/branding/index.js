@@ -1,6 +1,7 @@
 import Template from "../../../Template";
 
 import { Section, Paragraph, ListItem, Text } from "../../Elements";
+import Date from "../../../../components/Date";
 
 import { ReactComponent as HkpLogo } from "./assets/hkp-dots-round.svg";
 import { ReactComponent as HkpBraidLogo } from "./assets/hkp-dots-plait-linkedin.svg";
@@ -10,6 +11,7 @@ export default function Brand() {
   return (
     <Template title="Brand and Identity" parent="side tracks">
       <div style={{ margin: "40px 0px" }}>
+        <Date month="August" day="6" year="2022" size="s" />
         <Section title="Logo">
           <Text>
             <Paragraph brief="Initial draft: render three dots with vowels of the project name">
@@ -48,13 +50,25 @@ export default function Brand() {
             </Paragraph>
             <Paragraph brief="Removing the vowel ...">
               <ListItem>
-                as they carry informatiom mostly for pronunciation, less for
+                as they carry information mostly for pronunciation, less for
                 understanding
               </ListItem>
               <ListItem>
                 as the odds are that Hookup is already taken for being used in
                 such context.
               </ListItem>
+            </Paragraph>
+            <Date month="January" day="21" year="2023" size="s" />
+            <Paragraph brief="In functional notation a representation of the smallest valuable building block ...">
+              <div>
+                a runtime consisting of two services: <code>h</code> and{" "}
+                <code>k</code>, with parameters <code>p</code> floating from
+                input to output while being transformed and producing the
+                result:
+                <span style={{ marginLeft: 10 }}>
+                  <code>h(k(p))</code>
+                </span>
+              </div>
             </Paragraph>
           </Text>
         </Section>
