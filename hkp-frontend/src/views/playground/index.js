@@ -17,7 +17,6 @@ import LoadPanel from "./LoadPanel";
 import Login from "../Login";
 import { generateRandomName } from "../../core/board";
 import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
-import { redirectTo } from "../../core/actions";
 import { s, t } from "../../styles";
 import {
   localStoragePrefix,
@@ -94,41 +93,24 @@ class Playground extends Component {
 
   componentDidMount() {
     document.addEventListener("keydown", this.onKey, false);
-    if (this.isBoardUnnamed()) {
-      this.newBoard(document.location.search);
-    }
   }
 
   componentDidUpdate(prevProps) {
     const board = this.props.match.params.board;
     const prevBoard = prevProps.match.params.board;
-    if (this.isBoardUnnamed()) {
-      return this.newBoard(document.location.search);
-    }
     if (board !== prevBoard) {
-      if (board === undefined) {
-        this.setState({
-          boardName: defaultName,
-          runtimes: undefined,
-          services: undefined,
-          sidechainRouting: {},
-          description: "",
-          initialFetched: false,
-          outputRouting: {},
-          inputRouting: {},
-        });
-      } else {
+      this.clearPlayground().then(() =>
         this.setState({
           boardName: board,
           initialFetched: false,
-        });
-      }
+        })
+      );
     }
   }
 
   componentWillUnmount() {
-    this.clearPlayground();
     document.removeEventListener("keydown", this.onKey);
+    this.clearPlayground();
   }
 
   fetchData = async () => {
@@ -297,9 +279,12 @@ class Playground extends Component {
     return data;
   };
 
-  newBoard = (searchParams = "") => {
+  newBoard = async (searchParams = "") => {
+    await this.clearPlayground();
     const name = generateRandomName();
-    redirectTo(`/playground/${name}${searchParams}`);
+    this.props.navigate(`/playground/${name}${searchParams}`, {
+      replace: true,
+    });
   };
 
   addService = (boardname, descriptor, runtimeId) => {
@@ -461,7 +446,7 @@ class Playground extends Component {
           JSON.stringify(data)
         );
         if (name !== suggested) {
-          redirectTo(`/playground/${name}`);
+          this.props.navigate(`/playground/${name}`, { replace: true });
         }
         return data;
       }
@@ -507,24 +492,14 @@ class Playground extends Component {
     }
   };
 
-  isBoardUnnamed = () => {
-    return (
-      !this.props.match ||
-      !this.props.match.params ||
-      !this.props.match.params.board
-    );
-  };
-
   renderPlaceholderOrBoard = (boardContext) => {
     const { boardName } = this.state;
     const isPlaygroundEmpty =
       boardContext &&
       boardContext.runtimes &&
       boardContext.runtimes.length === 0;
-    const isBoardUnnamed = this.isBoardUnnamed();
-
     const content = isPlaygroundEmpty ? (
-      <EmptySketch boardName={isBoardUnnamed ? undefined : boardName} />
+      <EmptySketch boardName={boardName} />
     ) : (
       this.renderBoard(boardContext)
     );
@@ -567,7 +542,7 @@ class Playground extends Component {
             )}
             <div>
               {content}
-              {!isPlaygroundEmpty && isBoardUnnamed ? saveReminder : false}
+              {!isPlaygroundEmpty ? saveReminder : false}
             </div>
             {isPlaygroundEmpty && (
               <div style={s(t.uc, { width: "90%", margin: "auto" })}>

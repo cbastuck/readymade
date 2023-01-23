@@ -411,6 +411,7 @@ export default class Runtime extends Component {
           flexDirection: "row",
           width: "100%",
           flexFlow: wrapServices ? "wrap" : "row nowrap",
+          overflow: "auto",
         }}
       >
         {inputs && expanded ? (
@@ -583,12 +584,10 @@ export default class Runtime extends Component {
             {this.renderSettings(runtime, onToggleOwnership, isOwner)}
           </Sidebar>
           <div
-            ref={(c) => (this.runtimeContainer = c)}
-            style={{
-              display: "flex",
-              overflow: "auto",
-              ...readonlyStyle,
+            ref={(c) => {
+              this.runtimeContainer = c;
             }}
+            style={readonlyStyle}
             onClickCapture={(e) => readonly && e.stopPropagation()}
           >
             {runtime && (runtime.type === "node" || runtime.type === "remote")
