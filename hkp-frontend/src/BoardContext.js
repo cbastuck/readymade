@@ -249,7 +249,9 @@ class BoardContext extends Component {
     const { runtimes } = this.state;
     if (runtimes) {
       for (const runtime of runtimes) {
-        runtime.destroyRuntime && runtime.destroyRuntime();
+        if (runtime.destroyRuntime) {
+          await runtime.destroyRuntime();
+        }
       }
     }
 
