@@ -72,7 +72,7 @@ export default class ServiceUI extends Component {
     }
   };
 
-  renderSegments = ({ service }, segments, resizable, onResize) => {
+  renderSegments = ({ service }, segments, resizable, onResize, style) => {
     if (!service) {
       return false;
     }
@@ -84,6 +84,7 @@ export default class ServiceUI extends Component {
       <Resizable
         hideHandle={!resizable}
         onResize={onResize ? (size) => onResize(this.service, size) : undefined}
+        style={style}
       >
         <div
           style={{
@@ -141,7 +142,13 @@ export default class ServiceUI extends Component {
     );
   };
 
-  renderSingleSegment = (boardContext, children, resizable, onResize) => {
+  renderSingleSegment = (
+    boardContext,
+    children,
+    resizable,
+    onResize,
+    style
+  ) => {
     const { setup } = this.props;
     const c = children({
       boardContext,
@@ -152,6 +159,7 @@ export default class ServiceUI extends Component {
     return resizable ? (
       <Resizable
         onResize={onResize ? (size) => onResize(this.service, size) : undefined}
+        style={style}
       >
         {c}
       </Resizable>
@@ -166,7 +174,8 @@ export default class ServiceUI extends Component {
       segments,
       setup,
       resizable = true,
-      onResize,
+      onResize = () => {},
+      style = {},
     } = this.props;
     return (
       <BoardConsumer>
@@ -181,13 +190,15 @@ export default class ServiceUI extends Component {
                 },
                 segments,
                 resizable,
-                onResize
+                onResize,
+                style
               )
             : this.renderSingleSegment(
                 boardContext,
                 children,
                 resizable,
-                onResize
+                onResize,
+                style
               )
         }
       </BoardConsumer>

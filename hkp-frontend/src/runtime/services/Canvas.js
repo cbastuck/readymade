@@ -10,17 +10,14 @@ const serviceName = "Canvas";
 
 const TWO_PI = 2 * Math.PI;
 
-const initialWidth = 350;
-const initialHeight = 180;
-
 class CanvasUI extends Component {
   state = {
     fullWidth: document.body.clientWidth,
     fullHeight: document.body.clientHeight,
     fullscreen: false,
     clearOnRedraw: true,
-    canvasWidth: initialWidth,
-    canvasHeight: initialHeight,
+    canvasWidth: 0,
+    canvasHeight: 0,
   };
 
   imageCache = {};
@@ -33,27 +30,7 @@ class CanvasUI extends Component {
 
   componentWillUnmount() {
     this.resizeBodyObserver.disconnect();
-    this.resizeCanvasObserver.disconnect();
   }
-
-  onResizeCanvasEvent = (entries, observer) => {
-    const entry = entries && entries[0];
-    if (entry) {
-      const { width: canvasWidth, height: canvasHeight } = entry.contentRect;
-      this.setState(
-        {
-          canvasWidth,
-          canvasHeight,
-        },
-        () => {
-          this.update(this.recentData);
-          this.props.service.configure({
-            size: [canvasWidth, canvasHeight],
-          });
-        }
-      );
-    }
-  };
 
   onResizeBodyEvent = (entries) => {
     const entry = entries && entries[0];
@@ -574,59 +551,44 @@ class CanvasUI extends Component {
     } = this.state;
 
     const fullscreen = showFullscreen || service.fullscreen;
-    const width = fullscreen ? fullWidth : canvasWidth;
-    const height = fullscreen ? fullHeight : canvasHeight - 4;
+    const width = (fullscreen ? fullWidth : canvasWidth) + 0;
+    const height = (fullscreen ? fullHeight : canvasHeight) - 4;
     return (
-      <div
-        style={
-          resizable
-            ? { ...t.resizable, overflow: "hidden", padding: 5 }
-            : { overflow: "hidden", padding: 5 }
-        }
-        ref={(resizable) => (this.resizable = resizable)}
-      >
-        <canvas
-          ref={(canvas) => (this.canvas = canvas)}
-          style={{
-            width,
-            height,
-            margin: 0,
-            padding: 0,
-            position: fullscreen && "fixed",
-            top: 0,
-            left: 0,
-            zIndex: fullscreen && t.foreground,
-            minWidth: initialWidth,
-            minHeight: initialHeight,
-          }}
-          width={width}
-          height={height}
-          onDoubleClick={() => {
-            if (resizable && !service.noToggleFullscreenOnDblClick) {
-              const toggled = !fullscreen;
-              service.fullscreen = toggled;
-              this.setState({ fullscreen: toggled }, () =>
-                this.update(this.recentData)
-              );
-            }
-          }}
-          onClick={this.onClick.bind(this, service)}
-        />
-      </div>
+      <canvas
+        ref={(ref) => (this.canvas = ref)}
+        style={{
+          position: fullscreen ? "fixed" : undefined,
+          top: fullscreen ? 0 : undefined,
+          left: fullscreen ? 0 : undefined,
+          zIndex: fullscreen ? t.foreground : undefined,
+          width,
+          height,
+        }}
+        onDoubleClick={() => {
+          if (resizable && !service.noToggleFullscreenOnDblClick) {
+            const toggled = !fullscreen;
+            service.fullscreen = toggled;
+            this.setState({ fullscreen: toggled }, () =>
+              this.update(this.recentData)
+            );
+          }
+        }}
+        onClick={this.onClick.bind(this, service)}
+        width={width}
+        height={height}
+      />
     );
   };
 
   render() {
-    if (!this.resizeCanvasObserver && this.resizable) {
-      this.resizeCanvasObserver = new ResizeObserver(this.onResizeCanvasEvent);
-      this.resizeCanvasObserver.observe(this.resizable);
-    }
     return (
       <ServiceUI
         {...this.props}
-        onNotification={this.onNotification}
+        style={{ overflow: "auto", padding: "10px 0px" }}
         onInit={this.onInit}
-        resizable={false}
+        onNotification={this.onNotification}
+        onResize={this.onResize}
+        resizable={this.state.resizable}
       >
         {this.renderMain}
       </ServiceUI>
@@ -669,6 +631,12 @@ class CanvasUI extends Component {
       config.canvasHeight = size[1];
     }
     this.setState(config);
+  };
+
+  onResize = (service, { width, height }) => {
+    this.setState({ canvasWidth: width, canvasHeight: height });
+    service.configure({ size: [width, height] });
+    this.update(this.recentData);
   };
 }
 

@@ -104,6 +104,7 @@ class Sandbox extends Component {
         name: "Sandbox",
         type: firstBrowserRuntimeData.type,
         bundles: firstBrowserRuntimeData.bundles,
+        state: firstBrowserRuntimeData.state,
       },
       services: firstBrowserRuntimeData.services,
     });
@@ -138,6 +139,7 @@ class Sandbox extends Component {
           <DragProvider key={`sandbox-drag-provider-${runtime.id}`}>
             <Runtime
               key={`sandbox-runtime-${runtime.id}`}
+              initialState={runtime.state}
               style={{ marginBottom: 5 }}
               ref={(runtime) => (this.runtime = runtime)}
               runtime={runtime}

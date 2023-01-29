@@ -255,6 +255,7 @@ class Playground extends Component {
         id: rt.id,
         name: rt.name,
         type: rt.type,
+        state: this.board.getRuntimeById(rt.id).serialize(),
       })),
       services: Object.keys(services).reduce((all, runtimeId) => {
         const rt = this.board.getRuntimeById(runtimeId);

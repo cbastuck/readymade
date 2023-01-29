@@ -3,6 +3,9 @@
     "id": "4122caaa-2b93-40f0-a98e-8582369b685e",
     "name": "Chrome-78.0.3904.108 (0)",
     "type": "browser",
+    "state": {
+      "wrapServices": true
+    },
     "services": [
       {
         "serviceName": "Timer",
@@ -118,7 +121,7 @@
             },
             {
               "type": "text",
-              "text": "Support that narrative",
+              "text": "Spread that narrative",
               "color": "#454f6d",
               "textTransform": "uppercase-spacing-1",
               "font": {

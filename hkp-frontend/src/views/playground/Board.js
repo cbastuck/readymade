@@ -319,10 +319,12 @@ export default class Board extends Component {
     const filteredPeers = peersContext.peerNames.filter(
       (x) => ownPeers.indexOf(x) === -1
     );
+
     return (
       <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
         <Runtime
           key={`sandbox-playground-${runtime.id}`}
+          initialState={runtime.state}
           ref={(rt) => (this.runtimeInstances[runtime.id] = rt)}
           boardContext={boardContext}
           runtime={runtime}

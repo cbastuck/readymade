@@ -17,10 +17,12 @@ export default class Runtime extends Component {
   };
 
   componentDidMount() {
-    const { readonly, expanded } = this.props;
+    // TODO: Expanded and readonly should be in initial state
+    const { readonly, expanded, initialState } = this.props;
     this.setState({
       expanded: expanded !== undefined ? expanded : !readonly,
       readonly: readonly,
+      ...initialState,
     });
   }
 
@@ -75,6 +77,10 @@ export default class Runtime extends Component {
         console.log("Runtime processing unknown service action", action);
     }
   };
+
+  serialize = () => ({
+    wrapServices: !!this.state.wrapServices,
+  });
 
   getServiceById = (serviceUuid) => {
     const { boardContext, runtime } = this.props;
@@ -411,7 +417,7 @@ export default class Runtime extends Component {
           flexDirection: "row",
           width: "100%",
           flexFlow: wrapServices ? "wrap" : "row nowrap",
-          overflow: "auto",
+          overflow: wrapServices ? undefined : "auto",
         }}
       >
         {inputs && expanded ? (
