@@ -10,7 +10,7 @@ const serviceName = "Canvas";
 
 const TWO_PI = 2 * Math.PI;
 
-const initialWidth = 300;
+const initialWidth = 350;
 const initialHeight = 180;
 
 class CanvasUI extends Component {
@@ -29,11 +29,6 @@ class CanvasUI extends Component {
   componentDidMount() {
     this.resizeBodyObserver = new ResizeObserver(this.onResizeBodyEvent);
     this.resizeBodyObserver.observe(document.body);
-
-    if (this.canvas) {
-      this.resizeCanvasObserver = new ResizeObserver(this.onResizeCanvasEvent);
-      this.resizeCanvasObserver.observe(this.canvas);
-    }
   }
 
   componentWillUnmount() {
@@ -41,15 +36,21 @@ class CanvasUI extends Component {
     this.resizeCanvasObserver.disconnect();
   }
 
-  onResizeCanvasEvent = (entries) => {
+  onResizeCanvasEvent = (entries, observer) => {
     const entry = entries && entries[0];
     if (entry) {
+      const { width: canvasWidth, height: canvasHeight } = entry.contentRect;
       this.setState(
         {
-          canvasWidth: entry.contentRect.width,
-          canvasHeight: entry.contentRect.height,
+          canvasWidth,
+          canvasHeight,
         },
-        () => this.update(this.recentData)
+        () => {
+          this.update(this.recentData);
+          this.props.service.configure({
+            size: [canvasWidth, canvasHeight],
+          });
+        }
       );
     }
   };
@@ -503,26 +504,6 @@ class CanvasUI extends Component {
     }
   };
 
-  onNotification = (service, notification) => {
-    const { render } = notification;
-    if (render) {
-      const { captureMime, frameID } = notification;
-      this.update(render);
-      if (captureMime && this.canvas) {
-        this.canvas.toBlob(
-          (blob) =>
-            service.configure({
-              capturedFrame: {
-                frameID,
-                blob,
-              },
-            }),
-          captureMime
-        );
-      }
-    }
-  };
-
   update = (objectOrArray) => {
     this.recentData = objectOrArray;
     if (!this.canvas || !objectOrArray) {
@@ -588,65 +569,107 @@ class CanvasUI extends Component {
       canvasHeight,
       fullWidth,
       fullHeight,
-      fullscreen,
+      fullscreen: showFullscreen,
       resizable,
     } = this.state;
 
+    const fullscreen = showFullscreen || service.fullscreen;
+    const width = fullscreen ? fullWidth : canvasWidth;
+    const height = fullscreen ? fullHeight : canvasHeight - 4;
     return (
-      <div style={resizable ? { ...t.resizable } : {}}>
-        <div style={{ margin: 5 }}>
-          <canvas
-            ref={(canvas) => (this.canvas = canvas)}
-            style={{
-              height: "100%",
-              width: "100%",
-              margin: 0,
-              padding: 0,
-              position: (fullscreen || service.fullscreen) && "fixed",
-              top: 0,
-              left: 0,
-              zIndex: fullscreen && t.foreground,
-              minWidth: initialWidth,
-              minHeight: initialHeight,
-            }}
-            width={fullscreen || service.fullscreen ? fullWidth : canvasWidth}
-            height={
-              fullscreen || service.fullscreen ? fullHeight : canvasHeight
+      <div
+        style={
+          resizable
+            ? { ...t.resizable, overflow: "hidden", padding: 5 }
+            : { overflow: "hidden", padding: 5 }
+        }
+        ref={(resizable) => (this.resizable = resizable)}
+      >
+        <canvas
+          ref={(canvas) => (this.canvas = canvas)}
+          style={{
+            width,
+            height,
+            margin: 0,
+            padding: 0,
+            position: fullscreen && "fixed",
+            top: 0,
+            left: 0,
+            zIndex: fullscreen && t.foreground,
+            minWidth: initialWidth,
+            minHeight: initialHeight,
+          }}
+          width={width}
+          height={height}
+          onDoubleClick={() => {
+            if (resizable && !service.noToggleFullscreenOnDblClick) {
+              const toggled = !fullscreen;
+              service.fullscreen = toggled;
+              this.setState({ fullscreen: toggled }, () =>
+                this.update(this.recentData)
+              );
             }
-            onDoubleClick={() => {
-              if (resizable && !service.noToggleFullscreenOnDblClick) {
-                const toggled = !fullscreen;
-                service.fullscreen = toggled;
-                this.setState({ fullscreen: toggled }, () =>
-                  this.update(this.recentData)
-                );
-              }
-            }}
-            onClick={this.onClick.bind(this, service)}
-          />
-        </div>
+          }}
+          onClick={this.onClick.bind(this, service)}
+        />
       </div>
     );
   };
 
   render() {
+    if (!this.resizeCanvasObserver && this.resizable) {
+      this.resizeCanvasObserver = new ResizeObserver(this.onResizeCanvasEvent);
+      this.resizeCanvasObserver.observe(this.resizable);
+    }
     return (
       <ServiceUI
         {...this.props}
         onNotification={this.onNotification}
-        onInit={(service) =>
-          this.setState({
-            resizable: !!service.resizable,
-            fullscreen: service.fullscreen,
-            clearOnRedraw: service.clearOnRedraw,
-          })
-        }
+        onInit={this.onInit}
         resizable={false}
       >
         {this.renderMain}
       </ServiceUI>
     );
   }
+
+  onNotification = (service, notification) => {
+    const { render, size } = notification;
+    if (size !== undefined) {
+      const [canvasWidth, canvasHeight] = size;
+      this.setState({ canvasWidth, canvasHeight });
+    }
+    if (render) {
+      const { captureMime, frameID } = notification;
+      this.update(render);
+      if (captureMime && this.canvas) {
+        this.canvas.toBlob(
+          (blob) =>
+            service.configure({
+              capturedFrame: {
+                frameID,
+                blob,
+              },
+            }),
+          captureMime
+        );
+      }
+    }
+  };
+
+  onInit = (service) => {
+    const { size, resizable, fullscreen, clearOnRedraw } = service;
+    const config = {
+      resizable: !!resizable,
+      fullscreen,
+      clearOnRedraw,
+    };
+    if (size) {
+      config.canvasWidth = size[0];
+      config.canvasHeight = size[1];
+    }
+    this.setState(config);
+  };
 }
 
 class Canvas {
@@ -660,6 +683,7 @@ class Canvas {
     this._frameID = 0;
     this._pending = {};
     this.resizable = true;
+    this.size = undefined;
   }
 
   configure(config) {
@@ -670,6 +694,7 @@ class Canvas {
       capture,
       capturedFrame,
       resizable,
+      size,
     } = config || {};
     if (fullscreen !== undefined) {
       this.fullscreen = fullscreen;
@@ -693,6 +718,10 @@ class Canvas {
 
     if (resizable !== undefined) {
       this.resizable = resizable;
+    }
+
+    if (size !== undefined) {
+      this.size = size;
     }
   }
 
