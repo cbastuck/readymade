@@ -505,7 +505,7 @@ class Playground extends Component {
     );
     const saveReminder = (
       <div style={s(t.fs14, t.mb10, { fontFamily: "Lato" })}>
-        Remember you can
+        Remember to
         <span
           style={{ cursor: "help", color: "#4284C4" }}
           onClick={() => {
@@ -518,7 +518,7 @@ class Playground extends Component {
         >
           {" save this board "}
         </span>
-        to continue later
+        and continue later
       </div>
     );
     return (
