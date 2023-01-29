@@ -551,8 +551,8 @@ class CanvasUI extends Component {
     } = this.state;
 
     const fullscreen = showFullscreen || service.fullscreen;
-    const width = (fullscreen ? fullWidth : canvasWidth) + 0;
-    const height = (fullscreen ? fullHeight : canvasHeight) - 4;
+    const width = fullscreen ? fullWidth : canvasWidth;
+    const height = fullscreen ? fullHeight : canvasHeight - 4; // TODO: could not figure out why we grows otherwise
     return (
       <canvas
         ref={(ref) => (this.canvas = ref)}
@@ -581,14 +581,19 @@ class CanvasUI extends Component {
   };
 
   render() {
+    const { resizable } = this.state;
     return (
       <ServiceUI
         {...this.props}
-        style={{ overflow: "auto", padding: "10px 0px" }}
+        style={{
+          overflow: "auto",
+          padding: resizable ? 5 : 0,
+          margin: 0,
+        }}
         onInit={this.onInit}
         onNotification={this.onNotification}
         onResize={this.onResize}
-        resizable={this.state.resizable}
+        resizable={resizable}
       >
         {this.renderMain}
       </ServiceUI>
@@ -599,7 +604,9 @@ class CanvasUI extends Component {
     const { render, size } = notification;
     if (size !== undefined) {
       const [canvasWidth, canvasHeight] = size;
-      this.setState({ canvasWidth, canvasHeight });
+      this.setState({ canvasWidth, canvasHeight }, () =>
+        this.update(this.recentData)
+      );
     }
     if (render) {
       const { captureMime, frameID } = notification;
@@ -634,9 +641,7 @@ class CanvasUI extends Component {
   };
 
   onResize = (service, { width, height }) => {
-    this.setState({ canvasWidth: width, canvasHeight: height });
     service.configure({ size: [width, height] });
-    this.update(this.recentData);
   };
 }
 
@@ -652,6 +657,7 @@ class Canvas {
     this._pending = {};
     this.resizable = true;
     this.size = undefined;
+    this.reportSizeUpdate = true;
   }
 
   configure(config) {
@@ -663,6 +669,7 @@ class Canvas {
       capturedFrame,
       resizable,
       size,
+      reportSizeUpdate,
     } = config || {};
     if (fullscreen !== undefined) {
       this.fullscreen = fullscreen;
@@ -690,6 +697,15 @@ class Canvas {
 
     if (size !== undefined) {
       this.size = size;
+      this.app.notify(this, { size });
+      if (this.reportSizeUpdate) {
+        const [updatedWidth, updatedHeight] = size;
+        this.app.next(this, { updatedWidth, updatedHeight });
+      }
+    }
+
+    if (reportSizeUpdate !== undefined) {
+      this.reportSizeUpdate = reportSizeUpdate;
     }
   }
 

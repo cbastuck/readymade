@@ -201,6 +201,11 @@ export default class Toolbar extends Component {
               {this.props.boardSyncActive ? "Disable Sync" : "Board Sync"}
             </span>
           </Dropdown.Item>
+          <Dropdown.Item>
+            <Link to={`${window.location.pathname}/src`}>
+              <span style={menuItemStyle}>Board Source</span>
+            </Link>
+          </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>
     );

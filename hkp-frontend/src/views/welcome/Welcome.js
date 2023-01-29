@@ -95,10 +95,12 @@ class Welcome extends Component {
         visible={!this.state.introFinished}
       />
       {this.state.introFinished && (
-        <NavigateButton
-          destination="/?page=visualisation"
-          text="A thought experiment"
-        />
+        <div>
+          <NavigateButton
+            destination="/?page=visualisation"
+            text="A thought experiment"
+          />
+        </div>
       )}
     </div>
   );

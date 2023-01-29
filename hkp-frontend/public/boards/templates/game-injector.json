@@ -3,24 +3,29 @@
     {
       "id": "RT1",
       "name": "injector-runtime",
-      "type": "browser"
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
     }
   ],
   "services": {
     "RT1": [
       {
-        "serviceId": "hookup.to/service/injector",
-        "serviceName": "Injector",
-        "recentCode": {
-          "moveX": -10
-        }
+        "uuid": "3b02cfcb-81fb-4e74-947e-5b186856ba75",
+        "board": "xy-controller-game",
+        "serviceId": "hookup.to/service/xy-pad",
+        "serviceName": "XY Pad"
       },
       {
-        "serviceId": "hookup.to/service/injector",
-        "serviceName": "Injector",
-        "recentCode": {
-          "moveX": 10
-        }
+        "uuid": "2189eca2-21f6-4d97-9a10-a3de6b5a535e",
+        "board": "xy-controller-game",
+        "mode": "replace",
+        "template": {
+          "relX=": "params.x"
+        },
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map"
       }
     ]
   },

@@ -3,34 +3,51 @@
     {
       "id": "225f57b0-cb96-4ad0-be26-6e19610a1bc1",
       "name": "Input",
-      "type": "browser"
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     },
     {
       "id": "278d4f08-5055-4b71-8886-09b8b05129be",
       "name": "Logic",
-      "type": "browser"
+      "type": "browser",
+      "params": {
+        "minimized": true
+      },
+      "state": {
+        "wrapServices": false,
+        "minimized": true
+      }
     },
     {
       "id": "130bf554-4c61-4c94-a6d4-943a6263bb4f",
       "name": "Output",
-      "type": "browser"
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     }
   ],
   "services": {
     "225f57b0-cb96-4ad0-be26-6e19610a1bc1": [
       {
-        "serviceId": "hookup.to/service/injector",
-        "serviceName": "Injector",
-        "uuid": "03226cae-1bc1-4000-bd89-f22996adac04",
-        "board": "Playground",
-        "recentCode": "{ \"moveX\": -10 }"
+        "uuid": "3b02cfcb-81fb-4e74-947e-5b186856ba75",
+        "board": "xy-controller-game",
+        "serviceId": "hookup.to/service/xy-pad",
+        "serviceName": "XY Pad"
       },
       {
-        "serviceId": "hookup.to/service/injector",
-        "serviceName": "Injector",
-        "uuid": "6b183589-560b-4946-b023-9c0fa60c3783",
-        "board": "Playground",
-        "recentCode": "{ \"moveX\": 10 }"
+        "uuid": "2189eca2-21f6-4d97-9a10-a3de6b5a535e",
+        "board": "xy-controller-game",
+        "mode": "replace",
+        "template": {
+          "relX=": "params.x"
+        },
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map"
       }
     ],
     "278d4f08-5055-4b71-8886-09b8b05129be": [
@@ -39,36 +56,43 @@
         "serviceName": "Timer",
         "uuid": "5223e508-1aba-4332-a306-cd5725820fd6",
         "board": "Playground",
-        "count": 0,
+        "counter": 1,
         "periodic": true,
         "periodicValue": 20,
         "periodicUnit": "ms",
         "oneShotDelay": 0,
-        "running": true
+        "running": true,
+        "immediate": true
       },
       {
         "serviceId": "hookup.to/service/cache",
         "serviceName": "State-Cache",
         "uuid": "ed09b116-f718-4d3d-aee4-3a2cfcfdd4db",
         "board": "Playground",
+        "updateTrigger": "config",
         "initial": {
           "barX": 50,
           "ballX": 10,
           "ballY": 50,
           "dX": 1,
-          "dY": 2
+          "dY": 2,
+          "width": 400,
+          "height": 250
         }
       },
       {
         "uuid": "16309ca1-8cd2-4e13-aeba-c3a5487bbcb8",
         "board": "Playground",
+        "mode": "replace",
         "template": {
-          "barX=": "params.barX + (params.moveX || 0)",
-          "dX=": "(params.ballX + params.dX >= 290) || (params.ballX + params.dX * 1.1 < 5) ? min(params.dX * -1.1, 5) : params.dX",
-          "dY=": "((params.ballY < 190 && params.ballY + params.dY >= 190 && params.ballX >= params.barX && params.ballX <= params.barX+70) || (params.ballY+params.dY < 20)) ? params.dY * -1 : params.dY",
+          "barX=": "params.relX * params.width || (params.barX + (params.moveX || 0))",
+          "dX=": "(params.ballX + params.dX >= params.width) || (params.ballX + params.dX * 1.1 < 5) ? min(params.dX * -1.1, 5) : params.dX",
+          "dY=": "((params.ballY < params.height && params.ballY + params.dY >= params.height && params.ballX >= params.barX && params.ballX <= params.barX+70) || (params.ballY+params.dY < 20)) ? params.dY * -1 : params.dY",
           "ballX=": "params.triggerCount ? params.ballX + params.dX : params.ballX",
-          "ballY=": "params.ballY > 200 ? 50 : (params.triggerCount ? params.ballY + params.dY : params.ballY)",
-          "cacheProperties+": ["ballX", "ballY", "barX", "dX", "dY"]
+          "ballY=": "params.ballY > params.height + 10 ? 50 : (params.triggerCount ? params.ballY + params.dY : params.ballY)",
+          "cacheProperties+": ["ballX", "ballY", "barX", "dX", "dY"],
+          "width=": "params.width",
+          "height=": "params.height"
         },
         "serviceId": "hookup.to/service/map",
         "serviceName": "Map"
@@ -102,20 +126,13 @@
             "template": {
               "type": "rect",
               "x=": "params.barX",
-              "y": "98%",
-              "height": "10",
+              "y=": "params.height - 10",
+              "height": "5",
               "width": "70",
               "color": "#333"
             }
           }
         ]
-      },
-      {
-        "serviceId": "hookup.to/service/monitor",
-        "serviceName": "Monitor",
-        "uuid": "a27410b4-4f63-402e-a07b-d8a018c7be83",
-        "board": "Playground",
-        "logToConsole": false
       },
       {
         "serviceId": "hookup.to/service/canvas",
@@ -124,7 +141,21 @@
         "board": "Playground",
         "fullscreen": false,
         "clearOnRedraw": true,
-        "resizable": false
+        "resizable": true,
+        "size": [400, 250],
+        "reportSizeUpdate": true
+      },
+      {
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map",
+        "uuid": "b12ac4bb-643a-444e-9806-9cdfc571aed9",
+        "board": "Playground",
+        "mode": "replace",
+        "template": {
+          "width=": "params.updatedWidth || params.width",
+          "height=": "params.updatedHeight || params.height",
+          "cacheProperties+": ["width", "height"]
+        }
       }
     ]
   },
@@ -134,15 +165,27 @@
         "runtimeId": "278d4f08-5055-4b71-8886-09b8b05129be",
         "serviceUuid": "ed09b116-f718-4d3d-aee4-3a2cfcfdd4db"
       }
+    ],
+    "130bf554-4c61-4c94-a6d4-943a6263bb4f": [
+      {
+        "runtimeId": "278d4f08-5055-4b71-8886-09b8b05129be",
+        "serviceUuid": "ed09b116-f718-4d3d-aee4-3a2cfcfdd4db"
+      }
     ]
   },
   "outputRouting": {},
-  "inputRouting": { 
-    "278d4f08-5055-4b71-8886-09b8b05129be": "%sender-board%-injector-runtime" 
+  "inputRouting": {
+    "278d4f08-5055-4b71-8886-09b8b05129be": "%sender-board%-injector-runtime"
   },
   "description": [
-    { "type": "headline", "text": "How to connect" },
+    {
+      "type": "headline",
+      "text": "How to connect"
+    },
     "Connect another device as the input controller, using following injector board",
-    { "type": "qr", "href": "%http-host%/playground/%sender-board%?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game-injector.json&receiver-board=%board%" }
+    {
+      "type": "qr",
+      "href": "%http-host%/playground/%sender-board%?template=%http-host%/boards/templates/game-injector.json&receiver-board=%board%"
+    }
   ]
-} 
+}

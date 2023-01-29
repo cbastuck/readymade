@@ -6,16 +6,15 @@ import { replacePlaceholders } from "../../core/url";
 import { generateRandomName } from "../../core/board";
 import { t } from "../../styles";
 
-//const usecasesUrl = 'https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/index.json';
 const usecasesUrl = "/boards/usecases/index.json";
 
 const internalUsecases = [
-  /*{
-      name: 'GameInternal',
-      url: `/playground/${generateRandomName()}?template=/boards/templates/game.json&${qs.stringify({ 'sender-board': generateRandomName() })}`,
-      metadata: 'showcase',
-      description: 'GAMEMEME'
-    }*/
+  ,/*{
+    name: "GameInternal",
+    url: `/playground/${generateRandomName()}?template=/boards/templates/game.json&sender-board=${generateRandomName()}`,
+    metadata: "showcase",
+    description: "GAMEMEME",
+  }*/
 ];
 
 async function retrieveUsecases() {

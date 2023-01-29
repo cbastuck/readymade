@@ -17,11 +17,11 @@ export default class Runtime extends Component {
   };
 
   componentDidMount() {
-    // TODO: Expanded and readonly should be in initial state
-    const { readonly, expanded, initialState } = this.props;
+    const { readonly, initialState = {} } = this.props;
     this.setState({
-      expanded: expanded !== undefined ? expanded : !readonly,
       readonly: readonly,
+      wrapServices: initialState.wrapServices,
+      expanded: initialState.minimized !== true,
       ...initialState,
     });
   }
@@ -80,6 +80,7 @@ export default class Runtime extends Component {
 
   serialize = () => ({
     wrapServices: !!this.state.wrapServices,
+    minimized: !this.state.expanded,
   });
 
   getServiceById = (serviceUuid) => {

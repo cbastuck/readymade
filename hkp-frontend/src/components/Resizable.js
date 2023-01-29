@@ -4,10 +4,6 @@ import { s, t } from "../styles";
 
 export default class Resizable extends Component {
   componentDidMount() {
-    this.setState({
-      width: undefined,
-      height: undefined,
-    });
     this.resizableObserver = new ResizeObserver(this.onResize);
   }
   componentWillUnmount() {
@@ -20,13 +16,13 @@ export default class Resizable extends Component {
     }
   };
 
-  onResize = debounce((ev) => {
+  onResize = debounce((entries) => {
     if (this.props.onResize) {
-      const { width, height } = ev[0].contentRect;
-      if (width !== this.state.width || height !== this.state.height) {
-        this.setState({ width, height }, () =>
-          this.props.onResize({ width, height })
-        );
+      const { width, height } = entries[0].contentRect;
+      if (width !== this.width || height !== this.height) {
+        this.width = width;
+        this.height = height;
+        this.props.onResize({ width, height });
       }
     }
   }, 300);
@@ -44,8 +40,6 @@ export default class Resizable extends Component {
         }}
         style={s(
           {
-            minWidth: 200,
-            minHeight: 100,
             overflow: "auto",
           },
           resizeableStyle,
