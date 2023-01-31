@@ -17,11 +17,12 @@ export default class Runtime extends Component {
   };
 
   componentDidMount() {
-    const { readonly, initialState = {} } = this.props;
+    const { readonly, initialState = {}, expanded } = this.props;
     this.setState({
       readonly: readonly,
       wrapServices: initialState.wrapServices,
-      expanded: initialState.minimized !== true,
+      expanded:
+        expanded !== undefined ? expanded : initialState.minimized !== true,
       ...initialState,
     });
   }

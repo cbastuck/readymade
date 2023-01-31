@@ -13,7 +13,7 @@
         "serviceId": "hookup.to/service/map",
         "template": {
           "type": "text",
-          "y": "35%",
+          "y": "45%",
           "textTransform": "uppercase-spacing-1",
           "font": {
             "weight": "lighter",
@@ -27,7 +27,9 @@
       {
         "serviceName": "Canvas",
         "serviceId": "hookup.to/service/canvas",
-        "fullscreen": false
+        "fullscreen": false,
+        "size": [400, 250],
+        "resizable": false
       }
     ]
   }

@@ -16,8 +16,8 @@ class CanvasUI extends Component {
     fullHeight: document.body.clientHeight,
     fullscreen: false,
     clearOnRedraw: true,
-    canvasWidth: 0,
-    canvasHeight: 0,
+    canvasWidth: 400,
+    canvasHeight: 250,
   };
 
   imageCache = {};
@@ -586,7 +586,7 @@ class CanvasUI extends Component {
       <ServiceUI
         {...this.props}
         style={{
-          overflow: "auto",
+          overflow: "hidden",
           padding: resizable ? 5 : 0,
           margin: 0,
         }}

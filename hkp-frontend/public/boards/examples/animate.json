@@ -78,7 +78,8 @@
       {
         "serviceName": "Canvas",
         "serviceId": "hookup.to/service/canvas",
-        "capture": "image/png"
+        "capture": "image/png",
+        "size": [400, 250]
       },
       {
         "serviceName": "GIF Recorder",
