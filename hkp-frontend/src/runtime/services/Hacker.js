@@ -40,6 +40,7 @@ export function HackerUI(props) {
       onInit={onInit}
       resizable={true}
       onResize={onResize}
+      style={{ overflow: "hidden", minWidth: 350 }}
     >
       {({ boardContext, service }) => (
         <div

@@ -8,7 +8,7 @@ import Runtime from "./components/Runtime";
 import BoardProvider, { BoardConsumer } from "./BoardContext";
 import DragProvider from "./DragContext";
 import BrowserRegistry from "./runtime/BrowserRegistry";
-
+import { generateRandomName } from "./core/board";
 import { s, t } from "./styles";
 
 function extractRuntimeData(data) {
@@ -158,7 +158,7 @@ class Sandbox extends Component {
               >
                 <Link
                   style={s(t.uc, t.ls1, t.fs12, { fontFamily: "Lato" })}
-                  to={`/playground?src=${url}#sketch`}
+                  to={`/playground/${generateRandomName()}?src=${url}#sketch`}
                 >
                   Open In Playground
                 </Link>

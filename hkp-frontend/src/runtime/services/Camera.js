@@ -149,23 +149,26 @@ class CameraUI extends Component {
       MozTransform: "rotateY(180deg)" /* Firefox */,
     };
     return (
-      <div style={{ textAlign: "center" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          width: "100%",
+        }}
+      >
         <video
           ref={(videoElement) => {
             if (!this.videoElement) {
               this.videoElement = videoElement;
               this.startVideo(videoElement);
             } else if (videoElement && this.videoElement !== videoElement) {
-              console.warn(
-                "HEY setting again a video element",
-                videoElement,
-                this.videoElement
-              );
+              this.videoElement = videoElement; // happens e.g. on resize
             }
           }}
           style={{
             border: "solid 1px lightgray",
             borderRadius: 5,
+            width: "100%",
             ...mirrorStyle,
           }}
           width={this.state.width}
@@ -196,7 +199,9 @@ class CameraUI extends Component {
                 this.setState({ width });
               }
             }}
+            style={{ minWidth: 80 }}
           />
+
           <InputField
             label="height"
             value={this.state.height}
@@ -206,6 +211,7 @@ class CameraUI extends Component {
                 this.setState({ height });
               }
             }}
+            style={{ minWidth: 80 }}
           />
         </div>
 

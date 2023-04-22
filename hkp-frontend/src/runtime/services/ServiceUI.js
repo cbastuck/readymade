@@ -84,7 +84,7 @@ export default class ServiceUI extends Component {
       <Resizable
         hideHandle={!resizable}
         onResize={onResize ? (size) => onResize(this.service, size) : undefined}
-        style={style}
+        style={{ minWidth: 350, ...style }}
       >
         <div
           style={{
@@ -159,7 +159,7 @@ export default class ServiceUI extends Component {
     return resizable ? (
       <Resizable
         onResize={onResize ? (size) => onResize(this.service, size) : undefined}
-        style={style}
+        style={{ minWidth: 350, ...style }}
       >
         {c}
       </Resizable>
