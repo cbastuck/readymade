@@ -3,13 +3,12 @@ import { Loader } from "semantic-ui-react";
 
 import BoardCollection from "../../components/BoardCollection";
 import { replacePlaceholders } from "../../core/url";
-import { generateRandomName } from "../../core/board";
 import { t } from "../../styles";
 
 const usecasesUrl = "/boards/usecases/index.json";
 
 const internalUsecases = [
-  ,/*{
+  /*{
     name: "GameInternal",
     url: `/playground/${generateRandomName()}?template=/boards/templates/game.json&sender-board=${generateRandomName()}`,
     metadata: "showcase",
