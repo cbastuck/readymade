@@ -1,7 +1,7 @@
 [
   {
     "name": "Slideshow",
-    "template": "https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/slideshow-canvas.json&sender-board=%random-name%",
+    "template": "https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/slideshow-canvas.json",
     "description": [
       "Show photos you made with your phone to friends you invited.",
       "Launch this board on a device with a big screen, a TV for example.",
@@ -12,7 +12,7 @@
   },
   {
     "name": "Game",
-    "template": "https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game.json&sender-board=%random-name%",
+    "template": "https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game.json",
     "description": [
       "Use your phone as an input controller for a simple game.",
       "The game is devided into three runtimes: input, logic and output.",

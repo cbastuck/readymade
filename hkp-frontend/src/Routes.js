@@ -33,6 +33,7 @@ import ServiceRedirect from "./views/ServiceRedirect";
 import Track from "./views/docs/tracks";
 import Prototypes from "./views/docs/prototypes";
 import { generateRandomName } from "./core/board";
+import { replacePlaceholders } from "./core/url";
 
 export default function AppRoutes() {
   return (
@@ -83,7 +84,7 @@ function PlaygroundRedirect() {
   const { search = "" } = location;
   return (
     <Navigate
-      to={`/playground/${generateRandomName()}${search}`}
+      to={replacePlaceholders(`/playground/${generateRandomName()}${search}`)}
       replace={true}
     />
   );

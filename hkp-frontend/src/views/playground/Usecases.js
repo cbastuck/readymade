@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { Loader } from "semantic-ui-react";
 
 import BoardCollection from "../../components/BoardCollection";
-import { replacePlaceholders } from "../../core/url";
 import { t } from "../../styles";
 
 const usecasesUrl = "/boards/usecases/index.json";
@@ -22,7 +21,7 @@ async function retrieveUsecases() {
   return internalUsecases.concat(
     usecases.map((item) => ({
       ...item,
-      url: replacePlaceholders(`/playground?template=${item.template}`),
+      url: `/playground?template=${item.template}&sender-board=%random-name%`,
       metadata: "showcase",
       repo: item.repo,
     }))
