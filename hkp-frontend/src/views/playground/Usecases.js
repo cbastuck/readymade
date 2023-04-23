@@ -23,9 +23,7 @@ async function retrieveUsecases() {
   return internalUsecases.concat(
     usecases.map((item) => ({
       ...item,
-      url: replacePlaceholders(
-        `/playground/${generateRandomName()}?template=${item.template}`
-      ),
+      url: replacePlaceholders(`/playground?template=${item.template}`),
       metadata: "showcase",
       repo: item.repo,
     }))

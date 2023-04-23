@@ -25,6 +25,7 @@ export const allowedServices = [
   "hookup.to/service/sound",
   "hookup.to/service/audio-output",
   "hookup.to/service/audio-input",
+  "hookup.to/service/audio-recorder",
   "hookup.to/service/gif-encoder",
   "hookup.to/service/input",
   "hookup.to/service/output",

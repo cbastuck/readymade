@@ -63,24 +63,41 @@ class TriggerPadUI extends Component {
       return true;
     };
     return (
-      <HoldableButton
-        style={{
-          width: 100,
-          height: 100,
-          margin: 2,
-          border: `solid 1px ${isPadArmed ? "#4183c4" : "lightgray"}`,
-          backgroundColor: !isPadTriggered
-            ? isPadAssigned
-              ? "#eff"
-              : "white"
-            : "#4183c4",
+      <div
+        onDragOver={(ev) => {
+          ev.preventDefault();
+          ev.dataTransfer.dropEffect = "move";
         }}
-        onDown={onPush}
-        onUp={onEnd}
-        onRightClick={() => {
-          service.clearPad(index);
+        onDrop={async (ev) => {
+          const item = ev.dataTransfer.getData("text/plain");
+          const blob = dataURItoBlob(item);
+          service.configure({
+            padAssignments: {
+              ...this.state.assignments,
+              [`${index}`]: blob,
+            },
+          });
         }}
-      />
+      >
+        <HoldableButton
+          style={{
+            width: 100,
+            height: 100,
+            margin: 2,
+            border: `solid 1px ${isPadArmed ? "#4183c4" : "lightgray"}`,
+            backgroundColor: !isPadTriggered
+              ? isPadAssigned
+                ? "#eff"
+                : "white"
+              : "#4183c4",
+          }}
+          onDown={onPush}
+          onUp={onEnd}
+          onRightClick={() => {
+            service.clearPad(index);
+          }}
+        />
+      </div>
     );
   };
 
@@ -209,3 +226,25 @@ const descriptor = {
 };
 
 export default descriptor;
+
+function dataURItoBlob(dataURI) {
+  // Split the input to get the mime-type and the data itself
+  dataURI = dataURI.split(",");
+
+  // First part contains data:audio/ogg;base64 from which we only need audio/ogg
+  const type = dataURI[0].split(":")[1].split(";")[0];
+
+  // Second part is the data itself and we decode it
+  const byteString = window.atob(dataURI[1]);
+  const byteStringLen = byteString.length;
+
+  // Create ArrayBuffer with the byte string and set the length to it
+  const ab = new ArrayBuffer(byteStringLen);
+
+  // Create a typed array out of the array buffer representing each character from as a 8-bit unsigned integer
+  const intArray = new Uint8Array(ab);
+  for (var i = 0; i < byteStringLen; i++) {
+    intArray[i] = byteString.charCodeAt(i);
+  }
+  return new Blob([intArray], { type });
+}

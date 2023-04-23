@@ -158,7 +158,7 @@ class Sandbox extends Component {
               >
                 <Link
                   style={s(t.uc, t.ls1, t.fs12, { fontFamily: "Lato" })}
-                  to={`/playground/${generateRandomName()}?src=${url}#sketch`}
+                  to={`/playground?src=${url}`}
                 >
                   Open In Playground
                 </Link>

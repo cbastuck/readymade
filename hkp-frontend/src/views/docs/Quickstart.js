@@ -115,7 +115,7 @@ export default function Quickstart() {
           {renderClaim({
             s: "Because",
             c: '"Da fehlen Rebellen, da fehlen Dilettanten”',
-            link: "https://www.youtube.com/watch?v=58ShJinuHTg",
+            link: "https://www.youtube.com/watch?v=rZ6TjOQQuTU",
             cite: "Kapelle Petra",
           })}
           {renderClaim({

@@ -10,11 +10,10 @@ const fontStyle = {
 export default function Docs() {
   return (
     <Template title="Documentation" isRoot={true}>
+      <Article to="/docs/quickstart">1. Quickstarter</Article>
       <Article to="/docs/updates" details="feature log">
-        1. What's new
+        2. What's new
       </Article>
-
-      <Article to="/docs/quickstart">2. Quickstarter</Article>
 
       <Chapter name="3. Project Scope">
         <Article to="/docs/pitch/what">What</Article>

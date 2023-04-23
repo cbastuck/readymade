@@ -1,5 +1,5 @@
 import React from "react";
-import { Route, Routes, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 
 import Welcome from "./views/welcome/Welcome";
 import About from "./views/about/About";
@@ -33,9 +33,6 @@ import ServiceRedirect from "./views/ServiceRedirect";
 import Track from "./views/docs/tracks";
 import Prototypes from "./views/docs/prototypes";
 import { generateRandomName } from "./core/board";
-/*
-import AppHub from "./views/AppHub";
-*/
 
 export default function AppRoutes() {
   return (
@@ -47,12 +44,7 @@ export default function AppRoutes() {
       <Route path="/sandbox" element={<Sandbox />} />
       <Route path="/playground/:board/src" element={<BoardSource />} />
       <Route path="/playground/:board" element={<Playground />} />
-      <Route
-        path="/playground"
-        element={
-          <Navigate to={`/playground/${generateRandomName()}`} replace={true} />
-        }
-      />
+      <Route path="/playground" element={<PlaygroundRedirect />} />
       <Route path="/examples" element={<Examples />} />
       <Route path="/docs/updates" element={<Updates />} />
       <Route path="/docs/quickstart" element={<Quickstart />} />
@@ -83,5 +75,16 @@ export default function AppRoutes() {
       {/* <Route path="/:board/app" element={<AppHub />} /> */}
       <Route path="/:board" element={<BoardWithContext />} />
     </Routes>
+  );
+}
+
+function PlaygroundRedirect() {
+  const location = useLocation();
+  const { search = "" } = location;
+  return (
+    <Navigate
+      to={`/playground/${generateRandomName()}${search}`}
+      replace={true}
+    />
   );
 }

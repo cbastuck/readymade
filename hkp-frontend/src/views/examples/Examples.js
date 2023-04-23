@@ -342,7 +342,7 @@ class Examples extends Component {
             locally and do not require a login. More is possible when mixing
             remote and local runtimes on the same board. But registration and
             login aren't public yet. Instead play with multiple local runtimes
-            on <a href="/playground#sketch">playground</a>. Use the public{" "}
+            on <a href="/playground">playground</a>. Use the public{" "}
             <span style={s(t.bold, t.it)}>reflector</span> to hookup different
             playgrounds or connect to <span style={s(t.bold, t.it)}>peers</span>
             . More on both topics soon.
