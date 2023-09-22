@@ -22,7 +22,7 @@ function RemoteRuntimeInput({ onCancel, onChange }) {
       <div style={{ marginLeft: 5 }} />
       <Button
         icon="check"
-        onClick={() => onChange({ name, url: host })}
+        onClick={() => onChange({ type: "remote", name, url: host })}
         fluid
       />
       <Button icon="cancel" onClick={onCancel} fluid />
@@ -32,9 +32,9 @@ function RemoteRuntimeInput({ onCancel, onChange }) {
 
 function RuntimeItem({ name, type, url, onRemove }) {
   return type === "remote" ? (
-    <div style={{ display: "flex", flexDirection: "row" }}>
-      <div>{name}</div>
-      <div style={{ padding: 0, marginLeft: "auto", width: 15 }}>
+    <div style={{ display: "flex", flexDirection: "row", width: "100%" }}>
+      <div style={{ width: "100%" }}>{name}</div>
+      <div style={{ padding: 0, marginLeft: "auto", width: 13 }}>
         <Button
           fluid
           style={{ padding: 0, margin: 0 }}

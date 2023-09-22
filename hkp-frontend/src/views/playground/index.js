@@ -32,11 +32,15 @@ import {
   renameRuntime,
 } from "./BoardActions";
 import {
-  addRuntime,
-  addService,
-  setRuntime,
-  getRuntimeRegistry,
+  addRuntime as addRuntimeREST,
+  addService as addServiceREST,
+  setRuntime as setRuntimeREST,
+  getRuntimeRegistry as getRuntimeRegistryREST,
 } from "../../core/actions";
+import {
+  createFreeRuntime,
+  getRuntimeRegistry,
+} from "../../core/graphqlActions";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -117,6 +121,7 @@ class Playground extends Component {
     if (!this.defaultRegistry) {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
     }
+    console.log("Fetching from Playgoround");
     const {
       boardName = this.state.boardName || defaultName,
       runtimes = [],
@@ -206,7 +211,7 @@ class Playground extends Component {
             const { id: runtimeId, ...desc } = runtime;
             const services = board.services[runtimeId];
             try {
-              await setRuntime(
+              await setRuntimeREST(
                 name,
                 {
                   ...desc,
@@ -218,7 +223,7 @@ class Playground extends Component {
             } catch (err) {
               this.handleRequestError(err);
             }
-            const registry = await getRuntimeRegistry(name, runtimeId);
+            const registry = await getRuntimeRegistryREST(name, runtimeId);
             board.registry[runtimeId] = registry;
           } else if (runtime.type === "browser") {
             board.registry[runtime.id] = this.defaultRegistry.availableServices;
@@ -295,8 +300,10 @@ class Playground extends Component {
       uuid: uuid.v4(),
     };
     const runtime = runtimes.find((rt) => rt.id === runtimeId);
-    if (runtime.type === "remote" || runtime.type === "node") {
-      addService(boardname, svc, runtimeId).then((created) =>
+    if (runtime.type === "remote") {
+      // TODO: GraphQL
+    } else if (runtime.type === "node") {
+      addServiceREST(boardname, svc, runtimeId).then((created) =>
         console.log("CREATED SERVICE", created, svc)
       );
     } else {
@@ -346,10 +353,13 @@ class Playground extends Component {
       url,
     };
     let registry;
-    if (type === "remote" || type === "node") {
-      // TODO: inform the remote instance about the board and runtime
-      const created = await addRuntime(boardname, { ...desc, runtimeId });
-      registry = await getRuntimeRegistry(name, created.id);
+    if (type === "remote") {
+      console.log("Adding GraphQL runtime", rt);
+      await createFreeRuntime(rt);
+      registry = await getRuntimeRegistry(rt);
+    } else if (type === "node") {
+      const created = await addRuntimeREST(boardname, { ...desc, runtimeId });
+      registry = await getRuntimeRegistryREST(name, created.id);
     } else {
       registry = this.defaultRegistry.availableServices;
     }

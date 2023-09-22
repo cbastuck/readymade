@@ -2,8 +2,9 @@ import React, { Component } from "react";
 import { Icon, Sidebar, Segment, Menu, Input, Button } from "semantic-ui-react";
 
 import { openTab, getServiceConfiguration } from "../core/actions";
-import RemoteRuntime from "../runtime/RemoteRuntime";
+import NodeRuntime from "../runtime/NodeRuntime";
 import BrowserRuntime from "../runtime/BrowserRuntime";
+import RemoteRuntime from "../runtime/RemoteRuntime";
 import ServiceDropdown from "./ServiceDropdown";
 
 import { s, t } from "../styles";
@@ -371,6 +372,35 @@ export default class Runtime extends Component {
     }
   };
 
+  renderNodeRuntime = (
+    runtime,
+    expanded,
+    userId,
+    boardName,
+    services,
+    readonly,
+    registry,
+    onArrangeService
+  ) => {
+    if (expanded) {
+      return (
+        <NodeRuntime
+          ref={(rt) => (this.impl = rt)}
+          userId={userId}
+          boardName={boardName}
+          runtime={runtime}
+          services={services}
+          readonly={readonly}
+          registry={registry}
+          onArrangeService={onArrangeService}
+          onServiceAction={this.onServiceAction}
+          onResult={this.props.onResult}
+        />
+      );
+    }
+    return false;
+  };
+
   renderRemoteRuntime = (
     runtime,
     expanded,
@@ -384,7 +414,6 @@ export default class Runtime extends Component {
     if (expanded) {
       return (
         <RemoteRuntime
-          ref={(rt) => (this.impl = rt)}
           userId={userId}
           boardName={boardName}
           runtime={runtime}
@@ -598,28 +627,40 @@ export default class Runtime extends Component {
             style={readonlyStyle}
             onClickCapture={(e) => readonly && e.stopPropagation()}
           >
-            {runtime && (runtime.type === "node" || runtime.type === "remote")
-              ? this.renderRemoteRuntime(
-                  runtime,
-                  expanded,
-                  userId,
-                  boardName,
-                  services,
-                  readonly,
-                  registry,
-                  onArrangeService
-                )
-              : this.renderBrowserRuntime(
-                  runtime,
-                  expanded,
-                  userId,
-                  boardName,
-                  services,
-                  readonly,
-                  registry,
-                  onArrangeService,
-                  wrapServices
-                )}
+            {runtime &&
+              (runtime.type === "node"
+                ? this.renderNodeRuntime(
+                    runtime,
+                    expanded,
+                    userId,
+                    boardName,
+                    services,
+                    readonly,
+                    registry,
+                    onArrangeService
+                  )
+                : runtime.type === "remote"
+                ? this.renderRemoteRuntime(
+                    runtime,
+                    expanded,
+                    userId,
+                    boardName,
+                    services,
+                    readonly,
+                    registry,
+                    onArrangeService
+                  )
+                : this.renderBrowserRuntime(
+                    runtime,
+                    expanded,
+                    userId,
+                    boardName,
+                    services,
+                    readonly,
+                    registry,
+                    onArrangeService,
+                    wrapServices
+                  ))}
             {((services && services.length === 0) || !isOwner) && (
               <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
             )}
