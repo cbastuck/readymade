@@ -1,24 +1,39 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
-export default class SandboxFrame extends Component {
+type Action = {
+  page: string;
+  finished: boolean;
+  checkpoint: string;
+};
+
+type Props = {
+  title: string;
+  src: string;
+  maxWidth: number;
+  frameless: string | boolean;
+  frameBorder: string | number;
+  height: string;
+  width: string;
+  onAction: (action: Action) => any;
+};
+
+export default class SandboxFrame extends Component<Props> {
   render() {
     const {
       title,
       src,
-      onAction,
       maxWidth,
       frameless = "false",
       frameBorder = "0",
       height = "100%",
       width = "100%",
+      onAction,
     } = this.props;
     const style = {
       height,
       width,
+      maxWidth: maxWidth ? maxWidth : undefined,
     };
-    if (maxWidth) {
-      style.maxWidth = maxWidth;
-    }
 
     if (!src) {
       console.warn("Sandbox component without src");
@@ -31,7 +46,7 @@ export default class SandboxFrame extends Component {
         src={`/sandbox?src=${src}&frameless=${frameless}`}
         frameBorder={frameBorder}
         style={style}
-        ref={(frame) => {
+        ref={(frame: any) => {
           if (frame && onAction) {
             frame.onAction = onAction;
           }

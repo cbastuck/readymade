@@ -136,22 +136,6 @@ export async function createBoardFromTemplate(templateUrl, params) {
   }
 }
 
-export function reorderServiceOld(
-  allServices,
-  runtime,
-  serviceUuid,
-  targetPosition
-) {
-  const services = allServices[runtime.id];
-
-  const service = services.find((svc) => serviceUuid === svc.uuid);
-  const oldPosition = services.indexOf(service);
-  const rearranged = services.filter((svc) => serviceUuid !== svc.uuid);
-  const offset = targetPosition < oldPosition ? 0 : 1;
-  rearranged.splice(targetPosition - offset, 0, service);
-  return rearranged;
-}
-
 export function reorderService(
   allServices,
   runtime,

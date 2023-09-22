@@ -1,4 +1,4 @@
-export function getActivationId(runtimeId) {
+export function getActivationId(runtimeId: string) {
   return `peer-${runtimeId}-active`;
 }
 
@@ -60,7 +60,7 @@ export const availableRuntimes = [
   // { name: "hookup", type: "node" },
 ];
 
-export function getLocalBoards(prefix) {
+export function getLocalBoards(prefix: string) {
   const savedBoards = [];
   for (const key in localStorage) {
     if (key.startsWith(prefix)) {

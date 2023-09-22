@@ -43,7 +43,7 @@ export default function What() {
         </div>
         <Date month="June" day="24" year="2022" />
         <HStack style={{ marginTop: 10 }}>
-          <NavigateButton to="/?page=mission" label="overview" />
+          <NavigateButton to="/#mission" label="overview" />
           <NavigateButton to="/docs/pitch/why" label="why? >" />
         </HStack>
       </div>
