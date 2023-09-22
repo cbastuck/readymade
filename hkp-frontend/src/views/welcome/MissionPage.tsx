@@ -1,9 +1,7 @@
 import { Link } from "react-router-dom";
 import NavigateButton from "../NavigateButton";
 
-type Props = { onNext: () => void };
-
-export default function MissionPage({ onNext }: Props) {
+export default function MissionPage() {
   return (
     <div
       className="fade-in-linear-slow"
@@ -35,7 +33,9 @@ export default function MissionPage({ onNext }: Props) {
             href: "/docs/pitch/how",
           },
           {
-            a: <NavigateButton onClicked={onNext} text="Quick Pitch" />,
+            a: (
+              <NavigateButton destination="/welcome/pitch" text="Quick Pitch" />
+            ),
           },
         ].map((x, xi) => (
           <div

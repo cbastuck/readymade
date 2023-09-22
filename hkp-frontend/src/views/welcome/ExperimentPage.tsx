@@ -1,16 +1,10 @@
+import { useState } from "react";
+
 import SandboxFrame from "../../components/SandboxFrame";
 import { redirectTo } from "../../core/actions";
 
-type Props = {
-  visualisationFinished: boolean;
-  onSetPage: (page: string) => void;
-  onVisualisationFinished: () => void;
-};
-export default function VisualisationPage({
-  visualisationFinished,
-  onSetPage,
-  onVisualisationFinished,
-}: Props) {
+export default function VisualisationPage() {
+  const [visualisationFinished, setVisualisationFinished] = useState(false);
   return (
     <div style={{ height: "100%" }}>
       <SandboxFrame
@@ -21,15 +15,9 @@ export default function VisualisationPage({
         height="95%"
         width="100%"
         maxWidth={800}
-        onAction={({ page, finished, checkpoint }) => {
-          if (page) {
-            onSetPage(page);
-          }
-          if (finished) {
-            redirectTo("/examples");
-          }
+        onAction={({ checkpoint }) => {
           if (checkpoint === "@last-state" && !visualisationFinished) {
-            onVisualisationFinished();
+            setVisualisationFinished(true);
           }
         }}
       />

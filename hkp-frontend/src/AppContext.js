@@ -1,4 +1,4 @@
-import React, { Component, createContext } from "react";
+import { Component, createContext } from "react";
 
 import { restoreToken, processToken, setToken } from "./core/Auth";
 import { redirectTo } from "./core/actions";

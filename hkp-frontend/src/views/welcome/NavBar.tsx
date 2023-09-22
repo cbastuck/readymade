@@ -1,39 +1,41 @@
-import { Page } from "./PageContainer";
+import { redirectTo } from "../../core/actions";
 
 type Props = {
-  page: string;
-  pages: Array<Page>;
-  visualisationFinished: boolean;
-  onNavPage: (x: Page) => void;
+  pathname: string;
 };
 
-export default function NavBar({
-  page,
-  pages,
-  visualisationFinished,
-  onNavPage,
-}: Props) {
-  if (page === pages[0].p || visualisationFinished) {
-    return false;
-  }
-  const renderBullet = (x: Page, c: string) => (
+export default function NavBar({ pathname }: Props) {
+  const pages = [
+    "/welcome",
+    "/welcome/mission",
+    "/welcome/pitch",
+    "/welcome/experiment",
+  ];
+
+  const renderBullet = (index: number, c: string) => (
     <span
-      key={x.p}
+      key={index}
       style={{ cursor: "pointer", padding: 5 }}
-      onClick={() => onNavPage(x)}
+      onClick={() => redirectTo(`${pages[index]}#open`)}
     >
       {c}
     </span>
   );
+
+  const currentIndex = pages.indexOf(pathname);
+  if (currentIndex === 0) {
+    return null;
+  }
+
   return (
     <div
       style={{
         fontSize: 22,
-        marginTop: 20,
+        marginTop: 22,
       }}
     >
-      {pages.map((x) =>
-        x.p === page ? renderBullet(x, "●") : renderBullet(x, "￮")
+      {pages.map((_, idx) =>
+        idx === currentIndex ? renderBullet(idx, "●") : renderBullet(idx, "￮")
       )}
     </div>
   );

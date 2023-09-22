@@ -1,22 +1,13 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import ProgressIndicator from "../../components/ProgressIndicator";
 
 import SandboxFrame from "../../components/SandboxFrame";
 
 import NavigateButton from "../NavigateButton";
 
-type Props = {
-  introFinished: boolean;
-  onIntroFinished: () => void;
-  onNext: () => void;
-};
-
-export default function IntroPage({
-  introFinished,
-  onIntroFinished,
-  onNext,
-}: Props) {
+export default function IntroPage() {
   const progressRef = useRef<ProgressIndicator>(null);
+  const [introFinished, setIntroFinished] = useState(false);
   return (
     <div style={{ height: "100%" }}>
       <SandboxFrame
@@ -29,7 +20,7 @@ export default function IntroPage({
         maxWidth={800}
         onAction={({ checkpoint }) => {
           if (checkpoint === "@last-slide") {
-            setTimeout(onIntroFinished, 500);
+            setTimeout(() => setIntroFinished(true), 500);
           } else if (checkpoint) {
             progressRef.current && progressRef.current.triggerAnimation();
           }
@@ -43,9 +34,8 @@ export default function IntroPage({
       {introFinished && (
         <div>
           <NavigateButton
-            destination="/?page=visualisation"
+            destination="/welcome/experiment"
             text="A thought experiment"
-            onClicked={onNext}
           />
         </div>
       )}

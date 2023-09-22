@@ -25,7 +25,11 @@ export default function WelcomePage({ onNext }: Props) {
           make <span className="claim-it"> it</span> yours
         </span>
       </div>
-      <NavigateButton text="What is this?" width="180px" onClicked={onNext} />
+      <NavigateButton
+        text="What is this?"
+        width="180px"
+        destination="/welcome/mission"
+      />
     </div>
   );
 }

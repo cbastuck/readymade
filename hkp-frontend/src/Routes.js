@@ -1,7 +1,10 @@
-import React from "react";
 import { Route, Routes, Navigate, useLocation } from "react-router-dom";
 
-import Welcome from "./views/welcome/Welcome";
+import WelcomeTemplate from "./views/welcome/WelcomeTemplate";
+import WelcomePage from "./views/welcome/WelcomePage";
+import MissionPage from "./views/welcome/MissionPage";
+import PitchPage from "./views/welcome/PitchPage";
+import ExperimentPage from "./views/welcome/ExperimentPage";
 import About from "./views/about/About";
 import Imprint from "./views/about/Imprint";
 import Updates from "./views/docs/Updates";
@@ -38,7 +41,39 @@ import { replacePlaceholders } from "./core/url";
 export default function AppRoutes() {
   return (
     <Routes>
-      <Route path="/" exact element={<Welcome />} />
+      <Route path="/" exact element={<Navigate replace to="/welcome" />} />
+      <Route
+        path="/welcome"
+        element={
+          <WelcomeTemplate>
+            <WelcomePage />
+          </WelcomeTemplate>
+        }
+      />
+      <Route
+        path="/welcome/mission"
+        element={
+          <WelcomeTemplate pageStyle={{ paddingTop: "25px", height: "450px" }}>
+            <MissionPage />
+          </WelcomeTemplate>
+        }
+      />
+      <Route
+        path="/welcome/pitch"
+        element={
+          <WelcomeTemplate pageStyle={{ paddingTop: "25px", height: "450px" }}>
+            <PitchPage />
+          </WelcomeTemplate>
+        }
+      />
+      <Route
+        path="/welcome/experiment"
+        element={
+          <WelcomeTemplate pageStyle={{ paddingTop: "25px", height: "450px" }}>
+            <ExperimentPage />
+          </WelcomeTemplate>
+        }
+      />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
       <Route path="/imprint" element={<Imprint />} />
