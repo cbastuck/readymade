@@ -23,7 +23,7 @@ export default function NavBar({ pathname }: Props) {
   );
 
   const currentIndex = pages.indexOf(pathname);
-  if (currentIndex === 0) {
+  if (currentIndex === 0 || currentIndex === pages.length - 1) {
     return null;
   }
 
@@ -31,11 +31,11 @@ export default function NavBar({ pathname }: Props) {
     <div
       style={{
         fontSize: 22,
-        marginTop: 22,
+        marginTop: 10,
       }}
     >
       {pages.map((_, idx) =>
-        idx === currentIndex ? renderBullet(idx, "●") : renderBullet(idx, "￮")
+        idx === currentIndex ? renderBullet(idx, "●") : renderBullet(idx, "○")
       )}
     </div>
   );

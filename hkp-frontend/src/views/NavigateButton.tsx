@@ -5,12 +5,14 @@ type Props = {
   text: string;
   destination?: string;
   width?: number | string;
+  style?: object;
   onClicked?: () => void;
 };
 export default function NavigateButton({
   destination,
   text,
   width,
+  style: passedStyle,
   onClicked,
 }: Props) {
   const navigate = useNavigate();
@@ -21,20 +23,19 @@ export default function NavigateButton({
     navigate(destination);
   };
   const onClick = onClicked || onDestination;
+  const style = passedStyle || {
+    fontSize: 11,
+    textTransform: "uppercase",
+    letterSpacing: 2,
+    whiteSpace: "nowrap",
+    border: "solid 1px white",
+    color: "black",
+    padding: 10,
+    width: width ? width : "initial",
+  };
+
   return (
-    <Button
-      style={{
-        fontSize: 11,
-        textTransform: "uppercase",
-        letterSpacing: 2,
-        whiteSpace: "nowrap",
-        border: "solid 1px white",
-        color: "black",
-        padding: 10,
-        width: width ? width : "initial",
-      }}
-      onClick={onClick}
-    >
+    <Button style={style} onClick={onClick}>
       {text}
     </Button>
   );

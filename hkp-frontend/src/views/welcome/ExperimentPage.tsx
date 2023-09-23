@@ -1,7 +1,8 @@
 import { useState } from "react";
 
 import SandboxFrame from "../../components/SandboxFrame";
-import { redirectTo } from "../../core/actions";
+
+import NavigateButton from "../NavigateButton";
 
 export default function VisualisationPage() {
   const [visualisationFinished, setVisualisationFinished] = useState(false);
@@ -22,16 +23,23 @@ export default function VisualisationPage() {
         }}
       />
       {visualisationFinished && (
-        <button
-          style={{
-            fontSize: 12,
-            textTransform: "uppercase",
-          }}
-          className="button fade-in-linear"
-          onClick={() => redirectTo("/examples")}
-        >
-          Examples
-        </button>
+        <div className=" fade-in-linear">
+          <NavigateButton
+            destination="/examples"
+            text="Examples"
+            style={{
+              color: "white",
+              backgroundColor: "#454f6d",
+              fontSize: 12,
+              textTransform: "uppercase",
+              letterSpacing: 2,
+              padding: "15px 35px",
+              width: "initial",
+              border: "solid 1px transparent",
+              borderRadius: 0,
+            }}
+          />
+        </div>
       )}
     </div>
   );

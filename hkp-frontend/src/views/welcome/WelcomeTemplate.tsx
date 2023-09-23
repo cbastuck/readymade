@@ -43,7 +43,7 @@ function Welcome({ children, location, pageStyle }: Props) {
             }}
           >
             {children}
-            <div className="fade-in-linear-slow">
+            <div className="fade-in-linear">
               <NavBar pathname={location.pathname} />
             </div>
           </div>
