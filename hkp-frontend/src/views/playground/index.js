@@ -121,7 +121,6 @@ class Playground extends Component {
     if (!this.defaultRegistry) {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
     }
-    console.log("Fetching from Playgoround");
     const {
       boardName = this.state.boardName || defaultName,
       runtimes = [],

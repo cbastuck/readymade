@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 import Headline from "./Headline";
-import Usecases from "../playground/Usecases";
+import Usecases from "../../components/BoardCollection/Usecases";
 
 export default function Showcases() {
   return (
