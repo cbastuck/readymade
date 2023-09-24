@@ -11,7 +11,8 @@ import Updates from "./views/docs/Updates";
 import Contact from "./views/about/Contact";
 import Sandbox from "./Sandbox";
 import Playground from "./views/playground/index";
-import Examples from "./views/examples/Examples";
+import Examples from "./views/examples";
+import Example from "./views/examples/Example";
 import Quickstart from "./views/docs/Quickstart";
 import Docs from "./views/docs";
 import BoardSource from "./views/playground/BoardSource";
@@ -81,7 +82,10 @@ export default function AppRoutes() {
       <Route path="/playground/:board/src" element={<BoardSource />} />
       <Route path="/playground/:board" element={<Playground />} />
       <Route path="/playground" element={<PlaygroundRedirect />} />
+
+      <Route path="/example/sandbox" element={<Example />} />
       <Route path="/examples" element={<Examples />} />
+
       <Route path="/docs/updates" element={<Updates />} />
       <Route path="/docs/quickstart" element={<Quickstart />} />
       <Route path="/docs" element={<Docs />} />
