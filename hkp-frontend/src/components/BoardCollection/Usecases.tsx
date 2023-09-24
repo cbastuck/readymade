@@ -25,11 +25,9 @@ export default function Usecases({
           renderSearch={renderSearch}
         />
       ) : (
-        <div>
-          <Loader active inline>
-            Loading Showcases ...
-          </Loader>
-        </div>
+        <Loader active inline>
+          Loading Showcases ...
+        </Loader>
       )}
     </div>
   );

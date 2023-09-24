@@ -6,10 +6,12 @@ import Sandbox from "../../Sandbox";
 import { ExampleDescriptor } from "./types";
 import Header from "./Header";
 
-import { t } from "../../styles";
+import { s, t } from "../../styles";
 
 import examples from "./ExamplesData";
 import { redirectTo } from "../../core/actions";
+import Toolbar from "../../components/Toolbar";
+import Footer from "../../components/Footer";
 
 export default function Example() {
   const location = useLocation();
@@ -20,18 +22,28 @@ export default function Example() {
   }
 
   return (
-    <div style={{ height: "100%", marginTop: 20 }}>
-      <Header example={descriptor} />
-      <div style={{ margin: 40, height: "100%" }}>
-        <div style={t.fill}>
-          <div style={{ maxHeight: "20%", overflowY: "auto" }}>
-            <Explanation value={descriptor.explanation} />
-          </div>
-          <div style={{ marginTop: 5 }}>
-            <Sandbox src={descriptor.url} />
+    <div
+      style={s(t.h100, {
+        fontFamily: "Roboto",
+        display: "flex",
+        flexDirection: "column",
+      })}
+    >
+      <Toolbar />
+      <div style={{ height: "100%", marginTop: 20 }}>
+        <Header example={descriptor} />
+        <div style={{ margin: 40, height: "100%" }}>
+          <div style={t.fill}>
+            <div style={{ maxHeight: "20%", overflowY: "auto" }}>
+              <Explanation value={descriptor.explanation} />
+            </div>
+            <div style={{ marginTop: 5 }}>
+              <Sandbox src={descriptor.url} />
+            </div>
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }
