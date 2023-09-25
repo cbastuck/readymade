@@ -48,7 +48,7 @@ export default function Brand() {
                 elements of a bicycle chain in the alternative version
               </ListItem>
             </Paragraph>
-            <Paragraph brief="Removing the vowel ...">
+            <Paragraph brief="Removing vowels ...">
               <ListItem>
                 as they carry information mostly for pronunciation, less for
                 understanding

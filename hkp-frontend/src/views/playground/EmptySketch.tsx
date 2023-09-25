@@ -1,10 +1,14 @@
-import React from "react";
 import { Icon } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
+
 import { ReactComponent as Logo } from "./hkp-dots-braid.svg";
 
-export default function EmptySketch({ boardName }) {
+type Props = {
+  boardName: string;
+};
+
+export default function EmptySketch({ boardName }: Props) {
   const headline = !boardName ? (
     "this is an empty board"
   ) : (

@@ -1,6 +1,6 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
-import ServiceUI from "../../runtime/services/ServiceUI";
+import ServiceUI from "../../../runtime/services/ServiceUI";
 
 const serviceId = "hookup.to/service/example-service";
 const serviceName = "Some Service";

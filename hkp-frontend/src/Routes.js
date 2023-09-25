@@ -26,14 +26,18 @@ import Headless from "./views/headless";
 import Join from "./Join";
 import ServiceReferenceView from "./views/ServiceReferenceView";
 import DataModelReferenceView from "./views/DataModelReferenceView";
-import ServiceDocumentation from "./views/docs/Service";
+
 import MyBoards from "./views/dashboard/MyBoards";
 import WhatPitch from "./views/docs/pitch/What";
 import WhyPitch from "./views/docs/pitch/Why";
 import HowPitch from "./views/docs/pitch/How";
-import BoardDocumentation from "./views/docs/Board";
-import RuntimeDocumentation from "./views/docs/Runtime";
+
+import BoardBlock from "./views/docs/buildingblocks/BoardBlock";
+import RuntimeBlock from "./views/docs/buildingblocks/RuntimeBlock";
+import ServiceBlock from "./views/docs/buildingblocks/ServiceBlock";
+
 import ServiceRedirect from "./views/ServiceRedirect";
+
 import Track from "./views/docs/tracks";
 import Prototypes from "./views/docs/prototypes";
 import { generateRandomName } from "./core/board";
@@ -97,13 +101,15 @@ export default function AppRoutes() {
 
       <Route path="/service/:service" element={<ServiceReferenceView />} />
       <Route path="/datamodel/:name" element={<DataModelReferenceView />} />
-      <Route path="/docs/service" element={<ServiceDocumentation />} />
+
       <Route path="/docs/pitch/what" element={<WhatPitch />} />
       <Route path="/docs/pitch/why" element={<WhyPitch />} />
       <Route path="/docs/pitch/how" element={<HowPitch />} />
       <Route path="/docs/tracks/:track" element={<Track />} />
-      <Route path="/docs/board" element={<BoardDocumentation />} />
-      <Route path="/docs/runtime" element={<RuntimeDocumentation />} />
+
+      <Route path="/docs/buildingblock/board" element={<BoardBlock />} />
+      <Route path="/docs/buildingblock/runtime" element={<RuntimeBlock />} />
+      <Route path="/docs/buildingblock/service" element={<ServiceBlock />} />
 
       <Route path="/docs/proto/:name" element={<Prototypes />} />
 

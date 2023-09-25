@@ -124,7 +124,7 @@ export default function Bridge() {
                 (as specified in first row) The HTLM tempalte references row
                 values by their corresponding column names arusing a double
                 bracket notation, e.g.{" "}
-                <verbatim style={{ fontFamily: "courier" }}>[[link]]</verbatim>
+                <code style={{ fontFamily: "courier" }}>[[link]]</code>
               </div>
 
               <div

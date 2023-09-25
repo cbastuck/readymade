@@ -1,11 +1,11 @@
-import React, { Component } from "react";
-
-import Template from "../Template";
-
 import { ExampleService, ExampleServiceUI } from "./ExampleService";
-import Runtime from "../../components/Runtime";
+import Runtime from "../../../components/Runtime";
 
-export function renderSceneExample(runtimeName) {
+type Props = {
+  runtimeName: string;
+};
+
+export default function RuntimeBlock({ runtimeName }: Props) {
   const service = new ExampleService();
   const services = [
     <ExampleServiceUI
@@ -38,14 +38,4 @@ export function renderSceneExample(runtimeName) {
       />
     </div>
   );
-}
-
-export default class ServiceDocumentation extends Component {
-  render() {
-    return (
-      <Template title="Runtime">
-        <div style={{ height: "100%" }}>{renderSceneExample()}</div>
-      </Template>
-    );
-  }
 }

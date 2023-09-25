@@ -8,7 +8,7 @@ type Props = {
   onAction: (action: any) => void;
 };
 
-export default function ({ currentUser, onAction }: Props) {
+export default function Login({ currentUser, onAction }: Props) {
   const fontStyle = s(t.uc, t.ls1, t.fs11);
   return currentUser ? (
     <Dropdown.Item

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Icon } from "semantic-ui-react";
 
 import PeersProvider, { PeersConsumer } from "../../PeersContext";

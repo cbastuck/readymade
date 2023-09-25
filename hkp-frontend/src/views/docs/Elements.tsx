@@ -1,5 +1,11 @@
-export function Paragraph({ children, brief, headline }) {
-  const headlineStyle = {
+type ParagraphProps = {
+  children: string | string[];
+  brief: string;
+  headline: string;
+};
+
+export function Paragraph({ children, brief, headline }: ParagraphProps) {
+  const headlineStyle: any = {
     textTransform: "uppercase",
     fontSize: 12,
   };
@@ -12,8 +18,13 @@ export function Paragraph({ children, brief, headline }) {
   );
 }
 
-export function Section({ title, children }) {
-  const headlineStyle = { textTransform: "uppercase", fontSize: 16 };
+type SectionProps = {
+  children: string | string[];
+  title: string;
+};
+
+export function Section({ title, children }: SectionProps) {
+  const headlineStyle: any = { textTransform: "uppercase", fontSize: 16 };
   return (
     <>
       <h1 style={headlineStyle}> {title}</h1>
@@ -22,7 +33,11 @@ export function Section({ title, children }) {
   );
 }
 
-export function ListItem({ children }) {
+type ListItemProps = {
+  children: string | string[];
+};
+
+export function ListItem({ children }: ListItemProps) {
   return (
     <div style={{ display: "flex", flexDirection: "row" }}>
       <div style={{ width: 40 }}>-</div>
@@ -31,8 +46,12 @@ export function ListItem({ children }) {
   );
 }
 
-export function Text({ children }) {
-  const style = {
+type TextProps = {
+  children: string | string[];
+};
+
+export function Text({ children }: TextProps) {
+  const style: any = {
     textTransform: "none",
     fontFamily: "roboto",
     fontSize: 16,

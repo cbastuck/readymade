@@ -1,8 +1,9 @@
-import React from "react";
 import { Link } from "react-router-dom";
-import { List, Icon } from "semantic-ui-react";
+import { List } from "semantic-ui-react";
 
-import Template from "../Template";
+import NewsItem from "./NewsItem";
+
+import Template from "../../Template";
 
 export default function Updates() {
   return (
@@ -77,19 +78,5 @@ export default function Updates() {
         />
       </List>
     </Template>
-  );
-}
-
-function NewsItem({ content, date }) {
-  return (
-    <List.Item style={{ margin: "5px 0px" }}>
-      <List.Icon size="large" verticalAlign="middle">
-        <Icon name="circle outline" size="small" />
-      </List.Icon>
-      <List.Content>
-        <List.Header style={{ fontWeight: "normal" }}>{content}</List.Header>
-        <List.Description>{date}</List.Description>
-      </List.Content>
-    </List.Item>
   );
 }

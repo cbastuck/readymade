@@ -5,7 +5,7 @@ type Props = {
   description: string;
 };
 
-export default function ({ name, description }: Props) {
+export default function Description({ name, description }: Props) {
   if (!description) {
     return "No description available";
   }
