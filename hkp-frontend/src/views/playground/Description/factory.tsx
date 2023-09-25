@@ -48,12 +48,12 @@ export function createDescription({ boardName, item, idx }: Props) {
 
   return (
     <div key={key} style={{ padding: "0px 2px", margin: 0, display: "flex" }}>
-      {createImpl(item)}
+      {createImpl(item, boardName)}
     </div>
   );
 }
 
-function createImpl(item: BaseType): ReactElement {
+function createImpl(item: BaseType, board: string): ReactElement {
   switch (item.type) {
     case "headline":
       return <Headline {...(item as HeadlineType)} />;
@@ -67,7 +67,7 @@ function createImpl(item: BaseType): ReactElement {
       return <VSpace {...(item as VSpaceType)} />;
     }
     case "qr": {
-      return <QRCode {...(item as QRCodeType)} />;
+      return <QRCode {...(item as QRCodeType)} board={board} />;
     }
     case "text":
       return <Text {...(item as TextType)} />;
