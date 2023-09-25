@@ -27,6 +27,7 @@ export async function createFreeRuntime(desc) {
 }
 
 export async function getRuntimeRegistry(rt) {
+  /*
   const url = `${rt.url}/query`;
   const payload = {
     query: `mutation makeFreeRuntime {
@@ -36,4 +37,5 @@ export async function getRuntimeRegistry(rt) {
       }
     }`,
   };
+  */
 }

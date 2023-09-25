@@ -1,4 +1,4 @@
-import React, { Component, createContext } from "react";
+import { Component, ReactElement, createContext } from "react";
 import UAParser from "ua-parser-js";
 
 import BrowserRegistry from "./runtime/BrowserRegistry";
@@ -18,11 +18,69 @@ import {
   configureService,
   clearBoard,
 } from "./core/actions";
+import {
+  BoardState,
+  RuntimeClass,
+  RuntimeClassType,
+  RuntimeDescriptor,
+  ServiceDescriptor,
+} from "./types";
 
-const { Provider, Consumer: BoardConsumer } = createContext();
+export type BoardContextState = {
+  boardName: string;
+  appViewMode: "wide" | "narrow";
+  runtimes: Array<RuntimeDescriptor>;
+  availableRuntimes: Array<RuntimeClass>;
 
-class BoardContext extends Component {
-  static registerBrowserRuntime(boardName, runtimeId) {
+  addAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
+  removeAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
+  addRuntime: (type: RuntimeClassType, name: string, url?: string) => void;
+  addService: (descriptor: ServiceDescriptor, runtimeId: string) => void;
+
+  fetchData: () => void;
+};
+
+type Props = {
+  children: ReactElement;
+  user: any;
+  boardName: string;
+  fetchData: () => Promise<BoardState>;
+  isRuntimeInScope: () => boolean;
+  addRuntime: (boardname: string, desc: RuntimeDescriptor) => void;
+  removeRuntime: (runtime: RuntimeDescriptor) => void;
+  addService: (
+    boardname: string,
+    descriptor: ServiceDescriptor,
+    runtimeId: string
+  ) => void;
+  removeService: (runtime: RuntimeDescriptor) => void;
+  newBoard: (searchParams: string) => void;
+  clearBoard: () => void;
+  saveBoard?: () => void;
+  shareBoard: () => void;
+  arrangeService: (
+    runtime: RuntimeDescriptor,
+    serviceUuid: string,
+    targetPosition: number
+  ) => void;
+  isActionAvailable: (action: string) => boolean;
+  setRuntimeName: (runtimeId: string, newName: string) => void;
+  serializeBoard: ({
+    name,
+    description,
+  }: {
+    name: string | undefined;
+    description: string;
+  }) => void;
+  onAction: (action: any) => void;
+  availableRuntimes: Array<RuntimeClass>;
+};
+
+const { Provider, Consumer: BoardConsumer } =
+  createContext<BoardContextState>();
+
+class BoardContext extends Component<Props, BoardContextState> {
+  static registerBrowserRuntime(boardName: string, runtimeId: string) {
     // remember id of created runtime, it belongs to 'this' browser
     const existing = JSON.parse(
       localStorage.getItem(`runtimes-${boardName}`) || "[]"
@@ -33,7 +91,7 @@ class BoardContext extends Component {
     );
   }
 
-  static unregisterBrowserRuntime(boardName, runtimeId) {
+  static unregisterBrowserRuntime(boardName: string, runtimeId: string) {
     // unremember that the id belongs to 'this' browser
     const existing = JSON.parse(
       localStorage.getItem(`runtimes-${boardName}`) || "[]"
@@ -42,7 +100,7 @@ class BoardContext extends Component {
     localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(pruned));
   }
 
-  constructor(props) {
+  constructor(props: Props) {
     super(props);
 
     this.state = {
@@ -301,7 +359,11 @@ class BoardContext extends Component {
     }
   };
 
-  arrangeService = async (runtime, serviceUuid, targetPosition) => {
+  arrangeService = async (
+    runtime: RuntimeDescriptor,
+    serviceUuid: string,
+    targetPosition: number
+  ) => {
     const { arrangeService = this.arrangeServiceDefault } = this.props;
     await arrangeService(runtime, serviceUuid, targetPosition);
     await this.fetchData();
@@ -315,7 +377,7 @@ class BoardContext extends Component {
     return registry.availableServices;
   };
 
-  addRuntime = async (type, name, url) => {
+  addRuntime = async (type: RuntimeClassType, name: string, url?: string) => {
     const { addRuntime = this.addRuntimeDefault } = this.props;
     const boardName = this.getBoardName();
     if (!boardName) {
@@ -323,17 +385,15 @@ class BoardContext extends Component {
       return;
     }
 
-    const params = {};
-    if (type === "browser") {
-      params.registry = await this.createBrowserRegistry();
-      const browser = new UAParser().getBrowser();
-      if (browser) {
-        name = browser.name;
-      }
-    }
+    const params =
+      type === "browser"
+        ? { registry: await this.createBrowserRegistry() }
+        : {};
+
+    const browser = new UAParser().getBrowser();
     const desc = {
       type,
-      name,
+      name: (type === "browser" && browser ? browser.name : name) || "unnamed",
       params,
       url,
     };
@@ -341,7 +401,7 @@ class BoardContext extends Component {
     await this.fetchData();
   };
 
-  addRuntimeDefault = async (boardName, desc) => {
+  addRuntimeDefault = async (boardName: string, desc: RuntimeDescriptor) => {
     const created = await addRuntime(boardName, desc);
     if (desc.type === "browser") {
       BoardContext.registerBrowserRuntime(boardName, created.id);
@@ -349,7 +409,7 @@ class BoardContext extends Component {
     return created;
   };
 
-  addService = async (descriptor, runtimeId) => {
+  addService = async (descriptor: ServiceDescriptor, runtimeId: string) => {
     const { addService = this.addServiceDefault } = this.props;
     const boardName = this.getBoardName();
     if (boardName) {
@@ -358,11 +418,19 @@ class BoardContext extends Component {
     }
   };
 
-  addServiceDefault = (boardName, descriptor, runtimeId) => {
+  addServiceDefault = (
+    boardName: string,
+    descriptor: ServiceDescriptor,
+    runtimeId: string
+  ) => {
     return addService(boardName, descriptor, runtimeId);
   };
 
-  removeService = async (runtime, service, fetchData = true) => {
+  removeService = async (
+    runtime: RuntimeDescriptor,
+    service: ServiceDescriptor,
+    fetchData = true
+  ) => {
     const { removeService = this.removeServiceDefault } = this.props;
     const boardName = this.getBoardName();
 
@@ -372,23 +440,26 @@ class BoardContext extends Component {
     }
   };
 
-  removeServiceDefault = async (boardName, runtimeId, service) =>
-    removeService(boardName, runtimeId, service.uuid);
+  removeServiceDefault = async (
+    boardName: string,
+    runtimeId: string,
+    service: ServiceDescriptor
+  ) => removeService(boardName, runtimeId, service.uuid);
 
-  removeRuntime = async (runtime) => {
+  removeRuntime = async (runtime: RuntimeDescriptor) => {
     const { removeRuntime = this.removeRuntimeDefault } = this.props;
     await removeRuntime(runtime);
     await this.fetchData();
   };
 
-  removeRuntimeDefault = async (runtime) => {
+  removeRuntimeDefault = async (runtime: RuntimeDescriptor) => {
     await this.removeAllServices(runtime);
     const boardName = this.getBoardName();
     await removeRuntime(boardName, runtime);
     await this.fetchData();
   };
 
-  removeAllServices = async (runtime) => {
+  removeAllServices = async (runtime: RuntimeDescriptor) => {
     const { services } = this.state;
     const boardName = this.getBoardName();
     if (boardName) {
@@ -399,7 +470,7 @@ class BoardContext extends Component {
     await this.fetchData();
   };
 
-  isRuntimeInScope = (runtime) => {
+  isRuntimeInScope = (runtime: RuntimeDescriptor) => {
     if (runtime.type !== "browser") {
       return true; // TODO: take user into account if shared
     }
@@ -408,10 +479,12 @@ class BoardContext extends Component {
     const ownedRuntimes = JSON.parse(
       localStorage.getItem(`runtimes-${board}`) || "[]"
     );
-    return !!ownedRuntimes.find((runtimeId) => runtimeId === runtime.id);
+    return !!ownedRuntimes.find(
+      (runtimeId: string) => runtimeId === runtime.id
+    );
   };
 
-  acquireRuntimeScope = (boardname, runtime) => {
+  acquireRuntimeScope = (boardname: string, runtime: RuntimeDescriptor) => {
     if (runtime.type === "browser") {
       if (!this.isRuntimeInScope(runtime)) {
         BoardContext.registerBrowserRuntime(boardname, runtime.id);
@@ -420,7 +493,7 @@ class BoardContext extends Component {
     }
   };
 
-  releaseRuntimeScope = (boardname, runtime) => {
+  releaseRuntimeScope = (boardname: string, runtime: RuntimeDescriptor) => {
     if (runtime.type === "browser") {
       BoardContext.unregisterBrowserRuntime(boardname, runtime.id);
       let releasedRT;
@@ -438,7 +511,7 @@ class BoardContext extends Component {
     }
   };
 
-  addAvailableRuntime = ({ name, url, type }) => {
+  addAvailableRuntime = ({ name, url, type }: RuntimeClass) => {
     const availableRuntimes = this.state.availableRuntimes.concat({
       name,
       type,
@@ -450,7 +523,7 @@ class BoardContext extends Component {
     return availableRuntimes;
   };
 
-  removeAvailableRuntime = ({ name, url, type }) => {
+  removeAvailableRuntime = ({ name, url, type }: RuntimeClass) => {
     const availableRuntimes = this.state.availableRuntimes.filter(
       (rt) => rt.name !== name
     );

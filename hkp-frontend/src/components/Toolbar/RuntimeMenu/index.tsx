@@ -1,55 +1,16 @@
 import { useState, useRef } from "react";
-import { Dropdown, Input, Button, Icon } from "semantic-ui-react";
+import { Dropdown, Icon } from "semantic-ui-react";
+import RuntimeItem from "./RuntimeItem";
+import { RuntimeClass } from "../../../types";
+import RemoteRuntimeInput from "./RemoteRuntimeInput";
 
-import { s, t } from "../../styles";
-
-function RemoteRuntimeInput({ onCancel, onChange }) {
-  const [host, setHost] = useState("");
-  const [name, setName] = useState("");
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        marginLeft: 5,
-      }}
-    >
-      <div style={s(t.mt(8), t.fs11, t.mr(5))}>Name </div>
-      <Input value={name} onChange={(ev) => setName(ev.target.value)} />
-      <div style={{ marginLeft: 10 }} />
-      <div style={s(t.mt(8), t.fs11, t.mr(5))}>URL </div>
-      <Input value={host} onChange={(ev) => setHost(ev.target.value)} />
-      <div style={{ marginLeft: 5 }} />
-      <Button
-        icon="check"
-        onClick={() => onChange({ type: "remote", name, url: host })}
-        fluid
-      />
-      <Button icon="cancel" onClick={onCancel} fluid />
-    </div>
-  );
-}
-
-function RuntimeItem({ name, type, url, onRemove }) {
-  return type === "remote" ? (
-    <div style={{ display: "flex", flexDirection: "row", width: "100%" }}>
-      <div style={{ width: "100%" }}>{name}</div>
-      <div style={{ padding: 0, marginLeft: "auto", width: 13 }}>
-        <Button
-          fluid
-          style={{ padding: 0, margin: 0 }}
-          icon="remove"
-          onClick={(ev) => {
-            onRemove();
-            ev.stopPropagation();
-          }}
-        />
-      </div>
-    </div>
-  ) : (
-    <div> Add {name} </div>
-  );
-}
+type Props = {
+  availableRuntimes: Array<RuntimeClass>;
+  onAddAvailableRuntime: (desc: RuntimeClass) => void;
+  onRemoveAvailableRuntime: (desc: RuntimeClass) => void;
+  onAddRuntime: (rtClass: RuntimeClass) => void;
+  isWideViewMode: boolean;
+};
 
 export default function RuntimeMenu({
   availableRuntimes,
@@ -57,11 +18,12 @@ export default function RuntimeMenu({
   onRemoveAvailableRuntime,
   onAddRuntime,
   isWideViewMode,
-}) {
+}: Props) {
   const [showRuntimeMenuHighlighted, setShowRuntimeMenuHighlighted] =
     useState(false);
   const [inputRemoteRuntime, setInputRemoteRuntime] = useState(false);
-  const dropdown = useRef();
+  const dropdown = useRef<any>(null);
+
   const options = availableRuntimes.map((rt, idx) => ({
     key: `${rt.name}.${idx}`,
     value: `${idx}`,
@@ -83,6 +45,19 @@ export default function RuntimeMenu({
     ),
     selected: false,
   }));
+
+  const dropdownOptions = options.concat({
+    key: "add-remote-runtime-item",
+    value: "add-runtime",
+    children: (
+      <div style={{ display: "flex", flexDirection: "row" }}>
+        <Icon name="plus" />
+        Add remote
+      </div>
+    ),
+    selected: false,
+  });
+
   return (
     <div
       id="runtime-dropdown"
@@ -114,16 +89,7 @@ export default function RuntimeMenu({
             minWidth: !isWideViewMode ? 120 : undefined,
           }}
           ref={dropdown}
-          options={options.concat({
-            key: "add-remote-runtime-item",
-            value: "add-runtime",
-            children: (
-              <div style={{ display: "flex", flexDirection: "row" }}>
-                <Icon name="plus" />
-                Add remote
-              </div>
-            ),
-          })}
+          options={dropdownOptions}
           placeholder={"Add Runtime"}
           selection
           selectOnBlur={false}
@@ -131,11 +97,17 @@ export default function RuntimeMenu({
             if (value === "add-runtime") {
               setInputRemoteRuntime(true);
             } else if (value) {
-              const selectedRuntime = availableRuntimes[value];
+              const idx = Number(value);
+              if (isNaN(idx)) {
+                throw new Error(
+                  "RuntimeMenu.Dropdown.onChange selected value type mismatch"
+                );
+              }
+              const selectedRuntime = availableRuntimes[idx];
               if (selectedRuntime) {
                 onAddRuntime(selectedRuntime);
               }
-              dropdown.current.clearValue();
+              dropdown.current?.clearValue();
               setShowRuntimeMenuHighlighted(false);
             }
           }}

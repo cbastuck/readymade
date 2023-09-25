@@ -10,13 +10,15 @@ import BoardMenu from "./BoardMenu";
 import AccountMenu from "./AccountMenu";
 
 import "./index.css";
+import { RuntimeClass } from "../../types";
+import { BoardContextState } from "../../BoardContext";
 
 type Props = {
   board?: string;
   showRuntimeMenu?: boolean;
   isCompact?: boolean;
   boardSyncActive?: boolean;
-  onUpdateAvailableRuntimes?: any;
+  onUpdateAvailableRuntimes?: (runtimeClasses: Array<RuntimeClass>) => void;
 };
 
 export default function Toolbar({
@@ -30,7 +32,7 @@ export default function Toolbar({
     <AppConsumer>
       {(appContext) => (
         <BoardConsumer>
-          {(boardContext) => (
+          {(boardContext: BoardContextState) => (
             <div
               style={{
                 position: "sticky",

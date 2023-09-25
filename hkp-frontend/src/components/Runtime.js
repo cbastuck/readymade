@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Icon, Sidebar, Segment, Menu, Input, Button } from "semantic-ui-react";
 
 import { openTab, getServiceConfiguration } from "../core/actions";

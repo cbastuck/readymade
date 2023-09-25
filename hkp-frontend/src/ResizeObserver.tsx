@@ -1,11 +1,25 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import ResizeObserver from "resize-observer-polyfill";
 
-export default class ResizeObserverComponent extends Component {
+type Props = {
+  onChange: (newState: OnChangeEvent) => void;
+};
+
+type State = {
+  viewportWidth: number | undefined;
+};
+
+export type OnChangeEvent = {
+  viewportWidth: number;
+  appViewMode: "wide" | "narrow";
+};
+
+export default class ResizeObserverComponent extends Component<Props, State> {
   state = {
     viewportWidth: undefined,
   };
+  resizeObserver: ResizeObserver | null = null;
 
   componentDidMount() {
     this.resizeObserver = new ResizeObserver(this.onResizeEvent);
@@ -13,17 +27,17 @@ export default class ResizeObserverComponent extends Component {
   }
 
   componentWillUnmount() {
-    this.resizeObserver.disconnect();
+    this.resizeObserver?.disconnect();
   }
 
-  onResizeEvent = (entries) => {
+  onResizeEvent = (entries: ResizeObserverEntry[]) => {
     const { viewportWidth } = this.state;
     const { onChange } = this.props;
     const entry = entries && entries[0];
     if (entry) {
       const { width: newViewportWidth } = entry.contentRect;
       if (newViewportWidth !== viewportWidth) {
-        const newState = {
+        const newState: OnChangeEvent = {
           viewportWidth: newViewportWidth,
           appViewMode: newViewportWidth > 400 ? "wide" : "narrow",
         };

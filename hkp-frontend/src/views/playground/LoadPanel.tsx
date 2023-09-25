@@ -1,11 +1,12 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { localStoragePrefix, getLocalBoards } from "./common";
 import { s, t } from "../../styles";
 import BoardCollection from "../../components/BoardCollection";
+import { SavedBoard } from "../../types";
 
 export default function LoadPanel() {
-  const [items, setSavedBoards] = useState([]);
+  const [items, setSavedBoards] = useState<Array<SavedBoard>>([]);
   useEffect(() => setSavedBoards(getLocalBoards(localStoragePrefix)), []);
 
   if (!items || items.length === 0) {
@@ -14,20 +15,14 @@ export default function LoadPanel() {
 
   return (
     <div style={s(t.m(0, 20), t.tc)}>
-      <SavedBoards items={items} />
-    </div>
-  );
-}
-
-function SavedBoards({ items }) {
-  return (
-    <div style={s(t.mt20, t.uc)}>
-      <BoardCollection
-        style={{ width: "100%" }}
-        headline="Saved on this browser"
-        items={items}
-        renderBorder={false}
-      />
+      <div style={s(t.mt20, t.uc)}>
+        <BoardCollection
+          style={{ width: "100%" }}
+          headline="Saved on this browser"
+          items={items}
+          renderBorder={false}
+        />
+      </div>
     </div>
   );
 }

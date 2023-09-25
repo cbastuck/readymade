@@ -1,3 +1,5 @@
+import { RuntimeClass, SavedBoard } from "../../types";
+
 export function getActivationId(runtimeId: string) {
   return `peer-${runtimeId}-active`;
 }
@@ -55,24 +57,28 @@ export const allowedServices = [
 
 export const defaultName = "Playground";
 
-export const availableRuntimes = [
+export const availableRuntimes: Array<RuntimeClass> = [
   { name: "browser", type: "browser" },
   // { name: "hookup", type: "node" },
 ];
 
-export function getLocalBoards(prefix: string) {
+export function getLocalBoards(prefix: string): Array<SavedBoard> {
   const savedBoards = [];
   for (const key in localStorage) {
     if (key.startsWith(prefix)) {
       const data = localStorage.getItem(key);
-      try {
-        const value = JSON.parse(data);
-        savedBoards.push({
-          name: key.substr(prefix.length),
-          value,
-        });
-      } catch (err) {
-        console.warn("Could not restore local board", key, err);
+      if (!data) {
+        console.warn(`Got empty local board: ${key}`);
+      } else {
+        try {
+          const value = JSON.parse(data);
+          savedBoards.push({
+            name: key.substr(prefix.length),
+            value,
+          });
+        } catch (err) {
+          console.warn("Could not restore local board", key, err);
+        }
       }
     }
   }
