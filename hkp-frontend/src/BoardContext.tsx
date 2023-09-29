@@ -27,6 +27,8 @@ import {
 } from "./types";
 
 export type BoardContextState = {
+  user: any;
+
   boardName: string;
   appViewMode: "wide" | "narrow";
   runtimes: Array<RuntimeDescriptor>;
@@ -289,6 +291,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       .map((key) => key.substr(6));
     return boards;
   };
+
   newBoard = () => {
     if (this.props && this.props.newBoard) {
       this.props.newBoard();

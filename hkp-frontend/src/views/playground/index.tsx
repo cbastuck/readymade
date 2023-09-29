@@ -1,4 +1,4 @@
-import { Component } from "react";
+import React, { Component } from "react";
 import { Loader } from "semantic-ui-react";
 import * as uuid from "uuid";
 
@@ -88,6 +88,7 @@ type State = {
 
 class Playground extends Component<Props, State> {
   static contextType = AppCtx;
+  context!: React.ContextType<typeof AppCtx>;
 
   defaultRegistry: BrowserRegistry | undefined = undefined;
   board: Board | null = null;
