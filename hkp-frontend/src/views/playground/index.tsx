@@ -49,6 +49,7 @@ import {
   PlaygroundBoard,
   RuntimeClass,
   RuntimeDescriptor,
+  ServiceClass,
   ServiceDescriptor,
   SidechainRouting,
 } from "../../types";
@@ -329,7 +330,7 @@ class Playground extends Component<Props, State> {
   };
 
   addService = (
-    service: ServiceDescriptor,
+    service: ServiceClass,
     runtime: RuntimeDescriptor
   ): AddServiceResult => {
     const svc = {

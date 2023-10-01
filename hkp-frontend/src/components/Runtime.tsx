@@ -1,5 +1,13 @@
-import { Component } from "react";
-import { Icon, Sidebar, Segment, Menu, Input, Button } from "semantic-ui-react";
+import { Component, ReactElement } from "react";
+import {
+  Icon,
+  Sidebar,
+  Segment,
+  Menu,
+  Input,
+  Button,
+  SemanticICONS,
+} from "semantic-ui-react";
 
 import { openTab, getServiceConfiguration } from "../core/actions";
 import NodeRuntime from "../runtime/NodeRuntime";
@@ -9,21 +17,66 @@ import ServiceDropdown from "./ServiceDropdown";
 
 import { s, t } from "../styles";
 import {
+  AppViewMode,
   RuntimeDescriptor,
+  RuntimeImpl,
+  ServiceAction,
+  ServiceClass,
   ServiceDescriptor,
+  ServiceImpl,
   ServiceRegistry,
+  ServiceURI,
 } from "../types";
+import { BoardContextState } from "../BoardContext";
 
-type Props = any;
+type Props = {
+  style: object;
+  boardContext: BoardContextState;
+  readonly: boolean;
+  expanded: boolean;
+  frameless: boolean;
+  children: JSX.Element | JSX.Element[];
+  onArrangeService: (serviceUuid: string, position: number) => void;
+  headless: boolean;
 
-export default class Runtime extends Component<Props> {
-  state = {
+  initialState: {
+    wrapServices?: boolean;
+    minimized?: boolean;
+  };
+  runtime: RuntimeDescriptor;
+  allowedServices: Array<ServiceURI>;
+  customItems: Array<{
+    key: string;
+    onClick: (ev: React.MouseEvent) => void;
+    icon: SemanticICONS;
+  }>;
+  disabledItems: Array<string>;
+
+  outputs: ReactElement;
+  inputs: ReactElement;
+  onResult: any; // TODO
+};
+
+type State = {
+  runtimeNameEditBuffer: string;
+  expanded: boolean;
+  readonly: boolean;
+  showSettings: boolean;
+  wrapServices: boolean | undefined;
+};
+
+export default class Runtime extends Component<Props, State> {
+  state: State = {
     expanded: false,
     readonly: false,
     showSettings: false,
     wrapServices: undefined,
+    runtimeNameEditBuffer: "",
   };
 
+  impl: RuntimeImpl | null = null;
+  dropdown: ServiceDropdown | null = null;
+  runtimeContainer: HTMLDivElement | null = null;
   componentDidMount() {
     const { readonly, initialState = {}, expanded } = this.props;
     this.setState({
@@ -31,6 +84,8 @@ export default class Runtime extends Component<Props> {
       wrapServices: initialState.wrapServices,
       expanded:
         expanded !== undefined ? expanded : initialState.minimized !== true,
+      runtimeNameEditBuffer: "",
+      showSettings: false,
       ...initialState,
     });
   }
@@ -49,14 +104,14 @@ export default class Runtime extends Component<Props> {
     this.destroyRuntime();
   }
 
-  onAddService(service) {
+  onAddService(service: ServiceClass) {
     const { boardContext, runtime } = this.props;
     if (boardContext && runtime) {
       boardContext.addService(service, runtime);
     }
   }
 
-  onServiceAction = (command) => {
+  onServiceAction = (command: ServiceAction) => {
     const { boardContext, runtime } = this.props;
     const { service, action } = command;
     switch (action) {
@@ -67,9 +122,13 @@ export default class Runtime extends Component<Props> {
         break;
       }
       case "help": {
-        const serviceId = service.serviceId || service.__descriptor.serviceId;
-        const parts = serviceId.split("/");
-        openTab(`/service/${parts[parts.length - 1]}`);
+        const serviceId =
+          service.serviceId || service.__descriptor?.serviceId || null;
+        const parts = serviceId && serviceId.split("/");
+        if (parts) {
+          openTab(`/service/${parts[parts.length - 1]}`);
+        }
+
         break;
       }
       case "getConfig": {
@@ -91,20 +150,22 @@ export default class Runtime extends Component<Props> {
     minimized: !this.state.expanded,
   });
 
-  getServiceById = (serviceUuid) => {
+  getServiceById = (serviceUuid: string) => {
     const { boardContext, runtime } = this.props;
     const services = boardContext.services[runtime.id];
     return this.impl && this.impl.getServiceById
       ? this.impl.getServiceById(serviceUuid)
-      : services.find((svc) => svc.uuid === serviceUuid);
+      : makeServiceImpl(services.find((svc) => svc.uuid === serviceUuid));
   };
 
-  processRuntime = (params, serviceId) => {
+  processRuntime = (params: any, serviceId: string) => {
     const svc = serviceId ? this.getServiceById(serviceId) : null;
-    this.impl.processRuntime && this.impl.processRuntime(params, svc);
+    this.impl &&
+      this.impl.processRuntime &&
+      this.impl.processRuntime(params, svc);
   };
 
-  processService = (serviceUuid, params) => {
+  processService = (serviceUuid: string, params: any) => {
     const service = this.getServiceById(serviceUuid);
     if (service) {
       service.process(params);
@@ -113,7 +174,7 @@ export default class Runtime extends Component<Props> {
     }
   };
 
-  configureService = (serviceUuid, config) => {
+  configureService = (serviceUuid: string, config: any) => {
     const service = this.getServiceById(serviceUuid);
     if (service) {
       service.configure(config);
@@ -129,7 +190,7 @@ export default class Runtime extends Component<Props> {
 
   // TODO: this should not happen here. Is a command to the backend not the UI component
   // Probably the boardContext should be the receiver
-  destroyService = (service) => {
+  destroyService = (service: ServiceDescriptor) => {
     return (
       this.impl && this.impl.destroyService && this.impl.destroyService(service)
     );
@@ -141,7 +202,12 @@ export default class Runtime extends Component<Props> {
     return this.impl && this.impl.destroyRuntime && this.impl.destroyRuntime();
   };
 
-  renderServiceMenu(runtimeId, runtimeName, registry, appViewMode) {
+  renderServiceMenu(
+    runtimeId: string,
+    runtimeName: string,
+    registry: ServiceRegistry,
+    appViewMode: AppViewMode
+  ) {
     const { allowedServices } = this.props;
     const wide = appViewMode === "wide";
     const options = registry
@@ -159,8 +225,8 @@ export default class Runtime extends Component<Props> {
         ref={(dropdown) => (this.dropdown = dropdown)}
         options={options}
         wide={wide}
-        onSelected={(value) => {
-          const service = registry.find((s) => s.serviceId === value);
+        onSelected={(serviceId: string) => {
+          const service = registry.find((s) => s.serviceId === serviceId);
           if (service) {
             this.onAddService(service);
           }
@@ -169,7 +235,13 @@ export default class Runtime extends Component<Props> {
     );
   }
 
-  renderExpandableHeadline(id, name, registry, isOwner, appViewMode) {
+  renderExpandableHeadline(
+    runtimeId: string,
+    name: string,
+    registry: ServiceRegistry,
+    isOwner: boolean,
+    appViewMode: AppViewMode
+  ) {
     const { expanded, showSettings, runtimeNameEditBuffer = "" } = this.state;
 
     return (
@@ -197,13 +269,15 @@ export default class Runtime extends Component<Props> {
           }
         />
         <div
-          style={{
-            ...t.unselectable,
-            fontSize: 12,
-            letterSpacing: 1,
-            textTransform: "uppercase",
-            marginTop: 10,
-          }}
+          style={
+            {
+              ...t.unselectable,
+              fontSize: 12,
+              letterSpacing: 1,
+              textTransform: "uppercase",
+              marginTop: 10,
+            } as any
+          }
           onDoubleClick={() =>
             !runtimeNameEditBuffer && this.setState({ expanded: !expanded })
           }
@@ -222,10 +296,10 @@ export default class Runtime extends Component<Props> {
                 onChange={(ev, { value: runtimeNameEditBuffer }) =>
                   this.setState({ runtimeNameEditBuffer })
                 }
-                onKeyUp={(ev) => {
+                onKeyUp={(ev: KeyboardEvent) => {
                   if (ev.key === "Enter") {
                     this.props.boardContext.setRuntimeName(
-                      id,
+                      runtimeId,
                       runtimeNameEditBuffer
                     );
                     this.setState({ runtimeNameEditBuffer: "" });
@@ -246,7 +320,7 @@ export default class Runtime extends Component<Props> {
                 disabled={runtimeNameEditBuffer === name}
                 onClick={() => {
                   this.props.boardContext.setRuntimeName(
-                    id,
+                    runtimeId,
                     runtimeNameEditBuffer
                   );
                   this.setState({ runtimeNameEditBuffer: "" });
@@ -277,16 +351,20 @@ export default class Runtime extends Component<Props> {
         >
           {registry &&
             isOwner &&
-            this.renderServiceMenu(id, name, registry, appViewMode)}
+            this.renderServiceMenu(runtimeId, name, registry, appViewMode)}
         </div>
       </div>
     );
   }
 
-  renderSettings = (runtime, onToggleOwnership, isOwner) => {
+  renderSettings = (
+    runtime: RuntimeDescriptor,
+    onToggleOwnership: () => void,
+    isOwner: boolean
+  ) => {
     const { expanded, showSettings, wrapServices } = this.state;
     const { boardContext, customItems = [], disabledItems = [] } = this.props;
-    const { services: allServices = [] } = boardContext;
+    const { services: allServices = {} } = boardContext;
     const services = allServices[runtime.id];
     const itemStyle = {
       height: 40,
@@ -352,7 +430,7 @@ export default class Runtime extends Component<Props> {
             key={`custom-item-${item.key}-${idx}`}
             as="a"
             style={itemStyle}
-            onClick={(ev) => {
+            onClick={(ev: React.MouseEvent) => {
               item.onClick(ev);
               this.setState({
                 showSettings: false,
@@ -372,21 +450,21 @@ export default class Runtime extends Component<Props> {
     }
   };
 
-  scrollRuntimeContainerTo = (x, y) => {
+  scrollRuntimeContainerTo = (x: number, y: number) => {
     if (this.runtimeContainer) {
       this.runtimeContainer.scroll(x, y);
     }
   };
 
   renderNodeRuntime = (
-    runtime,
-    expanded,
-    userId,
-    boardName,
-    services,
-    readonly,
-    registry,
-    onArrangeService
+    runtime: RuntimeDescriptor,
+    expanded: boolean,
+    userId: string,
+    boardName: string,
+    services: Array<ServiceDescriptor>,
+    readonly: boolean,
+    registry: ServiceRegistry,
+    onArrangeService: (serviceUuid: string, position: number) => void
   ) => {
     if (expanded) {
       return (
@@ -408,14 +486,14 @@ export default class Runtime extends Component<Props> {
   };
 
   renderRemoteRuntime = (
-    runtime,
-    expanded,
-    userId,
-    boardName,
-    services,
-    readonly,
-    registry,
-    onArrangeService
+    runtime: RuntimeDescriptor,
+    expanded: boolean,
+    userId: string,
+    boardName: string,
+    services: Array<ServiceDescriptor>,
+    readonly: boolean,
+    registry: ServiceRegistry,
+    onArrangeService: (serviceUuid: string, position: number) => void
   ) => {
     if (expanded) {
       return (
@@ -525,8 +603,8 @@ export default class Runtime extends Component<Props> {
   render() {
     const {
       style,
-      runtime = null,
-      boardContext = null,
+      runtime,
+      boardContext,
       frameless = false,
       children = undefined,
       onArrangeService: onArrangeServiceCustom = undefined,
@@ -536,12 +614,12 @@ export default class Runtime extends Component<Props> {
     const runtimeId = runtime && runtime.id;
     const runtimeName = runtime ? runtime.name : "Blank";
     const services =
-      boardContext && boardContext.services[runtime && runtime.id];
+      runtime && boardContext && boardContext.services[runtime.id];
     const userId =
       boardContext && boardContext.user && boardContext.user.userId;
     const boardName = boardContext && boardContext.boardName;
     const registry =
-      boardContext && boardContext.registry[runtime && runtime.id];
+      runtime && boardContext && boardContext.registry[runtime.id];
     const appViewMode = boardContext && boardContext.appViewMode;
     const wide = boardContext ? appViewMode === "wide" : true;
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
@@ -549,7 +627,7 @@ export default class Runtime extends Component<Props> {
     const { wrapServices = !wide, showSettings, expanded } = this.state;
 
     const readonly = !registry;
-    const readonlyStyle =
+    const readonlyStyle: any =
       readonly && !frameless
         ? {
             backgroundColor: "#FFFFFF",
@@ -562,18 +640,23 @@ export default class Runtime extends Component<Props> {
         : {};
 
     const onArrangeServiceDefault = (serviceUuid: string, position: number) =>
+      runtime &&
+      boardContext &&
       boardContext.arrangeService(runtime, serviceUuid, position);
+
     const onArrangeService =
       onArrangeServiceCustom !== undefined
         ? onArrangeServiceCustom
         : onArrangeServiceDefault;
 
     const onToggleOwnership = () =>
-      boardContext.isRuntimeInScope(runtime)
+      boardContext &&
+      runtime &&
+      (boardContext.isRuntimeInScope(runtime)
         ? boardContext.releaseRuntimeScope(boardContext.boardName, runtime)
-        : boardContext.acquireRuntimeScope(boardContext.boardName, runtime);
+        : boardContext.acquireRuntimeScope(boardContext.boardName, runtime));
 
-    if (headless) {
+    if (headless && runtime) {
       return this.renderBrowserRuntime(
         runtime,
         expanded,
@@ -588,12 +671,14 @@ export default class Runtime extends Component<Props> {
 
     return (
       <div
-        style={{
-          border: !frameless && "solid 1px lightgray",
-          borderRadius: 3,
-          backgroundColor: !frameless && "#EEEEEE10",
-          ...style,
-        }}
+        style={
+          {
+            border: !frameless && "solid 1px lightgray",
+            borderRadius: 3,
+            backgroundColor: !frameless && "#EEEEEE10",
+            ...style,
+          } as any
+        }
       >
         {!frameless &&
           this.renderExpandableHeadline(
@@ -688,4 +773,8 @@ export default class Runtime extends Component<Props> {
       </div>
     );
   }
+}
+
+function makeServiceImpl(desc?: ServiceDescriptor): ServiceImpl {
+  throw new Error("makeServiceImpl() not implemented ");
 }

@@ -1,6 +1,7 @@
 import { Component } from "react";
 
 import ResizeObserver from "resize-observer-polyfill";
+import { AppViewMode } from "./types";
 
 type Props = {
   onChange: (newState: OnChangeEvent) => void;
@@ -12,7 +13,7 @@ type State = {
 
 export type OnChangeEvent = {
   viewportWidth: number;
-  appViewMode: "wide" | "narrow";
+  appViewMode: AppViewMode;
 };
 
 export default class ResizeObserverComponent extends Component<Props, State> {

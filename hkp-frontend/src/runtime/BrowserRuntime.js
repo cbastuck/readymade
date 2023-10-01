@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
 
 // TODO: remove dependency if not needed anymore (double check commented out code)

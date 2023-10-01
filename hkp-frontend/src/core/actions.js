@@ -121,12 +121,8 @@ export function getRuntimeRegistry(board, runtimeId) {
   return request(`board/${board}/runtime/${runtimeId}/registry`);
 }
 
-export async function getServiceConfiguration(
-  boardname,
-  service,
-  runtime = null
-) {
-  const rt = runtime !== null ? runtime.id : service.__descriptor.runtime;
+export async function getServiceConfiguration(boardname, service, runtime) {
+  const rt = !!runtime ? runtime.id : service.__descriptor.runtime;
   return await request(
     `board/${boardname}/runtime/${rt}/service/${service.uuid}/config`
   );

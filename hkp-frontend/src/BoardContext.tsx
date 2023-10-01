@@ -21,12 +21,14 @@ import {
   Action,
   AddRuntimeResult,
   AddServiceResult,
+  AppViewMode,
   BoardDescriptor,
   RuntimeClass,
   RuntimeDescriptor,
-  ServiceClass,
+  ServiceModule,
   ServiceDescriptor,
   ServiceRegistry,
+  ServiceClass,
 } from "./types";
 import { reorderService } from "./views/playground/BoardActions";
 
@@ -38,7 +40,7 @@ type BoardContextAPI = {
   removeRuntime: (runtime: RuntimeDescriptor) => void;
   removeAllServices: (runtime: RuntimeDescriptor) => void;
 
-  addService: (desc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
+  addService: (desc: ServiceClass, rt: RuntimeDescriptor) => void;
   removeService: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
 
   arrangeService: (rt: RuntimeDescriptor, svcUuid: string, dst: number) => void;
@@ -60,7 +62,7 @@ export type BoardContextState = BoardContextAPI & {
   user: any;
 
   boardName: string;
-  appViewMode: "wide" | "narrow";
+  appViewMode: AppViewMode;
   viewportWidth: number | undefined;
 
   runtimes: Array<RuntimeDescriptor>;
@@ -80,10 +82,7 @@ type Props = {
   isRuntimeInScope: () => boolean;
   addRuntime: (rtClass: RuntimeClass) => AddRuntimeResult;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
-  addService: (
-    svc: ServiceDescriptor,
-    rt: RuntimeDescriptor
-  ) => AddServiceResult;
+  addService: (svc: ServiceClass, rt: RuntimeDescriptor) => AddServiceResult;
   removeService: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
   newBoard: (searchParams?: string) => void; // TODO: why search params ??
   clearBoard: () => Promise<void>;
@@ -271,7 +270,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       runtimes = this.state.runtimes;
     }
     const board = this.getBoardName();
-    const registry: { [runtimeId: string]: Array<ServiceClass> } = {};
+    const registry: { [runtimeId: string]: Array<ServiceModule> } = {};
     if (runtimes) {
       for (const runtime of runtimes) {
         registry[runtime.id] =
@@ -429,10 +428,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     return created;
   };
 
-  addService = async (
-    service: ServiceDescriptor,
-    runtime: RuntimeDescriptor
-  ) => {
+  addService = async (service: ServiceClass, runtime: RuntimeDescriptor) => {
     const { addService = this.addServiceDefault } = this.props;
 
     const svc = await addService(service, runtime);
@@ -447,7 +443,7 @@ class BoardContext extends Component<Props, BoardContextState> {
   };
 
   addServiceDefault = (
-    service: ServiceDescriptor,
+    service: ServiceClass,
     runtime: RuntimeDescriptor
   ): Promise<AddServiceResult> => {
     return addService(this.getBoardName(), service, runtime.id);
