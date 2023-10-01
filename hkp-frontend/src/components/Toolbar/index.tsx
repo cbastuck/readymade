@@ -80,8 +80,8 @@ export default function Toolbar({
                         onUpdateAvailableRuntimes &&
                           onUpdateAvailableRuntimes(runtimes);
                       }}
-                      onAddRuntime={({ name, type, url }) =>
-                        boardContext.addRuntime(type, name, url)
+                      onAddRuntime={(rtClass: RuntimeClass) =>
+                        boardContext.addRuntime(rtClass)
                       }
                     />
                   )}

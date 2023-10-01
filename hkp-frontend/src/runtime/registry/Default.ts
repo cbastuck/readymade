@@ -52,12 +52,13 @@ import FeedbackTakerDesriptor from "../services/FeedbackTaker";
 import SpotifyDescriptor from "../services/Spotify";
 import GithubSourceDescriptor from "../services/GithubSource";
 import GithubSinkDescriptor from "../services/GithubSink";
+import { ServiceRegistry } from "../../types";
 
 // Modules with additional dependencies
 // import GeneticOptimizerDescriptor from "../services/GeneticOptimizer";
 // import DownloaderDescriptor from "../services/Downloader";
 
-const defaultRegistry = [
+const defaultRegistry: ServiceRegistry = [
   TimerDescriptor,
   MonitorDescriptor,
 

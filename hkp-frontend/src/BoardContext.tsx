@@ -3,7 +3,6 @@ import UAParser from "ua-parser-js";
 
 import BrowserRegistry from "./runtime/BrowserRegistry";
 import ResizeObserver from "./ResizeObserver";
-import { redirectTo } from "./core/actions";
 
 import {
   getServices,
@@ -19,67 +18,86 @@ import {
   clearBoard,
 } from "./core/actions";
 import {
-  BoardState,
+  Action,
+  AddRuntimeResult,
+  AddServiceResult,
+  BoardDescriptor,
   RuntimeClass,
-  RuntimeClassType,
   RuntimeDescriptor,
+  ServiceClass,
   ServiceDescriptor,
+  ServiceRegistry,
 } from "./types";
+import { reorderService } from "./views/playground/BoardActions";
 
-export type BoardContextState = {
+type BoardContextAPI = {
+  addAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
+  removeAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
+
+  addRuntime: (rtClass: RuntimeClass) => void;
+  removeRuntime: (runtime: RuntimeDescriptor) => void;
+  removeAllServices: (runtime: RuntimeDescriptor) => void;
+
+  addService: (desc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
+  removeService: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
+
+  arrangeService: (rt: RuntimeDescriptor, svcUuid: string, dst: number) => void;
+
+  fetchData: () => Promise<void>;
+  isActionAvailable: (action: Action) => boolean;
+  onAction: (action: Action) => void;
+
+  serializeBoard: () => Promise<BoardDescriptor | null>;
+
+  isRuntimeInScope: (runtime: RuntimeDescriptor) => boolean;
+  acquireRuntimeScope: (boardname: string, runtime: RuntimeDescriptor) => void;
+  releaseRuntimeScope: (boardname: string, runtime: RuntimeDescriptor) => void;
+
+  setRuntimeName: (runtimeId: string, newName: string) => void;
+};
+
+export type BoardContextState = BoardContextAPI & {
   user: any;
 
   boardName: string;
   appViewMode: "wide" | "narrow";
+  viewportWidth: number | undefined;
+
   runtimes: Array<RuntimeDescriptor>;
+  services: { [runtimeId: string]: Array<ServiceDescriptor> };
+  registry: { [runtimeId: string]: ServiceRegistry };
+
   availableRuntimes: Array<RuntimeClass>;
-
-  addAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
-  removeAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
-  addRuntime: (type: RuntimeClassType, name: string, url?: string) => void;
-  addService: (descriptor: ServiceDescriptor, runtimeId: string) => void;
-
-  fetchData: () => void;
 };
 
 type Props = {
-  children: ReactElement;
   user: any;
   boardName: string;
-  fetchData: () => Promise<BoardState>;
+  availableRuntimes: Array<RuntimeClass>;
+  children: ReactElement;
+
+  fetchData: () => Promise<BoardDescriptor>;
   isRuntimeInScope: () => boolean;
-  addRuntime: (boardname: string, desc: RuntimeDescriptor) => void;
+  addRuntime: (rtClass: RuntimeClass) => AddRuntimeResult;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
   addService: (
-    boardname: string,
-    descriptor: ServiceDescriptor,
-    runtimeId: string
-  ) => void;
-  removeService: (runtime: RuntimeDescriptor) => void;
-  newBoard: (searchParams: string) => void;
-  clearBoard: () => void;
+    svc: ServiceDescriptor,
+    rt: RuntimeDescriptor
+  ) => AddServiceResult;
+  removeService: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
+  newBoard: (searchParams?: string) => void; // TODO: why search params ??
+  clearBoard: () => Promise<void>;
   saveBoard?: () => void;
-  shareBoard: () => void;
-  arrangeService: (
-    runtime: RuntimeDescriptor,
-    serviceUuid: string,
-    targetPosition: number
-  ) => void;
-  isActionAvailable: (action: string) => boolean;
-  setRuntimeName: (runtimeId: string, newName: string) => void;
-  serializeBoard: ({
-    name,
-    description,
-  }: {
-    name: string | undefined;
-    description: string;
-  }) => void;
-  onAction: (action: any) => void;
-  availableRuntimes: Array<RuntimeClass>;
+  shareBoard?: () => void;
+
+  isActionAvailable: (action: Action, state: BoardContextState) => boolean;
+
+  onAction: (action: any) => boolean;
+  serializeBoard: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
 };
 
 const { Provider, Consumer: BoardConsumer } =
-  createContext<BoardContextState>();
+  createContext<BoardContextState | null>(null);
 
 class BoardContext extends Component<Props, BoardContextState> {
   static registerBrowserRuntime(boardName: string, runtimeId: string) {
@@ -98,9 +116,11 @@ class BoardContext extends Component<Props, BoardContextState> {
     const existing = JSON.parse(
       localStorage.getItem(`runtimes-${boardName}`) || "[]"
     );
-    const pruned = existing.filter((id) => id !== runtimeId);
+    const pruned = existing.filter((id: string) => id !== runtimeId);
     localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(pruned));
   }
+
+  browserRuntimes: Array<any> = []; // TODO
 
   constructor(props: Props) {
     super(props);
@@ -110,7 +130,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       fetchData: this.fetchData,
       addRuntime: this.addRuntime,
       addService: this.addService,
-      arrangeService: this.arrangeService,
+      arrangeService: this.arrangeServices,
       removeService: this.removeService,
       removeRuntime: this.removeRuntime,
       removeAllServices: this.removeAllServices,
@@ -123,12 +143,11 @@ class BoardContext extends Component<Props, BoardContextState> {
       availableRuntimes: props.availableRuntimes || [],
       addAvailableRuntime: this.addAvailableRuntime,
       removeAvailableRuntime: this.removeAvailableRuntime,
-      serializeBoard: props.serializeBoard, // TODO: this must exist for PeerSync
+      serializeBoard: this.serializeBoard,
 
       // UI/App data
       viewportWidth: undefined,
       appViewMode: "wide",
-      savedBoards: [],
 
       // Board data
       user: props.user,
@@ -143,7 +162,11 @@ class BoardContext extends Component<Props, BoardContextState> {
     this.fetchData();
   }
 
-  componentDidUpdate(prevProps) {
+  componentWillUnmount(): void {
+    this.clearBoard();
+  }
+
+  componentDidUpdate(prevProps: Props) {
     const { user, boardName } = this.props;
     if (prevProps.user !== user) {
       this.setState({ user });
@@ -157,20 +180,19 @@ class BoardContext extends Component<Props, BoardContextState> {
     const { fetchData = this.fetchDataDefault } = this.props;
     const {
       boardName = this.getBoardName(),
-      services,
-      savedBoards,
-      registry,
+      services = {},
+      registry = {},
       runtimes = [],
     } = await fetchData();
-    if (runtimes) {
+    if (runtimes && services) {
       for (const runtime of runtimes) {
         // ensure service.configure function exists
         for (const svc of services[runtime.id]) {
-          if (!svc.configure) {
+          if (!(svc as any).configure) {
             // TODO: for BrowserRuntimes this happens in BrowserRuntime
             // this should be streamlined!
             // This implementation is only true for services in RemoteRuntimes
-            svc.configure = async (config) =>
+            (svc as any).configure = async (config: any) =>
               configureService(boardName, svc, config, runtime);
           }
         }
@@ -179,14 +201,11 @@ class BoardContext extends Component<Props, BoardContextState> {
         }
       }
     }
-
     this.setState({
-      //board,
       boardName,
       runtimes,
       registry,
       services,
-      savedBoards,
     });
   };
 
@@ -195,36 +214,33 @@ class BoardContext extends Component<Props, BoardContextState> {
     if (!user) {
       return {};
     }
-    try {
-      const board = await this.fetchBoard();
-      const runtimes = await this.fetchRuntimes();
-      const registry = await this.fetchRegistry(runtimes); // FIXME: always after fetchRuntimes
-      const services = await this.fetchServices(runtimes);
-      const userBoards = await this.fetchUserBoards();
-      return { board, runtimes, registry, services, userBoards };
-    } catch (error) {
-      console.log("Fetching data failed", error);
-      return {};
-    }
+
+    const boardName = this.getBoardName();
+    const runtimes = await this.fetchRuntimes();
+    const registry = await this.fetchRegistry(runtimes); // FIXME: always after fetchRuntimes
+    const services = await this.fetchServices(runtimes);
+    return { boardName, runtimes, registry, services };
   };
 
-  setRuntimeName = async (runtimeId, newName) => {
-    const { setRuntimeName = this.setRuntimeNameDefault } = this.props;
-    await setRuntimeName(runtimeId, newName);
-    await this.fetchData();
+  setRuntimeName = async (runtimeId: string, newName: string) => {
+    const runtimes = this.state.runtimes.map((rt) => {
+      if (rt.type !== "browser") {
+        throw new Error(
+          "BoardContext.setRuntimeName() only supported for browser runtimes"
+        );
+      }
+      return rt.id === runtimeId ? { ...rt, name: newName } : rt;
+    });
+    this.setState({ runtimes });
   };
 
-  setRuntimeNameDefault = (runtimeId, newName) => {
-    console.log("Implement setRuntimeNameDefault for remote services");
-  };
-
-  isActionAvailable = (action) => {
+  isActionAvailable = (action: Action) => {
     const { isActionAvailable = this.isActionAvailableDefaut } = this.props;
-    return isActionAvailable(action);
+    return isActionAvailable(action, this.state);
   };
 
-  isActionAvailableDefaut = (action) => {
-    switch (action) {
+  isActionAvailableDefaut = (action: Action, state: BoardContextState) => {
+    switch (action.type) {
       case "clearBoard":
         return true;
       default:
@@ -250,12 +266,12 @@ class BoardContext extends Component<Props, BoardContextState> {
     return runtimes;
   };
 
-  fetchRegistry = async (runtimes) => {
+  fetchRegistry = async (runtimes: Array<RuntimeDescriptor>) => {
     if (!runtimes) {
       runtimes = this.state.runtimes;
     }
     const board = this.getBoardName();
-    const registry = {};
+    const registry: { [runtimeId: string]: Array<ServiceClass> } = {};
     if (runtimes) {
       for (const runtime of runtimes) {
         registry[runtime.id] =
@@ -267,12 +283,12 @@ class BoardContext extends Component<Props, BoardContextState> {
     return registry;
   };
 
-  fetchServices = async (runtimes) => {
+  fetchServices = async (runtimes: Array<RuntimeDescriptor>) => {
     if (!runtimes) {
       runtimes = this.state.runtimes;
     }
     const board = this.getBoardName();
-    const services = {};
+    const services: { [runtimeId: string]: Array<ServiceDescriptor> } = {};
     if (board && runtimes) {
       for (const runtime of runtimes) {
         const { services: runtimeServices } = await getServices(
@@ -292,24 +308,26 @@ class BoardContext extends Component<Props, BoardContextState> {
     return boards;
   };
 
-  newBoard = () => {
+  newBoard = (searchParams: string = "") => {
     if (this.props && this.props.newBoard) {
-      this.props.newBoard();
-    } else {
-      redirectTo("/playground"); // TODO: consolidate with remote boards
+      this.props.newBoard(searchParams);
     }
   };
 
   clearBoard = async () => {
     const { clearBoard = this.clearBoardDefault } = this.props;
     await clearBoard();
-    await this.fetchData();
+    this.setState(() => ({
+      runtimes: [],
+      services: {},
+      registry: {},
+    }));
   };
 
   clearBoardDefault = async () => {
     const { runtimes } = this.state;
     if (runtimes) {
-      for (const runtime of runtimes) {
+      for (const runtime of runtimes as Array<any>) {
         if (runtime.destroyRuntime) {
           await runtime.destroyRuntime();
         }
@@ -327,7 +345,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     }
   };
 
-  onAction = async (action) => {
+  onAction = async (action: Action) => {
     const boardname = this.getBoardName();
     const { onAction } = this.props;
     if (onAction) {
@@ -348,7 +366,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       case "loadBoard":
         try {
           const loadState = JSON.parse(
-            localStorage.getItem(`board-${boardname}`)
+            localStorage.getItem(`board-${boardname}`) || ""
           );
           await loadBoard(action.board, loadState);
           await this.fetchData();
@@ -362,49 +380,48 @@ class BoardContext extends Component<Props, BoardContextState> {
     }
   };
 
-  arrangeService = async (
-    runtime: RuntimeDescriptor,
-    serviceUuid: string,
-    targetPosition: number
-  ) => {
-    const { arrangeService = this.arrangeServiceDefault } = this.props;
-    await arrangeService(runtime, serviceUuid, targetPosition);
-    await this.fetchData();
-  };
-
-  arrangeServiceDefault = () => {};
-
   createBrowserRegistry = async () => {
     const { user } = this.state;
     const registry = await BrowserRegistry.create([], user);
     return registry.availableServices;
   };
 
-  addRuntime = async (type: RuntimeClassType, name: string, url?: string) => {
+  addRuntime = async (rtClass: RuntimeClass) => {
     const { addRuntime = this.addRuntimeDefault } = this.props;
-    const boardName = this.getBoardName();
-    if (!boardName) {
-      console.error("Board name missing for adding a runtime");
-      return;
-    }
 
+    const { type, name, url } = rtClass;
     const params =
       type === "browser"
         ? { registry: await this.createBrowserRegistry() }
         : {};
 
-    const browser = new UAParser().getBrowser();
+    const browser = type === "browser" ? new UAParser().getBrowser() : null;
     const desc = {
       type,
-      name: (type === "browser" && browser ? browser.name : name) || "unnamed",
+      name: `${browser?.name || name || "unnamed"}-${
+        this.state.runtimes.length + 1
+      }`,
       params,
       url,
     };
-    await addRuntime(boardName, desc);
-    await this.fetchData();
+    const { runtime, services, registry } = await addRuntime(desc);
+    this.setState((state: BoardContextState) => ({
+      runtimes: [...state.runtimes, runtime],
+      services: {
+        ...state.services,
+        [runtime.id]: services,
+      },
+      registry: {
+        ...state.registry,
+        [runtime.id]: registry,
+      },
+    }));
   };
 
-  addRuntimeDefault = async (boardName: string, desc: RuntimeDescriptor) => {
+  // TODO: this is not needed for playground setups
+  // probably this can go away once mixed board work with playground
+  addRuntimeDefault = async (desc: RuntimeClass) => {
+    const boardName = this.getBoardName();
     const created = await addRuntime(boardName, desc);
     if (desc.type === "browser") {
       BoardContext.registerBrowserRuntime(boardName, created.id);
@@ -412,47 +429,69 @@ class BoardContext extends Component<Props, BoardContextState> {
     return created;
   };
 
-  addService = async (descriptor: ServiceDescriptor, runtimeId: string) => {
+  addService = async (
+    service: ServiceDescriptor,
+    runtime: RuntimeDescriptor
+  ) => {
     const { addService = this.addServiceDefault } = this.props;
-    const boardName = this.getBoardName();
-    if (boardName) {
-      await addService(boardName, descriptor, runtimeId);
-      await this.fetchData(); // TODO: fetching too much data
+
+    const svc = await addService(service, runtime);
+    if (svc) {
+      this.setState((state: BoardContextState) => ({
+        services: {
+          ...state.services,
+          [runtime.id]: state.services[runtime.id].concat(svc),
+        },
+      }));
     }
   };
 
   addServiceDefault = (
-    boardName: string,
-    descriptor: ServiceDescriptor,
-    runtimeId: string
-  ) => {
-    return addService(boardName, descriptor, runtimeId);
+    service: ServiceDescriptor,
+    runtime: RuntimeDescriptor
+  ): Promise<AddServiceResult> => {
+    return addService(this.getBoardName(), service, runtime.id);
   };
 
   removeService = async (
-    runtime: RuntimeDescriptor,
     service: ServiceDescriptor,
-    fetchData = true
+    runtime: RuntimeDescriptor
   ) => {
     const { removeService = this.removeServiceDefault } = this.props;
-    const boardName = this.getBoardName();
+    await removeService(service, runtime);
 
-    await removeService(boardName, runtime.id, service);
-    if (fetchData) {
-      await this.fetchData();
-    }
+    this.setState((state) => ({
+      services: {
+        ...state.services,
+        [runtime.id]: state.services[runtime.id].filter(
+          (svc) => svc.uuid !== service.uuid
+        ),
+      },
+    }));
   };
 
   removeServiceDefault = async (
-    boardName: string,
-    runtimeId: string,
-    service: ServiceDescriptor
-  ) => removeService(boardName, runtimeId, service.uuid);
+    service: ServiceDescriptor,
+    runtime: RuntimeDescriptor
+  ) => {
+    const boardName = this.getBoardName();
+    removeService(boardName, runtime.id, service.uuid);
+  };
 
   removeRuntime = async (runtime: RuntimeDescriptor) => {
     const { removeRuntime = this.removeRuntimeDefault } = this.props;
     await removeRuntime(runtime);
-    await this.fetchData();
+
+    this.setState((state) => {
+      const updatedRuntimes = state.runtimes.filter((r) => r.id !== runtime.id);
+      const updatedServices = Object.keys(state.services)
+        .filter((rid) => rid !== runtime.id)
+        .reduce((all, key) => ({ ...all, [key]: state.services[key] }), {});
+      return {
+        runtimes: updatedRuntimes,
+        services: updatedServices,
+      };
+    });
   };
 
   removeRuntimeDefault = async (runtime: RuntimeDescriptor) => {
@@ -463,14 +502,22 @@ class BoardContext extends Component<Props, BoardContextState> {
   };
 
   removeAllServices = async (runtime: RuntimeDescriptor) => {
-    const { services } = this.state;
+    const { removeService = this.removeServiceDefault } = this.props;
     const boardName = this.getBoardName();
-    if (boardName) {
-      for (const service of services[runtime.id]) {
-        await this.removeService(runtime, service, false);
-      }
+    if (!boardName) {
+      throw new Error("removeAllServices() no boardname");
     }
-    await this.fetchData();
+
+    for (const service of this.state.services[runtime.id]) {
+      await removeService(service, runtime);
+    }
+
+    this.setState((state) => ({
+      services: {
+        ...state.services,
+        [runtime.id]: [],
+      },
+    }));
   };
 
   isRuntimeInScope = (runtime: RuntimeDescriptor) => {
@@ -499,7 +546,7 @@ class BoardContext extends Component<Props, BoardContextState> {
   releaseRuntimeScope = (boardname: string, runtime: RuntimeDescriptor) => {
     if (runtime.type === "browser") {
       BoardContext.unregisterBrowserRuntime(boardname, runtime.id);
-      let releasedRT;
+      let releasedRT: any;
       this.browserRuntimes = this.browserRuntimes.filter((rt) => {
         if (rt.id === runtime.id) {
           releasedRT = rt;
@@ -534,6 +581,47 @@ class BoardContext extends Component<Props, BoardContextState> {
       availableRuntimes,
     });
     return availableRuntimes;
+  };
+
+  serializeBoard = (): Promise<BoardDescriptor | null> => {
+    const data = {
+      runtimes: this.state.runtimes.map((rt) => ({
+        id: rt.id,
+        name: rt.name,
+        type: rt.type,
+      })),
+      services: Object.keys(this.state.services).reduce((all, runtimeId) => {
+        return {
+          ...all,
+          [runtimeId]: this.state.services[runtimeId].map((s) => ({
+            uuid: s.uuid,
+            serviceId: s.serviceId,
+            serviceName: s.serviceName,
+          })),
+        };
+      }, {}),
+    };
+    return this.props.serializeBoard(data);
+  };
+
+  arrangeServices = (
+    runtime: RuntimeDescriptor,
+    serviceUuid: string,
+    targetPosition: number
+  ) => {
+    this.setState((state) => {
+      return {
+        services: {
+          ...state.services,
+          [runtime.id]: reorderService(
+            state.services,
+            runtime,
+            serviceUuid,
+            targetPosition
+          ),
+        },
+      };
+    });
   };
 
   render() {

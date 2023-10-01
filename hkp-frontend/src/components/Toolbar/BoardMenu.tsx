@@ -1,9 +1,10 @@
 import { Dropdown } from "semantic-ui-react";
 import { Link } from "react-router-dom";
+import { BoardContextState } from "../../BoardContext";
 
 type Props = {
   board?: string;
-  boardContext: any;
+  boardContext: BoardContextState;
   boardSyncActive: boolean;
 };
 
@@ -48,7 +49,8 @@ export default function BoardMenu({
             })
           }
           disabled={
-            !boardContext || !boardContext.isActionAvailable("clearBoard")
+            !boardContext ||
+            !boardContext.isActionAvailable({ type: "clearBoard" })
           }
         >
           <span style={menuItemStyle}>Clear Board</span>
@@ -60,7 +62,8 @@ export default function BoardMenu({
             })
           }
           disabled={
-            !boardContext || !boardContext.isActionAvailable("shareBoard")
+            !boardContext ||
+            !boardContext.isActionAvailable({ type: "shareBoard" })
           }
         >
           <span style={menuItemStyle}>Share Board</span>
@@ -72,7 +75,8 @@ export default function BoardMenu({
             })
           }
           disabled={
-            !boardContext || !boardContext.isActionAvailable("saveBoard")
+            !boardContext ||
+            !boardContext.isActionAvailable({ type: "saveBoard" })
           }
         >
           <span style={menuItemStyle}>Save Board</span>
@@ -84,7 +88,8 @@ export default function BoardMenu({
             })
           }
           disabled={
-            !boardContext || !boardContext.isActionAvailable("toggleBoardSync")
+            !boardContext ||
+            !boardContext.isActionAvailable({ type: "toggleBoardSync" })
           }
         >
           <span style={menuItemStyle}>

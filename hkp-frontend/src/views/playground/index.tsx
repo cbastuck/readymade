@@ -28,12 +28,7 @@ import {
   defaultName,
   availableRuntimes,
 } from "./common";
-import {
-  importBoard,
-  createBoardFromTemplate,
-  reorderService,
-  renameRuntime,
-} from "./BoardActions";
+import { importBoard, createBoardFromTemplate } from "./BoardActions";
 import {
   addRuntime as addRuntimeREST,
   addService as addServiceREST,
@@ -45,10 +40,14 @@ import {
   getRuntimeRegistry,
 } from "../../core/graphqlActions";
 import {
-  BoardState,
+  Action,
+  AddServiceResult,
+  BoardDescriptor,
   ExternalInput,
   InputRouting,
   OutpoutRouting,
+  PlaygroundBoard,
+  RuntimeClass,
   RuntimeDescriptor,
   ServiceDescriptor,
   SidechainRouting,
@@ -72,15 +71,6 @@ type State = {
   acceptedSyncSenders: Array<any>; // TODO
   rejectedSyncSenders: Array<any>; // TODO
 
-  /*
-      this part of the state represents the board
-      state as available on the backend (which does not
-      exist in case of the playground)
-    */
-  registry: undefined | { [runtimeId: string]: any }; // TODO
-  runtimes: undefined | Array<RuntimeDescriptor>;
-  services: undefined | { [runtimeId: string]: Array<ServiceDescriptor> };
-
   sidechainRouting: { [runtimeId: string]: SidechainRouting };
   inputRouting: { [runtimeId: string]: InputRouting };
   outputRouting: { [runtimeId: string]: OutpoutRouting | null };
@@ -89,6 +79,8 @@ type State = {
 class Playground extends Component<Props, State> {
   static contextType = AppCtx;
   context!: React.ContextType<typeof AppCtx>;
+
+  boardProviderRef: BoardProvider | null = null;
 
   defaultRegistry: BrowserRegistry | undefined = undefined;
   board: Board | null = null;
@@ -108,15 +100,6 @@ class Playground extends Component<Props, State> {
     boardSyncActive: false,
     acceptedSyncSenders: [],
     rejectedSyncSenders: [],
-
-    /*
-      this part of the state represents the board
-      state as available on the backend (which does not
-      exist in case of the playground)
-    */
-    registry: undefined,
-    runtimes: undefined,
-    services: undefined,
 
     sidechainRouting: {},
     inputRouting: {},
@@ -146,7 +129,6 @@ class Playground extends Component<Props, State> {
 
   componentWillUnmount() {
     document.removeEventListener("keydown", this.onKey);
-    this.clearPlayground();
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -162,15 +144,12 @@ class Playground extends Component<Props, State> {
     }
   }
 
-  fetchData = async (): Promise<BoardState> => {
+  fetchData = async (): Promise<BoardDescriptor> => {
     if (!this.defaultRegistry) {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
     }
     const {
       boardName = this.state.boardName || defaultName,
-      runtimes = [],
-      registry = undefined,
-      services = {},
       description = "",
       sidechainRouting = {},
       outputRouting = {},
@@ -180,11 +159,30 @@ class Playground extends Component<Props, State> {
       syncedPeer = undefined,
       acceptedSyncSenders = [],
       rejectedSyncSenders = [],
-    }: State = this.state.initialFetched
+      runtimes = [],
+      registry = undefined,
+      services = {},
+    }: State & BoardDescriptor = this.state.initialFetched
       ? this.state
       : await this.setInitialPlayground();
 
     const data = {
+      sidechainRouting,
+      outputRouting,
+      inputRouting,
+      acceptedSyncSenders,
+      rejectedSyncSenders,
+    };
+
+    this.setState({
+      ...data,
+      initialFetched: true,
+      description,
+      boardSyncActive,
+      syncedPeer,
+    });
+
+    return {
       boardName,
       runtimes,
       services,
@@ -201,22 +199,7 @@ class Playground extends Component<Props, State> {
             }),
             {}
           ),
-      sidechainRouting,
-      outputRouting,
-      inputRouting,
-      acceptedSyncSenders,
-      rejectedSyncSenders,
     };
-
-    this.setState({
-      ...data,
-      initialFetched: true,
-      description,
-      boardSyncActive,
-      syncedPeer,
-    });
-
-    return data;
   };
 
   setInitialPlayground = async () => {
@@ -235,7 +218,7 @@ class Playground extends Component<Props, State> {
         if (localBoard) {
           return localBoard;
         }
-        return this.state; // use initial state
+        return {};
       }
     }
   };
@@ -280,13 +263,9 @@ class Playground extends Component<Props, State> {
     }
   };
 
-  serializeBoard = async ({
-    name = undefined,
-    description = "",
-  }: {
-    name: string | undefined;
-    description: string;
-  }): Promise<BoardState | null> => {
+  serializeBoard = async (
+    descriptor: BoardDescriptor
+  ): Promise<PlaygroundBoard | null> => {
     const maxRetries = 10;
     for (let i = 0; i < maxRetries && !this.board; ++i) {
       await sleep(10); // retry later
@@ -302,8 +281,7 @@ class Playground extends Component<Props, State> {
     }
 
     const {
-      runtimes = [],
-      services = {},
+      description = "",
       sidechainRouting = {},
       outputRouting = {},
       inputRouting = {},
@@ -314,23 +292,23 @@ class Playground extends Component<Props, State> {
     }: State = this.state;
 
     const data = {
-      runtimes: runtimes.map((rt) => ({
-        id: rt.id,
-        name: rt.name,
-        type: rt.type,
+      runtimes: descriptor.runtimes.map((rt) => ({
+        ...rt,
         state: board.getRuntimeById(rt.id).serialize(),
       })),
-      services: Object.keys(services).reduce((all, runtimeId) => {
+      services: Object.keys(descriptor.services).reduce((all, runtimeId) => {
         const rt = board.getRuntimeById(runtimeId);
         return {
           ...all,
-          [runtimeId]: services[runtimeId].map((s) => ({
+          [runtimeId]: descriptor.services[runtimeId].map((s) => ({
+            ...s,
             ...filterPrivateMembers(rt.getServiceById(s.uuid)),
-            serviceId: s.serviceId,
-            serviceName: s.serviceName,
           })),
         };
       }, {}),
+    };
+    return {
+      ...data,
       sidechainRouting,
       outputRouting,
       inputRouting,
@@ -340,7 +318,6 @@ class Playground extends Component<Props, State> {
       acceptedSyncSenders,
       rejectedSyncSenders,
     };
-    return data;
   };
 
   newBoard = async (searchParams = "") => {
@@ -352,22 +329,18 @@ class Playground extends Component<Props, State> {
   };
 
   addService = (
-    boardname: string,
-    descriptor: ServiceDescriptor,
-    runtimeId: string
-  ) => {
-    const { services = {}, runtimes } = this.state;
+    service: ServiceDescriptor,
+    runtime: RuntimeDescriptor
+  ): AddServiceResult => {
     const svc = {
-      ...descriptor,
+      ...service,
       uuid: uuid.v4(),
     };
-    const runtime: RuntimeDescriptor | undefined = runtimes?.find(
-      (rt) => rt.id === runtimeId
-    );
+
     if (runtime?.type === "remote") {
       // TODO: GraphQL
     } else if (runtime?.type === "node") {
-      addServiceREST(boardname, svc, runtimeId).then((created) =>
+      addServiceREST(this.state.boardName, svc, runtime.id).then((created) =>
         console.log("CREATED SERVICE", created, svc)
       );
     } else {
@@ -375,52 +348,28 @@ class Playground extends Component<Props, State> {
         throw new Error("addService() board is undefined");
       }
 
-      if (!this.board.getRuntimeById(runtimeId)) {
-        console.warn("Could not find runtime for", runtimeId);
+      if (!this.board.getRuntimeById(runtime.id)) {
+        console.warn("Could not find runtime for", runtime.id);
         return;
       }
     }
-    this.setState({
-      services: {
-        ...services,
-        [runtimeId]: [...services[runtimeId], svc],
-      },
-    });
+
     return svc;
   };
 
-  removeService = async (
-    boardName: string,
-    runtimeId: string,
-    service: ServiceDescriptor
-  ) => {
-    const { services = {} } = this.state;
-    const runtime = this.board && this.board.getRuntimeById(runtimeId);
+  removeService = async (service: ServiceDescriptor, rt: RuntimeDescriptor) => {
+    const runtime = this.board && this.board.getRuntimeById(rt.id);
     if (!runtime) {
-      return;
+      await runtime.destroyService(service.uuid);
     }
-
-    await runtime.destroyService(service.uuid);
-
-    const runtimeServices = services[runtimeId];
-    const updatedServices = runtimeServices.filter(
-      (svc) => svc.uuid !== service.uuid
-    );
-    this.setState({
-      services: {
-        ...services,
-        [runtimeId]: updatedServices,
-      },
-    });
   };
 
-  addRuntime = async (boardname: string, desc: RuntimeDescriptor) => {
-    const { runtimes = [], services = {} } = this.state;
+  addRuntime = async (desc: RuntimeClass) => {
     const runtimeId = uuid.v4();
     const { name, type, url } = desc;
-    const rt = {
+    const rt: RuntimeDescriptor = {
       id: runtimeId,
-      name: `${name}-${runtimes ? runtimes.length + 1 : 1}`,
+      name,
       type,
       url,
     };
@@ -430,22 +379,15 @@ class Playground extends Component<Props, State> {
       await createFreeRuntime(rt);
       registry = await getRuntimeRegistry(rt);
     } else if (type === "node") {
-      const created = await addRuntimeREST(boardname, { ...desc, runtimeId });
+      const created = await addRuntimeREST(this.state.boardName, {
+        ...desc,
+        runtimeId,
+      });
       registry = await getRuntimeRegistryREST(name, created.id);
     } else {
       registry = this.defaultRegistry?.availableServices || [];
     }
-    this.setState({
-      runtimes: runtimes.concat(rt),
-      services: {
-        ...services,
-        [runtimeId]: [],
-      },
-      registry: {
-        ...this.state.registry,
-        [runtimeId]: registry,
-      },
-    });
+    return { runtime: rt, services: [], registry };
   };
 
   destroyRuntime = (runtime: RuntimeDescriptor) => {
@@ -465,20 +407,10 @@ class Playground extends Component<Props, State> {
 
   removeRuntime = async (runtime: RuntimeDescriptor) => {
     await this.destroyRuntime(runtime);
-
-    const { runtimes = [], services = {} } = this.state;
-    const updatedRuntimes = runtimes.filter((r) => r.id !== runtime.id);
-    const updatedServices = Object.keys(services)
-      .filter((rid) => rid !== runtime.id)
-      .reduce((all, key) => ({ ...all, [key]: services[key] }), {});
-    this.setState({
-      runtimes: updatedRuntimes,
-      services: updatedServices,
-    });
   };
 
   clearPlayground = async () => {
-    const { runtimes = [] } = this.state;
+    const { runtimes = [] } = this.boardProviderRef?.state || {};
     for (const runtime of runtimes) {
       await this.destroyRuntime(runtime);
     }
@@ -487,32 +419,6 @@ class Playground extends Component<Props, State> {
       this.externalInputs[ext].close();
     }
     this.externalInputs = {};
-    this.setState({ services: {}, runtimes: [] });
-  };
-
-  reorderService = (
-    runtime: RuntimeDescriptor,
-    serviceUuid: string,
-    targetPosition: number
-  ) => {
-    const { services: allServices } = this.state;
-    const rearranged = reorderService(
-      allServices,
-      runtime,
-      serviceUuid,
-      targetPosition
-    );
-    this.setState({
-      services: {
-        ...allServices,
-        [runtime.id]: rearranged,
-      },
-    });
-  };
-
-  setRuntimeName = (runtimeId: string, newName: string) => {
-    const runtimes = renameRuntime(this.state.runtimes, runtimeId, newName);
-    this.setState({ runtimes });
   };
 
   saveBoard = async (showDialog = true) => {
@@ -521,17 +427,18 @@ class Playground extends Component<Props, State> {
         this.props.match && this.props.match.params
           ? this.props.match.params.board
           : generateRandomName();
-      const value = await this.prompt.getInput(
+      const userInput = await this.prompt.getInput(
         suggested,
         this.state.description
       );
-      if (value !== null) {
-        const { name, description } = value;
-        const data = await this.serializeBoard({ name, description });
+      if (userInput !== null) {
+        const { name, description } = userInput;
+        const data = await this.boardProviderRef?.state.serializeBoard();
         localStorage.setItem(
           `${localStoragePrefix}${name}`,
-          JSON.stringify(data)
+          JSON.stringify({ ...data, name, description })
         );
+        this.setState(() => ({ description }));
         if (name !== suggested) {
           this.props.navigate(`/playground/${name}`, { replace: true });
         }
@@ -539,10 +446,10 @@ class Playground extends Component<Props, State> {
       }
     } else if (this.state.boardName) {
       const { boardName: name, description } = this.state;
-      const data = await this.serializeBoard({ name, description });
+      const data = await this.boardProviderRef?.state.serializeBoard();
       localStorage.setItem(
         `${localStoragePrefix}${name}`,
-        JSON.stringify(data)
+        JSON.stringify({ ...data, name, description })
       );
       this.context.pushNotification({
         type: "info",
@@ -557,18 +464,19 @@ class Playground extends Component<Props, State> {
     }
   };
 
-  isActionAvailable = (action: string) => {
-    switch (action) {
+  isActionAvailable = (action: Action, state: BoardContextState) => {
+    switch (action.type) {
       case "shareBoard":
         return false;
       case "saveBoard":
       case "clearBoard":
-        return this.state.runtimes;
+        return !!this.boardProviderRef?.state.runtimes;
       case "toggleBoardSync":
         return true;
       default:
-        return true;
+        break;
     }
+    return true;
   };
 
   handleRequestError = (err: Error) => {
@@ -771,6 +679,7 @@ class Playground extends Component<Props, State> {
     const appContext = this.context;
     return (
       <BoardProvider
+        ref={(ref) => (this.boardProviderRef = ref)}
         key={`playground-${this.state.boardName}`}
         user={(appContext && appContext.user) || this.user}
         boardName={this.state.boardName}
@@ -783,51 +692,52 @@ class Playground extends Component<Props, State> {
         newBoard={this.newBoard}
         clearBoard={this.clearPlayground}
         saveBoard={this.saveBoard}
-        arrangeService={this.reorderService}
         isActionAvailable={this.isActionAvailable}
-        setRuntimeName={this.setRuntimeName}
         serializeBoard={this.serializeBoard}
-        onAction={(action) => {
+        onAction={(action: Action): boolean => {
           if (action.type === "toggleBoardSync") {
             this.setState({ boardSyncActive: !this.state.boardSyncActive });
             return true;
           }
+          return false;
         }}
         availableRuntimes={availableRuntimes.concat(restoredAvailableRuntimes)}
       >
         <BoardConsumer>
-          {(boardContext) => (
-            <div style={t.fill}>
-              <Toolbar
-                board={this.state.boardName}
-                showRuntimeMenu={true}
-                onUpdateAvailableRuntimes={(runtimes) =>
-                  localStorage.setItem(
-                    "available-remote-runtimes",
-                    JSON.stringify(
-                      runtimes.filter((rt) => rt.type === "remote")
+          {(boardContext) =>
+            boardContext && (
+              <div style={t.fill}>
+                <Toolbar
+                  board={this.state.boardName}
+                  showRuntimeMenu={true}
+                  onUpdateAvailableRuntimes={(runtimes) =>
+                    localStorage.setItem(
+                      "available-remote-runtimes",
+                      JSON.stringify(
+                        runtimes.filter((rt) => rt.type === "remote")
+                      )
                     )
-                  )
-                }
-                isCompact={boardContext.appViewMode !== "wide"}
-                boardSyncActive={this.state.boardSyncActive}
-              />
-              {requireLogin ? (
-                <Login board={`playground/${boardContext.boardName}`} />
-              ) : (
-                <>
-                  <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
-                  {this.state.boardSyncActive &&
-                    this.renderBoardSync(boardContext)}
-                  {this.state.initialFetched
-                    ? this.renderPlaceholderOrBoard(boardContext)
-                    : this.renderLoadIndicator()}
-                </>
-              )}
+                  }
+                  isCompact={boardContext.appViewMode !== "wide"}
+                  boardSyncActive={this.state.boardSyncActive}
+                />
+                {requireLogin ? (
+                  <Login board={`playground/${boardContext.boardName}`} />
+                ) : (
+                  <>
+                    <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
+                    {this.state.boardSyncActive &&
+                      this.renderBoardSync(boardContext)}
+                    {this.state.initialFetched
+                      ? this.renderPlaceholderOrBoard(boardContext)
+                      : this.renderLoadIndicator()}
+                  </>
+                )}
 
-              <Footer />
-            </div>
-          )}
+                <Footer />
+              </div>
+            )
+          }
         </BoardConsumer>
       </BoardProvider>
     );

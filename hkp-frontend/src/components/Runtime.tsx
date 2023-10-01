@@ -8,8 +8,15 @@ import RemoteRuntime from "../runtime/RemoteRuntime";
 import ServiceDropdown from "./ServiceDropdown";
 
 import { s, t } from "../styles";
+import {
+  RuntimeDescriptor,
+  ServiceDescriptor,
+  ServiceRegistry,
+} from "../types";
 
-export default class Runtime extends Component {
+type Props = any;
+
+export default class Runtime extends Component<Props> {
   state = {
     expanded: false,
     readonly: false,
@@ -28,7 +35,7 @@ export default class Runtime extends Component {
     });
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     const { readonly } = this.props;
     if (readonly !== prevProps.readonly) {
       this.setState({
@@ -43,10 +50,9 @@ export default class Runtime extends Component {
   }
 
   onAddService(service) {
-    const { boardContext, runtime, runtimeId } = this.props;
-    const id = runtimeId || (runtime && runtime.id);
-    if (boardContext) {
-      boardContext.addService(service, id);
+    const { boardContext, runtime } = this.props;
+    if (boardContext && runtime) {
+      boardContext.addService(service, runtime);
     }
   }
 
@@ -56,7 +62,7 @@ export default class Runtime extends Component {
     switch (action) {
       case "remove": {
         if (boardContext && runtime && service) {
-          return boardContext.removeService(runtime, service);
+          return boardContext.removeService(service, runtime);
         }
         break;
       }
@@ -430,15 +436,15 @@ export default class Runtime extends Component {
   };
 
   renderBrowserRuntime = (
-    runtime,
-    expanded,
-    userId,
-    boardName,
-    services,
-    readonly,
-    registry,
-    onArrangeService,
-    wrapServices
+    runtime: RuntimeDescriptor,
+    expanded: boolean,
+    userId: string,
+    boardName: string,
+    services: Array<ServiceDescriptor>,
+    readonly: boolean,
+    registry: ServiceRegistry,
+    onArrangeService: (serviceUuid: string, position: number) => void,
+    wrapServices?: boolean
   ) => {
     const { outputs, inputs, onResult = undefined } = this.props;
     return (
@@ -555,7 +561,7 @@ export default class Runtime extends Component {
           }
         : {};
 
-    const onArrangeServiceDefault = (serviceUuid, position) =>
+    const onArrangeServiceDefault = (serviceUuid: string, position: number) =>
       boardContext.arrangeService(runtime, serviceUuid, position);
     const onArrangeService =
       onArrangeServiceCustom !== undefined

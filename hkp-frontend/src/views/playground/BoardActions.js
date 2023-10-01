@@ -155,9 +155,3 @@ export function reorderService(
   newArr.splice(toIndex, 0, services[fromIndex]);
   return newArr;
 }
-
-export function renameRuntime(runtimes, runtimeId, newName) {
-  return runtimes.map((rt) =>
-    rt.id === runtimeId ? { ...rt, name: newName } : rt
-  );
-}
