@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import ServiceFrame from "../components/ServiceFrame";
 import { createServiceUI, createPlaceholderUI } from "../UIFactory";

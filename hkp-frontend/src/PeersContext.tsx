@@ -1,11 +1,34 @@
-import React, { Component, createContext } from "react";
+import { Component, createContext } from "react";
 
 import { removeKeyFromObject } from "./runtime/services/helpers";
+import { Peer } from "./types";
+import { DataConnection } from "peerjs";
 
-const PeersCtx = createContext();
+export type PeersContextState = {
+  peers: { [peerName: string]: Peer };
+  connections: { [srcPeer: string]: { [dstPeerName: string]: DataConnection } };
+  peerNames: Array<string>;
+  onPeer: (peerName: string, peer: Peer) => void;
+  onPeerClosed: (peerName: string) => void;
+  updatePeers: (peer: Peer) => void;
+  closeConnection: (srcPeerName: string, dstPeerName: string) => void;
+};
 
-class PeersProvider extends Component {
-  constructor(props) {
+type Props = {
+  children: JSX.Element | JSX.Element[];
+};
+
+type ConnectionAndPeer = {
+  connection: DataConnection;
+  srcPeer: Peer;
+};
+
+const PeersCtx = createContext<PeersContextState | null>(null);
+
+class PeersProvider extends Component<Props, PeersContextState> {
+  pendingConnections: { [connectionId: string]: boolean } = {};
+
+  constructor(props: Props) {
     super(props);
     this.state = {
       peers: {},
@@ -18,7 +41,7 @@ class PeersProvider extends Component {
     };
   }
 
-  closeConnection = (srcPeerName, dstPeerName) => {
+  closeConnection = (srcPeerName: string, dstPeerName: string) => {
     const { peers, connections } = this.state;
     const srcPeer = peers[srcPeerName];
     if (srcPeer && srcPeer.onConnectionClosed) {
@@ -41,8 +64,8 @@ class PeersProvider extends Component {
     );
   };
 
-  onPeer = (peerName, peer) => {
-    peer.on("error", (err) => {
+  onPeer = (peerName: string, peer: Peer) => {
+    peer.on("error", (err: any) => {
       console.error("PeersProvider peer.onError", err);
     });
 
@@ -58,7 +81,7 @@ class PeersProvider extends Component {
     this.updatePeers(peer);
   };
 
-  onPeerClosed = (peerName) => {
+  onPeerClosed = (peerName: string) => {
     const { peers, peerNames, connections } = this.state;
     this.setState({
       peers: removeKeyFromObject(peers, peerName),
@@ -75,10 +98,10 @@ class PeersProvider extends Component {
     });
   };
 
-  updatePeers = (peer) => {
+  updatePeers = (peer?: Peer) => {
     if (!peer) {
       const firstPeer = Object.keys(this.state.peers)[0];
-      peer = firstPeer && this.state.peers[firstPeer];
+      peer = firstPeer ? this.state.peers[firstPeer] : undefined;
     }
 
     if (peer) {
@@ -88,9 +111,9 @@ class PeersProvider extends Component {
     }
   };
 
-  connectToPeer = (src, dst) => {
+  connectToPeer = (src: string, dst: string): Promise<ConnectionAndPeer> => {
     return new Promise((resolve, reject) => {
-      const srcPeer = this.state.peers[src];
+      const srcPeer: Peer = this.state.peers[src];
       if (!srcPeer) {
         console.warn(
           `Trying to send data from an unregistered peer from: ${src} to: ${dst} know peers: ${this.state.peers}`
@@ -98,7 +121,7 @@ class PeersProvider extends Component {
         return reject();
       }
 
-      const connection = srcPeer.connect(dst);
+      const connection: DataConnection = srcPeer.connect(dst);
       if (connection) {
         connection.on("open", () => resolve({ connection, srcPeer }));
       } else {
@@ -107,7 +130,7 @@ class PeersProvider extends Component {
     });
   };
 
-  sendData = async (src, dst, data) => {
+  sendData = async (src: string, dst: string, data: any) => {
     const connectionId = `${src}.${dst}`;
     const { connections } = this.state;
     const envelope = {

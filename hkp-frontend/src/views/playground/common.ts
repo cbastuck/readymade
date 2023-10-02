@@ -1,4 +1,4 @@
-import { RuntimeClass, SavedBoard } from "../../types";
+import { PeerJsHostDescriptor, RuntimeClass, SavedBoard } from "../../types";
 
 export function getActivationId(runtimeId: string) {
   return `peer-${runtimeId}-active`;
@@ -92,7 +92,7 @@ export function getLocalBoards(prefix: string): Array<SavedBoard> {
 
 const isSecureConnection = window.location.protocol === "https:";
 
-export const availableDiscoveryPeerHosts = [
+export const availableDiscoveryPeerHosts: Array<PeerJsHostDescriptor> = [
   {
     host: "peers.hookup.to",
     port: 443,

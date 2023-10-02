@@ -1,18 +1,40 @@
-import React, { Component } from "react";
+import React, { Component, ReactElement } from "react";
 
 import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";
 import SidechainSelector from "./SidechainSelector";
+import { Action, SidechainRoute } from "../../types";
+import { BoardContextState } from "../../BoardContext";
 
 const none = "No Output";
 
-export default class OutputOptions extends Component {
+type Props = {
+  items: Array<string>;
+  value: string;
+  children: JSX.Element | JSX.Element[];
+  flow: "pass" | "stop";
+  disabled?: boolean;
+  boardContext: BoardContextState;
+  sidechainRouting: Array<SidechainRoute>;
+  onSidechangeRouting: (route: Array<SidechainRoute>) => void;
+
+  onAction: (action: Action) => void;
+  onSelect: (item: string | null) => void;
+  onExpand: () => void;
+  onCollapse: () => void;
+};
+
+type State = {
+  expanded: boolean;
+};
+
+export default class OutputOptions extends Component<Props, State> {
   state = { expanded: false };
 
   static updatePeersAction = "update-peers";
   static flowChanged = "flow-changed";
 
-  componentDidUpdate(_, prevState) {
+  componentDidUpdate(prevPops: Props, prevState: State) {
     if (prevState.expanded !== this.state.expanded) {
       this.props.onAction({ type: OutputOptions.updatePeersAction });
     }
@@ -25,7 +47,7 @@ export default class OutputOptions extends Component {
     });
   };
 
-  renderOptions = (label, selector) => {
+  renderOptions = (label: string, selector: ReactElement) => {
     return (
       <div style={s(t.p10)}>
         <h1 style={s(t.tl, t.fs11, t.pt0, t.mb5)}>{label}</h1>

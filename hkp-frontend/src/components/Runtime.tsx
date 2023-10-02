@@ -158,7 +158,7 @@ export default class Runtime extends Component<Props, State> {
       : makeServiceImpl(services.find((svc) => svc.uuid === serviceUuid));
   };
 
-  processRuntime = (params: any, serviceId: string) => {
+  processRuntime = (params: any, serviceId?: string) => {
     const svc = serviceId ? this.getServiceById(serviceId) : null;
     this.impl &&
       this.impl.processRuntime &&
@@ -498,6 +498,7 @@ export default class Runtime extends Component<Props, State> {
     if (expanded) {
       return (
         <RemoteRuntime
+          ref={(rt) => (this.impl = rt)}
           userId={userId}
           boardName={boardName}
           runtime={runtime}
@@ -506,7 +507,6 @@ export default class Runtime extends Component<Props, State> {
           registry={registry}
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
-          onResult={this.props.onResult}
         />
       );
     }

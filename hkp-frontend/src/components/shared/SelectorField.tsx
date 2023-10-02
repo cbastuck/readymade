@@ -4,8 +4,37 @@ import SyncIndicator from "./SyncIndicator";
 
 import "./SelectorField.css";
 
-export default class SelectorField extends Component {
-  state = {
+type OnChangeValue = {
+  value: string;
+  index?: number;
+};
+
+type Options = { [key: string]: string };
+
+type Props = {
+  value: string;
+  label: string;
+  options: Options;
+
+  onChange: (ev: React.MouseEvent, value: OnChangeValue) => void;
+  onOpen?: (options: Options) => void;
+
+  uppercaseValues?: boolean;
+  disabled?: boolean;
+  highlight?: string;
+  style?: object;
+  minWidth?: string | number;
+  placeholder?: string;
+};
+
+type State = {
+  value: string;
+  optionsVisible: boolean;
+  highlight?: string;
+};
+
+export default class SelectorField extends Component<Props, State> {
+  state: State = {
     value: "",
     optionsVisible: false,
   };
@@ -15,7 +44,7 @@ export default class SelectorField extends Component {
     this.setState({ value });
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     const { value, highlight } = this.props;
     if (value !== prevProps.value) {
       this.setState({ value });
@@ -55,9 +84,9 @@ export default class SelectorField extends Component {
               fontWeight: "bold",
               whiteSpace: "nowrap",
               padding: "3px 10px",
-              backgroundColor: highlight === key && "#8aa1b733",
+              backgroundColor: highlight === key ? "#8aa1b733" : undefined,
             }}
-            onClick={(ev) => {
+            onClick={(ev: React.MouseEvent) => {
               onChange && onChange(ev, { value: key, index: idx });
               this.setState({ optionsVisible: false });
             }}
@@ -98,7 +127,9 @@ export default class SelectorField extends Component {
       >
         {useDefaultLabel ? (
           <SyncIndicator
-            onClick={(ev) => onChange && onChange(ev, { value })}
+            onClick={(ev: React.MouseEvent) =>
+              onChange && onChange(ev, { value })
+            }
             inSync={value === syncedValue}
             label={label}
             style={{
@@ -124,8 +155,8 @@ export default class SelectorField extends Component {
             position: "relative",
             left: -2,
             cursor: disabled ? "not-allowed" : "pointer",
-            backgroundColor: disabled && "lightgray",
-            color: disabled && "darkgray",
+            backgroundColor: disabled ? "lightgray" : undefined,
+            color: disabled ? "darkgray" : undefined,
           }}
           onClick={() =>
             !disabled &&

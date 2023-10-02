@@ -1,7 +1,10 @@
 import { Component } from "react";
 import { Icon } from "semantic-ui-react";
 
-import PeersProvider, { PeersConsumer } from "../../PeersContext";
+import PeersProvider, {
+  PeersConsumer,
+  PeersContextState,
+} from "../../PeersContext";
 import Peer from "../../components/Peer";
 import { s, t } from "../../styles";
 import Description from "./Description";
@@ -13,23 +16,53 @@ import InputOptions from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
 import SelectorField from "../../components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
+import {
+  InputRoute,
+  InputRouting,
+  InputRoutingCompat,
+  OutputRouting,
+  PeerInputActivation,
+  PeerJsHostDescriptor,
+  PeerOutputActivation,
+  RuntimeDescriptor,
+  SidechainRouting,
+} from "../../types";
+import { BoardContextState } from "../../BoardContext";
 
-const defaultDiscoveryPeer = availableDiscoveryPeerHosts[0];
+const defaultDiscoveryPeer: PeerJsHostDescriptor =
+  availableDiscoveryPeerHosts[0];
 
-export default class Board extends Component {
-  state = {
+type Props = {
+  inputRouting: InputRoutingCompat;
+  outputRouting: OutputRouting;
+  boardContext: BoardContextState;
+  sidechainRouting: SidechainRouting;
+  boardName: string;
+};
+
+type State = {
+  peerOutputActivation: {
+    [getActivationId: string]: PeerOutputActivation | null;
+  };
+  peerInputActivation: { [getActivationId: string]: PeerInputActivation };
+};
+
+export default class Board extends Component<Props, State> {
+  state: State = {
     peerOutputActivation: {},
     peerInputActivation: {},
   };
-  runtimeInstances = {};
-  inputSelectors = {};
+  runtimeInstances: { [runtimeId: string]: Runtime } = {};
+  inputSelectors: { [runtimeId: string]: InputOptions } = {};
+
+  peerContext: PeersProvider | null = null;
 
   componentDidMount() {
     this.updateInputActivation(this.props.inputRouting);
     this.updateOutputActivation(this.props.outputRouting);
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     if (prevProps.inputRouting !== this.props.inputRouting) {
       this.updateInputActivation(this.props.inputRouting);
     }
@@ -39,14 +72,14 @@ export default class Board extends Component {
     }
   }
 
-  updateInputActivation = (inputRouting) => {
+  updateInputActivation = (inputRouting: InputRoutingCompat) => {
     const peerInputActivation = inputRouting
       ? Object.keys(inputRouting).reduce((all, runtimeId) => {
           const activationId = getActivationId(runtimeId);
           const runtimeInputRouting =
             typeof inputRouting[runtimeId] === "string" // compatibility - was a string with peername
               ? { peer: inputRouting[runtimeId] }
-              : inputRouting[runtimeId];
+              : (inputRouting[runtimeId] as InputRoute);
 
           return {
             ...all,
@@ -64,7 +97,7 @@ export default class Board extends Component {
     this.setState((state) => ({ ...state, peerInputActivation }));
   };
 
-  updateOutputActivation = (outputRouting) => {
+  updateOutputActivation = (outputRouting: OutputRouting) => {
     const peerOutputActivation = outputRouting
       ? Object.keys(outputRouting).reduce((all, runtimeId) => {
           const activationId = getActivationId(runtimeId);
@@ -85,14 +118,14 @@ export default class Board extends Component {
     this.setState((state) => ({ ...state, peerOutputActivation }));
   };
 
-  getNextRuntime = (runtime) => {
+  getNextRuntime = (runtime: RuntimeDescriptor) => {
     const { runtimes = [] } = this.props.boardContext;
     const pos = runtimes.findIndex((rt) => rt.id === runtime.id);
     const nextRuntime = pos !== -1 && runtimes[pos + 1];
     return nextRuntime && this.runtimeInstances[nextRuntime.id];
   };
 
-  getRuntimeById = (runtimeId) => {
+  getRuntimeById = (runtimeId: string) => {
     const { runtimes = [] } = this.props.boardContext;
     const runtime = runtimes.find((rt) => rt.id === runtimeId);
     if (!runtime) {
@@ -102,7 +135,11 @@ export default class Board extends Component {
     return this.runtimeInstances[runtime.id];
   };
 
-  onResult = async (runtime, svcUuid, result) => {
+  onResult = async (
+    runtime: RuntimeDescriptor,
+    svcUuid: string,
+    result: any
+  ) => {
     const { sidechainRouting, outputRouting, boardName } = this.props;
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
     if (sroute) {
@@ -137,7 +174,12 @@ export default class Board extends Component {
     }
   };
 
-  renderOutputs = (peers, runtime, peersContext, boardContext) => {
+  renderOutputs = (
+    peers: Array<string>,
+    runtime: RuntimeDescriptor,
+    peersContext: PeersContextState,
+    boardContext: BoardContextState
+  ) => {
     const activationId = getActivationId(runtime.id);
     const { sidechainRouting, outputRouting } = this.props;
     const runtimeSidechainRouting =
@@ -343,9 +385,10 @@ export default class Board extends Component {
     );
   };
 
-  getPeerName = (runtime) => `${this.props.boardName}-${runtime.name}`;
+  getPeerName = (runtime: RuntimeDescriptor) =>
+    `${this.props.boardName}-${runtime.name}`;
 
-  getRuntimeActivation = (runtime) => {
+  getRuntimeActivation = (runtime: RuntimeDescriptor) => {
     const activationId = getActivationId(runtime.id);
     return (
       this.state.peerInputActivation[activationId] ||

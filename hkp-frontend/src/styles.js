@@ -121,6 +121,7 @@ export const t = {
   pt: function (x) {
     return { paddingTop: x };
   },
+  pt0: { paddingTop: 0 },
   pt1: { paddingTop: 1 },
   pt2: { paddingTop: 2 },
   pt3: { paddingTop: 3 },

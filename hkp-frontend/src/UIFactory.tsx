@@ -21,33 +21,38 @@ import OutputUI from "./components/services/OutputUI";
 import WebsocketUI from "./components/services/WebsocketUI";
 import defaultRegistry from "./runtime/registry/Default";
 import PlaceholderUI from "./runtime/services/PlaceholderUI";
+import { ServiceImpl, ServiceModule, ServiceRegistry } from "./types";
 
-function findServiceUi(registry, serviceId) {
+function findServiceUi(
+  registry: ServiceRegistry,
+  serviceId: string
+): ServiceModule | undefined {
   const a = registry || defaultRegistry;
   return a.find((s) => serviceId === s.serviceId && s.createUI);
 }
 
-export function createPlaceholderUI(service) {
+export function createPlaceholderUI(service: ServiceImpl) {
   return <PlaceholderUI service={service} />;
 }
 
 export function createServiceUI(
-  registry,
-  board,
-  service,
-  runtimeId,
-  userId = undefined,
-  props = {}
+  registry: ServiceRegistry,
+  board: string,
+  service: ServiceImpl,
+  runtimeId: string,
+  userId: string | undefined = undefined,
+  props: any = {}
 ) {
   const serviceId = service.__descriptor
     ? service.__descriptor.serviceId
     : service.serviceId;
+
   if (!serviceId) {
-    console.error("UIFactory missing serviceId", service);
+    throw new Error(`UIFactory missing serviceId ${JSON.stringify(service)}`);
   }
 
   const factory = findServiceUi(registry, serviceId);
-  if (factory) {
+  if (factory && factory.createUI) {
     return React.createElement(factory.createUI, {
       ...props,
       service,
