@@ -2,12 +2,27 @@ import { Component, createContext } from "react";
 
 import { restoreToken, processToken, setToken } from "./core/Auth";
 import { redirectTo } from "./core/actions";
+import { User, Notification } from "./types";
 
-const AppCtx = createContext();
+export type AppContextState = {
+  token: string;
+  user: User;
+  notifications: Array<Notification>;
+  pushNotification: (n: Notification) => void;
+  popNotification: () => void;
+  updateToken: (incomingToken: string) => void;
+  logout: () => void;
+};
+
+type Props = {
+  children: JSX.Element | JSX.Element[];
+};
+
+const AppCtx = createContext<AppContextState | null>(null);
 const { Provider, Consumer: AppConsumer } = AppCtx;
 
-class AppContext extends Component {
-  constructor(props) {
+class AppContext extends Component<Props, AppContextState> {
+  constructor(props: Props) {
     super(props);
 
     const { token, username, userId, features } = processToken(restoreToken());
@@ -45,7 +60,7 @@ class AppContext extends Component {
     };
   }
 
-  updateToken = (incomingToken) => {
+  updateToken = (incomingToken?: string): Promise<void> => {
     return new Promise((resolve) => {
       const { token, username, userId, features } = processToken(incomingToken);
       if (token) {

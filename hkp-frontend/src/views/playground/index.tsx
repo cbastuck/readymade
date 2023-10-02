@@ -45,7 +45,7 @@ import {
   BoardDescriptor,
   ExternalInput,
   InputRouting,
-  OutpoutRouting,
+  OutputRouting,
   PlaygroundBoard,
   RuntimeClass,
   RuntimeDescriptor,
@@ -72,9 +72,9 @@ type State = {
   acceptedSyncSenders: Array<any>; // TODO
   rejectedSyncSenders: Array<any>; // TODO
 
-  sidechainRouting: { [runtimeId: string]: SidechainRouting };
-  inputRouting: { [runtimeId: string]: InputRouting };
-  outputRouting: { [runtimeId: string]: OutpoutRouting | null };
+  sidechainRouting: SidechainRouting;
+  inputRouting: InputRouting;
+  outputRouting: OutputRouting;
 };
 
 class Playground extends Component<Props, State> {
@@ -130,6 +130,7 @@ class Playground extends Component<Props, State> {
 
   componentWillUnmount() {
     document.removeEventListener("keydown", this.onKey);
+    this.boardProviderRef?.clearBoard();
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -295,7 +296,7 @@ class Playground extends Component<Props, State> {
     const data = {
       runtimes: descriptor.runtimes.map((rt) => ({
         ...rt,
-        state: board.getRuntimeById(rt.id).serialize(),
+        state: board.getRuntimeById(rt.id)?.serialize() || {},
       })),
       services: Object.keys(descriptor.services).reduce((all, runtimeId) => {
         const rt = board.getRuntimeById(runtimeId);
@@ -303,7 +304,7 @@ class Playground extends Component<Props, State> {
           ...all,
           [runtimeId]: descriptor.services[runtimeId].map((s) => ({
             ...s,
-            ...filterPrivateMembers(rt.getServiceById(s.uuid)),
+            ...filterPrivateMembers(rt ? rt.getServiceById(s.uuid) : {}),
           })),
         };
       }, {}),
@@ -360,9 +361,7 @@ class Playground extends Component<Props, State> {
 
   removeService = async (service: ServiceDescriptor, rt: RuntimeDescriptor) => {
     const runtime = this.board && this.board.getRuntimeById(rt.id);
-    if (!runtime) {
-      await runtime.destroyService(service.uuid);
-    }
+    return runtime?.destroyService(service.uuid);
   };
 
   addRuntime = async (desc: RuntimeClass) => {
@@ -465,7 +464,7 @@ class Playground extends Component<Props, State> {
     }
   };
 
-  isActionAvailable = (action: Action, state: BoardContextState) => {
+  isActionAvailable = (action: Action) => {
     switch (action.type) {
       case "shareBoard":
         return false;
@@ -572,7 +571,7 @@ class Playground extends Component<Props, State> {
         outputRouting={outputRouting}
         onChangeOutputRouting={(
           runtime: RuntimeDescriptor,
-          value: OutpoutRouting
+          value: OutputRouting
         ) => {
           if (value === null) {
             this.setState({

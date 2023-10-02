@@ -4,7 +4,7 @@ import { BoardContextState } from "../../BoardContext";
 
 type Props = {
   board?: string;
-  boardContext: BoardContextState;
+  boardContext: BoardContextState | null;
   boardSyncActive: boolean;
 };
 
@@ -35,7 +35,7 @@ export default function BoardMenu({
       <Dropdown.Menu>
         <Dropdown.Item
           onClick={() =>
-            boardContext.onAction({
+            boardContext?.onAction({
               type: "newBoard",
             })
           }
@@ -44,7 +44,7 @@ export default function BoardMenu({
         </Dropdown.Item>
         <Dropdown.Item
           onClick={() =>
-            boardContext.onAction({
+            boardContext?.onAction({
               type: "clearBoard",
             })
           }
@@ -57,39 +57,39 @@ export default function BoardMenu({
         </Dropdown.Item>
         <Dropdown.Item
           onClick={() =>
-            boardContext.onAction({
+            boardContext?.onAction({
               type: "shareBoard",
             })
           }
           disabled={
             !boardContext ||
-            !boardContext.isActionAvailable({ type: "shareBoard" })
+            !boardContext?.isActionAvailable({ type: "shareBoard" })
           }
         >
           <span style={menuItemStyle}>Share Board</span>
         </Dropdown.Item>
         <Dropdown.Item
           onClick={() =>
-            boardContext.onAction({
+            boardContext?.onAction({
               type: "saveBoard",
             })
           }
           disabled={
             !boardContext ||
-            !boardContext.isActionAvailable({ type: "saveBoard" })
+            !boardContext?.isActionAvailable({ type: "saveBoard" })
           }
         >
           <span style={menuItemStyle}>Save Board</span>
         </Dropdown.Item>
         <Dropdown.Item
           onClick={() =>
-            boardContext.onAction({
+            boardContext?.onAction({
               type: "toggleBoardSync",
             })
           }
           disabled={
             !boardContext ||
-            !boardContext.isActionAvailable({ type: "toggleBoardSync" })
+            !boardContext?.isActionAvailable({ type: "toggleBoardSync" })
           }
         >
           <span style={menuItemStyle}>

@@ -89,7 +89,7 @@ type Props = {
   saveBoard?: () => void;
   shareBoard?: () => void;
 
-  isActionAvailable: (action: Action, state: BoardContextState) => boolean;
+  isActionAvailable: (action: Action) => boolean;
 
   onAction: (action: any) => boolean;
   serializeBoard: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
@@ -159,10 +159,6 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   componentDidMount() {
     this.fetchData();
-  }
-
-  componentWillUnmount(): void {
-    this.clearBoard();
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -235,10 +231,10 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   isActionAvailable = (action: Action) => {
     const { isActionAvailable = this.isActionAvailableDefaut } = this.props;
-    return isActionAvailable(action, this.state);
+    return isActionAvailable(action);
   };
 
-  isActionAvailableDefaut = (action: Action, state: BoardContextState) => {
+  isActionAvailableDefaut = (action: Action) => {
     switch (action.type) {
       case "clearBoard":
         return true;

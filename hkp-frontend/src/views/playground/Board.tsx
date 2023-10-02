@@ -18,7 +18,6 @@ import SelectorField from "../../components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
 import {
   InputRoute,
-  InputRouting,
   InputRoutingCompat,
   OutputRouting,
   PeerInputActivation,
@@ -28,11 +27,13 @@ import {
   SidechainRouting,
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
+import { AppContextState } from "../../AppContext";
 
 const defaultDiscoveryPeer: PeerJsHostDescriptor =
   availableDiscoveryPeerHosts[0];
 
 type Props = {
+  appContext: AppContextState;
   inputRouting: InputRoutingCompat;
   outputRouting: OutputRouting;
   boardContext: BoardContextState;

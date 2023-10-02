@@ -1,4 +1,8 @@
-export async function loadBundle(bundleId) {
+import { ServiceModule } from "../types";
+
+export async function loadBundle(
+  bundleId: string
+): Promise<Array<ServiceModule>> {
   switch (bundleId) {
     case "hookup.to/registry/browser/Audio":
       const { default: audioRegistry } = await import(

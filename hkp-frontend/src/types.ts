@@ -22,10 +22,6 @@ export type ExternalInput = {
   close: () => void;
 };
 
-export type AppContextState = {
-  user: any;
-};
-
 export type SavedBoard = {
   url: string;
   description: string;
@@ -72,9 +68,9 @@ export type BoardDescriptor = {
 };
 
 export type PlaygroundBoard = BoardDescriptor & {
-  sidechainRouting: { [runtimeId: string]: SidechainRouting };
-  outputRouting: { [runtimeId: string]: OutputRouting | null };
-  inputRouting: { [runtimeId: string]: InputRouting };
+  sidechainRouting: SidechainRouting;
+  outputRouting: OutputRouting | null;
+  inputRouting: InputRouting;
   description: string;
   boardSyncActive: boolean;
   syncedPeer: string | undefined;
@@ -149,8 +145,22 @@ export type ServiceImpl = {
 export type RuntimeImpl = {
   getServiceById: (uuid: string) => ServiceImpl;
   processRuntime: (params: any, svc: ServiceImpl | null | undefined) => any;
-  destroyService: (svc: ServiceDescriptor) => void;
+  destroyService: (svcUuid: string) => void;
   destroyRuntime: () => void;
 };
 
 export type AppViewMode = "wide" | "narrow";
+
+export type Bundles = Array<string>;
+
+export type User = {
+  username: string;
+  userId: string;
+  features?: {
+    registry?: string; // stringified Array<string>;
+  };
+};
+
+export type Notification = {
+  tag: string;
+};

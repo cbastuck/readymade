@@ -31,74 +31,72 @@ export default function Toolbar({
     <AppConsumer>
       {(appContext) => (
         <BoardConsumer>
-          {(boardContext) =>
-            boardContext && (
+          {(boardContext) => (
+            <div
+              style={{
+                position: "sticky",
+                left: 0,
+                top: 0,
+                zIndex: 100,
+              }}
+            >
               <div
                 style={{
-                  position: "sticky",
-                  left: 0,
-                  top: 0,
-                  zIndex: 100,
+                  marginTop: 0,
+                  marginBottom: 5,
+                  textAlign: "left",
+                  borderBottom: "1px solid rgba(34,36,38,.15)",
+                  borderTop: "1px solid #ddd",
                 }}
               >
-                <div
+                <Menu
                   style={{
-                    marginTop: 0,
-                    marginBottom: 5,
-                    textAlign: "left",
-                    borderBottom: "1px solid rgba(34,36,38,.15)",
-                    borderTop: "1px solid #ddd",
+                    boxShadow: "none",
+                    border: "none",
                   }}
                 >
-                  <Menu
-                    style={{
-                      boxShadow: "none",
-                      border: "none",
-                    }}
-                  >
-                    <HomeIcon />
-                    {appContext.user && (
-                      <BoardMenu
-                        boardSyncActive={boardSyncActive}
-                        board={board}
-                        boardContext={boardContext}
-                      />
-                    )}
+                  <HomeIcon />
+                  {appContext?.user && (
+                    <BoardMenu
+                      boardSyncActive={boardSyncActive}
+                      board={board}
+                      boardContext={boardContext}
+                    />
+                  )}
 
-                    {showRuntimeMenu && (
-                      <RuntimeMenu
-                        isWideViewMode={boardContext.appViewMode === "wide"}
-                        availableRuntimes={boardContext.availableRuntimes}
-                        onAddAvailableRuntime={(desc) => {
-                          const runtimes =
-                            boardContext.addAvailableRuntime(desc);
-                          onUpdateAvailableRuntimes &&
-                            onUpdateAvailableRuntimes(runtimes);
-                        }}
-                        onRemoveAvailableRuntime={(desc) => {
-                          const runtimes =
-                            boardContext.removeAvailableRuntime(desc);
-                          onUpdateAvailableRuntimes &&
-                            onUpdateAvailableRuntimes(runtimes);
-                        }}
-                        onAddRuntime={(rtClass: RuntimeClass) =>
-                          boardContext.addRuntime(rtClass)
-                        }
-                      />
-                    )}
+                  {showRuntimeMenu && (
+                    <RuntimeMenu
+                      isWideViewMode={boardContext?.appViewMode === "wide"}
+                      availableRuntimes={boardContext?.availableRuntimes || []}
+                      onAddAvailableRuntime={(desc) => {
+                        const runtimes =
+                          boardContext?.addAvailableRuntime(desc) || [];
+                        onUpdateAvailableRuntimes &&
+                          onUpdateAvailableRuntimes(runtimes);
+                      }}
+                      onRemoveAvailableRuntime={(desc) => {
+                        const runtimes =
+                          boardContext?.removeAvailableRuntime(desc) || [];
+                        onUpdateAvailableRuntimes &&
+                          onUpdateAvailableRuntimes(runtimes);
+                      }}
+                      onAddRuntime={(rtClass: RuntimeClass) =>
+                        boardContext?.addRuntime(rtClass)
+                      }
+                    />
+                  )}
 
-                    <Navigation appContext={appContext} isCompact={isCompact} />
-                    {appContext && !isCompact && (
-                      <AccountMenu
-                        appContext={appContext}
-                        boardContext={boardContext}
-                      />
-                    )}
-                  </Menu>
-                </div>
+                  <Navigation appContext={appContext} isCompact={isCompact} />
+                  {appContext && !isCompact && (
+                    <AccountMenu
+                      appContext={appContext}
+                      boardContext={boardContext}
+                    />
+                  )}
+                </Menu>
               </div>
-            )
-          }
+            </div>
+          )}
         </BoardConsumer>
       )}
     </AppConsumer>

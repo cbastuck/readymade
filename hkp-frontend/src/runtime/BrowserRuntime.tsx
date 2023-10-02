@@ -1,11 +1,8 @@
 import { Component } from "react";
 import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
 
-// TODO: remove dependency if not needed anymore (double check commented out code)
-// import { decode } from 'base64-arraybuffer';
-
 import { request } from "../core/actions";
-import { parseResponse } from "./MultiformParser";
+import { isMultipartsResult, parseResponse } from "./MultiformParser";
 import { restoreToken } from "../core/Auth";
 import { serializeWebsocketBuffer } from "../core/format";
 import ServiceUiContainer from "./ServiceUiContainer";
@@ -228,9 +225,9 @@ export default class BrowserRuntime extends Component<Props> {
     this.websocket.binaryType = "arraybuffer";
     this.websocket.onmessage = (event) => {
       const message = parseResponse(event.data);
-      const action = message.json
+      const action: Command = isMultipartsResult(message)
         ? rebuild(message.json.payload, message)
-        : JSON.parse(message);
+        : JSON.parse(message as any); // TODO: not sure how this behaves with Blob
       logInfo(
         `BrowserRuntime ${runtimeId} (${runtimeName}) received: ${JSON.stringify(
           action
@@ -254,7 +251,7 @@ export default class BrowserRuntime extends Component<Props> {
     const { id: runtimeId } = runtime;
     this.eventSource = new EventSource(backendPath);
 
-    const onMessage = (e: Error) =>
+    const onMessage = (e: MessageEvent) =>
       this.onMessage(e.data ? JSON.parse(e.data) : e);
     const onError = (error: any) => {
       if (error.status === 504) {
@@ -318,7 +315,7 @@ export default class BrowserRuntime extends Component<Props> {
     if (this.websocket) {
       // send the result via websocket
       const buffer = await serializeWebsocketBuffer(data, {
-        board: this.board, // TODO: this seems wrong
+        board: boardName, // TODO: before was this.board
         userId,
         serviceUuid,
         requestId,
@@ -350,7 +347,7 @@ export default class BrowserRuntime extends Component<Props> {
   }
 
   configureService = (service: ServiceDescriptor, config: any) => {
-    const svc: ServiceImpl = this.serviceInstance(service);
+    const svc: ServiceImpl | undefined = this.serviceInstance(service);
     if (svc) {
       svc.configure(config);
     }
@@ -490,7 +487,7 @@ export default class BrowserRuntime extends Component<Props> {
       service,
       this.props.registry
     );
-    return undefined; // TODO: old comment: trya not to crash
+    return undefined; // TODO: old comment: try not to crash
   };
 
   render() {

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Tab, Menu } from "semantic-ui-react";
 
 import Login from "./Login";

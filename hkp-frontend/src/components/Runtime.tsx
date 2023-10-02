@@ -190,9 +190,11 @@ export default class Runtime extends Component<Props, State> {
 
   // TODO: this should not happen here. Is a command to the backend not the UI component
   // Probably the boardContext should be the receiver
-  destroyService = (service: ServiceDescriptor) => {
+  destroyService = (serviceUuid: string) => {
     return (
-      this.impl && this.impl.destroyService && this.impl.destroyService(service)
+      this.impl &&
+      this.impl.destroyService &&
+      this.impl.destroyService(serviceUuid)
     );
   };
 

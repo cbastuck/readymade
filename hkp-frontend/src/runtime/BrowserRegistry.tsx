@@ -1,8 +1,11 @@
+import { Bundles, ServiceModule, ServiceRegistry, User } from "../types";
 import { loadBundle } from "./Bundles";
 import defaultRegistry from "./registry/Default";
 
 export default class BrowserRegistry {
-  static async create(bundles, user) {
+  availableServices: ServiceRegistry | undefined = undefined;
+
+  static async create(bundles: Bundles, user?: User): Promise<BrowserRegistry> {
     const registry = new BrowserRegistry();
     registry.availableServices = defaultRegistry;
     if (bundles) {
@@ -14,14 +17,14 @@ export default class BrowserRegistry {
     return registry;
   }
 
-  loadUserBundles = async (user) => {
+  loadUserBundles = async (user: User) => {
     if (user && user.features && user.features.registry) {
-      const userBundles = JSON.parse(user.features.registry);
+      const userBundles: Array<string> = JSON.parse(user.features.registry);
       await this.loadBundles(userBundles);
     }
   };
 
-  async loadBundles(bundles) {
+  async loadBundles(bundles: Bundles) {
     if (bundles) {
       for (const bundleId of bundles) {
         const bdl = await loadBundle(bundleId);
@@ -31,7 +34,7 @@ export default class BrowserRegistry {
     return this.availableServices;
   }
 
-  __appendBundleServices = (arr) => {
+  __appendBundleServices = (arr: Array<ServiceModule>) => {
     arr.forEach((x) => {
       const exists =
         this.availableServices &&

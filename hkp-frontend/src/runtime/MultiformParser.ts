@@ -2,17 +2,20 @@ import TextDecoder from "./TextDecoderPolyfill";
 
 const decoder = new TextDecoder();
 
-function utf16leBufferToStr(buf) {
-  return String.fromCharCode.apply(null, new Uint16Array(buf));
+function utf16leBufferToStr(buf: ArrayBuffer) {
+  const arr: any = new Uint16Array(buf);
+  return String.fromCharCode.apply(null, arr); // TODO not sure if this is correct
 }
 
-function utf8BufferToStr(buf) {
+function utf8BufferToStr(buf: BufferSource): string {
   return decoder.decode(buf);
 }
 
 const CRLF = "\r\n";
 
-export function parseResponse(arraybuf) {
+export function parseResponse(
+  arraybuf: ArrayBuffer | string
+): MultipartsResult | Blob | string {
   if (typeof arraybuf === "string") {
     return arraybuf;
   }
@@ -39,14 +42,18 @@ export function parseResponse(arraybuf) {
   return parseMultipart(body, boundary);
 }
 
-function stringToCharCodes(str) {
+function stringToCharCodes(str: string): Array<number> {
   return str.split("").map((c) => c.charCodeAt(0));
 }
 
-function findStringInView(searchString, view, startIndex = 0) {
-  function finder(str, startIndex = 0) {
+function findStringInView(
+  searchString: string,
+  view: Uint8Array,
+  startIndex: number = 0
+) {
+  function finder(str: string, startIndex: number = 0) {
     const arr = stringToCharCodes(str);
-    return function (element, index, view) {
+    return function (element: any, index: number, view: Uint8Array) {
       const n = arr.length - 1;
       if (index < n || index <= startIndex) {
         return false;
@@ -63,8 +70,13 @@ function findStringInView(searchString, view, startIndex = 0) {
   return idx === -1 ? -1 : idx + 1;
 }
 
-function parsePartHeader(view, verifyBoundary) {
-  const headers = {};
+type Headers = { [key: string]: any };
+
+function parsePartHeader(
+  view: Uint8Array,
+  verifyBoundary?: string
+): { headers: Headers; finished: boolean; end: number } {
+  const headers: Headers = {};
   for (let start = 0, end = 0; end !== -1; start = end) {
     end = findStringInView(CRLF, view, start);
     if (end !== -1) {
@@ -73,7 +85,7 @@ function parsePartHeader(view, verifyBoundary) {
       if (verifyBoundary && start === 0) {
         if (line === `${verifyBoundary}--\r\n`) {
           // end of multipart
-          return { headers: {}, finished: true };
+          return { headers: {}, finished: true, end };
         }
         if (line !== `${verifyBoundary}\r\n`) {
           throw new Error(
@@ -89,13 +101,18 @@ function parsePartHeader(view, verifyBoundary) {
       }
     }
     if (end - start === CRLF.length) {
-      return { headers, end }; // header ends with empty CLCR
+      return { headers, end, finished: false }; // header ends with empty CLCR
     }
   }
   throw new Error(`No ending CRLF when parsing multiform header found`);
 }
 
-function assureEqual(view, start, end, expectedStr) {
+function assureEqual(
+  view: Uint8Array,
+  start: number,
+  end: number,
+  expectedStr: string
+) {
   const expectedChars = stringToCharCodes(expectedStr);
   for (let i = 0, n = end - start; i < n; ++i) {
     if (view[start + i] !== expectedChars[i]) {
@@ -106,7 +123,17 @@ function assureEqual(view, start, end, expectedStr) {
   }
 }
 
-function readPart(fullView, boundary, startPos = 0) {
+type Part = {
+  headers: Headers;
+  payload: any;
+  end: number;
+  name: string;
+};
+function readPart(
+  fullView: Uint8Array,
+  boundary: string,
+  startPos: number = 0
+): Part | null {
   if (startPos >= fullView.length) {
     return null;
   }
@@ -147,12 +174,20 @@ function readPart(fullView, boundary, startPos = 0) {
   };
 }
 
-function parseMultipart(body, boundary) {
+export type MultipartsResult = {
+  [partName: string]: { headers: Headers; payload: any };
+};
+
+export function isMultipartsResult(obj: any): obj is MultipartsResult {
+  return obj.json;
+}
+
+function parseMultipart(body: ArrayBuffer, boundary: string): MultipartsResult {
   const view = new Uint8Array(body);
-  let part,
-    parts = {};
+  let part: Part | null = null;
+  const parts: MultipartsResult = {};
   do {
-    part = readPart(view, boundary, part && part.end);
+    part = readPart(view, boundary, part?.end || 0);
     if (part) {
       parts[part.name] = {
         headers: part.headers,
