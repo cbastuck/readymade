@@ -1,12 +1,32 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";
+import { Action } from "../../types";
 
 const none = "No Input";
 const all = "All Peers";
 
-export default class InputOptions extends Component {
+type Props = {
+  items: Array<string>;
+  value: string | null;
+  disabled: boolean;
+  children: JSX.Element | Array<JSX.Element | null>;
+
+  onSelect: (selected: string | null) => void;
+  onAction: (action: Action) => void;
+
+  onExpand?: () => void;
+  onCollapse?: () => void;
+};
+
+type State = {
+  selected: string;
+  expanded: boolean;
+  incoming: boolean | string | undefined;
+};
+
+export default class InputOptions extends Component<Props, State> {
   state = {
     selected: "none",
     expanded: false,
@@ -24,7 +44,7 @@ export default class InputOptions extends Component {
     });
   };
 
-  signalIncoming = (sender) => {
+  signalIncoming = (sender: string) => {
     if (!this.state.incoming) {
       this.setState({ incoming: sender }, () =>
         setTimeout(this.resetIncoming, 1000)
@@ -48,7 +68,7 @@ export default class InputOptions extends Component {
             <SelectorField
               label="Peer"
               options={peerOptions}
-              highlight={incoming}
+              highlight={typeof incoming === "string" ? incoming : undefined}
               value={value === null ? "none" : value}
               disabled={disabled}
               onChange={(_ev, { value: selected }) =>

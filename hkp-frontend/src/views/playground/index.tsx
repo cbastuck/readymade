@@ -3,7 +3,7 @@ import { Loader } from "semantic-ui-react";
 import * as uuid from "uuid";
 
 import { withRouter, WithRouterProps } from "../../common";
-import { AppCtx } from "../../AppContext";
+import { AppContextState, AppCtx } from "../../AppContext";
 import BoardProvider, {
   BoardConsumer,
   BoardContextState,
@@ -44,13 +44,16 @@ import {
   AddServiceResult,
   BoardDescriptor,
   ExternalInput,
+  InputRoute,
   InputRouting,
+  OutputRoute,
   OutputRouting,
   PlaygroundBoard,
   RuntimeClass,
   RuntimeDescriptor,
   ServiceClass,
   ServiceDescriptor,
+  SidechainRoute,
   SidechainRouting,
 } from "../../types";
 
@@ -79,7 +82,7 @@ type State = {
 
 class Playground extends Component<Props, State> {
   static contextType = AppCtx;
-  context!: React.ContextType<typeof AppCtx>;
+  context!: AppContextState;
 
   boardProviderRef: BoardProvider | null = null;
 
@@ -376,8 +379,8 @@ class Playground extends Component<Props, State> {
     let registry;
     if (type === "remote") {
       console.log("Adding GraphQL runtime", rt);
-      await createFreeRuntime(rt);
-      registry = await getRuntimeRegistry(rt);
+      //await createFreeRuntime(rt);
+      registry = []; //await getRuntimeRegistry(rt);
     } else if (type === "node") {
       const created = await addRuntimeREST(this.state.boardName, {
         ...desc,
@@ -571,7 +574,7 @@ class Playground extends Component<Props, State> {
         outputRouting={outputRouting}
         onChangeOutputRouting={(
           runtime: RuntimeDescriptor,
-          value: OutputRouting
+          value: OutputRoute | null
         ) => {
           if (value === null) {
             this.setState({
@@ -604,10 +607,7 @@ class Playground extends Component<Props, State> {
           }
         }}
         inputRouting={inputRouting}
-        onChangeInputRouting={(
-          runtime: RuntimeDescriptor,
-          value: InputRouting
-        ) =>
+        onChangeInputRouting={(runtime: RuntimeDescriptor, value: InputRoute) =>
           this.setState({
             inputRouting: {
               ...this.state.inputRouting,
@@ -617,7 +617,7 @@ class Playground extends Component<Props, State> {
         }
         onChangeSidechainRouting={(
           runtime: RuntimeDescriptor,
-          routing: SidechainRouting
+          routing: Array<SidechainRoute>
         ) =>
           this.setState({
             sidechainRouting: {

@@ -12,19 +12,19 @@ type OnChangeValue = {
 type Options = { [key: string]: string };
 
 type Props = {
-  value: string;
+  value: string | null;
   label: string;
   options: Options;
 
-  onChange: (ev: React.MouseEvent, value: OnChangeValue) => void;
-  onOpen?: (options: Options) => void;
-
   uppercaseValues?: boolean;
   disabled?: boolean;
-  highlight?: string;
+  highlight?: string | undefined;
   style?: object;
   minWidth?: string | number;
   placeholder?: string;
+
+  onChange: (ev: React.MouseEvent, value: OnChangeValue) => void;
+  onOpen?: (options: Options) => void;
 };
 
 type State = {

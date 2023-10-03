@@ -9,8 +9,8 @@ import {
   SemanticICONS,
 } from "semantic-ui-react";
 
-import { openTab, getServiceConfiguration } from "../core/actions";
-import NodeRuntime from "../runtime/NodeRuntime";
+import { getServiceConfiguration } from "../core/actions";
+//import NodeRuntime from "../runtime/NodeRuntime";
 import BrowserRuntime from "../runtime/BrowserRuntime";
 import RemoteRuntime from "../runtime/RemoteRuntime";
 import ServiceDropdown from "./ServiceDropdown";
@@ -23,7 +23,7 @@ import {
   ServiceAction,
   ServiceClass,
   ServiceDescriptor,
-  ServiceImpl,
+  ServiceId,
   ServiceRegistry,
   ServiceURI,
 } from "../types";
@@ -54,7 +54,11 @@ type Props = {
 
   outputs: ReactElement;
   inputs: ReactElement;
-  onResult: any; // TODO
+  onResult: (
+    uuid: string,
+    result: any,
+    requestId: string | null
+  ) => Promise<void>;
 };
 
 type State = {
@@ -121,19 +125,9 @@ export default class Runtime extends Component<Props, State> {
         }
         break;
       }
-      case "help": {
-        const serviceId =
-          service.serviceId || service.__descriptor?.serviceId || null;
-        const parts = serviceId && serviceId.split("/");
-        if (parts) {
-          openTab(`/service/${parts[parts.length - 1]}`);
-        }
-
-        break;
-      }
       case "getConfig": {
         return getServiceConfiguration(
-          // TODO: this should go through BoardContext
+          // TODO: this should g  o through BoardContext
           // This does not work for services in BeowserRuntimes
           boardContext.boardName,
           service,
@@ -151,15 +145,14 @@ export default class Runtime extends Component<Props, State> {
   });
 
   getServiceById = (serviceUuid: string) => {
-    const { boardContext, runtime } = this.props;
-    const services = boardContext.services[runtime.id];
-    return this.impl && this.impl.getServiceById
-      ? this.impl.getServiceById(serviceUuid)
-      : makeServiceImpl(services.find((svc) => svc.uuid === serviceUuid));
+    return (
+      this.impl &&
+      this.impl.getServiceById &&
+      this.impl.getServiceById(serviceUuid)
+    );
   };
 
-  processRuntime = (params: any, serviceId?: string) => {
-    const svc = serviceId ? this.getServiceById(serviceId) : null;
+  processRuntime = (params: any, svc: ServiceId | null = null) => {
     this.impl &&
       this.impl.processRuntime &&
       this.impl.processRuntime(params, svc);
@@ -458,6 +451,7 @@ export default class Runtime extends Component<Props, State> {
     }
   };
 
+  /*
   renderNodeRuntime = (
     runtime: RuntimeDescriptor,
     expanded: boolean,
@@ -486,6 +480,7 @@ export default class Runtime extends Component<Props, State> {
     }
     return false;
   };
+  */
 
   renderRemoteRuntime = (
     runtime: RuntimeDescriptor,
@@ -500,7 +495,7 @@ export default class Runtime extends Component<Props, State> {
     if (expanded) {
       return (
         <RemoteRuntime
-          ref={(rt) => (this.impl = rt)}
+          onRef={(impl) => (this.impl = impl)}
           userId={userId}
           boardName={boardName}
           runtime={runtime}
@@ -526,7 +521,7 @@ export default class Runtime extends Component<Props, State> {
     onArrangeService: (serviceUuid: string, position: number) => void,
     wrapServices?: boolean
   ) => {
-    const { outputs, inputs, onResult = undefined } = this.props;
+    const { outputs, inputs, onResult } = this.props;
     return (
       <div
         style={{
@@ -720,19 +715,8 @@ export default class Runtime extends Component<Props, State> {
             style={readonlyStyle}
             onClickCapture={(e) => readonly && e.stopPropagation()}
           >
-            {runtime &&
-              (runtime.type === "node"
-                ? this.renderNodeRuntime(
-                    runtime,
-                    expanded,
-                    userId,
-                    boardName,
-                    services,
-                    readonly,
-                    registry,
-                    onArrangeService
-                  )
-                : runtime.type === "remote"
+            {
+              runtime && runtime.type === "remote"
                 ? this.renderRemoteRuntime(
                     runtime,
                     expanded,
@@ -743,7 +727,8 @@ export default class Runtime extends Component<Props, State> {
                     registry,
                     onArrangeService
                   )
-                : this.renderBrowserRuntime(
+                : runtime.type === "browser"
+                ? this.renderBrowserRuntime(
                     runtime,
                     expanded,
                     userId,
@@ -753,7 +738,21 @@ export default class Runtime extends Component<Props, State> {
                     registry,
                     onArrangeService,
                     wrapServices
-                  ))}
+                  )
+                : null
+              /*runtime.type === "node"
+              ? this.renderNodeRuntime(
+                  runtime,
+                  expanded,
+                  userId,
+                  boardName,
+                  services,
+                  readonly,
+                  registry,
+                  onArrangeService
+                ) : null
+              :*/
+            }
             {((services && services.length === 0) || !isOwner) && (
               <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
             )}
@@ -775,8 +774,4 @@ export default class Runtime extends Component<Props, State> {
       </div>
     );
   }
-}
-
-function makeServiceImpl(desc?: ServiceDescriptor): ServiceImpl {
-  throw new Error("makeServiceImpl() not implemented ");
 }

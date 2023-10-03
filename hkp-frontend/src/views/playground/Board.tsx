@@ -19,11 +19,14 @@ import { availableDiscoveryPeerHosts } from "./common";
 import {
   InputRoute,
   InputRoutingCompat,
+  OutputRoute,
   OutputRouting,
   PeerInputActivation,
   PeerJsHostDescriptor,
   PeerOutputActivation,
   RuntimeDescriptor,
+  ServiceURI,
+  SidechainRoute,
   SidechainRouting,
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
@@ -39,6 +42,21 @@ type Props = {
   boardContext: BoardContextState;
   sidechainRouting: SidechainRouting;
   boardName: string;
+  allowedServices: Array<ServiceURI>;
+  description: string;
+
+  onChangeOutputRouting: (
+    runtime: RuntimeDescriptor,
+    value: OutputRoute | null
+  ) => void;
+  onChangeInputRouting: (
+    runtime: RuntimeDescriptor,
+    value: InputRoute | null
+  ) => void;
+  onChangeSidechainRouting: (
+    runtime: RuntimeDescriptor,
+    routing: Array<SidechainRoute>
+  ) => void;
 };
 
 type State = {
@@ -54,7 +72,7 @@ export default class Board extends Component<Props, State> {
     peerInputActivation: {},
   };
   runtimeInstances: { [runtimeId: string]: Runtime } = {};
-  inputSelectors: { [runtimeId: string]: InputOptions } = {};
+  inputSelectors: { [runtimeId: string]: InputOptions | null } = {};
 
   peerContext: PeersProvider | null = null;
 
@@ -162,7 +180,7 @@ export default class Board extends Component<Props, State> {
     if (flow === "pass") {
       const nextRuntime = this.getNextRuntime(runtime);
       if (nextRuntime) {
-        nextRuntime.processRuntime(result);
+        nextRuntime.processRuntime(result, null);
       }
     }
 
@@ -198,7 +216,7 @@ export default class Board extends Component<Props, State> {
         }}
         onSelect={(peer) => {
           const output = this.state.peerOutputActivation[activationId];
-          if (output.peer) {
+          if (output && output.peer) {
             const srcPeer = this.getPeerName(runtime);
             const dstPeer = output.peer;
             peersContext.closeConnection(srcPeer, dstPeer);
@@ -224,8 +242,8 @@ export default class Board extends Component<Props, State> {
         flow={outputRouting[runtime.id]?.flow}
         boardContext={boardContext}
         sidechainRouting={runtimeSidechainRouting}
-        onSidechangeRouting={(routing) =>
-          this.props.onChangeSidechainRouting(runtime, routing)
+        onSidechangeRouting={(routes) =>
+          this.props.onChangeSidechainRouting(runtime, routes)
         }
         disabled={!this.state.peerOutputActivation[activationId]}
       >
@@ -235,7 +253,11 @@ export default class Board extends Component<Props, State> {
     );
   };
 
-  renderInputs = (peers, runtime, peersContext) => {
+  renderInputs = (
+    peers: Array<string>,
+    runtime: RuntimeDescriptor,
+    peersContext: PeersContextState
+  ) => {
     const activationId = getActivationId(runtime.id);
     return (
       <InputOptions
@@ -265,7 +287,10 @@ export default class Board extends Component<Props, State> {
     );
   };
 
-  renderPeersActivator = (runtime, type) => {
+  renderPeersActivator = (
+    runtime: RuntimeDescriptor,
+    type: "input" | "output"
+  ) => {
     const runtimeActivation = this.getRuntimeActivation(runtime);
     if (!!runtimeActivation) {
       return null;
@@ -335,7 +360,10 @@ export default class Board extends Component<Props, State> {
     );
   };
 
-  renderPeersDeactivator = (runtime, type) => {
+  renderPeersDeactivator = (
+    runtime: RuntimeDescriptor,
+    type: "input" | "output"
+  ) => {
     const runtimeActivation = this.getRuntimeActivation(runtime);
     if (!runtimeActivation) {
       return null;
@@ -354,14 +382,18 @@ export default class Board extends Component<Props, State> {
     );
   };
 
-  renderRuntime = (boardContext, runtime, peersContext, allowedServices) => {
+  renderRuntime = (
+    boardContext: BoardContextState,
+    runtime: RuntimeDescriptor,
+    peersContext: PeersContextState | null,
+    allowedServices: Array<string>
+  ) => {
     const { boardName } = this.props;
     const ownPeers = boardContext.runtimes.map(
       (rt) => `${boardName}-${rt.name}`
     );
-    const filteredPeers = peersContext.peerNames.filter(
-      (x) => ownPeers.indexOf(x) === -1
-    );
+    const filteredPeers =
+      peersContext?.peerNames.filter((x) => ownPeers.indexOf(x) === -1) || [];
 
     return (
       <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
@@ -422,7 +454,7 @@ export default class Board extends Component<Props, State> {
                         if (isWildcardInput || input?.peer === sender) {
                           const rt = this.getRuntimeById(runtime.id);
                           if (rt) {
-                            rt.processRuntime(data);
+                            rt.processRuntime(data, null);
                           }
                         } else {
                           const selector = this.inputSelectors[runtime.id];
@@ -514,7 +546,7 @@ export default class Board extends Component<Props, State> {
   }
 }
 
-function formatHostAndPort(availablePeer) {
+function formatHostAndPort(availablePeer: PeerJsHostDescriptor) {
   const { host, port, secure } = availablePeer;
   const protocol = secure ? "wss" : "ws";
   return `${protocol}://${host}:${port}`;

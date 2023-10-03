@@ -1,14 +1,38 @@
 import { Component } from "react";
 
-import Peerjs from "peerjs";
+import Peerjs, { DataConnection } from "peerjs";
 
-import { PeersCtx } from "../PeersContext";
+import { DataEnvelope, Peer } from "../types";
+import { PeersContextState, PeersCtx } from "../PeersContext";
 
-function logError(err) {
-  console.error("Error in <Peer />", err);
-}
+type Props = {
+  active: boolean;
+  name: string;
 
-export default class Peer extends Component {
+  peerHost: string;
+  usePeerPort: number;
+  usePeerRoutePath: string;
+  isSecure: boolean;
+
+  children: JSX.Element | JSX.Element[];
+
+  onData: (envelope: DataEnvelope, peer: string) => void;
+
+  onConnectionOpened?: (syncedPeer: string, connection: DataConnection) => void;
+  onConnectionClosed?: (dst: string) => void;
+
+  onOpen?: () => void;
+  onClose?: (name: string) => void;
+  onDisconnect?: (name: string) => void;
+  onError?: (err: Error) => void;
+};
+
+export default class PeerComponent extends Component<Props> {
+  static contextType = PeersCtx;
+  context!: PeersContextState;
+
+  peer: Peer | null = null;
+
   componentDidMount() {
     const { active } = this.props;
     if (active !== undefined && active) {
@@ -20,7 +44,7 @@ export default class Peer extends Component {
     this.closePeer();
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     const { name, active } = this.props;
     if (name !== prevProps.name) {
       this.closePeer(prevProps.name);
@@ -49,7 +73,7 @@ export default class Peer extends Component {
       usePeerRoutePath,
       isSecure,
     } = this.props;
-    const peer = new Peerjs(name, {
+    const peer: Peer = new Peerjs(name, {
       host: peerHost,
       port: usePeerPort ? usePeerPort : isSecure ? 443 : 80,
       path: usePeerRoutePath ? usePeerRoutePath : "/peers",
@@ -68,24 +92,25 @@ export default class Peer extends Component {
     });
 
     peer.on("close", () => {
-      const { onClose = () => {} } = this.props;
-      onClose(name);
+      const { onClose } = this.props;
+      onClose && onClose(name);
     });
 
     // called when a remote peer is connecting to this peer
-    peer.on("connection", (connection) => {
-      const { onConnectionOpened = () => {}, onConnectionClosed = () => {} } =
-        this.props;
-      connection.on("data", (data) => onData(data, connection.peer));
+    peer.on("connection", (connection: DataConnection) => {
+      const { onConnectionOpened, onConnectionClosed } = this.props;
+      connection.on("data", (data: unknown) =>
+        onData(data as DataEnvelope, connection.peer)
+      );
       connection.on("close", () => {
-        onConnectionClosed(name);
+        onConnectionClosed && onConnectionClosed(name);
       });
-      onConnectionOpened(name, connection);
+      onConnectionOpened && onConnectionOpened(name, connection);
     });
 
     peer.on("disconnected", () => {
-      const { onDisconnect = () => {} } = this.props;
-      onDisconnect(name);
+      const { onDisconnect } = this.props;
+      onDisconnect && onDisconnect(name);
     });
 
     peer.on("error", (err) => {
@@ -99,7 +124,7 @@ export default class Peer extends Component {
     });
   };
 
-  closePeer = (name) => {
+  closePeer = (name?: string) => {
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
@@ -112,4 +137,6 @@ export default class Peer extends Component {
   }
 }
 
-Peer.contextType = PeersCtx;
+function logError(err: Error) {
+  console.error("Error in <Peer />", err);
+}

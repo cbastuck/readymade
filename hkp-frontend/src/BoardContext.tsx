@@ -119,8 +119,6 @@ class BoardContext extends Component<Props, BoardContextState> {
     localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(pruned));
   }
 
-  browserRuntimes: Array<any> = []; // TODO
-
   constructor(props: Props) {
     super(props);
 
@@ -538,17 +536,7 @@ class BoardContext extends Component<Props, BoardContextState> {
   releaseRuntimeScope = (boardname: string, runtime: RuntimeDescriptor) => {
     if (runtime.type === "browser") {
       BoardContext.unregisterBrowserRuntime(boardname, runtime.id);
-      let releasedRT: any;
-      this.browserRuntimes = this.browserRuntimes.filter((rt) => {
-        if (rt.id === runtime.id) {
-          releasedRT = rt;
-          return false;
-        }
-        return true;
-      });
-      if (releasedRT) {
-        releasedRT.destroyRuntime();
-      }
+
       this.fetchData();
     }
   };

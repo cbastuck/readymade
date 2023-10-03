@@ -1,26 +1,21 @@
 import { Component, createContext } from "react";
+import { DataConnection } from "peerjs";
 
 import { removeKeyFromObject } from "./runtime/services/helpers";
-import { Peer } from "./types";
-import { DataConnection } from "peerjs";
+import { ConnectionAndPeer, Peer, PeerConnections } from "./types";
 
 export type PeersContextState = {
   peers: { [peerName: string]: Peer };
-  connections: { [srcPeer: string]: { [dstPeerName: string]: DataConnection } };
+  connections: PeerConnections;
   peerNames: Array<string>;
   onPeer: (peerName: string, peer: Peer) => void;
   onPeerClosed: (peerName: string) => void;
-  updatePeers: (peer: Peer) => void;
+  updatePeers: (peer?: Peer) => void;
   closeConnection: (srcPeerName: string, dstPeerName: string) => void;
 };
 
 type Props = {
   children: JSX.Element | JSX.Element[];
-};
-
-type ConnectionAndPeer = {
-  connection: DataConnection;
-  srcPeer: Peer;
 };
 
 const PeersCtx = createContext<PeersContextState | null>(null);

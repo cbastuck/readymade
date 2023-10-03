@@ -12,6 +12,7 @@ import {
   RuntimeDescriptor,
   ServiceAction,
   ServiceDescriptor,
+  ServiceId,
   ServiceImpl,
   ServiceRegistry,
 } from "../types";
@@ -117,19 +118,19 @@ export default class BrowserRuntime extends Component<Props> {
     };
   };
 
-  processRuntime = (params: any, svc: ServiceDescriptor | null = null) =>
+  processRuntime = (params: any, svc: ServiceId | null) =>
     this.next(svc, params, null, false);
 
-  findServiceIndex = (service: ServiceDescriptor) => {
+  findServiceIndex = (svc: ServiceId) => {
     const { services } = this.props;
-    const { parent } = this.subservices[service.uuid] || {};
-    const searchUuid = parent ? parent.uuid : service.uuid;
+    const { parent } = this.subservices[svc.uuid] || {};
+    const searchUuid = parent ? parent.uuid : svc.uuid;
     return services.findIndex((s) => s.uuid === searchUuid);
   };
 
   // service parameter can be null, then starts with the first service
   next = async (
-    service: ServiceDescriptor | null,
+    service: ServiceId | null,
     params: any,
     requestId: string | null = null,
     advanceBeforeProcess: boolean = true
@@ -347,7 +348,7 @@ export default class BrowserRuntime extends Component<Props> {
   }
 
   configureService = (service: ServiceDescriptor, config: any) => {
-    const svc: ServiceImpl | undefined = this.serviceInstance(service);
+    const svc: ServiceImpl | null = this.serviceInstance(service);
     if (svc) {
       svc.configure(config);
     }
@@ -398,7 +399,7 @@ export default class BrowserRuntime extends Component<Props> {
   getServiceById = (uuid: string) => {
     const { services } = this.props;
     const svc = services.find((s) => s.uuid === uuid);
-    return svc ? this.serviceInstance(svc) : undefined;
+    return svc ? this.serviceInstance(svc) : null;
   };
 
   destroyRuntime = async () => {
@@ -467,9 +468,9 @@ export default class BrowserRuntime extends Component<Props> {
     return svc;
   };
 
-  serviceInstance = (service: ServiceDescriptor): ServiceImpl | undefined => {
+  serviceInstance = (service: ServiceDescriptor): ServiceImpl | null => {
     if (!service) {
-      return;
+      return null;
     }
     const instance = this.serviceInstances[service.uuid];
     if (instance) {
@@ -487,7 +488,7 @@ export default class BrowserRuntime extends Component<Props> {
       service,
       this.props.registry
     );
-    return undefined; // TODO: old comment: try not to crash
+    return null; // TODO: old comment: try not to crash
   };
 
   render() {

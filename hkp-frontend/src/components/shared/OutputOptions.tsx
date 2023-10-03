@@ -10,8 +10,8 @@ const none = "No Output";
 
 type Props = {
   items: Array<string>;
-  value: string;
-  children: JSX.Element | JSX.Element[];
+  value: string | null;
+  children: JSX.Element | Array<JSX.Element | null>;
   flow: "pass" | "stop";
   disabled?: boolean;
   boardContext: BoardContextState;
@@ -20,8 +20,8 @@ type Props = {
 
   onAction: (action: Action) => void;
   onSelect: (item: string | null) => void;
-  onExpand: () => void;
-  onCollapse: () => void;
+  onExpand?: () => void;
+  onCollapse?: () => void;
 };
 
 type State = {

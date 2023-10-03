@@ -1,7 +1,10 @@
-import PeerJs from "peerjs";
+import PeerJs, { DataConnection } from "peerjs";
 
-export type ServiceDescriptor = {
+export type ServiceId = {
   uuid: string;
+};
+
+export type ServiceDescriptor = ServiceId & {
   serviceId: string;
   serviceName: string;
 };
@@ -16,6 +19,7 @@ export type RuntimeClass = {
 
 export type RuntimeDescriptor = RuntimeClass & {
   id: string;
+  state?: any;
 };
 
 export type ExternalInput = {
@@ -30,7 +34,7 @@ export type SavedBoard = {
 };
 
 export type InputRouteCompat = string;
-export type InputRoute = { peer: string };
+export type InputRoute = { peer: string | null };
 export type InputRoutingCompat = {
   [id: string]: InputRouteCompat | InputRoute;
 };
@@ -40,15 +44,26 @@ export type OutputRoute = {
   peer?: any;
   flow?: any;
 };
-export type OutputRouting = { [runtimeId: string]: OutputRoute };
+export type OutputRouting = { [runtimeId: string]: OutputRoute | null };
 
 export type SidechainRoute = { runtimeId: string; serviceUuid: string };
 export type SidechainRouting = { [runtimeId: string]: Array<SidechainRoute> };
 
 export type Peer = PeerJs & {
   onConnectionClosed?: (dstName: string) => void;
-  onConnectionOpened?: (dstName: string) => void;
+  onConnectionOpened?: (dstName: string, connection: DataConnection) => void;
 };
+
+export type ConnectionAndPeer = {
+  connection: DataConnection;
+  srcPeer: Peer;
+};
+
+export type PeerConnections = {
+  [srcPeer: string]: { [dstPeerName: string]: DataConnection };
+};
+
+export type DataEnvelope = { sender: string; data: any };
 
 export type PeerJsHostDescriptor = {
   host: string;
@@ -116,8 +131,8 @@ export type ServiceAction = {
 
 export type AppImpl = {
   notify: (svc: ServiceImpl, notification: any) => void;
-  next: (svc: ServiceDescriptor | null, result: any) => void;
-  getServiceById: (uuid: string) => ServiceImpl | null | undefined;
+  next: (svc: ServiceId | null, result: any) => void;
+  getServiceById: (uuid: string) => ServiceImpl | null;
   sendAction: (action: ServiceAction) => void;
   storeServiceData: (serviceUuid: string, key: string, value: string) => void;
   restoreServiceData: (serviceUuid: string, key: string) => void;
@@ -128,7 +143,7 @@ export type AppImpl = {
 
 export type ServiceImpl = {
   serviceId?: string; // TODO not sure about this
-  __descriptor?: ServiceDescriptor; // TODOÖ: remove
+  __descriptor?: ServiceDescriptor; // TODO: remove - this only existed in old nodejs backend services
   __notificationTargets?: {
     notify: (svc: ServiceImpl, notification: any) => void;
   };
@@ -143,8 +158,8 @@ export type ServiceImpl = {
 };
 
 export type RuntimeImpl = {
-  getServiceById: (uuid: string) => ServiceImpl;
-  processRuntime: (params: any, svc: ServiceImpl | null | undefined) => any;
+  getServiceById: (uuid: string) => ServiceImpl | null;
+  processRuntime: (params: any, svc: ServiceId | null) => any;
   destroyService: (svcUuid: string) => void;
   destroyRuntime: () => void;
 };
@@ -162,5 +177,7 @@ export type User = {
 };
 
 export type Notification = {
-  tag: string;
+  type: "info" | "error";
+  tag?: string;
+  message: string;
 };
