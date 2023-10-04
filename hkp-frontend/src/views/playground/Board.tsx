@@ -71,7 +71,7 @@ export default class Board extends Component<Props, State> {
     peerOutputActivation: {},
     peerInputActivation: {},
   };
-  runtimeInstances: { [runtimeId: string]: Runtime } = {};
+  runtimeInstances: { [runtimeId: string]: Runtime | null } = {};
   inputSelectors: { [runtimeId: string]: InputOptions | null } = {};
 
   peerContext: PeersProvider | null = null;
@@ -196,7 +196,7 @@ export default class Board extends Component<Props, State> {
   renderOutputs = (
     peers: Array<string>,
     runtime: RuntimeDescriptor,
-    peersContext: PeersContextState,
+    peersContext: PeersContextState | null,
     boardContext: BoardContextState
   ) => {
     const activationId = getActivationId(runtime.id);
@@ -204,6 +204,7 @@ export default class Board extends Component<Props, State> {
     const runtimeSidechainRouting =
       sidechainRouting && sidechainRouting[runtime.id];
 
+    const runtimeActivation = this.getRuntimeActivation(runtime);
     return (
       <OutputOptions
         items={peers}
@@ -219,7 +220,7 @@ export default class Board extends Component<Props, State> {
           if (output && output.peer) {
             const srcPeer = this.getPeerName(runtime);
             const dstPeer = output.peer;
-            peersContext.closeConnection(srcPeer, dstPeer);
+            peersContext?.closeConnection(srcPeer, dstPeer);
           }
           this.props.onChangeOutputRouting(runtime, {
             ...output,
@@ -229,7 +230,7 @@ export default class Board extends Component<Props, State> {
         onAction={(action) => {
           switch (action.type) {
             case OutputOptions.updatePeersAction: {
-              peersContext.updatePeers();
+              peersContext?.updatePeers();
               break;
             }
             case OutputOptions.flowChanged:
@@ -245,10 +246,10 @@ export default class Board extends Component<Props, State> {
         onSidechangeRouting={(routes) =>
           this.props.onChangeSidechainRouting(runtime, routes)
         }
-        disabled={!this.state.peerOutputActivation[activationId]}
+        disabled={!runtimeActivation}
       >
         {this.renderPeersActivator(runtime, "output")}
-        {this.renderPeersDeactivator(runtime, "output")}
+        {this.renderPeersDeactivator(runtime)}
       </OutputOptions>
     );
   };
@@ -256,9 +257,10 @@ export default class Board extends Component<Props, State> {
   renderInputs = (
     peers: Array<string>,
     runtime: RuntimeDescriptor,
-    peersContext: PeersContextState
+    peersContext: PeersContextState | null
   ) => {
     const activationId = getActivationId(runtime.id);
+    const runtimeActivation = this.getRuntimeActivation(runtime);
     return (
       <InputOptions
         ref={(selector) => (this.inputSelectors[runtime.id] = selector)}
@@ -267,22 +269,27 @@ export default class Board extends Component<Props, State> {
         onAction={(action) => {
           switch (action.type) {
             case InputOptions.updatePeersAction:
-              return peersContext.updatePeers();
+              return peersContext?.updatePeers();
             default:
               break;
           }
         }}
         onSelect={(value) => {
           const input = this.state.peerInputActivation[activationId];
-          this.props.onChangeInputRouting(runtime, {
-            ...input,
-            peer: value,
-          });
+          this.props.onChangeInputRouting(
+            runtime,
+            value
+              ? {
+                  ...input,
+                  peer: value,
+                }
+              : null
+          );
         }}
-        disabled={!this.state.peerInputActivation[activationId]}
+        disabled={!runtimeActivation}
       >
         {this.renderPeersActivator(runtime, "input")}
-        {this.renderPeersDeactivator(runtime, "input")}
+        {this.renderPeersDeactivator(runtime)}
       </InputOptions>
     );
   };
@@ -293,8 +300,9 @@ export default class Board extends Component<Props, State> {
   ) => {
     const runtimeActivation = this.getRuntimeActivation(runtime);
     if (!!runtimeActivation) {
-      return null;
+      return null; // already active
     }
+
     const discoveryOptions = availableDiscoveryPeerHosts.reduce(
       (acc, availablePeer) => {
         const hostAndPort = formatHostAndPort(availablePeer);
@@ -327,12 +335,14 @@ export default class Board extends Component<Props, State> {
               : null
           }
           options={discoveryOptions}
-          onChange={(_ev, { _, index }) =>
-            this.props.onChangeOutputRouting(
-              runtime,
-              availableDiscoveryPeerHosts[index]
-            )
-          }
+          onChange={(_ev, { index }) => {
+            if (index !== undefined) {
+              this.props.onChangeOutputRouting(
+                runtime,
+                availableDiscoveryPeerHosts[index]
+              );
+            }
+          }}
           uppercaseValues={false}
         />
         <div
@@ -360,10 +370,7 @@ export default class Board extends Component<Props, State> {
     );
   };
 
-  renderPeersDeactivator = (
-    runtime: RuntimeDescriptor,
-    type: "input" | "output"
-  ) => {
+  renderPeersDeactivator = (runtime: RuntimeDescriptor) => {
     const runtimeActivation = this.getRuntimeActivation(runtime);
     if (!runtimeActivation) {
       return null;
@@ -372,9 +379,8 @@ export default class Board extends Component<Props, State> {
       <div
         style={{ cursor: "pointer", color: "#1e70bf" }}
         onClick={() => {
-          type === "input"
-            ? this.props.onChangeInputRouting(runtime, null)
-            : this.props.onChangeOutputRouting(runtime, null);
+          this.props.onChangeInputRouting(runtime, null);
+          this.props.onChangeOutputRouting(runtime, null);
         }}
       >
         Click to disable
@@ -466,27 +472,32 @@ export default class Board extends Component<Props, State> {
                       onConnectionClosed={(closedPeer) => {
                         // the connection between peers was closed by either side
                         const isInputConnection = closedPeer === peerName;
-
                         let reconnectCallback;
                         if (isInputConnection) {
                           const closedInputRouting =
                             this.props.inputRouting[runtime.id];
 
+                          const isCompatRoute =
+                            typeof closedInputRouting === "string";
                           if (
-                            closedInputRouting.peer !==
-                            InputOptions.allInputsWildcard
+                            !isCompatRoute &&
+                            closedInputRouting?.peer !==
+                              InputOptions.allInputsWildcard
                           ) {
                             this.props.onChangeInputRouting(runtime, null);
                           }
 
                           reconnectCallback = // no reconnect for wildcard inputs
-                            closedInputRouting.peer ===
-                            InputOptions.allInputsWildcard
+                            !isCompatRoute &&
+                            closedInputRouting?.peer ===
+                              InputOptions.allInputsWildcard
                               ? null
-                              : (onClose) => {
+                              : (onClose: () => void) => {
                                   this.props.onChangeInputRouting(
                                     runtime,
-                                    closedInputRouting
+                                    isCompatRoute
+                                      ? { peer: closedInputRouting }
+                                      : closedInputRouting
                                   );
                                   onClose();
                                 };
@@ -497,7 +508,7 @@ export default class Board extends Component<Props, State> {
                             peer: null,
                           });
                           reconnectCallback = closedOutputRouting
-                            ? (onClose) => {
+                            ? (onClose: () => void) => {
                                 this.props.onChangeOutputRouting(runtime, {
                                   peer: closedOutputRouting,
                                 });

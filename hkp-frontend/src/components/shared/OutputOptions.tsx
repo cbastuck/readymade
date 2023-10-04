@@ -13,11 +13,11 @@ type Props = {
   value: string | null;
   children: JSX.Element | Array<JSX.Element | null>;
   flow: "pass" | "stop";
-  disabled?: boolean;
   boardContext: BoardContextState;
   sidechainRouting: Array<SidechainRoute>;
-  onSidechangeRouting: (route: Array<SidechainRoute>) => void;
+  disabled?: boolean;
 
+  onSidechangeRouting: (route: Array<SidechainRoute>) => void;
   onAction: (action: Action) => void;
   onSelect: (item: string | null) => void;
   onExpand?: () => void;
@@ -120,7 +120,7 @@ export default class OutputOptions extends Component<Props, State> {
         {this.renderFlowOptions()}
         {this.renderSidechainOptions()}
         {disabled ? (
-          <div style={{ ...t.p(10, 25) }}>{this.props.children} </div>
+          <div style={{ ...t.p(10, 25) }}> {this.props.children} </div>
         ) : (
           this.renderPeerOptions()
         )}

@@ -35,9 +35,9 @@ export type SavedBoard = {
 };
 
 export type InputRouteCompat = string;
-export type InputRoute = { peer: string | null };
+export type InputRoute = { peer: string } | null;
 export type InputRoutingCompat = {
-  [id: string]: InputRouteCompat | InputRoute;
+  [id: string]: InputRouteCompat | InputRoute | null;
 };
 export type InputRouting = { [id: string]: InputRoute | null };
 
