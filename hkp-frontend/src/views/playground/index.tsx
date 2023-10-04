@@ -35,16 +35,15 @@ import {
   setRuntime as setRuntimeREST,
   getRuntimeRegistry as getRuntimeRegistryREST,
 } from "../../core/actions";
-import {
-  createFreeRuntime,
-  getRuntimeRegistry,
-} from "../../core/graphqlActions";
+//import {
+//  createFreeRuntime,
+//  getRuntimeRegistry,
+//} from "../../core/graphqlActions";
 import {
   Action,
   AddServiceResult,
   BoardDescriptor,
   ExternalInput,
-  InputRoute,
   InputRouting,
   OutputRoute,
   OutputRouting,
@@ -607,7 +606,7 @@ class Playground extends Component<Props, State> {
           }
         }}
         inputRouting={inputRouting}
-        onChangeInputRouting={(runtime: RuntimeDescriptor, value: InputRoute) =>
+        onChangeInputRouting={(runtime, value) =>
           this.setState({
             inputRouting: {
               ...this.state.inputRouting,

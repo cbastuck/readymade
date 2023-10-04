@@ -8,7 +8,6 @@ import { PeersContextState, PeersCtx } from "../PeersContext";
 type Props = {
   active: boolean;
   name: string;
-
   peerHost: string;
   usePeerPort: number;
   usePeerRoutePath: string;

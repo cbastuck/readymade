@@ -30,35 +30,34 @@ import {
 import { BoardContextState } from "../BoardContext";
 
 type Props = {
-  style: object;
   boardContext: BoardContextState;
-  readonly: boolean;
-  expanded: boolean;
-  frameless: boolean;
-  children: JSX.Element | JSX.Element[];
-  onArrangeService: (serviceUuid: string, position: number) => void;
-  headless: boolean;
-
   initialState: {
     wrapServices?: boolean;
     minimized?: boolean;
   };
   runtime: RuntimeDescriptor;
   allowedServices: Array<ServiceURI>;
-  customItems: Array<{
-    key: string;
-    onClick: (ev: React.MouseEvent) => void;
-    icon: SemanticICONS;
-  }>;
-  disabledItems: Array<string>;
-
   outputs: ReactElement;
   inputs: ReactElement;
+  children?: JSX.Element | JSX.Element[];
+  customItems?: Array<{
+    key: string;
+    icon: SemanticICONS;
+    onClick: (ev: React.MouseEvent) => void;
+  }>;
+  disabledItems?: Array<string>;
+  headless?: boolean;
+  style?: object;
+  readonly?: boolean;
+  expanded?: boolean;
+  frameless?: boolean;
+
   onResult: (
     uuid: string,
     result: any,
     requestId: string | null
   ) => Promise<void>;
+  onArrangeService?: (serviceUuid: string, position: number) => void;
 };
 
 type State = {
@@ -84,7 +83,7 @@ export default class Runtime extends Component<Props, State> {
   componentDidMount() {
     const { readonly, initialState = {}, expanded } = this.props;
     this.setState({
-      readonly: readonly,
+      readonly: !!readonly,
       wrapServices: initialState.wrapServices,
       expanded:
         expanded !== undefined ? expanded : initialState.minimized !== true,
@@ -99,7 +98,7 @@ export default class Runtime extends Component<Props, State> {
     if (readonly !== prevProps.readonly) {
       this.setState({
         expanded: !readonly,
-        readonly: readonly,
+        readonly: !!readonly,
       });
     }
   }

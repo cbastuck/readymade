@@ -1,4 +1,5 @@
 import PeerJs, { DataConnection } from "peerjs";
+import { ReactElement } from "react";
 
 export type ServiceId = {
   uuid: string;
@@ -38,7 +39,7 @@ export type InputRoute = { peer: string | null };
 export type InputRoutingCompat = {
   [id: string]: InputRouteCompat | InputRoute;
 };
-export type InputRouting = { [id: string]: InputRoute };
+export type InputRouting = { [id: string]: InputRoute | null };
 
 export type OutputRoute = {
   peer?: any;
@@ -73,7 +74,7 @@ export type PeerJsHostDescriptor = {
 };
 
 export type PeerOutputActivation = PeerJsHostDescriptor & OutputRoute;
-export type PeerInputActivation = InputRoute;
+export type PeerInputActivation = PeerJsHostDescriptor & InputRoute;
 
 export type BoardDescriptor = {
   runtimes: Array<RuntimeDescriptor>;
@@ -180,4 +181,9 @@ export type Notification = {
   type: "info" | "error";
   tag?: string;
   message: string;
+  ctas?: Array<{
+    icon: ReactElement;
+    positive: boolean;
+    callback: null | ((onClose: () => void) => void);
+  }>;
 };
