@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Loader } from "semantic-ui-react";
 import * as uuid from "uuid";
 
@@ -27,6 +27,7 @@ import {
   allowedServices,
   defaultName,
   availableRuntimes,
+  getActivationId,
 } from "./common";
 import { importBoard, createBoardFromTemplate } from "./BoardActions";
 import {
@@ -44,9 +45,8 @@ import {
   AddServiceResult,
   BoardDescriptor,
   ExternalInput,
-  InputRouting,
-  OutputRoute,
-  OutputRouting,
+  PeerOutputActivation,
+  PeerInputActivation,
   PlaygroundBoard,
   RuntimeClass,
   RuntimeDescriptor,
@@ -75,8 +75,8 @@ type State = {
   rejectedSyncSenders: Array<any>; // TODO
 
   sidechainRouting: SidechainRouting;
-  inputRouting: InputRouting;
-  outputRouting: OutputRouting;
+  inputRouting: { [activationId: string]: PeerInputActivation | null };
+  outputRouting: { [activationId: string]: PeerOutputActivation | null };
 };
 
 class Playground extends Component<Props, State> {
@@ -571,10 +571,7 @@ class Playground extends Component<Props, State> {
         boardName={boardName}
         sidechainRouting={sidechainRouting}
         outputRouting={outputRouting}
-        onChangeOutputRouting={(
-          runtime: RuntimeDescriptor,
-          value: OutputRoute | null
-        ) => {
+        onChangeOutputRouting={(runtime, value) => {
           if (value === null) {
             this.setState({
               outputRouting: {

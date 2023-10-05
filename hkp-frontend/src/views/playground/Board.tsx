@@ -19,7 +19,6 @@ import { availableDiscoveryPeerHosts } from "./common";
 import {
   InputRoute,
   InputRoutingCompat,
-  OutputRoute,
   OutputRouting,
   PeerInputActivation,
   PeerJsHostDescriptor,
@@ -47,11 +46,11 @@ type Props = {
 
   onChangeOutputRouting: (
     runtime: RuntimeDescriptor,
-    value: OutputRoute | null
+    value: PeerOutputActivation | null
   ) => void;
   onChangeInputRouting: (
     runtime: RuntimeDescriptor,
-    value: InputRoute | null
+    value: PeerInputActivation | null
   ) => void;
   onChangeSidechainRouting: (
     runtime: RuntimeDescriptor,
@@ -215,17 +214,21 @@ export default class Board extends Component<Props, State> {
             rt.scrollRuntimeContainerToRight();
           }
         }}
-        onSelect={(peer) => {
-          const output = this.state.peerOutputActivation[activationId];
-          if (output && output.peer) {
-            const srcPeer = this.getPeerName(runtime);
-            const dstPeer = output.peer;
-            peersContext?.closeConnection(srcPeer, dstPeer);
+        onSelect={(peer: string | null) => {
+          const output: PeerOutputActivation | null =
+            this.state.peerOutputActivation[activationId];
+          if (output) {
+            if (output.peer) {
+              const srcPeer = this.getPeerName(runtime);
+              const dstPeer = output.peer;
+              peersContext?.closeConnection(srcPeer, dstPeer);
+            }
+            output &&
+              this.props.onChangeOutputRouting(runtime, {
+                ...output,
+                peer,
+              });
           }
-          this.props.onChangeOutputRouting(runtime, {
-            ...output,
-            peer,
-          });
         }}
         onAction={(action) => {
           switch (action.type) {
@@ -234,7 +237,10 @@ export default class Board extends Component<Props, State> {
               break;
             }
             case OutputOptions.flowChanged:
-              this.props.onChangeOutputRouting(runtime, { flow: action.flow });
+              this.props.onChangeOutputRouting(runtime, {
+                ...runtimeActivation,
+                flow: action.flow,
+              });
               return;
             default:
               break;
@@ -496,20 +502,25 @@ export default class Board extends Component<Props, State> {
                                   this.props.onChangeInputRouting(
                                     runtime,
                                     isCompatRoute
-                                      ? { peer: closedInputRouting }
-                                      : closedInputRouting
+                                      ? {
+                                          ...runtimeActivation,
+                                          peer: closedInputRouting,
+                                        }
+                                      : {
+                                          ...runtimeActivation,
+                                          ...closedInputRouting,
+                                        }
                                   );
                                   onClose();
                                 };
                         } else {
                           const closedOutputRouting =
                             this.props.outputRouting[runtime.id]?.peer;
-                          this.props.onChangeOutputRouting(runtime, {
-                            peer: null,
-                          });
+                          this.props.onChangeOutputRouting(runtime, null);
                           reconnectCallback = closedOutputRouting
                             ? (onClose: () => void) => {
                                 this.props.onChangeOutputRouting(runtime, {
+                                  ...runtimeActivation,
                                   peer: closedOutputRouting,
                                 });
                                 onClose();
