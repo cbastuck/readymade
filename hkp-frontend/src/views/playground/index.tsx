@@ -27,7 +27,6 @@ import {
   allowedServices,
   defaultName,
   availableRuntimes,
-  getActivationId,
 } from "./common";
 import { importBoard, createBoardFromTemplate } from "./BoardActions";
 import {
