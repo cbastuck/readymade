@@ -196,7 +196,7 @@ export default class Board extends Component<Props, State> {
     boardContext: BoardContextState
   ) => {
     const activationId = getActivationId(runtime.id);
-    const { sidechainRouting, outputRouting } = this.props;
+    const { sidechainRouting } = this.props;
     const runtimeSidechainRouting =
       sidechainRouting && sidechainRouting[runtime.id];
 
@@ -207,9 +207,7 @@ export default class Board extends Component<Props, State> {
     return (
       <OutputOptions
         items={peers}
-        value={
-          this.state.peerOutputActivation[activationId]?.route?.peer || null
-        }
+        value={outputActivation?.route?.peer || null}
         onExpand={() => {
           const rt = this.getRuntimeById(runtime.id);
           if (rt) {
@@ -217,19 +215,17 @@ export default class Board extends Component<Props, State> {
           }
         }}
         onSelect={(peer: string | null) => {
-          const output: PeerOutputActivation | null =
-            this.state.peerOutputActivation[activationId];
-          if (output) {
-            if (output?.route?.peer) {
+          if (outputActivation) {
+            if (outputActivation?.route?.peer) {
               const srcPeer = this.getPeerName(runtime);
-              const dstPeer = output.route.peer;
+              const dstPeer = outputActivation.route.peer;
               peersContext?.closeConnection(srcPeer, dstPeer);
             }
-            output &&
+            outputActivation &&
               this.props.onChangeOutputRouting(runtime, {
-                ...output,
+                ...outputActivation,
                 route: {
-                  ...output.route,
+                  ...outputActivation.route,
                   peer,
                 },
               });
@@ -255,7 +251,7 @@ export default class Board extends Component<Props, State> {
                       }
                     : {
                         hostDescriptor: null,
-                        route: { flow: "pass", peer: null },
+                        route: { flow: action.flow, peer: null },
                       }
                 );
               }
@@ -264,7 +260,7 @@ export default class Board extends Component<Props, State> {
               break;
           }
         }}
-        flow={outputRouting[runtime.id]?.route?.flow}
+        flow={outputActivation?.route?.flow}
         boardContext={boardContext}
         sidechainRouting={runtimeSidechainRouting}
         onSidechangeRouting={(routes) =>

@@ -1,5 +1,5 @@
 import { Dropdown } from "semantic-ui-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { BoardContextState } from "../../BoardContext";
 
 type Props = {
@@ -19,7 +19,6 @@ export default function BoardMenu({
     letterSpacing: 1,
   };
 
-  const navigateTo = useNavigate();
   const location = useLocation();
   return (
     <Dropdown
@@ -101,10 +100,25 @@ export default function BoardMenu({
         <Dropdown.Item
           disabled={!location.pathname.startsWith("/playground")}
           onClick={() =>
-            navigateTo(`${location.pathname}/src${location.search}`)
+            boardContext?.onAction({
+              type: "showBoardSource",
+            })
           }
         >
           <span style={menuItemStyle}>Board Source</span>
+        </Dropdown.Item>
+        <Dropdown.Item
+          onClick={() =>
+            boardContext?.onAction({
+              type: "createBoardLink",
+            })
+          }
+          disabled={
+            !boardContext ||
+            !boardContext?.isActionAvailable({ type: "createBoardLink" })
+          }
+        >
+          <span style={menuItemStyle}>Board Link</span>
         </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>

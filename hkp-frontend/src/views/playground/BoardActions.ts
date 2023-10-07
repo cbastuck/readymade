@@ -12,6 +12,7 @@ import {
   RuntimeServiceMap,
   ServiceDescriptor,
 } from "../../types";
+import { decodeBoardState } from "./BoardLink";
 
 export async function importBoard(
   url: string
@@ -190,4 +191,9 @@ export function reorderService(
   newArr.splice(fromIndex, 1);
   newArr.splice(toIndex, 0, services[fromIndex]);
   return newArr;
+}
+
+export function importFromLink(fromLink: string) {
+  const src: string = decodeBoardState(fromLink);
+  return JSON.parse(src);
 }

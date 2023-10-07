@@ -17,7 +17,7 @@ type Props = {
   items: Array<string>;
   value: string | null;
   children: JSX.Element | Array<JSX.Element | null>;
-  flow: RuntimeFlowOutputOptions;
+  flow: RuntimeFlowOutputOptions | undefined;
   boardContext: BoardContextState;
   sidechainRouting: Array<SidechainRoute>;
   disabled?: boolean;
@@ -62,7 +62,7 @@ export default class OutputOptions extends Component<Props, State> {
   };
 
   renderPeerOptions = () => {
-    const { onSelect, onAction, value } = this.props;
+    const { onSelect, onAction, value = "pass" } = this.props;
     const peerOptions = this.getSelectorOptions();
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -95,10 +95,10 @@ export default class OutputOptions extends Component<Props, State> {
           // stopIf: 'stop-if'
         }}
         value={flow}
-        onChange={(ev, { value: flow }) =>
+        onChange={(ev, { value: flow }) => {
           isValidFlowOption(flow) &&
-          onAction({ type: OutputOptions.flowChanged, flow })
-        }
+            onAction({ type: OutputOptions.flowChanged, flow });
+        }}
       />
     );
   };

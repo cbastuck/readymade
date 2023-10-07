@@ -30,7 +30,11 @@ import {
   defaultName,
   availableRuntimes,
 } from "./common";
-import { importBoard, createBoardFromTemplate } from "./BoardActions";
+import {
+  importBoard,
+  createBoardFromTemplate,
+  importFromLink,
+} from "./BoardActions";
 import {
   addRuntime as addRuntimeREST,
   addService as addServiceREST,
@@ -56,7 +60,7 @@ import {
   PeerOutputRouting,
   PlaygroundState,
 } from "../../types";
-import { decodeLink } from "./BoardSource";
+import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -227,8 +231,7 @@ class Playground extends Component<Props, State> {
       } else if (params.src) {
         return importBoard(params.src);
       } else if (params.fromLink) {
-        const src: string = decodeLink(params.fromLink);
-        return JSON.parse(src);
+        return importFromLink(params.fromLink);
       } else {
         const localBoard = await this.restoreBoardFromLocalStorage(board);
         if (localBoard) {
@@ -503,6 +506,8 @@ class Playground extends Component<Props, State> {
         return !!this.boardProviderRef?.state.runtimes;
       case "toggleBoardSync":
         return true;
+      case "createBoardLink":
+        return true;
       default:
         break;
     }
@@ -608,10 +613,7 @@ class Playground extends Component<Props, State> {
               [runtime.id]: {
                 hostDescriptor: hostDescriptor || null,
                 route: {
-                  peer:
-                    peer === undefined
-                      ? outputRouting[runtime.id]?.route.peer || null
-                      : peer,
+                  peer: peer || outputRouting[runtime.id]?.route.peer || null,
                   flow,
                 },
               },
@@ -710,6 +712,28 @@ class Playground extends Component<Props, State> {
           if (action.type === "toggleBoardSync") {
             this.setState({ boardSyncActive: !this.state.boardSyncActive });
             return true;
+          } else if (action.type === "createBoardLink") {
+            this.boardProviderRef?.state.serializeBoard().then(
+              (data) =>
+                data &&
+                createBoardLink(
+                  JSON.stringify({
+                    runtimes: data.runtimes,
+                    services: data.services,
+                  })
+                )
+            );
+            return true;
+          } else if (action.type === "showBoardSource") {
+            this.boardProviderRef?.state.serializeBoard().then((data) => {
+              data &&
+                createBoardSrcLink(
+                  JSON.stringify({
+                    runtimes: data.runtimes,
+                    services: data.services,
+                  })
+                );
+            });
           }
           return false;
         }}
