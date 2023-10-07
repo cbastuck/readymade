@@ -56,6 +56,7 @@ import {
   PeerOutputRouting,
   PlaygroundState,
 } from "../../types";
+import { decodeLink } from "./BoardSource";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -225,6 +226,9 @@ class Playground extends Component<Props, State> {
         return createBoardFromTemplate(params.template, params);
       } else if (params.src) {
         return importBoard(params.src);
+      } else if (params.fromLink) {
+        const src: string = decodeLink(params.fromLink);
+        return JSON.parse(src);
       } else {
         const localBoard = await this.restoreBoardFromLocalStorage(board);
         if (localBoard) {

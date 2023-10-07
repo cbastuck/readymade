@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Button } from "semantic-ui-react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+// import { compressSync, decompressSync, strToU8, strFromU8 } from "fflate";
 
 import { localStoragePrefix } from "./common";
 import Editor from "../../components/shared/Editor/index";
@@ -9,25 +10,59 @@ import { redirectTo } from "../../core/actions";
 import { InfoNotification } from "../../components/Notifications";
 import { withRouter } from "../../common";
 import { importBoard } from "./BoardActions";
+import { generateRandomName } from "../../core/board";
 
-function BoardSource({ editSourceCode = true, match: { params } }) {
-  const [notification, setNotification] = React.useState(undefined);
-  const editor = React.useRef();
+type Props = {
+  editSourceCode: boolean;
+  match: {
+    params: any;
+  };
+};
+
+export function decodeLink(compressedEncoded: string): string {
+  /*
+  const stillCompressed = new Uint8Array(
+    atob(compressedEncoded)
+      .split("")
+      .map(function (c) {
+        return c.charCodeAt(0);
+      })
+  );
+  const inflated = strFromU8(decompressSync(stillCompressed));
+  */
+  const inflated = atob(compressedEncoded);
+  return inflated;
+}
+
+function BoardSource({ editSourceCode = true, match: { params } }: Props) {
+  const [editSourceCodeMode, setEditSourceCodeMode] = useState(editSourceCode);
+  const [notification, setNotification] = React.useState<string | undefined>();
+  const editor = React.useRef<any>();
 
   const onSave = () => {
-    const src = editor.current.getValue();
+    const src = editor.current?.getValue();
     storeBoardToLocalStorage(board, src);
     setNotification("Saved Successfully");
   };
 
-  const onCreateLink = () => {
-    const src = editor.current.getValue();
-    const encoded = btoa(src);
-    console.log(encoded);
+  const navigateTo = useNavigate();
+
+  const onCreateLink = (src: string) => {
+    /*const compressed = compressSync(strToU8(src));
+    const compressedB64Encoded = btoa(
+      String.fromCharCode.apply(null, compressed as any)
+    );*/
+    const compressedB64Encoded = btoa(src);
+    navigateTo(
+      `/playground/${generateRandomName()}?fromLink=${compressedB64Encoded}`,
+      {
+        replace: false,
+      }
+    );
   };
 
   React.useEffect(() => {
-    const keyListener = (e) => {
+    const keyListener = (e: any) => {
       if (
         (window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) &&
         e.keyCode === 83
@@ -57,7 +92,7 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
     });
   }
 
-  if (editSourceCode) {
+  if (editSourceCodeMode) {
     return (
       <div style={{ height: "100%" }}>
         <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={onSave}>
@@ -66,7 +101,10 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
         <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={closeSourceView}>
           Close
         </Button>
-        <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={onCreateLink}>
+        <Button
+          style={s(t.m5, t.uc, t.ls1, t.fs12)}
+          onClick={() => onCreateLink(editor.current?.getValue())}
+        >
           Link
         </Button>
         <InfoNotification
@@ -95,12 +133,18 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
       >
         <Button
           style={s(t.mt10, t.mh(5), t.uc, t.ls1, t.fs12)}
-          onClick={() => this.setState({ editSourceCode: true })}
+          onClick={() => setEditSourceCodeMode(true)}
         >
           Edit
         </Button>
         <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={closeSourceView}>
           Close
+        </Button>
+        <Button
+          style={s(t.m5, t.uc, t.ls1, t.fs12)}
+          onClick={() => onCreateLink(JSON.stringify(srcState || src, null, 2))}
+        >
+          Link
         </Button>
         <hr style={{ borderTop: "1px solid lightgray" }} />
       </div>
@@ -113,7 +157,7 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
 
 export default withRouter(BoardSource);
 
-function restoreBoardFromLocalStorage(name) {
+function restoreBoardFromLocalStorage(name: string) {
   const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
   const data = localStorage.getItem(storageName);
   if (data) {
@@ -121,6 +165,6 @@ function restoreBoardFromLocalStorage(name) {
   }
 }
 
-function storeBoardToLocalStorage(board, src) {
+function storeBoardToLocalStorage(board: string, src: string) {
   localStorage.setItem(`${localStoragePrefix}${board}`, src);
 }
