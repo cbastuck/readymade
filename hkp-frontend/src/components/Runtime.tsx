@@ -323,7 +323,7 @@ export default class Runtime extends Component<Props, State> {
               />
             </div>
           ) : (
-            <div style={{ cursor: "pointer" }}>
+            <div style={{ cursor: "pointer" }} title={runtimeId}>
               {name}
               <Icon
                 style={s(t.m(5, 0))}

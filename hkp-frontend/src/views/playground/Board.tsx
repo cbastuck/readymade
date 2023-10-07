@@ -17,12 +17,11 @@ import { getActivationId } from "./common";
 import SelectorField from "../../components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
 import {
-  InputRoute,
-  InputRoutingCompat,
-  OutputRouting,
   PeerInputActivation,
+  PeerInputRouting,
   PeerJsHostDescriptor,
   PeerOutputActivation,
+  PeerOutputRouting,
   RuntimeDescriptor,
   ServiceURI,
   SidechainRoute,
@@ -36,8 +35,8 @@ const defaultDiscoveryPeer: PeerJsHostDescriptor =
 
 type Props = {
   appContext: AppContextState;
-  inputRouting: InputRoutingCompat;
-  outputRouting: OutputRouting;
+  inputRouting: { [runtimeId: string]: PeerInputActivation };
+  outputRouting: { [runtimeId: string]: PeerOutputActivation };
   boardContext: BoardContextState;
   sidechainRouting: SidechainRouting;
   boardName: string;
@@ -46,11 +45,11 @@ type Props = {
 
   onChangeOutputRouting: (
     runtime: RuntimeDescriptor,
-    value: PeerOutputActivation | null
+    value: PeerOutputActivation
   ) => void;
   onChangeInputRouting: (
     runtime: RuntimeDescriptor,
-    value: PeerInputActivation | null
+    value: PeerInputActivation
   ) => void;
   onChangeSidechainRouting: (
     runtime: RuntimeDescriptor,
@@ -90,24 +89,21 @@ export default class Board extends Component<Props, State> {
     }
   }
 
-  updateInputActivation = (inputRouting: InputRoutingCompat) => {
+  updateInputActivation = (inputRouting: PeerInputRouting) => {
     const peerInputActivation = inputRouting
       ? Object.keys(inputRouting).reduce((all, runtimeId) => {
           const activationId = getActivationId(runtimeId);
-          const runtimeInputRouting =
-            typeof inputRouting[runtimeId] === "string" // compatibility - was a string with peername
-              ? { peer: inputRouting[runtimeId] }
-              : (inputRouting[runtimeId] as InputRoute);
-
+          const runtimeInputRouting = inputRouting[runtimeId];
           return {
             ...all,
             [activationId]:
-              runtimeInputRouting === null
-                ? null
-                : {
-                    ...defaultDiscoveryPeer,
+              runtimeInputRouting?.route?.peer &&
+              !runtimeInputRouting.hostDescriptor
+                ? {
                     ...runtimeInputRouting,
-                  },
+                    hostDescriptor: defaultDiscoveryPeer,
+                  }
+                : runtimeInputRouting,
           };
         }, {})
       : {};
@@ -115,7 +111,7 @@ export default class Board extends Component<Props, State> {
     this.setState((state) => ({ ...state, peerInputActivation }));
   };
 
-  updateOutputActivation = (outputRouting: OutputRouting) => {
+  updateOutputActivation = (outputRouting: PeerOutputRouting) => {
     const peerOutputActivation = outputRouting
       ? Object.keys(outputRouting).reduce((all, runtimeId) => {
           const activationId = getActivationId(runtimeId);
@@ -123,12 +119,13 @@ export default class Board extends Component<Props, State> {
           return {
             ...all,
             [activationId]:
-              runtimeOutputRouting === null
-                ? null
-                : {
-                    ...defaultDiscoveryPeer,
+              runtimeOutputRouting?.route?.peer &&
+              !runtimeOutputRouting.hostDescriptor
+                ? {
                     ...runtimeOutputRouting,
-                  },
+                    hostDescriptor: defaultDiscoveryPeer,
+                  }
+                : runtimeOutputRouting,
           };
         }, {})
       : {};
@@ -175,7 +172,7 @@ export default class Board extends Component<Props, State> {
       }
     }
     const runtimeOutput = outputRouting[runtime.id] || {};
-    const flow = (runtimeOutput && runtimeOutput.flow) || "pass";
+    const flow = (runtimeOutput && runtimeOutput.route?.flow) || "pass";
     if (flow === "pass") {
       const nextRuntime = this.getNextRuntime(runtime);
       if (nextRuntime) {
@@ -183,10 +180,10 @@ export default class Board extends Component<Props, State> {
       }
     }
 
-    if (runtimeOutput.peer && this.peerContext) {
+    if (runtimeOutput.route?.peer && this.peerContext) {
       this.peerContext.sendData(
         `${boardName}-${runtime.name}`,
-        runtimeOutput.peer,
+        runtimeOutput.route.peer,
         result
       );
     }
@@ -203,11 +200,16 @@ export default class Board extends Component<Props, State> {
     const runtimeSidechainRouting =
       sidechainRouting && sidechainRouting[runtime.id];
 
-    const runtimeActivation = this.getRuntimeActivation(runtime);
+    const outputActivation = this.state.peerOutputActivation[activationId];
+    const inputActivation = this.state.peerInputActivation[activationId];
+    const hostDescriptor =
+      outputActivation?.hostDescriptor || inputActivation?.hostDescriptor;
     return (
       <OutputOptions
         items={peers}
-        value={this.state.peerOutputActivation[activationId]?.peer || null}
+        value={
+          this.state.peerOutputActivation[activationId]?.route?.peer || null
+        }
         onExpand={() => {
           const rt = this.getRuntimeById(runtime.id);
           if (rt) {
@@ -218,15 +220,18 @@ export default class Board extends Component<Props, State> {
           const output: PeerOutputActivation | null =
             this.state.peerOutputActivation[activationId];
           if (output) {
-            if (output.peer) {
+            if (output?.route?.peer) {
               const srcPeer = this.getPeerName(runtime);
-              const dstPeer = output.peer;
+              const dstPeer = output.route.peer;
               peersContext?.closeConnection(srcPeer, dstPeer);
             }
             output &&
               this.props.onChangeOutputRouting(runtime, {
                 ...output,
-                peer,
+                route: {
+                  ...output.route,
+                  peer,
+                },
               });
           }
         }}
@@ -237,22 +242,35 @@ export default class Board extends Component<Props, State> {
               break;
             }
             case OutputOptions.flowChanged:
-              this.props.onChangeOutputRouting(runtime, {
-                ...runtimeActivation,
-                flow: action.flow,
-              });
+              if (action.flow) {
+                this.props.onChangeOutputRouting(
+                  runtime,
+                  outputActivation
+                    ? {
+                        ...outputActivation,
+                        route: {
+                          ...outputActivation.route,
+                          flow: action.flow,
+                        },
+                      }
+                    : {
+                        hostDescriptor: null,
+                        route: { flow: "pass", peer: null },
+                      }
+                );
+              }
               return;
             default:
               break;
           }
         }}
-        flow={outputRouting[runtime.id]?.flow}
+        flow={outputRouting[runtime.id]?.route?.flow}
         boardContext={boardContext}
         sidechainRouting={runtimeSidechainRouting}
         onSidechangeRouting={(routes) =>
           this.props.onChangeSidechainRouting(runtime, routes)
         }
-        disabled={!runtimeActivation}
+        disabled={!hostDescriptor}
       >
         {this.renderPeersActivator(runtime, "output")}
         {this.renderPeersDeactivator(runtime)}
@@ -266,12 +284,14 @@ export default class Board extends Component<Props, State> {
     peersContext: PeersContextState | null
   ) => {
     const activationId = getActivationId(runtime.id);
-    const runtimeActivation = this.getRuntimeActivation(runtime);
+    const runtimeActivation = this.state.peerInputActivation[activationId];
     return (
       <InputOptions
         ref={(selector) => (this.inputSelectors[runtime.id] = selector)}
         items={peers}
-        value={this.state.peerInputActivation[activationId]?.peer || null}
+        value={
+          this.state.peerInputActivation[activationId]?.route?.peer || null
+        }
         onAction={(action) => {
           switch (action.type) {
             case InputOptions.updatePeersAction:
@@ -280,16 +300,18 @@ export default class Board extends Component<Props, State> {
               break;
           }
         }}
-        onSelect={(value) => {
+        onSelect={(value: string | null) => {
           const input = this.state.peerInputActivation[activationId];
           this.props.onChangeInputRouting(
             runtime,
-            value
-              ? {
+            value === null
+              ? { ...input, route: { peer: null } }
+              : {
                   ...input,
-                  peer: value,
+                  route: {
+                    peer: value,
+                  },
                 }
-              : null
           );
         }}
         disabled={!runtimeActivation}
@@ -304,8 +326,12 @@ export default class Board extends Component<Props, State> {
     runtime: RuntimeDescriptor,
     type: "input" | "output"
   ) => {
-    const runtimeActivation = this.getRuntimeActivation(runtime);
-    if (!!runtimeActivation) {
+    const activationId = getActivationId(runtime.id);
+    const inputActivation = this.state.peerInputActivation[activationId];
+    const outputActivation = this.state.peerOutputActivation[activationId];
+    const hostDescriptor =
+      inputActivation?.hostDescriptor || outputActivation?.hostDescriptor;
+    if (!!hostDescriptor) {
       return null; // already active
     }
 
@@ -319,8 +345,11 @@ export default class Board extends Component<Props, State> {
       },
       {}
     );
-
-    const selectedDiscoveryServer = runtimeActivation || defaultDiscoveryPeer;
+    const outputRoute = outputActivation?.route || {
+      peer: null,
+      flow: "pass",
+    };
+    const selectedDiscoveryServer = defaultDiscoveryPeer;
     return (
       <div
         style={{
@@ -343,10 +372,10 @@ export default class Board extends Component<Props, State> {
           options={discoveryOptions}
           onChange={(_ev, { index }) => {
             if (index !== undefined) {
-              this.props.onChangeOutputRouting(
-                runtime,
-                availableDiscoveryPeerHosts[index]
-              );
+              this.props.onChangeOutputRouting(runtime, {
+                route: outputRoute,
+                hostDescriptor: availableDiscoveryPeerHosts[index],
+              });
             }
           }}
           uppercaseValues={false}
@@ -360,14 +389,14 @@ export default class Board extends Component<Props, State> {
           }}
           onClick={() =>
             type === "output"
-              ? this.props.onChangeOutputRouting(
-                  runtime,
-                  selectedDiscoveryServer
-                )
-              : this.props.onChangeInputRouting(
-                  runtime,
-                  selectedDiscoveryServer
-                )
+              ? this.props.onChangeOutputRouting(runtime, {
+                  route: outputRoute,
+                  hostDescriptor: selectedDiscoveryServer,
+                })
+              : this.props.onChangeInputRouting(runtime, {
+                  route: { peer: null },
+                  hostDescriptor: selectedDiscoveryServer,
+                })
           }
         >
           Click to enable
@@ -377,16 +406,28 @@ export default class Board extends Component<Props, State> {
   };
 
   renderPeersDeactivator = (runtime: RuntimeDescriptor) => {
-    const runtimeActivation = this.getRuntimeActivation(runtime);
-    if (!runtimeActivation) {
-      return null;
+    const activationId = getActivationId(runtime.id);
+    const inputRoute = this.state.peerInputActivation[activationId];
+    const outputRoute = this.state.peerOutputActivation[activationId];
+    const hostDescriptor =
+      inputRoute?.hostDescriptor || outputRoute?.hostDescriptor;
+    if (!hostDescriptor) {
+      return null; // already active
     }
     return (
       <div
         style={{ cursor: "pointer", color: "#1e70bf" }}
         onClick={() => {
-          this.props.onChangeInputRouting(runtime, null);
-          this.props.onChangeOutputRouting(runtime, null);
+          inputRoute &&
+            this.props.onChangeInputRouting(runtime, {
+              ...inputRoute,
+              hostDescriptor: null,
+            });
+          outputRoute &&
+            this.props.onChangeOutputRouting(runtime, {
+              ...outputRoute,
+              hostDescriptor: null,
+            });
         }}
       >
         Click to disable
@@ -433,14 +474,6 @@ export default class Board extends Component<Props, State> {
   getPeerName = (runtime: RuntimeDescriptor) =>
     `${this.props.boardName}-${runtime.name}`;
 
-  getRuntimeActivation = (runtime: RuntimeDescriptor) => {
-    const activationId = getActivationId(runtime.id);
-    return (
-      this.state.peerInputActivation[activationId] ||
-      this.state.peerOutputActivation[activationId]
-    );
-  };
-
   render() {
     const { description, boardName, allowedServices } = this.props;
     return (
@@ -450,9 +483,15 @@ export default class Board extends Component<Props, State> {
             <PeersConsumer>
               {(peersContext) =>
                 this.props.boardContext.runtimes.map((runtime) => {
-                  const runtimeActivation = this.getRuntimeActivation(runtime);
-                  const peerName = this.getPeerName(runtime);
                   const activationId = getActivationId(runtime.id);
+                  const inputActivation =
+                    this.state.peerInputActivation[activationId];
+                  const outputActivation =
+                    this.state.peerOutputActivation[activationId];
+                  const hostDescriptor =
+                    inputActivation?.hostDescriptor ||
+                    outputActivation?.hostDescriptor;
+                  const peerName = this.getPeerName(runtime);
                   return (
                     <Peer
                       key={`${boardName}-runtime-peer-${runtime.id}`}
@@ -462,8 +501,8 @@ export default class Board extends Component<Props, State> {
                         const input =
                           this.state.peerInputActivation[activationId];
                         const isWildcardInput =
-                          input?.peer === InputOptions.allInputsWildcard;
-                        if (isWildcardInput || input?.peer === sender) {
+                          input?.route?.peer === InputOptions.allInputsWildcard;
+                        if (isWildcardInput || input?.route?.peer === sender) {
                           const rt = this.getRuntimeById(runtime.id);
                           if (rt) {
                             rt.processRuntime(data, null);
@@ -483,45 +522,50 @@ export default class Board extends Component<Props, State> {
                           const closedInputRouting =
                             this.props.inputRouting[runtime.id];
 
-                          const isCompatRoute =
-                            typeof closedInputRouting === "string";
                           if (
-                            !isCompatRoute &&
-                            closedInputRouting?.peer !==
-                              InputOptions.allInputsWildcard
+                            closedInputRouting?.route?.peer !==
+                            InputOptions.allInputsWildcard
                           ) {
-                            this.props.onChangeInputRouting(runtime, null);
+                            this.props.onChangeInputRouting(runtime, {
+                              ...inputActivation,
+                              route: { peer: null },
+                            });
                           }
 
                           reconnectCallback = // no reconnect for wildcard inputs
-                            !isCompatRoute &&
-                            closedInputRouting?.peer ===
-                              InputOptions.allInputsWildcard
+                            closedInputRouting?.route?.peer ===
+                            InputOptions.allInputsWildcard
                               ? null
                               : (onClose: () => void) => {
-                                  this.props.onChangeInputRouting(
-                                    runtime,
-                                    isCompatRoute
-                                      ? {
-                                          ...runtimeActivation,
-                                          peer: closedInputRouting,
-                                        }
-                                      : {
-                                          ...runtimeActivation,
-                                          ...closedInputRouting,
-                                        }
-                                  );
+                                  this.props.onChangeInputRouting(runtime, {
+                                    ...inputActivation,
+                                    ...closedInputRouting,
+                                  });
                                   onClose();
                                 };
                         } else {
                           const closedOutputRouting =
-                            this.props.outputRouting[runtime.id]?.peer;
-                          this.props.onChangeOutputRouting(runtime, null);
+                            this.props.outputRouting[runtime.id]?.route?.peer;
+                          this.props.onChangeOutputRouting(runtime, {
+                            hostDescriptor:
+                              outputActivation?.hostDescriptor || null,
+                            route: {
+                              ...(outputActivation?.route || {
+                                flow: "pass",
+                                peer: null,
+                              }),
+                              peer: null,
+                            },
+                          });
                           reconnectCallback = closedOutputRouting
                             ? (onClose: () => void) => {
                                 this.props.onChangeOutputRouting(runtime, {
-                                  ...runtimeActivation,
-                                  peer: closedOutputRouting,
+                                  hostDescriptor: hostDescriptor || null,
+                                  route: {
+                                    flow:
+                                      outputActivation?.route.flow || "pass",
+                                    peer: closedOutputRouting,
+                                  },
                                 });
                                 onClose();
                               }
@@ -540,13 +584,11 @@ export default class Board extends Component<Props, State> {
                           tag: "peers",
                         });
                       }}
-                      active={!!runtimeActivation}
-                      peerHost={runtimeActivation && runtimeActivation.host}
-                      usePeerPort={runtimeActivation && runtimeActivation.port}
-                      usePeerRoutePath={
-                        runtimeActivation && runtimeActivation.path
-                      }
-                      isSecure={runtimeActivation && runtimeActivation.secure}
+                      active={!!hostDescriptor}
+                      peerHost={hostDescriptor?.host}
+                      usePeerPort={hostDescriptor?.port}
+                      usePeerRoutePath={hostDescriptor?.path}
+                      isSecure={hostDescriptor?.secure}
                     >
                       {this.renderRuntime(
                         this.props.boardContext,

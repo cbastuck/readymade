@@ -8,10 +8,10 @@ import { PeersContextState, PeersCtx } from "../PeersContext";
 type Props = {
   active: boolean;
   name: string;
-  peerHost: string;
-  usePeerPort: number;
-  usePeerRoutePath: string;
-  isSecure: boolean;
+  peerHost?: string;
+  usePeerPort?: number;
+  usePeerRoutePath?: string;
+  isSecure?: boolean;
 
   children: JSX.Element | JSX.Element[];
 
@@ -33,9 +33,9 @@ export default class PeerComponent extends Component<Props> {
   peer: Peer | null = null;
 
   componentDidMount() {
-    const { active } = this.props;
-    if (active !== undefined && active) {
-      this.initPeer();
+    const { active, peerHost } = this.props;
+    if (active && !!peerHost) {
+      this.initPeer(peerHost);
     }
   }
 
@@ -44,20 +44,20 @@ export default class PeerComponent extends Component<Props> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    const { name, active } = this.props;
-    if (name !== prevProps.name) {
+    const { name, active, peerHost } = this.props;
+    if (name !== prevProps.name && !!peerHost) {
       this.closePeer(prevProps.name);
-      this.initPeer();
+      this.initPeer(peerHost);
     }
-    if (active !== undefined && active !== prevProps.active) {
+    if (active !== prevProps.active) {
       this.closePeer();
-      if (active) {
-        this.initPeer();
+      if (active && !!peerHost) {
+        this.initPeer(peerHost);
       }
     }
   }
 
-  initPeer = () => {
+  initPeer = (peerHost: string) => {
     if (this.peer) {
       console.warn(
         "Peer.initPeer previous peer did not shutdown - closing now"
@@ -67,7 +67,7 @@ export default class PeerComponent extends Component<Props> {
     const {
       name = "unnamed-peer",
       onData,
-      peerHost,
+
       usePeerPort,
       usePeerRoutePath,
       isSecure,
@@ -76,7 +76,7 @@ export default class PeerComponent extends Component<Props> {
       host: peerHost,
       port: usePeerPort ? usePeerPort : isSecure ? 443 : 80,
       path: usePeerRoutePath ? usePeerRoutePath : "/peers",
-      secure: isSecure,
+      secure: !!isSecure,
     });
 
     peer.on("open", () => {

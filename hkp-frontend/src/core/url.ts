@@ -1,13 +1,19 @@
 import { generateRandomName } from "./board";
 
+type StringReturner = () => string;
+
 // TODO: copy of runtime/services/helpers.js
-function isFunction(functionToCheck) {
+function isFunction(functionToCheck: any): functionToCheck is StringReturner {
   return (
     functionToCheck && {}.toString.call(functionToCheck) === "[object Function]"
   );
 }
 
-function replaceAll(input, needle, replacement) {
+function replaceAll(
+  input: string,
+  needle: string,
+  replacement: string | StringReturner
+) {
   let src = `${input}`;
   while (src.indexOf(needle) !== -1) {
     const rep = isFunction(replacement) ? replacement() : replacement;
@@ -16,7 +22,7 @@ function replaceAll(input, needle, replacement) {
   return src;
 }
 
-export function replacePlaceholders(url, params) {
+export function replacePlaceholders(url: string, params: any) {
   if (!url) {
     return;
   }
@@ -43,7 +49,7 @@ export function replacePlaceholders(url, params) {
   return rep;
 }
 
-export function isWebsocket(url) {
+export function isWebsocket(url: string) {
   return url.startsWith("ws://") || url.startsWith("wss://");
 }
 

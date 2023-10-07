@@ -34,22 +34,6 @@ export type SavedBoard = {
   name: string;
 };
 
-export type InputRouteCompat = string;
-export type InputRoute = { peer: string } | null;
-export type InputRoutingCompat = {
-  [id: string]: InputRouteCompat | InputRoute | null;
-};
-export type InputRouting = { [id: string]: InputRoute | null };
-
-export type OutputRoute = {
-  peer?: any;
-  flow?: any;
-};
-export type OutputRouting = { [runtimeId: string]: OutputRoute | null };
-
-export type SidechainRoute = { runtimeId: string; serviceUuid: string };
-export type SidechainRouting = { [runtimeId: string]: Array<SidechainRoute> };
-
 export type Peer = PeerJs & {
   onConnectionClosed?: (dstName: string) => void;
   onConnectionOpened?: (dstName: string, connection: DataConnection) => void;
@@ -73,26 +57,31 @@ export type PeerJsHostDescriptor = {
   secure: boolean;
 };
 
-export type PeerOutputActivation = PeerJsHostDescriptor & OutputRoute;
-export type PeerInputActivation = PeerJsHostDescriptor & InputRoute;
-
-export type BoardDescriptor = {
-  runtimes: Array<RuntimeDescriptor>;
-  services: { [runtimeId: string]: Array<ServiceDescriptor> };
-  boardName?: string;
-  registry?: { [runtimeId: string]: ServiceRegistry };
+export type RuntimeFlowOutputOptions = "pass" | "stop";
+export type InputRoute = { peer: string | null };
+export type OutputRoute = {
+  flow: RuntimeFlowOutputOptions;
+  peer: string | null;
 };
 
-export type PlaygroundBoard = BoardDescriptor & {
-  sidechainRouting: SidechainRouting;
-  outputRouting: OutputRouting | null;
-  inputRouting: InputRouting;
-  description: string;
-  boardSyncActive: boolean;
-  syncedPeer: string | undefined;
-  acceptedSyncSenders: Array<any>;
-  rejectedSyncSenders: Array<any>;
+export type InputRouting = { [runtimeId: string]: InputRoute };
+export type OutputRouting = { [runtimeId: string]: OutputRoute };
+
+export type SidechainRoute = { runtimeId: string; serviceUuid: string };
+export type SidechainRouting = { [runtimeId: string]: Array<SidechainRoute> };
+
+export type PeerOutputActivation = {
+  route: OutputRoute;
+  hostDescriptor: PeerJsHostDescriptor | null;
 };
+
+export type PeerInputActivation = {
+  route: InputRoute;
+  hostDescriptor: PeerJsHostDescriptor | null;
+};
+
+export type PeerInputRouting = { [id: string]: PeerInputActivation };
+export type PeerOutputRouting = { [id: string]: PeerOutputActivation };
 
 export type ServiceURI = string;
 export type ServiceModule = ServiceClass & {
@@ -106,6 +95,7 @@ export type ServiceModule = ServiceClass & {
 };
 
 export type ServiceRegistry = Array<ServiceModule>;
+export type ServiceRegistryMap = { [runtimeId: string]: ServiceRegistry };
 
 export type ServiceClass = {
   serviceName: string;
@@ -123,7 +113,11 @@ export type AddServiceResult =
   | ServiceDescriptor
   | undefined;
 
-export type Action = { type: string; board?: string; flow?: string };
+export type Action = {
+  type: string;
+  board?: string;
+  flow?: RuntimeFlowOutputOptions;
+};
 
 export type ServiceAction = {
   service: ServiceDescriptor;
@@ -186,4 +180,37 @@ export type Notification = {
     positive: boolean;
     callback: null | ((onClose: () => void) => void);
   }>;
+};
+
+export type RuntimeServiceMap = {
+  [runtimeId: string]: Array<ServiceDescriptor>;
+};
+
+export type BoardDescriptor = {
+  runtimes: Array<RuntimeDescriptor>;
+  services: RuntimeServiceMap;
+  boardName?: string;
+  registry?: ServiceRegistryMap;
+  description?: string;
+};
+
+export type DeprecatedInputRouting = { [runtimeId: string]: string }; // old format with just a peer string
+
+export type PlaygroundTemplate = BoardDescriptor & {
+  sidechainRouting: SidechainRouting;
+  inputRouting: DeprecatedInputRouting;
+  outputRouting: OutputRouting;
+};
+
+export type PlaygroundBoard = BoardDescriptor & {
+  sidechainRouting: SidechainRouting;
+  outputRouting: PeerOutputRouting;
+  inputRouting: PeerInputRouting;
+};
+
+export type PlaygroundState = PlaygroundBoard & {
+  syncedPeer: string | undefined;
+  boardSyncActive: boolean;
+  acceptedSyncSenders: Array<any>;
+  rejectedSyncSenders: Array<any>;
 };

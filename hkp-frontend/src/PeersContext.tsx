@@ -48,15 +48,12 @@ class PeersProvider extends Component<Props, PeersContextState> {
     if (closedConnection) {
       closedConnection.close();
     }
-    this.setState(
-      {
-        connections: {
-          ...connections,
-          [srcPeerName]: removeKeyFromObject(srcConnections, dstPeerName),
-        },
+    this.setState({
+      connections: {
+        ...connections,
+        [srcPeerName]: removeKeyFromObject(srcConnections, dstPeerName),
       },
-      () => console.log("PeersContext: Updated connections", this.state)
-    );
+    });
   };
 
   onPeer = (peerName: string, peer: Peer) => {

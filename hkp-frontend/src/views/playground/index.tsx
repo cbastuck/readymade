@@ -44,15 +44,15 @@ import {
   AddServiceResult,
   BoardDescriptor,
   ExternalInput,
-  PeerOutputActivation,
-  PeerInputActivation,
-  PlaygroundBoard,
   RuntimeClass,
   RuntimeDescriptor,
   ServiceClass,
   ServiceDescriptor,
   SidechainRoute,
   SidechainRouting,
+  PeerInputRouting,
+  PeerOutputRouting,
+  PlaygroundState,
 } from "../../types";
 
 const restoredAvailableRuntimes = JSON.parse(
@@ -74,8 +74,8 @@ type State = {
   rejectedSyncSenders: Array<any>; // TODO
 
   sidechainRouting: SidechainRouting;
-  inputRouting: { [activationId: string]: PeerInputActivation | null };
-  outputRouting: { [activationId: string]: PeerOutputActivation | null };
+  inputRouting: PeerInputRouting;
+  outputRouting: PeerOutputRouting;
 };
 
 class Playground extends Component<Props, State> {
@@ -151,61 +151,68 @@ class Playground extends Component<Props, State> {
     if (!this.defaultRegistry) {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
     }
-    const {
-      boardName = this.state.boardName || defaultName,
-      description = "",
-      sidechainRouting = {},
-      outputRouting = {},
-      inputRouting = {},
-      // playground specific board data
-      boardSyncActive = false,
-      syncedPeer = undefined,
-      acceptedSyncSenders = [],
-      rejectedSyncSenders = [],
-      runtimes = [],
-      registry = undefined,
-      services = {},
-    }: State & BoardDescriptor = this.state.initialFetched
-      ? this.state
-      : await this.setInitialPlayground();
 
-    const data = {
-      sidechainRouting,
-      outputRouting,
-      inputRouting,
-      acceptedSyncSenders,
-      rejectedSyncSenders,
-    };
+    if (!this.state.initialFetched) {
+      const initialBord = await this.getInitialPlayground();
+      if (initialBord !== null) {
+        const {
+          boardName = this.state.boardName || defaultName,
+          description = "",
+          sidechainRouting = {},
+          outputRouting = {},
+          inputRouting = {},
 
-    this.setState({
-      ...data,
-      initialFetched: true,
-      description,
-      boardSyncActive,
-      syncedPeer,
-    });
+          // playground specific board data
+          boardSyncActive = false,
+          syncedPeer = undefined,
+          acceptedSyncSenders = [],
+          rejectedSyncSenders = [],
 
-    return {
-      boardName,
-      runtimes,
-      services,
-      registry: registry // for backwards compatiblity: when we only had browser runtimes on the playground
-        ? registry
-        : runtimes &&
-          runtimes.reduce(
-            (all, rt) => ({
-              ...all,
-              [rt.id]:
-                rt.type === "browser"
-                  ? this.defaultRegistry?.availableServices || []
-                  : [],
-            }),
-            {}
-          ),
-    };
+          registry = undefined,
+          runtimes = [],
+          services = {},
+        } = initialBord;
+        const data = {
+          sidechainRouting,
+          outputRouting,
+          inputRouting,
+          acceptedSyncSenders,
+          rejectedSyncSenders,
+        };
+
+        this.setState({
+          ...data,
+          initialFetched: true,
+          description,
+          boardSyncActive,
+          syncedPeer,
+        });
+
+        return {
+          boardName,
+          runtimes,
+          services,
+          registry: registry // for backwards compatiblity: when we only had browser runtimes on the playground
+            ? registry
+            : runtimes &&
+              runtimes.reduce(
+                (all, rt) => ({
+                  ...all,
+                  [rt.id]:
+                    rt.type === "browser"
+                      ? this.defaultRegistry?.availableServices || []
+                      : [],
+                }),
+                {}
+              ),
+        };
+      }
+    }
+
+    return this.boardProviderRef!.state;
   };
 
-  setInitialPlayground = async () => {
+  getInitialPlayground = async (): Promise<Partial<PlaygroundState> | null> => {
     const board = this.props.match?.params?.board;
     if (board) {
       const params = Object.fromEntries(
@@ -221,9 +228,17 @@ class Playground extends Component<Props, State> {
         if (localBoard) {
           return localBoard;
         }
-        return {};
       }
+      return {
+        runtimes: [],
+        services: {},
+        registry: undefined,
+        boardName: board,
+        //description?: string;
+      };
     }
+    console.error("Playground.getInitialPlayground() - no noard name");
+    return null;
   };
 
   restoreBoardFromLocalStorage = async (name: string) => {
@@ -268,7 +283,7 @@ class Playground extends Component<Props, State> {
 
   serializeBoard = async (
     descriptor: BoardDescriptor
-  ): Promise<PlaygroundBoard | null> => {
+  ): Promise<PlaygroundState | null> => {
     const maxRetries = 10;
     for (let i = 0; i < maxRetries && !this.board; ++i) {
       await sleep(10); // retry later
@@ -313,8 +328,14 @@ class Playground extends Component<Props, State> {
     return {
       ...data,
       sidechainRouting,
-      outputRouting,
-      inputRouting,
+      outputRouting: Object.keys(outputRouting).reduce(
+        (acc, cur) => ({ ...acc, [cur]: outputRouting[cur]?.route || null }),
+        {}
+      ),
+      inputRouting: Object.keys(inputRouting).reduce(
+        (acc, cur) => ({ ...acc, [cur]: inputRouting[cur]?.route || null }),
+        {}
+      ),
       description,
       boardSyncActive,
       syncedPeer,
@@ -570,36 +591,24 @@ class Playground extends Component<Props, State> {
         boardName={boardName}
         sidechainRouting={sidechainRouting}
         outputRouting={outputRouting}
-        onChangeOutputRouting={(runtime, value) => {
-          if (value === null) {
-            this.setState({
-              outputRouting: {
-                ...this.state.outputRouting,
-                [runtime.id]: null,
+        onChangeOutputRouting={(runtime, routing) => {
+          const { hostDescriptor, route } = routing;
+          const { peer, flow } = route;
+          this.setState({
+            outputRouting: {
+              ...outputRouting,
+              [runtime.id]: {
+                hostDescriptor: hostDescriptor || null,
+                route: {
+                  peer:
+                    peer === undefined
+                      ? outputRouting[runtime.id]?.route.peer || null
+                      : peer,
+                  flow,
+                },
               },
-            });
-          } else {
-            const { peer, flow, ...rest } = value;
-            const runtimeData = {
-              ...outputRouting[runtime.id],
-              ...rest,
-            };
-
-            if (peer || peer === null) {
-              runtimeData.peer = peer;
-            }
-
-            if (flow) {
-              runtimeData.flow = flow;
-            }
-
-            this.setState({
-              outputRouting: {
-                ...this.state.outputRouting,
-                [runtime.id]: runtimeData,
-              },
-            });
-          }
+            },
+          });
         }}
         inputRouting={inputRouting}
         onChangeInputRouting={(runtime, value) =>
