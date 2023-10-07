@@ -85,7 +85,7 @@ type Props = {
   addService: (svc: ServiceClass, rt: RuntimeDescriptor) => AddServiceResult;
   removeService: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
   newBoard: (searchParams?: string) => void; // TODO: why search params ??
-  clearBoard: () => Promise<void>;
+  clearBoard: (board: BoardDescriptor) => Promise<void>;
   saveBoard?: () => void;
   shareBoard?: () => void;
 
@@ -309,16 +309,17 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   clearBoard = async () => {
     const { clearBoard = this.clearBoardDefault } = this.props;
-    await clearBoard();
+    const { runtimes, services, boardName } = this.state;
     this.setState(() => ({
       runtimes: [],
       services: {},
       registry: {},
     }));
+    await clearBoard({ runtimes, services, boardName });
   };
 
-  clearBoardDefault = async () => {
-    const { runtimes } = this.state;
+  clearBoardDefault = async (board: BoardDescriptor) => {
+    const { runtimes } = board;
     if (runtimes) {
       for (const runtime of runtimes as Array<any>) {
         if (runtime.destroyRuntime) {
@@ -326,9 +327,7 @@ class BoardContext extends Component<Props, BoardContextState> {
         }
       }
     }
-
-    const boardname = this.getBoardName();
-    await clearBoard(boardname);
+    await clearBoard(board.boardName);
   };
 
   saveBoard = () => {

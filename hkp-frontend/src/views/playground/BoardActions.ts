@@ -18,6 +18,7 @@ export async function importBoard(
 ): Promise<BoardDescriptor | null> {
   try {
     const res = await fetch(url);
+
     const data: any = await res.json();
     const runtimeIds = Object.keys(data);
     return {

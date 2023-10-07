@@ -140,7 +140,7 @@ class Playground extends Component<Props, State> {
     const board = this.props.match?.params?.board;
     const prevBoard = prevProps.match?.params?.board;
     if (board !== prevBoard && board) {
-      this.clearPlayground().then(() =>
+      this.boardProviderRef?.clearBoard().then(() =>
         this.setState({
           boardName: board,
           initialFetched: false,
@@ -347,7 +347,7 @@ class Playground extends Component<Props, State> {
   };
 
   newBoard = async (searchParams = "") => {
-    await this.clearPlayground();
+    await this.boardProviderRef?.clearBoard();
     const name = generateRandomName();
     this.props.navigate(`/playground/${name}${searchParams}`, {
       replace: true,
@@ -433,8 +433,8 @@ class Playground extends Component<Props, State> {
     await this.destroyRuntime(runtime);
   };
 
-  clearPlayground = async () => {
-    const { runtimes = [] } = this.boardProviderRef?.state || {};
+  clearPlayground = async (board: BoardDescriptor) => {
+    const { runtimes = [] } = board;
     for (const runtime of runtimes) {
       await this.destroyRuntime(runtime);
     }

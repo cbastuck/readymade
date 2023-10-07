@@ -1,5 +1,5 @@
 import { Dropdown } from "semantic-ui-react";
-import { Link } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { BoardContextState } from "../../BoardContext";
 
 type Props = {
@@ -19,6 +19,8 @@ export default function BoardMenu({
     letterSpacing: 1,
   };
 
+  const navigateTo = useNavigate();
+  const location = useLocation();
   return (
     <Dropdown
       id="board-dropdown"
@@ -96,10 +98,13 @@ export default function BoardMenu({
             {boardSyncActive ? "Disable Sync" : "Board Sync"}
           </span>
         </Dropdown.Item>
-        <Dropdown.Item>
-          <Link to={`${window.location.pathname}/src`}>
-            <span style={menuItemStyle}>Board Source</span>
-          </Link>
+        <Dropdown.Item
+          disabled={!location.pathname.startsWith("/playground")}
+          onClick={() =>
+            navigateTo(`${location.pathname}/src${location.search}`)
+          }
+        >
+          <span style={menuItemStyle}>Board Source</span>
         </Dropdown.Item>
       </Dropdown.Menu>
     </Dropdown>

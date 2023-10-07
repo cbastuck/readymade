@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "semantic-ui-react";
+import { useLocation } from "react-router-dom";
 
 import { localStoragePrefix } from "./common";
 import Editor from "../../components/shared/Editor/index";
@@ -7,37 +8,24 @@ import { s, t } from "../../styles";
 import { redirectTo } from "../../core/actions";
 import { InfoNotification } from "../../components/Notifications";
 import { withRouter } from "../../common";
-
-function restoreBoardFromLocalStorage(name) {
-  const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
-  const data = localStorage.getItem(storageName);
-  if (data) {
-    return JSON.parse(data);
-  }
-}
-
-function storeBoardToLocalStorage(board, src) {
-  localStorage.setItem(`${localStoragePrefix}${board}`, src);
-}
-
-function closeSourceView() {
-  const { pathname } = window.location;
-  redirectTo(pathname.split("/").slice(0, -1).join("/"));
-}
+import { importBoard } from "./BoardActions";
 
 function BoardSource({ editSourceCode = true, match: { params } }) {
   const [notification, setNotification] = React.useState(undefined);
   const editor = React.useRef();
+
   const onSave = () => {
     const src = editor.current.getValue();
     storeBoardToLocalStorage(board, src);
     setNotification("Saved Successfully");
   };
+
   const onCreateLink = () => {
     const src = editor.current.getValue();
     const encoded = btoa(src);
     console.log(encoded);
   };
+
   React.useEffect(() => {
     const keyListener = (e) => {
       if (
@@ -51,8 +39,24 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
     document.addEventListener("keydown", keyListener, false);
     return () => document.removeEventListener("keydown", keyListener);
   });
+
+  const location = useLocation();
+  const closeSourceView = () => {
+    redirectTo(
+      location.pathname.split("/").slice(0, -1).join("/") + location.search
+    );
+  };
+
   const { board } = params;
-  const src = restoreBoardFromLocalStorage(board) || "";
+  const srcParam = new URLSearchParams(location.search).get("src");
+  const src = srcParam ? null : restoreBoardFromLocalStorage(board) || "";
+  const [srcState, setSrcState] = useState(src);
+  if (srcParam && srcState === null) {
+    importBoard(srcParam).then((data) => {
+      setSrcState(data);
+    });
+  }
+
   if (editSourceCode) {
     return (
       <div style={{ height: "100%" }}>
@@ -74,7 +78,7 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
         <Editor
           ref={editor}
           language="json"
-          value={JSON.stringify(src, null, 2)}
+          value={JSON.stringify(srcState || src, null, 2)}
         />
       </div>
     );
@@ -101,10 +105,22 @@ function BoardSource({ editSourceCode = true, match: { params } }) {
         <hr style={{ borderTop: "1px solid lightgray" }} />
       </div>
       <div style={{ fontFamily: "monospace", margin: 5 }}>
-        <pre> {JSON.stringify(src, null, 2)} </pre>
+        <pre> {JSON.stringify(srcState || src, null, 2)} </pre>
       </div>
     </div>
   );
 }
 
 export default withRouter(BoardSource);
+
+function restoreBoardFromLocalStorage(name) {
+  const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
+  const data = localStorage.getItem(storageName);
+  if (data) {
+    return JSON.parse(data);
+  }
+}
+
+function storeBoardToLocalStorage(board, src) {
+  localStorage.setItem(`${localStoragePrefix}${board}`, src);
+}
