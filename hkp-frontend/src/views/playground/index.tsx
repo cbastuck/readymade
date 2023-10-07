@@ -11,7 +11,9 @@ import BoardProvider, {
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
 import BrowserRegistry from "../../runtime/BrowserRegistry";
-import SaveBoardPrompt from "../../components/SaveBoardPrompt";
+import SaveBoardPrompt, {
+  SaveBoardApi,
+} from "../../components/SaveBoardPrompt";
 import VSpacer from "../../components/shared/VSpacer";
 import EmptySketch from "./EmptySketch";
 import Board from "./Board";
@@ -86,7 +88,7 @@ class Playground extends Component<Props, State> {
 
   defaultRegistry: BrowserRegistry | undefined = undefined;
   board: Board | null = null;
-  prompt: SaveBoardPrompt | null = null;
+  prompt: SaveBoardApi | null = null;
   state: State = {
     boardName:
       (this.props.match &&
@@ -446,14 +448,16 @@ class Playground extends Component<Props, State> {
   saveBoard = async (showDialog = true) => {
     if (this.prompt && showDialog) {
       const suggested =
-        this.props.match && this.props.match.params
-          ? this.props.match.params.board
-          : generateRandomName();
-      const userInput = await this.prompt.getInput(
-        suggested,
-        this.state.description
-      );
-      if (userInput !== null) {
+        (this.props.match &&
+          this.props.match.params &&
+          this.props.match.params.board) ||
+        generateRandomName();
+
+      const userInput =
+        (await this.prompt.acceptInput(suggested, this.state.description)) &&
+        this.prompt.getValues();
+
+      if (userInput) {
         const { name, description } = userInput;
         const data = await this.boardProviderRef?.state.serializeBoard();
         localStorage.setItem(
@@ -729,7 +733,9 @@ class Playground extends Component<Props, State> {
                   <Login board={`playground/${boardContext.boardName}`} />
                 ) : (
                   <>
-                    <SaveBoardPrompt ref={(prompt) => (this.prompt = prompt)} />
+                    <SaveBoardPrompt
+                      onRef={(prompt) => (this.prompt = prompt)}
+                    />
                     {this.state.boardSyncActive &&
                       this.renderBoardSync(boardContext)}
                     {this.state.initialFetched

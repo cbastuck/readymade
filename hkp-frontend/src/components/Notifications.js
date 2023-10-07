@@ -1,4 +1,3 @@
-import React from "react";
 import { Message, Button } from "semantic-ui-react";
 
 import { s, t } from "../styles";
