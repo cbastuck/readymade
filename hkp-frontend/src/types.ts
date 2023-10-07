@@ -57,12 +57,14 @@ export type PeerJsHostDescriptor = {
   secure: boolean;
 };
 
-const flowOptions = ["pass", "stop"];
+const flowOptions = ["pass", "stop"] as const;
 export type RuntimeFlowOutputOptions = (typeof flowOptions)[number];
 export function isValidFlowOption(
   maybeOption: unknown
 ): maybeOption is RuntimeFlowOutputOptions {
-  return typeof maybeOption === "string" && flowOptions.includes(maybeOption);
+  return (
+    typeof maybeOption === "string" && flowOptions.includes(maybeOption as any)
+  );
 }
 
 export type InputRoute = { peer: string | null };
@@ -120,8 +122,24 @@ export type AddServiceResult =
   | ServiceDescriptor
   | undefined;
 
+const actionTypes = [
+  "logout",
+  "newBoard",
+  "clearBoard",
+  "shareBoard",
+  "saveBoard",
+  "toggleBoardSync",
+  "showBoardSource",
+  "createBoardLink",
+  "update-peers",
+  "flow-changed",
+  "loadBoard",
+  "update-peers",
+  "flow-changed",
+] as const;
+export type ActionType = (typeof actionTypes)[number];
 export type Action = {
-  type: string;
+  type: ActionType;
   board?: string;
   flow?: RuntimeFlowOutputOptions;
 };
