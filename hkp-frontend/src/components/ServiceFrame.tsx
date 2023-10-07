@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component, ReactElement } from "react";
 import { Icon, Menu, Header } from "semantic-ui-react";
 
 import Modal from "./Modal";
@@ -6,22 +6,40 @@ import ServiceReference from "./ServiceReference";
 import ConfigurationEditor from "./ConfigurationEditor";
 import { s, t } from "../styles";
 import { filterPrivateMembers } from "../runtime/services/helpers";
+import { ServiceAction, ServiceId, ServiceImpl } from "../types";
 
-function getNotificationID(service) {
+function getNotificationID(service: ServiceId) {
   return `service-frame-${service.uuid}`;
 }
 
-export default class ServiceFrame extends Component {
+type Props = {
+  service: ServiceImpl;
+  serviceUi: ReactElement;
+  draggable: boolean;
+
+  onAction: (action: ServiceAction) => void;
+};
+
+type State = {
+  menuVisible: boolean;
+  frameCollapsed: boolean;
+  modalReferenceService: string | undefined;
+  configVisible: boolean;
+  bypass: boolean;
+};
+
+export default class ServiceFrame extends Component<Props, State> {
   state = {
     menuVisible: false,
     frameCollapsed: false,
     modalReferenceService: undefined,
     configVisible: false,
+    bypass: false,
   };
 
   componentDidMount() {
     const { service } = this.props;
-    service.__notificationTargets.register(
+    service.__notificationTargets?.register(
       getNotificationID(service),
       (_, notification) => {
         const { bypass } = notification || {};
@@ -34,10 +52,10 @@ export default class ServiceFrame extends Component {
 
   componentWillUnmount() {
     const { service } = this.props;
-    service.__notificationTargets.unregister(getNotificationID(service));
+    service.__notificationTargets?.unregister(getNotificationID(service));
   }
 
-  renderServiceName = (name) => {
+  renderServiceName = (name: string) => {
     const { draggable = true } = this.props;
     return (
       <div
@@ -47,7 +65,7 @@ export default class ServiceFrame extends Component {
           fontSize: 16,
           fontWeight: "lighter",
           marginTop: 15,
-          cursor: draggable && "pointer",
+          cursor: draggable ? "pointer" : undefined,
         }}
         onDoubleClick={() =>
           this.setState({ frameCollapsed: !this.state.frameCollapsed })
@@ -75,11 +93,12 @@ export default class ServiceFrame extends Component {
     );
   };
 
-  renderHeader = (service) => {
+  renderHeader = (service: ServiceImpl) => {
     const { bypass = service && service.bypass } = this.state;
-    const serviceName = service.__descriptor
-      ? service.__descriptor.serviceName
-      : service.serviceName;
+    const serviceName =
+      service?.__descriptor?.serviceName ||
+      service.serviceName ||
+      "unnamed service";
     return (
       <div
         style={{
@@ -179,12 +198,14 @@ export default class ServiceFrame extends Component {
           onClick={() => {
             const { service } = this.props;
             const serviceId =
-              service.serviceId || service.__descriptor.serviceId;
-            const parts = serviceId.split("/");
-            this.setState({
-              modalReferenceService: parts[parts.length - 1],
-              menuVisible: false,
-            });
+              service.serviceId || service.__descriptor?.serviceId;
+            const parts = serviceId?.split("/") || [];
+            if (parts.length > 1) {
+              this.setState({
+                modalReferenceService: parts[parts.length - 1],
+                menuVisible: false,
+              });
+            }
           }}
         >
           <Icon name="help" />
@@ -205,7 +226,10 @@ export default class ServiceFrame extends Component {
     );
   };
 
-  renderServiceWithSidebar = (serviceUi, menuVisible) => {
+  renderServiceWithSidebar = (
+    serviceUi: ReactElement,
+    menuVisible: boolean
+  ) => {
     return (
       <div
         style={{
@@ -272,7 +296,7 @@ export default class ServiceFrame extends Component {
             <ConfigurationEditor
               service={service}
               onClose={() => this.setState({ configVisible: false })}
-              onChange={async (value) => {
+              onChange={async (value: string) => {
                 try {
                   const config = JSON.parse(value);
                   await service.configure(config); // TODO: not here

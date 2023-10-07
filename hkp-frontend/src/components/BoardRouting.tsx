@@ -1,9 +1,23 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import { s, t } from "../styles";
 import InputField from "./shared/InputField";
 
-export default class BoardRouting extends Component {
+type Routing = {
+  inputUrl?: string;
+  inputTopic?: string;
+  outputUrl?: string;
+  outputTopic?: string;
+};
+
+type Props = {
+  routing: Routing;
+  onChange: (routing: Routing) => void;
+};
+
+type State = Routing & {};
+
+export default class BoardRouting extends Component<Props, State> {
   state = {
     inputUrl: "",
     inputTopic: "",
@@ -22,7 +36,7 @@ export default class BoardRouting extends Component {
     this.setState({ inputUrl, inputTopic, outputUrl, outputTopic });
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     /*
     // TODO: we don't need this function at all!!
     const { inputUrl, outputUrl } = this.props;
@@ -53,41 +67,49 @@ export default class BoardRouting extends Component {
             style={t.w100}
             label="Input URL"
             value={inputUrl}
-            onChange={(ev, { value: inputUrl }) =>
-              this.setState({ inputUrl }, () =>
-                onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
-              )
-            }
+            onChange={(ev: any, { value: inputUrl }) => {
+              if (typeof inputUrl === "string") {
+                this.setState({ inputUrl }, () =>
+                  onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
+                );
+              }
+            }}
           />
           <InputField
             style={t.w100}
             label="Input Topic"
             value={inputTopic}
-            onChange={(ev, { value: inputTopic }) =>
-              this.setState({ inputTopic }, () =>
-                onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
-              )
-            }
+            onChange={(ev, { value: inputTopic }) => {
+              if (typeof inputTopic === "string") {
+                this.setState({ inputTopic }, () =>
+                  onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
+                );
+              }
+            }}
           />
         </div>
         <div style={{ display: "flex", flexDirection: "row" }}>
           <InputField
             label="Output URL"
             value={outputUrl}
-            onChange={(ev, { value: outputUrl }) =>
-              this.setState({ outputUrl }, () =>
-                onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
-              )
-            }
+            onChange={(ev, { value: outputUrl }) => {
+              if (typeof outputUrl === "string") {
+                this.setState({ outputUrl }, () =>
+                  onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
+                );
+              }
+            }}
           />
           <InputField
             label="Output Topic"
             value={outputTopic}
-            onChange={(ev, { value: outputTopic }) =>
-              this.setState({ outputTopic }, () =>
-                onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
-              )
-            }
+            onChange={(ev, { value: outputTopic }) => {
+              if (typeof outputTopic === "string") {
+                this.setState({ outputTopic }, () =>
+                  onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
+                );
+              }
+            }}
           />
         </div>
       </div>

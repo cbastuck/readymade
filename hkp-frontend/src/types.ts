@@ -144,9 +144,11 @@ export type Action = {
   flow?: RuntimeFlowOutputOptions;
 };
 
+const serviceActionTypes = ["remove"] as const;
+export type ServiceActionType = (typeof serviceActionTypes)[number];
 export type ServiceAction = {
-  service: ServiceDescriptor;
-  action: string;
+  action: ServiceActionType;
+  service: ServiceImpl;
 };
 
 export type AppImpl = {
@@ -163,9 +165,15 @@ export type AppImpl = {
 
 export type ServiceImpl = {
   serviceId?: string; // TODO not sure about this
+  serviceName?: string; // TODO not sure about this
   __descriptor?: ServiceDescriptor; // TODO: remove - this only existed in old nodejs backend services
   __notificationTargets?: {
     notify: (svc: ServiceImpl, notification: any) => void;
+    register: (
+      id: string,
+      cb: (svc: ServiceImpl, notification: any) => void
+    ) => void;
+    unregister: (id: string) => void;
   };
   bypass?: boolean;
   uuid: string;

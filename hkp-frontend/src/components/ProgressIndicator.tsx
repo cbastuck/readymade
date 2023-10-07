@@ -1,12 +1,25 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import "./ProgressIndicator.css";
 
-export default class ProgressIndicator extends Component {
+type Props = {
+  durationInSec: number;
+  visible: boolean;
+};
+
+type State = {
+  visible: boolean;
+  animationStyle: {
+    animation: string;
+  };
+};
+
+export default class ProgressIndicator extends Component<Props, State> {
   state = {
     animationStyle: {
       animation: "",
     },
+    visible: false,
   };
 
   triggerAnimation = () => {
@@ -24,7 +37,7 @@ export default class ProgressIndicator extends Component {
     this.setState({ animationStyle: { animation: "" } }, setAnimation);
   };
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     const { visible } = this.props;
     if (prevProps.visible !== visible) {
       this.setState({ visible });

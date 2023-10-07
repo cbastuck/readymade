@@ -1,9 +1,24 @@
-import React, { Component } from "react";
+import { Component, ReactElement } from "react";
 import { Button, Modal } from "semantic-ui-react";
 
 import { openTab } from "../core/actions";
 
-export default class ModalDialog extends Component {
+type Props = {
+  url: string;
+  component: ReactElement;
+  isOpen: boolean;
+  title: string;
+  style?: {
+    height: string | number;
+    width: string | number;
+  };
+
+  setOpen: (isOpen: boolean) => void;
+};
+
+type State = {};
+
+export default class ModalDialog extends Component<Props, State> {
   render() {
     const {
       url,

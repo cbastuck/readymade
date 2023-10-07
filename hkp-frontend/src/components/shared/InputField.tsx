@@ -1,11 +1,37 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import { Input, Checkbox } from "semantic-ui-react";
 
 import SyncIndicator from "./SyncIndicator";
 import { s, t } from "../../styles";
 
-export default class InputField extends Component {
+type InputValueType = string | number | boolean | undefined;
+type OnChangeEvent =
+  | React.MouseEvent
+  | React.FormEvent<HTMLInputElement>
+  | React.KeyboardEvent;
+type OnChangeValue = { value: InputValueType };
+type InputFieldType = "checkbox" | "number" | "text";
+
+type Props = {
+  value: InputValueType;
+  label: string;
+  type?: InputFieldType | undefined;
+  synced?: boolean;
+  disabled?: boolean;
+  unit?: string;
+  labelStyle?: any;
+  style?: any;
+
+  onChange: (ev: OnChangeEvent, value: OnChangeValue) => void;
+  onEscape?: (ev: OnChangeEvent, value: OnChangeValue) => void;
+  onFocus?: () => void;
+  onLabelClicked?: (ev: OnChangeEvent, value: OnChangeValue) => void;
+};
+
+type State = { value: InputValueType };
+
+export default class InputField extends Component<Props, State> {
   state = {
     value: "",
   };
@@ -19,7 +45,7 @@ export default class InputField extends Component {
     }
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: Props) {
     const { value, synced = true } = this.props;
     if (synced) {
       if (value !== prevProps.value) {
@@ -28,13 +54,15 @@ export default class InputField extends Component {
     }
   }
 
-  renderCheckboxType = (value) => {
-    const { onChange = () => {} } = this.props;
+  renderCheckboxType = (value: InputValueType) => {
+    const { onChange } = this.props;
     return (
       <Checkbox
         style={{ padding: "5px 5px" }}
         slider
-        checked={value !== undefined ? value : false}
+        checked={
+          value !== undefined && typeof value === "boolean" ? value : false
+        }
         onChange={(ev, { checked }) => {
           onChange(ev, { value: checked });
         }}
@@ -42,7 +70,12 @@ export default class InputField extends Component {
     );
   };
 
-  renderInputType = (value, type, fontSize, synced) => {
+  renderInputType = (
+    value: InputValueType,
+    type: InputFieldType,
+    fontSize: string | number,
+    synced: boolean
+  ) => {
     const {
       disabled,
       unit,
@@ -75,7 +108,7 @@ export default class InputField extends Component {
                 : rawValue;
             synced ? this.setState({ value }) : onChange(ev, { value });
           }}
-          onKeyUp={(ev) => {
+          onKeyUp={(ev: React.KeyboardEvent) => {
             switch (ev.key) {
               case "Enter":
                 if (value !== "") {
@@ -108,7 +141,7 @@ export default class InputField extends Component {
 
   render() {
     const {
-      type,
+      type = "text",
       label,
       labelStyle,
       style,
@@ -140,7 +173,7 @@ export default class InputField extends Component {
         />
         {type !== "checkbox"
           ? this.renderInputType(value, type, fontSize + 1, synced)
-          : this.renderCheckboxType(syncedValue)}
+          : this.renderCheckboxType(value)}
       </div>
     );
   }

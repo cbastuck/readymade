@@ -4,9 +4,15 @@ import { Label } from "semantic-ui-react";
 import Tooltip from "./Tooltip";
 import { labelWidth, labelHeight } from "./Defaults";
 
-export default class SyncIndicator extends Component {
+type Props = {
+  style: any;
+  inSync: boolean;
+  label: string;
+  onClick: (ev: React.MouseEvent<HTMLElement>) => void;
+};
+export default class SyncIndicator extends Component<Props> {
   render() {
-    const { style, inSync, onClick, label } = this.props;
+    const { style, inSync, label, onClick } = this.props;
     return typeof label === "string" ? (
       <div style={{ width: "auto" }}>
         <Tooltip text={label}>

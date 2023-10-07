@@ -1,8 +1,14 @@
 import { useState } from "react";
 
 import Code from "./Code";
+import CodeBlockHeader from "./CodeBlockHeader";
 
-export default function CodeBlock({ children, title }) {
+type Props = {
+  children: JSX.Element | JSX.Element[];
+  title: string;
+};
+
+export default function CodeBlock({ children, title }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   if (!isOpen) {
     return (
@@ -46,54 +52,11 @@ export default function CodeBlock({ children, title }) {
           flexDirection: "column",
         }}
       >
-        <Header title={title} setIsOpen={setIsOpen} />
+        <CodeBlockHeader title={title} setIsOpen={setIsOpen} />
         <div style={{ padding: "0px 10px", overflowY: "auto", height: "100" }}>
           <Code>{children}</Code>
         </div>
       </div>
-    </div>
-  );
-}
-
-function Header({ title, setIsOpen }) {
-  return (
-    <div
-      style={{
-        width: "100%",
-        display: "flex",
-        flexDirection: "row",
-        position: "sticky",
-        top: 0,
-        right: 0,
-        backgroundColor: "white",
-        borderBottom: "solid 1px #efefef",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          textAlign: "center",
-          padding: 5,
-          fontWeight: "bold",
-          textTransform: "uppercase",
-          fontSize: "13px",
-        }}
-      >
-        {title}
-      </div>
-      <button
-        style={{
-          marginLeft: "auto",
-          padding: "2px 12px",
-          backgroundColor: "#efefef",
-          borderRadius: 5,
-          border: "solid 1px transparent",
-          color: "gray",
-        }}
-        onClick={() => setIsOpen(false)}
-      >
-        X
-      </button>
     </div>
   );
 }

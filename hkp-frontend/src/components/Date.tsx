@@ -1,5 +1,12 @@
-export default function Date({ month, day, year, size = "m" }) {
-  const style = {
+type Props = {
+  month: string;
+  day: String;
+  year: string;
+  size: string;
+};
+
+export default function Date({ month, day, year, size = "m" }: Props) {
+  const style: any = {
     fontFamily: "roboto",
     letterSpacing: 1,
     lineHeight: 1.5,
