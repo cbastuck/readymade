@@ -3,7 +3,12 @@ import React, { Component, ReactElement } from "react";
 import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";
 import SidechainSelector from "./SidechainSelector";
-import { Action, SidechainRoute } from "../../types";
+import {
+  Action,
+  RuntimeFlowOutputOptions,
+  SidechainRoute,
+  isValidFlowOption,
+} from "../../types";
 import { BoardContextState } from "../../BoardContext";
 
 const none = "No Output";
@@ -12,7 +17,7 @@ type Props = {
   items: Array<string>;
   value: string | null;
   children: JSX.Element | Array<JSX.Element | null>;
-  flow: "pass" | "stop";
+  flow: RuntimeFlowOutputOptions;
   boardContext: BoardContextState;
   sidechainRouting: Array<SidechainRoute>;
   disabled?: boolean;
@@ -91,6 +96,7 @@ export default class OutputOptions extends Component<Props, State> {
         }}
         value={flow}
         onChange={(ev, { value: flow }) =>
+          isValidFlowOption(flow) &&
           onAction({ type: OutputOptions.flowChanged, flow })
         }
       />

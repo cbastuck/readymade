@@ -57,7 +57,14 @@ export type PeerJsHostDescriptor = {
   secure: boolean;
 };
 
-export type RuntimeFlowOutputOptions = "pass" | "stop";
+const flowOptions = ["pass", "stop"];
+export type RuntimeFlowOutputOptions = (typeof flowOptions)[number];
+export function isValidFlowOption(
+  maybeOption: unknown
+): maybeOption is RuntimeFlowOutputOptions {
+  return typeof maybeOption === "string" && flowOptions.includes(maybeOption);
+}
+
 export type InputRoute = { peer: string | null };
 export type OutputRoute = {
   flow: RuntimeFlowOutputOptions;
