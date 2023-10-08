@@ -26,9 +26,9 @@ export default class QR extends Component<Props, State> {
     const { canvas } = this.state;
 
     if (canvas) {
-      QRCode.toCanvas(canvas, url, (error: string) => {
+      QRCode.toCanvas(canvas, url, (error: Error | null | undefined) => {
         if (error) {
-          console.error(error);
+          console.error("QR.toCanvas()", error);
         }
       });
     }

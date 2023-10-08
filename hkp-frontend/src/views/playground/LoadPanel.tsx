@@ -17,7 +17,6 @@ export default function LoadPanel() {
     <div style={s(t.m(0, 20), t.tc)}>
       <div style={s(t.mt20, t.uc)}>
         <BoardCollection
-          style={{ width: "100%" }}
           headline="Saved in this browser"
           items={items}
           renderBorder={false}

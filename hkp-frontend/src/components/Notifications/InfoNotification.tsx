@@ -4,7 +4,7 @@ import NotificationContent from "./NotificationContent";
 import { s, t } from "../../styles";
 
 type Props = {
-  message: string;
+  message: string | undefined;
   title: string;
   style: any;
   onClose: () => void;

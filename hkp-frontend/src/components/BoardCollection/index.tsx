@@ -3,13 +3,13 @@ import { useState } from "react";
 import Collection from "./Collection";
 import Search from "./Search";
 import { s, t } from "../../styles";
-import { UsecaseDescriptor } from "./types";
+import { SavedBoard, UsecaseDescriptor } from "../../types";
 
 type Props = {
-  items: Array<UsecaseDescriptor>;
+  items: Array<UsecaseDescriptor | SavedBoard>;
   headline: string;
-  renderBorder: boolean;
-  renderSearch: boolean;
+  renderBorder?: boolean;
+  renderSearch?: boolean;
 };
 
 export default function BoardCollection({

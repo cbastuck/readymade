@@ -41,10 +41,10 @@ import {
   setRuntime as setRuntimeREST,
   getRuntimeRegistry as getRuntimeRegistryREST,
 } from "../../core/actions";
-//import {
-//  createFreeRuntime,
-//  getRuntimeRegistry,
-//} from "../../core/graphqlActions";
+import {
+  createFreeRuntime,
+  //  getRuntimeRegistry,
+} from "../../core/graphqlActions";
 import {
   Action,
   AddServiceResult,
@@ -408,8 +408,7 @@ class Playground extends Component<Props, State> {
     };
     let registry;
     if (type === "remote") {
-      console.log("Adding GraphQL runtime", rt);
-      //await createFreeRuntime(rt);
+      await createFreeRuntime(rt);
       registry = []; //await getRuntimeRegistry(rt);
     } else if (type === "node") {
       const created = await addRuntimeREST(this.state.boardName, {

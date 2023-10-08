@@ -233,11 +233,11 @@ export default class Board extends Component<Props, State> {
         }}
         onAction={(action) => {
           switch (action.type) {
-            case OutputOptions.updatePeersAction: {
+            case "update-peers": {
               peersContext?.updatePeers();
               break;
             }
-            case OutputOptions.flowChanged:
+            case "flow-changed":
               if (action.flow) {
                 this.props.onChangeOutputRouting(
                   runtime,

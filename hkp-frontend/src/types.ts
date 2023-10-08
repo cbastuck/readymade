@@ -27,13 +27,6 @@ export type ExternalInput = {
   close: () => void;
 };
 
-export type SavedBoard = {
-  url: string;
-  description: string;
-  value: BoardDescriptor;
-  name: string;
-};
-
 export type Peer = PeerJs & {
   onConnectionClosed?: (dstName: string) => void;
   onConnectionOpened?: (dstName: string, connection: DataConnection) => void;
@@ -246,4 +239,21 @@ export type PlaygroundState = PlaygroundBoard & {
   boardSyncActive: boolean;
   acceptedSyncSenders: Array<any>;
   rejectedSyncSenders: Array<any>;
+};
+
+export type UsecaseDescriptor = {
+  name: string;
+  url: string;
+  metadata: string;
+  description: string;
+  template: string;
+  repo: string;
+  image?: string;
+};
+
+export type SavedBoard = {
+  url: string;
+  description: string;
+  value: BoardDescriptor;
+  name: string;
 };
