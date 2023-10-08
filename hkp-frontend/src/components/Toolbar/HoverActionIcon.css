@@ -1,0 +1,19 @@
+.hover-icon-dark-disabled,
+.hover-icon-dark-dangerous,
+.hover-icon-dark {
+  height: 31px;
+  width: 33px;
+  padding: 5px 5px;
+  padding-left: 8px;
+  color: #777;
+}
+
+.hover-icon-dark:hover {
+  color: #418ec4;
+  background-color: #f1f1f1;
+}
+
+.hover-icon-dark-dangerous:hover {
+  color: red;
+  background-color: #f1f1f1;
+}

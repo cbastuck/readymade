@@ -503,11 +503,12 @@ class Playground extends Component<Props, State> {
         return false;
       case "saveBoard":
       case "clearBoard":
-        return !!this.boardProviderRef?.state.runtimes;
+      case "createBoardLink":
+      case "showBoardSource":
+        return (this.boardProviderRef?.state?.runtimes || []).length > 0;
       case "toggleBoardSync":
         return true;
-      case "createBoardLink":
-        return true;
+
       default:
         break;
     }
@@ -734,6 +735,7 @@ class Playground extends Component<Props, State> {
                   })
                 );
             });
+            return true;
           }
           return false;
         }}

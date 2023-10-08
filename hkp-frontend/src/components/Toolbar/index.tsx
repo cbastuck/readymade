@@ -11,6 +11,7 @@ import AccountMenu from "./AccountMenu";
 
 import "./index.css";
 import { RuntimeClass } from "../../types";
+import BoardActions from "./BoardActions";
 
 type Props = {
   board?: string;
@@ -85,7 +86,9 @@ export default function Toolbar({
                       }
                     />
                   )}
-
+                  {boardContext?.appViewMode === "wide" && (
+                    <BoardActions boardContext={boardContext} />
+                  )}
                   <Navigation appContext={appContext} isCompact={isCompact} />
                   {appContext && !isCompact && (
                     <AccountMenu
