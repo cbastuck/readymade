@@ -108,7 +108,7 @@ export type AddRuntimeResult = Promise<{
   runtime: RuntimeDescriptor;
   services: Array<ServiceDescriptor>;
   registry: ServiceRegistry;
-}>;
+} | null>;
 
 export type AddServiceResult =
   | Promise<ServiceDescriptor>
@@ -137,7 +137,7 @@ export type Action = {
   flow?: RuntimeFlowOutputOptions;
 };
 
-const serviceActionTypes = ["remove"] as const;
+const serviceActionTypes = ["remove", "getConfig"] as const;
 export type ServiceActionType = (typeof serviceActionTypes)[number];
 export type ServiceAction = {
   action: ServiceActionType;

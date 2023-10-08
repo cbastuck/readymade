@@ -10,7 +10,7 @@ const serviceName = "Canvas";
 
 const TWO_PI = 2 * Math.PI;
 
-class CanvasUI extends Component {
+export class CanvasUI extends Component {
   state = {
     fullWidth: document.body.clientWidth,
     fullHeight: document.body.clientHeight,

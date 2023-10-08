@@ -14,7 +14,7 @@ import { replacePlaceholders } from "../../core/url";
 const serviceId = "hookup.to/service/output";
 const serviceName = "Output";
 
-class OutputUI extends Component {
+export class OutputUI extends Component {
   state = {
     url: "",
     headers: {},

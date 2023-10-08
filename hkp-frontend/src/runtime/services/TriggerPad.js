@@ -10,7 +10,7 @@ function makeIndex(rowIndex, colIndex) {
   return `${rowIndex * 4 + colIndex}`;
 }
 
-class TriggerPadUI extends Component {
+export class TriggerPadUI extends Component {
   state = {
     triggeredPads: {},
     assignments: {},

@@ -9,7 +9,7 @@ import { s, t } from "../../styles";
 
 import ServiceUI from "./ServiceUI";
 
-class BufferUI extends Component {
+export class BufferUI extends Component {
   state = {
     capacity: 0,
     items: [],

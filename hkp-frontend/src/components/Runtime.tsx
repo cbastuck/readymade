@@ -550,7 +550,6 @@ export default class Runtime extends Component<Props, State> {
           runtime={runtime}
           services={services}
           readonly={readonly}
-          registry={registry}
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
           onResult={onResult}
@@ -622,7 +621,7 @@ export default class Runtime extends Component<Props, State> {
 
     const { wrapServices = !wide, showSettings, expanded } = this.state;
 
-    const readonly = !registry;
+    const readonly = false; // TODO: was if no registry is available
     const readonlyStyle: any =
       readonly && !frameless
         ? {

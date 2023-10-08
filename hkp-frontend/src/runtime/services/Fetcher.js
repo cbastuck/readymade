@@ -6,7 +6,7 @@ import ServiceUI from "./ServiceUI";
 const serviceId = "hookup.to/service/fetcher";
 const serviceName = "Fetcher";
 
-class FetcherUI extends Component {
+export class FetcherUI extends Component {
   state = { url: "" };
 
   onInit(initialState) {

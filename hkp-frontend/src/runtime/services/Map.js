@@ -11,7 +11,7 @@ import { s, t } from "../../styles";
 
 const newProperty = { key: "value" };
 
-class MapUI extends Component {
+export class MapUI extends Component {
   state = {
     template: {},
     conditionEnabled: false,

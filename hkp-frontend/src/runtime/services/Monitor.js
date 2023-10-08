@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { TextArea, Button } from "semantic-ui-react";
 
 import { MonitorDescriptor } from "hkp-services";
@@ -33,7 +33,7 @@ function unroll(params) {
   );
 }
 
-class MonitorUI extends Component {
+export class MonitorUI extends Component {
   state = {
     message: "",
     renderTextEditor: true,

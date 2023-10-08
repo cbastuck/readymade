@@ -8,7 +8,7 @@ import ServiceUI from "./ServiceUI";
 const serviceId = "hookup.to/service/aggregator";
 const serviceName = "Aggregator";
 
-class AggregatorUI extends Component {
+export class AggregatorUI extends Component {
   state = {
     interval: 0,
     property: "",

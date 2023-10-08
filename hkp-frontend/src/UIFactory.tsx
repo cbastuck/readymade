@@ -1,4 +1,4 @@
-import React from "react";
+import { Component, FunctionComponent, createElement } from "react";
 
 /*
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
@@ -17,26 +17,37 @@ import AggregatorUI from './components/services/AggregatorUI';
 */
 
 import IngressUI from "./components/services/IngressUI";
-import OutputUI from "./components/services/OutputUI";
+import OutputUIOld from "./components/services/OutputUI";
 import WebsocketUI from "./components/services/WebsocketUI";
-import defaultRegistry from "./runtime/registry/Default";
-import PlaceholderUI from "./runtime/services/PlaceholderUI";
-import { ServiceImpl, ServiceModule, ServiceRegistry } from "./types";
 
-function findServiceUi(
-  registry: ServiceRegistry,
-  serviceId: string
-): ServiceModule | undefined {
-  const a = registry || defaultRegistry;
-  return a.find((s) => serviceId === s.serviceId && s.createUI);
-}
+import PlaceholderUI from "./runtime/services/PlaceholderUI";
+import { ServiceImpl } from "./types";
+import { TimerUI } from "./runtime/services/Timer";
+import { MonitorUI } from "./runtime/services/Monitor";
+import { HackerUI } from "./runtime/services/Hacker";
+import { InputUI } from "./runtime/services/Input";
+import { OutputUI } from "./runtime/services/Output";
+import { FetcherUI } from "./runtime/services/Fetcher";
+import { InjectorUI } from "./runtime/services/Injector";
+import { MapUI } from "./runtime/services/Map";
+import { FilterUI } from "./runtime/services/Filter";
+import { AggregatorUI } from "./runtime/services/Aggregator";
+import { BufferUI } from "./runtime/services/Buffer";
+import { XYPadUI } from "./runtime/services/XYPad";
+import { CameraUI } from "./runtime/services/Camera";
+import { TriggerPadUI } from "./runtime/services/TriggerPad";
+import { CanvasUI } from "./runtime/services/Canvas";
+import { StackUI } from "./runtime/services/Stack";
+import { SequencerUI } from "./runtime/services/Sequencer";
+import { SpotifyUI } from "./runtime/services/Spotify";
+import { GithubSourceUI } from "./runtime/services/GithubSource";
+import { GithubSinkUI } from "./runtime/services/GithubSink";
 
 export function createPlaceholderUI(service: ServiceImpl) {
   return <PlaceholderUI service={service} />;
 }
 
 export function createServiceUI(
-  registry: ServiceRegistry,
   board: string,
   service: ServiceImpl,
   runtimeId: string,
@@ -51,9 +62,9 @@ export function createServiceUI(
     throw new Error(`UIFactory missing serviceId ${JSON.stringify(service)}`);
   }
 
-  const factory = findServiceUi(registry, serviceId);
-  if (factory && factory.createUI) {
-    return React.createElement(factory.createUI, {
+  const userInterface = findServiceUI(serviceId);
+  if (userInterface) {
+    return createElement(userInterface, {
       ...props,
       service,
       board,
@@ -71,46 +82,66 @@ export function createServiceUI(
     };
     switch (serviceId) {
       case "hookup.to/service/output": {
-        return <OutputUI {...params} />;
+        return <OutputUIOld {...params} />;
       }
       case "hookup.to/service/ingress":
         return <IngressUI {...params} />;
       case "hookup.to/service/websocket":
         return <WebsocketUI {...params} />;
-      /*
-      case 'hookup.to/service/monitor':
-        return <MonitorUI { ...params } />;
-      case 'hookup.to/service/html-filter':
-        return <HTMLFilterUI { ...params } />;
-      case 'hookup.to/service/file-exchange':
-        return <FileExchangeUI { ...params } />;
-      case 'hookup.to/service/websocket-provider':
-        return <WebsocketConsumer { ...params } />;    
-      case 'hookup.to/service/input':
-        return <InputUI { ...params } />;
-      case 'hookup.to/service/filter':
-        return <FilterUI { ...params } />;
-      case 'hookup.to/resource/docker/mysql':
-        return <MySqlResourceUI { ...params } />;
-      case 'hookup.to/service/mysql':
-        return <MySqlServiceUI { ...params } />;
-      case 'hookup.to/service/timer':
-        return <TimerUI { ...params } />;
-      case 'hookup.to/service/web-get':
-        return <WebGetUI { ...params } />;
-      case 'hookup.to/service/data-injector':
-        return <DataInjectorUI { ...params } />;
-      case 'hookup.to/service/html-templates':
-        return <HTMLTemplatesUI { ...params } />;
-      case 'hookup.to/resource/file-s3':
-        return <FileS3UI { ...params } />;
-      case 'hookup.to/service/aggregator':
-        return <AggregatorUI { ...params } />
-        */
       default:
         break;
     }
   }
-
   return createPlaceholderUI(service);
+}
+
+function findServiceUI(
+  serviceId: string
+): typeof Component | FunctionComponent | null {
+  switch (serviceId) {
+    case "hookup.to/service/timer":
+      return TimerUI;
+    case "hookup.to/service/monitor":
+      return MonitorUI;
+    case "hookup.to/service/hacker/considered":
+    case "hookup.to/service/hacker/dangerous":
+      return HackerUI;
+    case "hookup.to/service/input":
+      return InputUI;
+    case "hookup.to/service/output":
+      return OutputUI;
+    case "hookup.to/service/fetcher":
+      return FetcherUI;
+    case "hookup.to/service/injector":
+      return InjectorUI;
+    case "hookup.to/service/map":
+      return MapUI;
+    case "hookup.to/service/filter":
+      return FilterUI;
+    case "hookup.to/service/aggregator":
+      return AggregatorUI;
+    case "hookup.to/service/buffer":
+      return BufferUI;
+    case "hookup.to/service/xy-pad":
+      return XYPadUI;
+    case "hookup.to/service/camera":
+      return CameraUI;
+    case "hookup.to/service/trigger-pad":
+      return TriggerPadUI;
+    case "hookup.to/service/canvas":
+      return CanvasUI;
+    case "hookup.to/service/stack":
+      return StackUI;
+    case "hookup.to/service/sequencer":
+      return SequencerUI;
+    case "hookup.to/service/spotify":
+      return SpotifyUI;
+    case "hookup.to/service/github-source":
+      return GithubSourceUI;
+    case "hookup.to/service/github-sink":
+      return GithubSinkUI;
+    default:
+      throw new Error("IMPLEMENT ME UIFactory.findServiceUI");
+      return null;
+  }
 }

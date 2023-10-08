@@ -15,7 +15,7 @@ const clientSecret = "";
 const redirectURI = `${window.location.origin}/serviceRedirect`;
 const scopes = [];
 
-class GithubSourceUI extends Component {
+export class GithubSourceUI extends Component {
   state = {};
 
   onInit = (initialState) => {

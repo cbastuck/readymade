@@ -8,7 +8,7 @@ import InputField from "../../components/shared/InputField";
 const serviceId = "hookup.to/service/camera";
 const serviceName = "Camera";
 
-class CameraUI extends Component {
+export class CameraUI extends Component {
   state = {
     mirror: true,
     recording: false,

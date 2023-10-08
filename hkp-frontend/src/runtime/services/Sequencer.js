@@ -52,7 +52,7 @@ class Step extends Component {
   }
 }
 
-class SequencerUI extends Component {
+export class SequencerUI extends Component {
   state = {
     currentStep: 0,
     numSteps: "",

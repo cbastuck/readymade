@@ -20,7 +20,7 @@ const container = {
 
 const initialX = container.width / 2 - dragger.width / 2;
 const initialY = container.height / 2 - dragger.height / 2;
-class XYPadUI extends Component {
+export class XYPadUI extends Component {
   state = {
     x: initialX,
     y: initialY,

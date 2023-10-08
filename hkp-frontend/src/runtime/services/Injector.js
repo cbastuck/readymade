@@ -10,7 +10,7 @@ import { Debouncer } from "./helpers";
 const serviceId = "hookup.to/service/injector";
 const serviceName = "Injector";
 
-class InjectorUI extends Component {
+export class InjectorUI extends Component {
   state = {
     files: [],
     user: undefined,

@@ -36,13 +36,13 @@ import {
   importFromLink,
 } from "./BoardActions";
 import {
-  addRuntime as addRuntimeREST,
   addService as addServiceREST,
   setRuntime as setRuntimeREST,
   getRuntimeRegistry as getRuntimeRegistryREST,
 } from "../../core/actions";
 import {
   createFreeRuntime,
+  queryFreeRuntime,
   //  getRuntimeRegistry,
 } from "../../core/graphqlActions";
 import {
@@ -59,6 +59,7 @@ import {
   PeerInputRouting,
   PeerOutputRouting,
   PlaygroundState,
+  RuntimeServiceMap,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 
@@ -161,65 +162,89 @@ class Playground extends Component<Props, State> {
       this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
     }
 
-    if (!this.state.initialFetched) {
-      const initialBord = await this.getInitialPlayground();
-      if (initialBord !== null) {
-        const {
-          boardName = this.state.boardName || defaultName,
-          description = "",
-          sidechainRouting = {},
-          outputRouting = {},
-          inputRouting = {},
-
-          // playground specific board data
-          boardSyncActive = false,
-          syncedPeer = undefined,
-          acceptedSyncSenders = [],
-          rejectedSyncSenders = [],
-
-          registry = undefined,
-          runtimes = [],
-          services = {},
-        } = initialBord;
-        const data = {
-          sidechainRouting,
-          outputRouting,
-          inputRouting,
-          acceptedSyncSenders,
-          rejectedSyncSenders,
-        };
-
-        this.setState({
-          ...data,
-          initialFetched: true,
-          description,
-          boardSyncActive,
-          syncedPeer,
-        });
-
-        return {
-          boardName,
-          runtimes,
-          services,
-          registry: registry // for backwards compatiblity: when we only had browser runtimes on the playground
-            ? registry
-            : runtimes &&
-              runtimes.reduce(
-                (all, rt) => ({
-                  ...all,
-                  [rt.id]:
-                    rt.type === "browser"
-                      ? this.defaultRegistry?.availableServices || []
-                      : [],
-                }),
-                {}
-              ),
-        };
-      }
+    if (this.state.initialFetched) {
+      return this.boardProviderRef!.state;
     }
 
-    return this.boardProviderRef!.state;
+    const initialBord = await this.getInitialPlayground();
+    if (!initialBord) {
+      return this.boardProviderRef!.state;
+    }
+
+    const {
+      boardName = this.state.boardName || defaultName,
+      description = "",
+      sidechainRouting = {},
+      outputRouting = {},
+      inputRouting = {},
+
+      // playground specific board data
+      boardSyncActive = false,
+      syncedPeer = undefined,
+      acceptedSyncSenders = [],
+      rejectedSyncSenders = [],
+      runtimes = [],
+      services = {},
+    } = initialBord;
+    const data = {
+      sidechainRouting,
+      outputRouting,
+      inputRouting,
+      acceptedSyncSenders,
+      rejectedSyncSenders,
+    };
+
+    this.setState({
+      ...data,
+      initialFetched: true,
+      description,
+      boardSyncActive,
+      syncedPeer,
+    });
+
+    return {
+      boardName,
+      runtimes,
+      services,
+    };
   };
+
+  /*
+  fetchBoardData = async (state: Partial<PlaygroundState>) => {
+
+    services = await runtimes.reduce<Promise<RuntimeServiceMap>>(
+      async (acc, rt) => {
+        console.log("iterating", rt);
+        if (rt.type === "remote" && rt.url) {
+          const data = await queryFreeRuntime(rt);
+          console.log("Free Runtime data", data);
+          return { ...acc };
+        }
+        return { ...acc, [rt.id]: services[rt.id] };
+      },
+      Promise.resolve({})
+    );
+
+    console.log("REMOTE RUNTIMES SERVICES", services);
+
+    return {
+      registry: registry // for backwards compatiblity: when we only had browser runtimes on the playground
+        ? registry
+        : runtimes.reduce(
+            (all, rt) => ({
+              ...all,
+              [rt.id]:
+                rt.type === "browser"
+                  ? this.defaultRegistry?.availableServices || []
+                  : [],
+            }),
+            {}
+          ),
+      runtimes,
+      services,
+    };
+
+  };*/
 
   getInitialPlayground = async (): Promise<Partial<PlaygroundState> | null> => {
     const board = this.props.match?.params?.board;
@@ -243,9 +268,7 @@ class Playground extends Component<Props, State> {
       return {
         runtimes: [],
         services: {},
-        registry: undefined,
         boardName: board,
-        //description?: string;
       };
     }
     console.error("Playground.getInitialPlayground() - no noard name");
@@ -259,9 +282,6 @@ class Playground extends Component<Props, State> {
     const data = localStorage.getItem(storageName);
     if (data) {
       const board = JSON.parse(data);
-      if (!board.registry) {
-        board.registry = {};
-      }
       if (board && board.runtimes) {
         for (const runtime of board.runtimes) {
           if (runtime.type === "remote" || runtime.type === "node") {
@@ -282,9 +302,6 @@ class Playground extends Component<Props, State> {
             }
             const registry = await getRuntimeRegistryREST(name, runtimeId);
             board.registry[runtimeId] = registry;
-          } else if (runtime.type === "browser") {
-            board.registry[runtime.id] =
-              this.defaultRegistry?.availableServices || [];
           }
         }
       }
@@ -397,29 +414,35 @@ class Playground extends Component<Props, State> {
     return runtime?.destroyService(service.uuid);
   };
 
-  addRuntime = async (desc: RuntimeClass) => {
-    const runtimeId = uuid.v4();
-    const { name, type, url } = desc;
-    const rt: RuntimeDescriptor = {
-      id: runtimeId,
-      name,
-      type,
-      url,
-    };
-    let registry;
-    if (type === "remote") {
-      await createFreeRuntime(rt);
-      registry = []; //await getRuntimeRegistry(rt);
-    } else if (type === "node") {
-      const created = await addRuntimeREST(this.state.boardName, {
-        ...desc,
-        runtimeId,
-      });
-      registry = await getRuntimeRegistryREST(name, created.id);
-    } else {
-      registry = this.defaultRegistry?.availableServices || [];
+  addRuntime = async (rtClass: RuntimeClass) => {
+    switch (rtClass.type) {
+      case "remote": {
+        const desc = await createFreeRuntime(rtClass);
+        if (!desc) {
+          return null;
+        }
+        const { ...runtime } = desc;
+        return { runtime, services: [] };
+      }
+      case "browser": {
+        const { name, type, url } = rtClass;
+        const runtimeId = uuid.v4();
+        const rt: RuntimeDescriptor = {
+          id: runtimeId,
+          name,
+          type,
+          url,
+        };
+        const registry = this.defaultRegistry?.availableServices || [];
+        return { runtime: rt, services: [], registry };
+      }
+      case "node":
+        return null;
+      default:
+        throw new Error(
+          `Playground.addRuntime() runtime type is not supported: ${rtClass.type}`
+        );
     }
-    return { runtime: rt, services: [], registry };
   };
 
   destroyRuntime = (runtime: RuntimeDescriptor) => {

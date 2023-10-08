@@ -9,7 +9,7 @@ import { FilterDescriptor } from "hkp-services";
 
 import ServiceUI from "./ServiceUI";
 
-class FilterUI extends Component {
+export class FilterUI extends Component {
   state = {};
 
   onInit(initialState) {

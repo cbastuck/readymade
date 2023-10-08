@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Button } from "semantic-ui-react";
 
 import ServiceUI from "./ServiceUI";
@@ -8,7 +8,7 @@ import { s, t } from "../../styles";
 
 import { TimerDescriptor } from "hkp-services";
 
-class TimerUI extends Component {
+export class TimerUI extends Component {
   state = {
     timerIsRunning: false,
     periodic: false,

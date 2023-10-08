@@ -29,6 +29,7 @@ import {
   ServiceDescriptor,
   ServiceRegistry,
   ServiceClass,
+  ServiceId,
 } from "./types";
 import { reorderService } from "./views/playground/BoardActions";
 
@@ -41,7 +42,7 @@ type BoardContextAPI = {
   removeAllServices: (runtime: RuntimeDescriptor) => void;
 
   addService: (desc: ServiceClass, rt: RuntimeDescriptor) => void;
-  removeService: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
+  removeService: (svc: ServiceId, rt: RuntimeDescriptor) => void;
 
   arrangeService: (rt: RuntimeDescriptor, svcUuid: string, dst: number) => void;
 
@@ -83,7 +84,7 @@ type Props = {
   addRuntime: (rtClass: RuntimeClass) => AddRuntimeResult;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
   addService: (svc: ServiceClass, rt: RuntimeDescriptor) => AddServiceResult;
-  removeService: (svc: ServiceDescriptor, rt: RuntimeDescriptor) => void;
+  removeService: (svc: ServiceId, rt: RuntimeDescriptor) => void;
   newBoard: (searchParams?: string) => void; // TODO: why search params ??
   clearBoard: (board: BoardDescriptor) => Promise<void>;
   saveBoard?: () => void;
@@ -379,7 +380,7 @@ class BoardContext extends Component<Props, BoardContextState> {
   };
 
   addRuntime = async (rtClass: RuntimeClass) => {
-    const { addRuntime = this.addRuntimeDefault } = this.props;
+    const { addRuntime } = this.props;
 
     const { type, name, url } = rtClass;
     const params =
@@ -396,18 +397,21 @@ class BoardContext extends Component<Props, BoardContextState> {
       params,
       url,
     };
-    const { runtime, services, registry } = await addRuntime(desc);
-    this.setState((state: BoardContextState) => ({
-      runtimes: [...state.runtimes, runtime],
-      services: {
-        ...state.services,
-        [runtime.id]: services,
-      },
-      registry: {
-        ...state.registry,
-        [runtime.id]: registry,
-      },
-    }));
+    const result = await addRuntime(desc);
+    if (result) {
+      const { runtime, services, registry } = result;
+      this.setState((state: BoardContextState) => ({
+        runtimes: [...state.runtimes, runtime],
+        services: {
+          ...state.services,
+          [runtime.id]: services,
+        },
+        registry: {
+          ...state.registry,
+          [runtime.id]: registry,
+        },
+      }));
+    }
   };
 
   // TODO: this is not needed for playground setups
@@ -442,11 +446,8 @@ class BoardContext extends Component<Props, BoardContextState> {
     return addService(this.getBoardName(), service, runtime.id);
   };
 
-  removeService = async (
-    service: ServiceDescriptor,
-    runtime: RuntimeDescriptor
-  ) => {
-    const { removeService = this.removeServiceDefault } = this.props;
+  removeService = async (service: ServiceId, runtime: RuntimeDescriptor) => {
+    const { removeService } = this.props;
     await removeService(service, runtime);
 
     this.setState((state) => ({

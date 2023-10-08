@@ -14,7 +14,7 @@ import {
 const serviceId = "hookup.to/service/input";
 const serviceName = "Input";
 
-class InputUI extends Component {
+export class InputUI extends Component {
   state = {
     url: "",
     topic: "secret-key",

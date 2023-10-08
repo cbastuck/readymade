@@ -12,7 +12,7 @@ const serviceName = "Stack";
 const defaultInput = "multiplex";
 const defaultOutput = "array";
 
-class StackUI extends Component {
+export class StackUI extends Component {
   state = {
     subservices: [],
     input: defaultInput,

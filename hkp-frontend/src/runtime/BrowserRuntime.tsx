@@ -14,8 +14,8 @@ import {
   ServiceDescriptor,
   ServiceId,
   ServiceImpl,
-  ServiceRegistry,
 } from "../types";
+import defaultRegistry from "./registry/Default";
 
 const EventSource = NativeEventSource || EventSourcePolyfill;
 
@@ -31,7 +31,6 @@ type Props = {
   runtime: RuntimeDescriptor;
   userId: string;
   services: Array<ServiceDescriptor>;
-  registry: ServiceRegistry;
   boardName: string;
 
   onArrangeService: (serviceUuid: string, position: number) => void;
@@ -72,7 +71,7 @@ export default class BrowserRuntime extends Component<Props> {
   }
 
   createApp = (): AppImpl | undefined => {
-    const { services, registry, boardName, runtime, userId } = this.props;
+    const { services, boardName, runtime, userId } = this.props;
     if (!services) {
       return;
     }
@@ -112,7 +111,7 @@ export default class BrowserRuntime extends Component<Props> {
         return ssvc;
       },
       createSubServiceUI: (svc: ServiceImpl) =>
-        createServiceUI(registry, boardName, svc, runtime.id, userId, {
+        createServiceUI(boardName, svc, runtime.id, userId, {
           resizable: false,
         }),
     };
@@ -429,8 +428,9 @@ export default class BrowserRuntime extends Component<Props> {
   createServiceInstance = (
     service: ServiceDescriptor
   ): ServiceImpl | undefined => {
-    const { registry, boardName } = this.props;
+    const { boardName } = this.props;
     const { serviceId, serviceName } = service;
+    const registry = defaultRegistry;
     const descriptor = registry.find((elem) => elem.serviceId === serviceId);
     if (!descriptor) {
       return;
@@ -455,7 +455,7 @@ export default class BrowserRuntime extends Component<Props> {
       serviceName: serviceName || descriptor.serviceName,
     };
     const configure = svc.configure.bind(svc);
-    svc.configure = (config) => {
+    svc.configure = (config: any) => {
       // monkey wire configure
       const { bypass } = config || {};
       if (bypass !== undefined) {
@@ -483,11 +483,7 @@ export default class BrowserRuntime extends Component<Props> {
       return svc;
     }
 
-    console.error(
-      "No browser service descriptor found for ",
-      service,
-      this.props.registry
-    );
+    console.error("No browser service module found for ", service);
     return null; // TODO: old comment: try not to crash
   };
 
@@ -500,11 +496,13 @@ export default class BrowserRuntime extends Component<Props> {
       onArrangeService,
       onServiceAction,
       services: rawServices,
-      registry,
       collapsed = false,
     } = this.props;
-    const services =
-      rawServices && rawServices.map((svc) => this.serviceInstance(svc));
+    const services = rawServices
+      ? (rawServices
+          .map((svc) => this.serviceInstance(svc))
+          .filter((x) => x !== null) as Array<ServiceImpl>)
+      : [];
     return (
       !collapsed && (
         <ServiceUiContainer
@@ -512,7 +510,6 @@ export default class BrowserRuntime extends Component<Props> {
           runtime={runtime}
           readonly={readonly}
           services={services}
-          uiRegistry={registry}
           userId={userId}
           onArrangeService={onArrangeService}
           onServiceAction={onServiceAction}

@@ -14,7 +14,7 @@ const clientSecret = "";
 const redirectURI = `${window.location.origin}/serviceRedirect`;
 const scopes = [];
 
-class GithubSinkUI extends Component {
+export class GithubSinkUI extends Component {
   state = {};
 
   onInit = (initialState) => {

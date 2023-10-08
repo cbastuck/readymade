@@ -12,7 +12,7 @@ const serviceName = "Spotify";
 
 const loginStateId = "spotify-login";
 
-class SpotifyUI extends Component {
+export class SpotifyUI extends Component {
   state = {
     selectedAction: "injectSavedSongs",
   };
