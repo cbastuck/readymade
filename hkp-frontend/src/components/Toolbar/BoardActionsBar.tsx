@@ -5,7 +5,7 @@ type Props = {
   boardContext: BoardContextState;
 };
 
-export default function BoardActions({ boardContext }: Props) {
+export default function BoardActionsBar({ boardContext }: Props) {
   const onClick = (name: string) => {
     switch (name) {
       case "save":
@@ -44,21 +44,25 @@ export default function BoardActions({ boardContext }: Props) {
         flexDirection: "row",
         height: "32.5px",
         margin: "3px",
+        marginLeft: "8px",
         border: "solid 1px rgba(34,36,38,.15)",
         borderRadius: "5px",
       }}
     >
       <HoverActionIcon
+        tooltip="Save current board"
         iconName="save"
         disabled={!isSaveEnabled}
         onClick={onClick}
       />
       <HoverActionIcon
+        tooltip="Show code of current board"
         iconName="code"
         disabled={!isCodeEnabled}
         onClick={onClick}
       />
       <HoverActionIcon
+        tooltip="Create share link for current board"
         iconName="share"
         disabled={!isShareEnabled}
         onClick={onClick}
@@ -67,6 +71,7 @@ export default function BoardActions({ boardContext }: Props) {
         |
       </span>
       <HoverActionIcon
+        tooltip="Clear current board"
         iconName="trash"
         dangerous
         disabled={!isClearEnabled}

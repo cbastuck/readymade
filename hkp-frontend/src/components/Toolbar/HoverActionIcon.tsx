@@ -4,6 +4,7 @@ import "./HoverActionIcon.css";
 
 type Props = {
   iconName: SemanticICONS;
+  tooltip?: string;
   dangerous?: boolean;
   disabled?: boolean;
 
@@ -14,6 +15,7 @@ export default function HoverActionIcon({
   iconName,
   dangerous,
   disabled,
+  tooltip,
   onClick,
 }: Props) {
   const styleClass = disabled
@@ -22,7 +24,7 @@ export default function HoverActionIcon({
     ? "hover-icon-dark-dangerous"
     : "hover-icon-dark";
   return (
-    <div className={styleClass}>
+    <div className={styleClass} title={tooltip}>
       <Icon
         name={iconName}
         onClick={() => onClick(iconName)}
