@@ -1,13 +1,8 @@
-// import { compressSync, decompressSync, strToU8, strFromU8 } from "fflate";
-
 import { generateRandomName } from "../../core/board";
+import * as lzstring from "lz-string";
 
 export function encodeBoardState(src: string) {
-  /*const compressed = compressSync(strToU8(src));
-  const compressedB64Encoded = btoa(
-    String.fromCharCode.apply(null, compressed as any)
-  );*/
-  return btoa(src);
+  return lzstring.compressToEncodedURIComponent(src);
 }
 
 export function createBoardLink(src: string) {
@@ -24,18 +19,9 @@ export function createBoardSrcLink(src: string) {
 }
 
 export function decodeBoardState(compressedEncoded: string): string {
-  /*
-  const stillCompressed = new Uint8Array(
-    atob(compressedEncoded)
-      .split("")
-      .map(function (c) {
-        return c.charCodeAt(0);
-      })
+  return lzstring.decompressFromEncodedURIComponent(
+    decodeURIComponent(compressedEncoded)
   );
-  const inflated = strFromU8(decompressSync(stillCompressed));
-  */
-  const inflated = atob(compressedEncoded);
-  return inflated;
 }
 
 function openLink(url: string) {
