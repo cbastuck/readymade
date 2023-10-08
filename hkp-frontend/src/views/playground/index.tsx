@@ -83,6 +83,8 @@ type State = {
   sidechainRouting: SidechainRouting;
   inputRouting: PeerInputRouting;
   outputRouting: PeerOutputRouting;
+
+  enforceLoadPanel?: boolean;
 };
 
 class Playground extends Component<Props, State> {
@@ -524,7 +526,7 @@ class Playground extends Component<Props, State> {
   };
 
   renderPlaceholderOrBoard = (boardContext: BoardContextState) => {
-    const { boardName } = this.state;
+    const { boardName, enforceLoadPanel } = this.state;
     const isPlaygroundEmpty =
       boardContext &&
       boardContext.runtimes &&
@@ -549,7 +551,27 @@ class Playground extends Component<Props, State> {
         >
           {" save this board "}
         </span>
-        and continue later
+        and continue later by{" "}
+        <span
+          id="load-pane-view"
+          style={{
+            color: "#4284c4",
+            cursor: "pointer",
+          }}
+          onClick={() =>
+            this.setState(
+              (state) => ({ ...state, enforceLoadPanel: true }),
+              () =>
+                setTimeout(() =>
+                  document
+                    .getElementById("load-pane-view")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                )
+            )
+          }
+        >
+          restoring a local board
+        </span>
       </div>
     );
     return (
@@ -575,7 +597,7 @@ class Playground extends Component<Props, State> {
               {content}
               {!isPlaygroundEmpty ? saveReminder : false}
             </div>
-            {isPlaygroundEmpty && (
+            {(isPlaygroundEmpty || enforceLoadPanel) && (
               <div style={s(t.uc, { width: "90%", margin: "auto" })}>
                 <LoadPanel />
               </div>
