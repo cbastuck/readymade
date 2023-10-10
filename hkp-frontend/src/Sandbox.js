@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Link } from "react-router-dom";
 
 import * as uuid from "uuid";
@@ -7,7 +7,7 @@ import { withRouter } from "./common";
 import Runtime from "./components/Runtime";
 import BoardProvider, { BoardConsumer } from "./BoardContext";
 import DragProvider from "./DragContext";
-import BrowserRegistry from "./runtime/BrowserRegistry";
+import BrowserRuntime from "./runtime/BrowserRuntime";
 import { s, t } from "./styles";
 
 function extractRuntimeData(data) {
@@ -113,7 +113,7 @@ class Sandbox extends Component {
   fetchData = async () => {
     const { boardName = "Sandbox" } = this.props;
     const { runtime, services } = this.state;
-    const registry = await BrowserRegistry.create(runtime.bundles);
+    const registry = await BrowserRuntime.initRegistry(runtime.bundles);
     return {
       board: { name: boardName },
       runtimes: [runtime],

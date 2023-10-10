@@ -6,15 +6,6 @@ export function getActivationId(runtimeId: string) {
 
 export const localStoragePrefix = "hkp-playground-";
 
-export const defaultBundles = [
-  "hookup.to/registry/browser/Audio",
-  "hookup.to/registry/browser/Graphic",
-  "hookup.to/registry/browser/FileStorage",
-  "hookup.to/registry/browser/Crypto",
-  "hookup.to/registry/browser/TensorFlow",
-  "hookup.to/registry/browser/Fileformat",
-];
-
 export const allowedServices = [
   "hookup.to/service/timer",
   "hookup.to/service/monitor",

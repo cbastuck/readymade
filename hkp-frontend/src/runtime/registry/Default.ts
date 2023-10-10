@@ -52,13 +52,13 @@ import FeedbackTakerDesriptor from "../services/FeedbackTaker";
 import SpotifyDescriptor from "../services/Spotify";
 import GithubSourceDescriptor from "../services/GithubSource";
 import GithubSinkDescriptor from "../services/GithubSink";
-import { ServiceRegistry } from "../../types";
+import { ServiceModule } from "../../types";
 
 // Modules with additional dependencies
 // import GeneticOptimizerDescriptor from "../services/GeneticOptimizer";
 // import DownloaderDescriptor from "../services/Downloader";
 
-const defaultRegistry: ServiceRegistry = [
+export const defaultRegistry: Array<ServiceModule> = [
   TimerDescriptor,
   MonitorDescriptor,
 
@@ -126,4 +126,11 @@ const defaultRegistry: ServiceRegistry = [
   */
 ];
 
-export default defaultRegistry;
+export const defaultBundles = [
+  "hookup.to/registry/browser/Audio",
+  "hookup.to/registry/browser/Graphic",
+  "hookup.to/registry/browser/FileStorage",
+  "hookup.to/registry/browser/Crypto",
+  "hookup.to/registry/browser/TensorFlow",
+  "hookup.to/registry/browser/Fileformat",
+];

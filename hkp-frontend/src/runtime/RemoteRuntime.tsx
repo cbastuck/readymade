@@ -9,7 +9,7 @@ import {
   ServiceRegistry,
 } from "../types";
 import ServiceUiContainer from "./ServiceUiContainer";
-import defaultRegistry from "./registry/Default";
+import { defaultRegistry } from "./registry/Default";
 
 type Props = {
   userId: string;

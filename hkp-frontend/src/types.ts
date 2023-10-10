@@ -96,7 +96,7 @@ export type ServiceModule = ServiceClass & {
   createUI?: React.ElementType;
 };
 
-export type ServiceRegistry = Array<ServiceModule>;
+export type ServiceRegistry = Array<ServiceClass>;
 export type ServiceRegistryMap = { [runtimeId: string]: ServiceRegistry };
 
 export type ServiceClass = {
@@ -215,8 +215,8 @@ export type RuntimeServiceMap = {
 export type BoardDescriptor = {
   runtimes: Array<RuntimeDescriptor>;
   services: RuntimeServiceMap;
+  registry: ServiceRegistryMap;
   boardName?: string;
-  registry?: ServiceRegistryMap;
   description?: string;
 };
 

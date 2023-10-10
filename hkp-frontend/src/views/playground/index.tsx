@@ -25,7 +25,6 @@ import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
 import { s, t } from "../../styles";
 import {
   localStoragePrefix,
-  defaultBundles,
   allowedServices,
   defaultName,
   availableRuntimes,
@@ -53,15 +52,15 @@ import {
   RuntimeClass,
   RuntimeDescriptor,
   ServiceClass,
-  ServiceDescriptor,
   SidechainRoute,
   SidechainRouting,
   PeerInputRouting,
   PeerOutputRouting,
   PlaygroundState,
-  RuntimeServiceMap,
+  ServiceId,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
+import BrowserRuntime from "../../runtime/BrowserRuntime";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -158,10 +157,6 @@ class Playground extends Component<Props, State> {
   }
 
   fetchData = async (): Promise<BoardDescriptor> => {
-    if (!this.defaultRegistry) {
-      this.defaultRegistry = await BrowserRegistry.create(defaultBundles);
-    }
-
     if (this.state.initialFetched) {
       return this.boardProviderRef!.state;
     }
@@ -185,6 +180,7 @@ class Playground extends Component<Props, State> {
       rejectedSyncSenders = [],
       runtimes = [],
       services = {},
+      registry = {},
     } = initialBord;
     const data = {
       sidechainRouting,
@@ -206,6 +202,7 @@ class Playground extends Component<Props, State> {
       boardName,
       runtimes,
       services,
+      registry,
     };
   };
 
@@ -284,28 +281,42 @@ class Playground extends Component<Props, State> {
       const board = JSON.parse(data);
       if (board && board.runtimes) {
         for (const runtime of board.runtimes) {
-          if (runtime.type === "remote" || runtime.type === "node") {
-            const { id: runtimeId, ...desc } = runtime;
-            const services = board.services[runtimeId];
-            try {
-              await setRuntimeREST(
-                name,
-                {
-                  ...desc,
-                  runtimeId,
-                  params: { name },
-                },
-                services
-              );
-            } catch (err: any) {
-              this.handleRequestError(err);
+          switch (runtime.type) {
+            case "remote":
+            case "node": {
+              const { id: runtimeId, ...desc } = runtime;
+              const services = board.services[runtimeId];
+              try {
+                await setRuntimeREST(
+                  name,
+                  {
+                    ...desc,
+                    runtimeId,
+                    params: { name },
+                  },
+                  services
+                );
+              } catch (err: any) {
+                this.handleRequestError(err);
+              }
+              const registry = await getRuntimeRegistryREST(name, runtimeId);
+              board.registry[runtimeId] = registry;
+              return board;
             }
-            const registry = await getRuntimeRegistryREST(name, runtimeId);
-            board.registry[runtimeId] = registry;
+            case "browser": {
+              if (!board.registry || !board.registry[runtime.id]) {
+                board.registry = {
+                  ...board.registry,
+                  [runtime.id]: (
+                    await BrowserRuntime.initRegistry()
+                  ).getServiceClasses(),
+                };
+              }
+              return board;
+            }
           }
         }
       }
-      return board;
     }
   };
 
@@ -352,6 +363,7 @@ class Playground extends Component<Props, State> {
           })),
         };
       }, {}),
+      registry: descriptor.registry,
     };
     return {
       ...data,
@@ -409,7 +421,7 @@ class Playground extends Component<Props, State> {
     return svc;
   };
 
-  removeService = async (service: ServiceDescriptor, rt: RuntimeDescriptor) => {
+  removeService = async (service: ServiceId, rt: RuntimeDescriptor) => {
     const runtime = this.board && this.board.getRuntimeById(rt.id);
     return runtime?.destroyService(service.uuid);
   };
@@ -421,8 +433,8 @@ class Playground extends Component<Props, State> {
         if (!desc) {
           return null;
         }
-        const { ...runtime } = desc;
-        return { runtime, services: [] };
+        const { registry, ...runtime } = desc;
+        return { runtime, services: [], registry };
       }
       case "browser": {
         const { name, type, url } = rtClass;
@@ -433,7 +445,8 @@ class Playground extends Component<Props, State> {
           type,
           url,
         };
-        const registry = this.defaultRegistry?.availableServices || [];
+        const registry =
+          (await BrowserRuntime.initRegistry()).availableServices || [];
         return { runtime: rt, services: [], registry };
       }
       case "node":

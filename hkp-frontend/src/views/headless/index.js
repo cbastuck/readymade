@@ -1,7 +1,7 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import Runtime from "../../components/Runtime";
-import BrowserRegistry from "../../runtime/BrowserRegistry";
+import BrowserRuntime from "../../runtime/BrowserRuntime";
 
 import build from "../../buildNumber.json";
 
@@ -22,7 +22,7 @@ export default class Headless extends Component {
 
   constructor(props) {
     super(props);
-    BrowserRegistry.create(defaultBundles).then((defaultRegistry) =>
+    BrowserRuntime.initRegistry(defaultBundles).then((defaultRegistry) =>
       this.setState({ defaultRegistry })
     );
   }

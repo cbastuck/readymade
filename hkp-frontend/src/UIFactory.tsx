@@ -1,4 +1,9 @@
-import { Component, FunctionComponent, createElement } from "react";
+import {
+  Component,
+  FunctionComponent,
+  ReactElement,
+  createElement,
+} from "react";
 
 /*
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
@@ -17,7 +22,7 @@ import AggregatorUI from './components/services/AggregatorUI';
 */
 
 import IngressUI from "./components/services/IngressUI";
-import OutputUIOld from "./components/services/OutputUI";
+import OutputUINode from "./components/services/OutputUI";
 import WebsocketUI from "./components/services/WebsocketUI";
 
 import PlaceholderUI from "./runtime/services/PlaceholderUI";
@@ -42,6 +47,7 @@ import { SequencerUI } from "./runtime/services/Sequencer";
 import { SpotifyUI } from "./runtime/services/Spotify";
 import { GithubSourceUI } from "./runtime/services/GithubSource";
 import { GithubSinkUI } from "./runtime/services/GithubSink";
+import BrowserRuntime from "./runtime/BrowserRuntime";
 
 export function createPlaceholderUI(service: ServiceImpl) {
   return <PlaceholderUI service={service} />;
@@ -82,7 +88,7 @@ export function createServiceUI(
     };
     switch (serviceId) {
       case "hookup.to/service/output": {
-        return <OutputUIOld {...params} />;
+        return <OutputUINode {...params} />;
       }
       case "hookup.to/service/ingress":
         return <IngressUI {...params} />;
@@ -97,7 +103,7 @@ export function createServiceUI(
 
 function findServiceUI(
   serviceId: string
-): typeof Component | FunctionComponent | null {
+): typeof Component | FunctionComponent | null | typeof ReactElement {
   switch (serviceId) {
     case "hookup.to/service/timer":
       return TimerUI;
@@ -141,7 +147,7 @@ function findServiceUI(
     case "hookup.to/service/github-sink":
       return GithubSinkUI;
     default:
-      throw new Error("IMPLEMENT ME UIFactory.findServiceUI");
-      return null;
+      break;
   }
+  return BrowserRuntime.registry.find(serviceId)?.createUI || null;
 }

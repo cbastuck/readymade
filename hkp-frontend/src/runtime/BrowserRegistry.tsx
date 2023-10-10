@@ -1,9 +1,15 @@
-import { Bundles, ServiceModule, ServiceRegistry, User } from "../types";
+import {
+  Bundles,
+  ServiceClass,
+  ServiceModule,
+  ServiceRegistry,
+  User,
+} from "../types";
 import { loadBundle } from "./Bundles";
-import defaultRegistry from "./registry/Default";
+import { defaultRegistry } from "./registry/Default";
 
 export default class BrowserRegistry {
-  availableServices: ServiceRegistry | undefined = undefined;
+  availableServices: Array<ServiceModule> = defaultRegistry;
 
   static async create(bundles: Bundles, user?: User): Promise<BrowserRegistry> {
     const registry = new BrowserRegistry();
@@ -15,6 +21,17 @@ export default class BrowserRegistry {
       await registry.loadUserBundles(user);
     }
     return registry;
+  }
+
+  getServiceClasses(): Array<ServiceClass> {
+    return this.availableServices.map(({ serviceId, serviceName }) => ({
+      serviceId,
+      serviceName,
+    }));
+  }
+
+  find(serviceId: string): ServiceModule | undefined {
+    return this.availableServices.find((elem) => elem.serviceId === serviceId);
   }
 
   loadUserBundles = async (user: User) => {
@@ -31,7 +48,7 @@ export default class BrowserRegistry {
         this.__appendBundleServices(bdl);
       }
     }
-    return this.availableServices;
+    return this;
   }
 
   __appendBundleServices = (arr: Array<ServiceModule>) => {

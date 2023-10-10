@@ -61,12 +61,16 @@ export async function queryFreeRuntime(
 
 export async function createFreeRuntime(
   desc: RuntimeClass
-): Promise<RuntimeDescriptor | null> {
+): Promise<(RuntimeDescriptor & RegistryProp) | null> {
   const url = `${desc.url}/query`;
   const payload = `mutation makeFreeRuntime {
       createRuntime(input: {name: "${desc.name}"}) {
         id
         name,
+        registry {
+          serviceName
+          serviceId
+        }
       }
     }`;
   const result = await processQuery(url, payload);

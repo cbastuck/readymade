@@ -511,12 +511,13 @@ export default class Runtime extends Component<Props, State> {
 
   renderBrowserRuntime = (
     runtime: RuntimeDescriptor,
+    registry: ServiceRegistry,
     expanded: boolean,
     userId: string,
     boardName: string,
     services: Array<ServiceDescriptor>,
     readonly: boolean,
-    registry: ServiceRegistry,
+
     onArrangeService: (serviceUuid: string, position: number) => void,
     wrapServices?: boolean
   ) => {
@@ -549,6 +550,7 @@ export default class Runtime extends Component<Props, State> {
           boardName={boardName}
           runtime={runtime}
           services={services}
+          registry={registry}
           readonly={readonly}
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
@@ -654,12 +656,12 @@ export default class Runtime extends Component<Props, State> {
     if (headless && runtime) {
       return this.renderBrowserRuntime(
         runtime,
+        registry,
         expanded,
         userId,
         boardName,
         services,
         readonly,
-        registry,
         onArrangeService
       );
     }
@@ -728,12 +730,12 @@ export default class Runtime extends Component<Props, State> {
                 : runtime.type === "browser"
                 ? this.renderBrowserRuntime(
                     runtime,
+                    registry,
                     expanded,
                     userId,
                     boardName,
                     services,
                     readonly,
-                    registry,
                     onArrangeService,
                     wrapServices
                   )

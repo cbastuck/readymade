@@ -14,8 +14,9 @@ import {
   ServiceDescriptor,
   ServiceId,
   ServiceImpl,
+  ServiceRegistry,
 } from "../types";
-import defaultRegistry from "./registry/Default";
+import BrowserRegistry from "./BrowserRegistry";
 
 const EventSource = NativeEventSource || EventSourcePolyfill;
 
@@ -31,6 +32,7 @@ type Props = {
   runtime: RuntimeDescriptor;
   userId: string;
   services: Array<ServiceDescriptor>;
+  registry: ServiceRegistry;
   boardName: string;
 
   onArrangeService: (serviceUuid: string, position: number) => void;
@@ -46,6 +48,17 @@ type Props = {
 };
 
 export default class BrowserRuntime extends Component<Props> {
+  static registry: BrowserRegistry;
+
+  static async initRegistry(bundles?: Array<string>) {
+    if (!BrowserRuntime.registry) {
+      BrowserRuntime.registry = bundles
+        ? await new BrowserRegistry().loadBundles(bundles)
+        : new BrowserRegistry();
+    }
+    return BrowserRuntime.registry;
+  }
+
   serviceInstances: { [uuid: string]: ServiceImpl } = {};
   subservices: {
     [uuid: string]: { service: ServiceImpl; parent: ServiceImpl };
@@ -430,8 +443,7 @@ export default class BrowserRuntime extends Component<Props> {
   ): ServiceImpl | undefined => {
     const { boardName } = this.props;
     const { serviceId, serviceName } = service;
-    const registry = defaultRegistry;
-    const descriptor = registry.find((elem) => elem.serviceId === serviceId);
+    const descriptor = BrowserRuntime.registry.find(serviceId);
     if (!descriptor) {
       return;
     }
