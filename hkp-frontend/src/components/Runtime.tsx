@@ -103,10 +103,6 @@ export default class Runtime extends Component<Props, State> {
     }
   }
 
-  componentWillUnmount() {
-    this.destroyRuntime();
-  }
-
   onAddService(service: ServiceClass) {
     const { boardContext, runtime } = this.props;
     if (boardContext && runtime) {
@@ -188,12 +184,6 @@ export default class Runtime extends Component<Props, State> {
       this.impl.destroyService &&
       this.impl.destroyService(serviceUuid)
     );
-  };
-
-  // TODO: this should not happen here. Is a command to the backend not the UI component
-  // only makes sense for the BrowserRuntime as this hosts the real service not only the UI
-  destroyRuntime = () => {
-    return this.impl && this.impl.destroyRuntime && this.impl.destroyRuntime();
   };
 
   renderServiceMenu(

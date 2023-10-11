@@ -465,12 +465,14 @@ class Playground extends Component<Props, State> {
       delete this.externalInputs[runtime.id];
     }
 
+    /*
     const rt = this.board && this.board.getRuntimeById(runtime.id);
     if (!rt) {
       return;
     }
 
     return rt.destroyRuntime();
+    */
   };
 
   removeRuntime = async (runtime: RuntimeDescriptor) => {

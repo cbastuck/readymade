@@ -14,7 +14,6 @@ import {
   getRuntimeRegistry,
   addRuntime,
   removeRuntime,
-  configureService,
   clearBoard,
 } from "./core/actions";
 import {
@@ -178,10 +177,12 @@ class BoardContext extends Component<Props, BoardContextState> {
       registry = {},
       runtimes = [],
     } = await fetchData();
+
+    /*
     if (runtimes && services) {
       for (const runtime of runtimes) {
-        // ensure service.configure function exists
         for (const svc of services[runtime.id]) {
+          // ensure service.configure function exists
           if (!(svc as any).configure) {
             // TODO: for BrowserRuntimes this happens in BrowserRuntime
             // this should be streamlined!
@@ -195,6 +196,8 @@ class BoardContext extends Component<Props, BoardContextState> {
         }
       }
     }
+    */
+
     this.setState({
       boardName,
       runtimes,
@@ -310,13 +313,13 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   clearBoard = async () => {
     const { clearBoard = this.clearBoardDefault } = this.props;
-    const { runtimes, services, boardName } = this.state;
+    const { runtimes, services, registry, boardName } = this.state;
     this.setState(() => ({
       runtimes: [],
       services: {},
       registry: {},
     }));
-    await clearBoard({ runtimes, services, boardName });
+    await clearBoard({ runtimes, services, registry, boardName });
   };
 
   clearBoardDefault = async (board: BoardDescriptor) => {
@@ -580,6 +583,7 @@ class BoardContext extends Component<Props, BoardContextState> {
           })),
         };
       }, {}),
+      registry: this.state.registry,
     };
     return this.props.serializeBoard(data);
   };

@@ -1,9 +1,4 @@
-import {
-  Component,
-  FunctionComponent,
-  ReactElement,
-  createElement,
-} from "react";
+import { Component, FunctionComponent, createElement } from "react";
 
 /*
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
@@ -103,7 +98,7 @@ export function createServiceUI(
 
 function findServiceUI(
   serviceId: string
-): typeof Component | FunctionComponent | null | typeof ReactElement {
+): typeof Component | FunctionComponent | null {
   switch (serviceId) {
     case "hookup.to/service/timer":
       return TimerUI;

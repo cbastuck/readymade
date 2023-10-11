@@ -51,11 +51,10 @@ export default class BrowserRuntime extends Component<Props> {
   static registry: BrowserRegistry;
 
   static async initRegistry(bundles?: Array<string>) {
-    if (!BrowserRuntime.registry) {
-      BrowserRuntime.registry = bundles
-        ? await new BrowserRegistry().loadBundles(bundles)
-        : new BrowserRegistry();
-    }
+    BrowserRuntime.registry = bundles
+      ? await new BrowserRegistry().loadBundles(bundles)
+      : new BrowserRegistry();
+
     return BrowserRuntime.registry;
   }
 
@@ -81,6 +80,10 @@ export default class BrowserRuntime extends Component<Props> {
     if (this.props.services !== prevProps.services) {
       this.props.services.forEach((svc) => this.configureService(svc, svc));
     }
+  }
+
+  componentWillUnmount(): void {
+    this.destroyRuntime();
   }
 
   createApp = (): AppImpl | undefined => {
@@ -396,7 +399,7 @@ export default class BrowserRuntime extends Component<Props> {
     }
   }
 
-  destroyService(uuid: string) {
+  destroyService = async (uuid: string): Promise<void> => {
     const service = this.getServiceById(uuid);
     if (!service) {
       return console.error(
@@ -406,7 +409,7 @@ export default class BrowserRuntime extends Component<Props> {
       );
     }
     return service.destroy && service.destroy();
-  }
+  };
 
   getServiceById = (uuid: string) => {
     const { services } = this.props;
@@ -445,6 +448,11 @@ export default class BrowserRuntime extends Component<Props> {
     const { serviceId, serviceName } = service;
     const descriptor = BrowserRuntime.registry.find(serviceId);
     if (!descriptor) {
+      console.log(
+        "Could not create service instance",
+        serviceId,
+        BrowserRuntime.registry
+      );
       return;
     }
 

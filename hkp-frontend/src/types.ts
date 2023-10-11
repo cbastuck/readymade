@@ -1,5 +1,5 @@
 import PeerJs, { DataConnection } from "peerjs";
-import { ReactElement } from "react";
+import { Component, FunctionComponent, ReactElement } from "react";
 
 export type ServiceId = {
   uuid: string;
@@ -93,16 +93,15 @@ export type ServiceModule = ServiceClass & {
     descriptor: ServiceClass,
     id: string
   ) => ServiceImpl;
-  createUI?: React.ElementType;
+  createUI?: typeof Component | FunctionComponent;
 };
-
-export type ServiceRegistry = Array<ServiceClass>;
-export type ServiceRegistryMap = { [runtimeId: string]: ServiceRegistry };
-
 export type ServiceClass = {
   serviceName: string;
   serviceId: ServiceURI;
 };
+
+export type ServiceRegistry = Array<ServiceClass>;
+export type ServiceRegistryMap = { [runtimeId: string]: ServiceRegistry };
 
 export type AddRuntimeResult = Promise<{
   runtime: RuntimeDescriptor;
@@ -173,16 +172,16 @@ export type ServiceImpl = {
   board: string;
   app: AppImpl;
 
-  process: (params: any) => any;
-  configure: (config: any) => void;
-  destroy?: () => void;
+  process: (params: any) => Promise<any>;
+  configure: (config: any) => Promise<void>;
+  destroy?: () => Promise<void>;
 };
 
 export type RuntimeImpl = {
   getServiceById: (uuid: string) => ServiceImpl | null;
-  processRuntime: (params: any, svc: ServiceId | null) => any;
-  destroyService: (svcUuid: string) => void;
-  destroyRuntime: () => void;
+  processRuntime: (params: any, svc: ServiceId | null) => Promise<any>;
+  destroyService: (svcUuid: string) => Promise<void>;
+  destroyRuntime: () => Promise<void>;
 };
 
 export type AppViewMode = "wide" | "narrow";

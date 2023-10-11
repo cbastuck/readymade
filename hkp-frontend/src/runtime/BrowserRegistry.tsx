@@ -1,10 +1,4 @@
-import {
-  Bundles,
-  ServiceClass,
-  ServiceModule,
-  ServiceRegistry,
-  User,
-} from "../types";
+import { Bundles, ServiceClass, ServiceModule, User } from "../types";
 import { loadBundle } from "./Bundles";
 import { defaultRegistry } from "./registry/Default";
 
