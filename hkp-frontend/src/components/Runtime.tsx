@@ -485,19 +485,31 @@ export default class Runtime extends Component<Props, State> {
     registry: ServiceRegistry,
     onArrangeService: (serviceUuid: string, position: number) => void
   ) => {
+    const { wrapServices } = this.state;
     if (expanded) {
       return (
-        <RemoteRuntime
-          onRef={(impl) => (this.impl = impl)}
-          userId={userId}
-          boardName={boardName}
-          runtime={runtime}
-          services={services}
-          readonly={readonly}
-          registry={registry}
-          onArrangeService={onArrangeService}
-          onServiceAction={this.onServiceAction}
-        />
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            width: "100%",
+            flexFlow: wrapServices ? "wrap" : "row nowrap",
+            overflow: wrapServices ? undefined : "auto",
+          }}
+        >
+          <RemoteRuntime
+            onRef={(impl) => (this.impl = impl)}
+            userId={userId}
+            boardName={boardName}
+            runtime={runtime}
+            services={services}
+            readonly={readonly}
+            registry={registry}
+            onArrangeService={onArrangeService}
+            onServiceAction={this.onServiceAction}
+          />
+          {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
+        </div>
       );
     }
     return false;
@@ -505,13 +517,11 @@ export default class Runtime extends Component<Props, State> {
 
   renderBrowserRuntime = (
     runtime: RuntimeDescriptor,
-    registry: ServiceRegistry,
     expanded: boolean,
     userId: string,
     boardName: string,
     services: Array<ServiceDescriptor>,
     readonly: boolean,
-
     onArrangeService: (serviceUuid: string, position: number) => void,
     wrapServices?: boolean
   ) => {
@@ -544,37 +554,12 @@ export default class Runtime extends Component<Props, State> {
           boardName={boardName}
           runtime={runtime}
           services={services}
-          registry={registry}
           readonly={readonly}
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
           onResult={onResult}
         />
-        {services && services.length === 0 && (
-          <div
-            style={{
-              width: "100%",
-              margin: "auto",
-              textAlign: "center",
-              minHeight: 220,
-            }}
-          >
-            <div style={s(t.uc, t.fs13, t.ls1, { marginTop: 90 })}>
-              This is an empty runtime -
-              <span
-                style={{ cursor: "help", color: "#4284C4" }}
-                onClick={(ev) => {
-                  if (this.dropdown) {
-                    this.dropdown.open(ev);
-                  }
-                }}
-              >
-                {" add services "}
-              </span>
-              to start
-            </div>
-          </div>
-        )}
+        {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
         {outputs && expanded ? (
           <div
             style={{
@@ -590,6 +575,34 @@ export default class Runtime extends Component<Props, State> {
       </div>
     );
   };
+
+  renderEmptyRuntimePlaceholder() {
+    return (
+      <div
+        style={{
+          width: "100%",
+          margin: "auto",
+          textAlign: "center",
+          minHeight: 220,
+        }}
+      >
+        <div style={s(t.uc, t.fs13, t.ls1, { marginTop: 90 })}>
+          This is an empty runtime -
+          <span
+            style={{ cursor: "help", color: "#4284C4" }}
+            onClick={(ev) => {
+              if (this.dropdown) {
+                this.dropdown.open(ev);
+              }
+            }}
+          >
+            {" add services "}
+          </span>
+          to start
+        </div>
+      </div>
+    );
+  }
 
   render() {
     const {
@@ -650,7 +663,6 @@ export default class Runtime extends Component<Props, State> {
     if (headless && runtime) {
       return this.renderBrowserRuntime(
         runtime,
-        registry,
         expanded,
         userId,
         boardName,
@@ -724,7 +736,6 @@ export default class Runtime extends Component<Props, State> {
                 : runtime.type === "browser"
                 ? this.renderBrowserRuntime(
                     runtime,
-                    registry,
                     expanded,
                     userId,
                     boardName,

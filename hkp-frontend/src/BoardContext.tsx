@@ -43,6 +43,8 @@ type BoardContextAPI = {
   addService: (desc: ServiceClass, rt: RuntimeDescriptor) => void;
   removeService: (svc: ServiceId, rt: RuntimeDescriptor) => void;
 
+  updateRegistry: (runtimeId: string, services: Array<ServiceModule>) => void;
+
   arrangeService: (rt: RuntimeDescriptor, svcUuid: string, dst: number) => void;
 
   fetchData: () => Promise<void>;
@@ -95,8 +97,8 @@ type Props = {
   serializeBoard: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
 };
 
-const { Provider, Consumer: BoardConsumer } =
-  createContext<BoardContextState | null>(null);
+const BoardCtx = createContext<BoardContextState | null>(null);
+const { Provider, Consumer: BoardConsumer } = BoardCtx;
 
 class BoardContext extends Component<Props, BoardContextState> {
   static registerBrowserRuntime(boardName: string, runtimeId: string) {
@@ -131,6 +133,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       removeService: this.removeService,
       removeRuntime: this.removeRuntime,
       removeAllServices: this.removeAllServices,
+      updateRegistry: this.updateRegistry,
       onAction: this.onAction,
       isRuntimeInScope: props.isRuntimeInScope || this.isRuntimeInScope,
       acquireRuntimeScope: this.acquireRuntimeScope,
@@ -243,6 +246,12 @@ class BoardContext extends Component<Props, BoardContextState> {
       default:
         return true;
     }
+  };
+
+  updateRegistry = (runtimeId: string, registry: Array<ServiceModule>) => {
+    this.setState((state) => ({
+      registry: { ...state.registry, [runtimeId]: registry },
+    }));
   };
 
   getBoardName = () => {
@@ -398,18 +407,13 @@ class BoardContext extends Component<Props, BoardContextState> {
       url,
     };
     const result = await addRuntime(desc);
-    console.log("RESULT", result);
     if (result) {
-      const { runtime, services, registry } = result;
+      const { runtime, services } = result;
       this.setState((state: BoardContextState) => ({
         runtimes: [...state.runtimes, runtime],
         services: {
           ...state.services,
           [runtime.id]: services,
-        },
-        registry: {
-          ...state.registry,
-          [runtime.id]: registry,
         },
       }));
     }
@@ -617,5 +621,5 @@ class BoardContext extends Component<Props, BoardContextState> {
   }
 }
 
-export { BoardConsumer };
+export { BoardConsumer, BoardCtx };
 export default BoardContext;

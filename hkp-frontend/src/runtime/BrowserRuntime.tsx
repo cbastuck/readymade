@@ -15,11 +15,11 @@ import {
   ServiceDescriptor,
   ServiceId,
   ServiceImpl,
-  ServiceRegistry,
 } from "../types";
 import BrowserRegistry from "./BrowserRegistry";
 import { createServiceUI } from "../UIFactory";
 import { allowedServices } from "../views/playground/common";
+import { BoardContextState, BoardCtx } from "../BoardContext";
 
 const EventSource = NativeEventSource || EventSourcePolyfill;
 
@@ -35,9 +35,7 @@ type Props = {
   runtime: RuntimeDescriptor;
   userId: string;
   services: Array<ServiceDescriptor>;
-  registry: ServiceRegistry;
   boardName: string;
-
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
   onResult: (
@@ -55,6 +53,9 @@ type State = {
 };
 
 export default class BrowserRuntime extends Component<Props, State> {
+  static contextType = BoardCtx;
+  context!: BoardContextState;
+
   registry: BrowserRegistry | null = null;
 
   serviceInstances: { [uuid: string]: ServiceImpl } = {};
@@ -69,25 +70,41 @@ export default class BrowserRuntime extends Component<Props, State> {
     loadingCounter: 0,
   };
 
-  getAllowedServices = () => {
-    this.registry?.availableServices.filter(
-      (s) => !allowedServices || allowedServices.indexOf(s.serviceId) !== -1
-    );
-  };
+  componentDidMount() {
+    this.reset(this.props);
+  }
 
-  reset = (props: Props) => {
-    const doReset = async () => {
-      this.registry = new BrowserRegistry();
-      const bundles = props.runtime?.bundles;
-      if (bundles) {
-        await this.registry.loadBundles(bundles);
-      }
+  componentDidUpdate(prevProps: Props) {
+    if (this.props.services !== prevProps.services) {
+      this.reset(this.props, prevProps);
+    }
+  }
 
-      const { runtime, userId, services } = props;
-      if (services) {
+  componentWillUnmount(): void {
+    this.destroyRuntime();
+  }
+
+  resetImpl = async (props: Props, prevProps?: Props) => {
+    if (
+      !this.registry ||
+      props.runtime.bundles !== prevProps?.runtime.bundles
+    ) {
+      this.registry = await BrowserRegistry.create(props.runtime?.bundles);
+      this.context.updateRegistry(
+        props.runtime.id,
+        this.registry.availableServices.filter(
+          (s) => !allowedServices || allowedServices.indexOf(s.serviceId) !== -1
+        )
+      );
+    }
+
+    if (props.services !== prevProps?.services) {
+      if (props.services) {
         await Promise.all(
           Object.keys(this.serviceInstances).map(async (uuid) => {
-            const serviceWasRemoved = !services.find((s) => s.uuid === uuid);
+            const serviceWasRemoved = !props.services.find(
+              (s) => s.uuid === uuid
+            );
             if (serviceWasRemoved) {
               const svc = this.serviceInstances[uuid];
               if (svc) {
@@ -99,7 +116,7 @@ export default class BrowserRuntime extends Component<Props, State> {
         );
 
         await Promise.all(
-          services.map((svc) => {
+          props.services.map((svc) => {
             if (!this.serviceInstances[svc.uuid]) {
               const impl = this.createServiceInstance(svc);
               if (impl) {
@@ -110,35 +127,28 @@ export default class BrowserRuntime extends Component<Props, State> {
           })
         );
       }
+    }
 
-      if (runtime && userId && runtime.type !== "browser") {
-        this.connect(runtime.id);
+    // TODO: do we still need this block?
+    if (props.runtime !== prevProps?.runtime) {
+      if (props.runtime && props.userId && props.runtime.type !== "browser") {
+        this.connect(props.runtime.id);
       }
-
-      this.setState(({ loadingCounter }) => ({
-        loadingCounter: loadingCounter - 1,
-      }));
-    };
-
-    this.setState(
-      ({ loadingCounter }) => ({ loadingCounter: loadingCounter + 1 }),
-      doReset
-    );
+    }
   };
 
-  componentDidMount() {
-    this.reset(this.props);
-  }
-
-  componentDidUpdate(prevProps: Props) {
-    if (this.props.services !== prevProps.services) {
-      this.reset(this.props);
-    }
-  }
-
-  componentWillUnmount(): void {
-    this.destroyRuntime();
-  }
+  reset = (props: Props, prevProps?: Props) => {
+    // reentrant reset using counter
+    this.setState(
+      ({ loadingCounter }) => ({ loadingCounter: loadingCounter + 1 }),
+      async () => {
+        await this.resetImpl(props, prevProps);
+        this.setState(({ loadingCounter }) => ({
+          loadingCounter: loadingCounter - 1,
+        }));
+      }
+    );
+  };
 
   createApp = (): AppImpl | undefined => {
     const { services, boardName, runtime, userId } = this.props;
@@ -571,15 +581,15 @@ export default class BrowserRuntime extends Component<Props, State> {
             runtimeId: string,
             userId: string
           ) =>
-            (this.registry &&
-              createServiceUI(
-                this.registry,
-                boardName,
-                service,
-                runtimeId,
-                userId
-              )) ||
-            null
+            this.registry
+              ? createServiceUI(
+                  this.registry,
+                  boardName,
+                  service,
+                  runtimeId,
+                  userId
+                )
+              : null
           }
         />
       )

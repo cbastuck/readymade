@@ -24,12 +24,12 @@ export default function HoverActionIcon({
     ? "hover-icon-dark-dangerous"
     : "hover-icon-dark";
   return (
-    <div className={styleClass} title={tooltip}>
-      <Icon
-        name={iconName}
-        onClick={() => onClick(iconName)}
-        disabled={disabled}
-      />
+    <div
+      className={styleClass}
+      title={tooltip}
+      onClick={() => onClick(iconName)}
+    >
+      <Icon name={iconName} disabled={disabled} />
     </div>
   );
 }

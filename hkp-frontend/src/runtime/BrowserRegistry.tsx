@@ -5,7 +5,10 @@ import { defaultRegistry } from "./registry/Default";
 export default class BrowserRegistry {
   availableServices: Array<ServiceModule> = defaultRegistry;
 
-  static async create(bundles: Bundles, user?: User): Promise<BrowserRegistry> {
+  static async create(
+    bundles?: Bundles,
+    user?: User
+  ): Promise<BrowserRegistry> {
     const registry = new BrowserRegistry();
     registry.availableServices = defaultRegistry;
     if (bundles) {

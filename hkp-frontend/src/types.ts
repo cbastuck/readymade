@@ -107,7 +107,6 @@ export type ServiceRegistryMap = { [runtimeId: string]: ServiceRegistry };
 export type AddRuntimeResult = Promise<{
   runtime: RuntimeDescriptor;
   services: Array<ServiceDescriptor>;
-  registry: ServiceRegistry;
 } | null>;
 
 export type AddServiceResult =

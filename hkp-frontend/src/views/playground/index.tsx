@@ -23,12 +23,7 @@ import Login from "../Login";
 import { generateRandomName } from "../../core/board";
 import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
 import { s, t } from "../../styles";
-import {
-  localStoragePrefix,
-  allowedServices,
-  defaultName,
-  availableRuntimes,
-} from "./common";
+import { localStoragePrefix, defaultName, availableRuntimes } from "./common";
 import {
   importBoard,
   createBoardFromTemplate,
@@ -56,7 +51,6 @@ import {
   ServiceId,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
-import { defaultRegistry } from "../../runtime/registry/Default";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -201,43 +195,6 @@ class Playground extends Component<Props, State> {
       registry,
     };
   };
-
-  /*
-  fetchBoardData = async (state: Partial<PlaygroundState>) => {
-
-    services = await runtimes.reduce<Promise<RuntimeServiceMap>>(
-      async (acc, rt) => {
-        console.log("iterating", rt);
-        if (rt.type === "remote" && rt.url) {
-          const data = await queryFreeRuntime(rt);
-          console.log("Free Runtime data", data);
-          return { ...acc };
-        }
-        return { ...acc, [rt.id]: services[rt.id] };
-      },
-      Promise.resolve({})
-    );
-
-    console.log("REMOTE RUNTIMES SERVICES", services);
-
-    return {
-      registry: registry // for backwards compatiblity: when we only had browser runtimes on the playground
-        ? registry
-        : runtimes.reduce(
-            (all, rt) => ({
-              ...all,
-              [rt.id]:
-                rt.type === "browser"
-                  ? this.defaultRegistry?.availableServices || []
-                  : [],
-            }),
-            {}
-          ),
-      runtimes,
-      services,
-    };
-
-  };*/
 
   getInitialPlayground = async (): Promise<Partial<PlaygroundState> | null> => {
     const board = this.props.match?.params?.board;
@@ -420,8 +377,7 @@ class Playground extends Component<Props, State> {
         }
         desc.type = "remote";
         const { registry, ...runtime } = desc;
-        console.log("GOt REGISTR", registry);
-        return { runtime, services: [], registry };
+        return { runtime, services: [] };
       }
       case "browser": {
         const { name, type, url } = rtClass;
@@ -433,7 +389,7 @@ class Playground extends Component<Props, State> {
           url,
         };
 
-        return { runtime: rt, services: [], registry: defaultRegistry };
+        return { runtime: rt, services: [] };
       }
       case "node":
         return null;

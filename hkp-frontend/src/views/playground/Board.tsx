@@ -23,7 +23,6 @@ import {
   PeerOutputActivation,
   PeerOutputRouting,
   RuntimeDescriptor,
-  ServiceURI,
   SidechainRoute,
   SidechainRouting,
 } from "../../types";
@@ -40,7 +39,6 @@ type Props = {
   boardContext: BoardContextState;
   sidechainRouting: SidechainRouting;
   boardName: string;
-  allowedServices: Array<ServiceURI>;
   description: string;
 
   onChangeOutputRouting: (
@@ -434,8 +432,7 @@ export default class Board extends Component<Props, State> {
   renderRuntime = (
     boardContext: BoardContextState,
     runtime: RuntimeDescriptor,
-    peersContext: PeersContextState | null,
-    allowedServices: Array<string>
+    peersContext: PeersContextState | null
   ) => {
     const { boardName } = this.props;
     const ownPeers = boardContext.runtimes.map(
@@ -453,7 +450,6 @@ export default class Board extends Component<Props, State> {
           boardContext={boardContext}
           runtime={runtime}
           onResult={this.onResult.bind(this, runtime)}
-          allowedServices={allowedServices}
           outputs={this.renderOutputs(
             filteredPeers,
             runtime,
@@ -471,7 +467,7 @@ export default class Board extends Component<Props, State> {
     `${this.props.boardName}-${runtime.name}`;
 
   render() {
-    const { description, boardName, allowedServices } = this.props;
+    const { description, boardName } = this.props;
     return (
       <div>
         <div style={s(t.w100)}>
@@ -589,8 +585,7 @@ export default class Board extends Component<Props, State> {
                       {this.renderRuntime(
                         this.props.boardContext,
                         runtime,
-                        peersContext,
-                        allowedServices
+                        peersContext
                       )}
                     </Peer>
                   );

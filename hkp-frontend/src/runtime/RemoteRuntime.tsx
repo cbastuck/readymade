@@ -18,6 +18,7 @@ type Props = {
   runtime: RuntimeDescriptor;
   readonly: boolean;
   registry: ServiceRegistry;
+  children?: JSX.Element | JSX.Element[];
   onRef: (i: RuntimeImpl) => void;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
@@ -43,8 +44,6 @@ export default function RemoteRuntime({
   });
 
   onRef(impl.current);
-
-  console.log("RENDERING REMOTE RUNTIME", registry);
 
   const onCreateServiceUi = (
     boardName: string,
