@@ -35,7 +35,7 @@ export default class BrowserRegistry {
     }
   };
 
-  async loadBundles(bundles: Bundles) {
+  async loadBundles(bundles: Bundles): Promise<BrowserRegistry> {
     if (bundles) {
       for (const bundleId of bundles) {
         const bdl = await loadBundle(bundleId);

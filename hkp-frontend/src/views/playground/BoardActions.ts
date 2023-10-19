@@ -27,6 +27,7 @@ export async function importBoard(
         id: rid,
         type: data[rid].type,
         name: data[rid].name || `Runtime ${ridx + 1}`,
+        bundles: data[rid].bundles,
       })),
       services: runtimeIds.reduce(
         (all, rid) => ({
@@ -40,9 +41,10 @@ export async function importBoard(
         }),
         {}
       ),
+      registry: data.registry || {},
     };
   } catch (err) {
-    console.log("Import failed", err, url);
+    console.error("Import failed", err, url);
   }
   return null;
 }

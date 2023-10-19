@@ -60,7 +60,7 @@ import {
   ServiceId,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
-import BrowserRuntime from "../../runtime/BrowserRuntime";
+import { defaultRegistry } from "../../runtime/registry/Default";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -304,14 +304,6 @@ class Playground extends Component<Props, State> {
               return board;
             }
             case "browser": {
-              if (!board.registry || !board.registry[runtime.id]) {
-                board.registry = {
-                  ...board.registry,
-                  [runtime.id]: (
-                    await BrowserRuntime.initRegistry()
-                  ).getServiceClasses(),
-                };
-              }
               return board;
             }
           }
@@ -445,9 +437,8 @@ class Playground extends Component<Props, State> {
           type,
           url,
         };
-        const registry =
-          (await BrowserRuntime.initRegistry()).availableServices || [];
-        return { runtime: rt, services: [], registry };
+
+        return { runtime: rt, services: [], registry: defaultRegistry };
       }
       case "node":
         return null;

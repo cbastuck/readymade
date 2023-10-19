@@ -1,9 +1,9 @@
 import { Component } from "react";
 
 import Runtime from "../../components/Runtime";
-import BrowserRuntime from "../../runtime/BrowserRuntime";
 
 import build from "../../buildNumber.json";
+import BrowserRegistry from "../../runtime/BrowserRegistry";
 
 const defaultBundles = [
   "hookup.to/registry/browser/Audio",
@@ -22,7 +22,7 @@ export default class Headless extends Component {
 
   constructor(props) {
     super(props);
-    BrowserRuntime.initRegistry(defaultBundles).then((defaultRegistry) =>
+    BrowserRegistry.create(defaultBundles).then((defaultRegistry) =>
       this.setState({ defaultRegistry })
     );
   }

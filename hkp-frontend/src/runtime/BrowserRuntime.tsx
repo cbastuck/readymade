@@ -1,4 +1,5 @@
 import { Component } from "react";
+import { Loader } from "semantic-ui-react";
 import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
 
 import { request } from "../core/actions";
@@ -47,16 +48,12 @@ type Props = {
   readonly?: boolean;
 };
 
-export default class BrowserRuntime extends Component<Props> {
-  static registry: BrowserRegistry;
+type State = {
+  loadingCounter: number;
+};
 
-  static async initRegistry(bundles?: Array<string>) {
-    BrowserRuntime.registry = bundles
-      ? await new BrowserRegistry().loadBundles(bundles)
-      : new BrowserRegistry();
-
-    return BrowserRuntime.registry;
-  }
+export default class BrowserRuntime extends Component<Props, State> {
+  registry: BrowserRegistry | null = null;
 
   serviceInstances: { [uuid: string]: ServiceImpl } = {};
   subservices: {
@@ -66,19 +63,68 @@ export default class BrowserRuntime extends Component<Props> {
   eventSource: EventSource | undefined = undefined;
   app: AppImpl | null | undefined = undefined;
 
+  state = {
+    loadingCounter: 0,
+  };
+
+  reset = (props: Props) => {
+    const doReset = async () => {
+      this.registry = new BrowserRegistry();
+      const bundles = props.runtime?.bundles;
+      if (bundles) {
+        await this.registry.loadBundles(bundles);
+      }
+
+      const { runtime, userId, services } = props;
+      if (services) {
+        await Promise.all(
+          Object.keys(this.serviceInstances).map(async (uuid) => {
+            const serviceWasRemoved = !services.find((s) => s.uuid === uuid);
+            if (serviceWasRemoved) {
+              const svc = this.serviceInstances[uuid];
+              if (svc) {
+                delete this.serviceInstances[uuid]; // cleanup old instances
+                return svc.destroy();
+              }
+            }
+          })
+        );
+
+        await Promise.all(
+          services.map((svc) => {
+            if (!this.serviceInstances[svc.uuid]) {
+              const impl = this.createServiceInstance(svc);
+              if (impl) {
+                this.serviceInstances[svc.uuid] = impl;
+              }
+            }
+            return this.configureService(svc.uuid, svc);
+          })
+        );
+      }
+
+      if (runtime && userId && runtime.type !== "browser") {
+        this.connect(runtime.id);
+      }
+
+      this.setState(({ loadingCounter }) => ({
+        loadingCounter: loadingCounter - 1,
+      }));
+    };
+
+    this.setState(
+      ({ loadingCounter }) => ({ loadingCounter: loadingCounter + 1 }),
+      doReset
+    );
+  };
+
   componentDidMount() {
-    const { runtime, userId, services } = this.props;
-    if (services) {
-      services.forEach((svc) => this.configureService(svc, svc));
-    }
-    if (runtime && userId && runtime.type !== "browser") {
-      this.connect(runtime.id);
-    }
+    this.reset(this.props);
   }
 
   componentDidUpdate(prevProps: Props) {
     if (this.props.services !== prevProps.services) {
-      this.props.services.forEach((svc) => this.configureService(svc, svc));
+      this.reset(this.props);
     }
   }
 
@@ -127,7 +173,7 @@ export default class BrowserRuntime extends Component<Props> {
         return ssvc;
       },
       createSubServiceUI: (svc: ServiceImpl) =>
-        createServiceUI(boardName, svc, runtime.id, userId, {
+        createServiceUI(this.registry!, boardName, svc, runtime.id, userId, {
           resizable: false,
         }),
     };
@@ -168,7 +214,7 @@ export default class BrowserRuntime extends Component<Props> {
       ++i
     ) {
       svc = services[i];
-      const serviceInstance = this.serviceInstance(svc);
+      const serviceInstance = this.serviceInstances[svc.uuid];
       if (serviceInstance && !serviceInstance.bypass) {
         try {
           result = await serviceInstance.process(params);
@@ -289,7 +335,7 @@ export default class BrowserRuntime extends Component<Props> {
   onMessage(command: Command) {
     switch (command.action) {
       case "config":
-        return this.configureServiceByUuid(command.uuid, command.config);
+        return this.configureService(command.uuid, command.config);
       case "process":
         return this.processService(
           command.uuid,
@@ -349,23 +395,10 @@ export default class BrowserRuntime extends Component<Props> {
     }
   };
 
-  configureServiceByUuid(uuid: string, config: any) {
-    const { services } = this.props;
-    const service = services.find((s) => (s.uuid = uuid));
-    if (!service) {
-      return console.error(
-        `Could not find browser service to configure: ${uuid} in ${JSON.stringify(
-          services
-        )}`
-      );
-    }
-    this.configureService(service, config);
-  }
-
-  configureService = (service: ServiceDescriptor, config: any) => {
-    const svc: ServiceImpl | null = this.serviceInstance(service);
+  configureService = (uuid: string, config: any) => {
+    const svc: ServiceImpl | null = this.serviceInstances[uuid];
     if (svc) {
-      svc.configure(config);
+      return svc.configure(config);
     }
   };
 
@@ -414,7 +447,7 @@ export default class BrowserRuntime extends Component<Props> {
   getServiceById = (uuid: string) => {
     const { services } = this.props;
     const svc = services.find((s) => s.uuid === uuid);
-    return svc ? this.serviceInstance(svc) : null;
+    return svc ? this.serviceInstances[svc.uuid] : null;
   };
 
   destroyRuntime = async () => {
@@ -446,12 +479,12 @@ export default class BrowserRuntime extends Component<Props> {
   ): ServiceImpl | undefined => {
     const { boardName } = this.props;
     const { serviceId, serviceName } = service;
-    const descriptor = BrowserRuntime.registry.find(serviceId);
+    const descriptor = this.registry?.find(serviceId);
     if (!descriptor) {
       console.log(
         "Could not create service instance",
         serviceId,
-        BrowserRuntime.registry
+        this.registry
       );
       return;
     }
@@ -484,27 +517,7 @@ export default class BrowserRuntime extends Component<Props> {
       }
       return configure && configure(config || {});
     };
-    //svc.configure(service); // this happens in componentDidMount/Update hooks
     return svc;
-  };
-
-  serviceInstance = (service: ServiceDescriptor): ServiceImpl | null => {
-    if (!service) {
-      return null;
-    }
-    const instance = this.serviceInstances[service.uuid];
-    if (instance) {
-      return instance;
-    }
-
-    const svc = this.createServiceInstance(service);
-    if (svc) {
-      this.serviceInstances[service.uuid] = svc;
-      return svc;
-    }
-
-    console.error("No browser service module found for ", service);
-    return null; // TODO: old comment: try not to crash
   };
 
   render() {
@@ -513,15 +526,26 @@ export default class BrowserRuntime extends Component<Props> {
       boardName,
       runtime,
       readonly,
-      onArrangeService,
-      onServiceAction,
       services: rawServices,
       collapsed = false,
+      onArrangeService,
+      onServiceAction,
     } = this.props;
+
+    if (this.state.loadingCounter > 0 || !this.registry) {
+      return (
+        <div style={{ width: "100%", height: "100%", marginTop: "45px" }}>
+          <Loader active inline>
+            Loading ...
+          </Loader>
+        </div>
+      );
+    }
+
     const services = rawServices
       ? (rawServices
-          .map((svc) => this.serviceInstance(svc))
-          .filter((x) => x !== null) as Array<ServiceImpl>)
+          .map((svc) => this.serviceInstances[svc.uuid])
+          .filter((x) => !!x) as Array<ServiceImpl>)
       : [];
     return (
       !collapsed && (
@@ -530,6 +554,7 @@ export default class BrowserRuntime extends Component<Props> {
           runtime={runtime}
           readonly={readonly}
           services={services}
+          registry={this.registry}
           userId={userId}
           onArrangeService={onArrangeService}
           onServiceAction={onServiceAction}

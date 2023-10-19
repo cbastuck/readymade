@@ -16,6 +16,7 @@ export type RuntimeClass = {
   type: RuntimeClassType;
   name: string;
   url?: string;
+  bundles?: Array<string>;
 };
 
 export type RuntimeDescriptor = RuntimeClass & {
@@ -167,6 +168,7 @@ export type ServiceImpl = {
     ) => void;
     unregister: (id: string) => void;
   };
+
   bypass?: boolean;
   uuid: string;
   board: string;
@@ -174,10 +176,11 @@ export type ServiceImpl = {
 
   process: (params: any) => Promise<any>;
   configure: (config: any) => Promise<void>;
-  destroy?: () => Promise<void>;
+  destroy: () => Promise<void>;
 };
 
 export type RuntimeImpl = {
+  configureService: (uuid: string, config: any) => void;
   getServiceById: (uuid: string) => ServiceImpl | null;
   processRuntime: (params: any, svc: ServiceId | null) => Promise<any>;
   destroyService: (svcUuid: string) => Promise<void>;
@@ -217,6 +220,20 @@ export type BoardDescriptor = {
   registry: ServiceRegistryMap;
   boardName?: string;
   description?: string;
+};
+
+export type SandboxRuntimeDescriptor = RuntimeDescriptor & {
+  services: Array<ServiceDescriptor>;
+};
+
+export function isSandboxRuntimeDescriptor(
+  obj: any
+): obj is SandboxRuntimeDescriptor {
+  return obj.id && obj.type && obj.services && Array.isArray(obj.services);
+}
+
+export type SandboxRuntimeDescriptorMap = {
+  [id: string]: SandboxRuntimeDescriptor;
 };
 
 export type DeprecatedInputRouting = { [runtimeId: string]: string }; // old format with just a peer string

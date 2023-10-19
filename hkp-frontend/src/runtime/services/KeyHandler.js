@@ -8,20 +8,21 @@ class KeyHandler {
     this.app = app;
   }
 
-  destroy() {}
+  destroy() {
+    if (this.eventType) {
+      document.removeEventListener(this.eventType, this.onEvent);
+    }
+    this.eventType = "";
+  }
 
-  onEvent = (e) => {
-    this.app.next(this, { key: e.key, code: e.keyCode });
-  };
+  onEvent = (e) => this.app.next(this, { key: e.key, code: e.keyCode });
 
   configure(config) {
     const { eventType = "keydown" } = config;
 
-    if (this._registered) {
-      document.removeEventListener(this._registered);
-    }
-
-    this._registered = document.addEventListener(eventType, this.onEvent);
+    this.destroy();
+    document.addEventListener(eventType, this.onEvent);
+    this.eventType = eventType;
   }
 
   process(params) {

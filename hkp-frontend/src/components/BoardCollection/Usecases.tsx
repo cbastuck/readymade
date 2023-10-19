@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Loader } from "semantic-ui-react";
 
 import BoardCollection from ".";
-import { UsecaseDescriptor } from "./types";
+import { UsecaseDescriptor } from "../../types";
 import { s, t } from "../../styles";
 
 const usecasesUrl = "/boards/usecases/index.json";

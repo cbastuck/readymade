@@ -42,13 +42,14 @@ import { SequencerUI } from "./runtime/services/Sequencer";
 import { SpotifyUI } from "./runtime/services/Spotify";
 import { GithubSourceUI } from "./runtime/services/GithubSource";
 import { GithubSinkUI } from "./runtime/services/GithubSink";
-import BrowserRuntime from "./runtime/BrowserRuntime";
+import BrowserRegistry from "./runtime/BrowserRegistry";
 
 export function createPlaceholderUI(service: ServiceImpl) {
   return <PlaceholderUI service={service} />;
 }
 
 export function createServiceUI(
+  registry: BrowserRegistry,
   board: string,
   service: ServiceImpl,
   runtimeId: string,
@@ -63,7 +64,7 @@ export function createServiceUI(
     throw new Error(`UIFactory missing serviceId ${JSON.stringify(service)}`);
   }
 
-  const userInterface = findServiceUI(serviceId);
+  const userInterface = findServiceUI(registry, serviceId);
   if (userInterface) {
     return createElement(userInterface, {
       ...props,
@@ -97,6 +98,7 @@ export function createServiceUI(
 }
 
 function findServiceUI(
+  registry: BrowserRegistry,
   serviceId: string
 ): typeof Component | FunctionComponent | null {
   switch (serviceId) {
@@ -144,5 +146,5 @@ function findServiceUI(
     default:
       break;
   }
-  return BrowserRuntime.registry.find(serviceId)?.createUI || null;
+  return registry.find(serviceId)?.createUI || null;
 }

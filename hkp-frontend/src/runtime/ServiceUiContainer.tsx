@@ -4,14 +4,15 @@ import ServiceFrame from "../components/ServiceFrame";
 import { createServiceUI, createPlaceholderUI } from "../UIFactory";
 import ServiceDropBar from "./ServiceDropBar";
 import { RuntimeDescriptor, ServiceAction, ServiceImpl } from "../types";
+import BrowserRegistry from "./BrowserRegistry";
 
 type Props = {
   userId: string;
   boardName: string;
   runtime: RuntimeDescriptor;
   services: Array<ServiceImpl>;
+  registry: BrowserRegistry;
   readonly?: boolean;
-
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
 };
@@ -22,6 +23,7 @@ export default class ServiceUiContainer extends Component<Props> {
       boardName,
       runtime,
       services,
+      registry,
       readonly = false,
       onArrangeService,
       onServiceAction,
@@ -36,7 +38,7 @@ export default class ServiceUiContainer extends Component<Props> {
       services.map((service, pos) => {
         const serviceUi = readonly
           ? createPlaceholderUI(service)
-          : createServiceUI(boardName, service, runtime.id, userId);
+          : createServiceUI(registry, boardName, service, runtime.id, userId);
         return (
           <div
             key={`scene-frame-${service.uuid}`}

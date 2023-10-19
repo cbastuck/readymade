@@ -36,9 +36,9 @@ type Props = {
     minimized?: boolean;
   };
   runtime: RuntimeDescriptor;
-  allowedServices: Array<ServiceURI>;
-  outputs: ReactElement;
-  inputs: ReactElement;
+  allowedServices?: Array<ServiceURI>;
+  outputs?: ReactElement;
+  inputs?: ReactElement;
   children?: JSX.Element | JSX.Element[];
   customItems?: Array<{
     key: string;
@@ -147,10 +147,14 @@ export default class Runtime extends Component<Props, State> {
     );
   };
 
-  processRuntime = (params: any, svc: ServiceId | null = null) => {
-    this.impl &&
-      this.impl.processRuntime &&
-      this.impl.processRuntime(params, svc);
+  processRuntime = (
+    params: any,
+    svc: ServiceId | null = null
+  ): Promise<any> => {
+    if (!this.impl || !this.impl.processRuntime) {
+      throw new Error("Runtime.processRuntime() impl is missing");
+    }
+    return this.impl.processRuntime(params, svc);
   };
 
   processService = (serviceUuid: string, params: any) => {
@@ -179,11 +183,17 @@ export default class Runtime extends Component<Props, State> {
   // TODO: this should not happen here. Is a command to the backend not the UI component
   // Probably the boardContext should be the receiver
   destroyService = (serviceUuid: string) => {
-    return (
-      this.impl &&
-      this.impl.destroyService &&
-      this.impl.destroyService(serviceUuid)
-    );
+    if (!this.impl || !this.impl.destroyService) {
+      throw new Error("Runtime.destroyService() impl is missing");
+    }
+    return this.impl.destroyService(serviceUuid);
+  };
+
+  destroyRuntime = () => {
+    if (!this.impl || !this.impl.destroyRuntime) {
+      throw new Error("Runtime.destroyRuntime() impl is missing");
+    }
+    return this.impl.destroyRuntime();
   };
 
   renderServiceMenu(

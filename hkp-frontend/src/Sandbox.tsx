@@ -1,32 +1,61 @@
 import { Component } from "react";
-import { Link } from "react-router-dom";
+import { Link, Location } from "react-router-dom";
 import * as uuid from "uuid";
 
 import { withRouter } from "./common";
 import Runtime from "./components/Runtime";
-import BoardProvider, { BoardConsumer } from "./BoardContext";
+import BoardProvider, {
+  BoardConsumer,
+  BoardContextState,
+} from "./BoardContext";
 import DragProvider from "./DragContext";
-import BrowserRuntime from "./runtime/BrowserRuntime";
-import { s, t } from "./styles";
 
-class Sandbox extends Component {
-  constructor(props) {
+import { s, t } from "./styles";
+import {
+  RuntimeDescriptor,
+  RuntimeImpl,
+  SandboxRuntimeDescriptor,
+  SandboxRuntimeDescriptorMap,
+  ServiceDescriptor,
+  isSandboxRuntimeDescriptor,
+} from "./types";
+
+type Props = {
+  location: Location;
+  boardName?: string;
+  src?: string;
+  data?: string;
+};
+
+type State = {
+  runtime: RuntimeDescriptor | null;
+  options: Options;
+  url?: string;
+  services?: Array<ServiceDescriptor>;
+};
+
+type Options = {
+  frameless: boolean;
+};
+
+class Sandbox extends Component<Props, State> {
+  runtime: RuntimeImpl | null = null;
+  constructor(props: Props) {
     super(props);
 
     const urlProps = Object.fromEntries(
       new URLSearchParams(props.location.search)
     );
     const { frameless = "false" } = urlProps;
-
     this.state = {
-      runtime: undefined,
+      runtime: null,
       options: {
-        frameless: frameless === "true" || frameless === true,
+        frameless: frameless === "true",
       },
     };
   }
 
-  configureService = (serviceUuid, config) => {
+  configureService = (serviceUuid: string, config: any) => {
     if (this.runtime) {
       this.runtime.configureService(serviceUuid, config);
     }
@@ -43,7 +72,7 @@ class Sandbox extends Component {
       ? await this.parseData(typeof data === "string" ? JSON.parse(data) : data)
       : null;
 
-    if (runtime === null) {
+    if (!runtime) {
       throw new Error("Sandbox.fetchData sandbox without data source");
     }
 
@@ -59,7 +88,6 @@ class Sandbox extends Component {
       services: runtime.services,
     });
 
-    const registry = await BrowserRuntime.initRegistry(runtime.bundles);
     return {
       board: { name: boardName },
       runtimes: [runtime],
@@ -67,12 +95,12 @@ class Sandbox extends Component {
         [runtime.id]: runtime.services,
       },
       registry: {
-        [runtime.id]: registry.availableServices,
+        // [runtime.id]: registry.availableServices,
       },
     };
   };
 
-  fetchAndParseData = async (src) => {
+  fetchAndParseData = async (src: string) => {
     try {
       const response = await fetch(src);
       return this.parseData(await response.json());
@@ -81,7 +109,9 @@ class Sandbox extends Component {
     }
   };
 
-  parseData = async (data) => {
+  parseData = async (
+    data: SandboxRuntimeDescriptor | SandboxRuntimeDescriptorMap
+  ) => {
     const firstBrowserRuntimeData = extractFirstRuntime(data);
     if (!firstBrowserRuntimeData) {
       return;
@@ -98,28 +128,28 @@ class Sandbox extends Component {
     return firstBrowserRuntimeData;
   };
 
-  onResult = (serviceUuid, result) => {
+  onResult = (serviceUuid: string, result: any) => {
     // console.log('Sandbox result', serviceUuid, result);
   };
 
-  renderState = (boardContext, options, runtime, onResult) => {
-    if (!runtime) {
-      return null;
-    }
-
+  renderState = (
+    boardContext: BoardContextState,
+    options: Options,
+    runtime: RuntimeDescriptor,
+    onResult: (serviceUuid: string, result: any) => any
+  ) => {
     const url = this.state.url;
     return (
       <DragProvider key={`sandbox-drag-provider-${runtime.id}`}>
         <Runtime
+          ref={(runtime) => (this.runtime = runtime)}
           key={`sandbox-runtime-${runtime.id}`}
           initialState={runtime.state}
           style={{ marginBottom: 5 }}
-          ref={(runtime) => (this.runtime = runtime)}
           runtime={runtime}
           frameless={options && options.frameless}
           boardContext={boardContext}
           onResult={onResult}
-          onArrangeService={null}
           disabledItems={["remove"]}
         />
         {url && (
@@ -142,28 +172,26 @@ class Sandbox extends Component {
     );
   };
 
-  renderSandbox = (options, runtime, onResult) => {
-    return (
-      <BoardConsumer>
-        {(boardContext) =>
-          this.renderState(boardContext, options, runtime, onResult)
-        }
-      </BoardConsumer>
-    );
-  };
-
   render() {
     const { runtime, options } = this.state;
     return (
       <BoardProvider fetchData={this.fetchData}>
-        {this.renderSandbox(options, runtime, this.onResult)}
+        <BoardConsumer>
+          {(boardContext) =>
+            boardContext &&
+            runtime &&
+            this.renderState(boardContext, options, runtime, this.onResult)
+          }
+        </BoardConsumer>
       </BoardProvider>
     );
   }
 }
 
-function extractFirstRuntime(data) {
-  if (data.id && data.services) {
+function extractFirstRuntime(
+  data: SandboxRuntimeDescriptor | SandboxRuntimeDescriptorMap
+): SandboxRuntimeDescriptor | undefined {
+  if (isSandboxRuntimeDescriptor(data)) {
     return data;
   }
 
