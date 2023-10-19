@@ -1,4 +1,9 @@
-import { Component, FunctionComponent, createElement } from "react";
+import {
+  Component,
+  FunctionComponent,
+  ReactElement,
+  createElement,
+} from "react";
 
 /*
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
@@ -55,7 +60,7 @@ export function createServiceUI(
   runtimeId: string,
   userId: string | undefined = undefined,
   props: any = {}
-) {
+): ReactElement | null {
   const serviceId = service.__descriptor
     ? service.__descriptor.serviceId
     : service.serviceId;

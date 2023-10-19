@@ -1,20 +1,24 @@
-import { Component } from "react";
+import { Component, ReactElement } from "react";
 
 import ServiceFrame from "../components/ServiceFrame";
-import { createServiceUI, createPlaceholderUI } from "../UIFactory";
+import { createPlaceholderUI } from "../UIFactory";
 import ServiceDropBar from "./ServiceDropBar";
 import { RuntimeDescriptor, ServiceAction, ServiceImpl } from "../types";
-import BrowserRegistry from "./BrowserRegistry";
 
 type Props = {
   userId: string;
   boardName: string;
   runtime: RuntimeDescriptor;
   services: Array<ServiceImpl>;
-  registry: BrowserRegistry;
   readonly?: boolean;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
+  onCreateServiceUi: (
+    boardName: string,
+    service: ServiceImpl,
+    runtimeId: string,
+    userId: string
+  ) => ReactElement | null;
 };
 export default class ServiceUiContainer extends Component<Props> {
   render() {
@@ -23,10 +27,10 @@ export default class ServiceUiContainer extends Component<Props> {
       boardName,
       runtime,
       services,
-      registry,
       readonly = false,
       onArrangeService,
       onServiceAction,
+      onCreateServiceUi,
     } = this.props;
 
     if (!services) {
@@ -38,7 +42,7 @@ export default class ServiceUiContainer extends Component<Props> {
       services.map((service, pos) => {
         const serviceUi = readonly
           ? createPlaceholderUI(service)
-          : createServiceUI(registry, boardName, service, runtime.id, userId);
+          : onCreateServiceUi(boardName, service, runtime.id, userId);
         return (
           <div
             key={`scene-frame-${service.uuid}`}
@@ -47,6 +51,7 @@ export default class ServiceUiContainer extends Component<Props> {
             {pos === 0 && (
               <ServiceDropBar index={0} onDrop={onArrangeService} />
             )}
+
             <ServiceFrame
               service={service}
               serviceUi={serviceUi}

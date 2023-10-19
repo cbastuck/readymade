@@ -55,9 +55,9 @@ class Sandbox extends Component<Props, State> {
     };
   }
 
-  configureService = (serviceUuid: string, config: any) => {
+  configureService = async (serviceUuid: string, config: any) => {
     if (this.runtime) {
-      this.runtime.configureService(serviceUuid, config);
+      return this.runtime.configureService(serviceUuid, config);
     }
   };
 

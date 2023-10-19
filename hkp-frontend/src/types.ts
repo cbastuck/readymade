@@ -180,7 +180,7 @@ export type ServiceImpl = {
 };
 
 export type RuntimeImpl = {
-  configureService: (uuid: string, config: any) => void;
+  configureService: (uuid: string, config: any) => Promise<void>;
   getServiceById: (uuid: string) => ServiceImpl | null;
   processRuntime: (params: any, svc: ServiceId | null) => Promise<any>;
   destroyService: (svcUuid: string) => Promise<void>;

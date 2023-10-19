@@ -25,7 +25,6 @@ import {
   ServiceDescriptor,
   ServiceId,
   ServiceRegistry,
-  ServiceURI,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 
@@ -36,7 +35,6 @@ type Props = {
     minimized?: boolean;
   };
   runtime: RuntimeDescriptor;
-  allowedServices?: Array<ServiceURI>;
   outputs?: ReactElement;
   inputs?: ReactElement;
   children?: JSX.Element | JSX.Element[];
@@ -80,6 +78,7 @@ export default class Runtime extends Component<Props, State> {
   impl: RuntimeImpl | null = null;
   dropdown: ServiceDropdown | null = null;
   runtimeContainer: HTMLDivElement | null = null;
+
   componentDidMount() {
     const { readonly, initialState = {}, expanded } = this.props;
     this.setState({
@@ -166,7 +165,7 @@ export default class Runtime extends Component<Props, State> {
     }
   };
 
-  configureService = (serviceUuid: string, config: any) => {
+  configureService = async (serviceUuid: string, config: any) => {
     const service = this.getServiceById(serviceUuid);
     if (service) {
       service.configure(config);
@@ -198,22 +197,17 @@ export default class Runtime extends Component<Props, State> {
 
   renderServiceMenu(
     runtimeId: string,
-    runtimeName: string,
     registry: ServiceRegistry,
     appViewMode: AppViewMode
   ) {
-    const { allowedServices } = this.props;
     const wide = appViewMode === "wide";
-    const options = registry
-      .map((s) => ({
-        key: `${runtimeId}${s.serviceId}`,
-        value: s.serviceId,
-        text: s.serviceName,
-        selected: false,
-      }))
-      .filter(
-        (s) => !allowedServices || allowedServices.indexOf(s.value) !== -1
-      );
+    const options = registry.map((s) => ({
+      key: `${runtimeId}${s.serviceId}`,
+      value: s.serviceId,
+      text: s.serviceName,
+      selected: false,
+    }));
+
     return (
       <ServiceDropdown
         ref={(dropdown) => (this.dropdown = dropdown)}
@@ -345,7 +339,7 @@ export default class Runtime extends Component<Props, State> {
         >
           {registry &&
             isOwner &&
-            this.renderServiceMenu(runtimeId, name, registry, appViewMode)}
+            this.renderServiceMenu(runtimeId, registry, appViewMode)}
         </div>
       </div>
     );

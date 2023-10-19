@@ -1,5 +1,6 @@
-import { useRef } from "react";
+import { ReactElement, useRef } from "react";
 import {
+  AppImpl,
   RuntimeDescriptor,
   RuntimeImpl,
   ServiceAction,
@@ -9,7 +10,6 @@ import {
   ServiceRegistry,
 } from "../types";
 import ServiceUiContainer from "./ServiceUiContainer";
-import { defaultRegistry } from "./registry/Default";
 
 type Props = {
   userId: string;
@@ -36,14 +36,54 @@ export default function RemoteRuntime({
 }: Props) {
   const impl = useRef<RuntimeImpl>({
     getServiceById: (uuid: string): ServiceImpl | null => null,
-    processRuntime: (params: any, svc: ServiceId | null): any => {},
-    destroyService: (svcUuid: string) => {},
-    destroyRuntime: () => {},
+    processRuntime: async (params: any, svc: ServiceId | null) => {},
+    destroyService: async (svcUuid: string) => {},
+    configureService: async (uuid: string, config: any) => {},
+    destroyRuntime: async () => {},
   });
 
   onRef(impl.current);
-  const uiRegistry = registry.map(
-    (r) => defaultRegistry.find((dr) => r.serviceId === dr.serviceId) || r
+
+  console.log("RENDERING REMOTE RUNTIME", registry);
+
+  const onCreateServiceUi = (
+    boardName: string,
+    service: ServiceImpl,
+    runtimeId: string,
+    userId: string
+  ): ReactElement | null => {
+    return null;
+  };
+
+  const app: AppImpl = {
+    notify: (svc: ServiceImpl, notification: any): void => {},
+    next: (svc: ServiceId | null, result: any): void => {},
+    getServiceById: (uuid: string): ServiceImpl | null => {
+      return null;
+    },
+    sendAction: (action: ServiceAction): void => {},
+    storeServiceData: (
+      serviceUuid: string,
+      key: string,
+      value: string
+    ): void => {},
+    restoreServiceData: (serviceUuid: string, key: string): void => {},
+    removeServiceData: (serviceUuid: string, key: string): void => {},
+    createSubService: (
+      parent: ServiceImpl,
+      service: ServiceDescriptor
+    ): void => {},
+    createSubServiceUI: (svc: ServiceImpl): void => {},
+  };
+  const servicesWithImpl: Array<ServiceImpl> = services.map(
+    (svc: ServiceDescriptor) => ({
+      ...svc,
+      board: boardName,
+      app,
+      process: async (params: any): Promise<any> => {},
+      configure: async (config: any): Promise<void> => {},
+      destroy: async (): Promise<void> => {},
+    })
   );
   return (
     <ServiceUiContainer
@@ -51,10 +91,10 @@ export default function RemoteRuntime({
       boardName={boardName}
       runtime={runtime}
       readonly={readonly}
-      services={services}
-      uiRegistry={uiRegistry}
+      services={servicesWithImpl}
       onArrangeService={onArrangeService}
       onServiceAction={onServiceAction}
+      onCreateServiceUi={onCreateServiceUi}
     />
   );
 }

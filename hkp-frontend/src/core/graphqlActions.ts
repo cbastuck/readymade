@@ -80,17 +80,3 @@ export async function createFreeRuntime(
 
   return result.data?.createRuntime || null;
 }
-
-export async function getRuntimeRegistry(rt: RuntimeDescriptor) {
-  /*
-  const url = `${rt.url}/query`;
-  const payload = {
-    query: `mutation makeFreeRuntime {
-      createRuntime(input: {name: "FreeRuntime"}) {
-        id
-        name
-      }
-    }`,
-  };
-  */
-}

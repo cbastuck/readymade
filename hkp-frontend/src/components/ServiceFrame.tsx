@@ -14,7 +14,7 @@ function getNotificationID(service: ServiceId) {
 
 type Props = {
   service: ServiceImpl;
-  serviceUi: ReactElement;
+  serviceUi: ReactElement | null;
   draggable: boolean;
 
   onAction: (action: ServiceAction) => void;
@@ -227,7 +227,7 @@ export default class ServiceFrame extends Component<Props, State> {
   };
 
   renderServiceWithSidebar = (
-    serviceUi: ReactElement,
+    serviceUi: ReactElement | null,
     menuVisible: boolean
   ) => {
     return (
@@ -249,7 +249,7 @@ export default class ServiceFrame extends Component<Props, State> {
             onClick={() => this.setState({ menuVisible: false })}
           />
         )}
-        {serviceUi}
+        {serviceUi || <div />}
         <div
           style={{
             position: "absolute",

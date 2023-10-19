@@ -7,7 +7,7 @@ import { isMultipartsResult, parseResponse } from "./MultiformParser";
 import { restoreToken } from "../core/Auth";
 import { serializeWebsocketBuffer } from "../core/format";
 import ServiceUiContainer from "./ServiceUiContainer";
-import { createServiceUI } from "../UIFactory";
+
 import {
   AppImpl,
   RuntimeDescriptor,
@@ -18,6 +18,8 @@ import {
   ServiceRegistry,
 } from "../types";
 import BrowserRegistry from "./BrowserRegistry";
+import { createServiceUI } from "../UIFactory";
+import { allowedServices } from "../views/playground/common";
 
 const EventSource = NativeEventSource || EventSourcePolyfill;
 
@@ -65,6 +67,12 @@ export default class BrowserRuntime extends Component<Props, State> {
 
   state = {
     loadingCounter: 0,
+  };
+
+  getAllowedServices = () => {
+    this.registry?.availableServices.filter(
+      (s) => !allowedServices || allowedServices.indexOf(s.serviceId) !== -1
+    );
   };
 
   reset = (props: Props) => {
@@ -395,7 +403,7 @@ export default class BrowserRuntime extends Component<Props, State> {
     }
   };
 
-  configureService = (uuid: string, config: any) => {
+  configureService = async (uuid: string, config: any) => {
     const svc: ServiceImpl | null = this.serviceInstances[uuid];
     if (svc) {
       return svc.configure(config);
@@ -554,10 +562,25 @@ export default class BrowserRuntime extends Component<Props, State> {
           runtime={runtime}
           readonly={readonly}
           services={services}
-          registry={this.registry}
           userId={userId}
           onArrangeService={onArrangeService}
           onServiceAction={onServiceAction}
+          onCreateServiceUi={(
+            boardName: string,
+            service: ServiceImpl,
+            runtimeId: string,
+            userId: string
+          ) =>
+            (this.registry &&
+              createServiceUI(
+                this.registry,
+                boardName,
+                service,
+                runtimeId,
+                userId
+              )) ||
+            null
+          }
         />
       )
     );

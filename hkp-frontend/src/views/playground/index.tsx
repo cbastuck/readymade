@@ -39,11 +39,7 @@ import {
   setRuntime as setRuntimeREST,
   getRuntimeRegistry as getRuntimeRegistryREST,
 } from "../../core/actions";
-import {
-  createFreeRuntime,
-  queryFreeRuntime,
-  //  getRuntimeRegistry,
-} from "../../core/graphqlActions";
+import { createFreeRuntime } from "../../core/graphqlActions";
 import {
   Action,
   AddServiceResult,
@@ -277,12 +273,12 @@ class Playground extends Component<Props, State> {
       ? `${localStoragePrefix}${name}`
       : "hkp-playground";
     const data = localStorage.getItem(storageName);
+
     if (data) {
       const board = JSON.parse(data);
       if (board && board.runtimes) {
         for (const runtime of board.runtimes) {
           switch (runtime.type) {
-            case "remote":
             case "node": {
               const { id: runtimeId, ...desc } = runtime;
               const services = board.services[runtimeId];
@@ -301,13 +297,10 @@ class Playground extends Component<Props, State> {
               }
               const registry = await getRuntimeRegistryREST(name, runtimeId);
               board.registry[runtimeId] = registry;
-              return board;
-            }
-            case "browser": {
-              return board;
             }
           }
         }
+        return board;
       }
     }
   };
@@ -425,7 +418,9 @@ class Playground extends Component<Props, State> {
         if (!desc) {
           return null;
         }
+        desc.type = "remote";
         const { registry, ...runtime } = desc;
+        console.log("GOt REGISTR", registry);
         return { runtime, services: [], registry };
       }
       case "browser": {
@@ -650,7 +645,6 @@ class Playground extends Component<Props, State> {
         ref={(board) => (this.board = board)}
         appContext={this.context}
         boardContext={boardContext}
-        allowedServices={allowedServices}
         description={description}
         boardName={boardName}
         sidechainRouting={sidechainRouting}

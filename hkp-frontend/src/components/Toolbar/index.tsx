@@ -87,7 +87,9 @@ export default function Toolbar({
                     />
                   )}
                   {boardContext?.appViewMode === "wide" && (
-                    <BoardActionsBar boardContext={boardContext} />
+                    <div style={{ marginLeft: "5px" }}>
+                      <BoardActionsBar boardContext={boardContext} />
+                    </div>
                   )}
                   <Navigation appContext={appContext} isCompact={isCompact} />
                   {appContext && !isCompact && (

@@ -376,6 +376,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     }
   };
 
+  // TODO: do we need STILL this!!!???
   createBrowserRegistry = async () => {
     const { user } = this.state;
     const registry = await BrowserRegistry.create([], user);
@@ -386,11 +387,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     const { addRuntime } = this.props;
 
     const { type, name, url } = rtClass;
-    const params =
-      type === "browser"
-        ? { registry: await this.createBrowserRegistry() }
-        : {};
-
+    const params = {};
     const browser = type === "browser" ? new UAParser().getBrowser() : null;
     const desc = {
       type,
@@ -401,6 +398,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       url,
     };
     const result = await addRuntime(desc);
+    console.log("RESULT", result);
     if (result) {
       const { runtime, services, registry } = result;
       this.setState((state: BoardContextState) => ({
