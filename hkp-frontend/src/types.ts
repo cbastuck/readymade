@@ -107,10 +107,11 @@ export type ServiceRegistryMap = { [runtimeId: string]: ServiceRegistry };
 export type AddRuntimeResult = Promise<{
   runtime: RuntimeDescriptor;
   services: Array<ServiceDescriptor>;
+  registry?: ServiceRegistry;
 } | null>;
 
 export type AddServiceResult =
-  | Promise<ServiceDescriptor>
+  | Promise<ServiceDescriptor | null>
   | ServiceDescriptor
   | undefined;
 
@@ -184,6 +185,18 @@ export type RuntimeImpl = {
   processRuntime: (params: any, svc: ServiceId | null) => Promise<any>;
   destroyService: (svcUuid: string) => Promise<void>;
   destroyRuntime: () => Promise<void>;
+};
+
+export type RuntimeApi = {
+  addService: (
+    runtime: RuntimeDescriptor,
+    service: ServiceClass
+  ) => AddServiceResult;
+  addRuntime: (runtime: RuntimeClass) => AddRuntimeResult;
+};
+
+export type RuntimeApiMap = {
+  [type: string]: RuntimeApi;
 };
 
 export type AppViewMode = "wide" | "narrow";

@@ -482,7 +482,6 @@ export default class Runtime extends Component<Props, State> {
     boardName: string,
     services: Array<ServiceDescriptor>,
     readonly: boolean,
-    registry: ServiceRegistry,
     onArrangeService: (serviceUuid: string, position: number) => void
   ) => {
     const { wrapServices } = this.state;
@@ -504,7 +503,6 @@ export default class Runtime extends Component<Props, State> {
             runtime={runtime}
             services={services}
             readonly={readonly}
-            registry={registry}
             onArrangeService={onArrangeService}
             onServiceAction={this.onServiceAction}
           />
@@ -730,7 +728,6 @@ export default class Runtime extends Component<Props, State> {
                     boardName,
                     services,
                     readonly,
-                    registry,
                     onArrangeService
                   )
                 : runtime.type === "browser"

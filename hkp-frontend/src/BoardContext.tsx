@@ -1,25 +1,20 @@
 import { Component, ReactElement, createContext } from "react";
-import UAParser from "ua-parser-js";
 
 import BrowserRegistry from "./runtime/BrowserRegistry";
 import ResizeObserver from "./ResizeObserver";
 
 import {
   getServices,
-  addService,
   removeService,
   loadBoard,
   getBoard,
   getRuntimes,
   getRuntimeRegistry,
-  addRuntime,
   removeRuntime,
   clearBoard,
 } from "./core/actions";
 import {
   Action,
-  AddRuntimeResult,
-  AddServiceResult,
   AppViewMode,
   BoardDescriptor,
   RuntimeClass,
@@ -29,6 +24,7 @@ import {
   ServiceRegistry,
   ServiceClass,
   ServiceId,
+  RuntimeApiMap,
 } from "./types";
 import { reorderService } from "./views/playground/BoardActions";
 
@@ -82,9 +78,7 @@ type Props = {
 
   fetchData: () => Promise<BoardDescriptor>;
   isRuntimeInScope: () => boolean;
-  addRuntime: (rtClass: RuntimeClass) => AddRuntimeResult;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
-  addService: (svc: ServiceClass, rt: RuntimeDescriptor) => AddServiceResult;
   removeService: (svc: ServiceId, rt: RuntimeDescriptor) => void;
   newBoard: (searchParams?: string) => void; // TODO: why search params ??
   clearBoard: (board: BoardDescriptor) => Promise<void>;
@@ -95,6 +89,8 @@ type Props = {
 
   onAction: (action: any) => boolean;
   serializeBoard: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
+
+  runtimeApis: RuntimeApiMap;
 };
 
 const BoardCtx = createContext<BoardContextState | null>(null);
@@ -393,47 +389,38 @@ class BoardContext extends Component<Props, BoardContextState> {
   };
 
   addRuntime = async (rtClass: RuntimeClass) => {
-    const { addRuntime } = this.props;
-
-    const { type, name, url } = rtClass;
-    const params = {};
-    const browser = type === "browser" ? new UAParser().getBrowser() : null;
-    const desc = {
-      type,
-      name: `${browser?.name || name || "unnamed"}-${
-        this.state.runtimes.length + 1
-      }`,
-      params,
-      url,
-    };
-    const result = await addRuntime(desc);
+    const api = this.props.runtimeApis[rtClass.type];
+    if (!api) {
+      throw new Error(
+        `BoardContext.addRuntime() runtime api is missing: ${rtClass.type}`
+      );
+    }
+    const result = await api.addRuntime(rtClass);
+    console.log("ADDED RUNTIME", result);
     if (result) {
-      const { runtime, services } = result;
+      const { runtime, services, registry = [] } = result;
       this.setState((state: BoardContextState) => ({
         runtimes: [...state.runtimes, runtime],
         services: {
           ...state.services,
           [runtime.id]: services,
         },
+        registry: {
+          ...state.registry,
+          [runtime.id]: registry,
+        },
       }));
     }
   };
 
-  // TODO: this is not needed for playground setups
-  // probably this can go away once mixed board work with playground
-  addRuntimeDefault = async (desc: RuntimeClass) => {
-    const boardName = this.getBoardName();
-    const created = await addRuntime(boardName, desc);
-    if (desc.type === "browser") {
-      BoardContext.registerBrowserRuntime(boardName, created.id);
-    }
-    return created;
-  };
-
   addService = async (service: ServiceClass, runtime: RuntimeDescriptor) => {
-    const { addService = this.addServiceDefault } = this.props;
-
-    const svc = await addService(service, runtime);
+    const api = this.props.runtimeApis[runtime.type];
+    if (!api) {
+      throw new Error(
+        `BoardContext.addService() runtime api is missing: ${runtime.type}`
+      );
+    }
+    const svc = await api.addService(runtime, service);
     if (svc) {
       this.setState((state: BoardContextState) => ({
         services: {
@@ -442,13 +429,6 @@ class BoardContext extends Component<Props, BoardContextState> {
         },
       }));
     }
-  };
-
-  addServiceDefault = (
-    service: ServiceClass,
-    runtime: RuntimeDescriptor
-  ): Promise<AddServiceResult> => {
-    return addService(this.getBoardName(), service, runtime.id);
   };
 
   removeService = async (service: ServiceId, runtime: RuntimeDescriptor) => {
@@ -574,6 +554,8 @@ class BoardContext extends Component<Props, BoardContextState> {
         id: rt.id,
         name: rt.name,
         type: rt.type,
+        url: rt.url,
+        bundles: rt.bundles,
       })),
       services: Object.keys(this.state.services).reduce((all, runtimeId) => {
         return {

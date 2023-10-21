@@ -1,15 +1,22 @@
 import { ReactElement, useRef } from "react";
+
 import {
   AppImpl,
+  RuntimeApi,
+  RuntimeClass,
   RuntimeDescriptor,
   RuntimeImpl,
   ServiceAction,
+  ServiceClass,
   ServiceDescriptor,
   ServiceId,
   ServiceImpl,
-  ServiceRegistry,
 } from "../types";
 import ServiceUiContainer from "./ServiceUiContainer";
+import {
+  createFreeRuntime,
+  createRuntimeService,
+} from "../core/graphqlActions";
 
 type Props = {
   userId: string;
@@ -17,7 +24,6 @@ type Props = {
   services: Array<ServiceDescriptor>;
   runtime: RuntimeDescriptor;
   readonly: boolean;
-  registry: ServiceRegistry;
   children?: JSX.Element | JSX.Element[];
   onRef: (i: RuntimeImpl) => void;
   onArrangeService: (serviceUuid: string, position: number) => void;
@@ -29,7 +35,6 @@ export default function RemoteRuntime({
   boardName,
   services,
   runtime,
-  registry,
   readonly,
   onRef,
   onArrangeService,
@@ -97,3 +102,20 @@ export default function RemoteRuntime({
     />
   );
 }
+
+export const RemoteRuntimeApi: RuntimeApi = {
+  addService: async (runtime: RuntimeDescriptor, service: ServiceClass) => {
+    const svc = await createRuntimeService(runtime, service);
+    console.log("CREATED SERVICE", svc, runtime);
+    return svc;
+  },
+  addRuntime: async (rtClass: RuntimeClass) => {
+    const desc = await createFreeRuntime(rtClass);
+    if (!desc) {
+      return null;
+    }
+
+    const { registry, ...runtime } = desc;
+    return { runtime: { ...rtClass, ...runtime }, services: [], registry };
+  },
+};

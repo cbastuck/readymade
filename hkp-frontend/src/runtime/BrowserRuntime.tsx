@@ -1,6 +1,8 @@
 import { Component } from "react";
 import { Loader } from "semantic-ui-react";
+import * as uuid from "uuid";
 import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
+import UAParser from "ua-parser-js";
 
 import { request } from "../core/actions";
 import { isMultipartsResult, parseResponse } from "./MultiformParser";
@@ -9,9 +11,14 @@ import { serializeWebsocketBuffer } from "../core/format";
 import ServiceUiContainer from "./ServiceUiContainer";
 
 import {
+  AddRuntimeResult,
+  AddServiceResult,
   AppImpl,
+  RuntimeApi,
+  RuntimeClass,
   RuntimeDescriptor,
   ServiceAction,
+  ServiceClass,
   ServiceDescriptor,
   ServiceId,
   ServiceImpl,
@@ -71,12 +78,12 @@ export default class BrowserRuntime extends Component<Props, State> {
   };
 
   componentDidMount() {
-    this.reset(this.props);
+    this.update(this.props);
   }
 
   componentDidUpdate(prevProps: Props) {
     if (this.props.services !== prevProps.services) {
-      this.reset(this.props, prevProps);
+      this.update(this.props, prevProps);
     }
   }
 
@@ -84,7 +91,7 @@ export default class BrowserRuntime extends Component<Props, State> {
     this.destroyRuntime();
   }
 
-  resetImpl = async (props: Props, prevProps?: Props) => {
+  updateAsync = async (props: Props, prevProps?: Props) => {
     if (
       !this.registry ||
       props.runtime.bundles !== prevProps?.runtime.bundles
@@ -137,12 +144,12 @@ export default class BrowserRuntime extends Component<Props, State> {
     }
   };
 
-  reset = (props: Props, prevProps?: Props) => {
+  update = (props: Props, prevProps?: Props) => {
     // reentrant reset using counter
     this.setState(
       ({ loadingCounter }) => ({ loadingCounter: loadingCounter + 1 }),
       async () => {
-        await this.resetImpl(props, prevProps);
+        await this.updateAsync(props, prevProps);
         this.setState(({ loadingCounter }) => ({
           loadingCounter: loadingCounter - 1,
         }));
@@ -596,6 +603,30 @@ export default class BrowserRuntime extends Component<Props, State> {
     );
   }
 }
+
+export const BrowserRuntimeApi: RuntimeApi = {
+  addRuntime: (rtClass: RuntimeClass): AddRuntimeResult => {
+    const { name: passedName, type, url } = rtClass;
+    const runtimeId = uuid.v4();
+    const browser = new UAParser().getBrowser();
+    const rt: RuntimeDescriptor = {
+      id: runtimeId,
+      name: browser.name || passedName,
+      type,
+      url,
+    };
+    return Promise.resolve({ runtime: rt, services: [] });
+  },
+  addService: (
+    runtime: RuntimeDescriptor,
+    service: ServiceClass
+  ): AddServiceResult => {
+    return {
+      ...service,
+      uuid: uuid.v4(),
+    };
+  },
+};
 
 function logInfo(msg: string) {
   // console.log(msg);

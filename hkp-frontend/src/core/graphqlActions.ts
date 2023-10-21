@@ -1,6 +1,7 @@
 import {
   RuntimeClass,
   RuntimeDescriptor,
+  ServiceClass,
   ServiceDescriptor,
   ServiceRegistry,
 } from "../types";
@@ -79,4 +80,34 @@ export async function createFreeRuntime(
   }
 
   return result.data?.createRuntime || null;
+}
+
+export async function createRuntimeService(
+  runtime: RuntimeDescriptor,
+  service: ServiceClass
+): Promise<ServiceDescriptor | null> {
+  const url = `${runtime.url}/query`;
+  const payload = `query addRuntimeService {
+    runtimeById(runtimeId: "${runtime.id}") {
+      createService(
+        input: { uri: "${service.serviceId}", serviceName: "${service.serviceName}" }
+      ) { 
+        id 
+        name
+      }
+    }
+  }`;
+  const result = await processQuery(url, payload);
+  if (!result) {
+    return null;
+  }
+
+  const svc = result.data?.createService;
+  return svc
+    ? {
+        uuid: svc.id,
+        serviceId: svc.serviceId,
+        serviceName: svc.name,
+      }
+    : null;
 }

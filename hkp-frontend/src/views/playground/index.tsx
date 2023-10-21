@@ -1,6 +1,5 @@
 import { Component } from "react";
 import { Loader } from "semantic-ui-react";
-import * as uuid from "uuid";
 
 import { withRouter, WithRouterProps } from "../../common";
 import { AppContextState, AppCtx } from "../../AppContext";
@@ -30,27 +29,26 @@ import {
   importFromLink,
 } from "./BoardActions";
 import {
-  addService as addServiceREST,
   setRuntime as setRuntimeREST,
   getRuntimeRegistry as getRuntimeRegistryREST,
 } from "../../core/actions";
-import { createFreeRuntime } from "../../core/graphqlActions";
+
 import {
   Action,
-  AddServiceResult,
   BoardDescriptor,
   ExternalInput,
-  RuntimeClass,
   RuntimeDescriptor,
-  ServiceClass,
   SidechainRoute,
   SidechainRouting,
   PeerInputRouting,
   PeerOutputRouting,
   PlaygroundState,
   ServiceId,
+  RuntimeApiMap,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
+import { BrowserRuntimeApi } from "../../runtime/BrowserRuntime";
+import { RemoteRuntimeApi } from "../../runtime/RemoteRuntime";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -334,70 +332,9 @@ class Playground extends Component<Props, State> {
     });
   };
 
-  addService = (
-    service: ServiceClass,
-    runtime: RuntimeDescriptor
-  ): AddServiceResult => {
-    const svc = {
-      ...service,
-      uuid: uuid.v4(),
-    };
-
-    if (runtime?.type === "remote") {
-      // TODO: GraphQL
-    } else if (runtime?.type === "node") {
-      addServiceREST(this.state.boardName, svc, runtime.id).then((created) =>
-        console.log("CREATED SERVICE", created, svc)
-      );
-    } else {
-      if (!this.board) {
-        throw new Error("addService() board is undefined");
-      }
-
-      if (!this.board.getRuntimeById(runtime.id)) {
-        console.warn("Could not find runtime for", runtime.id);
-        return;
-      }
-    }
-
-    return svc;
-  };
-
   removeService = async (service: ServiceId, rt: RuntimeDescriptor) => {
     const runtime = this.board && this.board.getRuntimeById(rt.id);
     return runtime?.destroyService(service.uuid);
-  };
-
-  addRuntime = async (rtClass: RuntimeClass) => {
-    switch (rtClass.type) {
-      case "remote": {
-        const desc = await createFreeRuntime(rtClass);
-        if (!desc) {
-          return null;
-        }
-        desc.type = "remote";
-        const { registry, ...runtime } = desc;
-        return { runtime, services: [] };
-      }
-      case "browser": {
-        const { name, type, url } = rtClass;
-        const runtimeId = uuid.v4();
-        const rt: RuntimeDescriptor = {
-          id: runtimeId,
-          name,
-          type,
-          url,
-        };
-
-        return { runtime: rt, services: [] };
-      }
-      case "node":
-        return null;
-      default:
-        throw new Error(
-          `Playground.addRuntime() runtime type is not supported: ${rtClass.type}`
-        );
-    }
   };
 
   destroyRuntime = (runtime: RuntimeDescriptor) => {
@@ -689,6 +626,11 @@ class Playground extends Component<Props, State> {
     );
   };
 
+  runtimeApis: RuntimeApiMap = {
+    browser: BrowserRuntimeApi,
+    remote: RemoteRuntimeApi,
+  };
+
   render() {
     const { requireLogin } = this.state;
     const appContext = this.context;
@@ -700,9 +642,8 @@ class Playground extends Component<Props, State> {
         boardName={this.state.boardName}
         fetchData={this.fetchData}
         isRuntimeInScope={() => true}
-        addRuntime={this.addRuntime}
+        runtimeApis={this.runtimeApis}
         removeRuntime={this.removeRuntime}
-        addService={this.addService}
         removeService={this.removeService}
         newBoard={this.newBoard}
         clearBoard={this.clearPlayground}
