@@ -144,7 +144,7 @@ class Playground extends Component<Props, State> {
     }
   }
 
-  fetchData = async (): Promise<BoardDescriptor> => {
+  fetchBoard = async (): Promise<BoardDescriptor> => {
     if (this.state.initialFetched) {
       return this.boardProviderRef!.state;
     }
@@ -592,7 +592,7 @@ class Playground extends Component<Props, State> {
         }
         boardContext={boardContext}
         onUpdate={(update: any) =>
-          this.setState(update, boardContext.fetchData)
+          this.setState(update, boardContext.fetchBoard)
         }
         onClose={(closedPeer: string) => {
           if (closedPeer === this.state.syncedPeer) {
@@ -639,7 +639,7 @@ class Playground extends Component<Props, State> {
         key={`playground-${this.state.boardName}`}
         user={(appContext && appContext.user) || this.user}
         boardName={this.state.boardName}
-        fetchData={this.fetchData}
+        fetchBoard={this.fetchBoard}
         isRuntimeInScope={() => true}
         runtimeApis={runtimeApis}
         removeRuntime={this.removeRuntime}

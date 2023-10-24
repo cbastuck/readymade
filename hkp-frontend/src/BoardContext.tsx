@@ -7,7 +7,6 @@ import {
   getServices,
   removeService,
   loadBoard,
-  getBoard,
   getRuntimes,
   getRuntimeRegistry,
   removeRuntime,
@@ -43,7 +42,7 @@ type BoardContextAPI = {
 
   arrangeService: (rt: RuntimeDescriptor, svcUuid: string, dst: number) => void;
 
-  fetchData: () => Promise<void>;
+  fetchBoard: () => Promise<void>;
   isActionAvailable: (action: Action) => boolean;
   onAction: (action: Action) => void;
 
@@ -77,7 +76,7 @@ type Props = {
   runtimeApis: RuntimeApiMap;
   children: ReactElement;
 
-  fetchData: () => Promise<BoardDescriptor>;
+  fetchBoard: () => Promise<BoardDescriptor>;
   isRuntimeInScope: () => boolean;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
   removeService: (svc: ServiceId, rt: RuntimeDescriptor) => void;
@@ -121,7 +120,7 @@ class BoardContext extends Component<Props, BoardContextState> {
 
     this.state = {
       // API
-      fetchData: this.fetchData,
+      fetchBoard: this.fetchBoard,
       addRuntime: this.addRuntime,
       addService: this.addService,
       arrangeService: this.arrangeServices,
@@ -154,7 +153,7 @@ class BoardContext extends Component<Props, BoardContextState> {
   }
 
   componentDidMount() {
-    this.fetchData();
+    this.fetchBoard();
   }
 
   componentDidUpdate(prevProps: Props) {
@@ -167,14 +166,13 @@ class BoardContext extends Component<Props, BoardContextState> {
     }
   }
 
-  fetchData = async () => {
-    const { fetchData } = this.props;
+  fetchBoard = async () => {
     const {
       boardName = this.getBoardName(),
       runtimes = [],
       services = {},
       registry = {},
-    } = await fetchData();
+    } = await this.props.fetchBoard();
 
     await Promise.all(
       runtimes.map((rt) =>
@@ -224,14 +222,6 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   getBoardName = () => {
     return this.state.boardName;
-  };
-
-  fetchBoard = async () => {
-    const boardname = this.getBoardName();
-    if (boardname) {
-      const board = await getBoard(boardname);
-      return board;
-    }
   };
 
   fetchRuntimes = async () => {
@@ -342,7 +332,7 @@ class BoardContext extends Component<Props, BoardContextState> {
             localStorage.getItem(`board-${boardname}`) || ""
           );
           await loadBoard(action.board, loadState);
-          await this.fetchData();
+          await this.fetchBoard();
         } catch (error) {
           console.error("Loading board failed with error", error);
         }
@@ -444,7 +434,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     await this.removeAllServices(runtime);
     const boardName = this.getBoardName();
     await removeRuntime(boardName, runtime);
-    await this.fetchData();
+    await this.fetchBoard();
   };
 
   removeAllServices = async (runtime: RuntimeDescriptor) => {
@@ -484,7 +474,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     if (runtime.type === "browser") {
       if (!this.isRuntimeInScope(runtime)) {
         BoardContext.registerBrowserRuntime(boardname, runtime.id);
-        this.fetchData();
+        this.fetchBoard();
       }
     }
   };
@@ -493,7 +483,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     if (runtime.type === "browser") {
       BoardContext.unregisterBrowserRuntime(boardname, runtime.id);
 
-      this.fetchData();
+      this.fetchBoard();
     }
   };
 

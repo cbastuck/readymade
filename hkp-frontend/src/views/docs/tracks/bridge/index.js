@@ -14,7 +14,7 @@ export default function Bridge() {
   const [template, setTemplate] = useState("");
   const [jsCode, setJSCode] = useState("");
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchBoard = async () => {
       setTemplate(
         await (
           await fetch(
@@ -30,7 +30,7 @@ export default function Bridge() {
         ).text()
       );
     };
-    fetchData();
+    fetchBoard();
   }, []);
   return (
     <Template title="Bridge" parent="side tracks">

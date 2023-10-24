@@ -63,7 +63,7 @@ class Sandbox extends Component<Props, State> {
     }
   };
 
-  fetchData = async () => {
+  fetchBoard = async () => {
     const { boardName = "Sandbox", location } = this.props;
     const urlProps = Object.fromEntries(new URLSearchParams(location.search));
     const { src = this.props.src, data = this.props.data } = urlProps; // url props override internal props
@@ -75,7 +75,7 @@ class Sandbox extends Component<Props, State> {
       : null;
 
     if (!runtime) {
-      throw new Error("Sandbox.fetchData sandbox without data source");
+      throw new Error("Sandbox.fetchBoard sandbox without data source");
     }
 
     this.setState({
@@ -180,7 +180,7 @@ class Sandbox extends Component<Props, State> {
       browser: BrowserRuntimeApi,
     };
     return (
-      <BoardProvider fetchData={this.fetchData} runtimeApis={runtimeApis}>
+      <BoardProvider fetchBoard={this.fetchBoard} runtimeApis={runtimeApis}>
         <BoardConsumer>
           {(boardContext) =>
             boardContext &&
