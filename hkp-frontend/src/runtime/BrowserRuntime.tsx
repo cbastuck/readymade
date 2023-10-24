@@ -1,8 +1,6 @@
 import { Component } from "react";
 import { Loader } from "semantic-ui-react";
-import * as uuid from "uuid";
 import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
-import UAParser from "ua-parser-js";
 
 import { request } from "../core/actions";
 import { isMultipartsResult, parseResponse } from "./MultiformParser";
@@ -11,14 +9,9 @@ import { serializeWebsocketBuffer } from "../core/format";
 import ServiceUiContainer from "./ServiceUiContainer";
 
 import {
-  AddRuntimeResult,
-  AddServiceResult,
   AppImpl,
-  RuntimeApi,
-  RuntimeClass,
   RuntimeDescriptor,
   ServiceAction,
-  ServiceClass,
   ServiceDescriptor,
   ServiceId,
   ServiceImpl,
@@ -603,30 +596,6 @@ export default class BrowserRuntime extends Component<Props, State> {
     );
   }
 }
-
-export const BrowserRuntimeApi: RuntimeApi = {
-  addRuntime: (rtClass: RuntimeClass): AddRuntimeResult => {
-    const { name: passedName, type, url } = rtClass;
-    const runtimeId = uuid.v4();
-    const browser = new UAParser().getBrowser();
-    const rt: RuntimeDescriptor = {
-      id: runtimeId,
-      name: browser.name || passedName,
-      type,
-      url,
-    };
-    return Promise.resolve({ runtime: rt, services: [] });
-  },
-  addService: (
-    runtime: RuntimeDescriptor,
-    service: ServiceClass
-  ): AddServiceResult => {
-    return {
-      ...service,
-      uuid: uuid.v4(),
-    };
-  },
-};
 
 function logInfo(msg: string) {
   // console.log(msg);

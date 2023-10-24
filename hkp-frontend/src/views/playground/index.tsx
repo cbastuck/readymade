@@ -47,8 +47,8 @@ import {
   RuntimeApiMap,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
-import { BrowserRuntimeApi } from "../../runtime/BrowserRuntime";
-import { RemoteRuntimeApi } from "../../runtime/RemoteRuntime";
+import { BrowserRuntimeApi } from "../../runtime/BrowserRuntimeApi";
+import { RemoteRuntimeApi } from "../../runtime/RemoteRuntimeApi";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -626,14 +626,13 @@ class Playground extends Component<Props, State> {
     );
   };
 
-  runtimeApis: RuntimeApiMap = {
-    browser: BrowserRuntimeApi,
-    remote: RemoteRuntimeApi,
-  };
-
   render() {
     const { requireLogin } = this.state;
     const appContext = this.context;
+    const runtimeApis: RuntimeApiMap = {
+      browser: BrowserRuntimeApi,
+      remote: RemoteRuntimeApi,
+    };
     return (
       <BoardProvider
         ref={(ref) => (this.boardProviderRef = ref)}
@@ -642,7 +641,7 @@ class Playground extends Component<Props, State> {
         boardName={this.state.boardName}
         fetchData={this.fetchData}
         isRuntimeInScope={() => true}
-        runtimeApis={this.runtimeApis}
+        runtimeApis={runtimeApis}
         removeRuntime={this.removeRuntime}
         removeService={this.removeService}
         newBoard={this.newBoard}

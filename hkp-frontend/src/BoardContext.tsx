@@ -74,6 +74,7 @@ type Props = {
   user: any;
   boardName: string;
   availableRuntimes: Array<RuntimeClass>;
+  runtimeApis: RuntimeApiMap;
   children: ReactElement;
 
   fetchData: () => Promise<BoardDescriptor>;
@@ -89,8 +90,6 @@ type Props = {
 
   onAction: (action: any) => boolean;
   serializeBoard: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
-
-  runtimeApis: RuntimeApiMap;
 };
 
 const BoardCtx = createContext<BoardContextState | null>(null);
@@ -169,53 +168,26 @@ class BoardContext extends Component<Props, BoardContextState> {
   }
 
   fetchData = async () => {
-    const { fetchData = this.fetchDataDefault } = this.props;
+    const { fetchData } = this.props;
     const {
       boardName = this.getBoardName(),
+      runtimes = [],
       services = {},
       registry = {},
-      runtimes = [],
     } = await fetchData();
 
-    /*
-    if (runtimes && services) {
-      for (const runtime of runtimes) {
-        for (const svc of services[runtime.id]) {
-          // ensure service.configure function exists
-          if (!(svc as any).configure) {
-            // TODO: for BrowserRuntimes this happens in BrowserRuntime
-            // this should be streamlined!
-            // This implementation is only true for services in RemoteRuntimes
-            (svc as any).configure = async (config: any) =>
-              configureService(boardName, svc, config, runtime);
-          }
-        }
-        if (registry && registry[runtime.id]) {
-          runtime.registry = registry[runtime.id];
-        }
-      }
-    }
-    */
+    await Promise.all(
+      runtimes.map((rt) =>
+        this.props.runtimeApis[rt.type].onRestoreRuntime(rt, services[rt.id])
+      )
+    );
 
     this.setState({
       boardName,
       runtimes,
-      registry,
       services,
+      registry,
     });
-  };
-
-  fetchDataDefault = async () => {
-    const { user } = this.props;
-    if (!user) {
-      return {};
-    }
-
-    const boardName = this.getBoardName();
-    const runtimes = await this.fetchRuntimes();
-    const registry = await this.fetchRegistry(runtimes); // FIXME: always after fetchRuntimes
-    const services = await this.fetchServices(runtimes);
-    return { boardName, runtimes, registry, services };
   };
 
   setRuntimeName = async (runtimeId: string, newName: string) => {
@@ -396,7 +368,6 @@ class BoardContext extends Component<Props, BoardContextState> {
       );
     }
     const result = await api.addRuntime(rtClass);
-    console.log("ADDED RUNTIME", result);
     if (result) {
       const { runtime, services, registry = [] } = result;
       this.setState((state: BoardContextState) => ({

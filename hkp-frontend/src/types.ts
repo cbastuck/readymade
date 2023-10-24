@@ -110,6 +110,8 @@ export type AddRuntimeResult = Promise<{
   registry?: ServiceRegistry;
 } | null>;
 
+export type RestoreRuntimeResult = AddRuntimeResult;
+
 export type AddServiceResult =
   | Promise<ServiceDescriptor | null>
   | ServiceDescriptor
@@ -188,6 +190,10 @@ export type RuntimeImpl = {
 };
 
 export type RuntimeApi = {
+  onRestoreRuntime: (
+    runtime: RuntimeDescriptor,
+    services: Array<ServiceDescriptor>
+  ) => RestoreRuntimeResult;
   addService: (
     runtime: RuntimeDescriptor,
     service: ServiceClass

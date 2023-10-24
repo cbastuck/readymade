@@ -60,14 +60,14 @@ export async function queryFreeRuntime(
   );
 }
 
-export async function createFreeRuntime(
+export async function createRuntime(
   desc: RuntimeClass
 ): Promise<(RuntimeDescriptor & RegistryProp) | null> {
   const url = `${desc.url}/query`;
   const payload = `mutation makeFreeRuntime {
       createRuntime(input: {name: "${desc.name}"}) {
         id
-        name,
+        name
         registry {
           serviceName
           serviceId
@@ -82,6 +82,38 @@ export async function createFreeRuntime(
   return result.data?.createRuntime || null;
 }
 
+export async function restoreRuntime(
+  runtime: RuntimeDescriptor,
+  services: Array<ServiceDescriptor>
+) {
+  const url = `${runtime.url}/query`;
+  const payload = `mutation restoreFreeRuntime {
+      restoreRuntime(input: {runtimeId: "${runtime.id}", runtimeName: "${
+    runtime.name
+  }", services: [
+        ${services.map(
+          ({ serviceId, serviceName, uuid }) =>
+            `{instanceId: "${uuid}", serviceId: "${serviceId}", serviceName: "${serviceName}"}`
+        )}
+      ] }) {
+        id
+        name
+        registry {
+          serviceName
+          serviceId
+        }
+        services {
+          instanceId
+          serviceId
+          serviceName
+        }
+      }
+    }`;
+  const result = await processQuery(url, payload);
+
+  return result;
+}
+
 export async function createRuntimeService(
   runtime: RuntimeDescriptor,
   service: ServiceClass
@@ -92,8 +124,9 @@ export async function createRuntimeService(
       createService(
         input: { uri: "${service.serviceId}", serviceName: "${service.serviceName}" }
       ) { 
-        id 
-        name
+        instanceId
+        serviceName
+        serviceId
       }
     }
   }`;
@@ -102,12 +135,10 @@ export async function createRuntimeService(
     return null;
   }
 
-  const svc = result.data?.createService;
-  return svc
-    ? {
-        uuid: svc.id,
-        serviceId: svc.serviceId,
-        serviceName: svc.name,
-      }
-    : null;
+  const createServiceResult = result.data?.runtimeById?.createService;
+  if (!createServiceResult) {
+    return null;
+  }
+  const { instanceId, ...svc } = createServiceResult;
+  return { ...svc, uuid: createServiceResult.instanceId };
 }

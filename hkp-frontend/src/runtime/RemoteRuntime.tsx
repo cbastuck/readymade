@@ -2,21 +2,16 @@ import { ReactElement, useRef } from "react";
 
 import {
   AppImpl,
-  RuntimeApi,
-  RuntimeClass,
   RuntimeDescriptor,
   RuntimeImpl,
   ServiceAction,
-  ServiceClass,
   ServiceDescriptor,
   ServiceId,
   ServiceImpl,
 } from "../types";
 import ServiceUiContainer from "./ServiceUiContainer";
-import {
-  createFreeRuntime,
-  createRuntimeService,
-} from "../core/graphqlActions";
+
+import { createPlaceholderUI } from "../UIFactory";
 
 type Props = {
   userId: string;
@@ -50,15 +45,6 @@ export default function RemoteRuntime({
 
   onRef(impl.current);
 
-  const onCreateServiceUi = (
-    boardName: string,
-    service: ServiceImpl,
-    runtimeId: string,
-    userId: string
-  ): ReactElement | null => {
-    return null;
-  };
-
   const app: AppImpl = {
     notify: (svc: ServiceImpl, notification: any): void => {},
     next: (svc: ServiceId | null, result: any): void => {},
@@ -79,6 +65,7 @@ export default function RemoteRuntime({
     ): void => {},
     createSubServiceUI: (svc: ServiceImpl): void => {},
   };
+
   const servicesWithImpl: Array<ServiceImpl> = services.map(
     (svc: ServiceDescriptor) => ({
       ...svc,
@@ -103,19 +90,11 @@ export default function RemoteRuntime({
   );
 }
 
-export const RemoteRuntimeApi: RuntimeApi = {
-  addService: async (runtime: RuntimeDescriptor, service: ServiceClass) => {
-    const svc = await createRuntimeService(runtime, service);
-    console.log("CREATED SERVICE", svc, runtime);
-    return svc;
-  },
-  addRuntime: async (rtClass: RuntimeClass) => {
-    const desc = await createFreeRuntime(rtClass);
-    if (!desc) {
-      return null;
-    }
-
-    const { registry, ...runtime } = desc;
-    return { runtime: { ...rtClass, ...runtime }, services: [], registry };
-  },
+const onCreateServiceUi = (
+  boardName: string,
+  service: ServiceImpl,
+  runtimeId: string,
+  userId: string
+): ReactElement | null => {
+  return createPlaceholderUI(service);
 };

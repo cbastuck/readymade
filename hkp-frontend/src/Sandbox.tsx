@@ -12,6 +12,7 @@ import DragProvider from "./DragContext";
 
 import { s, t } from "./styles";
 import {
+  RuntimeApiMap,
   RuntimeDescriptor,
   RuntimeImpl,
   SandboxRuntimeDescriptor,
@@ -19,6 +20,7 @@ import {
   ServiceDescriptor,
   isSandboxRuntimeDescriptor,
 } from "./types";
+import { BrowserRuntimeApi } from "./runtime/BrowserRuntimeApi";
 
 type Props = {
   location: Location;
@@ -174,8 +176,11 @@ class Sandbox extends Component<Props, State> {
 
   render() {
     const { runtime, options } = this.state;
+    const runtimeApis: RuntimeApiMap = {
+      browser: BrowserRuntimeApi,
+    };
     return (
-      <BoardProvider fetchData={this.fetchData}>
+      <BoardProvider fetchData={this.fetchData} runtimeApis={runtimeApis}>
         <BoardConsumer>
           {(boardContext) =>
             boardContext &&
