@@ -3,7 +3,7 @@ import { Component } from "react";
 import Runtime from "../../components/Runtime";
 
 import build from "../../buildNumber.json";
-import BrowserRegistry from "../../runtime/BrowserRegistry";
+import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
 
 const defaultBundles = [
   "hookup.to/registry/browser/Audio",

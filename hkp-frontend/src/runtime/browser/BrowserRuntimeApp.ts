@@ -1,0 +1,57 @@
+import {
+  AppImpl,
+  InstanceId,
+  ServiceAction,
+  ServiceDescriptor,
+  ServiceImpl,
+} from "../../types";
+import BrowserRuntimeScope from "./BrowserRuntimeScope";
+
+export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
+  return {
+    next: (svc: InstanceId | null, result: any) => {
+      return scope.next(svc, result);
+    },
+    getServiceById: (instanceId: string) =>
+      scope.findServiceInstance(instanceId)?.[0] || null,
+    sendAction: (action: ServiceAction) => {
+      // the sandbox for example registers a listener
+      // for these kind of actions
+      const target: any = window.frameElement;
+      if (target && target.onAction) {
+        target.onAction(action);
+      }
+    },
+    storeServiceData: (serviceUuid: string, key: string, value: string) => {
+      localStorage.setItem(serviceDataKey(serviceUuid, key), value);
+    },
+    restoreServiceData: (serviceUuid: string, key: string) => {
+      return (
+        localStorage.getItem(serviceDataKey(serviceUuid, key)) || undefined
+      );
+    },
+    removeServiceData: (serviceUuid: string, key: string) => {
+      localStorage.removeItem(serviceDataKey(serviceUuid, key));
+    },
+    notify: (service: ServiceImpl, notification: any) => {
+      if (service.__notificationTargets) {
+        service.__notificationTargets.notify(service, notification);
+      }
+    },
+    createSubService: (parent: ServiceImpl, service: ServiceDescriptor) => {
+      const ssvc = this.createServiceInstance(service);
+      if (ssvc) {
+        this.subservices[ssvc.uuid] = { service: ssvc, parent };
+      }
+      return ssvc;
+    },
+    createSubServiceUI: (svc: ServiceImpl) =>
+      createServiceUI(this.registry!, boardName, svc, runtime.id, userId, {
+        resizable: false,
+      }),
+  };
+}
+
+function serviceDataKey(uuid: string, key: string) {
+  return `service-data-${uuid}-${key}`;
+}

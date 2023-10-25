@@ -1,11 +1,11 @@
-import PeerJs, { DataConnection } from "peerjs";
 import { Component, FunctionComponent, ReactElement } from "react";
+import PeerJs, { DataConnection } from "peerjs";
 
-export type ServiceId = {
+export type InstanceId = {
   uuid: string;
 };
 
-export type ServiceDescriptor = ServiceId & {
+export type ServiceDescriptor = InstanceId & {
   serviceId: string;
   serviceName: string;
 };
@@ -21,8 +21,18 @@ export type RuntimeClass = {
 
 export type RuntimeDescriptor = RuntimeClass & {
   id: string;
-  state?: any;
+  state?: any; // TODO: should this be here? Only for persisted Runtime states?
 };
+
+export interface RuntimeScope {
+  getApp(): AppImpl;
+  // boardName: string; --> Remove the board name from the services and move it to AppImpl
+  onResult: (
+    instanceId: string | null,
+    result: any,
+    requestId: string | null
+  ) => Promise<void>;
+}
 
 export type ExternalInput = {
   close: () => void;
@@ -92,7 +102,7 @@ export type ServiceModule = ServiceClass & {
     app: any,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    instanceId: string
   ) => ServiceImpl;
   createUI?: typeof Component | FunctionComponent;
 };
@@ -104,18 +114,14 @@ export type ServiceClass = {
 export type ServiceRegistry = Array<ServiceClass>;
 export type ServiceRegistryMap = { [runtimeId: string]: ServiceRegistry };
 
-export type AddRuntimeResult = Promise<{
+export type AddRuntimeResult = {
   runtime: RuntimeDescriptor;
   services: Array<ServiceDescriptor>;
+  scope: RuntimeScope;
   registry?: ServiceRegistry;
-} | null>;
+};
 
 export type RestoreRuntimeResult = AddRuntimeResult;
-
-export type AddServiceResult =
-  | Promise<ServiceDescriptor | null>
-  | ServiceDescriptor
-  | undefined;
 
 const actionTypes = [
   "logout",
@@ -148,7 +154,7 @@ export type ServiceAction = {
 
 export type AppImpl = {
   notify: (svc: ServiceImpl, notification: any) => void;
-  next: (svc: ServiceId | null, result: any) => void;
+  next: (svc: InstanceId | null, result: any) => void;
   getServiceById: (uuid: string) => ServiceImpl | null;
   sendAction: (action: ServiceAction) => void;
   storeServiceData: (serviceUuid: string, key: string, value: string) => void;
@@ -184,21 +190,48 @@ export type ServiceImpl = {
 export type RuntimeImpl = {
   configureService: (uuid: string, config: any) => Promise<void>;
   getServiceById: (uuid: string) => ServiceImpl | null;
-  processRuntime: (params: any, svc: ServiceId | null) => Promise<any>;
+  processRuntime: (params: any, svc: InstanceId | null) => Promise<any>;
   destroyService: (svcUuid: string) => Promise<void>;
   destroyRuntime: () => Promise<void>;
 };
 
 export type RuntimeApi = {
-  onRestoreRuntime: (
+  addRuntime: (runtime: RuntimeClass) => Promise<AddRuntimeResult | null>;
+  restoreRuntime: (
     runtime: RuntimeDescriptor,
     services: Array<ServiceDescriptor>
-  ) => RestoreRuntimeResult;
+  ) => Promise<RestoreRuntimeResult | null>;
+
+  processRuntime: (
+    scope: RuntimeScope,
+    params: any,
+    svc: InstanceId | null
+  ) => Promise<any>;
+
   addService: (
+    scope: RuntimeScope,
     runtime: RuntimeDescriptor,
     service: ServiceClass
-  ) => AddServiceResult;
-  addRuntime: (runtime: RuntimeClass) => AddRuntimeResult;
+  ) => Promise<ServiceDescriptor | null>;
+
+  removeService: (
+    scope: RuntimeScope,
+    service: InstanceId,
+    runtime: RuntimeDescriptor
+  ) => Promise<boolean>;
+
+  configureService: (
+    scope: RuntimeScope,
+    instanceId: string,
+    config: any
+  ) => Promise<void>;
+
+  processService: (
+    scope: RuntimeScope,
+    uuid: string,
+    params: any,
+    requestId: string | null
+  ) => Promise<any>;
 };
 
 export type RuntimeApiMap = {

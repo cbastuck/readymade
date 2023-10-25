@@ -1,7 +1,7 @@
 import { Component, createContext } from "react";
 import { DataConnection } from "peerjs";
 
-import { removeKeyFromObject } from "./runtime/services/helpers";
+import { removeKeyFromObject } from "./runtime/browser/services/helpers";
 import { ConnectionAndPeer, Peer, PeerConnections } from "./types";
 
 export type PeersContextState = {

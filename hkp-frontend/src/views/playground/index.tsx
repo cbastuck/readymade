@@ -9,7 +9,7 @@ import BoardProvider, {
 } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
-import BrowserRegistry from "../../runtime/BrowserRegistry";
+import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
 import SaveBoardPrompt, {
   SaveBoardApi,
 } from "../../components/SaveBoardPrompt";
@@ -20,7 +20,10 @@ import BoardSync from "./boardsync";
 import LoadPanel from "./LoadPanel";
 import Login from "../Login";
 import { generateRandomName } from "../../core/board";
-import { filterPrivateMembers, sleep } from "../../runtime/services/helpers";
+import {
+  filterPrivateMembers,
+  sleep,
+} from "../../runtime/browser/services/helpers";
 import { s, t } from "../../styles";
 import { localStoragePrefix, defaultName, availableRuntimes } from "./common";
 import {
@@ -43,12 +46,12 @@ import {
   PeerInputRouting,
   PeerOutputRouting,
   PlaygroundState,
-  ServiceId,
+  InstanceId,
   RuntimeApiMap,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
-import { BrowserRuntimeApi } from "../../runtime/BrowserRuntimeApi";
-import { RemoteRuntimeApi } from "../../runtime/RemoteRuntimeApi";
+import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
+import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -332,7 +335,7 @@ class Playground extends Component<Props, State> {
     });
   };
 
-  removeService = async (service: ServiceId, rt: RuntimeDescriptor) => {
+  removeService = async (service: InstanceId, rt: RuntimeDescriptor) => {
     const runtime = this.board && this.board.getRuntimeById(rt.id);
     return runtime?.destroyService(service.uuid);
   };
@@ -630,8 +633,8 @@ class Playground extends Component<Props, State> {
     const { requireLogin } = this.state;
     const appContext = this.context;
     const runtimeApis: RuntimeApiMap = {
-      browser: BrowserRuntimeApi,
-      remote: RemoteRuntimeApi,
+      browser: browserRuntimeApi,
+      remote: remoteRuntimeApi,
     };
     return (
       <BoardProvider
@@ -643,7 +646,6 @@ class Playground extends Component<Props, State> {
         isRuntimeInScope={() => true}
         runtimeApis={runtimeApis}
         removeRuntime={this.removeRuntime}
-        removeService={this.removeService}
         newBoard={this.newBoard}
         clearBoard={this.clearPlayground}
         saveBoard={this.saveBoard}

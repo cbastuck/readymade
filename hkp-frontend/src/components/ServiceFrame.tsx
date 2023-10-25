@@ -5,10 +5,10 @@ import Modal from "./Modal";
 import ServiceReference from "./ServiceReference";
 import ConfigurationEditor from "./ConfigurationEditor";
 import { s, t } from "../styles";
-import { filterPrivateMembers } from "../runtime/services/helpers";
-import { ServiceAction, ServiceId, ServiceImpl } from "../types";
+import { filterPrivateMembers } from "../runtime/browser/services/helpers";
+import { ServiceAction, InstanceId, ServiceImpl } from "../types";
 
-function getNotificationID(service: ServiceId) {
+function getNotificationID(service: InstanceId) {
   return `service-frame-${service.uuid}`;
 }
 

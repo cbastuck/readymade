@@ -1,11 +1,10 @@
 import { Component, ReactElement, createContext } from "react";
 
-import BrowserRegistry from "./runtime/BrowserRegistry";
+import BrowserRegistry from "./runtime/browser/BrowserRegistry";
 import ResizeObserver from "./ResizeObserver";
 
 import {
   getServices,
-  removeService,
   loadBoard,
   getRuntimes,
   getRuntimeRegistry,
@@ -22,8 +21,10 @@ import {
   ServiceDescriptor,
   ServiceRegistry,
   ServiceClass,
-  ServiceId,
+  InstanceId,
   RuntimeApiMap,
+  RuntimeScope,
+  RestoreRuntimeResult,
 } from "./types";
 import { reorderService } from "./views/playground/BoardActions";
 
@@ -36,7 +37,7 @@ type BoardContextAPI = {
   removeAllServices: (runtime: RuntimeDescriptor) => void;
 
   addService: (desc: ServiceClass, rt: RuntimeDescriptor) => void;
-  removeService: (svc: ServiceId, rt: RuntimeDescriptor) => void;
+  removeService: (svc: InstanceId, rt: RuntimeDescriptor) => void;
 
   updateRegistry: (runtimeId: string, services: Array<ServiceModule>) => void;
 
@@ -65,6 +66,7 @@ export type BoardContextState = BoardContextAPI & {
   runtimes: Array<RuntimeDescriptor>;
   services: { [runtimeId: string]: Array<ServiceDescriptor> };
   registry: { [runtimeId: string]: ServiceRegistry };
+  scopes: { [runtimeId: string]: RuntimeScope };
 
   availableRuntimes: Array<RuntimeClass>;
 };
@@ -79,7 +81,6 @@ type Props = {
   fetchBoard: () => Promise<BoardDescriptor>;
   isRuntimeInScope: () => boolean;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
-  removeService: (svc: ServiceId, rt: RuntimeDescriptor) => void;
   newBoard: (searchParams?: string) => void; // TODO: why search params ??
   clearBoard: (board: BoardDescriptor) => Promise<void>;
   saveBoard?: () => void;
@@ -149,6 +150,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       runtimes: [],
       services: {},
       registry: {},
+      scopes: {},
     };
   }
 
@@ -174,17 +176,19 @@ class BoardContext extends Component<Props, BoardContextState> {
       registry = {},
     } = await this.props.fetchBoard();
 
-    await Promise.all(
+    const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
       runtimes.map((rt) =>
-        this.props.runtimeApis[rt.type].onRestoreRuntime(rt, services[rt.id])
+        this.props.runtimeApis[rt.type].restoreRuntime(rt, services[rt.id])
       )
     );
 
+    const scopes = reduceByRuntime(restored, "scope");
     this.setState({
       boardName,
       runtimes,
       services,
       registry,
+      scopes,
     });
   };
 
@@ -359,7 +363,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     }
     const result = await api.addRuntime(rtClass);
     if (result) {
-      const { runtime, services, registry = [] } = result;
+      const { runtime, services, registry = [], scope } = result;
       this.setState((state: BoardContextState) => ({
         runtimes: [...state.runtimes, runtime],
         services: {
@@ -369,6 +373,10 @@ class BoardContext extends Component<Props, BoardContextState> {
         registry: {
           ...state.registry,
           [runtime.id]: registry,
+        },
+        scopes: {
+          ...state.scopes,
+          [runtime.id]: scope,
         },
       }));
     }
@@ -381,7 +389,11 @@ class BoardContext extends Component<Props, BoardContextState> {
         `BoardContext.addService() runtime api is missing: ${runtime.type}`
       );
     }
-    const svc = await api.addService(runtime, service);
+    const svc = await api.addService(
+      this.state.scopes[runtime.id],
+      runtime,
+      service
+    );
     if (svc) {
       this.setState((state: BoardContextState) => ({
         services: {
@@ -392,9 +404,20 @@ class BoardContext extends Component<Props, BoardContextState> {
     }
   };
 
-  removeService = async (service: ServiceId, runtime: RuntimeDescriptor) => {
-    const { removeService } = this.props;
-    await removeService(service, runtime);
+  removeService = async (service: InstanceId, runtime: RuntimeDescriptor) => {
+    const api = this.props.runtimeApis[runtime.type];
+    if (!api) {
+      throw new Error(
+        `BoardContext.const() runtime api is missing: ${runtime.type}`
+      );
+    }
+
+    const updatedServices = await api.removeService(
+      this.state.scopes[runtime.id],
+      service,
+      runtime
+    );
+    console.log("REMOVED A SERVICE", updatedServices);
 
     this.setState((state) => ({
       services: {
@@ -406,12 +429,17 @@ class BoardContext extends Component<Props, BoardContextState> {
     }));
   };
 
-  removeServiceDefault = async (
-    service: ServiceDescriptor,
-    runtime: RuntimeDescriptor
-  ) => {
-    const boardName = this.getBoardName();
-    removeService(boardName, runtime.id, service.uuid);
+  removeAllServices = async (runtime: RuntimeDescriptor) => {
+    for (const service of this.state.services[runtime.id]) {
+      await this.removeService(service, runtime);
+    }
+
+    this.setState((state) => ({
+      services: {
+        ...state.services,
+        [runtime.id]: [],
+      },
+    }));
   };
 
   removeRuntime = async (runtime: RuntimeDescriptor) => {
@@ -435,25 +463,6 @@ class BoardContext extends Component<Props, BoardContextState> {
     const boardName = this.getBoardName();
     await removeRuntime(boardName, runtime);
     await this.fetchBoard();
-  };
-
-  removeAllServices = async (runtime: RuntimeDescriptor) => {
-    const { removeService = this.removeServiceDefault } = this.props;
-    const boardName = this.getBoardName();
-    if (!boardName) {
-      throw new Error("removeAllServices() no boardname");
-    }
-
-    for (const service of this.state.services[runtime.id]) {
-      await removeService(service, runtime);
-    }
-
-    this.setState((state) => ({
-      services: {
-        ...state.services,
-        [runtime.id]: [],
-      },
-    }));
   };
 
   isRuntimeInScope = (runtime: RuntimeDescriptor) => {
@@ -566,3 +575,12 @@ class BoardContext extends Component<Props, BoardContextState> {
 
 export { BoardConsumer, BoardCtx };
 export default BoardContext;
+
+function reduceByRuntime<T extends keyof RestoreRuntimeResult>(
+  arr: Array<RestoreRuntimeResult | null>,
+  prop: T
+) {
+  return arr.reduce((all, cur) => {
+    return cur ? { ...all, [cur.runtime.id]: cur[prop] } : all;
+  }, {});
+}

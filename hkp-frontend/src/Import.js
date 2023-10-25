@@ -3,7 +3,7 @@ import { Navigate } from "react-router-dom";
 
 import { AppConsumer } from "./AppContext";
 import BoardContext from "./BoardContext";
-import BrowserRegistry from "./runtime/BrowserRegistry";
+import BrowserRegistry from "./runtime/browser/BrowserRegistry";
 import { loadBoard, clearBoard } from "./core/actions";
 
 export default class Import extends Component {

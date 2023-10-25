@@ -1,4 +1,8 @@
-import { isBlob, isFunction, isSomeObject } from "../runtime/services/helpers";
+import {
+  isBlob,
+  isFunction,
+  isSomeObject,
+} from "../runtime/browser/services/helpers";
 
 function reconstructData(incoming) {
   return Object.keys(incoming).reduce((all, key) => {

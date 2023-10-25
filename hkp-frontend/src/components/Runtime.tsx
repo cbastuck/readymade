@@ -11,8 +11,8 @@ import {
 
 import { getServiceConfiguration } from "../core/actions";
 //import NodeRuntime from "../runtime/NodeRuntime";
-import BrowserRuntime from "../runtime/BrowserRuntime";
-import RemoteRuntime from "../runtime/RemoteRuntime";
+import BrowserRuntime from "../runtime/browser/BrowserRuntime";
+import RemoteRuntime from "../runtime/remote/RemoteRuntime";
 import ServiceDropdown from "./ServiceDropdown";
 
 import { s, t } from "../styles";
@@ -23,10 +23,12 @@ import {
   ServiceAction,
   ServiceClass,
   ServiceDescriptor,
-  ServiceId,
+  InstanceId,
   ServiceRegistry,
+  RuntimeScope,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
+import BrowserRuntimeScope from "../runtime/browser/BrowserRuntimeScope";
 
 type Props = {
   boardContext: BoardContextState;
@@ -51,7 +53,7 @@ type Props = {
   frameless?: boolean;
 
   onResult: (
-    uuid: string,
+    uuid: string | null,
     result: any,
     requestId: string | null
   ) => Promise<void>;
@@ -148,7 +150,7 @@ export default class Runtime extends Component<Props, State> {
 
   processRuntime = (
     params: any,
-    svc: ServiceId | null = null
+    svc: InstanceId | null = null
   ): Promise<any> => {
     if (!this.impl || !this.impl.processRuntime) {
       throw new Error("Runtime.processRuntime() impl is missing");
@@ -514,6 +516,7 @@ export default class Runtime extends Component<Props, State> {
   };
 
   renderBrowserRuntime = (
+    scope: RuntimeScope,
     runtime: RuntimeDescriptor,
     expanded: boolean,
     userId: string,
@@ -546,10 +549,10 @@ export default class Runtime extends Component<Props, State> {
           false
         )}
         <BrowserRuntime
-          ref={(rt) => (this.impl = rt)}
           collapsed={!expanded}
           userId={userId}
           boardName={boardName}
+          scope={scope as BrowserRuntimeScope}
           runtime={runtime}
           services={services}
           readonly={readonly}
@@ -658,8 +661,10 @@ export default class Runtime extends Component<Props, State> {
         ? boardContext.releaseRuntimeScope(boardContext.boardName, runtime)
         : boardContext.acquireRuntimeScope(boardContext.boardName, runtime));
 
+    const scope = boardContext.scopes[runtimeId];
     if (headless && runtime) {
       return this.renderBrowserRuntime(
+        scope,
         runtime,
         expanded,
         userId,
@@ -732,6 +737,7 @@ export default class Runtime extends Component<Props, State> {
                   )
                 : runtime.type === "browser"
                 ? this.renderBrowserRuntime(
+                    scope,
                     runtime,
                     expanded,
                     userId,

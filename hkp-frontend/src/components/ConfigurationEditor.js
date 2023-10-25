@@ -3,9 +3,9 @@ import { Button, TextArea } from "semantic-ui-react";
 
 import Resizable from "./Resizable";
 import Editor from "./shared/Editor/index";
-import { filterPrivateMembers } from "../runtime/services/helpers";
+import { filterPrivateMembers } from "../runtime/browser/services/helpers";
 import { s, t } from "../styles";
-import { detectBrowserIOS } from "../runtime/services/helpers";
+import { detectBrowserIOS } from "../runtime/browser/services/helpers";
 
 export default class ConfigurationEditor extends Component {
   renderConfigAsTextArea = (filteredService) => {

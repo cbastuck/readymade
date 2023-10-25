@@ -4,7 +4,7 @@ import WebsocketChannel from "./WebsocketChannel";
 import { serializeWebsocketBuffer } from "../core/format";
 import { restoreToken } from "../core/Auth";
 import ServiceUiContainer from "./ServiceUiContainer";
-import defaultRegistry from "./registry/Default";
+import defaultRegistry from "./browser/registry/Default";
 
 function logInfo(msg) {
   // console.log(msg);

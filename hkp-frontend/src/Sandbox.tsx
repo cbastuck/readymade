@@ -20,7 +20,7 @@ import {
   ServiceDescriptor,
   isSandboxRuntimeDescriptor,
 } from "./types";
-import { BrowserRuntimeApi } from "./runtime/BrowserRuntimeApi";
+import browserRuntimeApi from "./runtime/browser/BrowserRuntimeApi";
 
 type Props = {
   location: Location;
@@ -138,7 +138,7 @@ class Sandbox extends Component<Props, State> {
     boardContext: BoardContextState,
     options: Options,
     runtime: RuntimeDescriptor,
-    onResult: (serviceUuid: string, result: any) => any
+    onResult: (serviceUuid: string | null, result: any) => Promise<any>
   ) => {
     const url = this.state.url;
     return (
@@ -177,7 +177,7 @@ class Sandbox extends Component<Props, State> {
   render() {
     const { runtime, options } = this.state;
     const runtimeApis: RuntimeApiMap = {
-      browser: BrowserRuntimeApi,
+      browser: browserRuntimeApi,
     };
     return (
       <BoardProvider fetchBoard={this.fetchBoard} runtimeApis={runtimeApis}>
