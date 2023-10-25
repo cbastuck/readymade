@@ -24,14 +24,16 @@ export type RuntimeDescriptor = RuntimeClass & {
   state?: any; // TODO: should this be here? Only for persisted Runtime states?
 };
 
+export type OnResult = (
+  uuid: string | null,
+  result: any,
+  requestId: string | null
+) => Promise<void>;
+
 export interface RuntimeScope {
   getApp(): AppImpl;
   // boardName: string; --> Remove the board name from the services and move it to AppImpl
-  onResult: (
-    instanceId: string | null,
-    result: any,
-    requestId: string | null
-  ) => Promise<void>;
+  onResult: OnResult;
 }
 
 export type ExternalInput = {
@@ -99,9 +101,9 @@ export type PeerOutputRouting = { [id: string]: PeerOutputActivation };
 export type ServiceURI = string;
 export type ServiceModule = ServiceClass & {
   create: (
-    app: any,
+    app: AppImpl,
     board: string,
-    descriptor: ServiceClass,
+    service: ServiceClass,
     instanceId: string
   ) => ServiceImpl;
   createUI?: typeof Component | FunctionComponent;

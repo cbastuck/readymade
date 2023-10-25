@@ -80,7 +80,7 @@ export async function addRuntime(rtClass: RuntimeClass) {
     url,
   };
 
-  const scope = await createScope(rtClass.bundles);
+  const scope = await createScope(runtimeId, rtClass.bundles);
   return {
     runtime,
     services: [],
@@ -93,7 +93,7 @@ async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>
 ): Promise<RestoreRuntimeResult | null> {
-  const scope = await createScope(runtime.bundles);
+  const scope = await createScope(runtime.id, runtime.bundles);
   const createdServices: Array<ServiceImpl> = (
     await Promise.all(
       services.map((svc) => addService(scope, runtime, svc, svc.uuid))
@@ -118,45 +118,12 @@ export async function addService(
   rt: RuntimeDescriptor,
   service: ServiceClass,
   instanceId?: string
-) {
+): Promise<ServiceDescriptor | null> {
   const scope = scope_ as BrowserRuntimeScope;
-  const module = scope.registry.findServiceModule(service.serviceId);
-  if (!module) {
-    console.log(
-      "Could not create service instance",
-      service.serviceId,
-      scope.registry
-    );
+  const [svc, descriptor] = createService(scope, service, instanceId) || [];
+  if (!svc || !descriptor) {
     return null;
   }
-  instanceId = instanceId || uuid.v4();
-  const svc = module.create(
-    scope.app,
-    "BrowserRuntimeApi.addService no boardName",
-    module,
-    instanceId
-  );
-  if (!svc) {
-    console.error("Could not create service", module);
-    return null;
-  }
-  const descriptor = {
-    ...module,
-    uuid: instanceId,
-    serviceName: service.serviceName || module.serviceName,
-  };
-  svc.__descriptor = descriptor;
-  const configure = svc.configure.bind(svc);
-  svc.configure = (config: any) => {
-    // monkey wire configure
-    const { bypass } = config || {};
-    if (bypass !== undefined) {
-      svc.bypass = bypass;
-      scope.app.notify(svc, { bypass });
-    }
-    return configure && configure(config || {});
-  };
-
   scope.appendService(svc);
   return descriptor;
 }
@@ -183,9 +150,71 @@ export async function removeService(
   return true;
 }
 
-async function createScope(bundles?: Bundles): Promise<BrowserRuntimeScope> {
+export async function appendSubservice(
+  scope_: RuntimeScope,
+  service: ServiceDescriptor,
+  parent: ServiceImpl
+) {
+  const scope = scope_ as BrowserRuntimeScope;
+  const [ssvc] = createService(scope, service) || [];
+  if (ssvc) {
+    scope.subservices[ssvc.uuid] = { service: ssvc, parent };
+    return ssvc;
+  }
+  return null;
+}
+
+async function createScope(
+  runtimeId: string,
+  bundles?: Bundles
+): Promise<BrowserRuntimeScope> {
   const registry = await BrowserRegistry.create(bundles);
-  return new BrowserRuntimeScope(registry);
+  return new BrowserRuntimeScope(runtimeId, registry);
+}
+
+function createService(
+  scope: BrowserRuntimeScope,
+  service: ServiceClass,
+  instanceId?: string
+): [ServiceImpl, ServiceDescriptor] | null {
+  const module = scope.registry.findServiceModule(service.serviceId);
+  if (!module) {
+    console.error(
+      `Could not create service: ${
+        service.serviceId
+      } in scope: ${JSON.stringify(scope)}`
+    );
+    return null;
+  }
+  const useInstanceId = instanceId || uuid.v4();
+  const svc: ServiceImpl = module.create(
+    scope.app,
+    "deprecated boardname - get it from app",
+    module,
+    useInstanceId
+  );
+  if (!svc) {
+    console.error(`Could not create service module: ${JSON.stringify(module)}`);
+    return null;
+  }
+  const descriptor = {
+    ...module,
+    uuid: useInstanceId,
+    serviceName: service.serviceName || module.serviceName,
+  };
+  svc.__descriptor = descriptor;
+  const configure = svc.configure.bind(svc);
+  svc.configure = (config: any) => {
+    // monkey wire configure
+    const { bypass } = config || {};
+    if (bypass !== undefined) {
+      svc.bypass = bypass;
+      scope.app.notify(svc, { bypass });
+    }
+    return configure && configure(config || {});
+  };
+
+  return [svc, descriptor];
 }
 
 const api: RuntimeApi = {

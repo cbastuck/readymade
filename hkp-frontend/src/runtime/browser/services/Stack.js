@@ -49,7 +49,6 @@ export class StackUI extends Component {
 
   renderMain = (service) => {
     const { subservices = [], output, input } = this.state;
-
     const rootPanels = subservices.map((ssvc, idx) => ({
       title: {
         children: (

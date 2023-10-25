@@ -5,6 +5,7 @@ import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 type InstanceIndexTuple = [ServiceImpl | null, number];
 
 export default class BrowserRuntimeScope implements RuntimeScope {
+  runtimeId: string;
   serviceInstances: Array<ServiceImpl>;
   subservices: {
     [uuid: string]: { service: ServiceImpl; parent: ServiceImpl };
@@ -12,7 +13,8 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   app: AppImpl;
   registry: BrowserRegistry;
 
-  constructor(registry: BrowserRegistry) {
+  constructor(runtimeId: string, registry: BrowserRegistry) {
+    this.runtimeId = runtimeId;
     this.registry = registry;
     this.serviceInstances = [];
     this.subservices = {};
@@ -28,14 +30,17 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     result: any,
     requestId: string | null
   ): Promise<void> => {
-    throw new Error("BrowserRuntimeScope.onResult not implemented");
+    console.warn("BrowserRuntimeScope.onResult not set");
   };
 
   findServiceInstance = (uuid: string | null): InstanceIndexTuple => {
     if (uuid === null) {
       return [this.serviceInstances[0], 0];
     }
-    const idx = this.serviceInstances.findIndex((i) => i.uuid === uuid);
+
+    const { parent } = this.subservices[uuid] || {};
+    const searchUuid = parent ? parent.uuid : uuid;
+    const idx = this.serviceInstances.findIndex((i) => i.uuid === searchUuid);
     return idx === -1 ? [null, -1] : [this.serviceInstances[idx], idx];
   };
 
@@ -64,9 +69,8 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     let [svc, position] = this.findServiceInstance(service?.uuid || null);
     if (position === -1) {
       return console.error(
-        `Called next() in browser but could not find current service: ${
-          service?.uuid
-        } in scope: ${JSON.stringify(this)}`
+        `Called next() in browser but could not find current service: ${service?.uuid} in scope:`,
+        this
       );
     }
 

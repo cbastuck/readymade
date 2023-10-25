@@ -26,6 +26,7 @@ import {
   InstanceId,
   ServiceRegistry,
   RuntimeScope,
+  OnResult,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 import BrowserRuntimeScope from "../runtime/browser/BrowserRuntimeScope";
@@ -52,11 +53,7 @@ type Props = {
   expanded?: boolean;
   frameless?: boolean;
 
-  onResult: (
-    uuid: string | null,
-    result: any,
-    requestId: string | null
-  ) => Promise<void>;
+  onResult: OnResult;
   onArrangeService?: (serviceUuid: string, position: number) => void;
 };
 

@@ -131,35 +131,35 @@ export default class Board extends Component<Props, State> {
     this.setState((state) => ({ ...state, peerOutputActivation }));
   };
 
-  getNextRuntime = (runtime: RuntimeDescriptor) => {
+  getNextRuntime = (runtime: RuntimeDescriptor): RuntimeDescriptor | null => {
     const { runtimes = [] } = this.props.boardContext;
     const pos = runtimes.findIndex((rt) => rt.id === runtime.id);
-    const nextRuntime = pos !== -1 && runtimes[pos + 1];
-    return nextRuntime && this.runtimeInstances[nextRuntime.id];
+    return pos !== -1 ? runtimes[pos + 1] : null;
   };
 
-  getRuntimeById = (runtimeId: string) => {
+  getRuntimeById = (runtimeId: string): RuntimeDescriptor | null => {
     const { runtimes = [] } = this.props.boardContext;
     const runtime = runtimes.find((rt) => rt.id === runtimeId);
     if (!runtime) {
       console.error("Unknown runtime", runtimeId, runtimes);
-      return;
     }
-    return this.runtimeInstances[runtime.id];
+    return runtime || null;
   };
 
   onResult = async (
     runtime: RuntimeDescriptor,
-    svcUuid: string,
-    result: any
+    svcUuid: string | null,
+    result: any,
+    requestId: string | null
   ) => {
     const { sidechainRouting, outputRouting, boardName } = this.props;
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
     if (sroute) {
       for (const route of sroute) {
-        const dst = this.runtimeInstances[route.runtimeId];
-        if (dst) {
-          await dst.configureService(route.serviceUuid, result);
+        const dstScope = this.props.boardContext.scopes[route.runtimeId]; //this.runtimeInstances[route.runtimeId];
+        const api = this.props.boardContext.runtimeApis[runtime.type];
+        if (dstScope && api) {
+          await api.configureService(dstScope, route.serviceUuid, result); //dst.configureService(route.serviceUuid, result);
         } else {
           console.error(
             "Playground.onResult() sidechain destination not found",
@@ -173,8 +173,12 @@ export default class Board extends Component<Props, State> {
     const flow = (runtimeOutput && runtimeOutput.route?.flow) || "pass";
     if (flow === "pass") {
       const nextRuntime = this.getNextRuntime(runtime);
-      if (nextRuntime) {
-        nextRuntime.processRuntime(result, null);
+      const nextScope =
+        nextRuntime && this.props.boardContext.scopes[nextRuntime.id];
+      if (nextScope) {
+        const api = this.props.boardContext.runtimeApis[nextRuntime.type];
+        api.processRuntime(nextScope, result, null);
+        //nextRuntime.processRuntime(result, null);
       }
     }
 
@@ -209,7 +213,7 @@ export default class Board extends Component<Props, State> {
         onExpand={() => {
           const rt = this.getRuntimeById(runtime.id);
           if (rt) {
-            rt.scrollRuntimeContainerToRight();
+            rt.scrollRuntimeContainerToRight(); // TODO: use getElementById instead
           }
         }}
         onSelect={(peer: string | null) => {
@@ -497,7 +501,12 @@ export default class Board extends Component<Props, State> {
                         if (isWildcardInput || input?.route?.peer === sender) {
                           const rt = this.getRuntimeById(runtime.id);
                           if (rt) {
-                            rt.processRuntime(data, null);
+                            const scope = this.props.boardContext.scopes[rt.id];
+                            const api =
+                              this.props.boardContext.runtimeApis[rt.type];
+                            if (scope && api) {
+                              api.processRuntime(scope, data, null);
+                            }
                           }
                         } else {
                           const selector = this.inputSelectors[runtime.id];

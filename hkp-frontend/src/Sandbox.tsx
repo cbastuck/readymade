@@ -130,15 +130,18 @@ class Sandbox extends Component<Props, State> {
     return firstBrowserRuntimeData;
   };
 
-  onResult = (serviceUuid: string, result: any) => {
+  onResult = async (
+    uuid: string | null,
+    result: any,
+    requestId: string | null
+  ) => {
     // console.log('Sandbox result', serviceUuid, result);
   };
 
   renderState = (
     boardContext: BoardContextState,
     options: Options,
-    runtime: RuntimeDescriptor,
-    onResult: (serviceUuid: string | null, result: any) => Promise<any>
+    runtime: RuntimeDescriptor
   ) => {
     const url = this.state.url;
     return (
@@ -151,7 +154,7 @@ class Sandbox extends Component<Props, State> {
           runtime={runtime}
           frameless={options && options.frameless}
           boardContext={boardContext}
-          onResult={onResult}
+          onResult={this.onResult}
           disabledItems={["remove"]}
         />
         {url && (
@@ -185,7 +188,7 @@ class Sandbox extends Component<Props, State> {
           {(boardContext) =>
             boardContext &&
             runtime &&
-            this.renderState(boardContext, options, runtime, this.onResult)
+            this.renderState(boardContext, options, runtime)
           }
         </BoardConsumer>
       </BoardProvider>

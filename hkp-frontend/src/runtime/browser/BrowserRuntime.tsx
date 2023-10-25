@@ -86,6 +86,7 @@ export default class BrowserRuntime extends Component<Props, State> {
   componentWillUnmount() {
     this.destroyRuntime();
   }
+
   /*
   updateAsync = async (props: Props, prevProps?: Props) => {
     if (
@@ -415,14 +416,6 @@ export default class BrowserRuntime extends Component<Props, State> {
     if (scope && scope.onResult !== onResult) {
       scope.onResult = onResult;
     }
-
-    console.log(
-      "!!!!!",
-      services,
-      rawServices,
-      rawServices &&
-        rawServices.map((svc) => scope.findServiceInstance(svc.uuid)[0])
-    );
 
     return (
       !collapsed && (

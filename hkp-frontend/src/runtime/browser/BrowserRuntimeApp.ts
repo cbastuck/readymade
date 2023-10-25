@@ -1,3 +1,4 @@
+import { createServiceUI } from "../../UIFactory";
 import {
   AppImpl,
   InstanceId,
@@ -5,6 +6,7 @@ import {
   ServiceDescriptor,
   ServiceImpl,
 } from "../../types";
+import { appendSubservice } from "./BrowserRuntimeApi";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 
 export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
@@ -12,8 +14,10 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     next: (svc: InstanceId | null, result: any) => {
       return scope.next(svc, result);
     },
+
     getServiceById: (instanceId: string) =>
       scope.findServiceInstance(instanceId)?.[0] || null,
+
     sendAction: (action: ServiceAction) => {
       // the sandbox for example registers a listener
       // for these kind of actions
@@ -22,33 +26,41 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
         target.onAction(action);
       }
     },
+
     storeServiceData: (serviceUuid: string, key: string, value: string) => {
       localStorage.setItem(serviceDataKey(serviceUuid, key), value);
     },
+
     restoreServiceData: (serviceUuid: string, key: string) => {
       return (
         localStorage.getItem(serviceDataKey(serviceUuid, key)) || undefined
       );
     },
+
     removeServiceData: (serviceUuid: string, key: string) => {
       localStorage.removeItem(serviceDataKey(serviceUuid, key));
     },
+
     notify: (service: ServiceImpl, notification: any) => {
       if (service.__notificationTargets) {
         service.__notificationTargets.notify(service, notification);
       }
     },
-    createSubService: (parent: ServiceImpl, service: ServiceDescriptor) => {
-      const ssvc = this.createServiceInstance(service);
-      if (ssvc) {
-        this.subservices[ssvc.uuid] = { service: ssvc, parent };
-      }
-      return ssvc;
-    },
+
+    createSubService: (parent: ServiceImpl, service: ServiceDescriptor) =>
+      appendSubservice(scope, service, parent),
+
     createSubServiceUI: (svc: ServiceImpl) =>
-      createServiceUI(this.registry!, boardName, svc, runtime.id, userId, {
-        resizable: false,
-      }),
+      createServiceUI(
+        scope.registry!,
+        "deprecated board name",
+        svc,
+        scope.runtimeId,
+        "deprecated userId",
+        {
+          resizable: false,
+        }
+      ),
   };
 }
 

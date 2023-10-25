@@ -151,5 +151,5 @@ function findServiceUI(
     default:
       break;
   }
-  return registry.find(serviceId)?.createUI || null;
+  return registry.findServiceModule(serviceId)?.createUI || null;
 }

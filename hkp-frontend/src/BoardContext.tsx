@@ -69,6 +69,7 @@ export type BoardContextState = BoardContextAPI & {
   scopes: { [runtimeId: string]: RuntimeScope };
 
   availableRuntimes: Array<RuntimeClass>;
+  runtimeApis: RuntimeApiMap;
 };
 
 type Props = {
@@ -151,6 +152,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       services: {},
       registry: {},
       scopes: {},
+      runtimeApis: props.runtimeApis,
     };
   }
 
