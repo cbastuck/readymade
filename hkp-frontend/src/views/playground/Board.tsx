@@ -208,15 +208,9 @@ export default class Board extends Component<Props, State> {
       outputActivation?.hostDescriptor || inputActivation?.hostDescriptor;
     return (
       <OutputOptions
-        id={`output-options-${runtime.id}`}
+        id={runtime.id}
         items={peers}
         value={outputActivation?.route?.peer || null}
-        onExpand={() => {
-          const elem = document.getElementById(`output-options-${runtime.id}`);
-          if (elem) {
-            elem.scrollIntoView({ behavior: "smooth" });
-          }
-        }}
         onSelect={(peer: string | null) => {
           if (outputActivation) {
             if (outputActivation?.route?.peer) {

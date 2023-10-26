@@ -144,14 +144,13 @@ export default class OutputOptions extends Component<Props, State> {
     const { id, onExpand, onCollapse } = this.props;
     return (
       <div
-        id={id}
+        id={`output-options-${id}`}
         style={s(
           t.uc,
           t.ls1,
           t.fs12,
           {
-            height: "90%",
-            minHeight: 140,
+            height: 300,
             marginTop: 10,
           },
           {
@@ -180,6 +179,13 @@ export default class OutputOptions extends Component<Props, State> {
                 onCollapse && onCollapse();
               } else {
                 onExpand && onExpand();
+                const elem = document.getElementById(`output-options-${id}`);
+                if (elem) {
+                  setTimeout(
+                    () => elem.scrollIntoView({ behavior: "smooth" }),
+                    400
+                  );
+                }
               }
             });
           }}

@@ -90,7 +90,8 @@ export default class InputOptions extends Component<Props, State> {
         )}
         <div
           style={{
-            paddingTop: 15,
+            paddingTop: 10,
+            paddingLeft: 5,
           }}
         >
           {children ? children : false}
@@ -109,9 +110,7 @@ export default class InputOptions extends Component<Props, State> {
           t.ls1,
           t.fs12,
           {
-            height: "90%",
-            minHeight: 140,
-            //minWidth: expanded && 200,
+            height: 300,
             marginTop: 10,
           },
           {
