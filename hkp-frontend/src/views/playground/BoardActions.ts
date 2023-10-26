@@ -66,6 +66,7 @@ export async function createBoardFromTemplate(
       description,
       inputRouting,
       outputRouting,
+      registry,
     } = template;
     const patchedRuntimes = runtimes.map((rt) => ({
       ...rt,
@@ -169,6 +170,7 @@ export async function createBoardFromTemplate(
       inputRouting: patchedInputRouting,
       outputRouting: patchedOutputRouting,
       description,
+      registry,
     };
   } catch (err) {
     console.error("Creating from template failed", templateUrl, err);

@@ -1,4 +1,4 @@
-import { Component, ReactElement, createContext } from "react";
+import { Component, createContext } from "react";
 
 import BrowserRegistry from "./runtime/browser/BrowserRegistry";
 import ResizeObserver from "./ResizeObserver";
@@ -531,41 +531,47 @@ class BoardContext extends Component<Props, BoardContextState> {
   }
 
   serializeBoard = async (): Promise<BoardDescriptor | null> => {
+    const services = await Object.keys(this.state.services).reduce(
+      async (all, runtimeId) => {
+        const runtimeServices = this.state.services[runtimeId];
+        const [scope, api] = this.getRuntimeScopeApi(runtimeId);
+        const serviceConfigs = await Promise.all(
+          runtimeServices.map(async (svc) => {
+            const config =
+              api && scope ? await api.getServiceConfig(scope, svc.uuid) : {};
+            return {
+              uuid: svc.uuid,
+              serviceId: svc.serviceId,
+              serviceName: svc.serviceName,
+              ...config,
+            };
+          })
+        );
+        return {
+          ...(await all),
+          [runtimeId]: serviceConfigs,
+        };
+      },
+      Promise.resolve({})
+    );
+    const runtimes = this.state.runtimes.map((rt) => ({
+      id: rt.id,
+      name: rt.name,
+      type: rt.type,
+      url: rt.url,
+      bundles: rt.bundles,
+      state: {
+        wrapServices: false,
+        minimized: false,
+      },
+    }));
+
     const data = {
-      runtimes: this.state.runtimes.map((rt) => ({
-        id: rt.id,
-        name: rt.name,
-        type: rt.type,
-        url: rt.url,
-        bundles: rt.bundles,
-        state: {
-          wrapServices: false,
-          minimized: false,
-        },
-      })),
-      services: await Object.keys(this.state.services).reduce(
-        async (all, runtimeId) => {
-          const [scope, api] = this.getRuntimeScopeApi(runtimeId);
-          return {
-            ...all,
-            [runtimeId]: await Promise.all(
-              this.state.services[runtimeId].map(async (s) => {
-                const config =
-                  api && scope ? await api.getServiceConfig(scope, s.uuid) : {};
-                return {
-                  uuid: s.uuid,
-                  serviceId: s.serviceId,
-                  serviceName: s.serviceName,
-                  ...config,
-                };
-              })
-            ),
-          };
-        },
-        Promise.resolve({})
-      ),
+      runtimes,
+      services,
       registry: this.state.registry,
     };
+
     return this.props.serializeBoard(data);
   };
 
