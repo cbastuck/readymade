@@ -152,7 +152,6 @@ export default class OutputOptions extends Component<Props, State> {
           {
             height: "90%",
             minHeight: 140,
-            minWidth: expanded && 200,
             marginTop: 10,
           },
           {
