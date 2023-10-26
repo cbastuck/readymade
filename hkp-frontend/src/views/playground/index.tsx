@@ -39,6 +39,8 @@ import {
   PeerOutputRouting,
   PlaygroundState,
   RuntimeApiMap,
+  AcceptedSyncSenders,
+  RejectedSyncSenders,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
@@ -60,9 +62,10 @@ type State = {
   // BoardSync data
   syncedPeer: string | undefined;
   boardSyncActive: boolean;
-  acceptedSyncSenders: Array<any>; // TODO
-  rejectedSyncSenders: Array<any>; // TODO
+  acceptedSyncSenders: AcceptedSyncSenders;
+  rejectedSyncSenders: RejectedSyncSenders;
 
+  // Peer routing
   sidechainRouting: SidechainRouting;
   inputRouting: PeerInputRouting;
   outputRouting: PeerOutputRouting;
@@ -438,7 +441,6 @@ class Playground extends Component<Props, State> {
     return (
       <BoardProvider
         ref={(ref) => (this.boardProviderRef = ref)}
-        key={`playground-${this.state.boardName}`}
         user={(appContext && appContext.user) || this.user}
         boardName={this.state.boardName}
         fetchBoard={this.fetchBoard}

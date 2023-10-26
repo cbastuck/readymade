@@ -19,10 +19,12 @@ export default class Resizable extends Component {
   onResize = debounce((entries) => {
     if (this.props.onResize) {
       const { width, height } = entries[0].contentRect;
-      if (width !== this.width || height !== this.height) {
-        this.width = width;
-        this.height = height;
-        this.props.onResize({ width, height });
+      const floorWidth = Math.floor(width);
+      const floorHeight = Math.floor(height);
+      if (floorWidth !== this.width || floorHeight !== this.height) {
+        this.width = floorWidth;
+        this.height = floorHeight;
+        this.props.onResize({ width: floorWidth, height: floorHeight });
       }
     }
   }, 300);
