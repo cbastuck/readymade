@@ -33,7 +33,7 @@ export default class InputOptions extends Component<Props, State> {
     incoming: false,
   };
 
-  static updatePeersAction = "update-peers";
+  static updatePeersAction = "update-peers" as const;
   static allInputsWildcard = "*";
 
   getSelectorOptions = () => {
@@ -116,6 +116,7 @@ export default class InputOptions extends Component<Props, State> {
         {expanded && this.renderExpanded()}
         <button
           style={{
+            marginLeft: "auto",
             height: "100%",
             border: "none",
             textAlign: "center",

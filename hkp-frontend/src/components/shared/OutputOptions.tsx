@@ -20,6 +20,7 @@ type Props = {
   flow: RuntimeFlowOutputOptions | undefined;
   boardContext: BoardContextState;
   sidechainRouting: Array<SidechainRoute>;
+  id: string;
   disabled?: boolean;
 
   onSidechangeRouting: (route: Array<SidechainRoute>) => void;
@@ -132,9 +133,10 @@ export default class OutputOptions extends Component<Props, State> {
 
   render() {
     const { expanded } = this.state;
-    const { onExpand, onCollapse } = this.props;
+    const { id, onExpand, onCollapse } = this.props;
     return (
       <div
+        id={id}
         style={s(
           t.uc,
           t.ls1,

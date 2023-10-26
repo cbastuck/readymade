@@ -46,7 +46,6 @@ import {
   PeerInputRouting,
   PeerOutputRouting,
   PlaygroundState,
-  InstanceId,
   RuntimeApiMap,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
@@ -335,11 +334,6 @@ class Playground extends Component<Props, State> {
     });
   };
 
-  removeService = async (service: InstanceId, rt: RuntimeDescriptor) => {
-    const runtime = this.board && this.board.getRuntimeById(rt.id);
-    return runtime?.destroyService(service.uuid);
-  };
-
   destroyRuntime = (runtime: RuntimeDescriptor) => {
     const externalInput = this.externalInputs[runtime.id];
     if (externalInput) {
@@ -358,7 +352,7 @@ class Playground extends Component<Props, State> {
   };
 
   removeRuntime = async (runtime: RuntimeDescriptor) => {
-    await this.destroyRuntime(runtime);
+    return this.destroyRuntime(runtime);
   };
 
   clearPlayground = async (board: BoardDescriptor) => {

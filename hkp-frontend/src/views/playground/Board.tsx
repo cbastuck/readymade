@@ -156,15 +156,17 @@ export default class Board extends Component<Props, State> {
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
     if (sroute) {
       for (const route of sroute) {
-        const dstScope = this.props.boardContext.scopes[route.runtimeId]; //this.runtimeInstances[route.runtimeId];
+        const dstScope = this.props.boardContext.scopes[route.runtimeId];
         const api = this.props.boardContext.runtimeApis[runtime.type];
         if (dstScope && api) {
-          await api.configureService(dstScope, route.serviceUuid, result); //dst.configureService(route.serviceUuid, result);
+          await api.configureService(dstScope, route.serviceUuid, result);
         } else {
           console.error(
             "Playground.onResult() sidechain destination not found",
             route.runtimeId,
-            this.runtimeInstances
+            this.props.boardContext.scopes,
+            dstScope,
+            api
           );
         }
       }
@@ -178,7 +180,6 @@ export default class Board extends Component<Props, State> {
       if (nextScope) {
         const api = this.props.boardContext.runtimeApis[nextRuntime.type];
         api.processRuntime(nextScope, result, null);
-        //nextRuntime.processRuntime(result, null);
       }
     }
 
@@ -208,12 +209,13 @@ export default class Board extends Component<Props, State> {
       outputActivation?.hostDescriptor || inputActivation?.hostDescriptor;
     return (
       <OutputOptions
+        id={`output-options-${runtime.id}`}
         items={peers}
         value={outputActivation?.route?.peer || null}
         onExpand={() => {
-          const rt = this.getRuntimeById(runtime.id);
-          if (rt) {
-            rt.scrollRuntimeContainerToRight(); // TODO: use getElementById instead
+          const elem = document.getElementById(`output-options-${runtime.id}`);
+          if (elem) {
+            elem.scrollIntoView({ behavior: "smooth" });
           }
         }}
         onSelect={(peer: string | null) => {
@@ -282,7 +284,7 @@ export default class Board extends Component<Props, State> {
     peersContext: PeersContextState | null
   ) => {
     const activationId = getActivationId(runtime.id);
-    const runtimeActivation = this.state.peerInputActivation[activationId];
+    const inputActivation = this.state.peerInputActivation[activationId];
     return (
       <InputOptions
         ref={(selector) => (this.inputSelectors[runtime.id] = selector)}
@@ -312,7 +314,7 @@ export default class Board extends Component<Props, State> {
                 }
           );
         }}
-        disabled={!runtimeActivation}
+        disabled={!inputActivation}
       >
         {this.renderPeersActivator(runtime, "input")}
         {this.renderPeersDeactivator(runtime)}
@@ -416,14 +418,14 @@ export default class Board extends Component<Props, State> {
       <div
         style={{ cursor: "pointer", color: "#1e70bf" }}
         onClick={() => {
-          inputRoute &&
-            this.props.onChangeInputRouting(runtime, {
-              ...inputRoute,
-              hostDescriptor: null,
-            });
+          this.props.onChangeInputRouting(runtime, {
+            ...(inputRoute || {}),
+            hostDescriptor: null,
+          });
+
           outputRoute &&
             this.props.onChangeOutputRouting(runtime, {
-              ...outputRoute,
+              ...(outputRoute || {}),
               hostDescriptor: null,
             });
         }}

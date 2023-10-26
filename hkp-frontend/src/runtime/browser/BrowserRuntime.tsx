@@ -73,89 +73,9 @@ export default class BrowserRuntime extends Component<Props, State> {
     loadingCounter: 0,
   };
 
-  componentDidMount() {
-    //this.update(this.props);
-  }
-
-  componentDidUpdate(prevProps: Props) {
-    if (this.props.services !== prevProps.services) {
-      //this.update(this.props, prevProps);
-    }
-  }
-
   componentWillUnmount() {
     this.destroyRuntime();
   }
-
-  /*
-  updateAsync = async (props: Props, prevProps?: Props) => {
-    if (
-      !this.registry ||
-      props.runtime.bundles !== prevProps?.runtime.bundles
-    ) {
-      this.registry = await BrowserRegistry.create(props.runtime?.bundles);
-      this.context.updateRegistry(
-        props.runtime.id,
-        this.registry.availableServices.filter(
-          (s) => !allowedServices || allowedServices.indexOf(s.serviceId) !== -1
-        )
-      );
-    }
-
-    if (props.services !== prevProps?.services) {
-      if (props.services) {
-        await Promise.all(
-          Object.keys(this.serviceInstances).map(async (uuid) => {
-            const serviceWasRemoved = !props.services.find(
-              (s) => s.uuid === uuid
-            );
-            if (serviceWasRemoved) {
-              const svc = this.serviceInstances[uuid];
-              if (svc) {
-                delete this.serviceInstances[uuid]; // cleanup old instances
-                return svc.destroy();
-              }
-            }
-          })
-        );
-
-        await Promise.all(
-          props.services.map((svc) => {
-            if (!this.serviceInstances[svc.uuid]) {
-              const impl = this.createServiceInstance(svc);
-              if (impl) {
-                this.serviceInstances[svc.uuid] = impl;
-              }
-            }
-            return this.configureService(svc.uuid, svc);
-          })
-        );
-      }
-    }
-
-    // TODO: do we still need this block?
-    if (props.runtime !== prevProps?.runtime) {
-      if (props.runtime && props.userId && props.runtime.type !== "browser") {
-        this.connect(props.runtime.id);
-      }
-    }
-  };
-  */
-
-  /*
-  update = (props: Props, prevProps?: Props) => {
-    // reentrant reset using counter
-    this.setState(
-      ({ loadingCounter }) => ({ loadingCounter: loadingCounter + 1 }),
-      async () => {
-        await this.updateAsync(props, prevProps);
-        this.setState(({ loadingCounter }) => ({
-          loadingCounter: loadingCounter - 1,
-        }));
-      }
-    );
-  };
-*/
 
   connect(id: string) {
     const { userId, runtime, boardName } = this.props;
