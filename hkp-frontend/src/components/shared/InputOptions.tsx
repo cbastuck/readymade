@@ -57,11 +57,19 @@ export default class InputOptions extends Component<Props, State> {
   };
 
   renderExpanded = () => {
-    const { incoming } = this.state;
+    const { incoming, expanded } = this.state;
     const { value, onSelect, onAction, children, disabled } = this.props;
     const peerOptions = this.getSelectorOptions();
     return (
-      <div style={{ padding: 10 }}>
+      <div
+        style={{
+          paddingTop: 10,
+          opacity: expanded ? 1 : 0,
+          width: expanded ? 290 : 0,
+          transition: "width 0.5s, opacity 0.5s",
+          overflow: "hidden",
+        }}
+      >
         {!disabled && (
           <>
             <h1 style={s(t.tc, t.fs11)}>Allow From</h1>
@@ -80,7 +88,13 @@ export default class InputOptions extends Component<Props, State> {
             />
           </>
         )}
-        <div style={{ paddingTop: 10 }}>{children ? children : false}</div>
+        <div
+          style={{
+            paddingTop: 15,
+          }}
+        >
+          {children ? children : false}
+        </div>
       </div>
     );
   };
@@ -97,7 +111,7 @@ export default class InputOptions extends Component<Props, State> {
           {
             height: "90%",
             minHeight: 140,
-            minWidth: expanded && 200,
+            //minWidth: expanded && 200,
             marginTop: 10,
           },
           {
@@ -113,7 +127,7 @@ export default class InputOptions extends Component<Props, State> {
           }
         )}
       >
-        {expanded && this.renderExpanded()}
+        {this.renderExpanded()}
         <button
           style={{
             marginLeft: "auto",

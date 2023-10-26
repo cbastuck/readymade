@@ -118,12 +118,20 @@ export default class OutputOptions extends Component<Props, State> {
 
   renderExpanded = () => {
     const { disabled } = this.props;
+    const { expanded } = this.state;
     return (
-      <div style={t.p3}>
+      <div
+        style={{
+          opacity: expanded ? 1 : 0,
+          width: expanded ? 300 : 0,
+          transition: "width 0.5s, opacity 0.5s",
+          overflow: "hidden",
+        }}
+      >
         {this.renderFlowOptions()}
         {this.renderSidechainOptions()}
         {disabled ? (
-          <div style={{ ...t.p(10, 25) }}> {this.props.children} </div>
+          <div style={{ ...t.p(10, 25) }}>{this.props.children}</div>
         ) : (
           this.renderPeerOptions()
         )}
@@ -188,7 +196,7 @@ export default class OutputOptions extends Component<Props, State> {
             Output
           </div>
         </button>
-        {expanded && this.renderExpanded()}
+        {this.renderExpanded()}
       </div>
     );
   }
