@@ -328,3 +328,6 @@ export type SavedBoard = {
   value: BoardDescriptor;
   name: string;
 };
+
+export type AcceptedSyncSenders = Array<any>;
+export type RejectedSyncSenders = Array<any>;

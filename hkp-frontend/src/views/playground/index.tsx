@@ -1,5 +1,4 @@
 import { Component } from "react";
-import { Loader } from "semantic-ui-react";
 
 import { withRouter, WithRouterProps } from "../../common";
 import { AppContextState, AppCtx } from "../../AppContext";
@@ -13,15 +12,11 @@ import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
 import SaveBoardPrompt, {
   SaveBoardApi,
 } from "../../components/SaveBoardPrompt";
-import VSpacer from "../../components/shared/VSpacer";
-import EmptySketch from "./EmptySketch";
 import Board from "./Board";
 import BoardSync from "./boardsync";
-import LoadPanel from "./LoadPanel";
 import Login from "../Login";
 import { generateRandomName } from "../../core/board";
-import { sleep } from "../../runtime/browser/services/helpers";
-import { s, t } from "../../styles";
+import { t } from "../../styles";
 import { localStoragePrefix, defaultName, availableRuntimes } from "./common";
 import {
   importBoard,
@@ -48,6 +43,7 @@ import {
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
+import BoardEntryPoint from "./BoardEntryPoint";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -262,20 +258,6 @@ class Playground extends Component<Props, State> {
   serializeBoard = async (
     descriptor: BoardDescriptor
   ): Promise<PlaygroundState | null> => {
-    const maxRetries = 10;
-    for (let i = 0; i < maxRetries && !this.board; ++i) {
-      await sleep(10); // retry later
-      if (i + 1 === maxRetries) {
-        console.error("Could not serialize board within retries");
-        return null;
-      }
-    }
-
-    const board = this.board;
-    if (!board) {
-      throw new Error("serializeBoard() board is undefined");
-    }
-
     const {
       description = "",
       sidechainRouting = {},
@@ -418,147 +400,6 @@ class Playground extends Component<Props, State> {
     }
   };
 
-  renderPlaceholderOrBoard = (boardContext: BoardContextState) => {
-    const { boardName, enforceLoadPanel } = this.state;
-    const isPlaygroundEmpty =
-      boardContext &&
-      boardContext.runtimes &&
-      boardContext.runtimes.length === 0;
-    const content = isPlaygroundEmpty ? (
-      <EmptySketch boardName={boardName} />
-    ) : (
-      this.renderBoard(boardContext)
-    );
-    const saveReminder = (
-      <div style={s(t.fs14, t.mb10, { fontFamily: "Lato" })}>
-        Remember to
-        <span
-          style={{ cursor: "help", color: "#4284C4" }}
-          onClick={() => {
-            const selector = document.getElementById("board-dropdown");
-            if (selector) {
-              selector.focus();
-              selector.click();
-            }
-          }}
-        >
-          {" save this board "}
-        </span>
-        and continue later by{" "}
-        <span
-          id="load-pane-view"
-          style={{
-            color: "#4284c4",
-            cursor: "pointer",
-          }}
-          onClick={() =>
-            this.setState(
-              (state) => ({ ...state, enforceLoadPanel: true }),
-              () =>
-                setTimeout(() =>
-                  document
-                    .getElementById("load-pane-view")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                )
-            )
-          }
-        >
-          restoring a local board
-        </span>
-      </div>
-    );
-    return (
-      <div style={t.w100}>
-        <div
-          style={{
-            width: "99%",
-            margin: "auto",
-          }}
-        >
-          <div style={s(t.fs16, t.ls1, t.tc)}>
-            {isPlaygroundEmpty && (
-              <h1
-                style={s(t.uc, t.fs20, {
-                  margin: 0,
-                  marginTop: "5%",
-                })}
-              >
-                Welcome to Playground
-              </h1>
-            )}
-            <div>
-              {content}
-              {!isPlaygroundEmpty ? saveReminder : false}
-            </div>
-            {(isPlaygroundEmpty || enforceLoadPanel) && (
-              <div style={s(t.uc, { width: "90%", margin: "auto" })}>
-                <LoadPanel />
-              </div>
-            )}
-          </div>
-        </div>
-        <VSpacer />
-      </div>
-    );
-  };
-
-  renderBoard = (boardContext: BoardContextState) => {
-    const {
-      description,
-      boardName,
-      sidechainRouting,
-      outputRouting,
-      inputRouting,
-    } = this.state;
-    return (
-      <Board
-        ref={(board) => (this.board = board)}
-        appContext={this.context}
-        boardContext={boardContext}
-        description={description}
-        boardName={boardName}
-        sidechainRouting={sidechainRouting}
-        outputRouting={outputRouting}
-        onChangeOutputRouting={(runtime, routing) => {
-          const { hostDescriptor, route } = routing;
-          const { peer, flow } = route;
-          this.setState({
-            outputRouting: {
-              ...outputRouting,
-              [runtime.id]: {
-                hostDescriptor: hostDescriptor || null,
-                route: {
-                  peer: peer || outputRouting[runtime.id]?.route.peer || null,
-                  flow,
-                },
-              },
-            },
-          });
-        }}
-        inputRouting={inputRouting}
-        onChangeInputRouting={(runtime, value) =>
-          this.setState({
-            inputRouting: {
-              ...this.state.inputRouting,
-              [runtime.id]: value,
-            },
-          })
-        }
-        onChangeSidechainRouting={(
-          runtime: RuntimeDescriptor,
-          routing: Array<SidechainRoute>
-        ) =>
-          this.setState({
-            sidechainRouting: {
-              ...this.state.sidechainRouting,
-              [runtime.id]: routing,
-            },
-          })
-        }
-      />
-    );
-  };
-
   renderBoardSync = (boardContext: BoardContextState) => {
     return (
       <BoardSync
@@ -584,22 +425,6 @@ class Playground extends Component<Props, State> {
           rejectedSenders: rejectedSyncSenders = this.state.rejectedSyncSenders,
         }) => this.setState({ acceptedSyncSenders, rejectedSyncSenders })}
       />
-    );
-  };
-
-  renderLoadIndicator = () => {
-    return (
-      <div
-        style={s(t.uc, t.ls1, {
-          position: "absolute",
-          left: "45%",
-          top: "45%",
-        })}
-      >
-        <Loader active inline>
-          Loading Playground
-        </Loader>
-      </div>
     );
   };
 
@@ -684,12 +509,58 @@ class Playground extends Component<Props, State> {
                     />
                     {this.state.boardSyncActive &&
                       this.renderBoardSync(boardContext)}
-                    {this.state.initialFetched
-                      ? this.renderPlaceholderOrBoard(boardContext)
-                      : this.renderLoadIndicator()}
+
+                    <BoardEntryPoint
+                      isLoading={!this.state.initialFetched}
+                      appContext={appContext}
+                      boardContext={boardContext}
+                      boardName={this.state.boardName}
+                      description={this.state.description}
+                      sidechainRouting={this.state.sidechainRouting}
+                      outputRouting={this.state.outputRouting}
+                      inputRouting={this.state.inputRouting}
+                      onChangeSidechainRouting={(
+                        runtime: RuntimeDescriptor,
+                        routing: Array<SidechainRoute>
+                      ) =>
+                        this.setState({
+                          sidechainRouting: {
+                            ...this.state.sidechainRouting,
+                            [runtime.id]: routing,
+                          },
+                        })
+                      }
+                      onChangeInputRouting={(runtime, value) =>
+                        this.setState({
+                          inputRouting: {
+                            ...this.state.inputRouting,
+                            [runtime.id]: value,
+                          },
+                        })
+                      }
+                      onChangeOutputRouting={(runtime, routing) => {
+                        const { hostDescriptor, route } = routing;
+                        const { peer, flow } = route;
+                        this.setState({
+                          outputRouting: {
+                            ...this.state.outputRouting,
+                            [runtime.id]: {
+                              hostDescriptor: hostDescriptor || null,
+                              route: {
+                                peer:
+                                  peer ||
+                                  this.state.outputRouting[runtime.id]?.route
+                                    .peer ||
+                                  null,
+                                flow,
+                              },
+                            },
+                          },
+                        });
+                      }}
+                    />
                   </>
                 )}
-
                 <Footer />
               </div>
             )

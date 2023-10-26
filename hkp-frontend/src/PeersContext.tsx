@@ -12,6 +12,7 @@ export type PeersContextState = {
   onPeerClosed: (peerName: string) => void;
   updatePeers: (peer?: Peer) => void;
   closeConnection: (srcPeerName: string, dstPeerName: string) => void;
+  sendData: (srcPeer: string, dstPeer: string, result: any) => Promise<void>;
 };
 
 type Props = {
@@ -33,6 +34,7 @@ class PeersProvider extends Component<Props, PeersContextState> {
       onPeerClosed: this.onPeerClosed,
       updatePeers: this.updatePeers,
       closeConnection: this.closeConnection,
+      sendData: this.sendData,
     };
   }
 

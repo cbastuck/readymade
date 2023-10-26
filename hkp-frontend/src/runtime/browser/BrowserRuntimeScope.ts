@@ -86,12 +86,11 @@ export default class BrowserRuntimeScope implements RuntimeScope {
           result = await svc.process(params);
           params = result;
         } catch (err) {
-          /*console.error(
-            `Seriously: service ${JSON.stringify(
-              serviceInstance
-            )} caused error: `,
-            err
-          );*/
+          console.warn(
+            `Seriously: service ${
+              svc.serviceName
+            } caused error: ${JSON.stringify(err)}`
+          );
         }
       }
     }

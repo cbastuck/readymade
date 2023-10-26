@@ -78,7 +78,7 @@ type Props = {
   boardName: string;
   availableRuntimes: Array<RuntimeClass>;
   runtimeApis: RuntimeApiMap;
-  children: ReactElement;
+  children: JSX.Element;
 
   fetchBoard: () => Promise<BoardDescriptor>;
   isRuntimeInScope: () => boolean;

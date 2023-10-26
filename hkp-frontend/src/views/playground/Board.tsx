@@ -70,8 +70,6 @@ export default class Board extends Component<Props, State> {
   runtimeInstances: { [runtimeId: string]: Runtime | null } = {};
   inputSelectors: { [runtimeId: string]: InputOptions | null } = {};
 
-  peerContext: PeersProvider | null = null;
-
   componentDidMount() {
     this.updateInputActivation(this.props.inputRouting);
     this.updateOutputActivation(this.props.outputRouting);
@@ -148,6 +146,7 @@ export default class Board extends Component<Props, State> {
 
   onResult = async (
     runtime: RuntimeDescriptor,
+    peersContext: PeersContextState | null,
     svcUuid: string | null,
     result: any,
     requestId: string | null
@@ -162,7 +161,7 @@ export default class Board extends Component<Props, State> {
           await api.configureService(dstScope, route.serviceUuid, result);
         } else {
           console.error(
-            "Playground.onResult() sidechain destination not found",
+            "Board.onResult() sidechain destination not found",
             route.runtimeId,
             this.props.boardContext.scopes,
             dstScope,
@@ -183,8 +182,8 @@ export default class Board extends Component<Props, State> {
       }
     }
 
-    if (runtimeOutput.route?.peer && this.peerContext) {
-      this.peerContext.sendData(
+    if (runtimeOutput.route?.peer && peersContext) {
+      peersContext.sendData(
         `${boardName}-${runtime.name}`,
         runtimeOutput.route.peer,
         result
@@ -455,7 +454,11 @@ export default class Board extends Component<Props, State> {
           ref={(rt) => (this.runtimeInstances[runtime.id] = rt)}
           boardContext={boardContext}
           runtime={runtime}
-          onResult={this.onResult.bind(this, runtime)}
+          onResult={(
+            uuid: string | null,
+            result: any,
+            requestId: string | null
+          ) => this.onResult(runtime, peersContext, uuid, result, requestId)}
           outputs={this.renderOutputs(
             filteredPeers,
             runtime,
@@ -477,7 +480,7 @@ export default class Board extends Component<Props, State> {
     return (
       <div>
         <div style={s(t.w100)}>
-          <PeersProvider ref={(ctx) => (this.peerContext = ctx)}>
+          <PeersProvider>
             <PeersConsumer>
               {(peersContext) =>
                 this.props.boardContext.runtimes.map((runtime) => {

@@ -58,13 +58,6 @@ type State = {
 export default class BrowserRuntime extends Component<Props, State> {
   static contextType = BoardCtx;
   context!: BoardContextState;
-
-  //registry: BrowserRegistry | null = null;
-
-  //serviceInstances: { [uuid: string]: ServiceImpl } = {};
-  //subservices: {
-  //  [uuid: string]: { service: ServiceImpl; parent: ServiceImpl };
-  //} = {};
   websocket: WebSocket | null | undefined = null;
   eventSource: EventSource | undefined = undefined;
   app: AppImpl | null | undefined = undefined;
