@@ -20,10 +20,7 @@ import BoardSync from "./boardsync";
 import LoadPanel from "./LoadPanel";
 import Login from "../Login";
 import { generateRandomName } from "../../core/board";
-import {
-  filterPrivateMembers,
-  sleep,
-} from "../../runtime/browser/services/helpers";
+import { sleep } from "../../runtime/browser/services/helpers";
 import { s, t } from "../../styles";
 import { localStoragePrefix, defaultName, availableRuntimes } from "./common";
 import {
@@ -290,25 +287,8 @@ class Playground extends Component<Props, State> {
       rejectedSyncSenders = [],
     }: State = this.state;
 
-    const data = {
-      runtimes: descriptor.runtimes.map((rt) => ({
-        ...rt,
-        state: board.getRuntimeById(rt.id)?.serialize() || {},
-      })),
-      services: Object.keys(descriptor.services).reduce((all, runtimeId) => {
-        const rt = board.getRuntimeById(runtimeId);
-        return {
-          ...all,
-          [runtimeId]: descriptor.services[runtimeId].map((s) => ({
-            ...s,
-            ...filterPrivateMembers(rt ? rt.getServiceById(s.uuid) : {}),
-          })),
-        };
-      }, {}),
-      registry: descriptor.registry,
-    };
     return {
-      ...data,
+      ...descriptor,
       sidechainRouting,
       outputRouting: Object.keys(outputRouting).reduce(
         (acc, cur) => ({ ...acc, [cur]: outputRouting[cur]?.route || null }),
@@ -334,7 +314,7 @@ class Playground extends Component<Props, State> {
     });
   };
 
-  destroyRuntime = (runtime: RuntimeDescriptor) => {
+  destroyRuntime = async (runtime: RuntimeDescriptor) => {
     const externalInput = this.externalInputs[runtime.id];
     if (externalInput) {
       externalInput.close();

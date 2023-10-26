@@ -25,6 +25,7 @@ import {
   RuntimeApiMap,
   RuntimeScope,
   RestoreRuntimeResult,
+  RuntimeApi,
 } from "./types";
 import { reorderService } from "./views/playground/BoardActions";
 
@@ -520,7 +521,16 @@ class BoardContext extends Component<Props, BoardContextState> {
     return availableRuntimes;
   };
 
-  serializeBoard = (): Promise<BoardDescriptor | null> => {
+  getRuntimeScopeApi(
+    runtimeId: string
+  ): [RuntimeScope | null, RuntimeApi | null] {
+    const runtime =
+      this.state.runtimes.find((rt) => rt.id === runtimeId) || null;
+    const scope = this.state.scopes[runtimeId] || null;
+    return [scope, runtime && this.props.runtimeApis[runtime.type]];
+  }
+
+  serializeBoard = async (): Promise<BoardDescriptor | null> => {
     const data = {
       runtimes: this.state.runtimes.map((rt) => ({
         id: rt.id,
@@ -528,17 +538,32 @@ class BoardContext extends Component<Props, BoardContextState> {
         type: rt.type,
         url: rt.url,
         bundles: rt.bundles,
+        state: {
+          wrapServices: false,
+          minimized: false,
+        },
       })),
-      services: Object.keys(this.state.services).reduce((all, runtimeId) => {
-        return {
-          ...all,
-          [runtimeId]: this.state.services[runtimeId].map((s) => ({
-            uuid: s.uuid,
-            serviceId: s.serviceId,
-            serviceName: s.serviceName,
-          })),
-        };
-      }, {}),
+      services: await Object.keys(this.state.services).reduce(
+        async (all, runtimeId) => {
+          const [scope, api] = this.getRuntimeScopeApi(runtimeId);
+          return {
+            ...all,
+            [runtimeId]: await Promise.all(
+              this.state.services[runtimeId].map(async (s) => {
+                const config =
+                  api && scope ? await api.getServiceConfig(scope, s.uuid) : {};
+                return {
+                  uuid: s.uuid,
+                  serviceId: s.serviceId,
+                  serviceName: s.serviceName,
+                  ...config,
+                };
+              })
+            ),
+          };
+        },
+        Promise.resolve({})
+      ),
       registry: this.state.registry,
     };
     return this.props.serializeBoard(data);

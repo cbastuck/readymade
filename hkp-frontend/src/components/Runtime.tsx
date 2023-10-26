@@ -59,17 +59,17 @@ type Props = {
 
 type State = {
   runtimeNameEditBuffer: string;
-  expanded: boolean;
   readonly: boolean;
   showSettings: boolean;
+  expanded: boolean;
   wrapServices: boolean | undefined;
 };
 
 export default class Runtime extends Component<Props, State> {
   state: State = {
-    expanded: false,
     readonly: false,
     showSettings: false,
+    expanded: false,
     wrapServices: undefined,
     runtimeNameEditBuffer: "",
   };
@@ -131,11 +131,6 @@ export default class Runtime extends Component<Props, State> {
         console.log("Runtime processing unknown service action", action);
     }
   };
-
-  serialize = () => ({
-    wrapServices: !!this.state.wrapServices,
-    minimized: !this.state.expanded,
-  });
 
   getServiceById = (serviceUuid: string) => {
     return (

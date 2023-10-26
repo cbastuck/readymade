@@ -14,60 +14,7 @@ import {
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
-
-export async function configureService(
-  scope_: RuntimeScope,
-  uuid: string,
-  config: any
-) {
-  const scope = scope_ as BrowserRuntimeScope;
-  const [svc] = scope.findServiceInstance(uuid);
-  if (svc) {
-    return svc.configure(config);
-  }
-}
-
-export async function processService(
-  scope_: RuntimeScope,
-  uuid: string,
-  params: any,
-  requestId: string | null
-) {
-  const scope = scope_ as BrowserRuntimeScope;
-  const [service, position] = scope.findServiceInstance(uuid);
-  if (position === -1) {
-    return console.error(
-      `Could not find browser service to process: ${uuid} in scope: ${JSON.stringify(
-        scope
-      )}`
-    );
-  }
-
-  // TODO: this is not true since a long time, right?
-  // if it's not an object it's a binary buffer base64 encoded
-  /*
-  const data = typeof params === 'string' ?
-    new Blob(
-      [decode(params)], 
-      { type: 'application/octet-binary' }
-    ) :
-    params;
-    */
-
-  const data = params;
-  if (service) {
-    return scope.next(service, data, requestId, false);
-  }
-}
-
-export function processRuntime(
-  scope_: RuntimeScope,
-  params: any,
-  svc: InstanceId | null
-) {
-  const scope = scope_ as BrowserRuntimeScope;
-  return scope.next(svc, params, null, false);
-}
+import { filterPrivateMembers } from "./services/helpers";
 
 export async function addRuntime(rtClass: RuntimeClass) {
   const { name: passedName, type, url } = rtClass;
@@ -113,6 +60,15 @@ async function restoreRuntime(
   };
 }
 
+export function processRuntime(
+  scope_: RuntimeScope,
+  params: any,
+  svc: InstanceId | null
+) {
+  const scope = scope_ as BrowserRuntimeScope;
+  return scope.next(svc, params, null, false);
+}
+
 export async function addService(
   scope_: RuntimeScope,
   rt: RuntimeDescriptor,
@@ -148,6 +104,61 @@ export async function removeService(
   }
 
   return true;
+}
+
+export async function configureService(
+  scope_: RuntimeScope,
+  uuid: string,
+  config: any
+): Promise<void> {
+  const scope = scope_ as BrowserRuntimeScope;
+  const [svc] = scope.findServiceInstance(uuid);
+  if (svc) {
+    return svc.configure(config);
+  }
+}
+
+export async function getServiceConfig(
+  scope_: RuntimeScope,
+  uuid: string
+): Promise<any> {
+  const scope = scope_ as BrowserRuntimeScope;
+  const [svc] = scope.findServiceInstance(uuid);
+  const config = svc ? filterPrivateMembers(svc) : {};
+  return config;
+}
+
+export async function processService(
+  scope_: RuntimeScope,
+  uuid: string,
+  params: any,
+  requestId: string | null
+) {
+  const scope = scope_ as BrowserRuntimeScope;
+  const [service, position] = scope.findServiceInstance(uuid);
+  if (position === -1) {
+    return console.error(
+      `Could not find browser service to process: ${uuid} in scope: ${JSON.stringify(
+        scope
+      )}`
+    );
+  }
+
+  // TODO: this is not true since a long time, right?
+  // if it's not an object it's a binary buffer base64 encoded
+  /*
+  const data = typeof params === 'string' ?
+    new Blob(
+      [decode(params)], 
+      { type: 'application/octet-binary' }
+    ) :
+    params;
+    */
+
+  const data = params;
+  if (service) {
+    return scope.next(service, data, requestId, false);
+  }
 }
 
 export async function appendSubservice(
@@ -225,6 +236,7 @@ const api: RuntimeApi = {
   addService,
   removeService,
   configureService,
+  getServiceConfig,
   processService,
 };
 

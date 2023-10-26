@@ -2,7 +2,7 @@ import { AppImpl, InstanceId, RuntimeScope, ServiceImpl } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 
-type InstanceIndexTuple = [ServiceImpl | null, number];
+export type InstanceIndexTuple = [ServiceImpl | null, number];
 
 export default class BrowserRuntimeScope implements RuntimeScope {
   runtimeId: string;

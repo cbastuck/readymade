@@ -228,6 +228,8 @@ export type RuntimeApi = {
     config: any
   ) => Promise<void>;
 
+  getServiceConfig: (scope_: RuntimeScope, uuid: string) => Promise<any>;
+
   processService: (
     scope: RuntimeScope,
     uuid: string,
