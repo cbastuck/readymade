@@ -415,12 +415,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       );
     }
 
-    const updatedServices = await api.removeService(
-      this.state.scopes[runtime.id],
-      service,
-      runtime
-    );
-    console.log("REMOVED A SERVICE", updatedServices);
+    await api.removeService(this.state.scopes[runtime.id], service, runtime);
 
     this.setState((state) => ({
       services: {

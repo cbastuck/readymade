@@ -99,9 +99,7 @@ export async function removeService(
     return false;
   }
 
-  if (service.destroy) {
-    service.destroy();
-  }
+  scope.removeService(service);
 
   return true;
 }

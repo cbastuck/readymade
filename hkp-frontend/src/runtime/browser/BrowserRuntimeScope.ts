@@ -48,6 +48,19 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     this.serviceInstances.push(svc);
   };
 
+  removeService = async (service: ServiceImpl) => {
+    const subservices = Object.keys(this.subservices).reduce<ServiceImpl[]>(
+      (all, ssvcUuid) => {
+        const ssvc = this.subservices[ssvcUuid];
+        return ssvc && ssvc.parent === service ? [...all, ssvc.service] : all;
+      },
+      []
+    );
+
+    await Promise.all(subservices.map((ssvc) => ssvc.destroy()));
+    service.destroy();
+  };
+
   removeSubservices = async () => {
     for (const ssvcUuid of Object.keys(this.subservices)) {
       const ssvc = this.subservices[ssvcUuid];
