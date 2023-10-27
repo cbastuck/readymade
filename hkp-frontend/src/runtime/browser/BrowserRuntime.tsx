@@ -169,10 +169,15 @@ export default class BrowserRuntime extends Component<Props, State> {
   }
 
   onMessage(command: Command) {
-    const { scope } = this.props;
+    const { runtime, scope } = this.props;
     switch (command.action) {
       case "config":
-        return configureService(scope, command.uuid, command.config);
+        return configureService(
+          scope,
+          runtime,
+          { uuid: command.uuid },
+          command.config
+        );
       case "process":
         return processService(
           scope,
@@ -181,7 +186,7 @@ export default class BrowserRuntime extends Component<Props, State> {
           command.requestId
         );
       case "destroy":
-        return removeService(scope, command);
+        return removeService(scope, runtime, command);
       case "ping":
         return;
       default:
@@ -233,6 +238,7 @@ export default class BrowserRuntime extends Component<Props, State> {
     }
   };
 
+  // TODO: remove - but still used in headless and elsewhere
   getServiceById = (uuid: string) => {
     const { services, scope } = this.props;
     const svc = services.find((s) => s.uuid === uuid);
@@ -240,7 +246,7 @@ export default class BrowserRuntime extends Component<Props, State> {
   };
 
   destroyRuntime = async () => {
-    const { services = [], scope } = this.props;
+    const { services = [], scope, runtime } = this.props;
 
     if (this.eventSource) {
       this.eventSource.close();
@@ -251,60 +257,10 @@ export default class BrowserRuntime extends Component<Props, State> {
       this.websocket = undefined;
     }
 
-    await scope.removeSubservices();
-
     for (const service of services) {
-      await removeService(scope, service);
+      await removeService(scope, runtime, service);
     }
   };
-
-  /*
-  createServiceInstance = (
-    service: ServiceDescriptor
-  ): ServiceImpl | undefined => {
-    const { boardName } = this.props;
-    const { serviceId, serviceName } = service;
-    const descriptor = this.registry?.findServiceModule(serviceId);
-    if (!descriptor) {
-      console.log(
-        "Could not create service instance",
-        serviceId,
-        this.registry
-      );
-      return;
-    }
-
-    if (!this.app) {
-      this.app = this.createApp();
-    }
-
-    const svc = descriptor.create(
-      this.app,
-      boardName,
-      descriptor,
-      service.uuid
-    );
-    if (!svc) {
-      console.error("Could not create service", descriptor);
-    }
-    svc.__descriptor = {
-      ...descriptor,
-      uuid: service.uuid,
-      serviceName: serviceName || descriptor.serviceName,
-    };
-    const configure = svc.configure.bind(svc);
-    svc.configure = (config: any) => {
-      // monkey wire configure
-      const { bypass } = config || {};
-      if (bypass !== undefined) {
-        svc.bypass = bypass;
-        this.app?.notify(svc, { bypass });
-      }
-      return configure && configure(config || {});
-    };
-    return svc;
-  };
-  */
 
   render() {
     const {

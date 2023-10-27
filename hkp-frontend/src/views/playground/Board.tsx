@@ -158,7 +158,12 @@ export default class Board extends Component<Props, State> {
         const dstScope = this.props.boardContext.scopes[route.runtimeId];
         const api = this.props.boardContext.runtimeApis[runtime.type];
         if (dstScope && api) {
-          await api.configureService(dstScope, route.serviceUuid, result);
+          await api.configureService(
+            dstScope,
+            runtime,
+            { uuid: route.serviceUuid },
+            result
+          );
         } else {
           console.error(
             "Board.onResult() sidechain destination not found",

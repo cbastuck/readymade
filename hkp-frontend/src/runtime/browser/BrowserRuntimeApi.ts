@@ -49,7 +49,9 @@ async function restoreRuntime(
 
   const configuredServices = await Promise.all(
     createdServices.map((svc, idx) =>
-      configureService(scope, svc.uuid, services[idx]).then(() => services[idx])
+      configureService(scope, runtime, svc, services[idx]).then(
+        () => services[idx]
+      )
     )
   );
   return {
@@ -86,8 +88,9 @@ export async function addService(
 
 export async function removeService(
   scope_: RuntimeScope,
+  runtime: RuntimeDescriptor,
   instance: InstanceId
-): Promise<boolean> {
+): Promise<Array<ServiceDescriptor> | null> {
   const scope = scope_ as BrowserRuntimeScope;
   const [service] = scope.findServiceInstance(instance.uuid);
   if (!service) {
@@ -96,21 +99,20 @@ export async function removeService(
         scope
       )}`
     );
-    return false;
+    return null;
   }
 
-  scope.removeService(service);
-
-  return true;
+  return await scope.removeService(service);
 }
 
 export async function configureService(
   scope_: RuntimeScope,
-  uuid: string,
+  runtime: RuntimeDescriptor,
+  service: InstanceId,
   config: any
 ): Promise<void> {
   const scope = scope_ as BrowserRuntimeScope;
-  const [svc] = scope.findServiceInstance(uuid);
+  const [svc] = scope.findServiceInstance(service.uuid);
   if (svc) {
     return svc.configure(config);
   }
@@ -118,10 +120,11 @@ export async function configureService(
 
 export async function getServiceConfig(
   scope_: RuntimeScope,
-  uuid: string
+  runtime: RuntimeDescriptor,
+  service: InstanceId
 ): Promise<any> {
   const scope = scope_ as BrowserRuntimeScope;
-  const [svc] = scope.findServiceInstance(uuid);
+  const [svc] = scope.findServiceInstance(service.uuid);
   const config = svc ? filterPrivateMembers(svc) : {};
   return config;
 }

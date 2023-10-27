@@ -25,8 +25,9 @@ export default class ServiceUI extends Component {
 
   componentWillUnmount() {
     const { service } = this.props;
-    service.__notificationTargets.unregister(getNotificationID(service));
-
+    if (service && service.__notificationTargets) {
+      service.__notificationTargets.unregister(getNotificationID(service));
+    }
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;

@@ -1,4 +1,10 @@
-import { AppImpl, InstanceId, RuntimeScope, ServiceImpl } from "../../types";
+import {
+  AppImpl,
+  InstanceId,
+  RuntimeScope,
+  ServiceDescriptor,
+  ServiceImpl,
+} from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 
@@ -48,7 +54,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     this.serviceInstances.push(svc);
   };
 
-  removeService = async (service: ServiceImpl) => {
+  removeService = async (
+    service: ServiceImpl
+  ): Promise<Array<ServiceDescriptor>> => {
     const subservices = Object.keys(this.subservices).reduce<ServiceImpl[]>(
       (all, ssvcUuid) => {
         const ssvc = this.subservices[ssvcUuid];
@@ -57,8 +65,23 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       []
     );
 
-    await Promise.all(subservices.map((ssvc) => ssvc.destroy()));
-    service.destroy();
+    if (subservices.length > 0) {
+      await Promise.all(
+        subservices.map(async (ssvc) => ssvc.destroy && ssvc.destroy())
+      );
+    }
+
+    if (service.destroy) {
+      await service.destroy();
+    }
+
+    return this.serviceInstances.map(
+      ({ uuid, serviceId = "", serviceName = "" }) => ({
+        uuid,
+        serviceId,
+        serviceName,
+      })
+    );
   };
 
   removeSubservices = async () => {

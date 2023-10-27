@@ -31,6 +31,7 @@ export type OnResult = (
 ) => Promise<void>;
 
 export interface RuntimeScope {
+  runtimeId: string;
   getApp(): AppImpl;
   // boardName: string; --> Remove the board name from the services and move it to AppImpl
   onResult: OnResult;
@@ -136,7 +137,6 @@ const actionTypes = [
   "createBoardLink",
   "update-peers",
   "flow-changed",
-  "loadBoard",
   "update-peers",
   "flow-changed",
 ] as const;
@@ -218,17 +218,22 @@ export type RuntimeApi = {
 
   removeService: (
     scope: RuntimeScope,
-    service: InstanceId,
-    runtime: RuntimeDescriptor
-  ) => Promise<boolean>;
+    runtime: RuntimeDescriptor,
+    service: InstanceId
+  ) => Promise<Array<ServiceDescriptor> | null>;
 
   configureService: (
     scope: RuntimeScope,
-    instanceId: string,
+    runtime: RuntimeDescriptor,
+    service: InstanceId,
     config: any
-  ) => Promise<void>;
+  ) => Promise<any>;
 
-  getServiceConfig: (scope_: RuntimeScope, uuid: string) => Promise<any>;
+  getServiceConfig: (
+    scope: RuntimeScope,
+    runtime: RuntimeDescriptor,
+    service: InstanceId
+  ) => Promise<any>;
 
   processService: (
     scope: RuntimeScope,

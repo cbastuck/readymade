@@ -1,12 +1,9 @@
-import { ReactElement, useRef } from "react";
+import { ReactElement } from "react";
 
 import {
-  AppImpl,
   RuntimeDescriptor,
-  RuntimeImpl,
   ServiceAction,
   ServiceDescriptor,
-  InstanceId,
   ServiceImpl,
   RuntimeScope,
 } from "../../types";
@@ -22,7 +19,6 @@ type Props = {
   readonly: boolean;
   children?: JSX.Element | JSX.Element[];
   scope: RuntimeScope;
-  // onRef: (i: RuntimeImpl) => void;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
 };
@@ -34,20 +30,9 @@ export default function RemoteRuntime({
   runtime,
   readonly,
   scope,
-  //onRef,
   onArrangeService,
   onServiceAction,
 }: Props) {
-  const impl = useRef<RuntimeImpl>({
-    getServiceById: (uuid: string): ServiceImpl | null => null,
-    processRuntime: async (params: any, svc: InstanceId | null) => {},
-    destroyService: async (svcUuid: string) => {},
-    configureService: async (uuid: string, config: any) => {},
-    destroyRuntime: async () => {},
-  });
-
-  //onRef(impl.current);
-
   const servicesWithImpl: Array<ServiceImpl> = scope
     ? services.map((svc: ServiceDescriptor) => ({
         ...svc,

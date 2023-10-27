@@ -1,4 +1,5 @@
 import {
+  InstanceId,
   RuntimeClass,
   RuntimeDescriptor,
   ServiceClass,
@@ -122,7 +123,7 @@ export async function createRuntimeService(
   const payload = `query addRuntimeService {
     runtimeById(runtimeId: "${runtime.id}") {
       createService(
-        input: { uri: "${service.serviceId}", serviceName: "${service.serviceName}" }
+        input: { serviceId: "${service.serviceId}", serviceName: "${service.serviceName}" }
       ) { 
         instanceId
         serviceName
@@ -141,4 +142,48 @@ export async function createRuntimeService(
   }
   const { instanceId, ...svc } = createServiceResult;
   return { ...svc, uuid: createServiceResult.instanceId };
+}
+
+export async function removeRuntimeService(
+  runtime: RuntimeDescriptor,
+  service: InstanceId
+): Promise<Array<ServiceDescriptor> | null> {
+  const url = `${runtime.url}/query`;
+  const payload = `query removeRuntimeService {
+    runtimeById(runtimeId: "${runtime.id}") {
+      removeService(
+        input: { instanceId: "${service.uuid}" }
+      ) { 
+          instanceId
+          serviceId
+          serviceName
+      }
+    }
+  }`;
+  const result = await processQuery(url, payload);
+  if (!result) {
+    return null;
+  }
+  return result.data?.runtimeById?.removeService;
+}
+
+export async function getRuntimeServiceConfig(
+  runtime: RuntimeDescriptor,
+  service: InstanceId
+): Promise<any | null> {
+  const url = `${runtime.url}/query`;
+  const payload = `query getServiceConfig {
+    runtimeById(runtimeId: "${runtime.id}") {
+      serviceById(serviceId: "${service.uuid}") {
+        config
+      }
+    }
+  }`;
+  const result = await processQuery(url, payload);
+  if (!result) {
+    return null;
+  }
+
+  const config = result.data?.runtimeById?.serviceById?.config;
+  return config ? JSON.parse(config) : null;
 }

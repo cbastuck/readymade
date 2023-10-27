@@ -8,7 +8,8 @@ export function isSomeObject(x) {
 
 export function isFunction(functionToCheck) {
   return (
-    functionToCheck && {}.toString.call(functionToCheck) === "[object Function]"
+    // functionToCheck && {}.toString.call(functionToCheck) === "[object Function]"
+    typeof functionToCheck === "function"
   );
 }
 

@@ -133,14 +133,20 @@ class Playground extends Component<Props, State> {
     const board = this.props.match?.params?.board;
     const prevBoard = prevProps.match?.params?.board;
     if (board !== prevBoard && board) {
-      this.boardProviderRef?.clearBoard().then(() =>
-        this.setState({
-          boardName: board,
-          initialFetched: false,
-        })
-      );
+      this.onBoardChanged(board);
     }
   }
+
+  onBoardChanged = async (board: string) => {
+    await this.boardProviderRef?.clearBoard();
+    this.setState(
+      {
+        boardName: board,
+        initialFetched: false,
+      },
+      this.boardProviderRef?.fetchBoard
+    );
+  };
 
   fetchBoard = async (): Promise<BoardDescriptor> => {
     if (this.state.initialFetched) {
@@ -148,6 +154,7 @@ class Playground extends Component<Props, State> {
     }
 
     const initialBord = await this.getInitialPlayground();
+
     if (!initialBord) {
       return this.boardProviderRef!.state;
     }
