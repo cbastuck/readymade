@@ -26,6 +26,7 @@ export default function BoardActionsBar({ boardContext }: Props) {
         });
     }
   };
+
   const isSaveEnabled = boardContext.isActionAvailable({ type: "saveBoard" });
   const isCodeEnabled = boardContext.isActionAvailable({
     type: "showBoardSource",
@@ -36,6 +37,10 @@ export default function BoardActionsBar({ boardContext }: Props) {
   const isClearEnabled = boardContext.isActionAvailable({
     type: "clearBoard",
   });
+
+  if (!isSaveEnabled && !isCodeEnabled && !isShareEnabled && !isClearEnabled) {
+    return null;
+  }
 
   return (
     <div

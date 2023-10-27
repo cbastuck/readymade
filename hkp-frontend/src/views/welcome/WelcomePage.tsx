@@ -1,11 +1,7 @@
 import UpdatesButton from "./UpdatesButton";
 import NavigateButton from "../NavigateButton";
 
-type Props = {
-  onNext: () => void;
-};
-
-export default function WelcomePage({ onNext }: Props) {
+export default function WelcomePage() {
   return (
     <div className="fade-in">
       <h1

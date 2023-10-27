@@ -174,7 +174,7 @@ export async function getRuntimeServiceConfig(
   const url = `${runtime.url}/query`;
   const payload = `query getServiceConfig {
     runtimeById(runtimeId: "${runtime.id}") {
-      serviceById(serviceId: "${service.uuid}") {
+      serviceById(instanceId: "${service.uuid}") {
         config
       }
     }

@@ -26,7 +26,7 @@ function Welcome({ children, location, pageStyle }: Props) {
   }
 
   return (
-    <BoardContext user={null}>
+    <BoardContext user={null} isActionAvailable={() => false}>
       <div>
         <BackgroundImage />
         <Toolbar />
