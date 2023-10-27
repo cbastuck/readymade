@@ -470,6 +470,7 @@ export default class Runtime extends Component<Props, State> {
   */
 
   renderRemoteRuntime = (
+    scope: RuntimeScope,
     runtime: RuntimeDescriptor,
     expanded: boolean,
     userId: string,
@@ -491,7 +492,8 @@ export default class Runtime extends Component<Props, State> {
           }}
         >
           <RemoteRuntime
-            onRef={(impl) => (this.impl = impl)}
+            // onRef={(impl) => (this.impl = impl)}
+            scope={scope}
             userId={userId}
             boardName={boardName}
             runtime={runtime}
@@ -719,6 +721,7 @@ export default class Runtime extends Component<Props, State> {
             {
               runtime && runtime.type === "remote"
                 ? this.renderRemoteRuntime(
+                    scope,
                     runtime,
                     expanded,
                     userId,

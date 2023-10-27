@@ -8,6 +8,7 @@ import {
   ServiceDescriptor,
   InstanceId,
   ServiceImpl,
+  RuntimeScope,
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
@@ -20,7 +21,8 @@ type Props = {
   runtime: RuntimeDescriptor;
   readonly: boolean;
   children?: JSX.Element | JSX.Element[];
-  onRef: (i: RuntimeImpl) => void;
+  scope: RuntimeScope;
+  // onRef: (i: RuntimeImpl) => void;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
 };
@@ -31,7 +33,8 @@ export default function RemoteRuntime({
   services,
   runtime,
   readonly,
-  onRef,
+  scope,
+  //onRef,
   onArrangeService,
   onServiceAction,
 }: Props) {
@@ -43,39 +46,19 @@ export default function RemoteRuntime({
     destroyRuntime: async () => {},
   });
 
-  onRef(impl.current);
+  //onRef(impl.current);
 
-  const app: AppImpl = {
-    notify: (svc: ServiceImpl, notification: any): void => {},
-    next: (svc: InstanceId | null, result: any): void => {},
-    getServiceById: (uuid: string): ServiceImpl | null => {
-      return null;
-    },
-    sendAction: (action: ServiceAction): void => {},
-    storeServiceData: (
-      serviceUuid: string,
-      key: string,
-      value: string
-    ): void => {},
-    restoreServiceData: (serviceUuid: string, key: string): void => {},
-    removeServiceData: (serviceUuid: string, key: string): void => {},
-    createSubService: (
-      parent: ServiceImpl,
-      service: ServiceDescriptor
-    ): void => {},
-    createSubServiceUI: (svc: ServiceImpl): void => {},
-  };
+  const servicesWithImpl: Array<ServiceImpl> = scope
+    ? services.map((svc: ServiceDescriptor) => ({
+        ...svc,
+        board: boardName,
+        app: scope.getApp(),
+        process: async (params: any): Promise<any> => {},
+        configure: async (config: any): Promise<void> => {},
+        destroy: async (): Promise<void> => {},
+      }))
+    : [];
 
-  const servicesWithImpl: Array<ServiceImpl> = services.map(
-    (svc: ServiceDescriptor) => ({
-      ...svc,
-      board: boardName,
-      app,
-      process: async (params: any): Promise<any> => {},
-      configure: async (config: any): Promise<void> => {},
-      destroy: async (): Promise<void> => {},
-    })
-  );
   return (
     <ServiceUiContainer
       userId={userId}
