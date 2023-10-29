@@ -9,6 +9,7 @@ import ServiceUiContainer from "../ServiceUiContainer";
 
 import {
   AppImpl,
+  OnResult,
   RuntimeDescriptor,
   ServiceAction,
   ServiceDescriptor,
@@ -44,11 +45,7 @@ type Props = {
 
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
-  onResult: (
-    uuid: string | null,
-    result: any,
-    requestId: string | null
-  ) => Promise<void>;
+  onResult: OnResult;
 };
 
 type State = {

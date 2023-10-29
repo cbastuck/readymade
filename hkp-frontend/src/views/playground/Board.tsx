@@ -182,7 +182,7 @@ export default class Board extends Component<Props, State> {
         nextRuntime && this.props.boardContext.scopes[nextRuntime.id];
       if (nextScope) {
         const api = this.props.boardContext.runtimeApis[nextRuntime.type];
-        api.processRuntime(nextScope, result, null);
+        await api.processRuntime(nextScope, result, null);
       }
     }
 

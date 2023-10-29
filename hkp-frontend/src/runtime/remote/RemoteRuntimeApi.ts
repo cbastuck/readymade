@@ -5,6 +5,7 @@ import {
   removeRuntimeService,
   getRuntimeServiceConfig,
   configureService as configureService_gql,
+  processRuntime as processRuntime_gql,
 } from "./graphqlActions";
 import {
   InstanceId,
@@ -54,11 +55,13 @@ export async function processRuntime(
   params: any,
   svc: InstanceId | null
 ): Promise<any> {
-  throw new Error("RemoteRuntime processRuntime no implemented");
+  const result = await processRuntime_gql(scope.descriptor, params, svc);
+  // TODO: currently only JSON payloads are supported
+  const json = JSON.parse(result);
+  return await scope.onResult(null, json, null);
 }
 
 export async function addService(scope: RuntimeScope, service: ServiceClass) {
-  console.log("CREATE RUNTIME WITH DESC", scope.descriptor);
   const svc = await createRuntimeService(scope.descriptor, service);
   return svc;
 }

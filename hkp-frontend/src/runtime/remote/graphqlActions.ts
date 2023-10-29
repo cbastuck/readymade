@@ -210,3 +210,30 @@ export async function configureService(
     ? JSON.parse(result.data.runtimeById?.serviceById?.configure)
     : null;
 }
+
+export async function processRuntime(
+  runtime: RuntimeDescriptor,
+  params: any,
+  service: InstanceId | null
+) {
+  const url = `${runtime.url}/query`;
+  const serviceInput = service
+    ? `instanceId: "${service.uuid}"`
+    : "instanceId: null";
+  const payload = `query processRuntime {
+    runtimeById(runtimeId: "${runtime.id}") {
+      process(
+        input: { 
+          params: """${JSON.stringify(params)}""", 
+          ${serviceInput}
+        }
+      )
+    }
+  }`;
+  const result = await processQuery(url, payload);
+  if (!result) {
+    return null;
+  }
+
+  return result.data.runtimeById?.process;
+}

@@ -492,7 +492,6 @@ export default class Runtime extends Component<Props, State> {
           }}
         >
           <RemoteRuntime
-            // onRef={(impl) => (this.impl = impl)}
             scope={scope}
             userId={userId}
             boardName={boardName}
@@ -501,6 +500,7 @@ export default class Runtime extends Component<Props, State> {
             readonly={readonly}
             onArrangeService={onArrangeService}
             onServiceAction={this.onServiceAction}
+            onResult={this.props.onResult}
           />
           {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
         </div>

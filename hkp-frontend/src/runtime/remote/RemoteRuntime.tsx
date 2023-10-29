@@ -6,6 +6,7 @@ import {
   ServiceDescriptor,
   ServiceImpl,
   RuntimeScope,
+  OnResult,
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
@@ -23,6 +24,7 @@ type Props = {
   scope: RuntimeScope;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
+  onResult: OnResult;
 };
 
 export default function RemoteRuntime({
@@ -32,6 +34,7 @@ export default function RemoteRuntime({
   runtime,
   readonly,
   scope,
+  onResult,
   onArrangeService,
   onServiceAction,
 }: Props) {
@@ -48,6 +51,9 @@ export default function RemoteRuntime({
       }))
     : [];
 
+  if (scope && scope.onResult !== onResult) {
+    scope.onResult = onResult;
+  }
   return (
     <ServiceUiContainer
       userId={userId}
