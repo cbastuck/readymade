@@ -194,12 +194,10 @@ export async function configureService(
   config: any
 ) {
   const url = `${runtime.url}/query`;
-  const payload = `query getServiceConfig {
+  const payload = `query setServiceConfig {
     runtimeById(runtimeId: "${runtime.id}") {
       serviceById(instanceId: "${service.uuid}") {
-        configure("${JSON.stringify(config)}") {
-          config
-        }
+        configure(input: { config: """${JSON.stringify(config)}""" })
       }
     }
   }`;
@@ -209,6 +207,6 @@ export async function configureService(
   }
 
   return config
-    ? JSON.parse(result.runtimeById?.serviceById?.configure?.config)
+    ? JSON.parse(result.data.runtimeById?.serviceById?.configure)
     : null;
 }
