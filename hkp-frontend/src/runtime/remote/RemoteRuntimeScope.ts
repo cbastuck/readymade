@@ -3,7 +3,7 @@ import { createRemoteRuntimeApp } from "./RemoteRuntimeApp";
 
 export default class RemoteRuntimeScope implements RuntimeScope {
   app: AppImpl;
-  runtimeId: string;
+  runtimeId: string; // TODO: better keep the whole runtime descriptor - change API
 
   constructor(runtimeId: string) {
     this.app = createRemoteRuntimeApp(this);

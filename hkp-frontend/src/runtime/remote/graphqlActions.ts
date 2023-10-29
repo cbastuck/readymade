@@ -187,3 +187,28 @@ export async function getRuntimeServiceConfig(
   const config = result.data?.runtimeById?.serviceById?.config;
   return config ? JSON.parse(config) : null;
 }
+
+export async function configureService(
+  runtime: RuntimeDescriptor,
+  service: InstanceId,
+  config: any
+) {
+  const url = `${runtime.url}/query`;
+  const payload = `query getServiceConfig {
+    runtimeById(runtimeId: "${runtime.id}") {
+      serviceById(instanceId: "${service.uuid}") {
+        configure("${JSON.stringify(config)}") {
+          config
+        }
+      }
+    }
+  }`;
+  const result = await processQuery(url, payload);
+  if (!result) {
+    return null;
+  }
+
+  return config
+    ? JSON.parse(result.runtimeById?.serviceById?.configure?.config)
+    : null;
+}

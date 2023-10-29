@@ -4,6 +4,7 @@ import {
   createRuntimeService,
   removeRuntimeService,
   getRuntimeServiceConfig,
+  configureService as configureService_gql,
 } from "./graphqlActions";
 import {
   InstanceId,
@@ -75,10 +76,10 @@ export async function removeService(
 export async function configureService(
   scope: RuntimeScope,
   runtime: RuntimeDescriptor,
-  instance: InstanceId,
+  service: InstanceId,
   config: any
 ): Promise<void> {
-  throw new Error("RemoteRuntime configureService no implemented");
+  return await configureService_gql(runtime, service, config);
 }
 
 export async function getServiceConfig(
@@ -92,7 +93,8 @@ export async function getServiceConfig(
 
 export async function processService(
   scope: RuntimeScope,
-  uuid: string,
+  runtime: RuntimeDescriptor,
+  service: InstanceId,
   params: any,
   requestId: string | null
 ): Promise<any> {

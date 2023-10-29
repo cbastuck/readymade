@@ -131,11 +131,13 @@ export async function getServiceConfig(
 
 export async function processService(
   scope_: RuntimeScope,
-  uuid: string,
+  runtime: RuntimeDescriptor,
+  svc: InstanceId,
   params: any,
   requestId: string | null
 ) {
   const scope = scope_ as BrowserRuntimeScope;
+  const { uuid } = svc;
   const [service, position] = scope.findServiceInstance(uuid);
   if (position === -1) {
     return console.error(

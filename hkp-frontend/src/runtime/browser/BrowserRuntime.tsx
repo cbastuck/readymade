@@ -181,7 +181,8 @@ export default class BrowserRuntime extends Component<Props, State> {
       case "process":
         return processService(
           scope,
-          command.uuid,
+          runtime,
+          command,
           command.params,
           command.requestId
         );

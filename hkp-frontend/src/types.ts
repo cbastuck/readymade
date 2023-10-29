@@ -237,7 +237,8 @@ export type RuntimeApi = {
 
   processService: (
     scope: RuntimeScope,
-    uuid: string,
+    runtime: RuntimeDescriptor,
+    service: InstanceId,
     params: any,
     requestId: string | null
   ) => Promise<any>;

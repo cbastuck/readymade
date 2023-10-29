@@ -10,6 +10,8 @@ import {
 import ServiceUiContainer from "../ServiceUiContainer";
 
 import { createPlaceholderUI } from "../../UIFactory";
+import createServiceUI from "./UIRegistry";
+import { configureService, processService } from "./RemoteRuntimeApi";
 
 type Props = {
   userId: string;
@@ -38,8 +40,10 @@ export default function RemoteRuntime({
         ...svc,
         board: boardName,
         app: scope.getApp(),
-        process: async (params: any): Promise<any> => {},
-        configure: async (config: any): Promise<void> => {},
+        process: async (params: any): Promise<any> =>
+          processService(scope, runtime, svc, params, null), // TODO: passing null as requestId
+        configure: async (config: any): Promise<void> =>
+          configureService(scope, runtime, svc, config),
         destroy: async (): Promise<void> => {},
       }))
     : [];
@@ -64,5 +68,13 @@ const onCreateServiceUi = (
   runtimeId: string,
   userId: string
 ): ReactElement | null => {
-  return createPlaceholderUI(service);
+  const { serviceId } = service;
+  const props = {
+    service,
+    board: boardName,
+    runtimeId,
+    key: `key-${service.uuid}`,
+  };
+  const Ui = serviceId && createServiceUI(serviceId);
+  return Ui ? <Ui {...props} /> : createPlaceholderUI(service);
 };
