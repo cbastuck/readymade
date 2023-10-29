@@ -55,7 +55,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
         scope.registry!,
         "deprecated board name",
         svc,
-        scope.runtimeId,
+        scope.descriptor.id,
         "deprecated userId",
         {
           resizable: false,

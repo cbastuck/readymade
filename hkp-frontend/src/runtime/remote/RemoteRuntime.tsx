@@ -41,9 +41,9 @@ export default function RemoteRuntime({
         board: boardName,
         app: scope.getApp(),
         process: async (params: any): Promise<any> =>
-          processService(scope, runtime, svc, params, null), // TODO: passing null as requestId
+          processService(scope, svc, params, null), // TODO: passing null as requestId
         configure: async (config: any): Promise<void> =>
-          configureService(scope, runtime, svc, config),
+          configureService(scope, svc, config),
         destroy: async (): Promise<void> => {},
       }))
     : [];

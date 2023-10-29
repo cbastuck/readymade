@@ -160,7 +160,6 @@ export default class Board extends Component<Props, State> {
         if (dstScope && api) {
           await api.configureService(
             dstScope,
-            runtime,
             { uuid: route.serviceUuid },
             result
           );

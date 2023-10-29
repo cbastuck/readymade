@@ -27,7 +27,7 @@ export async function addRuntime(rtClass: RuntimeClass) {
     url,
   };
 
-  const scope = await createScope(runtimeId, rtClass.bundles);
+  const scope = await createScope(runtime, rtClass.bundles);
   return {
     runtime,
     services: [],
@@ -40,18 +40,14 @@ async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>
 ): Promise<RestoreRuntimeResult | null> {
-  const scope = await createScope(runtime.id, runtime.bundles);
+  const scope = await createScope(runtime, runtime.bundles);
   const createdServices: Array<ServiceImpl> = (
-    await Promise.all(
-      services.map((svc) => addService(scope, runtime, svc, svc.uuid))
-    )
+    await Promise.all(services.map((svc) => addService(scope, svc, svc.uuid)))
   ).filter((svc) => svc && scope.findServiceInstance(svc.uuid)) as any;
 
   const configuredServices = await Promise.all(
     createdServices.map((svc, idx) =>
-      configureService(scope, runtime, svc, services[idx]).then(
-        () => services[idx]
-      )
+      configureService(scope, svc, services[idx]).then(() => services[idx])
     )
   );
   return {
@@ -73,7 +69,6 @@ export function processRuntime(
 
 export async function addService(
   scope_: RuntimeScope,
-  rt: RuntimeDescriptor,
   service: ServiceClass,
   instanceId?: string
 ): Promise<ServiceDescriptor | null> {
@@ -88,7 +83,6 @@ export async function addService(
 
 export async function removeService(
   scope_: RuntimeScope,
-  runtime: RuntimeDescriptor,
   instance: InstanceId
 ): Promise<Array<ServiceDescriptor> | null> {
   const scope = scope_ as BrowserRuntimeScope;
@@ -107,7 +101,6 @@ export async function removeService(
 
 export async function configureService(
   scope_: RuntimeScope,
-  runtime: RuntimeDescriptor,
   service: InstanceId,
   config: any
 ): Promise<void> {
@@ -120,7 +113,6 @@ export async function configureService(
 
 export async function getServiceConfig(
   scope_: RuntimeScope,
-  runtime: RuntimeDescriptor,
   service: InstanceId
 ): Promise<any> {
   const scope = scope_ as BrowserRuntimeScope;
@@ -131,7 +123,6 @@ export async function getServiceConfig(
 
 export async function processService(
   scope_: RuntimeScope,
-  runtime: RuntimeDescriptor,
   svc: InstanceId,
   params: any,
   requestId: string | null
@@ -179,11 +170,11 @@ export async function appendSubservice(
 }
 
 async function createScope(
-  runtimeId: string,
+  runtime: RuntimeDescriptor,
   bundles?: Bundles
 ): Promise<BrowserRuntimeScope> {
   const registry = await BrowserRegistry.create(bundles);
-  return new BrowserRuntimeScope(runtimeId, registry);
+  return new BrowserRuntimeScope(runtime, registry);
 }
 
 function createService(

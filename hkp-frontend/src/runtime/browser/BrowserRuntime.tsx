@@ -169,25 +169,19 @@ export default class BrowserRuntime extends Component<Props, State> {
   }
 
   onMessage(command: Command) {
-    const { runtime, scope } = this.props;
+    const { scope } = this.props;
     switch (command.action) {
       case "config":
-        return configureService(
-          scope,
-          runtime,
-          { uuid: command.uuid },
-          command.config
-        );
+        return configureService(scope, { uuid: command.uuid }, command.config);
       case "process":
         return processService(
           scope,
-          runtime,
           command,
           command.params,
           command.requestId
         );
       case "destroy":
-        return removeService(scope, runtime, command);
+        return removeService(scope, command);
       case "ping":
         return;
       default:
@@ -247,7 +241,7 @@ export default class BrowserRuntime extends Component<Props, State> {
   };
 
   destroyRuntime = async () => {
-    const { services = [], scope, runtime } = this.props;
+    const { services = [], scope } = this.props;
 
     if (this.eventSource) {
       this.eventSource.close();
@@ -259,7 +253,7 @@ export default class BrowserRuntime extends Component<Props, State> {
     }
 
     for (const service of services) {
-      await removeService(scope, runtime, service);
+      await removeService(scope, service);
     }
   };
 

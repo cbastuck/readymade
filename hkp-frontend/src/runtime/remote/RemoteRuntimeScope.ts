@@ -1,13 +1,13 @@
-import { AppImpl, RuntimeScope } from "../../types";
+import { AppImpl, RuntimeDescriptor, RuntimeScope } from "../../types";
 import { createRemoteRuntimeApp } from "./RemoteRuntimeApp";
 
 export default class RemoteRuntimeScope implements RuntimeScope {
   app: AppImpl;
-  runtimeId: string; // TODO: better keep the whole runtime descriptor - change API
+  descriptor: RuntimeDescriptor; // TODO: better keep the whole runtime descriptor - change API
 
-  constructor(runtimeId: string) {
+  constructor(runtime: RuntimeDescriptor) {
     this.app = createRemoteRuntimeApp(this);
-    this.runtimeId = runtimeId;
+    this.descriptor = runtime;
   }
 
   getApp = (): AppImpl => {

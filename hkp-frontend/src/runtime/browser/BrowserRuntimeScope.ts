@@ -1,6 +1,7 @@
 import {
   AppImpl,
   InstanceId,
+  RuntimeDescriptor,
   RuntimeScope,
   ServiceDescriptor,
   ServiceImpl,
@@ -11,7 +12,7 @@ import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 export type InstanceIndexTuple = [ServiceImpl | null, number];
 
 export default class BrowserRuntimeScope implements RuntimeScope {
-  runtimeId: string;
+  descriptor: RuntimeDescriptor;
   serviceInstances: Array<ServiceImpl>;
   subservices: {
     [uuid: string]: { service: ServiceImpl; parent: ServiceImpl };
@@ -19,8 +20,8 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   app: AppImpl;
   registry: BrowserRegistry;
 
-  constructor(runtimeId: string, registry: BrowserRegistry) {
-    this.runtimeId = runtimeId;
+  constructor(runtime: RuntimeDescriptor, registry: BrowserRegistry) {
+    this.descriptor = runtime;
     this.registry = registry;
     this.serviceInstances = [];
     this.subservices = {};

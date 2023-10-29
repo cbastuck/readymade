@@ -23,7 +23,7 @@ export async function addRuntime(rtClass: RuntimeClass) {
     return null;
   }
 
-  const scope = createScope(desc.id);
+  const scope = createScope(desc);
   const { registry, ...runtime } = desc;
   return {
     runtime: { ...rtClass, ...runtime },
@@ -40,7 +40,7 @@ export async function restoreRuntime(
   const result = await restoreRuntime_gql(rt, services);
   const restoredRuntime = result.data?.restoreRuntime;
 
-  const scope = createScope(rt.id);
+  const scope = createScope(rt);
   if (rt.id !== restoredRuntime.id) {
     return null;
   }
@@ -56,44 +56,36 @@ export async function processRuntime(
   throw new Error("RemoteRuntime processRuntime no implemented");
 }
 
-export async function addService(
-  scope_: RuntimeScope,
-  runtime: RuntimeDescriptor,
-  service: ServiceClass
-) {
-  const svc = await createRuntimeService(runtime, service);
+export async function addService(scope: RuntimeScope, service: ServiceClass) {
+  const svc = await createRuntimeService(scope.descriptor, service);
   return svc;
 }
 
 export async function removeService(
   scope: RuntimeScope,
-  runtime: RuntimeDescriptor,
   service: InstanceId
 ): Promise<Array<ServiceDescriptor> | null> {
-  return await removeRuntimeService(runtime, service);
+  return await removeRuntimeService(scope.descriptor, service);
 }
 
 export async function configureService(
   scope: RuntimeScope,
-  runtime: RuntimeDescriptor,
   service: InstanceId,
   config: any
 ): Promise<void> {
-  return await configureService_gql(runtime, service, config);
+  return await configureService_gql(scope.descriptor, service, config);
 }
 
 export async function getServiceConfig(
   scope: RuntimeScope,
-  runtime: RuntimeDescriptor,
   service: InstanceId
 ): Promise<any> {
-  const config = await getRuntimeServiceConfig(runtime, service);
+  const config = await getRuntimeServiceConfig(scope.descriptor, service);
   return config;
 }
 
 export async function processService(
   scope: RuntimeScope,
-  runtime: RuntimeDescriptor,
   service: InstanceId,
   params: any,
   requestId: string | null
@@ -114,6 +106,6 @@ const api: RuntimeApi = {
 
 export default api;
 
-function createScope(runtimeId: string): RemoteRuntimeScope {
-  return new RemoteRuntimeScope(runtimeId);
+function createScope(runtime: RuntimeDescriptor): RemoteRuntimeScope {
+  return new RemoteRuntimeScope(runtime);
 }

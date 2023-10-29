@@ -31,7 +31,7 @@ export type OnResult = (
 ) => Promise<void>;
 
 export interface RuntimeScope {
-  runtimeId: string;
+  descriptor: RuntimeDescriptor;
   getApp(): AppImpl;
   // boardName: string; --> Remove the board name from the services and move it to AppImpl
   onResult: OnResult;
@@ -212,32 +212,24 @@ export type RuntimeApi = {
 
   addService: (
     scope: RuntimeScope,
-    runtime: RuntimeDescriptor,
     service: ServiceClass
   ) => Promise<ServiceDescriptor | null>;
 
   removeService: (
     scope: RuntimeScope,
-    runtime: RuntimeDescriptor,
     service: InstanceId
   ) => Promise<Array<ServiceDescriptor> | null>;
 
   configureService: (
     scope: RuntimeScope,
-    runtime: RuntimeDescriptor,
     service: InstanceId,
     config: any
   ) => Promise<any>;
 
-  getServiceConfig: (
-    scope: RuntimeScope,
-    runtime: RuntimeDescriptor,
-    service: InstanceId
-  ) => Promise<any>;
+  getServiceConfig: (scope: RuntimeScope, service: InstanceId) => Promise<any>;
 
   processService: (
     scope: RuntimeScope,
-    runtime: RuntimeDescriptor,
     service: InstanceId,
     params: any,
     requestId: string | null
