@@ -185,9 +185,9 @@ function createService(
   const module = scope.registry.findServiceModule(service.serviceId);
   if (!module) {
     console.error(
-      `Could not create service: ${
-        service.serviceId
-      } in scope: ${JSON.stringify(scope)}`
+      `Could not create service: ${JSON.stringify(
+        service
+      )} in scope: ${JSON.stringify(scope)}`
     );
     return null;
   }

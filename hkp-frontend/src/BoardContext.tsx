@@ -306,7 +306,7 @@ class BoardContext extends Component<Props, BoardContextState> {
         `BoardContext.addService() runtime api is missing: ${runtime.type}`
       );
     }
-    const svc = await api.addService(scope, runtime, service);
+    const svc = await api.addService(scope, service);
     if (svc) {
       this.setState((state: BoardContextState) => ({
         services: {
@@ -325,7 +325,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       );
     }
 
-    await api.removeService(scope, runtime, service);
+    await api.removeService(scope, service);
 
     this.setState((state) => ({
       services: {
@@ -444,9 +444,7 @@ class BoardContext extends Component<Props, BoardContextState> {
         const serviceConfigs = await Promise.all(
           runtimeServices.map(async (svc) => {
             const config =
-              api && scope
-                ? await api.getServiceConfig(scope, runtime, svc)
-                : {};
+              api && scope ? await api.getServiceConfig(scope, svc) : {};
             return {
               uuid: svc.uuid,
               serviceId: svc.serviceId,
