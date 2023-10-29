@@ -23,10 +23,11 @@ export async function addRuntime(rtClass: RuntimeClass) {
     return null;
   }
 
-  const scope = createScope(desc);
-  const { registry, ...runtime } = desc;
+  const { registry, ...rest } = desc;
+  const runtime = { ...rtClass, ...rest };
+  const scope = createScope(runtime);
   return {
-    runtime: { ...rtClass, ...runtime },
+    runtime,
     services: [],
     registry,
     scope,
@@ -57,6 +58,7 @@ export async function processRuntime(
 }
 
 export async function addService(scope: RuntimeScope, service: ServiceClass) {
+  console.log("CREATE RUNTIME WITH DESC", scope.descriptor);
   const svc = await createRuntimeService(scope.descriptor, service);
   return svc;
 }

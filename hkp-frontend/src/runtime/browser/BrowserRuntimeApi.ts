@@ -226,7 +226,6 @@ const api: RuntimeApi = {
   addRuntime,
   restoreRuntime,
   processRuntime,
-
   addService,
   removeService,
   configureService,
