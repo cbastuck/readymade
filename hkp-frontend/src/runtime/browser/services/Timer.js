@@ -124,6 +124,9 @@ export class TimerUI extends Component {
           service.configure({
             periodic: false,
             start: true,
+            command: {
+              action: "start",
+            },
           })
         }
       >

@@ -6,6 +6,7 @@ import {
   getRuntimeServiceConfig,
   configureService as configureService_gql,
   processRuntime as processRuntime_gql,
+  getRuntimeOutputUrl,
 } from "./graphqlActions";
 import {
   InstanceId,
@@ -26,7 +27,7 @@ export async function addRuntime(rtClass: RuntimeClass) {
 
   const { registry, ...rest } = desc;
   const runtime = { ...rtClass, ...rest };
-  const scope = createScope(runtime);
+  const scope = await createScope(runtime);
   return {
     runtime,
     services: [],
@@ -42,7 +43,7 @@ export async function restoreRuntime(
   const result = await restoreRuntime_gql(rt, services);
   const restoredRuntime = result.data?.restoreRuntime;
 
-  const scope = createScope(rt);
+  const scope = await createScope(rt);
   if (rt.id !== restoredRuntime.id) {
     return null;
   }
@@ -55,10 +56,13 @@ export async function processRuntime(
   params: any,
   svc: InstanceId | null
 ): Promise<any> {
-  const result = await processRuntime_gql(scope.descriptor, params, svc);
-  // TODO: currently only JSON payloads are supported
-  const json = JSON.parse(result);
-  return await scope.onResult(null, json, null);
+  const res = processRuntime_gql(scope.descriptor, params, svc);
+  console.log("Remote Runtime process result", await res);
+
+  // TODO: We don't return the result from the handler
+  // instead onResult needs to be invoked from a websocket handler
+  // const json = JSON.parse(result);
+  //return await scope.onResult(null, json, null);
 }
 
 export async function addService(scope: RuntimeScope, service: ServiceClass) {
@@ -111,6 +115,9 @@ const api: RuntimeApi = {
 
 export default api;
 
-function createScope(runtime: RuntimeDescriptor): RemoteRuntimeScope {
-  return new RemoteRuntimeScope(runtime);
+async function createScope(
+  runtime: RuntimeDescriptor
+): Promise<RemoteRuntimeScope> {
+  const outputUrl = await getRuntimeOutputUrl(runtime);
+  return new RemoteRuntimeScope(runtime, outputUrl);
 }

@@ -227,7 +227,7 @@ export async function processRuntime(
           params: """${JSON.stringify(params)}""", 
           ${serviceInput}
         }
-      )
+      ) { id }
     }
   }`;
   const result = await processQuery(url, payload);
@@ -236,4 +236,19 @@ export async function processRuntime(
   }
 
   return result.data.runtimeById?.process;
+}
+
+export async function getRuntimeOutputUrl(runtime: RuntimeDescriptor) {
+  const url = `${runtime.url}/query`;
+  const payload = `query getRuntimeOutputUrl {
+    runtimeById(runtimeId: "${runtime.id}") {
+      outputUrl
+    }
+  }`;
+  const result = await processQuery(url, payload);
+  if (!result) {
+    return null;
+  }
+
+  return result.data?.runtimeById?.outputUrl;
 }

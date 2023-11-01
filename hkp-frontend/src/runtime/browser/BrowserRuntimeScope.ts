@@ -132,7 +132,6 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       }
     }
 
-    await this.onResult(svc ? svc.uuid : null, result, requestId);
-    return result;
+    this.onResult(svc ? svc.uuid : null, result, requestId);
   };
 }
