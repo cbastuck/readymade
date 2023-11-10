@@ -16,7 +16,9 @@ export default class ServiceUI extends Component {
   constructor(props) {
     super(props);
     const { service, initialSegment } = props;
-    service.__notificationTargets = new Notifications();
+    if (service) {
+      service.__notificationTargets = new Notifications();
+    }
 
     if (initialSegment) {
       this.state.currentSegmentName = initialSegment(service);

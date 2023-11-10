@@ -197,7 +197,7 @@ export async function configureService(
   const payload = `query setServiceConfig {
     runtimeById(runtimeId: "${runtime.id}") {
       serviceById(instanceId: "${service.uuid}") {
-        configure(input: { config: """${JSON.stringify(config)}""" })
+        configure(input: { config: ${JSON.stringify(config)} })
       }
     }
   }`;
@@ -206,9 +206,8 @@ export async function configureService(
     return null;
   }
 
-  return config
-    ? JSON.parse(result.data.runtimeById?.serviceById?.configure)
-    : null;
+  const resultConfig = result.data.runtimeById?.serviceById?.configure;
+  return resultConfig ? JSON.parse(resultConfig) : null;
 }
 
 export async function processRuntime(
@@ -224,7 +223,7 @@ export async function processRuntime(
     runtimeById(runtimeId: "${runtime.id}") {
       process(
         input: { 
-          params: """${JSON.stringify(params)}""", 
+          params: ${JSON.stringify(params)}, 
           ${serviceInput}
         }
       ) { id }

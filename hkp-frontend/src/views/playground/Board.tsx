@@ -155,8 +155,13 @@ export default class Board extends Component<Props, State> {
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
     if (sroute) {
       for (const route of sroute) {
-        const dstScope = this.props.boardContext.scopes[route.runtimeId];
-        const api = this.props.boardContext.runtimeApis[runtime.type];
+        const dstRuntime = this.props.boardContext.runtimes.find(
+          (rt) => rt.id === route.runtimeId
+        );
+        const dstScope =
+          dstRuntime && this.props.boardContext.scopes[dstRuntime.id];
+        const api =
+          dstScope && this.props.boardContext.runtimeApis[dstRuntime.type];
         if (dstScope && api) {
           await api.configureService(
             dstScope,

@@ -10,7 +10,7 @@ import {
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
-import { createPlaceholderUI } from "../../UIFactory";
+import GenericServiceUI from "./GenericServiceUI";
 import createServiceUI from "./UIRegistry";
 import { configureService, processService } from "./RemoteRuntimeApi";
 
@@ -75,12 +75,18 @@ const onCreateServiceUi = (
   userId: string
 ): ReactElement | null => {
   const { serviceId } = service;
-  const props = {
-    service,
-    board: boardName,
-    runtimeId,
-    key: `key-${service.uuid}`,
-  };
+
   const Ui = serviceId && createServiceUI(serviceId);
-  return Ui ? <Ui {...props} /> : createPlaceholderUI(service);
+  return Ui ? (
+    <Ui
+      {...{
+        service,
+        board: boardName,
+        runtimeId,
+        key: `key-${service.uuid}`,
+      }}
+    />
+  ) : (
+    <GenericServiceUI service={service} />
+  );
 };

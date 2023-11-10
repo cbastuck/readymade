@@ -56,7 +56,7 @@ export default class ServiceFrame extends Component<Props, State> {
   }
 
   renderServiceName = (name: string) => {
-    const { draggable = true } = this.props;
+    const { draggable = true, service } = this.props;
     return (
       <div
         style={{
@@ -85,6 +85,7 @@ export default class ServiceFrame extends Component<Props, State> {
               textTransform: "uppercase",
               whiteSpace: "nowrap",
             }}
+            title={service.uuid}
           >
             {name}
           </span>

@@ -125,7 +125,8 @@ export default class OutputOptions extends Component<Props, State> {
           opacity: expanded ? 1 : 0,
           width: expanded ? 300 : 0,
           transition: "width 0.5s, opacity 0.5s",
-          overflow: "hidden",
+          overflowX: "hidden",
+          overflowY: "auto",
         }}
       >
         {this.renderFlowOptions()}

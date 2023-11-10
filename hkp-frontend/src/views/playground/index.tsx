@@ -283,7 +283,10 @@ class Playground extends Component<Props, State> {
       ...descriptor,
       sidechainRouting,
       outputRouting: Object.keys(outputRouting).reduce(
-        (acc, cur) => ({ ...acc, [cur]: outputRouting[cur]?.route || null }),
+        (acc, cur) => ({
+          ...acc,
+          [cur]: { route: outputRouting[cur]?.route || null },
+        }),
         {}
       ),
       inputRouting: Object.keys(inputRouting).reduce(
@@ -550,22 +553,28 @@ class Playground extends Component<Props, State> {
                       onChangeOutputRouting={(runtime, routing) => {
                         const { hostDescriptor, route } = routing;
                         const { peer, flow } = route;
-                        this.setState({
-                          outputRouting: {
-                            ...this.state.outputRouting,
-                            [runtime.id]: {
-                              hostDescriptor: hostDescriptor || null,
-                              route: {
-                                peer:
-                                  peer ||
-                                  this.state.outputRouting[runtime.id]?.route
-                                    .peer ||
-                                  null,
-                                flow,
+
+                        this.setState(
+                          {
+                            outputRouting: {
+                              ...this.state.outputRouting,
+                              [runtime.id]: {
+                                hostDescriptor: hostDescriptor || null,
+                                route: {
+                                  peer:
+                                    peer ||
+                                    this.state.outputRouting[runtime.id]?.route
+                                      ?.peer ||
+                                    null,
+                                  flow,
+                                },
                               },
                             },
                           },
-                        });
+                          () => {
+                            console.log("...", this.state.outputRouting);
+                          }
+                        );
                       }}
                     />
                   </>
