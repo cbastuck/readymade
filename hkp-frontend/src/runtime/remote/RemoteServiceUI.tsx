@@ -18,7 +18,7 @@ export default function GenericServiceUI({ service }: Props) {
           const t = typeof val;
           return (
             <InputField
-              key={`PlaceholderUI-${service.uuid}.${prop}`}
+              key={`RemoteSerivceUI-${service.uuid}.${prop}`}
               label={prop}
               labelStyle={{ textTransform: "none" }}
               value={val}
@@ -26,7 +26,6 @@ export default function GenericServiceUI({ service }: Props) {
                 service.configure({ [prop]: value });
               }}
               type={t === "string" ? "text" : (t as any)}
-              disabled={true}
             />
           );
         })}
@@ -61,7 +60,7 @@ function extractProperties(service: any) {
       return t === "string"
         ? {
             ...all,
-            [key]: t,
+            [key]: val,
           }
         : all;
     }, {});

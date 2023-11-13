@@ -1,13 +1,5 @@
 import { Component, ReactElement } from "react";
-import {
-  Icon,
-  Sidebar,
-  Segment,
-  Menu,
-  Input,
-  Button,
-  SemanticICONS,
-} from "semantic-ui-react";
+import { Icon, Sidebar, Segment, Menu, SemanticICONS } from "semantic-ui-react";
 
 import { getServiceConfiguration } from "../core/actions";
 //import NodeRuntime from "../runtime/NodeRuntime";
@@ -30,6 +22,8 @@ import {
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 import BrowserRuntimeScope from "../runtime/browser/BrowserRuntimeScope";
+import RenameRuntimeAccessory from "./RenameRuntimeAccessory";
+import ProcessRuntimeAccessory from "./ProcessRuntimeAccessory";
 
 type Props = {
   boardContext: BoardContextState;
@@ -58,7 +52,6 @@ type Props = {
 };
 
 type State = {
-  runtimeNameEditBuffer: string;
   readonly: boolean;
   showSettings: boolean;
   expanded: boolean;
@@ -71,7 +64,6 @@ export default class Runtime extends Component<Props, State> {
     showSettings: false,
     expanded: false,
     wrapServices: undefined,
-    runtimeNameEditBuffer: "",
   };
 
   impl: RuntimeImpl | null = null;
@@ -85,7 +77,6 @@ export default class Runtime extends Component<Props, State> {
       wrapServices: initialState.wrapServices,
       expanded:
         expanded !== undefined ? expanded : initialState.minimized !== true,
-      runtimeNameEditBuffer: "",
       showSettings: false,
       ...initialState,
     });
@@ -140,6 +131,7 @@ export default class Runtime extends Component<Props, State> {
     );
   };
 
+  // TODO: NOBODY SHOULD CALL THIS ANYMORE
   processRuntime = (
     params: any,
     svc: InstanceId | null = null
@@ -224,7 +216,7 @@ export default class Runtime extends Component<Props, State> {
     isOwner: boolean,
     appViewMode: AppViewMode
   ) {
-    const { expanded, showSettings, runtimeNameEditBuffer = "" } = this.state;
+    const { expanded, showSettings } = this.state;
 
     return (
       <div
@@ -258,69 +250,38 @@ export default class Runtime extends Component<Props, State> {
               letterSpacing: 1,
               textTransform: "uppercase",
               marginTop: 10,
+              display: "flex",
+              flexDirection: "row",
+              width: "100%",
             } as any
           }
-          onDoubleClick={() =>
-            !runtimeNameEditBuffer && this.setState({ expanded: !expanded })
-          }
-          onClick={() =>
-            !runtimeNameEditBuffer &&
-            this.setState({ runtimeNameEditBuffer: name })
-          }
         >
-          {runtimeNameEditBuffer ? (
-            <div
-              style={{ display: "flex", flexDirection: "row", marginTop: -5 }}
-            >
-              <Input
-                ref={(elem) => elem && elem.focus()}
-                value={runtimeNameEditBuffer}
-                onChange={(ev, { value: runtimeNameEditBuffer }) =>
-                  this.setState({ runtimeNameEditBuffer })
+          <RenameRuntimeAccessory
+            name={name}
+            runtimeId={runtimeId}
+            onChangeName={(newName) =>
+              this.props.boardContext.setRuntimeName(runtimeId, newName)
+            }
+          />
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "row",
+              width: "100%",
+              marginLeft: 10,
+            }}
+          >
+            <ProcessRuntimeAccessory
+              onProcess={() => {
+                const rt = this.props.runtime;
+                const scope = this.props.boardContext.scopes[rt.id];
+                const api = this.props.boardContext.runtimeApis[rt.type];
+                if (scope && api) {
+                  api.processRuntime(scope, null, null);
                 }
-                onKeyUp={(ev: KeyboardEvent) => {
-                  if (ev.key === "Enter") {
-                    this.props.boardContext.setRuntimeName(
-                      runtimeId,
-                      runtimeNameEditBuffer
-                    );
-                    this.setState({ runtimeNameEditBuffer: "" });
-                  } else if (ev.key === "Escape") {
-                    this.setState({ runtimeNameEditBuffer: "" });
-                  }
-                }}
-              />
-              <Button
-                compact
-                style={{ width: 30, marginLeft: 3 }}
-                onClick={() => this.setState({ runtimeNameEditBuffer: "" })}
-                icon="close"
-              />
-              <Button
-                compact
-                style={{ width: 30 }}
-                disabled={runtimeNameEditBuffer === name}
-                onClick={() => {
-                  this.props.boardContext.setRuntimeName(
-                    runtimeId,
-                    runtimeNameEditBuffer
-                  );
-                  this.setState({ runtimeNameEditBuffer: "" });
-                }}
-                icon="check"
-              />
-            </div>
-          ) : (
-            <div style={{ cursor: "pointer" }} title={runtimeId}>
-              {name}
-              <Icon
-                style={s(t.m(5, 0))}
-                name="pencil"
-                color="grey"
-                size="small"
-              />
-            </div>
-          )}
+              }}
+            />
+          </div>
         </div>
         <div
           style={{

@@ -191,13 +191,14 @@ export async function getRuntimeServiceConfig(
 export async function configureService(
   runtime: RuntimeDescriptor,
   service: InstanceId,
-  config: any
+  config: object
 ) {
   const url = `${runtime.url}/query`;
+  const stringifiedConfig = JSON.stringify(config);
   const payload = `query setServiceConfig {
     runtimeById(runtimeId: "${runtime.id}") {
       serviceById(instanceId: "${service.uuid}") {
-        configure(input: { config: ${JSON.stringify(config)} })
+        configure(input: { config: ${JSON.stringify(stringifiedConfig)} })
       }
     }
   }`;

@@ -1,4 +1,4 @@
-import { ReactElement } from "react";
+import { ReactElement, useState } from "react";
 
 import {
   RuntimeDescriptor,
@@ -10,7 +10,7 @@ import {
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
-import GenericServiceUI from "./GenericServiceUI";
+import RemoteServiceUI from "./RemoteServiceUI";
 import createServiceUI from "./UIRegistry";
 import { configureService, processService } from "./RemoteRuntimeApi";
 
@@ -38,18 +38,26 @@ export default function RemoteRuntime({
   onArrangeService,
   onServiceAction,
 }: Props) {
-  const servicesWithImpl: Array<ServiceImpl> = scope
-    ? services.map((svc: ServiceDescriptor) => ({
-        ...svc,
-        board: boardName,
-        app: scope.getApp(),
-        process: async (params: any): Promise<any> =>
-          processService(scope, svc, params, null), // TODO: passing null as requestId
-        configure: async (config: any): Promise<void> =>
-          configureService(scope, svc, config),
-        destroy: async (): Promise<void> => {},
-      }))
-    : [];
+  const [servicesWithConfig, setServicesWithConfig] = useState<
+    Array<ServiceImpl>
+  >(
+    services.map((svc: ServiceDescriptor) => ({
+      ...svc,
+      board: boardName,
+      app: scope.getApp(),
+      process: async (params: any): Promise<any> =>
+        processService(scope, svc, params, null), // TODO: passing null as requestId
+      configure: async (config: object): Promise<void> => {
+        const newConfig = await configureService(scope, svc, config);
+        setServicesWithConfig((prevState) =>
+          prevState.map((prevSvc) =>
+            prevSvc.uuid === svc.uuid ? { ...prevSvc, ...newConfig } : prevSvc
+          )
+        );
+      },
+      destroy: async (): Promise<void> => {},
+    }))
+  );
 
   if (scope && scope.onResult !== onResult) {
     scope.onResult = onResult;
@@ -60,7 +68,7 @@ export default function RemoteRuntime({
       boardName={boardName}
       runtime={runtime}
       readonly={readonly}
-      services={servicesWithImpl}
+      services={servicesWithConfig}
       onArrangeService={onArrangeService}
       onServiceAction={onServiceAction}
       onCreateServiceUi={onCreateServiceUi}
@@ -87,6 +95,6 @@ const onCreateServiceUi = (
       }}
     />
   ) : (
-    <GenericServiceUI service={service} />
+    <RemoteServiceUI service={service} />
   );
 };

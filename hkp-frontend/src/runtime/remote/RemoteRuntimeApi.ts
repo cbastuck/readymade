@@ -80,8 +80,8 @@ export async function removeService(
 export async function configureService(
   scope: RuntimeScope,
   service: InstanceId,
-  config: any
-): Promise<void> {
+  config: object
+): Promise<object> {
   return await configureService_gql(scope.descriptor, service, config);
 }
 

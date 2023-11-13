@@ -163,10 +163,12 @@ export default class Board extends Component<Props, State> {
         const api =
           dstScope && this.props.boardContext.runtimeApis[dstRuntime.type];
         if (dstScope && api) {
+          const config =
+            typeof result === "string" ? JSON.parse(result) : result;
           await api.configureService(
             dstScope,
             { uuid: route.serviceUuid },
-            result
+            config
           );
         } else {
           console.error(
