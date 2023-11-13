@@ -196,7 +196,7 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   setRuntimeName = async (runtimeId: string, newName: string) => {
     const runtimes = this.state.runtimes.map((rt) => {
-      if (rt.type !== "browser") {
+      if (rt.id === runtimeId && rt.type !== "browser") {
         throw new Error(
           "BoardContext.setRuntimeName() only supported for browser runtimes"
         );
