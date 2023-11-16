@@ -184,10 +184,11 @@ class BoardContext extends Component<Props, BoardContextState> {
       })
     );
 
-    const scopes = reduceByRuntime(restored, "scope");
+    const scopes = reduceByRuntimeId(restored, "scope");
+    const validRuntimes = runtimes.filter((rt) => !!scopes[rt.id]);
     this.setState({
       boardName,
-      runtimes,
+      runtimes: validRuntimes,
       services,
       registry,
       scopes,
@@ -515,11 +516,14 @@ class BoardContext extends Component<Props, BoardContextState> {
 export { BoardConsumer, BoardCtx };
 export default BoardContext;
 
-function reduceByRuntime<T extends keyof RestoreRuntimeResult>(
+function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
   arr: Array<RestoreRuntimeResult | null>,
   prop: T
-) {
+): { [runtimeId: string]: RestoreRuntimeResult[T] } {
   return arr.reduce((all, cur) => {
+    if (cur === null) {
+      return all;
+    }
     return cur ? { ...all, [cur.runtime.id]: cur[prop] } : all;
   }, {});
 }

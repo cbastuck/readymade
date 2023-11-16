@@ -35,6 +35,7 @@ export interface RuntimeScope {
   getApp(): AppImpl;
   // boardName: string; --> Remove the board name from the services and move it to AppImpl
   onResult: OnResult;
+  onConfig?: (instanceId: string, config: object) => void;
 }
 
 export type ExternalInput = {
@@ -329,3 +330,9 @@ export type SavedBoard = {
 
 export type AcceptedSyncSenders = Array<any>;
 export type RejectedSyncSenders = Array<any>;
+
+export enum RemoteRuntimeMessageType {
+  RESULT = "result",
+  CONFIGURATION = "config",
+  NOTIFICATION = "notification",
+}

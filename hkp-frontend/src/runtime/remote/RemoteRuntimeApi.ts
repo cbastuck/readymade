@@ -41,6 +41,10 @@ export async function restoreRuntime(
   services: Array<ServiceDescriptor>
 ) {
   const result = await restoreRuntime_gql(rt, services);
+  if (!result) {
+    console.error("RemoteRuntimeApi restoreRuntime call failed");
+    return null;
+  }
   const restoredRuntime = result.data?.restoreRuntime;
 
   const scope = await createScope(rt);
@@ -56,13 +60,7 @@ export async function processRuntime(
   params: any,
   svc: InstanceId | null
 ): Promise<any> {
-  const res = processRuntime_gql(scope.descriptor, params, svc);
-  console.log("Remote Runtime process result", await res);
-
-  // TODO: We don't return the result from the handler
-  // instead onResult needs to be invoked from a websocket handler
-  // const json = JSON.parse(result);
-  //return await scope.onResult(null, json, null);
+  return processRuntime_gql(scope.descriptor, params, svc);
 }
 
 export async function addService(scope: RuntimeScope, service: ServiceClass) {

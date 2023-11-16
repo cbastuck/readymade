@@ -48,20 +48,23 @@ export default function RemoteRuntime({
       process: async (params: any): Promise<any> =>
         processService(scope, svc, params, null), // TODO: passing null as requestId
       configure: async (config: object): Promise<void> => {
-        const newConfig = await configureService(scope, svc, config);
-        setServicesWithConfig((prevState) =>
-          prevState.map((prevSvc) =>
-            prevSvc.uuid === svc.uuid ? { ...prevSvc, ...newConfig } : prevSvc
-          )
-        );
+        await configureService(scope, svc, config);
       },
       destroy: async (): Promise<void> => {},
     }))
   );
 
-  if (scope && scope.onResult !== onResult) {
+  if (scope.onResult !== onResult) {
     scope.onResult = onResult;
   }
+  scope.onConfig = (instanceId: string, config: object) => {
+    setServicesWithConfig((prevState) =>
+      prevState.map((prevSvc) =>
+        prevSvc.uuid === instanceId ? { ...prevSvc, ...config } : prevSvc
+      )
+    );
+  };
+
   return (
     <ServiceUiContainer
       userId={userId}

@@ -334,7 +334,7 @@ export default class Runtime extends Component<Props, State> {
           />
         </Menu.Item>
         {
-          /*runtime.type !== 'browser' && */ <Menu.Item
+          <Menu.Item
             as="a"
             style={itemStyle}
             onClick={() =>

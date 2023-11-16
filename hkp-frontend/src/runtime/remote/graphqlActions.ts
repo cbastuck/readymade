@@ -93,8 +93,10 @@ export async function restoreRuntime(
     runtime.name
   }", services: [
         ${services.map(
-          ({ serviceId, serviceName, uuid }) =>
-            `{instanceId: "${uuid}", serviceId: "${serviceId}", serviceName: "${serviceName}"}`
+          ({ serviceId, serviceName, uuid, ...config }) =>
+            `{instanceId: "${uuid}", serviceId: "${serviceId}", serviceName: "${serviceName}", config: ${encodeJsonObject(
+              config
+            )}}`
         )}
       ] }) {
         id
@@ -224,7 +226,7 @@ export async function processRuntime(
     runtimeById(runtimeId: "${runtime.id}") {
       process(
         input: { 
-          params: ${JSON.stringify(params)}, 
+          params: ${encodeAny(params)}, 
           ${serviceInput}
         }
       ) { id }
@@ -251,4 +253,15 @@ export async function getRuntimeOutputUrl(runtime: RuntimeDescriptor) {
   }
 
   return result.data?.runtimeById?.outputUrl;
+}
+
+function encodeJsonObject(obj: object): string {
+  return JSON.stringify(JSON.stringify(obj));
+}
+
+function encodeAny(data: any): string {
+  if (typeof data === "string") {
+    return JSON.stringify(decodeURIComponent(data));
+  }
+  return encodeJsonObject(data);
 }
