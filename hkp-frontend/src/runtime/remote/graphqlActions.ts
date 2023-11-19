@@ -15,8 +15,12 @@ export type RegistryProp = {
   registry: ServiceRegistry;
 };
 
+function reportGQLError(err?: any) {
+  throw new Error(err ? JSON.stringify(err) : "unspecified GQL request error");
+}
+
 async function processQuery(url: string, query: string) {
-  const res = await fetch(url, {
+  const response = await fetch(url, {
     method: "POST",
     body: JSON.stringify({
       query,
@@ -24,11 +28,20 @@ async function processQuery(url: string, query: string) {
     headers: { "content-type": "application/json" },
   });
 
-  if (!res.ok || res.status !== 200) {
-    return null;
+  if (!response.ok || response.status !== 200) {
+    return reportGQLError();
   }
 
-  return res.json();
+  const result = await response.json();
+  if (result.errors) {
+    return reportGQLError(result.errors);
+  }
+
+  if (!result.data) {
+    return reportGQLError("No Data returned");
+  }
+
+  return result.data;
 }
 
 export async function queryFreeRuntime(
@@ -51,14 +64,8 @@ export async function queryFreeRuntime(
       }
     }
   }`;
-  const result = await processQuery(url, payload);
-  if (!result) {
-    return null;
-  }
-
-  return (
-    result.data?.runtimes.find((x: RuntimeDescriptor) => x.id === rt.id) || null
-  );
+  const data = await processQuery(url, payload);
+  return data?.runtimes.find((x: RuntimeDescriptor) => x.id === rt.id) || null;
 }
 
 export async function createRuntime(
@@ -75,12 +82,8 @@ export async function createRuntime(
         }
       }
     }`;
-  const result = await processQuery(url, payload);
-  if (!result) {
-    return null;
-  }
-
-  return result.data?.createRuntime || null;
+  const data = await processQuery(url, payload);
+  return data?.createRuntime || null;
 }
 
 export async function restoreRuntime(
@@ -112,9 +115,8 @@ export async function restoreRuntime(
         }
       }
     }`;
-  const result = await processQuery(url, payload);
-
-  return result;
+  const data = await processQuery(url, payload);
+  return data.restoreRuntime;
 }
 
 export async function createRuntimeService(
@@ -130,20 +132,18 @@ export async function createRuntimeService(
         instanceId
         serviceName
         serviceId
+        config
       }
     }
   }`;
-  const result = await processQuery(url, payload);
-  if (!result) {
-    return null;
-  }
-
-  const createServiceResult = result.data?.runtimeById?.createService;
+  const data = await processQuery(url, payload);
+  const createServiceResult = data?.runtimeById?.createService;
   if (!createServiceResult) {
     return null;
   }
-  const { instanceId, ...svc } = createServiceResult;
-  return { ...svc, uuid: createServiceResult.instanceId };
+  const { instanceId, config: initialConfig, ...svc } = createServiceResult;
+  const config = initialConfig ? JSON.parse(initialConfig) : {};
+  return { ...svc, ...config, uuid: createServiceResult.instanceId };
 }
 
 export async function removeRuntimeService(
@@ -162,11 +162,8 @@ export async function removeRuntimeService(
       }
     }
   }`;
-  const result = await processQuery(url, payload);
-  if (!result) {
-    return null;
-  }
-  return result.data?.runtimeById?.removeService;
+  const data = await processQuery(url, payload);
+  return data?.runtimeById?.removeService;
 }
 
 export async function getRuntimeServiceConfig(
@@ -181,12 +178,9 @@ export async function getRuntimeServiceConfig(
       }
     }
   }`;
-  const result = await processQuery(url, payload);
-  if (!result) {
-    return null;
-  }
+  const data = await processQuery(url, payload);
 
-  const config = result.data?.runtimeById?.serviceById?.config;
+  const config = data?.runtimeById?.serviceById?.config;
   return config ? JSON.parse(config) : null;
 }
 
@@ -204,12 +198,8 @@ export async function configureService(
       }
     }
   }`;
-  const result = await processQuery(url, payload);
-  if (!result) {
-    return null;
-  }
-
-  const resultConfig = result.data.runtimeById?.serviceById?.configure;
+  const data = await processQuery(url, payload);
+  const resultConfig = data?.runtimeById?.serviceById?.configure;
   return resultConfig ? JSON.parse(resultConfig) : null;
 }
 
@@ -232,12 +222,8 @@ export async function processRuntime(
       ) { id }
     }
   }`;
-  const result = await processQuery(url, payload);
-  if (!result) {
-    return null;
-  }
-
-  return result.data.runtimeById?.process;
+  const data = await processQuery(url, payload);
+  return data?.runtimeById?.process;
 }
 
 export async function getRuntimeOutputUrl(runtime: RuntimeDescriptor) {
@@ -247,12 +233,8 @@ export async function getRuntimeOutputUrl(runtime: RuntimeDescriptor) {
       outputUrl
     }
   }`;
-  const result = await processQuery(url, payload);
-  if (!result) {
-    return null;
-  }
-
-  return result.data?.runtimeById?.outputUrl;
+  const data = await processQuery(url, payload);
+  return data?.runtimeById?.outputUrl;
 }
 
 function encodeJsonObject(obj: object): string {

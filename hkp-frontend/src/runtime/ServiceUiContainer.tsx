@@ -11,6 +11,7 @@ type Props = {
   runtime: RuntimeDescriptor;
   services: Array<ServiceImpl>;
   readonly?: boolean;
+  showBypassOnlyIfExplicit?: boolean;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
   onCreateServiceUi: (
@@ -28,6 +29,7 @@ export default class ServiceUiContainer extends Component<Props> {
       runtime,
       services,
       readonly = false,
+      showBypassOnlyIfExplicit = false,
       onArrangeService,
       onServiceAction,
       onCreateServiceUi,
@@ -57,6 +59,7 @@ export default class ServiceUiContainer extends Component<Props> {
               serviceUi={serviceUi}
               onAction={onServiceAction}
               draggable={!!onArrangeService}
+              showBypassOnlyIfExplicit={showBypassOnlyIfExplicit}
             />
             <ServiceDropBar index={pos + 1} onDrop={onArrangeService} />
           </div>

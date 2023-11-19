@@ -40,13 +40,7 @@ export async function restoreRuntime(
   rt: RuntimeDescriptor,
   services: Array<ServiceDescriptor>
 ) {
-  const result = await restoreRuntime_gql(rt, services);
-  if (!result) {
-    console.error("RemoteRuntimeApi restoreRuntime call failed");
-    return null;
-  }
-  const restoredRuntime = result.data?.restoreRuntime;
-
+  const restoredRuntime = await restoreRuntime_gql(rt, services);
   const scope = await createScope(rt);
   if (rt.id !== restoredRuntime.id) {
     return null;

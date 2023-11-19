@@ -1,4 +1,4 @@
-import { ReactElement, useState } from "react";
+import { ReactElement, useCallback, useEffect, useState } from "react";
 
 import {
   RuntimeDescriptor,
@@ -38,21 +38,29 @@ export default function RemoteRuntime({
   onArrangeService,
   onServiceAction,
 }: Props) {
+  const makeServiceWithConfig = useCallback(
+    (services: Array<ServiceDescriptor>) =>
+      services.map((svc: ServiceDescriptor) => ({
+        ...svc,
+        board: boardName,
+        app: scope.getApp(),
+        process: async (params: any): Promise<any> =>
+          processService(scope, svc, params, null), // TODO: passing null as requestId
+        configure: async (config: object): Promise<void> => {
+          await configureService(scope, svc, config);
+        },
+        destroy: async (): Promise<void> => {},
+      })),
+    [scope, boardName]
+  );
+
   const [servicesWithConfig, setServicesWithConfig] = useState<
     Array<ServiceImpl>
-  >(
-    services.map((svc: ServiceDescriptor) => ({
-      ...svc,
-      board: boardName,
-      app: scope.getApp(),
-      process: async (params: any): Promise<any> =>
-        processService(scope, svc, params, null), // TODO: passing null as requestId
-      configure: async (config: object): Promise<void> => {
-        await configureService(scope, svc, config);
-      },
-      destroy: async (): Promise<void> => {},
-    }))
-  );
+  >(makeServiceWithConfig(services));
+
+  useEffect(() => {
+    setServicesWithConfig(makeServiceWithConfig(services));
+  }, [services, makeServiceWithConfig]);
 
   if (scope.onResult !== onResult) {
     scope.onResult = onResult;
@@ -72,6 +80,7 @@ export default function RemoteRuntime({
       runtime={runtime}
       readonly={readonly}
       services={servicesWithConfig}
+      showBypassOnlyIfExplicit={true}
       onArrangeService={onArrangeService}
       onServiceAction={onServiceAction}
       onCreateServiceUi={onCreateServiceUi}

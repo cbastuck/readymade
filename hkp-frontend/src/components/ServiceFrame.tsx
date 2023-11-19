@@ -16,6 +16,7 @@ type Props = {
   service: ServiceImpl;
   serviceUi: ReactElement | null;
   draggable: boolean;
+  showBypassOnlyIfExplicit?: boolean;
 
   onAction: (action: ServiceAction) => void;
 };
@@ -25,7 +26,7 @@ type State = {
   frameCollapsed: boolean;
   modalReferenceService: string | undefined;
   configVisible: boolean;
-  bypass: boolean;
+  bypass: boolean | undefined;
 };
 
 export default class ServiceFrame extends Component<Props, State> {
@@ -34,7 +35,7 @@ export default class ServiceFrame extends Component<Props, State> {
     frameCollapsed: false,
     modalReferenceService: undefined,
     configVisible: false,
-    bypass: false,
+    bypass: undefined,
   };
 
   componentDidMount() {
@@ -95,7 +96,7 @@ export default class ServiceFrame extends Component<Props, State> {
   };
 
   renderHeader = (service: ServiceImpl) => {
-    const { bypass = service && service.bypass } = this.state;
+    const { bypass = service ? service.bypass : undefined } = this.state;
     const serviceName =
       service?.__descriptor?.serviceName ||
       service.serviceName ||
@@ -107,17 +108,19 @@ export default class ServiceFrame extends Component<Props, State> {
           flexDirection: "row",
         }}
       >
-        <div style={t.p(15, 13)}>
-          <Icon
-            style={{
-              cursor: "pointer",
-              opacity: 0.5,
-            }}
-            name="power off"
-            color={bypass ? "red" : "grey"}
-            onClick={() => service.configure({ bypass: !bypass })}
-          />
-        </div>
+        {(!this.props.showBypassOnlyIfExplicit || bypass !== undefined) && (
+          <div style={t.p(15, 13)}>
+            <Icon
+              style={{
+                cursor: "pointer",
+                opacity: 0.5,
+              }}
+              name="power off"
+              color={bypass ? "red" : "grey"}
+              onClick={() => service.configure({ bypass: !bypass })}
+            />
+          </div>
+        )}
         <div
           style={{
             flexGrow: 2,

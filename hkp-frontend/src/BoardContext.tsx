@@ -76,6 +76,8 @@ type Props = {
   saveBoard?: () => void;
   shareBoard?: () => void;
 
+  onRemoveService?: (service: InstanceId, runtime: RuntimeDescriptor) => void;
+
   isActionAvailable: (action: Action) => boolean;
 
   onAction: (action: any) => boolean;
@@ -326,6 +328,9 @@ class BoardContext extends Component<Props, BoardContextState> {
       );
     }
 
+    if (this.props.onRemoveService) {
+      this.props.onRemoveService(service, runtime);
+    }
     await api.removeService(scope, service);
 
     this.setState((state) => ({

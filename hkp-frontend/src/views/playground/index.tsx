@@ -41,6 +41,7 @@ import {
   RuntimeApiMap,
   AcceptedSyncSenders,
   RejectedSyncSenders,
+  InstanceId,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
@@ -441,6 +442,22 @@ class Playground extends Component<Props, State> {
     );
   };
 
+  onRemoveService = (instance: InstanceId, runtime: RuntimeDescriptor) => {
+    const updatedRoutings = Object.keys(this.state.sidechainRouting).reduce(
+      (all, rtId) => {
+        const routings = this.state.sidechainRouting[rtId];
+        return {
+          ...all,
+          [rtId]: routings.filter(
+            (routing) => routing.serviceUuid !== instance.uuid
+          ),
+        };
+      },
+      {}
+    );
+    this.setState({ sidechainRouting: updatedRoutings });
+  };
+
   render() {
     const { requireLogin } = this.state;
     const appContext = this.context;
@@ -492,6 +509,7 @@ class Playground extends Component<Props, State> {
           }
           return false;
         }}
+        onRemoveService={this.onRemoveService}
         availableRuntimes={availableRuntimes.concat(restoredAvailableRuntimes)}
       >
         <BoardConsumer>

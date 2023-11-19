@@ -49,26 +49,29 @@ export default class RemoteRuntimeScope implements RuntimeScope {
         })
       );
     };
-    socket.onmessage = (event) => {
-      let message;
-      try {
-        message = JSON.parse(event.data);
-      } catch (err) {
-        console.error("Received invalid message", event.data);
-        return;
-      }
+    socket.onmessage = this.onMessage;
+  };
 
-      if (message.type === RemoteRuntimeMessageType.RESULT) {
-        this.onResult(null, message.data, null);
-      } else if (message.type === RemoteRuntimeMessageType.CONFIGURATION) {
-        this.onConfig(message.data.instanceId, message.data.config);
-      } else {
-        console.warn(
-          `Unknown message reived in remote runtime scope: ${JSON.stringify(
-            event.data
-          )}`
-        );
-      }
-    };
+  onMessage = (event: MessageEvent) => {
+    let message;
+    try {
+      // TODO: binary data is currently not supported with this logic
+      message = JSON.parse(event.data);
+    } catch (err) {
+      console.error("Received invalid message", event.data);
+      return;
+    }
+
+    if (message.type === RemoteRuntimeMessageType.RESULT) {
+      this.onResult(null, message.data, null);
+    } else if (message.type === RemoteRuntimeMessageType.CONFIGURATION) {
+      this.onConfig(message.data.instanceId, message.data.config);
+    } else {
+      console.warn(
+        `Unknown message reived in remote runtime scope: ${JSON.stringify(
+          event.data
+        )}`
+      );
+    }
   };
 }

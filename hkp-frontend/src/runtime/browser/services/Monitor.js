@@ -7,32 +7,6 @@ import Editor from "../../../components/shared/Editor/index";
 import { s, t } from "../../../styles";
 import ServiceUI from "../../services/ServiceUI";
 
-function isObject(obj) {
-  return typeof obj === "object" && obj !== null;
-}
-
-function unroll(params) {
-  const isBlob = params instanceof Blob;
-  if (isBlob) {
-    return `Blob (${params.type} ${params.size} bytes)`;
-  }
-  const isPrimitive = !isObject(params);
-  if (isPrimitive) {
-    return params;
-  }
-  const isArray = Array.isArray(params);
-  if (isArray) {
-    return params.map((x) => unroll(x));
-  }
-  return Object.keys(params).reduce(
-    (all, key) => ({
-      ...all,
-      [key]: unroll(params[key]),
-    }),
-    {}
-  );
-}
-
 export class MonitorUI extends Component {
   state = {
     message: "",
@@ -134,6 +108,32 @@ export class MonitorUI extends Component {
       </ServiceUI>
     );
   }
+}
+
+function isObject(obj) {
+  return typeof obj === "object" && obj !== null;
+}
+
+function unroll(params) {
+  const isBlob = params instanceof Blob;
+  if (isBlob) {
+    return `Blob (${params.type} ${params.size} bytes)`;
+  }
+  const isPrimitive = !isObject(params);
+  if (isPrimitive) {
+    return params;
+  }
+  const isArray = Array.isArray(params);
+  if (isArray) {
+    return params.map((x) => unroll(x));
+  }
+  return Object.keys(params).reduce(
+    (all, key) => ({
+      ...all,
+      [key]: unroll(params[key]),
+    }),
+    {}
+  );
 }
 
 const { serviceName, serviceId, service: Monitor } = MonitorDescriptor;
