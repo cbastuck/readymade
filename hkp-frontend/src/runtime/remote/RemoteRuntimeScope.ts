@@ -10,11 +10,15 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   app: AppImpl;
   descriptor: RuntimeDescriptor; // TODO: better keep the whole runtime descriptor - change API
   outputUrl: string;
+  socket: WebSocket | null;
+  pendingReconnectPromise: [() => void, () => void] | null; // resolve/reject callbacks
 
   constructor(runtime: RuntimeDescriptor, outputUrl: string) {
     this.app = createRemoteRuntimeApp(this);
     this.descriptor = runtime;
     this.outputUrl = outputUrl;
+    this.socket = null;
+    this.pendingReconnectPromise = null;
 
     if (this.outputUrl) {
       this.connect(this.outputUrl);
@@ -42,14 +46,56 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     url.protocol = window.location.protocol === "http:" ? "ws" : "wss";
     const websocketUrl = url.toString() + outputUrl.slice(1);
     const socket = new WebSocket(websocketUrl);
-    socket.onopen = (event) => {
-      socket.send(
+    this.socket = socket;
+
+    socket.onopen = this.onSocketOpened;
+    socket.onmessage = this.onMessage;
+    socket.onclose = this.onSocketClosed;
+    socket.onerror = this.onSocketError;
+  };
+
+  isConnected = () => {
+    return !!this.socket;
+  };
+
+  reconnect = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (this.socket || !this.outputUrl) {
+        console.warn(
+          "RuntimeRemoteScope can not reconnect if socket available or output url missing"
+        );
+        return reject();
+      }
+      this.pendingReconnectPromise = [resolve, reject];
+      this.connect(this.outputUrl);
+    });
+  };
+
+  onSocketError = (event: Event) => {
+    if (this.pendingReconnectPromise) {
+      this.pendingReconnectPromise[1](); // reject the reconnect - TODO: might be a non-fatal error
+      this.pendingReconnectPromise = null;
+    }
+  };
+
+  onSocketOpened = (event: Event) => {
+    if (this.socket) {
+      this.socket.send(
         JSON.stringify({
           ping: "Hello",
         })
       );
-    };
-    socket.onmessage = this.onMessage;
+    }
+    if (this.pendingReconnectPromise) {
+      this.pendingReconnectPromise[0]();
+      this.pendingReconnectPromise = null;
+    }
+  };
+
+  onSocketClosed = () => {
+    if (this.socket) {
+      this.socket = null;
+    }
   };
 
   onMessage = (event: MessageEvent) => {

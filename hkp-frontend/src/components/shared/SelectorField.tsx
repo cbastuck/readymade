@@ -17,11 +17,13 @@ type Props = {
   options: Options;
 
   uppercaseValues?: boolean;
+  uppercaseKeys?: boolean;
   disabled?: boolean;
   highlight?: string | undefined;
   style?: object;
   minWidth?: string | number;
   placeholder?: string;
+  labelStyle?: object;
 
   onChange: (ev: React.MouseEvent, value: OnChangeValue) => void;
   onOpen?: (options: Options) => void;
@@ -41,12 +43,14 @@ export default class SelectorField extends Component<Props, State> {
 
   componentDidMount() {
     const { value } = this.props;
-    this.setState({ value });
+    if (value) {
+      this.setState({ value });
+    }
   }
 
   componentDidUpdate(prevProps: Props) {
     const { value, highlight } = this.props;
-    if (value !== prevProps.value) {
+    if (value && value !== prevProps.value) {
       this.setState({ value });
     }
 
@@ -111,6 +115,8 @@ export default class SelectorField extends Component<Props, State> {
       minWidth = "100%",
       placeholder = "",
       uppercaseValues = true,
+      uppercaseKeys = true,
+      labelStyle = {},
     } = this.props;
     const text = options[value];
     const fontSize = 11;
@@ -133,9 +139,10 @@ export default class SelectorField extends Component<Props, State> {
             inSync={value === syncedValue}
             label={label}
             style={{
-              textTransform: "uppercase",
+              textTransform: uppercaseKeys ? "uppercase" : undefined,
               letterSpacing: 1,
               fontSize,
+              ...labelStyle,
             }}
           />
         ) : (

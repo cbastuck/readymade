@@ -50,10 +50,14 @@ export async function restoreRuntime(
 }
 
 export async function processRuntime(
-  scope: RuntimeScope,
+  scope_: RuntimeScope,
   params: any,
   svc: InstanceId | null
 ): Promise<any> {
+  const scope = scope_ as RemoteRuntimeScope;
+  if (!scope.isConnected()) {
+    await scope.reconnect();
+  }
   return processRuntime_gql(scope.descriptor, params, svc);
 }
 

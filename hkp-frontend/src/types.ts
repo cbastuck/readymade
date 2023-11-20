@@ -167,7 +167,8 @@ export type AppImpl = {
   createSubServiceUI: (svc: ServiceImpl) => void;
 };
 
-export type ServiceImpl = {
+// TODO: an open ended object - should be further defined
+export type ServiceImpl = { [key: string]: any } & {
   serviceId?: string; // TODO not sure about this
   serviceName?: string; // TODO not sure about this
   __descriptor?: ServiceDescriptor; // TODO: remove - this only existed in old nodejs backend services

@@ -11,7 +11,7 @@ type OnChangeEvent =
   | React.FormEvent<HTMLInputElement>
   | React.KeyboardEvent;
 type OnChangeValue = { value: InputValueType };
-type InputFieldType = "checkbox" | "number" | "text";
+type InputFieldType = "checkbox" | "number" | "text" | "password";
 
 type Props = {
   value: InputValueType;
