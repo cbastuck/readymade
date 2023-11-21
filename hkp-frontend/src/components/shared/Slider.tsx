@@ -40,35 +40,53 @@ export default function Slider({
       style={{
         width: "100%",
         display: "flex",
-        flexDirection: "column",
+        flexDirection: "row",
         margin: "3px 0px",
         minWidth: "350px",
       }}
     >
-      <div style={{ width: "100%", textAlign: "left" }}>
-        <SyncIndicator
-          onClick={(ev) =>
-            inSync ? onLabelClicked(ev, { value }) : onChange(ev, { value })
+      <SyncIndicator
+        onClick={(ev) =>
+          inSync ? onLabelClicked(ev, { value }) : onChange(ev, { value })
+        }
+        inSync={synced ? inSync : true}
+        label={label}
+        style={{
+          ...labelStyle,
+          fontSize,
+          textAlign: "left",
+        }}
+      />
+      <div
+        style={{
+          width: "100%",
+          padding: "8px",
+        }}
+      >
+        <input
+          type="range"
+          min={minValue * 100}
+          max={maxValue * 100}
+          value={stateValue * 100}
+          onChange={(ev) => setStateValue(Number(ev.target.value) / 100)}
+          onMouseUp={(ev: any) =>
+            onChange(ev, { value: ev.target.value / 100 })
           }
-          inSync={synced ? inSync : true}
-          label={`${label}: ${stateValue}`}
           style={{
-            ...labelStyle,
-            fontSize,
+            accentColor: "#4183c4",
             width: "100%",
-            textAlign: "left",
           }}
         />
       </div>
-      <input
-        type="range"
-        min={minValue * 100}
-        max={maxValue * 100}
-        value={stateValue * 100}
-        onChange={(ev) => setStateValue(Number(ev.target.value) / 100)}
-        onMouseUp={(ev: any) => onChange(ev, { value: ev.target.value / 100 })}
-        style={{ accentColor: "#4183c4" }}
-      />
+      <div
+        style={{
+          width: "80px",
+          paddingTop: "6px",
+          border: "solid 1px lightgray",
+        }}
+      >
+        {stateValue}
+      </div>
     </div>
   );
 }

@@ -166,7 +166,6 @@ class BoardContext extends Component<Props, BoardContextState> {
       boardName = this.getBoardName(),
       runtimes = [],
       services = {},
-      registry = {},
     } = await this.props.fetchBoard();
 
     const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
@@ -187,6 +186,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     );
 
     const scopes = reduceByRuntimeId(restored, "scope");
+    const registry = reduceByRuntimeId(restored, "registry");
     const validRuntimes = runtimes.filter((rt) => !!scopes[rt.id]);
     this.setState({
       boardName,
@@ -268,6 +268,16 @@ class BoardContext extends Component<Props, BoardContextState> {
       case "saveBoard":
         await this.saveBoard();
         break;
+      case "playBoard": {
+        const firstRuntime = this.state.runtimes[0];
+        if (firstRuntime) {
+          const [scope, api] = this.getRuntimeScopeApi(firstRuntime.id);
+          if (scope && api) {
+            api.processRuntime(scope, undefined, null);
+          }
+        }
+        break;
+      }
       default:
         console.log("Unknown action", action);
         break;

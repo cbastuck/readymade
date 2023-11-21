@@ -122,7 +122,7 @@ export type AddRuntimeResult = {
   runtime: RuntimeDescriptor;
   services: Array<ServiceDescriptor>;
   scope: RuntimeScope;
-  registry?: ServiceRegistry;
+  registry: ServiceRegistry;
 };
 
 export type RestoreRuntimeResult = AddRuntimeResult;
@@ -140,6 +140,7 @@ const actionTypes = [
   "flow-changed",
   "update-peers",
   "flow-changed",
+  "playBoard",
 ] as const;
 export type ActionType = (typeof actionTypes)[number];
 export type Action = {

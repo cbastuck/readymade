@@ -57,11 +57,15 @@ export class MonitorUI extends Component {
       />
     ) : (
       <div style={s(t.m("5px 10px"), t.h100)}>
-        <Editor value={this.state.message} language="json" />
+        <Editor
+          value={this.state.message}
+          language="json"
+          onChange={(val) => this.setState({ message: val })}
+        />
       </div>
     );
 
-  renderActionBar = () => (
+  renderActionBar = (service) => (
     <div
       style={{
         display: "flex",
@@ -79,6 +83,20 @@ export class MonitorUI extends Component {
         onClick={this.switchEditor}
       >
         {this.state.renderTextEditor ? "Edit" : "Back"}
+      </Button>
+      <Button
+        style={s(t.uc, t.ls1, t.fs12, t.w100)}
+        onClick={() => {
+          let data;
+          try {
+            data = JSON.parse(this.state.message);
+          } catch (err) {
+            data = this.state.message;
+          }
+          service.app.next(service, data);
+        }}
+      >
+        Inject
       </Button>
     </div>
   );
@@ -101,7 +119,7 @@ export class MonitorUI extends Component {
               }}
             >
               {this.renderEditor()}
-              {this.renderActionBar()}
+              {this.renderActionBar(service)}
             </div>
           )
         }

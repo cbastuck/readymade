@@ -427,7 +427,7 @@ class Injector {
   }
 
   process(params) {
-    return params;
+    return this.recentInjection || params;
   }
 }
 

@@ -50,10 +50,11 @@ async function restoreRuntime(
       configureService(scope, svc, services[idx]).then(() => services[idx])
     )
   );
+
   return {
     runtime,
     services: configuredServices,
-    registry: scope.registry.allowedServices(),
+    registry: scope.registry.allServices(), // TODO: this is not used
     scope,
   };
 }

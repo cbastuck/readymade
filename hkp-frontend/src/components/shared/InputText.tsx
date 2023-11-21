@@ -83,6 +83,7 @@ export default class InputText extends Component<Props, State> {
             label={label}
             style={{
               ...labelStyle,
+              letterSpacing: 1,
               fontSize,
               width: "100%",
               textAlign: "left",

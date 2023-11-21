@@ -91,6 +91,7 @@ export default function Toolbar({
                       <BoardActionsBar boardContext={boardContext} />
                     </div>
                   )}
+
                   <Navigation appContext={appContext} isCompact={isCompact} />
                   {appContext && !isCompact && (
                     <AccountMenu

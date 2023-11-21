@@ -40,10 +40,30 @@ class AppContext extends Component<Props, AppContextState> {
         const pos = this.state.notifications.findIndex((cur) =>
           cur.tag === tag ? notification : cur
         );
+        const autoClose = () => {
+          const idx = this.state.notifications.indexOf(notification);
+          if (idx !== -1) {
+            setTimeout(
+              () =>
+                this.setState(({ notifications }) => {
+                  return {
+                    notifications: [
+                      ...notifications.slice(0, idx),
+                      ...notifications.slice(idx + 1),
+                    ],
+                  };
+                }),
+              1500
+            );
+          }
+        };
         if (!tag || pos === -1) {
-          this.setState({
-            notifications: [notification, ...this.state.notifications],
-          });
+          this.setState(
+            ({ notifications }) => ({
+              notifications: [notification, ...notifications],
+            }),
+            autoClose
+          );
         } else {
           // replace an existing notification with the same tag
           const notifications = this.state.notifications.map((cur, idx) =>

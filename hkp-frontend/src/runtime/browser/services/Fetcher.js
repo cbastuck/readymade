@@ -1,5 +1,4 @@
-import React, { Component } from "react";
-import { Input } from "semantic-ui-react";
+import { Component } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 
@@ -7,16 +6,14 @@ const serviceId = "hookup.to/service/fetcher";
 const serviceName = "Fetcher";
 
 export class FetcherUI extends Component {
-  state = { url: "" };
-
   onInit(initialState) {
     this.setState({
       ...initialState,
     });
   }
 
-  renderMain = (service) => {
-    return <Input disabled label="Fetching" value={this.state.url} />;
+  renderMain = () => {
+    return <div />;
   };
 
   render() {
@@ -24,10 +21,6 @@ export class FetcherUI extends Component {
       <ServiceUI
         {...this.props}
         onInit={this.onInit.bind(this)}
-        onTimer={(service) =>
-          service.fetchingURL !== this.state.url &&
-          this.setState({ url: service.fetchingURL || "" })
-        }
         segments={[{ name: "Main", render: this.renderMain }]}
       />
     );
@@ -39,34 +32,37 @@ class Fetcher {
     this.uuid = id;
     this.board = board;
     this.app = app;
-
-    this.fetchingURL = undefined;
   }
 
-  configure(config) {}
-
-  getURL(params) {
-    switch (typeof params) {
-      case "string":
-        return params;
-      case "object":
-        return params.url;
-      default:
-        break;
-    }
-  }
+  async configure() {}
 
   async process(params) {
-    const url = params && this.getURL(params);
+    const { url, method = "get", body, headers } = params;
     if (!url) {
-      return;
+      console.warn("Fetcher no url incoming", params);
+      return params;
     }
 
-    this.fetchingURL = url;
-    const res = await fetch(url);
-    const blob = await res.blob();
-    this.fetchingURL = undefined;
-    return blob;
+    try {
+      const res = await fetch(url, {
+        method,
+        body: body ? JSON.stringify(body) : undefined,
+        headers,
+      });
+      const contentType = res.headers.get("content-type");
+      switch (contentType) {
+        case "application/json":
+          return await res.json();
+        case "plain/text":
+          return await res.text();
+        default:
+          const blob = await res.blob();
+          return blob;
+      }
+    } catch (err) {
+      console.error("Fetcher caught error", err);
+      return null;
+    }
   }
 }
 

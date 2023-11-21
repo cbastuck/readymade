@@ -40,6 +40,7 @@ export const allowedServices = [
   "hookup.to/service/select",
   "hookup.to/service/hacker/considered",
   "hookup.to/service/hacker/dangerous",
+  "hookup.to/service/fetcher",
 ];
 
 export default class BrowserRegistry {
@@ -92,6 +93,10 @@ export default class BrowserRegistry {
     return this.availableServices.filter(
       (s) => !allowedServices || allowedServices.indexOf(s.serviceId) !== -1
     );
+  }
+
+  allServices() {
+    return this.availableServices;
   }
 
   __appendBundleServices = (arr: Array<ServiceModule>) => {

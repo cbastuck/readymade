@@ -36,6 +36,7 @@ export default function GenericServiceUI({ service }: Props) {
                   onChange={(_, { value }) => {
                     service.configure({ [prop]: value });
                   }}
+                  labelStyle={{ textTransform: "capitalize", letterSpacing: 1 }}
                 />
               );
             }

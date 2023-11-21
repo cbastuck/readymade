@@ -34,6 +34,7 @@ import TriggerPadDescriptor from "../services/TriggerPad";
 
 // Actor
 import CanvasDescriptor from "../services/Canvas";
+import MediaPlayer from "../services/MediaPlayer";
 
 // Structure / Containers
 import DispatcherDesriptor from "../services/Dispatcher";
@@ -74,6 +75,7 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Actor
   CanvasDescriptor,
+  MediaPlayer,
 
   // Analysis
   MapDescriptor,
@@ -113,6 +115,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   ChunkedFileProviderDescriptor,
   FeedbackProviderDesriptor,
   FeedbackTakerDesriptor,
+
   //DEPRECATED
   /*
   import SwitchDescriptor from "../services/Switch";
