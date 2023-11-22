@@ -3,13 +3,12 @@ import { Link } from "react-router-dom";
 
 import Template from "./Template";
 import { s, t } from "../styles";
-import { removeAuthCookies } from "../core/Auth";
 import { redirectTo } from "../core/actions";
 
 export default function LoginCheckMail() {
   const [restartFlow, setRestartFlow] = useState(false);
   if (restartFlow) {
-    removeAuthCookies();
+    //removeAuthCookies();
     redirectTo("/login");
     return false;
   }

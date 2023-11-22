@@ -26,6 +26,7 @@ export function getCookie(key) {
 }
 
 export function removeCookie(key) {
+  console.log("REMOVE COOKIE", key);
   setCookie(key, "", -100, "y");
 }
 

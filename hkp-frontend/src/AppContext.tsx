@@ -1,16 +1,15 @@
 import { Component, createContext } from "react";
 
-import { restoreToken, processToken, setToken } from "./core/Auth";
-import { redirectTo } from "./core/actions";
+import { processToken } from "./core/Auth";
 import { User, Notification } from "./types";
+import RestoredUser from "./RestoredUser";
 
 export type AppContextState = {
-  token: string;
-  user: User;
+  user: User | null;
   notifications: Array<Notification>;
   pushNotification: (n: Notification) => void;
   popNotification: () => void;
-  updateToken: (incomingToken: string) => void;
+  updateToken: (incomingToken: string, claims?: any) => void;
   logout: () => void;
 };
 
@@ -25,15 +24,9 @@ class AppContext extends Component<Props, AppContextState> {
   constructor(props: Props) {
     super(props);
 
-    const { token, username, userId, features } = processToken(restoreToken());
     this.state = {
       // state members
-      token, // TODO: token should be in user struct below
-      user: {
-        username,
-        userId,
-        features,
-      },
+      user: null,
       notifications: [],
       pushNotification: (notification) => {
         const { tag } = notification;
@@ -80,31 +73,25 @@ class AppContext extends Component<Props, AppContextState> {
     };
   }
 
-  updateToken = (incomingToken?: string): Promise<void> => {
+  updateToken = (idJwt?: string): Promise<void> => {
     return new Promise((resolve) => {
-      const { token, username, userId, features } = processToken(incomingToken);
-      if (token) {
-        const currentToken = restoreToken();
-        if (currentToken !== incomingToken) {
-          setToken(incomingToken);
-          setTimeout(() =>
-            this.setState(
-              {
-                token,
-                user: { username, userId, features },
-              },
-              resolve
-            )
-          );
-        }
+      if (idJwt && idJwt !== this.state.user?.idToken) {
+        const { username, userId, features } = processToken(idJwt);
+        setTimeout(() =>
+          this.setState(
+            {
+              user: { username, userId, features, idToken: idJwt },
+            },
+            resolve
+          )
+        );
       }
       resolve();
     });
   };
 
   logout = async () => {
-    await this.updateToken();
-    redirectTo("/");
+    this.setState({ user: null });
   };
 
   render() {
@@ -115,6 +102,7 @@ class AppContext extends Component<Props, AppContextState> {
           ...this.state,
         }}
       >
+        <RestoredUser onToken={({ __raw: jwt }) => this.updateToken(jwt)} />
         {children}
       </Provider>
     );

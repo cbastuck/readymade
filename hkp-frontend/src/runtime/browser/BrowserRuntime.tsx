@@ -3,7 +3,6 @@ import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
 
 import { request } from "../../core/actions";
 import { isMultipartsResult, parseResponse } from "../MultiformParser";
-import { restoreToken } from "../../core/Auth";
 import { serializeWebsocketBuffer } from "../../core/format";
 import ServiceUiContainer from "../ServiceUiContainer";
 
@@ -115,7 +114,7 @@ export default class BrowserRuntime extends Component<Props, State> {
     const protocol = secureConnection ? "wss" : "ws";
     this.websocket = new WebSocket(
       `${protocol}://${backendHost}${backendPath}`,
-      restoreToken()
+      this.context.user.idToken
     );
     this.websocket.binaryType = "arraybuffer";
     this.websocket.onmessage = (event) => {

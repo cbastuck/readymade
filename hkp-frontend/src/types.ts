@@ -253,6 +253,7 @@ export type User = {
   features?: {
     registry?: string; // stringified Array<string>;
   };
+  idToken: string;
 };
 
 export type Notification = {

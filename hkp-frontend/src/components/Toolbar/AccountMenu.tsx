@@ -1,21 +1,10 @@
+import { AppContextState } from "../../AppContext";
 import AccountDropdown from "./AccountDropdown";
 
 type Props = {
-  appContext: any;
-  boardContext: any;
+  appContext: AppContextState;
 };
 
-export default function AccountMenu({ appContext, boardContext }: Props) {
-  return (
-    <AccountDropdown
-      currentUser={appContext.user && appContext.user.username}
-      onAction={(action: { type: string }) => {
-        if (action.type === "logout") {
-          appContext.logout();
-        } else {
-          boardContext.onAction(action);
-        }
-      }}
-    />
-  );
+export default function AccountMenu({ appContext }: Props) {
+  return <AccountDropdown currentUser={appContext.user} />;
 }

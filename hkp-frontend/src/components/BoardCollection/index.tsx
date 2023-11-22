@@ -49,7 +49,7 @@ export default function BoardCollection({
             <h1 style={s(t.mt15, t.tc, t.fs16, t.w100)}>{headline}</h1>
           )}
         </div>
-        <div style={{ marginTop: -30 }}>
+        <div style={{ marginTop: "-30px", paddingBottom: "20px" }}>
           {renderSearch && (
             <Search
               filter={filter}

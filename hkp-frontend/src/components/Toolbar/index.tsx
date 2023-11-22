@@ -94,10 +94,7 @@ export default function Toolbar({
 
                   <Navigation appContext={appContext} isCompact={isCompact} />
                   {appContext && !isCompact && (
-                    <AccountMenu
-                      appContext={appContext}
-                      boardContext={boardContext}
-                    />
+                    <AccountMenu appContext={appContext} />
                   )}
                 </Menu>
               </div>

@@ -23,12 +23,6 @@ export default function Navigation({ appContext, isCompact }: Props) {
         marginRight: 10,
       }}
     >
-      {/* <span style={navItemStyle}>Go to:</span> */}
-      {username && (
-        <Link to="/dashboard" style={navItemStyle}>
-          {/*appContext.user.username*/}Home
-        </Link>
-      )}
       {isCompact && <CompactNav />}
       {!isCompact && (
         <Link to="/docs" style={navItemStyle}>
@@ -40,7 +34,7 @@ export default function Navigation({ appContext, isCompact }: Props) {
           Examples
         </Link>
       )}
-      {!username && !isCompact && (
+      {!isCompact && (
         <Link to="/playground" style={navItemStyle}>
           Playground
         </Link>

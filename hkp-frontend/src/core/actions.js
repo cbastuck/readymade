@@ -1,5 +1,12 @@
-import { logout, restoreToken } from "./Auth";
 import { serializeObject } from "./format";
+
+function restoreToken() {
+  throw new Error("This functionality does not exist anymore: restoreToken()");
+}
+
+function logout() {
+  throw new Error("This functionality does not exist anymore: logout()");
+}
 
 export function generateQueryParams() {
   const { search = "" } = window.location;

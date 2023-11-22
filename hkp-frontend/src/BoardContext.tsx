@@ -66,9 +66,9 @@ type Props = {
   boardName: string;
   availableRuntimes: Array<RuntimeClass>;
   runtimeApis: RuntimeApiMap;
-  children: JSX.Element;
+  children: JSX.Element | JSX.Element[];
 
-  fetchBoard: () => Promise<BoardDescriptor>;
+  fetchBoard?: () => Promise<BoardDescriptor>;
   isRuntimeInScope: () => boolean;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
   newBoard: (searchParams?: string) => void; // TODO: why search params ??
@@ -162,6 +162,9 @@ class BoardContext extends Component<Props, BoardContextState> {
   }
 
   fetchBoard = async () => {
+    if (!this.props.fetchBoard) {
+      return;
+    }
     const {
       boardName = this.getBoardName(),
       runtimes = [],
@@ -210,11 +213,11 @@ class BoardContext extends Component<Props, BoardContextState> {
   };
 
   isActionAvailable = (action: Action) => {
-    const { isActionAvailable = this.isActionAvailableDefaut } = this.props;
+    const { isActionAvailable = this.isActionAvailableDefault } = this.props;
     return isActionAvailable(action);
   };
 
-  isActionAvailableDefaut = (action: Action) => {
+  isActionAvailableDefault = (action: Action) => {
     switch (action.type) {
       case "clearBoard":
         return true;

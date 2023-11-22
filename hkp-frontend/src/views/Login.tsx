@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "semantic-ui-react";
 
@@ -8,14 +8,23 @@ import { s, t } from "../styles";
 import { restoreItem, storeItem } from "../core/storage";
 import { createChallengeAndVerifier } from "../core/pkce";
 
-export default class Login extends Component {
-  state = {};
+type Props = {
+  board: string;
+};
+
+type State = {
+  pkceChallenge: string | undefined;
+  pkceVerifier: string | undefined;
+};
+
+export default class Login extends Component<Props, State> {
+  state = { pkceChallenge: undefined, pkceVerifier: undefined };
 
   componentDidMount() {
     this.generatePkceChallenge();
   }
 
-  renderOpenIdLogin(pkceChallenge, pkceVerifier) {
+  renderOpenIdLogin(pkceChallenge: string, pkceVerifier: string) {
     const { board } = this.props;
     const query = new URLSearchParams({
       code_challenge: pkceChallenge,

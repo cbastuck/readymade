@@ -18,8 +18,11 @@ import Docs from "./views/docs";
 import BoardSource from "./views/playground/BoardSource";
 import BuildBoard from "./views/BuildBoard";
 import AuthRedirect from "./views/AuthRedirect";
+import AuthRedirectAuth0 from "./views/AuthRedirectAuth0";
 import Import from "./Import";
 import Login from "./views/Login";
+import Profile from "./views/profile";
+
 import LoginFail from "./views/LoginFail";
 import BoardWithContext from "./views/BoardWithContext";
 import Headless from "./views/headless";
@@ -95,9 +98,12 @@ export default function AppRoutes() {
       <Route path="/docs" element={<Docs />} />
       <Route path="/new" exact element={<BuildBoard />} />
       <Route path="/auth2app" element={<AuthRedirect />} />
+      <Route path="/authRedirect" element={<AuthRedirectAuth0 />} />
       <Route path="/import" element={<Import />} />
+      {/* old login route */}
       <Route path="/login" element={<Login />} />
       <Route path="/loginFail" element={<LoginFail />} />
+      <Route path="/profile" element={<Profile />} />
 
       <Route path="/service/:service" element={<ServiceReferenceView />} />
       <Route path="/datamodel/:name" element={<DataModelReferenceView />} />

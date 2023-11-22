@@ -7,9 +7,17 @@ import BoardContext, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
-export default class Template extends Component {
-  renderBreadcrumbs = (title, parent) => {
-    const breadcrumpStyle = {
+type Props = {
+  children: JSX.Element;
+  title: string;
+  isRoot: boolean;
+  parent?: string;
+};
+export default class Template extends Component<Props> {
+  // TODO: these breadcrumps are taylored to the docs views
+  // make this component more generic - also used in Profile
+  renderBreadcrumbs = (title: string, parent?: string) => {
+    const breadcrumpStyle: any = {
       letterSpacing: 1,
       textTransform: "uppercase",
       fontSize: 11,
@@ -51,10 +59,12 @@ export default class Template extends Component {
     return (
       <AppConsumer>
         {(appContext) => (
-          <BoardContext>
+          <BoardContext isActionAvailable={() => false}>
             <BoardConsumer>
               {(boardContext) => (
-                <div style={{ minHeight: "100%" }}>
+                <div
+                  style={{ width: "100%", height: "100%", minHeight: "100%" }}
+                >
                   <Toolbar />
                   <Container
                     style={{
@@ -92,7 +102,11 @@ export default class Template extends Component {
   }
 }
 
-export function NavigateButton({ to, label }) {
+type NavButtonProps = {
+  to: string;
+  label: string;
+};
+export function NavigateButton({ to, label }: NavButtonProps) {
   const navigate = useNavigate();
   return (
     <div style={{ textAlign: "center", width: "100%", margin: "10px 0px" }}>
