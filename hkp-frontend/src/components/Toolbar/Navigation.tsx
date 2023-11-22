@@ -1,19 +1,19 @@
 import { Link } from "react-router-dom";
 
 import CompactNav from "./CompactNav";
+import { AppContextState } from "../../AppContext";
 
 type Props = {
-  appContext: any;
+  appContext: AppContextState;
   isCompact: boolean;
 };
 
-export default function Navigation({ appContext, isCompact }: Props) {
+export default function Navigation({ isCompact }: Props) {
   const navItemStyle: any = {
     margin: 8,
     fontSize: 11,
     textTransform: "uppercase",
   };
-  const username = appContext && appContext.user && appContext.user.username;
   return (
     <div
       style={{

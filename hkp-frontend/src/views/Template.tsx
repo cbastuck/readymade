@@ -8,7 +8,7 @@ import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
 type Props = {
-  children: JSX.Element;
+  children: JSX.Element[] | JSX.Element;
   title: string;
   isRoot: boolean;
   parent?: string;

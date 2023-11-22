@@ -7,9 +7,9 @@ type Props = {
 export default function RestoredUser({ onToken }: Props) {
   const { getIdTokenClaims, isLoading, isAuthenticated } = useAuth0();
   if (!isLoading && isAuthenticated) {
-    getIdTokenClaims().then(
-      (idToken: IdToken | undefined) => idToken && onToken(idToken)
-    );
+    getIdTokenClaims().then((idToken: IdToken | undefined) => {
+      idToken && onToken(idToken);
+    });
   }
   return null;
 }

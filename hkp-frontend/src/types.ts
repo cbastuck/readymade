@@ -250,6 +250,8 @@ export type Bundles = Array<string>;
 export type User = {
   username: string;
   userId: string;
+  picture?: string;
+  updatedAt?: string;
   features?: {
     registry?: string; // stringified Array<string>;
   };

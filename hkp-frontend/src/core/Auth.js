@@ -10,7 +10,7 @@ export function validateToken(token) {
   const now = moment.utc();
   const exp = moment.utc(decoded.exp * 1000);
   if (now > exp) {
-    return {};
+    throw new Error("validateToken() token expired");
   }
 
   return { token, decoded };
@@ -19,10 +19,14 @@ export function validateToken(token) {
 export function processToken(incomingToken) {
   const { token, decoded } = validateToken(incomingToken);
 
+  const { nickname, sub, features, picture, ...rest } = decoded;
+
   return {
     token,
-    username: decoded && decoded.nickname,
-    userId: decoded && decoded.sub,
-    features: decoded && JSON.parse(decoded.features || "{}"),
+    username: nickname,
+    userId: sub,
+    features: JSON.parse(decoded.features || "{}"),
+    picture,
+    ...rest,
   };
 }

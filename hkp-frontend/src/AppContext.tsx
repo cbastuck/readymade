@@ -76,11 +76,11 @@ class AppContext extends Component<Props, AppContextState> {
   updateToken = (idJwt?: string): Promise<void> => {
     return new Promise((resolve) => {
       if (idJwt && idJwt !== this.state.user?.idToken) {
-        const { username, userId, features } = processToken(idJwt);
+        const { username, userId, features, picture } = processToken(idJwt);
         setTimeout(() =>
           this.setState(
             {
-              user: { username, userId, features, idToken: idJwt },
+              user: { username, userId, features, picture, idToken: idJwt },
             },
             resolve
           )
