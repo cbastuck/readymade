@@ -7,12 +7,6 @@ import { hashString } from "../../common";
 
 type Props = {};
 
-function formatDate(date: Date) {
-  return `${date.getFullYear()}${
-    date.getMonth() + 1
-  }${date.getDate()}-${date.getHours()}${date.getMinutes()}`;
-}
-
 export default function Profile(props: Props) {
   const context = useContext(AppCtx);
   const user = context?.user;
@@ -21,26 +15,14 @@ export default function Profile(props: Props) {
 
   const onClick = async () => {
     const message = {
-      type: "document",
-      resourceId: `test-${formatDate(new Date())}`,
-      data: {
-        gambler: "cba",
-        amount: Math.random() * 5,
-        game: val,
-      },
-    };
-    const messageHash = await hashString(JSON.stringify(message));
-    const groupId = "boardName";
-    const payload: any = {
-      QueueUrl:
-        "https://sqs.eu-central-1.amazonaws.com/000000000000/hkp-sqs.fifo",
-      MessageBody: message,
-      MessageGroupId: groupId,
-      MessageDeduplicationId: messageHash,
+      gambler: "cba",
+      amount: Math.random() * 5,
     };
 
+    const payload = { message };
+
     const resp = await fetch(
-      "https://redacted.execute-api.eu-central-1.amazonaws.com/state/someid",
+      `https://redacted.execute-api.eu-central-1.amazonaws.com/store/document/${val}?conflictStrategy=`,
       {
         method: "put",
         headers: {
