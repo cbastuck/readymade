@@ -1,7 +1,7 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import { AppConsumer } from "../AppContext";
-import BoardContext, { BoardConsumer } from "../BoardContext";
+import BoardProvider, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
@@ -16,7 +16,7 @@ class DataModelReferenceView extends Component {
     return (
       <AppConsumer>
         {(appContext) => (
-          <BoardContext>
+          <BoardProvider>
             <BoardConsumer>
               {(boardContext) => (
                 <div style={{ height: "100%" }}>
@@ -28,7 +28,7 @@ class DataModelReferenceView extends Component {
               )}
             </BoardConsumer>
             <Footer />
-          </BoardContext>
+          </BoardProvider>
         )}
       </AppConsumer>
     );

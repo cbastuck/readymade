@@ -1,7 +1,7 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import { AppConsumer } from "../AppContext";
-import BoardContext, { BoardConsumer } from "../BoardContext";
+import BoardProvider, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 import ServiceReference from "../components/ServiceReference";
@@ -20,7 +20,7 @@ class ServiceReferenceView extends Component {
     return (
       <AppConsumer>
         {(appContext) => (
-          <BoardContext>
+          <BoardProvider>
             <div
               style={{
                 display: "flex",
@@ -47,7 +47,7 @@ class ServiceReferenceView extends Component {
               </BoardConsumer>
               <Footer flex />
             </div>
-          </BoardContext>
+          </BoardProvider>
         )}
       </AppConsumer>
     );

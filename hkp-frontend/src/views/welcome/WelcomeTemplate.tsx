@@ -1,7 +1,7 @@
 import { ReactElement, useState } from "react";
 import { Location } from "react-router-dom";
 
-import BoardContext from "../../BoardContext";
+import BoardProvider from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
 
@@ -26,7 +26,7 @@ function Welcome({ children, location, pageStyle }: Props) {
   }
 
   return (
-    <BoardContext user={null} isActionAvailable={() => false}>
+    <BoardProvider user={null} isActionAvailable={() => false}>
       <div>
         <BackgroundImage />
         <Toolbar />
@@ -50,7 +50,7 @@ function Welcome({ children, location, pageStyle }: Props) {
         </div>
         <Footer />
       </div>
-    </BoardContext>
+    </BoardProvider>
   );
 }
 

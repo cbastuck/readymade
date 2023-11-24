@@ -1,8 +1,8 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Link } from "react-router-dom";
 
 import { AppConsumer } from "../AppContext";
-import BoardContext, { BoardConsumer } from "../BoardContext";
+import BoardProvider, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
@@ -16,7 +16,7 @@ export default class LoginFail extends Component {
     return (
       <AppConsumer>
         {(appContext) => (
-          <BoardContext>
+          <BoardProvider>
             <div className="hero-image">
               <BoardConsumer>{(boardContext) => <Toolbar />}</BoardConsumer>
               <div className="hero-text">
@@ -30,7 +30,7 @@ export default class LoginFail extends Component {
               </div>
               <Footer />
             </div>
-          </BoardContext>
+          </BoardProvider>
         )}
       </AppConsumer>
     );

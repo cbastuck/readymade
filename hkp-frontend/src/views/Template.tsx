@@ -1,9 +1,9 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Container, Breadcrumb, Button } from "semantic-ui-react";
 
 import { AppConsumer } from "../AppContext";
-import BoardContext, { BoardConsumer } from "../BoardContext";
+import BoardProvider, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
@@ -59,7 +59,7 @@ export default class Template extends Component<Props> {
     return (
       <AppConsumer>
         {(appContext) => (
-          <BoardContext isActionAvailable={() => false}>
+          <BoardProvider isActionAvailable={() => false}>
             <BoardConsumer>
               {(boardContext) => (
                 <div
@@ -95,7 +95,7 @@ export default class Template extends Component<Props> {
             </BoardConsumer>
             <div style={{ height: 5 }} />
             <Footer />
-          </BoardContext>
+          </BoardProvider>
         )}
       </AppConsumer>
     );

@@ -1,10 +1,10 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Link } from "react-router-dom";
 import { Button, Card, Image } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
 import { AppConsumer } from "../../AppContext";
-import BoardContext, { BoardConsumer } from "../../BoardContext";
+import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
 import BoardCollection from "../../components/BoardCollection";
@@ -73,7 +73,7 @@ export default class MyBoards extends Component {
     return (
       <AppConsumer>
         {(appContext) => (
-          <BoardContext>
+          <BoardProvider>
             <BoardConsumer>
               {(boardContext) => (
                 <div style={{ height: "100%" }}>
@@ -95,7 +95,7 @@ export default class MyBoards extends Component {
               )}
             </BoardConsumer>
             <Footer />
-          </BoardContext>
+          </BoardProvider>
         )}
       </AppConsumer>
     );
