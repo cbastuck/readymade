@@ -63,6 +63,8 @@ import CloudSourceDescriptor from "../services/CloudSource";
 // import GeneticOptimizerDescriptor from "../services/GeneticOptimizer";
 // import DownloaderDescriptor from "../services/Downloader";
 
+import BoardService from "../services/BoardService";
+
 export const defaultRegistry: Array<ServiceModule> = [
   TimerDescriptor,
   MonitorDescriptor,
@@ -123,6 +125,8 @@ export const defaultRegistry: Array<ServiceModule> = [
   // cloud
   CloudSinkDescriptor,
   CloudSourceDescriptor,
+
+  BoardService,
 
   //DEPRECATED
   /*

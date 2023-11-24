@@ -17,6 +17,7 @@ import { getActivationId } from "./common";
 import SelectorField from "../../components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
 import {
+  OnResult,
   PeerInputActivation,
   PeerInputRouting,
   PeerJsHostDescriptor,
@@ -40,6 +41,8 @@ type Props = {
   sidechainRouting: SidechainRouting;
   boardName: string;
   description: string;
+  headless?: boolean;
+  onResult?: OnResult;
 
   onChangeOutputRouting: (
     runtime: RuntimeDescriptor,
@@ -452,6 +455,15 @@ export default class Board extends Component<Props, State> {
     const filteredPeers =
       peersContext?.peerNames.filter((x) => ownPeers.indexOf(x) === -1) || [];
 
+    const onResult = (
+      uuid: string | null,
+      result: any,
+      requestId: string | null
+    ) =>
+      this.props.onResult
+        ? this.props.onResult(uuid, result, requestId)
+        : this.onResult(runtime, peersContext, uuid, result, requestId);
+
     return (
       <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
         <Runtime
@@ -460,19 +472,15 @@ export default class Board extends Component<Props, State> {
           ref={(rt) => (this.runtimeInstances[runtime.id] = rt)}
           boardContext={boardContext}
           runtime={runtime}
-          onResult={(
-            uuid: string | null,
-            result: any,
-            requestId: string | null
-          ) => this.onResult(runtime, peersContext, uuid, result, requestId)}
+          onResult={onResult}
           outputs={this.renderOutputs(
             filteredPeers,
             runtime,
             peersContext,
             boardContext
           )}
-          // expanded={!runtime.params || !runtime.params.minimized}
           inputs={this.renderInputs(filteredPeers, runtime, peersContext)}
+          headless={this.props.headless}
         />
       </DragProvider>
     );

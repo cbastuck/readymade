@@ -72,7 +72,7 @@ function CloudSourceUI(props: Props) {
         value={resourceId}
         onChange={(_, { value }) => service.configure({ resourceId: value })}
       />
-      <div style={{ display: "flex", flexDirection: "row", marginTop: "2px" }}>
+      <div style={{ display: "flex", flexDirection: "row", marginTop: "5px" }}>
         <Label
           style={{
             textTransform: "uppercase",

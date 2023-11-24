@@ -617,17 +617,36 @@ export default class Runtime extends Component<Props, State> {
         : boardContext.acquireRuntimeScope(boardContext.boardName, runtime));
 
     const scope = boardContext.scopes[runtimeId];
+
+    const renderActualRuntime = (headless: boolean) => {
+      return runtime.type === "remote"
+        ? this.renderRemoteRuntime(
+            scope,
+            runtime,
+            headless ? false : expanded,
+            user,
+            boardName,
+            services,
+            readonly,
+            onArrangeService
+          )
+        : runtime.type === "browser"
+        ? this.renderBrowserRuntime(
+            scope,
+            runtime,
+            headless ? false : expanded,
+            user,
+            boardName,
+            services,
+            readonly,
+            onArrangeService,
+            wrapServices
+          )
+        : null;
+    };
+
     if (headless && runtime) {
-      return this.renderBrowserRuntime(
-        scope,
-        runtime,
-        expanded,
-        user,
-        boardName,
-        services,
-        readonly,
-        onArrangeService
-      );
+      return renderActualRuntime(true);
     }
 
     return (
@@ -679,44 +698,7 @@ export default class Runtime extends Component<Props, State> {
             style={readonlyStyle}
             onClickCapture={(e) => readonly && e.stopPropagation()}
           >
-            {
-              runtime && runtime.type === "remote"
-                ? this.renderRemoteRuntime(
-                    scope,
-                    runtime,
-                    expanded,
-                    user,
-                    boardName,
-                    services,
-                    readonly,
-                    onArrangeService
-                  )
-                : runtime.type === "browser"
-                ? this.renderBrowserRuntime(
-                    scope,
-                    runtime,
-                    expanded,
-                    user,
-                    boardName,
-                    services,
-                    readonly,
-                    onArrangeService,
-                    wrapServices
-                  )
-                : null
-              /*runtime.type === "node"
-              ? this.renderNodeRuntime(
-                  runtime,
-                  expanded,
-                  userId,
-                  boardName,
-                  services,
-                  readonly,
-                  registry,
-                  onArrangeService
-                ) : null
-              :*/
-            }
+            {runtime && renderActualRuntime(false)}
             {((services && services.length === 0) || !isOwner) && (
               <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
             )}
