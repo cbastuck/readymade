@@ -104,10 +104,7 @@ class Playground extends Component<Props, State> {
     outputRouting: {},
   };
 
-  user = {
-    username: "Anonymous",
-    userId: undefined,
-  };
+  user = null;
 
   externalInputs: { [runtimeId: string]: ExternalInput } = {};
 

@@ -1,10 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 import { Checkbox, Label } from "semantic-ui-react";
 
 import ServiceUI from "../../services/ServiceUI";
 import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
 import InputField from "../../../components/shared/InputField";
 import moment from "moment";
+import { AppCtx } from "../../../AppContext";
 
 const serviceId = "hookup.to/service/cloud-sink";
 const serviceName = "Cloud-Sink";
@@ -22,6 +23,8 @@ function CloudSinkUI(props: Props) {
   const [resourceId, setResourceId] = useState("");
   const [resourceType, setResourceType] = useState("");
   const [conflictStrategy, setConflictStrategy] = useState("");
+  const context = useContext(AppCtx);
+  const user = context?.user;
 
   const onUpdate = useCallback((update: Partial<Config>) => {
     const { resourceType, resourceId, conflictStrategy } = update;
@@ -46,6 +49,14 @@ function CloudSinkUI(props: Props) {
       onUpdate(notification),
     [onUpdate]
   );
+
+  const renderUserMissing = () => {
+    return (
+      <div style={{ height: "100%" }}>
+        <span>This service requires you to login</span>
+      </div>
+    );
+  };
 
   const renderMain = (service: ServiceImpl) => {
     return (
@@ -90,12 +101,14 @@ function CloudSinkUI(props: Props) {
     );
   };
 
+  const panel = user ? renderMain : renderUserMissing;
+
   return (
     <ServiceUI
       {...props}
       onInit={onInit}
       onNotification={onNotification}
-      segments={[{ name: "main", render: renderMain }]}
+      segments={[{ name: "main", render: panel }]}
     />
   );
 }

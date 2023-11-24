@@ -17,7 +17,15 @@ export default function AuthEntries({ currentUser }: Props) {
   const context = useContext(AppCtx);
   return (
     <>
-      <Dropdown.Item onClick={async () => await loginWithRedirect()}>
+      <Dropdown.Item
+        onClick={async () =>
+          await loginWithRedirect({
+            appState: {
+              returnTo: window.location.href,
+            },
+          })
+        }
+      >
         <span style={fontStyle}>Login</span>
       </Dropdown.Item>
       <Dropdown.Item

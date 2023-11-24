@@ -1,9 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
 import InputField from "../../../components/shared/InputField";
 import { Button, Checkbox, Label } from "semantic-ui-react";
+import { AppCtx } from "../../../AppContext";
 
 const serviceId = "hookup.to/service/cloud-source";
 const serviceName = "Cloud-Source";
@@ -23,6 +24,9 @@ function CloudSourceUI(props: Props) {
   const [resourceType, setResourceType] = useState("");
   const [matchResourceIdExact, setMatchResourceIdExact] = useState(true);
 
+  const context = useContext(AppCtx);
+  const user = context?.user;
+
   const onUpdate = useCallback((update: Partial<Config>) => {
     const { resourceType, resourceId, matchResourceIdExact } = update;
     if (resourceId !== undefined) {
@@ -37,7 +41,7 @@ function CloudSourceUI(props: Props) {
   }, []);
 
   const onInit = useCallback(
-    (initialState: Partial<Config>) => onUpdate(initialState),
+    (initial: Partial<Config>) => onUpdate(initial),
     [onUpdate]
   );
 
@@ -46,6 +50,14 @@ function CloudSourceUI(props: Props) {
       onUpdate(notification),
     [onUpdate]
   );
+
+  const renderUserMissing = () => {
+    return (
+      <div style={{ height: "100%" }}>
+        <span>This service requires you to login</span>
+      </div>
+    );
+  };
 
   const renderMain = (service: ServiceImpl) => (
     <div>
@@ -103,12 +115,13 @@ function CloudSourceUI(props: Props) {
     </div>
   );
 
+  const panel = user ? renderMain : renderUserMissing;
   return (
     <ServiceUI
       {...props}
       onInit={onInit}
       onNotification={onNotification}
-      segments={[{ name: "main", render: renderMain }]}
+      segments={[{ name: "main", render: panel }]}
     />
   );
 }

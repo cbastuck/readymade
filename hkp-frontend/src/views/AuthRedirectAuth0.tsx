@@ -31,6 +31,8 @@ export default function AuthRedirectAuth0() {
       </div>
     );
   }
-
-  return <Navigate to="/" />;
+  /* auth0 framework already puts the right target location into
+   * the window without navigating to it. Check appState in AuthEntries.tsx
+   */
+  return <Navigate to={window.location.pathname} />;
 }
