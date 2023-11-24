@@ -86,8 +86,10 @@ class MediaPlayer {
 
   async configure() {}
 
+  async destroy() {}
+
   async process(params: any) {
-    this.app.notify(this as any, { process: params });
+    this.app.notify(this, { process: params });
     return params;
   }
 }

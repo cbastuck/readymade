@@ -7,12 +7,12 @@ import { serializeWebsocketBuffer } from "../../core/format";
 import ServiceUiContainer from "../ServiceUiContainer";
 
 import {
-  AppImpl,
   OnResult,
   RuntimeDescriptor,
   ServiceAction,
   ServiceDescriptor,
   ServiceImpl,
+  User,
 } from "../../types";
 import { createServiceUI } from "../../UIFactory";
 import { BoardContextState, BoardCtx } from "../../BoardContext";
@@ -36,7 +36,7 @@ type Command = {
 type Props = {
   scope: BrowserRuntimeScope;
   runtime: RuntimeDescriptor;
-  userId: string;
+  user: User | null;
   services: Array<ServiceDescriptor>;
   boardName: string;
   collapsed?: boolean;
@@ -56,7 +56,6 @@ export default class BrowserRuntime extends Component<Props, State> {
   context!: BoardContextState;
   websocket: WebSocket | null | undefined = null;
   eventSource: EventSource | undefined = undefined;
-  app: AppImpl | null | undefined = undefined;
 
   state = {
     loadingCounter: 0,
@@ -67,9 +66,9 @@ export default class BrowserRuntime extends Component<Props, State> {
   }
 
   connect(id: string) {
-    const { userId, runtime, boardName } = this.props;
+    const { user, runtime, boardName } = this.props;
     const { name: runtimeName } = runtime;
-    const backendPath = `/api/${userId}/${boardName}/${id}`;
+    const backendPath = `/api/${user?.userId}/${boardName}/${id}`;
     logInfo(`Connecting ${runtimeName} to ${backendPath}`);
 
     const useWebSockets = true;
@@ -190,12 +189,12 @@ export default class BrowserRuntime extends Component<Props, State> {
     data: any,
     requestId: string | null
   ) => {
-    const { userId, runtime, boardName } = this.props;
+    const { user, runtime, boardName } = this.props;
     const { id: runtimeId } = runtime;
 
-    if (!userId) {
+    if (!user) {
       console.error(
-        "Can not send result without valid UserId",
+        "Can not send result without valid user",
         runtime,
         boardName
       );
@@ -212,7 +211,7 @@ export default class BrowserRuntime extends Component<Props, State> {
       // send the result via websocket
       const buffer = await serializeWebsocketBuffer(data, {
         board: boardName, // TODO: before was this.board
-        userId,
+        userId: user.userId,
         serviceUuid,
         requestId,
       });
@@ -221,7 +220,7 @@ export default class BrowserRuntime extends Component<Props, State> {
     } else {
       // ... or as post
       return request(
-        `${userId}/${boardName}/${runtimeId}/${requestId}`,
+        `${user.userId}/${boardName}/${runtimeId}/${requestId}`,
         "POST",
         false,
         data
@@ -255,7 +254,7 @@ export default class BrowserRuntime extends Component<Props, State> {
 
   render() {
     const {
-      userId,
+      user,
       boardName,
       readonly,
       runtime,
@@ -275,6 +274,7 @@ export default class BrowserRuntime extends Component<Props, State> {
 
     if (scope && scope.onResult !== onResult) {
       scope.onResult = onResult;
+      scope.authenticatedUser = user;
     }
 
     return (
@@ -284,14 +284,14 @@ export default class BrowserRuntime extends Component<Props, State> {
           runtime={runtime}
           readonly={readonly}
           services={services}
-          userId={userId}
+          userId={user?.userId}
           onArrangeService={onArrangeService}
           onServiceAction={onServiceAction}
           onCreateServiceUi={(
             boardName: string,
             service: ServiceImpl,
             runtimeId: string,
-            userId: string
+            userId: string | undefined
           ) =>
             scope.registry
               ? createServiceUI(

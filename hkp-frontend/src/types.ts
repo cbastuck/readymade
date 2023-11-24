@@ -32,6 +32,8 @@ export type OnResult = (
 
 export interface RuntimeScope {
   descriptor: RuntimeDescriptor;
+  authenticatedUser: User | null;
+
   getApp(): AppImpl;
   // boardName: string; --> Remove the board name from the services and move it to AppImpl
   onResult: OnResult;
@@ -157,6 +159,7 @@ export type ServiceAction = {
 };
 
 export type AppImpl = {
+  getAuthenticatedUser: () => User | null;
   notify: (svc: ServiceImpl, notification: any) => void;
   next: (svc: InstanceId | null, result: any) => void;
   getServiceById: (uuid: string) => ServiceImpl | null;

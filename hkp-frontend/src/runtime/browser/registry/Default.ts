@@ -55,6 +55,10 @@ import GithubSourceDescriptor from "../services/GithubSource";
 import GithubSinkDescriptor from "../services/GithubSink";
 import { ServiceModule } from "../../../types";
 
+// Cloud services
+import CloudSinkDescriptor from "../services/CloudSink";
+import CloudSourceDescriptor from "../services/CloudSource";
+
 // Modules with additional dependencies
 // import GeneticOptimizerDescriptor from "../services/GeneticOptimizer";
 // import DownloaderDescriptor from "../services/Downloader";
@@ -115,6 +119,10 @@ export const defaultRegistry: Array<ServiceModule> = [
   ChunkedFileProviderDescriptor,
   FeedbackProviderDesriptor,
   FeedbackTakerDesriptor,
+
+  // cloud
+  CloudSinkDescriptor,
+  CloudSourceDescriptor,
 
   //DEPRECATED
   /*

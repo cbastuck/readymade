@@ -6,10 +6,15 @@ type Props = {
 
 export default function RestoredUser({ onToken }: Props) {
   const { getIdTokenClaims, isLoading, isAuthenticated } = useAuth0();
-  if (!isLoading && isAuthenticated) {
-    getIdTokenClaims().then((idToken: IdToken | undefined) => {
-      idToken && onToken(idToken);
-    });
-  }
+  const onRestore = async () => {
+    if (!isLoading && isAuthenticated) {
+      const idToken: IdToken | undefined = await getIdTokenClaims();
+      if (idToken) {
+        onToken(idToken);
+      }
+    }
+  };
+
+  onRestore();
   return null;
 }

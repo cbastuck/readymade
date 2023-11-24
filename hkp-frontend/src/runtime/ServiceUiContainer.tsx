@@ -6,7 +6,7 @@ import ServiceDropBar from "./ServiceDropBar";
 import { RuntimeDescriptor, ServiceAction, ServiceImpl } from "../types";
 
 type Props = {
-  userId: string;
+  userId: string | undefined;
   boardName: string;
   runtime: RuntimeDescriptor;
   services: Array<ServiceImpl>;
@@ -18,7 +18,7 @@ type Props = {
     boardName: string,
     service: ServiceImpl,
     runtimeId: string,
-    userId: string
+    userId: string | undefined
   ) => ReactElement | null;
 };
 export default class ServiceUiContainer extends Component<Props> {

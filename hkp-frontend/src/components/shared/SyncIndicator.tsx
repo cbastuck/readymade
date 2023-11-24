@@ -29,6 +29,7 @@ export default class SyncIndicator extends Component<Props> {
               color: !inSync && "red",
               cursor: !inSync ? "pointer" : undefined,
               textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
               ...style,
             }}
             onClick={onClick}

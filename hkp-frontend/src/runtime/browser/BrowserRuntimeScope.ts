@@ -5,6 +5,7 @@ import {
   RuntimeScope,
   ServiceDescriptor,
   ServiceImpl,
+  User,
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
@@ -19,6 +20,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   };
   app: AppImpl;
   registry: BrowserRegistry;
+  authenticatedUser: User | null = null;
 
   constructor(runtime: RuntimeDescriptor, registry: BrowserRegistry) {
     this.descriptor = runtime;

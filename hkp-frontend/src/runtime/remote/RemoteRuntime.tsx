@@ -7,6 +7,7 @@ import {
   ServiceImpl,
   RuntimeScope,
   OnResult,
+  User,
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
@@ -15,7 +16,7 @@ import createServiceUI from "./UIRegistry";
 import { configureService, processService } from "./RemoteRuntimeApi";
 
 type Props = {
-  userId: string;
+  user: User | null;
   boardName: string;
   services: Array<ServiceDescriptor>;
   runtime: RuntimeDescriptor;
@@ -28,7 +29,7 @@ type Props = {
 };
 
 export default function RemoteRuntime({
-  userId,
+  user,
   boardName,
   services,
   runtime,
@@ -64,6 +65,7 @@ export default function RemoteRuntime({
 
   if (scope.onResult !== onResult) {
     scope.onResult = onResult;
+    scope.authenticatedUser = user;
   }
   scope.onConfig = (instanceId: string, config: object) => {
     setServicesWithConfig((prevState) =>
@@ -75,7 +77,7 @@ export default function RemoteRuntime({
 
   return (
     <ServiceUiContainer
-      userId={userId}
+      userId={user?.userId}
       boardName={boardName}
       runtime={runtime}
       readonly={readonly}
@@ -92,7 +94,7 @@ const onCreateServiceUi = (
   boardName: string,
   service: ServiceImpl,
   runtimeId: string,
-  userId: string
+  userId: string | undefined
 ): ReactElement | null => {
   const { serviceId } = service;
 

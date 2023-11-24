@@ -9,6 +9,7 @@ import RemoteRuntimeScope from "./RemoteRuntimeScope";
 
 export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
   return {
+    getAuthenticatedUser: () => scope.authenticatedUser,
     notify: (svc: ServiceImpl, notification: any): void => {},
     next: (svc: InstanceId | null, result: any): void => {},
     getServiceById: (uuid: string): ServiceImpl | null => {

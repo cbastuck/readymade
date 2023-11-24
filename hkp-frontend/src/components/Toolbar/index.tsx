@@ -57,7 +57,7 @@ export default function Toolbar({
                   }}
                 >
                   <HomeIcon />
-                  {appContext?.user && (
+                  {board && (
                     <BoardMenu
                       boardSyncActive={boardSyncActive}
                       board={board}

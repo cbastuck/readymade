@@ -18,6 +18,7 @@ export default function App() {
         redirect_uri: redirectUri,
       }}
       useCookiesForTransactions={false}
+      cacheLocation="localstorage"
     >
       <AppContext>
         <div

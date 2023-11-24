@@ -23,7 +23,7 @@ type Props = {
   labelStyle?: any;
   style?: any;
 
-  onChange: (ev: OnChangeEvent, value: OnChangeValue) => void;
+  onChange?: (ev: OnChangeEvent, value: OnChangeValue) => void;
   onEscape?: (ev: OnChangeEvent, value: OnChangeValue) => void;
   onFocus?: () => void;
   onLabelClicked?: (ev: OnChangeEvent, value: OnChangeValue) => void;
@@ -64,7 +64,7 @@ export default class InputField extends Component<Props, State> {
           value !== undefined && typeof value === "boolean" ? value : false
         }
         onChange={(ev, { checked }) => {
-          onChange(ev, { value: checked });
+          onChange && onChange(ev, { value: checked });
         }}
       />
     );

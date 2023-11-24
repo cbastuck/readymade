@@ -19,6 +19,7 @@ import {
   ServiceRegistry,
   RuntimeScope,
   OnResult,
+  User,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 import BrowserRuntimeScope from "../runtime/browser/BrowserRuntimeScope";
@@ -434,7 +435,7 @@ export default class Runtime extends Component<Props, State> {
     scope: RuntimeScope,
     runtime: RuntimeDescriptor,
     expanded: boolean,
-    userId: string,
+    user: User | null,
     boardName: string,
     services: Array<ServiceDescriptor>,
     readonly: boolean,
@@ -454,7 +455,7 @@ export default class Runtime extends Component<Props, State> {
         >
           <RemoteRuntime
             scope={scope}
-            userId={userId}
+            user={user}
             boardName={boardName}
             runtime={runtime}
             services={services}
@@ -474,7 +475,7 @@ export default class Runtime extends Component<Props, State> {
     scope: RuntimeScope,
     runtime: RuntimeDescriptor,
     expanded: boolean,
-    userId: string,
+    user: User | null,
     boardName: string,
     services: Array<ServiceDescriptor>,
     readonly: boolean,
@@ -505,7 +506,7 @@ export default class Runtime extends Component<Props, State> {
         )}
         <BrowserRuntime
           collapsed={!expanded}
-          userId={userId}
+          user={user}
           boardName={boardName}
           scope={scope as BrowserRuntimeScope}
           runtime={runtime}
@@ -575,8 +576,7 @@ export default class Runtime extends Component<Props, State> {
     const runtimeName = runtime ? runtime.name : "Blank";
     const services =
       runtime && boardContext && boardContext.services[runtime.id];
-    const userId =
-      boardContext && boardContext.user && boardContext.user.userId;
+    const user = boardContext && boardContext.user && boardContext.user;
     const boardName = boardContext && boardContext.boardName;
     const registry =
       runtime && boardContext && boardContext.registry[runtime.id];
@@ -622,7 +622,7 @@ export default class Runtime extends Component<Props, State> {
         scope,
         runtime,
         expanded,
-        userId,
+        user,
         boardName,
         services,
         readonly,
@@ -685,7 +685,7 @@ export default class Runtime extends Component<Props, State> {
                     scope,
                     runtime,
                     expanded,
-                    userId,
+                    user,
                     boardName,
                     services,
                     readonly,
@@ -696,7 +696,7 @@ export default class Runtime extends Component<Props, State> {
                     scope,
                     runtime,
                     expanded,
-                    userId,
+                    user,
                     boardName,
                     services,
                     readonly,

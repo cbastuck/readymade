@@ -3,6 +3,7 @@ import {
   RemoteRuntimeMessageType,
   RuntimeDescriptor,
   RuntimeScope,
+  User,
 } from "../../types";
 import { createRemoteRuntimeApp } from "./RemoteRuntimeApp";
 
@@ -12,6 +13,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   outputUrl: string;
   socket: WebSocket | null;
   pendingReconnectPromise: [() => void, () => void] | null; // resolve/reject callbacks
+  authenticatedUser: User | null = null;
 
   constructor(runtime: RuntimeDescriptor, outputUrl: string) {
     this.app = createRemoteRuntimeApp(this);

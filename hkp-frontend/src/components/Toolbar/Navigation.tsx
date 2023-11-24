@@ -4,7 +4,7 @@ import CompactNav from "./CompactNav";
 import { AppContextState } from "../../AppContext";
 
 type Props = {
-  appContext: AppContextState;
+  appContext: AppContextState | null;
   isCompact: boolean;
 };
 

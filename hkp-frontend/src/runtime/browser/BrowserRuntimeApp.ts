@@ -11,6 +11,7 @@ import BrowserRuntimeScope from "./BrowserRuntimeScope";
 
 export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
   return {
+    getAuthenticatedUser: () => scope.authenticatedUser,
     next: (svc: InstanceId | null, result: any) => {
       return scope.next(svc, result);
     },

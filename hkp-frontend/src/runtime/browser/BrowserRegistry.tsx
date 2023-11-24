@@ -41,6 +41,8 @@ export const allowedServices = [
   "hookup.to/service/hacker/considered",
   "hookup.to/service/hacker/dangerous",
   "hookup.to/service/fetcher",
+  "hookup.to/service/cloud-source",
+  "hookup.to/service/cloud-sink",
 ];
 
 export default class BrowserRegistry {
