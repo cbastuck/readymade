@@ -112,7 +112,7 @@ export default class SelectorField extends Component<Props, State> {
       value: syncedValue,
       options = {},
       style = {},
-      minWidth = "100%",
+      minWidth = undefined, //"100%",
       placeholder = "",
       uppercaseValues = true,
       uppercaseKeys = true,
@@ -164,6 +164,9 @@ export default class SelectorField extends Component<Props, State> {
             cursor: disabled ? "not-allowed" : "pointer",
             backgroundColor: disabled ? "lightgray" : undefined,
             color: disabled ? "darkgray" : undefined,
+            minHeight: optionsVisible ? "100px" : undefined,
+            overflowY: optionsVisible ? "auto" : "hidden",
+            overflowX: "hidden",
           }}
           onClick={() =>
             !disabled &&

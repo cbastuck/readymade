@@ -1,17 +1,27 @@
-import { useCallback, useContext } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 import {
   AppImpl,
   RuntimeApiMap,
+  SavedBoard,
   ServiceClass,
   ServiceImpl,
 } from "../../../types";
-import BoardProvider, { BoardConsumer } from "../../../BoardContext";
+import BoardProvider, {
+  BoardConsumer,
+  BoardContextState,
+} from "../../../BoardContext";
 import Board from "../../../views/playground/Board";
 import { AppCtx } from "../../../AppContext";
 import browserRuntimeApi from "../../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../../runtime/remote/RemoteRuntimeApi";
+import {
+  getLocalBoards,
+  localStoragePrefix,
+} from "../../../views/playground/common";
+import SelectorField from "../../../components/shared/SelectorField";
+import { Button } from "semantic-ui-react";
 
 const serviceId = "hookup.to/service/board-service";
 const serviceName = "Board-Service";
@@ -22,6 +32,11 @@ type Config = {
 };
 
 function BoardServiceUI(props: Props) {
+  const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
+  useEffect(() => setSavedBoards(getLocalBoards(localStoragePrefix)), []);
+
+  const [selectedSavedBoard, setSelectedSavedBoard] = useState("");
+
   const onUpdate = useCallback((update: Partial<Config>) => {}, []);
 
   const onInit = useCallback(
@@ -35,14 +50,27 @@ function BoardServiceUI(props: Props) {
     [onUpdate]
   );
 
+  const selectedBoard = selectedSavedBoard || savedBoards[0]?.name || "";
+
   const appContext = useContext(AppCtx);
 
-  const boardName = "simple-counter";
-  const fetchBoard = () => {
-    const data = localStorage.getItem(`hkp-playground-${boardName}`);
+  const fetchBoard = useCallback(() => {
+    const data = localStorage.getItem(`${localStoragePrefix}${selectedBoard}`);
     const board = data && JSON.parse(data);
     return board;
-  };
+  }, [selectedBoard]);
+
+  const onChangeSavedBoard = useCallback(
+    (boardContext: BoardContextState, board: string) => {
+      setSelectedSavedBoard(board);
+      setTimeout(() => boardContext.fetchBoard(), 100);
+    },
+    []
+  );
+
+  const openSavedBoard = useCallback(() => {
+    window.open(`/playground/${selectedBoard}`, "blank");
+  }, [selectedBoard]);
 
   const runtimeApis: RuntimeApiMap = {
     browser: browserRuntimeApi,
@@ -62,20 +90,55 @@ function BoardServiceUI(props: Props) {
             <BoardConsumer>
               {(boardContext) =>
                 boardContext && (
-                  <Board
-                    appContext={appContext}
-                    inputRouting={{}}
-                    outputRouting={{}}
-                    boardContext={boardContext}
-                    sidechainRouting={{}}
-                    boardName={boardName}
-                    description={`Wrapped '${boardName}' board`}
-                    onChangeOutputRouting={() => {}}
-                    onChangeInputRouting={() => {}}
-                    onChangeSidechainRouting={() => {}}
-                    headless={true}
-                    onResult={onResult}
-                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      width: "100% ",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "100%",
+                        display: "flex",
+                        flexDirection: "row",
+                      }}
+                    >
+                      <SelectorField
+                        label="Board"
+                        value={selectedBoard}
+                        options={savedBoards.reduce(
+                          (all, board) => ({
+                            ...all,
+                            [board.name]: board.name,
+                          }),
+                          {}
+                        )}
+                        onChange={(ev, { value: board }) =>
+                          onChangeSavedBoard(boardContext, board)
+                        }
+                      />
+                      <Button
+                        icon="external alternate"
+                        size="tiny"
+                        style={{ width: "50px", height: "33px" }}
+                        onClick={openSavedBoard}
+                      />
+                    </div>
+                    <Board
+                      appContext={appContext}
+                      inputRouting={{}}
+                      outputRouting={{}}
+                      boardContext={boardContext}
+                      sidechainRouting={{}}
+                      boardName={selectedBoard}
+                      onChangeOutputRouting={() => {}}
+                      onChangeInputRouting={() => {}}
+                      onChangeSidechainRouting={() => {}}
+                      headless={true}
+                      onResult={onResult}
+                    />
+                  </div>
                 )
               }
             </BoardConsumer>

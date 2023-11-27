@@ -106,7 +106,6 @@ export default function BoardActionsBar({ boardContext }: Props) {
         <HoverActionIcon
           tooltip="Play board"
           iconName="play"
-          dangerous
           disabled={!isPlayEnabled}
           onClick={onClick}
         />

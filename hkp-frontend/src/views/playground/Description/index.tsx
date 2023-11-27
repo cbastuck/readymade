@@ -3,7 +3,7 @@ import { createDescription } from "./factory";
 import { BaseType } from "./types";
 
 type Props = {
-  description: string | BaseType | Array<BaseType>;
+  description?: string | BaseType | Array<BaseType>;
   boardName: string;
 };
 

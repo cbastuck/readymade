@@ -6,10 +6,10 @@ import BoardCollection from "../../components/BoardCollection";
 import { SavedBoard } from "../../types";
 
 export default function LoadPanel() {
-  const [items, setSavedBoards] = useState<Array<SavedBoard>>([]);
+  const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
   useEffect(() => setSavedBoards(getLocalBoards(localStoragePrefix)), []);
 
-  if (!items || items.length === 0) {
+  if (!savedBoards || savedBoards.length === 0) {
     return null;
   }
 
@@ -18,7 +18,7 @@ export default function LoadPanel() {
       <div style={s(t.mt20, t.uc)}>
         <BoardCollection
           headline="Saved on this browser"
-          items={items}
+          items={savedBoards}
           renderBorder={false}
         />
       </div>

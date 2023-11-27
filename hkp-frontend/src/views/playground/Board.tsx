@@ -40,7 +40,7 @@ type Props = {
   boardContext: BoardContextState;
   sidechainRouting: SidechainRouting;
   boardName: string;
-  description: string;
+  description?: string;
   headless?: boolean;
   onResult?: OnResult;
 
@@ -622,8 +622,12 @@ export default class Board extends Component<Props, State> {
             </PeersConsumer>
           </PeersProvider>
         </div>
-        <Description description={description} boardName={boardName} />
-        <VSpacer />
+        {description && (
+          <>
+            <Description description={description} boardName={boardName} />
+            <VSpacer />
+          </>
+        )}
       </div>
     );
   }
