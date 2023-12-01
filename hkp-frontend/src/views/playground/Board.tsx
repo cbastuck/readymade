@@ -17,7 +17,6 @@ import { getActivationId } from "./common";
 import SelectorField from "../../components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
 import {
-  OnResult,
   PeerInputActivation,
   PeerInputRouting,
   PeerJsHostDescriptor,
@@ -42,7 +41,7 @@ type Props = {
   boardName: string;
   description?: string;
   headless?: boolean;
-  onResult?: OnResult;
+  onResult?: (result: any) => void;
 
   onChangeOutputRouting: (
     runtime: RuntimeDescriptor,
@@ -194,6 +193,10 @@ export default class Board extends Component<Props, State> {
         nextScope && this.props.boardContext.runtimeApis[nextRuntime.type];
       if (api) {
         api.processRuntime(nextScope, result, null);
+      } else {
+        if (this.props.onResult) {
+          this.props.onResult(result);
+        }
       }
     }
 
@@ -459,10 +462,7 @@ export default class Board extends Component<Props, State> {
       uuid: string | null,
       result: any,
       requestId: string | null
-    ) =>
-      this.props.onResult
-        ? this.props.onResult(uuid, result, requestId)
-        : this.onResult(runtime, peersContext, uuid, result, requestId);
+    ) => this.onResult(runtime, peersContext, uuid, result, requestId);
 
     return (
       <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>

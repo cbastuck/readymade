@@ -442,33 +442,32 @@ export default class Runtime extends Component<Props, State> {
     onArrangeService: (serviceUuid: string, position: number) => void
   ) => {
     const { wrapServices } = this.state;
-    if (expanded) {
-      return (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            width: "100%",
-            flexFlow: wrapServices ? "wrap" : "row nowrap",
-            overflow: wrapServices ? undefined : "auto",
-          }}
-        >
-          <RemoteRuntime
-            scope={scope}
-            user={user}
-            boardName={boardName}
-            runtime={runtime}
-            services={services}
-            readonly={readonly}
-            onArrangeService={onArrangeService}
-            onServiceAction={this.onServiceAction}
-            onResult={this.props.onResult}
-          />
-          {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
-        </div>
-      );
-    }
-    return false;
+
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+          flexFlow: wrapServices ? "wrap" : "row nowrap",
+          overflow: wrapServices ? undefined : "auto",
+        }}
+      >
+        <RemoteRuntime
+          collapsed={!expanded}
+          scope={scope}
+          user={user}
+          boardName={boardName}
+          runtime={runtime}
+          services={services}
+          readonly={readonly}
+          onArrangeService={onArrangeService}
+          onServiceAction={this.onServiceAction}
+          onResult={this.props.onResult}
+        />
+        {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
+      </div>
+    );
   };
 
   renderBrowserRuntime = (

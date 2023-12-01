@@ -36,11 +36,11 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     result: any,
     requestId: string | null
   ): Promise<void> => {
-    console.warn("BrowserRuntimeScope.onResult not set");
+    console.warn("RemoteRuntimeScope.onResult not set");
   };
 
   onConfig = (instanceId: string, config: object) => {
-    console.warn("BrowserRuntimeScope.onConfig not set");
+    console.warn("RemoteRuntimeScope.onConfig not set");
   };
 
   connect = (outputUrl: string) => {

@@ -21,8 +21,9 @@ type Props = {
   services: Array<ServiceDescriptor>;
   runtime: RuntimeDescriptor;
   readonly: boolean;
-  children?: JSX.Element | JSX.Element[];
   scope: RuntimeScope;
+  children?: JSX.Element | JSX.Element[];
+  collapsed?: boolean;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
   onResult: OnResult;
@@ -35,6 +36,7 @@ export default function RemoteRuntime({
   runtime,
   readonly,
   scope,
+  collapsed,
   onResult,
   onArrangeService,
   onServiceAction,
@@ -76,17 +78,19 @@ export default function RemoteRuntime({
   };
 
   return (
-    <ServiceUiContainer
-      userId={user?.userId}
-      boardName={boardName}
-      runtime={runtime}
-      readonly={readonly}
-      services={servicesWithConfig}
-      showBypassOnlyIfExplicit={true}
-      onArrangeService={onArrangeService}
-      onServiceAction={onServiceAction}
-      onCreateServiceUi={onCreateServiceUi}
-    />
+    !collapsed && (
+      <ServiceUiContainer
+        userId={user?.userId}
+        boardName={boardName}
+        runtime={runtime}
+        readonly={readonly}
+        services={servicesWithConfig}
+        showBypassOnlyIfExplicit={true}
+        onArrangeService={onArrangeService}
+        onServiceAction={onServiceAction}
+        onCreateServiceUi={onCreateServiceUi}
+      />
+    )
   );
 }
 

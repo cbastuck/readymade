@@ -165,11 +165,12 @@ class BoardContext extends Component<Props, BoardContextState> {
     if (!this.props.fetchBoard) {
       return;
     }
+
     const {
       boardName = this.getBoardName(),
       runtimes = [],
       services = {},
-    } = await this.props.fetchBoard();
+    } = (await this.props.fetchBoard()) || {};
 
     const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
       runtimes.map((rt) => {
@@ -276,7 +277,7 @@ class BoardContext extends Component<Props, BoardContextState> {
         if (firstRuntime) {
           const [scope, api] = this.getRuntimeScopeApi(firstRuntime.id);
           if (scope && api) {
-            api.processRuntime(scope, undefined, null);
+            api.processRuntime(scope, action.params || undefined, null);
           }
         }
         break;

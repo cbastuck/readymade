@@ -1,12 +1,15 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 import {
   AppImpl,
+  PeerInputActivation,
+  PeerOutputActivation,
   RuntimeApiMap,
   SavedBoard,
   ServiceClass,
   ServiceImpl,
+  SidechainRouting,
 } from "../../../types";
 import BoardProvider, {
   BoardConsumer,
@@ -29,34 +32,107 @@ const serviceName = "Board-Service";
 type Props = {};
 type Config = {
   result: any;
+  selectedBoard: string;
+  command?: {
+    action: string;
+    params: any;
+  };
 };
 
 function BoardServiceUI(props: Props) {
+  const [inputRouting, setInputRouting] = useState<{
+    [runtimeId: string]: PeerInputActivation;
+  }>({});
+  const [outputRouting, setOutputRouting] = useState<{
+    [runtimeId: string]: PeerOutputActivation;
+  }>({});
+  const [sidechainRouting, setSidechainRouting] = useState<SidechainRouting>(
+    {}
+  );
+
   const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
   useEffect(() => setSavedBoards(getLocalBoards(localStoragePrefix)), []);
 
   const [selectedSavedBoard, setSelectedSavedBoard] = useState("");
 
-  const onUpdate = useCallback((update: Partial<Config>) => {}, []);
+  const boardProviderRef = useRef<BoardProvider | null>(null);
+
+  useEffect(() => {
+    if (selectedSavedBoard) {
+      console.log(`BoardService fetching board ${selectedSavedBoard}`);
+      boardProviderRef.current?.fetchBoard();
+    }
+  }, [selectedSavedBoard]);
+
+  const onUpdate = useCallback((update: Partial<Config>) => {
+    if (update.selectedBoard !== undefined) {
+      setSelectedSavedBoard(update.selectedBoard);
+    }
+  }, []);
 
   const onInit = useCallback(
     (initialState: Partial<Config>) => onUpdate(initialState),
     [onUpdate]
   );
 
-  const onNotification = useCallback(
-    (service: BoardService, notification: Partial<Config>) =>
-      onUpdate(notification),
-    [onUpdate]
-  );
+  const pendingPromise = useRef<any>(null);
+
+  const processSingle = async (params: any) => {
+    return new Promise((resolve, reject) => {
+      pendingPromise.current = { resolve, reject };
+      boardProviderRef.current?.onAction({
+        type: "playBoard",
+        params,
+      });
+    });
+  };
+
+  const process = async (params: any | Array<any>) => {
+    if (Array.isArray(params)) {
+      for (const p of params) {
+        await processSingle(p);
+      }
+    } else {
+      processSingle(params);
+    }
+  };
+
+  const onNotification = (
+    service: BoardService,
+    notification: Partial<Config>
+  ) => {
+    if (notification.command) {
+      if (notification.command.action === "process") {
+        process(notification.command.params);
+      }
+    } else {
+      onUpdate(notification);
+    }
+  };
 
   const selectedBoard = selectedSavedBoard || savedBoards[0]?.name || "";
 
   const appContext = useContext(AppCtx);
 
   const fetchBoard = useCallback(() => {
+    if (!selectedBoard) {
+      return null;
+    }
     const data = localStorage.getItem(`${localStoragePrefix}${selectedBoard}`);
+    if (!data) {
+      throw new Error(`Board with name: '${selectedBoard}' was not found`);
+    }
     const board = data && JSON.parse(data);
+    const { inputRouting, outputRouting, sidechainRouting } = board || {};
+    if (inputRouting !== undefined) {
+      setInputRouting(inputRouting);
+    }
+    if (outputRouting !== undefined) {
+      setOutputRouting(outputRouting);
+    }
+    if (sidechainRouting !== undefined) {
+      setSidechainRouting(sidechainRouting);
+    }
     return board;
   }, [selectedBoard]);
 
@@ -79,14 +155,19 @@ function BoardServiceUI(props: Props) {
 
   const renderMain = appContext
     ? (service: ServiceImpl) => {
-        const onResult = async (
-          uuid: string | null,
-          result: any,
-          requestId: string | null
-        ) => service.configure({ result });
-
+        const onResult = async (result: any) => {
+          if (pendingPromise.current) {
+            pendingPromise.current.resolve(result);
+            pendingPromise.current = null;
+          }
+          service.configure({ result }); // send back the result
+        };
         return (
-          <BoardProvider fetchBoard={fetchBoard} runtimeApis={runtimeApis}>
+          <BoardProvider
+            ref={boardProviderRef}
+            fetchBoard={fetchBoard}
+            runtimeApis={runtimeApis}
+          >
             <BoardConsumer>
               {(boardContext) =>
                 boardContext && (
@@ -114,9 +195,10 @@ function BoardServiceUI(props: Props) {
                           }),
                           {}
                         )}
-                        onChange={(ev, { value: board }) =>
-                          onChangeSavedBoard(boardContext, board)
-                        }
+                        onChange={(ev, { value: board }) => {
+                          service.configure({ selectedBoard: board });
+                          onChangeSavedBoard(boardContext, board);
+                        }}
                       />
                       <Button
                         icon="external alternate"
@@ -127,10 +209,10 @@ function BoardServiceUI(props: Props) {
                     </div>
                     <Board
                       appContext={appContext}
-                      inputRouting={{}}
-                      outputRouting={{}}
+                      inputRouting={inputRouting}
+                      outputRouting={outputRouting}
                       boardContext={boardContext}
-                      sidechainRouting={{}}
+                      sidechainRouting={sidechainRouting}
                       boardName={selectedBoard}
                       onChangeOutputRouting={() => {}}
                       onChangeInputRouting={() => {}}
@@ -161,6 +243,7 @@ class BoardService {
   app: AppImpl;
   board: string;
   uuid: string;
+  selectedBoard: string | null = null;
 
   constructor(
     app: AppImpl,
@@ -177,12 +260,22 @@ class BoardService {
     if (config.hasOwnProperty("result")) {
       this.app.next(this, config.result);
     }
+
+    if (config.selectedBoard !== undefined) {
+      this.selectedBoard = config.selectedBoard;
+    }
   }
 
   async destroy() {}
 
   async process(params: any) {
-    return params;
+    this.app.notify(this, {
+      command: {
+        action: "process",
+        params,
+      },
+    });
+    return null; // stop the process, onResult will come async and be injected
   }
 }
 

@@ -399,6 +399,9 @@ export class InjectorUI extends Component {
           { name: "File", render: this.renderFileInput },
           { name: "Drop", render: this.renderDragNDropInput },
         ]}
+        initialSegment={(service) =>
+          typeof service.recentInjection === "object" ? "JSON" : "Text"
+        }
       />
     );
   }

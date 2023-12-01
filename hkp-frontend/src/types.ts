@@ -149,6 +149,7 @@ export type Action = {
   type: ActionType;
   board?: string;
   flow?: RuntimeFlowOutputOptions;
+  params?: any;
 };
 
 const serviceActionTypes = ["remove", "getConfig"] as const;

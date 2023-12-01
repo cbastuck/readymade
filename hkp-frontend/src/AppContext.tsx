@@ -1,4 +1,5 @@
 import { Component, createContext } from "react";
+import { IdToken } from "@auth0/auth0-react";
 
 import { processToken } from "./core/Auth";
 import { User, Notification } from "./types";
@@ -9,7 +10,7 @@ export type AppContextState = {
   notifications: Array<Notification>;
   pushNotification: (n: Notification) => void;
   popNotification: () => void;
-  updateToken: (incomingToken: string, claims?: any) => void;
+  updateToken: (incomingToken: IdToken) => Promise<void>;
   logout: () => void;
 };
 
@@ -73,18 +74,25 @@ class AppContext extends Component<Props, AppContextState> {
     };
   }
 
-  updateToken = (idJwt?: string): Promise<void> => {
-    return new Promise((resolve) => {
+  updateToken = (idToken: IdToken): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const idJwt = idToken.__raw;
       if (idJwt && idJwt !== this.state.user?.idToken) {
-        const { username, userId, features, picture } = processToken(idJwt);
-        setTimeout(() =>
-          this.setState(
-            {
-              user: { username, userId, features, picture, idToken: idJwt },
-            },
-            resolve
-          )
-        );
+        try {
+          const { username, userId, features, picture } = processToken(idJwt);
+          setTimeout(() =>
+            this.setState(
+              {
+                user: { username, userId, features, picture, idToken: idJwt },
+              },
+              resolve
+            )
+          );
+        } catch (err) {
+          console.log("GOING TO REJECT");
+          reject(err);
+          return;
+        }
       }
       resolve();
     });
@@ -102,7 +110,7 @@ class AppContext extends Component<Props, AppContextState> {
           ...this.state,
         }}
       >
-        <RestoredUser onToken={({ __raw: jwt }) => this.updateToken(jwt)} />
+        <RestoredUser onToken={this.updateToken} />
         {children}
       </Provider>
     );

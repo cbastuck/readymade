@@ -5,12 +5,22 @@ type Props = {
 };
 
 export default function RestoredUser({ onToken }: Props) {
-  const { getIdTokenClaims, isLoading, isAuthenticated } = useAuth0();
+  const { getIdTokenClaims, isLoading, isAuthenticated, logout } = useAuth0();
   const onRestore = async () => {
     if (!isLoading && isAuthenticated) {
       const idToken: IdToken | undefined = await getIdTokenClaims();
       if (idToken) {
-        onToken(idToken);
+        try {
+          await onToken(idToken);
+        } catch (err: any) {
+          if (err.cause === "TokenExpired") {
+            await logout({ openUrl: false });
+            throw err;
+          } else {
+            console.log("AppContext.updateToken() unknown error ", err);
+            throw err;
+          }
+        }
       }
     }
   };
