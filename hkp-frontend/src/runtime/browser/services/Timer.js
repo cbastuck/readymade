@@ -1,9 +1,9 @@
 import { Component } from "react";
-import { Button } from "semantic-ui-react";
 
 import ServiceUI from "../../services/ServiceUI";
 import InputField from "../../../components/shared/InputField";
 import SelectorField from "../../../components/shared/SelectorField";
+import Button from "../../../components/shared/Button";
 import { s, t } from "../../../styles";
 
 import { TimerDescriptor } from "hkp-services";
@@ -72,7 +72,9 @@ export class TimerUI extends Component {
             this.setState({ periodicUnit: value });
           }}
         />
-        <Button.Group widths="10" style={t.mt3}>
+        <div
+          style={{ display: "flex", flexDirection: "row", marginTop: "5px" }}
+        >
           <Button
             style={buttonStyle}
             onClick={() =>
@@ -94,7 +96,7 @@ export class TimerUI extends Component {
           >
             Stop
           </Button>
-        </Button.Group>
+        </div>
       </div>
     );
   };
@@ -119,7 +121,7 @@ export class TimerUI extends Component {
         }}
       />
       <Button
-        style={s(t.w100, t.uc, t.ls1, t.fs12)}
+        style={{ marginTop: "3px" }}
         onClick={() =>
           service.configure({
             periodic: false,
@@ -136,7 +138,13 @@ export class TimerUI extends Component {
   );
 
   renderCounter = (service) => (
-    <div style={{ display: "flex", flexDirection: "column", paddingBottom: 3 }}>
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        paddingBottom: 3,
+      }}
+    >
       <InputField
         type="number"
         label="Counter"
@@ -150,7 +158,7 @@ export class TimerUI extends Component {
         }}
       />
       <Button
-        style={s(t.w100, t.uc, t.ls1, t.fs12)}
+        style={{ marginTop: "3px" }}
         onClick={() =>
           service.configure({
             periodic: false,

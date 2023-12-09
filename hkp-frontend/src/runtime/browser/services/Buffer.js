@@ -1,10 +1,9 @@
-import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
+import { Component } from "react";
+import { List } from "semantic-ui-react";
 
 import { BufferDescriptor } from "hkp-services";
-
-import { List } from "semantic-ui-react";
 import InputField from "../../../components/shared/InputField";
+import Button from "../../../components/shared/Button";
 import { s, t } from "../../../styles";
 
 import ServiceUI from "../../services/ServiceUI";

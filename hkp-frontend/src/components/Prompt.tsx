@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Modal, Button } from "semantic-ui-react";
+import { Modal } from "semantic-ui-react";
 
+import Button from "./shared/Button";
 import { s, t } from "../styles";
 
 export type PromptRefApi = { getInput: () => Promise<boolean> };

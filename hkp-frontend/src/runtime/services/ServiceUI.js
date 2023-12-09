@@ -105,7 +105,7 @@ export default class ServiceUI extends Component {
           </div>
           <div
             style={{
-              padding: 14,
+              //padding: 14,
               margin: "15px 20px",
               height: "90%",
             }}

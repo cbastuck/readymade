@@ -1,10 +1,11 @@
-import React, { Component } from "react";
-import { Input, Button, Checkbox } from "semantic-ui-react";
+import { Component } from "react";
+import { Input, Checkbox } from "semantic-ui-react";
 
 import { MapDescriptor } from "hkp-services";
 
 import InputLabelValue from "../../../components/shared/InputLabelValue";
 import SelectorField from "../../../components/shared/SelectorField";
+import Button from "../../../components/shared/Button";
 
 import ServiceUI from "../../services/ServiceUI";
 import { s, t } from "../../../styles";
@@ -98,11 +99,7 @@ export class MapUI extends Component {
           <div>
             <Button
               style={{
-                fontSize: 12,
-                textTransform: "uppercase",
-                letterSpacing: 1,
-                textAlign: "center",
-                width: "99%",
+                marginTop: "3px",
               }}
               onClick={() =>
                 this.setState({

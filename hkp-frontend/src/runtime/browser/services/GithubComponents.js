@@ -1,9 +1,10 @@
-import React, { Component } from "react";
-import { Button, Card, Icon, Image, Checkbox } from "semantic-ui-react";
+import { Component } from "react";
+import { Card, Icon, Image, Checkbox } from "semantic-ui-react";
 
 import MessageReceiver from "../../../MessageReceiver";
 import SelectorField from "../../../components/shared/SelectorField";
 import InputField from "../../../components/shared/InputField";
+import Button from "../../../components/shared/Button";
 import Tree from "../../../components/shared/Tree";
 import { s, t } from "../../../styles";
 import {

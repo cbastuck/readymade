@@ -1,10 +1,11 @@
-import React, { Component } from "react";
-import { Button, Checkbox, TextArea, Input, Progress } from "semantic-ui-react";
+import { Component } from "react";
+import { Checkbox, TextArea, Input, Progress } from "semantic-ui-react";
 
 import { s, t } from "../../../styles";
 import ServiceUI from "../../services/ServiceUI";
 import Editor from "../../../components/shared/Editor/index";
 import DropZone from "../../../components/shared/DropZone";
+import Button from "../../../components/shared/Button";
 import { Debouncer } from "./helpers";
 
 const serviceId = "hookup.to/service/injector";
@@ -153,7 +154,6 @@ export class InjectorUI extends Component {
           onItems={(items) => this.setState({ items })}
         />
         <Button
-          style={this.buttonStyle}
           onClick={() => {
             if (blob) {
               this.readFile(service, blob, false);
@@ -188,7 +188,6 @@ export class InjectorUI extends Component {
             textTransform: "uppercase",
             letterSpacing: 1,
             textAlign: "left",
-            margin: "4px 0px",
           }}
         >
           Enter plain text
@@ -270,7 +269,7 @@ export class InjectorUI extends Component {
       >
         <h1
           style={{
-            height: "10%",
+            height: "33px",
             fontSize: 12,
             textTransform: "uppercase",
             letterSpacing: 1,
@@ -278,17 +277,19 @@ export class InjectorUI extends Component {
             margin: "4px 0px",
           }}
         >
-          Input text below
+          Enter json data
         </h1>
 
-        <Editor
-          ref={(editor) => (this.editor = editor)}
-          value={recentInjection}
-          language="json"
-        />
+        <div style={{ height: "calc(100% - 90px)" }}>
+          <Editor
+            ref={(editor) => (this.editor = editor)}
+            value={recentInjection}
+            language="json"
+          />
+        </div>
 
         <div
-          style={{ display: "flex", flexDirection: "row", margin: "5px 0px" }}
+          style={{ display: "flex", flexDirection: "row", margin: "3px 0px" }}
         >
           <Button
             style={this.buttonStyle}

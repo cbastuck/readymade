@@ -1,5 +1,5 @@
 import { Component, ReactElement } from "react";
-import { Button, Modal } from "semantic-ui-react";
+import { Modal, Button } from "semantic-ui-react";
 
 import { openTab } from "../core/actions";
 

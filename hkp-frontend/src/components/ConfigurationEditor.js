@@ -1,10 +1,11 @@
-import React, { Component } from "react";
-import { Button, TextArea } from "semantic-ui-react";
+import { Component } from "react";
+import { TextArea } from "semantic-ui-react";
 
 import Resizable from "./Resizable";
 import Editor from "./shared/Editor/index";
 import { filterPrivateMembers } from "../runtime/browser/services/helpers";
 import { s, t } from "../styles";
+import Button from "./shared/Button";
 import { detectBrowserIOS } from "../runtime/browser/services/helpers";
 
 export default class ConfigurationEditor extends Component {

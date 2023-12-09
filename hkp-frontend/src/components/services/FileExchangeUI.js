@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Input, Button } from "semantic-ui-react";
 
 import { configureService, getServiceConfiguration } from "../../core/actions";

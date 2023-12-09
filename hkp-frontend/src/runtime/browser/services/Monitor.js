@@ -1,9 +1,10 @@
 import { Component } from "react";
-import { TextArea, Button } from "semantic-ui-react";
+import { TextArea } from "semantic-ui-react";
 
 import { MonitorDescriptor } from "hkp-services";
 
 import Editor from "../../../components/shared/Editor/index";
+import Button from "../../../components/shared/Button";
 import { s, t } from "../../../styles";
 import ServiceUI from "../../services/ServiceUI";
 

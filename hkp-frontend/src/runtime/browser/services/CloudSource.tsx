@@ -1,9 +1,11 @@
 import { useCallback, useContext, useState } from "react";
+import { Checkbox, Label } from "semantic-ui-react";
 
 import ServiceUI from "../../services/ServiceUI";
 import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
 import InputField from "../../../components/shared/InputField";
-import { Button, Checkbox, Label } from "semantic-ui-react";
+import Button from "../../../components/shared/Button";
+
 import { AppCtx } from "../../../AppContext";
 
 const serviceId = "hookup.to/service/cloud-source";

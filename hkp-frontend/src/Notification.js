@@ -1,4 +1,6 @@
-import { Message, Button, Icon } from "semantic-ui-react";
+import { Message, Icon } from "semantic-ui-react";
+
+import Button from "./components/shared/Button";
 
 export default function Notification({ value, onClose }) {
   const { type, message, ctas = [] } = value;

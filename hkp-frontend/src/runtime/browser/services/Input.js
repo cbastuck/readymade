@@ -1,7 +1,8 @@
-import React, { Component } from "react";
-import { Checkbox, Button } from "semantic-ui-react";
+import { Component } from "react";
+import { Checkbox } from "semantic-ui-react";
 
 import InputField from "../../../components/shared/InputField";
+import Button from "../../../components/shared/Button";
 import ServiceUI from "../../services/ServiceUI";
 import { s, t } from "../../../styles";
 import WebsocketChannel from "../../WebsocketChannel";

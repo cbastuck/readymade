@@ -18,6 +18,7 @@ type Props = {
   unit?: string;
   labelStyle?: any;
   style?: any;
+  resizeable?: boolean;
 
   onChange: (ev: OnChangeEvent, value: OnChangeValue) => void;
   onEscape?: (ev: OnChangeEvent, value: OnChangeValue) => void;
@@ -56,9 +57,10 @@ export default class InputText extends Component<Props, State> {
       labelStyle,
       style,
       value: syncedValue,
+      resizeable = true,
+      synced = true,
       onChange,
       onLabelClicked = () => {},
-      synced = true,
     } = this.props;
     const value = synced ? this.state.value : syncedValue;
     const inSync = synced ? value === syncedValue : true;
@@ -94,7 +96,7 @@ export default class InputText extends Component<Props, State> {
           style={{
             width: "100%",
             fontSize: 14,
-
+            resize: resizeable ? "both" : "none",
             border: "none",
             borderBottom: "1px solid lightgray",
           }}

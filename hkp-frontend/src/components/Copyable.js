@@ -1,6 +1,6 @@
-import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
+import { Component } from "react";
 
+import Button from "./shared/Button";
 import { s, t } from "../styles";
 
 export default class Copyable extends Component {

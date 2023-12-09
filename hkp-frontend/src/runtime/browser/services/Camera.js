@@ -1,9 +1,10 @@
-import React, { Component } from "react";
-import { Checkbox, Button } from "semantic-ui-react";
+import { Component } from "react";
+import { Checkbox } from "semantic-ui-react";
 
 import ServiceUI from "../../services/ServiceUI";
 import { s, t } from "../../../styles";
 import InputField from "../../../components/shared/InputField";
+import Button from "../../../components/shared/Button";
 
 const serviceId = "hookup.to/service/camera";
 const serviceName = "Camera";

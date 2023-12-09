@@ -1,6 +1,6 @@
-import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
+import { Component } from "react";
 
+import Button from "../shared/Button";
 import { configureService, getServiceConfiguration } from "../../core/actions";
 import { debounce } from "../shared/util";
 

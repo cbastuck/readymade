@@ -24,7 +24,7 @@ import {
   localStoragePrefix,
 } from "../../../views/playground/common";
 import SelectorField from "../../../components/shared/SelectorField";
-import { Button } from "semantic-ui-react";
+import Button from "../../../components/shared/Button";
 
 const serviceId = "hookup.to/service/board-service";
 const serviceName = "Board-Service";

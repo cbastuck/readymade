@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Button, Tab, Menu, Card, Icon } from "semantic-ui-react";
 
 import InputField from "./shared/InputField";
