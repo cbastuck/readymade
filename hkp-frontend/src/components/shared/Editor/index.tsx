@@ -2,8 +2,6 @@ import { Component } from "react";
 import MonacoEditor from "@monaco-editor/react";
 import { t } from "../../../styles";
 
-const initialHeight = "150px";
-
 type Props = {
   value: string;
   width: number;
@@ -13,10 +11,11 @@ type Props = {
   initialWidth?: number;
   onChange: (updated: string | undefined) => void;
 };
+
 export default class Editor extends Component<Props> {
-  state = { height: initialHeight };
   editor: any; // monaco.editor.IStandaloneCodeEditor
 
+  state = { height: "150px" };
   render() {
     const {
       value,
@@ -36,18 +35,16 @@ export default class Editor extends Component<Props> {
             textAlign: "left",
             width: width || "100%",
             minWidth: initialWidth,
-            height: height || "100%",
+            height: height || this.state.height,
             ...t.selectable,
             ...style,
           } as any
         }
       >
         <MonacoEditor
-          width="100%"
-          height={this.state.height}
           onMount={(editor) => {
-            setTimeout(() => this.setState({ height: "100%" }), 10);
             this.editor = editor;
+            setTimeout(() => this.setState({ height: "100%" }));
           }}
           onChange={onChange}
           defaultLanguage={language}

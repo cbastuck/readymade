@@ -48,7 +48,7 @@ export const t = {
 
   resizable: {
     resize: "both",
-    overflow: "auto",
+    //overflow: "auto",
   },
   foreground: 2000003,
 

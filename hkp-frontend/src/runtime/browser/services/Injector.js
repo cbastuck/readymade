@@ -265,10 +265,12 @@ export class InjectorUI extends Component {
           display: "flex",
           flexDirection: "column",
           height: "100%",
+          width: "100%",
         }}
       >
         <h1
           style={{
+            height: "10%",
             fontSize: 12,
             textTransform: "uppercase",
             letterSpacing: 1,
@@ -285,7 +287,9 @@ export class InjectorUI extends Component {
           language="json"
         />
 
-        <div style={{ display: "flex", flexDirection: "row" }}>
+        <div
+          style={{ display: "flex", flexDirection: "row", margin: "5px 0px" }}
+        >
           <Button
             style={this.buttonStyle}
             onClick={() => {
@@ -393,6 +397,7 @@ export class InjectorUI extends Component {
         {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
+        // onResize={(_, size) => this.setState({ size })}
         segments={[
           { name: "Text", render: this.renderRawInput },
           { name: "JSON", render: this.renderStructuredData },

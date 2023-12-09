@@ -1,57 +1,79 @@
-import React, { Component } from "react";
-
-import { s, t } from "../styles";
+import { Component } from "react";
 
 export default class Resizable extends Component {
-  componentDidMount() {
-    this.resizableObserver = new ResizeObserver(this.onResize);
-  }
-  componentWillUnmount() {
-    this.resetObserver();
-  }
-
-  resetObserver = () => {
-    if (this.resizableObserver) {
-      this.resizableObserver.disconnect();
-    }
-  };
-
-  onResize = debounce((entries) => {
-    if (this.props.onResize) {
-      const { width, height } = entries[0].contentRect;
-      const floorWidth = Math.floor(width);
-      const floorHeight = Math.floor(height);
-      if (floorWidth !== this.width || floorHeight !== this.height) {
-        this.width = floorWidth;
-        this.height = floorHeight;
-        this.props.onResize({ width: floorWidth, height: floorHeight });
-      }
-    }
-  }, 300);
-
   render() {
-    const { children, style = {}, hideHandle = false } = this.props;
-    const resizeableStyle = hideHandle ? {} : t.resizable;
+    const { children, hideHandle = false } = this.props;
+    const { width = "auto", height = "auto" } = this.state || {};
     return (
-      <div
-        ref={(ref) => {
-          this.resetObserver();
-          if (ref && this.resizableObserver) {
-            this.resizableObserver.observe(ref);
-          }
-        }}
-        style={s(
-          {
-            overflow: "auto",
-          },
-          resizeableStyle,
-          style
-        )}
-      >
+      <div ref={(ref) => (this.ref = ref)} style={{ width, height }}>
         {children}
+        {!hideHandle && this.renderHandle()}
       </div>
     );
   }
+
+  renderHandle = () => {
+    return (
+      <div
+        style={{
+          position: "absolute",
+          bottom: 0,
+          right: 0,
+          width: 12,
+          height: 12,
+          cursor: "nwse-resize",
+        }}
+        onMouseDown={() => {
+          this.setState({ resizing: true });
+          if (
+            this.initialHeight === undefined ||
+            this.initialWidth === undefined
+          ) {
+            const rect = this.ref.getBoundingClientRect();
+            this.initialWidth = rect.width;
+            this.initialHeight = rect.height;
+          }
+          const mouseMoveHandler = (ev) => {
+            if (this.state.resizing) {
+              if (this.ref) {
+                const rect = this.ref.getBoundingClientRect();
+                const [newWidth, newHeight] = [
+                  Math.max(this.initialWidth, ev.clientX - rect.x),
+                  Math.max(this.initialHeight, ev.clientY - rect.y),
+                ];
+                if (newWidth !== this.width || newHeight !== this.height) {
+                  this.width = newWidth;
+                  this.height = newHeight;
+
+                  const newSize = { width: newWidth, height: newHeight };
+                  this.setState(newSize);
+                  this.props.onResize(newSize);
+                }
+              }
+            }
+          };
+          const mouseUpHandler = () => {
+            this.setState({ resizing: false });
+            document.removeEventListener("mouseup", mouseUpHandler);
+            document.removeEventListener("mousemove", mouseMoveHandler);
+          };
+          document.addEventListener("mouseup", mouseUpHandler);
+          document.addEventListener("mousemove", mouseMoveHandler);
+        }}
+      >
+        <svg viewBox="0 0 10 10">
+          <polygon
+            points="0,8, 10,0, 10,8"
+            style={{
+              fill: "#9f9f9f",
+              stroke: "transparent",
+              strokeWidth: "1",
+            }}
+          />
+        </svg>
+      </div>
+    );
+  };
 }
 
 function debounce(func, timeout = 300) {

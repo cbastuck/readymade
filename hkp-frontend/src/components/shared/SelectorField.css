@@ -1,3 +1,11 @@
 .selector-field-option:hover {
   text-decoration: underline;
 }
+
+.selector-field-selected-value .text {
+  text-overflow: ellipsis;
+  overflow-x: clip;
+  white-space: nowrap;
+  width: calc(100% - 25px);
+  font-size: 13px;
+}

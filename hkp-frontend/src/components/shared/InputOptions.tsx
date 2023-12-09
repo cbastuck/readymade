@@ -65,7 +65,7 @@ export default class InputOptions extends Component<Props, State> {
         style={{
           paddingTop: 10,
           opacity: expanded ? 1 : 0,
-          width: expanded ? 290 : 0,
+          width: expanded ? 300 : 0,
           transition: "width 0.5s, opacity 0.5s",
           overflow: "hidden",
         }}

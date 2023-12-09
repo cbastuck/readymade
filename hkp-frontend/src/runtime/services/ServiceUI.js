@@ -1,5 +1,4 @@
-import React, { Component } from "react";
-import { Menu, Segment } from "semantic-ui-react";
+import { Component } from "react";
 
 import { BoardConsumer } from "../../BoardContext";
 import Resizable from "../../components/Resizable";
@@ -94,57 +93,85 @@ export default class ServiceUI extends Component {
             display: "flex",
             flexDirection: "column",
             height: "100%",
+            width: "100%",
           }}
         >
-          {segments.length > 1 && (
-            <div>
-              <Menu
-                compact
-                pointing
-                style={{
-                  marginTop: 10,
-                  overflow: "hidden",
-                  height: "auto",
-                }}
-              >
-                {segments.map((segment, idx) => (
-                  <Menu.Item
-                    key={`${service.uuid}-${segment.name}-${idx}`}
-                    name={segment.name}
-                    active={currentSegmentName === segment.name}
-                    onClick={(_, { name: currentSegmentName }) =>
-                      this.setState({ currentSegmentName })
-                    }
-                    style={{
-                      textTransform: "uppercase",
-                      fontSize: 11,
-                      letterSpacing: 1,
-                    }}
-                    disabled={segment.disabled}
-                  />
-                ))}
-              </Menu>
-            </div>
-          )}
-
-          <Segment
+          <div
+            style={{
+              height: "10%",
+            }}
+          >
+            {this.renderSegmentsHeader(segments, currentSegmentName)}
+          </div>
+          <div
             style={{
               padding: 14,
               margin: "15px 20px",
-              height: "85%",
-
-              overflow: "hidden",
+              height: "90%",
             }}
           >
             {segment && segment.render && segment.render(service)}
             {segment && segment.component && segment.component({ service })}
             {segment && segment.element ? segment.element : null}
-          </Segment>
+          </div>
         </div>
       </Resizable>
     );
   };
 
+  renderSegmentsHeader = (segments, currentSegmentName) => {
+    if (segments.length < 2) {
+      return null;
+    }
+    return (
+      <div
+        style={{
+          width: "60%",
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
+        <div
+          style={{
+            margin: "5px 0px",
+            display: "flex",
+            flexDirection: "row",
+          }}
+        >
+          {segments.map((segment, idx) => (
+            <div
+              key={`${segment.name}-${idx}`}
+              onClick={() =>
+                this.setState({ currentSegmentName: segment.name })
+              }
+              style={{
+                borderBottom: `solid 1px ${
+                  currentSegmentName === segment.name ? "lightgray" : "white"
+                }`,
+                borderRadius: "2px",
+                width: "100%",
+                padding: "5px",
+              }}
+              disabled={segment.disabled}
+            >
+              <span
+                style={{
+                  textTransform: "uppercase",
+                  fontSize: 11,
+                  letterSpacing: 1,
+                  color:
+                    currentSegmentName === segment.name ? "black" : "darkgray",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {segment.name}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
   renderSingleSegment = (
     boardContext,
     children,

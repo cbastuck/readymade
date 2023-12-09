@@ -123,7 +123,7 @@ export default class OutputOptions extends Component<Props, State> {
       <div
         style={{
           opacity: expanded ? 1 : 0,
-          width: expanded ? 300 : 0,
+          width: expanded ? 320 : 0,
           transition: "width 0.5s, opacity 0.5s",
           overflowX: "hidden",
           overflowY: "auto",
@@ -151,7 +151,7 @@ export default class OutputOptions extends Component<Props, State> {
           t.ls1,
           t.fs12,
           {
-            height: 300,
+            height: 320,
             marginTop: 10,
           },
           {

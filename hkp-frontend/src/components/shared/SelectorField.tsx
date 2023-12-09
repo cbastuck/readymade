@@ -1,4 +1,5 @@
 import React, { Component } from "react";
+import { Dropdown } from "semantic-ui-react";
 
 import SyncIndicator from "./SyncIndicator";
 
@@ -59,66 +60,75 @@ export default class SelectorField extends Component<Props, State> {
     }
   }
 
-  renderOptions = () => {
+  renderDropdown = () => {
     const {
-      label = "",
-      onChange = undefined,
-      options = {},
-      highlight = undefined,
-      uppercaseValues = true,
+      options: optionsMap,
+      value,
+      placeholder,
+      uppercaseValues,
+      disabled,
+      onChange,
     } = this.props;
+    const options = Object.keys(optionsMap).map((key) => ({
+      key,
+      text: optionsMap[key],
+      value: optionsMap[key],
+    }));
+
     return (
-      <div
+      <Dropdown
+        className="selector-field-selected-value"
         style={{
-          textAlign: "left",
-          textTransform: uppercaseValues ? "uppercase" : "initial",
-          backgroundColor: "white",
-          position: "absolute",
-          zIndex: 2000003,
-          margin: "0px -5px",
+          minHeight: 0,
+          height: 33,
+          paddingTop: 6,
+          width: "100%",
+          paddingRight: 10,
+          border: "solid 1px rgba(34, 36, 38, 0.15)",
+          borderRadius: 3,
+          paddingLeft: 5,
         }}
+        disabled={disabled}
+        placeholder={value ? value : placeholder}
+        value={value || undefined}
       >
-        {Object.keys(options).map((key, idx) => (
-          <div
-            key={`${label}.${key}.${idx}`}
-            className="selector-field-option"
-            style={{
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: "bold",
-              whiteSpace: "nowrap",
-              padding: "3px 10px",
-              backgroundColor: highlight === key ? "#8aa1b733" : undefined,
-            }}
-            onClick={(ev: React.MouseEvent) => {
-              onChange && onChange(ev, { value: key, index: idx });
-              this.setState({ optionsVisible: false });
-            }}
-          >
-            {options[key]}
-          </div>
-        ))}
-      </div>
+        <Dropdown.Menu>
+          {options.map((option, idx) => (
+            <Dropdown.Item
+              key={option.key}
+              style={{
+                backgroundColor: idx % 2 ? "#f9f9f9" : "white",
+              }}
+              onClick={(ev: React.MouseEvent) => {
+                onChange && onChange(ev, { value: option.key, index: idx });
+                this.setState({ optionsVisible: false });
+              }}
+            >
+              <span
+                style={{
+                  textTransform: uppercaseValues ? "uppercase" : "initial",
+                }}
+              >
+                {option.text}
+              </span>
+            </Dropdown.Item>
+          ))}
+        </Dropdown.Menu>
+      </Dropdown>
     );
   };
 
   render() {
-    const { value, optionsVisible } = this.state;
+    const { value } = this.state;
     const {
       label,
-      onChange,
-      onOpen,
-      disabled = false,
       value: syncedValue,
-      options = {},
       style = {},
       minWidth = undefined, //"100%",
-      placeholder = "",
-      uppercaseValues = true,
       uppercaseKeys = true,
       labelStyle = {},
+      onChange,
     } = this.props;
-    const text = options[value];
     const fontSize = 11;
     const useDefaultLabel = typeof label !== "object";
     return (
@@ -148,38 +158,8 @@ export default class SelectorField extends Component<Props, State> {
         ) : (
           label
         )}
-        <div
-          style={{
-            textTransform: uppercaseValues ? "uppercase" : "initial",
-            fontSize: 12,
-            padding: 8,
-            border: "solid 1px #DDD",
-            borderRadius: 3,
-            flexGrow: 3,
-            height: 33,
-            textAlign: "left",
-            whiteSpace: "nowrap",
-            position: "relative",
-            left: -2,
-            cursor: disabled ? "not-allowed" : "pointer",
-            backgroundColor: disabled ? "lightgray" : undefined,
-            color: disabled ? "darkgray" : undefined,
-            minHeight: optionsVisible ? "100px" : undefined,
-            overflowY: optionsVisible ? "auto" : "hidden",
-            overflowX: "hidden",
-          }}
-          onClick={() =>
-            !disabled &&
-            this.setState(
-              { optionsVisible: !optionsVisible },
-              () => onOpen && onOpen(options)
-            )
-          }
-        >
-          {`${text || placeholder}`}
-          <span style={{ marginLeft: 5 }}> ⬇ </span>
-          {optionsVisible && this.renderOptions()}
-        </div>
+
+        {this.renderDropdown()}
       </div>
     );
   }
