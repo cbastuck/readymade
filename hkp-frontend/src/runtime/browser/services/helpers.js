@@ -62,7 +62,10 @@ export function filterPrivateMembers(service) {
 }
 
 export function createObjectURL(object, type) {
-  const b = isArrayBuffer(object) ? new Blob([object], type) : object;
+  const b =
+    isArrayBuffer(object) || object instanceof Uint8Array
+      ? new Blob([object], type)
+      : object;
   try {
     return window.URL
       ? window.URL.createObjectURL(b)

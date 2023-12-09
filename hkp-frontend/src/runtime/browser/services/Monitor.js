@@ -138,6 +138,12 @@ function unroll(params) {
   if (isBlob) {
     return `Blob (${params.type} ${params.size} bytes)`;
   }
+
+  const isUint8Array = params instanceof Uint8Array;
+  if (isUint8Array) {
+    return `Uint8Array of ${params.length} bytes)`;
+  }
+
   const isPrimitive = !isObject(params);
   if (isPrimitive) {
     return params;
