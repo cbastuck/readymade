@@ -57,9 +57,10 @@ function BoardServiceUI(props: Props) {
 
   const boardProviderRef = useRef<BoardProvider | null>(null);
 
+  const [isExpanded, setIsExpanded] = useState(false);
+
   useEffect(() => {
     if (selectedSavedBoard) {
-      console.log(`BoardService fetching board ${selectedSavedBoard}`);
       boardProviderRef.current?.fetchBoard();
     }
   }, [selectedSavedBoard]);
@@ -87,13 +88,16 @@ function BoardServiceUI(props: Props) {
     });
   };
 
-  const process = async (params: any | Array<any>) => {
+  const process = async (service: ServiceImpl, params: any | Array<any>) => {
     if (Array.isArray(params)) {
+      const results = [];
       for (const p of params) {
-        await processSingle(p);
+        results.push(await processSingle(p));
       }
+      service.configure({ result: results }); // send back the result
     } else {
-      processSingle(params);
+      const result = await processSingle(params);
+      service.configure({ result }); // send back the result
     }
   };
 
@@ -103,7 +107,7 @@ function BoardServiceUI(props: Props) {
   ) => {
     if (notification.command) {
       if (notification.command.action === "process") {
-        process(notification.command.params);
+        process(service, notification.command.params);
       }
     } else {
       onUpdate(notification);
@@ -144,9 +148,12 @@ function BoardServiceUI(props: Props) {
     []
   );
 
-  const openSavedBoard = useCallback(() => {
+  const onEdit = useCallback(() => {
     window.open(`/playground/${selectedBoard}`, "blank");
   }, [selectedBoard]);
+
+  const onToggleExpandCollapse = () =>
+    setIsExpanded((isExpanded) => !isExpanded);
 
   const runtimeApis: RuntimeApiMap = {
     browser: browserRuntimeApi,
@@ -160,7 +167,6 @@ function BoardServiceUI(props: Props) {
             pendingPromise.current.resolve(result);
             pendingPromise.current = null;
           }
-          service.configure({ result }); // send back the result
         };
         return (
           <BoardProvider
@@ -175,7 +181,9 @@ function BoardServiceUI(props: Props) {
                     style={{
                       display: "flex",
                       flexDirection: "column",
-                      width: "100% ",
+                      width: "100%",
+                      height: "100%",
+                      overflow: "hidden",
                     }}
                   >
                     <div
@@ -183,6 +191,7 @@ function BoardServiceUI(props: Props) {
                         width: "100%",
                         display: "flex",
                         flexDirection: "row",
+                        marginBottom: "8px",
                       }}
                     >
                       <SelectorField
@@ -201,25 +210,43 @@ function BoardServiceUI(props: Props) {
                         }}
                       />
                       <Button
-                        icon="external alternate"
+                        icon={"pencil"}
                         size="tiny"
                         style={{ width: "50px", height: "33px" }}
-                        onClick={openSavedBoard}
+                        onClick={onEdit}
+                      />
+                      <Button
+                        icon={isExpanded ? "angle up" : "angle down"}
+                        size="tiny"
+                        style={{ width: "50px", height: "33px" }}
+                        onClick={onToggleExpandCollapse}
                       />
                     </div>
-                    <Board
-                      appContext={appContext}
-                      inputRouting={inputRouting}
-                      outputRouting={outputRouting}
-                      boardContext={boardContext}
-                      sidechainRouting={sidechainRouting}
-                      boardName={selectedBoard}
-                      onChangeOutputRouting={() => {}}
-                      onChangeInputRouting={() => {}}
-                      onChangeSidechainRouting={() => {}}
-                      headless={true}
-                      onResult={onResult}
-                    />
+                    <div
+                      style={{
+                        height: "100%",
+                        width: "100%",
+                        overflow: "auto",
+                        minHeight: isExpanded ? "200px" : undefined,
+                        border: isExpanded ? "1px solid lightgray" : undefined,
+                        padding: isExpanded ? 5 : undefined,
+                        borderRadius: "5px",
+                      }}
+                    >
+                      <Board
+                        appContext={appContext}
+                        inputRouting={inputRouting}
+                        outputRouting={outputRouting}
+                        boardContext={boardContext}
+                        sidechainRouting={sidechainRouting}
+                        boardName={selectedBoard}
+                        onChangeOutputRouting={() => {}}
+                        onChangeInputRouting={() => {}}
+                        onChangeSidechainRouting={() => {}}
+                        onResult={onResult}
+                        headless={!isExpanded}
+                      />
+                    </div>
                   </div>
                 )
               }
