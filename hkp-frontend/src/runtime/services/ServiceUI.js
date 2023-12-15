@@ -97,9 +97,11 @@ export default class ServiceUI extends Component {
           }}
         >
           <div
-            style={{
-              height: "10%",
-            }}
+            style={
+              {
+                //height: "10%",
+              }
+            }
           >
             {this.renderSegmentsHeader(segments, currentSegmentName)}
           </div>
@@ -107,7 +109,7 @@ export default class ServiceUI extends Component {
             style={{
               //padding: 14,
               margin: "15px 20px",
-              height: "90%",
+              height: "100%",
             }}
           >
             {segment && segment.render && segment.render(service)}

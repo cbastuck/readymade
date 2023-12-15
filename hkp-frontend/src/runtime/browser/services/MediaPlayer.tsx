@@ -53,7 +53,12 @@ export class MediaPlayerUI extends Component {
 
   renderMain = () => {
     return (
-      <audio ref={(audio) => (this.audio = audio)} controls autoPlay></audio>
+      <audio
+        ref={(audio) => (this.audio = audio)}
+        style={{ width: "100%" }}
+        controls
+        autoPlay
+      />
     );
   };
 

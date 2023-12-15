@@ -297,6 +297,20 @@ export class InjectorUI extends Component {
               const code = this.editor.getValue();
               try {
                 const obj = JSON.parse(code);
+                this.setState({
+                  recentInjection: JSON.stringify(obj, null, 2),
+                });
+              } catch (err) {}
+            }}
+          >
+            Prettify
+          </Button>
+          <Button
+            style={this.buttonStyle}
+            onClick={() => {
+              const code = this.editor.getValue();
+              try {
+                const obj = JSON.parse(code);
                 service.configure({ inject: obj });
               } catch (err) {
                 service.configure({ inject: code }); // can we check of the text is valid JSON from the editor?
@@ -305,20 +319,6 @@ export class InjectorUI extends Component {
             }}
           >
             Inject
-          </Button>
-          <Button
-            style={this.buttonStyle}
-            onClick={() => {
-              const code = this.editor.getValue();
-              try {
-                const obj = JSON.parse(code);
-                this.setState({
-                  recentInjection: JSON.stringify(obj, null, 2),
-                });
-              } catch (err) {}
-            }}
-          >
-            Prettify
           </Button>
         </div>
       </div>

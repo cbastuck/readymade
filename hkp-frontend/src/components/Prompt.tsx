@@ -41,10 +41,9 @@ export default function Prompt({
       dimmer="inverted"
     >
       <Modal.Header style={s(t.fs12, t.ls1, t.uc)}>{headline}</Modal.Header>
-      <Modal.Content>{children}</Modal.Content>
-      <Modal.Actions>
+      <div style={{ padding: 10 }}>{children}</div>
+      <div style={{ display: "flex", flexDirection: "row", margin: "10px" }}>
         <Button
-          style={s(t.fs12, t.ls1, t.uc)}
           onClick={() => {
             setOpen(false);
             promise?.resolve(false);
@@ -53,7 +52,6 @@ export default function Prompt({
           Cancel
         </Button>
         <Button
-          style={s(t.uc, t.fs12, t.ls1)}
           onClick={() => {
             promise?.resolve(true);
             setOpen(false);
@@ -61,7 +59,7 @@ export default function Prompt({
         >
           OK
         </Button>
-      </Modal.Actions>
+      </div>
     </Modal>
   );
 }

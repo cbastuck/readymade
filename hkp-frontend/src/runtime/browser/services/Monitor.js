@@ -8,6 +8,8 @@ import Button from "../../../components/shared/Button";
 import { s, t } from "../../../styles";
 import ServiceUI from "../../services/ServiceUI";
 
+const ACTION_BAR_HEIGHT = "45";
+
 export class MonitorUI extends Component {
   state = {
     message: "",
@@ -57,7 +59,11 @@ export class MonitorUI extends Component {
         cols={30}
       />
     ) : (
-      <div style={s(t.m("5px 10px"), t.h100)}>
+      <div
+        style={s(t.m("5px 10px"), {
+          height: `calc(100% - ${ACTION_BAR_HEIGHT}px)`,
+        })}
+      >
         <Editor
           value={this.state.message}
           language="json"
@@ -73,20 +79,15 @@ export class MonitorUI extends Component {
         flexDirection: "row",
         margin: "0px 10px",
         marginBottom: 5,
+        height: `${ACTION_BAR_HEIGHT} - 15}px`,
       }}
     >
-      <Button style={s(t.uc, t.ls1, t.fs12, t.w100)} onClick={this.clearEditor}>
-        Clear
-      </Button>
+      <Button onClick={this.clearEditor}>Clear</Button>
 
-      <Button
-        style={s(t.uc, t.ls1, t.fs12, t.w100)}
-        onClick={this.switchEditor}
-      >
+      <Button onClick={this.switchEditor}>
         {this.state.renderTextEditor ? "Edit" : "Back"}
       </Button>
       <Button
-        style={s(t.uc, t.ls1, t.fs12, t.w100)}
         onClick={() => {
           let data;
           try {
