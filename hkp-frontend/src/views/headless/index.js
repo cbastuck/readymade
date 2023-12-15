@@ -1,9 +1,13 @@
 import { Component } from "react";
 
 import Runtime from "../../components/Runtime";
+import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
+import BoardProvider, { BoardConsumer } from "../../BoardContext";
+import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
+import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
+import { availableRuntimes } from "../playground/common";
 
 import build from "../../buildNumber.json";
-import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
 
 const defaultBundles = [
   "hookup.to/registry/browser/Audio",
@@ -27,23 +31,41 @@ export default class Headless extends Component {
     );
   }
 
+  getFirstRuntime = () => {
+    return this.boardContext?.state?.runtimes?.[0];
+  };
+
   configure = (serviceId, config) => {
-    const svc = this.runtime.getServiceById(serviceId);
-    return svc.configure(config);
+    const runtime = this.getFirstRuntime();
+    if (runtime) {
+      const [scope, api] = this.boardContext.getRuntimeScopeApi(runtime.id);
+      api.configureService(scope, { uuid: serviceId }, config);
+    }
   };
 
   configuration = (serviceId) => {
-    const svc = this.runtime.getServiceById(serviceId);
-    return { ...svc };
+    const runtime = this.getFirstRuntime();
+    if (runtime) {
+      const [scope, api] = this.boardContext.getRuntimeScopeApi(runtime.id);
+      return api.getServiceConfig(scope, { uuid: serviceId });
+    }
   };
 
   processService = (serviceId, params) => {
-    const svc = this.runtime.getServiceById(serviceId);
-    return svc.process(params);
+    const runtime = this.getFirstRuntime();
+    if (runtime) {
+      const [scope, api] = this.boardContext.getRuntimeScopeApi(runtime.id);
+      return api.processService(scope, { uuid: serviceId }, params);
+    }
   };
 
-  process = (params, serviceId) =>
-    this.runtime.processRuntime(params, serviceId);
+  process = (params, serviceId) => {
+    const runtime = this.getFirstRuntime();
+    if (runtime) {
+      const [scope, api] = this.boardContext.getRuntimeScopeApi(runtime.id);
+      return api.processRuntime(scope, params, { uuid: serviceId });
+    }
+  };
 
   onResult = (runtimeId, data) => {
     const { callback } = this.props;
@@ -54,40 +76,62 @@ export default class Headless extends Component {
     }
   };
 
-  renderRuntime(boardContext, runtime) {
-    const { expanded = false } = this.props;
-    return (
-      <Runtime
-        ref={(rt) => (this.runtime = rt)}
-        boardContext={boardContext}
-        runtime={runtime}
-        onResult={this.onResult}
-        expanded={expanded}
-        headless={!expanded}
-      />
-    );
-  }
-
   render() {
-    const { runtimeId, runtimeName, services } = this.props;
+    const { runtimeId, runtimeName, services, expanded = false } = this.props;
     const { defaultRegistry } = this.state;
     if (!defaultRegistry) {
       return false;
     }
 
-    const runtime = { id: runtimeId, name: runtimeName };
-    const boardContext = {
-      board: { name: "headless-board" },
-      runtimes: [runtimeId],
-      services: {
-        [runtimeId]: services,
-      },
-      registry: {
-        [runtimeId]: defaultRegistry.availableServices,
-      },
-      isRuntimeInScope: () => true,
+    const runtime = { id: runtimeId, name: runtimeName, type: "browser" };
+    const emptyFunc = () => {};
+
+    const onFetchBoard = () => {
+      return {
+        runtimes: [runtime],
+        services: { [runtimeId]: services },
+        boardName: "headless-board",
+      };
     };
-    return this.renderRuntime(boardContext, runtime);
+
+    const runtimeApis = {
+      browser: browserRuntimeApi,
+      remote: remoteRuntimeApi,
+    };
+    return (
+      <BoardProvider
+        ref={(context) => (this.boardContext = context)}
+        user={{}}
+        boardName="headless-board"
+        fetchBoard={onFetchBoard}
+        isRuntimeInScope={() => true}
+        runtimeApis={runtimeApis}
+        removeRuntime={emptyFunc}
+        newBoard={emptyFunc}
+        clearBoard={emptyFunc}
+        saveBoard={emptyFunc}
+        isActionAvailable={() => false}
+        serializeBoard={emptyFunc}
+        onAction={emptyFunc}
+        onRemoveService={emptyFunc}
+        availableRuntimes={availableRuntimes}
+      >
+        <BoardConsumer>
+          {(boardContext) =>
+            boardContext && (
+              <Runtime
+                ref={(rt) => (this.runtime = rt)}
+                boardContext={boardContext}
+                runtime={runtime}
+                expanded={expanded}
+                headless={!expanded}
+                onResult={this.onResult}
+              />
+            )
+          }
+        </BoardConsumer>
+      </BoardProvider>
+    );
   }
 }
 

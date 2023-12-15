@@ -124,6 +124,7 @@ export default class Runtime extends Component<Props, State> {
     }
   };
 
+  // TODO: this.impl is null
   getServiceById = (serviceUuid: string) => {
     return (
       this.impl &&
@@ -175,6 +176,7 @@ export default class Runtime extends Component<Props, State> {
     return this.impl.destroyService(serviceUuid);
   };
 
+  // TODO: this.impl is NULL
   destroyRuntime = () => {
     if (!this.impl || !this.impl.destroyRuntime) {
       throw new Error("Runtime.destroyRuntime() impl is missing");
