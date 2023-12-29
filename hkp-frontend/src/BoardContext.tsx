@@ -148,7 +148,7 @@ class BoardContext extends Component<Props, BoardContextState> {
   }
 
   componentDidMount() {
-    this.fetchBoard();
+    //this.fetchBoard();
   }
 
   componentDidUpdate(prevProps: Props) {

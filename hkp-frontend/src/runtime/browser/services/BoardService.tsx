@@ -21,7 +21,7 @@ import browserRuntimeApi from "../../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../../runtime/remote/RemoteRuntimeApi";
 import {
   getLocalBoards,
-  localStoragePrefix,
+  getLocalBoard,
 } from "../../../views/playground/common";
 import SelectorField from "../../../components/shared/SelectorField";
 import Button from "../../../components/shared/Button";
@@ -51,7 +51,7 @@ function BoardServiceUI(props: Props) {
   );
 
   const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
-  useEffect(() => setSavedBoards(getLocalBoards(localStoragePrefix)), []);
+  useEffect(() => setSavedBoards(getLocalBoards()), []);
 
   const [selectedSavedBoard, setSelectedSavedBoard] = useState("");
 
@@ -122,7 +122,7 @@ function BoardServiceUI(props: Props) {
     if (!selectedBoard) {
       return null;
     }
-    const data = localStorage.getItem(`${localStoragePrefix}${selectedBoard}`);
+    const data = getLocalBoard(selectedBoard);
     if (!data) {
       throw new Error(`Board with name: '${selectedBoard}' was not found`);
     }
@@ -183,15 +183,15 @@ function BoardServiceUI(props: Props) {
                       flexDirection: "column",
                       width: "100%",
                       height: "100%",
-                      overflow: "hidden",
+                      marginBottom: "5px",
+                      minWidth: "250px",
                     }}
                   >
                     <div
                       style={{
-                        width: "100%",
                         display: "flex",
                         flexDirection: "row",
-                        marginBottom: "8px",
+                        padding: "2px 0px",
                       }}
                     >
                       <SelectorField
@@ -210,27 +210,39 @@ function BoardServiceUI(props: Props) {
                         }}
                       />
                       <Button
-                        icon={"pencil"}
+                        icon={"external alternate"}
                         size="tiny"
                         style={{ width: "50px", height: "33px" }}
                         onClick={onEdit}
                       />
-                      <Button
-                        icon={isExpanded ? "angle up" : "angle down"}
-                        size="tiny"
-                        style={{ width: "50px", height: "33px" }}
-                        onClick={onToggleExpandCollapse}
-                      />
                     </div>
+
+                    <SelectorField
+                      label="Input"
+                      value="array"
+                      options={{
+                        array: "process array items",
+                        whole: "process whole array ",
+                      }}
+                      onChange={(ev, { value: board }) => {}}
+                    />
+
+                    <Button
+                      style={{
+                        height: "15px",
+                        marginTop: 5,
+                        padding: 0,
+
+                        borderRadius: 1,
+                      }}
+                      onClick={onToggleExpandCollapse}
+                      icon={isExpanded ? "angle up" : "angle down"}
+                    />
+
                     <div
                       style={{
                         height: "100%",
                         width: "100%",
-                        overflow: "auto",
-                        minHeight: isExpanded ? "200px" : undefined,
-                        border: isExpanded ? "1px solid lightgray" : undefined,
-                        padding: isExpanded ? 5 : undefined,
-                        borderRadius: "5px",
                       }}
                     >
                       <Board

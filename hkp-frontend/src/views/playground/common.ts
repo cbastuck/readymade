@@ -13,7 +13,16 @@ export const availableRuntimes: Array<RuntimeClass> = [
   // { name: "hookup", type: "node" },
 ];
 
-export function getLocalBoards(prefix: string): Array<SavedBoard> {
+export function getLocalBoard(
+  selectedBoard: string,
+  prefix: string = localStoragePrefix
+) {
+  return localStorage.getItem(`${prefix}${selectedBoard}`);
+}
+
+export function getLocalBoards(
+  prefix: string = localStoragePrefix
+): Array<SavedBoard> {
   const savedBoards = [];
   for (const key in localStorage) {
     if (key.startsWith(prefix)) {

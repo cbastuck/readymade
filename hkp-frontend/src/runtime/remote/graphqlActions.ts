@@ -115,8 +115,13 @@ export async function restoreRuntime(
         }
       }
     }`;
-  const data = await processQuery(url, payload);
-  return data.restoreRuntime;
+  try {
+    const data = await processQuery(url, payload);
+    return data.restoreRuntime;
+  } catch (err: any) {
+    const message = `Restore runtime failed: ${url}: ${err.message}`;
+    throw new Error(message);
+  }
 }
 
 export async function createRuntimeService(

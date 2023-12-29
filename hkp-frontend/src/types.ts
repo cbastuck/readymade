@@ -271,6 +271,7 @@ export type Notification = {
     positive: boolean;
     callback: null | ((onClose: () => void) => void);
   }>;
+  timeout?: number;
 };
 
 export type RuntimeServiceMap = {

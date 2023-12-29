@@ -32,56 +32,60 @@ export default class ConfigurationEditor extends Component {
     const buttonStyle = s(t.uc, t.fs12, t.ls1, { flexGrow: 1 });
     const useEditor = !detectBrowserIOS();
     return (
-      <Resizable>
-        <div
-          style={{
-            width: "100%",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          <h1 style={s(t.uc, t.fs13, t.ls1)}>Service Configuration</h1>
-          <div
-            style={{
-              height: "100%",
-              margin: 5,
-              flexGrow: 1,
-            }}
-          >
-            {useEditor ? (
-              <Editor
-                ref={(editor) => (this.editor = editor)}
-                value={JSON.stringify(filteredService, null, 2)}
-                language="json"
-              />
-            ) : (
-              this.renderConfigAsTextArea(filteredService)
-            )}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-              margin: 10,
-            }}
-          >
-            <Button style={buttonStyle} onClick={onClose}>
-              Close
-            </Button>
-            <Button
-              style={buttonStyle}
-              onClick={() =>
-                onChange(
-                  this.editor ? this.editor.getValue() : this.state.textAreaData
-                )
-              }
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "relative",
+        }}
+      >
+        <Resizable>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <h1 style={s(t.uc, t.fs13, t.ls1)}>Service Configuration</h1>
+            <div
+              style={{
+                height: "100%",
+                minWidth: "600px",
+                margin: 5,
+                flexGrow: 1,
+              }}
             >
-              Update
-            </Button>
+              {useEditor ? (
+                <Editor
+                  ref={(editor) => (this.editor = editor)}
+                  value={JSON.stringify(filteredService, null, 2)}
+                  language="json"
+                />
+              ) : (
+                this.renderConfigAsTextArea(filteredService)
+              )}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "row",
+                margin: 10,
+              }}
+            >
+              <Button style={buttonStyle} onClick={onClose}>
+                Close
+              </Button>
+              <Button
+                style={buttonStyle}
+                onClick={() =>
+                  onChange(
+                    this.editor
+                      ? this.editor.getValue()
+                      : this.state.textAreaData
+                  )
+                }
+              >
+                Update
+              </Button>
+            </div>
           </div>
-        </div>
-      </Resizable>
+        </Resizable>
+      </div>
     );
   }
 }

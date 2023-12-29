@@ -120,6 +120,7 @@ class Playground extends Component<Props, State> {
 
   componentDidMount() {
     document.addEventListener("keydown", this.onKey, false);
+    this.tryFetch();
   }
 
   componentWillUnmount() {
@@ -135,6 +136,18 @@ class Playground extends Component<Props, State> {
     }
   }
 
+  tryFetch = async () => {
+    try {
+      await this.boardProviderRef?.fetchBoard();
+    } catch (err: any) {
+      this.context.pushNotification({
+        type: "error",
+        message: err.message ? err.message : `Fetch failed`,
+        timeout: 5000,
+      });
+    }
+  };
+
   onBoardChanged = async (board: string) => {
     await this.boardProviderRef?.clearBoard();
     this.setState(
@@ -142,7 +155,7 @@ class Playground extends Component<Props, State> {
         boardName: board,
         initialFetched: false,
       },
-      this.boardProviderRef?.fetchBoard
+      this.tryFetch
     );
   };
 
@@ -420,9 +433,7 @@ class Playground extends Component<Props, State> {
           this.setState({ syncedPeer })
         }
         boardContext={boardContext}
-        onUpdate={(update: any) =>
-          this.setState(update, boardContext.fetchBoard)
-        }
+        onUpdate={(update: any) => this.setState(update, this.tryFetch)}
         onClose={(closedPeer: string) => {
           if (closedPeer === this.state.syncedPeer) {
             this.setState({ syncedPeer: undefined });

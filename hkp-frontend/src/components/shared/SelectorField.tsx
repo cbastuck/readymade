@@ -25,6 +25,7 @@ type Props = {
   minWidth?: string | number;
   placeholder?: string;
   labelStyle?: object;
+  maxHeight?: string;
 
   onChange: (ev: React.MouseEvent, value: OnChangeValue) => void;
   onOpen?: (options: Options) => void;
@@ -67,6 +68,7 @@ export default class SelectorField extends Component<Props, State> {
       placeholder,
       uppercaseValues,
       disabled,
+      maxHeight = "200px",
       onChange,
     } = this.props;
     const options = Object.keys(optionsMap).map((key) => ({
@@ -89,10 +91,10 @@ export default class SelectorField extends Component<Props, State> {
           paddingLeft: 5,
         }}
         disabled={disabled}
-        placeholder={value ? value : placeholder}
+        placeholder={value ? optionsMap[value] : placeholder}
         value={value || undefined}
       >
-        <Dropdown.Menu>
+        <Dropdown.Menu style={{ maxHeight, overflowY: "auto", width: "100%" }}>
           {options.map((option, idx) => (
             <Dropdown.Item
               key={option.key}

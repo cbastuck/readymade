@@ -280,7 +280,7 @@ export default class Runtime extends Component<Props, State> {
                 const scope = this.props.boardContext.scopes[rt.id];
                 const api = this.props.boardContext.runtimeApis[rt.type];
                 if (scope && api) {
-                  api.processRuntime(scope, null, null);
+                  api.processRuntime(scope, {}, null);
                 }
               }}
             />

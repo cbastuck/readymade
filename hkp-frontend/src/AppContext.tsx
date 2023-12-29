@@ -30,10 +30,11 @@ class AppContext extends Component<Props, AppContextState> {
       user: null,
       notifications: [],
       pushNotification: (notification) => {
-        const { tag } = notification;
+        const { tag, timeout = 1500 } = notification;
         const pos = this.state.notifications.findIndex((cur) =>
           cur.tag === tag ? notification : cur
         );
+
         const autoClose = () => {
           const idx = this.state.notifications.indexOf(notification);
           if (idx !== -1) {
@@ -47,7 +48,7 @@ class AppContext extends Component<Props, AppContextState> {
                     ],
                   };
                 }),
-              1500
+              timeout
             );
           }
         };
