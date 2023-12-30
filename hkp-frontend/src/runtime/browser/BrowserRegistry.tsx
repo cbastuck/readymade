@@ -30,6 +30,7 @@ export const allowedServices = [
   "hookup.to/service/cache",
   "hookup.to/service/key-handler",
   "hookup.to/service/reactor",
+  "hookup.to/service/html",
   "hookup.to/service/xy-pad",
   "hookup.to/service/encrypt",
   "hookup.to/service/decrypt",

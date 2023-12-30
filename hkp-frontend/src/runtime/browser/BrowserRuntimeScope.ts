@@ -124,11 +124,11 @@ export default class BrowserRuntimeScope implements RuntimeScope {
         try {
           result = await svc.process(params);
           params = result;
-        } catch (err) {
+        } catch (err: any) {
           console.warn(
             `Seriously: service ${JSON.stringify(
               svc
-            )} caused error: ${JSON.stringify(err)}`
+            )} caused error: ${JSON.stringify(err.message)}`
           );
         }
       }
