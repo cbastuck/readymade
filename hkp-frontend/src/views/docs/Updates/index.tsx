@@ -10,6 +10,10 @@ export default function Updates() {
     <Template title="What's new">
       <List divided relaxed>
         <NewsItem
+          date="7.1.2024"
+          content={<div>Major overhaul and support for remote runtimes</div>}
+        />
+        <NewsItem
           date="30.10.2022"
           content={
             <div>

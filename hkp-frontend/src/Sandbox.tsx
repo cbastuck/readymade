@@ -67,7 +67,6 @@ class Sandbox extends Component<Props, State> {
     const { boardName = "Sandbox", location } = this.props;
     const urlProps = Object.fromEntries(new URLSearchParams(location.search));
     const { src = this.props.src, data = this.props.data } = urlProps; // url props override internal props
-
     const runtime = src
       ? await this.fetchAndParseData(src)
       : data
@@ -182,8 +181,13 @@ class Sandbox extends Component<Props, State> {
     const runtimeApis: RuntimeApiMap = {
       browser: browserRuntimeApi,
     };
+
     return (
-      <BoardProvider fetchBoard={this.fetchBoard} runtimeApis={runtimeApis}>
+      <BoardProvider
+        fetchBoard={this.fetchBoard}
+        runtimeApis={runtimeApis}
+        fetchAfterMount={true}
+      >
         <BoardConsumer>
           {(boardContext) =>
             boardContext &&

@@ -65,7 +65,6 @@ function HtmlUI(props: any) {
     name: "render",
     render: (service: ServiceImpl) => (
       <div
-        id="html-service"
         style={{
           width: "100%",
           height: "100%",
@@ -78,7 +77,9 @@ function HtmlUI(props: any) {
           padding: 5,
         }}
       >
-        <div style={{ margin: "20px 100px" }}>Render Area</div>
+        <div id="html-service" style={{ margin: "20px 100px" }}>
+          Render Area
+        </div>
       </div>
     ),
   };

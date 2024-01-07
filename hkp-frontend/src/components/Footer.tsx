@@ -55,7 +55,7 @@ export default function Footer({ flex }: Props) {
               fontSize: 10,
             }}
           >
-            © 2018-2023 cbastuck -
+            © 2018-2024 cbastuck -
             <span style={{ color: "gray", padding: 5, textTransform: "none" }}>
               v{build.version}
             </span>

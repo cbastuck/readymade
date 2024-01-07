@@ -67,6 +67,7 @@ type Props = {
   availableRuntimes: Array<RuntimeClass>;
   runtimeApis: RuntimeApiMap;
   children: JSX.Element | JSX.Element[];
+  fetchAfterMount?: boolean;
 
   fetchBoard?: () => Promise<BoardDescriptor>;
   isRuntimeInScope: () => boolean;
@@ -148,7 +149,9 @@ class BoardContext extends Component<Props, BoardContextState> {
   }
 
   componentDidMount() {
-    //this.fetchBoard();
+    if (this.props.fetchAfterMount) {
+      this.fetchBoard();
+    }
   }
 
   componentDidUpdate(prevProps: Props) {

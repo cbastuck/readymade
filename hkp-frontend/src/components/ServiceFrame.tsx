@@ -82,8 +82,7 @@ export default class ServiceFrame extends Component<Props, State> {
           <span
             style={{
               fontSize: 12,
-              letterSpacing: 1,
-              textTransform: "uppercase",
+              letterSpacing: 1.5,
               whiteSpace: "nowrap",
             }}
             title={service.uuid}
