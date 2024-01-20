@@ -45,7 +45,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
 
   connect = (outputUrl: string) => {
     const url = new URL(this.descriptor.url!);
-    url.protocol = window.location.protocol === "http:" ? "ws" : "wss";
+    url.protocol = new URL(url).protocol === "http:" ? "ws" : "wss";
     const websocketUrl = url.toString() + outputUrl.slice(1);
     const socket = new WebSocket(websocketUrl);
     this.socket = socket;

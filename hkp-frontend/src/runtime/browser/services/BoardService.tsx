@@ -162,17 +162,23 @@ function BoardServiceUI(props: Props) {
 
   const renderMain = appContext
     ? (service: ServiceImpl) => {
+        const user = service.app.getAuthenticatedUser();
         const onResult = async (result: any) => {
           if (pendingPromise.current) {
             pendingPromise.current.resolve(result);
             pendingPromise.current = null;
           }
         };
+
+        const needsAuthentication = true; // TODO: find out if we need auth for the board
         return (
           <BoardProvider
             ref={boardProviderRef}
-            fetchBoard={fetchBoard}
+            fetchBoard={() =>
+              needsAuthentication ? user && fetchBoard() : fetchBoard()
+            }
             runtimeApis={runtimeApis}
+            user={user}
           >
             <BoardConsumer>
               {(boardContext) =>

@@ -16,17 +16,18 @@ import {
   RuntimeScope,
   ServiceClass,
   ServiceDescriptor,
+  User,
 } from "../../types";
 import RemoteRuntimeScope from "./RemoteRuntimeScope";
 
-export async function addRuntime(rtClass: RuntimeClass) {
-  const desc = await createRuntime(rtClass);
+export async function addRuntime(rtClass: RuntimeClass, user: User | null) {
+  const desc = await createRuntime(rtClass, user);
   if (!desc) {
     return null;
   }
 
   const { registry, ...rest } = desc;
-  const runtime = { ...rtClass, ...rest };
+  const runtime = { ...rtClass, ...rest, user };
   const scope = await createScope(runtime);
   return {
     runtime,
@@ -38,15 +39,16 @@ export async function addRuntime(rtClass: RuntimeClass) {
 
 export async function restoreRuntime(
   rt: RuntimeDescriptor,
-  services: Array<ServiceDescriptor>
+  services: Array<ServiceDescriptor>,
+  user: User | null
 ) {
-  const restoredRuntime = await restoreRuntime_gql(rt, services);
-  const scope = await createScope(rt);
-  if (rt.id !== restoredRuntime.id) {
+  const restoredRuntime = await restoreRuntime_gql(rt, services, user);
+  if (!restoredRuntime || restoredRuntime.id !== rt.id) {
     return null;
   }
-
-  return { runtime: rt, services, scope, registry: restoredRuntime.registry };
+  const runtime = { ...rt, user };
+  const scope = await createScope(runtime);
+  return { runtime, services, scope, registry: restoredRuntime.registry };
 }
 
 export async function processRuntime(

@@ -108,6 +108,8 @@ class Playground extends Component<Props, State> {
 
   externalInputs: { [runtimeId: string]: ExternalInput } = {};
 
+  awaitUserLogin: (() => void) | null = null;
+
   onKey = (e: KeyboardEvent) => {
     if (
       (window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) &&
@@ -164,8 +166,15 @@ class Playground extends Component<Props, State> {
       return this.boardProviderRef!.state;
     }
 
-    const initialBord = await this.getInitialPlayground();
+    const isUserRequired = true;
+    if (isUserRequired && !this.context.user) {
+      await new Promise<void>((resolve) => {
+        this.awaitUserLogin = resolve;
+      });
+      this.awaitUserLogin = null;
+    }
 
+    const initialBord = await this.getInitialPlayground();
     if (!initialBord) {
       return this.boardProviderRef!.state;
     }
@@ -473,10 +482,15 @@ class Playground extends Component<Props, State> {
       browser: browserRuntimeApi,
       remote: remoteRuntimeApi,
     };
+
+    const user = (appContext && appContext.user) || this.user;
+    if (user && this.awaitUserLogin) {
+      this.awaitUserLogin();
+    }
     return (
       <BoardProvider
         ref={(ref) => (this.boardProviderRef = ref)}
-        user={(appContext && appContext.user) || this.user}
+        user={user}
         boardName={this.state.boardName}
         fetchBoard={this.fetchBoard}
         isRuntimeInScope={() => true}

@@ -5,6 +5,7 @@ import {
   ServiceClass,
   ServiceDescriptor,
   ServiceRegistry,
+  User,
 } from "../../types";
 
 export type ServicesProp = {
@@ -19,13 +20,18 @@ function reportGQLError(err?: any) {
   throw new Error(err ? JSON.stringify(err) : "unspecified GQL request error");
 }
 
-async function processQuery(url: string, query: string) {
+async function processQuery(url: string, query: string, user?: User | null) {
+  const headers: HeadersInit = { "content-type": "application/json" };
+  if (user && user.idToken) {
+    headers["authorization"] = `Bearer ${user.idToken}`;
+  }
+
   const response = await fetch(url, {
     method: "POST",
     body: JSON.stringify({
       query,
     }),
-    headers: { "content-type": "application/json" },
+    headers,
   });
 
   if (!response.ok || response.status !== 200) {
@@ -69,7 +75,8 @@ export async function queryFreeRuntime(
 }
 
 export async function createRuntime(
-  desc: RuntimeClass
+  desc: RuntimeClass,
+  user: User | null
 ): Promise<(RuntimeDescriptor & RegistryProp) | null> {
   const url = `${desc.url}/query`;
   const payload = `mutation makeFreeRuntime {
@@ -82,13 +89,14 @@ export async function createRuntime(
         }
       }
     }`;
-  const data = await processQuery(url, payload);
+  const data = await processQuery(url, payload, user);
   return data?.createRuntime || null;
 }
 
 export async function restoreRuntime(
   runtime: RuntimeDescriptor,
-  services: Array<ServiceDescriptor>
+  services: Array<ServiceDescriptor>,
+  user: User | null
 ) {
   const url = `${runtime.url}/query`;
   const payload = `mutation restoreFreeRuntime {
@@ -116,7 +124,7 @@ export async function restoreRuntime(
       }
     }`;
   try {
-    const data = await processQuery(url, payload);
+    const data = await processQuery(url, payload, user);
     return data.restoreRuntime;
   } catch (err: any) {
     const message = `Restore runtime failed: ${url}: ${err.message}`;
@@ -141,7 +149,7 @@ export async function createRuntimeService(
       }
     }
   }`;
-  const data = await processQuery(url, payload);
+  const data = await processQuery(url, payload, runtime.user);
   const createServiceResult = data?.runtimeById?.createService;
   if (!createServiceResult) {
     return null;
@@ -167,7 +175,7 @@ export async function removeRuntimeService(
       }
     }
   }`;
-  const data = await processQuery(url, payload);
+  const data = await processQuery(url, payload, runtime.user);
   return data?.runtimeById?.removeService;
 }
 
@@ -183,7 +191,7 @@ export async function getRuntimeServiceConfig(
       }
     }
   }`;
-  const data = await processQuery(url, payload);
+  const data = await processQuery(url, payload, runtime.user);
 
   const config = data?.runtimeById?.serviceById?.config;
   return config ? JSON.parse(config) : null;
@@ -203,7 +211,7 @@ export async function configureService(
       }
     }
   }`;
-  const data = await processQuery(url, payload);
+  const data = await processQuery(url, payload, runtime.user);
   const resultConfig = data?.runtimeById?.serviceById?.configure;
   return resultConfig ? JSON.parse(resultConfig) : null;
 }
@@ -227,7 +235,7 @@ export async function processRuntime(
       ) { id }
     }
   }`;
-  const data = await processQuery(url, payload);
+  const data = await processQuery(url, payload, runtime.user);
   return data?.runtimeById?.process;
 }
 
@@ -238,7 +246,7 @@ export async function getRuntimeOutputUrl(runtime: RuntimeDescriptor) {
       outputUrl
     }
   }`;
-  const data = await processQuery(url, payload);
+  const data = await processQuery(url, payload, runtime.user);
   return data?.runtimeById?.outputUrl;
 }
 

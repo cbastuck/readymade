@@ -11,12 +11,13 @@ import {
   ServiceClass,
   RestoreRuntimeResult,
   ServiceImpl,
+  User,
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { filterPrivateMembers } from "./services/helpers";
 
-export async function addRuntime(rtClass: RuntimeClass) {
+export async function addRuntime(rtClass: RuntimeClass, user: User | null) {
   const { name: passedName, type, url } = rtClass;
   const runtimeId = uuid.v4();
   const browser = new UAParser().getBrowser();
@@ -38,7 +39,8 @@ export async function addRuntime(rtClass: RuntimeClass) {
 
 async function restoreRuntime(
   runtime: RuntimeDescriptor,
-  services: Array<ServiceDescriptor>
+  services: Array<ServiceDescriptor>,
+  user: User | null
 ): Promise<RestoreRuntimeResult | null> {
   const scope = await createScope(runtime, runtime.bundles);
   const createdServices: Array<ServiceImpl> = (

@@ -175,6 +175,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       services = {},
     } = (await this.props.fetchBoard()) || {};
 
+    const user = this.state.user;
     const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
       runtimes.map((rt) => {
         const api = this.props.runtimeApis[rt.type];
@@ -188,13 +189,18 @@ class BoardContext extends Component<Props, BoardContextState> {
           );
           return Promise.resolve(null);
         }
-        return api.restoreRuntime(rt, services[rt.id]);
+        return api.restoreRuntime(rt, services[rt.id], user);
       })
     );
 
     const scopes = reduceByRuntimeId(restored, "scope");
     const registry = reduceByRuntimeId(restored, "registry");
-    const validRuntimes = runtimes.filter((rt) => !!scopes[rt.id]);
+    const validRuntimes = restored.flatMap((restoreResult) =>
+      restoreResult && !!scopes[restoreResult?.runtime.id]
+        ? [restoreResult.runtime]
+        : []
+    );
+
     this.setState({
       boardName,
       runtimes: validRuntimes,
@@ -298,11 +304,13 @@ class BoardContext extends Component<Props, BoardContextState> {
         `BoardContext.addRuntime() runtime api is missing: ${rtClass.type}`
       );
     }
-    const result = await api.addRuntime(rtClass);
+    const user = this.state.user;
+    const result = await api.addRuntime(rtClass, user);
     if (result) {
       const { runtime, services, registry = [], scope } = result;
+      const runtimeWithUser = { ...runtime, user };
       this.setState((state: BoardContextState) => ({
-        runtimes: [...state.runtimes, runtime],
+        runtimes: [...state.runtimes, runtimeWithUser],
         services: {
           ...state.services,
           [runtime.id]: services,

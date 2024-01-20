@@ -90,7 +90,6 @@ class AppContext extends Component<Props, AppContextState> {
             )
           );
         } catch (err) {
-          console.log("GOING TO REJECT");
           reject(err);
           return;
         }

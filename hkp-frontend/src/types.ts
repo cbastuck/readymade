@@ -22,6 +22,7 @@ export type RuntimeClass = {
 export type RuntimeDescriptor = RuntimeClass & {
   id: string;
   state?: any; // TODO: should this be here? Only for persisted Runtime states?
+  user?: User | null;
 };
 
 export type OnResult = (
@@ -205,10 +206,14 @@ export type RuntimeImpl = {
 };
 
 export type RuntimeApi = {
-  addRuntime: (runtime: RuntimeClass) => Promise<AddRuntimeResult | null>;
+  addRuntime: (
+    runtime: RuntimeClass,
+    user: User | null
+  ) => Promise<AddRuntimeResult | null>;
   restoreRuntime: (
     runtime: RuntimeDescriptor,
-    services: Array<ServiceDescriptor>
+    services: Array<ServiceDescriptor>,
+    user: User | null
   ) => Promise<RestoreRuntimeResult | null>;
 
   processRuntime: (
