@@ -1,10 +1,10 @@
+import { useContext } from "react";
 import { Dropdown } from "semantic-ui-react";
 import { useAuth0 } from "@auth0/auth0-react";
 
 import { s, t } from "../../styles";
 
 import { AppCtx } from "../../AppContext";
-import { useContext } from "react";
 import { User } from "../../types";
 
 type Props = {

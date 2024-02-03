@@ -1,7 +1,10 @@
 import { Loader } from "semantic-ui-react";
 import { s, t } from "../../styles";
 
-export default function LoadIndicator() {
+type Props = {
+  text: string;
+};
+export default function LoadIndicator({ text }: Props) {
   return (
     <div
       style={s(t.uc, t.ls1, {
@@ -11,7 +14,7 @@ export default function LoadIndicator() {
       })}
     >
       <Loader active inline>
-        Loading Playground
+        {text}
       </Loader>
     </div>
   );

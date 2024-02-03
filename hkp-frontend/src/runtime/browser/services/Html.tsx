@@ -1,9 +1,9 @@
+import { useState } from "react";
 import { Checkbox, Label, TextArea } from "semantic-ui-react";
 
 import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
 import { jsonPath } from "../../../jsonpath";
 import ServiceUI from "../../services/ServiceUI";
-import { useState } from "react";
 
 const serviceId = "hookup.to/service/html";
 const serviceName = "Html";
@@ -100,6 +100,7 @@ class Html {
 
   fullscreen: boolean = false;
   config = [
+    /*
     {
       html: "<div><h1>[[sub]]</h1>[[children]]</div>",
       children: [
@@ -109,6 +110,7 @@ class Html {
         },
       ],
     },
+    */
   ];
 
   constructor(
@@ -139,36 +141,8 @@ class Html {
     }
   }
 
-  processConfig(cfg: any, params: any): string {
-    if (Array.isArray(cfg)) {
-      const children = cfg.map((c) => this.processConfig(c, params)).join("");
-      return this.replaceParamsInString(params, children);
-    }
-
-    const { select, html, children } = cfg;
-    const selection = select ? jsonPath(params, select) : params;
-
-    const childContent = children
-      ? this.processConfig(children, selection)
-      : undefined;
-
-    return Array.isArray(selection)
-      ? selection
-          .map((selectedParams) =>
-            this.replaceParamsInString(
-              { ...selectedParams, children: childContent },
-              html
-            )
-          )
-          .join("")
-      : this.replaceParamsInString(
-          { ...selection, children: childContent },
-          html
-        );
-  }
-
   async process(params: any) {
-    const children = this.processConfig(this.config, params);
+    const children = processConfig(this.config, params);
 
     const root = `
       <div style="padding: 10px;">
@@ -180,15 +154,43 @@ class Html {
     body.innerHTML = root;
     return root;
   }
+}
 
-  replaceParamsInString(params: any, src: string) {
-    const keys = Object.keys(params);
-    const replaced = keys.reduce(
-      (acc, cur) => acc.split(`[[${cur}]]`).join(params[cur]),
-      src
-    );
-    return replaced;
+function replaceParamsInString(params: any, src: string) {
+  const keys = Object.keys(params);
+  const replaced = keys.reduce(
+    (acc, cur) => acc.split(`[[${cur}]]`).join(params[cur]),
+    src
+  );
+  return replaced;
+}
+
+export function processConfig(cfg: any, params: any): string {
+  if (Array.isArray(cfg)) {
+    const children = cfg.map((c) => processConfig(c, params)).join("");
+    return replaceParamsInString(params, children);
   }
+
+  const { select, html, children } = cfg;
+  return Array.isArray(params)
+    ? params
+        .map((param) => {
+          const childContent = children
+            ? processConfig(children, param)
+            : undefined;
+          return replaceParamsInString(
+            { ...param, children: childContent },
+            html
+          );
+        })
+        .join("")
+    : replaceParamsInString(
+        {
+          ...params,
+          children: children ? processConfig(children, params) : undefined,
+        },
+        html
+      );
 }
 
 const descriptor = {

@@ -14,7 +14,6 @@ import SaveBoardPrompt, {
 } from "../../components/SaveBoardPrompt";
 import Board from "./Board";
 import BoardSync from "./boardsync";
-import Login from "../Login";
 import { generateRandomName } from "../../core/board";
 import { t } from "../../styles";
 import { localStoragePrefix, defaultName, availableRuntimes } from "./common";
@@ -23,10 +22,7 @@ import {
   createBoardFromTemplate,
   importFromLink,
 } from "./BoardActions";
-import {
-  setRuntime as setRuntimeREST,
-  getRuntimeRegistry as getRuntimeRegistryREST,
-} from "../../core/actions";
+import { getHealth as getRemoteHealth } from "../../runtime/remote/RemoteRuntimeApi";
 
 import {
   Action,
@@ -72,6 +68,8 @@ type State = {
   outputRouting: PeerOutputRouting;
 
   enforceLoadPanel?: boolean;
+
+  awaitUserLogin: (() => void) | null;
 };
 
 class Playground extends Component<Props, State> {
@@ -102,13 +100,13 @@ class Playground extends Component<Props, State> {
     sidechainRouting: {},
     inputRouting: {},
     outputRouting: {},
+
+    awaitUserLogin: null,
   };
 
   user = null;
 
   externalInputs: { [runtimeId: string]: ExternalInput } = {};
-
-  awaitUserLogin: (() => void) | null = null;
 
   onKey = (e: KeyboardEvent) => {
     if (
@@ -166,14 +164,6 @@ class Playground extends Component<Props, State> {
       return this.boardProviderRef!.state;
     }
 
-    const isUserRequired = true;
-    if (isUserRequired && !this.context.user) {
-      await new Promise<void>((resolve) => {
-        this.awaitUserLogin = resolve;
-      });
-      this.awaitUserLogin = null;
-    }
-
     const initialBord = await this.getInitialPlayground();
     if (!initialBord) {
       return this.boardProviderRef!.state;
@@ -202,6 +192,14 @@ class Playground extends Component<Props, State> {
       acceptedSyncSenders,
       rejectedSyncSenders,
     };
+
+    const isUserRequired = runtimes.some((rt) => rt.type === "remote");
+    if (isUserRequired && !this.context.user) {
+      await new Promise<void>((resolve) => {
+        this.setState({ awaitUserLogin: resolve });
+      });
+      this.setState({ awaitUserLogin: null });
+    }
 
     this.setState({
       ...data,
@@ -259,24 +257,18 @@ class Playground extends Component<Props, State> {
       if (board && board.runtimes) {
         for (const runtime of board.runtimes) {
           switch (runtime.type) {
-            case "node": {
-              const { id: runtimeId, ...desc } = runtime;
-              const services = board.services[runtimeId];
+            case "remote": {
               try {
-                await setRuntimeREST(
-                  name,
-                  {
-                    ...desc,
-                    runtimeId,
-                    params: { name },
-                  },
-                  services
+                const health = await getRemoteHealth(
+                  runtime,
+                  this.context.user
                 );
+                if (health !== "200") {
+                  this.handleRequestError(health);
+                }
               } catch (err: any) {
-                this.handleRequestError(err);
+                this.handleRequestError(err.message);
               }
-              const registry = await getRuntimeRegistryREST(name, runtimeId);
-              board.registry[runtimeId] = registry;
             }
           }
         }
@@ -425,11 +417,11 @@ class Playground extends Component<Props, State> {
     return true;
   };
 
-  handleRequestError = (err: Error) => {
-    if (err.message === "Unauthorized") {
+  handleRequestError = (status: string) => {
+    if (status === "401") {
       this.setState({ requireLogin: true });
     } else {
-      console.error("Unkown request error", err);
+      console.error("Unkown request error", status);
     }
   };
 
@@ -484,9 +476,10 @@ class Playground extends Component<Props, State> {
     };
 
     const user = (appContext && appContext.user) || this.user;
-    if (user && this.awaitUserLogin) {
-      this.awaitUserLogin();
+    if (this.state.awaitUserLogin && user) {
+      this.state.awaitUserLogin();
     }
+
     return (
       <BoardProvider
         ref={(ref) => (this.boardProviderRef = ref)}
@@ -552,67 +545,62 @@ class Playground extends Component<Props, State> {
                   isCompact={boardContext.appViewMode !== "wide"}
                   boardSyncActive={this.state.boardSyncActive}
                 />
-                {requireLogin ? (
-                  <Login board={`playground/${boardContext.boardName}`} />
-                ) : (
-                  <>
-                    <SaveBoardPrompt
-                      onRef={(prompt) => (this.prompt = prompt)}
-                    />
-                    {this.state.boardSyncActive &&
-                      this.renderBoardSync(boardContext)}
 
-                    <BoardEntryPoint
-                      isLoading={!this.state.initialFetched}
-                      appContext={appContext}
-                      boardContext={boardContext}
-                      boardName={this.state.boardName}
-                      description={this.state.description}
-                      sidechainRouting={this.state.sidechainRouting}
-                      outputRouting={this.state.outputRouting}
-                      inputRouting={this.state.inputRouting}
-                      onChangeSidechainRouting={(
-                        runtime: RuntimeDescriptor,
-                        routing: Array<SidechainRoute>
-                      ) =>
-                        this.setState({
-                          sidechainRouting: {
-                            ...this.state.sidechainRouting,
-                            [runtime.id]: routing,
+                <SaveBoardPrompt onRef={(prompt) => (this.prompt = prompt)} />
+                {this.state.boardSyncActive &&
+                  this.renderBoardSync(boardContext)}
+
+                <BoardEntryPoint
+                  isLoading={!this.state.initialFetched}
+                  isLoginRequired={!user && requireLogin}
+                  appContext={appContext}
+                  boardContext={boardContext}
+                  boardName={this.state.boardName}
+                  description={this.state.description}
+                  sidechainRouting={this.state.sidechainRouting}
+                  outputRouting={this.state.outputRouting}
+                  inputRouting={this.state.inputRouting}
+                  onChangeSidechainRouting={(
+                    runtime: RuntimeDescriptor,
+                    routing: Array<SidechainRoute>
+                  ) =>
+                    this.setState({
+                      sidechainRouting: {
+                        ...this.state.sidechainRouting,
+                        [runtime.id]: routing,
+                      },
+                    })
+                  }
+                  onChangeInputRouting={(runtime, value) =>
+                    this.setState({
+                      inputRouting: {
+                        ...this.state.inputRouting,
+                        [runtime.id]: value,
+                      },
+                    })
+                  }
+                  onChangeOutputRouting={(runtime, routing) => {
+                    const { hostDescriptor, route } = routing;
+                    const { peer, flow } = route;
+                    this.setState({
+                      outputRouting: {
+                        ...this.state.outputRouting,
+                        [runtime.id]: {
+                          hostDescriptor: hostDescriptor || null,
+                          route: {
+                            peer:
+                              peer ||
+                              this.state.outputRouting[runtime.id]?.route
+                                ?.peer ||
+                              null,
+                            flow,
                           },
-                        })
-                      }
-                      onChangeInputRouting={(runtime, value) =>
-                        this.setState({
-                          inputRouting: {
-                            ...this.state.inputRouting,
-                            [runtime.id]: value,
-                          },
-                        })
-                      }
-                      onChangeOutputRouting={(runtime, routing) => {
-                        const { hostDescriptor, route } = routing;
-                        const { peer, flow } = route;
-                        this.setState({
-                          outputRouting: {
-                            ...this.state.outputRouting,
-                            [runtime.id]: {
-                              hostDescriptor: hostDescriptor || null,
-                              route: {
-                                peer:
-                                  peer ||
-                                  this.state.outputRouting[runtime.id]?.route
-                                    ?.peer ||
-                                  null,
-                                flow,
-                              },
-                            },
-                          },
-                        });
-                      }}
-                    />
-                  </>
-                )}
+                        },
+                      },
+                    });
+                  }}
+                />
+
                 <Footer />
               </div>
             )

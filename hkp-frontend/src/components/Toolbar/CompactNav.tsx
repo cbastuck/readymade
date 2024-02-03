@@ -1,5 +1,8 @@
 import { Dropdown } from "semantic-ui-react";
 import { Link } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
+import { useContext } from "react";
+import { AppCtx } from "../../AppContext";
 
 export default function CompactNav() {
   const navItemStyle: any = {
@@ -7,6 +10,9 @@ export default function CompactNav() {
     fontSize: 11,
     textTransform: "uppercase",
   };
+  const { loginWithRedirect, logout } = useAuth0();
+  const context = useContext(AppCtx);
+  const currentUser = context?.user;
   return (
     <div>
       <Dropdown text="" icon="bars" pointing="right">
@@ -27,10 +33,30 @@ export default function CompactNav() {
             </Link>
           </Dropdown.Item>
 
-          <Dropdown.Item>
-            <Link to="/new" style={navItemStyle}>
-              Login
-            </Link>
+          <Dropdown.Item
+            onClick={async () =>
+              await loginWithRedirect({
+                appState: {
+                  returnTo: window.location.href,
+                },
+              })
+            }
+          >
+            <span style={navItemStyle}>Login</span>
+          </Dropdown.Item>
+          <Dropdown.Item
+            onClick={async () => {
+              await logout({
+                openUrl: () => {
+                  if (context) {
+                    context.logout();
+                  }
+                },
+              });
+            }}
+            disabled={!currentUser}
+          >
+            <span style={navItemStyle}>Logout</span>
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>

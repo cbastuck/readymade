@@ -7,6 +7,7 @@ import {
   configureService as configureService_gql,
   processRuntime as processRuntime_gql,
   getRuntimeOutputUrl,
+  getHealth as getHealth_gql,
 } from "./graphqlActions";
 import {
   InstanceId,
@@ -19,6 +20,10 @@ import {
   User,
 } from "../../types";
 import RemoteRuntimeScope from "./RemoteRuntimeScope";
+
+export async function getHealth(rtClass: RuntimeClass, user: User | null) {
+  return getHealth_gql(rtClass, user);
+}
 
 export async function addRuntime(rtClass: RuntimeClass, user: User | null) {
   const desc = await createRuntime(rtClass, user);
@@ -109,6 +114,7 @@ const api: RuntimeApi = {
   configureService,
   getServiceConfig,
   processService,
+  getHealth,
 };
 
 export default api;

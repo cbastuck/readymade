@@ -206,6 +206,7 @@ export type RuntimeImpl = {
 };
 
 export type RuntimeApi = {
+  getHealth?: (runtime: RuntimeClass, user: User | null) => void;
   addRuntime: (
     runtime: RuntimeClass,
     user: User | null

@@ -250,6 +250,22 @@ export async function getRuntimeOutputUrl(runtime: RuntimeDescriptor) {
   return data?.runtimeById?.outputUrl;
 }
 
+export async function getHealth(rtClass: RuntimeClass, user: User | null) {
+  const url = rtClass.url;
+  if (!url) {
+    throw new Error("Remote class property missing: url");
+  }
+  const headers: HeadersInit = { "content-type": "application/json" };
+  if (user && user.idToken) {
+    headers["authorization"] = `Bearer ${user.idToken}`;
+  }
+
+  const res = await fetch(`${url}/health`, {
+    headers,
+  });
+  return res.status.toString();
+}
+
 function encodeJsonObject(obj: object): string {
   return JSON.stringify(JSON.stringify(obj));
 }
