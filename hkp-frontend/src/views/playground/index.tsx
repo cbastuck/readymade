@@ -22,10 +22,6 @@ import {
   createBoardFromTemplate,
   importFromLink,
 } from "./BoardActions";
-import {
-  getHealth as getRemoteHealth,
-  isUserAuthenticated,
-} from "../../runtime/remote/RemoteRuntimeApi";
 
 import {
   Action,
@@ -57,7 +53,6 @@ type State = {
   boardName: string;
   description: string;
   initialFetched: boolean;
-  requireLogin: boolean;
 
   // BoardSync data
   syncedPeer: string | undefined;
@@ -71,8 +66,6 @@ type State = {
   outputRouting: PeerOutputRouting;
 
   enforceLoadPanel?: boolean;
-
-  awaitUserLogin: (() => void) | null;
 };
 
 class Playground extends Component<Props, State> {
@@ -92,7 +85,6 @@ class Playground extends Component<Props, State> {
       defaultName,
     description: "",
     initialFetched: false,
-    requireLogin: false,
 
     // BoardSync data
     syncedPeer: undefined,
@@ -103,8 +95,6 @@ class Playground extends Component<Props, State> {
     sidechainRouting: {},
     inputRouting: {},
     outputRouting: {},
-
-    awaitUserLogin: null,
   };
 
   user = null;
@@ -196,23 +186,6 @@ class Playground extends Component<Props, State> {
       rejectedSyncSenders,
     };
 
-    const boardRequiresReauth = (
-      await Promise.all(
-        runtimes.map((rtClass) =>
-          rtClass.type === "remote"
-            ? isUserAuthenticated(rtClass, this.context.user)
-            : Promise.resolve(true)
-        )
-      )
-    ).some((isAuthenticated) => !isAuthenticated);
-    console.log("Board requires reauth: ", boardRequiresReauth);
-    if (boardRequiresReauth && !this.context.user) {
-      await new Promise<void>((resolve) => {
-        this.setState({ awaitUserLogin: resolve, requireLogin: true });
-      });
-      this.setState({ awaitUserLogin: null });
-    }
-
     this.setState({
       ...data,
       initialFetched: true,
@@ -267,24 +240,6 @@ class Playground extends Component<Props, State> {
     if (data) {
       const board = JSON.parse(data);
       if (board && board.runtimes) {
-        /*
-        for (const runtime of board.runtimes) {
-          switch (runtime.type) {
-            case "remote": {
-              try {
-                const health = await getRemoteHealth(
-                  runtime,
-                  this.context.user
-                );
-                if (health !== "200") {
-                  this.handleRequestError(health);
-                }
-              } catch (err: any) {
-                this.handleRequestError(err.message);
-              }
-            }
-          }
-        }*/
         return board;
       }
     }
@@ -430,14 +385,6 @@ class Playground extends Component<Props, State> {
     return true;
   };
 
-  handleRequestError = (status: string) => {
-    /*if (status === "401") {
-      this.setState({ requireLogin: true });
-    } else {*/
-    console.error("Unkown request error", status);
-    //}
-  };
-
   renderBoardSync = (boardContext: BoardContextState) => {
     return (
       <BoardSync
@@ -481,7 +428,6 @@ class Playground extends Component<Props, State> {
   };
 
   render() {
-    const { requireLogin } = this.state;
     const appContext = this.context;
     const runtimeApis: RuntimeApiMap = {
       browser: browserRuntimeApi,
@@ -489,10 +435,6 @@ class Playground extends Component<Props, State> {
     };
 
     const user = (appContext && appContext.user) || this.user;
-    if (this.state.awaitUserLogin && user) {
-      this.state.awaitUserLogin();
-    }
-
     return (
       <BoardProvider
         ref={(ref) => (this.boardProviderRef = ref)}
@@ -564,8 +506,10 @@ class Playground extends Component<Props, State> {
                   this.renderBoardSync(boardContext)}
 
                 <BoardEntryPoint
-                  isLoading={!this.state.initialFetched}
-                  showLoginRequired={!user && requireLogin}
+                  isLoading={
+                    !this.state.initialFetched || !!boardContext.awaitUserLogin
+                  }
+                  showLoginRequired={!!boardContext.awaitUserLogin}
                   appContext={appContext}
                   boardContext={boardContext}
                   boardName={this.state.boardName}

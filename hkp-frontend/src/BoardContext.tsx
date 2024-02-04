@@ -19,6 +19,7 @@ import {
   User,
 } from "./types";
 import { reorderService } from "./views/playground/BoardActions";
+import { isUserAuthenticated } from "./runtime/remote/RemoteRuntimeApi";
 
 type BoardContextAPI = {
   addAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
@@ -60,6 +61,7 @@ export type BoardContextState = BoardContextAPI & {
 
   availableRuntimes: Array<RuntimeClass>;
   runtimeApis: RuntimeApiMap;
+  awaitUserLogin: (() => void) | null;
 };
 
 type Props = {
@@ -146,6 +148,8 @@ class BoardContext extends Component<Props, BoardContextState> {
       registry: {},
       scopes: {},
       runtimeApis: props.runtimeApis,
+
+      awaitUserLogin: null,
     };
   }
 
@@ -175,6 +179,23 @@ class BoardContext extends Component<Props, BoardContextState> {
       runtimes = [],
       services = {},
     } = (await this.props.fetchBoard()) || {};
+
+    const boardRequiresReauth = (
+      await Promise.all(
+        runtimes.map((rtClass) =>
+          rtClass.type === "remote"
+            ? isUserAuthenticated(rtClass, this.state.user)
+            : Promise.resolve(true)
+        )
+      )
+    ).some((isAuthenticated) => !isAuthenticated);
+
+    if (boardRequiresReauth && !this.state.user) {
+      await new Promise<void>((resolve) => {
+        this.setState({ awaitUserLogin: resolve });
+      });
+      this.setState({ awaitUserLogin: null });
+    }
 
     const user = this.state.user;
     const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
@@ -534,7 +555,10 @@ class BoardContext extends Component<Props, BoardContextState> {
   };
 
   render() {
-    const { children } = this.props;
+    const { children, user } = this.props;
+    if (this.state.awaitUserLogin && user) {
+      this.state.awaitUserLogin();
+    }
     return (
       <Provider value={this.state}>
         {children}

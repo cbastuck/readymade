@@ -170,13 +170,10 @@ function BoardServiceUI(props: Props) {
           }
         };
 
-        const needsAuthentication = true; // TODO: find out if we need auth for the board
         return (
           <BoardProvider
             ref={boardProviderRef}
-            fetchBoard={() => {
-              return needsAuthentication ? user && fetchBoard() : fetchBoard();
-            }}
+            fetchBoard={fetchBoard}
             runtimeApis={runtimeApis}
             user={user}
           >
