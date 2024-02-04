@@ -9,16 +9,14 @@ type Props = {
 
 export default function Date({ month, day, year, size = "m" }: Props) {
   const style: CSSProperties = {
-    fontFamily: "roboto",
-    letterSpacing: 1,
     lineHeight: 1.5,
     textAlign: "right",
-    fontSize: size === "s" ? 13 : size === "m" ? 16 : 18,
+    fontSize: size === "s" ? 12 : size === "m" ? 13 : 14,
     textTransform: "capitalize",
   };
   return (
-    <div style={style}>
-      {month}, {day}.{year}
+    <div className="hkp-fnt-p" style={style}>
+      {month}, {day}. {year}
     </div>
   );
 }

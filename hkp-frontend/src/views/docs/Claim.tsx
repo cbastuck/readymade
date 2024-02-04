@@ -9,7 +9,7 @@ export default function Claim(claim: Props) {
   return (
     <div
       style={{
-        fontSize: 17,
+        fontSize: 14,
         textAlign: "left",
         margin: "5px 30px",
         color: claim.c ? "black" : "#454f6d",

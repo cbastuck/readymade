@@ -15,9 +15,9 @@ export default function Header({ example }: Props) {
     >
       <h1 style={{ margin: 0, padding: 0 }}>
         <div
+          className="hkp-fnt-label"
           style={{
             letterSpacing: 8,
-            textTransform: "uppercase",
             fontSize: 20,
             marginTop: 15,
           }}

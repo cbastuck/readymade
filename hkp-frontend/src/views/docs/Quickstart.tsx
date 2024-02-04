@@ -13,13 +13,17 @@ export default function Quickstart() {
   const sectionStyle: CSSProperties = {
     fontSize: 16,
     textAlign: "left",
-    textTransform: "uppercase",
     letterSpacing: 2,
   };
   return (
     <Template title="Quickstarter" isRoot={false}>
       <div>
-        <h2 style={{ ...sectionStyle, margin: "30px 0px" }}>Etiquette</h2>
+        <h2
+          className="hkp-fnt-label"
+          style={{ ...sectionStyle, margin: "30px 0px" }}
+        >
+          Etiquette
+        </h2>
         <div style={{ marginBottom: 35 }}>
           <Claim s="Please" c="Make stupid things!" />
           <Claim
@@ -68,6 +72,7 @@ export default function Quickstart() {
         </h1>
 
         <h2
+          className="hkp-fnt-label"
           style={{
             ...sectionStyle,
             marginTop: 30,
@@ -77,12 +82,10 @@ export default function Quickstart() {
           Stuff to know about
         </h2>
         <div
-          style={s(t.uc, t.fs16, {
+          className="hkp-fnt-p"
+          style={s(t.fs14, {
             textAlign: "left",
-            fontFamily: "Roboto",
             textTransform: "none",
-            lineHeight: 1.5,
-            letterSpacing: 1,
           })}
         >
           <div style={{ marginBottom: 10 }}>

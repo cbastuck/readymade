@@ -10,7 +10,7 @@ import Footer from "../components/Footer";
 type Props = {
   children: JSX.Element[] | JSX.Element;
   title: string;
-  isRoot: boolean;
+  isRoot?: boolean;
   parent?: string;
 };
 export default class Template extends Component<Props> {
@@ -19,15 +19,14 @@ export default class Template extends Component<Props> {
   renderBreadcrumbs = (title: string, parent?: string) => {
     const breadcrumpStyle: CSSProperties = {
       letterSpacing: 1,
-      textTransform: "uppercase",
-      fontSize: 11,
+      fontSize: 12,
     };
     return (
       <div
+        className="hkp-fnt-label"
         style={{
           textAlign: "left",
           marginTop: 15,
-          width: 300,
         }}
       >
         <Breadcrumb>
@@ -77,12 +76,12 @@ export default class Template extends Component<Props> {
                     <h1
                       style={{
                         width: "100%",
-                        fontSize: 20,
+                        fontSize: 24,
                         textAlign: "center",
-                        letterSpacing: 8,
-                        textTransform: "uppercase",
-                        padding: "20px 0px",
+                        letterSpacing: 6,
+                        padding: "5px 0px",
                       }}
+                      className="hkp-fnt-label"
                     >
                       {title}
                     </h1>
@@ -111,9 +110,9 @@ export function NavigateButton({ to, label }: NavButtonProps) {
   return (
     <div style={{ textAlign: "center", width: "100%", margin: "10px 0px" }}>
       <Button
+        className="hkp-fnt-label"
         style={{
-          textTransform: "uppercase",
-          fontSize: 12,
+          fontSize: 14,
           border: "1px solid darkgray",
           color: "white",
           backgroundColor: "#454f6d",
@@ -122,7 +121,6 @@ export function NavigateButton({ to, label }: NavButtonProps) {
       >
         {label ? label : "Next"}
       </Button>
-      <div style={{ height: 10 }} />
     </div>
   );
 }

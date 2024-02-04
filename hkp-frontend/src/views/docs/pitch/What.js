@@ -5,17 +5,15 @@ import Date from "../../../components/Date";
 
 export default function What() {
   return (
-    <Template title="What's the point" parent="project scope">
+    <Template title="What's the point" parent="Project scope">
       <div
+        className="hkp-fnt-p"
         style={{
           display: "flex",
           flexDirection: "column",
           gap: 10,
           marginTop: 20,
-          fontSize: 16,
-          fontFamily: "Roboto",
-          letterSpacing: 1,
-          lineHeight: 1.5,
+          fontSize: 14,
         }}
       >
         <div>
@@ -42,7 +40,7 @@ export default function What() {
           have.
         </div>
         <Date month="June" day="24" year="2022" />
-        <HStack style={{ marginTop: 10 }}>
+        <HStack style={{ marginBottom: "20px" }}>
           <NavigateButton to="/welcome/mission" label="overview" />
           <NavigateButton to="/docs/pitch/why" label="why? >" />
         </HStack>

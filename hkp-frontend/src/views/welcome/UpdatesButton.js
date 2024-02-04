@@ -7,20 +7,19 @@ export default function UpdatesButton() {
   return (
     <div
       style={{
-        marginLeft: 5,
+        marginLeft: "200px",
       }}
     >
-      <div
-        style={{
-          transform: "scale(1.6)",
-          transformOrigin: "center",
-        }}
-      >
+      <div>
         <Link to="/docs/updates">
           <div className="update-bar">
-            <Icon name="star outline" size="mini" />
-            <div style={{ fontSize: 7, marginTop: -57, marginLeft: -3 }}>
-              What's new?
+            <Icon name="star outline" size="large" />
+            <div
+              style={{
+                fontSize: 14,
+              }}
+            >
+              what's new?
             </div>
           </div>
         </Link>

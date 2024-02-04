@@ -1,3 +1,4 @@
+import UAParser from "ua-parser-js";
 import { PeerJsHostDescriptor, RuntimeClass, SavedBoard } from "../../types";
 
 export function getActivationId(runtimeId: string) {
@@ -8,9 +9,9 @@ export const localStoragePrefix = "hkp-playground-";
 
 export const defaultName = "Playground";
 
+const browser = new UAParser().getBrowser();
 export const availableRuntimes: Array<RuntimeClass> = [
-  { name: "browser", type: "browser" },
-  // { name: "hookup", type: "node" },
+  { name: `${browser.name}` || "browser", type: "browser" },
 ];
 
 export function getLocalBoard(

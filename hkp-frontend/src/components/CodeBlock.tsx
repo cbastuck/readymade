@@ -13,11 +13,11 @@ export default function CodeBlock({ children, title }: Props) {
   if (!isOpen) {
     return (
       <button
+        className="hkp-fnt-p"
         style={{
           backgroundColor: "white",
           border: "none",
           cursor: "pointer",
-          fontFamily: "roboto",
           color: "#4183c4",
           padding: 0,
         }}

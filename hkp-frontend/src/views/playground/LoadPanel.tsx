@@ -15,13 +15,11 @@ export default function LoadPanel() {
 
   return (
     <div style={s(t.m(0, 20), t.tc)}>
-      <div style={s(t.mt20, t.uc)}>
-        <BoardCollection
-          headline="Saved on this browser"
-          items={savedBoards}
-          renderBorder={false}
-        />
-      </div>
+      <BoardCollection
+        headline="Saved on this browser"
+        items={savedBoards}
+        renderBorder={false}
+      />
     </div>
   );
 }

@@ -163,11 +163,8 @@ class Sandbox extends Component<Props, State> {
               marginBottom: 2,
             }}
           >
-            <Link
-              style={s(t.uc, t.ls1, t.fs12, { fontFamily: "Lato" })}
-              to={`/playground?src=${url}`}
-            >
-              Open In Playground
+            <Link className="hkp-fnt-label" to={`/playground?src=${url}`}>
+              open on playground
             </Link>
             <div style={{ height: 50 }} />
           </div>

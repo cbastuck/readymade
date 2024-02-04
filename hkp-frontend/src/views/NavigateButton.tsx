@@ -24,18 +24,17 @@ export default function NavigateButton({
   };
   const onClick = onClicked || onDestination;
   const style = passedStyle || {
-    fontSize: 11,
-    textTransform: "uppercase",
+    fontSize: 13,
     letterSpacing: 2,
     whiteSpace: "nowrap",
     border: "solid 1px white",
-    color: "black",
-    padding: 10,
+    color: "#333",
+    padding: "10px",
     width: width ? width : "initial",
   };
 
   return (
-    <Button style={style} onClick={onClick}>
+    <Button className="hkp-fnt-label" style={style} onClick={onClick}>
       {text}
     </Button>
   );

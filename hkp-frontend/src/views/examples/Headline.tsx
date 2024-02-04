@@ -7,10 +7,10 @@ type Props = {
 export default function Headline({ children }: Props) {
   return (
     <h1
+      className="hkp-fnt-label"
       style={{
         letterSpacing: 4,
-        textTransform: "uppercase",
-        fontSize: 14,
+        fontSize: 18,
         marginTop: 15,
       }}
     >

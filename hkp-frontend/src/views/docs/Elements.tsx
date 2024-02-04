@@ -27,12 +27,14 @@ type SectionProps = {
 
 export function Section({ title, children }: SectionProps) {
   const headlineStyle: CSSProperties = {
-    textTransform: "uppercase",
     fontSize: 16,
   };
   return (
     <>
-      <h1 style={headlineStyle}> {title}</h1>
+      <h1 className="hkp-fnt-label" style={headlineStyle}>
+        {" "}
+        {title}
+      </h1>
       {children}
     </>
   );
@@ -58,10 +60,11 @@ type TextProps = {
 export function Text({ children }: TextProps) {
   const style: CSSProperties = {
     textTransform: "none",
-    fontFamily: "roboto",
     fontSize: 16,
-    letterSpacing: 1,
-    lineHeight: 1.5,
   };
-  return <div style={style}>{children} </div>;
+  return (
+    <div className="hkp-fnt-p" style={style}>
+      {children}{" "}
+    </div>
+  );
 }

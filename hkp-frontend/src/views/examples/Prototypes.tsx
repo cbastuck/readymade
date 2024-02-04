@@ -5,15 +5,14 @@ import Headline from "./Headline";
 
 export default function Prototypes() {
   return (
-    <div style={{ margin: "10px", width: "100%", height: "100%" }}>
+    <div style={{ margin: "50px 0px", width: "100%", height: "100%" }}>
       <Headline>My Prototypes</Headline>
       <div
+        className="hkp-fn-p"
         style={{
-          fontFamily: "Roboto",
-          fontSize: 16,
+          letterSpacing: 2,
+          lineHeight: 1.8,
           color: "rgb(85, 85, 85)",
-          lineHeight: 1.5,
-          letterSpacing: 1,
           display: "flex",
         }}
       >

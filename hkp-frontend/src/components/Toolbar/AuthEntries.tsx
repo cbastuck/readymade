@@ -12,7 +12,7 @@ type Props = {
 };
 
 export default function AuthEntries({ currentUser }: Props) {
-  const fontStyle = s(t.uc, t.ls1, t.fs11);
+  const fontStyle = s(t.ls1, t.fs11);
   const { loginWithRedirect, logout } = useAuth0();
   const context = useContext(AppCtx);
   return (

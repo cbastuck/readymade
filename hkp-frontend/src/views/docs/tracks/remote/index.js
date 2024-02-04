@@ -4,7 +4,7 @@ import { Section, Paragraph, Text } from "../../Elements";
 
 export default function Remotes() {
   return (
-    <Template title="remote runtimes" parent="side tracks">
+    <Template title="remote runtimes" parent="Side tracks">
       <div style={{ margin: "40px 0px" }}>
         <Section title="Setup remote runtime">
           <Text>

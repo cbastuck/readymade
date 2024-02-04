@@ -17,8 +17,8 @@ import Header from "./Header";
 export default function Examples() {
   return (
     <div
+      className="hkp-fn-p"
       style={s(t.h100, {
-        fontFamily: "Roboto",
         display: "flex",
         flexDirection: "column",
       })}

@@ -10,9 +10,8 @@ type Props = {
 };
 export default function Footer({ flex }: Props) {
   const fontStyle: CSSProperties = {
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    fontSize: 11,
+    letterSpacing: 2,
+    fontSize: 12,
   };
   return (
     <div
@@ -41,6 +40,7 @@ export default function Footer({ flex }: Props) {
             paddingBottom: 3,
             display: "flex",
             flexDirection: "row",
+            gap: "5px",
           }}
         >
           <Link to="/about"> about </Link>
@@ -56,7 +56,7 @@ export default function Footer({ flex }: Props) {
               fontSize: 10,
             }}
           >
-            © 2018-2024 cbastuck -
+            <span style={{ fontFamily: "Roboto" }}>©</span>2018-2024 cbastuck -
             <span style={{ color: "gray", padding: 5, textTransform: "none" }}>
               v{build.version}
             </span>

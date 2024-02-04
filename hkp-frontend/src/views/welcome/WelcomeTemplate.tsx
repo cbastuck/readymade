@@ -28,17 +28,16 @@ function Welcome({ children, location, pageStyle }: Props) {
   return (
     <BoardProvider user={null} isActionAvailable={() => false}>
       <div>
-        <BackgroundImage />
         <Toolbar />
         <div
           className={`hero-text fade-in-linear}`}
           style={isClosed ? { height: "0px", padding: "0px" } : pageStyle}
         >
           <div
+            className="hkp-fn-p"
             style={{
               width: "100%",
               height: "95%",
-              fontFamily: "Roboto",
               fontSize: 15,
             }}
           >

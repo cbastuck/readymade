@@ -9,7 +9,7 @@ import { ReactComponent as HkpSingleEdgy } from "./assets/hkp-single-dot-second-
 
 export default function Brand() {
   return (
-    <Template title="Brand and Identity" parent="side tracks">
+    <Template title="Brand and Identity" parent="Side tracks">
       <div style={{ margin: "40px 0px" }}>
         <Date month="August" day="6" year="2022" size="s" />
         <Section title="Logo">

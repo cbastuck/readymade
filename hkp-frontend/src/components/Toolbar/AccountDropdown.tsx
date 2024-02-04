@@ -9,7 +9,7 @@ type Props = {
   currentUser: User | null;
 };
 export default function AccountDropdown({ currentUser }: Props) {
-  const fontStyle = s(t.uc, t.ls1, t.fs11);
+  const fontStyle = s(t.ls1, t.fs11);
   const icon = (
     <div
       style={{
@@ -19,7 +19,9 @@ export default function AccountDropdown({ currentUser }: Props) {
     >
       <Icon name="user" style={{ margin: "0px 5px" }} />
       <div
-        style={s(t.uc, t.fs10, t.ls1, t.mt1, {
+        style={s(t.ls1, t.mt1, {
+          fontSize: 12,
+          paddingTop: 2,
           maxWidth: "40px",
           overflowX: "hidden",
           textOverflow: "ellipsis",
@@ -31,7 +33,7 @@ export default function AccountDropdown({ currentUser }: Props) {
   );
   return (
     <div style={{ marginLeft: "auto" }}>
-      <Dropdown icon={icon} className="link item right">
+      <Dropdown icon={icon} className="link item right hkp-fnt-label">
         <Dropdown.Menu>
           <AuthEntries currentUser={currentUser} />
           <Dropdown.Divider />

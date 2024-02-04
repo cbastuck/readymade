@@ -33,7 +33,7 @@ export default function Bridge() {
     fetchBoard();
   }, []);
   return (
-    <Template title="Bridge" parent="side tracks">
+    <Template title="Bridge" parent="Side tracks">
       <div style={{ margin: "40px 0px" }}>
         <Text>
           <Section title="Idea">

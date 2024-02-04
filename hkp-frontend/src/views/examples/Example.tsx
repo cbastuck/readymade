@@ -23,8 +23,8 @@ export default function Example() {
 
   return (
     <div
+      className="hkp-fnt-p"
       style={s(t.h100, {
-        fontFamily: "Roboto",
         display: "flex",
         flexDirection: "column",
       })}

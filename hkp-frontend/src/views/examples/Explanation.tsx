@@ -30,7 +30,8 @@ export default function Explanation({ value: explanation }: Props) {
   const id =
     modalReferenceDatamodel && modalReferenceDatamodel.link.split("/").pop();
 
-  let title, component;
+  let title;
+  let component = <div />;
   if (isDatamodelReference) {
     title = `${id} Datamodel Documentation`;
     component = (
@@ -46,12 +47,10 @@ export default function Explanation({ value: explanation }: Props) {
 
   return (
     <div
+      className="hkp-fnt-p"
       style={s(t.uc, t.fs15, t.ls1, t.m(0, 10), {
         width: "95%",
         textTransform: "none",
-        lineHeight: 1.2,
-        fontFamily: "Roboto",
-        letterSpacing: 1.2,
       })}
     >
       {assureArray(explanation).map((exp, eidx) => (
@@ -76,9 +75,9 @@ export default function Explanation({ value: explanation }: Props) {
         </div>
       ))}
       <Modal
-        title={title}
+        title={title || ""}
         component={component}
-        url={modalReferenceDatamodel && modalReferenceDatamodel.link}
+        url={modalReferenceDatamodel ? modalReferenceDatamodel.link : ""}
         setOpen={(open: boolean) =>
           !open && setModalReferenceDatamodel(undefined)
         }

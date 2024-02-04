@@ -60,7 +60,7 @@ export default function BoardEntryPoint({
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
   const saveReminder = (
-    <div style={s(t.fs14, t.mb10, { fontFamily: "Lato" })}>
+    <div className="hkp-fnt-label" style={{ margin: "10px 0px", fontSize: 14 }}>
       Remember to
       <span
         style={{ cursor: "help", color: "#4284C4" }}
@@ -113,10 +113,12 @@ export default function BoardEntryPoint({
         <div style={s(t.fs16, t.ls1, t.tc)}>
           {isPlaygroundEmpty && (
             <h1
-              style={s(t.uc, t.fs20, {
+              className="hkp-fnt-label"
+              style={{
+                fontSize: "22px",
                 margin: 0,
                 marginTop: "5%",
-              })}
+              }}
             >
               Welcome to Playground
             </h1>
@@ -141,7 +143,7 @@ export default function BoardEntryPoint({
             {!isPlaygroundEmpty ? saveReminder : false}
           </div>
           {(isPlaygroundEmpty || enforceLoadPanel) && (
-            <div style={s(t.uc, { width: "90%", margin: "auto" })}>
+            <div style={{ width: "90%", margin: "auto" }}>
               <LoadPanel />
             </div>
           )}

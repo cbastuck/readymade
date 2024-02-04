@@ -147,23 +147,10 @@ html {
 
 .hero-claim {
   color: #454f6d;
-  font-size: large;
   margin-bottom: 3px;
 }
 
 .claim-make-yours {
   font-weight: lighter;
-  font-style: normal;
-  text-transform: uppercase;
-  font-size: 15px;
   letter-spacing: 4px;
-}
-
-.claim-it {
-  font-style: normal;
-  font-weight: bold;
-  background-color: #454f6e;
-  color: white;
-  padding-left: 9px;
-  padding-right: 5px;
 }

@@ -18,7 +18,6 @@ export default function Chapter({
   const style: CSSProperties = {
     ...fontStyle,
     marginLeft: 8,
-    textTransform: "uppercase",
     ...passedStyle,
   };
   return (

@@ -17,9 +17,9 @@ export default function Docs() {
       </Chapter>
 
       <Chapter name="4. Side tracks" details="topics work in progress">
-        <Article to="/docs/tracks/branding">brand and identity</Article>
-        <Article to="/docs/tracks/bridge">bridge</Article>
-        <Article to="/docs/tracks/remote">remote runtimes</Article>
+        <Article to="/docs/tracks/branding">Brand and identity</Article>
+        <Article to="/docs/tracks/bridge">Bridge</Article>
+        <Article to="/docs/tracks/remote">Remote runtimes</Article>
       </Chapter>
       <br />
     </Template>

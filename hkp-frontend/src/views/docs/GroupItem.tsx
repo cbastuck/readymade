@@ -19,14 +19,13 @@ export default function GroupItem(item: Props) {
     <Item style={itemStyle}>
       {
         <Item.Header
+          className="hkp-fnt-label"
           style={{
-            fontSize: 16,
+            fontSize: 14,
             letterSpacing: 2,
             paddingTop: 9,
             marginLeft: 10,
             minWidth: 150,
-            textTransform: "uppercase",
-            fontFamily: "Lato",
             fontWeight: "thin",
           }}
         >
@@ -47,7 +46,7 @@ export default function GroupItem(item: Props) {
             <div
               key={`detail-${item.title}-${idx}`}
               style={{
-                fontSize: 16,
+                fontSize: 14,
                 cursor: "default",
                 lineHeight: 1.8,
                 letterSpacing: 1,

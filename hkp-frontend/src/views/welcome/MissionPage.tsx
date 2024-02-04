@@ -50,39 +50,37 @@ export default function MissionPage() {
                 display: "table-cell",
                 verticalAlign: "middle",
                 textAlign: "center",
-                letterSpacing: 1,
-                textTransform: "uppercase",
-                fontFamily: "Lato",
               }}
-              className={`fade-in-${xi}`}
+              className={`hkp-fnt-label fade-in-${xi}`}
             >
               {x.q && (
-                <h1 style={{ fontSize: 19, color: "454f6d", paddingBottom: 5 }}>
+                <h1
+                  className="hkp-fnt-label"
+                  style={{ fontSize: 19, color: "454f6d", paddingBottom: 5 }}
+                >
                   <Link to={x.href} style={{ fontSize: 17 }}>
                     {x.q}
                   </Link>
                 </h1>
               )}
               <div
-                className="home-title"
+                className="home-title hkp-fnt-label"
                 style={{
                   paddingTop: 2,
                   paddingLeft: 2,
-                  fontSize: 18,
+                  fontSize: 14,
                   color: "#777",
                   textTransform: "none",
-                  fontFamily: "roboto",
                   letterSpacing: 2,
                 }}
               >
                 {x.a}
                 {x.href && (
                   <Link
+                    className="hkp-fnt-label"
                     to={x.href}
                     style={{
-                      fontSize: 11,
-                      textTransform: "capitalize",
-                      fontFamily: "Lato",
+                      fontSize: 10,
                       paddingLeft: 3,
                     }}
                   >

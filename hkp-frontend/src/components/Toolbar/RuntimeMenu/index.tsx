@@ -46,21 +46,24 @@ export default function RuntimeMenu({
     selected: false,
   }));
 
-  const dropdownOptions = options.concat({
-    key: "add-remote-runtime-item",
-    value: "add-runtime",
-    children: (
-      <div style={{ display: "flex", flexDirection: "row" }}>
-        <Icon name="plus" />
-        Add remote
-      </div>
-    ),
-    selected: false,
-  });
+  const dropdownOptions = options.concat([
+    {
+      key: "add-remote-runtime-item",
+      value: "add-runtime",
+      children: (
+        <div style={{ display: "flex", flexDirection: "row" }}>
+          <Icon name="plus" />
+          New remote
+        </div>
+      ),
+      selected: false,
+    },
+  ]);
 
   return (
     <div
       id="runtime-dropdown"
+      className="hkp-fnt-label"
       style={{
         marginLeft: 10,
         marginTop: 3,

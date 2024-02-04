@@ -1,5 +1,26 @@
 @font-face {
-  font-family: 'Roboto';
+  font-family: "Roboto";
   src: local("Roboto"),
-   url("./assets/fonts/Roboto/Roboto-Light.ttf") format("truetype");
+    url("./assets/fonts/Roboto/Roboto-Light.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "SpecialElite";
+  src: url("./assets/fonts/SpecialElite-Regular.ttf") format("truetype");
+}
+
+.hkp-fnt-label {
+  font-family: SpecialElite !important;
+}
+
+.hkp-fnt-p {
+  font-family: SpecialElite;
+  letter-spacing: 1px;
+  font-size: 12px;
+  line-height: 2;
+}
+
+body {
+  font-family: SpecialElite;
+  color: #555;
 }

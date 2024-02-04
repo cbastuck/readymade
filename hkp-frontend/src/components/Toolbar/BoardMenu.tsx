@@ -15,9 +15,8 @@ export default function BoardMenu({
   boardSyncActive,
 }: Props) {
   const menuItemStyle: CSSProperties = {
-    fontSize: 10,
-    textTransform: "uppercase",
-    letterSpacing: 1,
+    fontSize: 13,
+    letterSpacing: 1.5,
   };
 
   const location = useLocation();
@@ -25,7 +24,7 @@ export default function BoardMenu({
     <Dropdown
       id="board-dropdown"
       text={board || "Board"}
-      className="link item"
+      className="link item hkp-fnt-label"
       style={{
         fontSize: 11,
         letterSpacing: 1,

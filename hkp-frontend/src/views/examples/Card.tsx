@@ -29,11 +29,12 @@ export default function EampleCard({ example }: Props) {
                 marginTop: 3,
                 textAlign: "left",
                 color: "#4183c4",
-                textTransform: "uppercase",
                 letterSpacing: 1,
               }}
             >
-              <h1 style={t.fs14}>{example.title}</h1>
+              <h1 className="hkp-fnt-label" style={t.fs14}>
+                {example.title}
+              </h1>
             </Card.Header>
             <Card.Meta
               style={{
@@ -50,7 +51,12 @@ export default function EampleCard({ example }: Props) {
                 color: "rgb(84 84 84)",
               }}
             >
-              <div style={s(t.tl, t.fs14, { letterSpacing: 1 })}>
+              <div
+                style={s(t.tl, {
+                  fontSize: 14,
+                  letterSpacing: 1.5,
+                })}
+              >
                 {Array.isArray(example.description)
                   ? example.description.map((d, idx) => (
                       <p key={`example-${example.title}-desc-${idx}`}>{d}</p>

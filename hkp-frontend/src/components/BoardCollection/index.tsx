@@ -30,10 +30,10 @@ export default function BoardCollection({
   return (
     items.length > 0 && (
       <div
+        className="hkp-fnt-p"
         style={{
           height: "100%",
           width: "100%",
-          fontFamily: "Roboto",
           ...borderStyle,
         }}
       >
@@ -46,7 +46,12 @@ export default function BoardCollection({
           }}
         >
           {headline && (
-            <h1 style={s(t.mt15, t.tc, t.fs16, t.w100)}>{headline}</h1>
+            <h1
+              className="hkp-fnt-label"
+              style={s(t.mt15, t.tc, t.fs16, t.w100)}
+            >
+              {headline}
+            </h1>
           )}
         </div>
         <div style={{ marginTop: "-30px", paddingBottom: "20px" }}>
