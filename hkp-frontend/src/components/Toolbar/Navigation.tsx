@@ -1,7 +1,6 @@
-import { Link } from "react-router-dom";
-
-import CompactNav from "./CompactNav";
+import CompactNavMenu from "./CompactNavMenu";
 import { AppContextState } from "../../AppContext";
+import WideNavigationLinks from "./WideNavigationLinks";
 
 type Props = {
   appContext: AppContextState | null;
@@ -9,11 +8,6 @@ type Props = {
 };
 
 export default function Navigation({ isCompact }: Props) {
-  const navItemStyle: any = {
-    margin: 8,
-    fontSize: 11,
-    textTransform: "uppercase",
-  };
   return (
     <div
       style={{
@@ -23,22 +17,7 @@ export default function Navigation({ isCompact }: Props) {
         marginRight: 10,
       }}
     >
-      {isCompact && <CompactNav />}
-      {!isCompact && (
-        <Link to="/docs" style={navItemStyle}>
-          Docs
-        </Link>
-      )}
-      {!isCompact && (
-        <Link to="/examples" style={navItemStyle}>
-          Examples
-        </Link>
-      )}
-      {!isCompact && (
-        <Link to="/playground" style={navItemStyle}>
-          Playground
-        </Link>
-      )}
+      {isCompact ? <CompactNavMenu /> : <WideNavigationLinks />}
     </div>
   );
 }

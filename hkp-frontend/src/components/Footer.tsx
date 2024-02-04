@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
 import build from "../buildNumber.json";
@@ -8,7 +9,7 @@ type Props = {
   flex?: boolean;
 };
 export default function Footer({ flex }: Props) {
-  const fontStyle: any = {
+  const fontStyle: CSSProperties = {
     letterSpacing: 1,
     textTransform: "uppercase",
     fontSize: 11,

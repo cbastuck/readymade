@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Item } from "semantic-ui-react";
 
@@ -9,7 +10,7 @@ import GroupItem from "./GroupItem";
 
 export default function Quickstart() {
   const navigate = useNavigate();
-  const sectionStyle: any = {
+  const sectionStyle: CSSProperties = {
     fontSize: 16,
     textAlign: "left",
     textTransform: "uppercase",

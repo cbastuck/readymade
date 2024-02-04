@@ -16,6 +16,7 @@ import {
   RuntimeScope,
   RestoreRuntimeResult,
   RuntimeApi,
+  User,
 } from "./types";
 import { reorderService } from "./views/playground/BoardActions";
 
@@ -46,7 +47,7 @@ type BoardContextAPI = {
 };
 
 export type BoardContextState = BoardContextAPI & {
-  user: any;
+  user: User | null;
 
   boardName: string;
   appViewMode: AppViewMode;
@@ -62,7 +63,7 @@ export type BoardContextState = BoardContextAPI & {
 };
 
 type Props = {
-  user: any;
+  user: User | null;
   boardName: string;
   availableRuntimes: Array<RuntimeClass>;
   runtimeApis: RuntimeApiMap;

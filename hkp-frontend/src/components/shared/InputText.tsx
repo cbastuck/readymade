@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, CSSProperties } from "react";
 
 import { TextArea } from "semantic-ui-react";
 
@@ -16,8 +16,8 @@ type Props = {
   synced?: boolean;
   disabled?: boolean;
   unit?: string;
-  labelStyle?: any;
-  style?: any;
+  labelStyle?: CSSProperties;
+  style?: CSSProperties;
   resizeable?: boolean;
 
   onChange: (ev: OnChangeEvent, value: OnChangeValue) => void;

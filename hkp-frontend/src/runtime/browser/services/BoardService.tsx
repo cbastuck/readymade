@@ -174,9 +174,9 @@ function BoardServiceUI(props: Props) {
         return (
           <BoardProvider
             ref={boardProviderRef}
-            fetchBoard={() =>
-              needsAuthentication ? user && fetchBoard() : fetchBoard()
-            }
+            fetchBoard={() => {
+              return needsAuthentication ? user && fetchBoard() : fetchBoard();
+            }}
             runtimeApis={runtimeApis}
             user={user}
           >

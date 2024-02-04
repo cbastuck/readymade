@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { Item } from "semantic-ui-react";
 
 type Props = {
@@ -8,7 +9,7 @@ type Props = {
 };
 
 export default function GroupItem(item: Props) {
-  const itemStyle: any = {
+  const itemStyle: CSSProperties = {
     width: "100%",
     marginBottom: 10,
     padding: 20,

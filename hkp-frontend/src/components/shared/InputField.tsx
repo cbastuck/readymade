@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, CSSProperties } from "react";
 
 import { Input, Checkbox } from "semantic-ui-react";
 
@@ -20,8 +20,8 @@ type Props = {
   synced?: boolean;
   disabled?: boolean;
   unit?: string;
-  labelStyle?: any;
-  style?: any;
+  labelStyle?: CSSProperties;
+  style?: CSSProperties;
 
   onChange?: (ev: OnChangeEvent, value: OnChangeValue) => void;
   onEscape?: (ev: OnChangeEvent, value: OnChangeValue) => void;

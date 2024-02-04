@@ -22,7 +22,10 @@ import {
   createBoardFromTemplate,
   importFromLink,
 } from "./BoardActions";
-import { getHealth as getRemoteHealth } from "../../runtime/remote/RemoteRuntimeApi";
+import {
+  getHealth as getRemoteHealth,
+  isUserAuthenticated,
+} from "../../runtime/remote/RemoteRuntimeApi";
 
 import {
   Action,
@@ -193,10 +196,19 @@ class Playground extends Component<Props, State> {
       rejectedSyncSenders,
     };
 
-    const isUserRequired = runtimes.some((rt) => rt.type === "remote");
-    if (isUserRequired && !this.context.user) {
+    const boardRequiresReauth = (
+      await Promise.all(
+        runtimes.map((rtClass) =>
+          rtClass.type === "remote"
+            ? isUserAuthenticated(rtClass, this.context.user)
+            : Promise.resolve(true)
+        )
+      )
+    ).some((isAuthenticated) => !isAuthenticated);
+    console.log("Board requires reauth: ", boardRequiresReauth);
+    if (boardRequiresReauth && !this.context.user) {
       await new Promise<void>((resolve) => {
-        this.setState({ awaitUserLogin: resolve });
+        this.setState({ awaitUserLogin: resolve, requireLogin: true });
       });
       this.setState({ awaitUserLogin: null });
     }
@@ -255,6 +267,7 @@ class Playground extends Component<Props, State> {
     if (data) {
       const board = JSON.parse(data);
       if (board && board.runtimes) {
+        /*
         for (const runtime of board.runtimes) {
           switch (runtime.type) {
             case "remote": {
@@ -271,7 +284,7 @@ class Playground extends Component<Props, State> {
               }
             }
           }
-        }
+        }*/
         return board;
       }
     }
@@ -418,11 +431,11 @@ class Playground extends Component<Props, State> {
   };
 
   handleRequestError = (status: string) => {
-    if (status === "401") {
+    /*if (status === "401") {
       this.setState({ requireLogin: true });
-    } else {
-      console.error("Unkown request error", status);
-    }
+    } else {*/
+    console.error("Unkown request error", status);
+    //}
   };
 
   renderBoardSync = (boardContext: BoardContextState) => {
@@ -552,7 +565,7 @@ class Playground extends Component<Props, State> {
 
                 <BoardEntryPoint
                   isLoading={!this.state.initialFetched}
-                  isLoginRequired={!user && requireLogin}
+                  showLoginRequired={!user && requireLogin}
                   appContext={appContext}
                   boardContext={boardContext}
                   boardName={this.state.boardName}

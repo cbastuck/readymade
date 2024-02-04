@@ -1,11 +1,11 @@
-import React, { Component } from "react";
+import React, { Component, CSSProperties } from "react";
 import { Label } from "semantic-ui-react";
 
 import Tooltip from "./Tooltip";
 import { labelWidth, labelHeight } from "./Defaults";
 
 type Props = {
-  style: any;
+  style: CSSProperties;
   inSync: boolean;
   label: string;
   onClick: (ev: React.MouseEvent<HTMLElement>) => void;

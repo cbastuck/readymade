@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { Dropdown } from "semantic-ui-react";
 import { useLocation } from "react-router-dom";
 import { BoardContextState } from "../../BoardContext";
@@ -13,7 +14,7 @@ export default function BoardMenu({
   boardContext,
   boardSyncActive,
 }: Props) {
-  const menuItemStyle: any = {
+  const menuItemStyle: CSSProperties = {
     fontSize: 10,
     textTransform: "uppercase",
     letterSpacing: 1,

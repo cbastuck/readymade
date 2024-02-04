@@ -1,4 +1,4 @@
-import { ReactElement } from "react";
+import { ReactElement, CSSProperties } from "react";
 
 import { fontStyle, detailStyle } from "./common";
 
@@ -15,7 +15,7 @@ export default function Chapter({
   details,
   style: passedStyle = {},
 }: Props) {
-  const style: any = {
+  const style: CSSProperties = {
     ...fontStyle,
     marginLeft: 8,
     textTransform: "uppercase",

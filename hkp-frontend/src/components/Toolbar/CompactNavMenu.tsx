@@ -1,11 +1,11 @@
 import { Dropdown } from "semantic-ui-react";
 import { Link } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
-import { useContext } from "react";
+import { useContext, CSSProperties } from "react";
 import { AppCtx } from "../../AppContext";
 
 export default function CompactNav() {
-  const navItemStyle: any = {
+  const navItemStyle: CSSProperties = {
     margin: 8,
     fontSize: 11,
     textTransform: "uppercase",

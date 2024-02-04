@@ -21,6 +21,23 @@ import {
 } from "../../types";
 import RemoteRuntimeScope from "./RemoteRuntimeScope";
 
+export async function isUserAuthenticated(
+  rtClass: RuntimeClass,
+  user?: User | null
+) {
+  const healthStatus = await getHealth(rtClass, user || null);
+  if (healthStatus === "200") {
+    return true;
+  } else if (healthStatus === "401") {
+    return false;
+  } else {
+    console.error(
+      `RemoteRuntimeApi.isUserAuthenticated reports unexpected status: ${healthStatus}`
+    );
+    return false;
+  }
+}
+
 export async function getHealth(rtClass: RuntimeClass, user: User | null) {
   return getHealth_gql(rtClass, user);
 }

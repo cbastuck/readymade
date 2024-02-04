@@ -1,3 +1,5 @@
+import { CSSProperties } from "react";
+
 type ParagraphProps = {
   children: string | string[];
   brief: string;
@@ -5,7 +7,7 @@ type ParagraphProps = {
 };
 
 export function Paragraph({ children, brief, headline }: ParagraphProps) {
-  const headlineStyle: any = {
+  const headlineStyle: CSSProperties = {
     textTransform: "uppercase",
     fontSize: 12,
   };
@@ -24,7 +26,10 @@ type SectionProps = {
 };
 
 export function Section({ title, children }: SectionProps) {
-  const headlineStyle: any = { textTransform: "uppercase", fontSize: 16 };
+  const headlineStyle: CSSProperties = {
+    textTransform: "uppercase",
+    fontSize: 16,
+  };
   return (
     <>
       <h1 style={headlineStyle}> {title}</h1>
@@ -51,7 +56,7 @@ type TextProps = {
 };
 
 export function Text({ children }: TextProps) {
-  const style: any = {
+  const style: CSSProperties = {
     textTransform: "none",
     fontFamily: "roboto",
     fontSize: 16,

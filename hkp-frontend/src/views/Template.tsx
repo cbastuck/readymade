@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { Component, CSSProperties } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Container, Breadcrumb, Button } from "semantic-ui-react";
 
@@ -17,7 +17,7 @@ export default class Template extends Component<Props> {
   // TODO: these breadcrumps are taylored to the docs views
   // make this component more generic - also used in Profile
   renderBreadcrumbs = (title: string, parent?: string) => {
-    const breadcrumpStyle: any = {
+    const breadcrumpStyle: CSSProperties = {
       letterSpacing: 1,
       textTransform: "uppercase",
       fontSize: 11,

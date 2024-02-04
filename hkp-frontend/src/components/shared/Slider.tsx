@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, CSSProperties } from "react";
 import SyncIndicator from "./SyncIndicator";
 
 type OnChangeEvent =
@@ -12,8 +12,8 @@ type Props = {
   synced?: boolean;
   minValue: number;
   maxValue: number;
-  labelStyle?: any;
-  style?: any;
+  labelStyle?: CSSProperties;
+  style?: CSSProperties;
 
   onLabelClicked?: (ev: OnChangeEvent, value: OnChangeValue) => void;
   onChange: (ev: OnChangeEvent, value: OnChangeValue) => void;

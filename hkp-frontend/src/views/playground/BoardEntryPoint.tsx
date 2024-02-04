@@ -19,7 +19,7 @@ import LoadIndicator from "./LoadIndicator";
 
 type Props = {
   isLoading: boolean;
-  isLoginRequired: boolean;
+  showLoginRequired: boolean;
   appContext: AppContextState;
   boardContext: BoardContextState;
   boardName: string;
@@ -43,7 +43,7 @@ type Props = {
 
 export default function BoardEntryPoint({
   isLoading,
-  isLoginRequired,
+  showLoginRequired,
   appContext,
   boardContext,
   boardName,
@@ -98,7 +98,7 @@ export default function BoardEntryPoint({
   if (isLoading) {
     return (
       <LoadIndicator
-        text={isLoginRequired ? "Login required" : "Loading Playground"}
+        text={showLoginRequired ? "Login required" : "Loading Playground"}
       />
     );
   }

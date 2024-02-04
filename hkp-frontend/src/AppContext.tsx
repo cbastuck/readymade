@@ -70,12 +70,12 @@ class AppContext extends Component<Props, AppContextState> {
       popNotification: () =>
         this.setState({ notifications: this.state.notifications.slice(1) }),
       // modifying functions
-      updateToken: this.updateToken,
+      updateToken: this.onToken,
       logout: this.logout,
     };
   }
 
-  updateToken = (idToken: IdToken): Promise<void> => {
+  onToken = (idToken: IdToken): Promise<void> => {
     return new Promise((resolve, reject) => {
       const idJwt = idToken.__raw;
       if (idJwt && idJwt !== this.state.user?.idToken) {
@@ -110,7 +110,7 @@ class AppContext extends Component<Props, AppContextState> {
           ...this.state,
         }}
       >
-        <RestoredUser onToken={this.updateToken} />
+        <RestoredUser onToken={this.onToken} />
         {children}
       </Provider>
     );

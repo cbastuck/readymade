@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { Message } from "semantic-ui-react";
 
 import NotificationContent from "./NotificationContent";
@@ -6,7 +7,7 @@ import { s, t } from "../../styles";
 type Props = {
   message: string;
   title: string;
-  style: any;
+  style: CSSProperties;
   onClose: () => void;
 };
 

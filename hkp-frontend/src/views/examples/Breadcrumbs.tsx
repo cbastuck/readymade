@@ -1,3 +1,4 @@
+import { CSSProperties } from "react";
 import { Link } from "react-router-dom";
 
 import { Breadcrumb } from "semantic-ui-react";
@@ -7,7 +8,7 @@ type Props = {
   current: ExampleDescriptor;
 };
 export default function Breadcrumbs({ current }: Props) {
-  const breadcrumpStyle: any = {
+  const breadcrumpStyle: CSSProperties = {
     letterSpacing: 1,
     textTransform: "uppercase",
     fontSize: 11,
