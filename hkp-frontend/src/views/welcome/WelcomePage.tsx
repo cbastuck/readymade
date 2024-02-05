@@ -24,7 +24,7 @@ export default function WelcomePage() {
                 paddingTop: "4px",
               }}
             >
-              stuff
+              it
             </span>{" "}
             up{" "}
           </span>

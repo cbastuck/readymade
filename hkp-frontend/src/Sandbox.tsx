@@ -10,7 +10,6 @@ import BoardProvider, {
 } from "./BoardContext";
 import DragProvider from "./DragContext";
 
-import { s, t } from "./styles";
 import {
   RuntimeApiMap,
   RuntimeDescriptor,

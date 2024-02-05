@@ -8,7 +8,11 @@ import Template from "../../Template";
 export default function Updates() {
   return (
     <Template title="What's new">
-      <List divided relaxed>
+      <List divided relaxed style={{ marginTop: "40px" }}>
+        <NewsItem
+          date="5.2.2024"
+          content={<div>Introduced typewriter style</div>}
+        />
         <NewsItem
           date="7.1.2024"
           content={<div>Major overhaul and support for remote runtimes</div>}

@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Checkbox, Label, TextArea } from "semantic-ui-react";
 
 import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
-import { jsonPath } from "../../../jsonpath";
 import ServiceUI from "../../services/ServiceUI";
 
 const serviceId = "hookup.to/service/html";
@@ -171,7 +170,7 @@ export function processConfig(cfg: any, params: any): string {
     return replaceParamsInString(params, children);
   }
 
-  const { select, html, children } = cfg;
+  const { html, children } = cfg;
   return Array.isArray(params)
     ? params
         .map((param) => {

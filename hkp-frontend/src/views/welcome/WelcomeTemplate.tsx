@@ -7,7 +7,6 @@ import Footer from "../../components/Footer";
 
 import { withRouter } from "../../common";
 
-import BackgroundImage from "./BackgroundImage";
 import NavBar from "./NavBar";
 
 import "./Welcome.css";

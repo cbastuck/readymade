@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Card, Image, Icon } from "semantic-ui-react";
+import { Image, Icon } from "semantic-ui-react";
 
 import Description from "./Description";
 import { UsecaseDescriptor } from "../../types";
