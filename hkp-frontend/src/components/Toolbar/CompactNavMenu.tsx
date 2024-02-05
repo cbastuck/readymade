@@ -7,15 +7,15 @@ import { AppCtx } from "../../AppContext";
 export default function CompactNav() {
   const navItemStyle: CSSProperties = {
     margin: 8,
-    fontSize: 11,
-    textTransform: "uppercase",
+    fontSize: 12,
+    color: "#4183c4",
   };
   const { loginWithRedirect, logout } = useAuth0();
   const context = useContext(AppCtx);
   const currentUser = context?.user;
   return (
     <div>
-      <Dropdown text="" icon="bars" pointing="right">
+      <Dropdown className="hkp-fnt-family" text="" icon="bars" pointing="right">
         <Dropdown.Menu>
           <Dropdown.Item>
             <Link to="/docs" style={navItemStyle}>
