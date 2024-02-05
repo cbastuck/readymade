@@ -34,7 +34,7 @@ export default function NavigateButton({
   };
 
   return (
-    <Button className="hkp-fnt-label" style={style} onClick={onClick}>
+    <Button className="hkp-fnt-family" style={style} onClick={onClick}>
       {text}
     </Button>
   );

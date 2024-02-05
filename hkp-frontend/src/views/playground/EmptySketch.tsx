@@ -32,7 +32,7 @@ export default function EmptySketch({ boardName }: Props) {
                 borderRadius: 5,
               }}
             >
-              <h1 className="hkp-fnt-label" style={s(t.fs14, t.tc, t.m(0, 6))}>
+              <h1 className="hkp-fnt-family" style={s(t.fs14, t.tc, t.m(0, 6))}>
                 {" "}
                 {headline}{" "}
               </h1>

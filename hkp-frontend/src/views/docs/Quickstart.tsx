@@ -19,7 +19,7 @@ export default function Quickstart() {
     <Template title="Quickstarter" isRoot={false}>
       <div>
         <h2
-          className="hkp-fnt-label"
+          className="hkp-fnt-family"
           style={{ ...sectionStyle, margin: "30px 0px" }}
         >
           Etiquette
@@ -72,7 +72,7 @@ export default function Quickstart() {
         </h1>
 
         <h2
-          className="hkp-fnt-label"
+          className="hkp-fnt-family"
           style={{
             ...sectionStyle,
             marginTop: 30,
@@ -82,7 +82,7 @@ export default function Quickstart() {
           Stuff to know about
         </h2>
         <div
-          className="hkp-fnt-p"
+          className="hkp-fnt-family"
           style={s(t.fs14, {
             textAlign: "left",
             textTransform: "none",

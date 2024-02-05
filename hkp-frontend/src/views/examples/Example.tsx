@@ -23,10 +23,13 @@ export default function Example() {
 
   return (
     <div
-      className="hkp-fnt-p"
+      className="hkp-fnt-family"
       style={s(t.h100, {
         display: "flex",
         flexDirection: "column",
+        letterSpacing: "1px",
+        fontSize: "12px",
+        lineHeight: 1.4,
       })}
     >
       <Toolbar />
@@ -34,7 +37,7 @@ export default function Example() {
         <Header example={descriptor} />
         <div style={{ margin: 40, height: "100%" }}>
           <div style={t.fill}>
-            <div style={{ maxHeight: "20%", overflowY: "auto" }}>
+            <div style={{ maxHeight: "30%", overflowY: "auto" }}>
               <Explanation value={descriptor.explanation} />
             </div>
             <div style={{ marginTop: 5 }}>

@@ -17,7 +17,7 @@ import Header from "./Header";
 export default function Examples() {
   return (
     <div
-      className="hkp-fn-p"
+      className="hkp-fnt-color"
       style={s(t.h100, {
         display: "flex",
         flexDirection: "column",

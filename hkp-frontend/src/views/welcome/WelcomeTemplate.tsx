@@ -34,7 +34,7 @@ function Welcome({ children, location, pageStyle }: Props) {
           style={isClosed ? { height: "0px", padding: "0px" } : pageStyle}
         >
           <div
-            className="hkp-fn-p"
+            className="hkp-fnt-color"
             style={{
               width: "100%",
               height: "95%",

@@ -15,7 +15,7 @@ export default function Date({ month, day, year, size = "m" }: Props) {
     textTransform: "capitalize",
   };
   return (
-    <div className="hkp-fnt-p" style={style}>
+    <div className="hkp-fnt-family" style={style}>
       {month}, {day}. {year}
     </div>
   );

@@ -5,7 +5,7 @@ export default function Disclaimer() {
   const p: CSSProperties = {
     marginBottom: 3,
     letterSpacing: 2,
-    lineHeight: 1.8,
+    lineHeight: 1.4,
   };
   return (
     <div style={{ marginBottom: 30 }}>

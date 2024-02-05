@@ -33,7 +33,7 @@ export default function AccountDropdown({ currentUser }: Props) {
   );
   return (
     <div style={{ marginLeft: "auto" }}>
-      <Dropdown icon={icon} className="link item right hkp-fnt-label">
+      <Dropdown icon={icon} className="link item right hkp-fnt-family">
         <Dropdown.Menu>
           <AuthEntries currentUser={currentUser} />
           <Dropdown.Divider />

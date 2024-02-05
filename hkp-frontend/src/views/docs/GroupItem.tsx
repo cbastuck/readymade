@@ -19,7 +19,7 @@ export default function GroupItem(item: Props) {
     <Item style={itemStyle}>
       {
         <Item.Header
-          className="hkp-fnt-label"
+          className="hkp-fnt-family"
           style={{
             fontSize: 14,
             letterSpacing: 2,

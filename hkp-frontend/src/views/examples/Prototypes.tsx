@@ -8,11 +8,10 @@ export default function Prototypes() {
     <div style={{ margin: "50px 0px", width: "100%", height: "100%" }}>
       <Headline>My Prototypes</Headline>
       <div
-        className="hkp-fn-p"
+        className="hkp-fnt-color"
         style={{
           letterSpacing: 2,
-          lineHeight: 1.8,
-          color: "rgb(85, 85, 85)",
+          lineHeight: 1.4,
           display: "flex",
         }}
       >

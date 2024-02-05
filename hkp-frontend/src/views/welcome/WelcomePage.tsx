@@ -16,7 +16,7 @@ export default function WelcomePage() {
         }}
       >
         <div
-          className="hkp-fnt-label"
+          className="hkp-fnt-family"
           style={{
             fontSize: "30px",
             marginLeft: "39%",

@@ -78,7 +78,7 @@ export default class ServiceFrame extends Component<Props, State> {
           ev.dataTransfer.setData("text/plain", JSON.stringify(publicService));
         }}
       >
-        <Header size="small" className="hkp-fnt-label">
+        <Header size="small" className="hkp-fnt-family">
           <span
             style={{
               fontSize: 12,

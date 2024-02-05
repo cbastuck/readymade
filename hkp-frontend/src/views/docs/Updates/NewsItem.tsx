@@ -18,7 +18,7 @@ export default function NewsItem({ content, date }: Props) {
       <Icon name="circle outline" size="small" />
       <List.Content>
         <List.Header style={{ fontWeight: "normal" }}>
-          <div className="hkp-fnt-label">{content}</div>
+          <div className="hkp-fnt-family">{content}</div>
         </List.Header>
       </List.Content>
       <div style={{ marginTop: "5px" }}>

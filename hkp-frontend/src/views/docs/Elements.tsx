@@ -31,7 +31,7 @@ export function Section({ title, children }: SectionProps) {
   };
   return (
     <>
-      <h1 className="hkp-fnt-label" style={headlineStyle}>
+      <h1 className="hkp-fnt-family" style={headlineStyle}>
         {" "}
         {title}
       </h1>
@@ -63,7 +63,7 @@ export function Text({ children }: TextProps) {
     fontSize: 16,
   };
   return (
-    <div className="hkp-fnt-p" style={style}>
+    <div className="hkp-fnt-family" style={style}>
       {children}{" "}
     </div>
   );

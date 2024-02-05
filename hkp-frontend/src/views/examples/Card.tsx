@@ -32,7 +32,7 @@ export default function EampleCard({ example }: Props) {
                 letterSpacing: 1,
               }}
             >
-              <h1 className="hkp-fnt-label" style={t.fs14}>
+              <h1 className="hkp-fnt-family" style={t.fs14}>
                 {example.title}
               </h1>
             </Card.Header>
@@ -46,15 +46,15 @@ export default function EampleCard({ example }: Props) {
               {example.brief}
             </Card.Meta>
             <Card.Description
+              className="hkp-fnt-color"
               style={{
                 marginTop: 10,
-                color: "rgb(84 84 84)",
               }}
             >
               <div
                 style={s(t.tl, {
                   fontSize: 14,
-                  letterSpacing: 1.5,
+                  letterSpacing: 1.4,
                 })}
               >
                 {Array.isArray(example.description)

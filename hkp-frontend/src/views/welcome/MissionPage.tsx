@@ -51,11 +51,11 @@ export default function MissionPage() {
                 verticalAlign: "middle",
                 textAlign: "center",
               }}
-              className={`hkp-fnt-label fade-in-${xi}`}
+              className={`hkp-fnt-family fade-in-${xi}`}
             >
               {x.q && (
                 <h1
-                  className="hkp-fnt-label"
+                  className="hkp-fnt-family"
                   style={{ fontSize: 19, color: "454f6d", paddingBottom: 5 }}
                 >
                   <Link to={x.href} style={{ fontSize: 17 }}>
@@ -64,7 +64,7 @@ export default function MissionPage() {
                 </h1>
               )}
               <div
-                className="home-title hkp-fnt-label"
+                className="home-title hkp-fnt-family"
                 style={{
                   paddingTop: 2,
                   paddingLeft: 2,
@@ -77,7 +77,7 @@ export default function MissionPage() {
                 {x.a}
                 {x.href && (
                   <Link
-                    className="hkp-fnt-label"
+                    className="hkp-fnt-family"
                     to={x.href}
                     style={{
                       fontSize: 10,

@@ -4,22 +4,22 @@ import { Link } from "react-router-dom";
 export default function NavigationLinks() {
   const navItemStyle: CSSProperties = {
     margin: 8,
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1.5,
   };
   return (
-    <>
-      <Link to="/docs" className="hkp-fnt-p" style={navItemStyle}>
+    <div className="hkp-fnt-family">
+      <Link to="/docs" style={navItemStyle}>
         Docs
       </Link>
 
-      <Link to="/examples" className="hkp-fnt-p" style={navItemStyle}>
+      <Link to="/examples" style={navItemStyle}>
         Examples
       </Link>
 
-      <Link to="/playground" className="hkp-fnt-p" style={navItemStyle}>
+      <Link to="/playground" style={navItemStyle}>
         Playground
       </Link>
-    </>
+    </div>
   );
 }

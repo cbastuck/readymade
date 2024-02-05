@@ -23,7 +23,7 @@ export default class Template extends Component<Props> {
     };
     return (
       <div
-        className="hkp-fnt-label"
+        className="hkp-fnt-family"
         style={{
           textAlign: "left",
           marginTop: 15,
@@ -81,12 +81,20 @@ export default class Template extends Component<Props> {
                         letterSpacing: 6,
                         padding: "5px 0px",
                       }}
-                      className="hkp-fnt-label"
+                      className="hkp-fnt-family"
                     >
                       {title}
                     </h1>
                     {renderBreadcrumbs && this.renderBreadcrumbs(title, parent)}
-                    {children}
+                    <div
+                      style={{
+                        fontSize: 14,
+                        letterSpacing: "1px",
+                        lineHeight: 2,
+                      }}
+                    >
+                      {children}
+                    </div>
                     <div style={{ height: 10 }} />
                   </Container>
                 </div>
@@ -110,7 +118,7 @@ export function NavigateButton({ to, label }: NavButtonProps) {
   return (
     <div style={{ textAlign: "center", width: "100%", margin: "10px 0px" }}>
       <Button
-        className="hkp-fnt-label"
+        className="hkp-fnt-family"
         style={{
           fontSize: 14,
           border: "1px solid darkgray",

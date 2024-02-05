@@ -48,7 +48,7 @@ export default function CardComponent({ value: item }: Props) {
               {metadata}
             </Card.Meta>
           )}
-          <Card.Description style={{ marginTop: 10, color: "rgb(84 84 84)" }}>
+          <Card.Description className="hkp-fnt-color" style={{ marginTop: 10 }}>
             <div style={s(t.tl, t.nc)}>
               <Description name={name} description={description} />
             </div>

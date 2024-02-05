@@ -9,18 +9,15 @@
   src: url("./assets/fonts/SpecialElite-Regular.ttf") format("truetype");
 }
 
-.hkp-fnt-label {
+.hkp-fnt-family {
   font-family: SpecialElite !important;
 }
 
-.hkp-fnt-p {
-  font-family: SpecialElite;
-  letter-spacing: 1px;
-  font-size: 12px;
-  line-height: 2;
+.hkp-fnt-color {
+  color: #888;
 }
 
 body {
   font-family: SpecialElite;
-  color: #555;
+  color: #888;
 }

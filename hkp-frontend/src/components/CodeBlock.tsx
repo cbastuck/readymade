@@ -13,7 +13,7 @@ export default function CodeBlock({ children, title }: Props) {
   if (!isOpen) {
     return (
       <button
-        className="hkp-fnt-p"
+        className="hkp-fnt-family"
         style={{
           backgroundColor: "white",
           border: "none",

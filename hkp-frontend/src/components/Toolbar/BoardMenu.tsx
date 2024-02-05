@@ -24,7 +24,7 @@ export default function BoardMenu({
     <Dropdown
       id="board-dropdown"
       text={board || "Board"}
-      className="link item hkp-fnt-label"
+      className="link item hkp-fnt-family"
       style={{
         fontSize: 11,
         letterSpacing: 1,
