@@ -13,7 +13,12 @@ export default function CardComponent({ value: item }: Props) {
   return (
     <div
       className="hkp-card-border"
-      style={s(t.p10, { width: "30%", letterSpacing: 1 })}
+      style={s(t.p10, {
+        letterSpacing: 1,
+        minWidth: 200,
+        flex: 1,
+        margin: 10,
+      })}
       key={`board-card-${name}`}
     >
       <div>

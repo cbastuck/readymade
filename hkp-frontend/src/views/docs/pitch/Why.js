@@ -48,7 +48,7 @@ export default function Why() {
         </div>
 
         <Date month="June" day="24" year="2022" />
-        <HStack style={{ marginTop: 10 }}>
+        <HStack style={{ marginTop: "10px" }}>
           <NavigateButton to="/docs/pitch/what" label="< what?" />
           <NavigateButton to="/docs/pitch/how" label="how? >" />
         </HStack>

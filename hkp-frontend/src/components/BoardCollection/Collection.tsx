@@ -16,7 +16,6 @@ export default function Collection({ items, filter, height = "100%" }: Props) {
         width: "100%",
         overflowY: "auto",
         padding: "0px 3px",
-        gap: "20px",
       }}
     >
       {items

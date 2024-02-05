@@ -62,7 +62,11 @@ export default class Template extends Component<Props> {
             <BoardConsumer>
               {(boardContext) => (
                 <div
-                  style={{ width: "100%", height: "100%", minHeight: "100%" }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    minHeight: "100%",
+                  }}
                 >
                   <Toolbar />
                   <Container
@@ -91,6 +95,7 @@ export default class Template extends Component<Props> {
                         fontSize: 14,
                         letterSpacing: "1px",
                         lineHeight: 1.6,
+                        paddingBottom: "30px",
                       }}
                     >
                       {children}
@@ -99,7 +104,6 @@ export default class Template extends Component<Props> {
                 </div>
               )}
             </BoardConsumer>
-            <div style={{ height: 5 }} />
             <Footer />
           </BoardProvider>
         )}
