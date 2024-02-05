@@ -251,7 +251,6 @@ export default class Runtime extends Component<Props, State> {
               ...t.unselectable,
               fontSize: 12,
               letterSpacing: 1,
-              textTransform: "uppercase",
               marginTop: 10,
               display: "flex",
               flexDirection: "row",

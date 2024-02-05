@@ -17,7 +17,7 @@ export default function Claim(claim: Props) {
         lineHeight: 1.5,
       }}
     >
-      <span style={{ textTransform: "uppercase" }}>{claim.s}</span>
+      <span>{claim.s}</span>
       {claim.c ? ": " : ""}
       <span
         style={{

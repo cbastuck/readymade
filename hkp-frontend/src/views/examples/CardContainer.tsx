@@ -9,7 +9,7 @@ type Props = {
 
 export default function CardContainer({ examples = [] }: Props) {
   return (
-    <SCard.Group style={{ display: "flex", width: "100%" }}>
+    <SCard.Group style={{ width: "100%" }}>
       {examples.map((ex) => (
         <Card key={ex.url} example={ex} />
       ))}

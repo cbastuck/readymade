@@ -52,7 +52,6 @@ export default function Footer({ flex }: Props) {
             style={{
               marginLeft: "auto",
               marginRight: 10,
-              color: "#555",
               fontSize: 10,
             }}
           >

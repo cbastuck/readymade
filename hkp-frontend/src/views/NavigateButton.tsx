@@ -28,7 +28,6 @@ export default function NavigateButton({
     letterSpacing: 2,
     whiteSpace: "nowrap",
     border: "solid 1px white",
-    color: "#333",
     padding: "10px",
     width: width ? width : "initial",
   };

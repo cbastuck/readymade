@@ -106,9 +106,8 @@ export default class InputOptions extends Component<Props, State> {
     return (
       <div
         style={s(
-          t.uc,
           t.ls1,
-          t.fs12,
+          t.fs13,
           {
             height: 300,
             marginTop: 10,
@@ -150,7 +149,8 @@ export default class InputOptions extends Component<Props, State> {
           }}
         >
           <div
-            style={s(t.uc, t.ls1, t.fs10, {
+            className="hkp-fnt-family"
+            style={s(t.ls2, t.fs11, {
               transform: "rotate(-90deg)",
               marginTop: 35,
               width: 8,

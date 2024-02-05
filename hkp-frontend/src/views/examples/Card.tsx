@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Card, Image } from "semantic-ui-react";
+import { Image } from "semantic-ui-react";
 
 import { ExampleDescriptor } from "./types";
 import { s, t } from "../../styles";
@@ -11,20 +11,25 @@ export default function EampleCard({ example }: Props) {
   return (
     <div
       key={`example-card-${example.title}`}
-      style={s(t.m10, { flex: 1, width: 0, minWidth: 200 })}
+      className="hkp-card-border"
+      style={s(t.m10, {
+        flex: 1,
+        width: 0,
+        minWidth: 200,
+      })}
     >
-      <Card style={{ ...fontStyle, minHeight: 250, padding: 10 }}>
+      <div style={{ ...fontStyle, minHeight: 250, padding: 10 }}>
         <Link
           key={`example-link-${example.title}`}
           to={`/example/sandbox?url=${example.url}`}
         >
-          <Card.Content>
+          <div>
             <Image
               floated="right"
               src={example.image}
               style={{ marginTop: 3, marginRight: 15, width: 20 }}
             />
-            <Card.Header
+            <div
               style={{
                 marginTop: 3,
                 textAlign: "left",
@@ -35,8 +40,8 @@ export default function EampleCard({ example }: Props) {
               <h1 className="hkp-fnt-family" style={t.fs14}>
                 {example.title}
               </h1>
-            </Card.Header>
-            <Card.Meta
+            </div>
+            <div
               style={{
                 margin: "5px 0px",
                 textAlign: "left",
@@ -44,8 +49,8 @@ export default function EampleCard({ example }: Props) {
               }}
             >
               {example.brief}
-            </Card.Meta>
-            <Card.Description
+            </div>
+            <div
               className="hkp-fnt-color"
               style={{
                 marginTop: 10,
@@ -63,10 +68,10 @@ export default function EampleCard({ example }: Props) {
                     ))
                   : example.description}
               </div>
-            </Card.Description>
-          </Card.Content>
+            </div>
+          </div>
         </Link>
-      </Card>
+      </div>
     </div>
   );
 }

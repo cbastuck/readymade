@@ -8,7 +8,7 @@ export default function NavigationLinks() {
     letterSpacing: 1.5,
   };
   return (
-    <div className="hkp-fnt-family">
+    <div className="hkp-fnt-family" style={{ marginTop: 2 }}>
       <Link to="/docs" style={navItemStyle}>
         Docs
       </Link>

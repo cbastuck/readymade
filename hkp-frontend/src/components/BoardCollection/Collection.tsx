@@ -1,7 +1,6 @@
-import { Card as SuiCard } from "semantic-ui-react";
-
+import { Card as SCard } from "semantic-ui-react";
 import Card from "./Card";
-import { UsecaseDescriptor } from "./types";
+import { UsecaseDescriptor } from "../../types";
 
 type Props = {
   filter: string;
@@ -11,12 +10,13 @@ type Props = {
 
 export default function Collection({ items, filter, height = "100%" }: Props) {
   return (
-    <SuiCard.Group
+    <SCard.Group
       style={{
         height,
         width: "100%",
         overflowY: "auto",
         padding: "0px 3px",
+        gap: "20px",
       }}
     >
       {items
@@ -24,6 +24,6 @@ export default function Collection({ items, filter, height = "100%" }: Props) {
         .map((x) => (
           <Card key={x.name} value={x} />
         ))}
-    </SuiCard.Group>
+    </SCard.Group>
   );
 }

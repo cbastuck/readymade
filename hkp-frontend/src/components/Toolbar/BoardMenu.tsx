@@ -28,7 +28,7 @@ export default function BoardMenu({
       style={{
         fontSize: 11,
         letterSpacing: 1,
-        textTransform: "uppercase",
+        marginTop: 2,
         paddingLeft: 5,
         paddingRight: 8,
       }}

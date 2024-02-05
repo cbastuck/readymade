@@ -24,12 +24,11 @@ export default function EmptySketch({ boardName }: Props) {
         <div style={s(t.tc, t.mt0, t.mb30)}>
           {true ? (
             <div
+              className="hkp-card-border"
               style={{
-                border: "dashed 1px lightgray",
-                padding: "40px 20px",
+                padding: "50px 20px",
                 width: "90%",
                 margin: "auto",
-                borderRadius: 5,
               }}
             >
               <h1 className="hkp-fnt-family" style={s(t.fs14, t.tc, t.m(0, 6))}>

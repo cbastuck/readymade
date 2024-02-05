@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card, Image, Icon } from "semantic-ui-react";
 
 import Description from "./Description";
-import { UsecaseDescriptor } from "./types";
+import { UsecaseDescriptor } from "../../types";
 import { s, t } from "../../styles";
 
 type Props = {
@@ -11,11 +11,12 @@ type Props = {
 export default function CardComponent({ value: item }: Props) {
   const { url, name, description, metadata, image, repo } = item;
   return (
-    <Card
+    <div
+      className="hkp-card-border"
       style={s(t.p10, { width: "30%", letterSpacing: 1 })}
       key={`board-card-${name}`}
     >
-      <Card.Content>
+      <div>
         {!repo ? (
           <Image
             floated="right"
@@ -31,13 +32,11 @@ export default function CardComponent({ value: item }: Props) {
           </Image>
         )}
         <Link key={`board-card-link-${name}`} to={url}>
-          <Card.Header
-            style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}
-          >
+          <div style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}>
             <h1 style={t.fs14}>{name}</h1>
-          </Card.Header>
+          </div>
           {metadata && (
-            <Card.Meta
+            <div
               style={{
                 margin: "5px 0px",
                 textAlign: "left",
@@ -46,15 +45,15 @@ export default function CardComponent({ value: item }: Props) {
               }}
             >
               {metadata}
-            </Card.Meta>
+            </div>
           )}
-          <Card.Description className="hkp-fnt-color" style={{ marginTop: 10 }}>
+          <div className="hkp-fnt-color" style={{ marginTop: 10 }}>
             <div style={s(t.tl, t.nc)}>
               <Description name={name} description={description} />
             </div>
-          </Card.Description>
+          </div>
         </Link>
-      </Card.Content>
-    </Card>
+      </div>
+    </div>
   );
 }

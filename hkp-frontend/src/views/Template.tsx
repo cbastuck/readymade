@@ -90,12 +90,11 @@ export default class Template extends Component<Props> {
                       style={{
                         fontSize: 14,
                         letterSpacing: "1px",
-                        lineHeight: 2,
+                        lineHeight: 1.6,
                       }}
                     >
                       {children}
                     </div>
-                    <div style={{ height: 10 }} />
                   </Container>
                 </div>
               )}

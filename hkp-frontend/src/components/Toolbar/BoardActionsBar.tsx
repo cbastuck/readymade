@@ -52,7 +52,7 @@ export default function BoardActionsBar({ boardContext }: Props) {
       style={{
         display: "flex",
         flexDirection: "row",
-        height: "32.5px",
+        height: "35px",
         margin: "3px",
         marginLeft: "8px",
       }}

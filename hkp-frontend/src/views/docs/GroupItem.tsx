@@ -44,6 +44,7 @@ export default function GroupItem(item: Props) {
         <Item.Description>
           {item.details.map((detail, idx) => (
             <div
+              className="hkp-fnt-color"
               key={`detail-${item.title}-${idx}`}
               style={{
                 fontSize: 14,
