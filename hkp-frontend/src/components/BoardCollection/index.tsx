@@ -30,7 +30,7 @@ export default function BoardCollection({
   return (
     items.length > 0 && (
       <div
-        className="hkp-fnt-family"
+        className="hkp-fnt-label"
         style={{
           height: "100%",
           width: "100%",
@@ -47,7 +47,7 @@ export default function BoardCollection({
         >
           {headline && (
             <h1
-              className="hkp-fnt-family"
+              className="hkp-fnt-label"
               style={s(t.mt15, t.tc, t.fs16, t.w100)}
             >
               {headline}

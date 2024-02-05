@@ -16,7 +16,7 @@ export default function Usecases({
     retrieveUsecases().then(setUsecases);
   }, []);
   return (
-    <div style={s(t.fill, t.tc, t.uc)}>
+    <div style={s(t.fill, t.tc)}>
       {usecases ? (
         <BoardCollection
           headline={headline}
