@@ -27,7 +27,7 @@ export function createDescription({ boardName, item, idx }: Props) {
   const key = `template-description-item-${idx}`;
   if (typeof item === "string") {
     return (
-      <div key={key} style={s(t.uc, t.fs12, t.tl)}>
+      <div key={key} style={s(t.fs12, t.tl, t.ls2)}>
         {" "}
         {item}{" "}
       </div>

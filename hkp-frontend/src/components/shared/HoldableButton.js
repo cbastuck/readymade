@@ -37,7 +37,7 @@ export default class HoldableButton extends Component {
     const { style, children } = this.props;
     return (
       <button
-        className="holdable-button"
+        className="holdable-button hkp-fnt-family"
         style={{ ...style, touchAction: "none" }} // manipulation if pan and two finger gestures should be allowed
         onTouchStart={isTouch ? this.onDown : undefined}
         onTouchEnd={isTouch ? this.onUp : undefined}

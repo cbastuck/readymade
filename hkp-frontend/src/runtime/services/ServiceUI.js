@@ -158,12 +158,13 @@ export default class ServiceUI extends Component {
             >
               <span
                 style={{
-                  textTransform: "uppercase",
-                  fontSize: 11,
+                  textTransform: "capitalize",
+                  fontSize: 12,
                   letterSpacing: 1,
                   color:
                     currentSegmentName === segment.name ? "black" : "darkgray",
                   whiteSpace: "nowrap",
+                  cursor: "pointer",
                 }}
               >
                 {segment.name}

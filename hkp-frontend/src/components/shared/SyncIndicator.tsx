@@ -20,7 +20,6 @@ export default class SyncIndicator extends Component<Props> {
             style={{
               backgroundColor: "#E8E8E8",
               borderRadius: 2,
-              textTransform: "uppercase",
               letterSpacing: 1,
               textAlign: "center",
               paddingTop: 10,

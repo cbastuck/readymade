@@ -22,7 +22,6 @@ export default function ButtonComponent({
 }: Props) {
   const buttonStyle = {
     fontSize: 11,
-    textTransform: "uppercase",
     letterSpacing: 1,
     width: "100%",
     backgroundColor: "#efefef",

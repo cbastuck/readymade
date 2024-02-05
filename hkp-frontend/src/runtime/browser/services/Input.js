@@ -100,8 +100,8 @@ export class InputUI extends Component {
         {canFetch === false && (
           <div style={t.tl}>
             <Checkbox
-              style={s(t.mt1, t.uc, t.ls1, t.fs12)}
-              label="input active"
+              style={s(t.mt1, t.ls1, t.fs12)}
+              label="Input active"
               toggle
               onChange={(_, { checked: running }) => {
                 service.configure({ running });

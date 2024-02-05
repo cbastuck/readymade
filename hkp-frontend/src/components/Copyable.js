@@ -16,15 +16,22 @@ export default class Copyable extends Component {
     const { label, value, style } = this.props;
     return (
       <div style={s({ display: "flex", flexDirection: "row", width: "100%" })}>
-        <div style={s(t.mt9, t.fs12, t.uc, t.ls1)}>{label}</div>
+        <div style={s(t.mt9, t.fs12, t.ls2, { textTransform: "capitalize" })}>
+          {label}
+        </div>
         <input
+          className="hkp-fnt-family"
           ref={(input) => (this.input = input)}
           style={s(
             t.m(5, 0),
             t.p2,
-            { border: "solid 1px lightgray" },
-            { color: "darkgray" },
-            { flexGrow: 2 },
+            {
+              border: "solid 1px lightgray",
+              color: "darkgray",
+              flexGrow: 2,
+              letterSpacing: 1.4,
+              padding: "5px",
+            },
             style
           )}
           value={value}

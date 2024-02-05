@@ -64,7 +64,8 @@ export class MapUI extends Component {
             this.setState({ mode });
           }}
         />
-        <div style={s(t.tl, t.uc, t.ls1, t.fs12)}>Template</div>
+        <div style={{ height: "5px" }} />
+        <div style={s(t.tl, t.ls1, t.fs12, t.mt5)}>Template</div>
         <div
           style={{
             border: "solid 1px lightgray",

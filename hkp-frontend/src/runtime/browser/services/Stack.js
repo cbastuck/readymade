@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Accordion, Label } from "semantic-ui-react";
 
 import * as uuid from "uuid";
@@ -52,7 +52,7 @@ export class StackUI extends Component {
     const rootPanels = subservices.map((ssvc, idx) => ({
       title: {
         children: (
-          <div style={s(t.uc, t.fs12, t.ls1)}>
+          <div className="hkp-fnt-family" style={s(t.fs12, t.ls1)}>
             {ssvc.__descriptor.serviceName}
           </div>
         ),
@@ -85,9 +85,7 @@ export class StackUI extends Component {
           }}
         />
         <div style={t.tl}>
-          <Label
-            style={s(t.uc, t.fs11, t.ls1, { borderRadius: 0, padding: 10 })}
-          >
+          <Label style={s(t.fs12, t.ls1, { borderRadius: 0, padding: 10 })}>
             Services
           </Label>
           <Accordion

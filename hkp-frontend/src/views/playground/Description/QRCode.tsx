@@ -13,11 +13,16 @@ export default function QRCode(item: QRCodeType) {
     ...params,
   });
   return (
-    <div style={{ margin: "auto", textAlign: "center" }}>
-      <QR url={url} />
-      <div style={{ width: "60%", margin: "auto" }}>
-        <Copyable label="url" value={url} />
-      </div>
+    <div
+      style={{
+        margin: "auto",
+        textAlign: "center",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <QR url={url || ""} />
+      <Copyable label="url" value={url} />
     </div>
   );
 }

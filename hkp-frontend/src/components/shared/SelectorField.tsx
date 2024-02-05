@@ -127,7 +127,7 @@ export default class SelectorField extends Component<Props, State> {
       value: syncedValue,
       style = {},
       minWidth = undefined, //"100%",
-      uppercaseKeys = true,
+      uppercaseKeys = false,
       labelStyle = {},
       onChange,
     } = this.props;

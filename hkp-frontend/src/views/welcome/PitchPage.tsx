@@ -36,6 +36,15 @@ export default function IntroPage() {
           <NavigateButton
             destination="/welcome/experiment"
             text="A thought experiment"
+            style={{
+              color: "#454f6e",
+              fontSize: 13,
+              letterSpacing: 2,
+              whiteSpace: "nowrap",
+              border: "solid 1px white",
+              padding: "10px",
+              width: "initial",
+            }}
           />
         </div>
       )}

@@ -126,7 +126,7 @@ export default class InputField extends Component<Props, State> {
         />
         {unit && (
           <div
-            style={s(t.uc, t.ls1, t.fs11, {
+            style={s(t.ls1, t.fs12, {
               marginLeft: 5,
               marginTop: 6,
               textAlign: "left",

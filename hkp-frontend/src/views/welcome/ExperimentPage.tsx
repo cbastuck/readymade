@@ -28,12 +28,10 @@ export default function VisualisationPage() {
             destination="/examples"
             text="Examples"
             style={{
-              color: "white",
-              backgroundColor: "#454f6d",
-              fontSize: 12,
-              textTransform: "uppercase",
+              color: "#454f6d",
+              fontSize: 13,
               letterSpacing: 2,
-              padding: "15px 35px",
+              padding: "10px 15px",
               width: "initial",
               border: "solid 1px transparent",
               borderRadius: 0,

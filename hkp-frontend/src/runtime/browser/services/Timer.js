@@ -44,7 +44,7 @@ export class TimerUI extends Component {
   };
 
   renderPeriodic = (service) => {
-    const buttonStyle = s(t.m1, t.uc, t.fs12, t.ls1);
+    const buttonStyle = s(t.m1, t.fs12, t.ls1);
     return (
       <div>
         <InputField
