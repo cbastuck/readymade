@@ -90,11 +90,10 @@
               "type": "text",
               "text": "In a way, nature appears",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
-                "weight": "lighter",
                 "size": "55%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "15%"
             },
@@ -102,11 +101,11 @@
               "type": "text",
               "text": "like an optimization framework",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "75%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "84%"
             },
@@ -156,11 +155,10 @@
               "type": "explainer",
               "text": "Press to Run",
               "font": {
-                "weight": "lighter",
-                "size": "7pt",
-                "family": "Helvetica Neue, sans-serif"
+                "size": "14pt",
+                "family": "SpecialElite"
               },
-              "textTransform": "uppercase-spacing-1",
+
               "color": "#454f6d",
               "pointer": {
                 "x": "56%",
@@ -173,10 +171,10 @@
               "text": "Press to Step",
               "font": {
                 "weight": "lighter",
-                "size": "7pt",
-                "family": "Helvetica Neue, sans-serif"
+                "size": "14pt",
+                "family": "SpecialElite"
               },
-              "textTransform": "uppercase-spacing-1",
+
               "color": "#454f6d",
               "pointer": {
                 "x": "44%",
@@ -189,13 +187,13 @@
           [
             {
               "type": "text",
-              "text": "driving towards an optimum - somewhere",
+              "text": "driving towards an optimum - somewhere.",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "80%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "15%"
             },
@@ -245,11 +243,11 @@
               "type": "text",
               "text": "Variance supports the process.",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "70%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "85%"
             }
@@ -259,11 +257,11 @@
               "type": "text",
               "text": "Exploration can take time",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "60%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "15%"
             },
@@ -313,11 +311,11 @@
               "type": "text",
               "text": "or got stuck in a local optimum",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "60%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "85%"
             }
@@ -327,11 +325,11 @@
               "type": "text",
               "text": "Variance issues?",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "60%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "15%"
             },
@@ -365,11 +363,11 @@
               "type": "text",
               "text": "Try again",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "40%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "85%"
             }
@@ -378,13 +376,13 @@
             {
               "type": "text",
               "id": "message",
-              "text": "variety explores spaces",
+              "text": "Variety explores spaces",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "65%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "20%",
               "checkpoint": "@last-state"
@@ -392,13 +390,13 @@
             {
               "type": "text",
               "id": "message",
-              "text": "WE are manifold solutions",
+              "text": "We are manifold solutions",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
+
               "font": {
                 "weight": "lighter",
                 "size": "90%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "83%"
             },

@@ -27,12 +27,10 @@
             {
               "type": "text",
               "text": "If you know little about a problem",
-              "textTransform": "uppercase-spacing-1",
               "color": "#454f6d",
               "font": {
-                "weight": "lighter",
                 "size": "38%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "checkpoint": "@unnamed-trigger",
               "x": "2%"
@@ -41,11 +39,9 @@
               "type": "text",
               "text": "Good solutions merge from many",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
               "font": {
-                "weight": "lighter",
                 "size": "90%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "x": "5%",
               "y": "70%"
@@ -56,11 +52,9 @@
               "type": "text",
               "text": "The more people contribute",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
               "font": {
-                "weight": "lighter",
                 "size": "90%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "checkpoint": "@unnamed-trigger",
               "x": "5%"
@@ -69,11 +63,9 @@
               "type": "text",
               "text": "the lower the risk to miss some",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
               "font": {
-                "weight": "lighter",
                 "size": "85%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "70%",
               "x": "8%"
@@ -84,24 +76,20 @@
               "type": "text",
               "text": "Technology shapes our future",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
               "font": {
-                "weight": "lighter",
                 "size": "80%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "checkpoint": "@unnamed-trigger",
               "x": "10%"
             },
             {
               "type": "text",
-              "text": "WE build technology",
+              "text": "We build technology",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
               "font": {
-                "weight": "lighter",
                 "size": "89%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "75%"
             }
@@ -111,11 +99,9 @@
               "type": "text",
               "text": "Enable and Include",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
               "font": {
-                "weight": "lighter",
                 "size": "80%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "checkpoint": "@last-slide"
             },
@@ -123,11 +109,9 @@
               "type": "text",
               "text": "Spread the narrative",
               "color": "#454f6d",
-              "textTransform": "uppercase-spacing-1",
               "font": {
-                "weight": "lighter",
                 "size": "58%",
-                "family": "Helvetica Neue, sans-serif"
+                "family": "SpecialElite"
               },
               "y": "75%",
               "x": "41%"

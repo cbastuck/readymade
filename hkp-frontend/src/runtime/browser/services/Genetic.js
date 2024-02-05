@@ -214,15 +214,13 @@ class Genetic {
     const statusText = {
       type: "text",
       text: `generation ${this.generation} has ${populationShapes.length} unique genes`,
-      y: "92%",
-      x: "70%",
+      y: "94%",
+      x: "60%",
       font: {
-        weight: "lighter",
-        size: "30%",
-        family: "Helvetica Neue, sans-serif",
+        size: "18px",
+        family: "SpecialElite",
       },
       color: "#454f6d",
-      textTransform: "uppercase-spacing-1",
     };
     return [this.targetShape].concat(populationShapes).concat(statusText);
   }
