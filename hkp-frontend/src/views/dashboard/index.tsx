@@ -51,7 +51,6 @@ export default function Dashboard() {
   const onLocalAction = useCallback(
     (action: Action, board: SavedBoard | UsecaseDescriptor) => {
       if (user) {
-        console.log("Put local board", action, board);
         putLocalBoard(board as SavedBoard, user);
       }
     },
@@ -61,27 +60,32 @@ export default function Dashboard() {
   if (user && cloudBoards === null) {
     getCloudBoards(user).then(setCloudBoards);
   }
-  console.log("Rendering with cloud boards", cloudBoards);
-  return (
-    <div style={{ height: "100%" }}>
-      <Toolbar />
-      <div style={s(t.fs12, t.ls1, t.m(25, 20))}>
-        <h3>Cloud boards</h3>
-        <BoardCollection headline="Cloud boards" items={cloudBoards || []} />
 
-        <h3>Local boards</h3>
-        <BoardCollection
-          items={localBoards || []}
-          actions={[
-            {
-              name: "upload",
-              icon: <Icon name="upload" />,
-            },
-          ]}
-          onAction={onLocalAction}
-        />
-      </div>
+  return (
+    <div
+      style={s(t.fs12, t.ls1, t.m(25, 20), {
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        gap: "20px",
+      })}
+    >
+      <Toolbar />
+
+      <BoardCollection
+        headline="Local boards"
+        items={localBoards || []}
+        actions={[
+          {
+            name: "upload",
+            icon: <Icon name="upload" />,
+          },
+        ]}
+        onAction={onLocalAction}
+      />
+      <BoardCollection headline="Cloud boards" items={cloudBoards || []} />
       <Footer />
+      <div style={{ minHeight: "10px" }} />
     </div>
   );
 }

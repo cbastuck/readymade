@@ -25,20 +25,17 @@ export default function BoardCollection({
 }: Props) {
   const [filter, setFilter] = useState("");
 
-  const borderStyle = renderBorder
-    ? {
-        border: "solid 1px #ccc",
-        borderRadius: 3,
-      }
-    : {};
-
   return (
     items.length > 0 && (
       <div
+        className={renderBorder ? "hkp-card-border" : ""}
         style={{
           height: "100%",
           width: "100%",
-          ...borderStyle,
+          display: "flex",
+          flexDirection: "column",
+          paddingBottom: "40px",
+          marginBottom: "20px",
         }}
       >
         <div
@@ -59,7 +56,7 @@ export default function BoardCollection({
           style={{
             marginTop: "-30px",
             paddingBottom: "20px",
-            marginRight: "5px",
+            marginRight: "15px",
           }}
         >
           {renderSearch && (
