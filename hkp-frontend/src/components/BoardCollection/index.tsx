@@ -1,20 +1,25 @@
-import { useState } from "react";
+import { ReactElement, useState } from "react";
 
 import Collection from "./Collection";
 import Search from "./Search";
 import { s, t } from "../../styles";
 import { SavedBoard, UsecaseDescriptor } from "../../types";
+import { Action } from "./Card";
 
 type Props = {
-  items: Array<UsecaseDescriptor | SavedBoard>;
-  headline: string;
+  items: Array<SavedBoard> | Array<UsecaseDescriptor>;
+  headline?: string;
   renderBorder?: boolean;
   renderSearch?: boolean;
+  actions?: Array<{ name: string; icon: ReactElement }>;
+  onAction?: (action: Action, item: UsecaseDescriptor | SavedBoard) => void;
 };
 
 export default function BoardCollection({
   items,
-  headline,
+  actions,
+  onAction,
+  headline = "",
   renderBorder = true,
   renderSearch = true,
 }: Props) {
@@ -30,7 +35,6 @@ export default function BoardCollection({
   return (
     items.length > 0 && (
       <div
-        className="hkp-fnt-label"
         style={{
           height: "100%",
           width: "100%",
@@ -45,16 +49,19 @@ export default function BoardCollection({
             paddingTop: 15,
           }}
         >
-          {headline && (
-            <h1
-              className="hkp-fnt-label"
-              style={s(t.mt15, t.tc, t.fs16, t.w100)}
-            >
-              {headline}
-            </h1>
+          {headline ? (
+            <h1 style={s(t.mt15, t.tc, t.fs16, t.w100)}>{headline}</h1>
+          ) : (
+            <div style={{ height: "20px" }} />
           )}
         </div>
-        <div style={{ marginTop: "-30px", paddingBottom: "20px" }}>
+        <div
+          style={{
+            marginTop: "-30px",
+            paddingBottom: "20px",
+            marginRight: "5px",
+          }}
+        >
           {renderSearch && (
             <Search
               filter={filter}
@@ -62,7 +69,12 @@ export default function BoardCollection({
             />
           )}
         </div>
-        <Collection filter={filter} items={items} />
+        <Collection
+          filter={filter}
+          items={items}
+          actions={actions}
+          onAction={onAction}
+        />
       </div>
     )
   );

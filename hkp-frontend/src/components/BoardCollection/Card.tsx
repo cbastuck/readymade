@@ -1,15 +1,21 @@
 import { Link } from "react-router-dom";
-import { Image, Icon } from "semantic-ui-react";
+import { Image, Icon, Button } from "semantic-ui-react";
 
 import Description from "./Description";
-import { UsecaseDescriptor } from "../../types";
+import { SavedBoard, UsecaseDescriptor } from "../../types";
 import { s, t } from "../../styles";
+import { ReactElement } from "react";
 
+export type Action = { name: string; icon: ReactElement };
 type Props = {
-  value: UsecaseDescriptor;
+  value: UsecaseDescriptor | SavedBoard;
+  actions?: Array<Action>;
+  onAction?: (action: Action, item: UsecaseDescriptor | SavedBoard) => void;
 };
-export default function CardComponent({ value: item }: Props) {
-  const { url, name, description, metadata, image, repo } = item;
+
+export default function Card({ value: item, actions, onAction }: Props) {
+  const { url, name, description, metadata, image, repo } =
+    item as UsecaseDescriptor;
   return (
     <div
       className="hkp-card-border"
@@ -18,6 +24,7 @@ export default function CardComponent({ value: item }: Props) {
         minWidth: 200,
         flex: 1,
         margin: 10,
+        position: "relative",
       })}
       key={`board-card-${name}`}
     >
@@ -56,6 +63,26 @@ export default function CardComponent({ value: item }: Props) {
             <div style={s(t.tl, t.nc)}>
               <Description name={name} description={description} />
             </div>
+            {actions && (
+              <div style={{ height: 30 }}>
+                <div style={{ position: "absolute", bottom: "10px" }}>
+                  {actions.map((action) => (
+                    <Button
+                      key={action.name}
+                      size="tiny"
+                      style={{ width: 40, backgroundColor: "white" }}
+                      compact
+                      onClick={(ev) => {
+                        onAction && onAction(action, item);
+                        ev.stopPropagation();
+                        ev.preventDefault();
+                      }}
+                      icon={action.icon}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </Link>
       </div>

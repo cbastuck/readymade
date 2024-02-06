@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
@@ -90,7 +90,7 @@ export default class Imprint extends Component {
                 as code editor
               </div>
               <div className="imprint-item">
-                <a href="">React</a> and{" "}
+                <a href="https://react.dev/">React</a> and{" "}
                 <a href="https://react.semantic-ui.com/">Semantic-UI React</a>{" "}
                 are used
               </div>

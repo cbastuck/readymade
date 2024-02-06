@@ -1,6 +1,6 @@
 import { LinkType } from "./types";
 
-import { s, t } from "../../../styles";
+import { t } from "../../../styles";
 
 export default function Link(item: LinkType) {
   const { text = "text property missing", href = "#" } = item;

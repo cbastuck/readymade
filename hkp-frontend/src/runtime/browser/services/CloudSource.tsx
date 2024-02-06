@@ -7,6 +7,7 @@ import InputField from "../../../components/shared/InputField";
 import Button from "../../../components/shared/Button";
 
 import { AppCtx } from "../../../AppContext";
+import { User } from "@auth0/auth0-react";
 
 const serviceId = "hookup.to/service/cloud-source";
 const serviceName = "Cloud-Source";
@@ -174,41 +175,7 @@ class CloudSource {
     if (!this.resourceId || !user) {
       return null;
     }
-    const resp = await fetch(`${documentStoreUrl}/${this.resourceId}`, {
-      method: "get",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${user?.idToken}`,
-      },
-    });
-
-    if (!resp.ok) {
-      console.warn(`CloudSource process results an error: ${resp.statusText}`);
-      return null;
-    }
-
-    const contentType = resp.headers.get("content-type");
-    if (contentType?.indexOf("application/json") !== -1) {
-      const results = await resp.json();
-      if (!Array.isArray(results)) {
-        console.warn(`Unexpected response format: ${JSON.stringify(results)}`);
-        return null;
-      }
-      if (this.matchResourceIdExact) {
-        return results.slice(-1)[0]?.data || undefined;
-      }
-      return results.map(({ userId, resourceId, data }) => ({
-        resourceId,
-        data,
-      }));
-    } else if (contentType.indexOf("text/plain") !== -1) {
-      return await resp.text();
-    }
-
-    console.warn(
-      `CloudSource received unsupported content type: ${contentType}`
-    );
-    return null;
+    return makeRequest(this.resourceId, user, this.matchResourceIdExact);
   };
 }
 
@@ -221,3 +188,43 @@ const descriptor = {
 };
 
 export default descriptor;
+
+export async function makeRequest(
+  resourceId: string,
+  user: User,
+  matchResourceIdExact: boolean
+) {
+  const resp = await fetch(`${documentStoreUrl}/${resourceId}`, {
+    method: "get",
+    headers: {
+      "content-type": "application/json",
+      authorization: `Bearer ${user?.idToken}`,
+    },
+  });
+
+  if (!resp.ok) {
+    console.warn(`CloudSource process results an error: ${resp.statusText}`);
+    return null;
+  }
+
+  const contentType = resp.headers.get("content-type");
+  if (contentType?.indexOf("application/json") !== -1) {
+    const results = await resp.json();
+    if (!Array.isArray(results)) {
+      console.warn(`Unexpected response format: ${JSON.stringify(results)}`);
+      return null;
+    }
+    if (matchResourceIdExact) {
+      return results.slice(-1)[0]?.data || undefined;
+    }
+    return results.map(({ /*userId,*/ resourceId, data }) => ({
+      resourceId,
+      data,
+    }));
+  } else if (contentType.indexOf("text/plain") !== -1) {
+    return await resp.text();
+  }
+
+  console.warn(`CloudSource received unsupported content type: ${contentType}`);
+  return null;
+}

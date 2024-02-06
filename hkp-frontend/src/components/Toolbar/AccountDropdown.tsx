@@ -38,6 +38,12 @@ export default function AccountDropdown({ currentUser }: Props) {
           <AuthEntries currentUser={currentUser} />
           <Dropdown.Divider />
           <Dropdown.Item
+            onClick={() => redirectTo("/dashboard")}
+            disabled={!currentUser}
+          >
+            <span style={fontStyle}>Dashboard</span>
+          </Dropdown.Item>
+          <Dropdown.Item
             onClick={() => redirectTo("/profile")}
             disabled={!currentUser}
           >

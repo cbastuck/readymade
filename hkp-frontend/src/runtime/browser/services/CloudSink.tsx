@@ -2,7 +2,7 @@ import { useCallback, useContext, useState } from "react";
 import { Checkbox, Label } from "semantic-ui-react";
 
 import ServiceUI from "../../services/ServiceUI";
-import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
+import { AppImpl, ServiceClass, ServiceImpl, User } from "../../../types";
 import InputField from "../../../components/shared/InputField";
 import moment from "moment";
 import { AppCtx } from "../../../AppContext";
@@ -150,18 +150,7 @@ class CloudSink {
     const user = this.app.getAuthenticatedUser();
     if (user) {
       const payload = { message: JSON.stringify(params) };
-      const resp = await fetch(
-        `${documentStoreUrl}/${this.resourceId}?conflictStrategy=${this.conflictStrategy}`,
-        {
-          method: "put",
-          headers: {
-            "content-type": "application/json",
-            authorization: `Bearer ${user.idToken}`,
-          },
-          body: JSON.stringify(payload),
-        }
-      );
-      return await resp.text();
+      makeRequest(this.resourceId, payload, user, this.conflictStrategy);
     }
 
     return params;
@@ -177,3 +166,23 @@ const descriptor = {
 };
 
 export default descriptor;
+
+export async function makeRequest(
+  resourceId: string,
+  payload: { message: any },
+  user: User,
+  conflictStrategy: string
+) {
+  const resp = await fetch(
+    `${documentStoreUrl}/${resourceId}?conflictStrategy=${conflictStrategy}`,
+    {
+      method: "put",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${user.idToken}`,
+      },
+      body: JSON.stringify(payload),
+    }
+  );
+  return await resp.text();
+}

@@ -30,7 +30,7 @@ import Join from "./Join";
 import ServiceReferenceView from "./views/ServiceReferenceView";
 import DataModelReferenceView from "./views/DataModelReferenceView";
 
-import MyBoards from "./views/dashboard/MyBoards";
+import Dashboard from "./views/dashboard";
 import WhatPitch from "./views/docs/pitch/What";
 import WhyPitch from "./views/docs/pitch/Why";
 import HowPitch from "./views/docs/pitch/How";
@@ -119,7 +119,7 @@ export default function AppRoutes() {
 
       <Route path="/docs/proto/:name" element={<Prototypes />} />
 
-      <Route path="/dashboard" element={<MyBoards />} />
+      <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/serviceRedirect" element={<ServiceRedirect />} />
 
       <Route path="/headless" element={<Headless />} />
