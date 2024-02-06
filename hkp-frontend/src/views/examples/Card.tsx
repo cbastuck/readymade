@@ -37,9 +37,7 @@ export default function EampleCard({ example }: Props) {
                 letterSpacing: 1,
               }}
             >
-              <h1 className="hkp-fnt-family" style={t.fs14}>
-                {example.title}
-              </h1>
+              <h1 style={t.fs14}>{example.title}</h1>
             </div>
             <div
               style={{

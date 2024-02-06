@@ -33,7 +33,7 @@ export default class WebsocketUI extends Component {
         <Checkbox
           toggle
           label="Public"
-          style={s(t.uc, t.fs12, t.m(0, 3))}
+          style={s(t.fs12, t.m(0, 3))}
           onChange={async (_, { checked: isPublic }) => {
             this.setState({ isPublic }, () => service.configure({ isPublic }));
           }}

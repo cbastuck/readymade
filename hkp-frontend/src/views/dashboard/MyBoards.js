@@ -58,7 +58,6 @@ export default class MyBoards extends Component {
               margin: "20px 0px",
               padding: 0,
               letterSpacing: 1,
-              textTransform: "uppercase",
             }}
           >
             {user ? `${user.username}'s` : "My"} Boards
@@ -78,7 +77,7 @@ export default class MyBoards extends Component {
               {(boardContext) => (
                 <div style={{ height: "100%" }}>
                   <Toolbar />
-                  <div style={s(t.uc, t.fs12, t.ls1, t.m(25, 20))}>
+                  <div style={s(t.fs12, t.ls1, t.m(25, 20))}>
                     <h1 style={s(t.mt10, t.fs14)}>
                       Locally stored Playgrounds
                     </h1>

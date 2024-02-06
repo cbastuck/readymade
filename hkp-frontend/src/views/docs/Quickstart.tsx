@@ -18,12 +18,7 @@ export default function Quickstart() {
   };
   return (
     <Template title="Quickstarter" isRoot={false}>
-      <h2
-        className="hkp-fnt-family"
-        style={{ ...sectionStyle, margin: "30px 0px" }}
-      >
-        Etiquette
-      </h2>
+      <h2 style={{ ...sectionStyle, margin: "30px 0px" }}>Etiquette</h2>
       <div style={{ marginBottom: 35 }}>
         <Claim s="Please" c="Make stupid things!" />
         <Claim
@@ -63,10 +58,7 @@ export default function Quickstart() {
           cite="Lazlo Bane"
         />
       </div>
-      <h1
-        className="hkp-fnt-family"
-        style={s(t.tc, t.ls1, t.fs12, t.it, { color: "#4183c4" })}
-      >
+      <h1 style={s(t.tc, t.ls1, t.fs12, t.it, { color: "#4183c4" })}>
         <span style={t.fs16}>Do. </span>
         <span style={t.fs20}>Be curious!</span>
         <a href="https://cbastuck.de" target="blank">
@@ -75,7 +67,6 @@ export default function Quickstart() {
       </h1>
 
       <h2
-        className="hkp-fnt-family"
         style={{
           ...sectionStyle,
           marginTop: 30,

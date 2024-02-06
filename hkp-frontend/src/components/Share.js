@@ -85,15 +85,13 @@ export default class Share extends Component {
         style={s(t.nc, t.m5, { overflowX: "auto", minWidth: 350 })}
       >
         <Card.Content>
-          <Card.Header style={s(t.uc, t.fs12, t.ls1)}>
-            {share.email}
-          </Card.Header>
+          <Card.Header style={s(t.fs12, t.ls1)}>{share.email}</Card.Header>
           <Card.Description>{this.renderShareLink(url)}</Card.Description>
         </Card.Content>
         <Card.Content extra>
           <div className="ui two buttons">
             <Button
-              style={s(t.uc, t.ls1, t.fs12)}
+              style={s(t.ls1, t.fs12)}
               basic
               onClick={async () => {
                 await removeShare(board, share);
@@ -158,7 +156,7 @@ export default class Share extends Component {
             }
           />
           <Button
-            style={s(t.uc, t.ls1, t.fs11, t.w100)}
+            style={s(t.ls1, t.fs12, t.w100)}
             onClick={this.onShare}
             disabled={!this.isValidEmail(shareEmail)}
           >
@@ -166,7 +164,7 @@ export default class Share extends Component {
           </Button>
         </div>
         {shareUrl && (
-          <div style={s(t.m(10, 20), t.uc, t.ls1, t.fs12)}>
+          <div style={s(t.m(10, 20), t.ls1, t.fs12)}>
             This board is now shared with
             <span style={t.nc}> {shareEmail} </span>
             via the following link:
@@ -188,7 +186,7 @@ export default class Share extends Component {
         menuItem: (
           <Menu.Item
             key={`share-tab-add`}
-            style={s(t.fs11, t.uc, t.ls1)}
+            style={s(t.fs12, t.ls1)}
             name="New"
           />
         ),
@@ -198,13 +196,13 @@ export default class Share extends Component {
         menuItem: (
           <Menu.Item
             key={`share-tab-manage`}
-            style={s(t.fs11, t.uc, t.ls1)}
+            style={s(t.fs12, t.ls1)}
             name="Manage"
           />
         ),
         render: () => <Tab.Pane>{this.renderShareManager()}</Tab.Pane>,
       },
     ];
-    return <Tab style={t.uc} panes={panes} />;
+    return <Tab panes={panes} />;
   }
 }

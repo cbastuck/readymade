@@ -79,8 +79,7 @@ function CloudSinkUI(props: Props) {
         >
           <Label
             style={{
-              textTransform: "uppercase",
-              fontSize: 11,
+              fontSize: 12,
               marginRight: "5px",
             }}
           >

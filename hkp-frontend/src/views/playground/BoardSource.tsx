@@ -61,17 +61,17 @@ function BoardSource({ editSourceCode = true, match: { params } }: Props) {
   if (editSourceCodeMode) {
     return (
       <div style={{ height: "100%" }}>
-        <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={onSave}>
+        <Button style={s(t.m5, t.ls1, t.fs12)} onClick={onSave}>
           Save
         </Button>
 
         <Button
-          style={s(t.m5, t.uc, t.ls1, t.fs12)}
+          style={s(t.m5, t.ls1, t.fs12)}
           onClick={() => createBoardLink(editor.current?.getValue())}
         >
           Link
         </Button>
-        <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={closeSourceView}>
+        <Button style={s(t.m5, t.ls1, t.fs12)} onClick={closeSourceView}>
           Close
         </Button>
         <InfoNotification
@@ -95,19 +95,19 @@ function BoardSource({ editSourceCode = true, match: { params } }: Props) {
         }}
       >
         <Button
-          style={s(t.mt10, t.mh(5), t.uc, t.ls1, t.fs12)}
+          style={s(t.mt10, t.mh(5), t.ls1, t.fs12)}
           onClick={() => setEditSourceCodeMode(true)}
         >
           Edit
         </Button>
 
         <Button
-          style={s(t.m5, t.uc, t.ls1, t.fs12)}
+          style={s(t.m5, t.ls1, t.fs12)}
           onClick={() => createBoardLink(JSON.stringify(srcState, null, 2))}
         >
           Link
         </Button>
-        <Button style={s(t.m5, t.uc, t.ls1, t.fs12)} onClick={closeSourceView}>
+        <Button style={s(t.m5, t.ls1, t.fs12)} onClick={closeSourceView}>
           Close
         </Button>
         <hr style={{ borderTop: "1px solid lightgray" }} />

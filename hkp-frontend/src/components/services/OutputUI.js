@@ -56,7 +56,7 @@ export default class OutputUI extends Component {
             <a
               href={`${window.location.origin}/api/${userId}/${board}/${this.state.name}`}
               target="blank"
-              style={s(t.uc, t.lc1, t.fs11)}
+              style={s(t.lc1, t.fs11)}
             >
               Show Output
             </a>

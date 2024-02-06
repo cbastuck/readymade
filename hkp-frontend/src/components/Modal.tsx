@@ -36,7 +36,6 @@ export default class ModalDialog extends Component<Props, State> {
     }
 
     const buttonStyle = {
-      textTransform: "uppercase",
       letterSpacing: 1,
       fontSize: 12,
     };
@@ -50,7 +49,6 @@ export default class ModalDialog extends Component<Props, State> {
       >
         <Modal.Header
           style={{
-            textTransform: "uppercase",
             letterSpacing: 2,
             fontSize: 14,
             textAlign: "center",

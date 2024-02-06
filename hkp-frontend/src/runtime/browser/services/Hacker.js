@@ -55,7 +55,6 @@ export function HackerUI(props) {
               textAlign: "left",
               width: "100%",
               padding: 5,
-              textTransform: "uppercase",
               display: "flex",
               flexDirection: "row",
               fontSize: 12,

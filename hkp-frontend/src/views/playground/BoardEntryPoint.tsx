@@ -116,7 +116,6 @@ export default function BoardEntryPoint({
         <div style={s(t.fs16, t.ls1, t.tc)}>
           {isPlaygroundEmpty && (
             <h1
-              className="hkp-fnt-family"
               style={{
                 fontSize: "22px",
                 margin: 0,

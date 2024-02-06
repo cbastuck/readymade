@@ -8,7 +8,6 @@ type ParagraphProps = {
 
 export function Paragraph({ children, brief, headline }: ParagraphProps) {
   const headlineStyle: CSSProperties = {
-    textTransform: "uppercase",
     fontSize: 12,
   };
   return (
@@ -31,10 +30,7 @@ export function Section({ title, children }: SectionProps) {
   };
   return (
     <>
-      <h1 className="hkp-fnt-family" style={headlineStyle}>
-        {" "}
-        {title}
-      </h1>
+      <h1 style={headlineStyle}> {title}</h1>
       {children}
     </>
   );

@@ -10,8 +10,7 @@ type Props = {
 export default function Breadcrumbs({ current }: Props) {
   const breadcrumpStyle: CSSProperties = {
     letterSpacing: 1,
-    textTransform: "uppercase",
-    fontSize: 11,
+    fontSize: 12,
     margin: "0px 2px",
   };
 

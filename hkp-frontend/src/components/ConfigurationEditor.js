@@ -29,7 +29,7 @@ export default class ConfigurationEditor extends Component {
   render() {
     const { service, onClose, onChange } = this.props;
     const { uuid, board, ...filteredService } = filterPrivateMembers(service);
-    const buttonStyle = s(t.uc, t.fs12, t.ls1, { flexGrow: 1 });
+    const buttonStyle = s(t.fs12, t.ls1, { flexGrow: 1 });
     const useEditor = !detectBrowserIOS();
     return (
       <div
@@ -41,7 +41,7 @@ export default class ConfigurationEditor extends Component {
       >
         <Resizable>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <h1 style={s(t.uc, t.fs13, t.ls1)}>Service Configuration</h1>
+            <h1 style={s(t.fs13, t.ls1)}>Service Configuration</h1>
             <div
               style={{
                 height: "100%",

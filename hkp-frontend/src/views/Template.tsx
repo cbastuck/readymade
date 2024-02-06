@@ -85,7 +85,6 @@ export default class Template extends Component<Props> {
                         letterSpacing: 6,
                         padding: "5px 0px",
                       }}
-                      className="hkp-fnt-family"
                     >
                       {title}
                     </h1>

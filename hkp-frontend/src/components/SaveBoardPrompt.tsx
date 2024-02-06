@@ -32,13 +32,13 @@ export default function SaveBoardPrompt({ onRef }: Props) {
       onRef={(prompt) => (promptRef.current = prompt)}
       headline="Enter a name for the board"
     >
-      <Label style={s(t.uc, t.fs12, t.ls1)}>Name</Label>
+      <Label style={s(t.fs12, t.ls1)}>Name</Label>
       <Input
         style={s(t.w100)}
         value={name || ""}
         onChange={(ev, { value: name }) => setName(name)}
       />
-      <Label style={s(t.uc, t.fs12, t.ls1, t.mt10)}>Description</Label>
+      <Label style={s(t.fs12, t.ls1, t.mt10)}>Description</Label>
       <TextArea
         style={s(t.w100, t.p10, {
           border: "solid 1px lightgray",

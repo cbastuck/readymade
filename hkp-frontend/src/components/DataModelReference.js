@@ -9,7 +9,7 @@ export default class DataModelReference extends Component {
     return (
       <div key={`datamodel-property-${key}`}>
         <span style={{ color: "#4183c4" }}>{key}</span>:
-        <span style={t.uc}>{` ${decription}`}</span>
+        <span>{` ${decription}`}</span>
       </div>
     );
   };

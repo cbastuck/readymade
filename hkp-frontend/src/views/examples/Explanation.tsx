@@ -48,7 +48,7 @@ export default function Explanation({ value: explanation }: Props) {
   return (
     <div
       className="hkp-fnt-family"
-      style={s(t.uc, t.fs15, t.ls1, t.m(0, 10), {
+      style={s(t.fs15, t.ls1, t.m(0, 10), {
         width: "95%",
         textTransform: "none",
       })}

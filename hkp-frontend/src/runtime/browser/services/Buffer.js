@@ -54,7 +54,7 @@ export class BufferUI extends Component {
           unit="items"
         />
         <Button
-          style={s(t.w100, t.mt5, t.uc, t.ls1, t.fs11)}
+          style={s(t.w100, t.mt5, t.ls1, t.fs12)}
           onClick={() => (service.buffer = [])}
         >
           Clear

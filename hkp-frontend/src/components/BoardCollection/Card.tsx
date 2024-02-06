@@ -38,9 +38,7 @@ export default function CardComponent({ value: item }: Props) {
         )}
         <Link key={`board-card-link-${name}`} to={url}>
           <div style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}>
-            <h1 className="hkp-fnt-family" style={t.fs14}>
-              {name}
-            </h1>
+            <h1 style={t.fs14}>{name}</h1>
           </div>
           {metadata && (
             <div

@@ -25,7 +25,7 @@ export function InfoNotification({
 
   return (
     <Message
-      style={s(t.uc, t.ls1, t.fs12, { padding: 5, ...margins, ...style })}
+      style={s(t.ls1, t.fs12, { padding: 5, ...margins, ...style })}
       header={title}
       content={<NotificationContent message={message} onClose={onClose} />}
       positive

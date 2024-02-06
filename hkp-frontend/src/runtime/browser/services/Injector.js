@@ -25,8 +25,7 @@ export class InjectorUI extends Component {
   };
 
   buttonStyle = {
-    fontSize: 11,
-    textTransform: "uppercase",
+    fontSize: 12,
     letterSpacing: 1,
     width: "100%",
     marginTop: 5,
@@ -68,7 +67,6 @@ export class InjectorUI extends Component {
             minHeight: 80,
             paddingTop: 30,
             fontSize: 20,
-            textTransform: "uppercase",
             letterSpacing: 1,
             fontWeight: "bold",
           }}
@@ -108,7 +106,6 @@ export class InjectorUI extends Component {
                 style={{
                   marginLeft: 5,
                   marginTop: -2,
-                  textTransform: "uppercase",
                   letterSpacing: 1,
                   fontSize: 12,
                 }}
@@ -134,7 +131,6 @@ export class InjectorUI extends Component {
         <h1
           style={{
             fontSize: 12,
-            textTransform: "uppercase",
             letterSpacing: 1,
             textAlign: "left",
             margin: "4px 0px",
@@ -185,7 +181,6 @@ export class InjectorUI extends Component {
         <h1
           style={{
             fontSize: 12,
-            textTransform: "uppercase",
             letterSpacing: 1,
             textAlign: "left",
           }}
@@ -235,7 +230,7 @@ export class InjectorUI extends Component {
           )}
           <div style={s(t.tl, t.mt3)}>
             <Checkbox
-              style={s(t.fs12, t.uc, t.ls1, { margin: "5px 0px" })}
+              style={s(t.fs12, t.ls1, { margin: "5px 0px" })}
               toggle
               checked={multirow}
               onChange={(_, { checked: multirow }) =>
@@ -271,7 +266,6 @@ export class InjectorUI extends Component {
           style={{
             height: "33px",
             fontSize: 12,
-            textTransform: "uppercase",
             letterSpacing: 1,
             textAlign: "left",
             margin: "4px 0px",
@@ -364,13 +358,13 @@ export class InjectorUI extends Component {
       >
         <div style={t.m(0, 10)}>
           <input
-            style={s(t.uc, t.fs12)}
+            style={t.fs12}
             type="file"
             onChange={(ev) => this.setState({ file: ev.target.files[0] })}
           />
         </div>
         <Checkbox
-          style={s(t.fs12, t.uc, t.ls1)}
+          style={s(t.fs12, t.ls1)}
           label="read as text"
           checked={loadAsText}
           onChange={(_, { checked: loadAsText }) =>

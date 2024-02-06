@@ -31,10 +31,7 @@ export default function EmptySketch({ boardName }: Props) {
                 margin: "auto",
               }}
             >
-              <h1 className="hkp-fnt-family" style={s(t.fs14, t.tc, t.m(0, 6))}>
-                {" "}
-                {headline}{" "}
-              </h1>
+              <h1 style={s(t.fs14, t.tc, t.m(0, 6))}> {headline} </h1>
               <div style={{ width: 200, margin: "10px auto" }}>
                 <Logo />
               </div>

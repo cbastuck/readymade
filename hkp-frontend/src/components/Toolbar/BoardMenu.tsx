@@ -3,6 +3,8 @@ import { Dropdown } from "semantic-ui-react";
 import { useLocation } from "react-router-dom";
 import { BoardContextState } from "../../BoardContext";
 
+import "./BoardMenu.css";
+
 type Props = {
   board?: string;
   boardContext: BoardContextState | null;
@@ -28,7 +30,7 @@ export default function BoardMenu({
       style={{
         fontSize: 11,
         letterSpacing: 1,
-        marginTop: 2,
+
         paddingLeft: 5,
         paddingRight: 8,
       }}

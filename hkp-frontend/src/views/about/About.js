@@ -36,8 +36,6 @@ export default class About extends Component {
   render() {
     const amp = {
       fontSize: " 22",
-      fontWeight: "bolder",
-      textTransform: "uppercase",
       letterSpacing: 2,
     };
     return (

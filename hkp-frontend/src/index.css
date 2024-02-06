@@ -24,7 +24,17 @@
   border-radius: 255px 15px 225px 15px/15px 225px 15px 255px;
 }
 
+h1,
+h2,
+h3 {
+  font-family: SpecialElite;
+}
+
 body {
   font-family: SpecialElite;
   color: #888;
+}
+
+.ui.dropdown > .text {
+  margin-top: 2px;
 }

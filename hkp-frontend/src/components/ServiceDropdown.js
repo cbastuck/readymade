@@ -22,7 +22,6 @@ export default class ServiceDropdown extends Component {
         style={{
           fontSize: 12,
           letterSpacing: 1,
-          textTransform: "uppercase",
           marginRight: 10,
         }}
       >

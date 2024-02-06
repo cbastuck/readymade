@@ -7,7 +7,7 @@ type Props = {
 export default function LoadIndicator({ text }: Props) {
   return (
     <div
-      style={s(t.uc, t.ls1, {
+      style={s(t.ls1, {
         position: "absolute",
         left: "45%",
         top: "45%",

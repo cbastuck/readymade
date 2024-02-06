@@ -22,7 +22,6 @@ export default function ServiceBlock() {
           style={{
             margin: "30px 5px",
             width: "80%",
-            textTransform: "uppercase",
             letterSpacing: 1,
             fontSize: 12,
           }}

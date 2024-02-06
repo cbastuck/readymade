@@ -110,7 +110,7 @@ export class GithubSourceUI extends Component {
           onChange={(kv) => service.configure(kv)}
         />
         <Button
-          style={s(t.uc, t.ls1, t.fs12, t.w100)}
+          style={s(t.ls1, t.fs12, t.w100)}
           onClick={() => this.inject(service)}
           disabled={!file}
         >

@@ -116,14 +116,7 @@ export default class ServiceReference extends Component {
             </div>
           </div>
           <Button
-            style={s(
-              t.fs12,
-              t.uc,
-              t.ls1,
-              t.w100,
-              t.mt5,
-              t.borderCol("#4284C499")
-            )}
+            style={s(t.fs12, t.ls1, t.w100, t.mt5, t.borderCol("#4284C499"))}
             onClick={() => this.tryConfiguration(service, item.value)}
           >
             Try
@@ -237,11 +230,11 @@ export default class ServiceReference extends Component {
       return false;
     }
 
-    const headlineStyle = s(t.m(10, 10), t.fs14, t.uc, t.ls1);
+    const headlineStyle = s(t.m(10, 10), t.fs14, t.ls1);
     return (
       <div style={s(t.fill, t.fs12)}>
         <h1 style={headlineStyle}>About this documentation</h1>
-        <div style={s(t.m10, t.uc, t.ls1, { marginBottom: 20 })}>
+        <div style={s(t.m10, t.ls1, { marginBottom: 20 })}>
           <div>
             The following sandbox allows you to try the{" "}
             <span style={{ color: "#4284C4" }}>{service}</span> service in

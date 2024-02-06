@@ -92,7 +92,7 @@ export default class IngressUI extends Component {
             <Checkbox
               toggle
               label="Wrap Headers"
-              style={s(t.uc, t.fs12, t.m(0, 3))}
+              style={s(t.fs12, t.m(0, 3))}
               onChange={async (_, { checked: wrapHeaders }) => {
                 this.setState({ wrapHeaders }, () =>
                   service.configure({ wrapHeaders })
@@ -106,7 +106,7 @@ export default class IngressUI extends Component {
             <Checkbox
               toggle
               label="Public"
-              style={s(t.uc, t.fs12, t.m(0, 3))}
+              style={s(t.fs12, t.m(0, 3))}
               onChange={async (_, { checked: isPublic }) => {
                 this.setState({ isPublic }, () =>
                   service.configure(this.state)
@@ -120,7 +120,7 @@ export default class IngressUI extends Component {
             <Checkbox
               toggle
               label="Active"
-              style={s(t.uc, t.fs12, t.m(0, 3))}
+              style={s(t.fs12, t.m(0, 3))}
               onChange={async (_, { checked: active }) => {
                 this.setState({ active }, () => service.configure(this.state));
               }}

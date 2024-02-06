@@ -40,7 +40,9 @@ export default function Prompt({
       open={open}
       dimmer="inverted"
     >
-      <Modal.Header style={s(t.fs12, t.ls1, t.uc)}>{headline}</Modal.Header>
+      <Modal.Header className="hkp-fnt-family" style={s(t.fs14, t.ls1)}>
+        {headline}
+      </Modal.Header>
       <div style={{ padding: 10 }}>{children}</div>
       <div style={{ display: "flex", flexDirection: "row", margin: "10px" }}>
         <Button
@@ -57,7 +59,7 @@ export default function Prompt({
             setOpen(false);
           }}
         >
-          OK
+          Ok
         </Button>
       </div>
     </Modal>

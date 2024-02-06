@@ -23,8 +23,6 @@ export default class Switcher extends Component {
         style={{
           fontSize: 45,
           letterSpacing: 1,
-          textTransform: "uppercase",
-          fontWeight: "bold",
           marginBottom: 50,
         }}
       >

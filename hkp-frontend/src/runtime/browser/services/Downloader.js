@@ -47,7 +47,7 @@ class DownloaderUI extends Component {
     <div
       style={{ display: "flex", flexDirection: "column", textAlign: "left" }}
     >
-      <div style={s(t.uc, t.ls1, t.fs12)}>Filename</div>
+      <div style={s(t.ls1, t.fs12)}>Filename</div>
       <div style={t.mt3}>
         <Input
           style={s(t.w100, { margin: 0 })}
@@ -64,7 +64,7 @@ class DownloaderUI extends Component {
       </div>
       <div style={t.mt3}>
         <Button
-          style={s(t.uc, t.ls1, t.fs11, t.w100)}
+          style={s(t.ls1, t.fs12, t.w100)}
           disabled={!this.state.running}
           onClick={() => this.onClose(service)}
         >

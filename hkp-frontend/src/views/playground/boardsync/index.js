@@ -157,14 +157,15 @@ export default class BoardSync extends Component {
           />
         </div>
         <Button
-          style={s(t.uc, t.fs11, t.ls1, {
+          className="hkp-fnt-family"
+          style={s(t.fs11, t.ls1, {
             height: 33,
             width: 80,
             color: "#5c5d5c",
           })}
           onClick={this.syncBoard}
         >
-          push
+          Push
         </Button>
       </>
     );

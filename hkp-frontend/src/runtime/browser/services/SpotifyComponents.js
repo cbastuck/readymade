@@ -26,7 +26,7 @@ export function SpotifyOAuth({
       }}
     >
       <Button
-        style={s(t.uc, t.ls1, t.fs12)}
+        style={s(t.ls1, t.fs12)}
         onClick={() => {
           const url = getAuthURL(clientID, redirectURI, scopes, loginStateId);
           window.open(url, "blank");

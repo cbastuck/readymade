@@ -52,7 +52,7 @@ export default class BoardRouting extends Component<Props, State> {
   render() {
     const { inputUrl, inputTopic, outputUrl, outputTopic } = this.state;
     const { onChange } = this.props;
-    const style = s(t.fs12, t.ls1, t.uc);
+    const style = s(t.fs12, t.ls1);
     return (
       <div
         style={s(style, {

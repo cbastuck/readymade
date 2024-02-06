@@ -48,7 +48,7 @@ export class GithubUser extends Component {
     const { size = "small", onLogout } = this.props;
     const { login, avatar_url, created_at, public_repos, followers } = user;
     return (
-      <div style={s(t.uc, t.fs12, t.ls1)}>
+      <div style={s(t.fs12, t.ls1)}>
         <Card>
           <div style={t.tc}>
             <Image src={avatar_url} wrapped size={size} />
@@ -66,7 +66,7 @@ export class GithubUser extends Component {
           </Card.Content>
         </Card>
         <Button
-          style={s(t.uc, t.fs12, t.ls1, t.w100)}
+          style={s(t.fs12, t.ls1, t.w100)}
           onClick={() => onLogout && onLogout()}
         >
           Logout
@@ -227,7 +227,7 @@ export class GithubObject extends Component {
             <Checkbox
               toggle
               label={renderAsFileInputToggle ? "New File" : "Select File"}
-              style={s(t.uc, t.fs12, t.mt5, t.mb3)}
+              style={s(t.fs12, t.mt5, t.mb3)}
               checked={!!renderAsFileInputToggle}
               onChange={async (_, { checked: renderAsFileInputToggle }) => {
                 this.setState({ renderAsFileInputToggle });
@@ -342,7 +342,7 @@ export class GithubOAuth extends Component {
         }}
       >
         <Button
-          style={s(t.uc, t.ls1, t.fs12)}
+          style={s(t.ls1, t.fs12)}
           onClick={() => {
             const url = getAuthURL({
               clientID,

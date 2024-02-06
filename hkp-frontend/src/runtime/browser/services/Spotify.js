@@ -51,12 +51,12 @@ export class SpotifyUI extends Component {
 
     if (!profile) {
       service.configure({ action: "getProfile" });
-      return <div style={s(t.uc, t.ls1, t.fs12)}>Loading profile</div>;
+      return <div style={s(t.ls1, t.fs12)}>Loading profile</div>;
     }
     const { display_name: name, followers, images: allImages } = profile;
     const image = allImages[0];
     return (
-      <div style={s(t.uc, t.fs12, t.ls1)}>
+      <div style={s(t.fs12, t.ls1)}>
         <Card>
           {image && (
             <div style={s(t.tc, t.w100, t.p10)}>
@@ -81,7 +81,7 @@ export class SpotifyUI extends Component {
           </Card.Content>
         </Card>
         <Button
-          style={s(t.uc, t.fs12, t.ls1, t.w100)}
+          style={s(t.fs12, t.ls1, t.w100)}
           onClick={() => {
             service.configure({ action: "logout" });
             this.setState({ token: null });
@@ -110,7 +110,7 @@ export class SpotifyUI extends Component {
           }
         />
         <Button
-          style={s(t.uc, t.ls1, t.fs12, t.w100, t.mt5)}
+          style={s(t.ls1, t.fs12, t.w100, t.mt5)}
           onClick={() => service.configure({ action: selectedAction })}
         >
           Do it

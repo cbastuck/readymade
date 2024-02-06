@@ -77,8 +77,7 @@ function CloudSourceUI(props: Props) {
       <div style={{ display: "flex", flexDirection: "row", marginTop: "5px" }}>
         <Label
           style={{
-            textTransform: "uppercase",
-            fontSize: 11,
+            fontSize: 12,
             marginRight: "5px",
           }}
         >
@@ -98,8 +97,7 @@ function CloudSourceUI(props: Props) {
       <Button
         style={{
           width: "100%",
-          textTransform: "uppercase",
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: 1,
           marginTop: "5px",
         }}

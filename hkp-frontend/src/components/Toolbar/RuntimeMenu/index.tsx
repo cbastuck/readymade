@@ -93,7 +93,7 @@ export default function RuntimeMenu({
           }}
           ref={dropdown}
           options={dropdownOptions}
-          placeholder={<div style={{ marginTop: 2 }}>Add Runtime</div>}
+          placeholder="Add Runtime"
           selection
           selectOnBlur={false}
           onChange={(ev, { value }) => {

@@ -12,10 +12,8 @@ export default class Contact extends Component {
           <div className="about-text">
             <div
               style={{
-                fontSize: 40,
+                fontSize: "50px",
                 letterSpacing: 1,
-                textTransform: "uppercase",
-                fontWeight: "bold",
               }}
             >
               Email

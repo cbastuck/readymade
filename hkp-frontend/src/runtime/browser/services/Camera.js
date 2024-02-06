@@ -178,7 +178,7 @@ export class CameraUI extends Component {
         />
         <div style={{ textAlign: "left", marginBottom: 5, width: "100%" }}>
           <Checkbox
-            style={s(t.uc, t.fs11)}
+            style={t.fs12}
             label="Mirror"
             checked={this.state.mirror}
             onChange={(_, { checked }) => this.setState({ mirror: checked })}
@@ -224,14 +224,14 @@ export class CameraUI extends Component {
           }}
         >
           <Button
-            style={s(t.uc, t.fs12, t.w100)}
+            style={s(t.fs12, t.w100)}
             disabled={!!this.state.stream && !!this.videoElement}
             onClick={() => this.startVideo(this.videoElement)}
           >
             Start
           </Button>
           <Button
-            style={s(t.uc, t.fs12, t.w100)}
+            style={s(t.fs12, t.w100)}
             disabled={!this.state.stream}
             onClick={() => this.stopVideo()}
           >
@@ -239,7 +239,7 @@ export class CameraUI extends Component {
           </Button>
         </div>
         <Button
-          style={s(t.uc, t.fs12, { marginTop: 3, width: "100%" })}
+          style={s(t.fs12, { marginTop: 3, width: "100%" })}
           disabled={!this.state.stream}
           onClick={() =>
             this.setState({ recording: !this.state.recording }, () => {

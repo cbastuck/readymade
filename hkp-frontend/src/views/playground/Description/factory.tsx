@@ -74,6 +74,6 @@ function createImpl(item: BaseType, board: string): ReactElement {
 
     default:
       console.error("Unsupported description type", item);
-      return <div style={s(t.uc, t.fs12, t.ls1)}>{JSON.stringify(item)}</div>;
+      return <div style={s(t.fs12, t.ls1)}>{JSON.stringify(item)}</div>;
   }
 }

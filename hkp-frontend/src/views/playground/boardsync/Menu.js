@@ -1,11 +1,9 @@
-import React from "react";
 import { Dropdown } from "semantic-ui-react";
 
 import ManageSync from "./ManageSync";
 
 const menuItemStyle = {
   fontSize: 10,
-  textTransform: "uppercase",
   letterSpacing: 1,
 };
 
@@ -18,7 +16,6 @@ export default function Menu({ actions, onChange, value }) {
       style={{
         fontSize: 11,
         letterSpacing: 1,
-        textTransform: "uppercase",
         backgroundColor: "#E8E8E8",
         borderRadius: 5,
         padding: "6px 10px",

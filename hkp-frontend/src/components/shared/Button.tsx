@@ -21,7 +21,7 @@ export default function ButtonComponent({
   onClick,
 }: Props) {
   const buttonStyle = {
-    fontSize: 11,
+    fontSize: 12,
     letterSpacing: 1,
     width: "100%",
     backgroundColor: "#efefef",

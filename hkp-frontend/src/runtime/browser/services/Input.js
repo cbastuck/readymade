@@ -66,7 +66,7 @@ export class InputUI extends Component {
           margin: 10,
         }}
       >
-        <div style={s(t.uc, t.ls1, t.fs12)}>
+        <div style={s(t.ls1, t.fs12)}>
           <InputField
             label="URL"
             value={url}
@@ -77,7 +77,7 @@ export class InputUI extends Component {
           />
         </div>
         {isWebsocket && (
-          <div style={s(t.uc, t.ls1, t.fs12)}>
+          <div style={s(t.ls1, t.fs12)}>
             <InputField
               label="topic"
               value={topic}
@@ -90,7 +90,7 @@ export class InputUI extends Component {
         )}
         {canFetch === true && (
           <Button
-            style={s(t.w100, t.uc, t.ls1, t.fs12, { marginTop: 0 })}
+            style={s(t.w100, t.ls1, t.fs12, { marginTop: 0 })}
             onClick={() => service.configure({ fetch: url })}
             disabled={fetchPending}
           >

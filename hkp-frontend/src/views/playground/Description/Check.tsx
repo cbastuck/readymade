@@ -19,7 +19,7 @@ export default function Check(item: CheckType) {
   }
 
   return (
-    <div style={s(t.uc, t.fs12, t.ls1)}>
+    <div style={s(t.fs12, t.ls1)}>
       {item.text} {checkPassed ? "✅" : "❌"}
     </div>
   );
