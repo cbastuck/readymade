@@ -15,38 +15,41 @@ export default function How() {
         }}
       >
         <div>
-          A brief story. When my life as a professional engineer began, I soon
-          felt like repeating work I did before. We worked on approaches that
-          would mimick music simlilarity as perceived by humans. We created
-          processing pipelines, graphs eventually: connected logical units, each
-          with a clear resposibility. Sequentially linked units that would
-          accept audio on the input, then extract similarity features from the
-          audio signal, then select the most important ones, then train
-          classification models, then validate these models, and finally persist
-          them, so they could be used for queries.
+          At the start of my professional engineering journey, I found myself
+          repeatedly involved in implementing modular pipelines to address
+          business needs. Initially, we focused on approaches to mimic music
+          similarity as perceived by humans. This led to the creation of
+          processing pipelines—eventual graphs with interconnected logical
+          units, each with a clear responsibility. These sequentially linked
+          units would accept audio input, extract similarity features from the
+          audio signal, select the most important ones, train classification
+          models, validate these models, and finally persist them for use in
+          queries.
         </div>
         <div>
-          A similar pattern we applied at university in the domain of
-          visualisation. We fed raw volumetric data from CT scans to processing
-          units. Again, these were organised in pipelines. The units
-          transformed, projected, selected, mapped and eventually visualized the
-          input data as semi-transparent, textured rectangles, ordererd and
-          blended over each other.
+          A similar pattern had already emerged during my university experience,
+          particularly in the domain of visualization. We channeled raw
+          volumetric data from CT scans through processing units, once more
+          organized in pipelines. These units executed transformations,
+          projections, selections, mappings, and eventually visualized the input
+          data as semi-transparent, textured rectangles, ordered and blended
+          seamlessly over each other.
         </div>
         <div>
-          Years later, I was working for the company that built the music tool
-          Reaktor. Actually, this product was one of the reasons, why I applied.
-          From my experience, I "felt" convinced that any instrument they
-          release would be low-level code compositions of Reaktor modules. That
-          conviction did not hold long after I started - still the pipeline
-          pattern re-occured multiple times again. So much for the <i>how</i>.
+          Years later, I found myself working for the company that developed the
+          music tool Reaktor. In fact, it was one of the main reasons I applied.
+          Despite my initial belief that any instrument they released would be
+          low-level code compositions of Reaktor modules, this conviction
+          shifted shortly after I started. Nevertheless, the familiar pipeline
+          pattern resurfaced multiple times, reinforcing the <i>how</i> embodied
+          in this project.
         </div>
         <div>
-          I know, complexity and its exponential growth are non-negotiable. In
-          particular, when applying this pattern to arbitrary domains and
-          use-cases. Perfection might be impossible in terms of not coding in
-          the end again. But when I look with an optimistic pair of glasses, I
-          notice a vibrant dynamic in this area:{" "}
+          I understand that complexity and its exponential growth are
+          non-negotiable, especially when applying this pattern to arbitrary
+          domains and use-cases. Achieving perfection in terms of avoiding
+          coding altogether may be impossible in the end. However, viewed
+          through an optimistic lens, a vibrant dynamic emerges in this space:{" "}
           <a href="https://nodered.org" target="_blank" rel="noreferrer">
             NodeRed
           </a>
@@ -65,21 +68,23 @@ export default function How() {
           , etc.
         </div>
         <div>
-          So then, why Hookup? Honestly, sometimes it feels like I don't have a
-          choice. It's fun building abstractions, see them work, watch them
-          fail, then understand and start pushing the limits by iterating on
-          multiple ends: the runtime, the module, the data, the topology of
-          connections.
+          So then, why Hookup? Honestly, at times, it feels more like a
+          necessity than a choice. There's a joy in constructing abstractions,
+          observing them in action, witnessing their challenges, understanding,
+          and then pushing the limits through iterations on multiple fronts: the
+          runtime, the module, the data, the topology of connections.
         </div>
         <div>
-          Hookup allows me to try many hats, in a product's lifecycle. I
-          consider this as one root to grow.
+          Hookup allows me to try on many hats throughout a product's lifecycle,
+          considering it as a foundational root to grow. One last important
+          aspect: curiosity and naivity.
         </div>
         <div>
-          One last important aspect: curiosity and naivity. "They say the
-          universe is infinite. Funny, that's what we tell our software about
-          space as well, while demand and growth accelerate." Why this matters
-          here? I think, it sounds like there is a lot to explore - in general.
+          They say the universe is infinite. It's interesting how, in our
+          software, we echo the same sentiment about space while facing
+          accelerating demands and growth. Why does this matter here? I believe
+          it resonates with the idea that there is a vast realm to explore, both
+          conceptually and practically—in general.
         </div>
         <Date month="June" day="24" year="2022" />
         <HStack>

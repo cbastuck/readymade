@@ -15,27 +15,47 @@ export default function What() {
         }}
       >
         <div>
-          With this project, I explore ideas to combine logic blocks to create
-          computational behavior with a curious mindset: more playful and
-          preferably using less code. I focus on ideas and prototypical
-          solutions within following domains: centrality, connectivity,
-          authority and scale.
+          In this project, I embark on the creation and synthesis of logical
+          blocks to bring arbitrary computational behaviors to life. Emphasizing
+          simplicity, I adopt a playful mindset, striving for the resulting
+          composition from the synthesized blocks to rely on as little code as
+          possible. My focus revolves around generating ideas and prototypical
+          solutions within the domains of centrality, connectivity, authority,
+          and scale."
+        </div>
+
+        <div>
+          Think of prototypes as flexible building blocks. They're made up of
+          reusable parts and, interestingly, can serve as a logical unit in
+          crafting new prototypes. While the modular approach may add
+          intricacies, it reveals interdependencies within the logic. This
+          method not only makes algorithms almost tangible but also keeps them
+          highly adaptable. Even after a prototype is formed, its logical units
+          remain parametrizable - allowing for dynamic adjustments in
+          algorithmic behavior. What's particularly intriguing is that this
+          parametrization can be driven by human inputs or, by machines
+          leveraging artificial intelligence.
         </div>
         <div>
-          Prototypes are modular and composed of versatile, reusable blocks.
-          Even if it complicates things at times, the modular approach exhibits
-          interdependencies in the logic. This makes algorithms almost tangible,
-          creates insights and leads to new questions and eventually new
-          prototypes exhibiting different characteristics inherent to the
-          solution - or sometimes even to the problem. With respect to scale, I
-          acknowledge small or individual spaces.
+          This unique quality positions the model as an excellent interface for
+          collaboration between humans and machines. It allows adaptable
+          algorithms while keeping control, enabling adjustments to specific
+          inputs. This controlled adaptability instills confidence in the
+          interface, mitigating concerns about maintaining oversight and
+          influence in the AI landscape.
         </div>
         <div>
-          Hookup is about exploration and little about delivering concrete
-          solutions. I make it, because it helps my thought process and enables
-          to tell unconventional stories. Stories that should create an
-          awareness for new possibilties and hidden abilities that one might
-          have.
+          In considering scale, I acknowledge the importance of addressing small
+          or individual spaces. Through an accessible interface, we empower more
+          individuals to navigate and explore these niches, unlocking the
+          potential for a variety of technical solutions that might otherwise go
+          unnoticed or underserved
+        </div>
+        <div>
+          Hookup is more about exploration than delivering concrete solutions. I
+          pursue it because it helps my thought process and enables the telling
+          of unconventional stories—narratives designed to raise awareness of
+          new possibilities and hidden abilities that individuals might possess.
         </div>
         <Date month="June" day="24" year="2022" />
         <HStack>

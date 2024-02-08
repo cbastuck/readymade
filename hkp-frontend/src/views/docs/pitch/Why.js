@@ -15,36 +15,35 @@ export default function Why() {
         }}
       >
         <div>
-          In my humble opinion, the ability to understand technical components
-          and data-flows is somewhat comparable to the ability to read.
+          In my humble opinion, the ability to comprehend technical components
+          and data flows is comparable to the skill of reading. Just as reading
+          doesn't automatically make you an author, a foundational understanding
+          of technical components and data doesn't turn you into a software
+          engineer. Instead, both abilities serve as prerequisites for the
+          latter. I believe these skills are crucial in today's digital age,
+          allowing individuals to navigate the digital landscape without
+          everyone needing to pursue a career as a software engineer.
+        </div>
+
+        <div>
+          When reading stories, recipes, history, poetry, etc., it can be
+          entertaining and lead to a deeper understanding of many things:
+          yourself, your environment, our world, etc. Maybe you discover unknown
+          abilities, interests, places, meaning, or something you can't even
+          imagine right now. Similarly, the ability to use technology to create
+          and express yourself can be mind-changing. While professional
+          development in technology is a challenging task and may not be the
+          path for everyone, the capacity to use tech for individual purposes
+          should not be restricted to a specialized group of people with certain
+          traits that match shallow stereotypes, sometimes even reproducing
+          them. Otherwise, we risk walking a steep slope along the gradient to
+          find a local optimum.
         </div>
         <div>
-          Reading doesn't turn you into an author. Similarly, a basic
-          understanding of technical components and data does not turn you into
-          a software engineer. Both abilitities are prerequisites for the
-          latter.
-        </div>
-        <div>
-          When reading stories, recipies, history, poetry, etc. it can be
-          entertaining and lead to a deeper understanding of many things: your
-          self, your environment, our world, etc. Maybe you discover unknown
-          abilities, interests, places, meaning or something you can't even
-          imagine right now.
-        </div>
-        <div>
-          Similarily the ability to use technology to create and express
-          yourself can be mind changing. Development is a challenging task. Also
-          there are good reasons to decide against a professional path. Still,
-          the ability to use tech for your individual purpose, should not be
-          restricted to a specialized group of people with certain traits
-          matching shallow stereotypes and sometimes even reproducing them.
-          Technically speaking, otherwise we could walk a steep slope along the
-          gradient to find a local optimum.
-        </div>
-        <div>
-          Automation and digitalisation are part of a public discourse and
-          agenda. According this reasoning, so should be upscaling the amount of
-          people finding new solutions and discover yet unknown problems.
+          As automation and digitalization become integral to public discourse
+          and agendas, so too should the focus shift towards empowering more
+          individuals to discover new solutions and uncover yet-unknown
+          problems.
         </div>
 
         <Date month="June" day="24" year="2022" />
