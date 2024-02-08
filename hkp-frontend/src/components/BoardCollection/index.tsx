@@ -28,7 +28,7 @@ export default function BoardCollection({
   return (
     items.length > 0 && (
       <div
-        className={renderBorder ? "hkp-card-border" : ""}
+        className={renderBorder ? "hkp-collection-border" : ""}
         style={{
           height: "100%",
           width: "100%",

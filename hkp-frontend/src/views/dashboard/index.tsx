@@ -10,7 +10,7 @@ import BoardCollection from "../../components/BoardCollection";
 import { SavedBoard, UsecaseDescriptor, User } from "../../types";
 import { makeRequest as getRequest } from "../../runtime/browser/services/CloudSource";
 import { makeRequest as putRequest } from "../../runtime/browser/services/CloudSink";
-import { getLocalBoards } from "../playground/common";
+import { getLocalBoards, storeBoardToLocalStorage } from "../playground/common";
 import { Action } from "../../components/BoardCollection/Card";
 
 const resourceId = "hkp.cloud-board.v1.";
@@ -48,10 +48,15 @@ export default function Dashboard() {
   const appContext = useContext(AppCtx);
   const user = appContext?.user;
 
-  const onLocalAction = useCallback(
+  const onAction = useCallback(
     (action: Action, board: SavedBoard | UsecaseDescriptor) => {
       if (user) {
-        putLocalBoard(board as SavedBoard, user);
+        if (action.name === "upload") {
+          putLocalBoard(board as SavedBoard, user);
+        } else if (action.name === "download") {
+          storeBoardToLocalStorage(board.name, JSON.stringify(board));
+          setLocalBoards(getLocalBoards());
+        }
       }
     },
     [user]
@@ -63,11 +68,12 @@ export default function Dashboard() {
 
   return (
     <div
-      style={s(t.fs12, t.ls1, t.m(25, 20), {
+      style={s(t.fs12, t.ls1, {
         height: "100%",
         display: "flex",
         flexDirection: "column",
         gap: "20px",
+        margin: "0px 10px",
       })}
     >
       <Toolbar />
@@ -78,12 +84,22 @@ export default function Dashboard() {
         actions={[
           {
             name: "upload",
-            icon: <Icon name="upload" />,
+            icon: <Icon name="cloud upload" />,
           },
         ]}
-        onAction={onLocalAction}
+        onAction={onAction}
       />
-      <BoardCollection headline="Cloud boards" items={cloudBoards || []} />
+      <BoardCollection
+        headline="Cloud boards"
+        items={cloudBoards || []}
+        actions={[
+          {
+            name: "download",
+            icon: <Icon name="cloud download" />,
+          },
+        ]}
+        onAction={onAction}
+      />
       <Footer />
       <div style={{ minHeight: "10px" }} />
     </div>

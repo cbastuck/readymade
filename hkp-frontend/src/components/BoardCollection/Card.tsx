@@ -25,6 +25,7 @@ export default function Card({ value: item, actions, onAction }: Props) {
         flex: 1,
         margin: 10,
         position: "relative",
+        maxHeight: "150px",
       })}
       key={`board-card-${name}`}
     >

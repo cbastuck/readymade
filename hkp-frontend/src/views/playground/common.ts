@@ -51,6 +51,18 @@ export function getLocalBoards(
   }));
 }
 
+export function restoreBoardFromLocalStorage(name: string) {
+  const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
+  const data = localStorage.getItem(storageName);
+  if (data) {
+    return JSON.parse(data);
+  }
+}
+
+export function storeBoardToLocalStorage(board: string, src: string) {
+  localStorage.setItem(`${localStoragePrefix}${board}`, src);
+}
+
 const isSecureConnection = window.location.protocol === "https:";
 
 export const availableDiscoveryPeerHosts: Array<PeerJsHostDescriptor> = [

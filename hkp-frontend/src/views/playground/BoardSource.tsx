@@ -2,7 +2,10 @@ import React, { useState } from "react";
 import { Button } from "semantic-ui-react";
 import { useLocation } from "react-router-dom";
 
-import { localStoragePrefix } from "./common";
+import {
+  restoreBoardFromLocalStorage,
+  storeBoardToLocalStorage,
+} from "./common";
 import Editor from "../../components/shared/Editor/index";
 import { s, t } from "../../styles";
 import { redirectTo } from "../../core/actions";
@@ -80,7 +83,12 @@ function BoardSource({ editSourceCode = true, match: { params } }: Props) {
           message={notification}
           onClose={() => setNotification(undefined)}
         />
-        <Editor ref={editor} language="json" value={srcState} />
+        <Editor
+          ref={editor}
+          language="json"
+          value={srcState || ""}
+          onChange={() => {}}
+        />
       </div>
     );
   }
@@ -120,18 +128,6 @@ function BoardSource({ editSourceCode = true, match: { params } }: Props) {
 }
 
 export default withRouter(BoardSource);
-
-function restoreBoardFromLocalStorage(name: string) {
-  const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
-  const data = localStorage.getItem(storageName);
-  if (data) {
-    return JSON.parse(data);
-  }
-}
-
-function storeBoardToLocalStorage(board: string, src: string) {
-  localStorage.setItem(`${localStoragePrefix}${board}`, src);
-}
 
 async function retrieveSource(
   board: string,

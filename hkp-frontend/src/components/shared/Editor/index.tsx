@@ -4,8 +4,8 @@ import { t } from "../../../styles";
 
 type Props = {
   value: string;
-  width: number;
-  height: number;
+  width?: number;
+  height?: number;
   language?: string;
   style?: object;
   initialWidth?: number;
