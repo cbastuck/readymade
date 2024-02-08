@@ -29,11 +29,11 @@ export default function How() {
         <div>
           A similar pattern had already emerged during my university experience,
           particularly in the domain of visualization. We channeled raw
-          volumetric data from CT scans through processing units, once more
-          organized in pipelines. These units executed transformations,
-          projections, selections, mappings, and eventually visualized the input
-          data as semi-transparent, textured rectangles, ordered and blended
-          seamlessly over each other.
+          volumetric data from computed tomography scans through processing
+          units, once more organized in pipelines. These units executed
+          transformations, projections, selections, mappings, and eventually
+          visualized the input data as semi-transparent, textured rectangles,
+          ordered and blended seamlessly over each other.
         </div>
         <div>
           Years later, I found myself working for the company that developed the
@@ -84,9 +84,10 @@ export default function How() {
           software, we echo the same sentiment about space while facing
           accelerating demands and growth. Why does this matter here? I believe
           it resonates with the idea that there is a vast realm to explore, both
-          conceptually and practically—in general.
+          conceptually and practically — in general.
         </div>
         <Date month="June" day="24" year="2022" />
+        <Date isUpdate month="February" day="8" year="2024" size={10} />
         <HStack>
           <NavigateButton to="/docs/pitch/why" label="< why?" />
           <NavigateButton to="/docs" label="docs" />

@@ -58,6 +58,7 @@ export default function What() {
           new possibilities and hidden abilities that individuals might possess.
         </div>
         <Date month="June" day="24" year="2022" />
+        <Date isUpdate month="February" day="8" year="2024" size={10} />
         <HStack>
           <NavigateButton to="/welcome/mission" label="overview" />
           <NavigateButton to="/docs/pitch/why" label="why? >" />
