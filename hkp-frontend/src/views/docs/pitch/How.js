@@ -41,7 +41,7 @@ export default function How() {
           Despite my initial belief that any instrument they released would be
           low-level code compositions of Reaktor modules, this conviction
           shifted shortly after I started. Nevertheless, the familiar pipeline
-          pattern resurfaced multiple times, reinforcing the <i>how</i> embodied
+          pattern resurfaced multiple times, reinforcing the <i>How</i> embodied
           in this project.
         </div>
         <div>

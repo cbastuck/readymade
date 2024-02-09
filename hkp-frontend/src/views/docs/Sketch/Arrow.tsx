@@ -10,7 +10,6 @@ export default function Arrow({ yOffset }: Props) {
       style={{ margin: 5, marginTop: yOffset }}
       name="chevron right"
       size="large"
-      color="grey"
     />
   );
 }

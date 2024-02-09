@@ -12,7 +12,7 @@ export default function Claim(claim: Props) {
         fontSize: 14,
         textAlign: "left",
         margin: "5px 30px",
-        color: claim.c ? "black" : "#454f6d",
+        color: claim.c ? undefined : "#454f6d",
         letterSpacing: 1,
         lineHeight: 1.5,
       }}

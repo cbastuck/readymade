@@ -1,8 +1,6 @@
 import { CSSProperties } from "react";
 import { Button, SemanticSIZES } from "semantic-ui-react";
 
-import "./Button.css";
-
 type Props = {
   children?: JSX.Element | string | undefined;
   style?: CSSProperties;

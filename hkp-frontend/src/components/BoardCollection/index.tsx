@@ -25,6 +25,8 @@ export default function BoardCollection({
 }: Props) {
   const [filter, setFilter] = useState("");
 
+  const headlinePlacement = { textAlign: "center" };
+
   return (
     items.length > 0 && (
       <div
@@ -34,7 +36,7 @@ export default function BoardCollection({
           width: "100%",
           display: "flex",
           flexDirection: "column",
-          paddingBottom: "40px",
+          paddingBottom: "20px",
           marginBottom: "20px",
         }}
       >
@@ -47,7 +49,9 @@ export default function BoardCollection({
           }}
         >
           {headline ? (
-            <h1 style={s(t.mt15, t.tc, t.fs16, t.w100)}>{headline}</h1>
+            <h1 style={s(t.mt15, t.fs16, t.w100, { ...headlinePlacement })}>
+              {headline}
+            </h1>
           ) : (
             <div style={{ height: "20px" }} />
           )}

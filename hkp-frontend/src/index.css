@@ -37,11 +37,21 @@ h3 {
   font-family: SpecialElite;
 }
 
-body {
-  font-family: SpecialElite;
-  color: #888;
+.hkp-button:hover {
+  background-color: #fafafa !important;
+  border-color: #888 !important;
+}
+
+.hkp-button {
+  font-family: SpecialElite !important;
+  color: #888 !important;
 }
 
 .ui.dropdown > .text {
   margin-top: 2px;
+}
+
+body {
+  font-family: SpecialElite;
+  color: #888;
 }

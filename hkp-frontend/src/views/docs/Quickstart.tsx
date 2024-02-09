@@ -16,6 +16,7 @@ export default function Quickstart() {
     textAlign: "left",
     letterSpacing: 2,
   };
+
   return (
     <Template title="Quickstarter" isRoot={false}>
       <h2 style={{ ...sectionStyle, margin: "30px 0px" }}>Etiquette</h2>
@@ -83,14 +84,16 @@ export default function Quickstart() {
         })}
       >
         <div style={{ marginBottom: 10 }}>
-          There are three "things" you need to know. These are the basic
-          building blocks that enable experimentation:
-          <span style={s(t.bold, t.m(5, 0))}>Board, Runtime and Service</span>
+          To get started with Hookup, know three things:
+          <span style={s(t.bold, t.m(5, 0))}>
+            Board, Runtime, and Service.{" "}
+          </span>
         </div>
         <div>
-          Think of a Board as a sheet of paper. Then, a Runtime is a single line
-          on that paper and the Services are the words on a line. Together they
-          tell a story or they create behavior.
+          Think of a <span style={t.bold}>Board</span> like a blank page, a{" "}
+          <span style={t.bold}>Runtime</span> as a line on that page, and{" "}
+          <span style={t.bold}>Services</span> as the words in that line. They
+          work together to tell a story or create behavior.
         </div>
         <div style={{ padding: "8px 0px" }}>
           <Sketch />
