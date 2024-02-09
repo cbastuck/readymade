@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Icon, Input, Button } from "semantic-ui-react";
+import { Icon, Input } from "semantic-ui-react";
 
 import { s, t } from "../styles";
 
@@ -19,7 +19,8 @@ export default function RenameRuntimeAccessory({
   return runtimeNameEditBuffer ? (
     <div style={{ display: "flex", flexDirection: "row", marginTop: -5 }}>
       <Input
-        style={{ ...topMargin, height: 16 }}
+        className="hkp-fnt-family hkp-input-ghost"
+        style={{ ...topMargin, height: 16, width: "100%" }}
         ref={(elem) => elem && elem.focus()}
         value={runtimeNameEditBuffer}
         onChange={(ev, { value: runtimeNameEditBuffer }) =>
@@ -34,26 +35,23 @@ export default function RenameRuntimeAccessory({
           }
         }}
       />
-      <Button
-        basic
-        style={{ ...topMargin, height: 18, width: 30, padding: 0 }}
-        onClick={() => setRuntimeNameEditBuffer("")}
-        icon="close"
-      />
-      <Button
-        basic
-        style={{ ...topMargin, height: 18, width: 30, padding: 0 }}
-        disabled={runtimeNameEditBuffer === name}
-        onClick={() => {
-          onChangeName(runtimeNameEditBuffer);
-          setRuntimeNameEditBuffer("");
+
+      <div
+        style={{
+          ...topMargin,
+          height: 18,
+          width: 30,
+          padding: 0,
+          cursor: "pointer",
         }}
-        icon="check"
-      />
+        onClick={() => setRuntimeNameEditBuffer("")}
+      >
+        <Icon style={s(t.m(5, 0))} name="close" color="grey" />
+      </div>
     </div>
   ) : (
     <div
-      style={{ cursor: "pointer", whiteSpace: "nowrap" }}
+      style={{ cursor: "pointer", whiteSpace: "nowrap", fontWeight: "bold" }}
       title={runtimeId}
       onClick={() => !runtimeNameEditBuffer && setRuntimeNameEditBuffer(name)}
     >

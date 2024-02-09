@@ -213,7 +213,7 @@ class Genetic {
 
     const statusText = {
       type: "text",
-      text: `generation ${this.generation} has ${populationShapes.length} unique genes`,
+      text: `generation ${this.generation} consists of ${populationShapes.length} items`,
       y: "94%",
       x: "60%",
       font: {

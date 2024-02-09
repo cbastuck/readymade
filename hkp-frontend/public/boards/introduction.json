@@ -26,10 +26,10 @@
           [
             {
               "type": "text",
-              "text": "If you know little about a problem",
+              "text": "In limited understanding,",
               "color": "#454f6d",
               "font": {
-                "size": "38%",
+                "size": "60%",
                 "family": "SpecialElite"
               },
               "checkpoint": "@unnamed-trigger",
@@ -37,10 +37,10 @@
             },
             {
               "type": "text",
-              "text": "Good solutions merge from many",
+              "text": "good solutions emerge from diverse perspectives.",
               "color": "#454f6d",
               "font": {
-                "size": "90%",
+                "size": "92%",
                 "family": "SpecialElite"
               },
               "x": "5%",
@@ -50,10 +50,10 @@
           [
             {
               "type": "text",
-              "text": "The more people contribute",
+              "text": "The more contributors, ",
               "color": "#454f6d",
               "font": {
-                "size": "90%",
+                "size": "75%",
                 "family": "SpecialElite"
               },
               "checkpoint": "@unnamed-trigger",
@@ -61,10 +61,10 @@
             },
             {
               "type": "text",
-              "text": "the lower the risk to miss some",
+              "text": "the fewer blind spots.",
               "color": "#454f6d",
               "font": {
-                "size": "85%",
+                "size": "70%",
                 "family": "SpecialElite"
               },
               "y": "70%",
@@ -74,7 +74,7 @@
           [
             {
               "type": "text",
-              "text": "Technology shapes our future",
+              "text": "Future is shaped through technology,",
               "color": "#454f6d",
               "font": {
                 "size": "80%",
@@ -85,7 +85,7 @@
             },
             {
               "type": "text",
-              "text": "We build technology",
+              "text": "we shape technology.",
               "color": "#454f6d",
               "font": {
                 "size": "89%",
@@ -97,17 +97,17 @@
           [
             {
               "type": "text",
-              "text": "Enable and Include",
+              "text": "Enable, include,",
               "color": "#454f6d",
               "font": {
-                "size": "80%",
+                "size": "75%",
                 "family": "SpecialElite"
               },
               "checkpoint": "@last-slide"
             },
             {
               "type": "text",
-              "text": "Spread the narrative",
+              "text": "spread the narrative.",
               "color": "#454f6d",
               "font": {
                 "size": "58%",

@@ -36,7 +36,7 @@ export default class Tooltip extends Component {
   };
 
   render() {
-    const { text, children, width = 90 } = this.props;
+    const { text, children, width = "100%" } = this.props;
     const { visible } = this.state;
     return (
       <div

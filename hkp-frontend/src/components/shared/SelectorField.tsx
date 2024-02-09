@@ -131,7 +131,7 @@ export default class SelectorField extends Component<Props, State> {
       labelStyle = {},
       onChange,
     } = this.props;
-    const fontSize = 11;
+    const fontSize = "12px";
     const useDefaultLabel = typeof label !== "object";
     return (
       <div

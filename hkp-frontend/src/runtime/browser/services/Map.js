@@ -101,6 +101,7 @@ export class MapUI extends Component {
             <Button
               style={{
                 marginTop: "3px",
+                width: "100%",
               }}
               onClick={() =>
                 this.setState({

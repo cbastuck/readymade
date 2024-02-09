@@ -37,6 +37,24 @@ h3 {
   font-family: SpecialElite;
 }
 
+input {
+  font-family: SpecialElite !important;
+  border-color: rgb(186, 186, 186) !important;
+  font-size: 14px !important;
+}
+
+.hkp-input-ghost input {
+  font-family: SpecialElite !important;
+  border: none !important;
+  margin-top: 3px !important;
+  color: #888 !important;
+  font-size: 12px !important;
+  padding-left: 0px !important;
+  width: fit-content !important;
+  letter-spacing: 1px !important;
+  font-weight: bold;
+}
+
 .hkp-button {
   font-family: SpecialElite !important;
   color: #888 !important;

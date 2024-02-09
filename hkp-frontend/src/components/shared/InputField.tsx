@@ -152,7 +152,7 @@ export default class InputField extends Component<Props, State> {
     } = this.props;
     const value = synced ? this.state.value : syncedValue;
     const inSync = synced ? value === syncedValue : true;
-    const fontSize = 11;
+    const fontSize = "12px";
     return (
       <div
         style={{

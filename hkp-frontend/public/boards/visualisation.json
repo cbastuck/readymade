@@ -88,7 +88,7 @@
           [
             {
               "type": "text",
-              "text": "In a way, nature appears",
+              "text": "Nature seems to function",
               "color": "#454f6d",
 
               "font": {
@@ -187,7 +187,7 @@
           [
             {
               "type": "text",
-              "text": "driving towards an optimum - somewhere.",
+              "text": "progressing towards an optimum - somewhere.",
               "color": "#454f6d",
 
               "font": {
@@ -241,12 +241,12 @@
             },
             {
               "type": "text",
-              "text": "Variance supports the process.",
+              "text": "Variance serves as a catalyst in the process.",
               "color": "#454f6d",
 
               "font": {
                 "weight": "lighter",
-                "size": "70%",
+                "size": "80%",
                 "family": "SpecialElite"
               },
               "y": "85%"
@@ -255,12 +255,12 @@
           [
             {
               "type": "text",
-              "text": "Exploration can take time",
+              "text": "The exploration phase may demand time,",
               "color": "#454f6d",
 
               "font": {
                 "weight": "lighter",
-                "size": "60%",
+                "size": "70%",
                 "family": "SpecialElite"
               },
               "y": "15%"
@@ -309,12 +309,12 @@
             },
             {
               "type": "text",
-              "text": "or got stuck in a local optimum",
+              "text": "or getting stuck in a local optimum?",
               "color": "#454f6d",
 
               "font": {
                 "weight": "lighter",
-                "size": "60%",
+                "size": "50%",
                 "family": "SpecialElite"
               },
               "y": "85%"
@@ -323,7 +323,7 @@
           [
             {
               "type": "text",
-              "text": "Variance issues?",
+              "text": "Perhaps, issues related to variance?",
               "color": "#454f6d",
 
               "font": {
@@ -376,12 +376,11 @@
             {
               "type": "text",
               "id": "message",
-              "text": "Variety explores spaces",
+              "text": "Embracing variety to explore spaces.",
               "color": "#454f6d",
-
               "font": {
                 "weight": "lighter",
-                "size": "65%",
+                "size": "85%",
                 "family": "SpecialElite"
               },
               "y": "20%",
@@ -390,12 +389,12 @@
             {
               "type": "text",
               "id": "message",
-              "text": "We are manifold solutions",
+              "text": "We embody manifold solutions.",
               "color": "#454f6d",
 
               "font": {
                 "weight": "lighter",
-                "size": "90%",
+                "size": "70%",
                 "family": "SpecialElite"
               },
               "y": "83%"

@@ -60,14 +60,8 @@ export default function Footer({ flex }: Props) {
               fontSize: 10,
             }}
           >
-            {isWide ? (
-              <span style={{ fontFamily: "Roboto" }}>
-                "© 2018-2024 cbastuck - "
-              </span>
-            ) : (
-              "©2018-2024"
-            )}
-
+            <span style={{ fontFamily: "Roboto" }}>©</span>
+            {isWide ? "2018-2024 cbastuck -" : "2018-2024"}
             <span
               style={{
                 color: "gray",
