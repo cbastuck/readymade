@@ -147,7 +147,7 @@ export default function Quickstart() {
 
       <Button
         onClick={() => navigate("/examples")}
-        style={{ marginBottom: "50px" }}
+        style={{ marginBottom: "50px", width: "100%" }}
       >
         Examples
       </Button>

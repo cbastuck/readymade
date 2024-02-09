@@ -68,7 +68,7 @@ export default class Template extends Component<Props> {
             minHeight: "100%",
           }}
         >
-          <Toolbar />
+          <Toolbar showBoardActions={false} />
           <Container
             style={{
               marginTop: 20,

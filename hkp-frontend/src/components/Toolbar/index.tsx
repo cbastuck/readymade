@@ -17,6 +17,7 @@ type Props = {
   showRuntimeMenu?: boolean;
   isCompact?: boolean;
   boardSyncActive?: boolean;
+  showBoardActions?: boolean;
   onUpdateAvailableRuntimes?: (runtimeClasses: Array<RuntimeClass>) => void;
 };
 
@@ -25,6 +26,7 @@ export default function Toolbar({
   boardSyncActive = false,
   showRuntimeMenu = false,
   isCompact = false,
+  showBoardActions = true,
   onUpdateAvailableRuntimes,
 }: Props) {
   return (
@@ -85,11 +87,12 @@ export default function Toolbar({
                   }
                 />
               )}
-              {boardContext?.appContext?.appViewMode === "wide" && (
-                <div style={{ marginLeft: "5px" }}>
-                  <BoardActionsBar boardContext={boardContext} />
-                </div>
-              )}
+              {showBoardActions &&
+                boardContext?.appContext?.appViewMode === "wide" && (
+                  <div style={{ marginLeft: "5px" }}>
+                    <BoardActionsBar boardContext={boardContext} />
+                  </div>
+                )}
 
               <Navigation
                 appContext={boardContext?.appContext || null}
