@@ -43,6 +43,7 @@ import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
 import BoardEntryPoint from "./BoardEntryPoint";
+import { AppContextState, AppCtx } from "../../AppContext";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -70,8 +71,8 @@ type State = {
 };
 
 class Playground extends Component<Props, State> {
-  static contextType = BoardCtx;
-  context!: BoardContextState;
+  static contextType = AppCtx;
+  context!: AppContextState;
 
   boardProviderRef: BoardProvider | null = null;
 
@@ -134,7 +135,7 @@ class Playground extends Component<Props, State> {
     try {
       await this.boardProviderRef?.fetchBoard();
     } catch (err: any) {
-      this.context.appContext?.pushNotification({
+      this.context.pushNotification({
         type: "error",
         message: err.message ? err.message : `Fetch failed`,
         timeout: 5000,
@@ -355,13 +356,13 @@ class Playground extends Component<Props, State> {
         `${localStoragePrefix}${name}`,
         JSON.stringify({ ...data, name, description })
       );
-      this.context.appContext?.pushNotification({
+      this.context.pushNotification({
         type: "info",
         message: "Board was saved",
         tag: "save",
       });
     } else {
-      this.context.appContext?.pushNotification({
+      this.context.pushNotification({
         type: "error",
         message: "Saving board failed",
       });
@@ -435,7 +436,7 @@ class Playground extends Component<Props, State> {
       remote: remoteRuntimeApi,
     };
 
-    const user = (appContext && appContext.user) || this.user;
+    const user = (appContext && appContext?.user) || this.user;
     return (
       <BoardProvider
         ref={(ref) => (this.boardProviderRef = ref)}

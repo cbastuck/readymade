@@ -185,7 +185,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       await Promise.all(
         runtimes.map((rtClass) =>
           rtClass.type === "remote"
-            ? isUserAuthenticated(rtClass, this.state.user)
+            ? isUserAuthenticated(rtClass, this.props.user)
             : Promise.resolve(true)
         )
       )
