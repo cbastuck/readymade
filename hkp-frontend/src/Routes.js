@@ -24,7 +24,7 @@ import Login from "./views/Login";
 import Profile from "./views/profile";
 
 import LoginFail from "./views/LoginFail";
-import BoardWithContext from "./views/BoardWithContext";
+//import BoardWithContext from "./views/BoardWithContext";
 import Headless from "./views/headless";
 import Join from "./Join";
 import ServiceReferenceView from "./views/ServiceReferenceView";
@@ -125,7 +125,7 @@ export default function AppRoutes() {
       <Route path="/headless" element={<Headless />} />
       <Route path="/join/:share" element={<Join />} />
       {/* <Route path="/:board/app" element={<AppHub />} /> */}
-      <Route path="/:board" element={<BoardWithContext />} />
+      {/* <Route path="/:board" element={<BoardWithContext />} /> */}
     </Routes>
   );
 }

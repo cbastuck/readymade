@@ -1,6 +1,13 @@
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
-import ServiceUI from "../../services/ServiceUI";
+import BoardProvider, {
+  BoardConsumer,
+  BoardContextState,
+} from "../../../BoardContext";
+import Button from "../../../components/shared/Button";
+import SelectorField from "../../../components/shared/SelectorField";
+import browserRuntimeApi from "../../../runtime/browser/BrowserRuntimeApi";
+import remoteRuntimeApi from "../../../runtime/remote/RemoteRuntimeApi";
 import {
   AppImpl,
   PeerInputActivation,
@@ -11,20 +18,12 @@ import {
   ServiceImpl,
   SidechainRouting,
 } from "../../../types";
-import BoardProvider, {
-  BoardConsumer,
-  BoardContextState,
-} from "../../../BoardContext";
 import Board from "../../../views/playground/Board";
-import { AppCtx } from "../../../AppContext";
-import browserRuntimeApi from "../../../runtime/browser/BrowserRuntimeApi";
-import remoteRuntimeApi from "../../../runtime/remote/RemoteRuntimeApi";
 import {
-  getLocalBoards,
   getLocalBoard,
+  getLocalBoards,
 } from "../../../views/playground/common";
-import SelectorField from "../../../components/shared/SelectorField";
-import Button from "../../../components/shared/Button";
+import ServiceUI from "../../services/ServiceUI";
 
 const serviceId = "hookup.to/service/board-service";
 const serviceName = "Board-Service";
@@ -116,8 +115,6 @@ function BoardServiceUI(props: Props) {
 
   const selectedBoard = selectedSavedBoard || savedBoards[0]?.name || "";
 
-  const appContext = useContext(AppCtx);
-
   const fetchBoard = useCallback(() => {
     if (!selectedBoard) {
       return null;
@@ -160,116 +157,116 @@ function BoardServiceUI(props: Props) {
     remote: remoteRuntimeApi,
   };
 
-  const renderMain = appContext
-    ? (service: ServiceImpl) => {
-        const user = service.app.getAuthenticatedUser();
-        const onResult = async (result: any) => {
-          if (pendingPromise.current) {
-            pendingPromise.current.resolve(result);
-            pendingPromise.current = null;
-          }
-        };
+  const renderMain = (service: ServiceImpl) => {
+    const user = service.app.getAuthenticatedUser();
 
-        return (
-          <BoardProvider
-            ref={boardProviderRef}
-            fetchBoard={fetchBoard}
-            runtimeApis={runtimeApis}
-            user={user}
-          >
-            <BoardConsumer>
-              {(boardContext) =>
-                boardContext && (
-                  <div
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      width: "100%",
-                      height: "100%",
-                      marginBottom: "5px",
-                      minWidth: "250px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        flexDirection: "row",
-                        padding: "2px 0px",
-                      }}
-                    >
-                      <SelectorField
-                        label="Board"
-                        value={selectedBoard}
-                        options={savedBoards.reduce(
-                          (all, board) => ({
-                            ...all,
-                            [board.name]: board.name,
-                          }),
-                          {}
-                        )}
-                        onChange={(ev, { value: board }) => {
-                          service.configure({ selectedBoard: board });
-                          onChangeSavedBoard(boardContext, board);
-                        }}
-                      />
-                      <Button
-                        icon={"external alternate"}
-                        size="tiny"
-                        style={{ width: "50px", height: "33px" }}
-                        onClick={onEdit}
-                      />
-                    </div>
-
-                    <SelectorField
-                      label="Input"
-                      value="array"
-                      options={{
-                        array: "process array items",
-                        whole: "process whole array ",
-                      }}
-                      onChange={(ev, { value: board }) => {}}
-                    />
-
-                    <Button
-                      style={{
-                        height: "15px",
-                        marginTop: 5,
-                        padding: 0,
-
-                        borderRadius: 1,
-                      }}
-                      onClick={onToggleExpandCollapse}
-                      icon={isExpanded ? "angle up" : "angle down"}
-                    />
-
-                    <div
-                      style={{
-                        height: "100%",
-                        width: "100%",
-                      }}
-                    >
-                      <Board
-                        appContext={appContext}
-                        inputRouting={inputRouting}
-                        outputRouting={outputRouting}
-                        boardContext={boardContext}
-                        sidechainRouting={sidechainRouting}
-                        boardName={selectedBoard}
-                        onChangeOutputRouting={() => {}}
-                        onChangeInputRouting={() => {}}
-                        onChangeSidechainRouting={() => {}}
-                        onResult={onResult}
-                        headless={!isExpanded}
-                      />
-                    </div>
-                  </div>
-                )
-              }
-            </BoardConsumer>
-          </BoardProvider>
-        );
+    const onResult = async (result: any) => {
+      if (pendingPromise.current) {
+        pendingPromise.current.resolve(result);
+        pendingPromise.current = null;
       }
-    : () => null;
+    };
+
+    return (
+      <BoardProvider
+        ref={boardProviderRef}
+        fetchBoard={fetchBoard}
+        runtimeApis={runtimeApis}
+        user={user}
+        boardName="board-service-board"
+        availableRuntimes={[]}
+      >
+        <BoardConsumer>
+          {(boardContext) =>
+            boardContext && (
+              <div
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  width: "100%",
+                  height: "100%",
+                  marginBottom: "5px",
+                  minWidth: "250px",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "row",
+                    padding: "2px 0px",
+                  }}
+                >
+                  <SelectorField
+                    label="Board"
+                    value={selectedBoard}
+                    options={savedBoards.reduce(
+                      (all, board) => ({
+                        ...all,
+                        [board.name]: board.name,
+                      }),
+                      {}
+                    )}
+                    onChange={(ev, { value: board }) => {
+                      service.configure({ selectedBoard: board });
+                      onChangeSavedBoard(boardContext, board);
+                    }}
+                  />
+                  <Button
+                    icon={"external alternate"}
+                    size="tiny"
+                    style={{ width: "50px", height: "33px" }}
+                    onClick={onEdit}
+                  />
+                </div>
+
+                <SelectorField
+                  label="Input"
+                  value="array"
+                  options={{
+                    array: "process array items",
+                    whole: "process whole array ",
+                  }}
+                  onChange={(ev, { value: board }) => {}}
+                />
+
+                <Button
+                  style={{
+                    height: "15px",
+                    marginTop: 5,
+                    padding: 0,
+
+                    borderRadius: 1,
+                  }}
+                  onClick={onToggleExpandCollapse}
+                  icon={isExpanded ? "angle up" : "angle down"}
+                />
+
+                <div
+                  style={{
+                    height: "100%",
+                    width: "100%",
+                  }}
+                >
+                  <Board
+                    inputRouting={inputRouting}
+                    outputRouting={outputRouting}
+                    boardContext={boardContext}
+                    sidechainRouting={sidechainRouting}
+                    boardName={selectedBoard}
+                    onChangeOutputRouting={() => {}}
+                    onChangeInputRouting={() => {}}
+                    onChangeSidechainRouting={() => {}}
+                    onResult={onResult}
+                    headless={!isExpanded}
+                  />
+                </div>
+              </div>
+            )
+          }
+        </BoardConsumer>
+      </BoardProvider>
+    );
+  };
 
   return (
     <ServiceUI

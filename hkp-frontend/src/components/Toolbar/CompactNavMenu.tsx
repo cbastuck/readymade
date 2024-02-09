@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useContext, CSSProperties } from "react";
 import { AppCtx } from "../../AppContext";
+import { redirectTo } from "../../core/actions";
 
 export default function CompactNav() {
   const navItemStyle: CSSProperties = {
@@ -33,6 +34,8 @@ export default function CompactNav() {
             </Link>
           </Dropdown.Item>
 
+          <Dropdown.Divider />
+
           <Dropdown.Item
             onClick={async () =>
               await loginWithRedirect({
@@ -57,6 +60,21 @@ export default function CompactNav() {
             disabled={!currentUser}
           >
             <span style={navItemStyle}>Logout</span>
+          </Dropdown.Item>
+
+          <Dropdown.Divider />
+
+          <Dropdown.Item
+            onClick={() => redirectTo("/dashboard")}
+            disabled={!currentUser}
+          >
+            <span style={navItemStyle}>Dashboard</span>
+          </Dropdown.Item>
+          <Dropdown.Item
+            onClick={() => redirectTo("/profile")}
+            disabled={!currentUser}
+          >
+            <span style={navItemStyle}>Profile</span>
           </Dropdown.Item>
         </Dropdown.Menu>
       </Dropdown>

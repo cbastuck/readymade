@@ -2,8 +2,7 @@ import { Component, CSSProperties } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Container, Breadcrumb, Button } from "semantic-ui-react";
 
-import { AppConsumer } from "../AppContext";
-import BoardProvider, { BoardConsumer } from "../BoardContext";
+import BoardProvider from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
@@ -56,57 +55,50 @@ export default class Template extends Component<Props> {
     const { children, title, isRoot, parent } = this.props;
     const renderBreadcrumbs = !!title && (!isRoot || !!parent);
     return (
-      <AppConsumer>
-        {(appContext) => (
-          <BoardProvider isActionAvailable={() => false}>
-            <BoardConsumer>
-              {(boardContext) => (
-                <div
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                    minHeight: "100%",
-                  }}
-                >
-                  <Toolbar />
-                  <Container
-                    style={{
-                      marginTop: 20,
-                      marginBottom: 50,
-                      width: "70%",
-                      height: "100%",
-                    }}
-                  >
-                    <h1
-                      style={{
-                        width: "100%",
-                        fontSize: 24,
-                        textAlign: "center",
-                        letterSpacing: 6,
-                        padding: "5px 0px",
-                      }}
-                    >
-                      {title}
-                    </h1>
-                    {renderBreadcrumbs && this.renderBreadcrumbs(title, parent)}
-                    <div
-                      style={{
-                        fontSize: 14,
-                        letterSpacing: "1px",
-                        lineHeight: 1.6,
-                        paddingBottom: "30px",
-                      }}
-                    >
-                      {children}
-                    </div>
-                  </Container>
-                </div>
-              )}
-            </BoardConsumer>
-            <Footer />
-          </BoardProvider>
-        )}
-      </AppConsumer>
+      <BoardProvider isActionAvailable={() => false}>
+        <div
+          style={{
+            width: "100%",
+            height: "100%",
+            minHeight: "100%",
+          }}
+        >
+          <Toolbar />
+          <Container
+            style={{
+              marginTop: 20,
+              marginBottom: 50,
+              width: "70%",
+              height: "100%",
+            }}
+          >
+            <h1
+              style={{
+                width: "100%",
+                fontSize: 24,
+                textAlign: "center",
+                letterSpacing: 6,
+                padding: "5px 0px",
+              }}
+            >
+              {title}
+            </h1>
+            {renderBreadcrumbs && this.renderBreadcrumbs(title, parent)}
+            <div
+              style={{
+                fontSize: 14,
+                letterSpacing: "1px",
+                lineHeight: 1.6,
+                paddingBottom: "30px",
+                width: "100%",
+              }}
+            >
+              {children}
+            </div>
+          </Container>
+        </div>
+        <Footer />
+      </BoardProvider>
     );
   }
 }
@@ -126,6 +118,8 @@ export function NavigateButton({ to, label }: NavButtonProps) {
           border: "1px solid darkgray",
           color: "white",
           backgroundColor: "#454f6d",
+          width: "100%",
+          whiteSpace: "nowrap",
         }}
         onClick={() => navigate(to)}
       >

@@ -1,10 +1,11 @@
 import { Component } from "react";
 
 import { withRouter, WithRouterProps } from "../../common";
-import { AppContextState, AppCtx } from "../../AppContext";
+
 import BoardProvider, {
   BoardConsumer,
   BoardContextState,
+  BoardCtx,
 } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
@@ -69,8 +70,8 @@ type State = {
 };
 
 class Playground extends Component<Props, State> {
-  static contextType = AppCtx;
-  context!: AppContextState;
+  static contextType = BoardCtx;
+  context!: BoardContextState;
 
   boardProviderRef: BoardProvider | null = null;
 
@@ -133,7 +134,7 @@ class Playground extends Component<Props, State> {
     try {
       await this.boardProviderRef?.fetchBoard();
     } catch (err: any) {
-      this.context.pushNotification({
+      this.context.appContext?.pushNotification({
         type: "error",
         message: err.message ? err.message : `Fetch failed`,
         timeout: 5000,
@@ -354,13 +355,13 @@ class Playground extends Component<Props, State> {
         `${localStoragePrefix}${name}`,
         JSON.stringify({ ...data, name, description })
       );
-      this.context.pushNotification({
+      this.context.appContext?.pushNotification({
         type: "info",
         message: "Board was saved",
         tag: "save",
       });
     } else {
-      this.context.pushNotification({
+      this.context.appContext?.pushNotification({
         type: "error",
         message: "Saving board failed",
       });
@@ -497,7 +498,7 @@ class Playground extends Component<Props, State> {
                       )
                     )
                   }
-                  isCompact={boardContext.appViewMode !== "wide"}
+                  isCompact={boardContext.appContext?.appViewMode !== "wide"}
                   boardSyncActive={this.state.boardSyncActive}
                 />
 
@@ -510,7 +511,6 @@ class Playground extends Component<Props, State> {
                     !this.state.initialFetched || !!boardContext.awaitUserLogin
                   }
                   showLoginRequired={!!boardContext.awaitUserLogin}
-                  appContext={appContext}
                   boardContext={boardContext}
                   boardName={this.state.boardName}
                   description={this.state.description}

@@ -13,11 +13,11 @@ export function validateToken(token) {
     throw new Error("validateToken() token expired", { cause: "TokenExpired" });
   }
 
-  return { token, decoded };
+  return { token, decoded, exp };
 }
 
 export function processToken(incomingToken) {
-  const { token, decoded } = validateToken(incomingToken);
+  const { token, decoded, exp } = validateToken(incomingToken);
 
   const { nickname, sub, features, picture, ...rest } = decoded;
 
@@ -27,6 +27,7 @@ export function processToken(incomingToken) {
     userId: sub,
     features: JSON.parse(decoded.features || "{}"),
     picture,
+    exp,
     ...rest,
   };
 }

@@ -1,10 +1,7 @@
 import { Component, createContext } from "react";
 
-import ResizeObserver from "./ResizeObserver";
-
 import {
   Action,
-  AppViewMode,
   BoardDescriptor,
   RuntimeClass,
   RuntimeDescriptor,
@@ -20,6 +17,7 @@ import {
 } from "./types";
 import { reorderService } from "./views/playground/BoardActions";
 import { isUserAuthenticated } from "./runtime/remote/RemoteRuntimeApi";
+import { AppContextState, AppCtx } from "./AppContext";
 
 type BoardContextAPI = {
   addAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
@@ -51,8 +49,6 @@ export type BoardContextState = BoardContextAPI & {
   user: User | null;
 
   boardName: string;
-  appViewMode: AppViewMode;
-  viewportWidth: number | undefined;
 
   runtimes: Array<RuntimeDescriptor>;
   services: { [runtimeId: string]: Array<ServiceDescriptor> };
@@ -61,6 +57,8 @@ export type BoardContextState = BoardContextAPI & {
 
   availableRuntimes: Array<RuntimeClass>;
   runtimeApis: RuntimeApiMap;
+
+  appContext?: AppContextState;
   awaitUserLogin: (() => void) | null;
 };
 
@@ -73,25 +71,28 @@ type Props = {
   fetchAfterMount?: boolean;
 
   fetchBoard?: () => Promise<BoardDescriptor>;
-  isRuntimeInScope: () => boolean;
-  removeRuntime: (runtime: RuntimeDescriptor) => void;
-  newBoard: (searchParams?: string) => void; // TODO: why search params ??
-  clearBoard: (board: BoardDescriptor) => Promise<void>;
+  isRuntimeInScope?: () => boolean;
+  removeRuntime?: (runtime: RuntimeDescriptor) => Promise<void>;
+  newBoard?: (searchParams?: string) => void; // TODO: why search params ??
+  clearBoard?: (board: BoardDescriptor) => Promise<void>;
   saveBoard?: () => void;
   shareBoard?: () => void;
 
   onRemoveService?: (service: InstanceId, runtime: RuntimeDescriptor) => void;
 
-  isActionAvailable: (action: Action) => boolean;
+  isActionAvailable?: (action: Action) => boolean;
 
-  onAction: (action: any) => boolean;
-  serializeBoard: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
+  onAction?: (action: any) => boolean;
+  serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
 };
 
 const BoardCtx = createContext<BoardContextState | null>(null);
 const { Provider, Consumer: BoardConsumer } = BoardCtx;
 
 class BoardContext extends Component<Props, BoardContextState> {
+  static contextType = AppCtx;
+  context!: AppContextState;
+
   static registerBrowserRuntime(boardName: string, runtimeId: string) {
     // remember id of created runtime, it belongs to 'this' browser
     const existing = JSON.parse(
@@ -136,10 +137,6 @@ class BoardContext extends Component<Props, BoardContextState> {
       removeAvailableRuntime: this.removeAvailableRuntime,
       serializeBoard: this.serializeBoard,
 
-      // UI/App data
-      viewportWidth: undefined,
-      appViewMode: "wide",
-
       // Board data
       user: props.user,
       boardName: props.boardName,
@@ -148,6 +145,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       registry: {},
       scopes: {},
       runtimeApis: props.runtimeApis,
+      appContext: this.context,
 
       awaitUserLogin: null,
     };
@@ -159,13 +157,16 @@ class BoardContext extends Component<Props, BoardContextState> {
     }
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(prevProps: Props, prevState: BoardContextState) {
     const { user, boardName } = this.props;
     if (prevProps.user !== user) {
       this.setState({ user });
     }
     if (prevProps.boardName !== boardName) {
       this.setState({ boardName });
+    }
+    if (this.context !== prevState.appContext) {
+      this.setState({ appContext: this.context });
     }
   }
 
@@ -270,6 +271,9 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   clearBoard = async () => {
     const { clearBoard } = this.props;
+    if (!clearBoard) {
+      throw new Error("BoardContext misses prop: clearBoard");
+    }
     const { runtimes, services, registry, boardName } = this.state;
     this.setState(() => ({
       runtimes: [],
@@ -405,6 +409,9 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   removeRuntime = async (runtime: RuntimeDescriptor) => {
     const { removeRuntime } = this.props;
+    if (!removeRuntime) {
+      throw new Error("BoardContext misses prop: removeRuntime");
+    }
     await removeRuntime(runtime);
 
     this.setState((state) => {
@@ -531,7 +538,7 @@ class BoardContext extends Component<Props, BoardContextState> {
       registry: this.state.registry,
     };
 
-    return this.props.serializeBoard(data);
+    return this.props.serializeBoard ? this.props.serializeBoard(data) : data;
   };
 
   arrangeServices = (
@@ -559,12 +566,7 @@ class BoardContext extends Component<Props, BoardContextState> {
     if (this.state.awaitUserLogin && user) {
       this.state.awaitUserLogin();
     }
-    return (
-      <Provider value={this.state}>
-        {children}
-        <ResizeObserver onChange={(data) => this.setState({ ...data })} />
-      </Provider>
-    );
+    return <Provider value={this.state}>{children}</Provider>;
   }
 }
 

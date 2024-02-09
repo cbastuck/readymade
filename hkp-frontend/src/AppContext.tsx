@@ -1,13 +1,15 @@
 import { Component, createContext } from "react";
 import { IdToken } from "@auth0/auth0-react";
 
+import ResizeObserver from "./ResizeObserver";
 import { processToken } from "./core/Auth";
-import { User, Notification } from "./types";
+import { User, Notification, AppViewMode } from "./types";
 import RestoredUser from "./RestoredUser";
 
 export type AppContextState = {
   user: User | null;
   notifications: Array<Notification>;
+  appViewMode: AppViewMode;
   pushNotification: (n: Notification) => void;
   popNotification: () => void;
   updateToken: (incomingToken: IdToken) => Promise<void>;
@@ -28,6 +30,7 @@ class AppContext extends Component<Props, AppContextState> {
     this.state = {
       // state members
       user: null,
+      appViewMode: "wide",
       notifications: [],
       pushNotification: (notification) => {
         const { tag, timeout = 1500 } = notification;
@@ -110,6 +113,9 @@ class AppContext extends Component<Props, AppContextState> {
           ...this.state,
         }}
       >
+        <ResizeObserver
+          onChange={({ appViewMode }) => this.setState({ appViewMode })}
+        />
         <RestoredUser onToken={this.onToken} />
         {children}
       </Provider>

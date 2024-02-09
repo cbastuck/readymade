@@ -12,6 +12,7 @@ export default function How() {
           flexDirection: "column",
           gap: 10,
           marginTop: 20,
+          width: "100%",
         }}
       >
         <div>
@@ -88,7 +89,7 @@ export default function How() {
         </div>
         <Date month="June" day="24" year="2022" />
         <Date isUpdate month="February" day="8" year="2024" size={10} />
-        <HStack>
+        <HStack gap="20px">
           <NavigateButton to="/docs/pitch/why" label="< why?" />
           <NavigateButton to="/docs" label="docs" />
           <NavigateButton to="/examples" label="examples >" />

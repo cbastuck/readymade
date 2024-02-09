@@ -1,6 +1,5 @@
 import { Component } from "react";
 
-import { AppConsumer } from "../AppContext";
 import BoardProvider, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
@@ -18,38 +17,34 @@ class ServiceReferenceView extends Component {
   render() {
     const service = this.getService();
     return (
-      <AppConsumer>
-        {(appContext) => (
-          <BoardProvider>
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                minHeight: "100%",
-              }}
-            >
-              <BoardConsumer>
-                {(boardContext) => (
-                  <div style={{ height: "100%" }}>
-                    <Toolbar />
-                    <div
-                      style={{
-                        height: "100%",
-                        width: "80%",
-                        margin: "auto",
-                        marginTop: 30,
-                      }}
-                    >
-                      <ServiceReference service={service} />
-                    </div>
-                  </div>
-                )}
-              </BoardConsumer>
-              <Footer flex />
-            </div>
-          </BoardProvider>
-        )}
-      </AppConsumer>
+      <BoardProvider>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "100%",
+          }}
+        >
+          <BoardConsumer>
+            {(boardContext) => (
+              <div style={{ height: "100%" }}>
+                <Toolbar />
+                <div
+                  style={{
+                    height: "100%",
+                    width: "80%",
+                    margin: "auto",
+                    marginTop: 30,
+                  }}
+                >
+                  <ServiceReference service={service} />
+                </div>
+              </div>
+            )}
+          </BoardConsumer>
+          <Footer flex />
+        </div>
+      </BoardProvider>
     );
   }
 }

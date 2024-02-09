@@ -47,6 +47,7 @@ export default function Dashboard() {
 
   const appContext = useContext(AppCtx);
   const user = appContext?.user;
+  const appViewMode = appContext?.appViewMode;
 
   const onAction = useCallback(
     (action: Action, board: SavedBoard | UsecaseDescriptor) => {
@@ -79,6 +80,7 @@ export default function Dashboard() {
       <Toolbar />
 
       <BoardCollection
+        appViewMode={appViewMode}
         headline="Local boards"
         items={localBoards || []}
         actions={[
@@ -90,6 +92,7 @@ export default function Dashboard() {
         onAction={onAction}
       />
       <BoardCollection
+        appViewMode={appViewMode}
         headline="Cloud boards"
         items={cloudBoards || []}
         actions={[

@@ -3,7 +3,7 @@ import { ReactElement, useState } from "react";
 import Collection from "./Collection";
 import Search from "./Search";
 import { s, t } from "../../styles";
-import { SavedBoard, UsecaseDescriptor } from "../../types";
+import { AppViewMode, SavedBoard, UsecaseDescriptor } from "../../types";
 import { Action } from "./Card";
 
 type Props = {
@@ -11,6 +11,7 @@ type Props = {
   headline?: string;
   renderBorder?: boolean;
   renderSearch?: boolean;
+  appViewMode?: AppViewMode;
   actions?: Array<{ name: string; icon: ReactElement }>;
   onAction?: (action: Action, item: UsecaseDescriptor | SavedBoard) => void;
 };
@@ -20,12 +21,16 @@ export default function BoardCollection({
   actions,
   onAction,
   headline = "",
+  appViewMode = "wide",
   renderBorder = true,
   renderSearch = true,
 }: Props) {
   const [filter, setFilter] = useState("");
 
-  const headlinePlacement = { textAlign: "center" };
+  const headlinePlacement =
+    appViewMode === "wide"
+      ? { textAlign: "center" }
+      : { textAlign: "left", paddingLeft: "10px" };
 
   return (
     items.length > 0 && (

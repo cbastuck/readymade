@@ -27,13 +27,11 @@ import {
   SidechainRouting,
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
-import { AppContextState } from "../../AppContext";
 
 const defaultDiscoveryPeer: PeerJsHostDescriptor =
   availableDiscoveryPeerHosts[0];
 
 type Props = {
-  appContext: AppContextState;
   inputRouting: { [runtimeId: string]: PeerInputActivation };
   outputRouting: { [runtimeId: string]: PeerOutputActivation };
   boardContext: BoardContextState;
@@ -591,7 +589,7 @@ export default class Board extends Component<Props, State> {
                               }
                             : null;
                         }
-                        this.props.appContext.pushNotification({
+                        this.props.boardContext.appContext?.pushNotification({
                           type: "info",
                           message: `Connection in runtime "${runtime.name}" to peer "${closedPeer}" was closed`,
                           ctas: [

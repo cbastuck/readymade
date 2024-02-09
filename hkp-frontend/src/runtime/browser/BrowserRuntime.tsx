@@ -113,7 +113,7 @@ export default class BrowserRuntime extends Component<Props, State> {
     const protocol = secureConnection ? "wss" : "ws";
     this.websocket = new WebSocket(
       `${protocol}://${backendHost}${backendPath}`,
-      this.context.user.idToken
+      this.context.user?.idToken
     );
     this.websocket.binaryType = "arraybuffer";
     this.websocket.onmessage = (event) => {

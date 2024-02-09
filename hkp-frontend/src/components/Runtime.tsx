@@ -217,7 +217,7 @@ export default class Runtime extends Component<Props, State> {
     name: string,
     registry: ServiceRegistry,
     isOwner: boolean,
-    appViewMode: AppViewMode
+    appViewMode: AppViewMode = "wide"
   ) {
     const { expanded, showSettings } = this.state;
 
@@ -483,6 +483,9 @@ export default class Runtime extends Component<Props, State> {
     wrapServices?: boolean
   ) => {
     const { outputs, inputs, onResult } = this.props;
+    if (scope) {
+      scope.authenticatedUser = user;
+    }
     return (
       <div
         style={{
@@ -576,11 +579,11 @@ export default class Runtime extends Component<Props, State> {
     const runtimeName = runtime ? runtime.name : "Blank";
     const services =
       runtime && boardContext && boardContext.services[runtime.id];
-    const user = boardContext && boardContext.user && boardContext.user;
+    const user = (boardContext && boardContext.appContext?.user) || null;
     const boardName = boardContext && boardContext.boardName;
     const registry =
       runtime && boardContext && boardContext.registry[runtime.id];
-    const appViewMode = boardContext && boardContext.appViewMode;
+    const appViewMode = boardContext && boardContext.appContext?.appViewMode;
     const wide = boardContext ? appViewMode === "wide" : true;
     const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
 

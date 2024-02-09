@@ -1,18 +1,23 @@
-import { CSSProperties } from "react";
+import { CSSProperties, useContext } from "react";
 import { Link } from "react-router-dom";
 
 import build from "../buildNumber.json";
 
 import "./Footer.css";
+import { AppCtx } from "../AppContext";
 
 type Props = {
   flex?: boolean;
 };
+
 export default function Footer({ flex }: Props) {
   const fontStyle: CSSProperties = {
     letterSpacing: 2,
     fontSize: 12,
   };
+
+  const appContext = useContext(AppCtx);
+  const isWide = appContext?.appViewMode === "wide";
   return (
     <div
       style={{
@@ -55,8 +60,22 @@ export default function Footer({ flex }: Props) {
               fontSize: 10,
             }}
           >
-            <span style={{ fontFamily: "Roboto" }}>©</span>2018-2024 cbastuck -
-            <span style={{ color: "gray", padding: 5, textTransform: "none" }}>
+            {isWide ? (
+              <span style={{ fontFamily: "Roboto" }}>
+                "© 2018-2024 cbastuck - "
+              </span>
+            ) : (
+              "©2018-2024"
+            )}
+
+            <span
+              style={{
+                color: "gray",
+                padding: 5,
+                textTransform: "none",
+                fontSize: isWide ? undefined : "9px",
+              }}
+            >
               v{build.version}
             </span>
           </div>

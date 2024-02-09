@@ -14,13 +14,12 @@ import {
   SidechainRouting,
 } from "../../types";
 import Board from "./Board";
-import { AppContextState } from "../../AppContext";
+
 import LoadIndicator from "./LoadIndicator";
 
 type Props = {
   isLoading: boolean;
   showLoginRequired: boolean;
-  appContext: AppContextState;
   boardContext: BoardContextState;
   boardName: string;
   description: string;
@@ -44,7 +43,7 @@ type Props = {
 export default function BoardEntryPoint({
   isLoading,
   showLoginRequired,
-  appContext,
+
   boardContext,
   boardName,
   description,
@@ -130,7 +129,6 @@ export default function BoardEntryPoint({
               <EmptySketch boardName={boardName} />
             ) : (
               <Board
-                appContext={appContext}
                 boardContext={boardContext}
                 description={description}
                 boardName={boardName}
