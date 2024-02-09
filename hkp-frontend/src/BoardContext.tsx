@@ -89,7 +89,7 @@ type Props = {
 const BoardCtx = createContext<BoardContextState | null>(null);
 const { Provider, Consumer: BoardConsumer } = BoardCtx;
 
-class BoardContext extends Component<Props, BoardContextState> {
+class BoardProvider extends Component<Props, BoardContextState> {
   static contextType = AppCtx;
   context!: AppContextState;
 
@@ -443,7 +443,7 @@ class BoardContext extends Component<Props, BoardContextState> {
   acquireRuntimeScope = (boardname: string, runtime: RuntimeDescriptor) => {
     if (runtime.type === "browser") {
       if (!this.isRuntimeInScope(runtime)) {
-        BoardContext.registerBrowserRuntime(boardname, runtime.id);
+        BoardProvider.registerBrowserRuntime(boardname, runtime.id);
         this.fetchBoard();
       }
     }
@@ -451,7 +451,7 @@ class BoardContext extends Component<Props, BoardContextState> {
 
   releaseRuntimeScope = (boardname: string, runtime: RuntimeDescriptor) => {
     if (runtime.type === "browser") {
-      BoardContext.unregisterBrowserRuntime(boardname, runtime.id);
+      BoardProvider.unregisterBrowserRuntime(boardname, runtime.id);
 
       this.fetchBoard();
     }
@@ -571,7 +571,7 @@ class BoardContext extends Component<Props, BoardContextState> {
 }
 
 export { BoardConsumer, BoardCtx };
-export default BoardContext;
+export default BoardProvider;
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
   arr: Array<RestoreRuntimeResult | null>,

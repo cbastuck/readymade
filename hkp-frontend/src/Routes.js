@@ -11,7 +11,7 @@ import Updates from "./views/docs/Updates";
 import Contact from "./views/about/Contact";
 import Sandbox from "./Sandbox";
 import Playground from "./views/playground/index";
-import Examples from "./views/examples";
+import Examples from "./views/examples/Examples";
 import Example from "./views/examples/Example";
 import Quickstart from "./views/docs/Quickstart";
 import Docs from "./views/docs";

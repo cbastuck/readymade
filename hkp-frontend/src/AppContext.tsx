@@ -23,7 +23,7 @@ type Props = {
 const AppCtx = createContext<AppContextState | null>(null);
 const { Provider, Consumer: AppConsumer } = AppCtx;
 
-class AppContext extends Component<Props, AppContextState> {
+class AppProvider extends Component<Props, AppContextState> {
   constructor(props: Props) {
     super(props);
 
@@ -124,4 +124,4 @@ class AppContext extends Component<Props, AppContextState> {
 }
 
 export { AppConsumer, AppCtx };
-export default AppContext;
+export default AppProvider;

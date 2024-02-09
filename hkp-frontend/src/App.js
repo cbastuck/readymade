@@ -1,7 +1,7 @@
 import { Auth0Provider } from "@auth0/auth0-react";
 
 import Routes from "./Routes";
-import AppContext from "./AppContext";
+import AppProvider from "./AppContext";
 import MessageDispatcher from "./MessageDispatcher";
 import Notifications from "./Notifications";
 
@@ -20,7 +20,7 @@ export default function App() {
       useCookiesForTransactions={false}
       cacheLocation="localstorage"
     >
-      <AppContext>
+      <AppProvider>
         <div
           style={{
             height: "100%",
@@ -33,7 +33,7 @@ export default function App() {
         </div>
 
         <MessageDispatcher />
-      </AppContext>
+      </AppProvider>
     </Auth0Provider>
   );
 }

@@ -1,10 +1,8 @@
-import { AppContextState } from "../../AppContext";
+import { useContext } from "react";
+import { AppCtx } from "../../AppContext";
 import AccountDropdown from "./AccountDropdown";
 
-type Props = {
-  appContext: AppContextState;
-};
-
-export default function AccountMenu({ appContext }: Props) {
-  return <AccountDropdown currentUser={appContext.user} />;
+export default function AccountMenu() {
+  const appContext = useContext(AppCtx);
+  return <AccountDropdown currentUser={appContext?.user || null} />;
 }

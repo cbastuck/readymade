@@ -1,6 +1,6 @@
 import { Menu } from "semantic-ui-react";
 
-import { BoardConsumer } from "../../BoardContext";
+import { BoardCtx } from "../../BoardContext";
 
 import RuntimeMenu from "./RuntimeMenu";
 import HomeIcon from "./HomeIcon";
@@ -11,6 +11,7 @@ import AccountMenu from "./AccountMenu";
 import "./index.css";
 import { RuntimeClass } from "../../types";
 import BoardActionsBar from "./BoardActionsBar";
+import { useContext } from "react";
 
 type Props = {
   board?: string;
@@ -29,82 +30,74 @@ export default function Toolbar({
   showBoardActions = true,
   onUpdateAvailableRuntimes,
 }: Props) {
+  const boardContext = useContext(BoardCtx);
+  const renderWide = boardContext?.appContext?.appViewMode === "wide";
   return (
-    <BoardConsumer>
-      {(boardContext) => (
-        <div
+    <div
+      style={{
+        position: "sticky",
+        left: 0,
+        top: 0,
+        zIndex: 100,
+      }}
+    >
+      <div
+        style={{
+          marginTop: 0,
+          marginBottom: 5,
+          textAlign: "left",
+          borderBottom: "1px solid rgba(34,36,38,.15)",
+          borderTop: "1px solid #ddd",
+        }}
+      >
+        <Menu
           style={{
-            position: "sticky",
-            left: 0,
-            top: 0,
-            zIndex: 100,
+            boxShadow: "none",
+            border: "none",
           }}
         >
-          <div
-            style={{
-              marginTop: 0,
-              marginBottom: 5,
-              textAlign: "left",
-              borderBottom: "1px solid rgba(34,36,38,.15)",
-              borderTop: "1px solid #ddd",
-            }}
-          >
-            <Menu
-              style={{
-                boxShadow: "none",
-                border: "none",
+          <HomeIcon />
+          {board && (
+            <BoardMenu
+              boardSyncActive={boardSyncActive}
+              board={board}
+              boardContext={boardContext}
+            />
+          )}
+
+          {showRuntimeMenu && (
+            <RuntimeMenu
+              isWideViewMode={renderWide}
+              availableRuntimes={boardContext?.availableRuntimes || []}
+              onAddAvailableRuntime={(desc) => {
+                const runtimes = boardContext?.addAvailableRuntime(desc) || [];
+                onUpdateAvailableRuntimes &&
+                  onUpdateAvailableRuntimes(runtimes);
               }}
-            >
-              <HomeIcon />
-              {board && (
-                <BoardMenu
-                  boardSyncActive={boardSyncActive}
-                  board={board}
-                  boardContext={boardContext}
-                />
-              )}
+              onRemoveAvailableRuntime={(desc) => {
+                const runtimes =
+                  boardContext?.removeAvailableRuntime(desc) || [];
+                onUpdateAvailableRuntimes &&
+                  onUpdateAvailableRuntimes(runtimes);
+              }}
+              onAddRuntime={(rtClass: RuntimeClass) =>
+                boardContext?.addRuntime(rtClass)
+              }
+            />
+          )}
+          {showBoardActions && renderWide && (
+            <div style={{ marginLeft: "5px" }}>
+              <BoardActionsBar boardContext={boardContext} />
+            </div>
+          )}
 
-              {showRuntimeMenu && (
-                <RuntimeMenu
-                  isWideViewMode={
-                    boardContext?.appContext?.appViewMode === "wide"
-                  }
-                  availableRuntimes={boardContext?.availableRuntimes || []}
-                  onAddAvailableRuntime={(desc) => {
-                    const runtimes =
-                      boardContext?.addAvailableRuntime(desc) || [];
-                    onUpdateAvailableRuntimes &&
-                      onUpdateAvailableRuntimes(runtimes);
-                  }}
-                  onRemoveAvailableRuntime={(desc) => {
-                    const runtimes =
-                      boardContext?.removeAvailableRuntime(desc) || [];
-                    onUpdateAvailableRuntimes &&
-                      onUpdateAvailableRuntimes(runtimes);
-                  }}
-                  onAddRuntime={(rtClass: RuntimeClass) =>
-                    boardContext?.addRuntime(rtClass)
-                  }
-                />
-              )}
-              {showBoardActions &&
-                boardContext?.appContext?.appViewMode === "wide" && (
-                  <div style={{ marginLeft: "5px" }}>
-                    <BoardActionsBar boardContext={boardContext} />
-                  </div>
-                )}
-
-              <Navigation
-                appContext={boardContext?.appContext || null}
-                isCompact={isCompact}
-              />
-              {boardContext?.appContext && !isCompact && (
-                <AccountMenu appContext={boardContext.appContext} />
-              )}
-            </Menu>
-          </div>
-        </div>
-      )}
-    </BoardConsumer>
+          <Navigation
+            appContext={boardContext?.appContext || null}
+            isCompact={isCompact}
+          />
+          {!isCompact && <AccountMenu />}
+        </Menu>
+      </div>
+    </div>
   );
 }
