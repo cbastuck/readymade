@@ -10,7 +10,7 @@ export default function Prototypes() {
         margin: "50px 0px",
         width: "100%",
         height: "100%",
-        fontSize: 16,
+        fontSize: 14,
         letterSpacing: 1,
         marginLeft: 10,
         lineHeight: 2,
@@ -20,6 +20,7 @@ export default function Prototypes() {
       <div
         className="hkp-fnt-color"
         style={{
+          fontSize: 14,
           letterSpacing: 2,
           lineHeight: 1.4,
           display: "flex",
@@ -46,7 +47,14 @@ export default function Prototypes() {
         </div>
       </div>
 
-      <div style={{ lineHeight: 1.4, fontSize: 14 }}>
+      <div
+        style={{
+          width: "95%",
+          lineHeight: 1.4,
+          fontSize: 14,
+          letterSpacing: 2,
+        }}
+      >
         Kindly note that these private prototypes reflect a more personalized
         approach, tailored to my preferences, and may not suit every use case or
         preference.

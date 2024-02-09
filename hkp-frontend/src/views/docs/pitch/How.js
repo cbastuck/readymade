@@ -1,4 +1,5 @@
-import Template, { NavigateButton } from "../../Template";
+import Template from "../../Template";
+import TemplateButton from "../../TemplateButton";
 
 import { HStack } from "../../../styles";
 import Date from "../../../components/Date";
@@ -90,9 +91,9 @@ export default function How() {
         <Date month="June" day="24" year="2022" />
         <Date isUpdate month="February" day="8" year="2024" size={10} />
         <HStack gap="20px">
-          <NavigateButton to="/docs/pitch/why" label="< why?" />
-          <NavigateButton to="/docs" label="docs" />
-          <NavigateButton to="/examples" label="examples >" />
+          <TemplateButton to="/docs/pitch/why" label="< why?" />
+          <TemplateButton to="/docs" label="docs" />
+          <TemplateButton to="/examples" label="examples >" />
         </HStack>
       </div>
     </Template>

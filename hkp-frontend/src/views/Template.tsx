@@ -1,6 +1,6 @@
 import { Component, CSSProperties } from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { Container, Breadcrumb, Button } from "semantic-ui-react";
+import { Link } from "react-router-dom";
+import { Container, Breadcrumb } from "semantic-ui-react";
 
 import BoardProvider from "../BoardContext";
 import Toolbar from "../components/Toolbar";
@@ -55,7 +55,12 @@ export default class Template extends Component<Props> {
     const { children, title, isRoot, parent } = this.props;
     const renderBreadcrumbs = !!title && (!isRoot || !!parent);
     return (
-      <BoardProvider isActionAvailable={() => false}>
+      <BoardProvider
+        user={null}
+        boardName="template"
+        availableRuntimes={[]}
+        runtimeApis={{}}
+      >
         <div
           style={{
             width: "100%",
@@ -101,30 +106,4 @@ export default class Template extends Component<Props> {
       </BoardProvider>
     );
   }
-}
-
-type NavButtonProps = {
-  to: string;
-  label: string;
-};
-export function NavigateButton({ to, label }: NavButtonProps) {
-  const navigate = useNavigate();
-  return (
-    <div style={{ textAlign: "center", width: "100%", margin: "10px 0px" }}>
-      <Button
-        className="hkp-fnt-family"
-        style={{
-          fontSize: 14,
-          border: "1px solid darkgray",
-          color: "white",
-          backgroundColor: "#454f6d",
-          width: "100%",
-          whiteSpace: "nowrap",
-        }}
-        onClick={() => navigate(to)}
-      >
-        {label ? label : "Next"}
-      </Button>
-    </div>
-  );
 }

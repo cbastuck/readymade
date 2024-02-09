@@ -16,9 +16,10 @@ export default function EampleCard({ example }: Props) {
         flex: 1,
         width: 0,
         minWidth: 200,
+        height: "min-content",
       })}
     >
-      <div style={{ ...fontStyle, minHeight: 250, padding: 10 }}>
+      <div style={{ ...fontStyle, padding: 10 }}>
         <Link
           key={`example-link-${example.title}`}
           to={`/example/sandbox?url=${example.url}`}

@@ -21,7 +21,7 @@ export default function ButtonComponent({
   const buttonStyle = {
     fontSize: 12,
     letterSpacing: 1,
-    width: "100%",
+
     backgroundColor: "#efefef",
     border: "solid 1px #bababa",
     ...style,

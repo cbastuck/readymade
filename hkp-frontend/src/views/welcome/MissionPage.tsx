@@ -34,7 +34,11 @@ export default function MissionPage() {
           },
           {
             a: (
-              <NavigateButton destination="/welcome/pitch" text="Quick Pitch" />
+              <NavigateButton
+                destination="/welcome/pitch"
+                text="Quick Pitch"
+                style={{ color: "#454f6e", fontSize: 14, border: "1px white" }}
+              />
             ),
           },
         ].map((x, xi) => (

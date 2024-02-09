@@ -27,15 +27,7 @@ export default function VisualisationPage() {
           <NavigateButton
             destination="/examples"
             text="Examples"
-            style={{
-              color: "#454f6d",
-              fontSize: 13,
-              letterSpacing: 2,
-              padding: "10px 15px",
-              width: "initial",
-              border: "solid 1px transparent",
-              borderRadius: 0,
-            }}
+            style={{ color: "#454f6e", fontSize: 14, border: "1px white" }}
           />
         </div>
       )}

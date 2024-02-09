@@ -38,12 +38,10 @@ export default function IntroPage() {
             text="A thought experiment"
             style={{
               color: "#454f6e",
-              fontSize: 13,
-              letterSpacing: 2,
+              fontSize: 14,
+              border: "1px white",
               whiteSpace: "nowrap",
-              border: "solid 1px white",
-              padding: "10px",
-              width: "initial",
+              width: "min-content",
             }}
           />
         </div>

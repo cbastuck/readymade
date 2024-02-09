@@ -7,7 +7,7 @@ import { AppCtx } from "../../AppContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
 import BoardCollection from "../../components/BoardCollection";
-import { SavedBoard, UsecaseDescriptor, User } from "../../types";
+import { SavedBoard, UsecaseDescriptor, User, isSavedBoard } from "../../types";
 import { makeRequest as getRequest } from "../../runtime/browser/services/CloudSource";
 import { makeRequest as putRequest } from "../../runtime/browser/services/CloudSink";
 import { getLocalBoards, storeBoardToLocalStorage } from "../playground/common";
@@ -51,11 +51,14 @@ export default function Dashboard() {
 
   const onAction = useCallback(
     (action: Action, board: SavedBoard | UsecaseDescriptor) => {
-      if (user) {
+      if (user && isSavedBoard(board)) {
         if (action.name === "upload") {
-          putLocalBoard(board as SavedBoard, user);
+          putLocalBoard(board, user);
         } else if (action.name === "download") {
-          storeBoardToLocalStorage(board.name, JSON.stringify(board));
+          storeBoardToLocalStorage(
+            board.name,
+            JSON.stringify(board.value ? board.value : board)
+          );
           setLocalBoards(getLocalBoards());
         }
       }
