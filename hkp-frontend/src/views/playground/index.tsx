@@ -5,7 +5,6 @@ import { withRouter, WithRouterProps } from "../../common";
 import BoardProvider, {
   BoardConsumer,
   BoardContextState,
-  BoardCtx,
 } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
