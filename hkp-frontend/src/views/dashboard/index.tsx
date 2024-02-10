@@ -49,11 +49,20 @@ export default function Dashboard() {
   const user = appContext?.user;
   const appViewMode = appContext?.appViewMode;
 
+  const refreshCloudBoards = useCallback(
+    () => user && getCloudBoards(user).then(setCloudBoards),
+    [user]
+  );
+
+  if (user && cloudBoards === null) {
+    refreshCloudBoards();
+  }
+
   const onAction = useCallback(
     (action: Action, board: SavedBoard | UsecaseDescriptor) => {
       if (user && isSavedBoard(board)) {
         if (action.name === "upload") {
-          putLocalBoard(board, user);
+          putLocalBoard(board, user).then(refreshCloudBoards);
         } else if (action.name === "download") {
           storeBoardToLocalStorage(
             board.name,
@@ -63,12 +72,8 @@ export default function Dashboard() {
         }
       }
     },
-    [user]
+    [user, refreshCloudBoards]
   );
-
-  if (user && cloudBoards === null) {
-    getCloudBoards(user).then(setCloudBoards);
-  }
 
   return (
     <div

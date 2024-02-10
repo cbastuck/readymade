@@ -346,7 +346,12 @@ export type SavedBoard = {
 
 export function isSavedBoard(board: any): board is SavedBoard {
   // TODO: make better
-  return board.url && board.description && board.value && board.name;
+  return (
+    board.url !== undefined &&
+    board.description !== undefined &&
+    board.value !== undefined &&
+    board.name !== undefined
+  );
 }
 
 export type AcceptedSyncSenders = Array<any>;

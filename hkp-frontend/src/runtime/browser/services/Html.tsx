@@ -9,17 +9,27 @@ const serviceName = "Html";
 
 function HtmlUI(props: any) {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [htmlDocument, setHtmlDocument] = useState("");
+
   const updateState = (config: any) => {
-    const { fullscreen } = config;
+    const { fullscreen, html } = config;
     if (fullscreen !== undefined) {
       setIsFullscreen(fullscreen);
+    } else if (html !== undefined) {
+      setHtmlDocument(html);
     }
   };
+
   const onInit = (config: any) => {
     updateState(config);
   };
+
   const onNotification = (service: Html, notification: any) => {
     updateState(notification);
+
+    if (notification.html && service.fullscreen) {
+      document.body.innerHTML = notification.html;
+    }
   };
 
   const configView = {
@@ -27,6 +37,8 @@ function HtmlUI(props: any) {
     render: (service: ServiceImpl) => (
       <div
         style={{
+          width: "100%",
+          height: "100%",
           textAlign: "left",
           display: "flex",
           flexDirection: "column",
@@ -35,7 +47,7 @@ function HtmlUI(props: any) {
         <Label style={{ width: "80px" }}>Config</Label>
         <TextArea
           style={{
-            width: "300px",
+            width: "100%",
             height: "100%",
             resize: "none",
             border: "solid 1px lightgray",
@@ -77,7 +89,11 @@ function HtmlUI(props: any) {
         }}
       >
         <div id="html-service" style={{ margin: "20px 100px" }}>
-          Render Area
+          {htmlDocument ? (
+            <div dangerouslySetInnerHTML={{ __html: htmlDocument }} />
+          ) : (
+            "Render Area"
+          )}
         </div>
       </div>
     ),
@@ -98,19 +114,7 @@ class Html {
   app: AppImpl;
 
   fullscreen: boolean = false;
-  config = [
-    /*
-    {
-      html: "<div><h1>[[sub]]</h1>[[children]]</div>",
-      children: [
-        {
-          select: "$.[?(@.title && @.link)]",
-          html: `<div><a href="[[link]]" target="blank">[[title]]</a></div>`,
-        },
-      ],
-    },
-    */
-  ];
+  config = [];
 
   constructor(
     app: AppImpl,
@@ -143,15 +147,12 @@ class Html {
   async process(params: any) {
     const children = processConfig(this.config, params);
 
-    const root = `
+    const html = `
       <div style="padding: 10px;">
         ${children}
       </div>`;
-    const body = this.fullscreen
-      ? document.body
-      : document.getElementById("html-service") || document.body;
-    body.innerHTML = root;
-    return root;
+    this.app.notify(this, { html });
+    return html;
   }
 }
 

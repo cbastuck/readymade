@@ -234,7 +234,7 @@ function BoardServiceUI(props: Props) {
                     height: "15px",
                     marginTop: 5,
                     padding: 0,
-
+                    width: "100%",
                     borderRadius: 1,
                   }}
                   onClick={onToggleExpandCollapse}

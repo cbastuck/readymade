@@ -62,7 +62,6 @@ export default class Tooltip extends Component {
             zIndex: 200001,
             top: 0,
             left: "50%",
-            marginLeft: -width / 2,
 
             width,
           }}
