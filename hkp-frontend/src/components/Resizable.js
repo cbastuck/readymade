@@ -63,7 +63,7 @@ export default class Resizable extends Component {
       >
         <svg viewBox="0 0 10 10">
           <polygon
-            points="0,8, 10,0, 10,8"
+            points="0,10, 10,0, 10,10"
             style={{
               fill: "#9f9f9f",
               stroke: "transparent",

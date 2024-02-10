@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Checkbox, Label, TextArea } from "semantic-ui-react";
+import { Checkbox, Label } from "semantic-ui-react";
 
 import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
 import ServiceUI from "../../services/ServiceUI";
+import HtmlConfigTree, { TreeConfig } from "./HtmlConfigTree";
 
 const serviceId = "hookup.to/service/html";
 const serviceName = "Html";
@@ -10,13 +11,20 @@ const serviceName = "Html";
 function HtmlUI(props: any) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [htmlDocument, setHtmlDocument] = useState("");
+  const [treeConfig, setTreeConfig] = useState<TreeConfig>([]);
 
-  const updateState = (config: any) => {
-    const { fullscreen, html } = config;
+  const updateState = (cfg: any) => {
+    const { fullscreen, html, config } = cfg;
     if (fullscreen !== undefined) {
       setIsFullscreen(fullscreen);
-    } else if (html !== undefined) {
+    }
+
+    if (html !== undefined) {
       setHtmlDocument(html);
+    }
+
+    if (config !== undefined) {
+      setTreeConfig(config);
     }
   };
 
@@ -34,46 +42,50 @@ function HtmlUI(props: any) {
 
   const configView = {
     name: "config",
-    render: (service: ServiceImpl) => (
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          textAlign: "left",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <Label style={{ width: "80px" }}>Config</Label>
-        <TextArea
+    render: (service: ServiceImpl) => {
+      return (
+        <div
           style={{
+            minWidth: "350px",
             width: "100%",
             height: "100%",
-            resize: "none",
-            border: "solid 1px lightgray",
+            textAlign: "left",
+            display: "flex",
+            flexDirection: "column",
           }}
-          value={JSON.stringify(service.config)}
-          rows={6}
-        />
-
-        <div style={{ marginTop: 5 }}>
-          <Checkbox
-            label="Fullscreen"
-            checked={isFullscreen}
-            onChange={async (_, { checked }) => {
-              service.configure({
-                fullscreen: checked,
-              });
+        >
+          <div
+            style={{
+              height: "200px",
+              width: "100%",
+              border: "solid 1px lightgray",
             }}
-            toggle
-          />
+          >
+            <HtmlConfigTree
+              data={treeConfig}
+              onChange={(cfg) => service.configure({ config: cfg })}
+            />
+          </div>
+
+          <div style={{ marginTop: 5 }}>
+            <Checkbox
+              label="Fullscreen"
+              checked={isFullscreen}
+              onChange={async (_, { checked }) => {
+                service.configure({
+                  fullscreen: checked,
+                });
+              }}
+              toggle
+            />
+          </div>
         </div>
-      </div>
-    ),
+      );
+    },
   };
 
   const renderView = {
-    name: "render",
+    name: "document",
     render: (service: ServiceImpl) => (
       <div
         style={{
@@ -141,6 +153,7 @@ class Html {
 
     if (config !== undefined) {
       this.config = config;
+      this.app.notify(this, { config });
     }
   }
 

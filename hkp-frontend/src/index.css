@@ -65,6 +65,11 @@ input {
   border-color: #888 !important;
 }
 
+.hkp-button-ghost {
+  background-color: white !important;
+  border: solid 1px rgb(186, 186, 186) !important;
+}
+
 .hkp-button:active {
   background-color: rgb(66, 132, 196) !important;
   color: white !important;
