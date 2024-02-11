@@ -82,12 +82,15 @@ export class MonitorUI extends Component {
         height: `${ACTION_BAR_HEIGHT} - 15}px`,
       }}
     >
-      <Button onClick={this.clearEditor}>Clear</Button>
+      <Button onClick={this.clearEditor} style={{ width: "100%" }}>
+        Clear
+      </Button>
 
-      <Button onClick={this.switchEditor}>
+      <Button onClick={this.switchEditor} style={{ width: "100%" }}>
         {this.state.renderTextEditor ? "Edit" : "Back"}
       </Button>
       <Button
+        style={{ width: "100%" }}
         onClick={() => {
           let data;
           try {

@@ -312,7 +312,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
         if (firstRuntime) {
           const [scope, api] = this.getRuntimeScopeApi(firstRuntime.id);
           if (scope && api) {
-            api.processRuntime(scope, action.params || undefined, null);
+            api.processRuntime(scope, action.params || {}, null); // pass {} as default because undefined is not accepted in Gql queries and null ends process
           }
         }
         break;

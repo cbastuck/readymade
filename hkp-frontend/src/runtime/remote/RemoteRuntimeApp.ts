@@ -28,5 +28,6 @@ export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
       service: ServiceDescriptor
     ): void => {},
     createSubServiceUI: (svc: ServiceImpl): void => {},
+    listAvailableServices: () => [],
   };
 }

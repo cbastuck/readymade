@@ -45,11 +45,11 @@ export default function HtmlConfigTree({ data, onChange }: Props) {
           display: "flex",
           borderBottom: "solid 1px lightgray",
           margin: 0,
-          padding: 10,
+          padding: "3px",
         }}
       >
         <Button
-          className="hkp-button-ghost"
+          className="hkp-button-borderless"
           style={{ width: "min-content" }}
           size="tiny"
           compact
@@ -60,6 +60,7 @@ export default function HtmlConfigTree({ data, onChange }: Props) {
       <div style={{ padding: "5px" }}>
         <Tree
           width="100%"
+          height={230}
           data={treeData}
           onCreate={onCreate}
           onMove={onMove}

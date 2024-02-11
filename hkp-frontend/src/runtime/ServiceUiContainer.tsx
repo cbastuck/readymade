@@ -12,6 +12,7 @@ type Props = {
   services: Array<ServiceImpl>;
   readonly?: boolean;
   showBypassOnlyIfExplicit?: boolean;
+  collapsed?: boolean;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
   onCreateServiceUi: (
@@ -30,6 +31,7 @@ export default class ServiceUiContainer extends Component<Props> {
       services,
       readonly = false,
       showBypassOnlyIfExplicit = false,
+      collapsed = false,
       onArrangeService,
       onServiceAction,
       onCreateServiceUi,
@@ -48,7 +50,10 @@ export default class ServiceUiContainer extends Component<Props> {
         return (
           <div
             key={`scene-frame-${service.uuid}`}
-            style={{ display: "flex", flexDirection: "row" }}
+            style={{
+              display: collapsed ? "none" : "flex",
+              flexDirection: "row",
+            }}
           >
             {pos === 0 && (
               <ServiceDropBar index={0} onDrop={onArrangeService} />

@@ -5,6 +5,7 @@ import {
   ServiceAction,
   ServiceDescriptor,
   ServiceImpl,
+  ServiceModule,
 } from "../../types";
 import { appendSubservice } from "./BrowserRuntimeApi";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
@@ -62,6 +63,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
           resizable: false,
         }
       ),
+    listAvailableServices: () => scope.registry.allowedServices(),
   };
 }
 

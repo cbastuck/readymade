@@ -169,6 +169,7 @@ export type AppImpl = {
   storeServiceData: (serviceUuid: string, key: string, value: string) => void;
   restoreServiceData: (serviceUuid: string, key: string) => void;
   removeServiceData: (serviceUuid: string, key: string) => void;
+  listAvailableServices: () => Array<ServiceModule>;
   createSubService: (parent: ServiceImpl, service: ServiceDescriptor) => void;
   createSubServiceUI: (svc: ServiceImpl) => void;
 };
@@ -358,6 +359,7 @@ export type AcceptedSyncSenders = Array<any>;
 export type RejectedSyncSenders = Array<any>;
 
 export enum RemoteRuntimeMessageType {
+  PONG = "pong",
   RESULT = "result",
   CONFIGURATION = "config",
   NOTIFICATION = "notification",

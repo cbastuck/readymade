@@ -14,6 +14,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   socket: WebSocket | null;
   pendingReconnectPromise: [() => void, () => void] | null; // resolve/reject callbacks
   authenticatedUser: User | null = null;
+  pingTimer: NodeJS.Timeout | undefined;
 
   constructor(runtime: RuntimeDescriptor, outputUrl: string) {
     this.app = createRemoteRuntimeApp(this);
@@ -82,10 +83,15 @@ export default class RemoteRuntimeScope implements RuntimeScope {
 
   onSocketOpened = (event: Event) => {
     if (this.socket) {
-      this.socket.send(
-        JSON.stringify({
-          ping: "Hello",
-        })
+      this.pingTimer = setInterval(
+        () =>
+          this.socket &&
+          this.socket.send(
+            JSON.stringify({
+              type: "ping",
+            })
+          ),
+        10000
       );
     }
     if (this.pendingReconnectPromise) {
@@ -97,6 +103,10 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   onSocketClosed = () => {
     if (this.socket) {
       this.socket = null;
+      if (this.pingTimer) {
+        clearInterval(this.pingTimer);
+        this.pingTimer = undefined;
+      }
     }
   };
 
@@ -110,7 +120,9 @@ export default class RemoteRuntimeScope implements RuntimeScope {
       return;
     }
 
-    if (message.type === RemoteRuntimeMessageType.RESULT) {
+    if (message.type === RemoteRuntimeMessageType.PONG) {
+      console.log("Received a pong message");
+    } else if (message.type === RemoteRuntimeMessageType.RESULT) {
       this.onResult(null, message.data, null);
     } else if (message.type === RemoteRuntimeMessageType.CONFIGURATION) {
       this.onConfig(message.data.instanceId, message.data.config);

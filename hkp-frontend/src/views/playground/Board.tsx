@@ -193,7 +193,10 @@ export default class Board extends Component<Props, State> {
         api.processRuntime(nextScope, result, null);
       } else {
         if (this.props.onResult) {
-          this.props.onResult(result);
+          if (result !== null) {
+            // null means stop the process
+            this.props.onResult(result);
+          }
         }
       }
     }

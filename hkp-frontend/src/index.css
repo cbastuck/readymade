@@ -70,6 +70,11 @@ input {
   border: solid 1px rgb(186, 186, 186) !important;
 }
 
+.hkp-button-borderless {
+  background-color: white !important;
+  border: none !important;
+}
+
 .hkp-button:active {
   background-color: rgb(66, 132, 196) !important;
   color: white !important;

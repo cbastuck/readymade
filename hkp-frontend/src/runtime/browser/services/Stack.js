@@ -1,5 +1,5 @@
 import { Component } from "react";
-import { Accordion, Label } from "semantic-ui-react";
+import { Accordion, Label, Dropdown, Icon } from "semantic-ui-react";
 
 import * as uuid from "uuid";
 
@@ -53,7 +53,9 @@ export class StackUI extends Component {
       title: {
         children: (
           <div className="hkp-fnt-family" style={s(t.fs12, t.ls1)}>
-            {ssvc.__descriptor.serviceName}
+            {ssvc.__descriptor
+              ? ssvc.__descriptor.serviceName
+              : ssvc.serviceName}
           </div>
         ),
       },
@@ -62,6 +64,7 @@ export class StackUI extends Component {
     }));
     const inputOptions = { multiplex: "multiplex", lanes: "lanes" };
     const outputOptions = { array: "array" };
+    const services = service.app.listAvailableServices();
     return (
       <div style={t.fill}>
         <SelectorField
@@ -84,18 +87,45 @@ export class StackUI extends Component {
             this.setState({ output });
           }}
         />
-        <div style={t.tl}>
+
+        <div
+          style={{
+            display: "flex",
+            width: "100%",
+          }}
+        >
           <Label style={s(t.fs12, t.ls1, { borderRadius: 0, padding: 10 })}>
             Services
           </Label>
-          <Accordion
-            style={t.tc}
-            defaultActiveIndex={0}
-            panels={rootPanels}
-            fluid
-            styled
-          />
+
+          <Dropdown
+            className="hkp-fnt-family"
+            text=""
+            icon={<Icon name="plus" color="grey" />}
+            pointing="top"
+            style={{
+              marginLeft: "auto",
+              marginTop: "5px",
+            }}
+          >
+            <Dropdown.Menu style={{ height: "200px", overflowY: "auto" }}>
+              {services.map((svc) => (
+                <Dropdown.Item
+                  key={svc.serviceId}
+                  text={svc.serviceName}
+                  onClick={() => service.appendSubService(svc)}
+                />
+              ))}
+            </Dropdown.Menu>
+          </Dropdown>
         </div>
+        <Accordion
+          style={t.tc}
+          defaultActiveIndex={0}
+          panels={rootPanels}
+          fluid
+          styled
+        />
       </div>
     );
   };
@@ -131,17 +161,7 @@ class Stack {
     const { services, input, output } = config;
     if (services !== undefined) {
       this.services = services;
-      const subservices = [];
-      for (const svc of services) {
-        if (!svc.uuid) {
-          svc.uuid = uuid.v4();
-        }
-        const ssvc = await this.app.createSubService(this, svc);
-        ssvc.configure && (await ssvc.configure(svc));
-        if (ssvc) {
-          subservices.push(ssvc);
-        }
-      }
+      const subservices = await this.createSubServices();
       this._subservices = subservices;
       this.app.notify({ subservices });
     }
@@ -156,6 +176,31 @@ class Stack {
       this.app.notify({ output });
     }
   }
+
+  appendSubService = async (svc) => {
+    const ssvc = await this.app.createSubService(this, svc);
+    this._subservices.push(ssvc);
+    this.app.notify(this, { subservices: this._subservices });
+  };
+
+  createSubServices = async (services) => {
+    const subservices = [];
+    for (const svc of services) {
+      if (!svc.uuid) {
+        svc.uuid = uuid.v4();
+      }
+      const ssvc = await this.createSubServices(svc);
+      if (ssvc) {
+        subservices.push(ssvc);
+      }
+    }
+  };
+
+  createSubService = async (svc) => {
+    const ssvc = this.app.createSubService(this, svc);
+    ssvc.configure && (await ssvc.configure(svc));
+    return ssvc;
+  };
 
   async processArray(params) {
     const results = await Promise.all(

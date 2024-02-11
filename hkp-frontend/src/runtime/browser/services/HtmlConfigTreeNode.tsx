@@ -46,7 +46,11 @@ export default function Node({
                   node.submit(e.currentTarget.value);
                 }
               }}
-              style={{ width: "100%", border: "none", outline: "none" }}
+              style={{
+                width: "100%",
+                border: "none",
+                outline: "none",
+              }}
               autoFocus
             />
           ) : (
@@ -62,7 +66,7 @@ export default function Node({
           });
         }}
         icon="plus"
-        className="hkp-button-ghost"
+        className="hkp-button-borderless"
         style={{ width: "min-content", height: "25px" }}
         size="tiny"
         compact
@@ -75,7 +79,7 @@ export default function Node({
           });
         }}
         icon="minus"
-        className="hkp-button-ghost"
+        className="hkp-button-borderless"
         style={{ width: "min-content", height: "25px" }}
         size="tiny"
         compact

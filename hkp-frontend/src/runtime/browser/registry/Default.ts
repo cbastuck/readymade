@@ -45,6 +45,7 @@ import SequencerDescriptor from "../services/Sequencer";
 import KeyHandlerDescriptor from "../services/KeyHandler";
 import ReactorDescriptor from "../services/Reactor";
 import HtmlDescriptor from "../services/Html";
+import ArrayTransformDescriptor from "../services/ArrayTransform";
 import TimelineDescriptor from "../services/Timeline";
 import ChunkedFileProviderDescriptor from "../services/ChunkedFileProvider";
 import FeedbackProviderDesriptor from "../services/FeedbackProvider";
@@ -119,6 +120,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   KeyHandlerDescriptor,
   ReactorDescriptor,
   HtmlDescriptor,
+  ArrayTransformDescriptor,
   TimelineDescriptor,
   ChunkedFileProviderDescriptor,
   FeedbackProviderDesriptor,

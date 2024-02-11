@@ -278,33 +278,32 @@ export default class BrowserRuntime extends Component<Props, State> {
     }
 
     return (
-      !collapsed && (
-        <ServiceUiContainer
-          boardName={boardName}
-          runtime={runtime}
-          readonly={readonly}
-          services={services}
-          userId={user?.userId}
-          onArrangeService={onArrangeService}
-          onServiceAction={onServiceAction}
-          onCreateServiceUi={(
-            boardName: string,
-            service: ServiceImpl,
-            runtimeId: string,
-            userId: string | undefined
-          ) =>
-            scope.registry
-              ? createServiceUI(
-                  scope.registry,
-                  boardName,
-                  service,
-                  runtimeId,
-                  userId
-                )
-              : null
-          }
-        />
-      )
+      <ServiceUiContainer
+        collapsed={collapsed}
+        boardName={boardName}
+        runtime={runtime}
+        readonly={readonly}
+        services={services}
+        userId={user?.userId}
+        onArrangeService={onArrangeService}
+        onServiceAction={onServiceAction}
+        onCreateServiceUi={(
+          boardName: string,
+          service: ServiceImpl,
+          runtimeId: string,
+          userId: string | undefined
+        ) =>
+          scope.registry
+            ? createServiceUI(
+                scope.registry,
+                boardName,
+                service,
+                runtimeId,
+                userId
+              )
+            : null
+        }
+      />
     );
   }
 }

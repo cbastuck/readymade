@@ -44,7 +44,7 @@ export class TimerUI extends Component {
   };
 
   renderPeriodic = (service) => {
-    const buttonStyle = s(t.m1, t.fs12, t.ls1);
+    const buttonStyle = s(t.m1, t.fs12, t.ls1, t.w100);
     return (
       <div>
         <InputField
@@ -121,7 +121,7 @@ export class TimerUI extends Component {
         }}
       />
       <Button
-        style={{ marginTop: "3px" }}
+        style={{ marginTop: "3px", width: "100%" }}
         onClick={() =>
           service.configure({
             periodic: false,
@@ -158,7 +158,7 @@ export class TimerUI extends Component {
         }}
       />
       <Button
-        style={{ marginTop: "3px" }}
+        style={{ marginTop: "3px", width: "100%" }}
         onClick={() =>
           service.configure({
             periodic: false,

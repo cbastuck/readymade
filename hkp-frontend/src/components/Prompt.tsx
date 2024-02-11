@@ -46,6 +46,7 @@ export default function Prompt({
       <div style={{ padding: 10 }}>{children}</div>
       <div style={{ display: "flex", flexDirection: "row", margin: "10px" }}>
         <Button
+          style={{ width: "100%" }}
           onClick={() => {
             setOpen(false);
             promise?.resolve(false);
@@ -54,6 +55,7 @@ export default function Prompt({
           Cancel
         </Button>
         <Button
+          style={{ width: "100%" }}
           onClick={() => {
             promise?.resolve(true);
             setOpen(false);
