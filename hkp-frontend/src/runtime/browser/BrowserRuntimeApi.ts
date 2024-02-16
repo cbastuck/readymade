@@ -160,11 +160,12 @@ export async function processService(
 
 export async function appendSubservice(
   scope_: RuntimeScope,
-  service: ServiceDescriptor,
-  parent: ServiceImpl
+  service: ServiceClass,
+  parent: ServiceImpl,
+  instanceId?: string
 ) {
   const scope = scope_ as BrowserRuntimeScope;
-  const [ssvc] = createService(scope, service) || [];
+  const [ssvc] = createService(scope, service, instanceId) || [];
   if (ssvc) {
     scope.subservices[ssvc.uuid] = { service: ssvc, parent };
     return ssvc;

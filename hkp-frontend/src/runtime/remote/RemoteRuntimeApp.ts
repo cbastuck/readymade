@@ -2,7 +2,7 @@ import {
   AppImpl,
   InstanceId,
   ServiceAction,
-  ServiceDescriptor,
+  ServiceClass,
   ServiceImpl,
 } from "../../types";
 import RemoteRuntimeScope from "./RemoteRuntimeScope";
@@ -25,7 +25,8 @@ export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
     removeServiceData: (serviceUuid: string, key: string): void => {},
     createSubService: (
       parent: ServiceImpl,
-      service: ServiceDescriptor
+      service: ServiceClass,
+      instanceId?: string
     ): void => {},
     createSubServiceUI: (svc: ServiceImpl): void => {},
     listAvailableServices: () => [],

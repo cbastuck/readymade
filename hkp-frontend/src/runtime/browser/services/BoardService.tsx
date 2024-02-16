@@ -35,6 +35,7 @@ type Config = {
   command?: {
     action: string;
     params: any;
+    promise?: { resolve: (result: any) => void; reject: (err: Error) => void };
   };
 };
 
@@ -87,26 +88,31 @@ function BoardServiceUI(props: Props) {
     });
   };
 
-  const process = async (service: ServiceImpl, params: any | Array<any>) => {
+  const process = async (params: any | Array<any>) => {
     if (Array.isArray(params)) {
       const results = [];
       for (const p of params) {
         results.push(await processSingle(p));
       }
-      service.configure({ result: results }); // send back the result
+      return results;
     } else {
       const result = await processSingle(params);
-      service.configure({ result }); // send back the result
+      return result;
     }
   };
 
-  const onNotification = (
+  const onNotification = async (
     service: BoardService,
     notification: Partial<Config>
   ) => {
     if (notification.command) {
       if (notification.command.action === "process") {
-        process(service, notification.command.params);
+        const result = await process(notification.command.params);
+        const resolver = notification.command.promise?.resolve;
+        if (!resolver) {
+          throw new Error("BoardService.onNotification, no resolver available");
+        }
+        resolver(result);
       }
     } else {
       onUpdate(notification);
@@ -307,14 +313,16 @@ class BoardService {
 
   async destroy() {}
 
-  async process(params: any) {
-    this.app.notify(this, {
-      command: {
-        action: "process",
-        params,
-      },
+  process(params: any) {
+    return new Promise((resolve, reject) => {
+      this.app.notify(this, {
+        command: {
+          action: "process",
+          params,
+          promise: { resolve, reject },
+        },
+      });
     });
-    return null; // stop the process, onResult will come async and be injected
   }
 }
 

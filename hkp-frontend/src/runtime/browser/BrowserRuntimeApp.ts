@@ -3,9 +3,8 @@ import {
   AppImpl,
   InstanceId,
   ServiceAction,
-  ServiceDescriptor,
+  ServiceClass,
   ServiceImpl,
-  ServiceModule,
 } from "../../types";
 import { appendSubservice } from "./BrowserRuntimeApi";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
@@ -46,11 +45,20 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     notify: (service: ServiceImpl, notification: any) => {
       if (service.__notificationTargets) {
         service.__notificationTargets.notify(service, notification);
+      } else {
+        console.warn(
+          "BrowserRuntimeApp.notify no targets for",
+          service.uuid,
+          service.__descriptor?.serviceName
+        );
       }
     },
 
-    createSubService: (parent: ServiceImpl, service: ServiceDescriptor) =>
-      appendSubservice(scope, service, parent),
+    createSubService: (
+      parent: ServiceImpl,
+      service: ServiceClass,
+      instanceId?: string
+    ) => appendSubservice(scope, service, parent, instanceId),
 
     createSubServiceUI: (svc: ServiceImpl) =>
       createServiceUI(

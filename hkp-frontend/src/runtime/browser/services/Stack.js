@@ -49,10 +49,14 @@ export class StackUI extends Component {
 
   renderMain = (service) => {
     const { subservices = [], output, input } = this.state;
-    const rootPanels = subservices.map((ssvc, idx) => ({
+    const rootPanels = subservices.map((ssvc) => ({
       title: {
         children: (
-          <div className="hkp-fnt-family" style={s(t.fs12, t.ls1)}>
+          <div
+            className="hkp-fnt-family"
+            style={s(t.fs12, t.ls1)}
+            title={ssvc.uuid}
+          >
             {ssvc.__descriptor
               ? ssvc.__descriptor.serviceName
               : ssvc.serviceName}
@@ -161,43 +165,46 @@ class Stack {
     const { services, input, output } = config;
     if (services !== undefined) {
       this.services = services;
-      const subservices = await this.createSubServices();
-      this._subservices = subservices;
-      this.app.notify({ subservices });
+      await this.createSubServices(services);
     }
 
     if (input !== undefined) {
       this.input = input;
-      this.app.notify({ input });
+      this.app.notify(this, { input });
     }
 
     if (output !== undefined) {
       this.output = output;
-      this.app.notify({ output });
+      this.app.notify(this, { output });
     }
   }
 
   appendSubService = async (svc) => {
     const ssvc = await this.app.createSubService(this, svc);
     this._subservices.push(ssvc);
+    this.services = this.services ? [...this.services, svc] : [svc];
     this.app.notify(this, { subservices: this._subservices });
   };
 
   createSubServices = async (services) => {
     const subservices = [];
     for (const svc of services) {
-      if (!svc.uuid) {
-        svc.uuid = uuid.v4();
-      }
-      const ssvc = await this.createSubServices(svc);
+      const ssvc = await this.createSubService(svc);
       if (ssvc) {
         subservices.push(ssvc);
       }
     }
+    this._subservices = subservices;
+    this.app.notify(this, { subservices: this._subservices });
   };
 
   createSubService = async (svc) => {
-    const ssvc = this.app.createSubService(this, svc);
+    const ssvc = await this.app.createSubService(
+      this,
+      svc,
+      svc.uuid || uuid.v4()
+    );
+
     ssvc.configure && (await ssvc.configure(svc));
     return ssvc;
   };
@@ -230,7 +237,7 @@ class Stack {
     }
   }
 
-  process(params) {
+  async process(params) {
     if (this._subservices.length > 0) {
       if (this.input === "lanes") {
         if (Array.isArray(params)) {
@@ -239,7 +246,8 @@ class Stack {
           return this.processScalar(params, 0);
         }
       }
-      return this.processScalar(params);
+      const res = await this.processScalar(params);
+      return res;
     }
     return params;
   }

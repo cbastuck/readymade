@@ -170,7 +170,11 @@ export type AppImpl = {
   restoreServiceData: (serviceUuid: string, key: string) => void;
   removeServiceData: (serviceUuid: string, key: string) => void;
   listAvailableServices: () => Array<ServiceModule>;
-  createSubService: (parent: ServiceImpl, service: ServiceDescriptor) => void;
+  createSubService: (
+    parent: ServiceImpl,
+    service: ServiceClass,
+    instanceId?: string
+  ) => void;
   createSubServiceUI: (svc: ServiceImpl) => void;
 };
 
