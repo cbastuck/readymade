@@ -66,7 +66,7 @@ export default class Board extends Component {
   renderRuntime = (boardContext, runtime) => {
     return (
       <Runtime
-        key={`${runtime.id}-scene`}
+        key={`board-${runtime.id}`}
         runtime={runtime}
         style={{ marginBottom: 5 }}
         boardContext={boardContext}

@@ -3,7 +3,10 @@ import { Message, Icon } from "semantic-ui-react";
 import Button from "./components/shared/Button";
 
 export default function Notification({ value, onClose }) {
-  const { type, message, ctas = [] } = value;
+  const { type, message, ctas = [], error } = value;
+  if (error) {
+    console.error(error);
+  }
   return (
     <Message info={type === "info"} error={type === "error"}>
       <div style={{ display: "flex", flexDirection: "row" }}>

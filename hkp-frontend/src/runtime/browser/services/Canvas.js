@@ -1,9 +1,9 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import ResizeObserver from "resize-observer-polyfill";
 
 import ServiceUI from "../../services/ServiceUI";
 import { createObjectURL, revokeObjectURL } from "./helpers";
-import { t } from "../../../styles";
+import { zLayers } from "../../../styles";
 
 const serviceId = "hookup.to/service/canvas";
 const serviceName = "Canvas";
@@ -560,7 +560,7 @@ export class CanvasUI extends Component {
           position: fullscreen ? "fixed" : undefined,
           top: fullscreen ? 0 : undefined,
           left: fullscreen ? 0 : undefined,
-          zIndex: fullscreen ? t.foreground : undefined,
+          zIndex: fullscreen ? zLayers.foreground : undefined,
           width,
           height,
         }}

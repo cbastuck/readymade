@@ -1,3 +1,8 @@
+.hover-icon-dark:active {
+  background-color: #1e70bf !important;
+  color: white !important;
+}
+
 .hover-icon-dark-disabled,
 .hover-icon-dark-dangerous,
 .hover-icon-dark {

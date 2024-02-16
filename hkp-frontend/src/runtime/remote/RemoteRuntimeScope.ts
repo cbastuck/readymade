@@ -104,6 +104,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     if (this.socket) {
       this.socket = null;
       if (this.pingTimer) {
+        // TODO: this timer is not cleared when scope is destroyed
         clearInterval(this.pingTimer);
         this.pingTimer = undefined;
       }
@@ -121,7 +122,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     }
 
     if (message.type === RemoteRuntimeMessageType.PONG) {
-      console.log("Received a pong message");
+      // console.log("Received a pong message");
     } else if (message.type === RemoteRuntimeMessageType.RESULT) {
       this.onResult(null, message.data, null);
     } else if (message.type === RemoteRuntimeMessageType.CONFIGURATION) {

@@ -1,8 +1,16 @@
-export function s() {
-  return Array.from(arguments).reduce((a, c) => ({ ...a, ...c }), {});
+import { CSSProperties } from "react";
+
+export function s(...args: any[]): CSSProperties {
+  return Array.from(args).reduce((a, c) => ({ ...a, ...c }), {});
 }
 
-export const t = {
+export const zLayers = {
+  foreground: 2000003,
+};
+
+//type CSSGenerator = { (...a: any[]): CSSProperties };
+type StyleType = any; //CSSProperties | CSSGenerator
+export const t: { [key: string]: StyleType } = {
   uc: { textTransform: "uppercase" },
   nc: { textTransform: "none" },
   ul: { textDecoration: "underline" },
@@ -18,9 +26,6 @@ export const t = {
   lh2: { lineHeight: 2 },
   lh3: { lineHeight: 3 },
 
-  fs: function (s) {
-    return { fontSize: s };
-  },
   fs20: { fontSize: 20 },
   fs19: { fontSize: 19 },
   fs18: { fontSize: 18 },
@@ -50,11 +55,7 @@ export const t = {
     resize: "both",
     //overflow: "auto",
   },
-  foreground: 2000003,
 
-  m: function (x, y) {
-    return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` };
-  },
   m0: { margin: 0 },
   m1: { margin: 1 },
   m2: { margin: 2 },
@@ -65,15 +66,7 @@ export const t = {
   m8: { margin: 8 },
   m9: { margin: 9 },
   m10: { margin: 10 },
-  mt: function (x) {
-    return { marginTop: x };
-  },
-  ml: function (x) {
-    return { marginLeft: x };
-  },
-  mr: function (x) {
-    return { marginRight: x };
-  },
+
   mt0: { marginTop: 0 },
   mt1: { marginTop: 1 },
   mt2: { marginTop: 2 },
@@ -89,9 +82,7 @@ export const t = {
   mt25: { marginTop: 25 },
   mt30: { marginTop: 30 },
   mt35: { marginTop: 35 },
-  mb: function (x) {
-    return { marginBottom: x };
-  },
+
   mb0: { marginBottom: 0 },
   mb1: { marginBottom: 1 },
   mb2: { marginBottom: 2 },
@@ -104,23 +95,12 @@ export const t = {
   mb10: { marginBottom: 10 },
   mb20: { marginBottom: 20 },
   mb30: { marginBottom: 30 },
-  mv: function (x) {
-    return { marginTop: x, marginBottom: x };
-  },
-  mh: function (x) {
-    return { marginLeft: x, marginRight: x };
-  },
 
-  p: function (x, y) {
-    return y === undefined ? { padding: x } : { padding: `${y}px ${x}px` };
-  },
   p2: { padding: 2 },
   p3: { padding: 3 },
   p5: { padding: 5 },
   p10: { padding: 10 },
-  pt: function (x) {
-    return { paddingTop: x };
-  },
+
   pt0: { paddingTop: 0 },
   pt1: { paddingTop: 1 },
   pt2: { paddingTop: 2 },
@@ -133,9 +113,7 @@ export const t = {
   pt10: { paddingTop: 10 },
   pt20: { paddingTop: 20 },
   pt30: { paddingTop: 30 },
-  pb: function (x) {
-    return { paddingBottom: x };
-  },
+
   pb2: { paddingBottom: 2 },
   pb3: { paddingBottom: 3 },
   pb5: { paddingBottom: 5 },
@@ -159,12 +137,6 @@ export const t = {
   tr: { textAlign: "right" },
   right: { width: "100%", textAlign: "right" },
 
-  bc: function (col) {
-    return { backgroundColor: col };
-  },
-  borderCol: function (col) {
-    return { border: `solid 1px ${col}` };
-  },
   border: { border: "solid 1px gray" },
   br2: { borderRadius: 2 },
   br3: { borderRadius: 3 },
@@ -176,8 +148,8 @@ export const t = {
     WebkitUserSelect: "none",
     KhtmlUserSelect: "none",
     MozUserSelect: "none",
-    MsUserSelect: "none",
-    UserSelect: "none",
+    msUserSelect: "none",
+    userSelect: "none",
     WebkitTapHighlightColor: "rgba(0,0,0,0)",
   },
 
@@ -186,17 +158,59 @@ export const t = {
     WebkitUserSelect: "initial",
     KhtmlUserSelect: "initial",
     MozUserSelect: "initial",
-    MsUserSelect: "initial",
-    UserSelect: "initial",
+    msUserSelect: "initial",
+    userSelect: "initial",
     WebkitTapHighlightColor: "initial",
+  },
+  fs: function (s: number | string) {
+    return { fontSize: s };
+  },
+  m: function (x: number | string, y: number | string | undefined) {
+    return y === undefined ? { margin: x } : { margin: `${y}px ${x}px` };
+  },
+  mt: function (x: number | string) {
+    return { marginTop: x };
+  },
+  ml: function (x: number | string) {
+    return { marginLeft: x };
+  },
+  mr: function (x: number | string) {
+    return { marginRight: x };
+  },
+  mb: function (x: number | string) {
+    return { marginBottom: x };
+  },
+  mv: function (x: number | string) {
+    return { marginTop: x, marginBottom: x };
+  },
+  mh: function (x: number | string) {
+    return { marginLeft: x, marginRight: x };
+  },
+  p: function (x: number | string, y: number | string | undefined) {
+    return y === undefined ? { padding: x } : { padding: `${y}px ${x}px` };
+  },
+  pt: function (x: number | string) {
+    return { paddingTop: x };
+  },
+  pb: function (x: number | string) {
+    return { paddingBottom: x };
+  },
+  bc: function (col: string) {
+    return { backgroundColor: col };
+  },
+  borderCol: function (col: string) {
+    return { border: `solid 1px ${col}` };
   },
 };
 
-// composed classes
 t.text = s(t.uc, t.ls1, t.fs12);
 
-export function HStack({ gap = undefined, style: _style = {}, children }) {
-  const style = {
+export function HStack({
+  gap = undefined,
+  style: _style = {},
+  children = null,
+}) {
+  const style: CSSProperties = {
     display: "flex",
     flexDirection: "row",
     width: "100%",
@@ -208,8 +222,16 @@ export function HStack({ gap = undefined, style: _style = {}, children }) {
   return <div style={style}>{children}</div>;
 }
 
-export function VStack({ gap = undefined, style: _style = {}, children }) {
-  const style = { display: "flex", flexDirection: "column", ..._style };
+export function VStack({
+  gap = undefined,
+  style: _style = {},
+  children = null,
+}) {
+  const style: CSSProperties = {
+    display: "flex",
+    flexDirection: "column",
+    ..._style,
+  };
   if (gap !== undefined) {
     style.gap = gap;
   }

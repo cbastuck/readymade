@@ -279,6 +279,7 @@ export type Notification = {
     callback: null | ((onClose: () => void) => void);
   }>;
   timeout?: number;
+  error?: Error;
 };
 
 export type RuntimeServiceMap = {

@@ -1,4 +1,4 @@
-import { Component, ReactElement } from "react";
+import { CSSProperties, Component, ReactElement } from "react";
 import { Icon, Sidebar, Segment, Menu, SemanticICONS } from "semantic-ui-react";
 
 import { getServiceConfiguration } from "../core/actions";
@@ -255,7 +255,7 @@ export default class Runtime extends Component<Props, State> {
               display: "flex",
               flexDirection: "row",
               width: "100%",
-            } as any
+            } as CSSProperties
           }
         >
           <RenameRuntimeAccessory
@@ -401,37 +401,6 @@ export default class Runtime extends Component<Props, State> {
     }
   };
 
-  /*
-  renderNodeRuntime = (
-    runtime: RuntimeDescriptor,
-    expanded: boolean,
-    userId: string,
-    boardName: string,
-    services: Array<ServiceDescriptor>,
-    readonly: boolean,
-    registry: ServiceRegistry,
-    onArrangeService: (serviceUuid: string, position: number) => void
-  ) => {
-    if (expanded) {
-      return (
-        <NodeRuntime
-          ref={(rt) => (this.impl = rt)}
-          userId={userId}
-          boardName={boardName}
-          runtime={runtime}
-          services={services}
-          readonly={readonly}
-          registry={registry}
-          onArrangeService={onArrangeService}
-          onServiceAction={this.onServiceAction}
-          onResult={this.props.onResult}
-        />
-      );
-    }
-    return false;
-  };
-  */
-
   renderRemoteRuntime = (
     scope: RuntimeScope,
     runtime: RuntimeDescriptor,
@@ -455,6 +424,7 @@ export default class Runtime extends Component<Props, State> {
         }}
       >
         <RemoteRuntime
+          key={`remote-runtime-${runtime.id}`}
           collapsed={!expanded}
           scope={scope}
           user={user}
@@ -508,6 +478,7 @@ export default class Runtime extends Component<Props, State> {
           false
         )}
         <BrowserRuntime
+          key={`browser-runtime-${runtime.id}`}
           collapsed={!expanded}
           user={user}
           boardName={boardName}
@@ -590,7 +561,7 @@ export default class Runtime extends Component<Props, State> {
     const { wrapServices = !wide, showSettings, expanded } = this.state;
 
     const readonly = false; // TODO: was if no registry is available
-    const readonlyStyle: any =
+    const readonlyStyle: CSSProperties =
       readonly && !frameless
         ? {
             backgroundColor: "#FFFFFF",
@@ -598,7 +569,7 @@ export default class Runtime extends Component<Props, State> {
             width: "100%",
             zIndex: 200000,
             cursor: "not-allowed",
-            display: !expanded && "none",
+            display: !expanded ? "none" : undefined,
           }
         : {};
 
@@ -648,22 +619,25 @@ export default class Runtime extends Component<Props, State> {
         : null;
     };
 
+    // TODO: this lead to a full re-rerender for BrowserRuntimes in BoardService when expading/collapsing
+    /*
     if (headless && runtime) {
       return renderActualRuntime(true);
     }
-
+*/
     return (
       <div
         style={
           {
-            border: !frameless && "solid 1px lightgray",
+            border: !frameless && !headless ? "solid 1px lightgray" : undefined,
             borderRadius: 3,
             backgroundColor: !frameless && "#EEEEEE10",
             ...style,
-          } as any
+          } as CSSProperties
         }
       >
         {!frameless &&
+          !headless &&
           this.renderExpandableHeadline(
             runtimeId,
             runtimeName,
@@ -701,8 +675,8 @@ export default class Runtime extends Component<Props, State> {
             style={readonlyStyle}
             onClickCapture={(e) => readonly && e.stopPropagation()}
           >
-            {runtime && renderActualRuntime(false)}
-            {((services && services.length === 0) || !isOwner) && (
+            {runtime && renderActualRuntime(headless)}
+            {((services && services.length === 0) || !isOwner) && !headless && (
               <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
             )}
           </div>

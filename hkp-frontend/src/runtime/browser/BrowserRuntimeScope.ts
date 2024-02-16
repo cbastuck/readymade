@@ -78,6 +78,10 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       await service.destroy();
     }
 
+    this.serviceInstances = this.serviceInstances.filter(
+      (svc) => svc.uuid !== service.uuid
+    );
+
     return this.serviceInstances.map(
       ({ uuid, serviceId = "", serviceName = "" }) => ({
         uuid,

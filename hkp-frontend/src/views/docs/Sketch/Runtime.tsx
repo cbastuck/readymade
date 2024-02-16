@@ -10,7 +10,7 @@ type Props = {
 
 export default function Runtime({ numServices }: Props) {
   return (
-    <div style={flexRow as any}>
+    <div style={flexRow}>
       <Arrow yOffset={75} />
       <div className="hkp-card-border" style={s(runtimeDim, t.mb10, t.p5)}>
         <div

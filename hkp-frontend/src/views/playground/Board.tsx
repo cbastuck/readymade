@@ -468,7 +468,7 @@ export default class Board extends Component<Props, State> {
     return (
       <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
         <Runtime
-          key={`sandbox-playground-${runtime.id}`}
+          key={`board-${runtime.id}`}
           initialState={runtime.state}
           ref={(rt) => (this.runtimeInstances[runtime.id] = rt)}
           boardContext={boardContext}

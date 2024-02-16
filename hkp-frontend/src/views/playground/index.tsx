@@ -138,6 +138,7 @@ class Playground extends Component<Props, State> {
         type: "error",
         message: err.message ? err.message : `Fetch failed`,
         timeout: 5000,
+        error: err,
       });
     }
   };
