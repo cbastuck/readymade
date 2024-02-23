@@ -1,5 +1,6 @@
 import { BoardContextState } from "../../BoardContext";
 import HoverActionIcon from "./HoverActionIcon";
+import { t } from "../../styles";
 
 type Props = {
   boardContext: BoardContextState;
@@ -55,6 +56,7 @@ export default function BoardActionsBar({ boardContext }: Props) {
         height: "35px",
         margin: "3px",
         marginLeft: "8px",
+        ...t.unselectable,
       }}
     >
       <div

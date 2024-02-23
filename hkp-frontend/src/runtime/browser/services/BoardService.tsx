@@ -92,7 +92,9 @@ function BoardServiceUI(props: Props) {
     if (Array.isArray(params)) {
       const results = [];
       for (const p of params) {
-        results.push(await processSingle(p));
+        const r: any = await processSingle(p);
+        const input = p; // typeof p === "string" ? p : JSON.stringify(p);
+        results.push({ params: input, value: r });
       }
       return results;
     } else {
@@ -152,7 +154,7 @@ function BoardServiceUI(props: Props) {
   );
 
   const onEdit = useCallback(() => {
-    window.open(`/playground/${selectedBoard}`, "blank");
+    window.open(`/playground/${selectedBoard}`, "_blank");
   }, [selectedBoard]);
 
   const onToggleExpandCollapse = () =>

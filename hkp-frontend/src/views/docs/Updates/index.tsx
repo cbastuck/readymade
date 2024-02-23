@@ -10,12 +10,41 @@ export default function Updates() {
     <Template title="What's new">
       <List divided relaxed style={{ marginTop: "40px" }}>
         <NewsItem
+          date="23.2.2024"
+          content={
+            <div>
+              Introduced the initial concept of BoardService, a service designed
+              to encapsulate entire boards, enabling the composition of logic
+              through nested boards. Each board serves as a reusable building
+              block within any arbitrary pipeline.
+            </div>
+          }
+        />
+        <NewsItem
+          date="23.2.2024"
+          content={
+            <div>
+              <span style={{ color: "rgb(218, 97, 97)" }}>Bugfix</span>: Peering
+              functionality down
+              <div>
+                The introduction of support for remote runtimes led to a
+                breakdown in peering functionality due to infrastructure
+                changes.
+                <div>
+                  The issue has been addressed with the deployment of an updated
+                  configuration.
+                </div>
+              </div>
+            </div>
+          }
+        />
+        <NewsItem
           date="5.2.2024"
-          content={<div>Introduced typewriter style</div>}
+          content={<div>Introduced typewriter style.</div>}
         />
         <NewsItem
           date="7.1.2024"
-          content={<div>Major overhaul and support for remote runtimes</div>}
+          content={<div>Major overhaul and support for remote runtimes.</div>}
         />
         <NewsItem
           date="30.10.2022"
@@ -62,7 +91,7 @@ export default function Updates() {
             <div>
               <Link to="/docs"> Documentation</Link>,{" "}
               <Link to="/docs/tracks/brand">Brand</Link> side-track and merge
-              <Link to="/examples"> Examples </Link> with showcases
+              <Link to="/examples"> Examples </Link> with showcases.
             </div>
           }
         />
@@ -70,7 +99,7 @@ export default function Updates() {
           date="24.6.2022"
           content={
             <div>
-              <Link to="/docs/pitch/what"> What - Why - How </Link> of Hookup
+              <Link to="/docs/pitch/what"> What - Why - How </Link> of Hookup.
             </div>
           }
         />
@@ -80,7 +109,7 @@ export default function Updates() {
             <div>
               Updates Section / Fix{" "}
               <Link to="/service/trigger-pad">TriggerPad</Link> for touch
-              devices
+              devices.
             </div>
           }
         />

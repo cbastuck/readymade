@@ -7,9 +7,9 @@ export default function Node({
   dragHandle,
   tree,
 }: NodeRendererProps<any>) {
-  const iconColor = node.data.iconColor;
-  const isSelected = node.state.isSelected;
-  const isLeaf = node.isLeaf;
+  //const iconColor = node.data.iconColor;
+  //const isSelected = node.state.isSelected;
+  //const isLeaf = node.isLeaf;
   const isEditing = node.isEditing;
   return (
     <div

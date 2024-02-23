@@ -133,24 +133,66 @@ class ArrayTransform {
 function replaceParamsInString(params: any, src: string) {
   const keys = Object.keys(params);
   const replaced = keys.reduce(
-    (acc, cur) => acc.split(`[[${cur}]]`).join(params[cur]),
+    (acc, cur) => acc.split(`[[${cur}]]`).join(resolveValue(params, cur)),
     src
   );
   return replaced;
 }
 
+export function resolveValue(
+  params: { [k: string]: any },
+  address: string
+): any {
+  const parts = address.split(".");
+  if (parts.length > 1) {
+    const top = parts.shift();
+    if (top === undefined) {
+      throw new Error(`ArrayTransform.resolve, top is undefined: ${address}`);
+    }
+    const subparams = params[top];
+    if (subparams === undefined) {
+      throw new Error(
+        `ArrayTransform.resolve, subparams is undefined: ${JSON.stringify(
+          params
+        )}, ${top}`
+      );
+    }
+    return resolveValue(subparams, parts.join("."));
+  }
+
+  return params[address];
+}
+
 export function processConfig(cfg: any, params: any): string {
   if (Array.isArray(cfg)) {
-    const children = cfg.map((c) => processConfig(c, params)).join("");
+    const children = cfg
+      .map((c) => {
+        const { select } = c;
+        const selectedParam = select ? resolveValue(params, select) : params;
+        return processConfig(c, selectedParam);
+      })
+      .join("");
     return replaceParamsInString(params, children);
   }
 
-  const { html, children } = cfg;
+  const { html, children, select, filter } = cfg;
   return Array.isArray(params)
     ? params
+        .filter((x) => {
+          if (!filter) {
+            return true;
+          }
+          try {
+            return !!resolveValue(x, filter); // TODO: not a nice way of using exceptions
+          } catch (err) {
+            return false;
+          }
+        })
+
         .map((param) => {
+          const selectedParam = select ? resolveValue(param, select) : param;
           const childContent = children
-            ? processConfig(children, param)
+            ? processConfig(children, selectedParam)
             : undefined;
           return replaceParamsInString(
             { ...param, children: childContent },

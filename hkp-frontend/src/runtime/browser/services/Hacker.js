@@ -63,6 +63,9 @@ export function HackerUI(props) {
             Health
             <div
               style={{
+                fontFamily: "Arial",
+                fontSize: "30px",
+                marginTop: -2,
                 marginLeft: 5,
                 color: healthStatus.error ? "red" : "green",
               }}

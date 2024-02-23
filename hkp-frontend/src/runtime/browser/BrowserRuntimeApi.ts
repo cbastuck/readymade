@@ -120,8 +120,11 @@ export async function getServiceConfig(
 ): Promise<any> {
   const scope = scope_ as BrowserRuntimeScope;
   const [svc] = scope.findServiceInstance(service.uuid);
-  const config = svc ? filterPrivateMembers(svc) : {};
-  return config;
+  if (svc && svc.getConfiguration) {
+    return await svc.getConfiguration();
+  } else {
+    return svc ? filterPrivateMembers(svc) : {};
+  }
 }
 
 export async function processService(

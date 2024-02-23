@@ -200,6 +200,8 @@ export type ServiceImpl = { [key: string]: any } & {
   process: (params: any) => Promise<any>;
   configure: (config: any) => Promise<void>;
   destroy: () => Promise<void>;
+
+  getConfiguration?: () => Promise<any>;
 };
 
 export type RuntimeImpl = {
@@ -354,7 +356,6 @@ export function isSavedBoard(board: any): board is SavedBoard {
   // TODO: make better
   return (
     board.url !== undefined &&
-    board.description !== undefined &&
     board.value !== undefined &&
     board.name !== undefined
   );

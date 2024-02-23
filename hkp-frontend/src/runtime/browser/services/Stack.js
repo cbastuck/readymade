@@ -6,6 +6,7 @@ import * as uuid from "uuid";
 import ServiceUI from "../../services/ServiceUI";
 import SelectorField from "../../../components/shared/SelectorField";
 import { s, t } from "../../../styles";
+import { filterPrivateMembers } from "./helpers";
 
 const serviceId = "hookup.to/service/stack";
 const serviceName = "Stack";
@@ -54,12 +55,25 @@ export class StackUI extends Component {
         children: (
           <div
             className="hkp-fnt-family"
-            style={s(t.fs12, t.ls1)}
+            style={s(t.fs12, t.ls1, t.w100)}
             title={ssvc.uuid}
           >
             {ssvc.__descriptor
               ? ssvc.__descriptor.serviceName
               : ssvc.serviceName}
+            <span
+              style={{
+                float: "right",
+                cursor: "pointer",
+              }}
+              onClick={(ev) => {
+                service.removeSubservice(ssvc);
+                ev.preventDefault();
+                ev.stopPropagation();
+              }}
+            >
+              <Icon className="hkp-icon-clickable-danger" name="minus" />
+            </span>
           </div>
         ),
       },
@@ -110,6 +124,7 @@ export class StackUI extends Component {
             style={{
               marginLeft: "auto",
               marginTop: "5px",
+              marginRight: "10px",
             }}
           >
             <Dropdown.Menu style={{ height: "200px", overflowY: "auto" }}>
@@ -179,6 +194,10 @@ class Stack {
     }
   }
 
+  getConfiguration = async () => {
+    return filterPrivateMembers(this);
+  };
+
   appendSubService = async (svc) => {
     const ssvc = await this.app.createSubService(this, svc);
     this._subservices.push(ssvc);
@@ -207,6 +226,14 @@ class Stack {
 
     ssvc.configure && (await ssvc.configure(svc));
     return ssvc;
+  };
+
+  removeSubservice = async (svc) => {
+    this._subservices = this._subservices.filter((x) => x !== svc);
+    if (svc.destroy) {
+      svc.destroy();
+    }
+    this.app.notify(this, { subservices: this._subservices });
   };
 
   async processArray(params) {

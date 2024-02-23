@@ -3,6 +3,7 @@ import { Checkbox } from "semantic-ui-react";
 
 import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
 import ServiceUI from "../../services/ServiceUI";
+import { t } from "../../../styles";
 
 const serviceId = "hookup.to/service/html";
 const serviceName = "Html";
@@ -53,7 +54,10 @@ function HtmlUI(props: any) {
         >
           <div id="html-service" style={{ margin: "20px 100px" }}>
             {htmlDocument ? (
-              <div dangerouslySetInnerHTML={{ __html: htmlDocument }} />
+              <div
+                dangerouslySetInnerHTML={{ __html: htmlDocument }}
+                style={t.selectable}
+              />
             ) : (
               "Render Area"
             )}
@@ -125,7 +129,7 @@ class Html {
   async process(params: any) {
     const html = `
       <div style="padding: 10px;">
-        ${params}
+        ${Array.isArray(params) ? params.join("") : params}
       </div>`;
     this.app.notify(this, { html });
     return html;

@@ -41,10 +41,9 @@ export default class ConfigurationEditor extends Component {
       >
         <Resizable>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <h1 style={s(t.fs13, t.ls1)}>Service Configuration</h1>
             <div
               style={{
-                height: "100%",
+                height: "400px",
                 minWidth: "600px",
                 margin: 5,
                 flexGrow: 1,

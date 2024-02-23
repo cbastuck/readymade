@@ -1,4 +1,14 @@
-import { processConfig } from "./Html";
+import { resolveValue, processConfig } from "./ArrayTransform";
+
+test("resolve direct child", async () => {
+  expect(resolveValue({ a: 123 }, "a")).toBe(123);
+});
+
+test("resolve one level", async () => {
+  expect(resolveValue({ a: { b: 123 } }, "a")).toEqual({ b: 123 });
+  expect(resolveValue({ a: { b: 123 } }, "a.b")).toBe(123);
+  expect(() => resolveValue({ a: { b: 123 } }, "x.b")).toThrow();
+});
 
 test("basic test - scalar param and scalar config", () => {
   const config = [
