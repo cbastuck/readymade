@@ -97,3 +97,20 @@ body {
   font-family: SpecialElite;
   color: #888;
 }
+
+.ui.accordion:not(.styled) .title ~ .content:not(.ui) {
+  padding: 0;
+}
+.ui.accordion .title ~ .content {
+  display: block;
+}
+.expand {
+  transition: 0.3s max-height ease-out, 0.3s opacity ease-out;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+.active.expand {
+  max-height: 1000px;
+  opacity: 1;
+}

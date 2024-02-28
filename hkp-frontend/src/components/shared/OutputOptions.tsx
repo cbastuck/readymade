@@ -1,4 +1,4 @@
-import React, { Component, ReactElement } from "react";
+import { Component, ReactElement } from "react";
 
 import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";

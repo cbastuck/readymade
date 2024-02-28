@@ -78,7 +78,11 @@ export class StackUI extends Component {
         ),
       },
       key: ssvc.uuid,
-      content: { content: service.createSubserviceUI(ssvc) }, // only possible in BrowserRuntime?
+      content: (
+        <Accordion.Content className="expand">
+          {service.createSubserviceUI(ssvc)}
+        </Accordion.Content>
+      ), // only possible in BrowserRuntime?
     }));
     const inputOptions = { multiplex: "multiplex", lanes: "lanes" };
     const outputOptions = { array: "array" };

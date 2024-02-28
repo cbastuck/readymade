@@ -222,7 +222,10 @@ function BoardServiceUI(props: Props) {
                   <Button
                     icon={"external alternate"}
                     size="tiny"
-                    style={{ width: "50px", height: "33px" }}
+                    style={{
+                      width: "50px",
+                      height: "33px",
+                    }}
                     onClick={onEdit}
                   />
                 </div>
@@ -252,7 +255,11 @@ function BoardServiceUI(props: Props) {
                 <div
                   style={{
                     height: "100%",
+                    maxHeight: isExpanded ? 1000 : 0,
+                    opacity: isExpanded ? 1 : 0,
                     width: "100%",
+                    maxWidth: isExpanded ? 1000 : 10,
+                    transition: "max-height 1s, max-width 0.5s, opacity 2.0s",
                   }}
                 >
                   <Board
