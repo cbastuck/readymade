@@ -16,7 +16,20 @@ export default function Docs() {
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
 
-      <Chapter name="4. Side tracks" details="topics work in progress">
+      <Chapter name="4. Blog">
+        <Article to="/docs/blog/nesting">
+          Nesting Boards: Each Puzzle Piece, a Puzzle Itself
+        </Article>
+        <Article to="/docs/blog/collaboration">
+          Human-machine collaboration and Determinism
+        </Article>
+        <Article to="/docs/blog/slideshow">
+          Cast photos from the phone to a Browser on the TV
+        </Article>
+        <Article to="/docs/blog/game">A playful introduction to Hookup</Article>
+      </Chapter>
+
+      <Chapter name="5. Side tracks" details="topics work in progress">
         <Article to="/docs/tracks/branding">Brand and identity</Article>
         <Article to="/docs/tracks/bridge">Bridge</Article>
         <Article to="/docs/tracks/remote">Remote runtimes</Article>

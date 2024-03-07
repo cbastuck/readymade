@@ -1,4 +1,4 @@
-import { Component, CSSProperties } from "react";
+import { Component, CSSProperties, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Container, Breadcrumb } from "semantic-ui-react";
 
@@ -7,18 +7,20 @@ import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
 
 type Props = {
-  children: JSX.Element[] | JSX.Element;
-  title: string;
+  children: ReactNode[] | ReactNode;
+  title?: string;
+  slug?: string;
   isRoot?: boolean;
   parent?: string;
 };
 export default class Template extends Component<Props> {
   // TODO: these breadcrumps are taylored to the docs views
   // make this component more generic - also used in Profile
-  renderBreadcrumbs = (title: string, parent?: string) => {
+  renderBreadcrumbs = (title?: string, parent?: string) => {
     const breadcrumpStyle: CSSProperties = {
       letterSpacing: 1,
       fontSize: 12,
+      textTransform: "capitalize",
     };
     return (
       <div
@@ -44,7 +46,7 @@ export default class Template extends Component<Props> {
             </>
           )}
           <Breadcrumb.Section link>
-            <span style={breadcrumpStyle}>{title}</span>
+            <span style={breadcrumpStyle}>{title || "missing"}</span>
           </Breadcrumb.Section>
         </Breadcrumb>
       </div>
@@ -52,8 +54,8 @@ export default class Template extends Component<Props> {
   };
 
   render() {
-    const { children, title, isRoot, parent } = this.props;
-    const renderBreadcrumbs = !!title && (!isRoot || !!parent);
+    const { children, title, isRoot, parent, slug } = this.props;
+    const renderBreadcrumbs = (!!title || slug) && (!isRoot || !!parent);
     return (
       <BoardProvider
         user={null}
@@ -88,7 +90,7 @@ export default class Template extends Component<Props> {
             >
               {title}
             </h1>
-            {renderBreadcrumbs && this.renderBreadcrumbs(title, parent)}
+            {renderBreadcrumbs && this.renderBreadcrumbs(title || slug, parent)}
             <div
               style={{
                 fontSize: 14,

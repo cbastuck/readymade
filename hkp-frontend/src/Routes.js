@@ -39,6 +39,8 @@ import BoardBlock from "./views/docs/buildingblocks/BoardBlock";
 import RuntimeBlock from "./views/docs/buildingblocks/RuntimeBlock";
 import ServiceBlock from "./views/docs/buildingblocks/ServiceBlock";
 
+import Blog from "./views/docs/blog";
+
 import ServiceRedirect from "./views/ServiceRedirect";
 
 import Track from "./views/docs/tracks";
@@ -112,6 +114,7 @@ export default function AppRoutes() {
       <Route path="/docs/pitch/why" element={<WhyPitch />} />
       <Route path="/docs/pitch/how" element={<HowPitch />} />
       <Route path="/docs/tracks/:track" element={<Track />} />
+      <Route path="/docs/blog/:article" element={<Blog />} />
 
       <Route path="/docs/buildingblock/board" element={<BoardBlock />} />
       <Route path="/docs/buildingblock/runtime" element={<RuntimeBlock />} />
