@@ -170,6 +170,13 @@ class BoardProvider extends Component<Props, BoardContextState> {
     }
   }
 
+  waitForUserLogin = async () => {
+    await new Promise<void>((resolve) => {
+      this.setState({ awaitUserLogin: resolve });
+    });
+    this.setState({ awaitUserLogin: null });
+  };
+
   fetchBoard = async () => {
     if (!this.props.fetchBoard) {
       return;
@@ -192,10 +199,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     ).some((isAuthenticated) => !isAuthenticated);
 
     if (boardRequiresReauth && !this.state.user) {
-      await new Promise<void>((resolve) => {
-        this.setState({ awaitUserLogin: resolve });
-      });
-      this.setState({ awaitUserLogin: null });
+      await this.waitForUserLogin();
     }
 
     const user = this.state.user;
@@ -331,25 +335,30 @@ class BoardProvider extends Component<Props, BoardContextState> {
       );
     }
     const user = this.state.user;
-    const result = await api.addRuntime(rtClass, user);
-    if (result) {
-      const { runtime, services, registry = [], scope } = result;
-      const runtimeWithUser = { ...runtime, user };
-      this.setState((state: BoardContextState) => ({
-        runtimes: [...state.runtimes, runtimeWithUser],
-        services: {
-          ...state.services,
-          [runtime.id]: services,
-        },
-        registry: {
-          ...state.registry,
-          [runtime.id]: registry,
-        },
-        scopes: {
-          ...state.scopes,
-          [runtime.id]: scope,
-        },
-      }));
+
+    try {
+      const result = await api.addRuntime(rtClass, user);
+      if (result) {
+        const { runtime, services, registry = [], scope } = result;
+        const runtimeWithUser = { ...runtime, user };
+        this.setState((state: BoardContextState) => ({
+          runtimes: [...state.runtimes, runtimeWithUser],
+          services: {
+            ...state.services,
+            [runtime.id]: services,
+          },
+          registry: {
+            ...state.registry,
+            [runtime.id]: registry,
+          },
+          scopes: {
+            ...state.scopes,
+            [runtime.id]: scope,
+          },
+        }));
+      }
+    } catch (err) {
+      await this.waitForUserLogin();
     }
   };
 
