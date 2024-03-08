@@ -190,9 +190,8 @@ export default class Board extends Component<Props, State> {
       const api =
         nextScope && this.props.boardContext.runtimeApis[nextRuntime.type];
       if (api) {
-        api.processRuntime(nextScope, result, null);
-        const boardResult = await api.processRuntime(nextScope, result, null);
         // TODO: THIS IS TEMPORARY FOR TESTING
+        const boardResult = await api.processRuntime(nextScope, result, null);
         const scope: any = this.props.boardContext.scopes[runtime.id];
         if (scope.reportBoardResult) {
           scope.reportBoardResult(boardResult);
