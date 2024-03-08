@@ -1,37 +1,28 @@
-import React, { Component } from "react";
-
-import Toolbar from "../../components/Toolbar";
-import Footer from "../../components/Footer";
+import { Component } from "react";
 
 export default class Contact extends Component {
   render() {
     return (
       <div>
-        <Toolbar />
-        <div className="about-image container">
-          <div className="about-text">
-            <div
-              style={{
-                fontSize: "50px",
-                letterSpacing: 1,
-              }}
-            >
-              Email
-            </div>
-            <div
-              style={{
-                margin: "7px 0px",
-                textTransform: "lowercase",
-                fontSize: 18,
-              }}
-            >
-              <a href="mailto:mail@hookup.to" style={{}}>
-                mail@hookup.to
-              </a>
-            </div>
-          </div>
+        <div
+          style={{
+            fontSize: "45px",
+            letterSpacing: 1,
+          }}
+        >
+          Email
         </div>
-        <Footer />
+        <div
+          style={{
+            margin: "30px 0px",
+            textTransform: "lowercase",
+            fontSize: 18,
+          }}
+        >
+          <a href="mailto:mail@hookup.to" style={{}}>
+            mail@hookup.to
+          </a>
+        </div>
       </div>
     );
   }

@@ -1,25 +1,9 @@
 import { Component } from "react";
 
-import Toolbar from "../../components/Toolbar";
-import Footer from "../../components/Footer";
 import "./Imprint.css";
 
 const data =
   "4368726973746f7068204261737475636b0a546175726f6767656e657220537472617373652033340a3130353839204265726c696e0a6d61696c40636261737475636b2e64650a3033303931393039333936";
-
-class Separator extends Component {
-  render() {
-    return (
-      <div
-        style={{
-          width: "40%",
-          borderBottom: "solid 1px #454f6d",
-          margin: "10px auto",
-        }}
-      ></div>
-    );
-  }
-}
 
 export default class Imprint extends Component {
   ex = (data) => {
@@ -52,52 +36,15 @@ export default class Imprint extends Component {
 
   render() {
     return (
-      <div className="container">
-        <Toolbar />
-        <div>
-          <div className="imprint-container">
-            <h3 className="imprint-text">
-              Information in accordance with Section 5 TMG
-            </h3>
-            {this.renderAddress()}
-            <Separator />
-            <h3 className="imprint-text">
-              Responsible for the content in accordance with Section 55
-              paragraph 2 of the German Rundfunkstaatsvertrag (RStV):
-            </h3>
-            {this.renderAddress()}
-            <Separator />
-            <h3 className="imprint-text">
-              Credits, Sources for images and graphics
-            </h3>
-            <div style={{ textAlign: "left" }} className="imprint-text">
-              <div className="imprint-item">
-                Icons are from
-                <a href="https://fontawesome.com/license/free">
-                  {" "}
-                  Font Awesome{" "}
-                </a>
-              </div>
-              <div className="imprint-item">
-                Special Elite is used as a{" "}
-                <a href="https://fonts.google.com/specimen/Special+Elite/about">
-                  font
-                </a>
-              </div>
-              <div className="imprint-item">
-                Using{" "}
-                <a href="https://microsoft.github.io/monaco-editor/">Monaco</a>{" "}
-                as code editor
-              </div>
-              <div className="imprint-item">
-                <a href="https://react.dev/">React</a> and{" "}
-                <a href="https://react.semantic-ui.com/">Semantic-UI React</a>{" "}
-                are used
-              </div>
-            </div>
-          </div>
-        </div>
-        <Footer />
+      <div>
+        <h4>Information in accordance with Section 5 TMG</h4>
+        {this.renderAddress()}
+
+        <h4>
+          Responsible for the content in accordance with Section 55 paragraph 2
+          of the German Rundfunkstaatsvertrag (RStV):
+        </h4>
+        {this.renderAddress()}
       </div>
     );
   }

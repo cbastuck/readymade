@@ -5,6 +5,7 @@ import Footer from "../../components/Footer";
 import Switcher from "../../components/Switcher";
 
 import "./About.css";
+import Contact from "./Contact";
 
 class Profile extends Component {
   render() {
@@ -49,6 +50,9 @@ export default class About extends Component {
                 marginTop: 30,
                 marginBottom: 0,
                 fontSize: 20,
+                display: "flex",
+                flexDirection: "column",
+                height: "100%",
               }}
             >
               <p>
@@ -66,6 +70,9 @@ export default class About extends Component {
               <p>
                 <span style={amp}>Improvise</span> with complexity.
               </p>
+              <div style={{ paddingTop: "40px" }}>
+                <Contact />
+              </div>
             </div>
           </div>
         </div>

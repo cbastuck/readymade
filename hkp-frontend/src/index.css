@@ -147,3 +147,13 @@ blockquote:after {
   right: -5rem;
   bottom: 1rem;
 }
+
+.hkp-fx-hover-grow {
+  transform: scale(1);
+  transition: transform 0.5s ease;
+}
+
+.hkp-fx-hover-grow:hover {
+  transform: scale(1.5);
+  transition: transform 0.5s ease;
+}

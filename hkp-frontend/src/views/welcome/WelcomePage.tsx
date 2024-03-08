@@ -41,6 +41,23 @@ export default function WelcomePage() {
           border: "1px white",
         }}
       />
+
+      <div
+        style={{
+          position: "absolute",
+          transform: "rotate(-20deg)",
+          right: "35%",
+        }}
+      >
+        <a href="/engage" style={{ color: "white" }}>
+          <div
+            style={{ padding: "7px 20px", backgroundColor: "black" }}
+            className="hkp-fx-hover-grow"
+          >
+            Click to Engage
+          </div>
+        </a>
+      </div>
     </div>
   );
 }

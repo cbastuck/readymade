@@ -50,9 +50,10 @@ export default function Footer({ flex }: Props) {
         >
           <Link to="/about"> about </Link>
           {" ‧ "}
-          <Link to="/imprint"> imprint </Link>
+          <Link to="/terms"> terms </Link>
           {" ‧ "}
-          <Link to="/contact"> contact </Link>
+          <Link to="/privacy"> privacy </Link>
+
           <div
             style={{
               marginLeft: "auto",

@@ -6,9 +6,9 @@ import MissionPage from "./views/welcome/MissionPage";
 import PitchPage from "./views/welcome/PitchPage";
 import ExperimentPage from "./views/welcome/ExperimentPage";
 import About from "./views/about/About";
-import Imprint from "./views/about/Imprint";
+
 import Updates from "./views/docs/Updates";
-import Contact from "./views/about/Contact";
+
 import Sandbox from "./Sandbox";
 import Playground from "./views/playground/index";
 import Examples from "./views/examples/Examples";
@@ -88,8 +88,7 @@ export default function AppRoutes() {
         }
       />
       <Route path="/about" element={<About />} />
-      <Route path="/contact" element={<Contact />} />
-      <Route path="/imprint" element={<Imprint />} />
+
       <Route path="/sandbox" element={<Sandbox />} />
       <Route path="/playground/:board/src" element={<BoardSource />} />
       <Route path="/playground/:board" element={<Playground />} />

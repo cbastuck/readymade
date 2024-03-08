@@ -3,9 +3,9 @@ import Template from "../../views/Template";
 import Title from "./Title";
 
 type Props = {
-  slug: string;
+  slug?: string;
   title: string;
-  hero: string;
+  hero?: string;
   caption?: string;
   date?: string;
   children: ReactNode | ReactNode[];

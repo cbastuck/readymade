@@ -1,5 +1,5 @@
 type Props = {
-  src: string;
+  src?: string;
   alt: string;
   caption?: string;
   border?: boolean;
@@ -12,23 +12,25 @@ export default function Image({
   border = false,
 }: Props) {
   return (
-    <div style={{ width: "100%" }}>
-      <img
-        src={src}
-        alt={alt}
-        width="80%"
-        style={{
-          margin: "15px auto",
-          display: "block",
-          border: border ? "solid 1px lightgray" : undefined,
-          padding: 5,
-        }}
-      />
-      {caption && (
-        <div style={{ width: "70%", margin: "auto", marginBottom: "30px" }}>
-          {caption}
-        </div>
-      )}
-    </div>
+    src && (
+      <div style={{ width: "100%" }}>
+        <img
+          src={src}
+          alt={alt}
+          width="80%"
+          style={{
+            margin: "15px auto",
+            display: "block",
+            border: border ? "solid 1px lightgray" : undefined,
+            padding: 5,
+          }}
+        />
+        {caption && (
+          <div style={{ width: "70%", margin: "auto", marginBottom: "30px" }}>
+            {caption}
+          </div>
+        )}
+      </div>
+    )
   );
 }

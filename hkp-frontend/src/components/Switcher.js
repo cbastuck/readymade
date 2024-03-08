@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 export default class Switcher extends Component {
   state = {
@@ -26,7 +26,7 @@ export default class Switcher extends Component {
           marginBottom: 50,
         }}
       >
-         {data[idx]} 
+        {data[idx]}
       </div>
     );
   }
