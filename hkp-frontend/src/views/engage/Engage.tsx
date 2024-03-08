@@ -82,7 +82,7 @@ export default function Engage() {
           >
             {showPersonals
               ? "No, does not look it's for me, remove that block again!"
-              : "I would like to engage more."}
+              : "I would like to engage more"}
           </button>
         </div>
         <div
