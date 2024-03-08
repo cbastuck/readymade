@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import Template from "../../Template";
+import Template from "../../views/Template";
 import Title from "./Title";
 
 type Props = {

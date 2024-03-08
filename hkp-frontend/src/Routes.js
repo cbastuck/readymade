@@ -40,6 +40,9 @@ import RuntimeBlock from "./views/docs/buildingblocks/RuntimeBlock";
 import ServiceBlock from "./views/docs/buildingblocks/ServiceBlock";
 
 import Blog from "./views/docs/blog";
+import Engage from "./views/engage/Engage";
+import Terms from "./views/terms";
+import Privacy from "./views/privacy";
 
 import ServiceRedirect from "./views/ServiceRedirect";
 
@@ -124,6 +127,10 @@ export default function AppRoutes() {
 
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/serviceRedirect" element={<ServiceRedirect />} />
+
+      <Route path="/engage" element={<Engage />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/privacy" element={<Privacy />} />
 
       <Route path="/headless" element={<Headless />} />
       <Route path="/join/:share" element={<Join />} />

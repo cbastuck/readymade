@@ -1,8 +1,8 @@
-import Article from "../Article";
-import Image from "../Image";
+import Article from "../../../../components/layout/Article";
+import Image from "../../../../components/layout/Image";
 
-import Paragraph from "../Paragraph";
-import Video from "../Video";
+import Paragraph from "../../../../components/layout/Paragraph";
+import Video from "../../../../components/layout/Video";
 
 import hero from "./1702039227041.png";
 import summarizeNewsBoard from "./1702043655732.jpeg";

@@ -7,6 +7,7 @@ type Props = {
   disabled?: boolean;
   icon?: string;
   size?: SemanticSIZES;
+  type?: "submit" | "reset" | "button";
   onClick: () => void;
 };
 
@@ -16,6 +17,7 @@ export default function ButtonComponent({
   disabled = false,
   icon,
   size,
+  type,
   onClick,
 }: Props) {
   const buttonStyle = {
@@ -34,6 +36,7 @@ export default function ButtonComponent({
       disabled={disabled}
       icon={icon}
       size={size}
+      type={type}
       onClick={onClick}
     >
       {children}

@@ -64,19 +64,30 @@ function BoardSource({ editSourceCode = true, match: { params } }: Props) {
   if (editSourceCodeMode) {
     return (
       <div style={{ height: "100%" }}>
-        <Button style={s(t.m5, t.ls1, t.fs12)} onClick={onSave}>
-          Save
-        </Button>
-
-        <Button
-          style={s(t.m5, t.ls1, t.fs12)}
-          onClick={() => createBoardLink(editor.current?.getValue())}
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            flexDirection: "row",
+            padding: "0px 5px",
+          }}
         >
-          Link
-        </Button>
-        <Button style={s(t.m5, t.ls1, t.fs12)} onClick={closeSourceView}>
-          Close
-        </Button>
+          <Button style={s(t.m5, t.ls1, t.fs12, t.w100)} onClick={onSave}>
+            Save
+          </Button>
+
+          <Button
+            style={s(t.m5, t.ls1, t.fs12, t.w100)}
+            onClick={() => {
+              const url = createBoardLink(editor.current?.getValue());
+              navigator.clipboard.writeText(url);
+              setNotification(`Copied to clipboard: ${url}`);
+            }}
+          >
+            Link
+          </Button>
+        </div>
+
         <InfoNotification
           style={{ marginBottom: 5 }}
           title="Info"

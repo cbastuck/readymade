@@ -429,6 +429,25 @@ class Playground extends Component<Props, State> {
     this.setState({ sidechainRouting: updatedRoutings });
   };
 
+  onCreateBoardLink = async () => {
+    const data = await this.boardProviderRef?.state.serializeBoard();
+    if (data) {
+      const url = createBoardLink(
+        JSON.stringify({
+          runtimes: data.runtimes,
+          services: data.services,
+        })
+      );
+      navigator.clipboard.writeText(url);
+      this.context.pushNotification({
+        type: "info",
+        message: `Copied to clipboard: ${url}`,
+      });
+    }
+
+    return true;
+  };
+
   render() {
     const appContext = this.context;
     const runtimeApis: RuntimeApiMap = {
@@ -456,17 +475,7 @@ class Playground extends Component<Props, State> {
             this.setState({ boardSyncActive: !this.state.boardSyncActive });
             return true;
           } else if (action.type === "createBoardLink") {
-            this.boardProviderRef?.state.serializeBoard().then(
-              (data) =>
-                data &&
-                createBoardLink(
-                  JSON.stringify({
-                    runtimes: data.runtimes,
-                    services: data.services,
-                  })
-                )
-            );
-            return true;
+            return this.onCreateBoardLink();
           } else if (action.type === "showBoardSource") {
             this.boardProviderRef?.state.serializeBoard().then((data) => {
               data &&

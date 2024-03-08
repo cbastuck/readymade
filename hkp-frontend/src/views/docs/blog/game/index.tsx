@@ -1,6 +1,6 @@
-import Article from "../Article";
-import Paragraph from "../Paragraph";
-import Image from "../Image";
+import Article from "../../../../components/layout/Article";
+import Paragraph from "../../../../components/layout/Paragraph";
+import Image from "../../../../components/layout/Image";
 
 import game from "./1682265455826.gif";
 import hero from "./1682312054570.png";

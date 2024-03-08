@@ -16,7 +16,7 @@ export default function Docs() {
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
 
-      <Chapter name="4. Blog">
+      <Chapter name="4. Blog Articles">
         <Article to="/docs/blog/nesting">
           Nesting Boards: Each Puzzle Piece, a Puzzle Itself
         </Article>

@@ -8,7 +8,16 @@ type Props = {
 export default function NotificationContent({ message, onClose }: Props) {
   return (
     <div style={{ display: "flex", flexDirection: "row" }}>
-      <div style={{ padding: "8px 5px" }}>{message}</div>
+      <div
+        style={{
+          padding: "8px 5px",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          overflowX: "clip",
+        }}
+      >
+        {message}
+      </div>
       {onClose && (
         <Button
           style={{ marginLeft: "auto", backgroundColor: "inherit", width: 40 }}

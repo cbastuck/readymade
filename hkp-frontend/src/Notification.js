@@ -10,7 +10,17 @@ export default function Notification({ value, onClose }) {
   return (
     <Message info={type === "info"} error={type === "error"}>
       <div style={{ display: "flex", flexDirection: "row" }}>
-        <div style={{ width: "100%", marginTop: 5 }}>{message}</div>
+        <div
+          style={{
+            width: "100%",
+            marginTop: 5,
+            overflowX: "clip",
+            whiteSpace: "nowrap",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {message}
+        </div>
         {ctas
           .filter((cta) => !!cta.callback)
           .map((cta) => (

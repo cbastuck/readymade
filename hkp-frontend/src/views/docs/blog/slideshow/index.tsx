@@ -1,6 +1,6 @@
-import Article from "../Article";
-import Paragraph from "../Paragraph";
-import Video from "../Video";
+import Article from "../../../../components/layout/Article";
+import Paragraph from "../../../../components/layout/Paragraph";
+import Video from "../../../../components/layout/Video";
 
 export default function Slideshow() {
   return (

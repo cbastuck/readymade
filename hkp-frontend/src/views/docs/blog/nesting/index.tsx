@@ -1,8 +1,8 @@
-import Image from "../Image";
-import Paragraph from "../Paragraph";
-import Article from "../Article";
-import Video from "../Video";
-import Code from "../Code";
+import Image from "../../../../components/layout/Image";
+import Paragraph from "../../../../components/layout/Paragraph";
+import Article from "../../../../components/layout/Article";
+import Video from "../../../../components/layout/Video";
+import Code from "../../../../components/layout/Code";
 
 import nestingExampleBoard from "./1708860295675.jpeg";
 import nestingExampleOuter from "./1708853605642.jpeg";

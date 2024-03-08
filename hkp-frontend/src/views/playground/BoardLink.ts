@@ -7,8 +7,10 @@ export function encodeBoardState(src: string) {
 
 export function createBoardLink(src: string) {
   const encoded = encodeBoardState(src);
-  const url = `/playground/${generateRandomName()}?fromLink=${encoded}`;
-  openLink(url);
+  const url = `${
+    window.location.origin
+  }/playground/${generateRandomName()}?fromLink=${encoded}`;
+  return url;
 }
 
 export function createBoardSrcLink(src: string) {

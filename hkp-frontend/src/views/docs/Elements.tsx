@@ -1,4 +1,4 @@
-import { CSSProperties } from "react";
+import { CSSProperties, ReactElement } from "react";
 
 type ParagraphProps = {
   children: string | string[];
