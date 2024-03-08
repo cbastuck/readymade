@@ -1,3 +1,5 @@
+import { Button } from "semantic-ui-react";
+
 import ServiceUI from "../services/ServiceUI";
 import InputField from "../../components/shared/InputField";
 import { ServiceImpl } from "../../types";
@@ -8,7 +10,7 @@ import Slider from "../../components/shared/Slider";
 
 type Props = { service: ServiceImpl };
 
-export default function GenericServiceUI({ service }: Props) {
+export default function RemoteServiceUI({ service }: Props) {
   const meta = service["__meta__"];
   const [properties, setProperties] = useState<any>(extractProperties(service));
 
@@ -86,6 +88,8 @@ export default function GenericServiceUI({ service }: Props) {
           const visibility =
             metaInfo && metaInfo.type === "text" && metaInfo.data.visibility;
 
+          const readonly = visibility === "readonly";
+
           const type =
             t === "string"
               ? visibility === "hide"
@@ -94,19 +98,32 @@ export default function GenericServiceUI({ service }: Props) {
               : (t as any);
 
           return (
-            <InputField
+            <div
               key={`RemoteSerivceUI-${service.uuid}.${prop}`}
-              label={prop}
-              labelStyle={{
-                textAlign: "left",
-                textTransform: "capitalize",
-              }}
-              value={val}
-              onChange={(_, { value }) => {
-                service.configure({ [prop]: value });
-              }}
-              type={type}
-            />
+              style={{ display: "flex", flexDirection: "row" }}
+            >
+              <InputField
+                label={prop}
+                labelStyle={{
+                  textAlign: "left",
+                  textTransform: "capitalize",
+                }}
+                value={val}
+                onChange={(_, { value }) => {
+                  service.configure({ [prop]: value });
+                }}
+                type={type}
+                disabled={readonly}
+              />
+              {readonly && (
+                <Button
+                  style={{ width: 40, height: 33, margin: 3 }}
+                  icon="copy"
+                  size="tiny"
+                  onClick={() => navigator.clipboard.writeText(val)}
+                />
+              )}
+            </div>
           );
         })}
       </div>

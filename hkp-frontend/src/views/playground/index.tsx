@@ -470,12 +470,13 @@ class Playground extends Component<Props, State> {
         saveBoard={this.saveBoard}
         isActionAvailable={this.isActionAvailable}
         serializeBoard={this.serializeBoard}
-        onAction={(action: Action): boolean => {
+        onAction={(action: Action) => {
           if (action.type === "toggleBoardSync") {
             this.setState({ boardSyncActive: !this.state.boardSyncActive });
             return true;
           } else if (action.type === "createBoardLink") {
-            return this.onCreateBoardLink();
+            this.onCreateBoardLink();
+            return true;
           } else if (action.type === "showBoardSource") {
             this.boardProviderRef?.state.serializeBoard().then((data) => {
               data &&

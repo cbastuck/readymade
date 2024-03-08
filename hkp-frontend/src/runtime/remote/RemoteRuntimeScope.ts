@@ -135,4 +135,15 @@ export default class RemoteRuntimeScope implements RuntimeScope {
       );
     }
   };
+
+  reportBoardResult = (result: any) => {
+    if (this.socket) {
+      this.socket.send(
+        JSON.stringify({
+          type: "boardResult",
+          result: JSON.stringify(result),
+        })
+      );
+    }
+  };
 }
