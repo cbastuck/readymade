@@ -37,7 +37,8 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   onResult = async (
     instanceId: string | null,
     result: any,
-    requestId: string | null
+    requestId: string | null,
+    resultCallback: null | ((p: any) => void)
   ): Promise<void> => {
     console.warn("BrowserRuntimeScope.onResult not set");
   };
@@ -138,7 +139,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       }
     }
 
-    this.onResult(svc ? svc.uuid : null, result, requestId);
+    this.onResult(svc ? svc.uuid : null, result, requestId, null);
     return result;
   };
 }

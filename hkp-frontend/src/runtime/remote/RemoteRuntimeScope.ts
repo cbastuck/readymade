@@ -35,9 +35,17 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   onResult = async (
     instanceId: string | null,
     result: any,
-    requestId: string | null
+    requestId: string | null,
+    resultCallback: null | ((p: any) => void)
   ): Promise<void> => {
     console.warn("RemoteRuntimeScope.onResult not set");
+  };
+
+  onResultWithCallback = async (data: any) => {
+    const boardResult = await new Promise<any>((resolve) =>
+      this.onResult(null, data, null, resolve)
+    );
+    this.reportBoardResult(boardResult);
   };
 
   onConfig = (instanceId: string, config: object) => {
@@ -124,7 +132,11 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     if (message.type === RemoteRuntimeMessageType.PONG) {
       // console.log("Received a pong message");
     } else if (message.type === RemoteRuntimeMessageType.RESULT) {
-      this.onResult(null, message.data, null);
+      if (message.expectCallback) {
+        this.onResultWithCallback(message.data);
+      } else {
+        this.onResult(null, message.data, null, null);
+      }
     } else if (message.type === RemoteRuntimeMessageType.CONFIGURATION) {
       this.onConfig(message.data.instanceId, message.data.config);
     } else {

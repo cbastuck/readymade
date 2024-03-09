@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 import { Dropdown } from "semantic-ui-react";
 
 import "./ServiceDropdown.css";

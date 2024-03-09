@@ -28,7 +28,8 @@ export type RuntimeDescriptor = RuntimeClass & {
 export type OnResult = (
   uuid: string | null,
   result: any,
-  requestId: string | null
+  requestId: string | null,
+  resultCallback: null | ((p: any) => void)
 ) => Promise<void>;
 
 export interface RuntimeScope {

@@ -144,12 +144,14 @@ export default class Board extends Component<Props, State> {
     return runtime || null;
   };
 
+  pendingResultCallback: null | ((p: any) => void) = null;
   onResult = async (
     runtime: RuntimeDescriptor,
     peersContext: PeersContextState | null,
     svcUuid: string | null,
     result: any,
-    requestId: string | null
+    requestId: string | null,
+    resultCallback: null | ((p: any) => void)
   ) => {
     const { sidechainRouting, outputRouting, boardName } = this.props;
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
@@ -181,23 +183,26 @@ export default class Board extends Component<Props, State> {
         }
       }
     }
+
+    if (resultCallback) {
+      this.pendingResultCallback = resultCallback;
+    }
+
     const runtimeOutput = outputRouting[runtime.id] || {};
     const flow = (runtimeOutput && runtimeOutput.route?.flow) || "pass";
     if (flow === "pass") {
       const nextRuntime = this.getNextRuntime(runtime);
       const nextScope =
         nextRuntime && this.props.boardContext.scopes[nextRuntime.id];
-      const api =
+      const nextApi =
         nextScope && this.props.boardContext.runtimeApis[nextRuntime.type];
-      if (api) {
-        // TODO: THIS IS TEMPORARY FOR TESTING
-        const boardResult = await api.processRuntime(nextScope, result, null);
-        const scope: any = this.props.boardContext.scopes[runtime.id];
-        if (scope.reportBoardResult) {
-          scope.reportBoardResult(boardResult);
-        }
-        // ------
+      if (nextApi) {
+        nextApi.processRuntime(nextScope, result, null);
       } else {
+        if (this.pendingResultCallback) {
+          this.pendingResultCallback(result);
+          this.pendingResultCallback = null;
+        }
         if (this.props.onResult) {
           if (result !== null) {
             // null means stop the process
@@ -468,8 +473,17 @@ export default class Board extends Component<Props, State> {
     const onResult = (
       uuid: string | null,
       result: any,
-      requestId: string | null
-    ) => this.onResult(runtime, peersContext, uuid, result, requestId);
+      requestId: string | null,
+      resultCallback: null | ((p: any) => void)
+    ) =>
+      this.onResult(
+        runtime,
+        peersContext,
+        uuid,
+        result,
+        requestId,
+        resultCallback
+      );
 
     return (
       <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
