@@ -255,6 +255,11 @@ export type RuntimeApi = {
     params: any,
     requestId: string | null
   ) => Promise<any>;
+
+  rearrangeServices: (
+    scope: RuntimeScope,
+    newOrder: Array<ServiceDescriptor>
+  ) => Promise<Array<ServiceDescriptor>>;
 };
 
 export type RuntimeApiMap = {

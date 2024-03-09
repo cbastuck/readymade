@@ -229,6 +229,15 @@ function createService(
   return [svc, descriptor];
 }
 
+function rearrangeServices(
+  scope_: RuntimeScope,
+  rearranged: Array<ServiceDescriptor>
+): Promise<Array<ServiceDescriptor>> {
+  const scope = scope_ as BrowserRuntimeScope;
+  scope.rearrangeServices(rearranged);
+  return Promise.resolve(rearranged);
+}
+
 const api: RuntimeApi = {
   addRuntime,
   restoreRuntime,
@@ -238,6 +247,7 @@ const api: RuntimeApi = {
   configureService,
   getServiceConfig,
   processService,
+  rearrangeServices,
 };
 
 export default api;

@@ -142,4 +142,10 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     this.onResult(svc ? svc.uuid : null, result, requestId, null);
     return result;
   };
+
+  rearrangeServices = (rearranged: Array<ServiceDescriptor>) => {
+    this.serviceInstances = rearranged.map(
+      (svc) => this.findServiceInstance(svc.uuid)[0]! // the instance must exist
+    );
+  };
 }

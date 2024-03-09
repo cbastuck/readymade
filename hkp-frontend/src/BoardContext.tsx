@@ -550,21 +550,27 @@ class BoardProvider extends Component<Props, BoardContextState> {
     return this.props.serializeBoard ? this.props.serializeBoard(data) : data;
   };
 
-  arrangeServices = (
+  arrangeServices = async (
     runtime: RuntimeDescriptor,
     serviceUuid: string,
     targetPosition: number
   ) => {
+    const [scope, api] = this.getRuntimeScopeApi(runtime.id);
+    if (!scope || !api) {
+      throw new Error("BoardContext.arrangeServices, scope or api missing");
+    }
+
+    const { services } = this.state;
+    const rearranged = await api.rearrangeServices(
+      scope,
+      reorderService(services, runtime, serviceUuid, targetPosition)
+    );
+
     this.setState((state) => {
       return {
         services: {
           ...state.services,
-          [runtime.id]: reorderService(
-            state.services,
-            runtime,
-            serviceUuid,
-            targetPosition
-          ),
+          [runtime.id]: rearranged,
         },
       };
     });
