@@ -8,7 +8,7 @@ type Props = {
   icon?: string;
   size?: SemanticSIZES;
   type?: "submit" | "reset" | "button";
-  onClick: () => void;
+  onClick?: () => void;
 };
 
 export default function ButtonComponent({

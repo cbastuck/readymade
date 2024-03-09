@@ -1,4 +1,5 @@
 import Feedback, {
+  FeedbackAnswer,
   FeedbackOptionsDirection,
   FeedbackQuestionMode,
   FeedbackType,
@@ -12,11 +13,15 @@ export type FeedbackQuestion = {
   direction?: FeedbackOptionsDirection;
 };
 
+export type FeedbackFormAnswers = Record<number, FeedbackAnswer>;
+
 type Props = {
   questions: Array<FeedbackQuestion>;
+  onChange: (questionIdx: number, values: FeedbackAnswer) => void;
+  answers: FeedbackFormAnswers;
 };
 
-export default function FeedbackForm({ questions }: Props) {
+export default function FeedbackForm({ questions, answers, onChange }: Props) {
   return (
     <>
       {questions.map(({ options, question, mode, type, direction }, idx) => (
@@ -28,6 +33,8 @@ export default function FeedbackForm({ questions }: Props) {
           type={type}
           direction={direction}
           question={question}
+          answers={answers[idx]}
+          onChange={(answer: FeedbackAnswer) => onChange(idx, answer)}
         />
       ))}
     </>

@@ -1,8 +1,11 @@
+import { useCallback } from "react";
 import { FormField, FormGroup } from "semantic-ui-react";
 
 export type FeedbackQuestionMode = "single" | "many";
 export type FeedbackType = "reaction" | "answer";
 export type FeedbackOptionsDirection = "row" | "column";
+
+export type FeedbackAnswer = Record<number, boolean>;
 
 type Props = {
   order: number;
@@ -10,7 +13,9 @@ type Props = {
   mode: FeedbackQuestionMode;
   type: FeedbackType;
   question: string;
+  answers: FeedbackAnswer;
   direction?: FeedbackOptionsDirection;
+  onChange: (answer: FeedbackAnswer) => void;
 };
 
 export default function Feedback({
@@ -20,12 +25,15 @@ export default function Feedback({
   type,
   direction = "row",
   question,
+  answers,
+  onChange,
 }: Props) {
   const padding = { margin: "0px 20px" };
   const headline =
     type === "reaction"
       ? `${order.toString()}. How would you react? `
       : `${order.toString()}. What would you say?`;
+
   return (
     <div style={{ marginTop: "5px" }}>
       <h1 style={{ fontSize: "14pt", padding: "10px 0px" }}>{headline}</h1>
@@ -54,7 +62,7 @@ export default function Feedback({
           grouped
         >
           {mode === "single" &&
-            options.map((opt) => (
+            options.map((opt, idx) => (
               <FormField
                 key={opt}
                 style={padding}
@@ -62,16 +70,22 @@ export default function Feedback({
                 control="input"
                 type="radio"
                 name="htmlRadios"
+                onChange={(ev: any) => onChange({ [idx]: ev.target.checked })}
+                checked={answers[idx] || false}
               />
             ))}
           {mode === "many" &&
-            options.map((opt) => (
+            options.map((opt, idx) => (
               <FormField
                 key={opt}
                 style={padding}
                 label={opt}
                 control="input"
                 type="checkbox"
+                onChange={(ev: any) =>
+                  onChange({ ...answers, [idx]: ev.target.checked })
+                }
+                checked={answers[idx] || false}
               />
             ))}
         </FormGroup>
