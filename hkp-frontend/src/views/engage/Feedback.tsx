@@ -1,4 +1,3 @@
-import { useCallback } from "react";
 import { FormField, FormGroup } from "semantic-ui-react";
 
 export type FeedbackQuestionMode = "single" | "many";

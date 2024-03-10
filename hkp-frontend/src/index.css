@@ -33,7 +33,8 @@
 
 h1,
 h2,
-h3 {
+h3,
+h4 {
   font-family: SpecialElite;
 }
 
@@ -154,6 +155,6 @@ blockquote:after {
 }
 
 .hkp-fx-hover-grow:hover {
-  transform: scale(1.5);
+  transform: scale(1.3);
   transition: transform 0.5s ease;
 }

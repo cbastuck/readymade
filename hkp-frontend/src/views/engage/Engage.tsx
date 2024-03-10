@@ -15,12 +15,13 @@ const feedbackQuestions: Array<FeedbackQuestion> = [
   {
     type: "reaction",
     question:
-      "Everyone will build their own personal apps and services  - assuming it would not require an in-depth technical foundation and learning a new language first",
+      "Everyone would build their own small, personal apps and services, assuming that it does not require an in-depth technical foundation and that they need to learn a new language first.",
     mode: "single",
     options: [
-      "Yes, rather sooner than later",
-      "Maybe, but certainly not within the next few years",
-      "No way, too much effort, and I have better things to do",
+      "Yes, absolutely",
+      "Yes, I would do it, but maybe that's just me",
+      "Maybe, but certainly it needs to get a lot easier",
+      "No chance, too much effort, got better things to do",
     ],
     direction: "column",
   },
@@ -28,16 +29,17 @@ const feedbackQuestions: Array<FeedbackQuestion> = [
   {
     options: [
       "No, not really",
-      "Yes, I use the computer for my own needs where possible",
-      "Yes, I'm able to write code",
       "Interested yes, but I consider myself less experienced",
-      "I would like to be able to do more using computers",
-      "I'm experienced, but I'm getting less interested",
+      "I want to get better with computers so I can do more stuff",
+      "Yeah, I use the computer for my own needs whenever I can",
+      "Yes, I'm able to write code",
+      "I have experience, but I'm becoming less interested",
       "I'm just here for the loot and fun",
     ],
     type: "answer",
     mode: "many",
-    question: "Are you technically interested and experienced?",
+    question:
+      "Are you into tech stuff and have some hands-on experience with it?",
     direction: "column",
   },
 ];
@@ -62,10 +64,14 @@ export default function Engage() {
       console.log("", answers, payload);
       fetch(
         "http://localhost:5555/runtime/69f0395a-2012-4035-817d-369fe56df227/service/43140ffb-b516-431f-b34d-df09487d07d7/in",
-        { method: "POST", body: JSON.stringify(payload) }
-      )
-        .then((x) => x.json())
-        .then((j) => console.log("-->", j));
+        {
+          method: "POST",
+          body: JSON.stringify(payload),
+          headers: {
+            "content-type": "application/json",
+          },
+        }
+      ).then((x) => !x.ok && console.error("NOOO", x.status));
     }
   }, [tcAgreed, personals, answers]);
 
@@ -82,8 +88,6 @@ export default function Engage() {
       })),
     []
   );
-
-  console.log("RENDEIRNG ANSWERS", answers);
 
   return (
     <Template title="What do you think?" isRoot={true}>

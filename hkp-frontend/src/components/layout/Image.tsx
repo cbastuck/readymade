@@ -11,26 +11,27 @@ export default function Image({
   caption = "",
   border = false,
 }: Props) {
+  if (!src) {
+    return null;
+  }
   return (
-    src && (
-      <div style={{ width: "100%" }}>
-        <img
-          src={src}
-          alt={alt}
-          width="80%"
-          style={{
-            margin: "15px auto",
-            display: "block",
-            border: border ? "solid 1px lightgray" : undefined,
-            padding: 5,
-          }}
-        />
-        {caption && (
-          <div style={{ width: "70%", margin: "auto", marginBottom: "30px" }}>
-            {caption}
-          </div>
-        )}
-      </div>
-    )
+    <div style={{ width: "100%" }}>
+      <img
+        src={src}
+        alt={alt}
+        width="80%"
+        style={{
+          margin: "15px auto",
+          display: "block",
+          border: border ? "solid 1px lightgray" : undefined,
+          padding: 5,
+        }}
+      />
+      {caption && (
+        <div style={{ width: "70%", margin: "auto", marginBottom: "30px" }}>
+          {caption}
+        </div>
+      )}
+    </div>
   );
 }

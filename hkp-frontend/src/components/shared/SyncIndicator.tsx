@@ -19,6 +19,7 @@ export default class SyncIndicator extends Component<Props> {
           <Label
             style={{
               backgroundColor: "#E8E8E8",
+              border: "1px solid rgb(186, 186, 186)",
               borderRadius: 2,
               letterSpacing: 1,
               textAlign: "center",

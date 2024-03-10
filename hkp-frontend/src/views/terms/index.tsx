@@ -7,25 +7,25 @@ export default function Terms() {
   return (
     <Article title="Terms and Conditions" date="March, 8. 2024">
       <Paragraph>
-        Welcome and thank you for your interest in Hookup and my website at{" "}
-        <a href="https://hookup.to">hookup.to</a>. These terms and conditions of
-        service form a legally binding contract between you and me concerning
+        Welcome and thank you for your interest my private project and website
+        at <a href="https://hookup.to">hookup.to</a>. These terms and conditions
+        of service form a legally binding contract between you and me concerning
         your use of the Service. Please read the following terms carefully. By
         using, downloading, installing, or otherwise accessing or using the
         Service, you agree that you have read and understood, and, as a
         condition to your use of the Service, you agree to be bound by, the
         following terms and conditions, including the privacy policy (together,
         these 'terms'). If you are not eligible or do not agree to the terms,
-        then you do not have our permission to use the Service. Your use of the
+        then you do not have my permission to use the Service. Your use of the
         Service constitutes an agreement, and you agree to be bound by these
         terms.
       </Paragraph>
       <Paragraph headline="Overview">
-        The website serves as a platform for constructing logic through modular
-        building blocks. Users have the ability to locally create and run
-        boards, subsequently storing them and uploading to the cloud. The
-        platform, along with example boards and remote runtimes, constitutes
-        integral parts of the service.
+        The website serves as a platform for constructing logic (further denoted
+        as 'Boards') through modular building blocks. Users have the ability to
+        locally create and run Boards, subsequently storing them and uploading
+        to the cloud. The platform, along with example Boards and remote
+        runtimes, constitutes integral parts of the service.
       </Paragraph>
       <Paragraph headline="Using Boards">
         The service is offered to anyone interested in constructing logic and
@@ -57,8 +57,7 @@ export default function Terms() {
         create a password. It is your sole responsibility to maintain the
         confidentiality of your account and password, and you accept
         responsibility for all activities that occur under your account. If you
-        believe that your account is no longer secure, please get{" "}
-        <a href="/contact">it touch</a>.
+        believe that your account is no longer secure, please get in touch.
       </Paragraph>
       <Paragraph headline="New Features">
         I may, at my sole discretion from time to time, introduce new features
@@ -120,7 +119,7 @@ export default function Terms() {
             within the platform.
           </li>
           <li>
-            our data, including its processing, will not: (i) infringe, violate,
+            Data, including its processing, will not: (i) infringe, violate,
             misappropriate, or otherwise breach any third-party right, including
             any copyright, trademark, patent, trade secret, moral right, privacy
             right, right of publicity, or any other intellectual property,
@@ -148,17 +147,17 @@ export default function Terms() {
         assume no responsibility or liability for the content or any loss or
         damage incurred as a result of the use of content. During monitoring,
         information may be examined, recorded, copied, and used in accordance
-        with our Privacy Policy (defined below). I may block, filter, remove, or
-        disable access to any user content transmitted through the service
-        without any liability to the user who uploaded such user content to the
-        service or to any other users of the service.
+        with the <a href="/privacy">Privacy Policy</a>. I may block, filter,
+        remove, or disable access to any user content transmitted through the
+        service without any liability to the user who uploaded such user content
+        to the service or to any other users of the service.
       </Paragraph>
       <Paragraph headline="Code of Conduct">
         By using the service, you agree not to:
         <ul>
           <li>
             Use the service for any illegal purpose or in violation of any
-            local, state, national, or international law or our Acceptable Use
+            local, state, national, or international law or my Acceptable Use
             Policy.
           </li>
           <li>
@@ -283,12 +282,8 @@ export default function Terms() {
       <Paragraph headline="Privacy Policy.">
         Please read the
         <a href="/privacy">Privacy Policy</a> carefully for information relating
-        to our collection, use, storage, and disclosure of your personal
-        information. The Privacy Policy is incorporated by this reference into,
-        and made a part of these Terms.
-      </Paragraph>
-      <Paragraph headline="Contact Information">
-        Please refer to <a href="/contact">this page</a>
+        to the collection, use, storage, and disclosure of your personal
+        information.
       </Paragraph>
       <Paragraph headline="Imprint">
         <Imprint />

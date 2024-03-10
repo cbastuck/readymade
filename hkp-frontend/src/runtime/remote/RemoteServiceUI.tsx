@@ -117,8 +117,13 @@ export default function RemoteServiceUI({ service }: Props) {
               />
               {readonly && (
                 <Button
-                  style={{ width: 40, height: 33, margin: 3 }}
-                  icon="copy"
+                  style={{
+                    width: 40,
+                    height: 33,
+                    margin: 3,
+                    border: "solid 1px rgb(186, 186, 186)",
+                  }}
+                  icon="copy outline"
                   size="tiny"
                   onClick={() => navigator.clipboard.writeText(val)}
                 />
