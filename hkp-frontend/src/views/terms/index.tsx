@@ -111,7 +111,7 @@ export default function Terms() {
         granted in these terms. However, you acknowledge and agree that if you
         are an employee of an organization, the applicable organization may own
         the rights to that user content. By providing user content via the
-        service, you affirm, represent, and warrant to us that:
+        service, you affirm, represent, and warrant to me that:
         <ul>
           <li>
             You are the creator and owner of the user content or have the
@@ -119,14 +119,14 @@ export default function Terms() {
             within the platform.
           </li>
           <li>
-            Data, including its processing, will not: (i) infringe, violate,
+            Data, including its processing, will not: (a) infringe, violate,
             misappropriate, or otherwise breach any third-party right, including
             any copyright, trademark, patent, trade secret, moral right, privacy
             right, right of publicity, or any other intellectual property,
-            contract, or proprietary right; (ii) slander, defame, libel, or
+            contract, or proprietary right; (b) slander, defame, libel, or
             invade the right of privacy, publicity, or other property rights of
-            any other person; or (iii) cause me to violate any law or regulation
-            or require us to obtain any further licenses from or pay any
+            any other person; or (c) cause me to violate any law or regulation
+            or require me to obtain any further licenses from or pay any
             royalties, fees, compensation, or other amounts or provide any
             attribution to any third parties.
           </li>
@@ -161,12 +161,6 @@ export default function Terms() {
             Policy.
           </li>
           <li>
-            Use the service or any content, information, or data obtained from
-            the service for purposes of informing, training, or developing (or
-            as input to) artificial intelligence or machine learning
-            technologies, services, or algorithms.
-          </li>
-          <li>
             Harass, threaten, demean, embarrass, bully, or otherwise harm any
             other user of the service.
           </li>
@@ -178,13 +172,13 @@ export default function Terms() {
           <li>
             Access, search, or otherwise use any portion of the service through
             the use of any engine, software, tool, agent, device, or mechanism
-            (including spiders, robots, crawlers, and data mining tools) other
-            than those provided by mechanisms.
+            (eg. spiders, robots, crawlers, and data mining tools) other than
+            those provided by mechanisms.
           </li>
           <li>
             Interfere with security-related features of the service, including
-            by: (i) disabling or circumventing features that prevent or limit
-            the use, printing, or copying of any content; or (ii) reverse
+            by: (a) disabling or circumventing features that prevent or limit
+            the use, printing, or copying of any content; or (b) reverse
             engineering or otherwise attempting to discover the source code of
             any portion of the service except to the extent that the activity is
             expressly permitted by applicable law.
@@ -221,14 +215,14 @@ export default function Terms() {
       </Paragraph>
       <Paragraph headline="Changes">
         I reserve the right to modify or discontinue all or any portion of the
-        service at any time, temporarily or permanently, without notice to you
-        (including by limiting or discontinuing certain features of the
-        service). I will have no liability for any change to the service,
-        including any paid-for functionalities, or any suspension or termination
-        of your access to or use of the service. It is advisable to retain
-        copies of any user content you upload to the service so that you have
-        permanent copies in the event the service is modified in such a way that
-        you lose access to uploaded user content.
+        service at any time, temporarily or permanently, without notice to you -
+        including by limiting or discontinuing certain features of the service.
+        I will have no liability for any change to the service, including any
+        paid-for functionalities, or any suspension or termination of your
+        access to or use of the service. It is advisable to retain copies of any
+        user content you upload to the service so that you have permanent copies
+        in the event the service is modified in such a way that you lose access
+        to uploaded user content.
       </Paragraph>
       <Paragraph headline="Indemnity">
         To the maximum extent permitted by law, you are accountable for your

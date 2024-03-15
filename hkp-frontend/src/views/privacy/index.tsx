@@ -16,7 +16,7 @@ export default function Privacy() {
       </Paragraph>
       <Paragraph headline="Information in Server Logs">
         I collect various information from or about you and your devices,
-        including registration and account details, device information, and
+        eventually registration and account details, device information, and
         engagement data. If you choose to engage anonymously, only the provided
         information will be stored, with no connection to server logs containing
         your local IP address.
@@ -29,7 +29,7 @@ export default function Privacy() {
         and the server logs, which will contain your local IP address, with a
         two-month retention span.
       </Paragraph>
-      <Paragraph headline="Information in servier logs">
+      <Paragraph headline="Information in server logs">
         Device Information. We receive information about the device and software
         you use to access our Services, including IP address, web browser type,
         operating system version, phone carrier and manufacturer, application
@@ -99,7 +99,7 @@ export default function Privacy() {
 
       <Paragraph headline="Contact">
         For any questions, comments, or concerns about our processing
-        activities, please <a href="/contact">contact us</a>.
+        activities, please get <a href="/contact">in contact</a>.
       </Paragraph>
     </Article>
   );
