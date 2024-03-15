@@ -31,7 +31,7 @@ export default function Feedback({
   const headline =
     type === "reaction"
       ? `${order.toString()}. How would you react? `
-      : `${order.toString()}. What would you say?`;
+      : `${order.toString()}. What would you answer?`;
 
   return (
     <div style={{ marginTop: "5px" }}>
@@ -41,7 +41,7 @@ export default function Feedback({
         <blockquote
           style={{
             width: "100%",
-            fontSize: 18,
+            fontSize: "14pt",
             textAlign: "center",
           }}
         >
@@ -57,6 +57,7 @@ export default function Feedback({
             display: "flex",
             flexDirection: direction,
             padding: "5px 20px",
+            fontSize: "12pt",
           }}
           grouped
         >

@@ -5,7 +5,7 @@ import Imprint from "../about/Imprint";
 
 export default function Terms() {
   return (
-    <Article title="Terms and Conditions" date="March, 8. 2024">
+    <Article title="Terms and Conditions" date="8.3.2024">
       <Paragraph>
         Welcome and thank you for your interest my private project and website
         at <a href="https://hookup.to">hookup.to</a>. These terms and conditions
@@ -235,11 +235,11 @@ export default function Terms() {
         utilization of the service.
       </Paragraph>
       <Paragraph headline="Disclaimers">
-        The service and all materials and content available through the service,
-        including WAVETOOL generated content, are provided 'as is' and on an 'as
-        available' basis. I disclaim all warranties of any kind, whether express
-        or implied, relating to the service and all materials and content
-        available through the service, including:
+        The service and all materials and content available through the service
+        are provided 'as is' and on an 'as available' basis. I disclaim all
+        warranties of any kind, whether express or implied, relating to the
+        service and all materials and content available through the service,
+        including:
         <ol>
           <li>
             Any implied warranty of merchantability, fitness for a particular

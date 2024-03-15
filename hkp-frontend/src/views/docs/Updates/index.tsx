@@ -10,7 +10,7 @@ export default function Updates() {
     <Template title="What's new">
       <List divided relaxed style={{ marginTop: "40px" }}>
         <NewsItem
-          date="8.3.2024"
+          date="15.3.2024"
           content={
             <div>
               Added pages: <a href="/docs">Blog Articles</a> and{" "}

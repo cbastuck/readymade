@@ -8,6 +8,7 @@ import Footer from "../components/Footer";
 
 type Props = {
   children: ReactNode[] | ReactNode;
+  width?: string;
   title?: string;
   slug?: string;
   isRoot?: boolean;
@@ -54,7 +55,7 @@ export default class Template extends Component<Props> {
   };
 
   render() {
-    const { children, title, isRoot, parent, slug } = this.props;
+    const { children, title, isRoot, parent, slug, width = "70%" } = this.props;
     const renderBreadcrumbs = (!!title || slug) && (!isRoot || !!parent);
     return (
       <BoardProvider
@@ -68,6 +69,7 @@ export default class Template extends Component<Props> {
             width: "100%",
             height: "100%",
             minHeight: "100%",
+            margin: "auto",
           }}
         >
           <Toolbar showBoardActions={false} />
@@ -75,7 +77,7 @@ export default class Template extends Component<Props> {
             style={{
               marginTop: 20,
               marginBottom: 50,
-              width: "70%",
+              width,
               height: "100%",
             }}
           >

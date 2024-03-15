@@ -2,6 +2,7 @@ import { FormField, Checkbox, CheckboxProps } from "semantic-ui-react";
 
 import Personals, { PersonalData } from "./Personals";
 import { useCallback } from "react";
+import Incentive from "./Incentive";
 
 type Props = {
   tcAgreed: boolean;
@@ -25,7 +26,8 @@ export default function Participation({
     [onTcChanged]
   );
   return (
-    <>
+    <div className="hkp-card-border" style={{ padding: "20px" }}>
+      <Incentive />
       <Personals data={personals} onChange={onPersonalsChanged} />
       <FormField
         style={{ marginTop: "20px", display: "flex", flexDirection: "row" }}
@@ -38,6 +40,6 @@ export default function Participation({
           </a>
         </span>
       </FormField>
-    </>
+    </div>
   );
 }

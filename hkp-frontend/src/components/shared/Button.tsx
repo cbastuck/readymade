@@ -2,6 +2,7 @@ import { CSSProperties } from "react";
 import { Button, SemanticSIZES } from "semantic-ui-react";
 
 type Props = {
+  className?: string;
   children?: JSX.Element | string | undefined;
   style?: CSSProperties;
   disabled?: boolean;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function ButtonComponent({
+  className,
   children = undefined,
   style = {},
   disabled = false,
@@ -32,7 +34,7 @@ export default function ButtonComponent({
   return (
     <Button
       style={buttonStyle}
-      className="hkp-button"
+      className={className ? className : "hkp-button"}
       disabled={disabled}
       icon={icon}
       size={size}

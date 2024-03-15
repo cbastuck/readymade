@@ -3,7 +3,7 @@ import Paragraph from "../../components/layout/Paragraph";
 
 export default function Privacy() {
   return (
-    <Article title="Privacy Policy" date="March, 8. 2024">
+    <Article title="Privacy Policy" date="8.3.2024">
       <Paragraph>
         I highly value the privacy of individuals who browse this website,
         especially those who use the playground and additional services at

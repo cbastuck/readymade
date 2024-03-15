@@ -122,6 +122,13 @@ export async function processService(
   throw new Error("RemoteRuntime processService no implemented");
 }
 
+export async function rearrangeServices(
+  scope: RuntimeScope,
+  newOrder: Array<ServiceDescriptor>
+): Promise<Array<ServiceDescriptor>> {
+  return []; // TODO: implement me
+}
+
 const api: RuntimeApi = {
   addRuntime,
   restoreRuntime,
@@ -132,6 +139,7 @@ const api: RuntimeApi = {
   getServiceConfig,
   processService,
   getHealth,
+  rearrangeServices,
 };
 
 export default api;

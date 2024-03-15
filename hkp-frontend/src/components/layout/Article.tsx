@@ -3,6 +3,7 @@ import Template from "../../views/Template";
 import Title from "./Title";
 
 type Props = {
+  width?: string;
   slug?: string;
   title: string;
   hero?: string;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function Article({
+  width,
   slug,
   title,
   hero,
@@ -20,7 +22,7 @@ export default function Article({
   date,
 }: Props) {
   return (
-    <Template slug={slug} parent="Blog" isRoot={false}>
+    <Template slug={slug} parent="Blog" isRoot={false} width={width}>
       {date && <div style={{ width: "100%", textAlign: "right" }}>{date}</div>}
       <div style={{ marginTop: "10px" }}>
         <Title title={title} image={hero} caption={caption || ""} />
