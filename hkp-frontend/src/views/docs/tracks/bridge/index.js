@@ -39,9 +39,9 @@ export default function Bridge() {
           <Section title="Idea">
             <Paragraph>
               The Bridge allows integrating hookup runtimes into HTML documents.
-              Any board is just a JSON document and playground boards run in the
-              browser only (in case no dependencies to external remote
-              runtimes). Therefore, runtimes from playground boards can
+              Any board is just a JSON document, and playground boards run in
+              the browser only (in case there are no dependencies on external
+              remote runtimes). Therefore, runtimes from playground boards can
               seamlessly run on any website where they execute on the visitor's
               device.
             </Paragraph>
@@ -59,8 +59,8 @@ export default function Bridge() {
               for a basic example.
             </Paragraph>
             <Paragraph>
-              The idea of this demo is to tell a story by combining three media
-              elements: text,{" "}
+              The purpose of this demo is to weave a narrative by combining
+              three media elements: text,{" "}
               <a href="https://unsplash.com" target="_black" rel="noreferrer">
                 image
               </a>
@@ -68,27 +68,28 @@ export default function Bridge() {
               <a href="https://spotify.com" target="_black" rel="noreferrer">
                 music
               </a>
-              . Taken individually, these elements are not connected to each
-              other in any way. Putting them together creates a new context,
-              which might be interesting, funny, inspiring or anything else
-              depending on the observer.
+              . Individually, these elements are unrelated. However, when
+              merged, they form a new context that can be interesting, humorous,
+              inspiring, or evoke various other responses depending on the
+              observer.
             </Paragraph>
             <Paragraph>
-              The combination (rows) of media elements (columns) are collected
-              in a spreadsheet using the Excel format. Every row of this table
-              gets selected, converted to JSON and passed as input data to a
-              HTML template, where template variables are replaced with the
-              value of their corresponding column. You can step through the rows
-              by clicking somewhere on the image, or using the arrow keys.
+              The combinations of media elements (rows) are collected in a
+              spreadsheet using the Excel format. Each row of this table is
+              selected, converted to JSON, and then passed as input data to an
+              HTML template. In the template, variables are replaced with the
+              values of their corresponding columns. You can navigate through
+              the rows by clicking anywhere on the image or using the arrow
+              keys.
             </Paragraph>
           </Section>
           <Section title="Description">
             <Paragraph headline="Template Runtime">
-              A runtime is responsible fetching data from a spreadsheet (serves
-              as CMS in this example), converting the data from the binary excel
-              format into a JSON object, selecting a particular row, adding
-              derived data from existing columns and finally applying the mapped
-              result to a HTML template.
+              A runtime is responsible for fetching data from a spreadsheet
+              (which serves as the CMS in this example), converting the data
+              from the binary Excel format into a JSON object, selecting a
+              particular row, adding derived data from existing columns, and
+              then applying the mapped result to an HTML template.
               <div
                 style={{
                   width: "100%",
@@ -120,10 +121,10 @@ export default function Bridge() {
               }}
             >
               <div style={{ width: "100%" }}>
-                Data in the spreadsheet is organised in rows and named columns
-                (as specified in first row) The HTLM tempalte references row
-                values by their corresponding column names arusing a double
-                bracket notation, e.g.{" "}
+                The data in the spreadsheet is organized in rows and named
+                columns (as specified in the first row). The HTML template
+                references row values by their corresponding column names using
+                a double bracket notation, e.g.{" "}
                 <code style={{ fontFamily: "courier" }}>[[link]]</code>
               </div>
 
@@ -144,10 +145,10 @@ export default function Bridge() {
             <Paragraph headline="Hookup the runtime">
               The <CodeBlock title="script">{jsCode}</CodeBlock>{" "}
               programmatically instantiates the runtimes and configures them
-              using the Bridge's API. Whenever the user clicks on a blank space
-              in the document (HTML body), the script reconfigures the select
-              module and data from the next row from the spreadsheet is applied
-              to the HTML template.
+              using the Bridge's API. When a user clicks on a blank space in the
+              HTML body, the script reconfigures the select module, and data
+              from the next row in the spreadsheet is applied to the HTML
+              template.
             </Paragraph>
           </Section>
 
