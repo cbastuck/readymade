@@ -9,6 +9,7 @@ type Props = {
   hero?: string;
   caption?: string;
   date?: string;
+  withTemplate?: boolean;
   children: ReactNode | ReactNode[];
 };
 
@@ -20,14 +21,22 @@ export default function Article({
   children,
   caption,
   date,
+  withTemplate,
 }: Props) {
-  return (
-    <Template slug={slug} parent="Blog" isRoot={false} width={width}>
+  const content = (
+    <>
       {date && <div style={{ width: "100%", textAlign: "right" }}>{date}</div>}
       <div style={{ marginTop: "10px" }}>
         <Title title={title} image={hero} caption={caption || ""} />
         {children}
       </div>
+    </>
+  );
+  return withTemplate ? (
+    <Template slug={slug} parent="Blog" isRoot={false} width={width}>
+      {content}
     </Template>
+  ) : (
+    <div style={{ width, margin: "auto", textAlign: "left" }}>{content}</div>
   );
 }

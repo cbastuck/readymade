@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";

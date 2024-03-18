@@ -1,5 +1,11 @@
 import { Component } from "react";
 
+const defaultStyle = {
+  fontSize: 45,
+  letterSpacing: 1,
+  marginBottom: 50,
+};
+
 export default class Switcher extends Component {
   state = {
     counter: 0,
@@ -16,18 +22,8 @@ export default class Switcher extends Component {
   }
 
   render() {
-    const { data } = this.props;
+    const { data, style = defaultStyle } = this.props;
     const idx = this.state.counter % data.length;
-    return (
-      <div
-        style={{
-          fontSize: 45,
-          letterSpacing: 1,
-          marginBottom: 50,
-        }}
-      >
-        {data[idx]}
-      </div>
-    );
+    return <div style={style}>{data[idx]}</div>;
   }
 }

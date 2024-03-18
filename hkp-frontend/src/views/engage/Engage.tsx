@@ -14,7 +14,10 @@ import { convertAnswers, postAnswers } from "./actions";
 
 import { feedbackQuestions } from "./forms/engageForm1";
 
-export default function Engage() {
+type Props = {
+  withTemplate?: boolean;
+};
+export default function Engage({ withTemplate = true }: Props) {
   const [showPersonals, setShowPersonals] = useState(false);
   const [tcAgreed, setTcAgreed] = useState(false);
   const [personals, setPersonals] = useState<PersonalData>({
@@ -76,9 +79,12 @@ export default function Engage() {
       : `Try again (${submittedStatus})`;
 
   const submitButtonText = submittedStatus ? statusText : submitText;
+
   return (
-    <Article title="What do you think?" date="15.8.2024" width="60%">
+    <Article title="What do you think?" width="60%" withTemplate={withTemplate}>
+      <div style={{ width: "100%", textAlign: "right" }}>15.3.2024</div>
       <Motivation />
+
       <Form onSubmit={handleSubmit}>
         <FeedbackForm
           questions={feedbackQuestions}

@@ -55,14 +55,7 @@ export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/" exact element={<Navigate replace to="/welcome" />} />
-      <Route
-        path="/welcome"
-        element={
-          <WelcomeTemplate>
-            <WelcomePage />
-          </WelcomeTemplate>
-        }
-      />
+      <Route path="/welcome" element={<WelcomePage />} />
       <Route
         path="/welcome/mission"
         element={

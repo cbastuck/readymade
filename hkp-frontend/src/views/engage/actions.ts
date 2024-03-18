@@ -29,17 +29,22 @@ export function convertAnswers(
   answers: FeedbackFormAnswers
 ): Record<string, Array<string>> {
   return Object.keys(answers).reduce((all, _, idx) => {
+    const currentAnswers = Object.keys(answers[idx]);
+    if (currentAnswers.length === 0) {
+      return all;
+    }
     return {
       ...all,
-      [feedbackQuestions[idx].question]: Object.keys(answers[idx]).reduce<
-        Array<string>
-      >((fall, cur) => {
-        const fidx = Number(cur);
-        if (!answers[idx][fidx]) {
-          return fall;
-        }
-        return [...fall, feedbackQuestions[idx].options[fidx]];
-      }, []),
+      [feedbackQuestions[idx].question]: currentAnswers.reduce<Array<string>>(
+        (fall, cur) => {
+          const fidx = Number(cur);
+          if (!answers[idx][fidx]) {
+            return fall;
+          }
+          return [...fall, feedbackQuestions[idx].options[fidx]];
+        },
+        []
+      ),
     };
   }, {});
 }
