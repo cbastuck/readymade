@@ -7,6 +7,7 @@ import ServiceUI from "../../services/ServiceUI";
 import SelectorField from "../../../components/shared/SelectorField";
 import { s, t } from "../../../styles";
 import { filterPrivateMembers } from "./helpers";
+import BypassSwitch from "../../../components/BypassSwitch";
 
 const serviceId = "hookup.to/service/stack";
 const serviceName = "Stack";
@@ -18,6 +19,14 @@ export class StackUI extends Component {
     subservices: [],
     input: defaultInput,
     output: defaultOutput,
+    bypass: {},
+  };
+
+  updateBypass = (subservices) => {
+    return subservices.reduce(
+      (all, ssvc) => ({ ...all, [ssvc.uuid]: ssvc.bypass }),
+      {}
+    );
   };
 
   onInit = (initialState) => {
@@ -26,17 +35,23 @@ export class StackUI extends Component {
       input = defaultInput,
       output = defaultOutput,
     } = initialState;
+    const bypass = this.updateBypass(_subservices);
     this.setState({
       subservices: _subservices,
       input,
       output,
+      bypass,
     });
   };
 
   onNotification = (service, notification) => {
     const { subservices, input, output } = notification;
     if (subservices !== undefined) {
-      this.setState({ subservices });
+      const bypass = this.updateBypass(subservices);
+      this.setState({
+        subservices,
+        bypass,
+      });
     }
 
     if (input !== undefined) {
@@ -55,13 +70,31 @@ export class StackUI extends Component {
         children: (
           <div
             className="hkp-fnt-family"
-            style={s(t.fs12, t.ls1, t.w100)}
+            style={s(t.fs12, t.ls1, t.w100, {
+              display: "flex",
+              justifyContent: "space-between",
+            })}
             title={ssvc.uuid}
           >
-            {ssvc.__descriptor
-              ? ssvc.__descriptor.serviceName
-              : ssvc.serviceName}
-            <span
+            <BypassSwitch
+              disabled={true}
+              style={{}}
+              bypass={this.state.bypass[ssvc.uuid]}
+              onChange={async (update) => {
+                await ssvc.configure({ bypass: update });
+                this.setState({
+                  ...this.state,
+                  bypass: { ...this.state.bypass, [ssvc.uuid]: update },
+                });
+              }}
+            />
+
+            <div style={{ textAlign: "center", width: "100%" }}>
+              {ssvc.__descriptor
+                ? ssvc.__descriptor.serviceName
+                : ssvc.serviceName}
+            </div>
+            <div
               style={{
                 float: "right",
                 cursor: "pointer",
@@ -73,7 +106,7 @@ export class StackUI extends Component {
               }}
             >
               <Icon className="hkp-icon-clickable-danger" name="minus" />
-            </span>
+            </div>
           </div>
         ),
       },
@@ -240,9 +273,18 @@ class Stack {
     this.app.notify(this, { subservices: this._subservices });
   };
 
+  processSubservice = async (ssvc, params) => {
+    if (ssvc.bypass) {
+      return undefined;
+    }
+    return ssvc.process(params);
+  };
+
   async processArray(params) {
     const results = await Promise.all(
-      this._subservices.map((ssvc, idx) => ssvc.process(params[idx]))
+      this._subservices.map((ssvc, idx) =>
+        this.processSubservice(ssvc, params[idx])
+      )
     );
     const notNull = results.some((r) => r !== null);
     return notNull ? results : null;
@@ -252,13 +294,13 @@ class Stack {
     if (idx !== undefined) {
       const ssvc = this._subservices[idx];
       if (ssvc) {
-        return ssvc.process(params);
+        return this.processSubservice(ssvc, params);
       }
     } else {
       const results = [];
       let allNull = true;
       for (const ssvc of this._subservices) {
-        const r = await ssvc.process(params);
+        const r = await this.processSubservice(ssvc, params);
         if (r !== null) {
           allNull = false;
         }

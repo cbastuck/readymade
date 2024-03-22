@@ -24,7 +24,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     this.pendingReconnectPromise = null;
 
     if (this.outputUrl) {
-      this.connect(this.outputUrl);
+      this.connect(this.outputUrl, runtime.user || null);
     }
   }
 
@@ -52,10 +52,17 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     console.warn("RemoteRuntimeScope.onConfig not set");
   };
 
-  connect = (outputUrl: string) => {
+  connect = (outputUrl: string, user: User | null) => {
+    if (user) {
+      this.authenticatedUser = user;
+    }
+
     const url = new URL(this.descriptor.url!);
     url.protocol = new URL(url).protocol === "http:" ? "ws" : "wss";
-    const websocketUrl = url.toString() + outputUrl.slice(1);
+    const websocketUrl =
+      url.toString() +
+      outputUrl.slice(1) +
+      `?token=${this.authenticatedUser?.idToken}`;
     const socket = new WebSocket(websocketUrl);
     this.socket = socket;
 
@@ -71,6 +78,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
 
   reconnect = (): Promise<void> => {
     return new Promise((resolve, reject) => {
+      console.log("Calling Reconnect");
       if (this.socket || !this.outputUrl) {
         console.warn(
           "RuntimeRemoteScope can not reconnect if socket available or output url missing"
@@ -78,7 +86,8 @@ export default class RemoteRuntimeScope implements RuntimeScope {
         return reject();
       }
       this.pendingReconnectPromise = [resolve, reject];
-      this.connect(this.outputUrl);
+
+      this.connect(this.outputUrl, this.authenticatedUser);
     });
   };
 

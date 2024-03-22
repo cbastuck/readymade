@@ -377,7 +377,7 @@ class Playground extends Component<Props, State> {
       case "clearBoard":
       case "createBoardLink":
       case "showBoardSource":
-        return (this.boardProviderRef?.state?.runtimes || []).length > 0;
+        return true; //(this.boardProviderRef?.state?.runtimes || []).length > 0;
       case "toggleBoardSync":
         return true;
 

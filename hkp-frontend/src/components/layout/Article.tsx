@@ -21,7 +21,7 @@ export default function Article({
   children,
   caption,
   date,
-  withTemplate,
+  withTemplate = true,
 }: Props) {
   const content = (
     <>

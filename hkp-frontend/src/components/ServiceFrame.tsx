@@ -7,6 +7,7 @@ import ConfigurationEditor from "./ConfigurationEditor";
 import { s, t } from "../styles";
 import { filterPrivateMembers } from "../runtime/browser/services/helpers";
 import { ServiceAction, InstanceId, ServiceImpl } from "../types";
+import BypassSwitch from "./BypassSwitch";
 
 function getNotificationID(service: InstanceId) {
   return `service-frame-${service.uuid}`;
@@ -108,17 +109,12 @@ export default class ServiceFrame extends Component<Props, State> {
         }}
       >
         {(!this.props.showBypassOnlyIfExplicit || bypass !== undefined) && (
-          <div style={t.p(15, 13)}>
-            <Icon
-              style={{
-                cursor: "pointer",
-                opacity: 0.5,
-              }}
-              name="power off"
-              color={bypass ? "red" : "grey"}
-              onClick={() => service.configure({ bypass: !bypass })}
-            />
-          </div>
+          <BypassSwitch
+            bypass={!!bypass}
+            onChange={(update: boolean) =>
+              service.configure({ bypass: update })
+            }
+          />
         )}
         <div
           style={{

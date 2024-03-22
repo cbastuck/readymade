@@ -178,6 +178,7 @@ export default function NestingBoards() {
         employed goto statements.
       </Paragraph>
       <Video
+        anchor="video"
         caption="Demo of the nested news board"
         src="/assets/videos/Nesting Boards Overdub Title social.mp4"
       />
