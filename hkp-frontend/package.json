@@ -49,9 +49,10 @@
     "eject": "react-app-rewired eject",
     "deployXeon": "rsync -avz --progress --exclude node_modules build/* xeon:frontend",
     "deploy": "aws s3 cp build/ s3://hkp-frontend --recursive --profile hkp-s3-uploader",
+    "quickdeploy": "aws s3 cp build/static s3://hkp-frontend/static --recursive --profile hkp-s3-uploader",
     "push": "npm run build && docker build -f docker/Dockerfile -t localhost:5001/hkp-frontend . && docker push localhost:5001/hkp-frontend",
     "prettier": "prettier --write \"src/**/*.js\"",
-    "ssl": "HTTPS=true SSL_CRT_FILE=cert/server.crt SSL_KEY_FILE=cert/server.key npm start",
+    "ssl": "HTTPS=true SSL_CRT_FILE=cert/hkp.local.crt SSL_KEY_FILE=cert/hkp.local.key npm start",
     "audit": "npm audit --production",
     "updateBuildNumber": "node ./updateBuildNumber.js",
     "invalidateCDN": "aws cloudfront create-invalidation --distribution-id E3SKF64N6ROA32 --paths '/index.html' --profile hkp-s3-uploader"
