@@ -32,7 +32,7 @@ export default class ServiceDropBar extends Component<Props, State> {
           this.setState({ active: true });
           ev.preventDefault();
         }}
-        onDragLeave={(ev) => this.setState({ active: false })}
+        onDragLeave={(_ev) => this.setState({ active: false })}
         onDrop={(ev) => {
           this.setState({ active: false });
           const data = ev.dataTransfer.getData("text/plain");

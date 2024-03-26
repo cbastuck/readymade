@@ -4,7 +4,7 @@
     "name": "Chrome-78.0.3904.108 (0)",
     "type": "browser",
     "state": {
-      "wrapServices": true
+      "wrapServices": false
     },
     "services": [
       {
@@ -15,7 +15,8 @@
         "periodicValue": 6,
         "periodicUnit": "s",
         "immediate": true,
-        "start": true
+        "start": true,
+        "counter": -1
       },
       {
         "serviceName": "Sequencer",

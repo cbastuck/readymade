@@ -44,8 +44,7 @@ export default class SandboxFrame extends Component<Props> {
       <iframe
         title={title}
         src={`/sandbox?src=${src}&frameless=${frameless}`}
-        frameBorder={frameBorder}
-        style={style}
+        style={{ border: frameBorder, ...style }}
         ref={(frame: any) => {
           if (frame && onAction) {
             frame.onAction = onAction;

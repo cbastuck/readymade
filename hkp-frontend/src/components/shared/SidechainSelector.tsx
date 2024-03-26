@@ -47,7 +47,7 @@ export default function SidechainSelector({
       multiple
       selection
       options={options}
-      onChange={(ev, { value }: DropdownProps) => {
+      onChange={(_ev, { value }: DropdownProps) => {
         if (Array.isArray(value)) {
           const unmappedValues = (value as string[]).map((item) => {
             const pair = item.split(".");

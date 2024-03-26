@@ -1,11 +1,9 @@
-import { ExampleService, ExampleServiceUI } from "./ExampleService";
-import Runtime from "../../../components/Runtime";
-
 type Props = {
   runtimeName: string;
 };
 
-export default function RuntimeBlock({ runtimeName }: Props) {
+export default function RuntimeBlock(_props: Props) {
+  /*
   const service = new ExampleService();
   const services = [
     <ExampleServiceUI
@@ -14,6 +12,7 @@ export default function RuntimeBlock({ runtimeName }: Props) {
       setup={() => service}
     />,
   ];
+  
   const runtime = {
     services,
   };
@@ -22,6 +21,7 @@ export default function RuntimeBlock({ runtimeName }: Props) {
     registry: [],
     isRuntimeInScope: () => false,
   };
+  */
   return (
     <div
       style={{
@@ -29,13 +29,6 @@ export default function RuntimeBlock({ runtimeName }: Props) {
         marginRight: 30,
         width: 300,
       }}
-    >
-      <Runtime
-        runtime={runtime}
-        runtimeName={runtimeName}
-        services={services}
-        boardContext={boardContext}
-      />
-    </div>
+    ></div>
   );
 }

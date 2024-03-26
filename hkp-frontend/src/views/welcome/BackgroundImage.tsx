@@ -1,4 +1,4 @@
-import { ReactComponent as HkpBraidLogo } from "./hkp-dots-braid.svg";
+import HkpBraidLogo from "./hkp-dots-braid.svg?react";
 
 export default function BackgroundImage() {
   return (

@@ -38,7 +38,11 @@ function Welcome({
     style.height = height;
   }
   return (
-    <BoardProvider user={null} isActionAvailable={() => false}>
+    <BoardProvider
+      user={null}
+      boardName="welcomepage"
+      isActionAvailable={() => false}
+    >
       <div>
         <Toolbar />
         <div className={`hero-text fade-in-linear}`} style={style}>

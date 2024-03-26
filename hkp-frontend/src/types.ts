@@ -198,9 +198,9 @@ export type ServiceImpl = { [key: string]: any } & {
   board: string;
   app: AppImpl;
 
-  process: (params: any) => Promise<any>;
-  configure: (config: any) => Promise<void>;
-  destroy: () => Promise<void>;
+  process: (params: any) => Promise<any> | any;
+  configure: (config: any) => Promise<any> | any;
+  destroy?: () => Promise<void> | void;
 
   getConfiguration?: () => Promise<any>;
 };

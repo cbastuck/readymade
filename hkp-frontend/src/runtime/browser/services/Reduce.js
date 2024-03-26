@@ -1,4 +1,4 @@
-import { ReduceDescriptor } from "hkp-services";
+import ReduceDescriptor from "hkp-services/Reduce";
 
 const descriptor = {
   serviceName: ReduceDescriptor.serviceName,

@@ -37,7 +37,7 @@ type State = {
 export default class OutputOptions extends Component<Props, State> {
   state = { expanded: false };
 
-  componentDidUpdate(prevPops: Props, prevState: State) {
+  componentDidUpdate(_prevPops: Props, prevState: State) {
     if (prevState.expanded !== this.state.expanded) {
       this.props.onAction({ type: "update-peers" });
     }
@@ -70,7 +70,7 @@ export default class OutputOptions extends Component<Props, State> {
             label="Peer"
             options={peerOptions}
             value={value || none}
-            onChange={(ev, { value: selected }) => {
+            onChange={(_ev, { value: selected }) => {
               onSelect(selected === none ? null : selected);
             }}
             onOpen={() => onAction({ type: "update-peers" })}
@@ -93,7 +93,7 @@ export default class OutputOptions extends Component<Props, State> {
           // stopIf: 'stop-if'
         }}
         value={flow}
-        onChange={(ev, { value: flow }) => {
+        onChange={(_ev, { value: flow }) => {
           isValidFlowOption(flow) && onAction({ type: "flow-changed", flow });
         }}
       />

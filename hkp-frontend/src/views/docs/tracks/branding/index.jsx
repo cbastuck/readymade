@@ -3,9 +3,9 @@ import Template from "../../../Template";
 import { Section, Paragraph, ListItem, Text } from "../../Elements";
 import Date from "../../../../components/Date";
 
-import { ReactComponent as HkpLogo } from "./assets/hkp-dots-round.svg";
-import { ReactComponent as HkpBraidLogo } from "./assets/hkp-dots-plait-linkedin.svg";
-import { ReactComponent as HkpSingleEdgy } from "./assets/hkp-single-dot-second-trial-edgy.svg";
+import HkpLogo from "./assets/hkp-dots-round.svg?react";
+import HkpBraidLogo from "./assets/hkp-dots-plait-linkedin.svg?react";
+import HkpSingleEdgy from "./assets/hkp-single-dot-second-trial-edgy.svg?react";
 
 export default function Brand() {
   return (
@@ -24,7 +24,7 @@ export default function Brand() {
               <Logo size="10%" letters={false} svg={<HkpBraidLogo />} />
               <Logo size="5%" letters={false} svg={<HkpBraidLogo />} />
             </Paragraph>
-            <Paragraph brief="Single dot as symbol and favicon (WIP)">
+            <Paragraph brief="Single dot as symbol and favicon">
               <Logo svg={<HkpSingleEdgy />} size="30px" />
             </Paragraph>
           </Text>
@@ -59,17 +59,17 @@ export default function Brand() {
               </ListItem>
             </Paragraph>
             <Date month="January" day="21" year="2023" size="s" />
-            <Paragraph brief="In functional notation a representation of the smallest valuable building block ...">
+            <Section title="Pipelines and Functional analogy:  h(k(p))">
               <div>
-                a runtime consisting of two services: <code>h</code> and{" "}
-                <code>k</code>, with parameters <code>p</code> floating from
-                input to output while being transformed and producing the
-                result:
-                <span style={{ marginLeft: 10 }}>
-                  <code>h(k(p))</code>
-                </span>
+                Two services: <code>h</code>, <code>k</code>, and parameters{" "}
+                <code>p</code>.
               </div>
-            </Paragraph>
+              <div>
+                Read as a pipeline: the parameters <code>p</code> first go into
+                service <code>k</code> and the result as input to service{" "}
+                <code>h</code>
+              </div>
+            </Section>
           </Text>
         </Section>
       </div>

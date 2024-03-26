@@ -17,7 +17,7 @@ import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { filterPrivateMembers } from "./services/helpers";
 
-export async function addRuntime(rtClass: RuntimeClass, user: User | null) {
+export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
   const { name: passedName, type, url } = rtClass;
   const runtimeId = uuid.v4();
   const browser = new UAParser().getBrowser();
@@ -40,7 +40,7 @@ export async function addRuntime(rtClass: RuntimeClass, user: User | null) {
 async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
-  user: User | null
+  _user: User | null
 ): Promise<RestoreRuntimeResult | null> {
   const scope = await createScope(runtime, runtime.bundles);
   const createdServices: Array<ServiceImpl> = (
@@ -110,7 +110,7 @@ export async function configureService(
   const scope = scope_ as BrowserRuntimeScope;
   const [svc] = scope.findServiceInstance(service.uuid);
   if (svc) {
-    return svc.configure(config);
+    return svc.configure?.(config);
   }
 }
 
@@ -215,7 +215,7 @@ function createService(
     serviceName: service.serviceName || module.serviceName,
   };
   svc.__descriptor = descriptor;
-  const configure = svc.configure.bind(svc);
+  const configure = svc.configure?.bind(svc);
   svc.configure = (config: any) => {
     // monkey wire configure
     const { bypass } = config || {};

@@ -98,7 +98,7 @@ const onCreateServiceUi = (
   boardName: string,
   service: ServiceImpl,
   runtimeId: string,
-  userId: string | undefined
+  _userId: string | undefined
 ): ReactElement | null => {
   const { serviceId } = service;
 

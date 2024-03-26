@@ -1,12 +1,13 @@
 .runtime-accessory-button {
   color: #555;
-  height: 20px;
-  padding-left: 10px;
+  padding: "0px 1px";
+  margin-top: -6px;
+  height: 28px;
 }
 
 .runtime-accessory-button:active {
   background-color: #1e70bf;
   border-radius: 5px;
   color: white;
-  height: min-content;
+  height: 28px;
 }

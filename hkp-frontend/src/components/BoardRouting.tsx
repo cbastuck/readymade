@@ -36,7 +36,7 @@ export default class BoardRouting extends Component<Props, State> {
     this.setState({ inputUrl, inputTopic, outputUrl, outputTopic });
   }
 
-  componentDidUpdate(prevProps: Props) {
+  componentDidUpdate(_prevProps: Props) {
     /*
     // TODO: we don't need this function at all!!
     const { inputUrl, outputUrl } = this.props;
@@ -67,7 +67,7 @@ export default class BoardRouting extends Component<Props, State> {
             style={t.w100}
             label="Input URL"
             value={inputUrl}
-            onChange={(ev: any, { value: inputUrl }) => {
+            onChange={(_ev: any, { value: inputUrl }) => {
               if (typeof inputUrl === "string") {
                 this.setState({ inputUrl }, () =>
                   onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
@@ -79,7 +79,7 @@ export default class BoardRouting extends Component<Props, State> {
             style={t.w100}
             label="Input Topic"
             value={inputTopic}
-            onChange={(ev, { value: inputTopic }) => {
+            onChange={(_ev, { value: inputTopic }) => {
               if (typeof inputTopic === "string") {
                 this.setState({ inputTopic }, () =>
                   onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
@@ -92,7 +92,7 @@ export default class BoardRouting extends Component<Props, State> {
           <InputField
             label="Output URL"
             value={outputUrl}
-            onChange={(ev, { value: outputUrl }) => {
+            onChange={(_ev, { value: outputUrl }) => {
               if (typeof outputUrl === "string") {
                 this.setState({ outputUrl }, () =>
                   onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
@@ -103,7 +103,7 @@ export default class BoardRouting extends Component<Props, State> {
           <InputField
             label="Output Topic"
             value={outputTopic}
-            onChange={(ev, { value: outputTopic }) => {
+            onChange={(_ev, { value: outputTopic }) => {
               if (typeof outputTopic === "string") {
                 this.setState({ outputTopic }, () =>
                   onChange({ inputUrl, inputTopic, outputUrl, outputTopic })

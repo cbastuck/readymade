@@ -65,6 +65,7 @@ export default class Template extends Component<Props> {
         runtimeApis={{}}
       >
         <div
+          className="hkp-fnt-color"
           style={{
             width: "100%",
             height: "100%",
@@ -82,6 +83,7 @@ export default class Template extends Component<Props> {
             }}
           >
             <h1
+              className="hkp-fnt-color"
               style={{
                 width: "100%",
                 fontSize: 24,

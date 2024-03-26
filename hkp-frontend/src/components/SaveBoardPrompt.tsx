@@ -36,7 +36,7 @@ export default function SaveBoardPrompt({ onRef }: Props) {
       <Input
         style={s(t.w100)}
         value={name || ""}
-        onChange={(ev, { value: name }) => setName(name)}
+        onChange={(_ev, { value: name }) => setName(name)}
       />
       <Label style={s(t.fs12, t.ls1, t.mt10)}>Description</Label>
       <TextArea
@@ -45,7 +45,7 @@ export default function SaveBoardPrompt({ onRef }: Props) {
           resize: "none",
         })}
         value={description || ""}
-        onChange={(ev, { value: description }) =>
+        onChange={(_ev, { value: description }) =>
           setDescription(`${description}`)
         }
       />

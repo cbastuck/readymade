@@ -96,7 +96,7 @@ export default function RuntimeMenu({
           placeholder="Add Runtime"
           selection
           selectOnBlur={false}
-          onChange={(ev, { value }) => {
+          onChange={(_ev, { value }) => {
             if (value === "add-runtime") {
               setInputRemoteRuntime(true);
             } else if (value) {

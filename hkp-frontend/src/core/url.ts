@@ -22,7 +22,7 @@ function replaceAll(
   return src;
 }
 
-export function replacePlaceholders(url: string, params: any) {
+export function replacePlaceholders(url: string, params?: any) {
   if (!url) {
     return;
   }

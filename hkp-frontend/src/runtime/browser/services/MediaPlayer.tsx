@@ -1,7 +1,7 @@
 import { Component } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
-import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
+import { AppImpl, ServiceClass } from "../../../types";
 
 const serviceId = "hookup.to/service/media-player";
 const serviceName = "Media Player";
@@ -20,14 +20,14 @@ export class MediaPlayerUI extends Component {
     });
   }
 
-  onNotification = (service: ServiceImpl, params: any) => {
+  onNotification = (params: any) => {
     const { process: data } = params;
     if (this.audio && data) {
       this.resetIfNeeded();
       if (data instanceof Blob) {
         this.playBlob(data);
       } else {
-        throw new Error("Unsupported media format", data);
+        throw new Error("Unsupported media format");
       }
     }
   };
@@ -81,7 +81,7 @@ class MediaPlayer {
   constructor(
     app: AppImpl,
     board: string,
-    descriptor: ServiceClass,
+    _descriptor: ServiceClass,
     id: string
   ) {
     this.uuid = id;

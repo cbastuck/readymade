@@ -1,14 +1,14 @@
 import { Component } from "react";
 import { Input, Checkbox } from "semantic-ui-react";
 
-import { MapDescriptor } from "hkp-services";
+import MapDescriptor from "hkp-services/Map";
 
-import InputLabelValue from "../../../components/shared/InputLabelValue";
-import SelectorField from "../../../components/shared/SelectorField";
-import Button from "../../../components/shared/Button";
+import InputLabelValue from "hkp-frontend/src/components/shared/InputLabelValue";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
+import Button from "hkp-frontend/src/components/shared/Button";
 
-import ServiceUI from "../../services/ServiceUI";
-import { s, t } from "../../../styles";
+import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";
+import { s, t } from "hkp-frontend/src/styles";
 
 const newProperty = { key: "value" };
 

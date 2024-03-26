@@ -18,7 +18,7 @@ export default function Participation({
   onTcChanged,
 }: Props) {
   const onTc = useCallback(
-    (ev: React.FormEvent<HTMLInputElement>, { checked }: CheckboxProps) => {
+    (_ev: React.FormEvent<HTMLInputElement>, { checked }: CheckboxProps) => {
       if (checked !== undefined) {
         onTcChanged(checked);
       }

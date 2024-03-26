@@ -104,7 +104,7 @@ function BoardServiceUI(props: Props) {
   };
 
   const onNotification = async (
-    service: BoardService,
+    _service: BoardService,
     notification: Partial<Config>
   ) => {
     if (notification.command) {
@@ -214,7 +214,7 @@ function BoardServiceUI(props: Props) {
                       }),
                       {}
                     )}
-                    onChange={(ev, { value: board }) => {
+                    onChange={(_ev, { value: board }) => {
                       service.configure({ selectedBoard: board });
                       onChangeSavedBoard(boardContext, board);
                     }}
@@ -237,7 +237,7 @@ function BoardServiceUI(props: Props) {
                     array: "process array items",
                     whole: "process whole array ",
                   }}
-                  onChange={(ev, { value: board }) => {}}
+                  onChange={() => {}}
                 />
 
                 <Button
@@ -302,7 +302,7 @@ class BoardService {
   constructor(
     app: AppImpl,
     board: string,
-    descriptor: ServiceClass,
+    _descriptor: ServiceClass,
     id: string
   ) {
     this.uuid = id;

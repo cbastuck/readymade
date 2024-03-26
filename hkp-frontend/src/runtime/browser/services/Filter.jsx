@@ -1,13 +1,12 @@
 import React, { Component } from "react";
 import { Button } from "semantic-ui-react";
 
-import { s, t } from "../../../styles";
-import InputField from "../../../components/shared/InputField";
-import SelectorField from "../../../components/shared/SelectorField";
+import { s, t } from "hkp-frontend/src/styles";
+import InputField from "hkp-frontend/src/components/shared/InputField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
+import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";
 
-import { FilterDescriptor } from "hkp-services";
-
-import ServiceUI from "../../services/ServiceUI";
+import FilterDescriptor from "hkp-services/Filter";
 
 export class FilterUI extends Component {
   state = {};

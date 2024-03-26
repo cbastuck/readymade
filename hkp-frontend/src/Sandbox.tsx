@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { CSSProperties, Component } from "react";
 import { Link, Location } from "react-router-dom";
 import * as uuid from "uuid";
 
@@ -26,6 +26,8 @@ type Props = {
   boardName?: string;
   src?: string;
   data?: string;
+  style?: CSSProperties;
+  onAction: (params: any) => void;
 };
 
 type State = {
@@ -129,9 +131,9 @@ class Sandbox extends Component<Props, State> {
   };
 
   onResult = async (
-    uuid: string | null,
-    result: any,
-    requestId: string | null
+    _uuid: string | null,
+    _result: any,
+    _requestId: string | null
   ) => {
     // console.log('Sandbox result', serviceUuid, result);
   };
@@ -180,6 +182,8 @@ class Sandbox extends Component<Props, State> {
 
     return (
       <BoardProvider
+        user={null}
+        boardName="Sandbox Board"
         fetchBoard={this.fetchBoard}
         runtimeApis={runtimeApis}
         fetchAfterMount={true}

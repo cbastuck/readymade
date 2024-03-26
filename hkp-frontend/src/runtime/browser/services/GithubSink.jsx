@@ -168,7 +168,7 @@ class GithubSink {
     }
   }
 
-  destroy() {}
+  async destroy() {}
 
   async process(params) {
     if (this.token) {

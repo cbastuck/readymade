@@ -81,7 +81,7 @@ export default function Updates() {
           content={
             <div>
               <div>
-                <Link to="/docs/proto/Spotty"> Spotty</Link>
+                <Link to="/docs/proto/spotty"> Spotty</Link>
                 <div>
                   An early, unplublished, internal prototype. Still, a good
                   example for hooking up with external services.

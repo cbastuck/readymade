@@ -112,7 +112,7 @@ export default class ServiceFrame extends Component<Props, State> {
           <BypassSwitch
             bypass={!!bypass}
             onChange={(update: boolean) =>
-              service.configure({ bypass: update })
+              service.configure?.({ bypass: update })
             }
           />
         )}
@@ -298,7 +298,7 @@ export default class ServiceFrame extends Component<Props, State> {
               onChange={async (value: string) => {
                 try {
                   const config = JSON.parse(value);
-                  await service.configure(config); // TODO: not here
+                  await service.configure?.(config); // TODO: not here
                   this.setState({ configVisible: false });
                 } catch (err) {}
               }}

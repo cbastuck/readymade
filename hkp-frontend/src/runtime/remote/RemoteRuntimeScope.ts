@@ -33,10 +33,10 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   };
 
   onResult = async (
-    instanceId: string | null,
-    result: any,
-    requestId: string | null,
-    resultCallback: null | ((p: any) => void)
+    _instanceId: string | null,
+    _result: any,
+    _requestId: string | null,
+    _resultCallback: null | ((p: any) => void)
   ): Promise<void> => {
     console.warn("RemoteRuntimeScope.onResult not set");
   };
@@ -48,7 +48,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     this.reportBoardResult(boardResult);
   };
 
-  onConfig = (instanceId: string, config: object) => {
+  onConfig = (_instanceId: string, _config: object) => {
     console.warn("RemoteRuntimeScope.onConfig not set");
   };
 
@@ -91,14 +91,14 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     });
   };
 
-  onSocketError = (event: Event) => {
+  onSocketError = (_event: Event) => {
     if (this.pendingReconnectPromise) {
       this.pendingReconnectPromise[1](); // reject the reconnect - TODO: might be a non-fatal error
       this.pendingReconnectPromise = null;
     }
   };
 
-  onSocketOpened = (event: Event) => {
+  onSocketOpened = (_event: Event) => {
     if (this.socket) {
       this.pingTimer = setInterval(
         () =>

@@ -2,7 +2,7 @@ import { Icon } from "semantic-ui-react";
 
 import { s, t } from "../../styles";
 
-import { ReactComponent as Logo } from "./hkp-dots-braid.svg";
+import Logo from "./hkp-dots-braid.svg?react";
 
 type Props = {
   boardName: string;

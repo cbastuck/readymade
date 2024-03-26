@@ -1,13 +1,12 @@
 import Template from "../../Template";
 
-import { ExampleService, ExampleServiceUI } from "./ExampleService";
-import ServiceFrame from "../../../components/ServiceFrame";
-
 export default function ServiceBlock() {
+  /*
   const service = new ExampleService();
   const serviceUI = (
     <ExampleServiceUI service={service} setup={() => service} />
   );
+  */
 
   return (
     <Template title="Service">
@@ -44,9 +43,7 @@ export default function ServiceBlock() {
             marginRight: 30,
             width: 300,
           }}
-        >
-          <ServiceFrame service={service} serviceUi={serviceUI} />
-        </div>
+        ></div>
       </div>
     </Template>
   );

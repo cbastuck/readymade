@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import { ReactComponent as IconH } from "./assets/hkp-single-dot-h.svg";
+import IconH from "./assets/hkp-single-dot-h.svg?react";
 import Icon from "./assets/hkp-single-dot-second-trial-edgy.png";
 
 export default function HomeIcon() {

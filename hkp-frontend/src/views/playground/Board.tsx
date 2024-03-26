@@ -148,9 +148,9 @@ export default class Board extends Component<Props, State> {
   onResult = async (
     runtime: RuntimeDescriptor,
     peersContext: PeersContextState | null,
-    svcUuid: string | null,
+    _svcUuid: string | null,
     result: any,
-    requestId: string | null,
+    _requestId: string | null,
     resultCallback: null | ((p: any) => void)
   ) => {
     const { sidechainRouting, outputRouting, boardName } = this.props;

@@ -4,7 +4,7 @@ type Props = {
   month: string;
   day: String;
   year: string;
-  size: string;
+  size?: string | number;
   isUpdate?: boolean;
 };
 

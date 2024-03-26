@@ -1,12 +1,12 @@
 import { Component } from "react";
 import { TextArea } from "semantic-ui-react";
 
-import { MonitorDescriptor } from "hkp-services";
+import MonitorDescriptor from "hkp-services/Monitor";
 
-import Editor from "../../../components/shared/Editor/index";
-import Button from "../../../components/shared/Button";
-import { s, t } from "../../../styles";
-import ServiceUI from "../../services/ServiceUI";
+import Editor from "hkp-frontend/src/components/shared/Editor/index";
+import Button from "hkp-frontend/src/components/shared/Button";
+import { s, t } from "hkp-frontend/src/styles";
+import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";
 
 const ACTION_BAR_HEIGHT = "45";
 

@@ -100,7 +100,7 @@ class Html {
   constructor(
     app: AppImpl,
     board: string,
-    descriptor: ServiceClass,
+    _descriptor: ServiceClass,
     id: string
   ) {
     this.uuid = id;

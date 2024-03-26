@@ -42,7 +42,7 @@ import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
 import BoardEntryPoint from "./BoardEntryPoint";
-import { AppContextState, AppCtx } from "../../AppContext";
+import { AppCtx } from "../../AppContext";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -71,7 +71,7 @@ type State = {
 
 class Playground extends Component<Props, State> {
   static contextType = AppCtx;
-  context!: AppContextState;
+  declare context: React.ContextType<typeof AppCtx>;
 
   boardProviderRef: BoardProvider | null = null;
 
@@ -134,7 +134,7 @@ class Playground extends Component<Props, State> {
     try {
       await this.boardProviderRef?.fetchBoard();
     } catch (err: any) {
-      this.context.pushNotification({
+      this.context?.pushNotification({
         type: "error",
         message: err.message ? err.message : `Fetch failed`,
         timeout: 5000,
@@ -356,13 +356,13 @@ class Playground extends Component<Props, State> {
         `${localStoragePrefix}${name}`,
         JSON.stringify({ ...data, name, description })
       );
-      this.context.pushNotification({
+      this.context?.pushNotification({
         type: "info",
         message: "Board was saved",
         tag: "save",
       });
     } else {
-      this.context.pushNotification({
+      this.context?.pushNotification({
         type: "error",
         message: "Saving board failed",
       });
@@ -413,7 +413,7 @@ class Playground extends Component<Props, State> {
     );
   };
 
-  onRemoveService = (instance: InstanceId, runtime: RuntimeDescriptor) => {
+  onRemoveService = (instance: InstanceId, _runtime: RuntimeDescriptor) => {
     const updatedRoutings = Object.keys(this.state.sidechainRouting).reduce(
       (all, rtId) => {
         const routings = this.state.sidechainRouting[rtId];
@@ -439,7 +439,7 @@ class Playground extends Component<Props, State> {
         })
       );
       navigator.clipboard.writeText(url);
-      this.context.pushNotification({
+      this.context?.pushNotification({
         type: "info",
         message: `Copied to clipboard: ${url}`,
       });

@@ -3,7 +3,7 @@ import { Component } from "react";
 import Peerjs, { DataConnection } from "peerjs";
 
 import { DataEnvelope, Peer } from "../types";
-import { PeersContextState, PeersCtx } from "../PeersContext";
+import { PeersCtx } from "../PeersContext";
 
 type Props = {
   active: boolean;
@@ -28,7 +28,7 @@ type Props = {
 
 export default class PeerComponent extends Component<Props> {
   static contextType = PeersCtx;
-  context!: PeersContextState;
+  declare context: React.ContextType<typeof PeersCtx>;
 
   peer: Peer | null = null;
 
@@ -84,7 +84,7 @@ export default class PeerComponent extends Component<Props> {
       peer.onConnectionOpened = this.props.onConnectionOpened;
       peer.onConnectionClosed = this.props.onConnectionClosed;
       this.peer = peer;
-      this.context.onPeer(name, peer);
+      this.context?.onPeer(name, peer);
       if (this.props.onOpen) {
         this.props.onOpen();
       }
@@ -127,7 +127,7 @@ export default class PeerComponent extends Component<Props> {
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
-      this.context.onPeerClosed(name || this.props.name);
+      this.context?.onPeerClosed(name || this.props.name);
     }
   };
 

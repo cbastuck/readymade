@@ -24,11 +24,11 @@ export default function HtmlConfigTree({ data, onChange }: Props) {
   const onRename = ({ id, name }: any) =>
     onChange(updateNodeContent(data, id, name));
 
-  const onMove = ({ dragIds, parentId, index }: any) => {
+  const onMove = () => {
     console.log("Move node");
   };
 
-  const onDelete = ({ ids }: any) => {
+  const onDelete = () => {
     console.log("Delete node");
   };
 

@@ -23,7 +23,7 @@ export default function RenameRuntimeAccessory({
         style={{ ...topMargin, height: 16, width: "100%" }}
         ref={(elem) => elem && elem.focus()}
         value={runtimeNameEditBuffer}
-        onChange={(ev, { value: runtimeNameEditBuffer }) =>
+        onChange={(_ev, { value: runtimeNameEditBuffer }) =>
           setRuntimeNameEditBuffer(runtimeNameEditBuffer)
         }
         onKeyUp={(ev: KeyboardEvent) => {

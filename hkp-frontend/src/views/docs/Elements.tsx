@@ -26,7 +26,7 @@ type SectionProps = {
 
 export function Section({ title, children }: SectionProps) {
   const headlineStyle: CSSProperties = {
-    fontSize: 16,
+    fontSize: "20px",
   };
   return (
     <>

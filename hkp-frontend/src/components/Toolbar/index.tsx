@@ -8,10 +8,11 @@ import Navigation from "./Navigation";
 import BoardMenu from "./BoardMenu";
 import AccountMenu from "./AccountMenu";
 
-import "./index.css";
 import { RuntimeClass } from "../../types";
 import BoardActionsBar from "./BoardActionsBar";
 import { useContext } from "react";
+
+import "./index.css";
 
 type Props = {
   board?: string;

@@ -5,7 +5,7 @@ import SandboxFrame from "../../components/SandboxFrame";
 
 import NavigateButton from "../NavigateButton";
 
-export default function IntroPage() {
+export default function PitchPage() {
   const progressRef = useRef<ProgressIndicator>(null);
   const [introFinished, setIntroFinished] = useState(false);
   return (

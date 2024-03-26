@@ -10,25 +10,25 @@ import RemoteRuntimeScope from "./RemoteRuntimeScope";
 export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
   return {
     getAuthenticatedUser: () => scope.authenticatedUser,
-    notify: (svc: ServiceImpl, notification: any): void => {},
-    next: (svc: InstanceId | null, result: any): void => {},
-    getServiceById: (uuid: string): ServiceImpl | null => {
+    notify: (_svc: ServiceImpl, _notification: any): void => {},
+    next: (_svc: InstanceId | null, _result: any): void => {},
+    getServiceById: (_uuid: string): ServiceImpl | null => {
       return null;
     },
-    sendAction: (action: ServiceAction): void => {},
+    sendAction: (_action: ServiceAction): void => {},
     storeServiceData: (
-      serviceUuid: string,
-      key: string,
-      value: string
+      _serviceUuid: string,
+      _key: string,
+      _value: string
     ): void => {},
-    restoreServiceData: (serviceUuid: string, key: string): void => {},
-    removeServiceData: (serviceUuid: string, key: string): void => {},
+    restoreServiceData: (_serviceUuid: string, _key: string): void => {},
+    removeServiceData: (_serviceUuid: string, _key: string): void => {},
     createSubService: (
-      parent: ServiceImpl,
-      service: ServiceClass,
-      instanceId?: string
+      _parent: ServiceImpl,
+      _service: ServiceClass,
+      _instanceId?: string
     ): void => {},
-    createSubServiceUI: (svc: ServiceImpl): void => {},
+    createSubServiceUI: (_svc: ServiceImpl): void => {},
     listAvailableServices: () => [],
   };
 }

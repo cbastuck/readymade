@@ -156,7 +156,7 @@ export default class Runtime extends Component<Props, State> {
   configureService = async (serviceUuid: string, config: any) => {
     const service = this.getServiceById(serviceUuid);
     if (service) {
-      service.configure(config);
+      service.configure?.(config);
     } else {
       console.error(
         "configureService() Can not find service by id: ",

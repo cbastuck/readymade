@@ -28,7 +28,6 @@ export default function Slider({
   onLabelClicked = () => {},
   synced = true,
   labelStyle = {},
-  style = {},
 }: Props) {
   const [stateValue, setStateValue] = useState<number>(syncedValue);
 

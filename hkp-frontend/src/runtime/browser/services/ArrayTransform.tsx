@@ -28,7 +28,7 @@ function ArrayTransformUI(props: any) {
     updateState(config);
   };
 
-  const onNotification = (service: ArrayTransform, notification: any) => {
+  const onNotification = (_service: ArrayTransform, notification: any) => {
     updateState(notification);
   };
 
@@ -48,7 +48,7 @@ function ArrayTransformUI(props: any) {
         >
           <HtmlConfigTree
             data={treeConfig}
-            onChange={(cfg) => service.configure({ config: cfg })}
+            onChange={(cfg) => service.configure?.({ config: cfg })}
           />
         </div>
       );
@@ -57,7 +57,7 @@ function ArrayTransformUI(props: any) {
 
   const renderView = {
     name: "Output",
-    render: (service: ServiceImpl) => (
+    render: (_service: ServiceImpl) => (
       <div
         style={{
           width: "100%",
@@ -104,7 +104,7 @@ class ArrayTransform {
   constructor(
     app: AppImpl,
     board: string,
-    descriptor: ServiceClass,
+    _descriptor: ServiceClass,
     id: string
   ) {
     this.uuid = id;

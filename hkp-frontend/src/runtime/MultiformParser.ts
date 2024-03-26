@@ -53,7 +53,7 @@ function findStringInView(
 ) {
   function finder(str: string, startIndex: number = 0) {
     const arr = stringToCharCodes(str);
-    return function (element: any, index: number, view: Uint8Array) {
+    return function (_element: any, index: number, view: Uint8Array) {
       const n = arr.length - 1;
       if (index < n || index <= startIndex) {
         return false;

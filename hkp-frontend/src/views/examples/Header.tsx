@@ -15,7 +15,7 @@ export default function Header({ example }: Props) {
     >
       <h1 style={{ margin: 0, padding: 0 }}>
         <div
-          className="hkp-fnt-family"
+          className="hkp-fnt-family hkp-fnt-color"
           style={{
             letterSpacing: 8,
             fontSize: 20,

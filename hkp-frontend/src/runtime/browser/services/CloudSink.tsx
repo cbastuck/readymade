@@ -45,7 +45,7 @@ function CloudSinkUI(props: Props) {
   );
 
   const onNotification = useCallback(
-    (service: CloudSink, notification: Partial<Config>) =>
+    (_service: CloudSink, notification: Partial<Config>) =>
       onUpdate(notification),
     [onUpdate]
   );
@@ -124,7 +124,7 @@ class CloudSink {
   constructor(
     app: AppImpl,
     board: string,
-    descriptor: ServiceClass,
+    _descriptor: ServiceClass,
     id: string
   ) {
     this.uuid = id;

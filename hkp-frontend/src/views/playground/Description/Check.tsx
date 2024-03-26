@@ -15,7 +15,7 @@ export default function Check(item: CheckType) {
       .then((resp) =>
         setResolvedUrls({ ...resolvedURLs, [urlKey]: resp.status === 200 })
       )
-      .catch((err) => setResolvedUrls({ ...resolvedURLs, [urlKey]: false }));
+      .catch((_err) => setResolvedUrls({ ...resolvedURLs, [urlKey]: false }));
   }
 
   return (

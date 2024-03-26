@@ -5,8 +5,6 @@ import AppProvider from "./AppContext";
 import MessageDispatcher from "./MessageDispatcher";
 import Notifications from "./Notifications";
 
-import "./App.css";
-
 export default function App() {
   const location = window.location;
   const redirectUri = `${location.protocol}//${location.host}/authRedirect`;

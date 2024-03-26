@@ -1,12 +1,12 @@
 import { Component } from "react";
 
-import ServiceUI from "../../services/ServiceUI";
-import InputField from "../../../components/shared/InputField";
-import SelectorField from "../../../components/shared/SelectorField";
-import Button from "../../../components/shared/Button";
-import { s, t } from "../../../styles";
+import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";
+import InputField from "hkp-frontend/src/components/shared/InputField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
+import Button from "hkp-frontend/src/components/shared/Button";
+import { s, t } from "hkp-frontend/src/styles";
 
-import { TimerDescriptor } from "hkp-services";
+import TimerDescriptor from "hkp-services/Timer";
 
 export class TimerUI extends Component {
   state = {

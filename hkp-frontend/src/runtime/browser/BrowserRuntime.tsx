@@ -15,7 +15,7 @@ import {
   User,
 } from "../../types";
 import { createServiceUI } from "../../UIFactory";
-import { BoardContextState, BoardCtx } from "../../BoardContext";
+import { BoardCtx } from "../../BoardContext";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import {
   configureService,
@@ -53,7 +53,8 @@ type State = {
 
 export default class BrowserRuntime extends Component<Props, State> {
   static contextType = BoardCtx;
-  context!: BoardContextState;
+  declare context: React.ContextType<typeof BoardCtx>;
+
   websocket: WebSocket | null | undefined = null;
   eventSource: EventSource | undefined = undefined;
 
@@ -61,10 +62,13 @@ export default class BrowserRuntime extends Component<Props, State> {
     loadingCounter: 0,
   };
 
+  componentDidMount() {}
+
   componentWillUnmount() {
     this.destroyRuntime();
   }
 
+  // TODO: remove this
   connect(id: string) {
     const { user, runtime, boardName } = this.props;
     const { name: runtimeName } = runtime;
@@ -113,7 +117,7 @@ export default class BrowserRuntime extends Component<Props, State> {
     const protocol = secureConnection ? "wss" : "ws";
     this.websocket = new WebSocket(
       `${protocol}://${backendHost}${backendPath}`,
-      this.context.user?.idToken
+      this.context?.user?.idToken
     );
     this.websocket.binaryType = "arraybuffer";
     this.websocket.onmessage = (event) => {
@@ -128,13 +132,13 @@ export default class BrowserRuntime extends Component<Props, State> {
       );
       this.onMessage(action);
     };
-    this.websocket.onclose = (event) => {
+    this.websocket.onclose = (_event) => {
       logInfo(`Closed WebSocket with ${runtimeId}`);
     };
     this.websocket.onerror = function (error) {
       console.error(`WebSocket ${runtimeId} Error: `, error);
     };
-    this.websocket.onopen = (event) => {
+    this.websocket.onopen = (_event) => {
       logInfo(`BrowserRuntime ${runtimeId} WebSocket is open`);
     };
   }
@@ -308,6 +312,6 @@ export default class BrowserRuntime extends Component<Props, State> {
   }
 }
 
-function logInfo(msg: string) {
+function logInfo(_msg: string) {
   // console.log(msg);
 }

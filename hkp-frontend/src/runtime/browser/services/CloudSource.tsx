@@ -49,7 +49,7 @@ function CloudSourceUI(props: Props) {
   );
 
   const onNotification = useCallback(
-    (service: CloudSource, notification: Partial<Config>) =>
+    (_service: CloudSource, notification: Partial<Config>) =>
       onUpdate(notification),
     [onUpdate]
   );
@@ -139,7 +139,7 @@ class CloudSource {
   constructor(
     app: AppImpl,
     board: string,
-    descriptor: ServiceClass,
+    _descriptor: ServiceClass,
     id: string
   ) {
     this.uuid = id;
@@ -170,7 +170,7 @@ class CloudSource {
     return this.doProcess(params);
   }
 
-  doProcess = async (params: any) => {
+  doProcess = async (_params: any) => {
     const user = this.app.getAuthenticatedUser();
     if (!this.resourceId || !user) {
       return null;

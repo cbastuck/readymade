@@ -65,9 +65,9 @@ export type BoardContextState = BoardContextAPI & {
 type Props = {
   user: User | null;
   boardName: string;
-  availableRuntimes: Array<RuntimeClass>;
-  runtimeApis: RuntimeApiMap;
   children: JSX.Element | JSX.Element[];
+  availableRuntimes?: Array<RuntimeClass>;
+  runtimeApis?: RuntimeApiMap;
   fetchAfterMount?: boolean;
 
   fetchBoard?: () => Promise<BoardDescriptor>;
@@ -77,11 +77,8 @@ type Props = {
   clearBoard?: (board: BoardDescriptor) => Promise<void>;
   saveBoard?: () => void;
   shareBoard?: () => void;
-
   onRemoveService?: (service: InstanceId, runtime: RuntimeDescriptor) => void;
-
   isActionAvailable?: (action: Action) => boolean;
-
   onAction?: (action: any) => boolean;
   serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
 };
@@ -91,7 +88,7 @@ const { Provider, Consumer: BoardConsumer } = BoardCtx;
 
 class BoardProvider extends Component<Props, BoardContextState> {
   static contextType = AppCtx;
-  context!: AppContextState;
+  declare context: React.ContextType<typeof AppCtx>;
 
   static registerBrowserRuntime(boardName: string, runtimeId: string) {
     // remember id of created runtime, it belongs to 'this' browser
@@ -144,9 +141,8 @@ class BoardProvider extends Component<Props, BoardContextState> {
       services: {},
       registry: {},
       scopes: {},
-      runtimeApis: props.runtimeApis,
-      appContext: this.context,
-
+      runtimeApis: props.runtimeApis || {},
+      appContext: this.context || undefined,
       awaitUserLogin: null,
     };
   }
@@ -166,7 +162,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       this.setState({ boardName });
     }
     if (this.context !== prevState.appContext) {
-      this.setState({ appContext: this.context });
+      this.setState({ appContext: this.context || undefined });
     }
   }
 
@@ -205,13 +201,13 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const user = this.state.user;
     const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
       runtimes.map((rt) => {
-        const api = this.props.runtimeApis[rt.type];
+        const api = this.props.runtimeApis?.[rt.type];
         if (!api) {
           console.error(
             `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
               rt
             )} with type: ${rt.type} with registered apis: ${JSON.stringify(
-              Object.keys(this.props.runtimeApis)
+              Object.keys(this.props.runtimeApis || {})
             )}`
           );
           return Promise.resolve(null);
@@ -328,7 +324,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
   };
 
   addRuntime = async (rtClass: RuntimeClass) => {
-    const api = this.props.runtimeApis[rtClass.type];
+    const api = this.props.runtimeApis?.[rtClass.type];
     if (!api) {
       throw new Error(
         `BoardContext.addRuntime() runtime api is missing: ${rtClass.type}`
@@ -478,7 +474,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     return availableRuntimes;
   };
 
-  removeAvailableRuntime = ({ name, url, type }: RuntimeClass) => {
+  removeAvailableRuntime = ({ name }: RuntimeClass) => {
     const availableRuntimes = this.state.availableRuntimes.filter(
       (rt) => rt.name !== name
     );
@@ -494,7 +490,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const runtime =
       this.state.runtimes.find((rt) => rt.id === runtimeId) || null;
     const scope = this.state.scopes[runtimeId] || null;
-    return [scope, runtime && this.props.runtimeApis[runtime.type]];
+    return [scope, (runtime && this.props.runtimeApis?.[runtime.type]) || null];
   }
 
   serializeBoard = async (): Promise<BoardDescriptor | null> => {

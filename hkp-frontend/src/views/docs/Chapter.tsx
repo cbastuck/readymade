@@ -21,7 +21,7 @@ export default function Chapter({
     ...passedStyle,
   };
   return (
-    <div style={style}>
+    <div className="hkp-fnt-color" style={style}>
       {name}
       {details ? <span style={detailStyle}>[{details || ""}]</span> : null}
       <div style={{ paddingLeft: 10 }}>{children}</div>

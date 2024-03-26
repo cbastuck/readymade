@@ -24,7 +24,6 @@ import Login from "./views/Login";
 import Profile from "./views/profile";
 
 import LoginFail from "./views/LoginFail";
-//import BoardWithContext from "./views/BoardWithContext";
 import Headless from "./views/headless";
 import Join from "./Join";
 import ServiceReferenceView from "./views/ServiceReferenceView";
@@ -44,10 +43,17 @@ import Engage from "./views/engage/Engage";
 import Terms from "./views/terms";
 import Privacy from "./views/privacy";
 
+import Track from "./views/docs/tracks";
+import BrandingTrack from "./views/docs/tracks/branding";
+import BridgeTrack from "./views/docs/tracks/bridge";
+import RemoteTrack from "./views/docs/tracks/remote";
+
 import ServiceRedirect from "./views/ServiceRedirect";
 
-import Track from "./views/docs/tracks";
 import Prototypes from "./views/docs/prototypes";
+import Spotty from "./views/docs/prototypes/Spotty";
+import Multiplication from "./views/docs/prototypes/Multiplication";
+
 import { generateRandomName } from "./core/board";
 import { replacePlaceholders } from "./core/url";
 
@@ -97,7 +103,7 @@ export default function AppRoutes() {
       <Route path="/auth2app" element={<AuthRedirect />} />
       <Route path="/authRedirect" element={<AuthRedirectAuth0 />} />
       <Route path="/import" element={<Import />} />
-      {/* old login route */}
+
       <Route path="/login" element={<Login />} />
       <Route path="/loginFail" element={<LoginFail />} />
       <Route path="/profile" element={<Profile />} />
@@ -108,14 +114,21 @@ export default function AppRoutes() {
       <Route path="/docs/pitch/what" element={<WhatPitch />} />
       <Route path="/docs/pitch/why" element={<WhyPitch />} />
       <Route path="/docs/pitch/how" element={<HowPitch />} />
-      <Route path="/docs/tracks/:track" element={<Track />} />
+      <Route path="/docs/tracks" element={<Track />}>
+        <Route path="branding" element={<BrandingTrack />} />
+        <Route path="bridge" element={<BridgeTrack />} />
+        <Route path="remote" element={<RemoteTrack />} />
+      </Route>
       <Route path="/docs/blog/:article" element={<Blog />} />
 
       <Route path="/docs/buildingblock/board" element={<BoardBlock />} />
       <Route path="/docs/buildingblock/runtime" element={<RuntimeBlock />} />
       <Route path="/docs/buildingblock/service" element={<ServiceBlock />} />
 
-      <Route path="/docs/proto/:name" element={<Prototypes />} />
+      <Route path="/docs/proto" element={<Prototypes />}>
+        <Route path="spotty" element={<Spotty />} />
+        <Route path="multiplication" element={<Multiplication />} />
+      </Route>
 
       <Route path="/dashboard" element={<Dashboard />} />
       <Route path="/serviceRedirect" element={<ServiceRedirect />} />
@@ -126,8 +139,6 @@ export default function AppRoutes() {
 
       <Route path="/headless" element={<Headless />} />
       <Route path="/join/:share" element={<Join />} />
-      {/* <Route path="/:board/app" element={<AppHub />} /> */}
-      {/* <Route path="/:board" element={<BoardWithContext />} /> */}
     </Routes>
   );
 }

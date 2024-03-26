@@ -114,17 +114,17 @@ export async function getServiceConfig(
 }
 
 export async function processService(
-  scope: RuntimeScope,
-  service: InstanceId,
-  params: any,
-  requestId: string | null
+  _scope: RuntimeScope,
+  _service: InstanceId,
+  _params: any,
+  _requestId: string | null
 ): Promise<any> {
   throw new Error("RemoteRuntime processService no implemented");
 }
 
 export async function rearrangeServices(
-  scope: RuntimeScope,
-  newOrder: Array<ServiceDescriptor>
+  _scope: RuntimeScope,
+  _newOrder: Array<ServiceDescriptor>
 ): Promise<Array<ServiceDescriptor>> {
   return []; // TODO: implement me
 }

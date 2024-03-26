@@ -40,10 +40,10 @@ export default function Prototypes() {
           </a>
         </div>
         <div>
-          <Link to="/docs/proto/Spotty">Spotty</Link>
+          <Link to="/docs/proto/spotty">Spotty</Link>
         </div>
         <div>
-          <Link to="/docs/proto/Multiplication">Multiplication rows</Link>
+          <Link to="/docs/proto/multiplication">Multiplication rows</Link>
         </div>
       </div>
 

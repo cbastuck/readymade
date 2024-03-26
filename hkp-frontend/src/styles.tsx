@@ -1,4 +1,4 @@
-import { CSSProperties } from "react";
+import { CSSProperties, ReactNode } from "react";
 
 export function s(...args: any[]): CSSProperties {
   return Array.from(args).reduce((a, c) => ({ ...a, ...c }), {});
@@ -205,11 +205,16 @@ export const t: { [key: string]: StyleType } = {
 
 t.text = s(t.uc, t.ls1, t.fs12);
 
+type HStackProps = {
+  gap?: number | string;
+  style?: CSSProperties;
+  children: ReactNode;
+};
 export function HStack({
   gap = undefined,
   style: _style = {},
   children = null,
-}) {
+}: HStackProps) {
   const style: CSSProperties = {
     display: "flex",
     flexDirection: "row",
