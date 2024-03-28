@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import ReactDOM from "react-dom";
+import ReactDOM from "react-dom/client";
 
 import { parseExpression, evalExpression } from "hkp-services/eval";
 
@@ -73,7 +73,8 @@ class Reactor {
 
   process(params) {
     if (this.target) {
-      ReactDOM.render(this.buildComponent(params), this.target);
+      const C = () => this.buildComponent(params);
+      ReactDOM.createRoot(this.target).render(<C />);
     } else if (this.template !== null) {
       return this.applyToTemplate(params, this.template);
     } else {

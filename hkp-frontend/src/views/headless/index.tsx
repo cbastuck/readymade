@@ -8,6 +8,11 @@ import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
 import { availableRuntimes } from "../playground/common";
 
 import build from "../../buildNumber.json";
+import {
+  BoardDescriptor,
+  RuntimeDescriptor,
+  ServiceDescriptor,
+} from "../../types";
 
 const defaultBundles = [
   "hookup.to/registry/browser/Audio",
@@ -17,57 +22,76 @@ const defaultBundles = [
   "hookup.to/registry/browser/Fileformat",
 ];
 
-export default class Headless extends Component {
-  state = {};
+export type Props = {
+  callback: (data: any) => void;
+  runtimeId: string;
+  runtimeName: string;
+  services: Array<ServiceDescriptor>;
+  expanded: boolean;
+};
+
+type State = {
+  defaultRegistry?: BrowserRegistry;
+};
+
+export default class Headless extends Component<Props, State> {
+  state: State = {};
+  boardContext: BoardProvider | null = null;
+  runtimeRef: Runtime | null = null;
 
   static buildVersion() {
     return build.version;
   }
 
-  constructor(props) {
+  constructor(props: Props) {
     super(props);
-    BrowserRegistry.create(defaultBundles).then((defaultRegistry) =>
-      this.setState({ defaultRegistry })
-    );
   }
 
   getFirstRuntime = () => {
     return this.boardContext?.state?.runtimes?.[0];
   };
 
-  configure = (serviceId, config) => {
+  configure = (serviceId: string, config: any) => {
     const runtime = this.getFirstRuntime();
-    if (runtime) {
+    if (runtime && this.boardContext) {
       const [scope, api] = this.boardContext.getRuntimeScopeApi(runtime.id);
-      api.configureService(scope, { uuid: serviceId }, config);
+      if (scope && api) {
+        api.configureService(scope, { uuid: serviceId }, config);
+      }
     }
   };
 
-  configuration = (serviceId) => {
+  configuration = (serviceId: string) => {
     const runtime = this.getFirstRuntime();
-    if (runtime) {
+    if (runtime && this.boardContext) {
       const [scope, api] = this.boardContext.getRuntimeScopeApi(runtime.id);
-      return api.getServiceConfig(scope, { uuid: serviceId });
+      if (api && scope) {
+        return api.getServiceConfig(scope, { uuid: serviceId });
+      }
     }
   };
 
-  processService = (serviceId, params) => {
+  processService = (serviceId: string, params: any) => {
     const runtime = this.getFirstRuntime();
-    if (runtime) {
+    if (runtime && this.boardContext) {
       const [scope, api] = this.boardContext.getRuntimeScopeApi(runtime.id);
-      return api.processService(scope, { uuid: serviceId }, params);
+      if (scope && api) {
+        return api.processService(scope, { uuid: serviceId }, params, null);
+      }
     }
   };
 
-  process = (params, serviceId) => {
+  process = (params: any, serviceId: string) => {
     const runtime = this.getFirstRuntime();
-    if (runtime) {
+    if (runtime && this.boardContext) {
       const [scope, api] = this.boardContext.getRuntimeScopeApi(runtime.id);
-      return api.processRuntime(scope, params, { uuid: serviceId });
+      if (scope && api) {
+        return api.processRuntime(scope, params, { uuid: serviceId });
+      }
     }
   };
 
-  onResult = (runtimeId, data) => {
+  onResult = async (runtimeId: string | null, data: any) => {
     const { callback } = this.props;
     if (callback) {
       callback(data);
@@ -80,17 +104,24 @@ export default class Headless extends Component {
     const { runtimeId, runtimeName, services, expanded = false } = this.props;
     const { defaultRegistry } = this.state;
     if (!defaultRegistry) {
+      BrowserRegistry.create(defaultBundles).then((defaultRegistry) => {
+        this.setState({ defaultRegistry });
+      });
       return false;
     }
 
-    const runtime = { id: runtimeId, name: runtimeName, type: "browser" };
-    const emptyFunc = () => {};
+    const runtime: RuntimeDescriptor = {
+      id: runtimeId,
+      name: runtimeName,
+      type: "browser",
+    };
 
-    const onFetchBoard = () => {
+    const onFetchBoard = async (): Promise<BoardDescriptor> => {
       return {
         runtimes: [runtime],
         services: { [runtimeId]: services },
         boardName: "headless-board",
+        registry: {},
       };
     };
 
@@ -98,34 +129,30 @@ export default class Headless extends Component {
       browser: browserRuntimeApi,
       remote: remoteRuntimeApi,
     };
+
     return (
       <BoardProvider
         ref={(context) => (this.boardContext = context)}
-        user={{}}
+        user={null}
         boardName="headless-board"
         fetchBoard={onFetchBoard}
         isRuntimeInScope={() => true}
         runtimeApis={runtimeApis}
-        removeRuntime={emptyFunc}
-        newBoard={emptyFunc}
-        clearBoard={emptyFunc}
-        saveBoard={emptyFunc}
         isActionAvailable={() => false}
-        serializeBoard={emptyFunc}
-        onAction={emptyFunc}
-        onRemoveService={emptyFunc}
         availableRuntimes={availableRuntimes}
+        fetchAfterMount={true}
       >
         <BoardConsumer>
           {(boardContext) =>
             boardContext && (
               <Runtime
-                ref={(rt) => (this.runtime = rt)}
+                ref={(rt) => (this.runtimeRef = rt)}
                 boardContext={boardContext}
                 runtime={runtime}
                 expanded={expanded}
                 headless={!expanded}
                 onResult={this.onResult}
+                initialState={{}}
               />
             )
           }
@@ -134,7 +161,7 @@ export default class Headless extends Component {
     );
   }
 }
-
+/*
 Headless.defaultProps = {
   runtimeId: "d5a48a72-b077-4d1e-83de-4be8f64bc3e8",
   runtimeName: "Headless runtime",
@@ -150,3 +177,4 @@ Headless.defaultProps = {
     },
   ],
 };
+*/

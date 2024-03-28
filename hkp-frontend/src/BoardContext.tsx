@@ -58,7 +58,7 @@ export type BoardContextState = BoardContextAPI & {
   availableRuntimes: Array<RuntimeClass>;
   runtimeApis: RuntimeApiMap;
 
-  appContext?: AppContextState;
+  appContext: AppContextState | null;
   awaitUserLogin: (() => void) | null;
 };
 
@@ -112,6 +112,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
 
   constructor(props: Props) {
     super(props);
+    this.context = null;
 
     this.state = {
       // API
@@ -142,7 +143,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       registry: {},
       scopes: {},
       runtimeApis: props.runtimeApis || {},
-      appContext: this.context || undefined,
+      appContext: this.context || null,
       awaitUserLogin: null,
     };
   }
@@ -162,7 +163,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       this.setState({ boardName });
     }
     if (this.context !== prevState.appContext) {
-      this.setState({ appContext: this.context || undefined });
+      this.setState({ appContext: this.context });
     }
   }
 
@@ -174,6 +175,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
   };
 
   fetchBoard = async () => {
+    console.log("FETCHING");
     if (!this.props.fetchBoard) {
       return;
     }

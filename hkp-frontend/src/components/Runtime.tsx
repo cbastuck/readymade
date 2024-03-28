@@ -269,6 +269,7 @@ export default class Runtime extends Component<Props, State> {
             style={{
               display: "flex",
               flexDirection: "row",
+
               width: "100%",
               marginLeft: 10,
             }}
@@ -624,7 +625,9 @@ export default class Runtime extends Component<Props, State> {
     if (headless && runtime) {
       return renderActualRuntime(true);
     }
-*/
+    */
+
+    console.log("Runtime.render", services);
     return (
       <div
         style={
