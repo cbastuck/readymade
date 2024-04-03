@@ -627,7 +627,6 @@ export default class Runtime extends Component<Props, State> {
     }
     */
 
-    console.log("Runtime.render", services);
     return (
       <div
         style={

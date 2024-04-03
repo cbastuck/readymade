@@ -175,7 +175,6 @@ class BoardProvider extends Component<Props, BoardContextState> {
   };
 
   fetchBoard = async () => {
-    console.log("FETCHING");
     if (!this.props.fetchBoard) {
       return;
     }
