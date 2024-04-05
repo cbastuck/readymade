@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useState } from "react";
 
 type Props = {
   open: boolean;
@@ -17,36 +18,34 @@ type Props = {
 };
 
 export default function RunParamsDialog({ open, onClose, onRun }: Props) {
+  const [key, setKey] = useState("key");
+  const [value, setValue] = useState("value");
   const onSubmit = () => {
-    onRun({ test: 123 });
+    onRun({ [key]: value });
   };
   return (
     <Dialog open={open} onOpenChange={(open: boolean) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Edit profile</DialogTitle>
+          <DialogTitle>Run with parameters</DialogTitle>
           <DialogDescription>
-            Make changes to your profile here. Click save when you're done.
+            Provide parameters for injecting into the runtime
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="name" className="text-right">
-              Name
-            </Label>
+            <Label className="text-right">Key</Label>
             <Input
-              id="name"
-              defaultValue="Pedro Duarte"
+              value={key}
+              onChange={(ev) => setKey(ev.target.value)}
               className="col-span-3"
             />
           </div>
           <div className="grid grid-cols-4 items-center gap-4">
-            <Label htmlFor="username" className="text-right">
-              Username
-            </Label>
+            <Label className="text-right">Value</Label>
             <Input
-              id="username"
-              defaultValue="@peduarte"
+              value={value}
+              onChange={(ev) => setValue(ev.target.value)}
               className="col-span-3"
             />
           </div>

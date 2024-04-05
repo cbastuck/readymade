@@ -6,6 +6,7 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   StepForward,
+  ArrowRightLeft,
 } from "lucide-react";
 
 import {
@@ -31,7 +32,7 @@ type Props = {
   onClear: () => void;
   onDelete: () => void;
 };
-export default function SettingsDropdown({
+export default function RuntimeSettings({
   runtime,
   isExpanded,
   wrapServices,
@@ -75,8 +76,12 @@ export default function SettingsDropdown({
           </DropdownMenuItem>
 
           <DropdownMenuItem onClick={() => onWrapServices(!wrapServices)}>
-            <WrapText className="mr-2 h-4 w-4" />
-            <span>Wrap Services</span>
+            {wrapServices ? (
+              <ArrowRightLeft className="mr-2 h-4 w-4" />
+            ) : (
+              <WrapText className="mr-2 h-4 w-4" />
+            )}
+            <span>{wrapServices ? "Unwrap Services" : "Wrap services"}</span>
             <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
           </DropdownMenuItem>
 

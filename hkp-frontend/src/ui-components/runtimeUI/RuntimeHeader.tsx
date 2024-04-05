@@ -1,15 +1,17 @@
-import ServiceMenu from "./ServiceMenu";
+import { useContext, useState } from "react";
+
 import {
   AppViewMode,
   RuntimeDescriptor,
   ServiceClass,
   ServiceRegistry,
 } from "@/types";
-import SettingsDropdown from "./SettingsDropdown";
-import Editable from "../Editable";
-import RunParamsDialog from "./RunParamsDialog";
-import { useContext, useState } from "react";
+import Editable from "@/ui-components/Editable";
 import { BoardCtx } from "@/BoardContext";
+
+import RunParamsDialog from "./RunParamsDialog";
+import RuntimeSettings from "./RuntimeSettings";
+import RuntimeServiceMenu from "./RuntimeServiceMenu";
 
 type Props = {
   runtime: RuntimeDescriptor;
@@ -22,7 +24,7 @@ type Props = {
   onWrapServices: (isWrapped: boolean) => void;
 };
 
-export default function Header({
+export default function RuntimeHeader({
   runtime,
   registry,
   appViewMode,
@@ -67,7 +69,7 @@ export default function Header({
   return (
     <div className="flex items-center gap-3 px-2">
       <div className="flex items-end gap-3 px-2 min-h-10">
-        <SettingsDropdown
+        <RuntimeSettings
           runtime={runtime}
           isExpanded={isExpanded}
           wrapServices={wrapServices}
@@ -81,7 +83,7 @@ export default function Header({
       </div>
 
       <div className="ml-auto mt-1 mr-0">
-        <ServiceMenu
+        <RuntimeServiceMenu
           runtimeId={runtimeId}
           registry={registry}
           appViewMode={appViewMode}

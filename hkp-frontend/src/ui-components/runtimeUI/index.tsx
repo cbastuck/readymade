@@ -1,12 +1,12 @@
 import { CSSProperties, ReactNode } from "react";
 
-import Header from "./Header";
 import {
   AppViewMode,
   RuntimeDescriptor,
   ServiceClass,
   ServiceRegistry,
 } from "@/types";
+import RuntimeHeader from "./RuntimeHeader";
 
 type Props = {
   runtime: RuntimeDescriptor;
@@ -46,7 +46,7 @@ export default function RuntimeUI({
 
   return (
     <div style={style}>
-      <Header
+      <RuntimeHeader
         isExpanded={isExpanded}
         wrapServices={wrapServices}
         runtime={runtime}

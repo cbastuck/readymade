@@ -25,7 +25,7 @@ type Props = {
   onAddService: (svc: ServiceClass) => void;
 };
 
-export default function ServiceComboBox({
+export default function RuntimeServiceMenu({
   runtimeId,
   registry,
   onAddService,
