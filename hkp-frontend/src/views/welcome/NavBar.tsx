@@ -23,7 +23,7 @@ export default function NavBar({ pathname }: Props) {
   );
 
   const currentIndex = pages.indexOf(pathname);
-  if (currentIndex === 0 || currentIndex === pages.length - 1) {
+  if (currentIndex === 0) {
     return null;
   }
 

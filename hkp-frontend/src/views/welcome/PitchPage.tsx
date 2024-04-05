@@ -9,7 +9,7 @@ export default function PitchPage() {
   const progressRef = useRef<ProgressIndicator>(null);
   const [introFinished, setIntroFinished] = useState(false);
   return (
-    <div style={{ height: "100%" }}>
+    <div style={{ height: "100%", width: "50%", margin: "auto" }}>
       <SandboxFrame
         title="Hookup Intro"
         src="/boards/introduction.json"

@@ -213,7 +213,7 @@ class Genetic {
 
     const statusText = {
       type: "text",
-      text: `generation ${this.generation} consists of ${populationShapes.length} items`,
+      text: `iteration ${this.generation} with ${populationShapes.length} ideas`,
       y: "94%",
       x: "60%",
       font: {

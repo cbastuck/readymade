@@ -2,7 +2,7 @@ import { ChangeEvent, KeyboardEvent, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Pen, X } from "lucide-react";
+import { X } from "lucide-react";
 
 type Props = {
   value: string;

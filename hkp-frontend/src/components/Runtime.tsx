@@ -550,7 +550,7 @@ export default class Runtime extends Component<Props, State> {
     } = this.props;
 
     const runtimeId = runtime && runtime.id;
-    const runtimeName = runtime ? runtime.name : "Blank";
+
     const services =
       runtime && boardContext && boardContext.services[runtime.id];
     const user = (boardContext && boardContext.appContext?.user) || null;

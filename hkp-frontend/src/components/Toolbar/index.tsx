@@ -1,3 +1,4 @@
+import { useContext } from "react";
 import { Menu } from "semantic-ui-react";
 
 import { BoardCtx } from "../../BoardContext";
@@ -5,12 +6,12 @@ import { BoardCtx } from "../../BoardContext";
 import RuntimeMenu from "./RuntimeMenu";
 import HomeIcon from "./HomeIcon";
 import Navigation from "./Navigation";
-import BoardMenu from "./BoardMenu";
+
 import AccountMenu from "./AccountMenu";
 
 import { RuntimeClass } from "../../types";
 import BoardActionsBar from "./BoardActionsBar";
-import { useContext } from "react";
+import BoardMenu from "@/ui-components/BoardMenu";
 
 import "./index.css";
 
@@ -58,13 +59,7 @@ export default function Toolbar({
           }}
         >
           <HomeIcon />
-          {board && (
-            <BoardMenu
-              boardSyncActive={boardSyncActive}
-              board={board}
-              boardContext={boardContext}
-            />
-          )}
+          {board && <BoardMenu boardSyncActive={boardSyncActive} />}
 
           {showRuntimeMenu && (
             <RuntimeMenu

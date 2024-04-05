@@ -187,12 +187,12 @@
           [
             {
               "type": "text",
-              "text": "progressing towards an optimum - somewhere.",
+              "text": "Seeking the best ideas,",
               "color": "#454f6d",
 
               "font": {
                 "weight": "lighter",
-                "size": "80%",
+                "size": "60%",
                 "family": "SpecialElite"
               },
               "y": "15%"
@@ -241,12 +241,12 @@
             },
             {
               "type": "text",
-              "text": "Variance serves as a catalyst in the process.",
+              "text": "variance serves as a catalyst.",
               "color": "#454f6d",
 
               "font": {
                 "weight": "lighter",
-                "size": "80%",
+                "size": "70%",
                 "family": "SpecialElite"
               },
               "y": "85%"
@@ -328,7 +328,7 @@
 
               "font": {
                 "weight": "lighter",
-                "size": "60%",
+                "size": "70%",
                 "family": "SpecialElite"
               },
               "y": "15%"
@@ -366,7 +366,7 @@
 
               "font": {
                 "weight": "lighter",
-                "size": "40%",
+                "size": "30%",
                 "family": "SpecialElite"
               },
               "y": "85%"
@@ -376,7 +376,7 @@
             {
               "type": "text",
               "id": "message",
-              "text": "Embracing variety to explore spaces.",
+              "text": "Embrace variety to explore spaces,",
               "color": "#454f6d",
               "font": {
                 "weight": "lighter",
@@ -389,12 +389,12 @@
             {
               "type": "text",
               "id": "message",
-              "text": "We embody manifold solutions.",
+              "text": "towards manifold solutions.",
               "color": "#454f6d",
 
               "font": {
                 "weight": "lighter",
-                "size": "70%",
+                "size": "60%",
                 "family": "SpecialElite"
               },
               "y": "83%"

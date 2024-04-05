@@ -7,7 +7,7 @@ import NavigateButton from "../NavigateButton";
 export default function VisualisationPage() {
   const [visualisationFinished, setVisualisationFinished] = useState(false);
   return (
-    <div style={{ height: "100%" }}>
+    <div style={{ height: "100%", width: "50%", margin: "0px auto" }}>
       <SandboxFrame
         title="Hookup Visualisation"
         src="/boards/visualisation.json"
@@ -23,11 +23,16 @@ export default function VisualisationPage() {
         }}
       />
       {visualisationFinished && (
-        <div className=" fade-in-linear">
+        <div className="fade-in-linear">
           <NavigateButton
             destination="/examples"
             text="Examples"
-            style={{ color: "#454f6e", fontSize: 14, border: "1px white" }}
+            style={{
+              color: "#454f6e",
+              fontSize: 14,
+              border: "1px white",
+              padding: "9px 0px",
+            }}
           />
         </div>
       )}

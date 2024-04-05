@@ -13,7 +13,7 @@ export default function UpdatesButton() {
       <div>
         <Link to="/docs/updates">
           <div className="update-bar">
-            <Icon name="star outline" size="large" />
+            <Icon name="star" size="large" />
             <div
               style={{
                 fontSize: 14,
