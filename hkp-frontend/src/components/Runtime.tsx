@@ -26,6 +26,8 @@ import BrowserRuntimeScope from "../runtime/browser/BrowserRuntimeScope";
 import RenameRuntimeAccessory from "./RenameRuntimeAccessory";
 import ProcessRuntimeAccessory from "./ProcessRuntimeAccessory";
 
+import RuntimeUI from "@/ui-components/runtimeUI";
+
 type Props = {
   boardContext: BoardContextState;
   initialState: {
@@ -43,7 +45,7 @@ type Props = {
   }>;
   disabledItems?: Array<string>;
   headless?: boolean;
-  style?: object;
+  style?: CSSProperties;
   readonly?: boolean;
   expanded?: boolean;
   frameless?: boolean;
@@ -93,12 +95,12 @@ export default class Runtime extends Component<Props, State> {
     }
   }
 
-  onAddService(service: ServiceClass) {
+  onAddService = (service: ServiceClass) => {
     const { boardContext, runtime } = this.props;
     if (boardContext && runtime) {
       boardContext.addService(service, runtime);
     }
-  }
+  };
 
   onServiceAction = (command: ServiceAction) => {
     const { boardContext, runtime } = this.props;
@@ -522,10 +524,10 @@ export default class Runtime extends Component<Props, State> {
           This is an empty runtime -
           <span
             style={{ cursor: "help", color: "#4284C4" }}
-            onClick={(ev) => {
-              if (this.dropdown) {
-                this.dropdown.open(ev);
-              }
+            onClick={() => {
+              document
+                .getElementById(`service-menu-${this.props.runtime.id}`)
+                ?.click();
             }}
           >
             {" add services "}
@@ -628,25 +630,20 @@ export default class Runtime extends Component<Props, State> {
     */
 
     return (
-      <div
-        style={
-          {
-            border: !frameless && !headless ? "solid 1px lightgray" : undefined,
-            borderRadius: 3,
-            backgroundColor: !frameless && "#EEEEEE10",
-            ...style,
-          } as CSSProperties
+      <RuntimeUI
+        frameless={frameless}
+        headless={headless}
+        style={style}
+        isExpanded={expanded}
+        wrapServices={wrapServices}
+        runtime={runtime}
+        registry={registry}
+        onExpand={(expanded: boolean) => this.setState({ expanded })}
+        onAddService={this.onAddService}
+        onWrapServices={(isWrapped: boolean) =>
+          this.setState({ wrapServices: isWrapped })
         }
       >
-        {!frameless &&
-          !headless &&
-          this.renderExpandableHeadline(
-            runtimeId,
-            runtimeName,
-            registry,
-            isOwner,
-            appViewMode
-          )}
         <Sidebar.Pushable
           as={Segment}
           style={{
@@ -696,7 +693,7 @@ export default class Runtime extends Component<Props, State> {
             </div>
           )}
         </Sidebar.Pushable>
-      </div>
+      </RuntimeUI>
     );
   }
 }

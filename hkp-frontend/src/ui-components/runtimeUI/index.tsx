@@ -1,54 +1,63 @@
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { CSSProperties, ReactNode } from "react";
+
 import Header from "./Header";
-import { RuntimeDescriptor } from "@/types";
+import {
+  AppViewMode,
+  RuntimeDescriptor,
+  ServiceClass,
+  ServiceRegistry,
+} from "@/types";
 
 type Props = {
   runtime: RuntimeDescriptor;
-  onAction: () => void;
-
-  children?: JSX.Element | JSX.Element[];
-  renderHeadline?: boolean;
+  frameless?: boolean;
+  headless?: boolean;
+  wrapServices?: boolean;
+  isExpanded?: boolean;
+  style?: CSSProperties;
+  appViewMode?: AppViewMode;
+  children?: ReactNode | ReactNode[];
+  registry: ServiceRegistry;
+  onExpand: (isExpanded: boolean) => void;
+  onWrapServices: (isWrapped: boolean) => void;
+  onAddService: (svc: ServiceClass) => void;
 };
 
 export default function RuntimeUI({
   runtime,
-  onAction,
+  frameless,
+  headless,
+  wrapServices,
+  style: passedStyled,
   children,
-  renderHeadline = true,
+  registry,
+  appViewMode = "wide",
+  isExpanded = true,
+  onExpand,
+  onWrapServices,
+  onAddService,
 }: Props) {
+  const style: CSSProperties = {
+    ...passedStyled,
+    border: !frameless && !headless ? "solid 1px lightgray" : undefined,
+    borderRadius: 3,
+    backgroundColor: !frameless ? "#EEEEEE10" : undefined,
+  };
+
   return (
-    <Card>
-      <Header renderHeadline={renderHeadline} />
-      <CardContent>
-        <div>
-          {runtime && renderActualRuntime(headless)}
-          {((services && services.length === 0) || !isOwner) && !headless && (
-            <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
-          )}
-        </div>
-        {children && (
-          <div
-            style={{
-              margin: "5px",
-              padding: 10,
-              border: "dashed 1px lightgray",
-              borderRadius: 5,
-            }}
-          >
-            <div style={{ marginBottom: 5 }} />
-            {children}
-          </div>
-        )}
-      </CardContent>
-      <CardFooter className="flex justify-between"></CardFooter>
-    </Card>
+    <div style={style}>
+      <Header
+        isExpanded={isExpanded}
+        wrapServices={wrapServices}
+        runtime={runtime}
+        appViewMode={appViewMode}
+        registry={registry}
+        onAddService={onAddService}
+        onExpand={onExpand}
+        onWrapServices={onWrapServices}
+      />
+      {children}
+      {!isExpanded && <div className="min-h-1" />}{" "}
+    </div>
   );
 }

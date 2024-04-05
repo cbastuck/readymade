@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Icon, Input } from "semantic-ui-react";
-
-import { s, t } from "../styles";
+import { Input } from "semantic-ui-react";
+import { Button } from "@/components/ui/button";
+import { Pen, X } from "lucide-react";
 
 type Props = {
   name: string;
@@ -16,47 +16,46 @@ export default function RenameRuntimeAccessory({
 }: Props) {
   const [runtimeNameEditBuffer, setRuntimeNameEditBuffer] = useState("");
   const topMargin = { marginTop: 6 };
-  return runtimeNameEditBuffer ? (
+  return (
     <div style={{ display: "flex", flexDirection: "row", marginTop: -5 }}>
-      <Input
-        className="hkp-fnt-family hkp-input-ghost"
-        style={{ ...topMargin, height: 16, width: "100%" }}
-        ref={(elem) => elem && elem.focus()}
-        value={runtimeNameEditBuffer}
-        onChange={(_ev, { value: runtimeNameEditBuffer }) =>
-          setRuntimeNameEditBuffer(runtimeNameEditBuffer)
-        }
-        onKeyUp={(ev: KeyboardEvent) => {
-          if (ev.key === "Enter") {
-            onChangeName(runtimeNameEditBuffer);
-            setRuntimeNameEditBuffer("");
-          } else if (ev.key === "Escape") {
-            setRuntimeNameEditBuffer("");
-          }
-        }}
-      />
+      {runtimeNameEditBuffer ? (
+        <>
+          <Input
+            className="hkp-fnt-family hkp-input-ghost"
+            style={{ ...topMargin, height: 16, width: "100%" }}
+            ref={(elem) => elem && elem.focus()}
+            value={runtimeNameEditBuffer}
+            onChange={(_ev, { value: runtimeNameEditBuffer }) =>
+              setRuntimeNameEditBuffer(runtimeNameEditBuffer)
+            }
+            onKeyUp={(ev: KeyboardEvent) => {
+              if (ev.key === "Enter") {
+                onChangeName(runtimeNameEditBuffer);
+                setRuntimeNameEditBuffer("");
+              } else if (ev.key === "Escape") {
+                setRuntimeNameEditBuffer("");
+              }
+            }}
+          />
 
-      <div
-        style={{
-          ...topMargin,
-          height: 18,
-          width: 30,
-          padding: 0,
-          cursor: "pointer",
-        }}
-        onClick={() => setRuntimeNameEditBuffer("")}
-      >
-        <Icon style={s(t.m(5, 0))} name="close" color="grey" />
-      </div>
-    </div>
-  ) : (
-    <div
-      style={{ cursor: "pointer", whiteSpace: "nowrap", fontWeight: "bold" }}
-      title={runtimeId}
-      onClick={() => !runtimeNameEditBuffer && setRuntimeNameEditBuffer(name)}
-    >
-      {name}
-      <Icon style={s(t.m(5, 0))} name="pencil" color="grey" />
+          <Button variant="ghost" onClick={() => setRuntimeNameEditBuffer("")}>
+            <X />
+          </Button>
+        </>
+      ) : (
+        <>
+          {name}
+          <Button
+            variant="ghost"
+            title={runtimeId}
+            onClick={() =>
+              !runtimeNameEditBuffer && setRuntimeNameEditBuffer(name)
+            }
+          >
+            <Pen />
+          </Button>
+        </>
+      )}
     </div>
   );
 }
