@@ -9,30 +9,24 @@ type Props = {
 
 export default function WelcomePanel({ onEngage }: Props) {
   return (
-    <div className="fade-in" style={{ margin: "50px 0px", width: "100%" }}>
-      <div style={{ margin: "0px 0px" }}>
-        <UpdatesButton />
-      </div>
-
+    <div className="fade-in" style={{ width: "100%" }}>
+      <UpdatesButton />
       <div
         className="hkp-fnt-family"
         style={{
-          marginBottom: "5px",
           display: "flex",
           width: "min-content",
           margin: "auto",
         }}
       >
-        <div
-          style={{ fontSize: "35px", color: "#454f6e", marginBottom: "5px" }}
-        >
+        <div style={{ fontSize: "35px", color: "#454f6e", height: "43px" }}>
           Welcome
         </div>
         <Switcher
           style={{
             width: "130px",
             textAlign: "left",
-            marginTop: "3px",
+            marginTop: "18px",
             paddingLeft: "5px",
           }}
           data={[

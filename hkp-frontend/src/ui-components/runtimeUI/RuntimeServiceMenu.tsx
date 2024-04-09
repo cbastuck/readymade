@@ -1,3 +1,7 @@
+import { useState } from "react";
+import { ChevronsUpDown } from "lucide-react";
+import { CommandList } from "cmdk";
+
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -14,9 +18,6 @@ import {
 import { AppViewMode, ServiceClass, ServiceRegistry } from "@/types";
 
 import ServiceDropdown from "@/components/ServiceDropdown";
-import { useState } from "react";
-import { ChevronsUpDown } from "lucide-react";
-import { CommandList } from "cmdk";
 
 type Props = {
   runtimeId: string;

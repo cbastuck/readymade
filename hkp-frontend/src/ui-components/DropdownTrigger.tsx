@@ -1,6 +1,7 @@
+import { Menu } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu } from "lucide-react";
 
 export default function DropdownTrigger() {
   return (

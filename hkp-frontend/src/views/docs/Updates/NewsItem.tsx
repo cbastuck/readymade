@@ -1,5 +1,5 @@
 import { ReactElement } from "react";
-import { List, Icon } from "semantic-ui-react";
+import { List } from "semantic-ui-react";
 import moment from "moment";
 
 import Date from "../../../components/Date";
@@ -15,7 +15,6 @@ export default function NewsItem({ content, date }: Props) {
   const year = d.year().toString();
   return (
     <List.Item style={{ margin: "5px 0px" }}>
-      <Icon name="circle outline" size="small" />
       <List.Content>
         <List.Header style={{ fontWeight: "normal" }}>
           <div className="hkp-fnt-family">{content}</div>

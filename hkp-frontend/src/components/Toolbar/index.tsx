@@ -7,7 +7,7 @@ import RuntimeMenu from "./RuntimeMenu";
 import HomeIcon from "./HomeIcon";
 import Navigation from "./Navigation";
 
-import AccountMenu from "./AccountMenu";
+import AccountMenu from "@/ui-components/AccountMenu";
 
 import { RuntimeClass } from "../../types";
 import BoardActionsBar from "./BoardActionsBar";

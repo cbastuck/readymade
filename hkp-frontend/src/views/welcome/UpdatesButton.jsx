@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import { Icon } from "semantic-ui-react";
+import { Star } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
 
 import "./UpdatesButton.css";
 
@@ -7,23 +9,15 @@ export default function UpdatesButton() {
   return (
     <div
       style={{
-        marginLeft: "200px",
+        marginLeft: "250px",
       }}
     >
-      <div>
-        <Link to="/docs/updates">
-          <div className="update-bar">
-            <Icon name="star" size="large" />
-            <div
-              style={{
-                fontSize: 14,
-              }}
-            >
-              what's new?
-            </div>
-          </div>
-        </Link>
-      </div>
+      <Link to="/docs/updates">
+        <Button variant="ghost" size="icon">
+          <Star strokeWidth={1} />
+        </Button>
+        <div>what's new?</div>
+      </Link>
     </div>
   );
 }

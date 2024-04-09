@@ -19,13 +19,16 @@ export default function BoardMenu({}: Props) {
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
   return (
-    <NavigationMenu className="hkp-fnt-family">
+    <NavigationMenu className="hkp-fnt-family" delayDuration={10000}>
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuTrigger> {board || "Board"}</NavigationMenuTrigger>
+          <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white">
+            {" "}
+            {board || "Board"}
+          </NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-              <li className="row-span-3">
+              <li className="row-span-5">
                 <NavigationMenuLink asChild>
                   <a
                     className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
@@ -35,19 +38,44 @@ export default function BoardMenu({}: Props) {
                       Hookup.to
                     </div>
                     <p className="text-sm leading-tight text-muted-foreground">
-                      Hookup your ideas. Own your data. Own the process.
+                      Hookup your ideas. Own the data. Own the process.
                     </p>
                   </a>
                 </NavigationMenuLink>
               </li>
-              <ListItem href="/docs" title="Introduction">
-                Re-usable components built using Radix UI and Tailwind CSS.
+              <ListItem
+                title="New Board"
+                onClick={() =>
+                  boardContext?.onAction({
+                    type: "newBoard",
+                  })
+                }
+              >
+                Create a new board.
               </ListItem>
-              <ListItem href="/docs/installation" title="Installation">
-                How to install dependencies and structure your app.
+              <ListItem
+                title="Clear Board"
+                onClick={() =>
+                  boardContext?.onAction({
+                    type: "clearBoard",
+                  })
+                }
+                disabled={
+                  !boardContext ||
+                  !boardContext.isActionAvailable({ type: "clearBoard" })
+                }
+              >
+                Clear the current Board
               </ListItem>
-              <ListItem href="/docs/primitives/typography" title="Typography">
-                Styles for headings, paragraphs, lists...etc
+              <ListItem title="Save Board">
+                Save the current board to the browser
+              </ListItem>
+              <ListItem title="Board Source">
+                Edit the current board's source in a text editor
+              </ListItem>
+              <ListItem title="Board Link">
+                Create a link allowing to share and clone the board on another
+                device
               </ListItem>
             </ul>
           </NavigationMenuContent>
@@ -58,25 +86,27 @@ export default function BoardMenu({}: Props) {
 }
 
 const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a">
->(({ className, title, children, ...props }, ref) => {
+  React.ElementRef<"div">,
+  React.ComponentPropsWithoutRef<"div"> & { disabled?: boolean }
+>(({ className, title, children, disabled, ...props }, ref) => {
   return (
     <li>
       <NavigationMenuLink asChild>
-        <a
+        <div
           ref={ref}
           className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+            "cursor-pointer block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
             className
           )}
           {...props}
         >
-          <div className="text-sm font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+          <div className="text-sm font-medium leading-none underline">
+            {title}
+          </div>
+          <p className="line-clamp-2 text-sm leading-snug  hover:text-accent-foreground">
             {children}
           </p>
-        </a>
+        </div>
       </NavigationMenuLink>
     </li>
   );
