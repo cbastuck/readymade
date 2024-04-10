@@ -6,7 +6,7 @@ import { s, t } from "../../styles";
 
 type Props = { example: ExampleDescriptor };
 
-export default function EampleCard({ example }: Props) {
+export default function Card({ example }: Props) {
   const fontStyle = s(t.fs13, t.tc);
   return (
     <div
@@ -31,36 +31,30 @@ export default function EampleCard({ example }: Props) {
               style={{ marginTop: 3, marginRight: 15, width: 20 }}
             />
             <div
+              className="tracking-wider"
               style={{
                 marginTop: 3,
                 textAlign: "left",
                 color: "#4183c4",
-                letterSpacing: 1,
               }}
             >
-              <h1 style={t.fs14}>{example.title}</h1>
+              <h4>{example.title}</h4>
             </div>
             <div
+              className="tracking-wide font-sans"
               style={{
                 margin: "5px 0px",
                 textAlign: "left",
-                letterSpacing: 0.5,
               }}
             >
               {example.brief}
             </div>
             <div
-              className="hkp-fnt-color"
               style={{
                 marginTop: 10,
               }}
             >
-              <div
-                style={s(t.tl, {
-                  fontSize: 14,
-                  letterSpacing: 1.4,
-                })}
-              >
+              <div className="font-serif-wet tracking-wider" style={s(t.tl)}>
                 {Array.isArray(example.description)
                   ? example.description.map((d, idx) => (
                       <p key={`example-${example.title}-desc-${idx}`}>{d}</p>

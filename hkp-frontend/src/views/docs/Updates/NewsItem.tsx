@@ -17,7 +17,7 @@ export default function NewsItem({ content, date }: Props) {
     <List.Item style={{ margin: "5px 0px" }}>
       <List.Content>
         <List.Header style={{ fontWeight: "normal" }}>
-          <div className="hkp-fnt-family">{content}</div>
+          <div className="">{content}</div>
         </List.Header>
       </List.Content>
       <div style={{ marginTop: "5px" }}>

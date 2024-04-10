@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
 import WipTag from "../../components/WipTag";
 
-import Headline from "./Headline";
-
 export default function Prototypes() {
   return (
     <div
@@ -10,54 +8,52 @@ export default function Prototypes() {
         margin: "50px 0px",
         width: "100%",
         height: "100%",
-        fontSize: 14,
-        letterSpacing: 1,
         marginLeft: 10,
         lineHeight: 2,
       }}
     >
-      <Headline>My Prototypes</Headline>
+      <h2>My Prototypes</h2>
       <div
-        className="hkp-fnt-color"
-        style={{
-          fontSize: 14,
-          letterSpacing: 2,
-          lineHeight: 1.4,
-          display: "flex",
-        }}
+        className="font-serif-wet tracking-widest"
+        style={{ margin: "30px 20px", lineHeight: 1.4 }}
       >
-        The following private prototypes showcase creative ways to connect
-        services and address personal needs using Hookup.
-        <WipTag />
-      </div>
-
-      <div style={{ margin: "10px 10px" }}>
-        <div>
-          <a
-            href={`${window.location.protocol}//bridge.${window.location.host}`}
-          >
-            Bridge Pitch
-          </a>
+        <div className="flex">
+          The following private prototypes showcase creative ways to connect
+          services and address personal needs using Hookup.
+          <WipTag />
         </div>
-        <div>
-          <Link to="/docs/proto/spotty">Spotty</Link>
+        <div
+          style={{
+            width: "95%",
+            lineHeight: 1.4,
+            fontSize: 14,
+            letterSpacing: 2,
+          }}
+        >
+          Kindly note that these private prototypes reflect a more personalized
+          approach, tailored to my preferences, and may not suit every use case
+          or preference.
         </div>
-        <div>
-          <Link to="/docs/proto/multiplication">Multiplication rows</Link>
+        <div className="m-[10px] flex gap-[15px]">
+          <div className="flex hkp-card-border font-sans align-middle">
+            <Link
+              className="p-5"
+              to={`${window.location.protocol}//bridge.${window.location.host}`}
+            >
+              Bridge Pitch
+            </Link>
+          </div>
+          <div className="flex hkp-card-border font-sans align-middle">
+            <Link className="p-5" to="/docs/proto/spotty">
+              Spotty
+            </Link>
+          </div>
+          <div className="flex hkp-card-border font-sans align-middle">
+            <Link className="p-5" to="/docs/proto/multiplication">
+              Multiplication rows
+            </Link>
+          </div>
         </div>
-      </div>
-
-      <div
-        style={{
-          width: "95%",
-          lineHeight: 1.4,
-          fontSize: 14,
-          letterSpacing: 2,
-        }}
-      >
-        Kindly note that these private prototypes reflect a more personalized
-        approach, tailored to my preferences, and may not suit every use case or
-        preference.
       </div>
     </div>
   );

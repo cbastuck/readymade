@@ -19,7 +19,7 @@ export default function GroupItem(item: Props) {
     <Item style={itemStyle}>
       {
         <Item.Header
-          className="hkp-fnt-family"
+          className=""
           style={{
             fontSize: 14,
             letterSpacing: 2,
@@ -44,7 +44,6 @@ export default function GroupItem(item: Props) {
         <Item.Description>
           {item.details.map((detail, idx) => (
             <div
-              className="hkp-fnt-color"
               key={`detail-${item.title}-${idx}`}
               style={{
                 fontSize: 14,

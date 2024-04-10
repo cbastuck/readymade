@@ -1,20 +1,30 @@
 /*@font-face {
   font-family: "Roboto";
   src: local("Roboto"),
-    url("./assets/fonts/Roboto/Roboto-Light.ttf") format("truetype");
+    url("./assets/fonts/Roboto/Roboto-Light.ttf") format("opentype");
 }*/
 
 @font-face {
-  font-family: "SpecialElite";
+  font-family: "hkp-fnt-sans";
+  src: url("./assets/fonts/Walkway Black.ttf") format("truetype");
+}
+
+font-face {
+  font-family: "hkp-fnt-serif-dry";
+  src: url("./assets/fonts/cutive.regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "hkp-fnt-serif-wet";
   src: url("./assets/fonts/SpecialElite-Regular.ttf") format("truetype");
 }
 
-.hkp-fnt-family {
-  font-family: SpecialElite !important;
+.hkp-fnt-color {
+  color: #555;
 }
 
-.hkp-fnt-color {
-  color: #888;
+.hkp-fnt-spacing {
+  letter-spacing: 1.2;
 }
 
 .hkp-card-border {
@@ -31,15 +41,8 @@
   border-radius: 125px 25px 125px 20px/2px 5px 10px 4px;
 }
 
-h1,
-h2,
-h3,
-h4 {
-  font-family: SpecialElite !important;
-}
-
 .hkp-input-ghost input {
-  font-family: SpecialElite !important;
+  font-family: hkp-fnt-sans !important;
   border: none !important;
   margin-top: 3px !important;
   color: #888 !important;
@@ -51,7 +54,7 @@ h4 {
 }
 
 .hkp-button {
-  font-family: SpecialElite !important;
+  font-family: hkp-fnt-sans !important;
   color: #888 !important;
 }
 
@@ -77,7 +80,7 @@ h4 {
 }
 
 .hkp-button-blue {
-  font-family: SpecialElite !important;
+  font-family: hkp-fnt-sans !important;
   background-color: rgb(70, 79, 109) !important;
   color: white !important;
   border-color: rgb(223, 223, 223) !important;
@@ -116,11 +119,6 @@ h4 {
 /* consistent input with label appearance across application */
 .labeled .label {
   min-width: 65px;
-}
-
-body {
-  font-family: SpecialElite !important;
-  color: #888;
 }
 
 .ui.accordion:not(.styled) .title ~ .content:not(.ui) {

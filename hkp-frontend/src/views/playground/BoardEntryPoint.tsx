@@ -59,10 +59,7 @@ export default function BoardEntryPoint({
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
   const saveReminder = (
-    <div
-      className="hkp-fnt-family"
-      style={{ margin: "10px 0px", fontSize: 14 }}
-    >
+    <div className="" style={{ margin: "10px 0px", fontSize: 14 }}>
       Remember to
       <span
         style={{ cursor: "help", color: "#4284C4" }}

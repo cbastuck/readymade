@@ -23,12 +23,10 @@ export default function Example() {
 
   return (
     <div
-      className="hkp-fnt-family"
       style={s(t.h100, {
         display: "flex",
         flexDirection: "column",
         letterSpacing: "1px",
-        fontSize: "12px",
         lineHeight: 1.4,
       })}
     >

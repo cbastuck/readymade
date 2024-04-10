@@ -47,7 +47,6 @@ function Welcome({
         <Toolbar />
         <div className={`hero-text fade-in-linear}`} style={style}>
           <div
-            className="hkp-fnt-color"
             style={{
               width: "100%",
               height: "95%",

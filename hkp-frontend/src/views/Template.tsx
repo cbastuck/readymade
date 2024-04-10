@@ -25,7 +25,7 @@ export default class Template extends Component<Props> {
     };
     return (
       <div
-        className="hkp-fnt-family"
+        className=""
         style={{
           textAlign: "left",
           marginTop: 15,
@@ -65,7 +65,6 @@ export default class Template extends Component<Props> {
         runtimeApis={{}}
       >
         <div
-          className="hkp-fnt-color"
           style={{
             width: "100%",
             height: "100%",
@@ -83,12 +82,9 @@ export default class Template extends Component<Props> {
             }}
           >
             <h1
-              className="hkp-fnt-color"
               style={{
                 width: "100%",
-                fontSize: 24,
                 textAlign: "center",
-                letterSpacing: 6,
                 padding: "5px 0px",
               }}
             >
@@ -96,9 +92,8 @@ export default class Template extends Component<Props> {
             </h1>
             {renderBreadcrumbs && this.renderBreadcrumbs(title || slug, parent)}
             <div
+              className="font-serif-wet tracking-widest"
               style={{
-                fontSize: 14,
-                letterSpacing: "1px",
                 lineHeight: 1.6,
                 paddingBottom: "30px",
                 width: "100%",

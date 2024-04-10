@@ -20,7 +20,6 @@ export default class Copyable extends Component {
           {label}
         </div>
         <input
-          className="hkp-fnt-family"
           ref={(input) => (this.input = input)}
           style={s(
             t.m(5, 0),

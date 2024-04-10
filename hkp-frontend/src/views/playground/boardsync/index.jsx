@@ -157,7 +157,7 @@ export default class BoardSync extends Component {
           />
         </div>
         <Button
-          className="hkp-fnt-family"
+          className=""
           style={s(t.fs11, t.ls1, {
             height: 33,
             width: 80,

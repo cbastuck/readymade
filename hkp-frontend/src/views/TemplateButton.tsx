@@ -25,11 +25,7 @@ export default function TemplateButton({
   };
   return (
     <div style={{ textAlign: "center", width: "100%", margin: "10px 0px" }}>
-      <Button
-        className="hkp-fnt-family"
-        style={style}
-        onClick={() => navigate(to)}
-      >
+      <Button className="" style={style} onClick={() => navigate(to)}>
         {label ? label : "Next"}
       </Button>
     </div>

@@ -63,7 +63,7 @@ export default function RuntimeMenu({
   return (
     <div
       id="runtime-dropdown"
-      className="hkp-fnt-family"
+      className=""
       style={{
         marginLeft: 10,
         marginTop: 3,

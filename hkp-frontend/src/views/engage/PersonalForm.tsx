@@ -25,7 +25,7 @@ export default function PersonalForm({
             ev.preventDefault();
             onToggleVisibility();
           }}
-          className="hkp-fnt-family"
+          className=""
           style={{
             padding: 0,
             backgroundColor: "transparent",

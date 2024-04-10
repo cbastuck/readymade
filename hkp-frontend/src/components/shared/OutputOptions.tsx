@@ -191,7 +191,7 @@ export default class OutputOptions extends Component<Props, State> {
           }}
         >
           <div
-            className="hkp-fnt-family"
+            className=""
             style={s(t.ls2, t.fs11, {
               transform: "rotate(-90deg)",
               marginTop: 35,

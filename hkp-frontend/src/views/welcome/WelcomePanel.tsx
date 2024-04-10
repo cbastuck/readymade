@@ -12,7 +12,7 @@ export default function WelcomePanel({ onEngage }: Props) {
     <div className="fade-in" style={{ width: "100%" }}>
       <UpdatesButton />
       <div
-        className="hkp-fnt-family"
+        className=""
         style={{
           display: "flex",
           width: "min-content",
@@ -47,22 +47,31 @@ export default function WelcomePanel({ onEngage }: Props) {
         }}
       />
 
-      <div>
-        <Button
-          className="hkp-button-blue"
-          style={{
-            padding: "7px 20px",
-            backgroundColor: "black",
-            color: "white",
-            width: "280px",
-            marginTop: "3px",
-            height: "40px",
-          }}
-          onClick={onEngage}
-        >
-          I want to engage
-        </Button>
-      </div>
+      <Button
+        className="hkp-button-blue"
+        style={{
+          padding: "7px 20px",
+          backgroundColor: "black",
+          color: "white",
+          width: "280px",
+          marginTop: "3px",
+          height: "40px",
+        }}
+        onClick={onEngage}
+      >
+        I want to engage
+      </Button>
+
+      <NavigateButton
+        text="to Playground?"
+        destination="/playground"
+        style={{
+          width: "280px",
+          color: "#454f6e",
+          fontSize: 14,
+          border: "1px white",
+        }}
+      />
     </div>
   );
 }

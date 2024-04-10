@@ -6,15 +6,13 @@ export default function WipTag() {
       <div stlye={{ display: "flex", flexDirection: "column" }}>
         <Icon name="tag" size="huge" color="blue" />
         <div
+          className="font-sans text-xl"
           style={{
-            fontWeight: "bold",
             position: "absolute",
             marginTop: -40,
             marginLeft: 19,
-            fontSize: 16,
             transform: "rotate(45deg)",
-            color: "white",
-            fontFamily: "sans-serif",
+            color: "white",           
           }}
         >
           WIP

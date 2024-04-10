@@ -218,7 +218,7 @@ class Genetic {
       x: "60%",
       font: {
         size: "18px",
-        family: "SpecialElite",
+        family: "hkp-fnt-sans",
       },
       color: "#454f6d",
     };

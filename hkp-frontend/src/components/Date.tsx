@@ -30,7 +30,7 @@ export default function Date({
     textTransform: "capitalize",
   };
   return (
-    <div className="hkp-fnt-family" style={style}>
+    <div className="" style={style}>
       {isUpdate && (
         <span style={{ textTransform: "none" }}> last edited on </span>
       )}

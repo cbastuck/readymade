@@ -164,9 +164,7 @@ class Sandbox extends Component<Props, State> {
               marginBottom: 2,
             }}
           >
-            <Link className="hkp-fnt-family" to={`/playground?src=${url}`}>
-              open on playground
-            </Link>
+            <Link to={`/playground?src=${url}`}>open on playground</Link>
             <div style={{ height: 50 }} />
           </div>
         )}

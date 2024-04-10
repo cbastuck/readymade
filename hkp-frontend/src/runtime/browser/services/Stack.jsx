@@ -69,7 +69,7 @@ export class StackUI extends Component {
       title: {
         children: (
           <div
-            className="hkp-fnt-family"
+            className=""
             style={s(t.fs12, t.ls1, t.w100, {
               display: "flex",
               justifyContent: "space-between",
@@ -154,7 +154,7 @@ export class StackUI extends Component {
           </Label>
 
           <Dropdown
-            className="hkp-fnt-family"
+            className=""
             text=""
             icon={<Icon name="plus" color="grey" />}
             pointing="top"

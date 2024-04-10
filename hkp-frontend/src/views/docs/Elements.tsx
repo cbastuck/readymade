@@ -59,7 +59,7 @@ export function Text({ children }: TextProps) {
     fontSize: 16,
   };
   return (
-    <div className="hkp-fnt-family" style={style}>
+    <div className="" style={style}>
       {children}{" "}
     </div>
   );

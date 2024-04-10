@@ -71,6 +71,19 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground-font;
   }
+  h1 {
+    @apply font-sans text-3xl tracking-[6pt];
+  }
+  h2 {
+    @apply font-sans text-2xl tracking-[4pt];
+  }
+  h3 {
+    @apply font-sans text-xl;
+  }
+  h4 {
+    @apply font-sans text-lg;
+  }
+
 }

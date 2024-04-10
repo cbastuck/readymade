@@ -77,7 +77,7 @@ export default function Quickstart() {
         Stuff to know about
       </h2>
       <div
-        className="hkp-fnt-family"
+        className=""
         style={s(t.fs14, {
           textAlign: "left",
           textTransform: "none",

@@ -11,7 +11,7 @@ export default function NavigationLinks() {
   const nonActivestyles = `${defaultStyles} "hover:text-zinc-500"`;
   const activeStyles = `bg-sky-600 text-white hover:text-neutral-200 ${defaultStyles}`;
   return (
-    <div className="hkp-fnt-family">
+    <div className="">
       {links.map(({ link, name }) => (
         <Link
           className={

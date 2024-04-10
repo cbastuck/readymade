@@ -19,7 +19,7 @@ export default function BoardMenu({}: Props) {
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
   return (
-    <NavigationMenu className="hkp-fnt-family" delayDuration={10000}>
+    <NavigationMenu className="" delayDuration={10000}>
       <NavigationMenuList>
         <NavigationMenuItem>
           <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white">

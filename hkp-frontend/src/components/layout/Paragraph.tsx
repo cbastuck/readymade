@@ -6,16 +6,9 @@ type Props = {
   width?: string;
   headline?: string;
   style?: CSSProperties;
-  headlineFontSize?: string;
 };
 
-export default function Paragraph({
-  width,
-  headline,
-  children,
-  style,
-  headlineFontSize,
-}: Props) {
+export default function Paragraph({ width, headline, children, style }: Props) {
   return (
     <div
       style={{
@@ -24,10 +17,13 @@ export default function Paragraph({
         ...style,
       }}
     >
-      {headline && (
-        <h2 style={{ fontSize: headlineFontSize || undefined }}>{headline}</h2>
-      )}
-      <div style={{ margin: "10px 0px" }}>{children}</div>
+      {headline && <h2>{headline}</h2>}
+      <div
+        className="font-serif-wet tracking-widest"
+        style={{ margin: "20px 0px" }}
+      >
+        {children}
+      </div>
     </div>
   );
 }

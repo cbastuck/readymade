@@ -1,8 +1,7 @@
 import Toolbar from "../../components/Toolbar";
 import Footer from "../../components/Footer";
 import CardContainer from "./CardContainer";
-import Disclaimer from "./Disclaimer";
-import Headline from "./Headline";
+import Intro from "./Intro";
 import { s, t } from "../../styles";
 import Showcases from "./Showcases";
 import Prototypes from "./Prototypes";
@@ -12,7 +11,6 @@ import Header from "./Header";
 export default function Examples() {
   return (
     <div
-      className="hkp-fnt-color"
       style={s(t.h100, {
         display: "flex",
         flexDirection: "column",
@@ -22,8 +20,7 @@ export default function Examples() {
       <div style={{ marginTop: 20 }}>
         <Header />
         <div style={{ margin: 40 }}>
-          <Headline>Basic</Headline>
-          <Disclaimer />
+          <Intro />
           <CardContainer examples={examples} />
           <Showcases />
           <Prototypes />

@@ -18,9 +18,8 @@ export default function Card({ value: item, actions, onAction }: Props) {
     item as UsecaseDescriptor;
   return (
     <div
-      className="hkp-card-border"
+      className="hkp-card-border tracking-wider"
       style={s(t.p10, {
-        letterSpacing: 1,
         minWidth: 200,
         flex: 1,
         margin: 10,
@@ -46,22 +45,22 @@ export default function Card({ value: item, actions, onAction }: Props) {
         )}
         <Link key={`board-card-link-${name}`} to={url}>
           <div style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}>
-            <h1 style={t.fs14}>{name}</h1>
+            <h4>{name}</h4>
           </div>
           {metadata && (
             <div
+              className="font-sans"
               style={{
                 margin: "5px 0px",
                 textAlign: "left",
-                fontSize: 13,
                 textTransform: "capitalize",
               }}
             >
               {metadata}
             </div>
           )}
-          <div className="hkp-fnt-color" style={{ marginTop: 10 }}>
-            <div style={s(t.tl, t.nc)}>
+          <div style={{ marginTop: 10 }}>
+            <div className="font-serif-wet" style={s(t.tl, t.nc)}>
               <Description name={name} description={description} />
             </div>
             {actions && (

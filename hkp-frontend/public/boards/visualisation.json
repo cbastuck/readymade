@@ -93,7 +93,7 @@
 
               "font": {
                 "size": "55%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "15%"
             },
@@ -105,7 +105,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "75%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "84%"
             },
@@ -156,7 +156,7 @@
               "text": "Press to Run",
               "font": {
                 "size": "14pt",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
 
               "color": "#454f6d",
@@ -172,7 +172,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "14pt",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
 
               "color": "#454f6d",
@@ -193,7 +193,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "60%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "15%"
             },
@@ -247,7 +247,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "70%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "85%"
             }
@@ -261,7 +261,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "70%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "15%"
             },
@@ -315,7 +315,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "50%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "85%"
             }
@@ -329,7 +329,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "70%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "15%"
             },
@@ -367,7 +367,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "30%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "85%"
             }
@@ -381,7 +381,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "85%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "20%",
               "checkpoint": "@last-state"
@@ -395,7 +395,7 @@
               "font": {
                 "weight": "lighter",
                 "size": "60%",
-                "family": "SpecialElite"
+                "family": "hkp-fnt-sans"
               },
               "y": "83%"
             },

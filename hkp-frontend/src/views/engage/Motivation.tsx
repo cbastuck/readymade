@@ -2,11 +2,7 @@ import Paragraph from "../../components/layout/Paragraph";
 
 export default function Motivation() {
   return (
-    <Paragraph
-      headline="Motivation"
-      headlineFontSize="14pt"
-      style={{ fontSize: "12pt" }}
-    >
+    <Paragraph headline="Motivation">
       <div>
         In this section, I seek to validate the project's scope and direction by
         collecting opinions.

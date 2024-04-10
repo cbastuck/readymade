@@ -40,7 +40,7 @@ export default function Prompt({
       open={open}
       dimmer="inverted"
     >
-      <Modal.Header className="hkp-fnt-family" style={s(t.fs14, t.ls1)}>
+      <Modal.Header className="" style={s(t.fs14, t.ls1)}>
         {headline}
       </Modal.Header>
       <div style={{ padding: 10 }}>{children}</div>

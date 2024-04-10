@@ -1,18 +1,17 @@
 import { Link } from "react-router-dom";
 
-import Headline from "./Headline";
 import Usecases from "../../components/BoardCollection/Usecases";
 
 export default function Showcases() {
   return (
     <div style={{ margin: "50px 0px", width: "100%", height: "100%" }}>
-      <Headline>Showcases</Headline>
+      <h2>Showcases</h2>
       <div
-        className="hkp-fnt-color"
+        className="font-serif-wet tracking-widest"
         style={{
-          letterSpacing: 2,
           lineHeight: 1.4,
           marginBottom: 20,
+          margin: "30px 20px",
         }}
       >
         The following showcases operate in the{" "}

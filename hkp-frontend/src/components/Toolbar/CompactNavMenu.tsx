@@ -16,7 +16,7 @@ export default function CompactNav() {
   const currentUser = context?.user;
   return (
     <div>
-      <Dropdown className="hkp-fnt-family" text="" icon="bars" pointing="right">
+      <Dropdown className="" text="" icon="bars" pointing="right">
         <Dropdown.Menu>
           <Dropdown.Item>
             <Link to="/docs" style={navItemStyle}>

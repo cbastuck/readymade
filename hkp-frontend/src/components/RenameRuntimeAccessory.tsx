@@ -21,7 +21,7 @@ export default function RenameRuntimeAccessory({
       {runtimeNameEditBuffer ? (
         <>
           <Input
-            className="hkp-fnt-family hkp-input-ghost"
+            className=" hkp-input-ghost"
             style={{ ...topMargin, height: 16, width: "100%" }}
             ref={(elem) => elem && elem.focus()}
             value={runtimeNameEditBuffer}

@@ -16,8 +16,14 @@ module.exports = {
         "2xl": "1400px",
       },
     },
+    fontFamily: {
+      sans: ['hkp-fnt-sans', 'sans-serif'],
+      serif: ['hkp-fnt-serif-dry', 'serif'],
+      "serif-wet": ['hkp-fnt-serif-wet', 'serif'],
+    },
     extend: {
       colors: {
+        "foreground-font": "#555",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
