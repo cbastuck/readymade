@@ -5,18 +5,20 @@ import Article from "./Article";
 export default function Docs() {
   return (
     <Template title="Documentation" isRoot={true}>
-      <Article to="/docs/quickstart">1. Quickstarter</Article>
-      <Article to="/docs/updates" details="feature log">
-        2. What's new
+      <Article isRoot={true} to="/docs/quickstart">
+        Quickstarter
+      </Article>
+      <Article isRoot={true} to="/docs/updates">
+        What's new
       </Article>
 
-      <Chapter name="3. Project Scope">
+      <Chapter name="Project Scope">
         <Article to="/docs/pitch/what">What</Article>
         <Article to="/docs/pitch/why">Why</Article>
         <Article to="/docs/pitch/how">How</Article>
       </Chapter>
 
-      <Chapter name="4. Blog Articles">
+      <Chapter name="Blog Articles">
         <Article to="/docs/blog/nesting">
           Nesting Boards: Each Puzzle Piece, a Puzzle Itself
         </Article>
@@ -29,7 +31,7 @@ export default function Docs() {
         <Article to="/docs/blog/game">A playful introduction to Hookup</Article>
       </Chapter>
 
-      <Chapter name="5. Side tracks" details="topics work in progress">
+      <Chapter name="Side tracks" details="topics work in progress">
         <Article to="/docs/tracks/branding">Brand and identity</Article>
         <Article to="/docs/tracks/bridge">Bridge</Article>
         <Article to="/docs/tracks/remote">Remote runtimes</Article>

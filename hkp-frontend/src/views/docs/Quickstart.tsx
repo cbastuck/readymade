@@ -1,4 +1,3 @@
-import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 import { Item } from "semantic-ui-react";
 
@@ -11,15 +10,10 @@ import Button from "../../components/shared/Button";
 
 export default function Quickstart() {
   const navigate = useNavigate();
-  const sectionStyle: CSSProperties = {
-    fontSize: 16,
-    textAlign: "left",
-    letterSpacing: 2,
-  };
 
   return (
     <Template title="Quickstarter" isRoot={false}>
-      <h2 style={{ ...sectionStyle, margin: "30px 0px" }}>Etiquette</h2>
+      <h1 style={{ margin: "30px 0px" }}>Etiquette</h1>
       <div style={{ marginBottom: 35 }}>
         <Claim s="Please" c="Make stupid things!" />
         <Claim
@@ -60,24 +54,22 @@ export default function Quickstart() {
         />
       </div>
       <h1 style={s(t.tc, t.ls1, t.fs12, t.it, { color: "#4183c4" })}>
-        <span style={t.fs16}>Do. </span>
-        <span style={t.fs20}>Be curious!</span>
+        <span style={t.fs16}>Do.</span>
+        <span style={t.fs20}>Be curious.</span>
         <a href="https://cbastuck.de" target="blank">
-          <span style={t.fs9}> talk.</span>
+          <span className="text-3xl">Make.</span>
         </a>
       </h1>
 
-      <h2
+      <h1
         style={{
-          ...sectionStyle,
           marginTop: 30,
           marginBottom: 20,
         }}
       >
         Stuff to know about
-      </h2>
+      </h1>
       <div
-        className=""
         style={s(t.fs14, {
           textAlign: "left",
           textTransform: "none",

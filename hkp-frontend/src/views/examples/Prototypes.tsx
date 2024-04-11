@@ -9,13 +9,12 @@ export default function Prototypes() {
         width: "100%",
         height: "100%",
         marginLeft: 10,
-        lineHeight: 2,
       }}
     >
       <h2>My Prototypes</h2>
       <div
         className="font-serif-wet tracking-widest"
-        style={{ margin: "30px 20px", lineHeight: 1.4 }}
+        style={{ margin: "30px 20px" }}
       >
         <div className="flex">
           The following private prototypes showcase creative ways to connect
@@ -25,9 +24,6 @@ export default function Prototypes() {
         <div
           style={{
             width: "95%",
-            lineHeight: 1.4,
-            fontSize: 14,
-            letterSpacing: 2,
           }}
         >
           Kindly note that these private prototypes reflect a more personalized

@@ -2,7 +2,6 @@ import { CSSProperties, ReactElement, useState } from "react";
 
 import Collection from "./Collection";
 import Search from "./Search";
-import { s, t } from "../../styles";
 import { AppViewMode, SavedBoard, UsecaseDescriptor } from "../../types";
 import { Action } from "./Card";
 
@@ -54,7 +53,7 @@ export default function BoardCollection({
           }}
         >
           {headline ? (
-            <h4 style={headlinePlacement}>{headline}</h4>
+            <h2 style={headlinePlacement}>{headline}</h2>
           ) : (
             <div style={{ height: "20px" }} />
           )}

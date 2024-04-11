@@ -2,19 +2,18 @@ import { s, t } from "../../../styles";
 
 import Runtime from "./Runtime";
 import Dots from "./Dots";
-import { caption, text } from "./common";
 
 export default function Board() {
   return (
     <div
-      className="hkp-card-border"
+      className="hkp-card-border font-sans"
       style={s(t.m(10), t.p(10), { overflowX: "auto" })}
     >
       <div style={s(t.tc)}>
         <div style={s(t.tl, { marginLeft: 35 })}>
-          <div style={caption}>Board</div>
-          <div style={text}>Name: Example</div>
-          <div style={text}>Topology: Chain</div>
+          <div>Board</div>
+          <div>Name: Example</div>
+          <div>Topology: Chain</div>
         </div>
       </div>
       <div style={{ margin: "5px 0px" }}>

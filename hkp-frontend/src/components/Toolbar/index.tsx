@@ -3,15 +3,15 @@ import { Menu } from "semantic-ui-react";
 
 import { BoardCtx } from "../../BoardContext";
 
-import RuntimeMenu from "./RuntimeMenu";
+import RuntimeMenu from "@/ui-components/toolbar/RuntimeMenu";
 import HomeIcon from "./HomeIcon";
 import Navigation from "./Navigation";
 
-import AccountMenu from "@/ui-components/AccountMenu";
+import AccountMenu from "@/ui-components/toolbar/AccountMenu";
 
 import { RuntimeClass } from "../../types";
 import BoardActionsBar from "./BoardActionsBar";
-import BoardMenu from "@/ui-components/BoardMenu";
+import BoardMenu from "@/ui-components/toolbar/BoardMenu";
 
 import "./index.css";
 

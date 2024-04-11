@@ -14,7 +14,7 @@ export default function LoadPanel() {
   }
 
   return (
-    <div style={s(t.m(0, 20), t.tc)}>
+    <div style={s(t.m(0, 20))}>
       <BoardCollection
         headline="Saved on this browser"
         items={savedBoards}

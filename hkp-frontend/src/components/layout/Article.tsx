@@ -25,7 +25,14 @@ export default function Article({
 }: Props) {
   const content = (
     <>
-      {date && <div style={{ width: "100%", textAlign: "right" }}>{date}</div>}
+      {date && (
+        <div
+          className="font-sans text-sm"
+          style={{ width: "100%", textAlign: "right" }}
+        >
+          {date}
+        </div>
+      )}
       <div style={{ marginTop: "10px" }}>
         <Title title={title} image={hero} caption={caption || ""} />
         {children}

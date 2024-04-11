@@ -1,12 +1,12 @@
-import { Icon } from "semantic-ui-react";
-
-import { s, t } from "../../../styles";
+import { FileText } from "lucide-react";
 
 export default function Configuration() {
   return (
-    <div style={s(t.tc, { marginTop: 20 })}>
-      <Icon name="file outline" size="big" />
-      <div style={s(t.fs11, t.ls1, t.mt5)}>Configuration</div>
+    <div className="flex flex-col">
+      <div className="m-auto">
+        <FileText />
+      </div>
+      <div className="m-auto">Configuration</div>
     </div>
   );
 }

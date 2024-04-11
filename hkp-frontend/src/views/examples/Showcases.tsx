@@ -9,7 +9,6 @@ export default function Showcases() {
       <div
         className="font-serif-wet tracking-widest"
         style={{
-          lineHeight: 1.4,
           marginBottom: 20,
           margin: "30px 20px",
         }}

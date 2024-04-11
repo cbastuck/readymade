@@ -17,7 +17,7 @@ export default function Claim(claim: Props) {
         lineHeight: 1.5,
       }}
     >
-      <span>{claim.s}</span>
+      <span className="font-sans text-xl">{claim.s}</span>
       {claim.c ? ": " : ""}
       <span
         style={{
@@ -31,13 +31,7 @@ export default function Claim(claim: Props) {
             {claim.c}
           </a>
         ) : (
-          <span
-            style={{
-              color: "#4183c4",
-            }}
-          >
-            {claim.c}
-          </span>
+          <span className="text-lg">{claim.c}</span>
         )}
       </span>
     </div>

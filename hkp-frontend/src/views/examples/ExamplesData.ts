@@ -3,8 +3,7 @@ const examplesData = [
     title: "Hello World",
     brief: "The mother of examples",
     description: [
-      "Shows the basic structure of a flow",
-      "Say the words using that canvas that is used throughout presentations on this site",
+      "Shows the basic structure of a flow. The well-known words periodically rendered on a canvas",
     ],
     image: "/assets/hkp-single-dot.png",
     url: "/boards/examples/helloworld.json",

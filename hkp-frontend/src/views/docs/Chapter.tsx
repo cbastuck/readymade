@@ -1,6 +1,6 @@
 import { ReactElement, CSSProperties } from "react";
 
-import { fontStyle, detailStyle } from "./common";
+import { detailStyle } from "./common";
 
 type Props = {
   name: string;
@@ -9,22 +9,12 @@ type Props = {
   style?: object;
 };
 
-export default function Chapter({
-  name,
-  children,
-  details,
-  style: passedStyle = {},
-}: Props) {
-  const style: CSSProperties = {
-    ...fontStyle,
-    marginLeft: 8,
-    ...passedStyle,
-  };
+export default function Chapter({ name, children, details }: Props) {
   return (
-    <div style={style}>
+    <div className="font-sans text-xl">
       {name}
       {details ? <span style={detailStyle}>[{details || ""}]</span> : null}
-      <div style={{ paddingLeft: 10 }}>{children}</div>
+      <div className="px-8 text-lg">{children}</div>
     </div>
   );
 }

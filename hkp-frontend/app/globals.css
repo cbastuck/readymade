@@ -85,5 +85,7 @@
   h4 {
     @apply font-sans text-lg;
   }
-
+  a {
+    @apply text-accent hover:underline;
+  }
 }

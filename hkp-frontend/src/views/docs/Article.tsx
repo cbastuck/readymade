@@ -1,22 +1,21 @@
 import ChapterLink from "./ChapterLink";
 
-import { detailStyle } from "./common";
-
 type Props = {
   children: string | string[];
   to: string;
   separator?: string;
-  details?: string;
+  isRoot?: boolean;
 };
 
 export default function Article({
   children,
   to,
   separator = "",
-  details = "",
+  isRoot = false,
 }: Props) {
+  const classes = isRoot ? "text-xl" : "";
   return (
-    <div>
+    <div className={classes}>
       <div style={{ margin: "8px 0px" }}>
         <>
           {Array.isArray(to) ? (
@@ -31,7 +30,6 @@ export default function Article({
           ) : (
             <ChapterLink to={to} title={children as string} />
           )}
-          {details && <span style={detailStyle}>[{details}]</span>}
         </>
       </div>
     </div>

@@ -22,7 +22,7 @@ export default function What() {
           composition from the synthesized blocks to rely on as little code as
           possible. My focus revolves around generating ideas and prototypical
           solutions within the domains of centrality, connectivity, authority,
-          and scale."
+          and scale.
         </div>
 
         <div>
