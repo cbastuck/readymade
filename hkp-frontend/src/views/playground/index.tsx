@@ -283,6 +283,11 @@ class Playground extends Component<Props, State> {
     };
   };
 
+  onUpdateBoardState = (newState: BoardDescriptor) => {
+    console.log("UPDAETE", newState);
+    this.setState((state) => ({ ...state, ...newState }));
+  };
+
   newBoard = async (searchParams = "") => {
     await this.boardProviderRef?.clearBoard();
     const name = generateRandomName();
@@ -470,6 +475,7 @@ class Playground extends Component<Props, State> {
         saveBoard={this.saveBoard}
         isActionAvailable={this.isActionAvailable}
         serializeBoard={this.serializeBoard}
+        onUpdateBoardState={this.onUpdateBoardState}
         onAction={(action: Action) => {
           if (action.type === "toggleBoardSync") {
             this.setState({ boardSyncActive: !this.state.boardSyncActive });

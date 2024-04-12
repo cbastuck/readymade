@@ -37,6 +37,7 @@ type BoardContextAPI = {
   onAction: (action: Action) => void;
 
   serializeBoard: () => Promise<BoardDescriptor | null>;
+  setBoardState: (newState: BoardDescriptor) => void;
 
   isRuntimeInScope: (runtime: RuntimeDescriptor) => boolean;
   acquireRuntimeScope: (boardname: string, runtime: RuntimeDescriptor) => void;
@@ -81,6 +82,7 @@ type Props = {
   isActionAvailable?: (action: Action) => boolean;
   onAction?: (action: any) => boolean;
   serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
+  onUpdateBoardState?: (updated: BoardDescriptor) => void;
 };
 
 const BoardCtx = createContext<BoardContextState | null>(null);
@@ -134,6 +136,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       addAvailableRuntime: this.addAvailableRuntime,
       removeAvailableRuntime: this.removeAvailableRuntime,
       serializeBoard: this.serializeBoard,
+      setBoardState: this.setBoardState,
 
       // Board data
       user: props.user,
@@ -545,6 +548,14 @@ class BoardProvider extends Component<Props, BoardContextState> {
     };
 
     return this.props.serializeBoard ? this.props.serializeBoard(data) : data;
+  };
+
+  setBoardState = (newState: BoardDescriptor) => {
+    this.setState((state) => {
+      const merged = { ...state, ...newState };
+      this.props.onUpdateBoardState?.(merged);
+      return merged;
+    });
   };
 
   arrangeServices = async (

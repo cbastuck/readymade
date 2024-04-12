@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import {
   NavigationMenu,
@@ -10,15 +10,41 @@ import {
 } from "@/components/ui/navigation-menu";
 import { cn } from "@/ui-components";
 import { BoardCtx } from "@/BoardContext";
+import EditorDialog from "../EditorDialog";
 
 export default function BoardMenu() {
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
+  const [showBoardSource, setShowBoardSource] = useState(false);
+
+  const onShowBoardSource = () => setShowBoardSource(true);
+  const onCloseBoardSource = () => setShowBoardSource(false);
+  const onApplyBoardSource = (newSource: string) => {
+    const src = JSON.parse(newSource);
+    console.log("SEETING ", src);
+    boardContext?.setBoardState(src);
+  };
+
+  const [boardSource, setBoardSource] = useState("");
+  useEffect(() => {
+    if (showBoardSource && boardContext) {
+      boardContext
+        .serializeBoard()
+        .then((src) => setBoardSource(JSON.stringify(src, null, 2)));
+    }
+  }, [showBoardSource, boardContext]);
+
   if (!board) {
     return null;
   }
   return (
     <NavigationMenu className="" delayDuration={10000}>
+      <EditorDialog
+        isOpen={showBoardSource}
+        value={boardSource}
+        onClose={onCloseBoardSource}
+        onApply={onApplyBoardSource}
+      />
       <NavigationMenuList>
         <NavigationMenuItem>
           <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white">
@@ -76,7 +102,7 @@ export default function BoardMenu() {
               >
                 Save the current board to the browser
               </ListItem>
-              <ListItem title="Board Source">
+              <ListItem title="Board Source" onClick={onShowBoardSource}>
                 Edit the current board's source in a text editor
               </ListItem>
               <ListItem title="Board Link">

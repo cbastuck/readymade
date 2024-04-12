@@ -8,7 +8,8 @@ import {
 } from "@/types";
 import { s, t } from "@/styles";
 import ServiceHeader from "./ServiceHeader";
-import ServiceConfigDialog from "./ServiceConfigDialog";
+import EditorDialog from "../EditorDialog";
+import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 
 function getNotificationID(service: InstanceId) {
   return `service-frame-${service.uuid}`;
@@ -105,6 +106,7 @@ export default function ServiceFrame({
     } catch (err) {}
   };
 
+  const { uuid: _, board, ...filteredService } = filterPrivateMembers(service);
   return (
     <div key={`service-frame-${uuid}`}>
       <div
@@ -130,8 +132,8 @@ export default function ServiceFrame({
           onHelp={onHelp}
           onConfig={onConfig}
         />
-        <ServiceConfigDialog
-          service={descriptor}
+        <EditorDialog
+          value={JSON.stringify(filteredService, null, 2)}
           isOpen={configVisible}
           onClose={onCloseConfig}
           onApply={onApplyConfig}
