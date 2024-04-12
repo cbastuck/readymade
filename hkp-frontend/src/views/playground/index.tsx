@@ -510,7 +510,6 @@ class Playground extends Component<Props, State> {
                     )
                   }
                   isCompact={boardContext.appContext?.appViewMode !== "wide"}
-                  boardSyncActive={this.state.boardSyncActive}
                 />
 
                 <SaveBoardPrompt onRef={(prompt) => (this.prompt = prompt)} />

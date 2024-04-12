@@ -9,7 +9,7 @@ import HkpSingleEdgy from "./assets/hkp-single-dot-second-trial-edgy.svg?react";
 
 export default function Brand() {
   return (
-    <Template title="Brand and Identity" parent="Side tracks">
+    <Template title="Logos and Identity" parent="Project Scope">
       <div style={{ margin: "40px 0px" }}>
         <Date month="August" day="6" year="2022" size="s" />
         <Section title="Logo">

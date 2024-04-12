@@ -11,13 +11,12 @@ import {
 import { cn } from "@/ui-components";
 import { BoardCtx } from "@/BoardContext";
 
-type Props = {
-  boardSyncActive: boolean;
-};
-
-export default function BoardMenu({}: Props) {
+export default function BoardMenu() {
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
+  if (!board) {
+    return null;
+  }
   return (
     <NavigationMenu className="" delayDuration={10000}>
       <NavigationMenuList>
@@ -67,7 +66,14 @@ export default function BoardMenu({}: Props) {
               >
                 Clear the current Board
               </ListItem>
-              <ListItem title="Save Board">
+              <ListItem
+                title="Save Board"
+                onClick={() =>
+                  boardContext?.onAction({
+                    type: "saveBoard",
+                  })
+                }
+              >
                 Save the current board to the browser
               </ListItem>
               <ListItem title="Board Source">

@@ -1,18 +1,10 @@
+import { Fragment } from "react/jsx-runtime";
 import {
   Breadcrumb,
-  BreadcrumbEllipsis,
   BreadcrumbItem,
-  BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Link } from "react-router-dom";
 
 export type BreadcrumbItem = {
@@ -29,7 +21,7 @@ export default function Breadcrumbs({ path }: Props) {
     <Breadcrumb className="font-sans mt-6">
       <BreadcrumbList>
         {path.map((p, idx) => (
-          <>
+          <Fragment key={idx}>
             <BreadcrumbItem className="capitalize">
               {p.link ? (
                 <Link to={p.link}>{p.value}</Link>
@@ -38,7 +30,7 @@ export default function Breadcrumbs({ path }: Props) {
               )}
             </BreadcrumbItem>
             {idx + 1 < path.length && <BreadcrumbSeparator />}
-          </>
+          </Fragment>
         ))}
 
         {/*

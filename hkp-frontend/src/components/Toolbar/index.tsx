@@ -19,14 +19,12 @@ type Props = {
   board?: string;
   showRuntimeMenu?: boolean;
   isCompact?: boolean;
-  boardSyncActive?: boolean;
   showBoardActions?: boolean;
   onUpdateAvailableRuntimes?: (runtimeClasses: Array<RuntimeClass>) => void;
 };
 
 export default function Toolbar({
   board,
-  boardSyncActive = false,
   showRuntimeMenu = false,
   isCompact = false,
   showBoardActions = true,
@@ -59,7 +57,7 @@ export default function Toolbar({
           }}
         >
           <HomeIcon />
-          {board && <BoardMenu boardSyncActive={boardSyncActive} />}
+          <BoardMenu />
 
           {showRuntimeMenu && (
             <RuntimeMenu

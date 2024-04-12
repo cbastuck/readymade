@@ -8,7 +8,11 @@ export default function Video({ src, caption, anchor = "video" }: Props) {
     <div id={anchor} style={{ width: "100%", margin: "20px 0px" }}>
       <div style={{ margin: "auto", width: "80%" }}>
         <video src={src} width="100%" controls />
-        {caption && <div style={{ textAlign: "center" }}>{caption}</div>}
+        {caption && (
+          <div className="font-sans" style={{ textAlign: "center" }}>
+            {caption}
+          </div>
+        )}
       </div>
     </div>
   );

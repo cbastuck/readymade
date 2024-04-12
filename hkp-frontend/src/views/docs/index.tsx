@@ -13,9 +13,15 @@ export default function Docs() {
       </Article>
 
       <Chapter name="Project Scope">
-        <Article to="/docs/pitch/what">What</Article>
-        <Article to="/docs/pitch/why">Why</Article>
-        <Article to="/docs/pitch/how">How</Article>
+        <Article to="/docs/scope/what">What</Article>
+        <Article to="/docs/scope/why">Why</Article>
+        <Article to="/docs/scope/how">How</Article>
+        <Article to="/docs/scope/identity">Identity</Article>
+      </Chapter>
+
+      <Chapter name="Tracks">
+        <Article to="/docs/tracks/bridge">Bridge</Article>
+        <Article to="/docs/tracks/remote">Remote runtimes</Article>
       </Chapter>
 
       <Chapter name="Blog Articles">
@@ -29,12 +35,6 @@ export default function Docs() {
           Cast photos from the phone to a Browser on the TV
         </Article>
         <Article to="/docs/blog/game">A playful introduction to Hookup</Article>
-      </Chapter>
-
-      <Chapter name="Side tracks" details="topics work in progress">
-        <Article to="/docs/tracks/branding">Brand and identity</Article>
-        <Article to="/docs/tracks/bridge">Bridge</Article>
-        <Article to="/docs/tracks/remote">Remote runtimes</Article>
       </Chapter>
       <br />
     </Template>

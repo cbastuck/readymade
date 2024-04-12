@@ -48,7 +48,7 @@ type BoardContextAPI = {
 export type BoardContextState = BoardContextAPI & {
   user: User | null;
 
-  boardName: string;
+  boardName?: string;
 
   runtimes: Array<RuntimeDescriptor>;
   services: { [runtimeId: string]: Array<ServiceDescriptor> };
@@ -64,7 +64,7 @@ export type BoardContextState = BoardContextAPI & {
 
 type Props = {
   user: User | null;
-  boardName: string;
+  boardName?: string;
   children: JSX.Element | JSX.Element[];
   availableRuntimes?: Array<RuntimeClass>;
   runtimeApis?: RuntimeApiMap;

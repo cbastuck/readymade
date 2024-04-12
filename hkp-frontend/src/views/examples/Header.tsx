@@ -1,4 +1,5 @@
-import Breadcrumbs from "./Breadcrumbs";
+//import Breadcrumbs from "./Breadcrumbs";
+import Breadcrumbs from "@/ui-components/Breadcrumbs";
 import { ExampleDescriptor } from "./types";
 
 type Props = {
@@ -13,7 +14,14 @@ export default function Header({ example }: Props) {
       }}
     >
       <h1>Examples</h1>
-      {example && <Breadcrumbs current={example} />}
+      {example && (
+        <Breadcrumbs
+          path={[
+            { value: "Examples", link: "/examples" },
+            { value: example.title },
+          ]}
+        />
+      )}
     </div>
   );
 }

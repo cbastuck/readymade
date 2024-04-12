@@ -3,7 +3,7 @@ import { Component, ReactNode } from "react";
 import BoardProvider from "../BoardContext";
 import Toolbar from "../components/Toolbar";
 import Footer from "../components/Footer";
-import Breadcrumbs from "@/ui-components/Breadcrumbs";
+import Breadcrumbs, { BreadcrumbItem } from "@/ui-components/Breadcrumbs";
 
 type Props = {
   children: ReactNode[] | ReactNode;
@@ -18,12 +18,7 @@ export default class Template extends Component<Props> {
     const { children, title, isRoot, parent, slug, width = "70%" } = this.props;
     const renderBreadcrumbs = (!!title || slug) && (!isRoot || !!parent);
     return (
-      <BoardProvider
-        user={null}
-        boardName="template"
-        availableRuntimes={[]}
-        runtimeApis={{}}
-      >
+      <BoardProvider user={null} availableRuntimes={[]} runtimeApis={{}}>
         <div
           style={{
             width: "100%",
@@ -51,21 +46,7 @@ export default class Template extends Component<Props> {
               {title}
             </h1>
             {renderBreadcrumbs && (
-              <Breadcrumbs
-                path={[
-                  {
-                    value: "Docs",
-                    link: "/docs",
-                  },
-                  {
-                    value: parent!,
-                  },
-                  {
-                    value: title || slug || "",
-                    link: "#",
-                  },
-                ]}
-              />
+              <Breadcrumbs path={makeBreadcrumbsPath(title || slug!, parent)} />
             )}
             <div
               className="font-serif-wet tracking-widest"
@@ -83,4 +64,25 @@ export default class Template extends Component<Props> {
       </BoardProvider>
     );
   }
+}
+
+function makeBreadcrumbsPath(title: string, parent?: string) {
+  const path: Array<BreadcrumbItem> = [
+    {
+      value: "Docs",
+      link: "/docs",
+    },
+  ];
+
+  if (parent) {
+    path.push({
+      value: parent,
+    });
+  }
+
+  path.push({
+    value: title,
+    link: "#",
+  });
+  return path;
 }

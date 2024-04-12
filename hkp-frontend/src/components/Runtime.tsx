@@ -305,93 +305,6 @@ export default class Runtime extends Component<Props, State> {
     );
   }
 
-  renderSettings = (
-    runtime: RuntimeDescriptor,
-    onToggleOwnership: () => void,
-    isOwner: boolean
-  ) => {
-    const { expanded, showSettings, wrapServices } = this.state;
-    const { boardContext, customItems = [], disabledItems = [] } = this.props;
-    const { services: allServices = {} } = boardContext;
-    const services = allServices[runtime.id];
-    const itemStyle = {
-      height: 40,
-      margin: 0,
-    };
-    return (
-      <Menu vertical compact style={{ height: "100%" }}>
-        <Menu.Item
-          as="a"
-          style={itemStyle}
-          onClick={() =>
-            services.length === 0
-              ? boardContext.removeRuntime(runtime)
-              : boardContext.removeAllServices(runtime)
-          }
-          disabled={disabledItems.indexOf("remove") !== -1}
-        >
-          <Icon
-            name={
-              !services || services.length === 0
-                ? "trash alternate outline"
-                : "remove"
-            }
-          />
-        </Menu.Item>
-        {
-          <Menu.Item
-            as="a"
-            style={itemStyle}
-            onClick={() =>
-              this.setState({
-                expanded: !expanded,
-                showSettings: showSettings && !expanded,
-              })
-            }
-          >
-            <Icon name="compress" />
-          </Menu.Item>
-        }
-        <Menu.Item
-          as="a"
-          style={itemStyle}
-          onClick={() => this.setState({ wrapServices: !wrapServices })}
-        >
-          <Icon name={wrapServices ? "exchange" : "sort amount down"} />
-        </Menu.Item>
-        {false && (
-          <Menu.Item as="a" style={itemStyle} onClick={() => {}}>
-            <Icon name="keyboard" />
-          </Menu.Item>
-        )}
-        {false && runtime && runtime.type === "browser" && (
-          <Menu.Item
-            as="a"
-            style={itemStyle}
-            onClick={() => onToggleOwnership && onToggleOwnership()}
-          >
-            <Icon name={isOwner ? "unlink" : "linkify"} />
-          </Menu.Item>
-        )}
-        {customItems.map((item, idx) => (
-          <Menu.Item
-            key={`custom-item-${item.key}-${idx}`}
-            as="a"
-            style={itemStyle}
-            onClick={(ev: React.MouseEvent) => {
-              item.onClick(ev);
-              this.setState({
-                showSettings: false,
-              });
-            }}
-          >
-            <Icon name={item.icon} />
-          </Menu.Item>
-        ))}
-      </Menu>
-    );
-  };
-
   scrollRuntimeContainerToRight = () => {
     if (this.runtimeContainer) {
       this.scrollRuntimeContainerTo(this.runtimeContainer.scrollWidth, 0);
@@ -559,7 +472,6 @@ export default class Runtime extends Component<Props, State> {
       runtime && boardContext && boardContext.registry[runtime.id];
     const appViewMode = boardContext && boardContext.appContext?.appViewMode;
     const wide = boardContext ? appViewMode === "wide" : true;
-    const isOwner = boardContext && boardContext.isRuntimeInScope(runtime);
 
     const { wrapServices = !wide, showSettings, expanded } = this.state;
 
@@ -586,13 +498,6 @@ export default class Runtime extends Component<Props, State> {
         ? onArrangeServiceCustom
         : onArrangeServiceDefault;
 
-    const onToggleOwnership = () =>
-      boardContext &&
-      runtime &&
-      (boardContext.isRuntimeInScope(runtime)
-        ? boardContext.releaseRuntimeScope(boardContext.boardName, runtime)
-        : boardContext.acquireRuntimeScope(boardContext.boardName, runtime));
-
     const scope = boardContext.scopes[runtimeId];
 
     const renderActualRuntime = (headless: boolean) => {
@@ -602,7 +507,7 @@ export default class Runtime extends Component<Props, State> {
             runtime,
             headless ? false : expanded,
             user,
-            boardName,
+            boardName || "",
             services,
             readonly,
             onArrangeService
@@ -613,7 +518,7 @@ export default class Runtime extends Component<Props, State> {
             runtime,
             headless ? false : expanded,
             user,
-            boardName,
+            boardName || "",
             services,
             readonly,
             onArrangeService,
@@ -644,55 +549,31 @@ export default class Runtime extends Component<Props, State> {
           this.setState({ wrapServices: isWrapped })
         }
       >
-        <Sidebar.Pushable
-          as={Segment}
-          style={{
-            border: "none",
-            boxShadow: "none",
-            margin: 0,
-            // Workaround: https://github.com/Semantic-Org/Semantic-UI-React/issues/2897
-            // without it, the fullscreen is not working, eg. canvas service
-            transform: "none",
+        <div
+          ref={(c) => {
+            this.runtimeContainer = c;
           }}
+          style={readonlyStyle}
+          onClickCapture={(e) => readonly && e.stopPropagation()}
         >
-          <Sidebar
-            animation="overlay"
-            direction="left"
-            width="very thin"
-            visible={showSettings}
-            style={{
-              overflowX: "hidden",
-              boxShadow: "0 0 2px rgba(34,36,38,.15)",
-            }}
-          >
-            {this.renderSettings(runtime, onToggleOwnership, isOwner)}
-          </Sidebar>
-          <div
-            ref={(c) => {
-              this.runtimeContainer = c;
-            }}
-            style={readonlyStyle}
-            onClickCapture={(e) => readonly && e.stopPropagation()}
-          >
-            {runtime && renderActualRuntime(headless)}
-            {((services && services.length === 0) || !isOwner) && !headless && (
-              <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
-            )}
-          </div>
-          {children && (
-            <div
-              style={{
-                margin: "5px",
-                padding: 10,
-                border: "dashed 1px lightgray",
-                borderRadius: 5,
-              }}
-            >
-              <div style={{ marginBottom: 5 }} />
-              {children}
-            </div>
+          {runtime && renderActualRuntime(headless)}
+          {services && services.length === 0 && !headless && (
+            <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
           )}
-        </Sidebar.Pushable>
+        </div>
+        {children && (
+          <div
+            style={{
+              margin: "5px",
+              padding: 10,
+              border: "dashed 1px lightgray",
+              borderRadius: 5,
+            }}
+          >
+            <div style={{ marginBottom: 5 }} />
+            {children}
+          </div>
+        )}
       </RuntimeUI>
     );
   }

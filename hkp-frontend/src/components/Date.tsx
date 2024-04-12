@@ -28,7 +28,7 @@ export default function Date({
     textTransform: "capitalize",
   };
   return (
-    <div className="font-sans" style={style}>
+    <div className="font-sans text-right" style={style}>
       {isUpdate && (
         <span style={{ textTransform: "none" }}> last edited on </span>
       )}

@@ -30,9 +30,10 @@ import ServiceReferenceView from "./views/ServiceReferenceView";
 import DataModelReferenceView from "./views/DataModelReferenceView";
 
 import Dashboard from "./views/dashboard";
-import WhatPitch from "./views/docs/pitch/What";
-import WhyPitch from "./views/docs/pitch/Why";
-import HowPitch from "./views/docs/pitch/How";
+import WhatPitch from "./views/docs/scope/What";
+import WhyPitch from "./views/docs/scope/Why";
+import HowPitch from "./views/docs/scope/How";
+import Identity from "./views/docs/scope/identity";
 
 import BoardBlock from "./views/docs/buildingblocks/BoardBlock";
 import RuntimeBlock from "./views/docs/buildingblocks/RuntimeBlock";
@@ -44,7 +45,7 @@ import Terms from "./views/terms";
 import Privacy from "./views/privacy";
 
 import Track from "./views/docs/tracks";
-import BrandingTrack from "./views/docs/tracks/branding";
+
 import BridgeTrack from "./views/docs/tracks/bridge";
 import RemoteTrack from "./views/docs/tracks/remote";
 
@@ -96,10 +97,7 @@ export default function AppRoutes() {
       <Route path="/example/sandbox" element={<Example />} />
       <Route path="/examples" element={<Examples />} />
 
-      <Route path="/docs/updates" element={<Updates />} />
-      <Route path="/docs/quickstart" element={<Quickstart />} />
-      <Route path="/docs" element={<Docs />} />
-      <Route path="/new" exact element={<BuildBoard />} />
+      {/*<Route path="/new" exact element={<BuildBoard />} />*/}
       <Route path="/auth2app" element={<AuthRedirect />} />
       <Route path="/authRedirect" element={<AuthRedirectAuth0 />} />
       <Route path="/import" element={<Import />} />
@@ -111,11 +109,15 @@ export default function AppRoutes() {
       <Route path="/service/:service" element={<ServiceReferenceView />} />
       <Route path="/datamodel/:name" element={<DataModelReferenceView />} />
 
-      <Route path="/docs/pitch/what" element={<WhatPitch />} />
-      <Route path="/docs/pitch/why" element={<WhyPitch />} />
-      <Route path="/docs/pitch/how" element={<HowPitch />} />
+      <Route path="/docs" element={<Docs />} />
+      <Route path="/docs/updates" element={<Updates />} />
+      <Route path="/docs/quickstart" element={<Quickstart />} />
+      <Route path="/docs/scope/what" element={<WhatPitch />} />
+      <Route path="/docs/scope/why" element={<WhyPitch />} />
+      <Route path="/docs/scope/how" element={<HowPitch />} />
+      <Route path="/docs/scope/identity" element={<Identity />} />
+
       <Route path="/docs/tracks" element={<Track />}>
-        <Route path="branding" element={<BrandingTrack />} />
         <Route path="bridge" element={<BridgeTrack />} />
         <Route path="remote" element={<RemoteTrack />} />
       </Route>

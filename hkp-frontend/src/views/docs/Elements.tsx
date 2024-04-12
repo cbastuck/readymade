@@ -7,12 +7,9 @@ type ParagraphProps = {
 };
 
 export function Paragraph({ children, brief, headline }: ParagraphProps) {
-  const headlineStyle: CSSProperties = {
-    fontSize: 12,
-  };
   return (
     <div style={{ margin: "20px 0px" }}>
-      {headline && <h1 style={headlineStyle}> {headline}</h1>}
+      {headline && <h3> {headline}</h3>}
       {brief}
       <div style={{ marginLeft: 20 }}>{children}</div>
     </div>
