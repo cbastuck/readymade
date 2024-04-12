@@ -9,7 +9,7 @@ type Props = {
   language?: string;
   style?: object;
   initialWidth?: number;
-  onChange: (updated: string | undefined) => void;
+  onChange?: (updated: string | undefined) => void;
 };
 
 export default class Editor extends Component<Props> {

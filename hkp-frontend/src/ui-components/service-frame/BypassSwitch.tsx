@@ -1,6 +1,6 @@
 import { Icon } from "semantic-ui-react";
 
-import { t } from "../styles";
+import { t } from "../../styles";
 import { CSSProperties } from "react";
 
 type Props = {

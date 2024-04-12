@@ -17,7 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RuntimeDescriptor } from "@/types";
@@ -52,7 +51,7 @@ export default function RuntimeSettings({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel className="capitalize">
+        <DropdownMenuLabel className="capitalize font-sans tracking-wider">
           {runtime.type} Runtime
         </DropdownMenuLabel>
         <DropdownMenuSeparator />

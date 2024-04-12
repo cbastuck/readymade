@@ -96,18 +96,9 @@ export default class ServiceUI extends Component {
             width: "100%",
           }}
         >
-          <div
-            style={
-              {
-                //height: "10%",
-              }
-            }
-          >
-            {this.renderSegmentsHeader(segments, currentSegmentName)}
-          </div>
+          <div>{this.renderSegmentsHeader(segments, currentSegmentName)}</div>
           <div
             style={{
-              //padding: 14,
               margin: "15px 20px",
               height: "100%",
             }}
@@ -175,6 +166,7 @@ export default class ServiceUI extends Component {
       </div>
     );
   };
+
   renderSingleSegment = (
     boardContext,
     children,

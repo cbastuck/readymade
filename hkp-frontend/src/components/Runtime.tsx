@@ -1,5 +1,5 @@
 import { CSSProperties, Component, ReactElement } from "react";
-import { Icon, Sidebar, Segment, Menu, SemanticICONS } from "semantic-ui-react";
+import { Icon, SemanticICONS } from "semantic-ui-react";
 
 import { getServiceConfiguration } from "../core/actions";
 //import NodeRuntime from "../runtime/NodeRuntime";
@@ -26,7 +26,7 @@ import BrowserRuntimeScope from "../runtime/browser/BrowserRuntimeScope";
 import RenameRuntimeAccessory from "./RenameRuntimeAccessory";
 import ProcessRuntimeAccessory from "./ProcessRuntimeAccessory";
 
-import RuntimeUI from "@/ui-components/runtimeUI";
+import RuntimeUI from "@/ui-components/runtime-ui";
 
 type Props = {
   boardContext: BoardContextState;
@@ -382,17 +382,7 @@ export default class Runtime extends Component<Props, State> {
           overflow: wrapServices ? undefined : "auto",
         }}
       >
-        {inputs && expanded ? (
-          <div
-            style={{
-              marginBottom: 15,
-            }}
-          >
-            {inputs}
-          </div>
-        ) : (
-          false
-        )}
+        {inputs && expanded ? <>{inputs}</> : false}
         <BrowserRuntime
           key={`browser-runtime-${runtime.id}`}
           collapsed={!expanded}
@@ -411,7 +401,7 @@ export default class Runtime extends Component<Props, State> {
           <div
             style={{
               marginLeft: "auto",
-              marginBottom: 15,
+              marginRight: 4, // TODO: otherwise the runtime get horizontal scrollbar
             }}
           >
             {outputs}
@@ -549,30 +539,9 @@ export default class Runtime extends Component<Props, State> {
           this.setState({ wrapServices: isWrapped })
         }
       >
-        <div
-          ref={(c) => {
-            this.runtimeContainer = c;
-          }}
-          style={readonlyStyle}
-          onClickCapture={(e) => readonly && e.stopPropagation()}
-        >
-          {runtime && renderActualRuntime(headless)}
-          {services && services.length === 0 && !headless && (
-            <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
-          )}
-        </div>
-        {children && (
-          <div
-            style={{
-              margin: "5px",
-              padding: 10,
-              border: "dashed 1px lightgray",
-              borderRadius: 5,
-            }}
-          >
-            <div style={{ marginBottom: 5 }} />
-            {children}
-          </div>
+        {runtime && renderActualRuntime(headless)}
+        {services && services.length === 0 && !headless && (
+          <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
         )}
       </RuntimeUI>
     );

@@ -7,7 +7,7 @@ import ConfigurationEditor from "./ConfigurationEditor";
 import { s, t } from "../styles";
 import { filterPrivateMembers } from "../runtime/browser/services/helpers";
 import { ServiceAction, InstanceId, ServiceImpl } from "../types";
-import BypassSwitch from "./BypassSwitch";
+import BypassSwitch from "../ui-components/service-frame/BypassSwitch";
 
 function getNotificationID(service: InstanceId) {
   return `service-frame-${service.uuid}`;
