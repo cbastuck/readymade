@@ -7,7 +7,8 @@ export default function NavigationBar() {
     { name: "Examples", link: "/examples" },
     { name: "Playground", link: "/playground" },
   ];
-  const defaultStyles = "rounded-md p-[5px] m-1 text-sm tracking-wider";
+  const defaultStyles =
+    "font-sans rounded-md p-[5px] m-1 text-sm tracking-wider no-underline";
   const nonActivestyles = `${defaultStyles} "hover:text-zinc-500"`;
   const activeStyles = `bg-sky-600 text-white hover:text-neutral-200 ${defaultStyles}`;
   return (
@@ -19,7 +20,7 @@ export default function NavigationBar() {
         marginRight: 10,
       }}
     >
-      <div className="">
+      <div>
         {links.map(({ link, name }) => (
           <Link
             className={

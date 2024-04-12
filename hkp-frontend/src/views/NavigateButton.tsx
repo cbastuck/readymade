@@ -1,18 +1,18 @@
-import { Button } from "semantic-ui-react";
+import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 type Props = {
   text: string;
   destination?: string;
   width?: number | string;
-  style?: object;
+  color?: string;
   onClicked?: () => void;
 };
 export default function NavigateButton({
   destination,
   text,
   width,
-  style: passedStyle,
+  color,
   onClicked,
 }: Props) {
   const navigate = useNavigate();
@@ -23,17 +23,13 @@ export default function NavigateButton({
     navigate(destination);
   };
   const onClick = onClicked || onDestination;
-  const style = passedStyle || {
-    fontSize: 13,
-    letterSpacing: 2,
-    whiteSpace: "nowrap",
-    border: "solid 1px white",
-    padding: "10px",
-    width: width ? width : "initial",
-  };
 
   return (
-    <Button className="" style={style} onClick={onClick}>
+    <Button
+      className="bg-accent text-white font-sans tracking-widest"
+      style={{ width, backgroundColor: color }}
+      onClick={onClick}
+    >
       {text}
     </Button>
   );

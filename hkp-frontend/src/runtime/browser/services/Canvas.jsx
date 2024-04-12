@@ -294,7 +294,7 @@ export class CanvasUI extends Component {
       dx === undefined ? centerX - textWidth / 2 : toAbsolute(dx, canvasWidth);
     const y = dy === undefined ? centerY : toAbsolute(dy, canvasHeight);
     ctx.fillText(t, x, y);
-    ctx.strokeText(t, x, y);
+    // ctx.strokeText(t, x, y);
 
     if (onClick) {
       const rect = {

@@ -36,13 +36,6 @@ export default function PitchPage() {
           <NavigateButton
             destination="/welcome/experiment"
             text="A thought experiment"
-            style={{
-              color: "#454f6e",
-              fontSize: 14,
-              border: "1px white",
-              whiteSpace: "nowrap",
-              width: "min-content",
-            }}
           />
         </div>
       )}

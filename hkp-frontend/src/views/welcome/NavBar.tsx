@@ -1,10 +1,11 @@
-import { redirectTo } from "../../core/actions";
+import { useNavigate } from "react-router-dom";
 
 type Props = {
   pathname: string;
 };
 
 export default function NavBar({ pathname }: Props) {
+  const navigate = useNavigate();
   const pages = [
     "/welcome",
     "/welcome/mission",
@@ -16,7 +17,7 @@ export default function NavBar({ pathname }: Props) {
     <span
       key={index}
       style={{ cursor: "pointer", padding: 5 }}
-      onClick={() => redirectTo(`${pages[index]}#open`)}
+      onClick={() => navigate(`${pages[index]}#open`)}
     >
       {c}
     </span>

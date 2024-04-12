@@ -24,16 +24,7 @@ export default function VisualisationPage() {
       />
       {visualisationFinished && (
         <div className="fade-in-linear">
-          <NavigateButton
-            destination="/examples"
-            text="Examples"
-            style={{
-              color: "#454f6e",
-              fontSize: 14,
-              border: "1px white",
-              padding: "9px 0px",
-            }}
-          />
+          <NavigateButton destination="/examples" text="Examples" />
         </div>
       )}
     </div>

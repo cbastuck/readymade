@@ -1,18 +1,16 @@
 import UpdatesButton from "./UpdatesButton";
 import NavigateButton from "../NavigateButton";
-import Button from "../../components/shared/Button";
+
 import Switcher from "../../components/Switcher";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-type Props = {
-  onEngage: () => void;
-};
-
-export default function WelcomePanel({ onEngage }: Props) {
+export default function WelcomePanel() {
+  const navigate = useNavigate();
   return (
-    <div className="fade-in" style={{ width: "100%" }}>
+    <div className="flex flex-col fade-in" style={{ width: "100%" }}>
       <UpdatesButton />
       <div
-        className=""
         style={{
           display: "flex",
           width: "min-content",
@@ -26,7 +24,7 @@ export default function WelcomePanel({ onEngage }: Props) {
           style={{
             width: "130px",
             textAlign: "left",
-            marginTop: "18px",
+            marginTop: "21px",
             paddingLeft: "5px",
           }}
           data={[
@@ -36,42 +34,20 @@ export default function WelcomePanel({ onEngage }: Props) {
         />
       </div>
 
-      <NavigateButton
-        text="What is this?"
-        destination="/welcome/mission"
-        style={{
-          width: "280px",
-          color: "#454f6e",
-          fontSize: 14,
-          border: "1px white",
-        }}
-      />
+      <div className="flex flex-col gap-1 ml-auto mr-auto mt-1">
+        <NavigateButton
+          text="What is this?"
+          destination="/welcome/mission"
+          width="280px"
+        />
 
-      <Button
-        className="hkp-button-blue"
-        style={{
-          padding: "7px 20px",
-          backgroundColor: "black",
-          color: "white",
-          width: "280px",
-          marginTop: "3px",
-          height: "40px",
-        }}
-        onClick={onEngage}
-      >
-        I want to engage
-      </Button>
-
-      <NavigateButton
-        text="to Playground?"
-        destination="/playground"
-        style={{
-          width: "280px",
-          color: "#454f6e",
-          fontSize: 14,
-          border: "1px white",
-        }}
-      />
+        <Button
+          className="w-[280px] border  border-black bg-white text-black hover:bg-[#454f6e] hover:text-white"
+          onClick={() => navigate("/engage")}
+        >
+          I want to engage
+        </Button>
+      </div>
     </div>
   );
 }

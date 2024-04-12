@@ -1,6 +1,6 @@
+import { Button } from "@/components/ui/button";
 import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "semantic-ui-react";
 
 type NavButtonProps = {
   to: string;

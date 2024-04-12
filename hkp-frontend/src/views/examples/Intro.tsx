@@ -8,11 +8,10 @@ export default function Intro() {
         <div className="font-serif-wet tracking-widest">
           The examples below showcase just a glimpse of the possibilities. They
           all run in a Sandbox, designed for constructing flows that primarily
-          operate locally without the need for a login. The potential expands
-          further when combining remote and local runtimes on the same board.
-          For a deeper exploration of advanced features, visit the
-          <Link to="/playground"> Playground</Link> to explore advanced
-          features.
+          operate locally without the need for a login. Much more is possible
+          when combining remote and local runtimes on one board. For a deeper
+          exploration of advanced features, visit
+          <Link to="/playground"> Playground</Link>.
         </div>
       </div>
     </>

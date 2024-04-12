@@ -114,7 +114,7 @@ export default function RuntimeMenu({
                 className="flex gap-2"
                 onSelect={() => setShowManageRuntimesDialog(true)}
               >
-                <Settings size="20px" /> Manage remote runtimes
+                <Settings size="18px" /> Manage remote runtimes
               </CommandItem>
             </CommandGroup>
           </Command>

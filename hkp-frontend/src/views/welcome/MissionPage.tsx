@@ -34,45 +34,21 @@ export default function MissionPage() {
           },
           {
             a: (
-              <NavigateButton
-                destination="/welcome/pitch"
-                text="Quick Pitch"
-                style={{ color: "#454f6e", fontSize: 14, border: "1px white" }}
-              />
+              <NavigateButton destination="/welcome/pitch" text="Quick Pitch" />
             ),
           },
         ].map((x, xi) => (
-          <div
-            key={xi}
-            style={{
-              textAlign: "center",
-              display: "table-row",
-            }}
-          >
-            <div
-              style={{
-                display: "table-cell",
-                verticalAlign: "middle",
-                textAlign: "center",
-              }}
-              className={` fade-in-${xi}`}
-            >
+          <div key={xi} className="m-5" style={{ textAlign: "center" }}>
+            <div style={{ textAlign: "center" }} className={`fade-in-${xi}`}>
               {x.q && (
-                <h1
-                  className=""
-                  style={{ fontSize: 19, color: "454f6d", paddingBottom: 5 }}
-                >
-                  <Link to={x.href} style={{ fontSize: 17 }}>
-                    {x.q}
-                  </Link>
+                <h1 style={{ color: "454f6d", paddingBottom: 5 }}>
+                  <Link to={x.href}>{x.q}</Link>
                 </h1>
               )}
               <div
-                className="home-title "
+                className="home-title text-lg font-serif-wet my-4"
                 style={{
-                  paddingTop: 2,
                   paddingLeft: 2,
-                  fontSize: 14,
                   color: "#777",
                   textTransform: "none",
                   letterSpacing: 2,
@@ -81,14 +57,13 @@ export default function MissionPage() {
                 {x.a}
                 {x.href && (
                   <Link
-                    className=""
                     to={x.href}
                     style={{
-                      fontSize: 10,
+                      fontSize: 12,
                       paddingLeft: 3,
                     }}
                   >
-                    {" show more"}
+                    {" more"}
                   </Link>
                 )}
               </div>
