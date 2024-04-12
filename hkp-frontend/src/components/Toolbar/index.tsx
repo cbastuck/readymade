@@ -5,9 +5,9 @@ import { BoardCtx } from "../../BoardContext";
 
 import RuntimeMenu from "@/ui-components/toolbar/RuntimeMenu";
 import HomeIcon from "./HomeIcon";
-import Navigation from "./Navigation";
+import NavigationBar from "./NavigationBar";
 
-import AccountMenu from "@/ui-components/toolbar/AccountMenu";
+import AppMenu from "@/ui-components/toolbar/AppMenu";
 
 import { RuntimeClass } from "../../types";
 import BoardActionsBar from "./BoardActionsBar";
@@ -63,7 +63,6 @@ export default function Toolbar({
 
           {showRuntimeMenu && (
             <RuntimeMenu
-              isWideViewMode={renderWide}
               availableRuntimes={boardContext?.availableRuntimes || []}
               onAddAvailableRuntime={(desc) => {
                 const runtimes = boardContext?.addAvailableRuntime(desc) || [];
@@ -87,11 +86,8 @@ export default function Toolbar({
             </div>
           )}
 
-          <Navigation
-            appContext={boardContext?.appContext || null}
-            isCompact={isCompact}
-          />
-          {!isCompact && <AccountMenu />}
+          {!isCompact && <NavigationBar />}
+          <AppMenu isCompact={isCompact} />
         </Menu>
       </div>
     </div>

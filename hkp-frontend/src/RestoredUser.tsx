@@ -13,7 +13,7 @@ export default function RestoredUser({ onToken }: Props) {
         try {
           await onToken(idToken);
         } catch (err: any) {
-          if (err.cause === "TokenExpired") {
+          if (err.message === "token expired") {
             await logout({ openUrl: false });
             throw err;
           } else {

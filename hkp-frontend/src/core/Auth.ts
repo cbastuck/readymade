@@ -15,7 +15,7 @@ export function validateToken(token: string): ValidatedToken {
   const now = moment.utc();
   const exp = moment.utc(decoded.exp * 1000);
   if (now > exp) {
-    throw new Error("validateToken() token expired");
+    throw new Error("token expired");
   }
 
   return { token, decoded, exp };

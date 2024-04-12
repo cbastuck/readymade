@@ -41,30 +41,22 @@ export default function BoardCollection({
           display: "flex",
           flexDirection: "column",
           paddingBottom: "20px",
-          marginBottom: "20px",
+          marginBottom: "0px",
         }}
       >
         <div
           style={{
             display: "flex",
-            flexDirection: "row",
             width: "100%",
-            paddingTop: 15,
+            padding: "15px 0px",
           }}
         >
           {headline ? (
-            <h2 style={headlinePlacement}>{headline}</h2>
+            <h2 className="w-full text-left">{headline}</h2>
           ) : (
             <div style={{ height: "20px" }} />
           )}
-        </div>
-        <div
-          style={{
-            marginTop: "-30px",
-            paddingBottom: "20px",
-            marginRight: "15px",
-          }}
-        >
+
           {renderSearch && (
             <Search
               filter={filter}
@@ -72,6 +64,7 @@ export default function BoardCollection({
             />
           )}
         </div>
+
         <Collection
           filter={filter}
           items={items}

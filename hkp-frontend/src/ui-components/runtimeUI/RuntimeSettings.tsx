@@ -7,6 +7,7 @@ import {
   ChevronsUpDown,
   StepForward,
   ArrowRightLeft,
+  Menu,
 } from "lucide-react";
 
 import {
@@ -17,9 +18,10 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuShortcut,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { RuntimeDescriptor } from "@/types";
-import DropdownTrigger from "@/ui-components/DropdownTrigger";
+import { Button } from "@/components/ui/button";
 
 type Props = {
   isExpanded?: boolean;
@@ -44,7 +46,11 @@ export default function RuntimeSettings({
 }: Props) {
   return (
     <DropdownMenu>
-      <DropdownTrigger />
+      <DropdownMenuTrigger asChild>
+        <Button className="p-0 h-min w-min" variant="ghost" size="icon">
+          <Menu strokeWidth={1} />
+        </Button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel className="capitalize">
           {runtime.type} Runtime
@@ -54,7 +60,6 @@ export default function RuntimeSettings({
           <DropdownMenuItem onClick={() => onProcess(false)}>
             <Play className="mr-2 h-4 w-4" />
             <span>Run</span>
-            <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onProcess(true)}>
             <StepForward className="mr-2 h-4 w-4" />
@@ -63,18 +68,6 @@ export default function RuntimeSettings({
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={onClear}>
-            <Eraser className="mr-2 h-4 w-4" />
-            <span>Clear</span>
-            <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem onClick={onDelete}>
-            <Trash className="mr-2 h-4 w-4" />
-            <span>Delete</span>
-            <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
-          </DropdownMenuItem>
-
           <DropdownMenuItem onClick={() => onWrapServices(!wrapServices)}>
             {wrapServices ? (
               <ArrowRightLeft className="mr-2 h-4 w-4" />
@@ -82,22 +75,29 @@ export default function RuntimeSettings({
               <WrapText className="mr-2 h-4 w-4" />
             )}
             <span>{wrapServices ? "Unwrap Services" : "Wrap services"}</span>
-            <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
           </DropdownMenuItem>
 
           {isExpanded ? (
             <DropdownMenuItem onClick={() => onExpand(false)}>
               <ChevronsDownUp className="mr-2 h-4 w-4" />
               <span>Collapse</span>
-              <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
             </DropdownMenuItem>
           ) : (
             <DropdownMenuItem onClick={() => onExpand(true)}>
               <ChevronsUpDown className="mr-2 h-4 w-4" />
               <span>Expand</span>
-              <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
             </DropdownMenuItem>
           )}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={onClear}>
+            <Eraser className="mr-2 h-4 w-4" />
+            <span>Clear</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem onClick={onDelete}>
+            <Trash className="mr-2 h-4 w-4" />
+            <span>Delete</span>
+          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
