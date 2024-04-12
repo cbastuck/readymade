@@ -27,7 +27,6 @@ export default function Example() {
         display: "flex",
         flexDirection: "column",
         letterSpacing: "1px",
-        lineHeight: 1.4,
       })}
     >
       <Toolbar />

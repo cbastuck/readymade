@@ -82,35 +82,36 @@ export default function Dashboard() {
         display: "flex",
         flexDirection: "column",
         gap: "20px",
-        margin: "0px 10px",
       })}
     >
       <Toolbar />
 
-      <BoardCollection
-        appViewMode={appViewMode}
-        headline="Local boards"
-        items={localBoards || []}
-        actions={[
-          {
-            name: "upload",
-            icon: <Icon name="cloud upload" />,
-          },
-        ]}
-        onAction={onAction}
-      />
-      <BoardCollection
-        appViewMode={appViewMode}
-        headline="Cloud boards"
-        items={cloudBoards || []}
-        actions={[
-          {
-            name: "download",
-            icon: <Icon name="cloud download" />,
-          },
-        ]}
-        onAction={onAction}
-      />
+      <div style={{ margin: "0px 10px" }}>
+        <BoardCollection
+          appViewMode={appViewMode}
+          headline="Local boards"
+          items={localBoards || []}
+          actions={[
+            {
+              name: "upload",
+              icon: <Icon name="cloud upload" />,
+            },
+          ]}
+          onAction={onAction}
+        />
+        <BoardCollection
+          appViewMode={appViewMode}
+          headline="Cloud boards"
+          items={cloudBoards || []}
+          actions={[
+            {
+              name: "download",
+              icon: <Icon name="cloud download" />,
+            },
+          ]}
+          onAction={onAction}
+        />
+      </div>
       <Footer />
       <div style={{ minHeight: "10px" }} />
     </div>

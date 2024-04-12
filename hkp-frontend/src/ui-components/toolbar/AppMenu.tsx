@@ -9,7 +9,7 @@ import {
   User,
 } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 import { AppCtx } from "@/AppContext";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -31,6 +30,7 @@ export default function AppMenu({ isCompact }: Props) {
   const { loginWithRedirect, logout } = useAuth0();
   const context = useContext(AppCtx);
   const currentUser = context?.user;
+  const navigate = useNavigate();
 
   const isLoggedIn = !!currentUser;
   const nickname = currentUser?.username;
@@ -63,26 +63,20 @@ export default function AppMenu({ isCompact }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 mx-[10px]">
-        {isLoggedIn ? (
-          <>
-            <DropdownMenuLabel>{nickname} </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-          </>
-        ) : null}
         {isCompact && (
           <>
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/docs")}>
                 <Forward className="mr-2 h-4 w-4" />
-                <Link to="/docs">Docs</Link>
+                <span>Docs</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/examples")}>
                 <Forward className="mr-2 h-4 w-4" />
-                <Link to="/examples">Examples</Link>
+                <span>Examples</span>
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate("/playground")}>
                 <Forward className="mr-2 h-4 w-4" />
-                <Link to="/playground">Playground</Link>
+                <span>Playground</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
@@ -90,11 +84,13 @@ export default function AppMenu({ isCompact }: Props) {
         )}
 
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={onLogin}>
+          <DropdownMenuItem
+            onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
+          >
             {isLoggedIn ? (
               <>
                 <User className="mr-2 h-4 w-4" />
-                <Link to="/profile">Profile</Link>
+                <span>{nickname}</span>
               </>
             ) : (
               <>
@@ -104,9 +100,12 @@ export default function AppMenu({ isCompact }: Props) {
             )}
           </DropdownMenuItem>
 
-          <DropdownMenuItem disabled={!isLoggedIn}>
+          <DropdownMenuItem
+            disabled={!isLoggedIn}
+            onClick={() => navigate("/dashboard")}
+          >
             <LayoutDashboard className="mr-2 h-4 w-4" />
-            <Link to="/dashboard">Dashboard</Link>
+            <span>Dashboard</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem disabled={true}>

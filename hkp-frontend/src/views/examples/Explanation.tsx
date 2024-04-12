@@ -47,7 +47,8 @@ export default function Explanation({ value: explanation }: Props) {
 
   return (
     <div
-      style={s(t.fs15, t.ls1, t.m(0, 10), {
+      className="font-serif-wet tracking-widest"
+      style={s(t.m(0, 10), {
         width: "95%",
         textTransform: "none",
       })}

@@ -88,4 +88,7 @@
   a {
     @apply text-accent hover:underline;
   }
+  button {
+    @apply font-sans;
+  }
 }

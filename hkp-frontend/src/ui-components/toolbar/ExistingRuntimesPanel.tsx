@@ -31,9 +31,9 @@ export default ({ remoteRuntimes, onRemoveRuntime }: Props) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[100px]">Name</TableHead>
-          <TableHead>Url</TableHead>
-          <TableHead className="text-right">Action</TableHead>
+          <TableHead className="w-[100px] font-sans">Name</TableHead>
+          <TableHead className="font-sans">Url</TableHead>
+          <TableHead className="text-right font-sans">Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

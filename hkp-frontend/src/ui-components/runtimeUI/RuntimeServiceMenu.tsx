@@ -62,19 +62,20 @@ export default function RuntimeServiceMenu({
           />
           <CommandEmpty>No service found</CommandEmpty>
           <CommandList className="overflow-auto">
-            {registry.map((s) => (
-              <CommandItem
-                key={s.serviceId}
-                value={s.serviceId}
-                onSelect={(currentValue) => {
-                  onSelect(currentValue);
-                  setSearchTerm("");
-                }}
-                disabled={false}
-              >
-                {s.serviceName}
-              </CommandItem>
-            ))}
+            {registry &&
+              registry.map((s) => (
+                <CommandItem
+                  key={s.serviceId}
+                  value={s.serviceId}
+                  onSelect={(currentValue) => {
+                    onSelect(currentValue);
+                    setSearchTerm("");
+                  }}
+                  disabled={false}
+                >
+                  {s.serviceName}
+                </CommandItem>
+              ))}
           </CommandList>
         </Command>
       </PopoverContent>
