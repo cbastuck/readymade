@@ -24,8 +24,6 @@ export default function Date({
       ? 13
       : 14;
   const style: CSSProperties = {
-    lineHeight: 1.5,
-    textAlign: "right",
     fontSize,
     textTransform: "capitalize",
   };

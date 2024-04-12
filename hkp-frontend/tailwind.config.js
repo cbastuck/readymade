@@ -17,9 +17,9 @@ module.exports = {
       },
     },
     fontFamily: {
-      sans: ['hkp-fnt-sans', 'sans-serif'],
-      serif: ['hkp-fnt-serif-dry', 'serif'],
-      "serif-wet": ['hkp-fnt-serif-wet', 'serif'],
+      sans: ["hkp-fnt-sans", "sans-serif"],
+      serif: ["hkp-fnt-serif-dry", "serif"],
+      "serif-wet": ["hkp-fnt-serif-wet", "serif"],
     },
     extend: {
       colors: {
@@ -56,6 +56,10 @@ module.exports = {
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
+        },
+        healthy: {
+          DEFAULT: "hsl(var(--healthy))",
+          foreground: "hsl(var(--healthy))",
         },
       },
       borderRadius: {
