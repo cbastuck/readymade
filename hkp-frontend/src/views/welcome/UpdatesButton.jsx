@@ -7,13 +7,9 @@ import "./UpdatesButton.css";
 
 export default function UpdatesButton() {
   return (
-    <div
-      style={{
-        marginLeft: "250px",
-      }}
-    >
-      <Link to="/docs/updates">
-        <Button variant="ghost" size="icon">
+    <div className="font-sans" style={{ marginLeft: "250px" }}>
+      <Link to="/docs/updates" className="hover:no-underline">
+        <Button variant="minimal" size="icon" className="h-min">
           <Star strokeWidth={1} />
         </Button>
         <div>what's new?</div>

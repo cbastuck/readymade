@@ -22,7 +22,6 @@ export default function Claim(claim: Props) {
       <span
         style={{
           fontStyle: "italic",
-          color: "#454f6d",
           letterSpacing: 1.3,
         }}
       >

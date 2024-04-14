@@ -136,11 +136,6 @@ html {
   margin-top: 10px;
 }
 
-.hero-text button:hover {
-  color: #efefef;
-  border: 1px solid #454f6d;
-}
-
 .login-link {
   color: gray;
 }

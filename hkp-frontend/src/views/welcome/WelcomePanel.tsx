@@ -17,7 +17,10 @@ export default function WelcomePanel() {
           margin: "auto",
         }}
       >
-        <div style={{ fontSize: "35px", color: "#454f6e", height: "43px" }}>
+        <div
+          className="font-sans"
+          style={{ fontSize: "35px", color: "#454f6e", height: "43px" }}
+        >
           Welcome
         </div>
         <Switcher
@@ -42,7 +45,7 @@ export default function WelcomePanel() {
         />
 
         <Button
-          className="w-[280px] border  border-black bg-white text-black hover:bg-[#454f6e] hover:text-white"
+          className="w-[280px] border border-black bg-white text-black hover:bg-[#454f6e] hover:text-white text-2xl"
           onClick={() => navigate("/engage")}
         >
           I want to engage
@@ -59,22 +62,22 @@ type ClaimProps = {
 function Claim({ words }: ClaimProps) {
   const [first, second, third] = words;
   return (
-    <span style={{ marginLeft: "3px", whiteSpace: "nowrap" }}>
-      {` ${first} `}
-      <span
+    <div className="flex" style={{ marginLeft: "3px", whiteSpace: "nowrap" }}>
+      <div className="w-[40px]">{` ${first} `}</div>
+      <div
+        className="bg-sky-600 rounded"
         style={{
           fontStyle: "normal",
           fontWeight: "bold",
-          backgroundColor: "#454f6e",
           color: "white",
           paddingLeft: "5px",
           paddingRight: "5px",
-          paddingTop: "4px",
+          marginRight: "5px",
         }}
       >
         {second}
-      </span>
-      {` ${third} `}
-    </span>
+      </div>
+      <div>{` ${third} `}</div>
+    </div>
   );
 }

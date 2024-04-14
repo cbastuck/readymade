@@ -26,7 +26,7 @@ export default function NavigateButton({
 
   return (
     <Button
-      className="bg-accent text-white font-sans tracking-widest"
+      className="bg-accent text-white font-sans tracking-widest text-xl"
       style={{ width, backgroundColor: color }}
       onClick={onClick}
     >
