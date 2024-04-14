@@ -21,7 +21,6 @@ export default function BoardMenu() {
   const onCloseBoardSource = () => setShowBoardSource(false);
   const onApplyBoardSource = (newSource: string) => {
     const src = JSON.parse(newSource);
-    console.log("SEETING ", src);
     boardContext?.setBoardState(src);
   };
 
@@ -47,8 +46,7 @@ export default function BoardMenu() {
       />
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white">
-            {" "}
+          <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white text-base capitalize">
             {board || "Board"}
           </NavigationMenuTrigger>
           <NavigationMenuContent>

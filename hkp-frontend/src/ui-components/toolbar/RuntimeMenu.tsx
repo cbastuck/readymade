@@ -58,7 +58,7 @@ export default function RuntimeMenu({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-[300px] justify-between my-1"
+            className="w-[300px] justify-between my-1 text-base"
             onClick={() => open && setSearchTerm("")}
           >
             Add runtime

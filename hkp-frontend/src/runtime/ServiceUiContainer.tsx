@@ -1,7 +1,6 @@
 import { Component, ReactElement } from "react";
 
-//import ServiceFrame from "../components/ServiceFrame";
-import ServiceFrame from "@/ui-components/service-frame";
+import ServiceFrame from "@/ui-components/service/ServiceFrame";
 
 import { createPlaceholderUI } from "../UIFactory";
 import ServiceDropBar from "./ServiceDropBar";

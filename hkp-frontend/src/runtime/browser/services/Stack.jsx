@@ -7,7 +7,7 @@ import ServiceUI from "../../services/ServiceUI";
 import SelectorField from "../../../components/shared/SelectorField";
 import { s, t } from "../../../styles";
 import { filterPrivateMembers } from "./helpers";
-import BypassSwitch from "../../../ui-components/service-frame/BypassSwitch";
+import BypassSwitch from "../../../ui-components/service/BypassSwitch";
 
 const serviceId = "hookup.to/service/stack";
 const serviceName = "Stack";

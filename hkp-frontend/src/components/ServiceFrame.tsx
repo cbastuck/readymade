@@ -7,7 +7,7 @@ import ConfigurationEditor from "./ConfigurationEditor";
 import { s, t } from "../styles";
 import { filterPrivateMembers } from "../runtime/browser/services/helpers";
 import { ServiceAction, InstanceId, ServiceImpl } from "../types";
-import BypassSwitch from "../ui-components/service-frame/BypassSwitch";
+import BypassSwitch from "../ui-components/service/BypassSwitch";
 
 function getNotificationID(service: InstanceId) {
   return `service-frame-${service.uuid}`;
@@ -29,6 +29,10 @@ type State = {
   configVisible: boolean;
   bypass: boolean | undefined;
 };
+
+// TODO: THIS COMPONENT IS REPLACEd AND NOT USED ANYMORE
+// DELETE THE FILE WHEN THE DOCUMENTATION PART IS IMPLEMENTED
+// FOR THE NEW SERVICE FRAME
 
 export default class ServiceFrame extends Component<Props, State> {
   state = {

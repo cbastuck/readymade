@@ -37,7 +37,6 @@ type Props = {
   runtime: RuntimeDescriptor;
   outputs?: ReactElement;
   inputs?: ReactElement;
-  children?: JSX.Element | JSX.Element[];
   customItems?: Array<{
     key: string;
     icon: SemanticICONS;
@@ -447,7 +446,7 @@ export default class Runtime extends Component<Props, State> {
       runtime,
       boardContext,
       frameless = false,
-      children = undefined,
+
       onArrangeService: onArrangeServiceCustom = undefined,
       headless = false,
     } = this.props;
@@ -466,17 +465,6 @@ export default class Runtime extends Component<Props, State> {
     const { wrapServices = !wide, showSettings, expanded } = this.state;
 
     const readonly = false; // TODO: was if no registry is available
-    const readonlyStyle: CSSProperties =
-      readonly && !frameless
-        ? {
-            backgroundColor: "#FFFFFF",
-            opacity: 0.3,
-            width: "100%",
-            zIndex: 200000,
-            cursor: "not-allowed",
-            display: !expanded ? "none" : undefined,
-          }
-        : {};
 
     const onArrangeServiceDefault = (serviceUuid: string, position: number) =>
       runtime &&

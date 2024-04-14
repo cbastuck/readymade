@@ -27,7 +27,7 @@ import WebsocketUI from "./components/services/WebsocketUI";
 
 import PlaceholderUI from "./runtime/browser/services/PlaceholderUI";
 import { ServiceImpl } from "./types";
-import { TimerUI } from "./runtime/browser/services/Timer";
+import TimerUI from "./runtime/browser/services/TimerUI";
 import { MonitorUI } from "./runtime/browser/services/Monitor";
 import { HackerUI } from "./runtime/browser/services/Hacker";
 import { InputUI } from "./runtime/browser/services/Input";

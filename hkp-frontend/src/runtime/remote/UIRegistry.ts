@@ -1,4 +1,4 @@
-import { TimerUI } from "../../runtime/browser/services/Timer";
+import TimerUI from "../../runtime/browser/services/TimerUI";
 
 export default function createServiceUI(serviceId: string) {
   switch (serviceId) {

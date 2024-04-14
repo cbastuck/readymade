@@ -28,16 +28,12 @@ export default function ServiceHeader({
   onHelp,
   onConfig,
 }: Props) {
+  const onChangeName = (newName: string) => {
+    console.log("TODO: Implement me CHANGE SERVICE NAME", newName);
+  };
   const bypassDisabled = showBypassOnlyIfExplicit && bypass === undefined;
   return (
     <div className="flex">
-      <BypassSwitch
-        bypass={!!bypass}
-        onChange={onBypass}
-        disabled={bypassDisabled}
-      />
-
-      <ServiceName service={service} onDoubleClick={onDoubleClick} />
       <ServiceSettings
         service={service}
         isCollapsed={isCollapsed}
@@ -45,6 +41,16 @@ export default function ServiceHeader({
         onDelete={onDelete}
         onHelp={onHelp}
         onConfig={onConfig}
+      />
+      <ServiceName
+        service={service}
+        onDoubleClick={onDoubleClick}
+        onRename={onChangeName}
+      />
+      <BypassSwitch
+        bypass={!!bypass}
+        onChange={onBypass}
+        disabled={bypassDisabled}
       />
     </div>
   );

@@ -281,6 +281,17 @@ export default class BrowserRuntime extends Component<Props, State> {
       scope.authenticatedUser = user;
     }
 
+    const onCreateServiceUI = (
+      boardName: string,
+      service: ServiceImpl,
+      runtimeId: string,
+      userId: string | undefined
+    ) => {
+      return scope.registry
+        ? createServiceUI(scope.registry, boardName, service, runtimeId, userId)
+        : null;
+    };
+
     return (
       <ServiceUiContainer
         collapsed={collapsed}
@@ -291,22 +302,7 @@ export default class BrowserRuntime extends Component<Props, State> {
         userId={user?.userId}
         onArrangeService={onArrangeService}
         onServiceAction={onServiceAction}
-        onCreateServiceUi={(
-          boardName: string,
-          service: ServiceImpl,
-          runtimeId: string,
-          userId: string | undefined
-        ) =>
-          scope.registry
-            ? createServiceUI(
-                scope.registry,
-                boardName,
-                service,
-                runtimeId,
-                userId
-              )
-            : null
-        }
+        onCreateServiceUi={onCreateServiceUI}
       />
     );
   }

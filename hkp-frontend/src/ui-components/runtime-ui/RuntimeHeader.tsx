@@ -79,7 +79,9 @@ export default function RuntimeHeader({
           onClear={onClear}
           onDelete={onDelete}
         />
-        <Editable value={name} title={runtimeId} onChangeName={onChangeName} />
+        <div className="flex items-end font-sans">
+          <Editable value={name} title={runtimeId} onChange={onChangeName} />
+        </div>
       </div>
 
       <div className="ml-auto mt-1 mr-0">

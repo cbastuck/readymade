@@ -1,16 +1,20 @@
 import { ChangeEvent, KeyboardEvent, useState } from "react";
+import { X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
 
 type Props = {
   value: string;
   title?: string;
-  onChangeName: (newValue: string) => void;
+  onChange: (newValue: string) => void;
 };
 
-export default function Editable({ value, title, onChangeName }: Props) {
+export default function Editable({
+  value,
+  title,
+  onChange: onChangeProp,
+}: Props) {
   const [editableBuffer, setEditableBuffer] = useState("");
 
   const onChange = (ev: ChangeEvent<HTMLInputElement>) => {
@@ -20,7 +24,7 @@ export default function Editable({ value, title, onChangeName }: Props) {
 
   const onKeyUp = (ev: KeyboardEvent<HTMLInputElement>) => {
     if (ev.key === "Enter") {
-      onChangeName(editableBuffer);
+      onChangeProp(editableBuffer);
       setEditableBuffer("");
     } else if (ev.key === "Escape") {
       setEditableBuffer("");
@@ -30,12 +34,12 @@ export default function Editable({ value, title, onChangeName }: Props) {
   const onEdit = () => !editableBuffer && setEditableBuffer(value);
 
   return (
-    <div className="flex items-end h-full">
+    <>
       {!editableBuffer ? (
         <Button
           variant="ghost"
           title={title}
-          className="text-sm cursor-text p-0 h-min rounded-none"
+          className="cursor-text p-0 h-min rounded-none whitespace-nowrap text-base font-sans tracking-widest"
           onClick={onEdit}
         >
           {value}
@@ -43,7 +47,7 @@ export default function Editable({ value, title, onChangeName }: Props) {
       ) : (
         <>
           <Input
-            className="h-min w-min p-0 border-none rounded-none"
+            className="h-min w-min p-0 border-none rounded-none font-sans text-base tracking-widest"
             style={{ borderBottom: "solid 1px", paddingBottom: "1px" }}
             ref={(elem) => elem && elem.focus()}
             value={editableBuffer}
@@ -59,6 +63,6 @@ export default function Editable({ value, title, onChangeName }: Props) {
           </Button>
         </>
       )}
-    </div>
+    </>
   );
 }

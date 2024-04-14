@@ -21,6 +21,16 @@ module.exports = {
       serif: ["hkp-fnt-serif-dry", "serif"],
       "serif-wet": ["hkp-fnt-serif-wet", "serif"],
     },
+    fontSize: {
+      sm: "0.8rem",
+      base: "1.0rem",
+      lg: "1.15rem",
+      xl: "1.25rem",
+      "2xl": "1.563rem",
+      "3xl": "1.953rem",
+      "4xl": "2.441rem",
+      "5xl": "3.052rem",
+    },
     extend: {
       colors: {
         "foreground-font": "#555",

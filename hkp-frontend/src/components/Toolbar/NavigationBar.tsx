@@ -8,7 +8,7 @@ export default function NavigationBar() {
     { name: "Playground", link: "/playground" },
   ];
   const defaultStyles =
-    "font-sans rounded-md p-[5px] m-1 text-sm tracking-wider hover:no-underline";
+    "font-sans rounded-md p-[5px] m-1 text-base tracking-widest hover:no-underline";
   const nonActivestyles = `${defaultStyles} "hover:text-zinc-500"`;
   const activeStyles = `bg-sky-600 text-white hover:text-neutral-200 ${defaultStyles}`;
   return (
