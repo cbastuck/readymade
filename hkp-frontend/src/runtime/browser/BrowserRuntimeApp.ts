@@ -56,6 +56,9 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       notificationTargets.unregister(svc.uuid);
     },
 
+    configureService: (svc: ServiceDescriptor, config: any) =>
+      (svc as ServiceImpl).configure(config),
+
     notify: (service: ServiceImpl, notification: any) => {
       if (service.__notificationTargets) {
         service.__notificationTargets.notify(service, notification);

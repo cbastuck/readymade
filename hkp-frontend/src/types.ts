@@ -184,6 +184,7 @@ export type AppImpl = {
     onNotification: (svc: ServiceDescriptor, notification: any) => void
   ) => void;
   unregisterNotificationTarget?: (svc: ServiceDescriptor) => void;
+  configureService?: (svc: ServiceDescriptor, config: any) => void;
 };
 
 // TODO: an open ended object - should be further defined

@@ -28,17 +28,15 @@ export default function TimerUI(props: Props) {
   const [delay, setDelay] = useState(0);
   const [delayUnit, setDelayUnit] = useState(units[0]);
 
-  const onTrigger = () => {
-    service.configure({
+  const onTriggerOneshot = () => {
+    app.configureService?.(service, {
       periodic: false,
       start: true,
-      command: {
-        action: "start",
-      },
+      oneShotDelay: delay,
     });
   };
   const onStart = () => {
-    service.configure({
+    app.configureService?.(service, {
       periodic: true,
       periodicValue: interval,
       periodicUnit: intervalUnit,
@@ -46,11 +44,17 @@ export default function TimerUI(props: Props) {
     });
   };
   const onStop = () => {
-    service.configure({ stop: true });
+    app.configureService?.(service, { stop: true });
   };
 
   const update = (state: any) => {
-    const { periodicValue, periodicUnit, oneShotDelay, running } = state || {};
+    const {
+      periodicValue,
+      periodicUnit,
+      oneShotDelay,
+      oneShotDelayUnit,
+      running,
+    } = state || {};
     if (needsUpdate(periodicValue, interval)) {
       setInterval(periodicValue);
     }
@@ -59,6 +63,9 @@ export default function TimerUI(props: Props) {
     }
     if (needsUpdate(oneShotDelay, delay)) {
       setDelay(delay);
+    }
+    if (needsUpdate(oneShotDelayUnit, delayUnit)) {
+      setDelayUnit(delayUnit);
     }
     if (needsUpdate(running, isIntervalRunning)) {
       setIsIntervalRunning(running);
@@ -73,10 +80,26 @@ export default function TimerUI(props: Props) {
   const onIntervalSlider = (newValue: number) => {
     setInterval(newValue);
     if (isIntervalRunning) {
-      service.configure({
+      app.configureService?.(service, {
         periodicValue: newValue,
       });
     }
+  };
+
+  const onIntervalUnit = (newUnit: string) => {
+    setIntervalUnit(newUnit);
+    if (isIntervalRunning) {
+      app.configureService?.(service, {
+        periodicUnit: newUnit,
+      });
+    }
+  };
+
+  const onDelayUnit = (newUnit: string) => {
+    setDelayUnit(newUnit);
+    app.configureService?.(service, {
+      oneShotDelayUnit: newUnit,
+    });
   };
 
   return (
@@ -98,11 +121,11 @@ export default function TimerUI(props: Props) {
               unit={delayUnit}
               units={units}
               onChange={setDelay}
-              onUnit={setDelayUnit}
-              min={1}
-              max={100}
+              onUnit={onDelayUnit}
+              min={0}
+              max={1000}
             />
-            <Button variant="outline" onClick={onTrigger}>
+            <Button variant="outline" onClick={onTriggerOneshot}>
               Trigger Oneshot
             </Button>
           </div>
@@ -114,7 +137,7 @@ export default function TimerUI(props: Props) {
               units={units}
               onChange={onIntervalSlider}
               unit={intervalUnit}
-              onUnit={setIntervalUnit}
+              onUnit={onIntervalUnit}
               min={1}
               max={100}
             />
