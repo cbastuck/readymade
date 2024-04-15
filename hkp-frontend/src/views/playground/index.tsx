@@ -284,7 +284,6 @@ class Playground extends Component<Props, State> {
   };
 
   onUpdateBoardState = (newState: BoardDescriptor) => {
-    console.log("UPDAETE", newState);
     this.setState((state) => ({ ...state, ...newState }));
   };
 

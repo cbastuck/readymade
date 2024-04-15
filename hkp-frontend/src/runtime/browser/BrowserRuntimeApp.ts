@@ -4,12 +4,15 @@ import {
   InstanceId,
   ServiceAction,
   ServiceClass,
+  ServiceDescriptor,
   ServiceImpl,
 } from "../../types";
 import { appendSubservice } from "./BrowserRuntimeApi";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
+import NotificationTargets from "./NotificationsTargets";
 
 export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
+  const notificationTargets = new NotificationTargets();
   return {
     getAuthenticatedUser: () => scope.authenticatedUser,
     next: (svc: InstanceId | null, result: any) => {
@@ -42,10 +45,26 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       localStorage.removeItem(serviceDataKey(serviceUuid, key));
     },
 
+    registerNotificationTarget: (
+      svc: ServiceDescriptor,
+      onNotification: (svc: ServiceDescriptor, notification: any) => void
+    ) => {
+      notificationTargets.register(svc.uuid, onNotification);
+    },
+
+    unregisterNotificationTarget: (svc: ServiceDescriptor) => {
+      notificationTargets.unregister(svc.uuid);
+    },
+
     notify: (service: ServiceImpl, notification: any) => {
       if (service.__notificationTargets) {
         service.__notificationTargets.notify(service, notification);
       } else {
+        const target = notificationTargets.get(service.uuid);
+        if (target) {
+          target(service.__descriptor!, notification);
+          return;
+        }
         console.warn(
           "BrowserRuntimeApp.notify no targets for",
           service.uuid,
@@ -62,7 +81,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
 
     createSubServiceUI: (svc: ServiceImpl) =>
       createServiceUI(
-        scope.registry!,
+        scope,
         "deprecated board name",
         svc,
         scope.descriptor.id,

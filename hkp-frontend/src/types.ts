@@ -177,6 +177,13 @@ export type AppImpl = {
     instanceId?: string
   ) => void;
   createSubServiceUI: (svc: ServiceImpl) => void;
+
+  // TODO: should be available for both Brower and Remote runtime
+  registerNotificationTarget?: (
+    svc: ServiceDescriptor,
+    onNotification: (svc: ServiceDescriptor, notification: any) => void
+  ) => void;
+  unregisterNotificationTarget?: (svc: ServiceDescriptor) => void;
 };
 
 // TODO: an open ended object - should be further defined

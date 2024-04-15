@@ -288,7 +288,7 @@ export default class BrowserRuntime extends Component<Props, State> {
       userId: string | undefined
     ) => {
       return scope.registry
-        ? createServiceUI(scope.registry, boardName, service, runtimeId, userId)
+        ? createServiceUI(scope, boardName, service, runtimeId, userId)
         : null;
     };
 

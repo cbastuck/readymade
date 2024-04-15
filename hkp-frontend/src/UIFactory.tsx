@@ -26,7 +26,7 @@ import OutputUINode from "./components/services/OutputUI";
 import WebsocketUI from "./components/services/WebsocketUI";
 
 import PlaceholderUI from "./runtime/browser/services/PlaceholderUI";
-import { ServiceImpl } from "./types";
+import { ServiceDescriptor, ServiceImpl } from "./types";
 import TimerUI from "./runtime/browser/services/TimerUI";
 import { MonitorUI } from "./runtime/browser/services/Monitor";
 import { HackerUI } from "./runtime/browser/services/Hacker";
@@ -48,13 +48,14 @@ import { SpotifyUI } from "./runtime/browser/services/Spotify";
 import { GithubSourceUI } from "./runtime/browser/services/GithubSource";
 import { GithubSinkUI } from "./runtime/browser/services/GithubSink";
 import BrowserRegistry from "./runtime/browser/BrowserRegistry";
+import BrowserRuntimeScope from "./runtime/browser/BrowserRuntimeScope";
 
 export function createPlaceholderUI(service: ServiceImpl) {
   return <PlaceholderUI service={service} />;
 }
 
 export function createServiceUI(
-  registry: BrowserRegistry,
+  scope: BrowserRuntimeScope,
   board: string,
   service: ServiceImpl,
   runtimeId: string,
@@ -69,10 +70,12 @@ export function createServiceUI(
     throw new Error(`UIFactory missing serviceId ${JSON.stringify(service)}`);
   }
 
+  const registry = scope.registry;
   const userInterface = findServiceUI(registry, serviceId);
   if (userInterface) {
     return createElement(userInterface, {
       ...props,
+      app: scope.getApp(),
       service,
       board,
       runtimeId,
@@ -102,10 +105,14 @@ export function createServiceUI(
   return createPlaceholderUI(service);
 }
 
+type ServiceUIProps = {
+  service: ServiceDescriptor;
+};
+
 function findServiceUI(
   registry: BrowserRegistry,
   serviceId: string
-): typeof Component | FunctionComponent | null {
+): typeof Component | FunctionComponent<ServiceUIProps> | null {
   switch (serviceId) {
     case "hookup.to/service/timer":
       return TimerUI;

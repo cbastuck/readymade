@@ -8,6 +8,8 @@ type Props = {
   value: number;
   unit?: string;
   units?: Array<string>;
+  min?: number;
+  max?: number;
   onChange: (newValue: number, unit?: string) => void;
   onUnit?: (newUnit: string) => void;
 };
@@ -17,6 +19,8 @@ export default function Slider({
   value,
   units,
   unit,
+  min,
+  max,
   onChange,
   onUnit,
 }: Props) {
@@ -25,7 +29,12 @@ export default function Slider({
       <div className="flex gap-2 items-end h-min">
         {title && <PropertyLabel>{title}</PropertyLabel>}
         <div className="flex gap-2 w-full">
-          <SliderCN value={[value]} onValueChange={(val) => onChange(val[0])} />
+          <SliderCN
+            min={min}
+            max={max}
+            value={[value]}
+            onValueChange={(val) => onChange(val[0])}
+          />
           <Label className="ml-auto pl-2 text-lg"> {value}</Label>
           {units && onUnit && (
             <Select options={units} value={unit} onChange={onUnit} />

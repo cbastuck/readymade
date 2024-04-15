@@ -1,181 +1,19 @@
 import { useState } from "react";
 
+import { AppImpl, ServiceDescriptor } from "@/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
-import InputField from "hkp-frontend/src/components/shared/InputField";
-import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import { Button } from "hkp-frontend/src/components/ui/button";
-import { s, t } from "hkp-frontend/src/styles";
-import { ServiceDescriptor } from "@/types";
 import RadioGroup from "@/ui-components/RadioGroup";
 import Slider from "@/ui-components/Slider";
 import OneOfVisible from "@/ui-components/OneOfVisible";
 
 type Props = {
   service: ServiceDescriptor;
+  app: AppImpl;
 };
 
 export default function TimerUI(props: Props) {
-  const [state, setState] = useState({
-    timerIsRunning: false,
-    periodic: false,
-    periodicValue: 1,
-    periodicUnit: "s",
-    oneShotDelay: 0,
-    counter: 0,
-  });
-
-  const onInit = (initialState: any) => {
-    if (initialState) {
-      setState({
-        periodic: initialState.periodic,
-        periodicValue: initialState.periodicValue,
-        periodicUnit: initialState.periodicUnit,
-        oneShotDelay: initialState.oneShotDelay,
-        timerIsRunning: initialState.running,
-        counter: initialState.counter,
-      });
-    }
-  };
-
-  const onNotification = (_: ServiceDescriptor, notification: any) => {
-    const { running, counter } = notification;
-    const updatedState = {};
-    if (running !== undefined) {
-      updatedState.timerIsRunning = running;
-    }
-    if (counter !== undefined) {
-      updatedState.counter = counter;
-    }
-    setState(updatedState);
-  };
-
-  const renderPeriodic = (service) => {
-    const buttonStyle = s(t.m1, t.fs12, t.ls1, t.w100);
-    return (
-      <div>
-        <InputField
-          type="number"
-          label="interval"
-          value={state.periodicValue}
-          onChange={async (_, { value }) => {
-            await service.configure({ periodicValue: Number(value) });
-            setState({ periodicValue: Number(value) });
-          }}
-        />
-        <SelectorField
-          style={t.mt3}
-          label="unit"
-          options={{
-            ms: "milliseconds",
-            s: "seconds",
-            m: "minutes",
-            h: "hours",
-            d: "days",
-          }}
-          value={state.periodicUnit}
-          onChange={async (_ev, { value }) => {
-            await service.configure({ periodicUnit: value });
-            setState({ periodicUnit: value });
-          }}
-        />
-        <div
-          style={{ display: "flex", flexDirection: "row", marginTop: "5px" }}
-        >
-          <Button
-            style={buttonStyle}
-            onClick={() =>
-              service.configure({
-                periodic: true,
-                periodicValue: state.periodicValue,
-                periodicUnit: state.periodicUnit,
-                start: true,
-              })
-            }
-            disabled={!!state.timerIsRunning}
-          >
-            Start
-          </Button>
-          <Button
-            style={buttonStyle}
-            onClick={() => service.configure({ stop: true })}
-            disabled={!state.timerIsRunning}
-          >
-            Stop
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderOneShot = (service) => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        width: "100%",
-        paddingBottom: 3,
-      }}
-    >
-      <InputField
-        type="number"
-        label="delay"
-        unit="msec"
-        value={state.oneShotDelay || "0"}
-        onChange={async (_, { value: oneShotDelay }) => {
-          await service.configure({ oneShotDelay });
-          setState({ oneShotDelay });
-        }}
-      />
-      <Button
-        style={{ marginTop: "3px", width: "100%" }}
-        onClick={() =>
-          service.configure({
-            periodic: false,
-            start: true,
-            command: {
-              action: "start",
-            },
-          })
-        }
-      >
-        Trigger
-      </Button>
-    </div>
-  );
-
-  const renderCounter = (service) => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        paddingBottom: 3,
-      }}
-    >
-      <InputField
-        type="number"
-        label="Counter"
-        value={state.counter}
-        onChange={(_, { value: counter }) => {
-          service.configure({
-            counter,
-            periodic: false,
-            start: true,
-          });
-        }}
-      />
-      <Button
-        style={{ marginTop: "3px", width: "100%" }}
-        onClick={() =>
-          service.configure({
-            periodic: false,
-            start: true,
-          })
-        }
-      >
-        Trigger
-      </Button>
-    </div>
-  );
+  const { service, app } = props;
 
   const modes = ["oneshot", "periodic"];
   const units = ["ms", "s", "m", "h", "d"];
@@ -183,8 +21,10 @@ export default function TimerUI(props: Props) {
   const [mode, setMode] = useState(modes[0]);
   const modeIdx = modes.indexOf(mode);
 
-  const [interval, setInterval] = useState(0);
-  const [intervalUnit, setIntervalUnit] = useState(units[0]);
+  const [interval, setInterval] = useState(1);
+  const [intervalUnit, setIntervalUnit] = useState(units[1]);
+  const [isIntervalRunning, setIsIntervalRunning] = useState(false);
+
   const [delay, setDelay] = useState(0);
   const [delayUnit, setDelayUnit] = useState(units[0]);
 
@@ -209,9 +49,40 @@ export default function TimerUI(props: Props) {
     service.configure({ stop: true });
   };
 
-  const { service } = props;
+  const update = (state: any) => {
+    const { periodicValue, periodicUnit, oneShotDelay, running } = state || {};
+    if (needsUpdate(periodicValue, interval)) {
+      setInterval(periodicValue);
+    }
+    if (needsUpdate(periodicUnit, intervalUnit)) {
+      setIntervalUnit(periodicUnit);
+    }
+    if (needsUpdate(oneShotDelay, delay)) {
+      setDelay(delay);
+    }
+    if (needsUpdate(running, isIntervalRunning)) {
+      setIsIntervalRunning(running);
+    }
+  };
+
+  const onNotification = (_: ServiceDescriptor, notification: any) =>
+    update(notification);
+
+  const onInit = (initialState: any) => update(initialState);
+
+  const onIntervalSlider = (newValue: number) => {
+    setInterval(newValue);
+    if (isIntervalRunning) {
+      service.configure({
+        periodicValue: newValue,
+      });
+    }
+  };
+
   return (
     <ServiceUI
+      {...props}
+      app={app}
       initialSize={{ width: 400, height: 150 }}
       service={service}
       onInit={onInit}
@@ -228,6 +99,8 @@ export default function TimerUI(props: Props) {
               units={units}
               onChange={setDelay}
               onUnit={setDelayUnit}
+              min={1}
+              max={100}
             />
             <Button variant="outline" onClick={onTrigger}>
               Trigger Oneshot
@@ -239,15 +112,27 @@ export default function TimerUI(props: Props) {
               title="Interval"
               value={interval}
               units={units}
-              onChange={setInterval}
+              onChange={onIntervalSlider}
               unit={intervalUnit}
               onUnit={setIntervalUnit}
+              min={1}
+              max={100}
             />
             <div className="flex gap-2">
-              <Button className="w-full" variant="outline" onClick={onStart}>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={onStart}
+                disabled={isIntervalRunning}
+              >
                 Start Interval
               </Button>
-              <Button className="w-full" variant="outline" onClick={onStop}>
+              <Button
+                className="w-full"
+                variant="outline"
+                onClick={onStop}
+                disabled={!isIntervalRunning}
+              >
                 Stop Interval
               </Button>
             </div>
@@ -256,4 +141,8 @@ export default function TimerUI(props: Props) {
       </div>
     </ServiceUI>
   );
+}
+
+function needsUpdate<T>(newValue: T, oldValue: T) {
+  return newValue !== undefined && newValue !== oldValue;
 }

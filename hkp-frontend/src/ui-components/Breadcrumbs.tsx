@@ -22,7 +22,7 @@ export default function Breadcrumbs({ path }: Props) {
       <BreadcrumbList>
         {path.map((p, idx) => (
           <Fragment key={idx}>
-            <BreadcrumbItem className="capitalize">
+            <BreadcrumbItem className="capitalize text-base tracking-widest">
               {p.link ? (
                 <Link to={p.link}>{p.value}</Link>
               ) : (
