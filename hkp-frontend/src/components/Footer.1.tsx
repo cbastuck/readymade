@@ -2,13 +2,14 @@ import { CSSProperties, useContext } from "react";
 import { Link } from "react-router-dom";
 import { AppCtx } from "../AppContext";
 import Copyright from "./Copyright";
-import { Props } from "./Footer";
 
-export default function Footer({ flex }: Props) {
+export default function Footer() {
   const fontStyle: CSSProperties = {
     letterSpacing: 2,
     fontSize: 12,
   };
+
+  const flex = false; // seems to be only used in ServiceReferenceView
 
   const appContext = useContext(AppCtx);
   const isWide = appContext?.appViewMode === "wide";

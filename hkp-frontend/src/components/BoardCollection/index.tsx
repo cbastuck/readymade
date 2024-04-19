@@ -1,4 +1,4 @@
-import { CSSProperties, ReactElement, useState } from "react";
+import { ReactElement, useState } from "react";
 
 import Collection from "./Collection";
 import Search from "./Search";
@@ -20,16 +20,10 @@ export default function BoardCollection({
   actions,
   onAction,
   headline = "",
-  appViewMode = "wide",
   renderBorder = true,
   renderSearch = true,
 }: Props) {
   const [filter, setFilter] = useState("");
-
-  const headlinePlacement: CSSProperties =
-    appViewMode === "wide"
-      ? { textAlign: "center" }
-      : { textAlign: "left", paddingLeft: "10px" };
 
   return (
     items.length > 0 && (

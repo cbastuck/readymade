@@ -2,7 +2,6 @@ import { ReactElement, useEffect, useState } from "react";
 
 import {
   ServiceAction,
-  InstanceId,
   ServiceImpl,
   ServiceDescriptor,
   ServiceInstance,

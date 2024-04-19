@@ -16,7 +16,6 @@ import BoardMenu from "@/ui-components/toolbar/BoardMenu";
 import "./index.css";
 
 type Props = {
-  board?: string;
   showRuntimeMenu?: boolean;
   isCompact?: boolean;
   showBoardActions?: boolean;
@@ -24,7 +23,6 @@ type Props = {
 };
 
 export default function Toolbar({
-  board,
   showRuntimeMenu = false,
   isCompact = false,
   showBoardActions = true,

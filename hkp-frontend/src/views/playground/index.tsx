@@ -504,7 +504,6 @@ class Playground extends Component<Props, State> {
             boardContext && (
               <div style={t.fill}>
                 <Toolbar
-                  board={this.state.boardName}
                   showRuntimeMenu={true}
                   onUpdateAvailableRuntimes={(runtimes) =>
                     localStorage.setItem(

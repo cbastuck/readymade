@@ -47,7 +47,6 @@ export default function Dashboard() {
 
   const appContext = useContext(AppCtx);
   const user = appContext?.user;
-  const appViewMode = appContext?.appViewMode;
 
   const refreshCloudBoards = useCallback(
     () => user && getCloudBoards(user).then(setCloudBoards),
@@ -88,7 +87,6 @@ export default function Dashboard() {
 
       <div style={{ margin: "0px 10px" }}>
         <BoardCollection
-          appViewMode={appViewMode}
           headline="Local boards"
           items={localBoards || []}
           actions={[
@@ -100,7 +98,6 @@ export default function Dashboard() {
           onAction={onAction}
         />
         <BoardCollection
-          appViewMode={appViewMode}
           headline="Cloud boards"
           items={cloudBoards || []}
           actions={[
