@@ -134,7 +134,7 @@ export default class OutputOptions extends Component<Props, State> {
         {this.renderSidechainOptions()}
 
         {disabled ? (
-          <div className="pt-4 pl-4">
+          <div className="pt-4 pl-4 flex flex-col gap-2">
             <GroupLabel>Peers</GroupLabel>
             <div className="p-0 text-base">{this.props.children}</div>
           </div>
@@ -165,8 +165,6 @@ export default class OutputOptions extends Component<Props, State> {
           <button
             className="text-base h-full w-[33px]"
             style={{
-              border: "none",
-              textAlign: "center",
               backgroundColor: expanded ? "gray" : "#efefef",
             }}
             onClick={() => {
@@ -191,12 +189,13 @@ export default class OutputOptions extends Component<Props, State> {
             }}
           >
             <div
+              className="tracking-[4px] text-sm font-sans mt-[-25px]"
               style={{
-                transform: "rotate(-90deg)",
+                transform: "rotate(90deg)",
                 color: expanded ? "white" : "#333",
               }}
             >
-              Output
+              OUTPUT
             </div>
           </button>
           {this.renderExpanded()}

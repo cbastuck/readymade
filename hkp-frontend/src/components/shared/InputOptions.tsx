@@ -73,7 +73,7 @@ export default class InputOptions extends Component<Props, State> {
         }}
       >
         {!disabled ? (
-          <div className="pt-4 pl-4">
+          <div className="pt-4 px-4 flex flex-col gap-2">
             <GroupLabel>Allow From</GroupLabel>
             <SelectorField
               label="Peer"
@@ -127,8 +127,6 @@ export default class InputOptions extends Component<Props, State> {
           <button
             className="text-base min-h-[100%] ml-auto w-[33px]"
             style={{
-              border: "none",
-              textAlign: "center",
               backgroundColor: incoming
                 ? "#8aa1b7" // signal color
                 : expanded
@@ -146,12 +144,13 @@ export default class InputOptions extends Component<Props, State> {
             }}
           >
             <div
+              className="tracking-[4px] text-sm font-sans mt-[-25px]"
               style={{
-                transform: "rotate(-90deg)",
+                transform: "rotate(90deg)",
                 color: expanded ? "white" : "#333",
               }}
             >
-              Input
+              INPUT
             </div>
           </button>
         </div>

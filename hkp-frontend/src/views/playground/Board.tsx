@@ -397,7 +397,10 @@ export default class Board extends Component<Props, State> {
           width: 250,
         }}
       >
-        <div style={{ paddingBottom: 5 }}>
+        <div
+          className="font-sans-clean text-base tracking-widest leading-2"
+          style={{ paddingBottom: 5 }}
+        >
           Receive or send data from or to a peer runtime. Activate peer
           discovery via:
         </div>

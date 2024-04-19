@@ -18,6 +18,7 @@ module.exports = {
     },
     fontFamily: {
       sans: ["hkp-fnt-sans", "sans-serif"],
+      "sans-clean": ["Arial", "sans-serif"],
       serif: ["hkp-fnt-serif-dry", "serif"],
       "serif-wet": ["hkp-fnt-serif-wet", "serif"],
     },
