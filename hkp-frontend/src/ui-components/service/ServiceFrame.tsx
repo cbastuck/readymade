@@ -1,28 +1,28 @@
-import { ReactElement, useEffect, useState } from "react";
+import React, { useCallback } from "react";
+import { ReactElement, ReactNode, useEffect, useState } from "react";
 
-import {
-  ServiceAction,
-  ServiceImpl,
-  ServiceDescriptor,
-  ServiceInstance,
-} from "@/types";
+import { ServiceAction, ServiceDescriptor, ServiceInstance } from "@/types";
 import { s, t } from "@/styles";
 import ServiceHeader from "./ServiceHeader";
 import EditorDialog from "../EditorDialog";
 import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 
-export type CustomMenuEntry = {};
+export type CustomMenuEntry = {
+  name: string;
+  icon: ReactNode;
+  config: any;
+};
 
 type Props = {
-  service: ServiceImpl;
-  serviceUi: ReactElement | null;
+  service: ServiceInstance;
+  serviceUI: ReactElement | null;
   draggable: boolean;
   showBypassOnlyIfExplicit?: boolean;
   onAction: (action: ServiceAction) => void;
 };
 
 export default function ServiceFrame({
-  serviceUi,
+  serviceUI,
   service,
   showBypassOnlyIfExplicit,
   onAction,
@@ -104,6 +104,18 @@ export default function ServiceFrame({
     } catch (err) {}
   };
 
+  const [customMenuEntries, setCustomMenuEntries] = useState<
+    Array<CustomMenuEntry>
+  >([]);
+
+  const registerCustomMenuItems = useCallback(
+    (items: Array<CustomMenuEntry>) => setCustomMenuEntries(items),
+    []
+  );
+
+  const onCustomEntry = (item: CustomMenuEntry) =>
+    service.configure(item.config);
+
   const { uuid: _, board, ...filteredService } = filterPrivateMembers(service);
   return (
     <div key={`service-frame-${uuid}`}>
@@ -123,13 +135,16 @@ export default function ServiceFrame({
           bypass={bypass}
           service={descriptor}
           isCollapsed={frameCollapsed}
+          customMenuEntries={customMenuEntries}
           onDoubleClick={onHeaderDoubleClick}
           onExpand={onExpand}
           onDelete={onDelete}
           onBypass={onBypass}
           onHelp={onHelp}
           onConfig={onConfig}
+          onCustomEntry={onCustomEntry}
         />
+
         <EditorDialog
           title="Service Configuration"
           value={JSON.stringify(filteredService, null, 2)}
@@ -144,7 +159,12 @@ export default function ServiceFrame({
             display: frameCollapsed ? "none" : undefined,
           }}
         >
-          {serviceUi || <div />}
+          {serviceUI
+            ? React.createElement(serviceUI.type, {
+                ...serviceUI.props,
+                registerCustomMenuItems,
+              })
+            : null}
         </div>
       </div>
     </div>

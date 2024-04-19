@@ -6,13 +6,14 @@ import {
   RuntimeScope,
   ServiceDescriptor,
   ServiceImpl,
+  ServiceInstance,
   User,
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 import api from "./BrowserRuntimeApi";
 
-export type InstanceIndexTuple = [ServiceImpl | null, number];
+export type InstanceIndexTuple = [ServiceInstance | null, number];
 
 export default class BrowserRuntimeScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;

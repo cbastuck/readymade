@@ -12,6 +12,7 @@ import {
   ServiceAction,
   ServiceDescriptor,
   ServiceImpl,
+  ServiceInstance,
   User,
 } from "../../types";
 import { createServiceUI } from "../../UIFactory";
@@ -270,10 +271,14 @@ export default class BrowserRuntime extends Component<Props, State> {
       onServiceAction,
     } = this.props;
 
-    const services = rawServices
-      ? (rawServices
-          .map((svc) => scope.findServiceInstance(svc.uuid)[0])
-          .filter((x) => !!x) as Array<ServiceImpl>)
+    const services: Array<ServiceInstance> = rawServices
+      ? rawServices.flatMap((x) => {
+          const svc = scope.findServiceInstance(x.uuid);
+          if (svc && svc[0]) {
+            return [svc[0]];
+          }
+          return [];
+        })
       : [];
 
     if (scope && scope.onResult !== onResult) {

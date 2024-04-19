@@ -90,9 +90,8 @@ export function createServiceUI(
       ...props,
     };
     switch (serviceId) {
-      case "hookup.to/service/output": {
+      case "hookup.to/service/output":
         return <OutputUINode {...params} />;
-      }
       case "hookup.to/service/ingress":
         return <IngressUI {...params} />;
       case "hookup.to/service/websocket":
@@ -104,10 +103,15 @@ export function createServiceUI(
   return createPlaceholderUI(service);
 }
 
+type ServiceUIComponent =
+  | typeof Component<ServiceUIProps>
+  | FunctionComponent<ServiceUIProps>
+  | null;
+
 function findServiceUI(
   registry: BrowserRegistry,
   serviceId: string
-): typeof Component<ServiceUIProps> | FunctionComponent<ServiceUIProps> | null {
+): ServiceUIComponent {
   switch (serviceId) {
     case "hookup.to/service/timer":
       return TimerUI;

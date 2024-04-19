@@ -45,7 +45,7 @@ export default class ServiceUiContainer extends Component<Props> {
     return (
       services &&
       services.map((service, pos) => {
-        const serviceUi = readonly
+        const serviceUI = readonly
           ? createPlaceholderUI(service)
           : onCreateServiceUi(boardName, service, runtime.id, userId);
 
@@ -63,7 +63,7 @@ export default class ServiceUiContainer extends Component<Props> {
 
             <ServiceFrame
               service={service}
-              serviceUi={serviceUi}
+              serviceUI={serviceUI}
               onAction={onServiceAction}
               draggable={!!onArrangeService}
               showBypassOnlyIfExplicit={showBypassOnlyIfExplicit}

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { RotateCcw } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceUI, {
@@ -8,10 +9,9 @@ import { Button } from "hkp-frontend/src/components/ui/button";
 import RadioGroup from "@/ui-components/RadioGroup";
 import Slider from "@/ui-components/Slider";
 import OneOfVisible from "@/ui-components/OneOfVisible";
-import { CustomMenuEntry } from "@/ui-components/service/ServiceFrame";
 
 export default function TimerUI(props: ServiceUIProps) {
-  const { service } = props;
+  const { service, registerCustomMenuItems } = props;
 
   const modes = ["oneshot", "periodic"];
   const units = ["ms", "s", "m", "h", "d"];
@@ -100,7 +100,16 @@ export default function TimerUI(props: ServiceUIProps) {
     });
   };
 
-  const customMenuEntries: Array<CustomMenuEntry> = [];
+  useEffect(() => {
+    registerCustomMenuItems?.([
+      {
+        name: "Reset Timer",
+        icon: <RotateCcw className="mr-2 h-4 w-4" />,
+        config: { counter: 0 },
+      },
+    ]);
+  }, [registerCustomMenuItems]);
+
   return (
     <ServiceUI
       {...props}
@@ -108,7 +117,6 @@ export default function TimerUI(props: ServiceUIProps) {
       service={service}
       onInit={onInit}
       onNotification={onNotification}
-      customMenuEntries={customMenuEntries}
     >
       <div className="flex flex-col gap-2 h-full">
         <RadioGroup title="Mode" items={modes} initial={0} onChange={setMode} />
