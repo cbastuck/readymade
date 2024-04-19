@@ -41,7 +41,7 @@ export default function SidechainSelector({
   );
   return (
     <Dropdown
-      style={{ width: "100%" }}
+      style={{ width: "100%", whiteSpace: "nowrap" }}
       placeholder="Targets"
       fluid
       multiple

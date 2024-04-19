@@ -396,18 +396,7 @@ export default class Runtime extends Component<Props, State> {
           onResult={onResult}
         />
         {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
-        {outputs && expanded ? (
-          <div
-            style={{
-              marginLeft: "auto",
-              marginRight: 4, // TODO: otherwise the runtime get horizontal scrollbar
-            }}
-          >
-            {outputs}
-          </div>
-        ) : (
-          false
-        )}
+        {outputs && expanded ? <div className="ml-auto">{outputs}</div> : false}
       </div>
     );
   };

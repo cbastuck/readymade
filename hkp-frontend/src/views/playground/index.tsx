@@ -542,14 +542,15 @@ class Playground extends Component<Props, State> {
                       },
                     })
                   }
-                  onChangeInputRouting={(runtime, value) =>
+                  onChangeInputRouting={(runtime, value) => {
+                    console.log("Playground.onChangeInputRouting", value);
                     this.setState({
                       inputRouting: {
                         ...this.state.inputRouting,
                         [runtime.id]: value,
                       },
-                    })
-                  }
+                    });
+                  }}
                   onChangeOutputRouting={(runtime, routing) => {
                     const { hostDescriptor, route } = routing;
                     const { peer, flow } = route;

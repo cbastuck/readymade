@@ -3,7 +3,7 @@ import {
   RadioGroup as RadioGroupCN,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
-import PropertyLabel from "./PropertyLabel";
+import PropertyLabel from "./GroupLabel";
 
 type Props = {
   title: string;

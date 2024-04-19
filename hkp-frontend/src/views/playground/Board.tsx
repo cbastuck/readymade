@@ -77,6 +77,10 @@ export default class Board extends Component<Props, State> {
 
   componentDidUpdate(prevProps: Props) {
     if (prevProps.inputRouting !== this.props.inputRouting) {
+      console.log(
+        "componentDidUpdate - new input routing",
+        this.props.inputRouting
+      );
       this.updateInputActivation(this.props.inputRouting);
     }
 
@@ -94,7 +98,8 @@ export default class Board extends Component<Props, State> {
             ...all,
             [activationId]:
               runtimeInputRouting?.route?.peer &&
-              !runtimeInputRouting.hostDescriptor
+              !runtimeInputRouting.hostDescriptor &&
+              runtimeInputRouting.hostDescriptor !== null
                 ? {
                     ...runtimeInputRouting,
                     hostDescriptor: defaultDiscoveryPeer,
@@ -104,7 +109,18 @@ export default class Board extends Component<Props, State> {
         }, {})
       : {};
 
-    this.setState((state) => ({ ...state, peerInputActivation }));
+    this.setState(
+      (state) => {
+        console.log(
+          "updateInputActivation with",
+          peerInputActivation,
+          "tostate",
+          state
+        );
+        return { ...state, peerInputActivation };
+      },
+      () => console.log("NEW STATE", this.state)
+    );
   };
 
   updateOutputActivation = (outputRouting: PeerOutputRouting) => {
@@ -296,7 +312,7 @@ export default class Board extends Component<Props, State> {
         disabled={!hostDescriptor}
       >
         {this.renderPeersActivator(runtime, "output")}
-        {this.renderPeersDeactivator(runtime)}
+        {this.renderPeersDeactivator(runtime, "output")}
       </OutputOptions>
     );
   };
@@ -337,10 +353,10 @@ export default class Board extends Component<Props, State> {
                 }
           );
         }}
-        disabled={!inputActivation}
+        disabled={!inputActivation || !inputActivation.hostDescriptor}
       >
         {this.renderPeersActivator(runtime, "input")}
-        {this.renderPeersDeactivator(runtime)}
+        {this.renderPeersDeactivator(runtime, "input")}
       </InputOptions>
     );
   };
@@ -352,10 +368,12 @@ export default class Board extends Component<Props, State> {
     const activationId = getActivationId(runtime.id);
     const inputActivation = this.state.peerInputActivation[activationId];
     const outputActivation = this.state.peerOutputActivation[activationId];
-    const hostDescriptor =
-      inputActivation?.hostDescriptor || outputActivation?.hostDescriptor;
-    if (!!hostDescriptor) {
-      return null; // already active
+
+    if (type === "input" && inputActivation?.hostDescriptor) {
+      return null;
+    }
+    if (type === "output" && outputActivation?.hostDescriptor) {
+      return null;
     }
 
     const discoveryOptions = availableDiscoveryPeerHosts.reduce(
@@ -368,10 +386,7 @@ export default class Board extends Component<Props, State> {
       },
       {}
     );
-    const outputRoute = outputActivation?.route || {
-      peer: null,
-      flow: "pass",
-    };
+
     const selectedDiscoveryServer = defaultDiscoveryPeer;
     return (
       <div
@@ -379,9 +394,10 @@ export default class Board extends Component<Props, State> {
           display: "flex",
           flexDirection: "column",
           textAlign: "left",
+          width: 250,
         }}
       >
-        <div style={{ width: 250, paddingBottom: 5 }}>
+        <div style={{ paddingBottom: 5 }}>
           Receive or send data from or to a peer runtime. Activate peer
           discovery via:
         </div>
@@ -395,10 +411,25 @@ export default class Board extends Component<Props, State> {
           options={discoveryOptions}
           onChange={(_ev, { index }) => {
             if (index !== undefined) {
-              this.props.onChangeOutputRouting(runtime, {
-                route: outputRoute,
-                hostDescriptor: availableDiscoveryPeerHosts[index],
-              });
+              if (type === "output") {
+                const outputRoute = outputActivation?.route || {
+                  peer: null,
+                  flow: "pass",
+                };
+                this.props.onChangeOutputRouting(runtime, {
+                  route: outputRoute,
+                  hostDescriptor: availableDiscoveryPeerHosts[index],
+                });
+              } else {
+                const inputRoute = inputActivation?.route || {
+                  peer: null,
+                  flow: "pass",
+                };
+                this.props.onChangeInputRouting(runtime, {
+                  route: inputRoute,
+                  hostDescriptor: availableDiscoveryPeerHosts[index],
+                });
+              }
             }
           }}
           uppercaseValues={false}
@@ -410,17 +441,23 @@ export default class Board extends Component<Props, State> {
             cursor: "pointer",
             textAlign: "center",
           }}
-          onClick={() =>
-            type === "output"
-              ? this.props.onChangeOutputRouting(runtime, {
-                  route: outputRoute,
-                  hostDescriptor: selectedDiscoveryServer,
-                })
-              : this.props.onChangeInputRouting(runtime, {
-                  route: { peer: null },
-                  hostDescriptor: selectedDiscoveryServer,
-                })
-          }
+          onClick={() => {
+            if (type === "output") {
+              const outputRoute = outputActivation?.route || {
+                peer: null,
+                flow: "pass",
+              };
+              this.props.onChangeOutputRouting(runtime, {
+                route: outputRoute,
+                hostDescriptor: selectedDiscoveryServer,
+              });
+            } else {
+              this.props.onChangeInputRouting(runtime, {
+                route: { peer: null },
+                hostDescriptor: selectedDiscoveryServer,
+              });
+            }
+          }}
         >
           Click to enable
         </div>
@@ -428,29 +465,46 @@ export default class Board extends Component<Props, State> {
     );
   };
 
-  renderPeersDeactivator = (runtime: RuntimeDescriptor) => {
+  renderPeersDeactivator = (
+    runtime: RuntimeDescriptor,
+    type: "input" | "output"
+  ) => {
     const activationId = getActivationId(runtime.id);
     const inputRoute = this.state.peerInputActivation[activationId];
     const outputRoute = this.state.peerOutputActivation[activationId];
-    const hostDescriptor =
-      inputRoute?.hostDescriptor || outputRoute?.hostDescriptor;
-    if (!hostDescriptor) {
-      return null; // already active
+    if (
+      type === "input" &&
+      (!inputRoute || inputRoute.hostDescriptor === null)
+    ) {
+      return null;
+    }
+    if (
+      type === "output" &&
+      (!outputRoute || outputRoute.hostDescriptor === null)
+    ) {
+      return null;
     }
     return (
       <div
         style={{ cursor: "pointer", color: "#1e70bf" }}
         onClick={() => {
-          this.props.onChangeInputRouting(runtime, {
-            ...(inputRoute || {}),
-            hostDescriptor: null,
-          });
-
-          outputRoute &&
-            this.props.onChangeOutputRouting(runtime, {
-              ...(outputRoute || {}),
+          if (type === "input") {
+            console.log("SETTOJNG", {
+              ...(inputRoute || {}),
               hostDescriptor: null,
             });
+            this.props.onChangeInputRouting(runtime, {
+              ...(inputRoute || {}),
+              hostDescriptor: null,
+            });
+          } else {
+            if (outputRoute) {
+              this.props.onChangeOutputRouting(runtime, {
+                ...(outputRoute || {}),
+                hostDescriptor: null,
+              });
+            }
+          }
         }}
       >
         Click to disable
@@ -484,7 +538,14 @@ export default class Board extends Component<Props, State> {
         requestId,
         resultCallback
       );
-
+    const outputs =
+      runtime.type === "browser"
+        ? this.renderOutputs(filteredPeers, runtime, peersContext, boardContext)
+        : undefined;
+    const inputs =
+      runtime.type === "browser"
+        ? this.renderInputs(filteredPeers, runtime, peersContext)
+        : undefined;
     return (
       <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
         <Runtime
@@ -494,13 +555,8 @@ export default class Board extends Component<Props, State> {
           boardContext={boardContext}
           runtime={runtime}
           onResult={onResult}
-          outputs={this.renderOutputs(
-            filteredPeers,
-            runtime,
-            peersContext,
-            boardContext
-          )}
-          inputs={this.renderInputs(filteredPeers, runtime, peersContext)}
+          outputs={outputs}
+          inputs={inputs}
           headless={this.props.headless}
         />
       </DragProvider>

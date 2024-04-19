@@ -1,7 +1,7 @@
 import { Label } from "@/components/ui/label";
 import Select from "@/ui-components/Select";
 import { Slider as SliderCN } from "@/components/ui/slider";
-import PropertyLabel from "./PropertyLabel";
+import PropertyLabel from "./GroupLabel";
 
 type Props = {
   title?: string;

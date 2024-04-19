@@ -3,6 +3,7 @@ import { Component } from "react";
 import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";
 import { Action } from "../../types";
+import GroupLabel from "@/ui-components/GroupLabel";
 
 const none = "No Input";
 const all = "All Peers";
@@ -63,16 +64,17 @@ export default class InputOptions extends Component<Props, State> {
     return (
       <div
         style={{
-          paddingTop: 10,
           opacity: expanded ? 1 : 0,
-          width: expanded ? 300 : 0,
+          width: expanded ? 320 : 0,
           transition: "width 0.5s, opacity 0.5s",
-          overflow: "hidden",
+          overflowX: "hidden",
+          overflowY: "auto",
+          minHeight: 350,
         }}
       >
-        {!disabled && (
-          <>
-            <h1 style={s(t.tc, t.fs11)}>Allow From</h1>
+        {!disabled ? (
+          <div className="pt-4 pl-4">
+            <GroupLabel>Allow From</GroupLabel>
             <SelectorField
               label="Peer"
               options={peerOptions}
@@ -86,16 +88,22 @@ export default class InputOptions extends Component<Props, State> {
               }
               onOpen={() => onAction({ type: InputOptions.updatePeersAction })}
             />
-          </>
+            <div style={{ paddingBottom: 20 }}>{this.props.children}</div>
+          </div>
+        ) : (
+          <div className="pt-4 pl-4">
+            <GroupLabel>Peers</GroupLabel>
+            <div
+              style={{
+                paddingTop: 10,
+                paddingLeft: 5,
+                minHeight: "250px",
+              }}
+            >
+              {children ? children : false}
+            </div>
+          </div>
         )}
-        <div
-          style={{
-            paddingTop: 10,
-            paddingLeft: 5,
-          }}
-        >
-          {children ? children : false}
-        </div>
       </div>
     );
   };
@@ -104,62 +112,49 @@ export default class InputOptions extends Component<Props, State> {
     const { expanded, incoming } = this.state;
     const { onExpand, onCollapse } = this.props;
     return (
-      <div
-        style={s(
-          t.ls1,
-          t.fs13,
-          {
-            height: 300,
-            marginTop: 10,
-          },
-          {
+      <div className="h-full py-[20px]" style={{ minHeight: "100%" }}>
+        <div
+          className="flex h-full"
+          style={{
             border: "solid 1px lightgray",
             borderLeft: "none",
             borderRadius: 5,
             borderTopLeftRadius: 0,
             borderBottomLeftRadius: 0,
-          },
-          {
-            display: "flex",
-            flexDirection: "row",
-          }
-        )}
-      >
-        {this.renderExpanded()}
-        <button
-          style={{
-            marginLeft: "auto",
-            height: "100%",
-            border: "none",
-            textAlign: "center",
-            backgroundColor: incoming
-              ? "#8aa1b7" // signal color
-              : expanded
-              ? "gray"
-              : "#efefef",
-          }}
-          onClick={() => {
-            this.setState({ expanded: !expanded }, () => {
-              if (expanded) {
-                onCollapse && onCollapse();
-              } else {
-                onExpand && onExpand();
-              }
-            });
           }}
         >
-          <div
-            className=""
-            style={s(t.ls2, t.fs11, {
-              transform: "rotate(-90deg)",
-              marginTop: 35,
-              width: 8,
-              color: expanded ? "white" : "#333",
-            })}
+          {this.renderExpanded()}
+          <button
+            className="text-base min-h-[100%] ml-auto w-[33px]"
+            style={{
+              border: "none",
+              textAlign: "center",
+              backgroundColor: incoming
+                ? "#8aa1b7" // signal color
+                : expanded
+                ? "gray"
+                : "#efefef",
+            }}
+            onClick={() => {
+              this.setState({ expanded: !expanded }, () => {
+                if (expanded) {
+                  onCollapse && onCollapse();
+                } else {
+                  onExpand && onExpand();
+                }
+              });
+            }}
           >
-            Input
-          </div>
-        </button>
+            <div
+              style={{
+                transform: "rotate(-90deg)",
+                color: expanded ? "white" : "#333",
+              }}
+            >
+              Input
+            </div>
+          </button>
+        </div>
       </div>
     );
   }

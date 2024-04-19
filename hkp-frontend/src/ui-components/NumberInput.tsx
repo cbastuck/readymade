@@ -1,5 +1,5 @@
 import { Input as InputCN } from "@/components/ui/input";
-import PropertyLabel from "./PropertyLabel";
+import PropertyLabel from "./GroupLabel";
 
 type Props = {
   title: string;

@@ -18,16 +18,15 @@ import "./index.css";
 type Props = {
   showRuntimeMenu?: boolean;
   isCompact?: boolean;
-  showBoardActions?: boolean;
   onUpdateAvailableRuntimes?: (runtimeClasses: Array<RuntimeClass>) => void;
 };
 
 export default function Toolbar({
   showRuntimeMenu = false,
   isCompact = false,
-  showBoardActions = true,
   onUpdateAvailableRuntimes,
 }: Props) {
+  const showBoardActions = false;
   const boardContext = useContext(BoardCtx);
   const renderWide = boardContext?.appContext?.appViewMode === "wide";
   return (

@@ -10,6 +10,7 @@ import {
   isValidFlowOption,
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
+import GroupLabel from "@/ui-components/GroupLabel";
 
 const none = "No Output";
 
@@ -52,8 +53,8 @@ export default class OutputOptions extends Component<Props, State> {
 
   renderOptions = (label: string, selector: ReactElement) => {
     return (
-      <div style={s(t.p10)}>
-        <h1 style={s(t.tl, t.fs11, t.pt0, t.mb5)}>{label}</h1>
+      <div className="pt-4 pl-4">
+        <GroupLabel>{label}</GroupLabel>
         {selector}
       </div>
     );
@@ -131,8 +132,12 @@ export default class OutputOptions extends Component<Props, State> {
       >
         {this.renderFlowOptions()}
         {this.renderSidechainOptions()}
+
         {disabled ? (
-          <div style={{ ...t.p(10, 25) }}>{this.props.children}</div>
+          <div className="pt-4 pl-4">
+            <GroupLabel>Peers</GroupLabel>
+            <div className="p-0 text-base">{this.props.children}</div>
+          </div>
         ) : (
           this.renderPeerOptions()
         )}
@@ -144,65 +149,58 @@ export default class OutputOptions extends Component<Props, State> {
     const { expanded } = this.state;
     const { id, onExpand, onCollapse } = this.props;
     return (
-      <div
-        id={`output-options-${id}`}
-        style={s(
-          t.ls1,
-          t.fs13,
-          {
-            height: 320,
-            marginTop: 10,
-          },
-          {
+      <div className="h-full py-[20px]">
+        <div
+          className="flex h-full"
+          id={`output-options-${id}`}
+          style={{
             border: "solid 1px lightgray",
             borderRight: "none",
             borderRadius: 5,
             borderTopRightRadius: 0,
             borderBottomRightRadius: 0,
-          },
-          {
-            display: "flex",
-            flexDirection: "row",
-          }
-        )}
-      >
-        <button
-          style={{
-            height: "100%",
-            border: "none",
-            textAlign: "center",
-            backgroundColor: expanded ? "gray" : "#efefef",
-          }}
-          onClick={() => {
-            this.setState({ expanded: !expanded }, () => {
-              if (expanded) {
-                onCollapse && onCollapse();
-              } else {
-                onExpand && onExpand();
-                const elem = document.getElementById(`output-options-${id}`);
-                if (elem) {
-                  setTimeout(
-                    () => elem.scrollIntoView({ behavior: "smooth" }),
-                    400
-                  );
-                }
-              }
-            });
+            maxHeight: 350,
           }}
         >
-          <div
-            className=""
-            style={s(t.ls2, t.fs11, {
-              transform: "rotate(-90deg)",
-              marginTop: 35,
-              width: 8,
-              color: expanded ? "white" : "#333",
-            })}
+          <button
+            className="text-base h-full w-[33px]"
+            style={{
+              border: "none",
+              textAlign: "center",
+              backgroundColor: expanded ? "gray" : "#efefef",
+            }}
+            onClick={() => {
+              this.setState({ expanded: !expanded }, () => {
+                if (expanded) {
+                  onCollapse && onCollapse();
+                } else {
+                  onExpand && onExpand();
+                  const elem = document.getElementById(`output-options-${id}`);
+                  if (elem) {
+                    setTimeout(
+                      () =>
+                        elem.scrollIntoView({
+                          behavior: "smooth",
+                          block: "nearest",
+                        }),
+                      400
+                    );
+                  }
+                }
+              });
+            }}
           >
-            Output
-          </div>
-        </button>
-        {this.renderExpanded()}
+            <div
+              style={{
+                transform: "rotate(-90deg)",
+                color: expanded ? "white" : "#333",
+              }}
+            >
+              Output
+            </div>
+          </button>
+          {this.renderExpanded()}
+        </div>
       </div>
     );
   }
