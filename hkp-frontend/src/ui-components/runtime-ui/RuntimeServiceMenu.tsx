@@ -56,15 +56,19 @@ export default function RuntimeServiceMenu({
       <PopoverContent className="w-[200px] p-0 h-[260px] opacity-100">
         <Command>
           <CommandInput
+            className="text-base"
             placeholder="Search"
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          <CommandEmpty>No service found</CommandEmpty>
+          <CommandEmpty className="text-base p-2">
+            No service found
+          </CommandEmpty>
           <CommandList className="overflow-auto">
             {registry &&
               registry.map((s) => (
                 <CommandItem
+                  className="text-base"
                   key={s.serviceId}
                   value={s.serviceId}
                   onSelect={(currentValue) => {

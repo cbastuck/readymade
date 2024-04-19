@@ -49,7 +49,7 @@ export default function RuntimeMenu({
   };
   const remoteRuntimes = availableRuntimes.filter((rt) => rt.type === "remote");
   const localRuntimes = availableRuntimes.filter((rt) => rt.type === "browser");
-  const heightConstraint = remoteRuntimes.length ? "h-[160px]" : "";
+  const heightConstraint = remoteRuntimes.length ? "h-[170px]" : "";
   return (
     <>
       <Popover open={open} onOpenChange={onOpenChange}>
@@ -70,14 +70,18 @@ export default function RuntimeMenu({
         >
           <Command>
             <CommandInput
+              className="text-base"
               placeholder="Search"
               value={searchTerm}
               onValueChange={setSearchTerm}
             />
-            <CommandEmpty>No service found</CommandEmpty>
+            <CommandEmpty className="text-base p-2">
+              No Runtime found
+            </CommandEmpty>
             <CommandList className="overflow-auto">
               {localRuntimes.map((rt, idx) => (
                 <CommandItem
+                  className="text-base"
                   key={`${rt.type}${rt.name}`}
                   value={`${rt.name}|${idx}`}
                   onSelect={(currentValue) => {
@@ -94,6 +98,7 @@ export default function RuntimeMenu({
 
               {remoteRuntimes.map((rt, idx) => (
                 <CommandItem
+                  className="text-base"
                   key={`${rt.type}${rt.name}`}
                   value={`${rt.name}|${idx}`}
                   onSelect={(currentValue) => {
@@ -111,7 +116,7 @@ export default function RuntimeMenu({
             <CommandSeparator />
             <CommandGroup className="mt-auto">
               <CommandItem
-                className="flex gap-2"
+                className="flex gap-2 text-base"
                 onSelect={() => setShowManageRuntimesDialog(true)}
               >
                 <Settings size="18px" /> Manage remote runtimes
