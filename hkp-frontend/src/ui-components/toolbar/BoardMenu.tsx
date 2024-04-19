@@ -39,6 +39,7 @@ export default function BoardMenu() {
   return (
     <NavigationMenu className="" delayDuration={10000}>
       <EditorDialog
+        title="Board Configuration"
         isOpen={showBoardSource}
         value={boardSource}
         onClose={onCloseBoardSource}

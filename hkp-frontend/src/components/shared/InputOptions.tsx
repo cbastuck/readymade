@@ -111,28 +111,27 @@ export default class InputOptions extends Component<Props, State> {
   render() {
     const { expanded, incoming } = this.state;
     const { onExpand, onCollapse } = this.props;
+
+    const bgColor = incoming
+      ? "bg-[#8aa1b7]" // signal color
+      : expanded
+      ? "bg-sky-600"
+      : "bg-white";
+    const textColor = expanded ? "text-white" : "text-[#333]";
     return (
-      <div className="h-full py-[20px]" style={{ minHeight: "100%" }}>
+      <div className="h-full py-[10px]" style={{ minHeight: "100%" }}>
         <div
           className="flex h-full"
           style={{
             border: "solid 1px lightgray",
             borderLeft: "none",
-            borderRadius: 5,
             borderTopLeftRadius: 0,
             borderBottomLeftRadius: 0,
           }}
         >
           {this.renderExpanded()}
           <button
-            className="text-base min-h-[100%] ml-auto w-[33px]"
-            style={{
-              backgroundColor: incoming
-                ? "#8aa1b7" // signal color
-                : expanded
-                ? "gray"
-                : "#efefef",
-            }}
+            className={`text-base min-h-[100%] ml-auto w-[33px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
             onClick={() => {
               this.setState({ expanded: !expanded }, () => {
                 if (expanded) {
@@ -147,7 +146,6 @@ export default class InputOptions extends Component<Props, State> {
               className="tracking-[4px] text-sm font-sans mt-[-25px]"
               style={{
                 transform: "rotate(90deg)",
-                color: expanded ? "white" : "#333",
               }}
             >
               INPUT

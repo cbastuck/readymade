@@ -5,6 +5,7 @@ import Editor from "@/components/shared/Editor/index";
 import { Button } from "@/components/ui/button";
 
 type Props = {
+  title: string;
   value: string;
   isOpen: boolean;
   onClose: () => void;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function EditorDialog({
+  title,
   value,
   isOpen,
   onClose,
@@ -42,7 +44,7 @@ export default function EditorDialog({
         onPointerDownOutside={avoidDefaultDomBehavior}
         onInteractOutside={avoidDefaultDomBehavior}
       >
-        <h2>Service Configuration</h2>
+        <h2>{title}</h2>
         <Editor ref={editor} value={value} language="json" />
         <DialogFooter>
           <Button variant="destructive" onClick={onClose}>

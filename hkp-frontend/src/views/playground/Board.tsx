@@ -109,18 +109,7 @@ export default class Board extends Component<Props, State> {
         }, {})
       : {};
 
-    this.setState(
-      (state) => {
-        console.log(
-          "updateInputActivation with",
-          peerInputActivation,
-          "tostate",
-          state
-        );
-        return { ...state, peerInputActivation };
-      },
-      () => console.log("NEW STATE", this.state)
-    );
+    this.setState((state) => ({ ...state, peerInputActivation }));
   };
 
   updateOutputActivation = (outputRouting: PeerOutputRouting) => {

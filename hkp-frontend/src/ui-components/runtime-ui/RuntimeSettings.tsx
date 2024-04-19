@@ -8,6 +8,7 @@ import {
   StepForward,
   ArrowRightLeft,
   Menu,
+  Settings,
 } from "lucide-react";
 
 import {
@@ -32,6 +33,7 @@ type Props = {
   onProcess: (withParams?: boolean) => void;
   onClear: () => void;
   onDelete: () => void;
+  onConfiguration: () => void;
 };
 export default function RuntimeSettings({
   runtime,
@@ -42,6 +44,7 @@ export default function RuntimeSettings({
   onClear,
   onDelete,
   onProcess,
+  onConfiguration,
 }: Props) {
   return (
     <DropdownMenu>
@@ -87,6 +90,11 @@ export default function RuntimeSettings({
               <span>Expand</span>
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem onClick={onConfiguration}>
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Configuration</span>
+          </DropdownMenuItem>
+
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={onClear}>
             <Eraser className="mr-2 h-4 w-4" />

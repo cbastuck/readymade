@@ -44,3 +44,7 @@ export default function ServiceUI({
     </Resizable>
   );
 }
+
+export function needsUpdate<T>(newValue: T, oldValue: T) {
+  return newValue !== undefined && newValue !== oldValue;
+}

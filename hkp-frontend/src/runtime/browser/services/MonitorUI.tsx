@@ -1,51 +1,50 @@
 import { ServiceInstance, ServiceUIProps } from "@/types";
-import { Component } from "react";
+
 import { TextArea } from "semantic-ui-react";
 
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
-import Button from "hkp-frontend/src/components/shared/Button";
+import { Button } from "hkp-frontend/src/components/ui/button";
 
 import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";
 
 import { s, t } from "hkp-frontend/src/styles";
+import { useState } from "react";
+import { needsUpdate } from "@/ui-components/service/ServiceUI";
 
 const ACTION_BAR_HEIGHT = "45";
 
-export default class MonitorUI extends Component<ServiceUIProps> {
-  state = {
-    message: "",
-    renderTextEditor: true,
+export default function MonitorUI(props: ServiceUIProps) {
+  const [message, setMessage] = useState("");
+  const [renderTextEditor, setRenderTextEditor] = useState(true);
+
+  const onInit = (state: any) => {
+    if (needsUpdate(state.message, message)) {
+      setMessage(state.message);
+    }
+    if (needsUpdate(state.renderTextEditor, renderTextEditor)) {
+      setRenderTextEditor(state.renderTextEditor);
+    }
   };
 
-  onInit = (initialState: any) => {
-    this.setState({
-      ...initialState,
-    });
-  };
-
-  onNotification = (_: ServiceInstance, params: any) => {
+  const onNotification = (_: ServiceInstance, params: any) => {
     const nil = params === null && "<null>";
     const undef = params === undefined && "<undefined>";
     const s = nil || undef || unroll(params);
-    console.log("GOT NOTIFI", params);
 
     const { bypass } = params || {};
     if (bypass !== undefined) {
       return;
     }
 
-    this.setState({
-      message: isObject(s) ? JSON.stringify(s, null, 2) : s,
-    });
+    setMessage(isObject(s) ? JSON.stringify(s, null, 2) : s);
   };
 
-  clearEditor = () => this.setState({ message: "" });
+  const clearEditor = () => setMessage("");
 
-  switchEditor = () =>
-    this.setState({ renderTextEditor: !this.state.renderTextEditor });
+  const switchEditor = () => setRenderTextEditor(!renderTextEditor);
 
-  renderEditor = () =>
-    this.state.renderTextEditor ? (
+  const renderEditor = () =>
+    renderTextEditor ? (
       <TextArea
         style={{
           margin: "5px 10px",
@@ -56,7 +55,7 @@ export default class MonitorUI extends Component<ServiceUIProps> {
           borderRadius: 5,
           flexGrow: 1,
         }}
-        value={this.state.message}
+        value={message}
         rows={10}
         cols={30}
       />
@@ -67,14 +66,14 @@ export default class MonitorUI extends Component<ServiceUIProps> {
         })}
       >
         <Editor
-          value={this.state.message}
+          value={message}
           language="json"
-          onChange={(val) => this.setState({ message: val })}
+          onChange={(val) => val && setMessage(val)}
         />
       </div>
     );
 
-  renderActionBar = (service: ServiceInstance) => (
+  const renderActionBar = (service: ServiceInstance) => (
     <div
       style={{
         display: "flex",
@@ -84,21 +83,26 @@ export default class MonitorUI extends Component<ServiceUIProps> {
         height: `${ACTION_BAR_HEIGHT} - 15}px`,
       }}
     >
-      <Button onClick={this.clearEditor} style={{ width: "100%" }}>
+      <Button variant="outline" onClick={clearEditor} style={{ width: "100%" }}>
         Clear
       </Button>
 
-      <Button onClick={this.switchEditor} style={{ width: "100%" }}>
-        {this.state.renderTextEditor ? "Edit" : "Back"}
+      <Button
+        variant="outline"
+        onClick={switchEditor}
+        style={{ width: "100%" }}
+      >
+        {renderTextEditor ? "Edit" : "Back"}
       </Button>
       <Button
+        variant="outline"
         style={{ width: "100%" }}
         onClick={() => {
           let data;
           try {
-            data = JSON.parse(this.state.message);
+            data = JSON.parse(message);
           } catch (err) {
-            data = this.state.message;
+            data = message;
           }
           service.app.next(service, data);
         }}
@@ -108,31 +112,25 @@ export default class MonitorUI extends Component<ServiceUIProps> {
     </div>
   );
 
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-      >
-        {({ service }: { service: ServiceInstance }) =>
-          service && (
-            <div
-              style={{
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              {this.renderEditor()}
-              {this.renderActionBar(service)}
-            </div>
-          )
-        }
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI {...props} onInit={onInit} onNotification={onNotification}>
+      {({ service }: { service: ServiceInstance }) =>
+        service && (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {renderEditor()}
+            {renderActionBar(service)}
+          </div>
+        )
+      }
+    </ServiceUI>
+  );
 }
 
 function isObject(obj: any) {

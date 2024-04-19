@@ -12,6 +12,7 @@ import { BoardCtx } from "@/BoardContext";
 import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
 import RuntimeServiceMenu from "./RuntimeServiceMenu";
+import EditorDialog from "../EditorDialog";
 
 type Props = {
   runtime: RuntimeDescriptor;
@@ -35,6 +36,8 @@ export default function RuntimeHeader({
   onWrapServices,
 }: Props) {
   const [showRunWithParams, setShowRunWithParams] = useState(false);
+  const [isRuntimeConfigOpen, setIsRuntimeConfigOpen] = useState(false);
+
   const { name, id: runtimeId } = runtime;
   const boardContext = useContext(BoardCtx);
   const onChangeName = (newName: string) =>
@@ -66,6 +69,21 @@ export default function RuntimeHeader({
   const onDelete = () => {
     boardContext?.removeRuntime(runtime);
   };
+
+  const onConfiguration = () => {
+    setIsRuntimeConfigOpen(true);
+  };
+
+  const runtimeConfig = JSON.stringify(
+    { runtime, services: boardContext?.services[runtime.id] },
+    null,
+    2
+  );
+
+  const onApplyRuntimeConfig = (newConfig: string) => {
+    console.log("Apply runtime config not implememnted", newConfig);
+  };
+
   return (
     <div className="flex items-center gap-3 px-2">
       <div className="flex items-end gap-3 px-2 min-h-10">
@@ -78,6 +96,7 @@ export default function RuntimeHeader({
           onProcess={onProcess}
           onClear={onClear}
           onDelete={onDelete}
+          onConfiguration={onConfiguration}
         />
         <div className="flex items-end font-sans">
           <Editable value={name} title={runtimeId} onChange={onChangeName} />
@@ -97,6 +116,14 @@ export default function RuntimeHeader({
         open={showRunWithParams}
         onClose={() => setShowRunWithParams(false)}
         onRun={runWithParams}
+      />
+
+      <EditorDialog
+        title="Runtime Configuration"
+        value={runtimeConfig}
+        isOpen={isRuntimeConfigOpen}
+        onClose={() => setIsRuntimeConfigOpen(false)}
+        onApply={onApplyRuntimeConfig}
       />
     </div>
   );

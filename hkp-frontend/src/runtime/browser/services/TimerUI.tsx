@@ -1,7 +1,9 @@
 import { useState } from "react";
 
 import { ServiceInstance, ServiceUIProps } from "@/types";
-import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { Button } from "hkp-frontend/src/components/ui/button";
 import RadioGroup from "@/ui-components/RadioGroup";
 import Slider from "@/ui-components/Slider";
@@ -161,8 +163,4 @@ export default function TimerUI(props: ServiceUIProps) {
       </div>
     </ServiceUI>
   );
-}
-
-function needsUpdate<T>(newValue: T, oldValue: T) {
-  return newValue !== undefined && newValue !== oldValue;
 }

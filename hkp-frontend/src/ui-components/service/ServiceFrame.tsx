@@ -131,6 +131,7 @@ export default function ServiceFrame({
           onConfig={onConfig}
         />
         <EditorDialog
+          title="Service Configuration"
           value={JSON.stringify(filteredService, null, 2)}
           isOpen={configVisible}
           onClose={onCloseConfig}
