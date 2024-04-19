@@ -1,30 +1,35 @@
-import { ServiceDescriptor } from "@/types";
+import { ServiceInstance } from "@/types";
 
-type Callback = (svc: ServiceDescriptor, notification: any) => void;
+type Callback = (svc: ServiceInstance, notification: any) => void;
 
 export default class NotificationTargets {
-  callbacks: { [id: string]: Callback };
+  callbacks: { [id: string]: Array<Callback> };
 
   constructor() {
     this.callbacks = {};
   }
 
-  register(id: string, callback: Callback) {
-    this.callbacks[id] = callback;
+  register(svc: ServiceInstance, callback: Callback) {
+    const id = svc.uuid;
+    const callbacks = this.callbacks[id] || [];
+    this.callbacks[id] = callbacks.concat(callback);
   }
 
-  unregister(id: string) {
-    delete this.callbacks[id];
+  unregister(svc: ServiceInstance, callback: Callback) {
+    const id = svc.uuid;
+    const callbacks = this.callbacks[id] || [];
+    this.callbacks[id] = callbacks.filter((cb) => cb !== callback);
   }
 
-  notify(service: ServiceDescriptor, notification: any) {
-    for (const id in this.callbacks) {
-      const cb = this.callbacks[id];
+  notify(service: ServiceInstance, notification: any) {
+    const callbacks = this.callbacks[service.uuid] || [];
+    for (const cb of callbacks) {
       cb(service, notification);
     }
   }
 
-  get(id: string): Callback | undefined {
-    return this.callbacks[id];
+  hasCallbacks(service: ServiceInstance): boolean {
+    const id = service.uuid;
+    return !!this.callbacks[id]?.length;
   }
 }

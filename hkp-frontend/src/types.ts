@@ -37,6 +37,7 @@ export interface RuntimeScope {
   authenticatedUser: User | null;
 
   getApp(): AppImpl;
+  getApi(): RuntimeApi;
   // boardName: string; --> Remove the board name from the services and move it to AppImpl
   onResult: OnResult;
   onConfig?: (instanceId: string, config: object) => void;
@@ -111,8 +112,10 @@ export type ServiceModule = ServiceClass & {
     board: string,
     service: ServiceClass,
     instanceId: string
-  ) => ServiceImpl;
-  createUI?: typeof Component | FunctionComponent;
+  ) => ServiceInstance;
+  createUI?:
+    | typeof Component<ServiceUIProps>
+    | FunctionComponent<ServiceUIProps>;
 };
 export type ServiceClass = {
   serviceName: string;
@@ -176,16 +179,25 @@ export type AppImpl = {
     service: ServiceClass,
     instanceId?: string
   ) => void;
-  createSubServiceUI: (svc: ServiceImpl) => void;
+  createSubServiceUI: (svc: ServiceInstance) => void;
 
   // TODO: should be available for both Brower and Remote runtime
   registerNotificationTarget?: (
-    svc: ServiceDescriptor,
-    onNotification: (svc: ServiceDescriptor, notification: any) => void
+    svc: ServiceInstance,
+    onNotification: (svc: ServiceInstance, notification: any) => void
   ) => void;
-  unregisterNotificationTarget?: (svc: ServiceDescriptor) => void;
+  unregisterNotificationTarget?: (
+    svc: ServiceInstance,
+    onNotification: (svc: ServiceInstance, notification: any) => void
+  ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
 };
+
+export type ServiceUIProps = {
+  service: ServiceInstance;
+};
+
+export type ServiceInstance = ServiceImpl;
 
 // TODO: an open ended object - should be further defined
 export type ServiceImpl = { [key: string]: any } & {
@@ -193,12 +205,15 @@ export type ServiceImpl = { [key: string]: any } & {
   serviceName?: string; // TODO not sure about this
   __descriptor?: ServiceDescriptor; // TODO: remove - this only existed in old nodejs backend services
   __notificationTargets?: {
-    notify: (svc: ServiceImpl, notification: any) => void;
+    notify: (svc: ServiceInstance, notification: any) => void;
     register: (
-      id: string,
-      cb: (svc: ServiceImpl, notification: any) => void
+      svc: ServiceInstance,
+      cb: (svc: ServiceInstance, notification: any) => void
     ) => void;
-    unregister: (id: string) => void;
+    unregister: (
+      svc: ServiceInstance,
+      cb: (svc: ServiceInstance, notification: any) => void
+    ) => void;
   };
 
   bypass?: boolean;

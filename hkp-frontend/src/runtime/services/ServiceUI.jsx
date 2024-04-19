@@ -7,6 +7,9 @@ function getNotificationID(service) {
   return `service-ui-${service.uuid}`;
 }
 
+/*
+ * THIS IS DEPRECATED
+ */
 export default class ServiceUI extends Component {
   state = {
     currentSegmentName: undefined,
@@ -15,25 +18,26 @@ export default class ServiceUI extends Component {
   constructor(props) {
     super(props);
     const { service, initialSegment } = props;
-    if (service) {
-      service.__notificationTargets = new Notifications();
-    }
-
     if (initialSegment) {
       this.state.currentSegmentName = initialSegment(service);
     }
   }
 
   componentWillUnmount() {
-    const { service } = this.props;
-    if (service && service.__notificationTargets) {
-      service.__notificationTargets.unregister(getNotificationID(service));
-    }
+    this.cleanupNotificationTarget();
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = undefined;
     }
   }
+
+  cleanupNotificationTarget = () => {
+    const { service } = this.props;
+    if (service && service.app && this.onNotification) {
+      service.app.unregisterNotificationTarget?.(service, this.onNotification);
+      this.onNotification = null;
+    }
+  };
 
   setup = (
     boardContext,
@@ -50,10 +54,9 @@ export default class ServiceUI extends Component {
           this.timer = setInterval(() => onTimer(service), 1000);
         }
         if (onNotification) {
-          service.__notificationTargets.register(
-            getNotificationID(service),
-            onNotification
-          );
+          this.cleanupNotificationTarget();
+          service.app.registerNotificationTarget?.(service, onNotification);
+          this.onNotification = onNotification;
         }
       }
     }

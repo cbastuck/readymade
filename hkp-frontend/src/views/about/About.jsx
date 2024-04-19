@@ -1,7 +1,7 @@
 import { Component } from "react";
 
 import Toolbar from "../../components/Toolbar";
-import Footer from "../../components/Footer";
+import Footer from "@/components/Footer.1";
 import Switcher from "../../components/Switcher";
 
 import "./About.css";

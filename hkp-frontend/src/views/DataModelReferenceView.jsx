@@ -2,7 +2,7 @@ import { Component } from "react";
 
 import BoardProvider from "../BoardContext";
 import Toolbar from "../components/Toolbar";
-import Footer from "../components/Footer";
+import Footer from "@/components/Footer.1";
 
 import { withRouter } from "../common";
 import DataModelReference from "../components/DataModelReference";

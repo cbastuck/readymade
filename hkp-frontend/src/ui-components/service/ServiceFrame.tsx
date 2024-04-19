@@ -5,15 +5,14 @@ import {
   InstanceId,
   ServiceImpl,
   ServiceDescriptor,
+  ServiceInstance,
 } from "@/types";
 import { s, t } from "@/styles";
 import ServiceHeader from "./ServiceHeader";
 import EditorDialog from "../EditorDialog";
 import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 
-function getNotificationID(service: InstanceId) {
-  return `service-frame-${service.uuid}`;
-}
+export type CustomMenuEntry = {};
 
 type Props = {
   service: ServiceImpl;
@@ -33,18 +32,18 @@ export default function ServiceFrame({
   const [configVisible, setConfigVisible] = useState(false);
   const [bypass, setBypass] = useState(service?.bypass);
 
+  const onNotification = (_: ServiceInstance, notification: any) => {
+    const { bypass } = notification || {};
+    if (bypass !== undefined) {
+      setBypass(bypass);
+    }
+  };
   useEffect(() => {
-    service.__notificationTargets?.register(
-      getNotificationID(service),
-      (_, notification) => {
-        const { bypass } = notification || {};
-        if (bypass !== undefined) {
-          setBypass(bypass);
-        }
-      }
-    );
+    service.app.registerNotificationTarget?.(service, onNotification);
     return () => {
-      service.__notificationTargets?.unregister(getNotificationID(service));
+      if (service.app) {
+        service.app.unregisterNotificationTarget?.(service, onNotification);
+      }
     };
   }, [service]);
 

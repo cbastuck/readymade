@@ -1,10 +1,9 @@
 import { CSSProperties, useContext } from "react";
 import { Link } from "react-router-dom";
 
-import build from "../buildNumber.json";
-
 import "./Footer.css";
 import { AppCtx } from "../AppContext";
+import Copyright from "./Copyright";
 
 type Props = {
   flex?: boolean;
@@ -54,26 +53,7 @@ export default function Footer({ flex }: Props) {
           {" ‧ "}
           <Link to="/privacy"> privacy </Link>
 
-          <div
-            style={{
-              marginLeft: "auto",
-              marginRight: 10,
-              fontSize: 10,
-            }}
-          >
-            <span style={{ fontFamily: "Roboto" }}>©</span>
-            {isWide ? "2018-2024 cbastuck -" : "2018-2024"}
-            <span
-              style={{
-                color: "gray",
-                padding: 5,
-                textTransform: "none",
-                fontSize: isWide ? undefined : "9px",
-              }}
-            >
-              v{build.version}
-            </span>
-          </div>
+          <Copyright isWide={isWide} />
         </div>
       </div>
     </div>

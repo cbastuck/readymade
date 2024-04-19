@@ -6,6 +6,7 @@ import {
   ServiceClass,
   ServiceDescriptor,
   ServiceImpl,
+  ServiceInstance,
 } from "../../types";
 import { appendSubservice } from "./BrowserRuntimeApi";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
@@ -46,34 +47,32 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     },
 
     registerNotificationTarget: (
-      svc: ServiceDescriptor,
-      onNotification: (svc: ServiceDescriptor, notification: any) => void
+      svc: ServiceInstance,
+      onNotification: (svc: ServiceInstance, notification: any) => void
     ) => {
-      notificationTargets.register(svc.uuid, onNotification);
+      notificationTargets.register(svc, onNotification);
     },
 
-    unregisterNotificationTarget: (svc: ServiceDescriptor) => {
-      notificationTargets.unregister(svc.uuid);
+    unregisterNotificationTarget: (
+      svc: ServiceInstance,
+      onNotification: (svc: ServiceInstance, notification: any) => void
+    ) => {
+      notificationTargets.unregister(svc, onNotification);
     },
 
     configureService: (svc: ServiceDescriptor, config: any) =>
       (svc as ServiceImpl).configure(config),
 
-    notify: (service: ServiceImpl, notification: any) => {
-      if (service.__notificationTargets) {
-        service.__notificationTargets.notify(service, notification);
-      } else {
-        const target = notificationTargets.get(service.uuid);
-        if (target) {
-          target(service.__descriptor!, notification);
-          return;
-        }
+    notify: (service: ServiceInstance, notification: any) => {
+      if (!notificationTargets.hasCallbacks(service)) {
         console.warn(
           "BrowserRuntimeApp.notify no targets for",
           service.uuid,
           service.__descriptor?.serviceName
         );
+        return;
       }
+      notificationTargets.notify(service, notification);
     },
 
     createSubService: (

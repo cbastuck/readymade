@@ -4,13 +4,13 @@ import ServiceFrame from "@/ui-components/service/ServiceFrame";
 
 import { createPlaceholderUI } from "../UIFactory";
 import ServiceDropBar from "./ServiceDropBar";
-import { RuntimeDescriptor, ServiceAction, ServiceImpl } from "../types";
+import { RuntimeDescriptor, ServiceAction, ServiceInstance } from "../types";
 
 type Props = {
   userId: string | undefined;
   boardName: string;
   runtime: RuntimeDescriptor;
-  services: Array<ServiceImpl>;
+  services: Array<ServiceInstance>;
   readonly?: boolean;
   showBypassOnlyIfExplicit?: boolean;
   collapsed?: boolean;
@@ -18,7 +18,7 @@ type Props = {
   onServiceAction: (command: ServiceAction) => void;
   onCreateServiceUi: (
     boardName: string,
-    service: ServiceImpl,
+    service: ServiceInstance,
     runtimeId: string,
     userId: string | undefined
   ) => ReactElement | null;
@@ -48,9 +48,10 @@ export default class ServiceUiContainer extends Component<Props> {
         const serviceUi = readonly
           ? createPlaceholderUI(service)
           : onCreateServiceUi(boardName, service, runtime.id, userId);
+
         return (
           <div
-            key={`scene-frame-${service.uuid}`}
+            key={`service-ui-container-${service.uuid}`}
             style={{
               display: collapsed ? "none" : "flex",
               flexDirection: "row",

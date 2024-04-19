@@ -1,23 +1,23 @@
 import { ReactElement, useEffect } from "react";
 
 import Resizable, { Size } from "@/components/Resizable";
-import { AppImpl, ServiceDescriptor } from "@/types";
+import { ServiceInstance } from "@/types";
+import { CustomMenuEntry } from "./ServiceFrame";
 
 type Props = {
-  service: ServiceDescriptor;
+  service: ServiceInstance;
   children: ReactElement;
   initialSize?: Size;
-  app: AppImpl;
+  customMenuEntries?: Array<CustomMenuEntry>;
   onInit?: (initialState: any) => void;
-  onNotification?: (_: ServiceDescriptor, notification: any) => void;
-  onResize?: (svc: ServiceDescriptor, size: Size) => void;
+  onNotification?: (_: ServiceInstance, notification: any) => void;
+  onResize?: (svc: ServiceInstance, size: Size) => void;
 };
 
 export default function ServiceUI({
   service,
   children,
   initialSize,
-  app,
   onResize: onResizeProp,
   onNotification,
 }: Props) {
@@ -26,13 +26,15 @@ export default function ServiceUI({
     : undefined;
 
   useEffect(() => {
-    if (app && onNotification) {
-      app.registerNotificationTarget?.(service, onNotification);
+    if (service.app && onNotification) {
+      service.app.registerNotificationTarget?.(service, onNotification);
     }
     return () => {
-      app.unregisterNotificationTarget?.(service);
+      if (service.app && onNotification) {
+        service.app.unregisterNotificationTarget?.(service, onNotification);
+      }
     };
-  }, [app, service, onNotification]);
+  }, [service, onNotification]);
 
   return (
     <Resizable initialSize={initialSize} onResize={onResize}>

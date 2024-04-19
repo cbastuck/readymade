@@ -61,7 +61,7 @@ export default function RuntimeMenu({
             className="w-[300px] justify-between my-1 text-base"
             onClick={() => open && setSearchTerm("")}
           >
-            Add runtime
+            Add Runtime
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>

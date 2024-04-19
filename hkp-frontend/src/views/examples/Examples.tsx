@@ -1,5 +1,5 @@
 import Toolbar from "../../components/Toolbar";
-import Footer from "../../components/Footer";
+import Footer from "@/components/Footer.1";
 import CardContainer from "./CardContainer";
 import Intro from "./Intro";
 import { s, t } from "../../styles";

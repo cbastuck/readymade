@@ -1,19 +1,15 @@
 import { useState } from "react";
 
-import { AppImpl, ServiceDescriptor } from "@/types";
+import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { Button } from "hkp-frontend/src/components/ui/button";
 import RadioGroup from "@/ui-components/RadioGroup";
 import Slider from "@/ui-components/Slider";
 import OneOfVisible from "@/ui-components/OneOfVisible";
+import { CustomMenuEntry } from "@/ui-components/service/ServiceFrame";
 
-type Props = {
-  service: ServiceDescriptor;
-  app: AppImpl;
-};
-
-export default function TimerUI(props: Props) {
-  const { service, app } = props;
+export default function TimerUI(props: ServiceUIProps) {
+  const { service } = props;
 
   const modes = ["oneshot", "periodic"];
   const units = ["ms", "s", "m", "h", "d"];
@@ -29,14 +25,14 @@ export default function TimerUI(props: Props) {
   const [delayUnit, setDelayUnit] = useState(units[0]);
 
   const onTriggerOneshot = () => {
-    app.configureService?.(service, {
+    service.configure({
       periodic: false,
       start: true,
       oneShotDelay: delay,
     });
   };
   const onStart = () => {
-    app.configureService?.(service, {
+    service.configure({
       periodic: true,
       periodicValue: interval,
       periodicUnit: intervalUnit,
@@ -44,7 +40,7 @@ export default function TimerUI(props: Props) {
     });
   };
   const onStop = () => {
-    app.configureService?.(service, { stop: true });
+    service.configure({ stop: true });
   };
 
   const update = (state: any) => {
@@ -72,7 +68,7 @@ export default function TimerUI(props: Props) {
     }
   };
 
-  const onNotification = (_: ServiceDescriptor, notification: any) =>
+  const onNotification = (_: ServiceInstance, notification: any) =>
     update(notification);
 
   const onInit = (initialState: any) => update(initialState);
@@ -80,7 +76,7 @@ export default function TimerUI(props: Props) {
   const onIntervalSlider = (newValue: number) => {
     setInterval(newValue);
     if (isIntervalRunning) {
-      app.configureService?.(service, {
+      service.configure({
         periodicValue: newValue,
       });
     }
@@ -89,7 +85,7 @@ export default function TimerUI(props: Props) {
   const onIntervalUnit = (newUnit: string) => {
     setIntervalUnit(newUnit);
     if (isIntervalRunning) {
-      app.configureService?.(service, {
+      service.configure({
         periodicUnit: newUnit,
       });
     }
@@ -97,19 +93,20 @@ export default function TimerUI(props: Props) {
 
   const onDelayUnit = (newUnit: string) => {
     setDelayUnit(newUnit);
-    app.configureService?.(service, {
+    service.configure({
       oneShotDelayUnit: newUnit,
     });
   };
 
+  const customMenuEntries: Array<CustomMenuEntry> = [];
   return (
     <ServiceUI
       {...props}
-      app={app}
       initialSize={{ width: 400, height: 150 }}
       service={service}
       onInit={onInit}
       onNotification={onNotification}
+      customMenuEntries={customMenuEntries}
     >
       <div className="flex flex-col gap-2 h-full">
         <RadioGroup title="Mode" items={modes} initial={0} onChange={setMode} />

@@ -26,9 +26,9 @@ import OutputUINode from "./components/services/OutputUI";
 import WebsocketUI from "./components/services/WebsocketUI";
 
 import PlaceholderUI from "./runtime/browser/services/PlaceholderUI";
-import { ServiceDescriptor, ServiceImpl } from "./types";
+import { ServiceImpl, ServiceUIProps } from "./types";
 import TimerUI from "./runtime/browser/services/TimerUI";
-import { MonitorUI } from "./runtime/browser/services/Monitor";
+import MonitorUI from "./runtime/browser/services/MonitorUI";
 import { HackerUI } from "./runtime/browser/services/Hacker";
 import { InputUI } from "./runtime/browser/services/Input";
 import { OutputUI } from "./runtime/browser/services/Output";
@@ -75,7 +75,6 @@ export function createServiceUI(
   if (userInterface) {
     return createElement(userInterface, {
       ...props,
-      app: scope.getApp(),
       service,
       board,
       runtimeId,
@@ -105,14 +104,10 @@ export function createServiceUI(
   return createPlaceholderUI(service);
 }
 
-type ServiceUIProps = {
-  service: ServiceDescriptor;
-};
-
 function findServiceUI(
   registry: BrowserRegistry,
   serviceId: string
-): typeof Component | FunctionComponent<ServiceUIProps> | null {
+): typeof Component<ServiceUIProps> | FunctionComponent<ServiceUIProps> | null {
   switch (serviceId) {
     case "hookup.to/service/timer":
       return TimerUI;

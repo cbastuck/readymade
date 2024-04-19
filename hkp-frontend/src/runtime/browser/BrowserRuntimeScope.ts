@@ -1,6 +1,7 @@
 import {
   AppImpl,
   InstanceId,
+  RuntimeApi,
   RuntimeDescriptor,
   RuntimeScope,
   ServiceDescriptor,
@@ -9,6 +10,7 @@ import {
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
+import api from "./BrowserRuntimeApi";
 
 export type InstanceIndexTuple = [ServiceImpl | null, number];
 
@@ -28,6 +30,10 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     this.serviceInstances = [];
     this.subservices = {};
     this.app = createBrowserRuntimeApp(this);
+  }
+
+  getApi(): RuntimeApi {
+    return api;
   }
 
   getApp = (): AppImpl => {

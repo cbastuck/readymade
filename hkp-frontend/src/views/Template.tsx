@@ -2,7 +2,7 @@ import { Component, ReactNode } from "react";
 
 import BoardProvider from "../BoardContext";
 import Toolbar from "../components/Toolbar";
-import Footer from "../components/Footer";
+import Footer from "@/components/Footer.1";
 import Breadcrumbs, { BreadcrumbItem } from "@/ui-components/Breadcrumbs";
 
 type Props = {

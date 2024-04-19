@@ -1,31 +1,33 @@
+import { ServiceInstance, ServiceUIProps } from "@/types";
 import { Component } from "react";
 import { TextArea } from "semantic-ui-react";
 
-import MonitorDescriptor from "hkp-services/Monitor";
-
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
 import Button from "hkp-frontend/src/components/shared/Button";
-import { s, t } from "hkp-frontend/src/styles";
+
 import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";
+
+import { s, t } from "hkp-frontend/src/styles";
 
 const ACTION_BAR_HEIGHT = "45";
 
-export class MonitorUI extends Component {
+export default class MonitorUI extends Component<ServiceUIProps> {
   state = {
     message: "",
     renderTextEditor: true,
   };
 
-  onInit = (initialState) => {
+  onInit = (initialState: any) => {
     this.setState({
       ...initialState,
     });
   };
 
-  onNotification = (service, params) => {
+  onNotification = (_: ServiceInstance, params: any) => {
     const nil = params === null && "<null>";
     const undef = params === undefined && "<undefined>";
     const s = nil || undef || unroll(params);
+    console.log("GOT NOTIFI", params);
 
     const { bypass } = params || {};
     if (bypass !== undefined) {
@@ -72,7 +74,7 @@ export class MonitorUI extends Component {
       </div>
     );
 
-  renderActionBar = (service) => (
+  renderActionBar = (service: ServiceInstance) => (
     <div
       style={{
         display: "flex",
@@ -113,7 +115,7 @@ export class MonitorUI extends Component {
         onInit={this.onInit}
         onNotification={this.onNotification}
       >
-        {({ service }) =>
+        {({ service }: { service: ServiceInstance }) =>
           service && (
             <div
               style={{
@@ -133,11 +135,11 @@ export class MonitorUI extends Component {
   }
 }
 
-function isObject(obj) {
+function isObject(obj: any) {
   return typeof obj === "object" && obj !== null;
 }
 
-function unroll(params) {
+function unroll(params: any): any {
   const isBlob = params instanceof Blob;
   if (isBlob) {
     return `Blob (${params.type} ${params.size} bytes)`;
@@ -164,14 +166,3 @@ function unroll(params) {
     {}
   );
 }
-
-const { serviceName, serviceId, service: Monitor } = MonitorDescriptor;
-const descriptor = {
-  serviceName,
-  serviceId,
-  create: (app, board, descriptor, id) =>
-    new Monitor(app, board, descriptor, id),
-  createUI: MonitorUI,
-};
-
-export default descriptor;

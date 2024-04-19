@@ -4,16 +4,16 @@ import {
   RuntimeDescriptor,
   ServiceAction,
   ServiceDescriptor,
-  ServiceImpl,
   RuntimeScope,
   OnResult,
   User,
+  RuntimeApi,
+  ServiceInstance,
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
 import RemoteServiceUI from "./RemoteServiceUI";
 import createServiceUI from "./UIRegistry";
-import { configureService, processService } from "./RemoteRuntimeApi";
 
 type Props = {
   user: User | null;
@@ -41,34 +41,25 @@ export default function RemoteRuntime({
   onArrangeService,
   onServiceAction,
 }: Props) {
-  const makeServiceWithConfig = useCallback(
+  const makeServiceInstances = useCallback(
     (services: Array<ServiceDescriptor>) =>
-      services.map((svc: ServiceDescriptor) => ({
-        ...svc,
-        board: boardName,
-        app: scope.getApp(),
-        process: async (params: any): Promise<any> =>
-          processService(scope, svc, params, null), // TODO: passing null as requestId
-        configure: async (config: object): Promise<void> => {
-          await configureService(scope, svc, config);
-        },
-        destroy: async (): Promise<void> => {},
-      })),
+      services.map((svc) => makeServiceInstance(scope, svc, boardName)),
     [scope, boardName]
   );
 
   const [servicesWithConfig, setServicesWithConfig] = useState<
-    Array<ServiceImpl>
-  >(makeServiceWithConfig(services));
+    Array<ServiceInstance>
+  >(makeServiceInstances(services));
 
   useEffect(() => {
-    setServicesWithConfig(makeServiceWithConfig(services));
-  }, [services, makeServiceWithConfig]);
+    setServicesWithConfig(makeServiceInstances(services));
+  }, [services, makeServiceInstances]);
 
   if (scope.onResult !== onResult) {
     scope.onResult = onResult;
     scope.authenticatedUser = user;
   }
+
   scope.onConfig = (instanceId: string, config: object) => {
     setServicesWithConfig((prevState) =>
       prevState.map((prevSvc) =>
@@ -95,24 +86,36 @@ export default function RemoteRuntime({
 }
 
 const onCreateServiceUi = (
-  boardName: string,
-  service: ServiceImpl,
-  runtimeId: string,
+  _boardName: string,
+  service: ServiceInstance,
+  _runtimeId: string,
   _userId: string | undefined
 ): ReactElement | null => {
   const { serviceId } = service;
 
   const Ui = serviceId && createServiceUI(serviceId);
   return Ui ? (
-    <Ui
-      {...{
-        service,
-        board: boardName,
-        runtimeId,
-        key: `key-${service.uuid}`,
-      }}
-    />
+    <Ui service={service} key={`key-${service.uuid}`} />
   ) : (
     <RemoteServiceUI service={service} />
   );
 };
+
+export function makeServiceInstance(
+  scope: RuntimeScope,
+  svc: ServiceDescriptor,
+  boardName: string
+): ServiceInstance {
+  const api: RuntimeApi = scope.getApi();
+  return {
+    ...svc,
+    board: boardName,
+    app: scope.getApp(),
+    process: async (params: any): Promise<any> =>
+      api.processService(scope, svc, params, null), // TODO: passing null as requestId
+    configure: async (config: object): Promise<void> => {
+      await api.configureService(scope, svc, config);
+    },
+    destroy: async (): Promise<void> => {},
+  };
+}

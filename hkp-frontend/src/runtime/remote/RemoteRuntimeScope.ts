@@ -1,11 +1,13 @@
 import {
   AppImpl,
   RemoteRuntimeMessageType,
+  RuntimeApi,
   RuntimeDescriptor,
   RuntimeScope,
   User,
 } from "../../types";
 import { createRemoteRuntimeApp } from "./RemoteRuntimeApp";
+import api from "./RemoteRuntimeApi";
 
 export default class RemoteRuntimeScope implements RuntimeScope {
   app: AppImpl;
@@ -26,6 +28,10 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     if (this.outputUrl) {
       this.connect(this.outputUrl, runtime.user || null);
     }
+  }
+
+  getApi(): RuntimeApi {
+    return api;
   }
 
   getApp = (): AppImpl => {

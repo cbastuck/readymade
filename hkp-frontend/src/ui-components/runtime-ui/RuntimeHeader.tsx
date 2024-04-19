@@ -84,7 +84,7 @@ export default function RuntimeHeader({
         </div>
       </div>
 
-      <div className="ml-auto mt-1 mr-0">
+      <div className="ml-auto my-2">
         <RuntimeServiceMenu
           runtimeId={runtimeId}
           registry={registry}

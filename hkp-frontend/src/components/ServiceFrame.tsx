@@ -6,7 +6,12 @@ import ServiceReference from "./ServiceReference";
 import ConfigurationEditor from "./ConfigurationEditor";
 import { s, t } from "../styles";
 import { filterPrivateMembers } from "../runtime/browser/services/helpers";
-import { ServiceAction, InstanceId, ServiceImpl } from "../types";
+import {
+  ServiceAction,
+  InstanceId,
+  ServiceImpl,
+  ServiceInstance,
+} from "../types";
 import BypassSwitch from "../ui-components/service/BypassSwitch";
 
 function getNotificationID(service: InstanceId) {
@@ -43,22 +48,21 @@ export default class ServiceFrame extends Component<Props, State> {
     bypass: undefined,
   };
 
+  onNotification = (_: ServiceInstance, notification: any) => {
+    const { bypass } = notification || {};
+    if (bypass !== undefined) {
+      this.setState({ bypass });
+    }
+  };
+
   componentDidMount() {
     const { service } = this.props;
-    service.__notificationTargets?.register(
-      getNotificationID(service),
-      (_, notification) => {
-        const { bypass } = notification || {};
-        if (bypass !== undefined) {
-          this.setState({ bypass });
-        }
-      }
-    );
+    service.app.registerNotificationTarget?.(service, this.onNotification);
   }
 
   componentWillUnmount() {
     const { service } = this.props;
-    service.__notificationTargets?.unregister(getNotificationID(service));
+    service.app.unregisterNotificationTarget?.(service, this.onNotification);
   }
 
   renderServiceName = (name: string) => {

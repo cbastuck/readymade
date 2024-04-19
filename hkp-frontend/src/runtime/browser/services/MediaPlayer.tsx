@@ -1,12 +1,12 @@
 import { Component } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
-import { AppImpl, ServiceClass } from "../../../types";
+import { AppImpl, ServiceClass, ServiceUIProps } from "../../../types";
 
 const serviceId = "hookup.to/service/media-player";
 const serviceName = "Media Player";
 
-export class MediaPlayerUI extends Component {
+export class MediaPlayerUI extends Component<ServiceUIProps> {
   createdObjectUrl: string | null = null;
   audio: HTMLAudioElement | null = null;
 

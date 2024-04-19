@@ -10,7 +10,7 @@ import {
   InstanceId,
   ServiceClass,
   RestoreRuntimeResult,
-  ServiceImpl,
+  ServiceInstance,
   User,
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
@@ -43,7 +43,7 @@ async function restoreRuntime(
   _user: User | null
 ): Promise<RestoreRuntimeResult | null> {
   const scope = await createScope(runtime, runtime.bundles);
-  const createdServices: Array<ServiceImpl> = (
+  const createdServices: Array<ServiceInstance> = (
     await Promise.all(services.map((svc) => addService(scope, svc, svc.uuid)))
   ).filter((svc) => svc && scope.findServiceInstance(svc.uuid)) as any;
 
@@ -164,7 +164,7 @@ export async function processService(
 export async function appendSubservice(
   scope_: RuntimeScope,
   service: ServiceClass,
-  parent: ServiceImpl,
+  parent: ServiceInstance,
   instanceId?: string
 ) {
   const scope = scope_ as BrowserRuntimeScope;
@@ -188,7 +188,7 @@ function createService(
   scope: BrowserRuntimeScope,
   service: ServiceClass,
   instanceId?: string
-): [ServiceImpl, ServiceDescriptor] | null {
+): [ServiceInstance, ServiceDescriptor] | null {
   const module = scope.registry.findServiceModule(service.serviceId);
   if (!module) {
     console.error(
@@ -199,7 +199,7 @@ function createService(
     return null;
   }
   const useInstanceId = instanceId || uuid.v4();
-  const svc: ServiceImpl = module.create(
+  const svc: ServiceInstance = module.create(
     scope.app,
     "deprecated boardname - get it from app",
     module,
@@ -209,12 +209,15 @@ function createService(
     console.error(`Could not create service module: ${JSON.stringify(module)}`);
     return null;
   }
+  svc.serviceName = service.serviceName || module.serviceName;
+  svc.serviceId = module.serviceId;
+
   const descriptor = {
     ...module,
     uuid: useInstanceId,
     serviceName: service.serviceName || module.serviceName,
   };
-  svc.__descriptor = descriptor;
+  svc.__descriptor = descriptor; // TODO: remote this __descriptor
   const configure = svc.configure?.bind(svc);
   svc.configure = (config: any) => {
     // monkey wire configure
