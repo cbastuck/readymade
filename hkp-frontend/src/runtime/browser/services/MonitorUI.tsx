@@ -1,17 +1,13 @@
-import { ServiceInstance, ServiceUIProps } from "@/types";
-
+import { useEffect, useState } from "react";
 import { TextArea } from "semantic-ui-react";
+import { CircleX, SquarePlay, Pencil } from "lucide-react";
 
+import { ServiceInstance, ServiceUIProps } from "@/types";
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
-import { Button } from "hkp-frontend/src/components/ui/button";
 
-import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";
-
-import { s, t } from "hkp-frontend/src/styles";
-import { useState } from "react";
-import { needsUpdate } from "@/ui-components/service/ServiceUI";
-
-const ACTION_BAR_HEIGHT = "45";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 export default function MonitorUI(props: ServiceUIProps) {
   const [message, setMessage] = useState("");
@@ -34,12 +30,10 @@ export default function MonitorUI(props: ServiceUIProps) {
     const { bypass } = params || {};
     if (bypass !== undefined) {
       return;
+    } else {
+      setMessage(isObject(s) ? JSON.stringify(s, null, 2) : s);
     }
-
-    setMessage(isObject(s) ? JSON.stringify(s, null, 2) : s);
   };
-
-  const clearEditor = () => setMessage("");
 
   const switchEditor = () => setRenderTextEditor(!renderTextEditor);
 
@@ -60,44 +54,32 @@ export default function MonitorUI(props: ServiceUIProps) {
         cols={30}
       />
     ) : (
-      <div
-        style={s(t.m("5px 10px"), {
-          height: `calc(100% - ${ACTION_BAR_HEIGHT}px)`,
-        })}
-      >
-        <Editor
-          value={message}
-          language="json"
-          onChange={(val) => val && setMessage(val)}
-        />
-      </div>
+      <Editor
+        value={message}
+        language="json"
+        onChange={(val) => val && setMessage(val)}
+      />
     );
 
-  const renderActionBar = (service: ServiceInstance) => (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        margin: "0px 10px",
-        marginBottom: 5,
-        height: `${ACTION_BAR_HEIGHT} - 15}px`,
-      }}
-    >
-      <Button variant="outline" onClick={clearEditor} style={{ width: "100%" }}>
-        Clear
-      </Button>
+  const clearEditor = () => setMessage("");
 
-      <Button
-        variant="outline"
-        onClick={switchEditor}
-        style={{ width: "100%" }}
-      >
-        {renderTextEditor ? "Edit" : "Back"}
-      </Button>
-      <Button
-        variant="outline"
-        style={{ width: "100%" }}
-        onClick={() => {
+  const { service, registerCustomMenuItems } = props;
+  useEffect(() => {
+    registerCustomMenuItems?.([
+      {
+        name: "Clear Buffer",
+        icon: <CircleX className="mr-2 h-4 w-4" />,
+        onClick: clearEditor,
+      },
+      {
+        name: "Edit Buffer",
+        icon: <Pencil className="mr-2 h-4 w-4" />,
+        onClick: switchEditor,
+      },
+      {
+        name: "Inject Buffer",
+        icon: <SquarePlay className="mr-2 h-4 w-4" />,
+        onClick: () => {
           let data;
           try {
             data = JSON.parse(message);
@@ -105,30 +87,24 @@ export default function MonitorUI(props: ServiceUIProps) {
             data = message;
           }
           service.app.next(service, data);
-        }}
-      >
-        Inject
-      </Button>
-    </div>
-  );
+        },
+      },
+    ]);
+  }, []);
 
   return (
     <ServiceUI {...props} onInit={onInit} onNotification={onNotification}>
-      {({ service }: { service: ServiceInstance }) =>
-        service && (
-          <div
-            style={{
-              width: "100%",
-              height: "100%",
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {renderEditor()}
-            {renderActionBar(service)}
-          </div>
-        )
-      }
+      <div
+        className="pb-2"
+        style={{
+          width: "100%",
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {renderEditor()}
+      </div>
     </ServiceUI>
   );
 }

@@ -39,7 +39,6 @@ export default function ServiceSettings({
   onConfig,
   onCustomEntry,
 }: Props) {
-  // console.log("GOT SERVICE", service);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

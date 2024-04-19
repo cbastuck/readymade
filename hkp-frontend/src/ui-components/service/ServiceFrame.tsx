@@ -10,7 +10,8 @@ import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 export type CustomMenuEntry = {
   name: string;
   icon: ReactNode;
-  config: any;
+  config?: any;
+  onClick?: () => void;
 };
 
 type Props = {
@@ -113,8 +114,14 @@ export default function ServiceFrame({
     []
   );
 
-  const onCustomEntry = (item: CustomMenuEntry) =>
-    service.configure(item.config);
+  const onCustomEntry = (item: CustomMenuEntry) => {
+    const { config, onClick } = item;
+    if (config) {
+      service.configure(config);
+    } else if (onClick) {
+      onClick();
+    }
+  };
 
   const { uuid: _, board, ...filteredService } = filterPrivateMembers(service);
   return (
