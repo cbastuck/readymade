@@ -1,31 +1,30 @@
-import React, { useCallback } from "react";
-import { ReactElement, ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
-import { ServiceAction, ServiceDescriptor, ServiceInstance } from "@/types";
+import {
+  CustomMenuEntry,
+  ServiceAction,
+  ServiceDescriptor,
+  ServiceInstance,
+} from "@/types";
 import { s, t } from "@/styles";
 import ServiceHeader from "./ServiceHeader";
 import EditorDialog from "../EditorDialog";
 import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 
-export type CustomMenuEntry = {
-  name: string;
-  icon: ReactNode;
-  config?: any;
-  onClick?: () => void;
-};
-
 type Props = {
   service: ServiceInstance;
-  serviceUI: ReactElement | null;
   draggable: boolean;
   showBypassOnlyIfExplicit?: boolean;
+  children: ReactNode;
+  customMenuEntries?: Array<CustomMenuEntry>;
   onAction: (action: ServiceAction) => void;
 };
 
 export default function ServiceFrame({
-  serviceUI,
+  children,
   service,
   showBypassOnlyIfExplicit,
+  customMenuEntries,
   onAction,
 }: Props) {
   const [frameCollapsed, setFrameCollapsed] = useState(false);
@@ -105,15 +104,6 @@ export default function ServiceFrame({
     } catch (err) {}
   };
 
-  const [customMenuEntries, setCustomMenuEntries] = useState<
-    Array<CustomMenuEntry>
-  >([]);
-
-  const registerCustomMenuItems = useCallback(
-    (items: Array<CustomMenuEntry>) => setCustomMenuEntries(items),
-    []
-  );
-
   const onCustomEntry = (item: CustomMenuEntry) => {
     const { config, onClick } = item;
     if (config) {
@@ -166,12 +156,7 @@ export default function ServiceFrame({
             display: frameCollapsed ? "none" : undefined,
           }}
         >
-          {serviceUI
-            ? React.createElement(serviceUI.type, {
-                ...serviceUI.props,
-                registerCustomMenuItems,
-              })
-            : null}
+          {children}
         </div>
       </div>
     </div>

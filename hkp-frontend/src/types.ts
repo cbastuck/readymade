@@ -1,6 +1,5 @@
-import { Component, FunctionComponent, ReactElement } from "react";
+import { Component, FunctionComponent, ReactElement, ReactNode } from "react";
 import PeerJs, { DataConnection } from "peerjs";
-import { CustomMenuEntry } from "./ui-components/service/ServiceFrame";
 
 export type InstanceId = {
   uuid: string;
@@ -196,7 +195,17 @@ export type AppImpl = {
 
 export type ServiceUIProps = {
   service: ServiceInstance;
-  registerCustomMenuItems?: (items: Array<CustomMenuEntry>) => void;
+  showBypassOnlyIfExplicit?: boolean;
+  draggable?: boolean;
+  customMenuEntries?: Array<CustomMenuEntry>;
+  onServiceAction: (command: ServiceAction) => void;
+};
+
+export type CustomMenuEntry = {
+  name: string;
+  icon: ReactNode;
+  config?: any;
+  onClick?: () => void;
 };
 
 export type ServiceInstance = ServiceImpl;

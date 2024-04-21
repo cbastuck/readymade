@@ -15,9 +15,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ServiceDescriptor } from "@/types";
+import { CustomMenuEntry, ServiceDescriptor } from "@/types";
 import { Button } from "@/components/ui/button";
-import { CustomMenuEntry } from "./ServiceFrame";
 
 type Props = {
   service: ServiceDescriptor;

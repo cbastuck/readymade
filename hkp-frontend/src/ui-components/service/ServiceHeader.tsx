@@ -1,9 +1,8 @@
-import { ServiceDescriptor } from "@/types";
+import { CustomMenuEntry, ServiceDescriptor } from "@/types";
 
 import BypassSwitch from "./BypassSwitch";
 import ServiceSettings from "./ServiceSettings";
 import ServiceName from "./ServiceName";
-import { CustomMenuEntry } from "./ServiceFrame";
 
 type Props = {
   showBypassOnlyIfExplicit: boolean;

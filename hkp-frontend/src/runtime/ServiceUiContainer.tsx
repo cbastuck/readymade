@@ -1,10 +1,9 @@
 import { Component, ReactElement } from "react";
 
-import ServiceFrame from "@/ui-components/service/ServiceFrame";
-
 import { createPlaceholderUI } from "../UIFactory";
 import ServiceDropBar from "./ServiceDropBar";
 import { RuntimeDescriptor, ServiceAction, ServiceInstance } from "../types";
+import React from "react";
 
 type Props = {
   userId: string | undefined;
@@ -42,13 +41,22 @@ export default class ServiceUiContainer extends Component<Props> {
       return false;
     }
 
+    const draggable = !!onArrangeService;
+
     return (
       services &&
       services.map((service, pos) => {
         const serviceUI = readonly
           ? createPlaceholderUI(service)
           : onCreateServiceUi(boardName, service, runtime.id, userId);
-
+        const serviceElement =
+          serviceUI &&
+          React.createElement(serviceUI.type, {
+            ...serviceUI.props,
+            draggable,
+            showBypassOnlyIfExplicit,
+            onServiceAction,
+          });
         return (
           <div
             key={`service-ui-container-${service.uuid}`}
@@ -61,13 +69,8 @@ export default class ServiceUiContainer extends Component<Props> {
               <ServiceDropBar index={0} onDrop={onArrangeService} />
             )}
 
-            <ServiceFrame
-              service={service}
-              serviceUI={serviceUI}
-              onAction={onServiceAction}
-              draggable={!!onArrangeService}
-              showBypassOnlyIfExplicit={showBypassOnlyIfExplicit}
-            />
+            {serviceElement}
+
             <ServiceDropBar index={pos + 1} onDrop={onArrangeService} />
           </div>
         );

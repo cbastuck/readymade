@@ -1,22 +1,21 @@
 import { Button } from "semantic-ui-react";
 
-import ServiceUI from "../services/ServiceUI";
 import InputField from "../../components/shared/InputField";
-import { ServiceImpl } from "../../types";
+import { ServiceInstance, ServiceUIProps } from "../../types";
 import { useEffect, useState } from "react";
 import SelectorField from "../../components/shared/SelectorField";
 import InputText from "../../components/shared/InputText";
 import Slider from "../../components/shared/Slider";
+import ServiceUI from "@/ui-components/service/ServiceUI";
 
-type Props = { service: ServiceImpl };
-
-export default function RemoteServiceUI({ service }: Props) {
+export default function RemoteServiceUI(props: ServiceUIProps) {
+  const { service } = props;
   const meta = service["__meta__"];
   const [properties, setProperties] = useState<any>(extractProperties(service));
 
   useEffect(() => setProperties(extractProperties(service)), [service]);
 
-  const renderMain = (service: ServiceImpl) => {
+  const renderMain = (service: ServiceInstance) => {
     return (
       <div key={service.uuid} id={service.uuid} style={{ minWidth: 200 }}>
         {Object.keys(properties).map((prop) => {
@@ -139,11 +138,13 @@ export default function RemoteServiceUI({ service }: Props) {
   const onNotification = () => {};
   return (
     <ServiceUI
+      {...props}
       service={service}
       onInit={onInit}
       onNotification={onNotification}
-      segments={[{ name: "Main", render: renderMain }]}
-    />
+    >
+      {renderMain(service)}
+    </ServiceUI>
   );
 }
 

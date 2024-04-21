@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "@/types";
@@ -11,7 +11,7 @@ import Slider from "@/ui-components/Slider";
 import OneOfVisible from "@/ui-components/OneOfVisible";
 
 export default function TimerUI(props: ServiceUIProps) {
-  const { service, registerCustomMenuItems } = props;
+  const { service } = props;
 
   const modes = ["oneshot", "periodic"];
   const units = ["ms", "s", "m", "h", "d"];
@@ -100,15 +100,13 @@ export default function TimerUI(props: ServiceUIProps) {
     });
   };
 
-  useEffect(() => {
-    registerCustomMenuItems?.([
-      {
-        name: "Reset Timer",
-        icon: <RotateCcw className="mr-2 h-4 w-4" />,
-        config: { counter: 0 },
-      },
-    ]);
-  }, [registerCustomMenuItems]);
+  const customMenuEntries = [
+    {
+      name: "Reset Timer",
+      icon: <RotateCcw className="mr-2 h-4 w-4" />,
+      config: { counter: 0 },
+    },
+  ];
 
   return (
     <ServiceUI
@@ -117,6 +115,7 @@ export default function TimerUI(props: ServiceUIProps) {
       service={service}
       onInit={onInit}
       onNotification={onNotification}
+      customMenuEntries={customMenuEntries}
     >
       <div className="flex flex-col gap-2 h-full">
         <RadioGroup title="Mode" items={modes} initial={0} onChange={setMode} />

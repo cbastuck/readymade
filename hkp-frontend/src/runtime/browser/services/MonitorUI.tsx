@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { TextArea } from "semantic-ui-react";
 import { CircleX, SquarePlay, Pencil } from "lucide-react";
 
@@ -37,6 +37,35 @@ export default function MonitorUI(props: ServiceUIProps) {
 
   const switchEditor = () => setRenderTextEditor(!renderTextEditor);
 
+  const clearEditor = () => setMessage("");
+
+  const { service } = props;
+  const customMenuEntries = [
+    {
+      name: "Clear Buffer",
+      icon: <CircleX className="mr-2 h-4 w-4" />,
+      onClick: clearEditor,
+    },
+    {
+      name: "Edit Buffer",
+      icon: <Pencil className="mr-2 h-4 w-4" />,
+      onClick: switchEditor,
+    },
+    {
+      name: "Inject Buffer",
+      icon: <SquarePlay className="mr-2 h-4 w-4" />,
+      onClick: () => {
+        let data;
+        try {
+          data = JSON.parse(message);
+        } catch (err) {
+          data = message;
+        }
+        service.app.next(service, data);
+      },
+    },
+  ];
+
   const renderEditor = () =>
     renderTextEditor ? (
       <TextArea
@@ -61,39 +90,13 @@ export default function MonitorUI(props: ServiceUIProps) {
       />
     );
 
-  const clearEditor = () => setMessage("");
-
-  const { service, registerCustomMenuItems } = props;
-  useEffect(() => {
-    registerCustomMenuItems?.([
-      {
-        name: "Clear Buffer",
-        icon: <CircleX className="mr-2 h-4 w-4" />,
-        onClick: clearEditor,
-      },
-      {
-        name: "Edit Buffer",
-        icon: <Pencil className="mr-2 h-4 w-4" />,
-        onClick: switchEditor,
-      },
-      {
-        name: "Inject Buffer",
-        icon: <SquarePlay className="mr-2 h-4 w-4" />,
-        onClick: () => {
-          let data;
-          try {
-            data = JSON.parse(message);
-          } catch (err) {
-            data = message;
-          }
-          service.app.next(service, data);
-        },
-      },
-    ]);
-  }, []);
-
   return (
-    <ServiceUI {...props} onInit={onInit} onNotification={onNotification}>
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      customMenuEntries={customMenuEntries}
+    >
       <div
         className="pb-2"
         style={{
