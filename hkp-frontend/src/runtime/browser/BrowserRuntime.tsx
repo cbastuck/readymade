@@ -1,4 +1,4 @@
-import { Component } from "react";
+import React, { Component, ReactElement } from "react";
 import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
 
 import { request } from "../../core/actions";
@@ -11,11 +11,10 @@ import {
   RuntimeDescriptor,
   ServiceAction,
   ServiceDescriptor,
-  ServiceImpl,
   ServiceInstance,
   User,
 } from "../../types";
-import { createServiceUI } from "../../UIFactory";
+import { findServiceUI } from "../../UIFactory";
 import { BoardCtx } from "../../BoardContext";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import {
@@ -41,7 +40,6 @@ type Props = {
   services: Array<ServiceDescriptor>;
   boardName: string;
   collapsed?: boolean;
-  readonly?: boolean;
 
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
@@ -261,7 +259,6 @@ export default class BrowserRuntime extends Component<Props, State> {
     const {
       user,
       boardName,
-      readonly,
       runtime,
       scope,
       services: rawServices,
@@ -287,14 +284,24 @@ export default class BrowserRuntime extends Component<Props, State> {
     }
 
     const onCreateServiceUI = (
-      boardName: string,
-      service: ServiceImpl,
-      runtimeId: string,
-      userId: string | undefined
-    ) => {
-      return scope.registry
-        ? createServiceUI(scope, boardName, service, runtimeId, userId)
-        : null;
+      _boardName: string,
+      service: ServiceInstance,
+      _runtimeId: string,
+      _userId: string | undefined
+    ): ReactElement => {
+      const serviceId = service.serviceId || service.__descriptor?.serviceId;
+      const ui = serviceId ? findServiceUI(serviceId) : null;
+      if (!ui) {
+        return <div>Browser ServiceUI missing for {serviceId}</div>;
+      }
+
+      const draggable = !!onArrangeService;
+      return React.createElement(ui, {
+        service,
+        showBypassOnlyIfExplicit: false,
+        draggable,
+        onServiceAction,
+      });
     };
 
     return (
@@ -302,11 +309,9 @@ export default class BrowserRuntime extends Component<Props, State> {
         collapsed={collapsed}
         boardName={boardName}
         runtime={runtime}
-        readonly={readonly}
         services={services}
         userId={user?.userId}
         onArrangeService={onArrangeService}
-        onServiceAction={onServiceAction}
         onCreateServiceUi={onCreateServiceUI}
       />
     );

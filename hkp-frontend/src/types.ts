@@ -106,6 +106,20 @@ export type PeerInputRouting = { [id: string]: PeerInputActivation };
 export type PeerOutputRouting = { [id: string]: PeerOutputActivation };
 
 export type ServiceURI = string;
+
+export type ServiceUIProps = {
+  service: ServiceInstance;
+  showBypassOnlyIfExplicit?: boolean;
+  draggable?: boolean;
+  resizable?: boolean;
+  customMenuEntries?: Array<CustomMenuEntry>;
+  onServiceAction: (command: ServiceAction) => void;
+};
+
+export type ServiceUIComponent =
+  | typeof Component<ServiceUIProps>
+  | FunctionComponent<ServiceUIProps>;
+
 export type ServiceModule = ServiceClass & {
   create: (
     app: AppImpl,
@@ -113,9 +127,7 @@ export type ServiceModule = ServiceClass & {
     service: ServiceClass,
     instanceId: string
   ) => ServiceInstance;
-  createUI?:
-    | typeof Component<ServiceUIProps>
-    | FunctionComponent<ServiceUIProps>;
+  createUI?: ServiceUIComponent;
 };
 export type ServiceClass = {
   serviceName: string;
@@ -179,7 +191,7 @@ export type AppImpl = {
     service: ServiceClass,
     instanceId?: string
   ) => void;
-  createSubServiceUI: (svc: ServiceInstance) => void;
+  createSubServiceUI: (svc: ServiceInstance) => ReactElement | null;
 
   // TODO: should be available for both Brower and Remote runtime
   registerNotificationTarget?: (
@@ -191,14 +203,6 @@ export type AppImpl = {
     onNotification: (svc: ServiceInstance, notification: any) => void
   ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
-};
-
-export type ServiceUIProps = {
-  service: ServiceInstance;
-  showBypassOnlyIfExplicit?: boolean;
-  draggable?: boolean;
-  customMenuEntries?: Array<CustomMenuEntry>;
-  onServiceAction: (command: ServiceAction) => void;
 };
 
 export type CustomMenuEntry = {

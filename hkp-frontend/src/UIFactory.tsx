@@ -26,7 +26,7 @@ import OutputUINode from "./components/services/OutputUI";
 import WebsocketUI from "./components/services/WebsocketUI";
 
 import PlaceholderUI from "./runtime/browser/services/PlaceholderUI";
-import { ServiceImpl, ServiceUIProps } from "./types";
+import { ServiceImpl, ServiceUIComponent } from "./types";
 import TimerUI from "./runtime/browser/services/TimerUI";
 import MonitorUI from "./runtime/browser/services/MonitorUI";
 import { HackerUI } from "./runtime/browser/services/Hacker";
@@ -47,15 +47,15 @@ import { SequencerUI } from "./runtime/browser/services/Sequencer";
 import { SpotifyUI } from "./runtime/browser/services/Spotify";
 import { GithubSourceUI } from "./runtime/browser/services/GithubSource";
 import { GithubSinkUI } from "./runtime/browser/services/GithubSink";
-import BrowserRegistry from "./runtime/browser/BrowserRegistry";
 import BrowserRuntimeScope from "./runtime/browser/BrowserRuntimeScope";
 
 export function createPlaceholderUI(service: ServiceImpl) {
   return <PlaceholderUI service={service} />;
 }
 
-export function createServiceUI(
-  scope: BrowserRuntimeScope,
+// TODO: deprecated, sbould not be used anymore
+function createServiceUI(
+  _scope: BrowserRuntimeScope,
   board: string,
   service: ServiceImpl,
   runtimeId: string,
@@ -70,8 +70,7 @@ export function createServiceUI(
     throw new Error(`UIFactory missing serviceId ${JSON.stringify(service)}`);
   }
 
-  const registry = scope.registry;
-  const userInterface = findServiceUI(registry, serviceId);
+  const userInterface = findServiceUI(serviceId);
   if (userInterface) {
     return createElement(userInterface, {
       ...props,
@@ -103,15 +102,7 @@ export function createServiceUI(
   return createPlaceholderUI(service);
 }
 
-type ServiceUIComponent =
-  | typeof Component<ServiceUIProps>
-  | FunctionComponent<ServiceUIProps>
-  | null;
-
-function findServiceUI(
-  registry: BrowserRegistry,
-  serviceId: string
-): ServiceUIComponent {
+export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {
     case "hookup.to/service/timer":
       return TimerUI;
@@ -155,7 +146,7 @@ function findServiceUI(
     case "hookup.to/service/github-sink":
       return GithubSinkUI;
     default:
-      break;
+      return PlaceholderUI;
   }
-  return registry.findServiceModule(serviceId)?.createUI || null;
+  //return registry.findServiceModule(serviceId)?.createUI || null;
 }

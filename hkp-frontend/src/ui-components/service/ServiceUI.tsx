@@ -11,6 +11,7 @@ type Props = {
   customMenuEntries?: Array<CustomMenuEntry>;
   showBypassOnlyIfExplicit?: boolean;
   draggable?: boolean;
+  resizable?: boolean;
   onInit?: (initialState: any) => void;
   onNotification?: (_: ServiceInstance, notification: any) => void;
   onResize?: (svc: ServiceInstance, size: Size) => void;
@@ -24,6 +25,7 @@ export default function ServiceUI({
   onResize: onResizeProp,
   showBypassOnlyIfExplicit,
   draggable,
+  resizable = true,
   customMenuEntries,
   onNotification,
   onServiceAction,
@@ -51,7 +53,11 @@ export default function ServiceUI({
       showBypassOnlyIfExplicit={showBypassOnlyIfExplicit}
       customMenuEntries={customMenuEntries}
     >
-      <Resizable initialSize={initialSize} onResize={onResize}>
+      <Resizable
+        initialSize={initialSize}
+        onResize={onResize}
+        disabled={!resizable}
+      >
         <div className="font-sans text-foreground-font px-4 h-full w-full">
           {children}
         </div>

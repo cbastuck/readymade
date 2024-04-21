@@ -1,4 +1,5 @@
-import { createServiceUI } from "../../UIFactory";
+import React from "react";
+import { findServiceUI } from "../../UIFactory";
 import {
   AppImpl,
   InstanceId,
@@ -81,17 +82,17 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       instanceId?: string
     ) => appendSubservice(scope, service, parent, instanceId),
 
-    createSubServiceUI: (svc: ServiceImpl) =>
-      createServiceUI(
-        scope,
-        "deprecated board name",
-        svc,
-        scope.descriptor.id,
-        "deprecated userId",
-        {
-          resizable: false,
-        }
-      ),
+    createSubServiceUI: (svc: ServiceInstance) => {
+      const serviceId = svc.serviceId || svc.__descriptor?.serviceId;
+      const ui = serviceId && findServiceUI(serviceId);
+      return React.createElement(ui || "div", {
+        resizable: false,
+        service: svc,
+        onServiceAction: () => {
+          console.warn("No service actions available for sub services");
+        },
+      });
+    },
     listAvailableServices: () => scope.registry.allowedServices(),
   };
 }

@@ -323,7 +323,7 @@ export default class Runtime extends Component<Props, State> {
     user: User | null,
     boardName: string,
     services: Array<ServiceDescriptor>,
-    readonly: boolean,
+    _readonly: boolean,
     onArrangeService: (serviceUuid: string, position: number) => void
   ) => {
     const { wrapServices } = this.state;
@@ -346,7 +346,6 @@ export default class Runtime extends Component<Props, State> {
           boardName={boardName}
           runtime={runtime}
           services={services}
-          readonly={readonly}
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
           onResult={this.props.onResult}
@@ -363,7 +362,7 @@ export default class Runtime extends Component<Props, State> {
     user: User | null,
     boardName: string,
     services: Array<ServiceDescriptor>,
-    readonly: boolean,
+    _readonly: boolean,
     onArrangeService: (serviceUuid: string, position: number) => void,
     wrapServices?: boolean
   ) => {
@@ -390,7 +389,6 @@ export default class Runtime extends Component<Props, State> {
           scope={scope as BrowserRuntimeScope}
           runtime={runtime}
           services={services}
-          readonly={readonly}
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
           onResult={onResult}

@@ -1,26 +1,21 @@
 import { Component, ReactElement } from "react";
 
-import { createPlaceholderUI } from "../UIFactory";
 import ServiceDropBar from "./ServiceDropBar";
-import { RuntimeDescriptor, ServiceAction, ServiceInstance } from "../types";
-import React from "react";
+import { RuntimeDescriptor, ServiceInstance } from "../types";
 
 type Props = {
   userId: string | undefined;
   boardName: string;
   runtime: RuntimeDescriptor;
   services: Array<ServiceInstance>;
-  readonly?: boolean;
-  showBypassOnlyIfExplicit?: boolean;
   collapsed?: boolean;
   onArrangeService: (serviceUuid: string, position: number) => void;
-  onServiceAction: (command: ServiceAction) => void;
   onCreateServiceUi: (
     boardName: string,
     service: ServiceInstance,
     runtimeId: string,
     userId: string | undefined
-  ) => ReactElement | null;
+  ) => ReactElement;
 };
 export default class ServiceUiContainer extends Component<Props> {
   render() {
@@ -29,11 +24,8 @@ export default class ServiceUiContainer extends Component<Props> {
       boardName,
       runtime,
       services,
-      readonly = false,
-      showBypassOnlyIfExplicit = false,
       collapsed = false,
       onArrangeService,
-      onServiceAction,
       onCreateServiceUi,
     } = this.props;
 
@@ -41,22 +33,16 @@ export default class ServiceUiContainer extends Component<Props> {
       return false;
     }
 
-    const draggable = !!onArrangeService;
-
     return (
       services &&
       services.map((service, pos) => {
-        const serviceUI = readonly
-          ? createPlaceholderUI(service)
-          : onCreateServiceUi(boardName, service, runtime.id, userId);
-        const serviceElement =
-          serviceUI &&
-          React.createElement(serviceUI.type, {
-            ...serviceUI.props,
-            draggable,
-            showBypassOnlyIfExplicit,
-            onServiceAction,
-          });
+        const serviceElement = onCreateServiceUi(
+          boardName,
+          service,
+          runtime.id,
+          userId
+        );
+
         return (
           <div
             key={`service-ui-container-${service.uuid}`}

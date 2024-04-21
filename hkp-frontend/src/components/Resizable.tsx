@@ -6,6 +6,7 @@ export type Size = {
 };
 
 type Props = {
+  disabled?: boolean;
   children: ReactElement;
   hideHandle?: boolean;
   initialSize?: Size;
@@ -15,6 +16,7 @@ type Props = {
 export default function Resizable({
   children,
   hideHandle,
+  disabled,
   initialSize: initialSizeProp,
   onResize,
 }: Props) {
@@ -65,6 +67,9 @@ export default function Resizable({
     document.addEventListener("mouseup", mouseUpHandler);
     document.addEventListener("mousemove", mouseMoveHandler);
   };
+  if (disabled) {
+    return children;
+  }
 
   return (
     <div ref={ref} className="h-full w-full" style={size}>

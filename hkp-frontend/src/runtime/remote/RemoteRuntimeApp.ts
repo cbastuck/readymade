@@ -1,3 +1,4 @@
+import { ReactElement } from "react";
 import {
   AppImpl,
   InstanceId,
@@ -28,7 +29,9 @@ export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
       _service: ServiceClass,
       _instanceId?: string
     ): void => {},
-    createSubServiceUI: (_svc: ServiceImpl): void => {},
+    createSubServiceUI: (_svc: ServiceImpl): ReactElement | null => {
+      return null;
+    },
     listAvailableServices: () => [],
   };
 }

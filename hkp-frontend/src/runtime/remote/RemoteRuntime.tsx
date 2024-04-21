@@ -13,14 +13,14 @@ import {
 import ServiceUiContainer from "../ServiceUiContainer";
 
 import RemoteServiceUI from "./RemoteServiceUI";
-import createServiceUI from "./UIRegistry";
+import { findServiceUI } from "./UIRegistry";
+import React from "react";
 
 type Props = {
   user: User | null;
   boardName: string;
   services: Array<ServiceDescriptor>;
   runtime: RuntimeDescriptor;
-  readonly: boolean;
   scope: RuntimeScope;
   children?: JSX.Element | JSX.Element[];
   collapsed?: boolean;
@@ -34,7 +34,6 @@ export default function RemoteRuntime({
   boardName,
   services,
   runtime,
-  readonly,
   scope,
   collapsed,
   onResult,
@@ -68,38 +67,36 @@ export default function RemoteRuntime({
     );
   };
 
+  const onCreateServiceUi = (
+    _boardName: string,
+    service: ServiceInstance,
+    _runtimeId: string,
+    _userId: string | undefined
+  ): ReactElement => {
+    const { serviceId } = service;
+    const ui = (serviceId && findServiceUI(serviceId)) || RemoteServiceUI;
+
+    return React.createElement(ui, {
+      service,
+      showBypassOnlyIfExplicit: true,
+      draggable: false,
+      onServiceAction,
+    });
+  };
+
   return (
     !collapsed && (
       <ServiceUiContainer
         userId={user?.userId}
         boardName={boardName}
         runtime={runtime}
-        readonly={readonly}
         services={servicesWithConfig}
-        showBypassOnlyIfExplicit={true}
         onArrangeService={onArrangeService}
-        onServiceAction={onServiceAction}
         onCreateServiceUi={onCreateServiceUi}
       />
     )
   );
 }
-
-const onCreateServiceUi = (
-  _boardName: string,
-  service: ServiceInstance,
-  _runtimeId: string,
-  _userId: string | undefined
-): ReactElement | null => {
-  const { serviceId } = service;
-
-  const Ui = serviceId && createServiceUI(serviceId);
-  return Ui ? (
-    <Ui service={service} key={`key-${service.uuid}`} />
-  ) : (
-    <RemoteServiceUI service={service} />
-  );
-};
 
 export function makeServiceInstance(
   scope: RuntimeScope,

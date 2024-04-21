@@ -26,7 +26,7 @@ export default class Template extends Component<Props> {
             minHeight: "100%",
           }}
         >
-          <Toolbar showBoardActions={false} />
+          <Toolbar />
           <div
             style={{
               height: "100%",
