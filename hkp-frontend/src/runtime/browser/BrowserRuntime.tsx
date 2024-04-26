@@ -22,6 +22,7 @@ import {
   processService,
   removeService,
 } from "./BrowserRuntimeApi";
+import PlaceholderUI from "./services/PlaceholderUI";
 
 const EventSource = NativeEventSource || EventSourcePolyfill;
 
@@ -290,10 +291,15 @@ export default class BrowserRuntime extends Component<Props, State> {
       _userId: string | undefined
     ): ReactElement => {
       const serviceId = service.serviceId || service.__descriptor?.serviceId;
-      const ui = serviceId ? findServiceUI(serviceId) : null;
-      if (!ui) {
-        return <div>Browser ServiceUI missing for {serviceId}</div>;
+      if (!serviceId) {
+        throw new Error(
+          `ServiceId missing for service: ${JSON.stringify(service)}`
+        );
       }
+      const ui =
+        findServiceUI(serviceId) ||
+        scope.registry.findServiceModule(serviceId)?.createUI ||
+        PlaceholderUI;
 
       const draggable = !!onArrangeService;
       return React.createElement(ui, {

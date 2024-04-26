@@ -1,130 +1,13 @@
-import { Component } from "react";
-import { Checkbox } from "semantic-ui-react";
-
-import InputField from "../../../components/shared/InputField";
-import Button from "../../../components/shared/Button";
-import ServiceUI from "../../services/ServiceUI";
-import { s, t } from "../../../styles";
 import WebsocketChannel from "../../WebsocketChannel";
 import {
   replacePlaceholders,
   isWebsocket,
   isSecureConnection,
 } from "../../../core/url";
+import InputUI from "./InputUI";
 
 const serviceId = "hookup.to/service/input";
 const serviceName = "Input";
-
-export class InputUI extends Component {
-  state = {
-    url: "",
-    topic: "secret-key",
-    isWebsocket: false,
-    canFetch: undefined,
-  };
-
-  onInit = (initialState) => {
-    const {
-      url = "",
-      running = false,
-      topic = "secret-key",
-      isWebsocket = false,
-    } = initialState;
-    this.setState({ url, running, topic, isWebsocket });
-  };
-
-  onNotification = (service, notification) => {
-    const { url, running, topic, isWebsocket, canFetch } = notification;
-
-    if (url !== undefined && this.state.url !== url) {
-      this.setState({ url });
-    }
-
-    if (running !== undefined && this.state.running !== running) {
-      this.setState({ running });
-    }
-
-    if (topic !== undefined) {
-      this.setState({ topic });
-    }
-
-    if (isWebsocket !== undefined) {
-      this.setState({ isWebsocket });
-    }
-
-    if (canFetch !== undefined) {
-      this.setState({ canFetch });
-    }
-  };
-
-  renderMain = (service) => {
-    const { running, url, topic, isWebsocket, canFetch, fetchPending } =
-      this.state;
-    return (
-      <div
-        style={{
-          margin: 10,
-        }}
-      >
-        <div style={s(t.ls1, t.fs12)}>
-          <InputField
-            label="URL"
-            value={url}
-            onChange={(_, { value: url }) => {
-              this.setState({ url });
-              service.configure({ url });
-            }}
-          />
-        </div>
-        {isWebsocket && (
-          <div style={s(t.ls1, t.fs12)}>
-            <InputField
-              label="topic"
-              value={topic}
-              onChange={(_, { value: topic }) => {
-                this.setState({ topic });
-                service.configure({ topic });
-              }}
-            />
-          </div>
-        )}
-        {canFetch === true && (
-          <Button
-            style={s(t.w100, t.ls1, t.fs12, { marginTop: 0 })}
-            onClick={() => service.configure({ fetch: url })}
-            disabled={fetchPending}
-          >
-            Fetch
-          </Button>
-        )}
-        {canFetch === false && (
-          <div style={t.tl}>
-            <Checkbox
-              style={s(t.mt1, t.ls1, t.fs12)}
-              label="Input active"
-              toggle
-              onChange={(_, { checked: running }) => {
-                service.configure({ running });
-              }}
-              checked={running}
-            />
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        segments={[{ name: "Main", render: this.renderMain }]}
-      />
-    );
-  }
-}
 
 class Input {
   constructor(app, board, descriptor, id) {

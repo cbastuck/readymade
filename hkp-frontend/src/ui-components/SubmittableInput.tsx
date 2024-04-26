@@ -12,7 +12,7 @@ type SubmittableInputProps = {
   value: string;
   selectAllOnFocus?: boolean;
   onSubmit: (val: string) => void;
-  onChangePending: (isChangePending: boolean) => void;
+  onChangePending?: (isChangePending: boolean) => void;
 };
 const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
   (props, ref) => {
@@ -22,7 +22,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
 
     const isChangePending = value !== internal;
     useEffect(
-      () => onChangePending(isChangePending),
+      () => onChangePending?.(isChangePending),
       [onChangePending, isChangePending]
     );
 

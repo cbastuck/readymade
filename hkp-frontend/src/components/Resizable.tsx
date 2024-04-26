@@ -84,7 +84,7 @@ export default function Resizable({
   }
 
   return (
-    <div ref={ref} className="h-full w-full overflow-clip" style={size}>
+    <div ref={ref} className="h-full w-full overflow-y-auto" style={size}>
       {children}
       {!hideHandle && (
         <div

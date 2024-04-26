@@ -65,6 +65,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       (svc as ServiceImpl).configure(config),
 
     notify: (service: ServiceInstance, notification: any) => {
+      /*
       if (!notificationTargets.hasCallbacks(service)) {
         console.warn(
           "BrowserRuntimeApp.notify no targets for",
@@ -73,6 +74,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
         );
         return;
       }
+      */
       notificationTargets.notify(service, notification);
     },
 

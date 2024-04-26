@@ -3,7 +3,7 @@ import {
   RadioGroup as RadioGroupCN,
   RadioGroupItem,
 } from "@/components/ui/radio-group";
-import PropertyLabel from "./GroupLabel";
+import GroupLabel from "./GroupLabel";
 
 type Props = {
   id?: string;
@@ -22,7 +22,7 @@ export default function RadioGroup({
 }: Props) {
   return (
     <div className="flex-col">
-      <PropertyLabel>{title}</PropertyLabel>
+      <GroupLabel>{title}</GroupLabel>
       <RadioGroupCN className="py-2 flex" value={value}>
         {options.map((item, idx) => {
           const optionId = `${id || title}-option-${idx}`;

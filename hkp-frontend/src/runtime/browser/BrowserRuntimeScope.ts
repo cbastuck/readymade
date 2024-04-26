@@ -138,9 +138,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
           params = result;
         } catch (err: any) {
           console.warn(
-            `Seriously: service ${JSON.stringify(
-              svc
-            )} caused error: ${JSON.stringify(err.message)}`
+            `Seriously: service ${
+              svc.serviceName
+            } caused error: ${JSON.stringify(err.message)}`
           );
         }
       }

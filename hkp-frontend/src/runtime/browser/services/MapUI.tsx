@@ -149,7 +149,10 @@ export default function MapUI(props: ServiceUIProps) {
               {Object.keys(template)
                 .filter((key) => typeof template[key] !== "object")
                 .map((key, idx) => (
-                  <TableRow className="hover:bg-white" key={`${key}-${idx}`}>
+                  <TableRow
+                    className="hover:bg-white font-sans-clean"
+                    key={`${key}-${idx}`}
+                  >
                     <TableCell className="text-left p-0">
                       <SubmittableInput
                         value={key}

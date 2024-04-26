@@ -23,10 +23,12 @@ import PlaceholderUI from "./runtime/browser/services/PlaceholderUI";
 import MapUI from "./runtime/browser/services/MapUI";
 import TimerUI from "./runtime/browser/services/TimerUI";
 import MonitorUI from "./runtime/browser/services/MonitorUI";
+import CanvasUI from "./runtime/browser/services/CanvasUI";
+import InputUI from "./runtime/browser/services/InputUI";
 
-import { ServiceImpl, ServiceUIComponent } from "./types";
+import { ServiceUIComponent } from "./types";
 import { HackerUI } from "./runtime/browser/services/Hacker";
-import { InputUI } from "./runtime/browser/services/Input";
+
 import { OutputUI } from "./runtime/browser/services/Output";
 import { FetcherUI } from "./runtime/browser/services/Fetcher";
 import { InjectorUI } from "./runtime/browser/services/Injector";
@@ -37,16 +39,13 @@ import { BufferUI } from "./runtime/browser/services/Buffer";
 import { XYPadUI } from "./runtime/browser/services/XYPad";
 import { CameraUI } from "./runtime/browser/services/Camera";
 import { TriggerPadUI } from "./runtime/browser/services/TriggerPad";
-import { CanvasUI } from "./runtime/browser/services/Canvas";
+
 import { StackUI } from "./runtime/browser/services/Stack";
 import { SequencerUI } from "./runtime/browser/services/Sequencer";
 import { SpotifyUI } from "./runtime/browser/services/Spotify";
 import { GithubSourceUI } from "./runtime/browser/services/GithubSource";
 import { GithubSinkUI } from "./runtime/browser/services/GithubSink";
-
-export function createPlaceholderUI(service: ServiceImpl) {
-  return <PlaceholderUI service={service} />;
-}
+import BrowserRegistry from "./runtime/browser/BrowserRegistry";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {
@@ -54,11 +53,14 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return TimerUI;
     case "hookup.to/service/monitor":
       return MonitorUI;
+    case "hookup.to/service/canvas":
+      return CanvasUI;
+    case "hookup.to/service/input":
+      return InputUI;
     case "hookup.to/service/hacker/considered":
     case "hookup.to/service/hacker/dangerous":
       return HackerUI;
-    case "hookup.to/service/input":
-      return InputUI;
+
     case "hookup.to/service/output":
       return OutputUI;
     case "hookup.to/service/fetcher":
@@ -79,8 +81,6 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return CameraUI;
     case "hookup.to/service/trigger-pad":
       return TriggerPadUI;
-    case "hookup.to/service/canvas":
-      return CanvasUI;
     case "hookup.to/service/stack":
       return StackUI;
     case "hookup.to/service/sequencer":
@@ -92,7 +92,6 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
     case "hookup.to/service/github-sink":
       return GithubSinkUI;
     default:
-      return PlaceholderUI;
+      return null;
   }
-  //return registry.findServiceModule(serviceId)?.createUI || null;
 }
