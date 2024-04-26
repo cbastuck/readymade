@@ -1,6 +1,5 @@
 import { Component, ReactElement } from "react";
 
-import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";
 import SidechainSelector from "./SidechainSelector";
 import {
@@ -191,7 +190,6 @@ export default class OutputOptions extends Component<Props, State> {
               className="tracking-[4px] text-sm font-sans mt-[-25px]"
               style={{
                 transform: "rotate(90deg)",
-                color: expanded ? "white" : "#333",
               }}
             >
               OUTPUT

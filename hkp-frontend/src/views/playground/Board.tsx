@@ -77,10 +77,6 @@ export default class Board extends Component<Props, State> {
 
   componentDidUpdate(prevProps: Props) {
     if (prevProps.inputRouting !== this.props.inputRouting) {
-      console.log(
-        "componentDidUpdate - new input routing",
-        this.props.inputRouting
-      );
       this.updateInputActivation(this.props.inputRouting);
     }
 

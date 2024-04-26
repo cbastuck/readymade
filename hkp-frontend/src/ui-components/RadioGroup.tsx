@@ -6,32 +6,42 @@ import {
 import PropertyLabel from "./GroupLabel";
 
 type Props = {
+  id?: string;
   title: string;
-  items: Array<string>;
-  initial: number;
+  options: Array<string>;
+  value: string;
   onChange: (item: string) => void;
 };
 
-export default function RadioGroup({ title, items, initial, onChange }: Props) {
+export default function RadioGroup({
+  id,
+  title,
+  options,
+  value,
+  onChange,
+}: Props) {
   return (
     <div className="flex-col">
       <PropertyLabel>{title}</PropertyLabel>
-      <RadioGroupCN className="py-2 flex" defaultValue={items[initial]}>
-        {items.map((item, idx) => (
-          <div key={`${item}.${idx}`} className="flex items-center space-x-2">
-            <RadioGroupItem
-              value={item}
-              id={`r${idx}`}
-              onClick={() => onChange(item)}
-            />
-            <Label
-              htmlFor={`r${idx}`}
-              className="text-base capitalize tracking-widest"
-            >
-              {item}
-            </Label>
-          </div>
-        ))}
+      <RadioGroupCN className="py-2 flex" value={value}>
+        {options.map((item, idx) => {
+          const optionId = `${id || title}-option-${idx}`;
+          return (
+            <div key={`${item}.${idx}`} className="flex items-center space-x-2">
+              <RadioGroupItem
+                value={item}
+                id={optionId}
+                onClick={() => onChange(item)}
+              />
+              <Label
+                htmlFor={optionId}
+                className="text-base capitalize tracking-widest"
+              >
+                {item}
+              </Label>
+            </div>
+          );
+        })}
       </RadioGroupCN>
     </div>
   );

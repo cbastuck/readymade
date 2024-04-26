@@ -118,7 +118,13 @@ export default function TimerUI(props: ServiceUIProps) {
       customMenuEntries={customMenuEntries}
     >
       <div className="flex flex-col gap-2 h-full">
-        <RadioGroup title="Mode" items={modes} initial={0} onChange={setMode} />
+        <RadioGroup
+          id="TimerMode"
+          title="Mode"
+          options={modes}
+          value={mode}
+          onChange={setMode}
+        />
         <OneOfVisible current={modeIdx}>
           <div className="flex flex-col gap-4">
             <Slider

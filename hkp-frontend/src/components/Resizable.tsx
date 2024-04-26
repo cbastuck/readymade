@@ -38,13 +38,13 @@ export default function Resizable({
     const mouseMoveHandler = (ev: MouseEvent) => {
       if (ref.current) {
         const rect = ref.current.getBoundingClientRect();
-        const newWidth = Math.max(
-          Number(initialSize.current!.width),
-          ev.clientX - rect.x
-        );
+        const newX = ev.clientX - rect.x;
+        const newY = ev.clientY - rect.y;
+
+        const newWidth = Math.max(Number(initialSize.current!.width), newX);
         const newHeight = Math.max(
-          Number(initialSize.current!.height),
-          ev.clientY - rect.y
+          Number(initialSize.current!.height ?? rect.height),
+          newY
         );
 
         if (
@@ -52,6 +52,18 @@ export default function Resizable({
           newHeight !== currentSize.current.height
         ) {
           currentSize.current = { width: newWidth, height: newHeight };
+
+          // initial size is treated as minimum size, if it was undefined on purpose
+          // set the current size as the initial size
+          if (
+            initialSize.current?.height === undefined ||
+            initialSize.current?.width === undefined
+          ) {
+            initialSize.current = {
+              width: initialSize.current?.width ?? newWidth,
+              height: initialSize.current?.height ?? newHeight,
+            };
+          }
           setSize(currentSize.current);
           if (onResize) {
             onResize(currentSize.current);

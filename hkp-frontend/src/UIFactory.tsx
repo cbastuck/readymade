@@ -1,10 +1,3 @@
-import {
-  Component,
-  FunctionComponent,
-  ReactElement,
-  createElement,
-} from "react";
-
 /*
 import HTMLFilterUI  from './components/services/HTMLFilterUI';
 import FileExchangeUI from './components/services/FileExchangeUI';
@@ -19,22 +12,25 @@ import DataInjectorUI from './components/services/DataInjectorUI';
 import HTMLTemplatesUI from './components/services/HTMLTemplatesUI';
 import FileS3UI from './components/services/FileS3UI';
 import AggregatorUI from './components/services/AggregatorUI';
-*/
+
 
 import IngressUI from "./components/services/IngressUI";
 import OutputUINode from "./components/services/OutputUI";
 import WebsocketUI from "./components/services/WebsocketUI";
+*/
 
 import PlaceholderUI from "./runtime/browser/services/PlaceholderUI";
-import { ServiceImpl, ServiceUIComponent } from "./types";
+import MapUI from "./runtime/browser/services/MapUI";
 import TimerUI from "./runtime/browser/services/TimerUI";
 import MonitorUI from "./runtime/browser/services/MonitorUI";
+
+import { ServiceImpl, ServiceUIComponent } from "./types";
 import { HackerUI } from "./runtime/browser/services/Hacker";
 import { InputUI } from "./runtime/browser/services/Input";
 import { OutputUI } from "./runtime/browser/services/Output";
 import { FetcherUI } from "./runtime/browser/services/Fetcher";
 import { InjectorUI } from "./runtime/browser/services/Injector";
-import { MapUI } from "./runtime/browser/services/Map";
+
 import { FilterUI } from "./runtime/browser/services/Filter";
 import { AggregatorUI } from "./runtime/browser/services/Aggregator";
 import { BufferUI } from "./runtime/browser/services/Buffer";
@@ -47,59 +43,9 @@ import { SequencerUI } from "./runtime/browser/services/Sequencer";
 import { SpotifyUI } from "./runtime/browser/services/Spotify";
 import { GithubSourceUI } from "./runtime/browser/services/GithubSource";
 import { GithubSinkUI } from "./runtime/browser/services/GithubSink";
-import BrowserRuntimeScope from "./runtime/browser/BrowserRuntimeScope";
 
 export function createPlaceholderUI(service: ServiceImpl) {
   return <PlaceholderUI service={service} />;
-}
-
-// TODO: deprecated, sbould not be used anymore
-function createServiceUI(
-  _scope: BrowserRuntimeScope,
-  board: string,
-  service: ServiceImpl,
-  runtimeId: string,
-  userId: string | undefined = undefined,
-  props: any = {}
-): ReactElement | null {
-  const serviceId = service.__descriptor
-    ? service.__descriptor.serviceId
-    : service.serviceId;
-
-  if (!serviceId) {
-    throw new Error(`UIFactory missing serviceId ${JSON.stringify(service)}`);
-  }
-
-  const userInterface = findServiceUI(serviceId);
-  if (userInterface) {
-    return createElement(userInterface, {
-      ...props,
-      service,
-      board,
-      runtimeId,
-      key: `key-${service.uuid}`,
-    });
-  } else {
-    const params = {
-      key: serviceId,
-      id: serviceId,
-      service,
-      board,
-      userId,
-      ...props,
-    };
-    switch (serviceId) {
-      case "hookup.to/service/output":
-        return <OutputUINode {...params} />;
-      case "hookup.to/service/ingress":
-        return <IngressUI {...params} />;
-      case "hookup.to/service/websocket":
-        return <WebsocketUI {...params} />;
-      default:
-        break;
-    }
-  }
-  return createPlaceholderUI(service);
 }
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {

@@ -1,4 +1,4 @@
-import { ReactElement, useEffect } from "react";
+import { ReactElement, useEffect, useRef } from "react";
 
 import Resizable, { Size } from "@/components/Resizable";
 import { CustomMenuEntry, ServiceAction, ServiceInstance } from "@/types";
@@ -27,6 +27,7 @@ export default function ServiceUI({
   draggable,
   resizable = true,
   customMenuEntries,
+  onInit,
   onNotification,
   onServiceAction,
 }: Props) {
@@ -44,6 +45,8 @@ export default function ServiceUI({
       }
     };
   }, [service, onNotification]);
+
+  useInitOnFirstRender(service, onInit, onNotification);
 
   return (
     <ServiceFrame
@@ -68,4 +71,23 @@ export default function ServiceUI({
 
 export function needsUpdate<T>(newValue: T, oldValue: T) {
   return newValue !== undefined && newValue !== oldValue;
+}
+
+function useInitOnFirstRender(
+  service: ServiceInstance,
+  onInit: any,
+  onNotification: any
+) {
+  const isFirstRender = useRef<boolean>(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      const config = service.getConfiguration?.() || service;
+      if (onInit) {
+        onInit(config);
+      } else if (onNotification) {
+        onNotification(service, config);
+      }
+    }
+  }, []);
 }
