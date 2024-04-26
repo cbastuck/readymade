@@ -16,7 +16,12 @@ import Board from "./Board";
 import BoardSync from "./boardsync";
 import { generateRandomName } from "../../core/board";
 import { t } from "../../styles";
-import { localStoragePrefix, defaultName, availableRuntimes } from "./common";
+import {
+  localStoragePrefix,
+  defaultName,
+  availableRuntimes,
+  restoreBoardFromLocalStorage,
+} from "./common";
 import {
   importBoard,
   createBoardFromTemplate,
@@ -218,7 +223,7 @@ class Playground extends Component<Props, State> {
       } else if (params.fromLink) {
         return importFromLink(params.fromLink);
       } else {
-        const localBoard = await this.restoreBoardFromLocalStorage(board);
+        const localBoard = restoreBoardFromLocalStorage(board);
         if (localBoard) {
           return localBoard;
         }
@@ -233,6 +238,7 @@ class Playground extends Component<Props, State> {
     return null;
   };
 
+  /*
   restoreBoardFromLocalStorage = async (name: string) => {
     const storageName = name
       ? `${localStoragePrefix}${name}`
@@ -246,6 +252,7 @@ class Playground extends Component<Props, State> {
       }
     }
   };
+  */
 
   serializeBoard = async (
     descriptor: BoardDescriptor
@@ -543,7 +550,6 @@ class Playground extends Component<Props, State> {
                     })
                   }
                   onChangeInputRouting={(runtime, value) => {
-                    console.log("Playground.onChangeInputRouting", value);
                     this.setState({
                       inputRouting: {
                         ...this.state.inputRouting,

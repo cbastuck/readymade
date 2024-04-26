@@ -123,7 +123,7 @@ export default function RuntimeHeader({
         value={runtimeConfig}
         isOpen={isRuntimeConfigOpen}
         onClose={() => setIsRuntimeConfigOpen(false)}
-        onApply={onApplyRuntimeConfig}
+        actions={[{ label: "Apply", onAction: onApplyRuntimeConfig }]}
       />
     </div>
   );

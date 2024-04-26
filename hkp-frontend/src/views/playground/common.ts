@@ -55,7 +55,10 @@ export function restoreBoardFromLocalStorage(name: string) {
   const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
   const data = localStorage.getItem(storageName);
   if (data) {
-    return JSON.parse(data);
+    const board = JSON.parse(data);
+    if (board && board.runtimes) {
+      return board;
+    }
   }
 }
 

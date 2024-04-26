@@ -4,20 +4,21 @@ import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import Editor from "@/components/shared/Editor/index";
 import { Button } from "@/components/ui/button";
 
+type Action = { label: string; onAction: (buf: string) => void };
 type Props = {
   title: string;
   value: string;
   isOpen: boolean;
+  actions: Array<Action>;
   onClose: () => void;
-  onApply: (newValue: string) => void;
 };
 
 export default function EditorDialog({
   title,
   value,
   isOpen,
+  actions,
   onClose,
-  onApply,
 }: Props) {
   const editor = useRef<any>(null);
 
@@ -27,10 +28,10 @@ export default function EditorDialog({
     }
   };
 
-  const onApplyConfig = () => {
+  const onButton = (action: Action) => {
     const value = editor.current?.getValue();
     if (value) {
-      onApply(value);
+      action.onAction(value);
     }
   };
 
@@ -46,13 +47,16 @@ export default function EditorDialog({
       >
         <h2>{title}</h2>
         <Editor ref={editor} value={value} language="json" />
-        <DialogFooter>
-          <Button variant="destructive" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button variant="outline" onClick={onApplyConfig}>
-            Apply
-          </Button>
+        <DialogFooter className="flex">
+          {actions.map((action) => (
+            <Button
+              key={action.label}
+              variant="outline"
+              onClick={() => onButton(action)}
+            >
+              {action.label}
+            </Button>
+          ))}
         </DialogFooter>
       </DialogContent>
     </Dialog>

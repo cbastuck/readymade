@@ -54,23 +54,32 @@ export default function RuntimeSettings({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
-        <DropdownMenuLabel className="capitalize font-sans tracking-wider">
+        <DropdownMenuLabel className="text-base capitalize font-sans tracking-wider">
           {runtime.type} Runtime
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => onProcess(false)}>
+          <DropdownMenuItem
+            className="text-base"
+            onClick={() => onProcess(false)}
+          >
             <Play className="mr-2 h-4 w-4" />
             <span>Run</span>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onProcess(true)}>
+          <DropdownMenuItem
+            className="text-base"
+            onClick={() => onProcess(true)}
+          >
             <StepForward className="mr-2 h-4 w-4" />
             <span>Run with ...</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => onWrapServices(!wrapServices)}>
+          <DropdownMenuItem
+            className="text-base"
+            onClick={() => onWrapServices(!wrapServices)}
+          >
             {wrapServices ? (
               <ArrowRightLeft className="mr-2 h-4 w-4" />
             ) : (
@@ -80,28 +89,34 @@ export default function RuntimeSettings({
           </DropdownMenuItem>
 
           {isExpanded ? (
-            <DropdownMenuItem onClick={() => onExpand(false)}>
+            <DropdownMenuItem
+              className="text-base"
+              onClick={() => onExpand(false)}
+            >
               <ChevronsDownUp className="mr-2 h-4 w-4" />
               <span>Collapse</span>
             </DropdownMenuItem>
           ) : (
-            <DropdownMenuItem onClick={() => onExpand(true)}>
+            <DropdownMenuItem
+              className="text-base"
+              onClick={() => onExpand(true)}
+            >
               <ChevronsUpDown className="mr-2 h-4 w-4" />
               <span>Expand</span>
             </DropdownMenuItem>
           )}
-          <DropdownMenuItem onClick={onConfiguration}>
+          <DropdownMenuItem className="text-base" onClick={onConfiguration}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Configuration</span>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={onClear}>
+          <DropdownMenuItem className="text-base" onClick={onClear}>
             <Eraser className="mr-2 h-4 w-4" />
             <span>Clear</span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem onClick={onDelete}>
+          <DropdownMenuItem className="text-base" onClick={onDelete}>
             <Trash className="mr-2 h-4 w-4" />
             <span>Delete</span>
           </DropdownMenuItem>

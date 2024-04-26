@@ -11,6 +11,7 @@ import {
 import { cn } from "@/ui-components";
 import { BoardCtx } from "@/BoardContext";
 import EditorDialog from "../EditorDialog";
+import { storeBoardToLocalStorage } from "@/views/playground/common";
 
 export default function BoardMenu() {
   const boardContext = useContext(BoardCtx);
@@ -22,9 +23,17 @@ export default function BoardMenu() {
   const onApplyBoardSource = (newSource: string) => {
     const src = JSON.parse(newSource);
     boardContext?.setBoardState(src);
+    onCloseBoardSource();
   };
 
   const [boardSource, setBoardSource] = useState("");
+
+  const onSaveBoardSource = (newSource: string) => {
+    if (board) {
+      storeBoardToLocalStorage(board, newSource);
+    }
+  };
+
   useEffect(() => {
     if (showBoardSource && boardContext) {
       boardContext
@@ -43,7 +52,16 @@ export default function BoardMenu() {
         isOpen={showBoardSource}
         value={boardSource}
         onClose={onCloseBoardSource}
-        onApply={onApplyBoardSource}
+        actions={[
+          {
+            label: "Apply",
+            onAction: onApplyBoardSource,
+          },
+          {
+            label: "Save",
+            onAction: onSaveBoardSource,
+          },
+        ]}
       />
       <NavigationMenuList>
         <NavigationMenuItem>

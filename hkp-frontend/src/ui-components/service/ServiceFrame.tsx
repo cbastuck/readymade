@@ -147,7 +147,7 @@ export default function ServiceFrame({
           value={JSON.stringify(filteredService, null, 2)}
           isOpen={configVisible}
           onClose={onCloseConfig}
-          onApply={onApplyConfig}
+          actions={[{ label: "Apply", onAction: onApplyConfig }]}
         />
 
         <div
