@@ -101,6 +101,7 @@ export default function MapUI(props: ServiceUIProps) {
     service.configure({ template: newTemplate });
   };
 
+  const mappingOptions = [Mode.REPLACE, Mode.OVERWRITE, Mode.ADD];
   const renderMapping = () => {
     return (
       <div
@@ -114,13 +115,22 @@ export default function MapUI(props: ServiceUIProps) {
         <RadioGroup
           id="MapMode"
           title="Mode"
-          options={[Mode.REPLACE, Mode.OVERWRITE, Mode.ADD]}
+          options={mappingOptions}
           value={mode}
           onChange={onModeChange}
         />
 
-        <div className="flex flex-col col-2 mt-4">
-          <GroupLabel>Mapping</GroupLabel>
+        <div className="flex flex-col col-2 mt-2">
+          <div className="flex h-min items-end">
+            <GroupLabel>Mapping</GroupLabel>
+            <Button
+              className="h-[24px] ml-auto"
+              variant="outline"
+              onClick={onNewProperty}
+            >
+              <Plus size="20px" />
+            </Button>
+          </div>
           <Table className="my-2">
             <TableHeader>
               <TableRow>
@@ -162,22 +172,11 @@ export default function MapUI(props: ServiceUIProps) {
                         onClick={() => onRemoveProperty(key)}
                         disabled={isMappingChangePending}
                       >
-                        <X />
+                        <X size="16px" />
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
-              <TableRow className="pb-2">
-                <TableCell colSpan={3}>
-                  <Button
-                    variant="ghost"
-                    className="w-full"
-                    onClick={onNewProperty}
-                  >
-                    <Plus size="20px" />
-                  </Button>
-                </TableCell>
-              </TableRow>
             </TableBody>
           </Table>
         </div>
