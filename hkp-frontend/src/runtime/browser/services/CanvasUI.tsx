@@ -508,6 +508,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     //if (isPureNumberArray) {
     //  this.drawArray2d(ctx, dataArray);
     //}
+
     for (const data of dataArray) {
       if (data) {
         switch (data.type) {

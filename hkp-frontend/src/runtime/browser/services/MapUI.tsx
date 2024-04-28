@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { X, Plus } from "lucide-react";
+import { Trash, Plus } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
@@ -140,9 +140,7 @@ export default function MapUI(props: ServiceUIProps) {
                 <TableHead className="font-sans tracking-widest text-base text-left p-0">
                   Value
                 </TableHead>
-                <TableHead className="font-sans tracking-widest text-base text-right p-0 w-min">
-                  Action
-                </TableHead>
+                <TableHead className="font-sans tracking-widest text-base text-right p-0 w-min"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -175,7 +173,7 @@ export default function MapUI(props: ServiceUIProps) {
                         onClick={() => onRemoveProperty(key)}
                         disabled={isMappingChangePending}
                       >
-                        <X size="16px" />
+                        <Trash size="16px" />
                       </Button>
                     </TableCell>
                   </TableRow>

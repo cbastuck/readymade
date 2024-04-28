@@ -9,6 +9,7 @@ type Props = ServiceUIProps & {
   initialSize?: Size;
   className?: string;
   onInit?: (initialState: any) => void;
+  onTimer?: (_: ServiceInstance) => void;
   onNotification?: (_: ServiceInstance, notification: any) => void;
   onResize?: (svc: ServiceInstance, size: Size) => void;
 };
@@ -25,6 +26,7 @@ export default function ServiceUI({
   resizable = true,
   frameless = false,
   onInit,
+  onTimer,
   onNotification,
   onServiceAction,
 }: Props) {
@@ -44,6 +46,13 @@ export default function ServiceUI({
   }, [service, onNotification]);
 
   useInitOnFirstRender(service, onInit, onNotification);
+
+  useEffect(() => {
+    if (onTimer) {
+      const t = setInterval(() => onTimer(service), 1000);
+      return () => clearInterval(t);
+    }
+  }, [onTimer, service]);
 
   return (
     <ServiceFrame
