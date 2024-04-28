@@ -19,8 +19,8 @@ export default class TriggerPadUI extends Component<ServiceUIProps, State> {
 
   onInit = (service: ServiceInstance) => {
     this.setState({
-      armedPad: `${service.armedPad}`,
-      assignments: service.padAssignments,
+      armedPad: `${service.state.armedPad}`,
+      assignments: service.state.padAssignments,
     });
   };
 

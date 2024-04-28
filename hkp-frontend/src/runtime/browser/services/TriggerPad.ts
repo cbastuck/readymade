@@ -1,26 +1,26 @@
 import { AppInstance, ServiceClass } from "@/types";
 import TriggerPadUI from "./TriggerPadUI";
+import ServiceBase from "./ServiceBase";
 
 const serviceId = "hookup.to/service/trigger-pad";
 const serviceName = "Trigger Pad";
 
-class TriggerPad {
-  uuid: string;
-  board: string;
-  app: AppInstance;
+type State = {
+  armedPad: number;
+  padAssignments: { [key: string]: any };
+};
 
-  armedPad: number = 0;
-  padAssignments: { [key: string]: any } = {};
-
+class TriggerPad extends ServiceBase<State> {
   constructor(
     app: AppInstance,
     board: string,
-    _descriptor: ServiceClass,
+    descriptor: ServiceClass,
     id: string
   ) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
+    super(app, board, descriptor, id, {
+      armedPad: 0,
+      padAssignments: {},
+    });
   }
 
   destroy() {}
@@ -30,18 +30,18 @@ class TriggerPad {
 
     const notification: any = {};
     if (padAssignments !== undefined) {
-      this.padAssignments = notification.assignments = padAssignments;
+      this.state.padAssignments = notification.assignments = padAssignments;
     }
 
     if (armedPad !== undefined) {
-      this.armedPad = notification.armedPad = armedPad;
+      this.state.armedPad = notification.armedPad = armedPad;
     }
 
     this.app.notify(this, notification);
   }
 
   padAssignment(padIndex: number) {
-    return this.padAssignments[padIndex];
+    return this.state.padAssignments[padIndex];
   }
 
   triggerPad(padIndex: number) {
@@ -49,17 +49,17 @@ class TriggerPad {
     if (assignment) {
       return this.app.next(this, assignment);
     } else {
-      this.armedPad = padIndex;
+      this.state.armedPad = padIndex;
     }
   }
 
   clearPad(padIndex: number) {
     const idx = `${padIndex}`;
-    this.padAssignments[idx] = undefined;
-    this.armedPad = padIndex;
+    this.state.padAssignments[idx] = undefined;
+    this.state.armedPad = padIndex;
     this.app.notify(this, {
-      assignments: this.padAssignments,
-      armedPad: this.armedPad,
+      assignments: this.state.padAssignments,
+      armedPad: this.state.armedPad,
     });
   }
 
@@ -71,14 +71,14 @@ class TriggerPad {
 
   async process(params: any) {
     if (this.isMatch(params)) {
-      if (this.armedPad !== undefined) {
-        const idx = `${this.armedPad}`;
-        this.padAssignments[idx] = params;
-        this.app.notify(this, { assignments: this.padAssignments });
-        for (; this.padAssignments[this.armedPad]; ) {
-          ++this.armedPad;
+      if (this.state.armedPad !== undefined) {
+        const idx = `${this.state.armedPad}`;
+        this.state.padAssignments[idx] = params;
+        this.app.notify(this, { assignments: this.state.padAssignments });
+        for (; this.state.padAssignments[this.state.armedPad]; ) {
+          ++this.state.armedPad;
         }
-        this.app.notify(this, { armedPad: this.armedPad });
+        this.app.notify(this, { armedPad: this.state.armedPad });
       }
     }
     return params;
