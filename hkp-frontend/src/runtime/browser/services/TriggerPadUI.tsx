@@ -1,31 +1,30 @@
-import React, { Component } from "react";
+import { Component } from "react";
 
-import ServiceUI from "../../services/ServiceUI";
-import HoldableButton from "../../../components/shared/HoldableButton";
+import { ServiceInstance, ServiceUIProps } from "@/types";
+import ServiceUI from "@/ui-components/service/ServiceUI";
+import HoldableButton from "hkp-frontend/src/components/shared/HoldableButton";
 
-const serviceId = "hookup.to/service/trigger-pad";
-const serviceName = "Trigger Pad";
+type State = {
+  triggeredPads: { [key: string]: any };
+  assignments: { [key: string]: any };
+  armedPad: string | undefined;
+};
 
-function makeIndex(rowIndex, colIndex) {
-  return `${rowIndex * 4 + colIndex}`;
-}
-
-export class TriggerPadUI extends Component {
-  state = {
+export default class TriggerPadUI extends Component<ServiceUIProps, State> {
+  state: State = {
     triggeredPads: {},
     assignments: {},
     armedPad: undefined,
   };
 
-  onInit = (service) => {
-    this.service = service;
+  onInit = (service: ServiceInstance) => {
     this.setState({
       armedPad: `${service.armedPad}`,
       assignments: service.padAssignments,
     });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (_: ServiceInstance, notification: any) => {
     const { assignments, armedPad } = notification;
     if (assignments) {
       this.setState({ assignments });
@@ -36,7 +35,11 @@ export class TriggerPadUI extends Component {
     }
   };
 
-  renderPad = (service, rowIndex, colIndex) => {
+  renderPad = (
+    service: ServiceInstance,
+    rowIndex: number,
+    colIndex: number
+  ) => {
     const index = makeIndex(rowIndex, colIndex);
     const isPadTriggered = this.state.triggeredPads[index];
     const isPadAssigned = this.state.assignments[index];
@@ -101,7 +104,7 @@ export class TriggerPadUI extends Component {
     );
   };
 
-  renderRow = (service, rowIndex) => {
+  renderRow = (service: ServiceInstance, rowIndex: number) => {
     return (
       <div
         style={{
@@ -117,14 +120,9 @@ export class TriggerPadUI extends Component {
     );
   };
 
-  renderMain = (service) => {
+  renderMain = (service: ServiceInstance) => {
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      <div className="flex flex-col mb-2">
         {this.renderRow(service, 0)}
         {this.renderRow(service, 1)}
         {this.renderRow(service, 2)}
@@ -139,97 +137,20 @@ export class TriggerPadUI extends Component {
         {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
-        segments={[{ name: "Main", render: this.renderMain }]}
-      />
+      >
+        {this.renderMain(this.props.service)}
+      </ServiceUI>
     );
   }
 }
 
-class TriggerPad {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.armedPad = 0;
-    this.padAssignments = {};
-  }
-
-  destroy() {}
-
-  configure(config) {
-    const { padAssignments, armedPad } = config;
-
-    const notification = {};
-    if (padAssignments !== undefined) {
-      this.padAssignments = notification.assignments = padAssignments;
-    }
-
-    if (armedPad !== undefined) {
-      this.armedPad = notification.armedPad = armedPad;
-    }
-
-    this.app.notify(this, notification);
-  }
-
-  padAssignment(padIndex) {
-    return this.padAssignments[padIndex];
-  }
-
-  triggerPad(padIndex) {
-    const assignment = this.padAssignment(padIndex);
-    if (assignment) {
-      return this.app.next(this, assignment);
-    } else {
-      this.armedPad = padIndex;
-    }
-  }
-
-  clearPad(padIndex) {
-    const idx = `${padIndex}`;
-    this.padAssignments[idx] = undefined;
-    this.armedPad = padIndex;
-    this.app.notify(this, {
-      assignments: this.padAssignments,
-      armedPad: this.armedPad,
-    });
-  }
-
-  isMatch(params) {
-    const isBlob = params instanceof Blob;
-    const isObject = typeof params === "object" && params !== null;
-    return isBlob || isObject;
-  }
-
-  async process(params) {
-    if (this.isMatch(params)) {
-      if (this.armedPad !== undefined) {
-        const idx = `${this.armedPad}`;
-        this.padAssignments[idx] = params;
-        this.app.notify(this, { assignments: this.padAssignments });
-        for (; this.padAssignments[this.armedPad]; ) {
-          ++this.armedPad;
-        }
-        this.app.notify(this, { armedPad: this.armedPad });
-      }
-    }
-    return params;
-  }
+function makeIndex(rowIndex: number, colIndex: number) {
+  return `${rowIndex * 4 + colIndex}`;
 }
 
-const descriptor = {
-  serviceName,
-  serviceId,
-  create: (app, board, descriptor, id) =>
-    new TriggerPad(app, board, descriptor, id),
-  createUI: TriggerPadUI,
-};
-
-export default descriptor;
-
-function dataURItoBlob(dataURI) {
+function dataURItoBlob(dataURI_: string) {
   // Split the input to get the mime-type and the data itself
-  dataURI = dataURI.split(",");
+  const dataURI = dataURI_.split(",");
 
   // First part contains data:audio/ogg;base64 from which we only need audio/ogg
   const type = dataURI[0].split(":")[1].split(";")[0];

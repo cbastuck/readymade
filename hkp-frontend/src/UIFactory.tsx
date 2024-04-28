@@ -38,7 +38,7 @@ import { AggregatorUI } from "./runtime/browser/services/Aggregator";
 import { BufferUI } from "./runtime/browser/services/Buffer";
 import { XYPadUI } from "./runtime/browser/services/XYPad";
 import { CameraUI } from "./runtime/browser/services/Camera";
-import { TriggerPadUI } from "./runtime/browser/services/TriggerPad";
+import TriggerPadUI from "./runtime/browser/services/TriggerPadUI";
 
 import { SequencerUI } from "./runtime/browser/services/Sequencer";
 import { SpotifyUI } from "./runtime/browser/services/Spotify";
@@ -55,6 +55,8 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return CanvasUI;
     case "hookup.to/service/input":
       return InputUI;
+    case "hookup.to/service/trigger-pad":
+      return TriggerPadUI;
     case "hookup.to/service/hacker/considered":
     case "hookup.to/service/hacker/dangerous":
       return HackerUI;
@@ -79,8 +81,6 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return XYPadUI;
     case "hookup.to/service/camera":
       return CameraUI;
-    case "hookup.to/service/trigger-pad":
-      return TriggerPadUI;
 
     case "hookup.to/service/sequencer":
       return SequencerUI;

@@ -11,9 +11,8 @@ import { Button } from "@/components/ui/button";
 const isTouch = "ontouchstart" in window;
 
 type Props = {
-  children: ReactElement | string;
+  children?: ReactElement | string;
   style?: CSSProperties;
-
   onUp: () => void;
   onDown: () => void;
   onRightClick?: () => void;
