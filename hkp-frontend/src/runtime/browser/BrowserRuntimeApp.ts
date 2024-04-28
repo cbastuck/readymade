@@ -65,7 +65,6 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       (svc as ServiceImpl).configure(config),
 
     notify: (service: ServiceInstance, notification: any) => {
-      /*
       if (!notificationTargets.hasCallbacks(service)) {
         console.warn(
           "BrowserRuntimeApp.notify no targets for",
@@ -74,7 +73,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
         );
         return;
       }
-      */
+
       notificationTargets.notify(service, notification);
     },
 
@@ -84,12 +83,17 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       instanceId?: string
     ) => appendSubservice(scope, service, parent, instanceId),
 
-    createSubServiceUI: (svc: ServiceInstance) => {
-      const serviceId = svc.serviceId || svc.__descriptor?.serviceId;
+    createSubServiceUI: (svc: InstanceId) => {
+      const ssvc = scope.getSubservice(svc.uuid);
+      if (!ssvc) {
+        throw new Error("createSubServiceUI failed - subservice not found");
+      }
+      const serviceId = ssvc.serviceId || ssvc.__descriptor?.serviceId;
       const ui = serviceId && findServiceUI(serviceId);
       return React.createElement(ui || "div", {
         resizable: false,
-        service: svc,
+        frameless: true,
+        service: ssvc,
         onServiceAction: () => {
           console.warn("No service actions available for sub services");
         },

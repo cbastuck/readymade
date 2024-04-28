@@ -1,23 +1,17 @@
 import { useContext, useState } from "react";
 
-import {
-  AppViewMode,
-  RuntimeDescriptor,
-  ServiceClass,
-  ServiceRegistry,
-} from "@/types";
+import { RuntimeDescriptor, ServiceClass, ServiceRegistry } from "@/types";
 import Editable from "@/ui-components/Editable";
 import { BoardCtx } from "@/BoardContext";
 
 import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
-import RuntimeServiceMenu from "./RuntimeServiceMenu";
+import ServiceSelector from "../ServiceSelector";
 import EditorDialog from "../EditorDialog";
 
 type Props = {
   runtime: RuntimeDescriptor;
   registry: ServiceRegistry;
-  appViewMode?: AppViewMode;
   isExpanded?: boolean;
   wrapServices?: boolean;
   onAddService: (svc: ServiceClass) => void;
@@ -28,7 +22,6 @@ type Props = {
 export default function RuntimeHeader({
   runtime,
   registry,
-  appViewMode,
   isExpanded,
   wrapServices,
   onAddService,
@@ -104,10 +97,9 @@ export default function RuntimeHeader({
       </div>
 
       <div className="ml-auto my-2">
-        <RuntimeServiceMenu
-          runtimeId={runtimeId}
+        <ServiceSelector
+          id={runtimeId}
           registry={registry}
-          appViewMode={appViewMode}
           onAddService={onAddService}
         />
       </div>

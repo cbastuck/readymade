@@ -1,202 +1,13 @@
-import { Component } from "react";
-import { Accordion, Label, Dropdown, Icon } from "semantic-ui-react";
-
 import * as uuid from "uuid";
 
-import ServiceUI from "../../services/ServiceUI";
-import SelectorField from "../../../components/shared/SelectorField";
-import { s, t } from "../../../styles";
 import { filterPrivateMembers } from "./helpers";
-import BypassSwitch from "../../../ui-components/service/BypassSwitch";
+import StackUI from "./StackUI";
 
 const serviceId = "hookup.to/service/stack";
 const serviceName = "Stack";
+
 const defaultInput = "multiplex";
 const defaultOutput = "array";
-
-export class StackUI extends Component {
-  state = {
-    subservices: [],
-    input: defaultInput,
-    output: defaultOutput,
-    bypass: {},
-  };
-
-  updateBypass = (subservices) => {
-    return subservices.reduce(
-      (all, ssvc) => ({ ...all, [ssvc.uuid]: ssvc.bypass }),
-      {}
-    );
-  };
-
-  onInit = (initialState) => {
-    const {
-      _subservices = [],
-      input = defaultInput,
-      output = defaultOutput,
-    } = initialState;
-    const bypass = this.updateBypass(_subservices);
-    this.setState({
-      subservices: _subservices,
-      input,
-      output,
-      bypass,
-    });
-  };
-
-  onNotification = (service, notification) => {
-    const { subservices, input, output } = notification;
-    if (subservices !== undefined) {
-      const bypass = this.updateBypass(subservices);
-      this.setState({
-        subservices,
-        bypass,
-      });
-    }
-
-    if (input !== undefined) {
-      this.setState({ input });
-    }
-
-    if (output !== undefined) {
-      this.setState({ output });
-    }
-  };
-
-  renderMain = (service) => {
-    const { subservices = [], output, input } = this.state;
-    const rootPanels = subservices.map((ssvc) => ({
-      title: {
-        children: (
-          <div
-            className=""
-            style={s(t.fs12, t.ls1, t.w100, {
-              display: "flex",
-              justifyContent: "space-between",
-            })}
-            title={ssvc.uuid}
-          >
-            <BypassSwitch
-              disabled={true}
-              style={{}}
-              bypass={this.state.bypass[ssvc.uuid]}
-              onChange={async (update) => {
-                await ssvc.configure({ bypass: update });
-                this.setState({
-                  ...this.state,
-                  bypass: { ...this.state.bypass, [ssvc.uuid]: update },
-                });
-              }}
-            />
-
-            <div style={{ textAlign: "center", width: "100%" }}>
-              {ssvc.__descriptor
-                ? ssvc.__descriptor.serviceName
-                : ssvc.serviceName}
-            </div>
-            <div
-              style={{
-                float: "right",
-                cursor: "pointer",
-              }}
-              onClick={(ev) => {
-                service.removeSubservice(ssvc);
-                ev.preventDefault();
-                ev.stopPropagation();
-              }}
-            >
-              <Icon className="hkp-icon-clickable-danger" name="minus" />
-            </div>
-          </div>
-        ),
-      },
-      key: ssvc.uuid,
-      content: (
-        <Accordion.Content className="expand">
-          {service.createSubserviceUI(ssvc)}
-        </Accordion.Content>
-      ), // only possible in BrowserRuntime?
-    }));
-    const inputOptions = { multiplex: "multiplex", lanes: "lanes" };
-    const outputOptions = { array: "array" };
-    const services = service.app.listAvailableServices();
-    return (
-      <div style={t.fill}>
-        <SelectorField
-          style={t.mb3}
-          label="input"
-          options={inputOptions}
-          value={input}
-          onChange={async (_ev, { value: input }) => {
-            await service.configure({ input });
-            this.setState({ input });
-          }}
-        />
-        <SelectorField
-          style={t.mb3}
-          label="output"
-          options={outputOptions}
-          value={output}
-          onChange={async (_ev, { value: output }) => {
-            await service.configure({ output });
-            this.setState({ output });
-          }}
-        />
-
-        <div
-          style={{
-            display: "flex",
-            width: "100%",
-          }}
-        >
-          <Label style={s(t.fs12, t.ls1, { borderRadius: 0, padding: 10 })}>
-            Services
-          </Label>
-
-          <Dropdown
-            className=""
-            text=""
-            icon={<Icon name="plus" color="grey" />}
-            pointing="top"
-            style={{
-              marginLeft: "auto",
-              marginTop: "5px",
-              marginRight: "10px",
-            }}
-          >
-            <Dropdown.Menu style={{ height: "200px", overflowY: "auto" }}>
-              {services.map((svc) => (
-                <Dropdown.Item
-                  key={svc.serviceId}
-                  text={svc.serviceName}
-                  onClick={() => service.appendSubService(svc)}
-                />
-              ))}
-            </Dropdown.Menu>
-          </Dropdown>
-        </div>
-        <Accordion
-          style={t.tc}
-          defaultActiveIndex={0}
-          panels={rootPanels}
-          fluid
-          styled
-        />
-      </div>
-    );
-  };
-
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        segments={[{ name: "Main", render: this.renderMain }]}
-      />
-    );
-  }
-}
 
 class Stack {
   constructor(app, board, descriptor, id) {
@@ -207,10 +18,6 @@ class Stack {
     this._subservices = [];
     this.input = defaultInput;
     this.output = defaultOutput;
-  }
-
-  createSubserviceUI(ssvc) {
-    return this.app.createSubServiceUI(ssvc);
   }
 
   async configure(config) {
@@ -232,7 +39,11 @@ class Stack {
   }
 
   getConfiguration = async () => {
-    return filterPrivateMembers(this);
+    const cfg = {
+      ...filterPrivateMembers(this),
+      subservices: this._subservices.map((ssvc) => filterPrivateMembers(ssvc)),
+    };
+    return cfg;
   };
 
   appendSubService = async (svc) => {

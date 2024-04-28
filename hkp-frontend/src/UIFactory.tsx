@@ -19,12 +19,12 @@ import OutputUINode from "./components/services/OutputUI";
 import WebsocketUI from "./components/services/WebsocketUI";
 */
 
-import PlaceholderUI from "./runtime/browser/services/PlaceholderUI";
 import MapUI from "./runtime/browser/services/MapUI";
 import TimerUI from "./runtime/browser/services/TimerUI";
 import MonitorUI from "./runtime/browser/services/MonitorUI";
 import CanvasUI from "./runtime/browser/services/CanvasUI";
 import InputUI from "./runtime/browser/services/InputUI";
+import StackUI from "./runtime/browser/services/StackUI";
 
 import { ServiceUIComponent } from "./types";
 import { HackerUI } from "./runtime/browser/services/Hacker";
@@ -40,12 +40,10 @@ import { XYPadUI } from "./runtime/browser/services/XYPad";
 import { CameraUI } from "./runtime/browser/services/Camera";
 import { TriggerPadUI } from "./runtime/browser/services/TriggerPad";
 
-import { StackUI } from "./runtime/browser/services/Stack";
 import { SequencerUI } from "./runtime/browser/services/Sequencer";
 import { SpotifyUI } from "./runtime/browser/services/Spotify";
 import { GithubSourceUI } from "./runtime/browser/services/GithubSource";
 import { GithubSinkUI } from "./runtime/browser/services/GithubSink";
-import BrowserRegistry from "./runtime/browser/BrowserRegistry";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {
@@ -69,6 +67,8 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return InjectorUI;
     case "hookup.to/service/map":
       return MapUI;
+    case "hookup.to/service/stack":
+      return StackUI;
     case "hookup.to/service/filter":
       return FilterUI;
     case "hookup.to/service/aggregator":
@@ -81,8 +81,7 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return CameraUI;
     case "hookup.to/service/trigger-pad":
       return TriggerPadUI;
-    case "hookup.to/service/stack":
-      return StackUI;
+
     case "hookup.to/service/sequencer":
       return SequencerUI;
     case "hookup.to/service/spotify":

@@ -415,7 +415,7 @@ export default class Runtime extends Component<Props, State> {
             style={{ cursor: "help", color: "#4284C4" }}
             onClick={() => {
               document
-                .getElementById(`service-menu-${this.props.runtime.id}`)
+                .getElementById(`service-selector-${this.props.runtime.id}`)
                 ?.click();
             }}
           >

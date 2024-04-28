@@ -15,22 +15,15 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-import { AppViewMode, ServiceClass, ServiceRegistry } from "@/types";
-
-import ServiceDropdown from "@/components/ServiceDropdown";
+import { ServiceClass, ServiceRegistry } from "@/types";
 
 type Props = {
-  runtimeId: string;
+  id: string;
   registry: ServiceRegistry;
-  appViewMode?: AppViewMode;
   onAddService: (svc: ServiceClass) => void;
 };
 
-export default function RuntimeServiceMenu({
-  runtimeId,
-  registry,
-  onAddService,
-}: Props) {
+export default function ServiceSelector({ id, registry, onAddService }: Props) {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const onSelect = (value: string) => {
@@ -43,7 +36,7 @@ export default function RuntimeServiceMenu({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          id={`service-menu-${runtimeId}`}
+          id={`service-selector-${id}`}
           variant="outline"
           role="combobox"
           aria-expanded={open}
@@ -84,34 +77,5 @@ export default function RuntimeServiceMenu({
         </Command>
       </PopoverContent>
     </Popover>
-  );
-}
-
-export function ServiceMenu({
-  runtimeId,
-  registry,
-  appViewMode,
-  onAddService,
-}: Props) {
-  const wide = appViewMode === "wide";
-  const options = registry.map((s) => ({
-    key: `${runtimeId}${s.serviceId}`,
-    value: s.serviceId,
-    text: s.serviceName,
-    selected: false,
-  }));
-
-  return (
-    <ServiceDropdown
-      // ref={(dropdown) => (this.dropdown = dropdown)}
-      options={options}
-      wide={wide}
-      onSelected={(serviceId: string) => {
-        const service = registry.find((s) => s.serviceId === serviceId);
-        if (service) {
-          onAddService(service);
-        }
-      }}
-    />
   );
 }

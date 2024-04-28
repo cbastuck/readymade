@@ -112,6 +112,7 @@ export type ServiceUIProps = {
   showBypassOnlyIfExplicit?: boolean;
   draggable?: boolean;
   resizable?: boolean;
+  frameless?: boolean;
   customMenuEntries?: Array<CustomMenuEntry>;
   onServiceAction: (command: ServiceAction) => void;
 };

@@ -1,11 +1,6 @@
 import { CSSProperties, ReactNode } from "react";
 
-import {
-  AppViewMode,
-  RuntimeDescriptor,
-  ServiceClass,
-  ServiceRegistry,
-} from "@/types";
+import { RuntimeDescriptor, ServiceClass, ServiceRegistry } from "@/types";
 import RuntimeHeader from "./RuntimeHeader";
 
 type Props = {
@@ -15,7 +10,6 @@ type Props = {
   wrapServices?: boolean;
   isExpanded?: boolean;
   style?: CSSProperties;
-  appViewMode?: AppViewMode;
   children?: ReactNode | ReactNode[];
   registry: ServiceRegistry;
   onExpand: (isExpanded: boolean) => void;
@@ -31,7 +25,6 @@ export default function RuntimeUI({
   style: passedStyled,
   children,
   registry,
-  appViewMode = "wide",
   isExpanded = true,
   onExpand,
   onWrapServices,
@@ -50,7 +43,6 @@ export default function RuntimeUI({
         isExpanded={isExpanded}
         wrapServices={wrapServices}
         runtime={runtime}
-        appViewMode={appViewMode}
         registry={registry}
         onAddService={onAddService}
         onExpand={onExpand}

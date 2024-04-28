@@ -109,6 +109,11 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     this.subservices = {};
   };
 
+  getSubservice = (ssvcUuid: string): ServiceInstance | null => {
+    const m = this.subservices[ssvcUuid];
+    return m ? m.service : null;
+  };
+
   // service parameter can be null, then starts with the first service
   next = async (
     service: InstanceId | null,

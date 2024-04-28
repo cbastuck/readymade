@@ -17,6 +17,7 @@ type Props = {
   showBypassOnlyIfExplicit?: boolean;
   children: ReactNode;
   customMenuEntries?: Array<CustomMenuEntry>;
+  frameless?: boolean;
   onAction: (action: ServiceAction) => void;
 };
 
@@ -25,6 +26,7 @@ export default function ServiceFrame({
   service,
   showBypassOnlyIfExplicit,
   customMenuEntries,
+  frameless = false,
   onAction,
 }: Props) {
   const [frameCollapsed, setFrameCollapsed] = useState(false);
@@ -113,6 +115,9 @@ export default function ServiceFrame({
     }
   };
 
+  if (frameless) {
+    return children;
+  }
   const { uuid: _, board, ...filteredService } = filterPrivateMembers(service);
   return (
     <div key={`service-frame-${uuid}`}>

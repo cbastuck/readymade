@@ -1,22 +1,16 @@
 import { ReactElement, useEffect, useRef } from "react";
 
 import Resizable, { Size } from "@/components/Resizable";
-import { CustomMenuEntry, ServiceAction, ServiceInstance } from "@/types";
+import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceFrame from "./ServiceFrame";
 
-type Props = {
-  service: ServiceInstance;
+type Props = ServiceUIProps & {
   children: ReactElement;
   initialSize?: Size;
-  customMenuEntries?: Array<CustomMenuEntry>;
-  showBypassOnlyIfExplicit?: boolean;
-  draggable?: boolean;
-  resizable?: boolean;
   className?: string;
   onInit?: (initialState: any) => void;
   onNotification?: (_: ServiceInstance, notification: any) => void;
   onResize?: (svc: ServiceInstance, size: Size) => void;
-  onServiceAction: (command: ServiceAction) => void;
 };
 
 export default function ServiceUI({
@@ -29,6 +23,7 @@ export default function ServiceUI({
   className = "",
   customMenuEntries,
   resizable = true,
+  frameless = false,
   onInit,
   onNotification,
   onServiceAction,
@@ -52,6 +47,7 @@ export default function ServiceUI({
 
   return (
     <ServiceFrame
+      frameless={frameless}
       service={service}
       onAction={onServiceAction}
       draggable={!!draggable}
@@ -79,19 +75,24 @@ export function needsUpdate<T>(newValue: T, oldValue: T) {
 
 function useInitOnFirstRender(
   service: ServiceInstance,
-  onInit: any,
-  onNotification: any
+  onInit?: (state: any) => void,
+  onNotification?: (svc: ServiceInstance, notification: any) => void
 ) {
+  const notify = async () => {
+    const config = await (service.getConfiguration?.() ||
+      Promise.resolve(service));
+    if (onInit) {
+      onInit(config);
+    } else if (onNotification) {
+      onNotification(service, config);
+    }
+  };
+
   const isFirstRender = useRef<boolean>(true);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
-      const config = service.getConfiguration?.() || service;
-      if (onInit) {
-        onInit(config);
-      } else if (onNotification) {
-        onNotification(service, config);
-      }
+      notify();
     }
-  }, []);
+  }, [notify]);
 }

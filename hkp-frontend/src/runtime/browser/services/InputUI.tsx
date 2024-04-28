@@ -1,15 +1,23 @@
+import { useState } from "react";
 import { Checkbox } from "semantic-ui-react";
-
-import InputField from "../../../components/shared/InputField";
-import Button from "../../../components/shared/Button";
 
 import { s, t } from "../../../styles";
 import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
-import { useState } from "react";
 
+import Input from "@/ui-components/Input";
+import { Button } from "@/components/ui/button";
+import BinarySwitch from "@/ui-components/BinarySwitch";
+
+type State = {
+  url: string;
+  topic: string;
+  isWebsocket: boolean;
+  canFetch: boolean | undefined;
+  running: boolean;
+};
 export default function InputUI(props: ServiceUIProps) {
-  const [state, setState] = useState({
+  const [state, setState] = useState<State>({
     url: "",
     topic: "secret-key",
     isWebsocket: false,
@@ -54,56 +62,47 @@ export default function InputUI(props: ServiceUIProps) {
   const { service } = props;
   const { running, url, topic, isWebsocket, canFetch } = state;
   return (
-    <ServiceUI {...props} onInit={onInit} onNotification={onNotification}>
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      initialSize={{ width: 300, height: undefined }}
+    >
       <div
         style={{
           margin: 10,
         }}
       >
-        <div style={s(t.ls1, t.fs12)}>
-          <InputField
-            label="URL"
-            value={url}
-            onChange={(_, { value: url }) => {
-              if (url) {
-                setState((state) => ({ ...state, url }));
-                service.configure({ url });
-              }
-            }}
-          />
-        </div>
+        <Input
+          title="URL"
+          value={url}
+          onChange={(newUrl) => service.configure({ url: newUrl })}
+        />
+
         {isWebsocket && (
-          <div style={s(t.ls1, t.fs12)}>
-            <InputField
-              label="topic"
-              value={topic}
-              onChange={(_, { value: topic }) => {
-                setState((state) => ({ ...state, topic }));
-                service.configure({ topic });
-              }}
-            />
-          </div>
+          <Input
+            title="topic"
+            value={topic}
+            onChange={(newTopic) => service.configure({ topic: newTopic })}
+          />
         )}
         {canFetch === true && (
           <Button
-            style={s(t.w100, t.ls1, t.fs12, { marginTop: 0 })}
+            variant="ghost"
+            className="my-2 w-full"
             onClick={() => service.configure({ fetch: url })}
           >
             Fetch
           </Button>
         )}
         {canFetch === false && (
-          <div style={t.tl}>
-            <Checkbox
-              style={s(t.mt1, t.ls1, t.fs12)}
-              label="Input active"
-              toggle
-              onChange={(_, { checked: running }) => {
-                service.configure({ running });
-              }}
-              checked={running}
-            />
-          </div>
+          <BinarySwitch
+            label="Input active"
+            value={running}
+            onChange={(newRunning) =>
+              service.configure({ running: newRunning })
+            }
+          />
         )}
       </div>
     </ServiceUI>

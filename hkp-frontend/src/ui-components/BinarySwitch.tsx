@@ -1,5 +1,4 @@
 import { Switch } from "@/components/ui/switch";
-import GroupLabel from "./GroupLabel";
 
 type Props = {
   label: string;
@@ -9,11 +8,10 @@ type Props = {
 
 export default function BinarySwitch({ label, value, onChange }: Props) {
   return (
-    <div className="flex my-4">
-      <GroupLabel>{label}</GroupLabel>
-
+    <div className="flex my-4 items-end">
+      <div className="text-base">{label}</div>
       <Switch
-        className="ml-4 mr-auto mr-4"
+        className="ml-4 mr-auto"
         checked={value}
         onCheckedChange={onChange}
       />
