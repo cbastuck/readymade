@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CustomMenuEntry, ServiceDescriptor } from "@/types";
 import { Button } from "@/components/ui/button";
+import MenuIcon from "../MenuIcon";
 
 type Props = {
   service: ServiceDescriptor;
@@ -52,7 +53,7 @@ export default function ServiceSettings({
         <DropdownMenuSeparator />
 
         <DropdownMenuItem onClick={onConfig} className="text-base">
-          <FileCog className="mr-2 h-4 w-4" />
+          <MenuIcon icon={FileCog} />
           <span>Config</span>
         </DropdownMenuItem>
 
@@ -63,7 +64,7 @@ export default function ServiceSettings({
             onClick={() => onExpand(false)}
             className="text-base"
           >
-            <ChevronsDownUp className="mr-2 h-4 w-4" />
+            <MenuIcon icon={ChevronsDownUp} />
             <span>Collapse</span>
           </DropdownMenuItem>
         ) : (
@@ -71,17 +72,17 @@ export default function ServiceSettings({
             onClick={() => onExpand(true)}
             className="text-base"
           >
-            <ChevronsUpDown className="mr-2 h-4 w-4" />
+            <MenuIcon icon={ChevronsUpDown} />
             <span>Expand</span>
           </DropdownMenuItem>
         )}
         <DropdownMenuItem onClick={onHelp} className="text-base">
-          <Info className="mr-2 h-4 w-4" />
+          <MenuIcon icon={Info} />
           <span>Documentation</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="text-base">
-          <Trash className="mr-2 h-4 w-4" />
+          <MenuIcon icon={Trash} />
           <span>Delete</span>
         </DropdownMenuItem>
 

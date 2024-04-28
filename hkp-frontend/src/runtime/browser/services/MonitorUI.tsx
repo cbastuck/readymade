@@ -8,6 +8,7 @@ import Editor from "hkp-frontend/src/components/shared/Editor/index";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
+import MenuIcon from "@/ui-components/MenuIcon";
 
 export default function MonitorUI(props: ServiceUIProps) {
   const [message, setMessage] = useState("");
@@ -43,17 +44,17 @@ export default function MonitorUI(props: ServiceUIProps) {
   const customMenuEntries = [
     {
       name: "Clear Buffer",
-      icon: <CircleX className="mr-2 h-4 w-4" />,
+      icon: <MenuIcon icon={CircleX} />,
       onClick: clearEditor,
     },
     {
       name: "Edit Buffer",
-      icon: <Pencil className="mr-2 h-4 w-4" />,
+      icon: <MenuIcon icon={Pencil} />,
       onClick: switchEditor,
     },
     {
       name: "Inject Buffer",
-      icon: <SquarePlay className="mr-2 h-4 w-4" />,
+      icon: <MenuIcon icon={SquarePlay} />,
       onClick: () => {
         let data;
         try {

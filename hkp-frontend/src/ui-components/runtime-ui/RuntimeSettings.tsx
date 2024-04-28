@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { RuntimeDescriptor } from "@/types";
 import { Button } from "@/components/ui/button";
+import MenuIcon from "../MenuIcon";
 
 type Props = {
   isExpanded?: boolean;
@@ -63,14 +64,14 @@ export default function RuntimeSettings({
             className="text-base"
             onClick={() => onProcess(false)}
           >
-            <Play className="mr-2 h-4 w-4" />
+            <MenuIcon icon={Play} />
             <span>Run</span>
           </DropdownMenuItem>
           <DropdownMenuItem
             className="text-base"
             onClick={() => onProcess(true)}
           >
-            <StepForward className="mr-2 h-4 w-4" />
+            <MenuIcon icon={StepForward} />
             <span>Run with ...</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
@@ -81,9 +82,9 @@ export default function RuntimeSettings({
             onClick={() => onWrapServices(!wrapServices)}
           >
             {wrapServices ? (
-              <ArrowRightLeft className="mr-2 h-4 w-4" />
+              <MenuIcon icon={ArrowRightLeft} />
             ) : (
-              <WrapText className="mr-2 h-4 w-4" />
+              <MenuIcon icon={WrapText} />
             )}
             <span>{wrapServices ? "Unwrap Services" : "Wrap services"}</span>
           </DropdownMenuItem>
@@ -93,7 +94,7 @@ export default function RuntimeSettings({
               className="text-base"
               onClick={() => onExpand(false)}
             >
-              <ChevronsDownUp className="mr-2 h-4 w-4" />
+              <MenuIcon icon={ChevronsDownUp} />
               <span>Collapse</span>
             </DropdownMenuItem>
           ) : (
@@ -101,23 +102,23 @@ export default function RuntimeSettings({
               className="text-base"
               onClick={() => onExpand(true)}
             >
-              <ChevronsUpDown className="mr-2 h-4 w-4" />
+              <MenuIcon icon={ChevronsUpDown} />
               <span>Expand</span>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem className="text-base" onClick={onConfiguration}>
-            <Settings className="mr-2 h-4 w-4" />
+            <MenuIcon icon={Settings} />
             <span>Configuration</span>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-base" onClick={onClear}>
-            <Eraser className="mr-2 h-4 w-4" />
+            <MenuIcon icon={Eraser} />
             <span>Clear</span>
           </DropdownMenuItem>
 
           <DropdownMenuItem className="text-base" onClick={onDelete}>
-            <Trash className="mr-2 h-4 w-4" />
+            <MenuIcon icon={Trash} />
             <span>Delete</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>

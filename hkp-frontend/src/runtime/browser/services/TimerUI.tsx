@@ -9,6 +9,7 @@ import { Button } from "hkp-frontend/src/components/ui/button";
 import RadioGroup from "@/ui-components/RadioGroup";
 import Slider from "@/ui-components/Slider";
 import OneOfVisible from "@/ui-components/OneOfVisible";
+import MenuIcon from "@/ui-components/MenuIcon";
 
 export default function TimerUI(props: ServiceUIProps) {
   const { service } = props;
@@ -103,7 +104,7 @@ export default function TimerUI(props: ServiceUIProps) {
   const customMenuEntries = [
     {
       name: "Reset Timer",
-      icon: <RotateCcw className="mr-2 h-4 w-4" />,
+      icon: <MenuIcon icon={RotateCcw} />,
       config: { counter: 0 },
     },
   ];

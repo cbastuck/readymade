@@ -21,6 +21,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import MenuIcon from "../MenuIcon";
 
 type Props = {
   isCompact: boolean;
@@ -66,16 +67,25 @@ export default function AppMenu({ isCompact }: Props) {
         {isCompact && (
           <>
             <DropdownMenuGroup>
-              <DropdownMenuItem onClick={() => navigate("/docs")}>
-                <Forward className="mr-2 h-4 w-4" />
+              <DropdownMenuItem
+                className="text-base"
+                onClick={() => navigate("/docs")}
+              >
+                <MenuIcon icon={Forward} />
                 <span>Docs</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/examples")}>
-                <Forward className="mr-2 h-4 w-4" />
+              <DropdownMenuItem
+                className="text-base"
+                onClick={() => navigate("/examples")}
+              >
+                <MenuIcon icon={Forward} />
                 <span>Examples</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/playground")}>
-                <Forward className="mr-2 h-4 w-4" />
+              <DropdownMenuItem
+                className="text-base"
+                onClick={() => navigate("/playground")}
+              >
+                <MenuIcon icon={Forward} />
                 <span>Playground</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
@@ -85,39 +95,45 @@ export default function AppMenu({ isCompact }: Props) {
 
         <DropdownMenuGroup>
           <DropdownMenuItem
+            className="text-base"
             onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
           >
             {isLoggedIn ? (
               <>
-                <User className="mr-2 h-4 w-4" />
+                <MenuIcon icon={User} />
                 <span>{nickname}</span>
               </>
             ) : (
               <>
-                <LogIn className="mr-2 h-4 w-4" />
+                <MenuIcon icon={LogIn} />
                 <span>Login</span>
               </>
             )}
           </DropdownMenuItem>
 
           <DropdownMenuItem
+            className="text-base"
             disabled={!isLoggedIn}
             onClick={() => navigate("/dashboard")}
           >
-            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <MenuIcon icon={LayoutDashboard} />
             <span>Dashboard</span>
           </DropdownMenuItem>
 
-          <DropdownMenuItem disabled={true}>
-            <Settings className="mr-2 h-4 w-4" />
+          <DropdownMenuItem className="text-base" disabled={true}>
+            <MenuIcon icon={Settings} />
             <span>Settings</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem disabled={!isLoggedIn} onClick={onLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
+        <DropdownMenuItem
+          className="text-base"
+          disabled={!isLoggedIn}
+          onClick={onLogout}
+        >
+          <MenuIcon icon={LogOut} />
           <span>Log out</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
