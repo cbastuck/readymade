@@ -7,10 +7,11 @@ import GroupLabel from "./GroupLabel";
 
 type Props = {
   id?: string;
+  className?: string;
   title: string;
   options: Array<string>;
   value: string;
-  onChange: (item: string) => void;
+  onChange: (value: string) => void;
 };
 
 export default function RadioGroup({
@@ -18,10 +19,11 @@ export default function RadioGroup({
   title,
   options,
   value,
+  className = "",
   onChange,
 }: Props) {
   return (
-    <div className="flex-col">
+    <div className={`flex-col ${className}`}>
       <GroupLabel>{title}</GroupLabel>
       <RadioGroupCN className="py-2 flex" value={value}>
         {options.map((item, idx) => {

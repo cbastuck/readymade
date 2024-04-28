@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { Checkbox } from "semantic-ui-react";
 
-import { s, t } from "../../../styles";
 import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 

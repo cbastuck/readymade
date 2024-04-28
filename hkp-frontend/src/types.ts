@@ -177,6 +177,8 @@ export type ServiceAction = {
   service: ServiceImpl;
 };
 
+export type AppInstance = AppImpl;
+
 export type AppImpl = {
   getAuthenticatedUser: () => User | null;
   notify: (svc: ServiceImpl, notification: any) => void;
