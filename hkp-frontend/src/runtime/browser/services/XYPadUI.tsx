@@ -1,8 +1,8 @@
-import React, { Component } from "react";
-import ServiceUI from "../../services/ServiceUI";
+import { Component, DragEvent, TouchEvent, MouseEvent } from "react";
 
-const serviceName = "XY Pad";
-const serviceId = "hookup.to/service/xy-pad";
+import { ServiceInstance, ServiceUIProps } from "@/types";
+import ServiceUI from "@/ui-components/service/ServiceUI";
+import { Point, Rect } from "@/common";
 
 const transparentImage = new Image();
 transparentImage.src =
@@ -20,7 +20,8 @@ const container = {
 
 const initialX = container.width / 2 - dragger.width / 2;
 const initialY = container.height / 2 - dragger.height / 2;
-export class XYPadUI extends Component {
+
+export default class XYPadUI extends Component<ServiceUIProps> {
   state = {
     x: initialX,
     y: initialY,
@@ -32,11 +33,14 @@ export class XYPadUI extends Component {
     y: initialY,
   };
 
-  onInit = (initialState) => {};
+  padRect: Rect | null = null;
+  pickOffset: Point | null = null;
 
-  onNotification = async (service, notification) => {};
+  onInit = (_initialState: any) => {};
 
-  getRelativePosition = (e) => {
+  onNotification = async (_service: ServiceInstance, _notification: any) => {};
+
+  getRelativePosition = (e: DragEvent | TouchEvent) => {
     //const { clientX, clientY } = e.type.includes("drag") ? e : e.targetTouches[0];
     const { clientX, clientY } = e.targetTouches ? e.targetTouches[0] : e;
     return {
@@ -63,7 +67,7 @@ export class XYPadUI extends Component {
     this.setState({ dragging: false });
   };
 
-  onPanEnd = (e) => {
+  onPanEnd = (e: DragEvent) => {
     const dropPos = this.getRelativePosition(e);
 
     this.setState({
@@ -75,7 +79,7 @@ export class XYPadUI extends Component {
     e.preventDefault();
   };
 
-  onPan = (e, service) => {
+  onPan = (e: DragEvent | TouchEvent, service: ServiceInstance) => {
     const touchPos = this.getRelativePosition(e);
     if (
       (touchPos.x !== this.lastPos.x || touchPos.y !== this.lastPos.y) &&
@@ -89,7 +93,7 @@ export class XYPadUI extends Component {
     return false;
   };
 
-  onDblClick = (e, service) => {
+  onDblClick = (e: MouseEvent, service: ServiceInstance) => {
     const clickPos = this.getRelativePosition(e);
     const draggerPos = {
       x: clickPos.x - dragger.width / 2,
@@ -99,7 +103,7 @@ export class XYPadUI extends Component {
     this.updateService(service, clickPos);
   };
 
-  updateService = (service, clickPos) => {
+  updateService = (service: ServiceInstance, clickPos: Point) => {
     const normalizedClickPos = {
       x: Math.min(clickPos.x / this.padRect.width, this.padRect.width),
       y: Math.min(clickPos.y / this.padRect.height, this.padRect.height),
@@ -109,7 +113,8 @@ export class XYPadUI extends Component {
     });
   };
 
-  renderMain = (service) => {
+  renderMain = () => {
+    const { service } = this.props;
     const { x, y, dragging } = this.state;
     return (
       <div
@@ -123,7 +128,6 @@ export class XYPadUI extends Component {
           height: container.height,
           position: "relative",
           overflow: "hidden",
-          border: "solid 1px gray",
         }}
         onDoubleClick={(ev) => this.onDblClick(ev, service)}
         onDragOver={(e) => {
@@ -164,36 +168,9 @@ export class XYPadUI extends Component {
         {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[{ name: "main", render: this.renderMain }]}
-      />
+      >
+        {this.renderMain()}
+      </ServiceUI>
     );
   }
 }
-
-class XYPad {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-  }
-
-  configure(config) {
-    const { position } = config;
-    if (position !== undefined) {
-      this.app.next(this, position);
-    }
-  }
-
-  process(params) {
-    return params;
-  }
-}
-
-const descriptor = {
-  serviceName,
-  serviceId,
-  create: (app, board, descriptor, id) => new XYPad(app, board, descriptor, id),
-  createUI: XYPadUI,
-};
-
-export default descriptor;

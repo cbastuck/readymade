@@ -26,6 +26,7 @@ import CanvasUI from "./runtime/browser/services/CanvasUI";
 import InputUI from "./runtime/browser/services/InputUI";
 import StackUI from "./runtime/browser/services/StackUI";
 import CameraUI from "./runtime/browser/services/CameraUI";
+import XYPadUI from "./runtime/browser/services/XYPadUI";
 
 import { ServiceUIComponent } from "./types";
 import { HackerUI } from "./runtime/browser/services/Hacker";
@@ -37,7 +38,6 @@ import { InjectorUI } from "./runtime/browser/services/Injector";
 import { FilterUI } from "./runtime/browser/services/Filter";
 import { AggregatorUI } from "./runtime/browser/services/Aggregator";
 import { BufferUI } from "./runtime/browser/services/Buffer";
-import { XYPadUI } from "./runtime/browser/services/XYPad";
 
 import TriggerPadUI from "./runtime/browser/services/TriggerPadUI";
 

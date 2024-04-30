@@ -42,7 +42,9 @@ export async function hashString(message: string) {
   return hashHex;
 }
 
-export type Rect = {
+export type Rect = Size & Point;
+
+export type Point = {
   x: number;
   y: number;
 };
