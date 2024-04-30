@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TextArea } from "semantic-ui-react";
-import { CircleX, SquarePlay, Pencil } from "lucide-react";
+import { CircleX, SquarePlay, Pencil, ScanText } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "@/types";
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
@@ -48,8 +48,12 @@ export default function MonitorUI(props: ServiceUIProps) {
       onClick: clearEditor,
     },
     {
-      name: "Edit Buffer",
-      icon: <MenuIcon icon={Pencil} />,
+      name: renderTextEditor ? "Edit Mode" : "Close Edit Mode",
+      icon: renderTextEditor ? (
+        <MenuIcon icon={Pencil} />
+      ) : (
+        <MenuIcon icon={ScanText} />
+      ),
       onClick: switchEditor,
     },
     {
@@ -71,11 +75,10 @@ export default function MonitorUI(props: ServiceUIProps) {
     renderTextEditor ? (
       <TextArea
         style={{
-          margin: "5px 10px",
+          margin: "5px 0px",
           fontFamily: "monospace",
           fontWeight: "bold",
           resize: "none",
-          border: "1px solid lightgray",
           borderRadius: 5,
           flexGrow: 1,
         }}
@@ -93,22 +96,14 @@ export default function MonitorUI(props: ServiceUIProps) {
 
   return (
     <ServiceUI
+      className="pb-4"
       {...props}
       onInit={onInit}
       onNotification={onNotification}
       customMenuEntries={customMenuEntries}
+      initialSize={{ width: 400, height: undefined }}
     >
-      <div
-        className="pb-2"
-        style={{
-          width: "100%",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        {renderEditor()}
-      </div>
+      {renderEditor()}
     </ServiceUI>
   );
 }

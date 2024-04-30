@@ -54,6 +54,10 @@ export default function TimerUI(props: ServiceUIProps) {
       oneShotDelayUnit,
       running,
     } = state || {};
+
+    if (state.periodic === true && mode === "oneshot") {
+      setMode("periodic");
+    }
     if (needsUpdate(periodicValue, interval)) {
       setInterval(periodicValue);
     }

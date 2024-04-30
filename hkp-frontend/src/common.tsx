@@ -41,3 +41,13 @@ export async function hashString(message: string) {
     .join(""); // convert bytes to hex string
   return hashHex;
 }
+
+export type Rect = {
+  x: number;
+  y: number;
+};
+
+export type Size = {
+  width: string | number | undefined;
+  height: string | number | undefined;
+};

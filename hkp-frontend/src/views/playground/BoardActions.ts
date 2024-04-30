@@ -4,7 +4,6 @@ import { replacePlaceholders } from "../../core/url";
 import {
   BoardDescriptor,
   OutputRoute,
-  PeerInputRouting,
   PeerOutputRouting,
   PlaygroundBoard,
   PlaygroundTemplate,
@@ -13,6 +12,7 @@ import {
   ServiceDescriptor,
 } from "../../types";
 import { decodeBoardState } from "./BoardLink";
+import { defaultDiscoveryPeer } from "./common";
 
 export async function importBoard(
   url: string
@@ -127,20 +127,24 @@ export async function createBoardFromTemplate(
       : {};
 
     const patchedInputRouting = inputRouting
-      ? patchedRuntimes.reduce<PeerInputRouting>(
-          (all, rt, idx) => ({
+      ? patchedRuntimes.reduce((all, rt, idx) => {
+          const currentRuntimeInputRouting: string =
+            inputRouting[runtimes[idx].id]; // NOTE: inputRouting is of tyoe DeprecatedInputRouting in this case, when reading from a template
+          const inputHost = currentRuntimeInputRouting
+            ? defaultDiscoveryPeer
+            : null;
+          const peerInput =
+            replacePlaceholders(currentRuntimeInputRouting, params) || null;
+          return {
             ...all,
             [rt.id]: {
-              hostDescriptor: null,
+              hostDescriptor: inputHost,
               route: {
-                peer:
-                  replacePlaceholders(inputRouting[runtimes[idx].id], params) ||
-                  null,
+                peer: peerInput,
               },
             },
-          }),
-          {}
-        )
+          };
+        }, {})
       : {};
 
     const patchedOutputRouting = outputRouting

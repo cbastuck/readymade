@@ -1,26 +1,33 @@
+import { AppInstance, ServiceClass } from "@/types";
 import CanvasUI from "./CanvasUI";
+import ServiceBase from "./ServiceBase";
 
 const serviceId = "hookup.to/service/canvas";
 const serviceName = "Canvas";
 
-const TWO_PI = 2 * Math.PI;
+type P = { resolve: (blob: Blob) => void; reject: (frameID: number) => void };
 
-class Canvas {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
+class Canvas extends ServiceBase<any> {
+  fullscreen = false;
+  clearOnRedraw = true;
+  resizable = true;
+  size = undefined;
+  reportSizeUpdate = true;
+  _frameID = 0;
+  _pending: { [frameID: number]: P } = {};
+  noToggleFullscreenOnDblClick = false;
+  capture = false;
 
-    this.fullscreen = false;
-    this.clearOnRedraw = true;
-    this._frameID = 0;
-    this._pending = {};
-    this.resizable = true;
-    this.size = undefined;
-    this.reportSizeUpdate = true;
+  constructor(
+    app: AppInstance,
+    board: string,
+    descriptor: ServiceClass,
+    id: string
+  ) {
+    super(app, board, descriptor, id, {});
   }
 
-  configure(config) {
+  configure(config: any) {
     const {
       fullscreen,
       clearOnRedraw,
@@ -69,7 +76,7 @@ class Canvas {
     }
   }
 
-  resolveCapturedFrame({ blob, frameID }) {
+  resolveCapturedFrame({ blob, frameID }: any) {
     const { resolve, reject } = this._pending[frameID];
     delete this._pending[frameID];
     if (this._pending[frameID + 1]) {
@@ -79,13 +86,13 @@ class Canvas {
     }
   }
 
-  waitForCapturedFrame(frameID) {
+  waitForCapturedFrame(frameID: number) {
     return new Promise((resolve, reject) => {
       this._pending[frameID] = { resolve, reject };
     });
   }
 
-  async process(params) {
+  async process(params: any) {
     const frameID = this._frameID++;
     this.app.notify(this, {
       render: params,
@@ -105,8 +112,12 @@ class Canvas {
 const descriptor = {
   serviceName,
   serviceId,
-  create: (app, board, descriptor, id) =>
-    new Canvas(app, board, descriptor, id),
+  create: (
+    app: AppInstance,
+    board: string,
+    descriptor: ServiceClass,
+    id: string
+  ) => new Canvas(app, board, descriptor, id),
   createUI: CanvasUI,
 };
 

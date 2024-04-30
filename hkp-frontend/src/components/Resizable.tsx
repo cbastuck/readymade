@@ -1,9 +1,5 @@
+import { Size } from "@/common";
 import { ReactElement, useRef, useState } from "react";
-
-export type Size = {
-  width: string | number | undefined;
-  height: string | number | undefined;
-};
 
 type Props = {
   disabled?: boolean;

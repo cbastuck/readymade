@@ -82,3 +82,5 @@ export const availableDiscoveryPeerHosts: Array<PeerJsHostDescriptor> = [
     secure: isSecureConnection,
   },
 ];
+
+export const defaultDiscoveryPeer = availableDiscoveryPeerHosts[0];

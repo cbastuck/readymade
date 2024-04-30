@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useContext, useState, MouseEvent } from "react";
 
 import { RuntimeDescriptor, ServiceClass, ServiceRegistry } from "@/types";
 import Editable from "@/ui-components/Editable";
@@ -77,8 +77,14 @@ export default function RuntimeHeader({
     console.log("Apply runtime config not implememnted", newConfig);
   };
 
+  const onDblClick = (ev: MouseEvent) => {
+    onExpand(!isExpanded);
+    ev.preventDefault();
+    ev.stopPropagation();
+  };
+
   return (
-    <div className="flex items-center gap-3 px-2">
+    <div className="flex items-center gap-3 px-2" onDoubleClick={onDblClick}>
       <div className="flex items-end gap-3 px-2 min-h-10">
         <RuntimeSettings
           runtime={runtime}

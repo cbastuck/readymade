@@ -1,10 +1,14 @@
-import { Component } from "react";
+import { Component, MouseEvent } from "react";
 import ResizeObserver from "resize-observer-polyfill";
 
 import { createObjectURL, revokeObjectURL } from "./helpers";
 import { zLayers } from "../../../styles";
 import ServiceUI from "@/ui-components/service/ServiceUI";
-import { ServiceUIProps } from "@/types";
+import { ServiceInstance, ServiceUIProps } from "@/types";
+import { Rect } from "@/common";
+import { Size } from "@/components/Resizable";
+
+const TWO_PI = 2 * Math.PI;
 
 export default class CanvasUI extends Component<ServiceUIProps> {
   state = {
@@ -95,12 +99,12 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     });
   };
 
-  registerClickHandler = (rect, action) => {
+  registerClickHandler = (rect: Rect, action: string) => {
     const id = `${rect.x}${rect.y}`;
     this.clickHandlers[id] = { rect, action };
   };
 
-  onClick = (service, ev) => {
+  onClick = (service: ServiceInstance, ev: MouseEvent) => {
     const { clientX: x, clientY: y } = ev;
     for (const id in this.clickHandlers) {
       const { rect, action } = this.clickHandlers[id];
@@ -115,7 +119,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     }
   };
 
-  invokeClickAction = (service, action) => {
+  invokeClickAction = (service: ServiceInstance, action) => {
     if (action.internal) {
       // internal dispatch event
       service.app.next(service, action.internal);
@@ -584,7 +588,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     );
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (service: ServiceInstance, notification: any) => {
     const { render, size } = notification;
     if (size !== undefined) {
       const [canvasWidth, canvasHeight] = size;
@@ -610,9 +614,9 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     }
   };
 
-  onInit = (service) => {
+  onInit = (service: ServiceInstance) => {
     const { size, resizable, fullscreen, clearOnRedraw } = service;
-    const config = {
+    const config: any = {
       resizable: !!resizable,
       fullscreen,
       clearOnRedraw,
@@ -624,7 +628,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     this.setState(config);
   };
 
-  onResize = (service, { width, height }) => {
+  onResize = (service: ServiceInstance, { width, height }: Size) => {
     service.configure({ size: [width, height] });
   };
 
