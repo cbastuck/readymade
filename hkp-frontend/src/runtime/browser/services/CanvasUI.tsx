@@ -4,24 +4,36 @@ import ResizeObserver from "resize-observer-polyfill";
 import { createObjectURL, revokeObjectURL } from "./helpers";
 import { zLayers } from "../../../styles";
 import ServiceUI from "@/ui-components/service/ServiceUI";
-import { ServiceInstance, ServiceUIProps } from "@/types";
-import { Rect } from "@/common";
-import { Size } from "@/components/Resizable";
+import { ServiceAction, ServiceInstance, ServiceUIProps } from "@/types";
+import { Rect, Size } from "@/common";
 
 const TWO_PI = 2 * Math.PI;
 
-export default class CanvasUI extends Component<ServiceUIProps> {
-  state = {
+type DrawElement = any;
+
+type State = {
+  fullWidth: number;
+  fullHeight: number;
+  fullscreen: boolean;
+  clearOnRedraw: boolean;
+  canvasWidth: number;
+  canvasHeight: number;
+  resizable: boolean;
+};
+
+export default class CanvasUI extends Component<ServiceUIProps, State> {
+  state: State = {
     fullWidth: document.body.clientWidth,
     fullHeight: document.body.clientHeight,
     fullscreen: false,
     clearOnRedraw: true,
     canvasWidth: 400,
     canvasHeight: 250,
+    resizable: true,
   };
 
   imageCache: { [key: string]: any } = {};
-  clickHandlers: { [key: string]: any } = {};
+  clickHandlers: { [key: string]: { rect: Rect; action: ServiceAction } } = {};
 
   resizeBodyObserver?: ResizeObserver;
   recentData?: any;
@@ -99,7 +111,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     });
   };
 
-  registerClickHandler = (rect: Rect, action: string) => {
+  registerClickHandler = (rect: Rect, action: ServiceAction) => {
     const id = `${rect.x}${rect.y}`;
     this.clickHandlers[id] = { rect, action };
   };
@@ -110,16 +122,16 @@ export default class CanvasUI extends Component<ServiceUIProps> {
       const { rect, action } = this.clickHandlers[id];
       if (
         x >= rect.x &&
-        x <= rect.x + rect.width &&
+        x <= rect.x + (Number(rect.width) || 0) &&
         y >= rect.y &&
-        y <= rect.y + rect.height
+        y <= rect.y + (Number(rect.height) || 0)
       ) {
         return this.invokeClickAction(service, action);
       }
     }
   };
 
-  invokeClickAction = (service: ServiceInstance, action) => {
+  invokeClickAction = (service: ServiceInstance, action: ServiceAction) => {
     if (action.internal) {
       // internal dispatch event
       service.app.next(service, action.internal);
@@ -129,7 +141,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     }
   };
 
-  drawExplainer = (ctx, data) => {
+  drawExplainer = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const {
       pointer = { x: "50%", y: "50%", length: "1%" },
       text,
@@ -182,7 +194,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     this.drawText(ctx, textData);
   };
 
-  drawImage = async (ctx, data) => {
+  drawImage = async (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const {
       centerX: canvasCenterX,
       centerY: canvasCenterY,
@@ -202,7 +214,9 @@ export default class CanvasUI extends Component<ServiceUIProps> {
       x,
       y,
     } = data;
-    const img = url ? await this.fetchImage(url) : await this.createImage(blob);
+    const img = (
+      url ? await this.fetchImage(url) : await this.createImage(blob)
+    ) as HTMLImageElement;
     const scaledHeight =
       height === undefined ? canvasHeight : toAbsolute(height, canvasHeight);
     const aspectRatio = img.width / img.height;
@@ -233,7 +247,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     ctx.restore();
   };
 
-  applyTextTransform = (input, operation) => {
+  applyTextTransform = (input: string, operation: string) => {
     switch (operation) {
       case "lowercase":
         return input.toLowerCase();
@@ -249,7 +263,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     }
   };
 
-  drawText = (ctx, data) => {
+  drawText = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const { centerX, centerY, canvasWidth, canvasHeight } =
       this.getCanvasCenter();
     const {
@@ -316,11 +330,11 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     ctx.restore();
   };
 
-  drawCircle = (ctx, data) => {
+  drawCircle = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const { width, height } = this.getCanvasDim();
     const { radius = 100, color, contour, gradient } = data || {};
     ctx.save();
-    const drawPath = (ctx) => {
+    const drawPath = (ctx: CanvasRenderingContext2D) => {
       ctx.beginPath();
       ctx.arc(
         toAbsolute(data.x, width),
@@ -350,7 +364,9 @@ export default class CanvasUI extends Component<ServiceUIProps> {
       const gy = toAbsolute(gradient.centerY, height);
       const grd = ctx.createRadialGradient(gx, gy, r * 0.2, gx, gy, r * 1.5);
       const nColors = gradient.colors.length;
-      gradient.colors.forEach((c, i) => grd.addColorStop(i / nColors, c));
+      gradient.colors.forEach((c: string, i: number) =>
+        grd.addColorStop(i / nColors, c)
+      );
       ctx.fillStyle = grd;
 
       drawPath(ctx);
@@ -359,7 +375,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     ctx.restore();
   };
 
-  drawRect = (ctx, data) => {
+  drawRect = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const { width: canvasWidth, height: canvasHeight } = this.getCanvasDim();
     const {
       x,
@@ -372,7 +388,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     } = data || {};
 
     ctx.save();
-    const drawPath = (ctx) => {
+    const drawPath = (ctx: CanvasRenderingContext2D) => {
       ctx.beginPath();
       ctx.rect(
         toAbsolute(x, canvasWidth),
@@ -398,7 +414,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     ctx.restore();
   };
 
-  drawVideo = (ctx, data) => {
+  drawVideo = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const {
       x = 0,
       y = 0,
@@ -410,10 +426,13 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     } = data;
     const video = document.createElement("video");
     if (looped) {
-      video.setAttribute("loop", true);
+      video.setAttribute("loop", "");
     }
     const url = createObjectURL(blob);
-    video.src = url;
+    if (url) {
+      video.src = url;
+    }
+
     const looper = () => {
       if (video && !video.paused && !video.ended) {
         ctx.drawImage(video, x, y, width, height);
@@ -429,7 +448,11 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     });
   };
 
-  drawArray = (ctx, params) => {
+  drawArray = (ctx: CanvasRenderingContext2D, params: any) => {
+    if (!this.canvas) {
+      return;
+    }
+
     const { data } = params;
     const n = data.length;
 
@@ -454,7 +477,11 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     }
   };
 
-  drawArray2d = (ctx, params) => {
+  drawArray2d = (ctx: CanvasRenderingContext2D, params: any) => {
+    if (!this.canvas) {
+      return;
+    }
+
     const { data, cols: nCols, rows: nRows } = params;
     const n = Math.min(data.length, nRows * nCols);
 
@@ -473,8 +500,12 @@ export default class CanvasUI extends Component<ServiceUIProps> {
       const row = Math.floor(i / nCols);
       const col = i % nCols;
       if (normaliseValues) {
-        ctx.fillStyle = `rgb(${((value - min) / range) * 255}, 0, 0)`;
-        ctx.strokeStyle = `rgb(${((value - min) / range) * 255}, 0, 0)`;
+        ctx.fillStyle = range
+          ? `rgb(${((value - min) / range) * 255}, 0, 0)`
+          : "";
+        ctx.strokeStyle = range
+          ? `rgb(${((value - min) / range) * 255}, 0, 0)`
+          : "";
       } else {
         ctx.fillStyle = `#${valueHex}${valueHex}${valueHex}`;
         ctx.strokeStyle = `#${valueHex}${valueHex}${valueHex}`;
@@ -488,7 +519,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     }
   };
 
-  update = (objectOrArray) => {
+  update = (objectOrArray: any | Array<any>) => {
     this.recentData = objectOrArray;
     if (!this.canvas || !objectOrArray) {
       // nothing to render, or nowhere to render to
@@ -502,6 +533,9 @@ export default class CanvasUI extends Component<ServiceUIProps> {
         ? objectOrArray
         : [objectOrArray];
     const ctx = this.canvas.getContext("2d");
+    if (!ctx) {
+      return;
+    }
     if (this.state.clearOnRedraw) {
       ctx.fillStyle = "#FFF";
       ctx.strokeStyle = "#FFF";
@@ -548,7 +582,7 @@ export default class CanvasUI extends Component<ServiceUIProps> {
     }
   };
 
-  renderMain = (service) => {
+  renderMain = (service: ServiceInstance) => {
     const {
       canvasWidth,
       canvasHeight,
@@ -657,15 +691,15 @@ export default class CanvasUI extends Component<ServiceUIProps> {
   }
 }
 
-function maxArrayElem(arr) {
+function maxArrayElem<T>(arr: Array<T>) {
   return arr.reduce((max, cur) => (cur > max ? cur : max), arr[0]);
 }
 
-function minArrayElem(arr) {
+function minArrayElem<T>(arr: Array<T>) {
   return arr.reduce((min, cur) => (cur < min ? cur : min), arr[0]);
 }
 
-function toAbsolute(value, upper) {
+function toAbsolute(value: string | undefined, upper: number) {
   if (value === undefined || upper === undefined) {
     return 0;
   }

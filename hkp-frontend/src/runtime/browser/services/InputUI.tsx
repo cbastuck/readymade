@@ -66,12 +66,9 @@ export default function InputUI(props: ServiceUIProps) {
       onNotification={onNotification}
       initialSize={{ width: 300, height: undefined }}
     >
-      <div
-        style={{
-          margin: 10,
-        }}
-      >
+      <>
         <Input
+          fullWidth
           title="URL"
           value={url}
           onChange={(newUrl) => service.configure({ url: newUrl })}
@@ -102,7 +99,7 @@ export default function InputUI(props: ServiceUIProps) {
             }
           />
         )}
-      </div>
+      </>
     </ServiceUI>
   );
 }
