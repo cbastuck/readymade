@@ -5,16 +5,45 @@ import {
   ServiceAction,
   ServiceClass,
   ServiceImpl,
+  ServiceInstance,
 } from "../../types";
 import RemoteRuntimeScope from "./RemoteRuntimeScope";
 
+import NotificationTargets from "../NotificationsTargets";
+
 export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
+  const notificationTargets = new NotificationTargets();
   return {
     getAuthenticatedUser: () => scope.authenticatedUser,
-    notify: (_svc: ServiceImpl, _notification: any): void => {},
+    registerNotificationTarget: (
+      svc: ServiceInstance,
+      onNotification: (svc: ServiceInstance, notification: any) => void
+    ) => {
+      notificationTargets.register(svc, onNotification);
+    },
+
+    unregisterNotificationTarget: (
+      svc: ServiceInstance,
+      onNotification: (svc: ServiceInstance, notification: any) => void
+    ) => {
+      notificationTargets.unregister(svc, onNotification);
+    },
+    notify: (service: ServiceImpl, notification: any): void => {
+      // TODO: the type of first parameter is bad
+      if (!notificationTargets.hasCallbacks(service)) {
+        console.warn(
+          "BrowserRuntimeApp.notify no targets for",
+          service.uuid,
+          service.__descriptor?.serviceName
+        );
+        return;
+      }
+
+      notificationTargets.notify(service, notification);
+    },
     next: (_svc: InstanceId | null, _result: any): void => {},
-    getServiceById: (_uuid: string): ServiceImpl | null => {
-      return null;
+    getServiceById: (uuid: string): ServiceImpl | null => {
+      return { uuid } as any; // TODO:  see above, mabye we don't need this at all for the remote case
     },
     sendAction: (_action: ServiceAction): void => {},
     storeServiceData: (

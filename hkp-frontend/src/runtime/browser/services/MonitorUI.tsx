@@ -23,7 +23,7 @@ export default function MonitorUI(props: ServiceUIProps) {
     }
   };
 
-  const onNotification = (_: ServiceInstance, params: any) => {
+  const onNotification = (_instance: ServiceInstance, params: any) => {
     const nil = params === null && "<null>";
     const undef = params === undefined && "<undefined>";
     const s = nil || undef || unroll(params);

@@ -24,7 +24,7 @@ function replaceAll(
 
 export function replacePlaceholders(url: string, params?: any) {
   if (!url) {
-    return;
+    return url;
   }
 
   const secure = isSecureConnection();

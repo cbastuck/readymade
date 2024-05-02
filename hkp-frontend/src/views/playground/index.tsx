@@ -193,7 +193,6 @@ class Playground extends Component<Props, State> {
       rejectedSyncSenders,
     };
 
-    console.log("FETCHED INPUT ROUTING", inputRouting);
     this.setState({
       ...data,
       initialFetched: true,

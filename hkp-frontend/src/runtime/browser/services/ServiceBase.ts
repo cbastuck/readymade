@@ -5,6 +5,7 @@ export default class ServiceBase<T> {
   board: string;
   app: AppInstance;
   state: T;
+  bypass: boolean = false;
 
   constructor(
     app: AppInstance,

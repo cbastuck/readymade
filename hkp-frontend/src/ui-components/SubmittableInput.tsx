@@ -1,22 +1,35 @@
 import {
-  ChangeEvent,
   KeyboardEvent,
   useEffect,
   useState,
   forwardRef,
   FocusEvent,
 } from "react";
-import { Input } from "@/components/ui/input";
+
+import Input from "./Input";
 
 type SubmittableInputProps = {
+  title?: string;
   value: string;
   selectAllOnFocus?: boolean;
+  fullWidth?: boolean;
+  minHeight?: boolean;
+  hideBottomBorder?: boolean;
   onSubmit: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
 };
 const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
   (props, ref) => {
-    const { value, selectAllOnFocus, onSubmit, onChangePending } = props;
+    const {
+      title,
+      value,
+      selectAllOnFocus,
+      hideBottomBorder,
+      fullWidth,
+      minHeight = true,
+      onSubmit,
+      onChangePending,
+    } = props;
     const [internal, setInternal] = useState(value);
     useEffect(() => setInternal(value), [value]);
 
@@ -31,8 +44,8 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         onSubmit(internal);
       }
     };
-    const onChange = (ev: ChangeEvent<HTMLInputElement>) => {
-      setInternal(ev.target.value);
+    const onChange = (newValue: string) => {
+      setInternal(newValue);
     };
 
     const onBlur = () => onSubmit(internal);
@@ -43,12 +56,14 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     return (
       <Input
         ref={ref}
-        className="text-base border-none p-0"
+        fullWidth={fullWidth}
+        minHeight={minHeight}
+        hideBottomBorder={hideBottomBorder}
+        title={title}
         value={internal}
         onChange={onChange}
         onKeyUp={onKeyUp}
         onBlur={onBlur}
-        spellCheck={false}
         onFocus={onFocus}
       />
     );

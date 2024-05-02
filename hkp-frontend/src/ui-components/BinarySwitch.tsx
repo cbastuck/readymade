@@ -9,7 +9,7 @@ type Props = {
 export default function BinarySwitch({ label, value, onChange }: Props) {
   return (
     <div className="flex items-end my-4">
-      <div className="text-base p-0">{label}</div>
+      <div className="text-base p-0 tracking-widest">{label}</div>
       <Switch
         className="ml-4 mr-auto"
         checked={value}

@@ -11,7 +11,7 @@ import {
 } from "../../types";
 import { appendSubservice } from "./BrowserRuntimeApi";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
-import NotificationTargets from "./NotificationsTargets";
+import NotificationTargets from "../NotificationsTargets";
 
 export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
   const notificationTargets = new NotificationTargets();

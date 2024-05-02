@@ -181,7 +181,7 @@ export type AppInstance = AppImpl;
 
 export type AppImpl = {
   getAuthenticatedUser: () => User | null;
-  notify: (svc: ServiceImpl, notification: any) => void;
+  notify: (svc: ServiceImpl, notification: any) => void; // TODO: should be InstanceId instead of ServiceImpl
   next: (svc: InstanceId | null, result: any) => void;
   getServiceById: (uuid: string) => ServiceImpl | null;
   sendAction: (action: ServiceAction) => void;

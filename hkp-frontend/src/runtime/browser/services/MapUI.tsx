@@ -153,6 +153,7 @@ export default function MapUI(props: ServiceUIProps) {
                   >
                     <TableCell className="text-left p-0">
                       <SubmittableInput
+                        hideBottomBorder
                         value={key}
                         onSubmit={(newKey) => onChangeKey(key, newKey)}
                         onChangePending={setIsMappingChangePending}
@@ -161,6 +162,7 @@ export default function MapUI(props: ServiceUIProps) {
                     </TableCell>
                     <TableCell className="text-left p-0">
                       <SubmittableInput
+                        hideBottomBorder
                         ref={valueInputRef}
                         value={template[key]}
                         onSubmit={(newValue) => onChangeValue(key, newValue)}

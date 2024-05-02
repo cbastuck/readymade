@@ -1,8 +1,9 @@
 import { ReactElement, useEffect, useRef } from "react";
 
-import Resizable, { Size } from "@/components/Resizable";
+import Resizable from "@/components/Resizable";
 import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceFrame from "./ServiceFrame";
+import { Size } from "@/common";
 
 type Props = ServiceUIProps & {
   children: ReactElement;

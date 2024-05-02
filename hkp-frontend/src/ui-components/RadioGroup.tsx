@@ -22,12 +22,13 @@ export default function RadioGroup({
   className = "",
   onChange,
 }: Props) {
+  const uniqueId = id || crypto.randomUUID();
   return (
     <div className={`flex-col ${className}`}>
       <GroupLabel>{title}</GroupLabel>
       <RadioGroupCN className="py-2 flex" value={value}>
         {options.map((item, idx) => {
-          const optionId = `${id || title}-option-${idx}`;
+          const optionId = `${uniqueId || title}-option-${idx}`;
           return (
             <div key={`${item}.${idx}`} className="flex items-center space-x-2">
               <RadioGroupItem

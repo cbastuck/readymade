@@ -3,103 +3,71 @@ import { useState } from "react";
 import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
-import Input from "@/ui-components/Input";
-import { Button } from "@/components/ui/button";
-import BinarySwitch from "@/ui-components/BinarySwitch";
+import ServiceBase from "./ServiceBase";
+import { State as ServiceState, InputMode } from "./Input";
+import RadioGroup from "@/ui-components/RadioGroup";
+import SubmittableInput from "@/ui-components/SubmittableInput";
 
 type State = {
   url: string;
-  topic: string;
-  isWebsocket: boolean;
-  canFetch: boolean | undefined;
-  running: boolean;
+  mode: InputMode;
 };
+
 export default function InputUI(props: ServiceUIProps) {
   const [state, setState] = useState<State>({
     url: "",
-    topic: "secret-key",
-    isWebsocket: false,
-    canFetch: undefined,
-    running: false,
+    mode: "eventsource",
   });
 
-  const onInit = (initialState: any) => {
-    const {
-      url = "",
-      running = false,
-      topic = "secret-key",
-      isWebsocket = false,
-    } = initialState;
-    setState((state) => ({ ...state, url, running, topic, isWebsocket }));
+  const update = (newState: Partial<ServiceState>) => {
+    if (needsUpdate(newState.url, state.url)) {
+      setState((state) => ({ ...state, url: newState.url! }));
+    }
+
+    if (needsUpdate(newState.mode, state.mode)) {
+      setState((state) => ({ ...state, mode: newState.mode as InputMode }));
+    }
+  };
+
+  const onInit = (initialState: ServiceBase<ServiceState>) => {
+    update(initialState.state);
   };
 
   const onNotification = (_: ServiceInstance, notification: any) => {
-    const { url, running, topic, isWebsocket, canFetch } = notification;
-
-    if (needsUpdate(url, state.url)) {
-      setState((state) => ({ ...state, url }));
-    }
-
-    if (needsUpdate(running, state.running)) {
-      setState((state) => ({ ...state, running }));
-    }
-
-    if (needsUpdate(topic, state.topic)) {
-      setState((state) => ({ ...state, topic }));
-    }
-
-    if (needsUpdate(isWebsocket, state.isWebsocket)) {
-      setState((state) => ({ ...state, isWebsocket }));
-    }
-
-    if (needsUpdate(canFetch, state.canFetch)) {
-      setState((state) => ({ ...state, canFetch }));
-    }
+    update(notification);
   };
 
+  const modeOptions: Array<InputMode> = ["eventsource", "websocket"];
+
   const { service } = props;
-  const { running, url, topic, isWebsocket, canFetch } = state;
+  const { url, mode } = state;
   return (
     <ServiceUI
       {...props}
+      className="mb-4"
       onInit={onInit}
       onNotification={onNotification}
-      initialSize={{ width: 300, height: undefined }}
+      initialSize={{ width: 480, height: undefined }}
     >
-      <>
-        <Input
+      <div className="flex flex-col gap-2">
+        <RadioGroup
+          title="Input Mode"
+          options={modeOptions}
+          value={mode}
+          onChange={(newMode) =>
+            service.configure({
+              mode: newMode,
+            })
+          }
+        />
+        <SubmittableInput
           fullWidth
+          minHeight
           title="URL"
           value={url}
-          onChange={(newUrl) => service.configure({ url: newUrl })}
+          onSubmit={(newUrl) => service.configure({ url: newUrl })}
         />
-
-        {isWebsocket && (
-          <Input
-            title="topic"
-            value={topic}
-            onChange={(newTopic) => service.configure({ topic: newTopic })}
-          />
-        )}
-        {canFetch === true && (
-          <Button
-            variant="ghost"
-            className="my-2 w-full"
-            onClick={() => service.configure({ fetch: url })}
-          >
-            Fetch
-          </Button>
-        )}
-        {canFetch === false && (
-          <BinarySwitch
-            label="Input active"
-            value={running}
-            onChange={(newRunning) =>
-              service.configure({ running: newRunning })
-            }
-          />
-        )}
-      </>
+      </div>
     </ServiceUI>
   );
 }

@@ -154,6 +154,17 @@ export default class RemoteRuntimeScope implements RuntimeScope {
       }
     } else if (message.type === RemoteRuntimeMessageType.CONFIGURATION) {
       this.onConfig(message.data.instanceId, message.data.config);
+    } else if (message.type === RemoteRuntimeMessageType.NOTIFICATION) {
+      const { instanceId, data, mimeType } = message;
+      if (mimeType !== "application/json") {
+        throw new Error(
+          "Remote runtime notifications can only be JSON at the moment"
+        );
+      }
+      const svc = this.app.getServiceById(instanceId);
+      if (svc) {
+        this.app.notify(svc, data);
+      }
     } else {
       console.warn(
         `Unknown message reived in remote runtime scope: ${JSON.stringify(

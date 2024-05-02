@@ -1,4 +1,5 @@
-import { Hacker, HackerUI } from "./Hacker";
+import HackerUI from "./HackerUI";
+import Hacker from "./Hacker";
 
 import { parseExpression, evalExpression } from "hkp-services/eval";
 

@@ -1,31 +1,55 @@
+import { KeyboardEvent, FocusEvent, forwardRef } from "react";
+
 import { Input as InputCN } from "@/components/ui/input";
 import PropertyLabel from "./GroupLabel";
 
 type Props = {
-  title: string;
+  title?: string;
   value: string;
   disabled?: boolean;
   fullWidth?: boolean;
+  minHeight?: boolean;
+  hideBottomBorder?: boolean;
   onChange: (newValue: string) => void;
+  onKeyUp?: (ev: KeyboardEvent) => void;
+  onBlur?: (ev: FocusEvent<HTMLInputElement>) => void;
+  onFocus?: (ev: FocusEvent<HTMLInputElement>) => void;
 };
 
-export default function Input({
-  title,
-  fullWidth,
-  value,
-  disabled,
-  onChange,
-}: Props) {
+const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
+  const {
+    title,
+    fullWidth,
+    minHeight,
+    hideBottomBorder,
+    value,
+    disabled,
+    onChange,
+    onKeyUp,
+    onBlur,
+    onFocus,
+  } = props;
   const w = fullWidth ? "" : "w-[80px]";
+  const h = minHeight ? "h-min" : "";
+  const bottomBorder = hideBottomBorder
+    ? "border-none"
+    : "border-t-0 border-b-1";
   return (
     <div className="flex items-center gap-2 w-full">
-      <PropertyLabel className="pt-1">{title}</PropertyLabel>
+      {title && <PropertyLabel className="pt-1">{title}</PropertyLabel>}
       <InputCN
-        className={`m-0 p-0 h-min text-base border-x-0 border-t-0 border-b-1 rounded-none ${w}`}
+        ref={ref}
+        className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h}`}
         value={value}
         onChange={(ev) => onChange(ev.target.value)}
         disabled={disabled}
+        spellCheck={false}
+        onKeyUp={onKeyUp}
+        onBlur={onBlur}
+        onFocus={onFocus}
       />
     </div>
   );
-}
+});
+
+export default InputWithRef;
