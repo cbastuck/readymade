@@ -1,18 +1,45 @@
-import { Component } from "react";
+import { Component, KeyboardEvent } from "react";
+import { SquareCode, FileType, FileJson } from "lucide-react";
 import { Checkbox, TextArea, Input, Progress } from "semantic-ui-react";
 
 import { s, t } from "../../../styles";
-import ServiceUI from "../../services/ServiceUI";
+
 import Editor from "../../../components/shared/Editor/index";
 import DropZone from "../../../components/shared/DropZone";
-import Button from "../../../components/shared/Button";
+
 import { Debouncer } from "./helpers";
+import {
+  CustomMenuEntry,
+  ServiceInstance,
+  ServiceUIProps,
+  User,
+} from "@/types";
+import ServiceUI from "@/ui-components/service/ServiceUI";
+import RadioGroup from "@/ui-components/RadioGroup";
+import Button from "@/ui-components/Button";
+import MenuIcon from "@/ui-components/MenuIcon";
+import BinarySwitch from "@/ui-components/BinarySwitch";
 
-const serviceId = "hookup.to/service/injector";
-const serviceName = "Injector";
+type State = {
+  files: Array<File>;
+  user: User | undefined;
+  blob: Blob | null;
+  dropName: string | undefined;
+  items: DataTransferItemList | null;
+  itemsSelection: Array<any>;
+  recentInjection: string;
+  multirow: boolean;
+  fileProgress: number;
+  file: File | null;
+  loadAsText: boolean;
+  mode: InjectorMode;
+  plainText: boolean;
+};
 
-export class InjectorUI extends Component {
-  state = {
+type InjectorMode = "data" | "file" | "drop";
+
+export default class InjectorUI extends Component<ServiceUIProps, State> {
+  state: State = {
     files: [],
     user: undefined,
     blob: null,
@@ -22,6 +49,10 @@ export class InjectorUI extends Component {
     recentInjection: "",
     multirow: false,
     fileProgress: 0,
+    file: null,
+    loadAsText: true,
+    mode: "data",
+    plainText: false,
   };
 
   buttonStyle = {
@@ -31,15 +62,15 @@ export class InjectorUI extends Component {
     marginTop: 5,
   };
 
-  componentDidMount() {
-    this.debouncer = new Debouncer(100);
-  }
+  debouncer: Debouncer = new Debouncer(100);
+
+  editor: Editor | null = null;
 
   componentWillUnmount() {
     this.debouncer.clear();
   }
 
-  onInit = (initialState) => {
+  onInit = (initialState: any) => {
     const { recentInjection } = initialState;
     if (recentInjection !== undefined) {
       const data =
@@ -50,7 +81,7 @@ export class InjectorUI extends Component {
     }
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (_service: ServiceInstance, notification: any) => {
     const { recentInjection } = notification;
     if (recentInjection !== undefined) {
       this.setState({ recentInjection });
@@ -119,43 +150,34 @@ export class InjectorUI extends Component {
     );
   };
 
-  renderDragNDropInput = (service) => {
+  renderDragNDropInput = (service: ServiceInstance) => {
     const { items, itemsSelection, blob, dropName } = this.state;
     return (
-      <div
-        style={s(t.fill, {
-          display: "flex",
-          flexDirection: "column",
-        })}
-      >
-        <h1
-          style={{
-            fontSize: 12,
-            letterSpacing: 1,
-            textAlign: "left",
-            margin: "4px 0px",
-          }}
-        >
-          Drop something below
-        </h1>
+      <div className="flex flex-col gap-2 h-full w-full">
         <DropZone
-          style={{ flexGrow: 2 }}
+          style={{ height: "100%", width: "100%" }}
           label={this.getDroppedItemLabels()}
-          onFiles={(files) => {
+          onFiles={(files: FileList) => {
             const isArray = files.length > 1;
-            const blob = isArray ? Array.from(files) : files[0];
+            if (isArray) {
+              console.warn(
+                "InjectorUI.renderDragNDropInput only single files supported"
+              );
+              return;
+            }
+            const blob: any = isArray ? Array.from(files) : files[0];
             const dropName = isArray ? "multiple files" : blob.name;
             this.setState({ blob, dropName, items: null });
           }}
-          onItems={(items) => this.setState({ items })}
+          // onItems={(items: DataTransferItemList) => this.setState({ items })}
         />
         <Button
           onClick={() => {
             if (blob) {
-              this.readFile(service, blob, false);
+              blob && this.readFile(service, blob, false);
             } else {
               service.configure({
-                inject: itemsSelection.map((idx) => items[idx]),
+                inject: itemsSelection.map((idx) => items?.[idx]),
               });
             }
           }}
@@ -167,7 +189,7 @@ export class InjectorUI extends Component {
     );
   };
 
-  renderRawInput = (service) => {
+  renderRawInput = (service: ServiceInstance) => {
     const { multirow, recentInjection } = this.state;
     return (
       <div
@@ -178,15 +200,6 @@ export class InjectorUI extends Component {
           flexDirection: "column",
         }}
       >
-        <h1
-          style={{
-            fontSize: 12,
-            letterSpacing: 1,
-            textAlign: "left",
-          }}
-        >
-          Enter plain text
-        </h1>
         <div
           style={{
             flexGrow: 2,
@@ -207,7 +220,8 @@ export class InjectorUI extends Component {
               cols="20"
               value={recentInjection}
               onChange={(_, { value: recentInjection }) => {
-                this.setState({ recentInjection });
+                recentInjection &&
+                  this.setState({ recentInjection: `${recentInjection}` });
               }}
             />
           ) : (
@@ -218,7 +232,7 @@ export class InjectorUI extends Component {
                 this.setState({ recentInjection })
               }
               placeholder="Enter text here"
-              onKeyUp={(ev) => {
+              onKeyUp={(ev: KeyboardEvent) => {
                 switch (ev.key) {
                   case "Enter":
                     return service.configure({ inject: recentInjection });
@@ -234,7 +248,7 @@ export class InjectorUI extends Component {
               toggle
               checked={multirow}
               onChange={(_, { checked: multirow }) =>
-                this.setState({ multirow })
+                this.setState({ multirow: !!multirow })
               }
               label="Multirow"
             />
@@ -251,86 +265,54 @@ export class InjectorUI extends Component {
     );
   };
 
-  renderStructuredData = (service) => {
-    const { recentInjection } = this.state;
+  renderDataEditor = (service: ServiceInstance) => {
+    const { recentInjection, plainText } = this.state;
     return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-          width: "100%",
-        }}
-      >
-        <h1
-          style={{
-            height: "33px",
-            fontSize: 12,
-            letterSpacing: 1,
-            textAlign: "left",
-            margin: "4px 0px",
-          }}
-        >
-          Enter json data
-        </h1>
-
-        <div style={{ height: "calc(100% - 90px)" }}>
+      <div className="flex flex-col h-full w-full">
+        <div style={{ height: "calc(100% - 54px)" }}>
           <Editor
             ref={(editor) => (this.editor = editor)}
             value={recentInjection}
-            language="json"
+            language={plainText ? "text" : "json"}
           />
         </div>
 
-        <div
-          style={{ display: "flex", flexDirection: "row", margin: "3px 0px" }}
+        <Button
+          className="h-[50px] mb-[4px]"
+          style={this.buttonStyle}
+          onClick={() => {
+            const code = this.editor?.getValue();
+            try {
+              const obj = JSON.parse(code);
+              service.configure({ inject: obj });
+            } catch (err) {
+              service.configure({ inject: code }); // can we check of the text is valid JSON from the editor?
+            }
+            this.setState({ recentInjection: code });
+          }}
         >
-          <Button
-            style={this.buttonStyle}
-            onClick={() => {
-              const code = this.editor.getValue();
-              try {
-                const obj = JSON.parse(code);
-                this.setState({
-                  recentInjection: JSON.stringify(obj, null, 2),
-                });
-              } catch (err) {}
-            }}
-          >
-            Prettify
-          </Button>
-          <Button
-            style={this.buttonStyle}
-            onClick={() => {
-              const code = this.editor.getValue();
-              try {
-                const obj = JSON.parse(code);
-                service.configure({ inject: obj });
-              } catch (err) {
-                service.configure({ inject: code }); // can we check of the text is valid JSON from the editor?
-              }
-              this.setState({ recentInjection: code });
-            }}
-          >
-            Inject
-          </Button>
-        </div>
+          Inject
+        </Button>
       </div>
     );
   };
 
-  readFile = (service, file, loadAsText) => {
+  readFile = (
+    service: ServiceInstance,
+    file: File | Blob,
+    loadAsText: boolean
+  ) => {
     const reader = new FileReader();
     //reader.addEventListener('loadstart', ev => console.log('loadstart', reader.result));
     //reader.addEventListener('load', ev => console.log('load', reader.result));
-    reader.addEventListener("error", (ev) => {
+    reader.addEventListener("error", (_ev: any) => {
       console.log("Error Injector.readFile", reader.error);
     });
     //reader.addEventListener('abort', ev => console.log('abort', reader.result));
-    reader.addEventListener("loadend", (ev) => {
+    reader.addEventListener("loadend", (_ev: any) => {
       const result = loadAsText
         ? reader.result
-        : new Blob([reader.result], { type: "application/octet-stream" });
+        : new Blob([reader.result!], { type: "application/octet-stream" });
       service.app.next(service, result);
       this.setState({ fileProgress: 0 });
     });
@@ -345,7 +327,7 @@ export class InjectorUI extends Component {
     }
   };
 
-  renderFileInput = (service) => {
+  renderFileInput = (service: ServiceInstance) => {
     const { file, loadAsText, fileProgress } = this.state;
     return (
       <div
@@ -356,26 +338,28 @@ export class InjectorUI extends Component {
           textAlign: "left",
         }}
       >
-        <div style={t.m(0, 10)}>
+        <div className="flex items-center">
           <input
             style={t.fs12}
             type="file"
-            onChange={(ev) => this.setState({ file: ev.target.files[0] })}
+            onChange={(ev) =>
+              ev.target.files?.length &&
+              this.setState({ file: ev.target.files[0] })
+            }
+          />
+          <BinarySwitch
+            className="whitespace-nowrap"
+            label="is binary"
+            value={!loadAsText}
+            disabled={!file}
+            onChange={(isBinary) => this.setState({ loadAsText: !isBinary })}
           />
         </div>
-        <Checkbox
-          style={s(t.fs12, t.ls1)}
-          label="read as text"
-          checked={loadAsText}
-          onChange={(_, { checked: loadAsText }) =>
-            this.setState({ loadAsText })
-          }
-          toggle
-        />
+
         <Button
           style={this.buttonStyle}
           disabled={!file}
-          onClick={() => this.readFile(service, file, loadAsText)}
+          onClick={() => file && this.readFile(service, file, loadAsText)}
         >
           Inject
         </Button>
@@ -386,60 +370,72 @@ export class InjectorUI extends Component {
     );
   };
 
+  onMode = (newMode: string) => {
+    this.setState((state) => ({ ...state, mode: newMode as InjectorMode }));
+  };
+
+  onFormatCode = () => {
+    const code = this.editor?.getValue();
+    try {
+      const obj = JSON.parse(code);
+      this.setState({
+        recentInjection: JSON.stringify(obj, null, 2),
+      });
+    } catch (err) {}
+  };
+
+  toggleTextMode = () => {
+    this.setState((state) => ({ ...state, plainText: !state.plainText }));
+  };
+
   render() {
+    const { service } = this.props;
+    const { mode, plainText } = this.state;
+    const customMenuEntries: Array<CustomMenuEntry> = (() => {
+      if (mode === "data") {
+        return [
+          {
+            name: plainText ? "Edit Json" : "Edit plain text",
+            icon: plainText ? (
+              <MenuIcon icon={FileJson} />
+            ) : (
+              <MenuIcon icon={FileType} />
+            ),
+            onClick: this.toggleTextMode,
+          },
+          {
+            name: "Prettify",
+            icon: <MenuIcon icon={SquareCode} />,
+            disabled: plainText,
+            onClick: this.onFormatCode,
+          },
+        ];
+      }
+      return [];
+    })();
+
+    const modes: Array<InjectorMode> = ["data", "file", "drop"];
     return (
       <ServiceUI
         {...this.props}
+        className="pb-2"
         onInit={this.onInit}
         onNotification={this.onNotification}
-        // onResize={(_, size) => this.setState({ size })}
-        segments={[
-          { name: "Text", render: this.renderRawInput },
-          { name: "JSON", render: this.renderStructuredData },
-          { name: "File", render: this.renderFileInput },
-          { name: "Drop", render: this.renderDragNDropInput },
-        ]}
-        initialSegment={(service) =>
-          typeof service.recentInjection === "object" ? "JSON" : "Text"
-        }
-      />
+        customMenuEntries={customMenuEntries}
+        initialSize={{ width: 500, height: 300 }}
+      >
+        <>
+          <RadioGroup
+            title="Mode"
+            value={this.state.mode}
+            options={modes}
+            onChange={this.onMode}
+          />
+          {this.state.mode === "data" && this.renderDataEditor(service)}
+          {this.state.mode === "file" && this.renderFileInput(service)}
+          {this.state.mode === "drop" && this.renderDragNDropInput(service)}
+        </>
+      </ServiceUI>
     );
   }
 }
-
-class Injector {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.recentInjection = undefined;
-  }
-
-  configure(config) {
-    const { inject, recentInjection } = config;
-
-    if (inject !== undefined) {
-      this.recentInjection = inject;
-      this.app.next(this, inject);
-    }
-
-    if (recentInjection !== undefined) {
-      this.recentInjection = recentInjection;
-    }
-  }
-
-  process(params) {
-    return this.recentInjection || params;
-  }
-}
-
-const descriptor = {
-  serviceName,
-  serviceId,
-  create: (app, board, descriptor, id) =>
-    new Injector(app, board, descriptor, id),
-  createUI: InjectorUI,
-};
-
-export default descriptor;

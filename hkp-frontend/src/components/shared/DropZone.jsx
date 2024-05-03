@@ -58,6 +58,7 @@ export default class DropZone extends Component {
     const { label, style } = this.props;
     return (
       <div
+        className="flex items-center"
         style={{
           ...style,
           border: "solid 1px lightgray",

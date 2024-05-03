@@ -94,6 +94,7 @@ export default function ServiceSettings({
                 className="text-base"
                 key={item.name}
                 onClick={() => onCustomEntry(item)}
+                disabled={item.disabled}
               >
                 {item.icon || null}
                 <span>{item.name}</span>

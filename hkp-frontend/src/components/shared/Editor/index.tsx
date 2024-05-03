@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { CSSProperties, Component } from "react";
 import MonacoEditor from "@monaco-editor/react";
 import { t } from "../../../styles";
 
@@ -27,27 +27,24 @@ export default class Editor extends Component<Props> {
       onChange,
     } = this.props;
 
+    const appliedStyle: CSSProperties = {
+      border: "solid 1px lightgray",
+      textAlign: "left",
+      width: width || "100%",
+      minWidth: initialWidth,
+      height: height || this.state.height,
+      ...t.selectable,
+      ...style,
+    };
     return (
-      <div
-        style={
-          {
-            border: "solid 1px lightgray",
-            textAlign: "left",
-            width: width || "100%",
-            minWidth: initialWidth,
-            height: height || this.state.height,
-            ...t.selectable,
-            ...style,
-          } as any
-        }
-      >
+      <div style={appliedStyle}>
         <MonacoEditor
           onMount={(editor) => {
             this.editor = editor;
             setTimeout(() => this.setState({ height: "100%" }));
           }}
           onChange={onChange}
-          defaultLanguage={language}
+          language={language}
           value={value}
         />
       </div>

@@ -29,11 +29,11 @@ import StackUI from "./runtime/browser/services/StackUI";
 import CameraUI from "./runtime/browser/services/CameraUI";
 import XYPadUI from "./runtime/browser/services/XYPadUI";
 import AggregatorUI from "./runtime/browser/services/AggregatorUI";
+import InjectorUI from "./runtime/browser/services/InjectorUI";
 import HackerUI from "./runtime/browser/services/HackerUI";
 
 import { OutputUI } from "./runtime/browser/services/Output";
 import { FetcherUI } from "./runtime/browser/services/Fetcher";
-import { InjectorUI } from "./runtime/browser/services/Injector";
 
 import { FilterUI } from "./runtime/browser/services/Filter";
 

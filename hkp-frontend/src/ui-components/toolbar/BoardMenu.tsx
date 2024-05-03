@@ -34,6 +34,12 @@ export default function BoardMenu() {
     }
   };
 
+  const onCreateBoardLink = () => {
+    boardContext?.onAction({
+      type: "createBoardLink",
+    });
+  };
+
   useEffect(() => {
     if (showBoardSource && boardContext) {
       boardContext
@@ -122,7 +128,7 @@ export default function BoardMenu() {
               <ListItem title="Board Source" onClick={onShowBoardSource}>
                 Edit the current board's source in a text editor
               </ListItem>
-              <ListItem title="Board Link">
+              <ListItem title="Board Link" onClick={onCreateBoardLink}>
                 Create a link allowing to share and clone the board on another
                 device
               </ListItem>

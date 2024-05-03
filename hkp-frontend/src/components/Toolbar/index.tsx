@@ -10,7 +10,7 @@ import NavigationBar from "./NavigationBar";
 import AppMenu from "@/ui-components/toolbar/AppMenu";
 
 import { RuntimeClass } from "../../types";
-import BoardActionsBar from "./BoardActionsBar";
+
 import BoardMenu from "@/ui-components/toolbar/BoardMenu";
 
 import "./index.css";
@@ -74,11 +74,6 @@ export default function Toolbar({
                 boardContext?.addRuntime(rtClass)
               }
             />
-          )}
-          {showBoardActions && renderWide && (
-            <div style={{ marginLeft: "5px" }}>
-              <BoardActionsBar boardContext={boardContext} />
-            </div>
           )}
 
           {!isCompact && <NavigationBar />}
