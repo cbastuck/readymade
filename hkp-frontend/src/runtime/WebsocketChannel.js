@@ -1,11 +1,12 @@
 import { parseResponse } from "./MultiformParser";
 
 export default class WebsocketChannel {
-  constructor(websocketId, onAction, secureConnection) {
+  constructor(websocketId, onAction, secureConnection, onClose) {
     this.websocket = null;
     this.websocketId = websocketId;
     this.onAction = onAction;
     this.secureConnection = secureConnection;
+    this.onCloseCallback = onClose;
   }
 
   open = (url, subprotocol) => {
@@ -55,6 +56,7 @@ export default class WebsocketChannel {
     if (this.pendingOpenPromise) {
       this.pendingOpenPromise.resolve();
       this.pendingOpenPromise = null;
+      this.websocketOpenedSuccessfully = true;
     }
   };
 
@@ -64,6 +66,10 @@ export default class WebsocketChannel {
       this.pendingOpenPromise.reject();
       this.pendingOpenPromise = null;
     }
+    if (this.websocketOpenedSuccessfully && this.onCloseCallback) {
+      this.onCloseCallback();
+    }
+    this.websocketOpenedSuccessfully = false;
   };
 
   onMessage = (event) => {

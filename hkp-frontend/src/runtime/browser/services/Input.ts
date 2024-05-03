@@ -17,7 +17,6 @@ export type InputMode = "eventsource" | "websocket";
 export type State = {
   url: string;
   mode: InputMode;
-
   parseEventsAsJSON: boolean;
 };
 
@@ -39,6 +38,49 @@ class Input extends ServiceBase<State> {
     });
   }
 
+  async configure(config: any) {
+    const { url, mode, bypass } = config;
+
+    let reconnect = bypass === false; // reconnect when bypass explicity changed
+    if (url !== undefined && url) {
+      if (isWebsocket(url) && this.state.mode === "eventsource") {
+        this.state.mode = "websocket";
+      }
+      this.state.url = replacePlaceholders(url);
+      reconnect = true;
+      this.app.notify(this, { url, mode: this.state.mode });
+    }
+
+    if (mode !== undefined) {
+      this.state.mode = mode;
+      reconnect = true;
+      this.app.notify(this, { mode });
+    }
+
+    if (reconnect) {
+      this.doConnect();
+    }
+
+    if (bypass === true) {
+      // explicit disconnect
+      this.doDisconnect();
+    }
+  }
+
+  doDisconnect = () => {
+    if (this.state.mode === "websocket") {
+      if (this._websocket) {
+        this._websocket.close();
+        this._websocket = null;
+      } else {
+        if (this._eventSource) {
+          this._eventSource.close();
+          this._eventSource = null;
+        }
+      }
+    }
+  };
+
   onEventSourceData(event: MessageEvent) {
     if (!this.bypass) {
       const { data } = event;
@@ -51,6 +93,51 @@ class Input extends ServiceBase<State> {
     }
   }
 
+  onCloseWebsocket = () => {};
+
+  doConnectWebsocket = async (url: string) => {
+    this._websocket = new WebsocketChannel(
+      `input-service-${this.uuid}`,
+      (params: any) => {
+        if (!this.bypass) {
+          const { action } = params;
+          if (action === "ping") {
+            return;
+          }
+          this.app.next(this, params);
+        }
+      },
+      isSecureConnection(),
+      this.onCloseWebsocket
+    );
+
+    try {
+      await this._websocket.open({
+        absolute: url,
+      });
+      this.setBypass(false);
+      // this._websocket.send({ topic });
+    } catch (err) {
+      this.setBypass(true);
+    }
+  };
+
+  doConnectEventSource = async (url: string) => {
+    try {
+      if (isWebsocket(url)) {
+        console.warn("Wrong schema for connecting event source", url);
+        return;
+      }
+      const resp = await fetch(url);
+      const contentType = resp.headers.get("content-type") || "";
+      if (contentType.indexOf("text/event-stream") !== -1) {
+        return this.openEventSource(url);
+      }
+    } catch (err) {
+      console.error("Input fetch failed with error: ", err);
+    }
+  };
+
   async doConnect() {
     this.closeConection();
     const { url, mode } = this.state;
@@ -58,36 +145,12 @@ class Input extends ServiceBase<State> {
       return;
     }
 
+    const urlWithAuth =
+      url + `?token=${this.app.getAuthenticatedUser()?.idToken}`;
     if (mode === "websocket") {
-      this._websocket = new WebsocketChannel(
-        `input-service-${this.uuid}`,
-        (params: any) => {
-          if (!this.bypass) {
-            const { action } = params;
-            if (action === "ping") {
-              return;
-            }
-            this.app.next(this, params);
-          }
-        },
-        isSecureConnection()
-      );
-
-      await this._websocket.open({
-        absolute: url + `?token=${this.app.getAuthenticatedUser()?.idToken}`,
-      });
-      // this._websocket.send({ topic });
+      this.doConnectWebsocket(urlWithAuth);
     } else {
-      try {
-        const resp = await fetch(url);
-        const contentType = resp.headers.get("content-type") || "";
-        if (contentType.indexOf("text/event-stream") !== -1) {
-          this.app.notify(this, { canFetch: false });
-          return this.openEventSource(url);
-        }
-      } catch (err) {
-        console.error("Input fetch failed with error: ", err);
-      }
+      this.doConnectEventSource(urlWithAuth);
     }
   }
 
@@ -118,30 +181,6 @@ class Input extends ServiceBase<State> {
 
     if (this.closeEventSourceConnection) {
       this.closeEventSourceConnection();
-    }
-  }
-
-  async configure(config: any) {
-    const { url, mode } = config;
-
-    let reconnect = false;
-    if (url !== undefined && url) {
-      if (isWebsocket(url) && this.state.mode === "eventsource") {
-        this.state.mode = "websocket";
-      }
-      this.state.url = replacePlaceholders(url);
-      reconnect = true;
-      this.app.notify(this, { url, mode: this.state.mode });
-    }
-
-    if (mode !== undefined) {
-      this.state.mode = mode;
-      reconnect = true;
-      this.app.notify(this, { mode });
-    }
-
-    if (reconnect) {
-      this.doConnect();
     }
   }
 

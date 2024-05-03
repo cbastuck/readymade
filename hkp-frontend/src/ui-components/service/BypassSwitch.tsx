@@ -22,11 +22,11 @@ export default function BypassSwitch({ bypass, disabled, onChange }: Props) {
       onClick={() => onChange(!bypass)}
     >
       {disabled ? (
-        <div style={{ width: 16 }} />
+        <div className="mt-6 mr-1" style={{ width: 18 }} />
       ) : (
         <Icon
-          size="18px"
-          className={`mt-2 w-min h-min ${hoverIconColor} ${iconColor}`}
+          size={18}
+          className={`mt-6 mr-1 w-min h-min ${hoverIconColor} ${iconColor}`}
           name="power off"
         />
       )}

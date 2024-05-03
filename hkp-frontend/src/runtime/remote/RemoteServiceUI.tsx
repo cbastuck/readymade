@@ -135,9 +135,8 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
   };
 
   const onInit = () => {};
-  const onNotification = (notification: any) => {
-    console.log(`Service: ${service.serviceName} Notification`, notification);
-  };
+  const onNotification = (_notification: any) => {};
+
   return (
     <ServiceUI
       {...props}

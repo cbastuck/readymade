@@ -3,23 +3,20 @@ import { useState } from "react";
 import { ServiceInstance, ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
-import ServiceBase from "./ServiceBase";
 import { State as ServiceState, InputMode } from "./Input";
 import RadioGroup from "@/ui-components/RadioGroup";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 
-type State = {
-  url: string;
-  mode: InputMode;
-};
+type State = ServiceState;
 
 export default function InputUI(props: ServiceUIProps) {
   const [state, setState] = useState<State>({
     url: "",
     mode: "eventsource",
+    parseEventsAsJSON: true,
   });
 
-  const update = (newState: Partial<ServiceState>) => {
+  const update = (newState: Partial<State>) => {
     if (needsUpdate(newState.url, state.url)) {
       setState((state) => ({ ...state, url: newState.url! }));
     }
@@ -29,13 +26,12 @@ export default function InputUI(props: ServiceUIProps) {
     }
   };
 
-  const onInit = (initialState: ServiceBase<ServiceState>) => {
-    update(initialState.state);
-  };
+  const onInit = (initialState: ServiceState) => update(initialState);
 
-  const onNotification = (_: ServiceInstance, notification: any) => {
-    update(notification);
-  };
+  const onNotification = (
+    _: ServiceInstance,
+    notification: Partial<ServiceState>
+  ) => update(notification);
 
   const modeOptions: Array<InputMode> = ["eventsource", "websocket"];
 
@@ -44,7 +40,7 @@ export default function InputUI(props: ServiceUIProps) {
   return (
     <ServiceUI
       {...props}
-      className="mb-4"
+      className="pb-4"
       onInit={onInit}
       onNotification={onNotification}
       initialSize={{ width: 480, height: undefined }}
@@ -60,6 +56,7 @@ export default function InputUI(props: ServiceUIProps) {
             })
           }
         />
+
         <SubmittableInput
           fullWidth
           minHeight

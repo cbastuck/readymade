@@ -307,7 +307,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
       const targetRelativeWidth = Number(size.substr(0, size.length - 1)) / 100;
       const currentRelativeWidth = textWidth / canvasWidth;
       const correctionRatio = targetRelativeWidth / currentRelativeWidth;
-      const correctedSize = Math.floor(correctionRatio * 9.9); // we tested with 10pt intially, 9.9 because otherwise we overshoot (not sure why)
+      const correctedSize = Math.floor(correctionRatio * 10);
       ctx.font = `${style} ${weight} ${correctedSize}px ${family}`;
       textWidth = ctx.measureText(t).width;
     }
@@ -536,6 +536,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     if (!ctx) {
       return;
     }
+
     if (this.state.clearOnRedraw) {
       ctx.fillStyle = "#FFF";
       ctx.strokeStyle = "#FFF";
@@ -648,8 +649,9 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  onInit = (service: ServiceInstance) => {
-    const { size, resizable, fullscreen, clearOnRedraw } = service;
+  onInit = (initialState: any) => {
+    const { size, resizable, fullscreen, clearOnRedraw = true } = initialState;
+
     const config: any = {
       resizable: !!resizable,
       fullscreen,

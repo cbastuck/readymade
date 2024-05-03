@@ -68,9 +68,27 @@ export async function restoreRuntime(
   if (!restoredRuntime || restoredRuntime.id !== rt.id) {
     return null;
   }
-  const runtime = { ...rt, user };
+
+  const restoredServices = restoredRuntime.services.map(
+    ({ config, instanceId, ...rest }: any) => {
+      const { bypass, ...state } = JSON.parse(config);
+      return {
+        ...rest,
+        uuid: instanceId,
+        bypass,
+        state,
+      };
+    }
+  );
+  const runtime = { ...rt, ...restoredRuntime, user };
+
   const scope = await createScope(runtime);
-  return { runtime, services, scope, registry: restoredRuntime.registry };
+  return {
+    runtime,
+    services: restoredServices,
+    scope,
+    registry: restoredRuntime.registry,
+  };
 }
 
 export async function processRuntime(

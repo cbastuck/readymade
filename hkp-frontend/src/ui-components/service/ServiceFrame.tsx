@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useMemo, useState } from "react";
 
 import {
   CustomMenuEntry,
@@ -39,6 +39,7 @@ export default function ServiceFrame({
       setBypass(bypass);
     }
   };
+
   useEffect(() => {
     service.app.registerNotificationTarget?.(service, onNotification);
     return () => {
@@ -79,9 +80,8 @@ export default function ServiceFrame({
     }
   };
 
-  const onBypass = (isBypass: boolean) => {
+  const onBypass = (isBypass: boolean) =>
     service.configure?.({ bypass: isBypass });
-  };
 
   const onHelp = () => {
     const serviceId = service.serviceId || service.__descriptor?.serviceId;
@@ -90,13 +90,9 @@ export default function ServiceFrame({
     }
   };
 
-  const onConfig = () => {
-    setConfigVisible(true);
-  };
+  const onConfig = () => setConfigVisible(true);
 
-  const onCloseConfig = () => {
-    setConfigVisible(false);
-  };
+  const onCloseConfig = () => setConfigVisible(false);
 
   const onApplyConfig = async (newConfig: string) => {
     try {
@@ -115,14 +111,33 @@ export default function ServiceFrame({
     }
   };
 
+  const [filteredServiceConfig, setFilteredServiceConfig] = useState("");
+  useEffect(() => {
+    if (configVisible) {
+      if (service.getConfiguration) {
+        service
+          .getConfiguration()
+          .then((cfg) =>
+            setFilteredServiceConfig(JSON.stringify(cfg, null, 2))
+          );
+      } else {
+        setFilteredServiceConfig(
+          JSON.stringify(filterPrivateMembers(service), null, 2)
+        );
+      }
+    }
+  }, [service, configVisible]);
+
   if (frameless) {
     return children;
   }
-  const { uuid: _, board, ...filteredService } = filterPrivateMembers(service);
+
   return (
     <div key={`service-frame-${uuid}`}>
       <div
+        //className="hover:drop-shadow-lg"
         style={s(t.unselectable, {
+          transition: "filter 1s",
           border: "solid 1px lightgray",
           borderRadius: 5,
           textAlign: "center",
@@ -149,7 +164,7 @@ export default function ServiceFrame({
 
         <EditorDialog
           title="Service Configuration"
-          value={JSON.stringify(filteredService, null, 2)}
+          value={filteredServiceConfig}
           isOpen={configVisible}
           onClose={onCloseConfig}
           actions={[{ label: "Apply", onAction: onApplyConfig }]}

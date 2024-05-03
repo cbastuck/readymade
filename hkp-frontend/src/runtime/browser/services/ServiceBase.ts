@@ -4,13 +4,14 @@ export default class ServiceBase<T> {
   uuid: string;
   board: string;
   app: AppInstance;
+  descriptor: ServiceClass;
   state: T;
   bypass: boolean = false;
 
   constructor(
     app: AppInstance,
     board: string,
-    _descriptor: ServiceClass,
+    descriptor: ServiceClass,
     uuid: string,
     s: T
   ) {
@@ -18,5 +19,17 @@ export default class ServiceBase<T> {
     this.board = board;
     this.app = app;
     this.state = s;
+    this.descriptor = descriptor;
   }
+
+  getConfiguration = async () => {
+    return this.state;
+  };
+
+  setBypass = (bypass: boolean) => {
+    if (!!this.bypass !== !!bypass) {
+      this.bypass = !!bypass;
+      this.app.notify(this as any, { bypass: this.bypass }); // TODO: as any - refactor interface
+    }
+  };
 }

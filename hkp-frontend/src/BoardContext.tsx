@@ -222,6 +222,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
 
     const scopes = reduceByRuntimeId(restored, "scope");
     const registry = reduceByRuntimeId(restored, "registry");
+    const restoredServicesWithState = reduceByRuntimeId(restored, "services");
     const validRuntimes = restored.flatMap((restoreResult) =>
       restoreResult && !!scopes[restoreResult?.runtime.id]
         ? [restoreResult.runtime]
@@ -231,7 +232,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     this.setState({
       boardName,
       runtimes: validRuntimes,
-      services,
+      services: restoredServicesWithState,
       registry,
       scopes,
     });

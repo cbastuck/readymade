@@ -120,6 +120,7 @@ export async function restoreRuntime(
           instanceId
           serviceId
           serviceName
+          config
         }
       }
     }`;

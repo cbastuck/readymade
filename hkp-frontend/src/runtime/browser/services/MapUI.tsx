@@ -153,6 +153,7 @@ export default function MapUI(props: ServiceUIProps) {
                   >
                     <TableCell className="text-left p-0">
                       <SubmittableInput
+                        fullWidth
                         hideBottomBorder
                         value={key}
                         onSubmit={(newKey) => onChangeKey(key, newKey)}
@@ -162,6 +163,7 @@ export default function MapUI(props: ServiceUIProps) {
                     </TableCell>
                     <TableCell className="text-left p-0">
                       <SubmittableInput
+                        fullWidth
                         hideBottomBorder
                         ref={valueInputRef}
                         value={template[key]}

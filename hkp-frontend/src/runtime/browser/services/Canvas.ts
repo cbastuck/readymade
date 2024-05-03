@@ -8,15 +8,8 @@ const serviceName = "Canvas";
 type P = { resolve: (blob: Blob) => void; reject: (frameID: number) => void };
 
 class Canvas extends ServiceBase<any> {
-  fullscreen = false;
-  clearOnRedraw = true;
-  resizable = true;
-  size = undefined;
-  reportSizeUpdate = true;
   _frameID = 0;
   _pending: { [frameID: number]: P } = {};
-  noToggleFullscreenOnDblClick = false;
-  capture = false;
 
   constructor(
     app: AppInstance,
@@ -24,7 +17,15 @@ class Canvas extends ServiceBase<any> {
     descriptor: ServiceClass,
     id: string
   ) {
-    super(app, board, descriptor, id, {});
+    super(app, board, descriptor, id, {
+      fullscreen: false,
+      clearOnRedraw: true,
+      resizable: true,
+      size: undefined,
+      reportSizeUpdate: true,
+      noToggleFullscreenOnDblClick: false,
+      capture: false,
+    });
   }
 
   configure(config: any) {
@@ -39,19 +40,19 @@ class Canvas extends ServiceBase<any> {
       reportSizeUpdate,
     } = config || {};
     if (fullscreen !== undefined) {
-      this.fullscreen = fullscreen;
+      this.state.fullscreen = fullscreen;
     }
 
     if (clearOnRedraw !== undefined) {
-      this.clearOnRedraw = clearOnRedraw;
+      this.state.clearOnRedraw = clearOnRedraw;
     }
 
     if (noToggleFullscreenOnDblClick !== undefined) {
-      this.noToggleFullscreenOnDblClick = noToggleFullscreenOnDblClick;
+      this.state.noToggleFullscreenOnDblClick = noToggleFullscreenOnDblClick;
     }
 
     if (capture !== undefined) {
-      this.capture = capture;
+      this.state.capture = capture;
     }
 
     if (capturedFrame !== undefined) {
@@ -59,20 +60,20 @@ class Canvas extends ServiceBase<any> {
     }
 
     if (resizable !== undefined) {
-      this.resizable = resizable;
+      this.state.resizable = resizable;
     }
 
     if (size !== undefined) {
-      this.size = size;
+      this.state.size = size;
       this.app.notify(this, { size });
-      if (this.reportSizeUpdate) {
+      if (this.state.reportSizeUpdate) {
         const [updatedWidth, updatedHeight] = size;
         this.app.next(this, { updatedWidth, updatedHeight });
       }
     }
 
     if (reportSizeUpdate !== undefined) {
-      this.reportSizeUpdate = reportSizeUpdate;
+      this.state.reportSizeUpdate = reportSizeUpdate;
     }
   }
 
@@ -97,9 +98,9 @@ class Canvas extends ServiceBase<any> {
     this.app.notify(this, {
       render: params,
       frameID,
-      captureMime: this.capture,
+      captureMime: this.state.capture,
     });
-    if (this.capture) {
+    if (this.state.capture) {
       return await this.waitForCapturedFrame(frameID).catch(
         (/*rejectFrameID*/) => null
       ); // null stops further propagation of droppped frames

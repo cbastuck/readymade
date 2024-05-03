@@ -45,6 +45,7 @@ export default class AggregatorUI extends Component<ServiceUIProps, State> {
     return (
       <div className="flex flex-col gap-2">
         <Input
+          minHeight
           title="Aggregate Property"
           value={property}
           onChange={(property) => {
