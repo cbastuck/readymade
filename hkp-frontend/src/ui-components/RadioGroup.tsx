@@ -10,7 +10,9 @@ type Props = {
   className?: string;
   title: string;
   options: Array<string>;
-  value: string;
+  value: string | undefined;
+  disabled?: boolean;
+  alignRight?: boolean;
   onChange: (value: string) => void;
 };
 
@@ -19,13 +21,21 @@ export default function RadioGroup({
   title,
   options,
   value,
+  disabled,
   className = "",
+  alignRight,
   onChange,
 }: Props) {
   const uniqueId = id || crypto.randomUUID();
   return (
-    <div className={`flex-col ${className}`}>
-      <GroupLabel>{title}</GroupLabel>
+    <div className={`flex-col ${alignRight && "text-right"} ${className}`}>
+      <GroupLabel
+        className={`${disabled && "text-gray-300"} ${
+          alignRight && "text-right"
+        }`}
+      >
+        {title}
+      </GroupLabel>
       <RadioGroupCN className="py-2 flex" value={value}>
         {options.map((item, idx) => {
           const optionId = `${uniqueId || title}-option-${idx}`;
@@ -35,10 +45,12 @@ export default function RadioGroup({
                 value={item}
                 id={optionId}
                 onClick={() => onChange(item)}
+                disabled={disabled}
               />
               <Label
                 htmlFor={optionId}
                 className="text-base capitalize tracking-widest"
+                aria-disabled={disabled}
               >
                 {item}
               </Label>

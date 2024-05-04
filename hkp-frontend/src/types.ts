@@ -212,6 +212,7 @@ export type CustomMenuEntry = {
   name: string;
   icon: ReactNode;
   config?: any;
+  disabled?: boolean;
   onClick?: () => void;
 };
 

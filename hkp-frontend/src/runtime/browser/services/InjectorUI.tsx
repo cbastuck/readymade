@@ -1,5 +1,5 @@
 import { Component, KeyboardEvent } from "react";
-import { SquareCode, FileType, FileJson } from "lucide-react";
+import { SquareCode } from "lucide-react";
 import { Checkbox, TextArea, Input, Progress } from "semantic-ui-react";
 
 import { s, t } from "../../../styles";
@@ -18,14 +18,13 @@ import ServiceUI from "@/ui-components/service/ServiceUI";
 import RadioGroup from "@/ui-components/RadioGroup";
 import Button from "@/ui-components/Button";
 import MenuIcon from "@/ui-components/MenuIcon";
-import BinarySwitch from "@/ui-components/BinarySwitch";
 
 type State = {
   files: Array<File>;
   user: User | undefined;
   blob: Blob | null;
   dropName: string | undefined;
-  items: DataTransferItemList | null;
+  items: Array<any> | null;
   itemsSelection: Array<any>;
   recentInjection: string;
   multirow: boolean;
@@ -114,7 +113,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
           paddingLeft: 15,
         }}
       >
-        {items.map((item, idx) => (
+        {items.map((item: any, idx: number) => (
           <li key={`drop-zone-item-${idx}`}>
             <div
               style={{
@@ -330,16 +329,10 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
   renderFileInput = (service: ServiceInstance) => {
     const { file, loadAsText, fileProgress } = this.state;
     return (
-      <div
-        style={{
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          textAlign: "left",
-        }}
-      >
+      <div className="flex flex-col h-full gap-2">
         <div className="flex items-center">
           <input
+            className="tracking-wider"
             style={t.fs12}
             type="file"
             onChange={(ev) =>
@@ -347,22 +340,17 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
               this.setState({ file: ev.target.files[0] })
             }
           />
-          <BinarySwitch
-            className="whitespace-nowrap"
-            label="is binary"
-            value={!loadAsText}
-            disabled={!file}
-            onChange={(isBinary) => this.setState({ loadAsText: !isBinary })}
-          />
         </div>
-
-        <Button
-          style={this.buttonStyle}
-          disabled={!file}
-          onClick={() => file && this.readFile(service, file, loadAsText)}
-        >
-          Inject
-        </Button>
+        <div className="mb-2 h-full">
+          <Button
+            className="h-full text-xl"
+            style={this.buttonStyle}
+            disabled={!file}
+            onClick={() => file && this.readFile(service, file, loadAsText)}
+          >
+            Inject
+          </Button>
+        </div>
         <div style={s(t.m(0, 3), { display: fileProgress <= 0 && "none" })}>
           <Progress progress="percent" percent={fileProgress} />
         </div>
@@ -390,19 +378,10 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
 
   render() {
     const { service } = this.props;
-    const { mode, plainText } = this.state;
+    const { mode, plainText, loadAsText } = this.state;
     const customMenuEntries: Array<CustomMenuEntry> = (() => {
       if (mode === "data") {
         return [
-          {
-            name: plainText ? "Edit Json" : "Edit plain text",
-            icon: plainText ? (
-              <MenuIcon icon={FileJson} />
-            ) : (
-              <MenuIcon icon={FileType} />
-            ),
-            onClick: this.toggleTextMode,
-          },
           {
             name: "Prettify",
             icon: <MenuIcon icon={SquareCode} />,
@@ -415,6 +394,37 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     })();
 
     const modes: Array<InjectorMode> = ["data", "file", "drop"];
+
+    const formatOptions =
+      mode === "data"
+        ? ["json", "plain"]
+        : mode === "file"
+        ? ["binary", "text"]
+        : [];
+    const formatValue =
+      mode === "data"
+        ? plainText
+          ? "plain"
+          : "json"
+        : mode === "file"
+        ? loadAsText
+          ? "text"
+          : "binary"
+        : undefined;
+
+    const onFormat = (newFormat: string) => {
+      if (mode === "data") {
+        this.setState((state) => ({
+          ...state,
+          plainText: newFormat === "plain",
+        }));
+      } else if (mode === "file") {
+        this.setState((state) => ({
+          ...state,
+          loadAsText: newFormat === "text",
+        }));
+      }
+    };
     return (
       <ServiceUI
         {...this.props}
@@ -425,15 +435,26 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
         initialSize={{ width: 500, height: 300 }}
       >
         <>
-          <RadioGroup
-            title="Mode"
-            value={this.state.mode}
-            options={modes}
-            onChange={this.onMode}
-          />
-          {this.state.mode === "data" && this.renderDataEditor(service)}
-          {this.state.mode === "file" && this.renderFileInput(service)}
-          {this.state.mode === "drop" && this.renderDragNDropInput(service)}
+          <div className="flex w-full">
+            <RadioGroup
+              className="w-full"
+              title="Mode"
+              value={this.state.mode}
+              options={modes}
+              onChange={this.onMode}
+            />
+            <RadioGroup
+              alignRight={true}
+              title="Format"
+              value={formatValue}
+              options={formatOptions}
+              onChange={onFormat}
+              disabled={formatOptions.length === 0}
+            />
+          </div>
+          {mode === "data" && this.renderDataEditor(service)}
+          {mode === "file" && this.renderFileInput(service)}
+          {mode === "drop" && this.renderDragNDropInput(service)}
         </>
       </ServiceUI>
     );
