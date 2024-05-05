@@ -74,7 +74,7 @@ export default function MapUI(props: ServiceUIProps) {
       {}
     );
     service.configure({ template: newTemplate });
-    setTimeout(() => valueInputRef.current?.focus(), 10);
+    // setTimeout(() => valueInputRef.current?.focus(), 10);
   };
 
   const onChangeValue = (key: string, newValue: string) => {
@@ -168,6 +168,7 @@ export default function MapUI(props: ServiceUIProps) {
                         value={template[key]}
                         onSubmit={(newValue) => onChangeValue(key, newValue)}
                         onChangePending={setIsMappingChangePending}
+                        selectAllOnFocus={true}
                       />
                     </TableCell>
                     <TableCell className="text-right p-0">

@@ -48,9 +48,7 @@ type Props = {
   onResult: OnResult;
 };
 
-type State = {
-  loadingCounter: number;
-};
+type State = {};
 
 export default class BrowserRuntime extends Component<Props, State> {
   static contextType = BoardCtx;
@@ -59,179 +57,13 @@ export default class BrowserRuntime extends Component<Props, State> {
   websocket: WebSocket | null | undefined = null;
   eventSource: EventSource | undefined = undefined;
 
-  state = {
-    loadingCounter: 0,
-  };
+  state = {};
 
   componentDidMount() {}
 
   componentWillUnmount() {
     this.destroyRuntime();
   }
-
-  // TODO: remove this
-  connect(id: string) {
-    const { user, runtime, boardName } = this.props;
-    const { name: runtimeName } = runtime;
-    const backendPath = `/api/${user?.userId}/${boardName}/${id}`;
-    logInfo(`Connecting ${runtimeName} to ${backendPath}`);
-
-    const useWebSockets = true;
-    if (useWebSockets) {
-      // TODO: assume coordinator is on the same host as frontend
-      const { host: backendHost, protocol } = window.location;
-      const secureConnection = protocol.indexOf("https") === 0;
-      this.connectRuntimeViaWebSocket(
-        backendHost,
-        backendPath,
-        secureConnection
-      );
-    } else {
-      this.connectRuntimeViaEventSource(backendPath);
-    }
-  }
-
-  connectRuntimeViaWebSocket(
-    backendHost: string,
-    backendPath: string,
-    secureConnection: boolean
-  ) {
-    const { runtime } = this.props;
-    const { id: runtimeId, name: runtimeName } = runtime;
-    function rebuild(json: any, message: any): object {
-      return Object.keys(json).reduce<any>((acc, key) => {
-        const value = json[key];
-        if (typeof value === "object") {
-          return { ...acc, [key]: rebuild(value, message) };
-        }
-        if (value.startsWith && value.startsWith("+binary-data-@")) {
-          const blob = new Blob([message[value].payload], {
-            type: message[value].headers["content-type"],
-          });
-          return { ...acc, [key]: blob };
-        } else {
-          return { ...acc, [key]: value };
-        }
-      }, {});
-    }
-
-    const protocol = secureConnection ? "wss" : "ws";
-    this.websocket = new WebSocket(
-      `${protocol}://${backendHost}${backendPath}`,
-      this.context?.user?.idToken
-    );
-    this.websocket.binaryType = "arraybuffer";
-    this.websocket.onmessage = (event) => {
-      const message = parseResponse(event.data);
-      const action: Command = isMultipartsResult(message)
-        ? rebuild(message.json.payload, message)
-        : JSON.parse(message as any); // TODO: not sure how this behaves with Blob
-      logInfo(
-        `BrowserRuntime ${runtimeId} (${runtimeName}) received: ${JSON.stringify(
-          action
-        )}`
-      );
-      this.onMessage(action);
-    };
-    this.websocket.onclose = (_event) => {
-      logInfo(`Closed WebSocket with ${runtimeId}`);
-    };
-    this.websocket.onerror = function (error) {
-      console.error(`WebSocket ${runtimeId} Error: `, error);
-    };
-    this.websocket.onopen = (_event) => {
-      logInfo(`BrowserRuntime ${runtimeId} WebSocket is open`);
-    };
-  }
-
-  connectRuntimeViaEventSource(backendPath: string) {
-    const { runtime } = this.props;
-    const { id: runtimeId } = runtime;
-    this.eventSource = new EventSource(backendPath);
-
-    const onMessage = (e: MessageEvent) =>
-      this.onMessage(e.data ? JSON.parse(e.data) : e);
-    const onError = (error: any) => {
-      if (error.status === 504) {
-        // HTTP Gateway Timeout
-        this.eventSource?.removeEventListener("data", onMessage);
-        this.eventSource?.removeEventListener("error", onError);
-        this.eventSource = undefined;
-        logInfo(`Reconnecting browser runtime ${error} - ${error.status}`);
-        setTimeout(() => this.connect(runtimeId), 1000);
-        return;
-      } else {
-        console.error("Unknown error in BrowserRuntime", error);
-      }
-    };
-    this.eventSource?.addEventListener("data", onMessage);
-    this.eventSource?.addEventListener("error", onError);
-  }
-
-  onMessage(command: Command) {
-    const { scope } = this.props;
-    switch (command.action) {
-      case "config":
-        return configureService(scope, { uuid: command.uuid }, command.config);
-      case "process":
-        return processService(
-          scope,
-          command,
-          command.params,
-          command.requestId
-        );
-      case "destroy":
-        return removeService(scope, command);
-      case "ping":
-        return;
-      default:
-        console.error("Unknown action in browser runtime: ", command);
-    }
-  }
-
-  sendResult = async (
-    serviceUuid: string,
-    data: any,
-    requestId: string | null
-  ) => {
-    const { user, runtime, boardName } = this.props;
-    const { id: runtimeId } = runtime;
-
-    if (!user) {
-      console.error(
-        "Can not send result without valid user",
-        runtime,
-        boardName
-      );
-      return;
-    }
-
-    if (!runtimeId) {
-      return console.error(
-        "Could not send result data, no backend is connected"
-      );
-    }
-
-    if (this.websocket) {
-      // send the result via websocket
-      const buffer = await serializeWebsocketBuffer(data, {
-        board: boardName, // TODO: before was this.board
-        userId: user.userId,
-        serviceUuid,
-        requestId,
-      });
-      this.websocket.send(buffer);
-      return null;
-    } else {
-      // ... or as post
-      return request(
-        `${user.userId}/${boardName}/${runtimeId}/${requestId}`,
-        "POST",
-        false,
-        data
-      );
-    }
-  };
 
   // TODO: remove - but still used in headless and elsewhere
   getServiceById = (uuid: string) => {

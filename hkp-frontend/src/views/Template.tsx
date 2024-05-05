@@ -2,7 +2,7 @@ import { Component, ReactNode } from "react";
 
 import BoardProvider from "../BoardContext";
 import Toolbar from "../components/Toolbar";
-import Footer from "@/components/Footer.1";
+import Footer from "@/components/Footer";
 import Breadcrumbs, { BreadcrumbItem } from "@/ui-components/Breadcrumbs";
 
 type Props = {
@@ -49,9 +49,8 @@ export default class Template extends Component<Props> {
               <Breadcrumbs path={makeBreadcrumbsPath(title || slug!, parent)} />
             )}
             <div
-              className="font-serif-wet tracking-widest"
+              className="font-serif"
               style={{
-                lineHeight: 1.6,
                 paddingBottom: "30px",
                 width: "100%",
               }}

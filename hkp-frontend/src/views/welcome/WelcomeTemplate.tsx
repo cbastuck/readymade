@@ -3,7 +3,7 @@ import { Location } from "react-router-dom";
 
 import BoardProvider from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
-import Footer from "@/components/Footer.1";
+import Footer from "@/components/Footer";
 
 import { withRouter } from "../../common";
 

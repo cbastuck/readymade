@@ -37,6 +37,7 @@ export default function RuntimeUI({
     backgroundColor: !frameless ? "#EEEEEE10" : undefined,
   };
 
+  console.log("REDER HEADER WITH REGISTRy", registry);
   return (
     <div style={style}>
       <RuntimeHeader
@@ -49,7 +50,7 @@ export default function RuntimeUI({
         onWrapServices={onWrapServices}
       />
       {children}
-      {!isExpanded && <div className="min-h-1" />}{" "}
+      {!isExpanded && <div className="min-h-1" />}
     </div>
   );
 }

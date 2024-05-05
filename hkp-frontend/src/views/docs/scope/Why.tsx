@@ -7,15 +7,8 @@ import Date from "../../../components/Date";
 export default function Why() {
   return (
     <Template title="Why does it matter" parent="Project scope">
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 10,
-          marginTop: 20,
-        }}
-      >
-        <div>
+      <div className="flex flex-col gap-[10px] mt-[20px]">
+        <p>
           In my humble opinion, the ability to comprehend technical components
           and data flows is comparable to the skill of reading. Just as reading
           doesn't automatically make you an author, a foundational understanding
@@ -24,9 +17,9 @@ export default function Why() {
           latter. I believe these skills are crucial in today's digital age,
           allowing individuals to navigate the digital landscape without
           everyone needing to pursue a career as a software engineer.
-        </div>
+        </p>
 
-        <div>
+        <p>
           When reading stories, recipes, history, poetry, etc., it can be
           entertaining and lead to a deeper understanding of many things:
           yourself, your environment, our world, etc. Maybe you discover unknown
@@ -39,13 +32,13 @@ export default function Why() {
           traits that match shallow stereotypes, sometimes even reproducing
           them. Otherwise, we risk walking a steep slope along the gradient to
           find a local optimum.
-        </div>
-        <div>
+        </p>
+        <p>
           As automation and digitalization become integral to public discourse
           and agendas, so too should the focus shift towards empowering more
           individuals to discover new solutions and uncover yet-unknown
           problems.
-        </div>
+        </p>
 
         <Date month="June" day="24" year="2022" />
         <Date isUpdate month="February" day="8" year="2024" size={10} />

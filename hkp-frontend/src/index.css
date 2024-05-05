@@ -9,8 +9,38 @@ font-face {
 }
 
 @font-face {
-  font-family: "hkp-fnt-serif-wet";
-  src: url("./assets/fonts/SpecialElite-Regular.ttf") format("truetype");
+  font-family: "hkp-fnt-serif";
+  src: url("./assets/fonts/Cabin-VariableFont_wdth,wght.ttf") format("truetype");
+  size-adjust: 115%;
+}
+
+:root {
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
 }
 
 .hkp-fnt-color {
@@ -134,10 +164,7 @@ font-face {
 
 /* blockquote source */
 blockquote {
-  font-weight: 100;
-  font-size: 2rem;
-  max-width: 600px;
-  line-height: 1.4;
+  line-height: 1.6;
   position: relative;
   margin: 0;
   padding: 0.5rem;
@@ -181,39 +208,4 @@ blockquote:after {
 
 .hkp-inp-error {
   border-color: rgb(213, 108, 108) !important;
-}
-
-:root {
-  line-height: 1.5;
-  color-scheme: light dark;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
 }

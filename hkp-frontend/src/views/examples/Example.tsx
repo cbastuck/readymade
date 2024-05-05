@@ -11,7 +11,7 @@ import { s, t } from "../../styles";
 import examples from "./ExamplesData";
 import { redirectTo } from "../../core/actions";
 import Toolbar from "../../components/Toolbar";
-import Footer from "@/components/Footer.1";
+import Footer from "@/components/Footer";
 
 export default function Example() {
   const location = useLocation();

@@ -7,7 +7,7 @@ type Props = {
 
 export default function Description({ name, description }: Props) {
   if (!description) {
-    return "No description available";
+    return "";
   }
 
   const d = Array.isArray(description) ? description : [description];

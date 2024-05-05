@@ -2,8 +2,9 @@ import UpdatesButton from "./UpdatesButton";
 import NavigateButton from "../NavigateButton";
 
 import Switcher from "../../components/Switcher";
-import { Button } from "@/components/ui/button";
+
 import { useNavigate } from "react-router-dom";
+import Button from "@/ui-components/Button";
 
 export default function WelcomePanel() {
   const navigate = useNavigate();
@@ -37,19 +38,12 @@ export default function WelcomePanel() {
         />
       </div>
 
-      <div className="flex flex-col gap-1 ml-auto mr-auto mt-1">
-        <NavigateButton
-          text="What is this?"
-          destination="/welcome/mission"
-          width="280px"
-        />
-
-        <Button
-          className="w-[280px] border border-black bg-white text-black hover:bg-[#454f6e] hover:text-white text-2xl"
-          onClick={() => navigate("/engage")}
-        >
-          I want to engage
+      <div className="flex flex-col gap-1 ml-auto mr-auto mt-1 w-[280px]">
+        <Button onClick={() => navigate("/welcome/mission")}>
+          What is this?
         </Button>
+
+        <Button onClick={() => navigate("/engage")}>I want to engage</Button>
       </div>
     </div>
   );

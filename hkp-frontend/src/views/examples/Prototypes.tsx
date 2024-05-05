@@ -13,7 +13,7 @@ export default function Prototypes() {
     >
       <h2>My Prototypes</h2>
       <div
-        className="font-serif-wet tracking-widest"
+        className="font-serif tracking-widest"
         style={{ margin: "30px 20px" }}
       >
         <div className="flex">

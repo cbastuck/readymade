@@ -48,7 +48,6 @@ export default function GroupItem(item: Props) {
               style={{
                 fontSize: 14,
                 cursor: "default",
-                lineHeight: 1.8,
                 letterSpacing: 1,
               }}
             >

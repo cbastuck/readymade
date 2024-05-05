@@ -14,7 +14,6 @@ export default function Claim(claim: Props) {
         margin: "5px 30px",
         color: claim.c ? undefined : "#454f6d",
         letterSpacing: 1,
-        lineHeight: 1.5,
       }}
     >
       <span className="font-sans text-xl">{claim.s}</span>

@@ -1,5 +1,5 @@
 import { CSSProperties, Component, ReactElement } from "react";
-import { Icon, SemanticICONS } from "semantic-ui-react";
+import { SemanticICONS } from "semantic-ui-react";
 
 import { getServiceConfiguration } from "../core/actions";
 //import NodeRuntime from "../runtime/NodeRuntime";
@@ -9,22 +9,18 @@ import ServiceDropdown from "./ServiceDropdown";
 
 import { s, t } from "../styles";
 import {
-  AppViewMode,
   RuntimeDescriptor,
   RuntimeImpl,
   ServiceAction,
   ServiceClass,
   ServiceDescriptor,
   InstanceId,
-  ServiceRegistry,
   RuntimeScope,
   OnResult,
   User,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 import BrowserRuntimeScope from "../runtime/browser/BrowserRuntimeScope";
-import RenameRuntimeAccessory from "./RenameRuntimeAccessory";
-import ProcessRuntimeAccessory from "./ProcessRuntimeAccessory";
 
 import RuntimeUI from "@/ui-components/runtime-ui";
 
@@ -186,125 +182,6 @@ export default class Runtime extends Component<Props, State> {
     return this.impl.destroyRuntime();
   };
 
-  renderServiceMenu(
-    runtimeId: string,
-    registry: ServiceRegistry,
-    appViewMode: AppViewMode
-  ) {
-    const wide = appViewMode === "wide";
-    const options = registry.map((s) => ({
-      key: `${runtimeId}${s.serviceId}`,
-      value: s.serviceId,
-      text: s.serviceName,
-      selected: false,
-    }));
-
-    return (
-      <ServiceDropdown
-        ref={(dropdown) => (this.dropdown = dropdown)}
-        options={options}
-        wide={wide}
-        onSelected={(serviceId: string) => {
-          const service = registry.find((s) => s.serviceId === serviceId);
-          if (service) {
-            this.onAddService(service);
-          }
-        }}
-      />
-    );
-  }
-
-  renderExpandableHeadline(
-    runtimeId: string,
-    name: string,
-    registry: ServiceRegistry,
-    isOwner: boolean,
-    appViewMode: AppViewMode = "wide"
-  ) {
-    const { expanded, showSettings } = this.state;
-
-    return (
-      <div
-        style={{
-          width: "100%",
-          marginTop: 5,
-          marginLeft: 5,
-          display: "flex",
-          flexDirection: "row",
-        }}
-      >
-        <Icon
-          name="bars"
-          style={{
-            margin: "10px 18px",
-            cursor: "pointer",
-            color: "#ddd",
-          }}
-          onClick={() =>
-            this.setState({
-              showSettings: expanded && !showSettings,
-              expanded: !expanded ? !showSettings : expanded,
-            })
-          }
-        />
-        <div
-          style={
-            {
-              ...t.unselectable,
-              fontSize: 12,
-              letterSpacing: 1,
-              marginTop: 10,
-              display: "flex",
-              flexDirection: "row",
-              width: "100%",
-            } as CSSProperties
-          }
-        >
-          <RenameRuntimeAccessory
-            name={name}
-            runtimeId={runtimeId}
-            onChangeName={(newName) =>
-              this.props.boardContext.setRuntimeName(runtimeId, newName)
-            }
-          />
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "row",
-
-              width: "100%",
-              marginLeft: 10,
-            }}
-          >
-            <ProcessRuntimeAccessory
-              onProcess={() => {
-                const rt = this.props.runtime;
-                const scope = this.props.boardContext.scopes[rt.id];
-                const api = this.props.boardContext.runtimeApis[rt.type];
-                if (scope && api) {
-                  api.processRuntime(scope, {}, null);
-                }
-              }}
-            />
-          </div>
-        </div>
-        <div
-          style={{
-            marginRight: 10,
-            marginTop: 5,
-            marginBottom: 10,
-            marginLeft: "auto",
-            textAlign: "right",
-          }}
-        >
-          {registry &&
-            isOwner &&
-            this.renderServiceMenu(runtimeId, registry, appViewMode)}
-        </div>
-      </div>
-    );
-  }
-
   scrollRuntimeContainerToRight = () => {
     if (this.runtimeContainer) {
       this.scrollRuntimeContainerTo(this.runtimeContainer.scrollWidth, 0);
@@ -449,6 +326,7 @@ export default class Runtime extends Component<Props, State> {
     const boardName = boardContext && boardContext.boardName;
     const registry =
       runtime && boardContext && boardContext.registry[runtime.id];
+    console.log("RUNTIME WITH REGISTYR", registry);
     const appViewMode = boardContext && boardContext.appContext?.appViewMode;
     const wide = boardContext ? appViewMode === "wide" : true;
 

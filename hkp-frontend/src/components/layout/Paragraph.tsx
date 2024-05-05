@@ -18,12 +18,7 @@ export default function Paragraph({ width, headline, children, style }: Props) {
       }}
     >
       {headline && <h2>{headline}</h2>}
-      <div
-        className="font-serif-wet tracking-widest"
-        style={{ margin: "20px 0px" }}
-      >
-        {children}
-      </div>
+      <div style={{ margin: "20px 0px" }}>{children}</div>
     </div>
   );
 }

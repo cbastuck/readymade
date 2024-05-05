@@ -1,8 +1,8 @@
 import Toolbar from "../../components/Toolbar";
-import Footer from "@/components/Footer.1";
+import Footer from "@/components/Footer";
 import CardContainer from "./CardContainer";
 import Intro from "./Intro";
-import { s, t } from "../../styles";
+
 import Showcases from "./Showcases";
 import Prototypes from "./Prototypes";
 import examples from "./ExamplesData";
@@ -10,12 +10,7 @@ import Header from "./Header";
 
 export default function Examples() {
   return (
-    <div
-      style={s(t.h100, {
-        display: "flex",
-        flexDirection: "column",
-      })}
-    >
+    <div className="h-full flex flex-col">
       <Toolbar />
       <div style={{ marginTop: 20 }}>
         <Header />

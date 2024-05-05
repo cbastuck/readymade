@@ -19,8 +19,7 @@ module.exports = {
     fontFamily: {
       sans: ["hkp-fnt-sans", "sans-serif"],
       "sans-clean": ["Arial", "sans-serif"],
-      serif: ["hkp-fnt-serif-dry", "serif"],
-      "serif-wet": ["hkp-fnt-serif-wet", "serif"],
+      serif: ["hkp-fnt-serif", "serif"],
     },
     fontSize: {
       sm: "0.8rem",
@@ -34,7 +33,9 @@ module.exports = {
     },
     extend: {
       colors: {
-        "foreground-font": "#555",
+        "paragraph-color": "hsl(var(--paragraph-color))",
+        "headline-color": "hsl(var(--headline-color))",
+        "input-color": "hsl(var(--input-color))",
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

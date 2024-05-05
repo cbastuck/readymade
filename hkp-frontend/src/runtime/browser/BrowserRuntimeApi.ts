@@ -16,6 +16,7 @@ import {
 import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { filterPrivateMembers } from "./services/helpers";
+import { defaultBundles } from "./registry/Default";
 
 export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
   const { name: passedName, type, url } = rtClass;
@@ -178,9 +179,10 @@ export async function appendSubservice(
 
 async function createScope(
   runtime: RuntimeDescriptor,
-  bundles?: Bundles
+  bundles: Bundles = defaultBundles
 ): Promise<BrowserRuntimeScope> {
   const registry = await BrowserRegistry.create(bundles);
+  console.log("BrowserRuntimeApi.createScope", registry);
   return new BrowserRuntimeScope(runtime, registry);
 }
 

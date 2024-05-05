@@ -13,7 +13,7 @@ import hero from "./1708869110895.jpeg";
 export default function NestingBoards() {
   return (
     <Article
-      title="Nesting Boards: Each Puzzle Piece, a Puzzle Itself."
+      title="Nesting Boards: Each Puzzle Piece, a Puzzle Itself"
       hero={hero}
       slug="nesting"
       date="25.2.2024"

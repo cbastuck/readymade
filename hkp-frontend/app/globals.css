@@ -4,6 +4,10 @@
 
 @layer base {
   :root {
+    --paragraph-color: 0 0% 50%;
+    --headline-color: 0 0% 37%;
+    --input-color: 0 0% 40%;
+
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
 
@@ -41,6 +45,9 @@
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
 
+    --paragraph-color: 0 0% 50%;
+    --headline-color: 0 0% 37%;
+
     --card: 222.2 84% 4.9%;
     --card-foreground: 210 40% 98%;
 
@@ -75,24 +82,30 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground-font;
+    @apply bg-background text-paragraph-color;
+  }
+  p {
+    @apply text-paragraph-color leading-[1.5rem] tracking-[1.6px] text-base;
   }
   h1 {
-    @apply font-sans text-3xl tracking-[6pt];
+    @apply font-sans text-headline-color text-3xl tracking-[6pt];
   }
   h2 {
-    @apply font-sans text-2xl tracking-[4pt];
+    @apply font-sans text-headline-color text-2xl tracking-[4pt];
   }
   h3 {
-    @apply font-sans text-xl;
+    @apply font-sans text-headline-color text-xl;
   }
   h4 {
-    @apply font-sans text-lg;
+    @apply font-sans text-headline-color text-lg;
   }
   a {
     @apply text-accent hover:underline;
   }
   button {
     @apply font-sans;
+  }
+  input {
+    @apply text-input-color;
   }
 }

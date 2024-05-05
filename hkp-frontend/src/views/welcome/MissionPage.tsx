@@ -3,10 +3,7 @@ import NavigateButton from "../NavigateButton";
 
 export default function MissionPage() {
   return (
-    <div
-      className="fade-in-linear-slow"
-      style={{ width: "100%", height: "100%" }}
-    >
+    <div className="fade-in-linear-slow h-full w-full">
       <div
         style={{
           height: "100%",
@@ -34,7 +31,10 @@ export default function MissionPage() {
           },
           {
             a: (
-              <NavigateButton destination="/welcome/pitch" text="Quick Pitch" />
+              <NavigateButton
+                destination="/welcome/pitch"
+                text="Show Quick Pitch"
+              />
             ),
           },
         ].map((x, xi) => (
@@ -48,7 +48,7 @@ export default function MissionPage() {
                 </h2>
               )}
               <div
-                className="home-title text-lg font-serif-wet my-4"
+                className="home-title text-lg font-serif my-4"
                 style={{
                   paddingLeft: 2,
                   color: "#777",

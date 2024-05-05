@@ -26,7 +26,7 @@ export default function NavigateButton({
 
   return (
     <Button
-      className="text-xl "
+      className="text-base tracking-widest "
       style={{ width, backgroundColor: color }}
       onClick={onClick}
     >

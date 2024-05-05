@@ -73,7 +73,7 @@ export default function ServiceUI({
         disabled={!resizable}
       >
         <div
-          className={`flex flex-col font-sans text-foreground-font px-4 h-full w-full ${className}`}
+          className={`flex flex-col font-sans px-4 h-full w-full ${className}`}
         >
           {children}
         </div>

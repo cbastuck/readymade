@@ -60,7 +60,7 @@ export default function Card({ value: item, actions, onAction }: Props) {
             </div>
           )}
           <div style={{ marginTop: 10 }}>
-            <div className="font-serif-wet" style={s(t.tl, t.nc)}>
+            <div className="font-serif" style={s(t.tl, t.nc)}>
               <Description name={name} description={description} />
             </div>
             {actions && (

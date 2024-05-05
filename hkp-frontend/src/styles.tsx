@@ -19,13 +19,6 @@ export const t: { [key: string]: StyleType } = {
   ls2: { letterSpacing: 2 },
   ls3: { letterSpacing: 3 },
   ls4: { letterSpacing: 4 },
-  lh1_5: { lineHeight: 1.5 },
-  lh1_6: { lineHeight: 1.6 },
-  lh1_7: { lineHeight: 1.7 },
-  lh1_8: { lineHeight: 1.8 },
-  lh2: { lineHeight: 2 },
-  lh3: { lineHeight: 3 },
-
   fs20: { fontSize: 20 },
   fs19: { fontSize: 19 },
   fs18: { fontSize: 18 },

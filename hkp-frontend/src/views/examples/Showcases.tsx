@@ -7,7 +7,7 @@ export default function Showcases() {
     <div style={{ margin: "50px 0px", width: "100%", height: "100%" }}>
       <h2>Showcases</h2>
       <div
-        className="font-serif-wet tracking-widest"
+        className="font-serif tracking-widest"
         style={{
           marginBottom: 20,
           margin: "30px 20px",

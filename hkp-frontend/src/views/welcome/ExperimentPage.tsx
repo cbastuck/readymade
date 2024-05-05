@@ -24,7 +24,7 @@ export default function ExperimentPage() {
       />
       {visualisationFinished && (
         <div className="fade-in-linear">
-          <NavigateButton destination="/examples" text="Show more Examples" />
+          <NavigateButton destination="/examples" text="Show some Examples" />
         </div>
       )}
     </div>

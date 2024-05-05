@@ -2,7 +2,7 @@ import { Component } from "react";
 
 import BoardProvider, { BoardConsumer } from "../BoardContext";
 import Toolbar from "../components/Toolbar";
-import Footer from "@/components/Footer.1";
+import Footer from "@/components/Footer";
 import ServiceReference from "../components/ServiceReference";
 import { withRouter } from "../common";
 

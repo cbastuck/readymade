@@ -6,7 +6,7 @@ import Template from "../Template";
 import { s, t } from "../../styles";
 import Claim from "./Claim";
 import GroupItem from "./GroupItem";
-import Button from "../../components/shared/Button";
+import Button from "@/ui-components/Button";
 
 export default function Quickstart() {
   const navigate = useNavigate();

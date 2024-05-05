@@ -23,7 +23,7 @@ export default function ServiceName({
   const cursor = draggable ? "move" : undefined;
   return (
     <div
-      className="w-full flex text-foreground-font"
+      className="w-full flex"
       style={{ cursor }}
       onDoubleClick={onDoubleClick}
       draggable={draggable}

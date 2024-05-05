@@ -54,7 +54,7 @@ export default function Card({ example }: Props) {
                 marginTop: 10,
               }}
             >
-              <div className="font-serif-wet tracking-wider" style={s(t.tl)}>
+              <div className="font-serif tracking-wider" style={s(t.tl)}>
                 {Array.isArray(example.description)
                   ? example.description.map((d, idx) => (
                       <p key={`example-${example.title}-desc-${idx}`}>{d}</p>

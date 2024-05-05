@@ -29,7 +29,7 @@ export default function NumberInput({
         onChange={(ev) => onChange(Number(ev.target.value))}
         disabled={disabled}
       />
-      <div className="py-[3px] pl-2 tracking-widest text-base">{children}</div>
+      <div className="pl-2 tracking-widest text-base">{children}</div>
     </div>
   );
 }
