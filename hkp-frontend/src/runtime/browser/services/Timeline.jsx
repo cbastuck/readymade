@@ -12,12 +12,12 @@ class TimelineUI extends Component {
     capture: false,
   };
 
-  onInit = (service) => {
-    const { capture, events } = service;
+  onInit = (initialState) => {
+    const { capture, events } = initialState;
     this.setState({ events, capture });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { events } = notification;
     if (events !== undefined) {
       this.setState({ events });

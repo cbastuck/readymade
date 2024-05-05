@@ -103,10 +103,7 @@ function BoardServiceUI(props: Props) {
     }
   };
 
-  const onNotification = async (
-    _service: BoardService,
-    notification: Partial<Config>
-  ) => {
+  const onNotification = async (notification: Partial<Config>) => {
     if (notification.command) {
       if (notification.command.action === "process") {
         const result = await process(notification.command.params);

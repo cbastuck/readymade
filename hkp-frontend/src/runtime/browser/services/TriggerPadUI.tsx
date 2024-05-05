@@ -17,14 +17,14 @@ export default class TriggerPadUI extends Component<ServiceUIProps, State> {
     armedPad: undefined,
   };
 
-  onInit = (service: ServiceInstance) => {
+  onInit = (initialState: any) => {
     this.setState({
-      armedPad: `${service.state.armedPad}`,
-      assignments: service.state.padAssignments,
+      armedPad: `${initialState.armedPad}`,
+      assignments: initialState.padAssignments,
     });
   };
 
-  onNotification = (_: ServiceInstance, notification: any) => {
+  onNotification = (notification: any) => {
     const { assignments, armedPad } = notification;
     if (assignments) {
       this.setState({ assignments });
@@ -135,8 +135,8 @@ export default class TriggerPadUI extends Component<ServiceUIProps, State> {
     return (
       <ServiceUI
         {...this.props}
-        onInit={this.onInit.bind(this)}
-        onNotification={this.onNotification.bind(this)}
+        onInit={this.onInit}
+        onNotification={this.onNotification}
       >
         {this.renderMain(this.props.service)}
       </ServiceUI>

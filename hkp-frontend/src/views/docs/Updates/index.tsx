@@ -122,7 +122,7 @@ export default function Updates() {
             date="24.6.2022"
             content={
               <div>
-                <Link to="/docs/pitch/what"> What - Why - How </Link> of Hookup.
+                <Link to="/docs/scope/what"> What - Why - How </Link> of Hookup.
               </div>
             }
           />

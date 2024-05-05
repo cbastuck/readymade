@@ -29,12 +29,7 @@ export default function NavBar({ pathname }: Props) {
   }
 
   return (
-    <div
-      style={{
-        fontSize: 22,
-        marginTop: 10,
-      }}
-    >
+    <div className="text-xl w-full">
       {pages.map((_, idx) =>
         idx === currentIndex ? renderBullet(idx, "●") : renderBullet(idx, "○")
       )}

@@ -26,9 +26,7 @@ export default function Toolbar({
   isCompact = false,
   onUpdateAvailableRuntimes,
 }: Props) {
-  const showBoardActions = false;
   const boardContext = useContext(BoardCtx);
-  const renderWide = boardContext?.appContext?.appViewMode === "wide";
   return (
     <div
       style={{

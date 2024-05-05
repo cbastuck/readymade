@@ -2,7 +2,7 @@ import { useState } from "react";
 import { TextArea } from "semantic-ui-react";
 import { CircleX, SquarePlay, Pencil, ScanText } from "lucide-react";
 
-import { ServiceInstance, ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "@/types";
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
 
 import ServiceUI, {
@@ -23,7 +23,7 @@ export default function MonitorUI(props: ServiceUIProps) {
     }
   };
 
-  const onNotification = (_instance: ServiceInstance, params: any) => {
+  const onNotification = (params: any) => {
     const nil = params === null && "<null>";
     const undef = params === undefined && "<undefined>";
     const s = nil || undef || unroll(params);

@@ -14,7 +14,7 @@ export function FetcherUI(props) {
     }
   };
 
-  const onNotification = (service, notification) => {
+  const onNotification = (notification) => {
     const { status: statusUpdate } = notification;
     if (statusUpdate !== undefined) {
       setStatus(statusUpdate || idleState);

@@ -35,7 +35,7 @@ export class OutputUI extends Component {
     });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { url, running, flow, headers } = notification;
 
     if (url !== undefined && this.state.url !== url) {

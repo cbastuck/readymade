@@ -49,14 +49,14 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
 
     registerNotificationTarget: (
       svc: ServiceInstance,
-      onNotification: (svc: ServiceInstance, notification: any) => void
+      onNotification: (notification: any) => void
     ) => {
       notificationTargets.register(svc, onNotification);
     },
 
     unregisterNotificationTarget: (
       svc: ServiceInstance,
-      onNotification: (svc: ServiceInstance, notification: any) => void
+      onNotification: (notification: any) => void
     ) => {
       notificationTargets.unregister(svc, onNotification);
     },
@@ -64,13 +64,9 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     configureService: (svc: ServiceDescriptor, config: any) =>
       (svc as ServiceImpl).configure(config),
 
-    notify: (service: ServiceInstance, notification: any) => {
+    notify: (service: InstanceId, notification: any) => {
       if (!notificationTargets.hasCallbacks(service)) {
-        console.warn(
-          "BrowserRuntimeApp.notify no targets for",
-          service.uuid,
-          service.__descriptor?.serviceName
-        );
+        console.warn("BrowserRuntimeApp.notify no targets for", service.uuid);
         return;
       }
 

@@ -16,7 +16,7 @@ export default class WebsocketUI extends Component {
     this.setState({ url, isPublic });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { isPublic } = notification;
     if (isPublic !== undefined) {
       this.setState({ isPublic });

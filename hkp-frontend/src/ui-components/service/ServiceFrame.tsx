@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useMemo, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 import {
   CustomMenuEntry,
@@ -18,6 +18,7 @@ type Props = {
   children: ReactNode;
   customMenuEntries?: Array<CustomMenuEntry>;
   frameless?: boolean;
+  dropShadowOnHover?: boolean;
   onAction: (action: ServiceAction) => void;
 };
 
@@ -27,13 +28,14 @@ export default function ServiceFrame({
   showBypassOnlyIfExplicit,
   customMenuEntries,
   frameless = false,
+  dropShadowOnHover = false,
   onAction,
 }: Props) {
   const [frameCollapsed, setFrameCollapsed] = useState(false);
   const [configVisible, setConfigVisible] = useState(false);
   const [bypass, setBypass] = useState(service?.bypass);
 
-  const onNotification = (_: ServiceInstance, notification: any) => {
+  const onNotification = (notification: any) => {
     const { bypass } = notification || {};
     if (bypass !== undefined) {
       setBypass(bypass);
@@ -92,7 +94,10 @@ export default function ServiceFrame({
 
   const onConfig = () => setConfigVisible(true);
 
-  const onCloseConfig = () => setConfigVisible(false);
+  const onCloseConfig = () => {
+    setFilteredServiceConfig("");
+    setConfigVisible(false);
+  };
 
   const onApplyConfig = async (newConfig: string) => {
     try {
@@ -115,11 +120,10 @@ export default function ServiceFrame({
   useEffect(() => {
     if (configVisible) {
       if (service.getConfiguration) {
-        service
-          .getConfiguration()
-          .then((cfg) =>
-            setFilteredServiceConfig(JSON.stringify(cfg, null, 2))
-          );
+        service.getConfiguration().then((cfg) => {
+          const buffer = JSON.stringify(cfg, null, 2);
+          setFilteredServiceConfig(buffer);
+        });
       } else {
         setFilteredServiceConfig(
           JSON.stringify(filterPrivateMembers(service), null, 2)
@@ -135,7 +139,7 @@ export default function ServiceFrame({
   return (
     <div key={`service-frame-${uuid}`}>
       <div
-        //className="hover:drop-shadow-lg"
+        className={`${dropShadowOnHover && "hover:drop-shadow-lg"}`}
         style={s(t.unselectable, {
           transition: "filter 1s",
           border: "solid 1px lightgray",
@@ -167,7 +171,7 @@ export default function ServiceFrame({
           value={filteredServiceConfig}
           isOpen={configVisible}
           onClose={onCloseConfig}
-          actions={[{ label: "Apply", onAction: onApplyConfig }]}
+          actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
         />
 
         <div

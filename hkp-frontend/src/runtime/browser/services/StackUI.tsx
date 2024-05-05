@@ -54,7 +54,7 @@ export default class StackUI extends Component<ServiceUIProps, State> {
     });
   };
 
-  onNotification = (_: ServiceInstance, notification: any) => {
+  onNotification = (notification: any) => {
     const { subservices, input, output } = notification;
 
     if (subservices !== undefined) {

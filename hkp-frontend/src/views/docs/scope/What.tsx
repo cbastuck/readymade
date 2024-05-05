@@ -64,7 +64,7 @@ export default function What() {
 
         <HStack>
           <TemplateButton to="/welcome/mission" label="overview" />
-          <TemplateButton to="/docs/pitch/why" label="why? >" />
+          <TemplateButton to="/docs/scope/why" label="why? >" />
         </HStack>
       </div>
     </Template>

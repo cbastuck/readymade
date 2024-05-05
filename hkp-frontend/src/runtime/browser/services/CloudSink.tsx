@@ -45,8 +45,7 @@ function CloudSinkUI(props: Props) {
   );
 
   const onNotification = useCallback(
-    (_service: CloudSink, notification: Partial<Config>) =>
-      onUpdate(notification),
+    (notification: Partial<Config>) => onUpdate(notification),
     [onUpdate]
   );
 

@@ -80,7 +80,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  onNotification = (_service: ServiceInstance, notification: any) => {
+  onNotification = (notification: any) => {
     const { recentInjection } = notification;
     if (recentInjection !== undefined) {
       this.setState({ recentInjection });

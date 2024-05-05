@@ -1,6 +1,5 @@
 import { Component } from "react";
 
-import { s, t } from "../../styles";
 import SelectorField from "./SelectorField";
 import { Action } from "../../types";
 import GroupLabel from "@/ui-components/GroupLabel";

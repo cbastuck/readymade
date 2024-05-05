@@ -74,7 +74,7 @@ export default function RuntimeHeader({
   );
 
   const onApplyRuntimeConfig = (newConfig: string) => {
-    console.log("Apply runtime config not implememnted", newConfig);
+    console.log("Apply runtime config not implemented", newConfig);
   };
 
   const onDblClick = (ev: MouseEvent) => {
@@ -121,7 +121,7 @@ export default function RuntimeHeader({
         value={runtimeConfig}
         isOpen={isRuntimeConfigOpen}
         onClose={() => setIsRuntimeConfigOpen(false)}
-        actions={[{ label: "Apply", onAction: onApplyRuntimeConfig }]}
+        actions={[{ label: "Apply Changes", onAction: onApplyRuntimeConfig }]}
       />
     </div>
   );

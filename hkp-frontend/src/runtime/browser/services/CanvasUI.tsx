@@ -131,7 +131,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  invokeClickAction = (service: ServiceInstance, action: ServiceAction) => {
+  invokeClickAction = (service: ServiceInstance, action: any) => {
     if (action.internal) {
       // internal dispatch event
       service.app.next(service, action.internal);
@@ -453,7 +453,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
       return;
     }
 
-    const { data } = params;
+    const { data }: { data: Array<number> } = params;
     const n = data.length;
 
     const min = minArrayElem(data);
@@ -486,10 +486,13 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     const n = Math.min(data.length, nRows * nCols);
 
     const normaliseValues = false;
-    const slice = data.slice(0, n);
+    const slice: Array<number> = data.slice(0, n);
     const min = normaliseValues ? minArrayElem(slice) : undefined;
     const max = normaliseValues ? maxArrayElem(slice) : undefined;
-    const range = normaliseValues ? max - min : undefined;
+    const range =
+      normaliseValues && max !== undefined && min !== undefined
+        ? max - min
+        : undefined;
 
     const rect = this.canvas.getBoundingClientRect();
     const cellWidth = rect.width / nCols;
@@ -500,12 +503,14 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
       const row = Math.floor(i / nCols);
       const col = i % nCols;
       if (normaliseValues) {
-        ctx.fillStyle = range
-          ? `rgb(${((value - min) / range) * 255}, 0, 0)`
-          : "";
-        ctx.strokeStyle = range
-          ? `rgb(${((value - min) / range) * 255}, 0, 0)`
-          : "";
+        ctx.fillStyle =
+          range && min !== undefined
+            ? `rgb(${((value - min) / range) * 255}, 0, 0)`
+            : "";
+        ctx.strokeStyle =
+          range && min !== undefined
+            ? `rgb(${((value - min) / range) * 255}, 0, 0)`
+            : "";
       } else {
         ctx.fillStyle = `#${valueHex}${valueHex}${valueHex}`;
         ctx.strokeStyle = `#${valueHex}${valueHex}${valueHex}`;
@@ -548,7 +553,8 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     //  this.drawArray2d(ctx, dataArray);
     //}
 
-    for (const data of dataArray) {
+    for (const data of dataArray as any) {
+      // TODO: any
       if (data) {
         switch (data.type) {
           case "image":
@@ -623,7 +629,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  onNotification = (service: ServiceInstance, notification: any) => {
+  onNotification = (notification: any) => {
     const { render, size } = notification;
     if (size !== undefined) {
       const [canvasWidth, canvasHeight] = size;
@@ -637,7 +643,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
       if (captureMime && this.canvas) {
         this.canvas.toBlob(
           (blob) =>
-            service.configure({
+            this.props.service.configure({
               capturedFrame: {
                 frameID,
                 blob,
@@ -693,15 +699,15 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
   }
 }
 
-function maxArrayElem<T>(arr: Array<T>) {
+function maxArrayElem<T>(arr: Array<T>): T {
   return arr.reduce((max, cur) => (cur > max ? cur : max), arr[0]);
 }
 
-function minArrayElem<T>(arr: Array<T>) {
+function minArrayElem<T>(arr: Array<T>): T {
   return arr.reduce((min, cur) => (cur < min ? cur : min), arr[0]);
 }
 
-function toAbsolute(value: string | undefined, upper: number) {
+function toAbsolute(value: string | undefined, upper: number): number {
   if (value === undefined || upper === undefined) {
     return 0;
   }
@@ -711,5 +717,5 @@ function toAbsolute(value: string | undefined, upper: number) {
       return (Number(components[0]) / 100) * upper;
     }
   }
-  return value;
+  return Number(value);
 }

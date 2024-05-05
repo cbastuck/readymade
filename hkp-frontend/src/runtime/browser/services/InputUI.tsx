@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import { ServiceInstance, ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
 import { State as ServiceState, InputMode } from "./Input";
@@ -28,10 +28,8 @@ export default function InputUI(props: ServiceUIProps) {
 
   const onInit = (initialState: ServiceState) => update(initialState);
 
-  const onNotification = (
-    _: ServiceInstance,
-    notification: Partial<ServiceState>
-  ) => update(notification);
+  const onNotification = (notification: Partial<ServiceState>) =>
+    update(notification);
 
   const modeOptions: Array<InputMode> = ["eventsource", "websocket"];
 

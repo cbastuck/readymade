@@ -29,7 +29,7 @@ export default class AggregatorUI extends Component<ServiceUIProps, State> {
     });
   };
 
-  onNotification = async (_service: ServiceInstance, notification: any) => {
+  onNotification = async (notification: any) => {
     if (needsUpdate(notification.property, this.state.property)) {
       this.setState({ property: notification.property });
     }

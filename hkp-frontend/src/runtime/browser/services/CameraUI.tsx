@@ -1,7 +1,7 @@
 import { Component } from "react";
 import { Video, VideoOff, FlipHorizontal } from "lucide-react";
 
-import { ServiceInstance, ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
 import NumberInput from "@/ui-components/NumberInput";
@@ -35,14 +35,14 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
     this.stopVideo();
   }
 
-  onInit = (service: ServiceInstance) => {
-    service.registerScreenshooter(this.triggerScreenshot);
+  onInit = (initialState: any) => {
+    this.props.service.registerScreenshooter(this.triggerScreenshot);
     this.setState({
-      ...(service as any),
+      ...initialState,
     });
   };
 
-  onNotification = (_service: ServiceInstance, notification: any) => {
+  onNotification = (notification: any) => {
     if (needsUpdate(notification.captureFormat, this.state.captureFormat)) {
       this.setState({ captureFormat: notification.captureFormat });
     }

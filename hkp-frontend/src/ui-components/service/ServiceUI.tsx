@@ -9,9 +9,10 @@ type Props = ServiceUIProps & {
   children: ReactElement;
   initialSize?: Size;
   className?: string;
+  dropShadowOnHover?: boolean;
   onInit?: (initialState: any) => void;
-  onTimer?: (_: ServiceInstance) => void;
-  onNotification?: (_: ServiceInstance, notification: any) => void;
+  onTimer?: () => void;
+  onNotification?: (notification: any) => void;
   onResize?: (svc: ServiceInstance, size: Size) => void;
 };
 
@@ -24,6 +25,7 @@ export default function ServiceUI({
   draggable,
   className = "",
   customMenuEntries,
+  dropShadowOnHover = false,
   resizable = true,
   frameless = false,
   onInit,
@@ -50,7 +52,7 @@ export default function ServiceUI({
 
   useEffect(() => {
     if (onTimer) {
-      const t = setInterval(() => onTimer(service), 1000);
+      const t = setInterval(() => onTimer(), 1000);
       return () => clearInterval(t);
     }
   }, [onTimer, service]);
@@ -63,6 +65,7 @@ export default function ServiceUI({
       draggable={!!draggable}
       showBypassOnlyIfExplicit={showBypassOnlyIfExplicit}
       customMenuEntries={customMenuEntries}
+      dropShadowOnHover={dropShadowOnHover}
     >
       <Resizable
         initialSize={initialSize}

@@ -93,7 +93,7 @@ export default function How() {
         <Date isUpdate month="February" day="8" year="2024" size={10} />
 
         <HStack gap="20px">
-          <TemplateButton to="/docs/pitch/why" label="< why?" />
+          <TemplateButton to="/docs/scope/why" label="< why?" />
           <TemplateButton to="/examples" label="examples" />
           <TemplateButton to="/welcome/pitch" label="pitch >" />
         </HStack>

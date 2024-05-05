@@ -22,7 +22,7 @@ export class GithubSinkUI extends Component {
     this.setState({ token, owner, repo, branch, file });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { token, user, owner, repo, branch, file } = notification;
     if (token) {
       this.setState({ token });

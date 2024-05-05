@@ -25,7 +25,7 @@ export class SpotifyUI extends Component {
     }
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { token, profile } = notification;
     if (token !== undefined) {
       this.setState({ token });

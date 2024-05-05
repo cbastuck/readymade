@@ -546,6 +546,7 @@ export default class Board extends Component<Props, State> {
           outputs={outputs}
           inputs={inputs}
           headless={this.props.headless}
+          highlightServicesOnHover={true}
         />
       </DragProvider>
     );

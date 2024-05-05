@@ -49,8 +49,7 @@ function CloudSourceUI(props: Props) {
   );
 
   const onNotification = useCallback(
-    (_service: CloudSource, notification: Partial<Config>) =>
-      onUpdate(notification),
+    (notification: Partial<Config>) => onUpdate(notification),
     [onUpdate]
   );
 

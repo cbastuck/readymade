@@ -4,10 +4,10 @@ import SandboxFrame from "../../components/SandboxFrame";
 
 import NavigateButton from "../NavigateButton";
 
-export default function VisualisationPage() {
+export default function ExperimentPage() {
   const [visualisationFinished, setVisualisationFinished] = useState(false);
   return (
-    <div style={{ height: "100%", width: "50%", margin: "0px auto" }}>
+    <div className="flex flex-col h-full w-[50%] mx-auto">
       <SandboxFrame
         title="Hookup Visualisation"
         src="/boards/visualisation.json"
@@ -24,7 +24,7 @@ export default function VisualisationPage() {
       />
       {visualisationFinished && (
         <div className="fade-in-linear">
-          <NavigateButton destination="/examples" text="Examples" />
+          <NavigateButton destination="/examples" text="Show more Examples" />
         </div>
       )}
     </div>

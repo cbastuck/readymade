@@ -20,17 +20,17 @@ export default function MissionPage() {
           {
             q: "What",
             a: "An attempt to lower access barriers and play with technology",
-            href: "/docs/pitch/what",
+            href: "/docs/scope/what",
           },
           {
             q: "Why",
             a: "Technology is an enabler for creativity, inspiration and thinking",
-            href: "/docs/pitch/why",
+            href: "/docs/scope/why",
           },
           {
             q: "How",
             a: "Build abstractions that seamlessly connect data, logic, devices and services",
-            href: "/docs/pitch/how",
+            href: "/docs/scope/how",
           },
           {
             a: (
@@ -41,9 +41,11 @@ export default function MissionPage() {
           <div key={xi} className="m-5" style={{ textAlign: "center" }}>
             <div style={{ textAlign: "center" }} className={`fade-in-${xi}`}>
               {x.q && (
-                <h1 style={{ color: "454f6d", paddingBottom: 5 }}>
-                  <Link to={x.href}>{x.q}</Link>
-                </h1>
+                <h2 style={{ color: "454f6d", paddingBottom: 5 }}>
+                  <Link className="hover:no-underline" to={x.href}>
+                    {x.q}
+                  </Link>
+                </h2>
               )}
               <div
                 className="home-title text-lg font-serif-wet my-4"

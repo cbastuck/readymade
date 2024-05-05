@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import Button from "@/ui-components/Button";
 import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -8,24 +8,11 @@ type NavButtonProps = {
   style?: CSSProperties;
 };
 
-export default function TemplateButton({
-  to,
-  label,
-  style: styleOverride = {},
-}: NavButtonProps) {
+export default function TemplateButton({ to, label }: NavButtonProps) {
   const navigate = useNavigate();
-  const style = {
-    fontSize: 14,
-    border: "1px solid darkgray",
-    color: "white",
-    backgroundColor: "#454f6d",
-    width: "100%",
-    whiteSpace: "nowrap",
-    ...styleOverride,
-  };
   return (
-    <div style={{ textAlign: "center", width: "100%", margin: "10px 0px" }}>
-      <Button className="" style={style} onClick={() => navigate(to)}>
+    <div className="w-full mx-1">
+      <Button className="w-full py-6" onClick={() => navigate(to)}>
         {label ? label : "Next"}
       </Button>
     </div>

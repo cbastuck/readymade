@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Trash, Plus } from "lucide-react";
 
-import { ServiceInstance, ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
 import { Button } from "@/components/ui/button";
@@ -42,8 +42,7 @@ export default function MapUI(props: ServiceUIProps) {
 
   const onInit = (initialState: any) => updateState(initialState);
 
-  const onNotification = (_service: ServiceInstance, notification: any) =>
-    updateState(notification);
+  const onNotification = (notification: any) => updateState(notification);
 
   const onNewProperty = () => {
     const newKey = "key";

@@ -25,7 +25,7 @@ export default function HackerUI(props: ServiceUIProps) {
     }
   };
 
-  const onNotification = (_service: ServiceInstance, notification: any) => {
+  const onNotification = (notification: any) => {
     if (needsUpdate(notification.healthStatus, healthStatus)) {
       setHealthStatus(notification.healthStatus);
     }

@@ -31,7 +31,7 @@ export default class PlaceholderUI extends Component {
     this.setState({ properties: this.extractProperties(initialState) });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { properties } = this.state;
     this.setState({
       properties: {

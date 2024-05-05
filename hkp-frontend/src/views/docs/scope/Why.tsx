@@ -51,8 +51,8 @@ export default function Why() {
         <Date isUpdate month="February" day="8" year="2024" size={10} />
 
         <HStack style={{ marginTop: "10px" }}>
-          <TemplateButton to="/docs/pitch/what" label="< what?" />
-          <TemplateButton to="/docs/pitch/how" label="how? >" />
+          <TemplateButton to="/docs/scope/what" label="< what?" />
+          <TemplateButton to="/docs/scope/how" label="how? >" />
         </HStack>
       </div>
     </Template>

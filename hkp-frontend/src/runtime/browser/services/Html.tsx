@@ -1,14 +1,19 @@
 import { useState } from "react";
 import { Checkbox } from "semantic-ui-react";
 
-import { AppImpl, ServiceClass, ServiceImpl } from "../../../types";
+import {
+  AppImpl,
+  ServiceClass,
+  ServiceImpl,
+  ServiceUIProps,
+} from "../../../types";
 import ServiceUI from "../../services/ServiceUI";
 import { t } from "../../../styles";
 
 const serviceId = "hookup.to/service/html";
 const serviceName = "Html";
 
-function HtmlUI(props: any) {
+function HtmlUI(props: ServiceUIProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [htmlDocument, setHtmlDocument] = useState("");
 
@@ -27,10 +32,10 @@ function HtmlUI(props: any) {
     updateState(config);
   };
 
-  const onNotification = (service: Html, notification: any) => {
+  const onNotification = (notification: any) => {
     updateState(notification);
 
-    if (notification.html && service.fullscreen) {
+    if (notification.html && props.service.fullscreen) {
       document.body.innerHTML = notification.html;
     }
   };

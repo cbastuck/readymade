@@ -28,7 +28,7 @@ function ArrayTransformUI(props: any) {
     updateState(config);
   };
 
-  const onNotification = (_service: ArrayTransform, notification: any) => {
+  const onNotification = (notification: any) => {
     updateState(notification);
   };
 

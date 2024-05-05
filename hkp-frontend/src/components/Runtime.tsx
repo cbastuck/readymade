@@ -48,6 +48,7 @@ type Props = {
   readonly?: boolean;
   expanded?: boolean;
   frameless?: boolean;
+  highlightServicesOnHover?: boolean;
 
   onResult: OnResult;
   onArrangeService?: (serviceUuid: string, position: number) => void;
@@ -349,6 +350,7 @@ export default class Runtime extends Component<Props, State> {
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
           onResult={this.props.onResult}
+          highlightServicesOnHover={this.props.highlightServicesOnHover}
         />
         {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
       </div>
@@ -392,6 +394,7 @@ export default class Runtime extends Component<Props, State> {
           onArrangeService={onArrangeService}
           onServiceAction={this.onServiceAction}
           onResult={onResult}
+          highlightServicesOnHover={this.props.highlightServicesOnHover}
         />
         {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
         {outputs && expanded ? <div className="ml-auto">{outputs}</div> : false}

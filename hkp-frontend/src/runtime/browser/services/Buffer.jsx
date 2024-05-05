@@ -21,7 +21,7 @@ export class BufferUI extends Component {
     });
   };
 
-  onNotification = async (service, notification) => {
+  onNotification = async (notification) => {
     const items = await service.configure({ action: "getBuffer" });
     this.setState({ items });
   };

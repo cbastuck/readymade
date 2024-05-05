@@ -15,7 +15,7 @@ class ReceiverUI extends Component {
 
   onInit = (initial) => {};
 
-  onNotification = (service, notification) => {};
+  onNotification = (notification) => {};
 
   renderMain = () => {
     const { wall, id } = this.state;

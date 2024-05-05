@@ -38,18 +38,24 @@ export default class XYPadUI extends Component<ServiceUIProps> {
 
   onInit = (_initialState: any) => {};
 
-  onNotification = async (_service: ServiceInstance, _notification: any) => {};
+  onNotification = async (_notification: any) => {};
 
-  getRelativePosition = (e: DragEvent | TouchEvent) => {
+  getRelativePosition = (e: any) => {
     //const { clientX, clientY } = e.type.includes("drag") ? e : e.targetTouches[0];
     const { clientX, clientY } = e.targetTouches ? e.targetTouches[0] : e;
     return {
-      x: Math.min(Math.max(0, clientX - this.padRect.x), this.padRect.width),
-      y: Math.min(Math.max(0, clientY - this.padRect.y), this.padRect.height),
+      x: Math.min(
+        Math.max(0, clientX - this.padRect!.x),
+        Number(this.padRect!.width!)
+      ),
+      y: Math.min(
+        Math.max(0, clientY - this.padRect!.y),
+        Number(this.padRect!.height!)
+      ),
     };
   };
 
-  onPanStart = (e) => {
+  onPanStart = (e: any) => {
     //e.dataTransfer.setDragImage(e.target, 0, 0);
     const { clientX, clientY } = e.type.includes("drag")
       ? e
@@ -72,8 +78,8 @@ export default class XYPadUI extends Component<ServiceUIProps> {
 
     this.setState({
       dragging: false,
-      x: dropPos.x - this.pickOffset.x,
-      y: dropPos.y - this.pickOffset.y,
+      x: dropPos.x - (this.pickOffset?.x || 0),
+      y: dropPos.y - (this.pickOffset?.y || 0),
     });
     this.pickOffset = null;
     e.preventDefault();
@@ -83,8 +89,8 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     const touchPos = this.getRelativePosition(e);
     if (
       (touchPos.x !== this.lastPos.x || touchPos.y !== this.lastPos.y) &&
-      touchPos.x <= this.padRect.width &&
-      touchPos.y <= this.padRect.height
+      touchPos.x <= Number(this.padRect!.width!) &&
+      touchPos.y <= Number(this.padRect!.height!)
     ) {
       this.updateService(service, touchPos);
       this.lastPos = touchPos;
@@ -105,8 +111,14 @@ export default class XYPadUI extends Component<ServiceUIProps> {
 
   updateService = (service: ServiceInstance, clickPos: Point) => {
     const normalizedClickPos = {
-      x: Math.min(clickPos.x / this.padRect.width, this.padRect.width),
-      y: Math.min(clickPos.y / this.padRect.height, this.padRect.height),
+      x: Math.min(
+        clickPos.x / Number(this.padRect!.width),
+        Number(this.padRect!.width)
+      ),
+      y: Math.min(
+        clickPos.y / Number(this.padRect!.height),
+        Number(this.padRect!.height)
+      ),
     };
     service.configure({
       position: normalizedClickPos,

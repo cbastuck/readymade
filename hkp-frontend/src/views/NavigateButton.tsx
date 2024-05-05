@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import Button from "@/ui-components/Button";
 import { useNavigate } from "react-router-dom";
 
 type Props = {
@@ -26,7 +26,7 @@ export default function NavigateButton({
 
   return (
     <Button
-      className="bg-accent text-white font-sans tracking-widest text-xl"
+      className="text-xl "
       style={{ width, backgroundColor: color }}
       onClick={onClick}
     >

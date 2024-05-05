@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 
-import { ServiceInstance, ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "@/types";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
@@ -75,8 +75,7 @@ export default function TimerUI(props: ServiceUIProps) {
     }
   };
 
-  const onNotification = (_: ServiceInstance, notification: any) =>
-    update(notification);
+  const onNotification = (notification: any) => update(notification);
 
   const onInit = (initialState: any) => update(initialState);
 

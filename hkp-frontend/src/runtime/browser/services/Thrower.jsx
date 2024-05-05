@@ -20,7 +20,7 @@ class ThrowerUI extends Component {
     });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { pushUrl } = notification;
     if (pushUrl !== undefined) {
       this.setState({ pushUrl });

@@ -113,6 +113,7 @@ export type ServiceUIProps = {
   draggable?: boolean;
   resizable?: boolean;
   frameless?: boolean;
+  dropShadowOnHover?: boolean;
   customMenuEntries?: Array<CustomMenuEntry>;
   onServiceAction: (command: ServiceAction) => void;
 };
@@ -181,7 +182,7 @@ export type AppInstance = AppImpl;
 
 export type AppImpl = {
   getAuthenticatedUser: () => User | null;
-  notify: (svc: ServiceImpl, notification: any) => void; // TODO: should be InstanceId instead of ServiceImpl
+  notify: (svc: InstanceId, notification: any) => void; // TODO: should be InstanceId instead of ServiceImpl
   next: (svc: InstanceId | null, result: any) => void;
   getServiceById: (uuid: string) => ServiceImpl | null;
   sendAction: (action: ServiceAction) => void;
@@ -199,11 +200,11 @@ export type AppImpl = {
   // TODO: should be available for both Brower and Remote runtime
   registerNotificationTarget?: (
     svc: ServiceInstance,
-    onNotification: (svc: ServiceInstance, notification: any) => void
+    onNotification: (notification: any) => void
   ) => void;
   unregisterNotificationTarget?: (
     svc: ServiceInstance,
-    onNotification: (svc: ServiceInstance, notification: any) => void
+    onNotification: (notification: any) => void
   ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
 };

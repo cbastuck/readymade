@@ -37,7 +37,7 @@ export default class IngressUI extends Component {
     });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { url, isPublic, active } = notification;
 
     if (url !== undefined) {

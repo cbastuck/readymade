@@ -29,7 +29,7 @@ class DownloaderUI extends Component {
     });
   };
 
-  onNotification = (service, notification) => {
+  onNotification = (notification) => {
     const { running } = notification;
     if (running !== undefined) {
       this.setState({ running });
