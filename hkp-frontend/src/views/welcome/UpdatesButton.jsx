@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 
 import "./UpdatesButton.css";
 

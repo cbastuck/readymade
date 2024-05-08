@@ -326,7 +326,7 @@ export default class Runtime extends Component<Props, State> {
     const boardName = boardContext && boardContext.boardName;
     const registry =
       runtime && boardContext && boardContext.registry[runtime.id];
-    console.log("RUNTIME WITH REGISTYR", registry);
+
     const appViewMode = boardContext && boardContext.appContext?.appViewMode;
     const wide = boardContext ? appViewMode === "wide" : true;
 

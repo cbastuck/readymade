@@ -1,7 +1,7 @@
 import { ReactElement } from "react";
-import { TableCell, TableRow } from "@/components/ui/table";
+import { TableCell, TableRow } from "@/ui-components/primitives/table";
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/ui-components/primitives/badge";
 
 import moment from "moment";
 

@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 
 import { localStoragePrefix, getLocalBoards } from "./common";
-import { s, t } from "../../styles";
-import BoardCollection from "../../components/BoardCollection";
+
 import { SavedBoard } from "../../types";
+import Search from "@/components/BoardCollection/Search";
+import BoardTable from "@/ui-components/BoardTable";
 
 export default function LoadPanel() {
+  const [filter, setFilter] = useState("");
   const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
   useEffect(() => setSavedBoards(getLocalBoards(localStoragePrefix)), []);
 
@@ -14,12 +16,18 @@ export default function LoadPanel() {
   }
 
   return (
-    <div style={s(t.m(0, 20))}>
-      <BoardCollection
-        headline="Saved on this browser"
-        items={savedBoards}
-        renderBorder={false}
-      />
+    <div className="flex flex-col w-full h-full">
+      <div className="flex items-center">
+        <h2>Local Boards</h2>
+        <div className="ml-auto">
+          <Search
+            filter={filter}
+            onChange={(newFilter) => setFilter(newFilter)}
+          />
+        </div>
+      </div>
+
+      <BoardTable boards={savedBoards} className="h-[300px] border" />
     </div>
   );
 }

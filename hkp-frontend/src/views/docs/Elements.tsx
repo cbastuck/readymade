@@ -1,5 +1,7 @@
 import { CSSProperties } from "react";
 
+import TextComp from "@/ui-components/Text";
+
 type ParagraphProps = {
   children: string | string[];
   brief: string;
@@ -11,7 +13,7 @@ export function Paragraph({ children, brief, headline }: ParagraphProps) {
     <div style={{ margin: "20px 0px" }}>
       {headline && <h3> {headline}</h3>}
       {brief}
-      <div style={{ marginLeft: 20 }}>{children}</div>
+      <TextComp className="ml-[20px]">{children}</TextComp>
     </div>
   );
 }
@@ -55,9 +57,5 @@ export function Text({ children }: TextProps) {
     textTransform: "none",
     fontSize: 16,
   };
-  return (
-    <div className="" style={style}>
-      {children}{" "}
-    </div>
-  );
+  return <TextComp style={style}>{children}</TextComp>;
 }

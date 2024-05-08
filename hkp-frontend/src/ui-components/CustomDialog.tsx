@@ -1,4 +1,4 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/ui-components/primitives/dialog";
 import { ReactElement } from "react";
 
 type Props = {

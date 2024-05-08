@@ -6,13 +6,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/ui-components/primitives/table";
 import { Trash, Plus } from "lucide-react";
 
 import { ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 import GroupLabel from "@/ui-components/GroupLabel";
 import RadioGroup from "@/ui-components/RadioGroup";
 import SubmittableInput from "@/ui-components/SubmittableInput";

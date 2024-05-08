@@ -1,16 +1,16 @@
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/ui-components/primitives/dialog";
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/ui-components/primitives/popover";
 
 import { RuntimeClass } from "@/types";
 
 import NewRuntimePanel from "./NewRuntimePanel";
 import ExistingRuntimesPanel from "./ExistingRuntimesPanel";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 import { useState } from "react";
 
 type Props = {

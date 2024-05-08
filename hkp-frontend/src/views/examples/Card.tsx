@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
-import { Image } from "semantic-ui-react";
 
+import Image from "@/ui-components/Image";
 import { ExampleDescriptor } from "./types";
 import { s, t } from "../../styles";
 
@@ -19,51 +19,46 @@ export default function Card({ example }: Props) {
         height: "min-content",
       })}
     >
-      <div style={{ ...fontStyle, padding: 10 }}>
-        <Link
-          key={`example-link-${example.title}`}
-          to={`/example/sandbox?url=${example.url}`}
-        >
-          <div>
-            <Image
-              floated="right"
-              src={example.image}
-              style={{ marginTop: 3, marginRight: 15, width: 20 }}
-            />
-            <div
-              className="tracking-wider"
-              style={{
-                marginTop: 3,
-                textAlign: "left",
-                color: "#4183c4",
-              }}
-            >
-              <h4>{example.title}</h4>
-            </div>
-            <div
-              className="tracking-wide font-sans"
-              style={{
-                margin: "5px 0px",
-                textAlign: "left",
-              }}
-            >
-              {example.brief}
-            </div>
-            <div
-              style={{
-                marginTop: 10,
-              }}
-            >
-              <div className="font-serif tracking-wider" style={s(t.tl)}>
-                {Array.isArray(example.description)
-                  ? example.description.map((d, idx) => (
-                      <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
-                    ))
-                  : example.description}
-              </div>
+      <div className="p-4" style={fontStyle}>
+        <div className="flex items-end">
+          <div
+            className="tracking-wider"
+            style={{
+              marginTop: 3,
+              textAlign: "left",
+              color: "#4183c4",
+            }}
+          >
+            <h4>
+              <Link
+                className="color-red-100"
+                key={`example-link-${example.title}`}
+                to={`/example/sandbox?url=${example.url}`}
+              >
+                {example.title}
+              </Link>
+            </h4>
+          </div>
+          <Image className="ml-auto mx-1" src={example.image} size={20} />
+        </div>
+        <div>
+          <div className="tracking-wide font-sans text-left">
+            {example.brief}
+          </div>
+          <div
+            style={{
+              marginTop: 10,
+            }}
+          >
+            <div className="font-serif tracking-wider" style={s(t.tl)}>
+              {Array.isArray(example.description)
+                ? example.description.map((d, idx) => (
+                    <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
+                  ))
+                : example.description}
             </div>
           </div>
-        </Link>
+        </div>
       </div>
     </div>
   );

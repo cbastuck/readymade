@@ -12,8 +12,8 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
+} from "@/ui-components/primitives/accordion";
+import { Button } from "@/ui-components/primitives/button";
 
 const defaultInput = "multiplex";
 const defaultOutput = "array";

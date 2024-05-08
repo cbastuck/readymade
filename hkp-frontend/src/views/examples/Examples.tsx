@@ -10,7 +10,7 @@ import Header from "./Header";
 
 export default function Examples() {
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col ">
       <Toolbar />
       <div style={{ marginTop: 20 }}>
         <Header />

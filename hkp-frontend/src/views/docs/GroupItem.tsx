@@ -1,6 +1,8 @@
 import { CSSProperties } from "react";
 import { Item } from "semantic-ui-react";
 
+import Text from "@/ui-components/Text";
+
 type Props = {
   title: string;
   details: string[];
@@ -29,12 +31,6 @@ export default function GroupItem(item: Props) {
             fontWeight: "thin",
           }}
         >
-          {/*
-          TODO: Documentation for building blocks
-          <Link to={`/docs/buildingblock/${item.title.toLowerCase()}`}>
-            {item.title}
-        </Link>
-        */}
           <span style={{ cursor: "initial", color: "#4183c4", fontSize: 14 }}>
             {item.title}
           </span>
@@ -43,16 +39,17 @@ export default function GroupItem(item: Props) {
       <Item.Content style={{ marginLeft: 10 }}>
         <Item.Description>
           {item.details.map((detail, idx) => (
-            <div
+            <Text
               key={`detail-${item.title}-${idx}`}
               style={{
                 fontSize: 14,
                 cursor: "default",
                 letterSpacing: 1,
               }}
+              yMargin={0}
             >
               {detail}
-            </div>
+            </Text>
           ))}
         </Item.Description>
       </Item.Content>

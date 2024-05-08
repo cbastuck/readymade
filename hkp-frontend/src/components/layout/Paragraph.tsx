@@ -1,8 +1,8 @@
-import { CSSProperties, ReactNode } from "react";
+import Text from "@/ui-components/Text";
+import { CSSProperties, ReactElement } from "react";
 
 type Props = {
-  children: ReactNode;
-
+  children: ReactElement;
   width?: string;
   headline?: string;
   style?: CSSProperties;
@@ -18,7 +18,7 @@ export default function Paragraph({ width, headline, children, style }: Props) {
       }}
     >
       {headline && <h2>{headline}</h2>}
-      <div style={{ margin: "20px 0px" }}>{children}</div>
+      <Text className="mt-[20px]">{children}</Text>
     </div>
   );
 }

@@ -1,8 +1,12 @@
 import { useRef } from "react";
-import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+} from "@/ui-components/primitives/dialog";
 
 import Editor from "@/components/shared/Editor/index";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 
 type Action = { label: string; onAction: (buf: string) => void };
 type Props = {

@@ -2,19 +2,19 @@ import { useState } from "react";
 import { ChevronsUpDown, Settings } from "lucide-react";
 import { CommandGroup, CommandList } from "cmdk";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 import {
   Command,
   CommandEmpty,
   CommandInput,
   CommandItem,
   CommandSeparator,
-} from "@/components/ui/command";
+} from "@/ui-components/primitives/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
+} from "@/ui-components/primitives/popover";
 import { RuntimeClass } from "@/types";
 import ManageRuntimesDialog from "./ManageRuntimesDialog";
 

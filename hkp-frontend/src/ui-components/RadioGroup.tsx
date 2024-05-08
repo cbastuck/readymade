@@ -1,8 +1,8 @@
-import { Label } from "@/components/ui/label";
+import { Label } from "@/ui-components/primitives/label";
 import {
   RadioGroup as RadioGroupCN,
   RadioGroupItem,
-} from "@/components/ui/radio-group";
+} from "@/ui-components/primitives/radio-group";
 import GroupLabel from "./GroupLabel";
 
 type Props = {

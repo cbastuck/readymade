@@ -1,5 +1,16 @@
-import { Button as ButtonCN, ButtonProps } from "@/components/ui/button";
+import {
+  Button as ButtonCN,
+  ButtonProps,
+} from "@/ui-components/primitives/button";
+import { ReactElement } from "react";
 
-export default function Button(props: ButtonProps) {
-  return <ButtonCN variant="outline" {...props} />;
+type Props = ButtonProps & {
+  icon?: ReactElement;
+};
+export default function Button(props: Props) {
+  return (
+    <ButtonCN variant="outline" {...props}>
+      {props.icon ? props.icon : props.children}
+    </ButtonCN>
+  );
 }

@@ -12,7 +12,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
 import { AppCtx } from "@/AppContext";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,7 +20,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
 
 type Props = {
@@ -59,11 +59,11 @@ export default function AppMenu({ isCompact }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost">
+        <Button variant="ghost" className="mt-1">
           <Menu strokeWidth={1} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 mx-[10px]">
+      <DropdownMenuContent className="w-56 mx-4">
         {isCompact && (
           <>
             <DropdownMenuGroup>

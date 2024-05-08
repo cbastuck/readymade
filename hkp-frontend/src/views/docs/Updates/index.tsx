@@ -5,8 +5,9 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/ui-components/primitives/table";
 
+import Text from "@/ui-components/Text";
 import NewsItem from "./NewsItem";
 
 import Template from "../../Template";
@@ -26,28 +27,28 @@ export default function Updates() {
           <NewsItem
             date="15.3.2024"
             content={
-              <div>
+              <Text>
                 Added pages: <a href="/docs">Blog Articles</a> and{" "}
                 <a href="/engage">Engage</a>
-              </div>
+              </Text>
             }
           />
           <NewsItem
             date="23.2.2024"
             content={
-              <div>
+              <Text>
                 Introduced the initial concept of BoardService, a service
                 designed to encapsulate entire boards, enabling the composition
                 of logic through nested boards. Each board serves as a reusable
                 building block within any arbitrary pipeline.
-              </div>
+              </Text>
             }
           />
           <NewsItem
             date="23.2.2024"
             type="fixed"
             content={
-              <div>
+              <Text>
                 Peering functionality down
                 <div>
                   The introduction of support for remote runtimes led to a
@@ -58,21 +59,23 @@ export default function Updates() {
                     updated configuration.
                   </div>
                 </div>
-              </div>
+              </Text>
             }
           />
           <NewsItem
             date="5.2.2024"
-            content={<div>Introduced typewriter style.</div>}
+            content={<Text>Introduced typewriter style.</Text>}
           />
           <NewsItem
             date="7.1.2024"
-            content={<div>Major overhaul and support for remote runtimes.</div>}
+            content={
+              <Text>Major overhaul and support for remote runtimes.</Text>
+            }
           />
           <NewsItem
             date="30.10.2022"
             content={
-              <div>
+              <Text>
                 <div>
                   <Link to="/docs/tracks/bridge">Bridge </Link>
                   <div>
@@ -87,13 +90,13 @@ export default function Updates() {
                     demonstrating the Bridge API.
                   </div>
                 </div>
-              </div>
+              </Text>
             }
           />
           <NewsItem
             date="24.7.2022"
             content={
-              <div>
+              <Text>
                 <div>
                   <Link to="/docs/proto/spotty"> Spotty</Link>
                   <div>
@@ -105,35 +108,35 @@ export default function Updates() {
                   Added <Link to="/docs/tracks/brand"> single dot symbol</Link>{" "}
                   as favicon and smallest logo version.
                 </div>
-              </div>
+              </Text>
             }
           />
           <NewsItem
             date="25.6.2022"
             content={
-              <div>
+              <Text>
                 <Link to="/docs"> Documentation</Link>,{" "}
                 <Link to="/docs/tracks/brand">Brand</Link> side-track and merge
                 <Link to="/examples"> Examples </Link> with showcases.
-              </div>
+              </Text>
             }
           />
           <NewsItem
             date="24.6.2022"
             content={
-              <div>
+              <Text>
                 <Link to="/docs/scope/what"> What - Why - How </Link> of Hookup.
-              </div>
+              </Text>
             }
           />
           <NewsItem
             date="24.2.2022"
             content={
-              <div>
+              <Text>
                 Updates Section / Fix{" "}
                 <Link to="/service/trigger-pad">TriggerPad</Link> for touch
                 devices.
-              </div>
+              </Text>
             }
           />
         </TableBody>

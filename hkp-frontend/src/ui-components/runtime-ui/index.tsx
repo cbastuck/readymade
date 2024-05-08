@@ -37,7 +37,6 @@ export default function RuntimeUI({
     backgroundColor: !frameless ? "#EEEEEE10" : undefined,
   };
 
-  console.log("REDER HEADER WITH REGISTRy", registry);
   return (
     <div style={style}>
       <RuntimeHeader

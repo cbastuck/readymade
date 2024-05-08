@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 import {
   Dialog,
   DialogContent,
@@ -6,9 +6,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@/ui-components/primitives/dialog";
+import { Input } from "@/ui-components/primitives/input";
+import { Label } from "@/ui-components/primitives/label";
 import { useState } from "react";
 
 type Props = {

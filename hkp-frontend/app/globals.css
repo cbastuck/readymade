@@ -84,9 +84,6 @@
   body {
     @apply bg-background text-paragraph-color;
   }
-  p {
-    @apply text-paragraph-color leading-[1.5rem] tracking-[1.6px] text-base;
-  }
   h1 {
     @apply font-sans text-headline-color text-3xl tracking-[6pt];
   }

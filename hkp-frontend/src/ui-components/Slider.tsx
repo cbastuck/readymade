@@ -1,6 +1,6 @@
-import { Label } from "@/components/ui/label";
+import { Label } from "@/ui-components/primitives/label";
 import Select from "@/ui-components/Select";
-import { Slider as SliderCN } from "@/components/ui/slider";
+import { Slider as SliderCN } from "@/ui-components/primitives/slider";
 import PropertyLabel from "./GroupLabel";
 
 type Props = {

@@ -19,9 +19,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/ui-components/primitives/dropdown-menu";
 import { RuntimeDescriptor } from "@/types";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 import MenuIcon from "../MenuIcon";
 
 type Props = {

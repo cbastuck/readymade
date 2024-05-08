@@ -1,5 +1,3 @@
-import { Card as SCard } from "semantic-ui-react";
-
 import Card from "./Card";
 import { ExampleDescriptor } from "./types";
 
@@ -9,10 +7,10 @@ type Props = {
 
 export default function CardContainer({ examples = [] }: Props) {
   return (
-    <SCard.Group style={{ width: "100%" }}>
+    <div className="flex w-full flex-wrap">
       {examples.map((ex) => (
         <Card key={ex.url} example={ex} />
       ))}
-    </SCard.Group>
+    </div>
   );
 }

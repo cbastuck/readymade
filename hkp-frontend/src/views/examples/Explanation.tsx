@@ -1,7 +1,9 @@
 import { useState } from "react";
+
 import Modal from "../../components/Modal";
 import ServiceReference from "../../components/ServiceReference";
 import DataModelReference from "../../components/DataModelReference";
+import Text from "@/ui-components/Text";
 import { s, t } from "../../styles";
 
 type Props = {
@@ -54,7 +56,7 @@ export default function Explanation({ value: explanation }: Props) {
       })}
     >
       {assureArray(explanation).map((exp, eidx) => (
-        <div key={`explanation-${eidx}`} style={{ marginTop: 3 }}>
+        <Text key={`explanation-${eidx}`} style={{ marginTop: 3 }}>
           {Array.from(tokenize(exp)).map((p, idx) =>
             typeof p === "string" ? (
               <span key={`example-explanation-part-${idx}`}>{p}</span>
@@ -72,7 +74,7 @@ export default function Explanation({ value: explanation }: Props) {
               </span>
             )
           )}
-        </div>
+        </Text>
       ))}
       <Modal
         title={title || ""}

@@ -1,4 +1,4 @@
-import { Input as InputCN } from "@/components/ui/input";
+import { Input as InputCN } from "@/ui-components/primitives/input";
 import PropertyLabel from "./GroupLabel";
 import { ReactElement } from "react";
 

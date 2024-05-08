@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 
 import {
   Table,
@@ -7,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
+} from "@/ui-components/primitives/table";
 
 import {
   DropdownMenu,
@@ -16,7 +16,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/ui-components/primitives/dropdown-menu";
 
 import { RuntimeClass } from "@/types";
 import { MoreHorizontal } from "lucide-react";

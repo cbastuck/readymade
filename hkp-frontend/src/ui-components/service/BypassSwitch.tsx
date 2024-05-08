@@ -17,15 +17,15 @@ export default function BypassSwitch({ bypass, disabled, onChange }: Props) {
   const Icon = bypass ? PowerOff : Power;
   return (
     <Button
-      className="border-none hover:bg-sky"
+      className="border-none hover:bg-sky h-min w-min"
       disabled={disabled}
       onClick={() => onChange(!bypass)}
     >
       {disabled ? (
-        <div className="mt-6 mr-1" style={{ width: 18 }} />
+        <div className="mt-6 mr-1" style={{ width: "18px" }} />
       ) : (
         <Icon
-          size={18}
+          size="18px"
           className={`mt-6 mr-1 w-min h-min ${hoverIconColor} ${iconColor}`}
           name="power off"
         />

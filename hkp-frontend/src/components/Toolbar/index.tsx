@@ -1,5 +1,4 @@
 import { useContext } from "react";
-import { Menu } from "semantic-ui-react";
 
 import { BoardCtx } from "../../BoardContext";
 
@@ -37,6 +36,7 @@ export default function Toolbar({
       }}
     >
       <div
+        className="bg-white"
         style={{
           marginTop: 0,
           marginBottom: 5,
@@ -45,12 +45,7 @@ export default function Toolbar({
           borderTop: "1px solid #ddd",
         }}
       >
-        <Menu
-          style={{
-            boxShadow: "none",
-            border: "none",
-          }}
-        >
+        <div className="w-full flex">
           <HomeIcon />
           <BoardMenu />
 
@@ -76,7 +71,7 @@ export default function Toolbar({
 
           {!isCompact && <NavigationBar />}
           <AppMenu isCompact={isCompact} />
-        </Menu>
+        </div>
       </div>
     </div>
   );

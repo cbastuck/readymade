@@ -7,7 +7,7 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
+} from "@/ui-components/primitives/navigation-menu";
 import { cn } from "@/ui-components";
 import { BoardCtx } from "@/BoardContext";
 import EditorDialog from "../EditorDialog";

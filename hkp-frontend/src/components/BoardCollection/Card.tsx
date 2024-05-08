@@ -1,10 +1,12 @@
+import { ReactElement } from "react";
 import { Link } from "react-router-dom";
-import { Image, Icon, Button } from "semantic-ui-react";
+import Image from "@/ui-components/Image";
+import { Github } from "lucide-react";
 
 import Description from "./Description";
 import { SavedBoard, UsecaseDescriptor } from "../../types";
 import { s, t } from "../../styles";
-import { ReactElement } from "react";
+import Button from "@/ui-components/Button";
 
 export type Action = { name: string; icon: ReactElement };
 type Props = {
@@ -18,73 +20,75 @@ export default function Card({ value: item, actions, onAction }: Props) {
     item as UsecaseDescriptor;
   return (
     <div
-      className="hkp-card-border tracking-wider"
-      style={s(t.p10, {
-        minWidth: 200,
-        flex: 1,
-        margin: 10,
-        position: "relative",
-        maxHeight: "min-content",
-      })}
       key={`board-card-${name}`}
+      className="hkp-card-border tracking-wider flex flex-col p-6"
+      style={{
+        minWidth: 200,
+        margin: 10,
+      }}
     >
-      <div>
+      <div className="flex">
+        <h4>
+          {" "}
+          <Link key={`board-card-link-${name}`} to={url}>
+            {name}
+          </Link>
+        </h4>
         {!repo ? (
           <Image
-            floated="right"
             size="mini"
             src={image || "/assets/shutterstock_1196210650.png"}
-            style={{ marginTop: 3 }}
           />
         ) : (
-          <Image floated="right" size="mini" style={{ marginTop: 3 }}>
-            <a href={repo} target="_blank" rel="noreferrer">
-              <Icon size="large" name="github" />
-            </a>
-          </Image>
-        )}
-        <Link key={`board-card-link-${name}`} to={url}>
-          <div style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}>
-            <h4>{name}</h4>
-          </div>
-          {metadata && (
-            <div
-              className="font-sans"
-              style={{
-                margin: "5px 0px",
-                textAlign: "left",
-                textTransform: "capitalize",
-              }}
+          <div className="ml-auto border p-[2px] rounded-full border-sky-600">
+            <a
+              className="ml-auto hover:no-underline"
+              href={repo}
+              target="_blank"
+              rel="noreferrer"
             >
-              {metadata}
-            </div>
-          )}
-          <div style={{ marginTop: 10 }}>
-            <div className="font-serif" style={s(t.tl, t.nc)}>
-              <Description name={name} description={description} />
-            </div>
-            {actions && (
-              <div style={{ height: 30 }}>
-                <div style={{ position: "absolute", bottom: "10px" }}>
-                  {actions.map((action) => (
-                    <Button
-                      key={action.name}
-                      size="tiny"
-                      style={{ width: 40, backgroundColor: "white" }}
-                      compact
-                      onClick={(ev) => {
-                        onAction && onAction(action, item);
-                        ev.stopPropagation();
-                        ev.preventDefault();
-                      }}
-                      icon={action.icon}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
+              <Github size={16} />
+            </a>
           </div>
-        </Link>
+        )}
+      </div>
+
+      <div style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}>
+        {metadata && (
+          <div
+            className="font-sans"
+            style={{
+              margin: "5px 0px",
+              textAlign: "left",
+              textTransform: "capitalize",
+            }}
+          >
+            {metadata}
+          </div>
+        )}
+      </div>
+      <div style={{ marginTop: 10 }}>
+        <div className="font-serif" style={s(t.tl, t.nc)}>
+          <Description name={name} description={description} />
+        </div>
+        {actions && (
+          <div style={{ height: 30 }}>
+            <div style={{ position: "absolute", bottom: "10px" }}>
+              {actions.map((action) => (
+                <Button
+                  key={action.name}
+                  style={{ width: 40, backgroundColor: "white" }}
+                  onClick={(ev) => {
+                    onAction && onAction(action, item);
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                  }}
+                  icon={action.icon}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Input } from "@/ui-components/primitives/input";
+import { Label } from "@/ui-components/primitives/label";
 import { RuntimeClass } from "@/types";
 import { useState } from "react";
 

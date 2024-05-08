@@ -1,4 +1,4 @@
-import { Switch } from "@/components/ui/switch";
+import { Switch } from "@/ui-components/primitives/switch";
 
 type Props = {
   label: string;

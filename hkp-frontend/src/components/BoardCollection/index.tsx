@@ -38,13 +38,7 @@ export default function BoardCollection({
           marginBottom: "0px",
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            width: "100%",
-            padding: "15px 0px",
-          }}
-        >
+        <div className="flex w-full">
           {headline ? (
             <h2 className="w-full text-left">{headline}</h2>
           ) : (

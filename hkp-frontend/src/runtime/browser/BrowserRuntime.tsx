@@ -1,9 +1,5 @@
 import React, { Component, ReactElement } from "react";
-import { NativeEventSource, EventSourcePolyfill } from "event-source-polyfill";
 
-import { request } from "../../core/actions";
-import { isMultipartsResult, parseResponse } from "../MultiformParser";
-import { serializeWebsocketBuffer } from "../../core/format";
 import ServiceUiContainer from "../ServiceUiContainer";
 
 import {
@@ -17,22 +13,8 @@ import {
 import { findServiceUI } from "../../UIFactory";
 import { BoardCtx } from "../../BoardContext";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
-import {
-  configureService,
-  processService,
-  removeService,
-} from "./BrowserRuntimeApi";
+import { removeService } from "./BrowserRuntimeApi";
 import PlaceholderUI from "./services/PlaceholderUI";
-
-const EventSource = NativeEventSource || EventSourcePolyfill;
-
-type Command = {
-  action: string;
-  uuid: string;
-  params: any;
-  requestId: string | null;
-  config: any;
-};
 
 type Props = {
   scope: BrowserRuntimeScope;
@@ -156,8 +138,4 @@ export default class BrowserRuntime extends Component<Props, State> {
       />
     );
   }
-}
-
-function logInfo(_msg: string) {
-  // console.log(msg);
 }

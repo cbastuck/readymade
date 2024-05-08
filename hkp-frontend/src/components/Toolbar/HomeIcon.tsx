@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 
 import IconH from "./assets/hkp-single-dot-h.svg?react";
 

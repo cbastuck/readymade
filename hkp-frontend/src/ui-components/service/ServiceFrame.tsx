@@ -28,7 +28,7 @@ export default function ServiceFrame({
   showBypassOnlyIfExplicit,
   customMenuEntries,
   frameless = false,
-  dropShadowOnHover = false,
+  //dropShadowOnHover = false,
   onAction,
 }: Props) {
   const [frameCollapsed, setFrameCollapsed] = useState(false);
@@ -135,11 +135,12 @@ export default function ServiceFrame({
   if (frameless) {
     return children;
   }
-
+  // TODO: enabling drop shadow on hover leads to artifacts when opening service menu
+  const enableDropShadow = false ? "hover:drop-shadow-lg" : "";
   return (
     <div key={`service-frame-${uuid}`}>
       <div
-        className={`${dropShadowOnHover && "hover:drop-shadow-lg"}`}
+        className={enableDropShadow}
         style={s(t.unselectable, {
           transition: "filter 1s",
           border: "solid 1px lightgray",

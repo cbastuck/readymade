@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Input } from "semantic-ui-react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 import { Pen, X } from "lucide-react";
 
 type Props = {

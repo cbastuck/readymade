@@ -1,5 +1,4 @@
 import UpdatesButton from "./UpdatesButton";
-import NavigateButton from "../NavigateButton";
 
 import Switcher from "../../components/Switcher";
 

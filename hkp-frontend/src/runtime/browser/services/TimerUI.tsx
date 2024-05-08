@@ -5,7 +5,7 @@ import { ServiceUIProps } from "@/types";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
-import { Button } from "hkp-frontend/src/components/ui/button";
+import { Button } from "@/ui-components/primitives/button";
 import RadioGroup from "@/ui-components/RadioGroup";
 import Slider from "@/ui-components/Slider";
 import OneOfVisible from "@/ui-components/OneOfVisible";

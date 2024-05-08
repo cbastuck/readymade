@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { Item } from "semantic-ui-react";
 
+import Text from "@/ui-components/Text";
 import Sketch from "./Sketch";
 import Template from "../Template";
 import { s, t } from "../../styles";
@@ -54,8 +55,8 @@ export default function Quickstart() {
         />
       </div>
       <h1 style={s(t.tc, t.ls1, t.fs12, t.it, { color: "#4183c4" })}>
-        <span style={t.fs16}>Do.</span>
-        <span style={t.fs20}>Be curious.</span>
+        <span className="text-xl">Do. </span>
+        <span className="text-2xl">Be curious. </span>
         <a href="https://cbastuck.de" target="blank">
           <span className="text-3xl">Make.</span>
         </a>
@@ -75,18 +76,18 @@ export default function Quickstart() {
           textTransform: "none",
         })}
       >
-        <div style={{ marginBottom: 10 }}>
+        <Text style={{ marginBottom: 10 }}>
           To get started with Hookup, know three things:
           <span style={s(t.bold, t.m(5, 0))}>
             Board, Runtime, and Service.{" "}
           </span>
-        </div>
-        <div>
+        </Text>
+        <Text>
           Think of a <span style={t.bold}>Board</span> like a blank page, a{" "}
           <span style={t.bold}>Runtime</span> as a line on that page, and{" "}
           <span style={t.bold}>Services</span> as the words in that line. They
           work together to tell a story or create behavior.
-        </div>
+        </Text>
         <div style={{ padding: "8px 0px" }}>
           <Sketch />
         </div>
