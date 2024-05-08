@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Image from "@/ui-components/Image";
 import { ExampleDescriptor } from "./types";
 import { s, t } from "../../styles";
+import CardText from "@/ui-components/CardText";
 
 type Props = { example: ExampleDescriptor };
 
@@ -31,7 +32,7 @@ export default function Card({ example }: Props) {
           >
             <h4>
               <Link
-                className="color-red-100"
+                className="color-red-100 hover:no-underline"
                 key={`example-link-${example.title}`}
                 to={`/example/sandbox?url=${example.url}`}
               >
@@ -50,13 +51,13 @@ export default function Card({ example }: Props) {
               marginTop: 10,
             }}
           >
-            <div className="font-serif tracking-wider" style={s(t.tl)}>
+            <CardText>
               {Array.isArray(example.description)
                 ? example.description.map((d, idx) => (
                     <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
                   ))
                 : example.description}
-            </div>
+            </CardText>
           </div>
         </div>
       </div>

@@ -1,5 +1,5 @@
-import Text from "@/ui-components/Text";
 import { s, t } from "../../styles";
+import CardText from "@/ui-components/CardText";
 
 type Props = {
   name: string;
@@ -15,9 +15,9 @@ export default function Description({ name, description }: Props) {
   return (
     <div style={s(t.nc)}>
       {d.map((content, idx) => (
-        <Text key={`usecase-${name}-description-${idx}`} yMargin={0}>
+        <CardText key={`usecase-${name}-description-${idx}`}>
           {typeof content === "string" ? content : ""}
-        </Text>
+        </CardText>
       ))}
     </div>
   );

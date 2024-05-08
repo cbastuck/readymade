@@ -20,7 +20,13 @@ module.exports = {
       sans: ["hkp-fnt-sans", "sans-serif"],
       "sans-clean": ["Arial", "sans-serif"],
       serif: ["hkp-fnt-serif", "serif"],
-      menu: ["Lato", "Helvetica Neue,Arial", "Helvetica", "sans-serif"],
+      menu: [
+        "hkp-fnt-lato",
+        "Lato",
+        "Helvetica Neue,Arial",
+        "Helvetica",
+        "sans-serif",
+      ],
     },
     fontSize: {
       sm: "0.65rem",
