@@ -46,7 +46,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0 h-[260px] opacity-100">
+      <PopoverContent className="w-[200px] p-0 h-[260px] opacity-100 font-menu">
         <Command>
           <CommandInput
             className="text-base"

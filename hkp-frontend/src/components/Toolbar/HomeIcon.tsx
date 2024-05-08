@@ -9,7 +9,7 @@ export default function HomeIcon() {
   return (
     <Button
       variant="ghost"
-      className="pt-[12px] pl-[4px] ml-[4px] mr-[1px] pr-1 hover:drop-shadow-2xl"
+      className="pt-[12px] pl-[4px] ml-[4px] mr-[0px] pr-0 hover:drop-shadow-2xl"
     >
       <Link to="/">
         <div className="px-[8px]">

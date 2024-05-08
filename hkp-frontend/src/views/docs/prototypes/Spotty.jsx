@@ -88,8 +88,9 @@ export default function Spotty() {
               </Paragraph>
 
               <NavigateButton
+                width="100%"
                 destination="/playground/spotty?template=/boards/protos/spotty.json"
-                text="Show on Playground"
+                text="Show it on Playground"
               />
             </Paragraph>
           </Section>

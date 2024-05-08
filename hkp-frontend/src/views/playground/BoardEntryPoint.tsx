@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BoardContextState } from "../../BoardContext";
 import EmptySketch from "./EmptySketch";
 import { s, t } from "../../styles";
-import LoadPanel from "./LoadPanel";
+import LoadPanel from "../../ui-components/loadpanel";
 import VSpacer from "../../components/shared/VSpacer";
 import {
   PeerInputActivation,

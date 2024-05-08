@@ -54,7 +54,7 @@ export default function RuntimeSettings({
           <Menu strokeWidth={1} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
+      <DropdownMenuContent className="w-56 font-menu">
         <DropdownMenuLabel className="text-base capitalize font-sans tracking-wider">
           {runtime.type} Runtime
         </DropdownMenuLabel>

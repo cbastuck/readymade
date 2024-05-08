@@ -52,7 +52,7 @@ export default function BoardMenu() {
     return null;
   }
   return (
-    <NavigationMenu className="" delayDuration={10000}>
+    <NavigationMenu delayDuration={10000}>
       <EditorDialog
         title="Board Configuration"
         isOpen={showBoardSource}
@@ -74,7 +74,7 @@ export default function BoardMenu() {
           <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white text-base capitalize">
             {board || "Board"}
           </NavigationMenuTrigger>
-          <NavigationMenuContent>
+          <NavigationMenuContent className="font-menu">
             <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
               <li className="row-span-5">
                 <NavigationMenuLink asChild>
@@ -155,9 +155,7 @@ const ListItem = React.forwardRef<
           )}
           {...props}
         >
-          <div className="text-sm font-medium leading-none underline">
-            {title}
-          </div>
+          <div className="text-base font-medium leading-none">{title}</div>
           <p className="line-clamp-2 text-sm leading-snug  hover:text-accent-foreground">
             {children}
           </p>

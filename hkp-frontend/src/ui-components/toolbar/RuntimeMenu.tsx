@@ -66,7 +66,7 @@ export default function RuntimeMenu({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className={`w-[200px] p-0 ${heightConstraint} opacity-100`}
+          className={`w-[200px] p-0 ${heightConstraint} opacity-100 font-menu`}
         >
           <Command>
             <CommandInput

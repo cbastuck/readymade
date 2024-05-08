@@ -1,8 +1,8 @@
 import Text from "@/ui-components/Text";
-import { CSSProperties, ReactElement } from "react";
+import { CSSProperties } from "react";
 
 type Props = {
-  children: ReactElement;
+  children: JSX.Element | Array<JSX.Element> | string | Array<string>;
   width?: string;
   headline?: string;
   style?: CSSProperties;

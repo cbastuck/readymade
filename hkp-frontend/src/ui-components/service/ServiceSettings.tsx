@@ -46,7 +46,7 @@ export default function ServiceSettings({
           <Menu strokeWidth={1} />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56">
+      <DropdownMenuContent className="w-56 font-menu">
         <DropdownMenuLabel className="capitalize font-sans tracking-wider text-base">
           {service.serviceName} Service
         </DropdownMenuLabel>

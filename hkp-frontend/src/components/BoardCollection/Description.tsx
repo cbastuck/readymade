@@ -1,3 +1,4 @@
+import Text from "@/ui-components/Text";
 import { s, t } from "../../styles";
 
 type Props = {
@@ -14,9 +15,9 @@ export default function Description({ name, description }: Props) {
   return (
     <div style={s(t.nc)}>
       {d.map((content, idx) => (
-        <div key={`usecase-${name}-description-${idx}`} style={t.mt5}>
+        <Text key={`usecase-${name}-description-${idx}`} yMargin={0}>
           {typeof content === "string" ? content : ""}
-        </div>
+        </Text>
       ))}
     </div>
   );

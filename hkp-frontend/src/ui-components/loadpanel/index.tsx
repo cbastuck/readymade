@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
 
-import { localStoragePrefix, getLocalBoards } from "./common";
+import {
+  localStoragePrefix,
+  getLocalBoards,
+} from "../../views/playground/common";
 
 import { SavedBoard } from "../../types";
-import Search from "@/components/BoardCollection/Search";
-import BoardTable from "@/ui-components/BoardTable";
+import Search from "@/ui-components/loadpanel/Search";
+import BoardTable from "@/ui-components/loadpanel/BoardTable";
 
 export default function LoadPanel() {
   const [filter, setFilter] = useState("");
@@ -27,7 +30,11 @@ export default function LoadPanel() {
         </div>
       </div>
 
-      <BoardTable boards={savedBoards} className="h-[300px] border" />
+      <BoardTable
+        boards={savedBoards}
+        className="h-[300px] border"
+        filter={filter}
+      />
     </div>
   );
 }
