@@ -15,7 +15,7 @@ import MenuIcon from "../MenuIcon";
 
 type Props = {
   board: SavedBoard;
-  onAction: (board: SavedBoard) => void;
+  onAction: (board: SavedBoard, action: any) => void;
 };
 
 export default function BoardActionButton({ board, onAction }: Props) {
@@ -34,7 +34,7 @@ export default function BoardActionButton({ board, onAction }: Props) {
         <DropdownMenuGroup>
           <DropdownMenuItem
             className="text-base"
-            onClick={() => onAction(board)}
+            onClick={() => onAction(board, { command: "delete" })}
           >
             <MenuIcon icon={Trash} />
             <span>Delete</span>

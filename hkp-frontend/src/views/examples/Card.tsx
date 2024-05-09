@@ -4,6 +4,7 @@ import Image from "@/ui-components/Image";
 import { ExampleDescriptor } from "./types";
 import { s, t } from "../../styles";
 import CardText from "@/ui-components/CardText";
+import Button from "@/ui-components/Button";
 
 type Props = { example: ExampleDescriptor };
 
@@ -21,7 +22,7 @@ export default function Card({ example }: Props) {
       })}
     >
       <div className="p-4" style={fontStyle}>
-        <div className="flex items-end">
+        <div className="flex items-center">
           <div
             className="tracking-wider"
             style={{
@@ -40,7 +41,11 @@ export default function Card({ example }: Props) {
               </Link>
             </h4>
           </div>
-          <Image className="ml-auto mx-1" src={example.image} size={20} />
+          <div className="ml-auto mx-1 p-0">
+            <a href={example.url} className="m-0 p-0 hover:no-underline">
+              <Image src={example.image} size={20} />
+            </a>
+          </div>
         </div>
         <div>
           <div className="tracking-wide font-sans text-left">

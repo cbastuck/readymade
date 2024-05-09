@@ -182,7 +182,6 @@ async function createScope(
   bundles: Bundles = defaultBundles
 ): Promise<BrowserRuntimeScope> {
   const registry = await BrowserRegistry.create(bundles);
-  console.log("BrowserRuntimeApi.createScope", registry);
   return new BrowserRuntimeScope(runtime, registry);
 }
 

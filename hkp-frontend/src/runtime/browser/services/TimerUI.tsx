@@ -115,7 +115,7 @@ export default function TimerUI(props: ServiceUIProps) {
   return (
     <ServiceUI
       {...props}
-      initialSize={{ width: 400, height: 150 }}
+      initialSize={{ width: 400, height: 155 }}
       service={service}
       onInit={onInit}
       onNotification={onNotification}

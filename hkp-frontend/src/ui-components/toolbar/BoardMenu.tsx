@@ -71,8 +71,10 @@ export default function BoardMenu() {
       />
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white text-base capitalize">
-            {board || "Board"}
+          <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white text-base capitalize ">
+            <div className="max-w-[130px] overflow-x-hidden text-ellipsis whitespace-nowrap">
+              {board || "Board"}
+            </div>
           </NavigationMenuTrigger>
           <NavigationMenuContent className="font-menu">
             <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
@@ -116,7 +118,7 @@ export default function BoardMenu() {
                 Clear the current Board
               </ListItem>
               <ListItem
-                title="Save Board"
+                title="Save Board as"
                 onClick={() =>
                   boardContext?.onAction({
                     type: "saveBoard",

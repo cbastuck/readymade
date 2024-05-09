@@ -9,9 +9,7 @@ import BoardProvider, {
 import Toolbar from "../../components/Toolbar";
 import Footer from "@/components/Footer";
 import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
-import SaveBoardPrompt, {
-  SaveBoardApi,
-} from "../../components/SaveBoardPrompt";
+import SaveBoardDialog from "../../components/SaveBoardDialog";
 import Board from "./Board";
 import BoardSync from "./boardsync";
 import { generateRandomName } from "../../core/board";
@@ -21,6 +19,7 @@ import {
   defaultName,
   availableRuntimes,
   restoreBoardFromLocalStorage,
+  storeBoardToLocalStorage,
 } from "./common";
 import {
   importBoard,
@@ -72,6 +71,7 @@ type State = {
   outputRouting: PeerOutputRouting;
 
   enforceLoadPanel?: boolean;
+  isSaveDialogVisible: boolean;
 };
 
 class Playground extends Component<Props, State> {
@@ -82,8 +82,9 @@ class Playground extends Component<Props, State> {
 
   defaultRegistry: BrowserRegistry | undefined = undefined;
   board: Board | null = null;
-  prompt: SaveBoardApi | null = null;
+
   state: State = {
+    isSaveDialogVisible: false,
     boardName:
       (this.props.match &&
         this.props.match.params &&
@@ -336,30 +337,8 @@ class Playground extends Component<Props, State> {
   };
 
   saveBoard = async (showDialog = true) => {
-    if (this.prompt && showDialog) {
-      const suggested =
-        (this.props.match &&
-          this.props.match.params &&
-          this.props.match.params.board) ||
-        generateRandomName();
-
-      const userInput =
-        (await this.prompt.acceptInput(suggested, this.state.description)) &&
-        this.prompt.getValues();
-
-      if (userInput) {
-        const { name, description } = userInput;
-        const data = await this.boardProviderRef?.state.serializeBoard();
-        localStorage.setItem(
-          `${localStoragePrefix}${name}`,
-          JSON.stringify({ ...data, name, description })
-        );
-        this.setState(() => ({ description }));
-        if (name !== suggested) {
-          this.props.navigate(`/playground/${name}`, { replace: true });
-        }
-        return data;
-      }
+    if (showDialog) {
+      this.setState({ isSaveDialogVisible: true });
     } else if (this.state.boardName) {
       const { boardName: name, description } = this.state;
       const data = await this.boardProviderRef?.state.serializeBoard();
@@ -459,6 +438,24 @@ class Playground extends Component<Props, State> {
     return true;
   };
 
+  onSaveDialog = async (
+    name: string,
+    description: string,
+    isSuggestedName: boolean
+  ) => {
+    const data = await this.boardProviderRef?.state.serializeBoard();
+    storeBoardToLocalStorage(
+      name,
+      JSON.stringify({ ...data, name, description })
+    );
+
+    this.setState(() => ({ description, isSaveDialogVisible: false }));
+    if (!isSuggestedName) {
+      this.props.navigate(`/playground/${name}`, { replace: true });
+    }
+    return data;
+  };
+
   render() {
     const appContext = this.context;
     const runtimeApis: RuntimeApiMap = {
@@ -523,7 +520,18 @@ class Playground extends Component<Props, State> {
                   isCompact={boardContext.appContext?.appViewMode !== "wide"}
                 />
 
-                <SaveBoardPrompt onRef={(prompt) => (this.prompt = prompt)} />
+                <SaveBoardDialog
+                  isOpen={this.state.isSaveDialogVisible}
+                  suggestedName={
+                    (this.props.match &&
+                      this.props.match.params &&
+                      this.props.match.params.board) ||
+                    generateRandomName()
+                  }
+                  suggestedDescription={this.state.description}
+                  onSave={this.onSaveDialog}
+                  onCancel={() => this.setState({ isSaveDialogVisible: false })}
+                />
                 {this.state.boardSyncActive &&
                   this.renderBoardSync(boardContext)}
 

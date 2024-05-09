@@ -1,7 +1,7 @@
 import { ReactElement, useState } from "react";
 
 import Collection from "./Collection";
-import Search from "../../ui-components/loadpanel/Search";
+import Search from "../../ui-components/boardmanager/Search";
 import { AppViewMode, SavedBoard, UsecaseDescriptor } from "../../types";
 import { Action } from "./Card";
 

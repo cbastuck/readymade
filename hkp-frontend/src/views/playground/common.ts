@@ -21,6 +21,10 @@ export function getLocalBoard(
   return localStorage.getItem(`${prefix}${selectedBoard}`);
 }
 
+export function removeLocalBoard(board: SavedBoard) {
+  localStorage.removeItem(board.id);
+}
+
 export function getLocalBoards(
   prefix: string = localStoragePrefix
 ): Array<SavedBoard> {
@@ -34,8 +38,10 @@ export function getLocalBoards(
         try {
           const value = JSON.parse(data);
           savedBoards.push({
-            name: key.substr(prefix.length),
-            value,
+            name: key.substring(prefix.length),
+            value: value.source ? value.source : value,
+            id: key,
+            createdAt: value.createdAt,
           });
         } catch (err) {
           console.warn("Could not restore local board", key, err);
@@ -51,19 +57,34 @@ export function getLocalBoards(
   }));
 }
 
+export type LocalBoard = {
+  source: string;
+  createdAt: string;
+};
+
 export function restoreBoardFromLocalStorage(name: string) {
   const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
   const data = localStorage.getItem(storageName);
   if (data) {
-    const board = JSON.parse(data);
-    if (board && board.runtimes) {
-      return board;
+    const item = JSON.parse(data);
+    if (item.source) {
+      return item.source;
+    }
+    if (item && item.runtimes) {
+      return item;
     }
   }
 }
 
-export function storeBoardToLocalStorage(board: string, src: string) {
-  localStorage.setItem(`${localStoragePrefix}${board}`, src);
+export function storeBoardToLocalStorage(boardName: string, source: string) {
+  const item: LocalBoard = {
+    source,
+    createdAt: new Date().toISOString(),
+  };
+  localStorage.setItem(
+    `${localStoragePrefix}${boardName}`,
+    JSON.stringify(item)
+  );
 }
 
 const isSecureConnection = window.location.protocol === "https:";

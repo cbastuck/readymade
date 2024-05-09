@@ -7,12 +7,14 @@ export default function Prototypes() {
   return (
     <div className="w-full h-full ml-4">
       <div className="flex">
-        <h2>My Prototypes</h2>
+        <h2>Personal Prototypes</h2>
         <WipTag />
       </div>
       <Text>
         The following private prototypes showcase creative ways to connect
-        services and address personal needs using Hookup.
+        services and address personal needs using Hookup. I added them as a kind
+        of teaser for creative ways of hooking up simple building blocks and
+        letting them communicate.
       </Text>
       <Text>
         Kindly note that these private prototypes reflect a more personalized

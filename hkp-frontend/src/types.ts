@@ -395,10 +395,12 @@ export type UsecaseDescriptor = {
 };
 
 export type SavedBoard = {
+  id: string;
   url: string;
   description: string;
   value: BoardDescriptor;
   name: string;
+  createdAt?: string;
 };
 
 export function isSavedBoard(board: any): board is SavedBoard {

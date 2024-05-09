@@ -29,7 +29,7 @@ export default function Image({
       />
       {caption && (
         <div
-          className="font-sans tracking-wider"
+          className="font-sans tracking-wider text-md"
           style={{ width: "70%", margin: "auto", marginBottom: "30px" }}
         >
           {caption}

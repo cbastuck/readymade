@@ -58,7 +58,6 @@ export default class BrowserRegistry {
   ): Promise<BrowserRegistry> {
     const registry = new BrowserRegistry();
     registry.availableServices = defaultRegistry;
-    console.log("CREATE BROWSEr REGISTRY WITH BUNDLEs", bundles);
     if (bundles) {
       await registry.loadBundles(bundles);
     }

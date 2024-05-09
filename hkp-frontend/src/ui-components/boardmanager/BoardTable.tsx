@@ -11,19 +11,23 @@ import moment from "moment";
 import { SavedBoard } from "@/types";
 import BoardActionButton from "./BoardActionButton";
 
+export type BoardManagerAction = {
+  command: string;
+};
+
 type Props = {
   boards: Array<SavedBoard>;
   className?: string;
   filter?: string;
+
+  onAction: (board: SavedBoard, action: BoardManagerAction) => void;
 };
 export default function BoardTable({
   boards: savedBoards,
   className,
   filter,
+  onAction,
 }: Props) {
-  const onAction = (board: SavedBoard) => {
-    console.log("onAction", board);
-  };
   return (
     <div className={`${className} overflow-y-auto`}>
       <Table>
@@ -53,7 +57,9 @@ export default function BoardTable({
                   {board.description}
                 </TableCell>
                 <TableCell className="text-left text-base">
-                  {moment().format("DD/MM/YYYY hh:mm")}
+                  {board.createdAt
+                    ? moment(board.createdAt).format("DD/MM/YYYY hh:mm")
+                    : "-"}
                 </TableCell>
                 <TableCell className="text-right text-base w-min">
                   <BoardActionButton board={board} onAction={onAction} />
