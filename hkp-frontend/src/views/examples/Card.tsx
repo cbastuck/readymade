@@ -4,7 +4,6 @@ import Image from "@/ui-components/Image";
 import { ExampleDescriptor } from "./types";
 import { s, t } from "../../styles";
 import CardText from "@/ui-components/CardText";
-import Button from "@/ui-components/Button";
 
 type Props = { example: ExampleDescriptor };
 

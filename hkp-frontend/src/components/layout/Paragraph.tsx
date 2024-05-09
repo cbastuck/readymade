@@ -2,7 +2,7 @@ import Text from "@/ui-components/Text";
 import { CSSProperties } from "react";
 
 type Props = {
-  children: JSX.Element | Array<JSX.Element> | string | Array<string>;
+  children: JSX.Element | string | Array<JSX.Element | string>;
   width?: string;
   headline?: string;
   style?: CSSProperties;

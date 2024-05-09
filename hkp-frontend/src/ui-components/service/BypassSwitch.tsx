@@ -1,5 +1,6 @@
 import { CSSProperties } from "react";
 import { Power, PowerOff } from "lucide-react";
+
 import Button from "@/ui-components/Button";
 
 type Props = {
@@ -17,17 +18,14 @@ export default function BypassSwitch({ bypass, disabled, onChange }: Props) {
   const Icon = bypass ? PowerOff : Power;
   return (
     <Button
-      className="border-none hover:bg-sky h-min w-min"
+      className="h-[50px] w-[50px] border-none hover:bg-sky"
       disabled={disabled}
       onClick={() => onChange(!bypass)}
     >
-      {disabled ? (
-        <div className="mt-6 mr-1" style={{ width: "18px" }} />
-      ) : (
+      {disabled ? null : (
         <Icon
-          size="18px"
-          className={`mt-6 mr-1 w-min h-min ${hoverIconColor} ${iconColor}`}
-          name="power off"
+          className={`mt-0 mr-0 w-min h-min ${hoverIconColor} ${iconColor}`}
+          name={disabled ? "power on" : "power off"}
         />
       )}
     </Button>
