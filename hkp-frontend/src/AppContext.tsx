@@ -1,5 +1,6 @@
 import { Component, createContext } from "react";
 import { IdToken } from "@auth0/auth0-react";
+import { toast } from "sonner";
 
 import ResizeObserver from "./ResizeObserver";
 import { processToken } from "./core/Auth";
@@ -8,7 +9,6 @@ import RestoredUser from "./RestoredUser";
 
 export type AppContextState = {
   user: User | null;
-  notifications: Array<Notification>;
   appViewMode: AppViewMode;
   pushNotification: (n: Notification) => void;
   popNotification: () => void;
@@ -31,52 +31,56 @@ class AppProvider extends Component<Props, AppContextState> {
       // state members
       user: null,
       appViewMode: "wide",
-      notifications: [],
-      pushNotification: (notification) => {
-        const { tag, timeout = 1500 } = notification;
-        const pos = this.state.notifications.findIndex((cur) =>
-          cur.tag === tag ? notification : cur
-        );
 
-        const autoClose = () => {
-          const idx = this.state.notifications.indexOf(notification);
-          if (idx !== -1) {
-            setTimeout(
-              () =>
-                this.setState(({ notifications }) => {
-                  return {
-                    notifications: [
-                      ...notifications.slice(0, idx),
-                      ...notifications.slice(idx + 1),
-                    ],
-                  };
-                }),
-              timeout
-            );
-          }
-        };
-        if (!tag || pos === -1) {
-          this.setState(
-            ({ notifications }) => ({
-              notifications: [notification, ...notifications],
-            }),
-            autoClose
-          );
-        } else {
-          // replace an existing notification with the same tag
-          const notifications = this.state.notifications.map((cur, idx) =>
-            idx === pos ? notification : cur
-          );
-          this.setState({ notifications });
-        }
+      pushNotification: (notification) => {
+        const action = notification.action
+          ? {
+              label: notification.action.positive ? "yes" : "no",
+              onClick: notification.action.callback,
+            }
+          : undefined;
+
+        const description = "";
+        const toastFunc =
+          notification.type === "info"
+            ? toast.info
+            : notification.type === "success"
+            ? toast.success
+            : toast.error;
+        toastFunc(notification.message, {
+          description,
+          action,
+        });
       },
-      popNotification: () =>
-        this.setState({ notifications: this.state.notifications.slice(1) }),
+      popNotification: () => {},
       // modifying functions
       updateToken: this.onToken,
       logout: this.logout,
     };
   }
+
+  componentDidMount(): void {
+    window.addEventListener("error", this.onError);
+    window.addEventListener("unhandledrejection", this.onUnhandledException);
+  }
+
+  componentWillUnmount(): void {
+    window.removeEventListener("error", this.onError);
+    window.removeEventListener("unhandledrejection", this.onUnhandledException);
+  }
+
+  onError = (event: any) => {
+    // event.preventDefault(); // This will not print the error in the console });
+    this.state.pushNotification({ message: event.message, type: "error" });
+  };
+
+  onUnhandledException = (event: any) => {
+    //event.preventDefault(); // This will not print the error in the console });
+    this.state.pushNotification({
+      message: `Unhandled rejection: ${event.reason}`,
+      type: "error",
+    });
+  };
 
   onToken = (idToken: IdToken): Promise<void> => {
     return new Promise((resolve, reject) => {

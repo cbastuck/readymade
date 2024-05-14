@@ -347,9 +347,8 @@ class Playground extends Component<Props, State> {
         JSON.stringify({ ...data, name, description })
       );
       this.context?.pushNotification({
-        type: "info",
-        message: "Board was saved",
-        tag: "save",
+        type: "success",
+        message: `The Board '${name}' was saved.`,
       });
     } else {
       this.context?.pushNotification({

@@ -1,5 +1,4 @@
 import { Component } from "react";
-import { Icon } from "semantic-ui-react";
 
 import PeersProvider, {
   PeersConsumer,
@@ -622,12 +621,11 @@ export default class Board extends Component<Props, State> {
                             closedInputRouting?.route?.peer ===
                             InputOptions.allInputsWildcard
                               ? null
-                              : (onClose: () => void) => {
+                              : () => {
                                   this.props.onChangeInputRouting(runtime, {
                                     ...inputActivation,
                                     ...closedInputRouting,
                                   });
-                                  onClose();
                                 };
                         } else {
                           const closedOutputRouting =
@@ -644,7 +642,7 @@ export default class Board extends Component<Props, State> {
                             },
                           });
                           reconnectCallback = closedOutputRouting
-                            ? (onClose: () => void) => {
+                            ? () => {
                                 this.props.onChangeOutputRouting(runtime, {
                                   hostDescriptor: hostDescriptor || null,
                                   route: {
@@ -653,20 +651,19 @@ export default class Board extends Component<Props, State> {
                                     peer: closedOutputRouting,
                                   },
                                 });
-                                onClose();
                               }
                             : null;
                         }
                         this.props.boardContext.appContext?.pushNotification({
                           type: "info",
                           message: `Connection in runtime "${runtime.name}" to peer "${closedPeer}" was closed`,
-                          ctas: [
-                            {
-                              icon: <Icon name="redo" />,
-                              positive: true,
-                              callback: reconnectCallback,
-                            },
-                          ],
+                          action: reconnectCallback
+                            ? {
+                                label: "redo",
+                                positive: true,
+                                callback: reconnectCallback,
+                              }
+                            : undefined,
                           tag: "peers",
                         });
                       }}

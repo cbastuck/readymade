@@ -325,14 +325,13 @@ export type User = {
 };
 
 export type Notification = {
-  type: "info" | "error";
-  tag?: string;
+  type: "success" | "info" | "error";
   message: string;
-  ctas?: Array<{
-    icon: ReactElement;
+  action?: {
+    label: string;
     positive: boolean;
-    callback: null | ((onClose: () => void) => void);
-  }>;
+    callback: () => void;
+  };
   timeout?: number;
   error?: Error;
 };

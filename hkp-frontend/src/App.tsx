@@ -1,9 +1,9 @@
 import { Auth0Provider } from "@auth0/auth0-react";
+import { Toaster } from "@/ui-components/primitives/sonner";
 
 import Routes from "./Routes";
 import AppProvider from "./AppContext";
 import MessageDispatcher from "./MessageDispatcher";
-import Notifications from "./Notifications";
 
 export default function App() {
   const location = window.location;
@@ -27,7 +27,7 @@ export default function App() {
           }}
         >
           <Routes />
-          <Notifications />
+          <Toaster />
         </div>
 
         <MessageDispatcher />
