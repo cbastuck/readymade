@@ -664,7 +664,6 @@ export default class Board extends Component<Props, State> {
                                 callback: reconnectCallback,
                               }
                             : undefined,
-                          tag: "peers",
                         });
                       }}
                       active={!!hostDescriptor}
