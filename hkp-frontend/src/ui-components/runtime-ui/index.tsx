@@ -1,24 +1,52 @@
-import { CSSProperties, ReactNode } from "react";
+import { CSSProperties, ReactElement, ReactNode } from "react";
 
-import { RuntimeDescriptor, ServiceClass, ServiceRegistry } from "@/types";
+import {
+  OnResult,
+  RuntimeDescriptor,
+  RuntimeScope,
+  ServiceAction,
+  ServiceClass,
+  ServiceDescriptor,
+  ServiceRegistry,
+  User,
+} from "@/types";
 import RuntimeHeader from "./RuntimeHeader";
+import EmptyRuntimePlaceholder from "./EmptyRuntimePlaceholder";
+import BrowserRuntime from "@/runtime/browser/BrowserRuntime";
+import RemoteRuntime from "@/runtime/remote/RemoteRuntime";
+import BrowserRuntimeScope from "@/runtime/browser/BrowserRuntimeScope";
 
 type Props = {
+  user: User | null;
+  boardName: string | null;
   runtime: RuntimeDescriptor;
+  registry: ServiceRegistry;
+  scope: RuntimeScope;
+  services: Array<ServiceDescriptor>;
   frameless?: boolean;
   headless?: boolean;
   wrapServices?: boolean;
   isExpanded?: boolean;
   style?: CSSProperties;
+  highlightServicesOnHover?: boolean;
+  outputs?: ReactElement;
+  inputs?: ReactElement;
   children?: ReactNode | ReactNode[];
-  registry: ServiceRegistry;
+
   onExpand: (isExpanded: boolean) => void;
   onWrapServices: (isWrapped: boolean) => void;
   onAddService: (svc: ServiceClass) => void;
+  onServiceAction: (command: ServiceAction) => void;
+  onArrangeService: (serviceUuid: string, position: number) => void;
+  onResult: OnResult;
 };
 
 export default function RuntimeUI({
+  user,
+  boardName,
   runtime,
+  services,
+  scope,
   frameless,
   headless,
   wrapServices,
@@ -26,9 +54,16 @@ export default function RuntimeUI({
   children,
   registry,
   isExpanded = true,
+  highlightServicesOnHover = false,
+  outputs,
+  inputs,
+
   onExpand,
   onWrapServices,
   onAddService,
+  onServiceAction,
+  onArrangeService,
+  onResult,
 }: Props) {
   const style: CSSProperties = {
     ...passedStyled,
@@ -37,6 +72,11 @@ export default function RuntimeUI({
     backgroundColor: !frameless ? "#EEEEEE10" : undefined,
   };
 
+  if (scope) {
+    scope.authenticatedUser = user;
+  }
+
+  const expanded = headless ? false : isExpanded;
   return (
     <div style={style}>
       <RuntimeHeader
@@ -48,7 +88,67 @@ export default function RuntimeUI({
         onExpand={onExpand}
         onWrapServices={onWrapServices}
       />
-      {children}
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+        }}
+      >
+        {runtime.type === "browser" ? (
+          <>
+            {inputs && expanded ? <>{inputs}</> : false}
+            <div
+              className={wrapServices ? "flex flex-col items-center " : "flex"}
+              style={{
+                width: "100%",
+                overflow: wrapServices ? "hidden" : "auto",
+              }}
+            >
+              <BrowserRuntime
+                key={`browser-runtime-${runtime.id}`}
+                collapsed={!expanded}
+                user={user}
+                boardName={boardName || ""}
+                scope={scope as BrowserRuntimeScope}
+                runtime={runtime}
+                services={services}
+                onArrangeService={onArrangeService}
+                onServiceAction={onServiceAction}
+                onResult={onResult}
+                highlightServicesOnHover={highlightServicesOnHover}
+              />
+            </div>
+            {services?.length === 0 && (
+              <EmptyRuntimePlaceholder runtime={runtime} />
+            )}
+            {outputs && expanded ? (
+              <div className="ml-auto">{outputs}</div>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <RemoteRuntime
+              key={`remote-runtime-${runtime.id}`}
+              collapsed={!expanded}
+              scope={scope}
+              user={user}
+              boardName={boardName || ""}
+              runtime={runtime}
+              services={services}
+              onArrangeService={onArrangeService}
+              onServiceAction={onServiceAction}
+              onResult={onResult}
+              highlightServicesOnHover={highlightServicesOnHover}
+            />
+            {services?.length === 0 && (
+              <EmptyRuntimePlaceholder runtime={runtime} />
+            )}
+          </>
+        )}
+        {children}
+      </div>
       {!isExpanded && <div className="min-h-1" />}
     </div>
   );

@@ -30,37 +30,34 @@ export default class ServiceUiContainer extends Component<Props> {
     } = this.props;
 
     if (!services) {
-      return false;
+      return null;
     }
 
     return (
-      services &&
-      services.map((service, pos) => {
-        const serviceElement = onCreateServiceUi(
-          boardName,
-          service,
-          runtime.id,
-          userId
-        );
+      <>
+        {services.map((service, pos) => {
+          const serviceElement = onCreateServiceUi(
+            boardName,
+            service,
+            runtime.id,
+            userId
+          );
 
-        return (
-          <div
-            key={`service-ui-container-${service.uuid}`}
-            style={{
-              display: collapsed ? "none" : "flex",
-              flexDirection: "row",
-            }}
-          >
-            {pos === 0 && (
-              <ServiceDropBar index={0} onDrop={onArrangeService} />
-            )}
-
-            {serviceElement}
-
-            <ServiceDropBar index={pos + 1} onDrop={onArrangeService} />
-          </div>
-        );
-      })
+          return (
+            <div
+              key={`service-ui-container-${service.uuid}`}
+              style={{
+                display: collapsed ? "none" : "flex",
+                flexDirection: "row",
+              }}
+            >
+              <ServiceDropBar index={pos} onDrop={onArrangeService} />
+              {serviceElement}
+            </div>
+          );
+        })}
+        <ServiceDropBar index={services.length} onDrop={onArrangeService} />
+      </>
     );
   }
 }

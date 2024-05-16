@@ -78,9 +78,12 @@ export default function RuntimeHeader({
   };
 
   const onDblClick = (ev: MouseEvent) => {
-    onExpand(!isExpanded);
-    ev.preventDefault();
-    ev.stopPropagation();
+    const toggleCollapseOnDblClick = false;
+    if (toggleCollapseOnDblClick) {
+      onExpand(!isExpanded);
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
   };
 
   return (

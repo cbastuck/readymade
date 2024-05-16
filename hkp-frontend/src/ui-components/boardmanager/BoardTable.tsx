@@ -54,7 +54,9 @@ export default function BoardTable({
                   {<a href={board.url}>{board.name}</a>}
                 </TableCell>
                 <TableCell className="text-left text-base">
-                  {board.description}
+                  {typeof board.description === "string"
+                    ? board.description
+                    : JSON.stringify(board.description)}
                 </TableCell>
                 <TableCell className="text-left text-base">
                   {board.createdAt

@@ -1,24 +1,17 @@
 import { CSSProperties, Component, ReactElement } from "react";
 
 import { getServiceConfiguration } from "../core/actions";
-import BrowserRuntime from "../runtime/browser/BrowserRuntime";
-import RemoteRuntime from "../runtime/remote/RemoteRuntime";
 import ServiceDropdown from "./ServiceDropdown";
 
-import { s, t } from "../styles";
 import {
   RuntimeDescriptor,
   RuntimeImpl,
   ServiceAction,
   ServiceClass,
-  ServiceDescriptor,
   InstanceId,
-  RuntimeScope,
   OnResult,
-  User,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
-import BrowserRuntimeScope from "../runtime/browser/BrowserRuntimeScope";
 
 import RuntimeUI from "@/ui-components/runtime-ui";
 
@@ -39,7 +32,7 @@ type Props = {
   disabledItems?: Array<string>;
   headless?: boolean;
   style?: CSSProperties;
-  readonly?: boolean;
+
   expanded?: boolean;
   frameless?: boolean;
   highlightServicesOnHover?: boolean;
@@ -49,7 +42,6 @@ type Props = {
 };
 
 type State = {
-  readonly: boolean;
   showSettings: boolean;
   expanded: boolean;
   wrapServices: boolean | undefined;
@@ -57,7 +49,6 @@ type State = {
 
 export default class Runtime extends Component<Props, State> {
   state: State = {
-    readonly: false,
     showSettings: false,
     expanded: false,
     wrapServices: undefined,
@@ -68,25 +59,14 @@ export default class Runtime extends Component<Props, State> {
   runtimeContainer: HTMLDivElement | null = null;
 
   componentDidMount() {
-    const { readonly, initialState = {}, expanded } = this.props;
+    const { initialState = {}, expanded } = this.props;
     this.setState({
-      readonly: !!readonly,
       wrapServices: initialState.wrapServices,
       expanded:
         expanded !== undefined ? expanded : initialState.minimized !== true,
       showSettings: false,
       ...initialState,
     });
-  }
-
-  componentDidUpdate(prevProps: Props) {
-    const { readonly } = this.props;
-    if (readonly !== prevProps.readonly) {
-      this.setState({
-        expanded: !readonly,
-        readonly: !!readonly,
-      });
-    }
   }
 
   onAddService = (service: ServiceClass) => {
@@ -192,119 +172,6 @@ export default class Runtime extends Component<Props, State> {
     }
   };
 
-  renderRemoteRuntime = (
-    scope: RuntimeScope,
-    runtime: RuntimeDescriptor,
-    expanded: boolean,
-    user: User | null,
-    boardName: string,
-    services: Array<ServiceDescriptor>,
-    _readonly: boolean,
-    onArrangeService: (serviceUuid: string, position: number) => void
-  ) => {
-    const { wrapServices } = this.state;
-
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          flexFlow: wrapServices ? "wrap" : "row nowrap",
-          overflow: wrapServices ? undefined : "auto",
-        }}
-      >
-        <RemoteRuntime
-          key={`remote-runtime-${runtime.id}`}
-          collapsed={!expanded}
-          scope={scope}
-          user={user}
-          boardName={boardName}
-          runtime={runtime}
-          services={services}
-          onArrangeService={onArrangeService}
-          onServiceAction={this.onServiceAction}
-          onResult={this.props.onResult}
-          highlightServicesOnHover={this.props.highlightServicesOnHover}
-        />
-        {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
-      </div>
-    );
-  };
-
-  renderBrowserRuntime = (
-    scope: RuntimeScope,
-    runtime: RuntimeDescriptor,
-    expanded: boolean,
-    user: User | null,
-    boardName: string,
-    services: Array<ServiceDescriptor>,
-    _readonly: boolean,
-    onArrangeService: (serviceUuid: string, position: number) => void,
-    wrapServices?: boolean
-  ) => {
-    const { outputs, inputs, onResult } = this.props;
-    if (scope) {
-      scope.authenticatedUser = user;
-    }
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-          flexFlow: wrapServices ? "wrap" : "row nowrap",
-          overflow: wrapServices ? undefined : "auto",
-        }}
-      >
-        {inputs && expanded ? <>{inputs}</> : false}
-        <BrowserRuntime
-          key={`browser-runtime-${runtime.id}`}
-          collapsed={!expanded}
-          user={user}
-          boardName={boardName}
-          scope={scope as BrowserRuntimeScope}
-          runtime={runtime}
-          services={services}
-          onArrangeService={onArrangeService}
-          onServiceAction={this.onServiceAction}
-          onResult={onResult}
-          highlightServicesOnHover={this.props.highlightServicesOnHover}
-        />
-        {services?.length === 0 && this.renderEmptyRuntimePlaceholder()}
-        {outputs && expanded ? <div className="ml-auto">{outputs}</div> : false}
-      </div>
-    );
-  };
-
-  renderEmptyRuntimePlaceholder() {
-    return (
-      <div
-        style={{
-          width: "100%",
-          margin: "auto",
-          textAlign: "center",
-          minHeight: 220,
-        }}
-      >
-        <div style={s(t.fs13, t.ls1, { marginTop: 90 })}>
-          This is an empty runtime -
-          <span
-            style={{ cursor: "help", color: "#4284C4" }}
-            onClick={() => {
-              document
-                .getElementById(`service-selector-${this.props.runtime.id}`)
-                ?.click();
-            }}
-          >
-            {" add services "}
-          </span>
-          to start
-        </div>
-      </div>
-    );
-  }
-
   render() {
     const {
       style,
@@ -330,8 +197,6 @@ export default class Runtime extends Component<Props, State> {
 
     const { wrapServices = !wide, showSettings, expanded } = this.state;
 
-    const readonly = false; // TODO: was if no registry is available
-
     const onArrangeServiceDefault = (serviceUuid: string, position: number) =>
       runtime &&
       boardContext &&
@@ -344,42 +209,14 @@ export default class Runtime extends Component<Props, State> {
 
     const scope = boardContext.scopes[runtimeId];
 
-    const renderActualRuntime = (headless: boolean) => {
-      return runtime.type === "remote"
-        ? this.renderRemoteRuntime(
-            scope,
-            runtime,
-            headless ? false : expanded,
-            user,
-            boardName || "",
-            services,
-            readonly,
-            onArrangeService
-          )
-        : runtime.type === "browser"
-        ? this.renderBrowserRuntime(
-            scope,
-            runtime,
-            headless ? false : expanded,
-            user,
-            boardName || "",
-            services,
-            readonly,
-            onArrangeService,
-            wrapServices
-          )
-        : null;
-    };
-
-    // TODO: this lead to a full re-rerender for BrowserRuntimes in BoardService when expading/collapsing
-    /*
-    if (headless && runtime) {
-      return renderActualRuntime(true);
-    }
-    */
-
     return (
       <RuntimeUI
+        scope={scope}
+        services={services}
+        onServiceAction={this.onServiceAction}
+        onArrangeService={onArrangeService}
+        boardName={boardName || null}
+        user={user}
         frameless={frameless}
         headless={headless}
         style={style}
@@ -387,13 +224,15 @@ export default class Runtime extends Component<Props, State> {
         wrapServices={wrapServices}
         runtime={runtime}
         registry={registry}
+        inputs={this.props.inputs}
+        outputs={this.props.outputs}
         onExpand={(expanded: boolean) => this.setState({ expanded })}
         onAddService={this.onAddService}
         onWrapServices={(isWrapped: boolean) =>
           this.setState({ wrapServices: isWrapped })
         }
+        onResult={this.props.onResult}
       >
-        {runtime && renderActualRuntime(headless)}
         {services && services.length === 0 && !headless && (
           <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
         )}
