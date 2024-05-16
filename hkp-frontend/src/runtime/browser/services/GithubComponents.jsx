@@ -214,13 +214,13 @@ export class GithubObject extends Component {
           label="repo"
           options={repositoryOptions}
           value={repo || ""}
-          onChange={(_, { value: repo }) => onChange({ repo })}
+          onChange={({ value: repo }) => onChange({ repo })}
         />
         <SelectorField
           label="branch"
           options={branchOptions}
           value={branch}
-          onChange={(_, { value: branch }) => onChange({ branch })}
+          onChange={({ value: branch }) => onChange({ branch })}
         />
         <div style={t.tl}>
           {!disableFileInput && (

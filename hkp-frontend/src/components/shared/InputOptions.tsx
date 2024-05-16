@@ -80,7 +80,7 @@ export default class InputOptions extends Component<Props, State> {
               highlight={typeof incoming === "string" ? incoming : undefined}
               value={value === null ? "none" : value}
               disabled={disabled}
-              onChange={(_ev, { value: selected }) =>
+              onChange={({ value: selected }) =>
                 this.setState({ selected }, () =>
                   onSelect(selected === "none" ? null : selected)
                 )

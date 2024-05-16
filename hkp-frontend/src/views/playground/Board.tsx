@@ -26,6 +26,7 @@ import {
   SidechainRouting,
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
+import Button from "@/ui-components/Button";
 
 const defaultDiscoveryPeer: PeerJsHostDescriptor =
   availableDiscoveryPeerHosts[0];
@@ -396,7 +397,7 @@ export default class Board extends Component<Props, State> {
               : null
           }
           options={discoveryOptions}
-          onChange={(_ev, { index }) => {
+          onChange={({ index }) => {
             if (index !== undefined) {
               if (type === "output") {
                 const outputRoute = outputActivation?.route || {
@@ -421,13 +422,8 @@ export default class Board extends Component<Props, State> {
           }}
           uppercaseValues={false}
         />
-        <div
-          style={{
-            marginTop: "3px",
-            color: "#4183c4",
-            cursor: "pointer",
-            textAlign: "center",
-          }}
+        <Button
+          className="mb-2"
           onClick={() => {
             if (type === "output") {
               const outputRoute = outputActivation?.route || {
@@ -447,7 +443,7 @@ export default class Board extends Component<Props, State> {
           }}
         >
           Click to enable
-        </div>
+        </Button>
       </div>
     );
   };

@@ -1,9 +1,15 @@
-import React, { Component } from "react";
-import { Dropdown } from "semantic-ui-react";
-
-import SyncIndicator from "./SyncIndicator";
+import { Component } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/ui-components/primitives/select";
 
 import "./SelectorField.css";
+import GroupLabel from "@/ui-components/GroupLabel";
 
 type OnChangeValue = {
   value: string;
@@ -14,7 +20,7 @@ type Options = { [key: string]: string };
 
 type Props = {
   value: string | null;
-  label: string;
+  label?: string;
   options: Options;
 
   uppercaseValues?: boolean;
@@ -27,141 +33,82 @@ type Props = {
   labelStyle?: object;
   maxHeight?: string;
 
-  onChange: (ev: React.MouseEvent, value: OnChangeValue) => void;
+  onChange: (value: OnChangeValue) => void;
   onOpen?: (options: Options) => void;
 };
 
 type State = {
-  value: string;
   optionsVisible: boolean;
   highlight?: string;
 };
 
 export default class SelectorField extends Component<Props, State> {
   state: State = {
-    value: "",
     optionsVisible: false,
   };
 
-  componentDidMount() {
-    const { value } = this.props;
-    if (value) {
-      this.setState({ value });
-    }
-  }
-
   componentDidUpdate(prevProps: Props) {
-    const { value, highlight } = this.props;
-    if (value && value !== prevProps.value) {
-      this.setState({ value });
-    }
+    const { highlight } = this.props;
 
     if (highlight !== prevProps.highlight) {
       this.setState({ highlight });
     }
   }
 
-  renderDropdown = () => {
+  render() {
     const {
-      options: optionsMap,
       value,
-      placeholder,
-      uppercaseValues,
-      disabled,
-      maxHeight = "200px",
+      label,
+      minWidth = undefined, //"100%",
+      options: optionsMap,
       onChange,
     } = this.props;
+
+    const useDefaultLabel = typeof label !== "object";
     const options = Object.keys(optionsMap).map((key) => ({
-      key,
       text: optionsMap[key],
       value: optionsMap[key],
     }));
 
     return (
-      <Dropdown
-        className="selector-field-selected-value"
-        style={{
-          minHeight: 0,
-          height: 33,
-          paddingTop: 6,
-          width: "100%",
-          paddingRight: 10,
-          border: "solid 1px rgba(34, 36, 38, 0.15)",
-          borderRadius: 3,
-          paddingLeft: 5,
-        }}
-        disabled={disabled}
-        placeholder={value ? optionsMap[value] : placeholder}
-        value={value || undefined}
-      >
-        <Dropdown.Menu style={{ maxHeight, overflowY: "auto", width: "100%" }}>
-          {options.map((option, idx) => (
-            <Dropdown.Item
-              key={option.key}
-              style={{
-                backgroundColor: idx % 2 ? "#f9f9f9" : "white",
-              }}
-              onClick={(ev: React.MouseEvent) => {
-                onChange && onChange(ev, { value: option.key, index: idx });
-                this.setState({ optionsVisible: false });
-              }}
-            >
-              <span
-                style={{
-                  textTransform: uppercaseValues ? "uppercase" : "initial",
-                }}
-              >
-                {option.text}
-              </span>
-            </Dropdown.Item>
-          ))}
-        </Dropdown.Menu>
-      </Dropdown>
-    );
-  };
-
-  render() {
-    const { value } = this.state;
-    const {
-      label,
-      value: syncedValue,
-      style = {},
-      minWidth = undefined, //"100%",
-      uppercaseKeys = false,
-      labelStyle = {},
-      onChange,
-    } = this.props;
-    const fontSize = "12px";
-    const useDefaultLabel = typeof label !== "object";
-    return (
       <div
+        className="items-center"
         style={{
-          ...style,
           width: "100%",
           display: "flex",
           flexDirection: "row",
           minWidth,
         }}
       >
-        {useDefaultLabel ? (
-          <SyncIndicator
-            onClick={(ev: React.MouseEvent) =>
-              onChange && onChange(ev, { value })
-            }
-            inSync={value === syncedValue}
-            label={label}
-            style={{
-              textTransform: uppercaseKeys ? "uppercase" : undefined,
-              letterSpacing: 1,
-              fontSize,
-              ...labelStyle,
-            }}
-          />
-        ) : (
-          label
-        )}
+        {label && (useDefaultLabel ? <div>{label}</div> : label)}
 
-        {this.renderDropdown()}
+        <Select
+          value={value || undefined}
+          onOpenChange={(isOpen) =>
+            isOpen && this.props.onOpen?.(this.props.options)
+          }
+          onValueChange={(newValue) =>
+            onChange({
+              index: options.findIndex((x) => x.value === newValue),
+              value: newValue,
+            })
+          }
+        >
+          <SelectTrigger className="w-full m-2">
+            <SelectValue placeholder="Select ..." />
+          </SelectTrigger>
+          <SelectContent className="font-menu">
+            <SelectGroup>
+              {/*<SelectLabel>SOME LABLE COULD BE HERE</SelectLabel>*/}
+
+              {options.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.text}
+                </SelectItem>
+              ))}
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       </div>
     );
   }

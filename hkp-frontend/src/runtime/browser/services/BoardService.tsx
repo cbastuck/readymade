@@ -211,7 +211,7 @@ function BoardServiceUI(props: Props) {
                       }),
                       {}
                     )}
-                    onChange={(_ev, { value: board }) => {
+                    onChange={({ value: board }) => {
                       service.configure({ selectedBoard: board });
                       onChangeSavedBoard(boardContext, board);
                     }}

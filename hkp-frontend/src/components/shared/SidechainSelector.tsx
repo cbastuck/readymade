@@ -1,10 +1,10 @@
-import { Dropdown, DropdownProps } from "semantic-ui-react";
 import { BoardContextState } from "../../BoardContext";
 import {
   RuntimeDescriptor,
   ServiceDescriptor,
   SidechainRoute,
 } from "../../types";
+import MultipleSelector, { Option } from "@/ui-components/MultiSelect";
 
 type FlatServices = {
   rt: RuntimeDescriptor;
@@ -32,31 +32,41 @@ export default function SidechainSelector({
 
   const options = flatServices.map(({ rt, svc }) => ({
     key: `${rt.id}.${svc.uuid}`,
-    text: `${rt.name}-${svc.serviceName}`,
+    label: `${rt.name}-${svc.serviceName}`,
     value: `${rt.id}.${svc.uuid}`,
   }));
 
-  const mappedValues = values.map(
-    (item) => `${item.runtimeId}.${item.serviceUuid}`
-  );
+  const mappedValues = values.flatMap((value) => {
+    const v = `${value.runtimeId}.${value.serviceUuid}`;
+    const opt = options.find((option) => option.value === v);
+    if (!opt) {
+      return [];
+    }
+    return [opt];
+  });
+
+  const onChangeSelector = (newValues: Array<Option>) => {
+    const values = newValues.map((item) => {
+      const pair = item.value.split(".");
+      return { runtimeId: pair[0], serviceUuid: pair[1] };
+    });
+    onChange(values);
+  };
+
   return (
-    <Dropdown
-      style={{ width: "100%", whiteSpace: "nowrap" }}
-      placeholder="Targets"
-      fluid
-      multiple
-      selection
-      options={options}
-      onChange={(_ev, { value }: DropdownProps) => {
-        if (Array.isArray(value)) {
-          const unmappedValues = (value as string[]).map((item) => {
-            const pair = item.split(".");
-            return { runtimeId: pair[0], serviceUuid: pair[1] };
-          });
-          onChange(unmappedValues);
+    <div className="p-2 flex flex-col">
+      <MultipleSelector
+        defaultOptions={options}
+        placeholder="Targets ..."
+        value={mappedValues}
+        onChange={onChangeSelector}
+        emptyIndicator={
+          <p className="text-center text-lg leading-10 text-gray-600 dark:text-gray-400">
+            No results found.
+          </p>
         }
-      }}
-      value={mappedValues}
-    />
+        badgeClassName="bg-sky-600 hover:bg-sky-400"
+      />
+    </div>
   );
 }

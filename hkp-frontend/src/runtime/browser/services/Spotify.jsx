@@ -105,7 +105,7 @@ export class SpotifyUI extends Component {
           label="Action"
           options={actions}
           value={selectedAction}
-          onChange={(_, { value: selectedAction }) =>
+          onChange={({ value: selectedAction }) =>
             this.setState({ selectedAction })
           }
         />

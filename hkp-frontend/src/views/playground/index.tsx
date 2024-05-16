@@ -2,16 +2,13 @@ import { Component } from "react";
 
 import { withRouter, WithRouterProps } from "../../common";
 
-import BoardProvider, {
-  BoardConsumer,
-  BoardContextState,
-} from "../../BoardContext";
+import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "@/components/Footer";
 import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
 import SaveBoardDialog from "../../components/SaveBoardDialog";
 import Board from "./Board";
-import BoardSync from "./boardsync";
+
 import { generateRandomName } from "../../core/board";
 import { t } from "../../styles";
 import {
@@ -59,9 +56,6 @@ type State = {
   description: string;
   initialFetched: boolean;
 
-  // BoardSync data
-  syncedPeer: string | undefined;
-  boardSyncActive: boolean;
   acceptedSyncSenders: AcceptedSyncSenders;
   rejectedSyncSenders: RejectedSyncSenders;
 
@@ -93,9 +87,6 @@ class Playground extends Component<Props, State> {
     description: "",
     initialFetched: false,
 
-    // BoardSync data
-    syncedPeer: undefined,
-    boardSyncActive: false,
     acceptedSyncSenders: [],
     rejectedSyncSenders: [],
 
@@ -178,8 +169,6 @@ class Playground extends Component<Props, State> {
       inputRouting = {},
 
       // playground specific board data
-      boardSyncActive = false,
-      syncedPeer = undefined,
       acceptedSyncSenders = [],
       rejectedSyncSenders = [],
       runtimes = [],
@@ -198,8 +187,6 @@ class Playground extends Component<Props, State> {
       ...data,
       initialFetched: true,
       description,
-      boardSyncActive,
-      syncedPeer,
     });
 
     return {
@@ -263,8 +250,6 @@ class Playground extends Component<Props, State> {
       sidechainRouting = {},
       outputRouting = {},
       inputRouting = {},
-      boardSyncActive = false,
-      syncedPeer = undefined,
       acceptedSyncSenders = [],
       rejectedSyncSenders = [],
     }: State = this.state;
@@ -284,8 +269,7 @@ class Playground extends Component<Props, State> {
         {}
       ),
       description,
-      boardSyncActive,
-      syncedPeer,
+
       acceptedSyncSenders,
       rejectedSyncSenders,
     };
@@ -367,39 +351,11 @@ class Playground extends Component<Props, State> {
       case "createBoardLink":
       case "showBoardSource":
         return true; //(this.boardProviderRef?.state?.runtimes || []).length > 0;
-      case "toggleBoardSync":
-        return true;
 
       default:
         break;
     }
     return true;
-  };
-
-  renderBoardSync = (boardContext: BoardContextState) => {
-    return (
-      <BoardSync
-        active={this.state.boardSyncActive}
-        syncedPeer={this.state.syncedPeer}
-        onSyncedPeerChanged={(syncedPeer: string) =>
-          this.setState({ syncedPeer })
-        }
-        boardContext={boardContext}
-        onUpdate={(update: any) => this.setState(update, this.tryFetch)}
-        onClose={(closedPeer: string) => {
-          if (closedPeer === this.state.syncedPeer) {
-            this.setState({ syncedPeer: undefined });
-          }
-        }}
-        defaultBrowserRegistry={this.defaultRegistry}
-        acceptedSenders={this.state.acceptedSyncSenders}
-        rejectedSenders={this.state.rejectedSyncSenders}
-        onChange={({
-          acceptedSenders: acceptedSyncSenders = this.state.acceptedSyncSenders,
-          rejectedSenders: rejectedSyncSenders = this.state.rejectedSyncSenders,
-        }) => this.setState({ acceptedSyncSenders, rejectedSyncSenders })}
-      />
-    );
   };
 
   onRemoveService = (instance: InstanceId, _runtime: RuntimeDescriptor) => {
@@ -479,10 +435,7 @@ class Playground extends Component<Props, State> {
         serializeBoard={this.serializeBoard}
         onUpdateBoardState={this.onUpdateBoardState}
         onAction={(action: Action) => {
-          if (action.type === "toggleBoardSync") {
-            this.setState({ boardSyncActive: !this.state.boardSyncActive });
-            return true;
-          } else if (action.type === "createBoardLink") {
+          if (action.type === "createBoardLink") {
             this.onCreateBoardLink();
             return true;
           } else if (action.type === "showBoardSource") {
@@ -531,8 +484,6 @@ class Playground extends Component<Props, State> {
                   onSave={this.onSaveDialog}
                   onCancel={() => this.setState({ isSaveDialogVisible: false })}
                 />
-                {this.state.boardSyncActive &&
-                  this.renderBoardSync(boardContext)}
 
                 <BoardEntryPoint
                   isLoading={

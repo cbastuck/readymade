@@ -71,9 +71,7 @@ export default class IngressUI extends Component {
             PUT: "PUT",
           }}
           value={op}
-          onChange={(_ev, { value }) =>
-            this.setState({ op: value, active: false })
-          }
+          onChange={({ value }) => this.setState({ op: value, active: false })}
         />
         <InputField
           label="Path"

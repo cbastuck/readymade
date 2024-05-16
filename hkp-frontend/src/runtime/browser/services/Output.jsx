@@ -112,7 +112,7 @@ export class OutputUI extends Component {
             pass: "pass-through",
           }}
           value={flow}
-          onChange={async (_ev, { value: flow }) => {
+          onChange={async ({ value: flow }) => {
             await service.configure({ flow });
             this.setState({ flow });
           }}

@@ -70,7 +70,7 @@ export default class OutputOptions extends Component<Props, State> {
             label="Peer"
             options={peerOptions}
             value={value || none}
-            onChange={(_ev, { value: selected }) => {
+            onChange={({ value: selected }) => {
               onSelect(selected === none ? null : selected);
             }}
             onOpen={() => onAction({ type: "update-peers" })}
@@ -86,14 +86,13 @@ export default class OutputOptions extends Component<Props, State> {
     return this.renderOptions(
       "Flow",
       <SelectorField
-        label="Flow"
         options={{
           pass: "pass",
           stop: "stop",
           // stopIf: 'stop-if'
         }}
         value={flow}
-        onChange={(_ev, { value: flow }) => {
+        onChange={({ value: flow }) => {
           isValidFlowOption(flow) && onAction({ type: "flow-changed", flow });
         }}
       />

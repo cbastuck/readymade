@@ -377,8 +377,6 @@ export type PlaygroundBoard = BoardDescriptor & {
 };
 
 export type PlaygroundState = PlaygroundBoard & {
-  syncedPeer: string | undefined;
-  boardSyncActive: boolean;
   acceptedSyncSenders: Array<any>;
   rejectedSyncSenders: Array<any>;
 };

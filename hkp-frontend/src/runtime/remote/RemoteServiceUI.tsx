@@ -53,7 +53,7 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
                   value={val}
                   label={prop}
                   options={options}
-                  onChange={(_, { value }) => {
+                  onChange={({ value }) => {
                     service.configure({ [prop]: value });
                   }}
                   labelStyle={{

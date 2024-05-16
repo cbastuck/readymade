@@ -57,7 +57,7 @@ export class FilterUI extends Component {
             label="Op"
             options={{ and: "and", or: "or" }}
             value={aggregator}
-            onChange={(_ev, { value: aggregator }) => {
+            onChange={({ value: aggregator }) => {
               service.configure({ aggregator });
             }}
           />
