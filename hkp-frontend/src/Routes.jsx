@@ -20,10 +20,8 @@ import BuildBoard from "./views/BuildBoard";
 import AuthRedirect from "./views/AuthRedirect";
 import AuthRedirectAuth0 from "./views/AuthRedirectAuth0";
 import Import from "./Import";
-import Login from "./views/Login";
 import Profile from "./views/profile";
 
-import LoginFail from "./views/LoginFail";
 import Headless from "./views/headless";
 import Join from "./Join";
 import ServiceReferenceView from "./views/ServiceReferenceView";
@@ -102,8 +100,6 @@ export default function AppRoutes() {
       <Route path="/authRedirect" element={<AuthRedirectAuth0 />} />
       <Route path="/import" element={<Import />} />
 
-      <Route path="/login" element={<Login />} />
-      <Route path="/loginFail" element={<LoginFail />} />
       <Route path="/profile" element={<Profile />} />
 
       <Route path="/service/:service" element={<ServiceReferenceView />} />
