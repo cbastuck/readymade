@@ -67,10 +67,9 @@ export function restoreBoardFromLocalStorage(name: string) {
   const data = localStorage.getItem(storageName);
   if (data) {
     const item = JSON.parse(data);
-    if (item.source) {
-      return item.source;
-    }
-    if (item && item.runtimes) {
+    if (typeof item.source === "string") {
+      return JSON.parse(item.source);
+    } else if (item && item.runtimes) {
       return item;
     }
   }

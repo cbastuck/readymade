@@ -47,9 +47,9 @@ export default function EmptySketch({ boardName }: Props) {
                     }
                   }}
                 >
-                  {" add a runtime "}
+                  {" Add a Runtime "}
                 </span>
-                to sketch an idea
+                to sketch an Idea
               </div>
             </div>
           ) : (

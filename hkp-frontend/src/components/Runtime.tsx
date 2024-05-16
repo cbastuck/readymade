@@ -1,8 +1,6 @@
 import { CSSProperties, Component, ReactElement } from "react";
-import { SemanticICONS } from "semantic-ui-react";
 
 import { getServiceConfiguration } from "../core/actions";
-//import NodeRuntime from "../runtime/NodeRuntime";
 import BrowserRuntime from "../runtime/browser/BrowserRuntime";
 import RemoteRuntime from "../runtime/remote/RemoteRuntime";
 import ServiceDropdown from "./ServiceDropdown";
@@ -35,7 +33,7 @@ type Props = {
   inputs?: ReactElement;
   customItems?: Array<{
     key: string;
-    icon: SemanticICONS;
+    icon: ReactElement;
     onClick: (ev: React.MouseEvent) => void;
   }>;
   disabledItems?: Array<string>;
