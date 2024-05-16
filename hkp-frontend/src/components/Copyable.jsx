@@ -1,46 +1,32 @@
 import { Component } from "react";
+import { Copy } from "lucide-react";
 
-import Button from "./shared/Button";
+import GroupLabel from "@/ui-components/GroupLabel";
+import Input from "@/ui-components/Input";
+
+import Button from "@/ui-components/Button";
 import { s, t } from "../styles";
 
 export default class Copyable extends Component {
   copyToClipboard = () => {
     if (this.input) {
-      this.input.select();
-      this.input.setSelectionRange(0, 99999);
-      document.execCommand("copy");
+      navigator.clipboard.writeText(this.input.value);
     }
   };
 
   render() {
     const { label, value, style } = this.props;
     return (
-      <div style={s({ display: "flex", flexDirection: "row", width: "100%" })}>
-        <div style={s(t.mt9, t.fs12, t.ls2, { textTransform: "capitalize" })}>
-          {label}
-        </div>
-        <input
+      <div className="flex w-full items-center gap-2">
+        <GroupLabel>{label}</GroupLabel>
+        <Input
           ref={(input) => (this.input = input)}
-          style={s(
-            t.m(5, 0),
-            t.p2,
-            {
-              border: "solid 1px lightgray",
-              color: "darkgray",
-              flexGrow: 2,
-              letterSpacing: 1.4,
-              padding: "5px",
-            },
-            style
-          )}
           value={value}
           onChange={() => {}}
+          fullWidth
+          hideBottomBorder
         />
-        <Button
-          style={{ width: 50 }}
-          icon="copy outline"
-          onClick={this.copyToClipboard}
-        />
+        <Button icon={<Copy />} onClick={this.copyToClipboard} />
       </div>
     );
   }

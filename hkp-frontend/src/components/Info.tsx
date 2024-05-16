@@ -1,9 +1,4 @@
-import {
-  Card,
-  CardHeader,
-  CardContent,
-  CardTitle,
-} from "@/ui-components/primitives/card";
+import { Card, CardHeader, CardContent } from "@/ui-components/primitives/card";
 
 type Props = {
   headline: string;
@@ -15,7 +10,7 @@ export default function Info({ headline, children }: Props) {
     <Card className="m-2">
       {headline && (
         <CardHeader>
-          <CardTitle>{headline}</CardTitle>
+          <h1>{headline}</h1>
         </CardHeader>
       )}
       <CardContent className="text-base mx-4 my-2 p-2">{children}</CardContent>

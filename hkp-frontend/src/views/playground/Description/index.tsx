@@ -1,4 +1,4 @@
-import { Message } from "semantic-ui-react";
+import Info from "@/components/Info";
 import { createDescription } from "./factory";
 import { BaseType } from "./types";
 
@@ -13,18 +13,12 @@ export default function Description({ description, boardName }: Props) {
   }
   const arr = Array.isArray(description) ? description : [description];
   return (
-    <div style={{ margin: "10px 0px" }}>
-      <Message
-        style={{
-          padding: "15px 30px",
-          color: "#555",
-          backgroundColor: "rgba(172, 200, 229, 0.01)",
-        }}
-      >
-        <>
+    <div className="my-[10px]">
+      <Info headline="Description">
+        <div className="w-[90%] mx-auto my-[10px]">
           {arr.map((item, idx) => createDescription({ boardName, item, idx }))}
-        </>
-      </Message>
+        </div>
+      </Info>
     </div>
   );
 }
