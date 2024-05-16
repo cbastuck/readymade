@@ -76,30 +76,4 @@ export default function SaveBoardDialog({
       </div>
     </CustomDialog>
   );
-  /*
-  return (
-    <Prompt
-      onRef={(prompt) => (promptRef.current = prompt)}
-      headline="Enter a name for the board"
-    >
-      <Label style={s(t.fs12, t.ls1)}>Name</Label>
-      <Input
-        style={s(t.w100)}
-        value={name || ""}
-        onChange={(_ev, { value: name }) => setName(name)}
-      />
-      <Label style={s(t.fs12, t.ls1, t.mt10)}>Description</Label>
-      <TextArea
-        style={s(t.w100, t.p10, {
-          border: "solid 1px lightgray",
-          resize: "none",
-        })}
-        value={description || ""}
-        onChange={(_ev, { value: description }) =>
-          setDescription(`${description}`)
-        }
-      />
-    </Prompt>
-  );
-  */
 }

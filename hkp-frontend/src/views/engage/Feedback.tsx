@@ -1,4 +1,5 @@
-import { FormField, FormGroup } from "semantic-ui-react";
+import CheckboxGroup from "@/ui-components/CheckboxGroup";
+import RadioGroup from "@/ui-components/RadioGroup";
 
 export type FeedbackQuestionMode = "single" | "many";
 export type FeedbackType = "reaction" | "answer";
@@ -22,16 +23,18 @@ export default function Feedback({
   options,
   mode,
   type,
-  direction = "row",
   question,
   answers,
   onChange,
 }: Props) {
-  const padding = { margin: "0px 20px" };
   const headline =
     type === "reaction"
       ? `${order.toString()}. How would you react? `
       : `${order.toString()}. What would you answer?`;
+
+  const currentAnswerValues = Object.keys(answers).flatMap((answerIdx) =>
+    answers[Number(answerIdx)] ? [options[Number(answerIdx)]] : []
+  );
 
   return (
     <div style={{ marginTop: "5px" }}>
@@ -47,48 +50,38 @@ export default function Feedback({
         >
           {question}
         </blockquote>
-        {mode === "many" && (
-          <div style={{ width: "80%", textAlign: "right" }}>
-            (multiple answers possible)
-          </div>
-        )}
-        <FormGroup
-          style={{
-            display: "flex",
-            flexDirection: direction,
-            padding: "5px 20px",
-            fontSize: "12pt",
-          }}
-          grouped
-        >
-          {mode === "single" &&
-            options.map((opt, idx) => (
-              <FormField
-                key={opt}
-                style={padding}
-                label={opt}
-                control="input"
-                type="radio"
-                name="htmlRadios"
-                onChange={(ev: any) => onChange({ [idx]: ev.target.checked })}
-                checked={answers[idx] || false}
-              />
-            ))}
-          {mode === "many" &&
-            options.map((opt, idx) => (
-              <FormField
-                key={opt}
-                style={padding}
-                label={opt}
-                control="input"
-                type="checkbox"
-                onChange={(ev: any) =>
-                  onChange({ ...answers, [idx]: ev.target.checked })
-                }
-                checked={answers[idx] || false}
-              />
-            ))}
-        </FormGroup>
+        <div className="my-2">
+          {mode === "single" && (
+            <RadioGroup
+              id={question}
+              vertical
+              title="Select a single answer"
+              options={options}
+              value={currentAnswerValues[0] || undefined}
+              onChange={(value) => {
+                onChange({
+                  [options.findIndex((a) => a === value)]: true,
+                });
+              }}
+            />
+          )}
+
+          {mode === "many" && (
+            <CheckboxGroup
+              id={question}
+              title="Multiple answers possible"
+              options={options}
+              values={currentAnswerValues}
+              onChange={(value: string, checked: boolean) => {
+                onChange({
+                  ...answers,
+                  [options.findIndex((a) => a === value)]: checked,
+                });
+              }}
+              vertical
+            />
+          )}
+        </div>
       </div>
     </div>
   );

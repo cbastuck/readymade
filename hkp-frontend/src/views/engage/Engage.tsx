@@ -82,7 +82,9 @@ export default function Engage({ withTemplate = true }: Props) {
 
   return (
     <Article title="What do you think?" width="60%" withTemplate={withTemplate}>
-      <div style={{ width: "100%", textAlign: "right" }}>15.3.2024</div>
+      <div className="text-md" style={{ width: "100%", textAlign: "right" }}>
+        15.3.2024
+      </div>
       <Motivation />
 
       <Form onSubmit={handleSubmit}>

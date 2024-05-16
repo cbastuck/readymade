@@ -1,8 +1,7 @@
-import { FormField, Checkbox, CheckboxProps } from "semantic-ui-react";
+import { Checkbox } from "@/ui-components/primitives/checkbox";
 
 import Personals, { PersonalData } from "./Personals";
 import { useCallback } from "react";
-import Incentive from "./Incentive";
 
 type Props = {
   tcAgreed: boolean;
@@ -18,7 +17,7 @@ export default function Participation({
   onTcChanged,
 }: Props) {
   const onTc = useCallback(
-    (_ev: React.FormEvent<HTMLInputElement>, { checked }: CheckboxProps) => {
+    (checked: boolean) => {
       if (checked !== undefined) {
         onTcChanged(checked);
       }
@@ -26,20 +25,17 @@ export default function Participation({
     [onTcChanged]
   );
   return (
-    <div className="hkp-card-border" style={{ padding: "20px" }}>
-      <Incentive />
+    <div className="p-2">
       <Personals data={personals} onChange={onPersonalsChanged} />
-      <FormField
-        style={{ marginTop: "20px", display: "flex", flexDirection: "row" }}
-      >
-        <Checkbox label="" checked={tcAgreed} onChange={onTc} />
-        <span>
+      <div className="mt-[20px] flex gap-2 items-center">
+        <Checkbox checked={tcAgreed} onCheckedChange={onTc} />
+        <div>
           I agree to the{" "}
           <a href="/terms" target="_blank">
             Terms and Conditions
           </a>
-        </span>
-      </FormField>
+        </div>
+      </div>
     </div>
   );
 }

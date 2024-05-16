@@ -13,6 +13,7 @@ type Props = {
   value: string | undefined;
   disabled?: boolean;
   alignRight?: boolean;
+  vertical?: boolean;
   onChange: (value: string) => void;
 };
 
@@ -24,6 +25,7 @@ export default function RadioGroup({
   disabled,
   className = "",
   alignRight,
+  vertical,
   onChange,
 }: Props) {
   const uniqueId = id || crypto.randomUUID();
@@ -36,7 +38,10 @@ export default function RadioGroup({
       >
         {title}
       </GroupLabel>
-      <RadioGroupCN className="py-2 flex" value={value}>
+      <RadioGroupCN
+        className={`py-2 flex ${vertical ? "flex-col" : ""}`}
+        value={value}
+      >
         {options.map((item, idx) => {
           const optionId = `${uniqueId || title}-option-${idx}`;
           return (
