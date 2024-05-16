@@ -1,5 +1,5 @@
 type Props = {
-  src: string;
+  src: string | undefined;
   floated?: string;
   size?: string | number;
   className?: string;

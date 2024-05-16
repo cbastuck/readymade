@@ -1,7 +1,9 @@
-import { Card, Image } from "semantic-ui-react";
+import { useContext } from "react";
+
+import { Card, CardHeader, CardContent } from "@/ui-components/primitives/card";
+import Image from "@/ui-components/Image";
 
 import Template from "../Template";
-import { useContext } from "react";
 import { AppCtx } from "../../AppContext";
 
 export default function Profile() {
@@ -9,17 +11,21 @@ export default function Profile() {
   const user = context?.user;
 
   return (
-    <Template title="profile" isRoot={true}>
+    <Template title="Profile" isRoot={true}>
       <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
-        <Card style={{ marginLeft: "auto", marginRight: "auto" }}>
-          <Image src={user?.picture} wrapped ui={false} />
-          <Card.Content>
-            <Card.Header>{user?.username}</Card.Header>
-            <Card.Meta>
-              <span className="date">{user?.updatedAt}</span>
-            </Card.Meta>
-            <Card.Description>{user?.userId}</Card.Description>
-          </Card.Content>
+        <Card className="m-auto w-[600px]">
+          <CardHeader></CardHeader>
+          <CardContent className="text-base mx-4 my-2 p-2">
+            <div>
+              <Image src={user?.picture} />
+
+              <div>{user?.username}</div>
+              <div>
+                <span className="date">{user?.updatedAt}</span>
+              </div>
+              <div>{user?.userId}</div>
+            </div>
+          </CardContent>
         </Card>
       </div>
     </Template>
