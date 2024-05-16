@@ -1,5 +1,4 @@
 import { CSSProperties } from "react";
-import { Item } from "semantic-ui-react";
 
 import Text from "@/ui-components/Text";
 
@@ -18,26 +17,20 @@ export default function GroupItem(item: Props) {
     borderBottom: item.bottomDivider ? "solid 1px lightgray" : "none",
   };
   return (
-    <Item style={itemStyle}>
+    <div style={itemStyle}>
       {
-        <Item.Header
-          className=""
+        <div
           style={{
-            fontSize: 14,
-            letterSpacing: 2,
             paddingTop: 9,
             marginLeft: 10,
             minWidth: 150,
-            fontWeight: "thin",
           }}
         >
-          <span style={{ cursor: "initial", color: "#4183c4", fontSize: 14 }}>
-            {item.title}
-          </span>
-        </Item.Header>
+          <h2 className="text-sky-600">{item.title}</h2>
+        </div>
       }
-      <Item.Content style={{ marginLeft: 10 }}>
-        <Item.Description>
+      <div className="ml-[10px] mt-2">
+        <>
           {item.details.map((detail, idx) => (
             <Text
               key={`detail-${item.title}-${idx}`}
@@ -51,8 +44,8 @@ export default function GroupItem(item: Props) {
               {detail}
             </Text>
           ))}
-        </Item.Description>
-      </Item.Content>
-    </Item>
+        </>
+      </div>
+    </div>
   );
 }

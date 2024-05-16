@@ -1,6 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { Item } from "semantic-ui-react";
-
 import Text from "@/ui-components/Text";
 import Sketch from "./Sketch";
 import Template from "../Template";
@@ -91,7 +89,7 @@ export default function Quickstart() {
         <div style={{ padding: "8px 0px" }}>
           <Sketch />
         </div>
-        <Item.Group link style={{ marginTop: 0, marginBottom: 0 }}>
+        <div className="flex flex-col">
           <GroupItem
             title="Board"
             details={[
@@ -135,7 +133,7 @@ export default function Quickstart() {
             ]}
             image={undefined}
           />
-        </Item.Group>
+        </div>
       </div>
 
       <Button

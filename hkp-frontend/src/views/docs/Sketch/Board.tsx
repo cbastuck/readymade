@@ -11,8 +11,7 @@ export default function Board() {
     >
       <div style={s(t.tc)}>
         <div style={s(t.tl, { marginLeft: 35 })}>
-          <div>Board</div>
-          <div>Name: Example</div>
+          <div>Boardname: Example</div>
           <div>Topology: Chain</div>
         </div>
       </div>
