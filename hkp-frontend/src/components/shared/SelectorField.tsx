@@ -9,7 +9,6 @@ import {
 } from "@/ui-components/primitives/select";
 
 import "./SelectorField.css";
-import GroupLabel from "@/ui-components/GroupLabel";
 
 type OnChangeValue = {
   value: string;
