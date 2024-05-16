@@ -1,5 +1,4 @@
 import { useCallback, useState } from "react";
-import { Form } from "semantic-ui-react";
 
 import Button from "../../components/shared/Button";
 import FeedbackForm, { FeedbackFormAnswers } from "./FeedbackForm";
@@ -87,7 +86,7 @@ export default function Engage({ withTemplate = true }: Props) {
       </div>
       <Motivation />
 
-      <Form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit}>
         <FeedbackForm
           questions={feedbackQuestions}
           answers={answers}
@@ -125,7 +124,7 @@ export default function Engage({ withTemplate = true }: Props) {
           </Button>
           {submittedStatus && <div>{}</div>}
         </div>
-      </Form>
+      </form>
     </Article>
   );
 }
