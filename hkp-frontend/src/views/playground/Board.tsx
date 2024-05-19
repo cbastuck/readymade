@@ -234,9 +234,6 @@ export default class Board extends Component<Props, State> {
       sidechainRouting && sidechainRouting[runtime.id];
 
     const outputActivation = this.state.peerOutputActivation[activationId];
-    const inputActivation = this.state.peerInputActivation[activationId];
-    const hostDescriptor =
-      outputActivation?.hostDescriptor || inputActivation?.hostDescriptor;
     return (
       <OutputOptions
         id={runtime.id}
