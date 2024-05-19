@@ -1,5 +1,7 @@
 import { NodeRendererProps } from "react-arborist";
-import { Button } from "semantic-ui-react";
+import { Plus, Minus } from "lucide-react";
+
+import Button from "@/ui-components/Button";
 
 export default function Node({
   node,
@@ -65,11 +67,8 @@ export default function Node({
             parentId: node.id,
           });
         }}
-        icon="plus"
-        className="hkp-button-borderless"
-        style={{ width: "min-content", height: "25px" }}
-        size="tiny"
-        compact
+        icon={<Plus />}
+        size="xs"
       />
 
       <Button
@@ -78,11 +77,8 @@ export default function Node({
             id: node.id,
           });
         }}
-        icon="minus"
-        className="hkp-button-borderless"
-        style={{ width: "min-content", height: "25px" }}
-        size="tiny"
-        compact
+        icon={<Minus />}
+        size="xs"
       />
     </div>
   );

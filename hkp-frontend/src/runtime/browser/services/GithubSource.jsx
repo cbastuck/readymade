@@ -2,7 +2,7 @@ import { Component } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 import InputField from "../../../components/shared/InputField";
-import Button from "../../../components/shared/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 import { GithubUser, GithubObject, GithubOAuth } from "./GithubComponents";
 import { getFile, getFileFromBranch } from "./GithubAPI";
 import { s, t } from "../../../styles";

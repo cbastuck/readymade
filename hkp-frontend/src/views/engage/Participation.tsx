@@ -29,7 +29,7 @@ export default function Participation({
       <Personals data={personals} onChange={onPersonalsChanged} />
       <div className="mt-[20px] flex gap-2 items-center">
         <Checkbox checked={tcAgreed} onCheckedChange={onTc} />
-        <div>
+        <div className="text-base">
           I agree to the{" "}
           <a href="/terms" target="_blank">
             Terms and Conditions

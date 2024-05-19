@@ -1,9 +1,7 @@
-import { Component, KeyboardEvent } from "react";
+import { Component } from "react";
 import { SquareCode } from "lucide-react";
-import { Checkbox, TextArea, Input, Progress } from "semantic-ui-react";
 
 import { s, t } from "../../../styles";
-
 import Editor from "../../../components/shared/Editor/index";
 import DropZone from "../../../components/shared/DropZone";
 
@@ -18,6 +16,9 @@ import ServiceUI from "@/ui-components/service/ServiceUI";
 import RadioGroup from "@/ui-components/RadioGroup";
 import Button from "@/ui-components/Button";
 import MenuIcon from "@/ui-components/MenuIcon";
+import { Label } from "@/ui-components/primitives/label";
+import { Checkbox } from "@/ui-components/primitives/checkbox";
+import { Progress } from "@/ui-components/primitives/progress";
 
 type State = {
   files: Array<File>;
@@ -124,7 +125,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
             >
               <Checkbox
                 key={`drop-zone-item-checkbox-${idx}`}
-                onChange={(_, { checked }) =>
+                onChange={(checked) =>
                   this.setState({
                     itemsSelection: checked
                       ? [...this.state.itemsSelection, idx]
@@ -184,82 +185,6 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
         >
           Inject
         </Button>
-      </div>
-    );
-  };
-
-  renderRawInput = (service: ServiceInstance) => {
-    const { multirow, recentInjection } = this.state;
-    return (
-      <div
-        style={{
-          height: "100%",
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
-        <div
-          style={{
-            flexGrow: 2,
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {multirow ? (
-            <TextArea
-              style={{
-                flexGrow: 2,
-                width: "100%",
-                padding: 10,
-                resize: "none",
-                border: "solid 1px #ccc",
-              }}
-              cols="20"
-              value={recentInjection}
-              onChange={(_, { value: recentInjection }) => {
-                recentInjection &&
-                  this.setState({ recentInjection: `${recentInjection}` });
-              }}
-            />
-          ) : (
-            <Input
-              style={{ width: "100%" }}
-              value={recentInjection}
-              onChange={(_, { value: recentInjection }) =>
-                this.setState({ recentInjection })
-              }
-              placeholder="Enter text here"
-              onKeyUp={(ev: KeyboardEvent) => {
-                switch (ev.key) {
-                  case "Enter":
-                    return service.configure({ inject: recentInjection });
-                  default:
-                    break;
-                }
-              }}
-            />
-          )}
-          <div style={s(t.tl, t.mt3)}>
-            <Checkbox
-              style={s(t.fs12, t.ls1, { margin: "5px 0px" })}
-              toggle
-              checked={multirow}
-              onChange={(_, { checked: multirow }) =>
-                this.setState({ multirow: !!multirow })
-              }
-              label="Multirow"
-            />
-          </div>
-          <Button
-            style={{ ...this.buttonStyle }}
-            onClick={() => service.configure({ inject: recentInjection })}
-            disabled={!recentInjection}
-          >
-            Inject
-          </Button>
-        </div>
       </div>
     );
   };
@@ -330,17 +255,21 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     const { file, loadAsText, fileProgress } = this.state;
     return (
       <div className="flex flex-col h-full gap-2">
-        <div className="flex items-center">
+        <div className="grid w-full items-center gap-1.5 text-left mt-2">
+          <Label htmlFor="file" className="text-base">
+            Select a file for injection
+          </Label>
           <input
-            className="tracking-wider"
-            style={t.fs12}
+            id="file"
             type="file"
+            className="tracking-wider"
             onChange={(ev) =>
               ev.target.files?.length &&
               this.setState({ file: ev.target.files[0] })
             }
           />
         </div>
+
         <div className="mb-2 h-full">
           <Button
             className="h-full text-xl"
@@ -351,8 +280,9 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
             Inject
           </Button>
         </div>
+
         <div style={s(t.m(0, 3), { display: fileProgress <= 0 && "none" })}>
-          <Progress progress="percent" percent={fileProgress} />
+          <Progress value={fileProgress} />
         </div>
       </div>
     );

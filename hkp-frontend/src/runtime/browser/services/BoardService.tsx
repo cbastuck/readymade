@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ExternalLink, ChevronUp, ChevronDown } from "lucide-react";
 
 import BoardProvider, {
   BoardConsumer,
   BoardContextState,
 } from "../../../BoardContext";
-import Button from "../../../components/shared/Button";
+
 import SelectorField from "../../../components/shared/SelectorField";
 import browserRuntimeApi from "../../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../../runtime/remote/RemoteRuntimeApi";
@@ -24,6 +25,7 @@ import {
   getLocalBoards,
 } from "../../../views/playground/common";
 import ServiceUI from "../../services/ServiceUI";
+import Button from "@/ui-components/Button";
 
 const serviceId = "hookup.to/service/board-service";
 const serviceName = "Board-Service";
@@ -213,8 +215,8 @@ function BoardServiceUI(props: Props) {
                     }}
                   />
                   <Button
-                    icon={"external alternate"}
-                    size="tiny"
+                    icon={<ExternalLink />}
+                    size="sm"
                     style={{
                       width: "50px",
                       height: "33px",
@@ -242,7 +244,7 @@ function BoardServiceUI(props: Props) {
                     borderRadius: 1,
                   }}
                   onClick={onToggleExpandCollapse}
-                  icon={isExpanded ? "angle up" : "angle down"}
+                  icon={isExpanded ? <ChevronUp /> : <ChevronDown />}
                 />
 
                 <div

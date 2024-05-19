@@ -4,7 +4,7 @@ import { Card, Icon, Image } from "semantic-ui-react";
 import ServiceUI from "../../services/ServiceUI";
 import { s, t } from "../../../styles";
 import SelectorField from "../../../components/shared/SelectorField";
-import Button from "../../../components/shared/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 import { SpotifyOAuth } from "./SpotifyComponents";
 import { getMySavedSongs, getUserProfile, getRecentSongs } from "./SpotifyAPI";
 

@@ -67,7 +67,7 @@ export default class BoardRouting extends Component<Props, State> {
             style={t.w100}
             label="Input URL"
             value={inputUrl}
-            onChange={(_ev: any, { value: inputUrl }) => {
+            onChange={(inputUrl) => {
               if (typeof inputUrl === "string") {
                 this.setState({ inputUrl }, () =>
                   onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
@@ -79,7 +79,7 @@ export default class BoardRouting extends Component<Props, State> {
             style={t.w100}
             label="Input Topic"
             value={inputTopic}
-            onChange={(_ev, { value: inputTopic }) => {
+            onChange={(inputTopic) => {
               if (typeof inputTopic === "string") {
                 this.setState({ inputTopic }, () =>
                   onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
@@ -92,7 +92,7 @@ export default class BoardRouting extends Component<Props, State> {
           <InputField
             label="Output URL"
             value={outputUrl}
-            onChange={(_ev, { value: outputUrl }) => {
+            onChange={(outputUrl) => {
               if (typeof outputUrl === "string") {
                 this.setState({ outputUrl }, () =>
                   onChange({ inputUrl, inputTopic, outputUrl, outputTopic })
@@ -103,7 +103,7 @@ export default class BoardRouting extends Component<Props, State> {
           <InputField
             label="Output Topic"
             value={outputTopic}
-            onChange={(_ev, { value: outputTopic }) => {
+            onChange={(outputTopic) => {
               if (typeof outputTopic === "string") {
                 this.setState({ outputTopic }, () =>
                   onChange({ inputUrl, inputTopic, outputUrl, outputTopic })

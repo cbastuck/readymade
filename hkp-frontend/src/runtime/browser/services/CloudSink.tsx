@@ -1,115 +1,18 @@
-import { useCallback, useContext, useState } from "react";
-import { Checkbox, Label } from "semantic-ui-react";
-
-import ServiceUI from "../../services/ServiceUI";
-import { AppImpl, ServiceClass, ServiceImpl, User } from "../../../types";
-import InputField from "../../../components/shared/InputField";
 import moment from "moment";
-import { AppCtx } from "../../../AppContext";
+
+import { AppImpl, ServiceClass, User } from "../../../types";
+import CloudSinkUI from "./CloudSinkUI";
 
 const serviceId = "hookup.to/service/cloud-sink";
 const serviceName = "Cloud-Sink";
 
 const documentStoreUrl = "https://cloud.hookup.to/store/document";
 
-type Props = {};
 type Config = {
   resourceType: string;
   resourceId: string;
   conflictStrategy: string;
 };
-
-function CloudSinkUI(props: Props) {
-  const [resourceId, setResourceId] = useState("");
-  const [resourceType, setResourceType] = useState("");
-  const [conflictStrategy, setConflictStrategy] = useState("");
-  const context = useContext(AppCtx);
-  const user = context?.user;
-
-  const onUpdate = useCallback((update: Partial<Config>) => {
-    const { resourceType, resourceId, conflictStrategy } = update;
-    if (resourceId !== undefined) {
-      setResourceId(resourceId);
-    }
-    if (resourceType !== undefined) {
-      setResourceType(resourceType);
-    }
-    if (conflictStrategy !== undefined) {
-      setConflictStrategy(conflictStrategy);
-    }
-  }, []);
-
-  const onInit = useCallback(
-    (initialState: Partial<Config>) => onUpdate(initialState),
-    [onUpdate]
-  );
-
-  const onNotification = useCallback(
-    (notification: Partial<Config>) => onUpdate(notification),
-    [onUpdate]
-  );
-
-  const renderUserMissing = () => {
-    return (
-      <div style={{ height: "100%" }}>
-        <span>This service requires you to login</span>
-      </div>
-    );
-  };
-
-  const renderMain = (service: ServiceImpl) => {
-    return (
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <InputField
-          label="Resource-Type"
-          disabled={true}
-          value={resourceType}
-          onChange={(_, { value }) =>
-            service.configure({ resourceType: value })
-          }
-        />
-        <InputField
-          label="Resource-Id"
-          value={resourceId}
-          onChange={(_, { value }) => service.configure({ resourceId: value })}
-        />
-        <div
-          style={{ display: "flex", flexDirection: "row", marginTop: "2px" }}
-        >
-          <Label
-            style={{
-              fontSize: 12,
-              marginRight: "5px",
-            }}
-          >
-            Replace resource if exists
-          </Label>
-          <div style={{ marginTop: 5 }}>
-            <Checkbox
-              checked={conflictStrategy === "overwrite"}
-              onChange={(_, { checked }) =>
-                service.configure({
-                  conflictStrategy: checked ? "overwrite" : "skip",
-                })
-              }
-            />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const panel = user ? renderMain : renderUserMissing;
-
-  return (
-    <ServiceUI
-      {...props}
-      onInit={onInit}
-      onNotification={onNotification}
-      segments={[{ name: "main", render: panel }]}
-    />
-  );
-}
 
 class CloudSink {
   app: AppImpl;

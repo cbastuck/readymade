@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Checkbox } from "semantic-ui-react";
+import { Checkbox } from "@/ui-components/primitives/checkbox";
 
 import ServiceUI from "../../services/ServiceUI";
 import { s, t } from "../../../styles";

@@ -1,17 +1,12 @@
 import { Component, CSSProperties } from "react";
 
-import { Input, Checkbox } from "semantic-ui-react";
+import SubmittableInput from "@/ui-components/SubmittableInput";
 
-import SyncIndicator from "./SyncIndicator";
 import { s, t } from "../../styles";
 
-type InputValueType = string | number | boolean | undefined;
-type OnChangeEvent =
-  | React.MouseEvent
-  | React.FormEvent<HTMLInputElement>
-  | React.KeyboardEvent;
-type OnChangeValue = { value: InputValueType };
-type InputFieldType = "checkbox" | "number" | "text" | "password";
+type InputValueType = string | undefined;
+
+type InputFieldType = "text" | "password";
 
 type Props = {
   value: InputValueType;
@@ -23,10 +18,9 @@ type Props = {
   labelStyle?: CSSProperties;
   style?: CSSProperties;
 
-  onChange?: (ev: OnChangeEvent, value: OnChangeValue) => void;
-  onEscape?: (ev: OnChangeEvent, value: OnChangeValue) => void;
+  onChange?: (value: string) => void;
+  onEscape?: (value: string) => void;
   onFocus?: () => void;
-  onLabelClicked?: (ev: OnChangeEvent, value: OnChangeValue) => void;
 };
 
 type State = { value: InputValueType };
@@ -54,35 +48,12 @@ export default class InputField extends Component<Props, State> {
     }
   }
 
-  renderCheckboxType = (value: InputValueType) => {
-    const { onChange } = this.props;
-    return (
-      <Checkbox
-        style={{ padding: "5px 5px" }}
-        slider
-        checked={
-          value !== undefined && typeof value === "boolean" ? value : false
-        }
-        onChange={(ev, { checked }) => {
-          onChange && onChange(ev, { value: checked });
-        }}
-      />
-    );
-  };
-
   renderInputType = (
     value: InputValueType,
     type: InputFieldType,
-    fontSize: string | number,
-    synced: boolean
+    label: string
   ) => {
-    const {
-      disabled,
-      unit,
-      onChange = () => {},
-      onEscape = () => {},
-      onFocus = () => {},
-    } = this.props;
+    const { disabled, unit, onChange = () => {} } = this.props;
     return (
       <div
         style={{
@@ -91,38 +62,13 @@ export default class InputField extends Component<Props, State> {
           flexDirection: "row",
         }}
       >
-        <Input
-          style={{
-            fontSize,
-            height: 33,
-            width: "100%",
-          }}
+        <SubmittableInput
+          title={label}
           type={type}
           value={value === undefined ? "" : value}
-          onChange={(ev, { value: rawValue }) => {
-            const value =
-              type === "number"
-                ? rawValue === ""
-                  ? ""
-                  : Number(rawValue)
-                : rawValue;
-            synced ? this.setState({ value }) : onChange(ev, { value });
-          }}
-          onKeyUp={(ev: React.KeyboardEvent) => {
-            switch (ev.key) {
-              case "Enter":
-                if (value !== "") {
-                  return onChange(ev, { value });
-                }
-                break;
-              case "Escape":
-                return onEscape && onEscape(ev, { value });
-              default:
-                break;
-            }
-          }}
-          onFocus={() => onFocus && onFocus()}
+          onSubmit={onChange}
           disabled={disabled}
+          fullWidth
         />
         {unit && (
           <div
@@ -143,16 +89,13 @@ export default class InputField extends Component<Props, State> {
     const {
       type = "text",
       label,
-      labelStyle,
+
       style,
       value: syncedValue,
-      onChange = () => {},
-      onLabelClicked = () => {},
       synced = true,
     } = this.props;
     const value = synced ? this.state.value : syncedValue;
-    const inSync = synced ? value === syncedValue : true;
-    const fontSize = "12px";
+
     return (
       <div
         style={{
@@ -163,17 +106,7 @@ export default class InputField extends Component<Props, State> {
           ...style,
         }}
       >
-        <SyncIndicator
-          onClick={(ev) =>
-            inSync ? onLabelClicked(ev, { value }) : onChange(ev, { value })
-          }
-          inSync={synced ? inSync : true}
-          label={label}
-          style={{ ...labelStyle, fontSize }}
-        />
-        {type !== "checkbox"
-          ? this.renderInputType(value, type, fontSize + 1, synced)
-          : this.renderCheckboxType(value)}
+        {this.renderInputType(value, type, label)}
       </div>
     );
   }

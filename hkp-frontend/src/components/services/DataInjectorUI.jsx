@@ -1,6 +1,6 @@
 import { Component } from "react";
 
-import Button from "../shared/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 import { configureService, getServiceConfiguration } from "../../core/actions";
 import { debounce } from "../shared/util";
 

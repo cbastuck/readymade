@@ -1,7 +1,7 @@
 import { getAuthURL } from "./SpotifyAPI";
 import { s, t } from "../../../styles";
 import MessageReceiver from "../../../MessageReceiver";
-import Button from "../../../components/shared/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 const clientIDDefault = "e91207fc5f2e4a5db1ca562954e4c23e";
 const redirectURIDefault = `${window.location.origin}/serviceRedirect`;

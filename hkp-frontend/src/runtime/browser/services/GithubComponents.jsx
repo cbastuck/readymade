@@ -4,7 +4,7 @@ import { Card, Icon, Image, Checkbox } from "semantic-ui-react";
 import MessageReceiver from "../../../MessageReceiver";
 import SelectorField from "../../../components/shared/SelectorField";
 import InputField from "../../../components/shared/InputField";
-import Button from "../../../components/shared/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 import Tree from "../../../components/shared/Tree";
 import { s, t } from "../../../styles";
 import {

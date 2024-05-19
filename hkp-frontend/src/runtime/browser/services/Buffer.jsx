@@ -3,7 +3,7 @@ import { List } from "semantic-ui-react";
 
 import BufferDescriptor from "hkp-services/Buffer";
 import InputField from "hkp-frontend/src/components/shared/InputField";
-import Button from "hkp-frontend/src/components/shared/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 import { s, t } from "hkp-frontend/src/styles";
 
 import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";

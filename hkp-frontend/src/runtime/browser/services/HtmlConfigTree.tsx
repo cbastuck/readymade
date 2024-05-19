@@ -1,8 +1,9 @@
 import { useMemo } from "react";
-import { Button } from "semantic-ui-react";
+import { Plus } from "lucide-react";
 import { Tree } from "react-arborist";
 
 import HtmlConfigTreeNode from "./HtmlConfigTreeNode";
+import Button from "@/ui-components/Button";
 
 type TreeNode = {
   html: string;
@@ -49,11 +50,9 @@ export default function HtmlConfigTree({ data, onChange }: Props) {
         }}
       >
         <Button
-          className="hkp-button-borderless"
-          style={{ width: "min-content" }}
-          size="tiny"
-          compact
-          icon="plus"
+          className="ml-auto"
+          size="xs"
+          icon={<Plus />}
           onClick={onAddRootRow}
         />
       </div>

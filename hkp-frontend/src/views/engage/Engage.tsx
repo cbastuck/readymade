@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 
-import Button from "../../components/shared/Button";
 import FeedbackForm, { FeedbackFormAnswers } from "./FeedbackForm";
 import { PersonalData } from "./Personals";
 
@@ -12,6 +11,7 @@ import PersonalForm from "./PersonalForm";
 import { convertAnswers, postAnswers } from "./actions";
 
 import { feedbackQuestions } from "./forms/engageForm1";
+import Button from "@/ui-components/Button";
 
 type Props = {
   withTemplate?: boolean;
@@ -110,7 +110,7 @@ export default function Engage({ withTemplate = true }: Props) {
           }}
         >
           <Button
-            className="hkp-button-blue"
+            className="text-base tracking-widest"
             type="submit"
             style={{
               width: "100%",
