@@ -56,8 +56,8 @@ export default function SidechainSelector({
   return (
     <div className="p-2 flex flex-col">
       <MultipleSelector
-        defaultOptions={options}
-        placeholder="Targets ..."
+        options={options}
+        placeholder="Add Targets ..."
         value={mappedValues}
         onChange={onChangeSelector}
         emptyIndicator={
@@ -65,6 +65,7 @@ export default function SidechainSelector({
             No results found.
           </p>
         }
+        hidePlaceholderWhenSelected
         badgeClassName="bg-sky-600 hover:bg-sky-400"
       />
     </div>

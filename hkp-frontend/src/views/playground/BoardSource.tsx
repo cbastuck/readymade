@@ -1,6 +1,7 @@
 import React, { useState } from "react";
-import { Button } from "semantic-ui-react";
+
 import { useLocation } from "react-router-dom";
+import Button from "@/ui-components/Button";
 
 import {
   restoreBoardFromLocalStorage,

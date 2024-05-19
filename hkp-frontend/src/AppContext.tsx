@@ -35,7 +35,7 @@ class AppProvider extends Component<Props, AppContextState> {
       pushNotification: (notification) => {
         const action = notification.action
           ? {
-              label: notification.action.positive ? "yes" : "no",
+              label: notification.action.label,
               onClick: notification.action.callback,
             }
           : undefined;

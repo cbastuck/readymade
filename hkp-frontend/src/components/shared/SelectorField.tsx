@@ -25,7 +25,6 @@ type Props = {
   uppercaseValues?: boolean;
   uppercaseKeys?: boolean;
   disabled?: boolean;
-  highlight?: string | undefined;
   style?: object;
   minWidth?: string | number;
   placeholder?: string;
@@ -38,21 +37,12 @@ type Props = {
 
 type State = {
   optionsVisible: boolean;
-  highlight?: string;
 };
 
 export default class SelectorField extends Component<Props, State> {
   state: State = {
     optionsVisible: false,
   };
-
-  componentDidUpdate(prevProps: Props) {
-    const { highlight } = this.props;
-
-    if (highlight !== prevProps.highlight) {
-      this.setState({ highlight });
-    }
-  }
 
   render() {
     const {

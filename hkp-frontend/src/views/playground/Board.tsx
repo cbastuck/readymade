@@ -294,7 +294,7 @@ export default class Board extends Component<Props, State> {
         onSidechangeRouting={(routes) =>
           this.props.onChangeSidechainRouting(runtime, routes)
         }
-        disabled={!hostDescriptor}
+        disabled={!outputActivation?.hostDescriptor}
       >
         {this.renderPeersActivator(runtime, "output")}
         {this.renderPeersDeactivator(runtime, "output")}
@@ -379,7 +379,7 @@ export default class Board extends Component<Props, State> {
           display: "flex",
           flexDirection: "column",
           textAlign: "left",
-          width: 250,
+          width: 300,
         }}
       >
         <div
@@ -423,7 +423,7 @@ export default class Board extends Component<Props, State> {
           uppercaseValues={false}
         />
         <Button
-          className="mb-2"
+          className="mr-2 mb-2"
           onClick={() => {
             if (type === "output") {
               const outputRoute = outputActivation?.route || {
@@ -468,29 +468,27 @@ export default class Board extends Component<Props, State> {
       return null;
     }
     return (
-      <div
-        style={{ cursor: "pointer", color: "#1e70bf" }}
-        onClick={() => {
-          if (type === "input") {
-            console.log("SETTOJNG", {
-              ...(inputRoute || {}),
-              hostDescriptor: null,
-            });
-            this.props.onChangeInputRouting(runtime, {
-              ...(inputRoute || {}),
-              hostDescriptor: null,
-            });
-          } else {
-            if (outputRoute) {
-              this.props.onChangeOutputRouting(runtime, {
-                ...(outputRoute || {}),
+      <div className={type === "input" ? "mr-2 mb-2" : "mx-2 mb-2"}>
+        <Button
+          className="w-full"
+          onClick={() => {
+            if (type === "input") {
+              this.props.onChangeInputRouting(runtime, {
+                ...(inputRoute || {}),
                 hostDescriptor: null,
               });
+            } else {
+              if (outputRoute) {
+                this.props.onChangeOutputRouting(runtime, {
+                  ...(outputRoute || {}),
+                  hostDescriptor: null,
+                });
+              }
             }
-          }
-        }}
-      >
-        Click to disable
+          }}
+        >
+          Click to disable
+        </Button>
       </div>
     );
   };
@@ -656,7 +654,6 @@ export default class Board extends Component<Props, State> {
                           action: reconnectCallback
                             ? {
                                 label: "redo",
-                                positive: true,
                                 callback: reconnectCallback,
                               }
                             : undefined,

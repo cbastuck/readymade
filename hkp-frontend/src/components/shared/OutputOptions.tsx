@@ -65,9 +65,9 @@ export default class OutputOptions extends Component<Props, State> {
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
         {this.renderOptions(
-          "Route to",
+          "Peers",
           <SelectorField
-            label="Peer"
+            label="Target"
             options={peerOptions}
             value={value || none}
             onChange={({ value: selected }) => {

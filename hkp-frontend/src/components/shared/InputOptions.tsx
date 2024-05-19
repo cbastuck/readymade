@@ -57,7 +57,7 @@ export default class InputOptions extends Component<Props, State> {
   };
 
   renderExpanded = () => {
-    const { incoming, expanded } = this.state;
+    const { expanded } = this.state;
     const { value, onSelect, onAction, children, disabled } = this.props;
     const peerOptions = this.getSelectorOptions();
     return (
@@ -77,7 +77,6 @@ export default class InputOptions extends Component<Props, State> {
             <SelectorField
               label="Peer"
               options={peerOptions}
-              highlight={typeof incoming === "string" ? incoming : undefined}
               value={value === null ? "none" : value}
               disabled={disabled}
               onChange={({ value: selected }) =>
@@ -87,7 +86,7 @@ export default class InputOptions extends Component<Props, State> {
               }
               onOpen={() => onAction({ type: InputOptions.updatePeersAction })}
             />
-            <div style={{ paddingBottom: 20 }}>{this.props.children}</div>
+            <div>{this.props.children}</div>
           </div>
         ) : (
           <div className="pt-4 pl-4">
@@ -112,7 +111,7 @@ export default class InputOptions extends Component<Props, State> {
     const { onExpand, onCollapse } = this.props;
 
     const bgColor = incoming
-      ? "bg-[#8aa1b7]" // signal color
+      ? "bg-sky-400" // signal color
       : expanded
       ? "bg-sky-600"
       : "bg-white";

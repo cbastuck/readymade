@@ -329,7 +329,6 @@ export type Notification = {
   message: string;
   action?: {
     label: string;
-    positive: boolean;
     callback: () => void;
   };
   timeout?: number;
