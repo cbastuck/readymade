@@ -5,6 +5,7 @@ import PropertyLabel from "./GroupLabel";
 
 type Props = {
   title?: string;
+  type?: string;
   value: string;
   disabled?: boolean;
   fullWidth?: boolean;
@@ -19,6 +20,7 @@ type Props = {
 const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
   const {
     title,
+    type,
     fullWidth,
     minHeight,
     hideBottomBorder,
@@ -39,6 +41,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
       {title && <PropertyLabel className="pt-1">{title}</PropertyLabel>}
       <InputCN
         ref={ref}
+        type={type}
         className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h}`}
         value={value}
         onChange={(ev) => onChange(ev.target.value)}

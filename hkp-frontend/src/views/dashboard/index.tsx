@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useState } from "react";
-import { Icon } from "semantic-ui-react";
+import { CloudUpload, CloudDownload } from "lucide-react";
 
 import { s, t } from "../../styles";
 import { AppCtx } from "../../AppContext";
@@ -85,14 +85,14 @@ export default function Dashboard() {
     >
       <Toolbar />
 
-      <div style={{ margin: "0px 10px" }}>
+      <div className="flex flex-col gap-4 p-4">
         <BoardCollection
           headline="Local boards"
           items={localBoards || []}
           actions={[
             {
               name: "upload",
-              icon: <Icon name="cloud upload" />,
+              icon: <CloudUpload />,
             },
           ]}
           onAction={onAction}
@@ -103,7 +103,7 @@ export default function Dashboard() {
           actions={[
             {
               name: "download",
-              icon: <Icon name="cloud download" />,
+              icon: <CloudDownload />,
             },
           ]}
           onAction={onAction}

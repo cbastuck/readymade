@@ -1,6 +1,5 @@
 import { Component } from "react";
 import { Link } from "react-router-dom";
-import { Icon } from "semantic-ui-react";
 
 import { redirectUri } from "../core/actions";
 import { s, t } from "../styles";
@@ -73,14 +72,6 @@ export default class Login extends Component<Props, State> {
         <div>Still in the making, to build something round and sound</div>
         <div style={t.mt10}>
           Please use <Link to="/playground">Playground</Link> for now ...
-        </div>
-        <div style={s(t.tc, t.m(0, 30))}>
-          <Icon
-            name="fly"
-            size="massive"
-            style={{ opacity: 0.6 }}
-            color="grey"
-          />
         </div>
       </div>
     );

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
-import { Loader } from "semantic-ui-react";
+import LoadIndicator from "./playground/LoadIndicator";
 
 export default function AuthRedirectAuth0() {
   const { getIdTokenClaims } = useAuth0();
@@ -25,9 +25,7 @@ export default function AuthRedirectAuth0() {
           marginTop: "15%",
         }}
       >
-        <Loader active inline>
-          Logging in ...
-        </Loader>
+        <LoadIndicator text="Logging in" />
       </div>
     );
   }

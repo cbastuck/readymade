@@ -1,12 +1,14 @@
-import { Button } from "semantic-ui-react";
-
-import InputField from "../../components/shared/InputField";
-import { ServiceInstance, ServiceUIProps } from "../../types";
 import { useEffect, useState } from "react";
+import { Copy } from "lucide-react";
+
+import { ServiceInstance, ServiceUIProps } from "../../types";
+
 import SelectorField from "../../components/shared/SelectorField";
 import InputText from "../../components/shared/InputText";
 import Slider from "../../components/shared/Slider";
 import ServiceUI from "@/ui-components/service/ServiceUI";
+import Button from "@/ui-components/Button";
+import SubmittableInput from "@/ui-components/SubmittableInput";
 
 export default function RemoteServiceUI(props: ServiceUIProps) {
   const { service } = props;
@@ -73,7 +75,7 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
           ) {
             return (
               <InputText
-                key={`RemoteSerivceUI-${service.uuid}.${prop}`}
+                key={`RemoteServiceUI-${service.uuid}.${prop}`}
                 label={prop}
                 labelStyle={{ textTransform: "capitalize" }}
                 value={val}
@@ -97,18 +99,11 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
               : (t as any);
 
           return (
-            <div
-              key={`RemoteSerivceUI-${service.uuid}.${prop}`}
-              style={{ display: "flex", flexDirection: "row" }}
-            >
-              <InputField
-                label={prop}
-                labelStyle={{
-                  textAlign: "left",
-                  textTransform: "capitalize",
-                }}
+            <div key={`RemoteServiceUI-${service.uuid}.${prop}`}>
+              <SubmittableInput
+                title={prop}
                 value={val}
-                onChange={(_, { value }) => {
+                onSubmit={(value) => {
                   service.configure({ [prop]: value });
                 }}
                 type={type}
@@ -117,13 +112,11 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
               {readonly && (
                 <Button
                   style={{
-                    width: 40,
-                    height: 33,
                     margin: 3,
                     border: "solid 1px rgb(186, 186, 186)",
                   }}
-                  icon="copy outline"
-                  size="tiny"
+                  icon={<Copy />}
+                  size="sm"
                   onClick={() => navigator.clipboard.writeText(val)}
                 />
               )}

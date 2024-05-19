@@ -15,6 +15,7 @@ import { BoardCtx } from "../../BoardContext";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { removeService } from "./BrowserRuntimeApi";
 import PlaceholderUI from "./services/PlaceholderUI";
+import EmptyRuntimePlaceholder from "@/ui-components/runtime-ui/EmptyRuntimePlaceholder";
 
 type Props = {
   scope: BrowserRuntimeScope;
@@ -126,6 +127,9 @@ export default class BrowserRuntime extends Component<Props, State> {
       });
     };
 
+    if (services?.length === 0) {
+      return <EmptyRuntimePlaceholder runtime={runtime} />;
+    }
     return (
       <ServiceUiContainer
         collapsed={collapsed}

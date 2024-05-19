@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { TextArea } from "semantic-ui-react";
 import { CircleX, SquarePlay, Pencil, ScanText } from "lucide-react";
+import { Textarea } from "@/ui-components/primitives/textarea";
 
 import { ServiceUIProps } from "@/types";
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
@@ -73,11 +73,11 @@ export default function MonitorUI(props: ServiceUIProps) {
 
   const renderEditor = () =>
     renderTextEditor ? (
-      <TextArea
+      <Textarea
+        className="text-base"
         style={{
           margin: "5px 0px",
           fontFamily: "monospace",
-          fontWeight: "bold",
           resize: "none",
           borderRadius: 5,
           flexGrow: 1,
@@ -85,6 +85,7 @@ export default function MonitorUI(props: ServiceUIProps) {
         value={message}
         rows={10}
         cols={30}
+        readOnly
       />
     ) : (
       <Editor

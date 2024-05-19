@@ -55,6 +55,7 @@ export default function RuntimeMenu({
       <Popover open={open} onOpenChange={onOpenChange}>
         <PopoverTrigger asChild>
           <Button
+            id="runtime-menu-trigger"
             variant="outline"
             role="combobox"
             aria-expanded={open}

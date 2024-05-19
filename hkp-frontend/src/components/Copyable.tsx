@@ -21,7 +21,7 @@ export default function Copyable({ label, value }: Props) {
       navigator.clipboard.writeText(url);
       appContext?.pushNotification({
         type: "success",
-        message: "URL coptied to clipboard",
+        message: "URL copied to clipboard",
         action: {
           label: "open",
           callback: () => window.open(url, "_blank"),

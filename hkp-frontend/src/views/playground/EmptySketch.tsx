@@ -36,7 +36,9 @@ export default function EmptySketch({ boardName }: Props) {
               <span
                 style={{ cursor: "help", color: "#4284C4" }}
                 onClick={() => {
-                  const selector = document.getElementById("runtime-dropdown");
+                  const selector = document.getElementById(
+                    "runtime-menu-trigger"
+                  );
                   if (selector) {
                     selector.focus();
                     selector.click();

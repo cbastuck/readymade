@@ -11,7 +11,6 @@ import {
   User,
 } from "@/types";
 import RuntimeHeader from "./RuntimeHeader";
-import EmptyRuntimePlaceholder from "./EmptyRuntimePlaceholder";
 import BrowserRuntime from "@/runtime/browser/BrowserRuntime";
 import RemoteRuntime from "@/runtime/remote/RemoteRuntime";
 import BrowserRuntimeScope from "@/runtime/browser/BrowserRuntimeScope";
@@ -120,9 +119,6 @@ export default function RuntimeUI({
                 highlightServicesOnHover={highlightServicesOnHover}
               />
             </div>
-            {services?.length === 0 && (
-              <EmptyRuntimePlaceholder runtime={runtime} />
-            )}
             {outputs && expanded ? (
               <div className="ml-auto">{outputs}</div>
             ) : null}
@@ -142,9 +138,6 @@ export default function RuntimeUI({
               onResult={onResult}
               highlightServicesOnHover={highlightServicesOnHover}
             />
-            {services?.length === 0 && (
-              <EmptyRuntimePlaceholder runtime={runtime} />
-            )}
           </>
         )}
         {children}

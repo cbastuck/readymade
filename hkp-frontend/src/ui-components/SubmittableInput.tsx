@@ -10,23 +10,27 @@ import Input from "./Input";
 
 type SubmittableInputProps = {
   title?: string;
+  type?: string;
   value: string;
   selectAllOnFocus?: boolean;
   fullWidth?: boolean;
   minHeight?: boolean;
   hideBottomBorder?: boolean;
+  disabled?: boolean;
   onSubmit: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
 };
 const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
   (props, ref) => {
     const {
+      type,
       title,
       value,
       selectAllOnFocus,
       hideBottomBorder,
       fullWidth,
       minHeight = true,
+      disabled = false,
       onSubmit,
       onChangePending,
     } = props;
@@ -56,11 +60,13 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     return (
       <Input
         ref={ref}
+        type={type}
         fullWidth={fullWidth}
         minHeight={minHeight}
         hideBottomBorder={hideBottomBorder}
         title={title}
         value={internal}
+        disabled={disabled}
         onChange={onChange}
         onKeyUp={onKeyUp}
         onBlur={onBlur}

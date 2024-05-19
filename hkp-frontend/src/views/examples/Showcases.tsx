@@ -11,12 +11,12 @@ export default function Showcases() {
         The following showcases operate in the{" "}
         <Link to="/playground">Playground</Link>, featuring multiple local
         runtimes interconnected. This configuration enables more intricate
-        possibilities compared to the sandbox environment. However, the true
-        potential unfolds when incorporating remote runtimes into a single
-        board.
+        possibilities compared to the sandbox environment. However, even more
+        and interesting setups appear when introducing remote runtimes into a
+        board mixed with browser runtimes.
       </Text>
 
-      <Usecases headline="" renderSearch={false} />
+      <Usecases renderSearch={false} />
     </div>
   );
 }

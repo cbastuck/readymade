@@ -5,7 +5,6 @@ import { Github } from "lucide-react";
 
 import Description from "./Description";
 import { SavedBoard, UsecaseDescriptor } from "../../types";
-import { s, t } from "../../styles";
 import Button from "@/ui-components/Button";
 
 export type Action = { name: string; icon: ReactElement };
@@ -68,16 +67,13 @@ export default function Card({ value: item, actions, onAction }: Props) {
         )}
       </div>
       <div style={{ marginTop: 10 }}>
-        <div className="font-serif" style={s(t.tl, t.nc)}>
-          <Description name={name} description={description} />
-        </div>
-        {actions && (
-          <div style={{ height: 30 }}>
-            <div style={{ position: "absolute", bottom: "10px" }}>
+        <Description name={name} description={description} />
+        <div className="mt-2">
+          {actions && (
+            <>
               {actions.map((action) => (
                 <Button
                   key={action.name}
-                  style={{ width: 40, backgroundColor: "white" }}
                   onClick={(ev) => {
                     onAction && onAction(action, item);
                     ev.stopPropagation();
@@ -86,9 +82,9 @@ export default function Card({ value: item, actions, onAction }: Props) {
                   icon={action.icon}
                 />
               ))}
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

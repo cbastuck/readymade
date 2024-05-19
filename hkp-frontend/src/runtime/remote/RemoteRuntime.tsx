@@ -15,6 +15,7 @@ import ServiceUiContainer from "../ServiceUiContainer";
 import RemoteServiceUI from "./RemoteServiceUI";
 import { findServiceUI } from "./UIRegistry";
 import React from "react";
+import EmptyRuntimePlaceholder from "@/ui-components/runtime-ui/EmptyRuntimePlaceholder";
 
 type Props = {
   user: User | null;
@@ -86,6 +87,10 @@ export default function RemoteRuntime({
       onServiceAction,
     });
   };
+
+  if (services?.length === 0) {
+    return <EmptyRuntimePlaceholder runtime={runtime} />;
+  }
 
   return (
     !collapsed && (
