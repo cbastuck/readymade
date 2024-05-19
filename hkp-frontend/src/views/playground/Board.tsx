@@ -16,12 +16,12 @@ import { getActivationId } from "./common";
 import SelectorField from "../../components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
 import {
-  PeerInputActivation,
-  PeerInputRouting,
+  RuntimeInputRoutings,
+  RuntimeOutputRoutings,
   PeerJsHostDescriptor,
-  PeerOutputActivation,
-  PeerOutputRouting,
   RuntimeDescriptor,
+  RuntimeInputOptions,
+  RuntimeOutputOptions,
   SidechainRoute,
   SidechainRouting,
 } from "../../types";
@@ -32,8 +32,8 @@ const defaultDiscoveryPeer: PeerJsHostDescriptor =
   availableDiscoveryPeerHosts[0];
 
 type Props = {
-  inputRouting: { [runtimeId: string]: PeerInputActivation };
-  outputRouting: { [runtimeId: string]: PeerOutputActivation };
+  inputRouting: RuntimeInputRoutings;
+  outputRouting: RuntimeOutputRoutings;
   boardContext: BoardContextState;
   sidechainRouting: SidechainRouting;
   boardName: string;
@@ -43,11 +43,11 @@ type Props = {
 
   onChangeOutputRouting: (
     runtime: RuntimeDescriptor,
-    value: PeerOutputActivation
+    value: RuntimeOutputOptions
   ) => void;
   onChangeInputRouting: (
     runtime: RuntimeDescriptor,
-    value: PeerInputActivation
+    value: RuntimeInputOptions
   ) => void;
   onChangeSidechainRouting: (
     runtime: RuntimeDescriptor,
@@ -56,10 +56,8 @@ type Props = {
 };
 
 type State = {
-  peerOutputActivation: {
-    [getActivationId: string]: PeerOutputActivation | null;
-  };
-  peerInputActivation: { [getActivationId: string]: PeerInputActivation };
+  peerOutputActivation: RuntimeOutputRoutings;
+  peerInputActivation: RuntimeInputRoutings;
 };
 
 export default class Board extends Component<Props, State> {
@@ -85,7 +83,7 @@ export default class Board extends Component<Props, State> {
     }
   }
 
-  updateInputActivation = (inputRouting: PeerInputRouting) => {
+  updateInputActivation = (inputRouting: RuntimeInputRoutings) => {
     const peerInputActivation = inputRouting
       ? Object.keys(inputRouting).reduce((all, runtimeId) => {
           const activationId = getActivationId(runtimeId);
@@ -108,7 +106,7 @@ export default class Board extends Component<Props, State> {
     this.setState((state) => ({ ...state, peerInputActivation }));
   };
 
-  updateOutputActivation = (outputRouting: PeerOutputRouting) => {
+  updateOutputActivation = (outputRouting: RuntimeOutputRoutings) => {
     const peerOutputActivation = outputRouting
       ? Object.keys(outputRouting).reduce((all, runtimeId) => {
           const activationId = getActivationId(runtimeId);
@@ -190,7 +188,7 @@ export default class Board extends Component<Props, State> {
     }
 
     const runtimeOutput = outputRouting[runtime.id] || {};
-    const flow = (runtimeOutput && runtimeOutput.route?.flow) || "pass";
+    const flow = runtimeOutput?.flow || "pass";
     if (flow === "pass") {
       const nextRuntime = this.getNextRuntime(runtime);
       const nextScope =
@@ -269,14 +267,12 @@ export default class Board extends Component<Props, State> {
                   outputActivation
                     ? {
                         ...outputActivation,
-                        route: {
-                          ...outputActivation.route,
-                          flow: action.flow,
-                        },
+                        flow: action.flow,
                       }
                     : {
                         hostDescriptor: null,
-                        route: { flow: action.flow, peer: null },
+                        route: { peer: null },
+                        flow: action.flow,
                       }
                 );
               }
@@ -285,7 +281,7 @@ export default class Board extends Component<Props, State> {
               break;
           }
         }}
-        flow={outputActivation?.route?.flow}
+        flow={outputActivation?.flow}
         boardContext={boardContext}
         sidechainRouting={runtimeSidechainRouting}
         onSidechangeRouting={(routes) =>
@@ -350,7 +346,6 @@ export default class Board extends Component<Props, State> {
     const activationId = getActivationId(runtime.id);
     const inputActivation = this.state.peerInputActivation[activationId];
     const outputActivation = this.state.peerOutputActivation[activationId];
-
     if (type === "input" && inputActivation?.hostDescriptor) {
       return null;
     }
@@ -399,11 +394,11 @@ export default class Board extends Component<Props, State> {
               if (type === "output") {
                 const outputRoute = outputActivation?.route || {
                   peer: null,
-                  flow: "pass",
                 };
                 this.props.onChangeOutputRouting(runtime, {
                   route: outputRoute,
                   hostDescriptor: availableDiscoveryPeerHosts[index],
+                  flow: outputActivation?.flow || "pass",
                 });
               } else {
                 const inputRoute = inputActivation?.route || {
@@ -425,11 +420,11 @@ export default class Board extends Component<Props, State> {
             if (type === "output") {
               const outputRoute = outputActivation?.route || {
                 peer: null,
-                flow: "pass",
               };
               this.props.onChangeOutputRouting(runtime, {
                 route: outputRoute,
                 hostDescriptor: selectedDiscoveryServer,
+                flow: outputActivation?.flow || "pass",
               });
             } else {
               this.props.onChangeInputRouting(runtime, {
@@ -452,16 +447,10 @@ export default class Board extends Component<Props, State> {
     const activationId = getActivationId(runtime.id);
     const inputRoute = this.state.peerInputActivation[activationId];
     const outputRoute = this.state.peerOutputActivation[activationId];
-    if (
-      type === "input" &&
-      (!inputRoute || inputRoute.hostDescriptor === null)
-    ) {
+    if (type === "input" && (!inputRoute || !inputRoute.hostDescriptor)) {
       return null;
     }
-    if (
-      type === "output" &&
-      (!outputRoute || outputRoute.hostDescriptor === null)
-    ) {
+    if (type === "output" && (!outputRoute || !outputRoute.hostDescriptor)) {
       return null;
     }
     return (
@@ -477,7 +466,8 @@ export default class Board extends Component<Props, State> {
             } else {
               if (outputRoute) {
                 this.props.onChangeOutputRouting(runtime, {
-                  ...(outputRoute || {}),
+                  ...outputRoute,
+                  route: { peer: null },
                   hostDescriptor: null,
                 });
               }
@@ -626,21 +616,20 @@ export default class Board extends Component<Props, State> {
                               outputActivation?.hostDescriptor || null,
                             route: {
                               ...(outputActivation?.route || {
-                                flow: "pass",
                                 peer: null,
                               }),
                               peer: null,
                             },
+                            flow: outputActivation?.flow || "pass",
                           });
                           reconnectCallback = closedOutputRouting
                             ? () => {
                                 this.props.onChangeOutputRouting(runtime, {
                                   hostDescriptor: hostDescriptor || null,
                                   route: {
-                                    flow:
-                                      outputActivation?.route.flow || "pass",
                                     peer: closedOutputRouting,
                                   },
+                                  flow: outputActivation?.flow || "pass",
                                 });
                               }
                             : null;

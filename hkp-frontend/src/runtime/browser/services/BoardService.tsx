@@ -10,8 +10,8 @@ import browserRuntimeApi from "../../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../../runtime/remote/RemoteRuntimeApi";
 import {
   AppImpl,
-  PeerInputActivation,
-  PeerOutputActivation,
+  RuntimeInputRoutings,
+  RuntimeOutputRoutings,
   RuntimeApiMap,
   SavedBoard,
   ServiceClass,
@@ -40,12 +40,8 @@ type Config = {
 };
 
 function BoardServiceUI(props: Props) {
-  const [inputRouting, setInputRouting] = useState<{
-    [runtimeId: string]: PeerInputActivation;
-  }>({});
-  const [outputRouting, setOutputRouting] = useState<{
-    [runtimeId: string]: PeerOutputActivation;
-  }>({});
+  const [inputRouting, setInputRouting] = useState<RuntimeInputRoutings>({});
+  const [outputRouting, setOutputRouting] = useState<RuntimeOutputRoutings>({});
   const [sidechainRouting, setSidechainRouting] = useState<SidechainRouting>(
     {}
   );

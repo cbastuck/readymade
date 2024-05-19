@@ -80,30 +80,32 @@ export function isValidFlowOption(
   );
 }
 
-export type InputRoute = { peer: string | null };
-export type OutputRoute = {
-  flow: RuntimeFlowOutputOptions;
-  peer: string | null;
-};
+export type PeerRoute = { peer: string | null };
 
-export type InputRouting = { [runtimeId: string]: InputRoute };
-export type OutputRouting = { [runtimeId: string]: OutputRoute };
+export type PeerInputRouting = { [runtimeId: string]: PeerRoute };
+export type PeerOutputRouting = { [runtimeId: string]: PeerRoute };
 
 export type SidechainRoute = { runtimeId: string; serviceUuid: string };
 export type SidechainRouting = { [runtimeId: string]: Array<SidechainRoute> };
 
 export type PeerOutputActivation = {
-  route: OutputRoute;
+  route: PeerRoute;
   hostDescriptor: PeerJsHostDescriptor | null;
 };
 
 export type PeerInputActivation = {
-  route: InputRoute;
+  route: PeerRoute;
   hostDescriptor: PeerJsHostDescriptor | null;
 };
 
-export type PeerInputRouting = { [id: string]: PeerInputActivation };
-export type PeerOutputRouting = { [id: string]: PeerOutputActivation };
+export type RuntimeInputOptions = PeerInputActivation;
+
+export type RuntimeOutputOptions = PeerOutputActivation & {
+  flow: RuntimeFlowOutputOptions;
+};
+
+export type RuntimeInputRoutings = { [id: string]: RuntimeInputOptions };
+export type RuntimeOutputRoutings = { [id: string]: RuntimeOutputOptions };
 
 export type ServiceURI = string;
 
@@ -366,13 +368,13 @@ export type DeprecatedInputRouting = { [runtimeId: string]: string }; // old for
 export type PlaygroundTemplate = BoardDescriptor & {
   sidechainRouting: SidechainRouting;
   inputRouting: DeprecatedInputRouting;
-  outputRouting: OutputRouting;
+  outputRouting: { [id: string]: PeerRoute };
 };
 
 export type PlaygroundBoard = BoardDescriptor & {
   sidechainRouting: SidechainRouting;
-  outputRouting: PeerOutputRouting;
-  inputRouting: PeerInputRouting;
+  outputRouting: RuntimeOutputRoutings;
+  inputRouting: RuntimeInputRoutings;
 };
 
 export type PlaygroundState = PlaygroundBoard & {

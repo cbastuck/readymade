@@ -5,11 +5,11 @@ import { s, t } from "../../styles";
 import LoadPanel from "../../ui-components/boardmanager";
 import VSpacer from "../../components/shared/VSpacer";
 import {
-  PeerInputActivation,
-  PeerInputRouting,
-  PeerOutputActivation,
-  PeerOutputRouting,
+  RuntimeInputRoutings,
+  RuntimeOutputRoutings,
   RuntimeDescriptor,
+  RuntimeInputOptions,
+  RuntimeOutputOptions,
   SidechainRoute,
   SidechainRouting,
 } from "../../types";
@@ -24,15 +24,15 @@ type Props = {
   boardName: string;
   description: string;
   sidechainRouting: SidechainRouting;
-  outputRouting: PeerOutputRouting;
-  inputRouting: PeerInputRouting;
+  outputRouting: RuntimeOutputRoutings;
+  inputRouting: RuntimeInputRoutings;
   onChangeOutputRouting: (
     runtime: RuntimeDescriptor,
-    value: PeerOutputActivation
+    value: RuntimeOutputOptions
   ) => void;
   onChangeInputRouting: (
     runtime: RuntimeDescriptor,
-    value: PeerInputActivation
+    value: RuntimeInputOptions
   ) => void;
   onChangeSidechainRouting: (
     runtime: RuntimeDescriptor,
@@ -43,7 +43,6 @@ type Props = {
 export default function BoardEntryPoint({
   isLoading,
   showLoginRequired,
-
   boardContext,
   boardName,
   description,

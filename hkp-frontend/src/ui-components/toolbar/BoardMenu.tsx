@@ -127,10 +127,10 @@ export default function BoardMenu() {
               >
                 Save the current board to the browser
               </ListItem>
-              <ListItem title="Board Source" onClick={onShowBoardSource}>
+              <ListItem title="Show Board Source" onClick={onShowBoardSource}>
                 Edit the current board's source in a text editor
               </ListItem>
-              <ListItem title="Board Link" onClick={onCreateBoardLink}>
+              <ListItem title="Create Board Link" onClick={onCreateBoardLink}>
                 Create a link allowing to share and clone the board on another
                 device
               </ListItem>

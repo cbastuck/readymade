@@ -31,13 +31,13 @@ import {
   RuntimeDescriptor,
   SidechainRoute,
   SidechainRouting,
-  PeerInputRouting,
-  PeerOutputRouting,
   PlaygroundState,
   RuntimeApiMap,
   AcceptedSyncSenders,
   RejectedSyncSenders,
   InstanceId,
+  RuntimeInputRoutings,
+  RuntimeOutputRoutings,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
@@ -61,8 +61,8 @@ type State = {
 
   // Peer routing
   sidechainRouting: SidechainRouting;
-  inputRouting: PeerInputRouting;
-  outputRouting: PeerOutputRouting;
+  inputRouting: RuntimeInputRoutings;
+  outputRouting: RuntimeOutputRoutings;
 
   enforceLoadPanel?: boolean;
   isSaveDialogVisible: boolean;
@@ -269,7 +269,6 @@ class Playground extends Component<Props, State> {
         {}
       ),
       description,
-
       acceptedSyncSenders,
       rejectedSyncSenders,
     };
@@ -386,7 +385,11 @@ class Playground extends Component<Props, State> {
       navigator.clipboard.writeText(url);
       this.context?.pushNotification({
         type: "info",
-        message: `Copied to clipboard: ${url}`,
+        message: "Board URL copied to clipboard",
+        action: {
+          label: "open",
+          callback: () => window.open(url, "_blank"),
+        },
       });
     }
 
@@ -516,22 +519,10 @@ class Playground extends Component<Props, State> {
                     });
                   }}
                   onChangeOutputRouting={(runtime, routing) => {
-                    const { hostDescriptor, route } = routing;
-                    const { peer, flow } = route;
                     this.setState({
                       outputRouting: {
                         ...this.state.outputRouting,
-                        [runtime.id]: {
-                          hostDescriptor: hostDescriptor || null,
-                          route: {
-                            peer:
-                              peer ||
-                              this.state.outputRouting[runtime.id]?.route
-                                ?.peer ||
-                              null,
-                            flow,
-                          },
-                        },
+                        [runtime.id]: routing,
                       },
                     });
                   }}

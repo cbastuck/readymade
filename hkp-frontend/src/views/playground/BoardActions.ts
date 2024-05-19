@@ -3,13 +3,12 @@ import * as uuid from "uuid";
 import { replacePlaceholders } from "../../core/url";
 import {
   BoardDescriptor,
-  OutputRoute,
-  PeerOutputRouting,
   PlaygroundBoard,
   PlaygroundTemplate,
   RuntimeDescriptor,
   RuntimeServiceMap,
   ServiceDescriptor,
+  RuntimeOutputRoutings,
 } from "../../types";
 import { decodeBoardState } from "./BoardLink";
 import { defaultDiscoveryPeer } from "./common";
@@ -148,8 +147,8 @@ export async function createBoardFromTemplate(
       : {};
 
     const patchedOutputRouting = outputRouting
-      ? patchedRuntimes.reduce<PeerOutputRouting>((all, rt, idx) => {
-          const routing: OutputRoute = outputRouting[runtimes[idx].id];
+      ? patchedRuntimes.reduce<RuntimeOutputRoutings>((all, rt, idx) => {
+          const routing = outputRouting[runtimes[idx].id];
           return routing
             ? {
                 ...all,
@@ -161,6 +160,7 @@ export async function createBoardFromTemplate(
                       ? replacePlaceholders(routing.peer, params) || null
                       : null,
                   },
+                  flow: "pass",
                 },
               }
             : all;
