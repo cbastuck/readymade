@@ -189,7 +189,7 @@ export type AppImpl = {
   getServiceById: (uuid: string) => ServiceImpl | null;
   sendAction: (action: ServiceAction) => void;
   storeServiceData: (serviceUuid: string, key: string, value: string) => void;
-  restoreServiceData: (serviceUuid: string, key: string) => void;
+  restoreServiceData: (serviceUuid: string, key: string) => string | undefined;
   removeServiceData: (serviceUuid: string, key: string) => void;
   listAvailableServices: () => Array<ServiceModule>;
   createSubService: (

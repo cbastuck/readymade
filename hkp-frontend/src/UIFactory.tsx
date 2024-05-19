@@ -31,18 +31,14 @@ import XYPadUI from "./runtime/browser/services/XYPadUI";
 import AggregatorUI from "./runtime/browser/services/AggregatorUI";
 import InjectorUI from "./runtime/browser/services/InjectorUI";
 import HackerUI from "./runtime/browser/services/HackerUI";
+import SpotifyUI from "./runtime/browser/services/SpotifyUI";
+import TriggerPadUI from "./runtime/browser/services/TriggerPadUI";
 
 import { OutputUI } from "./runtime/browser/services/Output";
 import { FetcherUI } from "./runtime/browser/services/Fetcher";
-
 import { FilterUI } from "./runtime/browser/services/Filter";
-
 import { BufferUI } from "./runtime/browser/services/Buffer";
-
-import TriggerPadUI from "./runtime/browser/services/TriggerPadUI";
-
 import { SequencerUI } from "./runtime/browser/services/Sequencer";
-import { SpotifyUI } from "./runtime/browser/services/Spotify";
 import { GithubSourceUI } from "./runtime/browser/services/GithubSource";
 import { GithubSinkUI } from "./runtime/browser/services/GithubSink";
 

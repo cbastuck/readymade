@@ -47,7 +47,12 @@ export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
       _key: string,
       _value: string
     ): void => {},
-    restoreServiceData: (_serviceUuid: string, _key: string): void => {},
+    restoreServiceData: (
+      _serviceUuid: string,
+      _key: string
+    ): string | undefined => {
+      return undefined;
+    },
     removeServiceData: (_serviceUuid: string, _key: string): void => {},
     createSubService: (
       _parent: ServiceImpl,

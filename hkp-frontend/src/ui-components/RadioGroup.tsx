@@ -9,7 +9,7 @@ type Props = {
   id?: string;
   className?: string;
   title: string;
-  options: Array<string>;
+  options: Array<string> | { [value: string]: string };
   value: string | undefined;
   disabled?: boolean;
   alignRight?: boolean;
@@ -29,6 +29,10 @@ export default function RadioGroup({
   onChange,
 }: Props) {
   const uniqueId = id || crypto.randomUUID();
+  const values = Array.isArray(options) ? options : Object.keys(options);
+  const labels = Array.isArray(options)
+    ? options
+    : values.map((val) => options[val]);
   return (
     <div className={`flex-col ${alignRight && "text-right"} ${className}`}>
       <GroupLabel
@@ -42,7 +46,7 @@ export default function RadioGroup({
         className={`py-2 flex ${vertical ? "flex-col" : ""}`}
         value={value}
       >
-        {options.map((item, idx) => {
+        {values.map((item, idx) => {
           const optionId = `${uniqueId || title}-option-${idx}`;
           return (
             <div key={`${item}.${idx}`} className="flex items-center space-x-2">
@@ -57,7 +61,7 @@ export default function RadioGroup({
                 className="text-base capitalize tracking-widest"
                 aria-disabled={disabled}
               >
-                {item}
+                {labels[idx]}
               </Label>
             </div>
           );
