@@ -56,7 +56,7 @@ export default class SelectorField extends Component<Props, State> {
     const useDefaultLabel = typeof label !== "object";
     const options = Object.keys(optionsMap).map((key) => ({
       text: optionsMap[key],
-      value: optionsMap[key],
+      value: key,
     }));
 
     return (
