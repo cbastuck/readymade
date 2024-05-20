@@ -118,7 +118,7 @@ export default class GithubSinkUI extends Component<ServiceUIProps, State> {
         owner={owner}
         repo={repo}
         branch={branch}
-        file={file}
+        file={file || ""}
         onChange={(kv) => this.props.service.configure(kv)}
       />
     );
@@ -134,7 +134,9 @@ export default class GithubSinkUI extends Component<ServiceUIProps, State> {
       >
         <>
           {this.renderLoginPanel()}
-          {this.state.token && this.renderObjectSelector()}
+          <div className="mt-4">
+            {this.state.token && this.renderObjectSelector()}
+          </div>
         </>
       </ServiceUI>
     );

@@ -17,6 +17,7 @@ type SubmittableInputProps = {
   minHeight?: boolean;
   hideBottomBorder?: boolean;
   disabled?: boolean;
+  placeholder?: string;
   onSubmit: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
 };
@@ -31,6 +32,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       fullWidth,
       minHeight = true,
       disabled = false,
+      placeholder,
       onSubmit,
       onChangePending,
     } = props;
@@ -67,6 +69,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         title={title}
         value={internal}
         disabled={disabled}
+        placeholder={placeholder}
         onChange={onChange}
         onKeyUp={onKeyUp}
         onBlur={onBlur}

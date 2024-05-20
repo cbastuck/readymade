@@ -7,7 +7,7 @@ import SelectorField from "../../../components/shared/SelectorField";
 import InputField from "../../../components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import Tree from "../../../components/shared/Tree";
-import { s, t } from "../../../styles";
+import { t } from "../../../styles";
 import {
   getUser,
   getRepos,
@@ -19,6 +19,7 @@ import {
 } from "./GithubAPI";
 import { ServiceUIProps } from "@/types";
 import RadioGroup from "@/ui-components/RadioGroup";
+import SubmittableInput from "@/ui-components/SubmittableInput";
 
 const loginStateId = "github-login";
 
@@ -56,24 +57,25 @@ export class GithubUser extends Component<UserProps, { user: User | null }> {
     if (!user) {
       return false;
     }
-    const { size = 150, onLogout } = this.props;
+    const { size = 80, onLogout } = this.props;
     const { login, avatar_url, created_at, public_repos, followers } = user;
     return (
-      <div style={s(t.fs12, t.ls1)}>
-        <div>
-          <div style={t.tc}>
-            <Image className="m-auto" src={avatar_url} size={size} />
+      <div>
+        <div className="flex flex-col gap-2 text-left">
+          <div className="flex items-end">
+            <h2>{login}</h2>
+            <Image className="ml-auto" src={avatar_url} size={size} />
           </div>
-          <div>{login}</div>
-          <div className="flex text-left">
+          <div className="flex text-left text-md">
             <div>Joined {created_at}</div>
             <div>{public_repos} public repositories</div>
             <div>{followers} Followers</div>
           </div>
+          <div style={t.tc}></div>
+          <Button className="w-full" onClick={() => onLogout && onLogout()}>
+            Logout
+          </Button>
         </div>
-        <Button className="w-full" onClick={() => onLogout && onLogout()}>
-          Logout
-        </Button>
       </div>
     );
   }
@@ -234,7 +236,7 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
     const isFilenameInTree = tree && tree.find((x: any) => x.path === file);
     const fileOptions = ["New File", "Select File"];
     return (
-      <div>
+      <div className="flex flex-col text-left">
         <InputField
           label="Owner"
           value={owner}
@@ -255,19 +257,21 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
           />
         </div>
 
-        <RadioGroup
-          title="File"
-          options={fileOptions}
-          value={fileMode}
-          onChange={async (opt) => {
-            this.setState({ fileMode: opt as any });
-            if (!isFilenameInTree) {
-              onChange({ file: null });
-            }
-          }}
-        />
+        {!disableFileInput && (
+          <RadioGroup
+            title="File Mode"
+            options={fileOptions}
+            value={fileMode}
+            onChange={async (opt) => {
+              this.setState({ fileMode: opt as any });
+              if (!isFilenameInTree) {
+                onChange({ file: null });
+              }
+            }}
+          />
+        )}
 
-        {fileMode === "Select File"
+        {fileMode === "Select File" || disableFileInput
           ? this.renderFileSelector(file, tree, onChange)
           : this.renderFileInput(file, onChange)}
       </div>
@@ -344,18 +348,21 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
   renderFileInput = (file: any, onChange: any) => {
     const value = typeof file === "string" ? file : file && file.name;
     return (
-      <InputField
-        label="file"
-        value={value}
-        onChange={(filename) =>
-          onChange({
-            file: {
-              name: filename,
-              treeSHA: null,
-            },
-          })
-        }
-      />
+      <div className="py-2">
+        <SubmittableInput
+          fullWidth
+          value={value}
+          placeholder="New Filename"
+          onSubmit={(filename) =>
+            onChange({
+              file: {
+                name: filename,
+                treeSHA: null,
+              },
+            })
+          }
+        />
+      </div>
     );
   };
 

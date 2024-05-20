@@ -24,7 +24,7 @@ export class Tree extends Component<Props> {
       <div
         key={absoluteFn}
         style={{ cursor: "pointer" }}
-        className="flex"
+        className="flex gap-1"
         onClick={(ev) => onChange(ev, { selected: absoluteFn })}
       >
         <Save />
@@ -47,7 +47,7 @@ export class Tree extends Component<Props> {
   renderFolder = (folder: any, _selected: any, _onChange: OnChange) => (
     <div
       key={folder.name}
-      className="flex"
+      className="flex gap-1"
       style={{ cursor: "pointer" }}
       onClick={() => this.props.onExpand(folder)}
     >
@@ -71,16 +71,15 @@ export class Tree extends Component<Props> {
 
   renderBreadcrumbs = () => {
     const { path = [], onPath } = this.props;
-
     return (
-      <div className="flex">
+      <div className="flex border-b mb-2">
         <div style={t.m(3, 0)} onClick={() => onPath(null)}>
           /
         </div>
         {path.map((part: any) => (
-          <span key={`tree-breadcrumb-${part}`}>
+          <div key={`tree-breadcrumb-${part}`}>
             <div onClick={() => onPath(part)}>{part}</div>
-          </span>
+          </div>
         ))}
       </div>
     );

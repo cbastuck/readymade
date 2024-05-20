@@ -1,29 +1,42 @@
 import { Component } from "react";
 
-import ServiceUI from "../../services/ServiceUI";
 import InputField from "../../../components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import { GithubUser, GithubObject, GithubOAuth } from "./GithubComponents";
 import { getFile, getFileFromBranch } from "./GithubAPI";
 import { s, t } from "../../../styles";
-
-const serviceId = "hookup.to/service/github-source";
-const serviceName = "Github Source";
+import ServiceUI from "@/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "@/types";
 
 const clientID = "f2b34053a831baa056e8";
 const clientSecret = "";
 const redirectURI = `${window.location.origin}/serviceRedirect`;
-const scopes = [];
+const scopes: Array<string> = [];
 
-export class GithubSourceUI extends Component {
-  state = {};
+type State = {
+  token: string | null;
+  owner: any;
+  repo: any;
+  branch: string | undefined;
+  file: any;
+  user: any;
+};
+export default class GithubSourceUI extends Component<ServiceUIProps, State> {
+  state: State = {
+    token: null,
+    owner: undefined,
+    repo: undefined,
+    branch: undefined,
+    file: undefined,
+    user: null,
+  };
 
-  onInit = (initialState) => {
+  onInit = (initialState: any) => {
     const { token, owner, repo, branch, file } = initialState;
     this.setState({ token, owner, repo, branch, file });
   };
 
-  onNotification = (notification) => {
+  onNotification = (notification: any) => {
     const { token, user, owner, repo, branch, file } = notification;
     if (token) {
       this.setState({ token });
@@ -50,7 +63,7 @@ export class GithubSourceUI extends Component {
     }
   };
 
-  renderLoginPanel = (service) => {
+  renderLoginPanel = () => {
     const { token } = this.state;
     if (token) {
       return (
@@ -60,7 +73,7 @@ export class GithubSourceUI extends Component {
             if (!this.state.owner) {
               const owner = user.login;
               this.setState({ owner });
-              service.configure({ owner });
+              this.props.service.configure({ owner });
             }
           }}
           onLogout={() => this.setState({ owner: null })}
@@ -73,27 +86,27 @@ export class GithubSourceUI extends Component {
         clientSecret={clientSecret}
         redirectURI={redirectURI}
         scopes={scopes}
-        onToken={(token) => this.setState({ token })}
+        onToken={(token: string) => this.setState({ token })}
       />
     ) : (
-      this.renderBasicAuth(service)
+      this.renderBasicAuth()
     );
   };
 
-  renderBasicAuth = (service) => {
+  renderBasicAuth = () => {
     const { token } = this.state;
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
         <InputField
           label="Token"
-          value={token}
-          onChange={(_, { value: token }) => service.configure({ token })}
+          value={token || undefined}
+          onChange={(token) => this.props.service.configure({ token })}
         />
       </div>
     );
   };
 
-  renderObjectSelector = (service) => {
+  renderObjectSelector = () => {
     const { token, owner, repo, branch, file } = this.state;
     if (!token) {
       return false;
@@ -101,17 +114,19 @@ export class GithubSourceUI extends Component {
     return (
       <div>
         <GithubObject
+          service={this.props.service}
+          onServiceAction={this.props.onServiceAction}
           token={token}
           owner={owner}
           repo={repo}
           branch={branch}
-          file={file}
+          file={file || ""}
           disableFileInput={true}
-          onChange={(kv) => service.configure(kv)}
+          onChange={(kv) => this.props.service.configure(kv)}
         />
         <Button
           style={s(t.ls1, t.fs12, t.w100)}
-          onClick={() => this.inject(service)}
+          onClick={() => this.inject()}
           disabled={!file}
         >
           Inject
@@ -120,91 +135,30 @@ export class GithubSourceUI extends Component {
     );
   };
 
-  inject = async (service) => {
+  inject = async () => {
     const { token, owner, repo, file, branch } = this.state;
     const content = file.treeSHA
       ? await getFile(token, owner, repo, file.treeSHA, file.name)
       : await getFileFromBranch(token, owner, repo, branch, file.name);
     if (content) {
-      service.inject(content);
+      this.props.service.inject(content);
     }
   };
 
   render() {
     const { token } = this.state;
-    const segments = [
-      { name: "User", render: this.renderLoginPanel },
-      { name: "Select", render: this.renderObjectSelector, disabled: !token },
-    ];
     return (
       <ServiceUI
         {...this.props}
-        onInit={this.onInit.bind(this)}
-        onNotification={this.onNotification.bind(this)}
-        segments={segments}
-      />
+        className="pb-2"
+        onInit={this.onInit}
+        onNotification={this.onNotification}
+      >
+        <>
+          {this.renderLoginPanel()}
+          <div className="mt-4">{token && this.renderObjectSelector()}</div>
+        </>
+      </ServiceUI>
     );
   }
 }
-
-class GithubSource {
-  constructor(app, board, descriptor, id) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.token = ""; //this.app.restoreServiceData(this.uuid, loginStateId);
-    this.owner = "";
-    this.repo = "";
-    this.branch = "";
-    this.file = null;
-  }
-
-  async configure(config) {
-    const { token, owner, repo, branch, file } = config;
-    if (token !== undefined) {
-      this.token = token;
-      this.app.notify(this, { token });
-    }
-
-    if (owner !== undefined) {
-      this.owner = owner;
-      this.app.notify(this, { owner });
-    }
-
-    if (repo !== undefined) {
-      this.repo = repo;
-      this.app.notify(this, { repo });
-    }
-
-    if (branch !== undefined) {
-      this.branch = branch;
-      this.app.notify(this, { branch });
-    }
-
-    if (file !== undefined) {
-      this.file = file;
-      this.app.notify(this, { file });
-    }
-  }
-
-  destroy() {}
-
-  inject(params) {
-    return this.app.next(this, params);
-  }
-
-  process(params) {
-    return params;
-  }
-}
-
-const descriptor = {
-  serviceName,
-  serviceId,
-  create: (app, board, descriptor, id) =>
-    new GithubSource(app, board, descriptor, id),
-  createUI: GithubSourceUI,
-};
-
-export default descriptor;

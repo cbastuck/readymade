@@ -11,6 +11,7 @@ type Props = {
   fullWidth?: boolean;
   minHeight?: boolean;
   hideBottomBorder?: boolean;
+  placeholder?: string;
   onChange: (newValue: string) => void;
   onKeyUp?: (ev: KeyboardEvent) => void;
   onBlur?: (ev: FocusEvent<HTMLInputElement>) => void;
@@ -26,6 +27,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
     hideBottomBorder,
     value,
     disabled,
+    placeholder,
     onChange,
     onKeyUp,
     onBlur,
@@ -47,6 +49,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
         onChange={(ev) => onChange(ev.target.value)}
         disabled={disabled}
         spellCheck={false}
+        placeholder={placeholder}
         onKeyUp={onKeyUp}
         onBlur={onBlur}
         onFocus={onFocus}
