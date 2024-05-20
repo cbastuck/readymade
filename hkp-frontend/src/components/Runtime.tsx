@@ -1,7 +1,6 @@
 import { CSSProperties, Component, ReactElement } from "react";
 
 import { getServiceConfiguration } from "../core/actions";
-import ServiceDropdown from "./ServiceDropdown";
 
 import {
   RuntimeDescriptor,
@@ -55,7 +54,6 @@ export default class Runtime extends Component<Props, State> {
   };
 
   impl: RuntimeImpl | null = null;
-  dropdown: ServiceDropdown | null = null;
   runtimeContainer: HTMLDivElement | null = null;
 
   componentDidMount() {
