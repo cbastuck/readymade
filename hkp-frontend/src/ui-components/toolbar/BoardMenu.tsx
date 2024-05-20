@@ -12,11 +12,14 @@ import { cn } from "@/ui-components";
 import { BoardCtx } from "@/BoardContext";
 import EditorDialog from "../EditorDialog";
 import { storeBoardToLocalStorage } from "@/views/playground/common";
+import { useNavigate } from "react-router-dom";
 
 export default function BoardMenu() {
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
   const [showBoardSource, setShowBoardSource] = useState(false);
+
+  const navigate = useNavigate();
 
   const onShowBoardSource = async () => {
     const src = await boardContext?.serializeBoard();
@@ -76,21 +79,9 @@ export default function BoardMenu() {
           </NavigationMenuTrigger>
           <NavigationMenuContent className="font-menu">
             <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-              <li className="row-span-5">
-                <NavigationMenuLink asChild>
-                  <a
-                    className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
-                    href="/"
-                  >
-                    <div className="mb-2 mt-4 text-lg font-medium">
-                      Hookup.to
-                    </div>
-                    <p className="text-sm leading-tight text-muted-foreground">
-                      Hookup your ideas. Own the data. Own the process.
-                    </p>
-                  </a>
-                </NavigationMenuLink>
-              </li>
+              <ListItem title="Startpage" onClick={() => navigate("/")}>
+                Go back to the landing page
+              </ListItem>
               <ListItem
                 title="New Board"
                 onClick={() =>
