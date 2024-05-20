@@ -61,7 +61,7 @@ export default class SelectorField extends Component<Props, State> {
 
     return (
       <div
-        className="items-center"
+        className="items-end"
         style={{
           width: "100%",
           display: "flex",
@@ -69,7 +69,8 @@ export default class SelectorField extends Component<Props, State> {
           minWidth,
         }}
       >
-        {label && (useDefaultLabel ? <div>{label}</div> : label)}
+        {label &&
+          (useDefaultLabel ? <div className="mb-2">{label}</div> : label)}
 
         <Select
           value={value || undefined}
@@ -83,7 +84,7 @@ export default class SelectorField extends Component<Props, State> {
             })
           }
         >
-          <SelectTrigger className="w-full m-2">
+          <SelectTrigger className="w-full m-2 h-min">
             <SelectValue placeholder="Select ..." />
           </SelectTrigger>
           <SelectContent className="font-menu">

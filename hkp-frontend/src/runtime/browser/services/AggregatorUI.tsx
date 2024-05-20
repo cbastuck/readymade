@@ -45,7 +45,8 @@ export default class AggregatorUI extends Component<ServiceUIProps, State> {
       <div className="flex flex-col gap-2">
         <Input
           minHeight
-          title="Aggregate Property"
+          fullWidth
+          title="Property"
           value={property}
           onChange={(property) => {
             service.configure({ property });
@@ -55,9 +56,10 @@ export default class AggregatorUI extends Component<ServiceUIProps, State> {
         <div className="pt-4">
           <RadioGroup
             id={`aggregator-${service.uuid}`}
-            title="Aggregate Mode"
+            title="Mode"
             options={aggOptions}
             value={aggregator}
+            disabled={true}
             onChange={(newAggregator) =>
               service.configure({ aggregator: newAggregator })
             }
@@ -65,7 +67,7 @@ export default class AggregatorUI extends Component<ServiceUIProps, State> {
         </div>
 
         <NumberInput
-          title="Aggregate Interval"
+          title="Interval"
           value={interval}
           onChange={(value) => {
             service.configure({ interval: value });

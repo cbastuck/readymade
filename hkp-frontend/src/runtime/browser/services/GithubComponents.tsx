@@ -1,5 +1,5 @@
 import { Component } from "react";
-
+import moment from "moment";
 import Image from "@/ui-components/Image";
 
 import MessageReceiver from "../../../MessageReceiver";
@@ -62,19 +62,25 @@ export class GithubUser extends Component<UserProps, { user: User | null }> {
     return (
       <div>
         <div className="flex flex-col gap-2 text-left">
-          <div className="flex items-end">
-            <h2>{login}</h2>
-            <Image className="ml-auto" src={avatar_url} size={size} />
+          <div className="flex items-start">
+            <div className="flex flex-col pr-4">
+              <h2>{login}</h2>
+              <div className="flex text-left text-md">
+                <div>Joined {moment(created_at).format("MM/YYYY")} - </div>
+                <div>{public_repos} public repositories - </div>
+                <div>{followers} followers</div>
+              </div>
+            </div>
+            <div className="flex flex-col ml-auto">
+              <Image className="ml-auto" src={avatar_url} size={size} />
+              <Button
+                className="ml-auto w-min h-min"
+                onClick={() => onLogout && onLogout()}
+              >
+                Logout
+              </Button>
+            </div>
           </div>
-          <div className="flex text-left text-md">
-            <div>Joined {created_at}</div>
-            <div>{public_repos} public repositories</div>
-            <div>{followers} Followers</div>
-          </div>
-          <div style={t.tc}></div>
-          <Button className="w-full" onClick={() => onLogout && onLogout()}>
-            Logout
-          </Button>
         </div>
       </div>
     );
@@ -238,7 +244,7 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
     return (
       <div className="flex flex-col text-left">
         <InputField
-          label="Owner"
+          label="User"
           value={owner}
           onChange={(owner) => onChange({ owner })}
         />

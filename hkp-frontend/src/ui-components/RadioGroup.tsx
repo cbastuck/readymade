@@ -43,6 +43,7 @@ export default function RadioGroup({
         {title}
       </GroupLabel>
       <RadioGroupCN
+        disabled={disabled}
         className={`py-2 flex ${vertical ? "flex-col" : ""}`}
         value={value}
       >

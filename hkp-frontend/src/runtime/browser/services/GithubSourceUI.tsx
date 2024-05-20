@@ -125,7 +125,7 @@ export default class GithubSourceUI extends Component<ServiceUIProps, State> {
           onChange={(kv) => this.props.service.configure(kv)}
         />
         <Button
-          style={s(t.ls1, t.fs12, t.w100)}
+          className="w-full mt-2"
           onClick={() => this.inject()}
           disabled={!file}
         >
@@ -156,7 +156,7 @@ export default class GithubSourceUI extends Component<ServiceUIProps, State> {
       >
         <>
           {this.renderLoginPanel()}
-          <div className="mt-4">{token && this.renderObjectSelector()}</div>
+          {token && this.renderObjectSelector()}
         </>
       </ServiceUI>
     );

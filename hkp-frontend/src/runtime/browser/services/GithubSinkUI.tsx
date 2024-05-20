@@ -128,15 +128,14 @@ export default class GithubSinkUI extends Component<ServiceUIProps, State> {
     return (
       <ServiceUI
         {...this.props}
+        className="pb-2"
         initialSize={{ width: 400, height: undefined }}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
       >
         <>
           {this.renderLoginPanel()}
-          <div className="mt-4">
-            {this.state.token && this.renderObjectSelector()}
-          </div>
+          {this.state.token && this.renderObjectSelector()}
         </>
       </ServiceUI>
     );

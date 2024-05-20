@@ -21,7 +21,7 @@ export default function NumberInput({
 }: Props) {
   return (
     <div className={`flex items-end gap-2 ${className}`}>
-      <PropertyLabel className="py-[3px]">{title}</PropertyLabel>
+      <PropertyLabel>{title}</PropertyLabel>
       <InputCN
         className="w-[60px] border-0 border-none p-0 h-min text-lg"
         type="number"
