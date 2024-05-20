@@ -4,7 +4,6 @@ import InputField from "../../../components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import { GithubUser, GithubObject, GithubOAuth } from "./GithubComponents";
 import { getFile, getFileFromBranch } from "./GithubAPI";
-import { s, t } from "../../../styles";
 import ServiceUI from "@/ui-components/service/ServiceUI";
 import { ServiceUIProps } from "@/types";
 

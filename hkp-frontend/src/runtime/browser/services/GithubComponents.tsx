@@ -7,7 +7,6 @@ import SelectorField from "../../../components/shared/SelectorField";
 import InputField from "../../../components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import Tree from "../../../components/shared/Tree";
-import { t } from "../../../styles";
 import {
   getUser,
   getRepos,

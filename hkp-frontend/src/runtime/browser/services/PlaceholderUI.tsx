@@ -53,7 +53,6 @@ export default class PlaceholderUI extends Component<ServiceUIProps, State> {
       <div key={service.uuid} id={service.uuid} style={{ minWidth: 200 }}>
         {Object.keys(properties).map((prop) => {
           const val = properties[prop];
-          const t = typeof val;
           return (
             <InputField
               key={`PlaceholderUI-${service.uuid}.${prop}`}
