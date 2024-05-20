@@ -1,4 +1,4 @@
-import AggregatorUI from "@/components/services/AggregatorUI";
+import AggregatorUI from "./AggregatorUI";
 import ServiceBase from "./ServiceBase";
 import { AppInstance, ServiceClass } from "@/types";
 

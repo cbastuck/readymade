@@ -96,8 +96,9 @@ export default class BrowserRegistry {
   }
 
   allowedServices() {
+    const allowAllServices = true;
     return this.availableServices.filter(
-      (s) => !allowedServices || allowedServices.indexOf(s.serviceId) !== -1
+      (s) => allowAllServices || allowedServices.indexOf(s.serviceId) !== -1
     );
   }
 

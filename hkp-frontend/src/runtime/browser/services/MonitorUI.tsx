@@ -74,7 +74,7 @@ export default function MonitorUI(props: ServiceUIProps) {
   const renderEditor = () =>
     renderTextEditor ? (
       <Textarea
-        className="text-base"
+        className="text-base border-none"
         style={{
           margin: "5px 0px",
           fontFamily: "monospace",

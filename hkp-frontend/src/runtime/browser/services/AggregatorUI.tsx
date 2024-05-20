@@ -1,9 +1,8 @@
 import { Component } from "react";
 
-import ServiceUI from "../../services/ServiceUI";
 import { ServiceInstance, ServiceUIProps } from "../../../types";
 import Input from "@/ui-components/Input";
-import { needsUpdate } from "@/ui-components/service/ServiceUI";
+import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 import NumberInput from "@/ui-components/NumberInput";
 import RadioGroup from "@/ui-components/RadioGroup";
 
@@ -23,9 +22,9 @@ export default class AggregatorUI extends Component<ServiceUIProps, State> {
 
   onInit = (initialState: any) => {
     this.setState({
-      interval: initialState.state.interval || 100,
-      property: initialState.state.property || "",
-      aggregator: initialState.state.aggregator || aggOptions[0],
+      interval: initialState.interval || 100,
+      property: initialState.property || "",
+      aggregator: initialState.aggregator || aggOptions[0],
     });
   };
 
@@ -82,10 +81,12 @@ export default class AggregatorUI extends Component<ServiceUIProps, State> {
     return (
       <ServiceUI
         {...this.props}
+        className="pb-2"
         onInit={this.onInit}
         onNotification={this.onNotification}
-        segments={[{ name: "main", render: this.renderMain }]}
-      />
+      >
+        {this.renderMain(this.props.service)}
+      </ServiceUI>
     );
   }
 }
