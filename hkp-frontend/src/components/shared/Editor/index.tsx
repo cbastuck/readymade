@@ -36,6 +36,7 @@ export default class Editor extends Component<Props> {
       ...t.selectable,
       ...style,
     };
+
     return (
       <div style={appliedStyle}>
         <MonacoEditor

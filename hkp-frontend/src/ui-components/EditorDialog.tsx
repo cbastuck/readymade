@@ -25,6 +25,9 @@ export default function EditorDialog({
   onClose,
 }: Props) {
   const editor = useRef<any>(null);
+  if (!isOpen) {
+    return null;
+  }
 
   const onChangeDialogOpen = (isOpen: boolean) => {
     if (!isOpen) {
@@ -42,6 +45,7 @@ export default function EditorDialog({
   const avoidDefaultDomBehavior = (e: Event) => {
     e.preventDefault();
   };
+
   return (
     <Dialog open={isOpen} onOpenChange={onChangeDialogOpen}>
       <DialogContent

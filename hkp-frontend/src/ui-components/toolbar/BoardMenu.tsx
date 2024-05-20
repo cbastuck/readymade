@@ -18,7 +18,12 @@ export default function BoardMenu() {
   const board = boardContext?.boardName;
   const [showBoardSource, setShowBoardSource] = useState(false);
 
-  const onShowBoardSource = () => setShowBoardSource(true);
+  const onShowBoardSource = async () => {
+    const src = await boardContext?.serializeBoard();
+    setBoardSource(JSON.stringify(src, null, 2));
+    setShowBoardSource(true);
+  };
+
   const onCloseBoardSource = () => setShowBoardSource(false);
   const onApplyBoardSource = (newSource: string) => {
     const src = JSON.parse(newSource);
@@ -40,17 +45,10 @@ export default function BoardMenu() {
     });
   };
 
-  useEffect(() => {
-    if (showBoardSource && boardContext) {
-      boardContext
-        .serializeBoard()
-        .then((src) => setBoardSource(JSON.stringify(src, null, 2)));
-    }
-  }, [showBoardSource, boardContext]);
-
   if (!board) {
     return null;
   }
+
   return (
     <NavigationMenu delayDuration={10000}>
       <EditorDialog
@@ -127,7 +125,7 @@ export default function BoardMenu() {
               >
                 Save the current board to the browser
               </ListItem>
-              <ListItem title="Show Board Source" onClick={onShowBoardSource}>
+              <ListItem title="Edit Board Source" onClick={onShowBoardSource}>
                 Edit the current board's source in a text editor
               </ListItem>
               <ListItem title="Create Board Link" onClick={onCreateBoardLink}>
