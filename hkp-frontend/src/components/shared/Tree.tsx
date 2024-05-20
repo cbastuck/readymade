@@ -1,81 +1,88 @@
-import React, { Component } from "react";
-import { List, Breadcrumb } from "semantic-ui-react";
+import { Component } from "react";
+import { Save, Folder } from "lucide-react";
 
 import { t } from "../../styles";
 
-export class Tree extends Component {
-  renderFile = (file, selected, onChange) => {
+type OnChange = (ev: any, data: { selected: string }) => void;
+
+type Props = {
+  values: any;
+  path: any;
+  selected: any;
+  onChange: OnChange;
+  onExpand: (folder: any) => void;
+  onPath: (p: any) => void;
+};
+
+export class Tree extends Component<Props> {
+  renderFile = (file: any, selected: any, onChange: OnChange) => {
     const { path } = this.props;
     const absoluteFn = path.concat(file.name).join("/");
     const isSelected = absoluteFn === selected;
     const spacing = { padding: "1px 2px" };
     return (
-      <List.Item
+      <div
         key={absoluteFn}
         style={{ cursor: "pointer" }}
+        className="flex"
         onClick={(ev) => onChange(ev, { selected: absoluteFn })}
       >
-        <List.Icon name="file" style={spacing} />
-        <List.Content>
-          <List.Header
+        <Save />
+        <div>
+          <div
             style={{
-              backgroundColor: isSelected && "#4183c4",
+              backgroundColor: isSelected ? "#4183c4" : undefined,
               ...spacing,
             }}
           >
-            <span style={{ color: isSelected && "white" }}>{file.name}</span>
-          </List.Header>
-          {/*
-            <List.Description style={spacing}>
-              no description available
-            </List.Description>
-          */}
-        </List.Content>
-      </List.Item>
+            <span style={{ color: isSelected ? "white" : "" }}>
+              {file.name}
+            </span>
+          </div>
+        </div>
+      </div>
     );
   };
 
-  renderFolder = (folder, selected, onChange) => (
-    <List.Item
+  renderFolder = (folder: any, _selected: any, _onChange: OnChange) => (
+    <div
       key={folder.name}
+      className="flex"
       style={{ cursor: "pointer" }}
       onClick={() => this.props.onExpand(folder)}
     >
-      <List.Icon name="folder" />
-      <List.Content>
-        <List.Header>{folder.name}</List.Header>
+      <Folder />
+      <div>
+        <div>{folder.name}</div>
         {/*<List.Description>no description available</List.Description>*/}
-      </List.Content>
-    </List.Item>
+      </div>
+    </div>
   );
 
-  renderItems = (items, selected, onChange) => (
-    <List>
-      {items.map((item) =>
+  renderItems = (items: any, selected: any, onChange: OnChange) => (
+    <div className="flex flex-col">
+      {items.map((item: any) =>
         item.type === "file"
           ? this.renderFile(item, selected, onChange)
           : this.renderFolder(item, selected, onChange)
       )}
-    </List>
+    </div>
   );
 
   renderBreadcrumbs = () => {
     const { path = [], onPath } = this.props;
 
     return (
-      <Breadcrumb>
-        <Breadcrumb.Section style={t.m(3, 0)} link onClick={() => onPath(null)}>
+      <div className="flex">
+        <div style={t.m(3, 0)} onClick={() => onPath(null)}>
           /
-        </Breadcrumb.Section>
-        {path.map((part) => (
+        </div>
+        {path.map((part: any) => (
           <span key={`tree-breadcrumb-${part}`}>
-            <Breadcrumb.Section link onClick={() => onPath(part)}>
-              {part}
-            </Breadcrumb.Section>
-            {part !== "/" && <Breadcrumb.Divider />}
+            <div onClick={() => onPath(part)}>{part}</div>
           </span>
         ))}
-      </Breadcrumb>
+      </div>
     );
   };
 

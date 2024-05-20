@@ -1,5 +1,6 @@
 import { Component } from "react";
-import { Card, Icon, Image, Checkbox } from "semantic-ui-react";
+
+import Image from "@/ui-components/Image";
 
 import MessageReceiver from "../../../MessageReceiver";
 import SelectorField from "../../../components/shared/SelectorField";
@@ -16,10 +17,20 @@ import {
   getAuthURL,
   exchangeCode,
 } from "./GithubAPI";
+import { ServiceUIProps } from "@/types";
+import RadioGroup from "@/ui-components/RadioGroup";
 
 const loginStateId = "github-login";
 
-export class GithubUser extends Component {
+type User = any;
+
+type UserProps = {
+  token: string | undefined;
+  size?: string;
+  onLogout: () => void;
+  onUser: (user: User | null) => void;
+};
+export class GithubUser extends Component<UserProps, { user: User | null }> {
   state = {
     user: null,
   };
@@ -29,7 +40,7 @@ export class GithubUser extends Component {
     this.init(token);
   }
 
-  init = async (token) => {
+  init = async (token: string | undefined) => {
     const user = await getUser(token);
     const { onUser } = this.props;
     if (user) {
@@ -45,30 +56,22 @@ export class GithubUser extends Component {
     if (!user) {
       return false;
     }
-    const { size = "small", onLogout } = this.props;
+    const { size = 150, onLogout } = this.props;
     const { login, avatar_url, created_at, public_repos, followers } = user;
     return (
       <div style={s(t.fs12, t.ls1)}>
-        <Card>
+        <div>
           <div style={t.tc}>
-            <Image src={avatar_url} wrapped size={size} />
+            <Image className="m-auto" src={avatar_url} size={size} />
           </div>
-          <Card.Content>
-            <Card.Header>{login}</Card.Header>
-            <Card.Meta>Joined in {created_at}</Card.Meta>
-            <Card.Description>
-              The user has {public_repos} public repositories
-            </Card.Description>
-          </Card.Content>
-          <Card.Content extra>
-            <Icon name="user" />
-            {followers} Followers
-          </Card.Content>
-        </Card>
-        <Button
-          style={s(t.fs12, t.ls1, t.w100)}
-          onClick={() => onLogout && onLogout()}
-        >
+          <div>{login}</div>
+          <div className="flex text-left">
+            <div>Joined {created_at}</div>
+            <div>{public_repos} public repositories</div>
+            <div>{followers} Followers</div>
+          </div>
+        </div>
+        <Button className="w-full" onClick={() => onLogout && onLogout()}>
           Logout
         </Button>
       </div>
@@ -76,16 +79,46 @@ export class GithubUser extends Component {
   }
 }
 
-export class GithubObject extends Component {
-  state = {
+type ObjectProps = ServiceUIProps & {
+  owner: string;
+  repo: any;
+  branch: any;
+  file: any;
+  token: string;
+  disableFileInput?: boolean;
+  onChange: (diff: Partial<ObjectProps>) => void;
+};
+
+type ObjectState = {
+  user: User | null;
+  owner: string | undefined;
+  repos?: any;
+  repo: any;
+  branches?: any;
+  branch: any;
+  tree?: any;
+  path?: Array<any>;
+  fileMode: "New File" | "Select File";
+};
+
+export class GithubObject extends Component<ObjectProps, ObjectState> {
+  state: ObjectState = {
     path: [],
+    user: null,
+    owner: undefined,
+    repos: undefined,
+    repo: undefined,
+    branches: undefined,
+    branch: undefined,
+    tree: undefined,
+    fileMode: "New File",
   };
 
   componentDidMount() {
     this.init();
   }
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps: ObjectProps) {
     const { owner, repo, branch, file } = this.props;
     if (owner !== prevProps.owner) {
       this.onOwnerChanged(owner);
@@ -126,7 +159,7 @@ export class GithubObject extends Component {
     });
   }
 
-  onOwnerChanged = async (owner) => {
+  onOwnerChanged = async (owner: string) => {
     const { token, onChange } = this.props;
     const repos = await getRepos(token, owner);
     this.setState({
@@ -137,10 +170,10 @@ export class GithubObject extends Component {
     onChange({ owner });
   };
 
-  onRepoChanged = async (repo) => {
+  onRepoChanged = async (repo: any) => {
     const { token, owner, branch, onChange } = this.props;
     const branches = await getBranches(token, owner, repo);
-    if (branches.find((b) => b.name === branch)) {
+    if (branches.find((b: any) => b.name === branch)) {
       // same branch-name exists in new repo
       const tree = await getBranch(token, owner, repo, branch);
       this.setState({
@@ -161,7 +194,7 @@ export class GithubObject extends Component {
     }
   };
 
-  onBranchChanged = async (branch) => {
+  onBranchChanged = async (branch: string) => {
     const { token, owner, repo, onChange } = this.props;
 
     this.setState({
@@ -170,9 +203,9 @@ export class GithubObject extends Component {
     onChange({ file: null });
   };
 
-  onFileChanged = async (file) => {};
+  onFileChanged = async (_file: any) => {};
 
-  renderPanel = (service) => {
+  renderPanel = () => {
     const { onChange, disableFileInput, branch, repo, file } = this.props; // selections come from props
     const {
       user,
@@ -180,7 +213,7 @@ export class GithubObject extends Component {
       repos,
       branches,
       tree,
-      renderAsFileInputToggle = true,
+      fileMode,
     } = this.state; // options come from state
 
     if (!repos) {
@@ -188,115 +221,115 @@ export class GithubObject extends Component {
     }
 
     const repositoryOptions = repos.reduce(
-      (all, cur) => ({ ...all, [cur.name]: cur.name }),
+      (all: any, cur: any) => ({ ...all, [cur.name]: cur.name }),
       {}
     );
     const branchOptions = branches
-      ? branches.reduce((all, cur) => ({ ...all, [cur.name]: cur.name }), {})
+      ? branches.reduce(
+          (all: any, cur: any) => ({ ...all, [cur.name]: cur.name }),
+          {}
+        )
       : {};
 
-    const isFilenameInTree = !!tree.find((x) => x.path === file);
-    const renderAsFileInput = disableFileInput
-      ? false
-      : isFilenameInTree
-      ? renderAsFileInputToggle
-      : file
-      ? true
-      : renderAsFileInputToggle;
+    const isFilenameInTree = tree && tree.find((x: any) => x.path === file);
+    const fileOptions = ["New File", "Select File"];
     return (
       <div>
         <InputField
           label="Owner"
           value={owner}
-          onChange={(_, { value: owner }) => onChange({ owner })}
+          onChange={(owner) => onChange({ owner })}
         />
-        <SelectorField
-          label="repo"
-          options={repositoryOptions}
-          value={repo || ""}
-          onChange={({ value: repo }) => onChange({ repo })}
-        />
-        <SelectorField
-          label="branch"
-          options={branchOptions}
-          value={branch}
-          onChange={({ value: branch }) => onChange({ branch })}
-        />
-        <div style={t.tl}>
-          {!disableFileInput && (
-            <Checkbox
-              toggle
-              label={renderAsFileInputToggle ? "New File" : "Select File"}
-              style={s(t.fs12, t.mt5, t.mb3)}
-              checked={!!renderAsFileInputToggle}
-              onChange={async (_, { checked: renderAsFileInputToggle }) => {
-                this.setState({ renderAsFileInputToggle });
-                if (!isFilenameInTree) {
-                  onChange({ file: null });
-                }
-              }}
-            />
-          )}
-          {renderAsFileInput
-            ? this.renderFileInput(file, onChange)
-            : this.renderFileSelector(file, tree, onChange)}
+        <div className="flex">
+          <SelectorField
+            label="Repo"
+            options={repositoryOptions}
+            value={repo || ""}
+            onChange={({ value: repo }) => onChange({ repo })}
+          />
+          <SelectorField
+            label="Branch"
+            options={branchOptions}
+            value={branch}
+            onChange={({ value: branch }) => onChange({ branch })}
+          />
         </div>
+
+        <RadioGroup
+          title="File"
+          options={fileOptions}
+          value={fileMode}
+          onChange={async (opt) => {
+            this.setState({ fileMode: opt as any });
+            if (!isFilenameInTree) {
+              onChange({ file: null });
+            }
+          }}
+        />
+
+        {fileMode === "Select File"
+          ? this.renderFileSelector(file, tree, onChange)
+          : this.renderFileInput(file, onChange)}
       </div>
     );
   };
 
-  renderFileTree = (file, tree, onChange) => {
+  renderFileTree = (file: any, tree: any, onChange: any) => {
     const { path } = this.state;
     const { token, owner, repo, branch } = this.props;
-    const dict = {
+    const dict: any = {
       blob: "file",
       tree: "folder",
     };
-    const items = tree.map((x) => ({
-      name: x.path,
-      type: dict[x.type],
-      sha: x.sha,
-    }));
+    const items = tree
+      ? tree.map((x: any) => ({
+          name: x.path,
+          type: dict[x.type],
+          sha: x.sha,
+        }))
+      : [];
     return (
-      <Tree
-        selected={file && file.name}
-        values={items}
-        onChange={onChange}
-        onExpand={async (folder) => {
-          const tree = await getTree(token, owner, repo, folder.sha);
-          this.setState({
-            tree,
-            path: path.concat({ sha: folder.sha, name: folder.name }),
-          });
-        }}
-        onPath={async (part) => {
-          const pos = path.findIndex((x) => x.name === part);
-          if (pos !== -1) {
-            const tree = await getTree(token, owner, repo, path[pos].sha);
-            const diff = path.length - 1 - pos;
-            if (diff > 0) {
+      <div className="text-left">
+        <Tree
+          selected={file && file.name}
+          values={items}
+          onChange={onChange}
+          onExpand={async (folder: any) => {
+            const tree = await getTree(token, owner, repo, folder.sha);
+            this.setState({
+              tree,
+              path: path?.concat({ sha: folder.sha, name: folder.name }),
+            });
+          }}
+          onPath={async (part: any) => {
+            const pos = path?.findIndex((x) => x.name === part) || -1;
+            if (pos !== -1) {
+              const tree = await getTree(token, owner, repo, path?.[pos].sha);
+              const diff = path ? path.length - 1 - pos : 0;
+              if (diff > 0) {
+                this.setState({
+                  tree,
+                  path: path?.slice(0, -diff),
+                });
+              }
+            } else {
+              const tree = await getBranch(token, owner, repo, branch);
               this.setState({
+                path: [],
                 tree,
-                path: path.slice(0, -diff),
               });
             }
-          } else {
-            const tree = await getBranch(token, owner, repo, branch);
-            this.setState({
-              path: [],
-              tree,
-            });
-          }
-        }}
-        path={path.map((x) => x.name)}
-      />
+          }}
+          path={path?.map((x) => x.name)}
+        />
+      </div>
     );
   };
 
-  renderFileSelector = (file, tree, onChange) => {
-    return this.renderFileTree(file, tree, (_, { selected: filename }) => {
+  renderFileSelector = (file: any, tree: any, onChange: any) => {
+    const cb = (_ev: any, { selected: filename }: any) => {
       const { path } = this.state;
-      const parent = path.slice(-1)[0];
+      const parent = path?.slice(-1)[0];
       const treeSHA = parent ? parent.sha : undefined;
       onChange({
         file: {
@@ -304,16 +337,17 @@ export class GithubObject extends Component {
           treeSHA,
         },
       });
-    });
+    };
+    return this.renderFileTree(file, tree, cb);
   };
 
-  renderFileInput = (file, onChange) => {
+  renderFileInput = (file: any, onChange: any) => {
     const value = typeof file === "string" ? file : file && file.name;
     return (
       <InputField
         label="file"
         value={value}
-        onChange={(_, { value: filename }) =>
+        onChange={(filename) =>
           onChange({
             file: {
               name: filename,
@@ -326,12 +360,18 @@ export class GithubObject extends Component {
   };
 
   render() {
-    const { service } = this.props;
-    return this.renderPanel(service);
+    return this.renderPanel();
   }
 }
 
-export class GithubOAuth extends Component {
+type AuthProps = {
+  onToken: any;
+  clientID: any;
+  clientSecret: any;
+  redirectURI: any;
+  scopes: any;
+};
+export class GithubOAuth extends Component<AuthProps> {
   render() {
     const { onToken, clientID, clientSecret, redirectURI, scopes } = this.props;
     return (
@@ -342,7 +382,6 @@ export class GithubOAuth extends Component {
         }}
       >
         <Button
-          style={s(t.ls1, t.fs12)}
           onClick={() => {
             const url = getAuthURL({
               clientID,
@@ -360,7 +399,7 @@ export class GithubOAuth extends Component {
         </Button>
         <MessageReceiver
           state={loginStateId}
-          onData={async (data) => {
+          onData={async (data: any) => {
             const { code } = data;
             if (code) {
               const token = await exchangeCode({

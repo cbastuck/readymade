@@ -1,6 +1,6 @@
 import { Component, CSSProperties } from "react";
 
-import { TextArea } from "semantic-ui-react";
+import { Textarea } from "@/ui-components/primitives/textarea";
 
 import SyncIndicator from "./SyncIndicator";
 
@@ -92,7 +92,7 @@ export default class InputText extends Component<Props, State> {
             }}
           />
         </div>
-        <TextArea
+        <Textarea
           style={{
             width: "100%",
             fontSize: 14,
