@@ -73,15 +73,18 @@ export default class WebsocketChannel {
   };
 
   onMessage = (event) => {
-    const message = parseResponse(event.data);
-    if (message instanceof Blob) {
-      return this.onAction(message);
-    }
-    const action = message.json
-      ? rebuild(message.json.payload, message) // message is a multipart/form
-      : JSON.parse(message);
+    if (event.data) {
+      const message = parseResponse(event.data);
+      if (message instanceof Blob) {
+        return this.onAction(message);
+      }
 
-    return this.onAction(action);
+      const action = message.json
+        ? rebuild(message.json.payload, message) // message is a multipart/form
+        : JSON.parse(message);
+
+      return this.onAction(action);
+    }
   };
 }
 

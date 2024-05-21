@@ -101,6 +101,7 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
           return (
             <div key={`RemoteServiceUI-${service.uuid}.${prop}`}>
               <SubmittableInput
+                fullWidth
                 title={prop}
                 value={val}
                 onSubmit={(value) => {

@@ -79,9 +79,6 @@ export default function BoardMenu() {
           </NavigationMenuTrigger>
           <NavigationMenuContent className="font-menu">
             <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
-              <ListItem title="Startpage" onClick={() => navigate("/")}>
-                Go back to the landing page
-              </ListItem>
               <ListItem
                 title="New Board"
                 onClick={() =>

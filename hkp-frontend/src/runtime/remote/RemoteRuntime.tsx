@@ -94,14 +94,16 @@ export default function RemoteRuntime({
 
   return (
     !collapsed && (
-      <ServiceUiContainer
-        userId={user?.userId}
-        boardName={boardName}
-        runtime={runtime}
-        services={servicesWithConfig}
-        onArrangeService={onArrangeService}
-        onCreateServiceUi={onCreateServiceUi}
-      />
+      <div className="flex overflow-x-auto">
+        <ServiceUiContainer
+          userId={user?.userId}
+          boardName={boardName}
+          runtime={runtime}
+          services={servicesWithConfig}
+          onArrangeService={onArrangeService}
+          onCreateServiceUi={onCreateServiceUi}
+        />
+      </div>
     )
   );
 }
