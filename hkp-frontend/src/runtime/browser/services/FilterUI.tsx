@@ -1,17 +1,24 @@
-import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
+import { Component } from "react";
 
-import { s, t } from "hkp-frontend/src/styles";
 import InputField from "hkp-frontend/src/components/shared/InputField";
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
-import ServiceUI from "hkp-frontend/src/runtime/services/ServiceUI";
 
-import FilterDescriptor from "hkp-services/Filter";
+import { ServiceUIProps } from "@/types";
+import ServiceUI from "@/ui-components/service/ServiceUI";
+import Button from "@/ui-components/Button";
 
-export class FilterUI extends Component {
-  state = {};
+type State = {
+  conditions: any;
+  aggregator: any;
+};
 
-  onInit(initialState) {
+export default class FilterUI extends Component<ServiceUIProps, State> {
+  state: State = {
+    conditions: undefined,
+    aggregator: undefined,
+  };
+
+  onInit(initialState: any) {
     const { conditions, aggregator } = initialState;
 
     this.setState({
@@ -20,7 +27,7 @@ export class FilterUI extends Component {
     });
   }
 
-  onNotification(service, notification) {
+  onNotification(notification: any) {
     const { conditions, aggregator } = notification;
 
     if (conditions !== undefined) {
@@ -32,22 +39,24 @@ export class FilterUI extends Component {
     }
   }
 
-  renderMain = (service) => {
+  renderMain = () => {
     const { conditions, aggregator } = this.state;
+    const { service } = this.props;
     return (
       <div className="filter-service" style={{ textAlign: "left" }}>
         {conditions &&
-          conditions.map((condition, cidx) => (
+          conditions.map((condition: any, cidx: number) => (
             <InputField
               key={`filter-condition-${service.uuuid}-${cidx}`}
               type="text"
               label={`C${cidx + 1}`}
               value={condition || ""}
-              labelPosition="left"
-              onChange={(_, { value: condition }) => {
+              onChange={(condition) => {
                 const updated = condition
-                  ? conditions.map((c, cci) => (cci === cidx ? condition : c))
-                  : conditions.filter((c, cci) => cci !== cidx);
+                  ? conditions.map((c: any, cci: number) =>
+                      cci === cidx ? condition : c
+                    )
+                  : conditions.filter((c: any, cci: number) => cci !== cidx);
                 service.configure({ conditions: updated });
               }}
             />
@@ -63,7 +72,6 @@ export class FilterUI extends Component {
           />
         )}
         <Button
-          style={s(t.uc, t.fs12, t.ls1, t.w100)}
           onClick={() => {
             service.configure({ conditions: [...conditions, ""] });
           }}
@@ -80,19 +88,9 @@ export class FilterUI extends Component {
         {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
-        segments={[{ name: "main", render: this.renderMain }]}
-      />
+      >
+        {this.renderMain()}
+      </ServiceUI>
     );
   }
 }
-
-const descriptor = {
-  serviceName: FilterDescriptor.serviceName,
-  serviceId: FilterDescriptor.serviceId,
-  create: (app, board, descriptor, id) =>
-    new FilterDescriptor.service(app, board, descriptor, id),
-  //new Filter(app, board, descriptor, id),
-  createUI: FilterUI,
-};
-
-export default descriptor;

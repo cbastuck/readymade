@@ -36,10 +36,10 @@ import TriggerPadUI from "./runtime/browser/services/TriggerPadUI";
 import GithubSinkUI from "./runtime/browser/services/GithubSinkUI";
 import GithubSourceUI from "./runtime/browser/services/GithubSourceUI";
 import OutputUI from "./runtime/browser/services/OutputUI";
+import FilterUI from "./runtime/browser/services/FilterUI";
+import FetcherUI from "./runtime/browser/services/FetcherUI";
+import BufferUI from "./runtime/browser/services/BufferUI";
 
-import { FetcherUI } from "./runtime/browser/services/Fetcher";
-import { FilterUI } from "./runtime/browser/services/Filter";
-import { BufferUI } from "./runtime/browser/services/Buffer";
 import { SequencerUI } from "./runtime/browser/services/Sequencer";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
