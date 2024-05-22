@@ -12,14 +12,11 @@ import { cn } from "@/ui-components";
 import { BoardCtx } from "@/BoardContext";
 import EditorDialog from "../EditorDialog";
 import { storeBoardToLocalStorage } from "@/views/playground/common";
-import { useNavigate } from "react-router-dom";
 
 export default function BoardMenu() {
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
   const [showBoardSource, setShowBoardSource] = useState(false);
-
-  const navigate = useNavigate();
 
   const onShowBoardSource = async () => {
     const src = await boardContext?.serializeBoard();

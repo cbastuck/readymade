@@ -56,7 +56,7 @@ export default class FilterUI extends Component<ServiceUIProps, State> {
                   ? conditions.map((c: any, cci: number) =>
                       cci === cidx ? condition : c
                     )
-                  : conditions.filter((c: any, cci: number) => cci !== cidx);
+                  : conditions.filter((_: any, cci: number) => cci !== cidx);
                 service.configure({ conditions: updated });
               }}
             />

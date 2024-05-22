@@ -1,5 +1,5 @@
 import FilterDescriptor from "hkp-services/Filter";
-import FilterUI from "@/components/services/FilterUI";
+import FilterUI from "./FilterUI";
 import { AppInstance, ServiceClass } from "@/types";
 
 const descriptor = {
