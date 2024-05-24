@@ -107,11 +107,13 @@ export default class OutputOptions extends Component<Props, State> {
     } = this.props;
     return this.renderOptions(
       "Sidechain",
-      <SidechainSelector
-        boardContext={boardContext}
-        values={sidechainRouting}
-        onChange={(routing) => onSidechangeRouting(routing)}
-      />
+      <div style={{ display: this.state.expanded ? undefined : "none" }}>
+        <SidechainSelector
+          boardContext={boardContext}
+          values={sidechainRouting}
+          onChange={(routing) => onSidechangeRouting(routing)}
+        />
+      </div>
     );
   };
 

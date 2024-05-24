@@ -123,7 +123,7 @@ export default function RuntimeUI({
               />
             </div>
             {outputs && expanded ? (
-              <div className="ml-auto">{outputs}</div>
+              <div className="ml-auto pl-4">{outputs}</div>
             ) : null}
           </>
         ) : (
