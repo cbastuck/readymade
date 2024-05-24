@@ -83,6 +83,7 @@ type Props = {
   onAction?: (action: any) => boolean;
   serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
   onUpdateBoardState?: (updated: BoardDescriptor) => void;
+  onBoardFetched?: (error?: Error) => void;
 };
 
 const BoardCtx = createContext<BoardContextState | null>(null);
@@ -188,54 +189,67 @@ class BoardProvider extends Component<Props, BoardContextState> {
       services = {},
     } = (await this.props.fetchBoard()) || {};
 
-    const boardRequiresReauth = (
-      await Promise.all(
-        runtimes.map((rtClass) =>
-          rtClass.type === "remote"
-            ? isUserAuthenticated(rtClass, this.props.user)
-            : Promise.resolve(true)
+    try {
+      const boardRequiresReauth = (
+        await Promise.all(
+          runtimes.map((rtClass) =>
+            rtClass.type === "remote"
+              ? isUserAuthenticated(rtClass, this.props.user).catch((err) => {
+                  throw new Error(`${err.message} for runtime ${rtClass.url}`);
+                })
+              : Promise.resolve(true)
+          )
         )
-      )
-    ).some((isAuthenticated) => !isAuthenticated);
-
-    if (boardRequiresReauth && !this.state.user) {
-      await this.waitForUserLogin();
+      ).some((isAuthenticated) => !isAuthenticated);
+      if (boardRequiresReauth && !this.state.user) {
+        await this.waitForUserLogin();
+      }
+    } catch (err: any) {
+      this.props.onBoardFetched?.(err);
+      return;
     }
 
-    const user = this.state.user;
-    const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
-      runtimes.map((rt) => {
-        const api = this.props.runtimeApis?.[rt.type];
-        if (!api) {
-          console.error(
-            `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
-              rt
-            )} with type: ${rt.type} with registered apis: ${JSON.stringify(
-              Object.keys(this.props.runtimeApis || {})
-            )}`
-          );
-          return Promise.resolve(null);
-        }
-        return api.restoreRuntime(rt, services[rt.id], user);
-      })
-    );
+    try {
+      const user = this.state.user;
+      const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
+        runtimes.map((rt) => {
+          const api = this.props.runtimeApis?.[rt.type];
+          if (!api) {
+            console.error(
+              `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
+                rt
+              )} with type: ${rt.type} with registered apis: ${JSON.stringify(
+                Object.keys(this.props.runtimeApis || {})
+              )}`
+            );
+            return Promise.resolve(null);
+          }
+          return api.restoreRuntime(rt, services[rt.id], user);
+        })
+      );
 
-    const scopes = reduceByRuntimeId(restored, "scope");
-    const registry = reduceByRuntimeId(restored, "registry");
-    const restoredServicesWithState = reduceByRuntimeId(restored, "services");
-    const validRuntimes = restored.flatMap((restoreResult) =>
-      restoreResult && !!scopes[restoreResult?.runtime.id]
-        ? [restoreResult.runtime]
-        : []
-    );
+      const scopes = reduceByRuntimeId(restored, "scope");
+      const registry = reduceByRuntimeId(restored, "registry");
+      const restoredServicesWithState = reduceByRuntimeId(restored, "services");
+      const validRuntimes = restored.flatMap((restoreResult) =>
+        restoreResult && !!scopes[restoreResult?.runtime.id]
+          ? [restoreResult.runtime]
+          : []
+      );
 
-    this.setState({
-      boardName,
-      runtimes: validRuntimes,
-      services: restoredServicesWithState,
-      registry,
-      scopes,
-    });
+      this.setState({
+        boardName,
+        runtimes: validRuntimes,
+        services: restoredServicesWithState,
+        registry,
+        scopes,
+      });
+    } catch (err: any) {
+      this.props.onBoardFetched?.(err);
+      return;
+    }
+
+    this.props.onBoardFetched?.();
   };
 
   setRuntimeName = async (runtimeId: string, newName: string) => {

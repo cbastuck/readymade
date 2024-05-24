@@ -44,6 +44,7 @@ import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
 import BoardEntryPoint from "./BoardEntryPoint";
 import { AppCtx } from "../../AppContext";
+import BoardFetchError from "./BoardFetchError";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -66,6 +67,8 @@ type State = {
 
   enforceLoadPanel?: boolean;
   isSaveDialogVisible: boolean;
+  isFetching?: boolean;
+  errorOnFetch?: Error;
 };
 
 class Playground extends Component<Props, State> {
@@ -152,6 +155,7 @@ class Playground extends Component<Props, State> {
   };
 
   fetchBoard = async (): Promise<BoardDescriptor> => {
+    this.setState({ isFetching: true });
     if (this.state.initialFetched) {
       return this.boardProviderRef!.state;
     }
@@ -197,6 +201,10 @@ class Playground extends Component<Props, State> {
     };
   };
 
+  onBoardFetched = (error?: Error) => {
+    this.setState({ isFetching: false, errorOnFetch: error });
+  };
+
   getInitialPlayground = async (): Promise<Partial<PlaygroundState> | null> => {
     const board = this.props.match?.params?.board;
     if (board) {
@@ -225,22 +233,6 @@ class Playground extends Component<Props, State> {
     console.error("Playground.getInitialPlayground() - no noard name");
     return null;
   };
-
-  /*
-  restoreBoardFromLocalStorage = async (name: string) => {
-    const storageName = name
-      ? `${localStoragePrefix}${name}`
-      : "hkp-playground";
-    const data = localStorage.getItem(storageName);
-
-    if (data) {
-      const board = JSON.parse(data);
-      if (board && board.runtimes) {
-        return board;
-      }
-    }
-  };
-  */
 
   serializeBoard = async (
     descriptor: BoardDescriptor
@@ -457,6 +449,7 @@ class Playground extends Component<Props, State> {
         }}
         onRemoveService={this.onRemoveService}
         availableRuntimes={availableRuntimes.concat(restoredAvailableRuntimes)}
+        onBoardFetched={this.onBoardFetched}
       >
         <BoardConsumer>
           {(boardContext) =>
@@ -487,46 +480,52 @@ class Playground extends Component<Props, State> {
                   onSave={this.onSaveDialog}
                   onCancel={() => this.setState({ isSaveDialogVisible: false })}
                 />
-
-                <BoardEntryPoint
-                  isLoading={
-                    !this.state.initialFetched || !!boardContext.awaitUserLogin
-                  }
-                  showLoginRequired={!!boardContext.awaitUserLogin}
-                  boardContext={boardContext}
-                  boardName={this.state.boardName}
-                  description={this.state.description}
-                  sidechainRouting={this.state.sidechainRouting}
-                  outputRouting={this.state.outputRouting}
-                  inputRouting={this.state.inputRouting}
-                  onChangeSidechainRouting={(
-                    runtime: RuntimeDescriptor,
-                    routing: Array<SidechainRoute>
-                  ) =>
-                    this.setState({
-                      sidechainRouting: {
-                        ...this.state.sidechainRouting,
-                        [runtime.id]: routing,
-                      },
-                    })
-                  }
-                  onChangeInputRouting={(runtime, value) => {
-                    this.setState({
-                      inputRouting: {
-                        ...this.state.inputRouting,
-                        [runtime.id]: value,
-                      },
-                    });
-                  }}
-                  onChangeOutputRouting={(runtime, routing) => {
-                    this.setState({
-                      outputRouting: {
-                        ...this.state.outputRouting,
-                        [runtime.id]: routing,
-                      },
-                    });
-                  }}
-                />
+                {this.state.errorOnFetch ? (
+                  <BoardFetchError
+                    boardName={this.state.boardName}
+                    error={this.state.errorOnFetch}
+                  />
+                ) : (
+                  <BoardEntryPoint
+                    isLoading={
+                      this.state.isFetching || !!boardContext.awaitUserLogin
+                    }
+                    showLoginRequired={!!boardContext.awaitUserLogin}
+                    boardContext={boardContext}
+                    boardName={this.state.boardName}
+                    description={this.state.description}
+                    sidechainRouting={this.state.sidechainRouting}
+                    outputRouting={this.state.outputRouting}
+                    inputRouting={this.state.inputRouting}
+                    onChangeSidechainRouting={(
+                      runtime: RuntimeDescriptor,
+                      routing: Array<SidechainRoute>
+                    ) =>
+                      this.setState({
+                        sidechainRouting: {
+                          ...this.state.sidechainRouting,
+                          [runtime.id]: routing,
+                        },
+                      })
+                    }
+                    onChangeInputRouting={(runtime, value) => {
+                      this.setState({
+                        inputRouting: {
+                          ...this.state.inputRouting,
+                          [runtime.id]: value,
+                        },
+                      });
+                    }}
+                    onChangeOutputRouting={(runtime, routing) => {
+                      this.setState({
+                        outputRouting: {
+                          ...this.state.outputRouting,
+                          [runtime.id]: routing,
+                        },
+                      });
+                    }}
+                  />
+                )}
 
                 <Footer />
               </div>

@@ -27,10 +27,6 @@ export default function BoardActionButton({ board, onAction }: Props) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 font-menu">
-        <DropdownMenuLabel className="text-base capitalize font-sans tracking-wider">
-          Saved Board Actions
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem
             className="text-base"

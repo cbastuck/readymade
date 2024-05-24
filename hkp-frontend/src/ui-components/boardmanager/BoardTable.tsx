@@ -40,9 +40,7 @@ export default function BoardTable({
               Description
             </TableHead>
             <TableHead className="text-left text-base w-[15%]">Date</TableHead>
-            <TableHead className="text-right text-base w-[5%]">
-              Action
-            </TableHead>
+            <TableHead className="text-right text-base w-[5%]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
