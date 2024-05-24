@@ -53,37 +53,28 @@ export default function HackerUI(props: ServiceUIProps) {
       onResize={onResize}
     >
       <div
+        className="select-none"
         style={{
           display: "flex",
           flexDirection: "column",
           height: "100%",
         }}
       >
-        <div
-          style={{
-            textAlign: "left",
-            width: "100%",
-            padding: 5,
-            display: "flex",
-            flexDirection: "row",
-            fontSize: 12,
-          }}
-        >
-          Health
+        <div className="flex items-center">
+          <div>Health</div>
           <div
+            className="ml-2"
             style={{
               fontFamily: "Arial",
               fontSize: "30px",
-              marginTop: -2,
-              marginLeft: 5,
               color: healthStatus.error ? "red" : "green",
             }}
           >
             •
           </div>
           <div
+            className="ml-2"
             style={{
-              marginLeft: 10,
               color: "orange",
               textTransform: "none",
             }}
@@ -105,15 +96,14 @@ export default function HackerUI(props: ServiceUIProps) {
             </button>
           </div>
         </div>
-        <Editor
-          style={{ paddingRight: 15 }}
-          ref={editorRef}
-          value={buffer}
-          language="javascript"
-          onChange={(buffer) => service.configure({ buffer })}
-          width={size[0]}
-          height={size[1]}
-        />
+        <div className="w-full h-full mb-2">
+          <Editor
+            ref={editorRef}
+            value={buffer}
+            language="javascript"
+            onChange={(buffer) => service.configure({ buffer })}
+          />
+        </div>
       </div>
     </ServiceUI>
   );

@@ -1,10 +1,10 @@
 import { useState } from "react";
 
-import Modal from "../../components/Modal";
 import ServiceReference from "../../components/ServiceReference";
 import DataModelReference from "../../components/DataModelReference";
 import Text from "@/ui-components/Text";
 import { s, t } from "../../styles";
+import CustomDialog from "@/ui-components/CustomDialog";
 
 type Props = {
   value: string | string[];
@@ -76,15 +76,17 @@ export default function Explanation({ value: explanation }: Props) {
           )}
         </Text>
       ))}
-      <Modal
+      <CustomDialog
         title={title || ""}
-        component={component}
-        url={modalReferenceDatamodel ? modalReferenceDatamodel.link : ""}
-        setOpen={(open: boolean) =>
+        //component={component}
+        //url={modalReferenceDatamodel ? modalReferenceDatamodel.link : ""}
+        onOpenChange={(open: boolean) =>
           !open && setModalReferenceDatamodel(undefined)
         }
         isOpen={!!modalReferenceDatamodel}
-      />
+      >
+        <div className="h-full w-full overflow-auto">{component}</div>
+      </CustomDialog>
     </div>
   );
 }

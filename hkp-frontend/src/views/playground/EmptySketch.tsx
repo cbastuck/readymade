@@ -1,19 +1,31 @@
+import { useNavigate } from "react-router-dom";
 import { s, t } from "../../styles";
 
 import Logo from "./hkp-dots-braid.svg?react";
+import SubmittableInput from "@/ui-components/SubmittableInput";
 
 type Props = {
   boardName: string;
 };
 
 export default function EmptySketch({ boardName }: Props) {
+  const navigate = useNavigate();
   const headline = !boardName ? (
     "this is an empty board"
   ) : (
-    <span style={s(t.tc, t.fs15, t.ls1)}>
-      Board <span style={s(t.italic, { color: "#1e70bf" })}>{boardName}</span>{" "}
-      is empty
-    </span>
+    <div className="w-full text-center flex items-end gap-4 font-sans tracking-wider">
+      <div className="w-full text-right">This board</div>
+      <div className="w-[40%]">
+        <SubmittableInput
+          selectAllOnFocus
+          fullWidth
+          className="text-[#1e70bf] text-center font-menu text-xl capitalize"
+          value={boardName}
+          onSubmit={(newName) => navigate(`/playground/${newName}`)}
+        />
+      </div>
+      <div className="w-full text-left">is empty.</div>
+    </div>
   );
   return (
     <div style={s({ margin: headline && "15px 0px" })}>
@@ -28,11 +40,11 @@ export default function EmptySketch({ boardName }: Props) {
               margin: "auto",
             }}
           >
-            <h1 style={s(t.fs14, t.tc, t.m(0, 6))}> {headline} </h1>
+            {headline}
             <div style={{ width: 200, margin: "10px auto" }}>
               <Logo />
             </div>
-            <div style={s(t.fs14, t.ls1, t.tc)}>
+            <div>
               <span
                 style={{ cursor: "help", color: "#4284C4" }}
                 onClick={() => {

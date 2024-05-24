@@ -16,16 +16,16 @@ export default function EmptyRuntimePlaceholder({ runtime }: Props) {
       }}
     >
       <div style={s(t.fs13, t.ls1, { marginTop: 90 })}>
-        This is an empty runtime -
+        This is an empty runtime.
         <span
           style={{ cursor: "help", color: "#4284C4" }}
           onClick={() => {
             document.getElementById(`service-selector-${runtime.id}`)?.click();
           }}
         >
-          {" add services "}
+          {" Add a service "}
         </span>
-        to start
+        to get going
       </div>
     </div>
   );

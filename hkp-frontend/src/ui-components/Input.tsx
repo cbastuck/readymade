@@ -4,6 +4,7 @@ import { Input as InputCN } from "@/ui-components/primitives/input";
 import PropertyLabel from "./GroupLabel";
 
 type Props = {
+  className?: string;
   title?: string;
   type?: string;
   value: string;
@@ -20,6 +21,7 @@ type Props = {
 
 const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
   const {
+    className,
     title,
     type,
     fullWidth,
@@ -44,7 +46,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
       <InputCN
         ref={ref}
         type={type}
-        className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h}`}
+        className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h} ${className} `}
         value={value}
         onChange={(ev) => onChange(ev.target.value)}
         disabled={disabled}

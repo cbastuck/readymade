@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader } from "semantic-ui-react";
+import LoadIndicator from "@/views/playground/LoadIndicator";
 
 import BoardCollection from ".";
 import { UsecaseDescriptor } from "../../types";
@@ -25,9 +25,7 @@ export default function Usecases({
           renderSearch={renderSearch}
         />
       ) : (
-        <Loader active inline>
-          Loading Showcases ...
-        </Loader>
+        <LoadIndicator text="Loading ... " />
       )}
     </div>
   );

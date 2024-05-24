@@ -9,6 +9,7 @@ import {
 import Input from "./Input";
 
 type SubmittableInputProps = {
+  className?: string;
   title?: string;
   type?: string;
   value: string;
@@ -24,6 +25,7 @@ type SubmittableInputProps = {
 const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
   (props, ref) => {
     const {
+      className,
       type,
       title,
       value,
@@ -62,6 +64,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     return (
       <Input
         ref={ref}
+        className={className}
         type={type}
         fullWidth={fullWidth}
         minHeight={minHeight}

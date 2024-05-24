@@ -4,8 +4,6 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/ui-components/primitives/dropdown-menu";
 import { Button } from "@/ui-components/primitives/button";

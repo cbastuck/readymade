@@ -1,5 +1,4 @@
 import React, { Component, CSSProperties } from "react";
-import { Label } from "semantic-ui-react";
 
 import Tooltip from "./Tooltip";
 import { labelWidth, labelHeight } from "./Defaults";
@@ -16,7 +15,7 @@ export default class SyncIndicator extends Component<Props> {
     return typeof label === "string" ? (
       <div style={{ width: "auto" }}>
         <Tooltip text={label}>
-          <Label
+          <div
             style={{
               backgroundColor: "#E8E8E8",
               border: "1px solid rgb(186, 186, 186)",
@@ -26,7 +25,7 @@ export default class SyncIndicator extends Component<Props> {
               paddingTop: 10,
               minWidth: labelWidth,
               minHeight: labelHeight,
-              color: !inSync && "red",
+              color: !inSync ? "red" : undefined,
               cursor: !inSync ? "pointer" : undefined,
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -35,7 +34,7 @@ export default class SyncIndicator extends Component<Props> {
             onClick={onClick}
           >
             {label}
-          </Label>
+          </div>
         </Tooltip>
       </div>
     ) : (

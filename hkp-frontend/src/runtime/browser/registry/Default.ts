@@ -40,6 +40,7 @@ import MediaPlayer from "../services/MediaPlayer";
 import DispatcherDesriptor from "../services/Dispatcher";
 import StackDescriptor from "../services/Stack";
 import SequencerDescriptor from "../services/Sequencer";
+import BoardService from "../services/BoardService";
 
 // Emerging concepts
 import KeyHandlerDescriptor from "../services/KeyHandler";
@@ -55,21 +56,25 @@ import FeedbackTakerDesriptor from "../services/FeedbackTaker";
 import SpotifyDescriptor from "../services/Spotify";
 import GithubSourceDescriptor from "../services/GithubSource";
 import GithubSinkDescriptor from "../services/GithubSink";
-import { ServiceModule } from "../../../types";
 
 // Cloud services
 import CloudSinkDescriptor from "../services/CloudSink";
 import CloudSourceDescriptor from "../services/CloudSource";
 
+// Random
+import UuidGeneratorDescriptor from "../services/UuidGenerator";
+
+import { ServiceModule } from "../../../types";
+
 // Modules with additional dependencies
 // import GeneticOptimizerDescriptor from "../services/GeneticOptimizer";
 // import DownloaderDescriptor from "../services/Downloader";
 
-import BoardService from "../services/BoardService";
-
 export const defaultRegistry: Array<ServiceModule> = [
   TimerDescriptor,
   MonitorDescriptor,
+
+  UuidGeneratorDescriptor,
 
   // Data I/O
   InputDescriptor,
