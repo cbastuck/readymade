@@ -61,6 +61,9 @@ export type BoardContextState = BoardContextAPI & {
 
   appContext: AppContextState | null;
   awaitUserLogin: (() => void) | null;
+
+  errorOnFetch?: Error;
+  isFetching: boolean;
 };
 
 type Props = {
@@ -83,7 +86,6 @@ type Props = {
   onAction?: (action: any) => boolean;
   serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
   onUpdateBoardState?: (updated: BoardDescriptor) => void;
-  onBoardFetched?: (error?: Error) => void;
 };
 
 const BoardCtx = createContext<BoardContextState | null>(null);
@@ -149,6 +151,8 @@ class BoardProvider extends Component<Props, BoardContextState> {
       runtimeApis: props.runtimeApis || {},
       appContext: this.context || null,
       awaitUserLogin: null,
+      isFetching: false,
+      errorOnFetch: undefined,
     };
   }
 
@@ -183,6 +187,8 @@ class BoardProvider extends Component<Props, BoardContextState> {
       return;
     }
 
+    this.setState({ isFetching: true });
+
     const {
       boardName = this.getBoardName(),
       runtimes = [],
@@ -205,7 +211,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
         await this.waitForUserLogin();
       }
     } catch (err: any) {
-      this.props.onBoardFetched?.(err);
+      this.setState({ errorOnFetch: err });
       return;
     }
 
@@ -243,13 +249,12 @@ class BoardProvider extends Component<Props, BoardContextState> {
         services: restoredServicesWithState,
         registry,
         scopes,
+        isFetching: false,
       });
     } catch (err: any) {
-      this.props.onBoardFetched?.(err);
+      this.setState({ errorOnFetch: err, isFetching: false });
       return;
     }
-
-    this.props.onBoardFetched?.();
   };
 
   setRuntimeName = async (runtimeId: string, newName: string) => {

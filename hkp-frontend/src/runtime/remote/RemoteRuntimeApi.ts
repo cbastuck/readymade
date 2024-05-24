@@ -80,6 +80,7 @@ export async function restoreRuntime(
       };
     }
   );
+
   const runtime = { ...rt, ...restoredRuntime, user };
 
   const scope = await createScope(runtime);

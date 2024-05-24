@@ -50,9 +50,7 @@ export default function HtmlUI(props: ServiceUIProps) {
             dangerouslySetInnerHTML={{ __html: htmlDocument }}
             style={t.selectable}
           />
-        ) : (
-          "Render Area"
-        )}
+        ) : null}
       </div>
 
       <div className="text-left my-1">

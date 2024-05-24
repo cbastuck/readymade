@@ -29,6 +29,8 @@ class GithubSink extends ServiceBase<State> {
       branch: "",
       file: "",
     });
+
+    this.bypass = true;
   }
 
   async configure(config: any) {

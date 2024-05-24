@@ -63,7 +63,7 @@ export default class SpotifyUI extends Component<ServiceUIProps, State> {
       service.configure({ action: "getProfile" });
       return <div style={s(t.ls1, t.fs12)}>Loading profile</div>;
     }
-    const { display_name: name, followers, images: allImages } = profile;
+    const { display_name: name, images: allImages } = profile;
     const image = allImages[0];
     return (
       <div className="mb-4">
@@ -76,7 +76,6 @@ export default class SpotifyUI extends Component<ServiceUIProps, State> {
         </div>
         <div className="flex gap-2 justify-evenly">
           <div>{name}</div>
-          <div>[{followers.total} following]</div>
           <Button
             size="xs"
             className="px-2"
@@ -121,13 +120,14 @@ export default class SpotifyUI extends Component<ServiceUIProps, State> {
     return (
       <ServiceUI
         {...this.props}
+        initialSize={{ width: 300, height: undefined }}
         className="pb-2"
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
       >
         <>
           {this.renderUser(this.props.service)}
-          {this.renderActions(this.props.service)}
+          {this.state.token && this.renderActions(this.props.service)}
         </>
       </ServiceUI>
     );

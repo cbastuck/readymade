@@ -67,8 +67,6 @@ type State = {
 
   enforceLoadPanel?: boolean;
   isSaveDialogVisible: boolean;
-  isFetching?: boolean;
-  errorOnFetch?: Error;
 };
 
 class Playground extends Component<Props, State> {
@@ -155,7 +153,6 @@ class Playground extends Component<Props, State> {
   };
 
   fetchBoard = async (): Promise<BoardDescriptor> => {
-    this.setState({ isFetching: true });
     if (this.state.initialFetched) {
       return this.boardProviderRef!.state;
     }
@@ -199,10 +196,6 @@ class Playground extends Component<Props, State> {
       services,
       registry,
     };
-  };
-
-  onBoardFetched = (error?: Error) => {
-    this.setState({ isFetching: false, errorOnFetch: error });
   };
 
   getInitialPlayground = async (): Promise<Partial<PlaygroundState> | null> => {
@@ -449,7 +442,6 @@ class Playground extends Component<Props, State> {
         }}
         onRemoveService={this.onRemoveService}
         availableRuntimes={availableRuntimes.concat(restoredAvailableRuntimes)}
-        onBoardFetched={this.onBoardFetched}
       >
         <BoardConsumer>
           {(boardContext) =>
@@ -480,15 +472,15 @@ class Playground extends Component<Props, State> {
                   onSave={this.onSaveDialog}
                   onCancel={() => this.setState({ isSaveDialogVisible: false })}
                 />
-                {this.state.errorOnFetch ? (
+                {boardContext.errorOnFetch ? (
                   <BoardFetchError
                     boardName={this.state.boardName}
-                    error={this.state.errorOnFetch}
+                    error={boardContext.errorOnFetch}
                   />
                 ) : (
                   <BoardEntryPoint
                     isLoading={
-                      this.state.isFetching || !!boardContext.awaitUserLogin
+                      boardContext.isFetching || !!boardContext.awaitUserLogin
                     }
                     showLoginRequired={!!boardContext.awaitUserLogin}
                     boardContext={boardContext}

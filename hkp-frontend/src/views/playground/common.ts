@@ -18,7 +18,15 @@ export function getLocalBoard(
   selectedBoard: string,
   prefix: string = localStoragePrefix
 ) {
-  return localStorage.getItem(`${prefix}${selectedBoard}`);
+  const item = localStorage.getItem(`${prefix}${selectedBoard}`);
+  if (!item) {
+    return;
+  }
+  const data = JSON.parse(item);
+  if (data.source) {
+    return JSON.parse(data.source);
+  }
+  return data;
 }
 
 export function removeLocalBoard(board: SavedBoard) {

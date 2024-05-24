@@ -76,6 +76,9 @@ export default function RuntimeUI({
   }
 
   const expanded = headless ? false : isExpanded;
+  const horizontalLayout = "flex";
+  const horizontalLayoutWrapped = "flex sm:flex-wrap flex-col items-center"; // use flex-col and items-center on mobile
+  const layout = wrapServices ? horizontalLayoutWrapped : horizontalLayout;
   return (
     <div style={style}>
       <RuntimeHeader
@@ -99,7 +102,7 @@ export default function RuntimeUI({
           <>
             {inputs && expanded ? <>{inputs}</> : false}
             <div
-              className={wrapServices ? "flex flex-col items-center " : "flex"}
+              className={layout}
               style={{
                 width: "100%",
                 overflow: wrapServices ? "hidden" : "auto",
