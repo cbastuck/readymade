@@ -40,6 +40,17 @@ module.exports = {
       "5xl": "2.87rem",
     },
     extend: {
+      backgroundImage: {
+        //"video-background": "url(/assets/teaser/sky-small.png)",
+        //"video-background2": "url(/assets/teaser/blue.jpg)",
+        //"video-background3": "url(/assets/teaser/sky2.png)",
+        //"video-background4": "url(/assets/teaser/sky-w-person2.png)",
+        //"video-background5": "url(/assets/teaser/sky4.png)",
+        //"video-background6": "url(/assets/teaser/sky5.png)",
+
+        // https://unsplash.com/photos/blue-smoke-on-white-background-mBHuEkka5wM
+        "video-background7": "url(/assets/teaser/blue2.png)",
+      },
       colors: {
         "paragraph-color": "hsl(var(--paragraph-color))",
         "headline-color": "hsl(var(--headline-color))",

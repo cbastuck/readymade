@@ -18,7 +18,7 @@ export default function Updates() {
       <Table className="mt-8">
         <TableHeader>
           <TableRow>
-            <TableHead className="font-sans text-xl">Description</TableHead>
+            <TableHead className="font-sans text-xl">Update</TableHead>
             <TableHead className="font-sans text-xl">State</TableHead>
             <TableHead className="font-sans text-xl">Date</TableHead>
           </TableRow>

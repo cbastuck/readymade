@@ -16,7 +16,7 @@ html {
   color: #454f6d;
   border-top: 1px solid rgba(34, 36, 38, 0.15);
   border-bottom: 1px solid rgba(34, 36, 38, 0.15);
-  height: 250px;
+  height: 100%;
   transition: height 0.5s linear;
 }
 

@@ -11,12 +11,14 @@ import BoardProvider, {
 import DragProvider from "./DragContext";
 
 import {
+  BoardDescriptor,
   RuntimeApiMap,
   RuntimeDescriptor,
   RuntimeImpl,
   SandboxRuntimeDescriptor,
   SandboxRuntimeDescriptorMap,
   ServiceDescriptor,
+  isBoardDescriptor,
   isSandboxRuntimeDescriptor,
 } from "./types";
 import browserRuntimeApi from "./runtime/browser/BrowserRuntimeApi";
@@ -27,6 +29,7 @@ type Props = {
   src?: string;
   data?: string;
   style?: CSSProperties;
+  hidePlaygroundLink?: boolean;
   onAction: (params: any) => void;
 };
 
@@ -105,7 +108,8 @@ class Sandbox extends Component<Props, State> {
   fetchAndParseData = async (src: string) => {
     try {
       const response = await fetch(src);
-      return this.parseData(await response.json());
+      const data = await response.json();
+      return this.parseData(data);
     } catch (err) {
       console.error("Fetched data is not valid JSON document", src, err);
     }
@@ -158,7 +162,7 @@ class Sandbox extends Component<Props, State> {
           disabledItems={["remove"]}
           highlightServicesOnHover={false}
         />
-        {url && (
+        {url && !this.props.hidePlaygroundLink && (
           <div
             style={{
               textAlign: "right",
@@ -200,10 +204,16 @@ class Sandbox extends Component<Props, State> {
 }
 
 function extractFirstRuntime(
-  data: SandboxRuntimeDescriptor | SandboxRuntimeDescriptorMap
+  data: SandboxRuntimeDescriptor | SandboxRuntimeDescriptorMap | BoardDescriptor
 ): SandboxRuntimeDescriptor | undefined {
   if (isSandboxRuntimeDescriptor(data)) {
     return data;
+  }
+
+  if (isBoardDescriptor(data)) {
+    const rt = data.runtimes[0];
+    const services = data.services[rt.id];
+    return { ...rt, services };
   }
 
   const runtimesInData = Object.keys(data);

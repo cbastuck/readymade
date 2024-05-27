@@ -41,7 +41,7 @@ function Welcome({
     <BoardProvider user={null} isActionAvailable={() => false}>
       <div>
         <Toolbar />
-        <div className={`hero-text fade-in-linear}`} style={style}>
+        <div className="hero-text fade-in-linear overflow-y-auto" style={style}>
           <div
             style={{
               width: "100%",

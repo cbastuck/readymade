@@ -349,6 +349,15 @@ export type BoardDescriptor = {
   description?: string;
 };
 
+export function isBoardDescriptor(data: any): data is BoardDescriptor {
+  return (
+    data.runtimes &&
+    Array.isArray(data.runtimes) &&
+    data.services &&
+    typeof data.services == "object"
+  );
+}
+
 export type SandboxRuntimeDescriptor = RuntimeDescriptor & {
   services: Array<ServiceDescriptor>;
 };
