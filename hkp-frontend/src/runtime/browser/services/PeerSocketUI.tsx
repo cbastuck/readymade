@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 
 import { ServiceUIProps } from "@/types";
 
@@ -11,6 +11,7 @@ import { availableDiscoveryPeerHosts } from "@/views/playground/common";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import { generateRandomName } from "@/core/board";
 import RadioGroup from "@/ui-components/RadioGroup";
+import { AppCtx } from "@/AppContext";
 
 export default function PeerSocketUI(props: ServiceUIProps) {
   const [bypass, setBypass] = useState(false);
@@ -50,6 +51,8 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     props.service.configure({ mode: newMode });
   };
   const hostDescriptor = availableDiscoveryPeerHosts[0];
+
+  const appContext = useContext(AppCtx);
   return (
     <ServiceUI
       className="pb-4"
@@ -96,6 +99,12 @@ export default function PeerSocketUI(props: ServiceUIProps) {
             usePeerPort={hostDescriptor?.port}
             usePeerRoutePath={hostDescriptor?.path}
             isSecure={hostDescriptor?.secure}
+            onError={(error) =>
+              appContext?.pushNotification({
+                type: "error",
+                message: error.message,
+              })
+            }
           />
         </div>
       </PeersProvider>

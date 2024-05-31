@@ -34,6 +34,7 @@ class PeerSocket extends ServiceBase<State> {
 
     if (needsUpdate(config.peerName, this.state.peerName)) {
       this.state.peerName = config.peerName;
+      this.app.notify(this, { peerName: this.state.peerName });
     }
 
     if (needsUpdate(config.targetPeer, this.state.targetPeer)) {

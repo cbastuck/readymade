@@ -86,7 +86,7 @@ class Sandbox extends Component<Props, State> {
       url: src,
       runtime: {
         id: runtime.id,
-        name: "Sandbox",
+        name: runtime.name,
         type: runtime.type,
         bundles: runtime.bundles,
         state: runtime.state,
@@ -150,7 +150,10 @@ class Sandbox extends Component<Props, State> {
   ) => {
     const url = this.state.url;
     return (
-      <DragProvider key={`sandbox-drag-provider-${runtime.id}`}>
+      <DragProvider
+        key={`sandbox-drag-provider-${runtime.id}`}
+        style={{ backgroundColor: "white" }}
+      >
         <Runtime
           ref={(runtime) => (this.runtime = runtime)}
           key={`sandbox-runtime-${runtime.id}`}
@@ -163,18 +166,18 @@ class Sandbox extends Component<Props, State> {
           disabledItems={["remove"]}
           highlightServicesOnHover={false}
         />
+
         {url && !this.props.hidePlaygroundLink && (
           <div
             style={{
               textAlign: "right",
               marginBottom: 2,
-              marginRight: 10,
+              marginRight: 2,
             }}
           >
-            <Link to={`/playground?src=${url}`}>
+            <Link to={`/playground?src=${url}`} target="_blank">
               <Button>open in Playground</Button>
             </Link>
-            <div style={{ height: 50 }} />
           </div>
         )}
       </DragProvider>
@@ -190,7 +193,7 @@ class Sandbox extends Component<Props, State> {
     return (
       <BoardProvider
         user={null}
-        boardName="Sandbox Board"
+        boardName={runtime?.name}
         fetchBoard={this.fetchBoard}
         runtimeApis={runtimeApis}
         fetchAfterMount={true}
