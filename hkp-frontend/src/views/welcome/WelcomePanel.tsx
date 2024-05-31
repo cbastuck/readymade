@@ -63,10 +63,10 @@ export default function WelcomePanel() {
 
       <div
         style={{
-          maxHeight: headerAnimationsComplete ? undefined : 0,
+          maxHeight: headerAnimationsComplete ? undefined : 530, // this show the scrollbar by default, but does not scroll much and avoids horiontal jumping when scrollbar comes in
           opacity: headerAnimationsComplete ? 1 : 0,
           transition: "opacity 2s ease",
-          overflow: "hidden",
+          overflowY: "hidden",
         }}
       >
         <h2 className="pt-10 m-0">Videos and Demos</h2>
