@@ -1,45 +1,53 @@
+import { useState } from "react";
+
 import WhatsNew from "./WhatsNew";
-import Carousel from "@/ui-components/Carousel";
-
-import { useNavigate } from "react-router-dom";
-import Button from "@/ui-components/Button";
-
+import Carousel, { CarouselItem } from "@/ui-components/Carousel";
 import Sandbox from "@/Sandbox";
 import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";
 import LandingPitch from "./LandingPitch";
-import { useState } from "react";
-
-const teaserVideos = ["/assets/teaser/GameTeaser.mp4"];
-const carouselItems = teaserVideos
-  .map((video) => ({
-    element: (
-      <video
-        className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
-        src={video}
-        autoPlay
-        loop
-        width="85%"
-      />
-    ),
-    title: "A quick game idea with Hookitapp",
-  }))
-  .concat({
-    element: (
-      <div className="flex justify-center mx-10 bg-white rounded-xl border-solid border drop-shadow-3xl">
-        <Sandbox src="/assets/teaser/board.json" hidePlaygroundLink={true} />
-      </div>
-    ),
-    title: "Try it out",
-  });
+import BackgroundSection from "./BackgroundSection";
+import { useNavigate } from "react-router-dom";
 
 export default function WelcomePanel() {
-  const navigate = useNavigate();
-
   const [headerAnimationsComplete, setHeaderAnimationsComplete] =
     useState(false);
+  const forceCompleteAnimation = () => setHeaderAnimationsComplete(true);
+  const navigate = useNavigate();
+  const carouselItems: Array<CarouselItem> = [
+    {
+      element: (
+        <video
+          className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
+          src="/assets/teaser/GameTeaser.mp4"
+          autoPlay
+          loop
+          width="85%"
+        />
+      ),
+      title: "A quick game idea with Hookitapp",
+      onClick: () =>
+        headerAnimationsComplete &&
+        navigate(
+          "/playground?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game.json&sender-board=%random-name%"
+        ),
+    },
+    {
+      element: (
+        <div className="flex justify-center mx-10 bg-white rounded-xl border-solid border drop-shadow-3xl">
+          <Sandbox src="/assets/teaser/board.json" hidePlaygroundLink={true} />
+        </div>
+      ),
+      title: "Try it out",
+      background: "/assets/teaser/sky-small.png",
+    },
+  ];
+
   return (
-    <div className="flex flex-col w-full mt-[5%]">
+    <div
+      className="flex flex-col w-full mt-[5%]"
+      onClick={forceCompleteAnimation}
+    >
       <div className="flex flex-col ">
         <div className="px-[100px] w-full flex mt-[50px]">
           <h1 className="w-full ml-auto">
@@ -54,28 +62,20 @@ export default function WelcomePanel() {
       </div>
 
       <div
-        className="flex gap-0.5 mx-auto mt-1 w-[60%]"
-        style={{ display: "none" }}
-      >
-        <Button className="w-full" onClick={() => navigate("/welcome/mission")}>
-          What is this?
-        </Button>
-
-        <Button className="w-full" onClick={() => navigate("/engage")}>
-          I want to engage
-        </Button>
-      </div>
-
-      <div
         style={{
+          maxHeight: headerAnimationsComplete ? undefined : 0,
           opacity: headerAnimationsComplete ? 1 : 0,
           transition: "opacity 2s ease",
+          overflow: "hidden",
         }}
       >
         <h2 className="pt-10 m-0">Videos and Demos</h2>
         <div className="mx-auto px-10 pb-10">
           <Carousel items={carouselItems} />
         </div>
+
+        <h2 className="pt-10 m-0">About Hookitapp</h2>
+        <BackgroundSection />
       </div>
     </div>
   );
