@@ -7,8 +7,6 @@ import Footer from "@/components/Footer";
 
 import { withRouter } from "../../common";
 
-import NavBar from "./NavBar";
-
 import "./Welcome.css";
 
 type Props = {
@@ -41,19 +39,8 @@ function Welcome({
     <BoardProvider user={null} isActionAvailable={() => false}>
       <div>
         <Toolbar />
-        <div className="hero-text fade-in-linear overflow-y-auto" style={style}>
-          <div
-            style={{
-              width: "100%",
-              height: "95%",
-              fontSize: 15,
-            }}
-          >
-            {children}
-            <div className="fade-in-linear">
-              <NavBar pathname={location.pathname} />
-            </div>
-          </div>
+        <div className="h-full w-full px-10" style={style}>
+          {children}
         </div>
         <Footer />
       </div>
