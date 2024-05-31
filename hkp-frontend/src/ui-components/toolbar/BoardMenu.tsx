@@ -46,6 +46,15 @@ export default function BoardMenu() {
     }
   };
 
+  const onDownloadButton = (src: string) => {
+    const dataUrl = "data:text/json;charset=utf-8," + encodeURIComponent(src);
+    const link = document.createElement("a");
+    const filename = `hkp-board-${board}.json`;
+    link.setAttribute("href", dataUrl);
+    link.setAttribute("download", filename);
+    link.click();
+  };
+
   const onCreateBoardLink = () => {
     boardContext?.onAction({
       type: "createBoardLink",
@@ -65,12 +74,16 @@ export default function BoardMenu() {
         onClose={onCloseBoardSource}
         actions={[
           {
-            label: "Apply",
+            label: "Apply Changes",
             onAction: onApplyBoardSource,
           },
           {
-            label: "Save",
+            label: "Save to Browser",
             onAction: onSaveBoardSource,
+          },
+          {
+            label: "Download Source",
+            onAction: onDownloadButton,
           },
         ]}
       />

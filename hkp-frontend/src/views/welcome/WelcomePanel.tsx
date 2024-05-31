@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import WhatsNew from "./WhatsNew";
 import Carousel, { CarouselItem } from "@/ui-components/Carousel";
@@ -7,7 +8,6 @@ import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";
 import LandingPitch from "./LandingPitch";
 import BackgroundSection from "./BackgroundSection";
-import { useNavigate } from "react-router-dom";
 
 export default function WelcomePanel() {
   const [headerAnimationsComplete, setHeaderAnimationsComplete] =
@@ -26,6 +26,7 @@ export default function WelcomePanel() {
         />
       ),
       title: "A quick game idea with Hookitapp",
+      background: "/assets/teaser/blue3.png",
       onClick: () =>
         headerAnimationsComplete &&
         navigate(
@@ -35,11 +36,11 @@ export default function WelcomePanel() {
     {
       element: (
         <div className="flex justify-center mx-10 bg-white rounded-xl border-solid border drop-shadow-3xl">
-          <Sandbox src="/assets/teaser/board.json" hidePlaygroundLink={true} />
+          <Sandbox src="/assets/teaser/board.json" hidePlaygroundLink={false} />
         </div>
       ),
       title: "Try it out",
-      background: "/assets/teaser/sky-small.png",
+      background: "/assets/teaser/sky-small2.png",
     },
   ];
 
@@ -69,12 +70,12 @@ export default function WelcomePanel() {
           overflowY: "hidden",
         }}
       >
-        <h2 className="pt-10 m-0">Videos and Demos</h2>
+        <h1 className="pt-10 m-0 text-center">Videos and Demos</h1>
         <div className="mx-auto px-10 pb-10">
           <Carousel items={carouselItems} />
         </div>
 
-        <h2 className="pt-10 m-0">About Hookitapp</h2>
+        <h1 className="pt-10 m-0 text-center">About Hookitapp</h1>
         <BackgroundSection />
       </div>
     </div>

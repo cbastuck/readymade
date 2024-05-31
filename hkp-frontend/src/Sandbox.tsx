@@ -167,6 +167,7 @@ class Sandbox extends Component<Props, State> {
             style={{
               textAlign: "right",
               marginBottom: 2,
+              marginRight: 20,
             }}
           >
             <Link to={`/playground?src=${url}`}>open on playground</Link>

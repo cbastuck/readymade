@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import anime from "./anime";
 
-import WelcomeWordSVG from "@/assets/animations/WelcomeWord.svg?react";
-import WelcomeWordFatSVG from "@/assets/animations/WelcomeWordFat.svg?react";
+import WelcomeWordSVG from "@/assets/animations/WelcomeWord2.svg?react";
+import WelcomeWordFatSVG from "@/assets/animations/WelcomeWordFat2.svg?react";
 
 export default function Welcome() {
   const [isComplete, setIsComplete] = useState(false);

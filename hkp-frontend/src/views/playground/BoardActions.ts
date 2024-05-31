@@ -9,6 +9,7 @@ import {
   RuntimeServiceMap,
   ServiceDescriptor,
   RuntimeOutputRoutings,
+  isBoardDescriptor,
 } from "../../types";
 import { decodeBoardState } from "./BoardLink";
 import { defaultDiscoveryPeer } from "./common";
@@ -16,36 +17,36 @@ import { defaultDiscoveryPeer } from "./common";
 export async function importBoard(
   url: string
 ): Promise<BoardDescriptor | null> {
-  try {
-    const res = await fetch(url);
-
-    const data: any = await res.json();
-    const runtimeIds = Object.keys(data);
-    return {
-      runtimes: runtimeIds.map((rid, ridx) => ({
-        id: rid,
-        type: data[rid].type,
-        name: data[rid].name || `Runtime ${ridx + 1}`,
-        bundles: data[rid].bundles,
-      })),
-      services: runtimeIds.reduce(
-        (all, rid) => ({
-          ...all,
-          [rid]: data[rid].services.map((svc: ServiceDescriptor) => {
-            if (!svc.uuid) {
-              return { ...svc, uuid: uuid.v4() };
-            }
-            return svc;
-          }),
-        }),
-        {}
-      ),
-      registry: data.registry || {},
-    };
-  } catch (err) {
-    console.error("Import failed", err, url);
+  const res = await fetch(url);
+  const data: any = await res.json();
+  if (isBoardDescriptor(data)) {
+    return data;
   }
-  return null;
+
+  const runtimeIds = Object.keys(data);
+  const board = {
+    runtimes: runtimeIds.map((rid, ridx) => ({
+      id: rid,
+      type: data[rid].type,
+      name: data[rid].name || `Runtime ${ridx + 1}`,
+      bundles: data[rid].bundles,
+    })),
+    services: runtimeIds.reduce(
+      (all, rid) => ({
+        ...all,
+        [rid]: data[rid].services.map((svc: ServiceDescriptor) => {
+          if (!svc.uuid) {
+            return { ...svc, uuid: uuid.v4() };
+          }
+          return svc;
+        }),
+      }),
+      {}
+    ),
+    registry: data.registry || {},
+  };
+  console.log("BOARD", board);
+  return board;
 }
 
 export async function createBoardFromTemplate(
