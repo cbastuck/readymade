@@ -22,6 +22,7 @@ import {
   isSandboxRuntimeDescriptor,
 } from "./types";
 import browserRuntimeApi from "./runtime/browser/BrowserRuntimeApi";
+import Button from "./ui-components/Button";
 
 type Props = {
   location: Location;
@@ -167,10 +168,12 @@ class Sandbox extends Component<Props, State> {
             style={{
               textAlign: "right",
               marginBottom: 2,
-              marginRight: 20,
+              marginRight: 10,
             }}
           >
-            <Link to={`/playground?src=${url}`}>open on playground</Link>
+            <Link to={`/playground?src=${url}`}>
+              <Button>open in Playground</Button>
+            </Link>
             <div style={{ height: 50 }} />
           </div>
         )}

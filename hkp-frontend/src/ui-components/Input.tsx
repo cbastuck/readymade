@@ -42,7 +42,11 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
     : "border-t-0 border-b-1";
   return (
     <div className="flex items-center gap-2 w-full">
-      {title && <PropertyLabel className="pt-1">{title}</PropertyLabel>}
+      {title && (
+        <PropertyLabel className="pt-1 whitespace-nowrap">
+          {title}
+        </PropertyLabel>
+      )}
       <InputCN
         ref={ref}
         type={type}

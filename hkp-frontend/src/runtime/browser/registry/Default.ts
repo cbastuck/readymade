@@ -64,6 +64,8 @@ import CloudSourceDescriptor from "../services/CloudSource";
 // Random
 import UuidGeneratorDescriptor from "../services/UuidGenerator";
 
+import PeerSocket from "../services/PeerSocket";
+
 import { ServiceModule } from "../../../types";
 
 // Modules with additional dependencies
@@ -136,6 +138,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   CloudSourceDescriptor,
 
   BoardService,
+  PeerSocket,
 
   //DEPRECATED
   /*

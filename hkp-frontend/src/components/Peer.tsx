@@ -13,7 +13,7 @@ type Props = {
   usePeerRoutePath?: string;
   isSecure?: boolean;
 
-  children: JSX.Element | JSX.Element[];
+  children?: JSX.Element | JSX.Element[];
 
   onData: (envelope: DataEnvelope, peer: string) => void;
 
@@ -132,7 +132,7 @@ export default class PeerComponent extends Component<Props> {
   };
 
   render() {
-    return <div>{this.props.children}</div>;
+    return <div>{this.props.children || null}</div>;
   }
 }
 
