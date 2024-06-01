@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { ChevronsUpDown } from "lucide-react";
 import { CommandList } from "cmdk";
 
@@ -16,6 +16,7 @@ import {
 } from "@/ui-components/primitives/popover";
 
 import { ServiceClass, ServiceRegistry } from "@/types";
+import { ThemeCtx } from "@/views/playground/ThemeContext";
 
 type Props = {
   id: string;
@@ -32,6 +33,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
       onAddService(svc);
     }
   };
+  const theme = useContext(ThemeCtx);
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -41,6 +43,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
           role="combobox"
           aria-expanded={open}
           className="w-[200px] justify-between text-base"
+          style={{ backgroundColor: theme.popoverBackgroundColor }}
         >
           Add Service
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

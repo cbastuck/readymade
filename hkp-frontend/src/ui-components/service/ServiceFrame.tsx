@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useContext, useEffect, useState } from "react";
 
 import {
   CustomMenuEntry,
@@ -10,6 +10,7 @@ import { s, t } from "@/styles";
 import ServiceHeader from "./ServiceHeader";
 import EditorDialog from "../EditorDialog";
 import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
+import { ThemeCtx } from "@/views/playground/ThemeContext";
 
 type Props = {
   service: ServiceInstance;
@@ -137,6 +138,7 @@ export default function ServiceFrame({
   }
   // TODO: enabling drop shadow on hover leads to artifacts when opening service menu
   const enableDropShadow = false ? "hover:drop-shadow-lg" : "";
+  const theme = useContext(ThemeCtx);
   return (
     <div key={`service-frame-${uuid}`}>
       <div
@@ -146,7 +148,7 @@ export default function ServiceFrame({
           border: "solid 1px lightgray",
           borderRadius: 5,
           textAlign: "center",
-          backgroundColor: "white",
+          backgroundColor: theme.serviceBackgroundColor,
           margin: "10px 0px",
           fontSize: 15,
           color: "black",
