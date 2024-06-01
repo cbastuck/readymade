@@ -65,6 +65,7 @@ import CloudSourceDescriptor from "../services/CloudSource";
 import UuidGeneratorDescriptor from "../services/UuidGenerator";
 
 import PeerSocket from "../services/PeerSocket";
+import OllamaPrompt from "../services/OllamaPrompt";
 
 import { ServiceModule } from "../../../types";
 
@@ -139,6 +140,7 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   BoardService,
   PeerSocket,
+  OllamaPrompt,
 
   //DEPRECATED
   /*
