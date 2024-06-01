@@ -2,7 +2,7 @@ import { Component } from "react";
 
 import { s, t } from "../../../styles";
 import InputField from "../../../components/shared/InputField";
-import SelectorField from "../../../components/shared/SelectorField";
+import SelectorField from "@/components/shared/SelectorField";
 import { ServiceUIProps } from "@/types";
 import ServiceUI from "@/ui-components/service/ServiceUI";
 import RadioGroup from "@/ui-components/RadioGroup";

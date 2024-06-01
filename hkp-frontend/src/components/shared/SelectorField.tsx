@@ -9,6 +9,7 @@ import {
 } from "@/ui-components/primitives/select";
 
 import "./SelectorField.css";
+import GroupLabel from "@/ui-components/GroupLabel";
 
 type OnChangeValue = {
   value: string;
@@ -70,7 +71,11 @@ export default class SelectorField extends Component<Props, State> {
         }}
       >
         {label &&
-          (useDefaultLabel ? <div className="mb-2">{label}</div> : label)}
+          (useDefaultLabel ? (
+            <GroupLabel className="mb-1">{label}</GroupLabel>
+          ) : (
+            label
+          ))}
 
         <Select
           value={value || undefined}

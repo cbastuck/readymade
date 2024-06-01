@@ -1,4 +1,5 @@
 import { generateRandomName } from "./board";
+import { v4 as uuidv4 } from "uuid";
 
 type StringReturner = () => string;
 
@@ -22,7 +23,10 @@ function replaceAll(
   return src;
 }
 
-export function replacePlaceholders(url: string, params?: any) {
+export function replacePlaceholders(
+  url: string,
+  params?: { [key: string]: string }
+) {
   if (!url) {
     return url;
   }
@@ -34,12 +38,21 @@ export function replacePlaceholders(url: string, params?: any) {
     "%ws-host%",
     secure ? `wss://${host}` : `ws://${host}`
   );
+
   rep = replaceAll(
     rep,
     "%http-host%",
     secure ? `https://${host}` : `http://${host}`
   );
-  rep = replaceAll(rep, "%random-name%", generateRandomName);
+
+  while (rep.indexOf("%uuid%") !== -1) {
+    rep = rep.replace("%uuid%", uuidv4());
+  }
+
+  while (rep.indexOf("%random-name%") !== -1) {
+    rep = rep.replace("%random-name%", generateRandomName);
+  }
+
   if (params) {
     Object.keys(params).forEach(
       (key) => (rep = rep.replace(`%${key}%`, params[key]))

@@ -45,6 +45,7 @@ import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
 import BoardEntryPoint from "./BoardEntryPoint";
 import { AppCtx } from "../../AppContext";
 import BoardFetchError from "./BoardFetchError";
+import ShareQRCodeDialog from "@/components/ShareQRCodeDialog";
 
 const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -67,6 +68,7 @@ type State = {
 
   enforceLoadPanel?: boolean;
   isSaveDialogVisible: boolean;
+  showShareBoardQRCodeURL: string | null;
 };
 
 class Playground extends Component<Props, State> {
@@ -80,6 +82,7 @@ class Playground extends Component<Props, State> {
 
   state: State = {
     isSaveDialogVisible: false,
+    showShareBoardQRCodeURL: null,
     boardName:
       (this.props.match &&
         this.props.match.params &&
@@ -245,7 +248,7 @@ class Playground extends Component<Props, State> {
       outputRouting: Object.keys(outputRouting).reduce(
         (acc, cur) => ({
           ...acc,
-          [cur]: { route: outputRouting[cur]?.route || null },
+          [cur]: { ...outputRouting[cur] },
         }),
         {}
       ),
@@ -372,8 +375,10 @@ class Playground extends Component<Props, State> {
         type: "info",
         message: "Board URL copied to clipboard",
         action: {
-          label: "open",
-          callback: () => window.open(url, "_blank"),
+          label: "QR Code",
+          callback: () => {
+            this.setState({ showShareBoardQRCodeURL: url });
+          },
         },
       });
     }
@@ -458,6 +463,14 @@ class Playground extends Component<Props, State> {
                     )
                   }
                   isCompact={boardContext.appContext?.appViewMode !== "wide"}
+                />
+
+                <ShareQRCodeDialog
+                  isOpen={this.state.showShareBoardQRCodeURL !== null}
+                  url={this.state.showShareBoardQRCodeURL}
+                  onClose={() =>
+                    this.setState({ showShareBoardQRCodeURL: null })
+                  }
                 />
 
                 <SaveBoardDialog

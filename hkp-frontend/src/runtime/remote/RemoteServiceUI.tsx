@@ -3,7 +3,7 @@ import { Copy } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "../../types";
 
-import SelectorField from "../../components/shared/SelectorField";
+import SelectorField from "@/components/shared/SelectorField";
 import InputText from "../../components/shared/InputText";
 import Slider from "../../components/shared/Slider";
 import ServiceUI from "@/ui-components/service/ServiceUI";

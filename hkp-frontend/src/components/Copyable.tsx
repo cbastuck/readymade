@@ -34,6 +34,7 @@ export default function Copyable({ label, value }: Props) {
     <div className="flex w-full items-center gap-2">
       <GroupLabel>{label}</GroupLabel>
       <Input
+        className="font-menu"
         ref={input}
         value={value}
         onChange={() => {}}

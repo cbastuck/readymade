@@ -4,7 +4,7 @@ import { s, t } from "../../styles";
 import Logo from "./hkp-dots-braid.svg?react";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import { DragEvent, useContext, useState } from "react";
-import { readFile } from "./common";
+import { getDraggedFiles, readFile } from "./common";
 import { BoardCtx } from "@/BoardContext";
 import { isBoardDescriptor } from "@/types";
 
@@ -112,24 +112,4 @@ export default function EmptyBoard({ boardName }: Props) {
       </div>
     </div>
   );
-}
-
-function getDraggedFiles(ev: DragEvent): Array<File> {
-  const files: Array<File> = [];
-  if (ev.dataTransfer.items) {
-    [...ev.dataTransfer.items].forEach((item) => {
-      if (item.kind === "file") {
-        const f = item.getAsFile();
-        if (f) {
-          files.push(f);
-        }
-      }
-    });
-  } else {
-    // Use DataTransfer interface to access the file(s)
-    [...ev.dataTransfer.files].forEach((file, i) => {
-      files.push(file);
-    });
-  }
-  return files;
 }

@@ -346,7 +346,7 @@ export type RuntimeServiceMap = {
 export type BoardDescriptor = {
   runtimes: Array<RuntimeDescriptor>;
   services: RuntimeServiceMap;
-  registry: ServiceRegistryMap;
+  registry?: ServiceRegistryMap;
   boardName?: string;
   description?: string;
 };

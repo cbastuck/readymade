@@ -1,7 +1,7 @@
 import { Component } from "react";
 
 import InputField from "hkp-frontend/src/components/shared/InputField";
-import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
+import SelectorField from "@/components/shared/SelectorField";
 
 import { ServiceUIProps } from "@/types";
 import ServiceUI from "@/ui-components/service/ServiceUI";

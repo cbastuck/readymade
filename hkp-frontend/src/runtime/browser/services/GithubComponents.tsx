@@ -3,7 +3,7 @@ import moment from "moment";
 import Image from "@/ui-components/Image";
 
 import MessageReceiver from "../../../MessageReceiver";
-import SelectorField from "../../../components/shared/SelectorField";
+import SelectorField from "@/components/shared/SelectorField";
 import InputField from "../../../components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import Tree from "../../../components/shared/Tree";

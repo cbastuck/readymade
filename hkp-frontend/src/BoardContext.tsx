@@ -568,7 +568,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const data = {
       runtimes,
       services,
-      registry: this.state.registry,
+      // registry: this.state.registry,
     };
 
     return this.props.serializeBoard ? this.props.serializeBoard(data) : data;

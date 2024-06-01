@@ -1,7 +1,7 @@
 import { KeyboardEvent, FocusEvent, forwardRef } from "react";
 
 import { Input as InputCN } from "@/ui-components/primitives/input";
-import PropertyLabel from "./GroupLabel";
+import GroupLabel from "./GroupLabel";
 
 type Props = {
   className?: string;
@@ -43,14 +43,12 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
   return (
     <div className="flex items-center gap-2 w-full">
       {title && (
-        <PropertyLabel className="pt-1 whitespace-nowrap">
-          {title}
-        </PropertyLabel>
+        <GroupLabel className="pt-1 whitespace-nowrap">{title}</GroupLabel>
       )}
       <InputCN
         ref={ref}
         type={type}
-        className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h} ${className} `}
+        className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h} ${className} text-ellipsis`}
         value={value}
         onChange={(ev) => onChange(ev.target.value)}
         disabled={disabled}

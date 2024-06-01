@@ -11,6 +11,7 @@ type State = {
   mode: "Receive only" | "Send only" | "Receive and Send";
   peerName: string;
   targetPeer: string | undefined;
+  extractIncomingData: boolean;
 };
 
 class PeerSocket extends ServiceBase<State> {
@@ -24,12 +25,16 @@ class PeerSocket extends ServiceBase<State> {
       mode: "Receive only",
       peerName: "untitled peer",
       targetPeer: undefined,
+      extractIncomingData: false,
     });
   }
 
   configure(config: any) {
     if (config.incoming !== undefined) {
-      this.app.next(this, config.incoming);
+      const data = this.state.extractIncomingData
+        ? config.incoming.data
+        : config.incoming;
+      this.app.next(this, data);
     }
 
     if (needsUpdate(config.peerName, this.state.peerName)) {
@@ -45,6 +50,14 @@ class PeerSocket extends ServiceBase<State> {
     if (needsUpdate(config.mode, this.state.mode)) {
       this.state.mode = config.mode;
       this.app.notify(this, { mode: this.state.mode });
+    }
+    if (
+      needsUpdate(config.extractIncomingData, this.state.extractIncomingData)
+    ) {
+      this.state.extractIncomingData = config.extractIncomingData;
+      this.app.notify(this, {
+        extractIncomingData: this.state.extractIncomingData,
+      });
     }
   }
 

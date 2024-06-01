@@ -1,0 +1,29 @@
+{
+  "runtimes": [
+    {
+      "id": "receiver-runtime",
+      "name": "Peer Receiver",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    }
+  ],
+  "services": {
+    "receiver-runtime": [
+      {
+        "uuid": "%uuid%",
+        "serviceId": "hookup.to/service/peer-socket",
+        "serviceName": "Peer Socket",
+        "mode": "Receive only",
+        "peerName": "%receiver-name%",
+        "extractIncomingData": false
+      },
+      {
+        "uuid": "%uuid%",
+        "serviceId": "hookup.to/service/monitor"
+      }
+    ]
+  }
+}

@@ -6,7 +6,7 @@ import BoardProvider, {
   BoardContextState,
 } from "../../../BoardContext";
 
-import SelectorField from "../../../components/shared/SelectorField";
+import SelectorField from "@/components/shared/SelectorField";
 import browserRuntimeApi from "../BrowserRuntimeApi";
 import remoteRuntimeApi from "../../remote/RemoteRuntimeApi";
 import {

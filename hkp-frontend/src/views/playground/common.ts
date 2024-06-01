@@ -1,3 +1,4 @@
+import { DragEvent } from "react";
 import UAParser from "ua-parser-js";
 import { PeerJsHostDescriptor, RuntimeClass, SavedBoard } from "../../types";
 
@@ -143,4 +144,24 @@ export function readFile(
     }
     progressFn?.(0);
   });
+}
+
+export function getDraggedFiles(ev: DragEvent): Array<File> {
+  const files: Array<File> = [];
+  if (ev.dataTransfer?.items) {
+    [...ev.dataTransfer.items].forEach((item) => {
+      if (item.kind === "file") {
+        const f = item.getAsFile();
+        if (f) {
+          files.push(f);
+        }
+      }
+    });
+  } else if (ev.dataTransfer?.files) {
+    // Use DataTransfer interface to access the file(s)
+    [...ev.dataTransfer.files].forEach((file) => {
+      files.push(file);
+    });
+  }
+  return files;
 }

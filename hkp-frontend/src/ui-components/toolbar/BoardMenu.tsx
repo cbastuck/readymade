@@ -134,8 +134,8 @@ export default function BoardMenu() {
                 Edit the current board's source in a text editor
               </ListItem>
               <ListItem title="Create Board Link" onClick={onCreateBoardLink}>
-                Create a link allowing to share and clone the board on another
-                device
+                Create a link or QR code allowing to share and clone the board
+                on another device
               </ListItem>
             </ul>
           </NavigationMenuContent>

@@ -13,7 +13,7 @@ import DragProvider from "../../DragContext";
 import OutputOptions from "../../components/shared/OutputOptions";
 import InputOptions from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
-import SelectorField from "../../components/shared/SelectorField";
+import SelectorField from "@/components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
 import {
   RuntimeInputRoutings,

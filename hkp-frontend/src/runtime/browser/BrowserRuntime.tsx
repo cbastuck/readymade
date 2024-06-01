@@ -100,7 +100,7 @@ export default class BrowserRuntime extends Component<Props, State> {
       scope.authenticatedUser = user;
     }
 
-    scope.onAction = (action: ServiceAction) => {
+    const onAction = (action: ServiceAction) => {
       if (action.action === "notification") {
         if (action.payload) {
           this.context?.appContext?.pushNotification(action.payload);
@@ -109,6 +109,10 @@ export default class BrowserRuntime extends Component<Props, State> {
       }
       return false;
     };
+
+    if (scope && scope.onAction !== onAction) {
+      scope.onAction = onAction;
+    }
 
     const onCreateServiceUI = (
       _boardName: string,

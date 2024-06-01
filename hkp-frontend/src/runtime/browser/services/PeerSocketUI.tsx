@@ -1,7 +1,9 @@
 import { useContext, useRef, useState } from "react";
+import { QrCode } from "lucide-react";
+import { v4 as uuidv4 } from "uuid";
 
-import { ServiceUIProps } from "@/types";
-
+import { CustomMenuEntry, ServiceUIProps } from "@/types";
+import MenuIcon from "@/ui-components/MenuIcon";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
@@ -12,12 +14,21 @@ import SubmittableInput from "@/ui-components/SubmittableInput";
 
 import RadioGroup from "@/ui-components/RadioGroup";
 import { AppCtx } from "@/AppContext";
+import Switch from "@/ui-components/Switch";
+import ShareQRCodeDialog from "@/components/ShareQRCodeDialog";
+
+import peerSocketReceiverTemplate from "./PeerSocketReceiverTemplate.json";
+import { createBoardLink } from "@/views/playground/BoardLink";
+import { replacePlaceholders } from "@/core/url";
+import Info from "@/components/Info";
+import Button from "@/ui-components/Button";
 
 export default function PeerSocketUI(props: ServiceUIProps) {
   const [bypass, setBypass] = useState(false);
   const [peerName, setPeerName] = useState("");
   const [targetPeer, setTargetPeer] = useState("");
   const [currentMode, setCurrentMode] = useState("");
+  const [extractIncomingData, setExtractIncomingData] = useState(false);
 
   const update = (state: any) => {
     if (needsUpdate(state.bypass, bypass)) {
@@ -35,6 +46,9 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     if (needsUpdate(state.mode, currentMode)) {
       setCurrentMode(state.mode);
     }
+    if (needsUpdate(state.extractIncomingData, extractIncomingData)) {
+      setExtractIncomingData(state.extractIncomingData);
+    }
   };
 
   const onInit = (state: any) => update(state);
@@ -51,36 +65,94 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     props.service.configure({ mode: newMode });
   };
   const hostDescriptor = availableDiscoveryPeerHosts[0];
-
   const appContext = useContext(AppCtx);
+  const onError = (error: Error) =>
+    appContext?.pushNotification({
+      type: "error",
+      message: error.message,
+    });
+
+  const [receiverBoardUrl, setReceiverBoardUrl] = useState<string | null>(null);
+  const onCreateReceiverBoard = () => {
+    const substitutes = {
+      "receiver-name": targetPeer,
+    };
+    const url = createBoardLink(
+      replacePlaceholders(
+        JSON.stringify(peerSocketReceiverTemplate),
+        substitutes
+      )
+    );
+    setReceiverBoardUrl(url);
+  };
+
+  const isSendAllowed = currentMode !== "Receive only";
+  const isReceivedAllowed = currentMode !== "Send only";
+  const customMenuEntries: Array<CustomMenuEntry> = [
+    {
+      name: "Create Receiver Board QR",
+      icon: <MenuIcon icon={QrCode} />,
+      disabled: !isSendAllowed,
+      onClick: onCreateReceiverBoard,
+    },
+  ];
+  const onRandomPeerName = () => setPeerName(uuidv4());
+  const onRandomTargetPeer = () => setTargetPeer(uuidv4());
   return (
     <ServiceUI
       className="pb-4"
       {...props}
+      customMenuEntries={customMenuEntries}
       onInit={onInit}
       onNotification={onNotification}
       initialSize={{ width: 400, height: undefined }}
     >
       <PeersProvider ref={(p) => (provider.current = p)}>
         <div className="flex flex-col gap-2">
-          <SubmittableInput
-            fullWidth
-            title="My Name"
-            value={peerName}
-            onSubmit={(peerName) => props.service.configure({ peerName })}
-          />
           <RadioGroup
             title="Mode"
             options={["Receive only", "Send only", "Receive and Send"]}
             value={currentMode}
             onChange={onChangeMode}
           />
-          {currentMode !== "Receive only" && (
+          <div className="flex items-end">
             <SubmittableInput
               fullWidth
-              title="Receiver Name"
-              value={targetPeer}
-              onSubmit={(targetPeer) => props.service.configure({ targetPeer })}
+              title="My Name"
+              value={peerName}
+              onSubmit={(peerName) => props.service.configure({ peerName })}
+            />
+            <Button className="px-1 h-[20px] mb-1" onClick={onRandomPeerName}>
+              Random
+            </Button>
+          </div>
+
+          {isSendAllowed && (
+            <div className="flex items-end">
+              <SubmittableInput
+                fullWidth
+                title="Send to"
+                value={targetPeer}
+                onSubmit={(targetPeer) =>
+                  props.service.configure({ targetPeer })
+                }
+              />
+              <Button
+                className="px-1 h-[20px] mb-1"
+                onClick={onRandomTargetPeer}
+              >
+                Random
+              </Button>
+            </div>
+          )}
+
+          {isReceivedAllowed && (
+            <Switch
+              title="Unpack received data"
+              checked={extractIncomingData}
+              onCheckedChange={(newChecked) =>
+                props.service.configure({ extractIncomingData: newChecked })
+              }
             />
           )}
 
@@ -99,14 +171,15 @@ export default function PeerSocketUI(props: ServiceUIProps) {
             usePeerPort={hostDescriptor?.port}
             usePeerRoutePath={hostDescriptor?.path}
             isSecure={hostDescriptor?.secure}
-            onError={(error) =>
-              appContext?.pushNotification({
-                type: "error",
-                message: error.message,
-              })
-            }
+            onError={onError}
           />
         </div>
+        <ShareQRCodeDialog
+          title="Receiver Board"
+          isOpen={receiverBoardUrl !== null}
+          url={receiverBoardUrl}
+          onClose={() => setReceiverBoardUrl(null)}
+        />
       </PeersProvider>
     </ServiceUI>
   );
