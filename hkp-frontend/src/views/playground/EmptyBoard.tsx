@@ -105,7 +105,7 @@ export default function EmptyBoard({ boardName }: Props) {
               >
                 {" Add a Runtime "}
               </span>
-              to sketch an Idea
+              to sketch an Idea, or Drop a downloaded board here
             </div>
           </div>
         </div>

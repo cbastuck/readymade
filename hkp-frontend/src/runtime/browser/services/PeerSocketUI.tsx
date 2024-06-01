@@ -20,7 +20,6 @@ import ShareQRCodeDialog from "@/components/ShareQRCodeDialog";
 import peerSocketReceiverTemplate from "./PeerSocketReceiverTemplate.json";
 import { createBoardLink } from "@/views/playground/BoardLink";
 import { replacePlaceholders } from "@/core/url";
-import Info from "@/components/Info";
 import Button from "@/ui-components/Button";
 
 export default function PeerSocketUI(props: ServiceUIProps) {

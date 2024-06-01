@@ -15,7 +15,18 @@ export default function Copyright({ isWide }: Props) {
       }}
     >
       <CopyrightIcon className="px-1" size="18px" />
-      <span>{isWide ? "cbastuck 2024" : "2024"}</span>
+      <span>
+        {isWide ? (
+          <>
+            <a href="https://cbastuck.de" target="_blank">
+              cbastuck
+            </a>{" "}
+            2024
+          </>
+        ) : (
+          "2024"
+        )}
+      </span>
       <span className="px-1">v{build.version}</span>
     </div>
   );
