@@ -112,3 +112,35 @@ export const availableDiscoveryPeerHosts: Array<PeerJsHostDescriptor> = [
 ];
 
 export const defaultDiscoveryPeer = availableDiscoveryPeerHosts[0];
+
+export function readFile(
+  file: File | Blob,
+  loadAsText: boolean,
+  progressFn?: (p: number) => void
+) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.addEventListener("error", (_ev: any) => {
+      return reject(reader.error);
+    });
+
+    reader.addEventListener("loadend", (_ev: any) => {
+      const result = loadAsText
+        ? reader.result
+        : new Blob([reader.result!], { type: "application/octet-stream" });
+      progressFn?.(100);
+      return resolve(result);
+    });
+    reader.addEventListener("progress", (ev) => {
+      const fileProgress = Math.round((ev.loaded / ev.total) * 100);
+      progressFn?.(fileProgress);
+    });
+
+    if (loadAsText) {
+      reader.readAsText(file);
+    } else {
+      reader.readAsArrayBuffer(file);
+    }
+    progressFn?.(0);
+  });
+}

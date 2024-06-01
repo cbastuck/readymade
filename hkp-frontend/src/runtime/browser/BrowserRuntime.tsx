@@ -100,6 +100,16 @@ export default class BrowserRuntime extends Component<Props, State> {
       scope.authenticatedUser = user;
     }
 
+    scope.onAction = (action: ServiceAction) => {
+      if (action.action === "notification") {
+        if (action.payload) {
+          this.context?.appContext?.pushNotification(action.payload);
+          return true;
+        }
+      }
+      return false;
+    };
+
     const onCreateServiceUI = (
       _boardName: string,
       service: ServiceInstance,

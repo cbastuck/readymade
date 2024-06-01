@@ -4,6 +4,7 @@ import {
   RuntimeApi,
   RuntimeDescriptor,
   RuntimeScope,
+  ServiceAction,
   User,
 } from "../../types";
 import { createRemoteRuntimeApp } from "./RemoteRuntimeApp";
@@ -45,6 +46,11 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     _resultCallback: null | ((p: any) => void)
   ): Promise<void> => {
     console.warn("RemoteRuntimeScope.onResult not set");
+  };
+
+  onAction = (_action: ServiceAction): boolean => {
+    console.warn("RemoteRuntimeScope.onAction not implemented");
+    return false;
   };
 
   onResultWithCallback = async (data: any) => {

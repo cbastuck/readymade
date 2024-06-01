@@ -41,7 +41,9 @@ export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
     getServiceById: (uuid: string): ServiceImpl | null => {
       return { uuid } as any; // TODO:  see above, mabye we don't need this at all for the remote case
     },
-    sendAction: (_action: ServiceAction): void => {},
+    sendAction: (action: ServiceAction) => {
+      scope.onAction(action); // just forward
+    },
     storeServiceData: (
       _serviceUuid: string,
       _key: string,

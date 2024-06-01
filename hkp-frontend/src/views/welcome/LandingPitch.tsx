@@ -26,12 +26,17 @@ export default function LandingPitch({ onComplete }: Props) {
   return (
     <div
       id="pitch-points"
-      className="flex flex-col mb-10 font-serif text-xl overflow-hidden tracking-widest text-center mx-auto w-[50%] gap-4"
+      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-center mx-auto w-[50%] gap-4"
     >
-      <div>Ever felt creative, but setup kills your inspiration?</div>
-      <div>Imagine focusing on ideas, not setup.</div>
       <div>
-        Hookitapp: Ideas built with data flowing through reusable blocks.
+        Ever felt creative, but the setup process kills your inspiration?
+      </div>
+      <div>
+        Imagine focusing on your ideas instead of dealing with technical setup.
+      </div>
+      <div>
+        HookitApp: Build ideas with data flowing through reusable building
+        blocks.
       </div>
     </div>
   );

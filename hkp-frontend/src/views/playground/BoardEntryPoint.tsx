@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BoardContextState } from "../../BoardContext";
-import EmptySketch from "./EmptySketch";
+import EmptyBoard from "./EmptyBoard";
 import { s, t } from "../../styles";
 import LoadPanel from "../../ui-components/boardmanager";
 import VSpacer from "../../components/shared/VSpacer";
@@ -122,7 +122,7 @@ export default function BoardEntryPoint({
           )}
           <div>
             {isPlaygroundEmpty ? (
-              <EmptySketch boardName={boardName} />
+              <EmptyBoard boardName={boardName} />
             ) : (
               <Board
                 boardContext={boardContext}

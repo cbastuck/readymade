@@ -25,6 +25,10 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       scope.findServiceInstance(instanceId)?.[0] || null,
 
     sendAction: (action: ServiceAction) => {
+      if (scope.onAction(action)) {
+        return; // the action was handled
+      }
+
       // the sandbox for example registers a listener
       // for these kind of actions
       const target: any = window.frameElement;

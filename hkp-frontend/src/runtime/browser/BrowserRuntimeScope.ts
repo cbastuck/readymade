@@ -4,6 +4,7 @@ import {
   RuntimeApi,
   RuntimeDescriptor,
   RuntimeScope,
+  ServiceAction,
   ServiceDescriptor,
   ServiceImpl,
   ServiceInstance,
@@ -48,6 +49,11 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     _resultCallback: null | ((p: any) => void)
   ): Promise<void> => {
     console.warn("BrowserRuntimeScope.onResult not set");
+  };
+
+  onAction = (_action: ServiceAction) => {
+    console.warn("BrowserRuntimeScope.onAction not implemented");
+    return false;
   };
 
   findServiceInstance = (uuid: string | null): InstanceIndexTuple => {

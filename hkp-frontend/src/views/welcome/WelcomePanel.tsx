@@ -25,13 +25,16 @@ export default function WelcomePanel() {
           width="85%"
         />
       ),
-      title: "A quick game idea with Hookitapp",
+      title: "A quick game idea with HookitApp",
       background: "/assets/teaser/blue3.png",
-      onClick: () =>
-        headerAnimationsComplete &&
-        navigate(
-          "/playground?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game.json&sender-board=%random-name%"
-        ),
+      action: {
+        title: "Click to try it on Playground",
+        onClick: () =>
+          headerAnimationsComplete &&
+          navigate(
+            "/playground?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game.json&sender-board=%random-name%"
+          ),
+      },
     },
     {
       element: (
@@ -58,7 +61,7 @@ export default function WelcomePanel() {
       onClick={forceCompleteAnimation}
     >
       <div className="flex flex-col ">
-        <div className="px-[100px] w-full flex mt-[50px]">
+        <div className="px-[10px] w-full flex mt-[50px]">
           <h1 className="w-full ml-auto">
             <WelcomeWord /> <WhatsNew />
           </h1>

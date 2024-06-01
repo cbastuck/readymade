@@ -41,6 +41,7 @@ export interface RuntimeScope {
   // boardName: string; --> Remove the board name from the services and move it to AppImpl
   onResult: OnResult;
   onConfig?: (instanceId: string, config: object) => void;
+  onAction: (_action: ServiceAction) => boolean;
 }
 
 export type ExternalInput = {
@@ -173,11 +174,12 @@ export type Action = {
   params?: any;
 };
 
-const serviceActionTypes = ["remove", "getConfig"] as const;
+const serviceActionTypes = ["remove", "getConfig", "notification"] as const;
 export type ServiceActionType = (typeof serviceActionTypes)[number];
 export type ServiceAction = {
   action: ServiceActionType;
   service: ServiceImpl;
+  payload?: any;
 };
 
 export type AppInstance = AppImpl;

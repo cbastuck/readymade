@@ -6,12 +6,16 @@ import {
 import { ReactElement } from "react";
 
 import CarouselNav from "./CarouselNav";
+import Button from "./Button";
 
 export type CarouselItem = {
   title: string;
   element: ReactElement;
   background?: string;
-  onClick?: () => void;
+  action?: {
+    title: string;
+    onClick?: () => void;
+  };
 };
 
 type Props = {
@@ -25,17 +29,32 @@ export default function Carousel({ items }: Props) {
       <CarouselContent>
         {items.map((item, index) => (
           <CarouselItem key={index}>
-            <div className="flex items-start h-full" onClick={item.onClick}>
+            <div className="flex items-start h-full">
               <div
-                className="rounded-xl bg-cover bg-no-repeat w-full mx-20 py-10 drop-shadow-2xl overflow-auto"
+                className="rounded-xl bg-cover bg-no-repeat w-full mx-20 py-10 drop-shadow-2xl overflow-auto hover:bg-gray-200"
                 style={{
-                  cursor: item.onClick ? "pointer" : "default",
+                  position: "relative",
+                  cursor: item.action ? "pointer" : "default",
                   backgroundImage: item.background
                     ? `url(${item.background})`
                     : undefined,
                 }}
+                onClick={item.action?.onClick}
               >
                 {item.element}
+                {item.action && (
+                  <Button
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      transition: "opacity, background-color 0.5s ease-in-out",
+                    }}
+                    className="w-full h-full hover:bg-[#22222270] bg-transparent text-center text-white hover:text-white text-2xl tracking-widest pt-[5%] opacity-0 hover:opacity-100"
+                  >
+                    {item.action?.title}
+                  </Button>
+                )}
               </div>
             </div>
           </CarouselItem>

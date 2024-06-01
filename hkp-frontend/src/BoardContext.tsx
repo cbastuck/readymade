@@ -188,73 +188,77 @@ class BoardProvider extends Component<Props, BoardContextState> {
     }
 
     this.setState({ isFetching: true });
-
-    const {
-      boardName = this.getBoardName(),
-      runtimes = [],
-      services = {},
-    } = (await this.props.fetchBoard()) || {};
-
     try {
-      const boardRequiresReauth = (
-        await Promise.all(
-          runtimes.map((rtClass) =>
-            rtClass.type === "remote"
-              ? isUserAuthenticated(rtClass, this.props.user).catch((err) => {
-                  throw new Error(`${err.message} for runtime ${rtClass.url}`);
-                })
-              : Promise.resolve(true)
-          )
-        )
-      ).some((isAuthenticated) => !isAuthenticated);
-      if (boardRequiresReauth && !this.state.user) {
-        await this.waitForUserLogin();
+      const board = await this.props.fetchBoard();
+      const data = await this.restoreBoard(board);
+      if (data) {
+        this.setState({
+          ...data,
+          isFetching: false,
+        });
       }
-    } catch (err: any) {
-      this.setState({ errorOnFetch: err });
-      return;
-    }
-
-    try {
-      const user = this.state.user;
-      const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
-        runtimes.map((rt) => {
-          const api = this.props.runtimeApis?.[rt.type];
-          if (!api) {
-            console.error(
-              `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
-                rt
-              )} with type: ${rt.type} with registered apis: ${JSON.stringify(
-                Object.keys(this.props.runtimeApis || {})
-              )}`
-            );
-            return Promise.resolve(null);
-          }
-          return api.restoreRuntime(rt, services[rt.id], user);
-        })
-      );
-
-      const scopes = reduceByRuntimeId(restored, "scope");
-      const registry = reduceByRuntimeId(restored, "registry");
-      const restoredServicesWithState = reduceByRuntimeId(restored, "services");
-      const validRuntimes = restored.flatMap((restoreResult) =>
-        restoreResult && !!scopes[restoreResult?.runtime.id]
-          ? [restoreResult.runtime]
-          : []
-      );
-
-      this.setState({
-        boardName,
-        runtimes: validRuntimes,
-        services: restoredServicesWithState,
-        registry,
-        scopes,
-        isFetching: false,
-      });
     } catch (err: any) {
       this.setState({ errorOnFetch: err, isFetching: false });
       return;
     }
+  };
+
+  restoreBoard = async (board: BoardDescriptor | undefined) => {
+    const {
+      boardName = this.getBoardName(),
+      runtimes = [],
+      services = {},
+    } = board || {};
+
+    const boardRequiresReauth = (
+      await Promise.all(
+        runtimes.map((rtClass) =>
+          rtClass.type === "remote"
+            ? isUserAuthenticated(rtClass, this.props.user).catch((err) => {
+                throw new Error(`${err.message} for runtime ${rtClass.url}`);
+              })
+            : Promise.resolve(true)
+        )
+      )
+    ).some((isAuthenticated) => !isAuthenticated);
+    if (boardRequiresReauth && !this.state.user) {
+      await this.waitForUserLogin();
+    }
+
+    const user = this.state.user;
+    const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
+      runtimes.map((rt) => {
+        const api = this.props.runtimeApis?.[rt.type];
+        if (!api) {
+          console.error(
+            `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
+              rt
+            )} with type: ${rt.type} with registered apis: ${JSON.stringify(
+              Object.keys(this.props.runtimeApis || {})
+            )}`
+          );
+          return Promise.resolve(null);
+        }
+        return api.restoreRuntime(rt, services[rt.id], user);
+      })
+    );
+
+    const scopes = reduceByRuntimeId(restored, "scope");
+    const registry = reduceByRuntimeId(restored, "registry");
+    const restoredServicesWithState = reduceByRuntimeId(restored, "services");
+    const validRuntimes = restored.flatMap((restoreResult) =>
+      restoreResult && !!scopes[restoreResult?.runtime.id]
+        ? [restoreResult.runtime]
+        : []
+    );
+
+    return {
+      boardName,
+      runtimes: validRuntimes,
+      services: restoredServicesWithState,
+      registry,
+      scopes,
+    };
   };
 
   setRuntimeName = async (runtimeId: string, newName: string) => {
@@ -570,12 +574,12 @@ class BoardProvider extends Component<Props, BoardContextState> {
     return this.props.serializeBoard ? this.props.serializeBoard(data) : data;
   };
 
-  setBoardState = (newState: BoardDescriptor) => {
-    this.setState((state) => {
-      const merged = { ...state, ...newState };
-      this.props.onUpdateBoardState?.(merged);
-      return merged;
-    });
+  setBoardState = async (newState: BoardDescriptor) => {
+    const data = await this.restoreBoard(newState);
+    if (data) {
+      this.setState(data);
+      this.props.onUpdateBoardState?.(data);
+    }
   };
 
   arrangeServices = async (

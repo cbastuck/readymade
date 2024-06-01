@@ -7,7 +7,7 @@ import { PeersCtx } from "../PeersContext";
 
 type Props = {
   active: boolean;
-  name: string;
+  name: string | undefined;
   peerHost?: string;
   usePeerPort?: number;
   usePeerRoutePath?: string;
@@ -65,13 +65,16 @@ export default class PeerComponent extends Component<Props> {
       this.closePeer();
     }
     const {
-      name = "unnamed-peer",
+      name,
       onData,
 
       usePeerPort,
       usePeerRoutePath,
       isSecure,
     } = this.props;
+    if (!name) {
+      return;
+    }
     const peer: Peer = new Peerjs(name, {
       host: peerHost,
       port: usePeerPort ? usePeerPort : isSecure ? 443 : 80,
@@ -127,7 +130,10 @@ export default class PeerComponent extends Component<Props> {
     if (this.peer) {
       this.peer.destroy();
       this.peer = null;
-      this.context?.onPeerClosed(name || this.props.name);
+      const n = name || this.props.name;
+      if (n) {
+        this.context?.onPeerClosed(n);
+      }
     }
   };
 

@@ -9,13 +9,13 @@ import PeersProvider from "@/PeersContext";
 import Peer from "@/components/Peer";
 import { availableDiscoveryPeerHosts } from "@/views/playground/common";
 import SubmittableInput from "@/ui-components/SubmittableInput";
-import { generateRandomName } from "@/core/board";
+
 import RadioGroup from "@/ui-components/RadioGroup";
 import { AppCtx } from "@/AppContext";
 
 export default function PeerSocketUI(props: ServiceUIProps) {
   const [bypass, setBypass] = useState(false);
-  const [peerName, setPeerName] = useState(generateRandomName());
+  const [peerName, setPeerName] = useState("");
   const [targetPeer, setTargetPeer] = useState("");
   const [currentMode, setCurrentMode] = useState("");
 
@@ -78,7 +78,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
           {currentMode !== "Receive only" && (
             <SubmittableInput
               fullWidth
-              title="Target name"
+              title="Receiver Name"
               value={targetPeer}
               onSubmit={(targetPeer) => props.service.configure({ targetPeer })}
             />

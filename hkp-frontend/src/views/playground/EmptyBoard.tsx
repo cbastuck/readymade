@@ -1,0 +1,135 @@
+import { useNavigate } from "react-router-dom";
+import { s, t } from "../../styles";
+
+import Logo from "./hkp-dots-braid.svg?react";
+import SubmittableInput from "@/ui-components/SubmittableInput";
+import { DragEvent, useContext, useState } from "react";
+import { readFile } from "./common";
+import { BoardCtx } from "@/BoardContext";
+import { isBoardDescriptor } from "@/types";
+
+type Props = {
+  boardName: string;
+};
+
+export default function EmptyBoard({ boardName }: Props) {
+  const boardContext = useContext(BoardCtx);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const onDragOver = (ev: DragEvent) => {
+    setIsDraggingOver(true);
+    ev.preventDefault();
+  };
+  const onDragEnd = () => {
+    if (isDraggingOver) {
+      setIsDraggingOver(false);
+    }
+  };
+  const onDrop = async (ev: DragEvent) => {
+    onDragEnd();
+    ev.preventDefault();
+    const files = getDraggedFiles(ev);
+    if (files.length === 1) {
+      const src = await readFile(files[0], true);
+      const data = typeof src === "string" && JSON.parse(src);
+      if (data && isBoardDescriptor(data)) {
+        boardContext?.setBoardState(data);
+      }
+    } else {
+      boardContext?.appContext?.pushNotification({
+        type: "error",
+        message: "Drag not accepted, one flile allowed",
+      });
+    }
+  };
+  const navigate = useNavigate();
+  const headline = !boardName ? (
+    "this is an empty board"
+  ) : (
+    <div className="w-full text-center flex items-end gap-4 font-sans tracking-wider">
+      <div className="w-full text-right">This board</div>
+      <div className="w-[40%]">
+        <SubmittableInput
+          selectAllOnFocus
+          fullWidth
+          className="text-[#1e70bf] text-center font-menu text-xl capitalize"
+          value={boardName}
+          onSubmit={(newName) => navigate(`/playground/${newName}`)}
+        />
+      </div>
+      <div className="w-full text-left">is empty.</div>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        margin: headline && "15px 0px",
+      }}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      onDragLeave={onDragEnd}
+    >
+      {headline && <div style={{ marginTop: 20 }} />}
+      <div
+        style={{
+          padding: headline && "20px 0px",
+        }}
+      >
+        <div style={s(t.tc, t.mt0, t.mb30)}>
+          <div
+            className="hkp-card-border"
+            style={{
+              padding: "50px 20px",
+              width: "90%",
+              margin: "auto",
+              backgroundColor: isDraggingOver ? "#0284c710" : undefined,
+            }}
+          >
+            {headline}
+            <div style={{ width: 200, margin: "10px auto" }}>
+              <Logo />
+            </div>
+            <div>
+              <span
+                style={{ cursor: "help", color: "#4284C4" }}
+                onClick={() => {
+                  const selector = document.getElementById(
+                    "runtime-menu-trigger"
+                  );
+                  if (selector) {
+                    selector.focus();
+                    selector.click();
+                  }
+                }}
+              >
+                {" Add a Runtime "}
+              </span>
+              to sketch an Idea
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getDraggedFiles(ev: DragEvent): Array<File> {
+  const files: Array<File> = [];
+  if (ev.dataTransfer.items) {
+    [...ev.dataTransfer.items].forEach((item) => {
+      if (item.kind === "file") {
+        const f = item.getAsFile();
+        if (f) {
+          files.push(f);
+        }
+      }
+    });
+  } else {
+    // Use DataTransfer interface to access the file(s)
+    [...ev.dataTransfer.files].forEach((file, i) => {
+      files.push(file);
+    });
+  }
+  return files;
+}
