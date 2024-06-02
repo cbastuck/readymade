@@ -32,4 +32,15 @@ export default class ServiceBase<T> {
       this.app.notify(this as any, { bypass: this.bypass }); // TODO: as any - refactor interface
     }
   };
+
+  pushErrorNotification = (message: string) => {
+    this.app.sendAction({
+      action: "notification",
+      service: this as any, // TODO: ServiceInstance is
+      payload: {
+        type: "error",
+        message,
+      },
+    });
+  };
 }

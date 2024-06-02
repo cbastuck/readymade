@@ -7,13 +7,20 @@ import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 export default function OllamaPromptUI(props: ServiceUIProps) {
   const [prompt, setPrompt] = useState("");
   const [isBusy, setIsBusy] = useState(false);
+  const [accumulatedUpdate, setAccumulatedUpdate] = useState("");
 
   const update = (state: any) => {
     if (needsUpdate(state.prompt, prompt)) {
       setPrompt(state.prompt);
     }
     if (needsUpdate(state.busy, isBusy)) {
+      if (!state.busy) {
+        setAccumulatedUpdate("");
+      }
       setIsBusy(state.busy);
+    }
+    if (state.update !== undefined) {
+      setAccumulatedUpdate((a) => a + state.update);
     }
   };
 
@@ -21,10 +28,9 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
   const onNotification = (notification: any) => update(notification);
 
   const omSubmitPrompt = (newPrompt: string) => {
-    if (newPrompt !== prompt) {
-      setPrompt(newPrompt);
-      props.service.configure({ prompt: newPrompt });
-    }
+    setPrompt(newPrompt);
+    setAccumulatedUpdate("");
+    props.service.configure({ prompt: newPrompt });
   };
 
   return (
@@ -35,15 +41,24 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
       onNotification={onNotification}
       initialSize={{ width: 400, height: undefined }}
     >
-      <div className="flex w-full items-end gap-4">
-        <SubmittableInput
-          fullWidth
-          title="Prompt"
-          value={prompt}
-          onSubmit={omSubmitPrompt}
-        />
+      <div className="flex flex-col w-full h-full">
+        <div className="flex w-full items-end gap-4">
+          <SubmittableInput
+            fullWidth
+            title="Prompt"
+            value={prompt}
+            onSubmit={omSubmitPrompt}
+          />
 
-        <BusyIndicator isBusy={isBusy} />
+          <BusyIndicator isBusy={isBusy} />
+        </div>
+        <div className="max-h-[100px] h-full p-2 my-2 text-md font-menu text-left overflow-y-auto border border-solid">
+          {accumulatedUpdate || (
+            <span className="text-gray-500">
+              Idle, updates appear here during progress
+            </span>
+          )}
+        </div>
       </div>
     </ServiceUI>
   );

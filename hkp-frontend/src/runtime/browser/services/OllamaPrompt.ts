@@ -2,6 +2,7 @@ import { AppInstance, ServiceClass } from "@/types";
 import ServiceBase from "./ServiceBase";
 
 import OllamaPromptUI from "./OllamaPromptUI";
+import { read } from "fs";
 
 const serviceName = "Ollama Prompt";
 const serviceId = "hookup.to/service/ollama-prompt";
@@ -26,29 +27,93 @@ class OllamaPrompt extends ServiceBase<State> {
 
   async configure(config: any) {
     const { prompt } = config;
-    if (config !== undefined) {
+    if (prompt !== undefined) {
       const result = await this.process(prompt);
       this.app.next(this, result);
     }
   }
 
   async process(params: any) {
-    this.app.notify(this, { busy: true });
-    const resp = await fetch(this.state.endpoint, {
-      method: "POST",
-      body: JSON.stringify({
-        model: this.state.model,
-        prompt: params,
-        stream: false,
-      }),
-    });
-    const { response, done, done_reason } = await resp.json();
-    if (done && done_reason === "stop") {
-      this.app.notify(this, { busy: false });
+    if (typeof params !== "string") {
+      this.pushErrorNotification("Ollama prompt input must be of type string");
+      return null;
     }
+    this.app.notify(this, { busy: true });
 
-    return response || null;
+    const body = {
+      model: this.state.model,
+      prompt: params,
+    };
+
+    const reportProgress = (partial: string) => {
+      const progressToOutput = false;
+      return progressToOutput
+        ? this.app.next(this, partial)
+        : this.app.notify(this, { update: partial });
+    };
+
+    const readAsStream = true;
+    if (readAsStream) {
+      const resp = await fetch(this.state.endpoint, {
+        method: "POST",
+        body: JSON.stringify({ ...body, stream: true }),
+      });
+      const reader = resp.body?.getReader();
+      if (reader) {
+        const stream = new ReadableStream({
+          start(controller) {
+            function push() {
+              reader?.read().then(({ done, value }) => {
+                if (done) {
+                  return controller.close();
+                }
+                controller.enqueue(value);
+                const str = uint8arrayToStringMethod(value);
+                try {
+                  const partialResponse = str ? JSON.parse(str).response : "";
+                  reportProgress(partialResponse);
+                } catch (err) {
+                  console.error(
+                    "Could not parse the following partial JSON response",
+                    str
+                  );
+                }
+
+                push();
+              });
+            }
+            push();
+          },
+        });
+
+        const r = new Response(stream, {
+          headers: { "Content-Type": "text/html" },
+        });
+        const a = await r.text();
+        this.app.notify(this, { busy: false });
+        return a
+          .split("\n")
+          .map((x) => (x ? JSON.parse(x) : ""))
+          .map((x) => x.response)
+          .join("");
+      }
+    } else {
+      const resp = await fetch(this.state.endpoint, {
+        method: "POST",
+        body: JSON.stringify({ ...body, stream: false }),
+      });
+      const { response, done, done_reason } = await resp.json();
+      if (done && done_reason === "stop") {
+        this.app.notify(this, { busy: false });
+      }
+
+      return response || null;
+    }
   }
+}
+
+function uint8arrayToStringMethod(uint8array: Uint8Array) {
+  return new TextDecoder("utf-8").decode(uint8array);
 }
 
 const descriptor = {

@@ -178,7 +178,7 @@ const serviceActionTypes = ["remove", "getConfig", "notification"] as const;
 export type ServiceActionType = (typeof serviceActionTypes)[number];
 export type ServiceAction = {
   action: ServiceActionType;
-  service: ServiceImpl;
+  service: ServiceInstance;
   payload?: any;
 };
 

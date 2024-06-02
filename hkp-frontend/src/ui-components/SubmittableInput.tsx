@@ -4,6 +4,7 @@ import {
   useState,
   forwardRef,
   FocusEvent,
+  useRef,
 } from "react";
 
 import Input from "./Input";
@@ -47,8 +48,10 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       [onChangePending, isChangePending]
     );
 
+    const lastSubmittedValue = useRef("");
     const onKeyUp = (ev: KeyboardEvent) => {
       if (ev.key === "Enter") {
+        lastSubmittedValue.current = internal;
         onSubmit(internal);
       }
     };
@@ -56,7 +59,11 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       setInternal(newValue);
     };
 
-    const onBlur = () => onSubmit(internal);
+    const onBlur = () => {
+      if (internal !== lastSubmittedValue.current) {
+        onSubmit(internal);
+      }
+    };
 
     const onFocus = (event: FocusEvent<HTMLInputElement>) =>
       selectAllOnFocus && setTimeout(() => event.target.select(), 10);
