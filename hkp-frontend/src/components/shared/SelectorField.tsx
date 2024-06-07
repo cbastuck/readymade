@@ -11,9 +11,9 @@ import {
 import "./SelectorField.css";
 import GroupLabel from "@/ui-components/GroupLabel";
 
-type OnChangeValue = {
+export type OnChangeValue = {
   value: string;
-  index?: number;
+  index: number;
 };
 
 type Options = { [key: string]: string };
@@ -89,7 +89,7 @@ export default class SelectorField extends Component<Props, State> {
             })
           }
         >
-          <SelectTrigger className="w-full m-2 h-min">
+          <SelectTrigger className="w-full mr-2 h-min">
             <SelectValue placeholder="Select ..." />
           </SelectTrigger>
           <SelectContent className="font-menu">
@@ -107,4 +107,8 @@ export default class SelectorField extends Component<Props, State> {
       </div>
     );
   }
+}
+
+export function arrayToOptions(arr: Array<string>): { [key: string]: string } {
+  return arr.reduce((all, cur) => ({ ...all, [cur]: cur }), {});
 }

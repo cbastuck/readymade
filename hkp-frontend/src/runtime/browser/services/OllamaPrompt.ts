@@ -2,15 +2,18 @@ import { AppInstance, ServiceClass } from "@/types";
 import ServiceBase from "./ServiceBase";
 
 import OllamaPromptUI from "./OllamaPromptUI";
-import { read } from "fs";
+import { needsUpdate } from "@/ui-components/service/ServiceUI";
 
 const serviceName = "Ollama Prompt";
 const serviceId = "hookup.to/service/ollama-prompt";
 
 type State = {
+  availableModels: Array<string>;
   model: string;
   endpoint: string;
 };
+
+const defaultLocalEndpoint = "http://localhost:11434/api";
 
 class OllamaPrompt extends ServiceBase<State> {
   constructor(
@@ -20,16 +23,36 @@ class OllamaPrompt extends ServiceBase<State> {
     id: string
   ) {
     super(app, board, descriptor, id, {
-      endpoint: "http://localhost:11434/api/generate",
-      model: "llama3",
+      availableModels: [],
+      endpoint: defaultLocalEndpoint,
+      model: "",
     });
+    fetch(`${this.state.endpoint}/tags`)
+      .then((r) => r.json())
+      .then((r) => r.models)
+      .then(this.onAvailableModels);
   }
 
+  onAvailableModels = (models: Array<{ model: string }>) => {
+    this.state.availableModels = models.map((m) => m.model);
+    this.state.model = this.state.availableModels[0];
+    this.app.notify(this, {
+      availableModels: this.state.availableModels,
+      model: this.state.model,
+    });
+  };
   async configure(config: any) {
     const { prompt } = config;
     if (prompt !== undefined) {
       const result = await this.process(prompt);
       this.app.next(this, result);
+    }
+
+    if (needsUpdate(config.model, this.state.model)) {
+      if (this.state.availableModels.indexOf(config.model) !== -1) {
+        this.state.model = config.model;
+        this.app.notify(this, { model: this.state.model });
+      }
     }
   }
 
@@ -54,7 +77,7 @@ class OllamaPrompt extends ServiceBase<State> {
 
     const readAsStream = true;
     if (readAsStream) {
-      const resp = await fetch(this.state.endpoint, {
+      const resp = await fetch(`${this.state.endpoint}/generate`, {
         method: "POST",
         body: JSON.stringify({ ...body, stream: true }),
       });

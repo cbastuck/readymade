@@ -1,8 +1,9 @@
 type Props = {
   text: string;
+  active?: boolean;
 };
 
-export default function LoadIndicator({ text }: Props) {
+export default function LoadIndicator({ active = true, text }: Props) {
   const css = `  
   @keyframes dot {
     0% { background-color: grey; transform: scale(1); }
@@ -20,6 +21,9 @@ export default function LoadIndicator({ text }: Props) {
     width: dotSize,
     borderRadius: "50%",
   };
+  if (!active) {
+    return null;
+  }
   return (
     <>
       <style>{css}</style>

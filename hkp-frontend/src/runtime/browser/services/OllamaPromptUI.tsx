@@ -4,10 +4,16 @@ import { ServiceUIProps } from "@/types";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
+import SelectorField, {
+  arrayToOptions,
+} from "@/components/shared/SelectorField";
+
 export default function OllamaPromptUI(props: ServiceUIProps) {
   const [prompt, setPrompt] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [accumulatedUpdate, setAccumulatedUpdate] = useState("");
+  const [availableModels, setAvailableModels] = useState<Array<string>>([]);
+  const [usedModel, setUsedModel] = useState("");
 
   const update = (state: any) => {
     if (needsUpdate(state.prompt, prompt)) {
@@ -22,6 +28,14 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
     if (state.update !== undefined) {
       setAccumulatedUpdate((a) => a + state.update);
     }
+
+    if (needsUpdate(state.availableModels, availableModels)) {
+      setAvailableModels(state.availableModels);
+    }
+
+    if (needsUpdate(state.model, usedModel)) {
+      setUsedModel(state.model);
+    }
   };
 
   const onInit = (state: any) => update(state);
@@ -33,6 +47,10 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
     props.service.configure({ prompt: newPrompt });
   };
 
+  const onSelectModel = ({ value: newModel }: any) => {
+    props.service.configure({ model: newModel });
+  };
+
   return (
     <ServiceUI
       className="pb-4"
@@ -42,14 +60,19 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
       initialSize={{ width: 400, height: undefined }}
     >
       <div className="flex flex-col w-full h-full">
-        <div className="flex w-full items-end gap-4">
+        <SelectorField
+          label="Model"
+          value={usedModel}
+          options={arrayToOptions(availableModels)}
+          onChange={onSelectModel}
+        />
+        <div className="flex w-full items-end gap-4 my-2">
           <SubmittableInput
             fullWidth
             title="Prompt"
             value={prompt}
             onSubmit={omSubmitPrompt}
           />
-
           <BusyIndicator isBusy={isBusy} />
         </div>
         <div className="max-h-[100px] h-full p-2 my-2 text-md font-menu text-left overflow-y-auto border border-solid">

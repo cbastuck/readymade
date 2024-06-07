@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import anime from "./anime";
 
-import Logo from "@/assets/animations/AnimatedLogo3.svg?react";
+//import Logo from "@/assets/animations/AnimatedLogo3.svg?react";
+import Logo from "@/assets/animations/AnimatedLogo6.svg?react";
 
 type Props = {
   initialDelay?: number;
@@ -19,7 +20,10 @@ export default function HookupLogo({ initialDelay = 3000 }: Props) {
         if (i === 0) {
           return initialDelay;
         }
-        return i * 250 + initialDelay;
+        if (i < 6) {
+          return i * 250 + initialDelay;
+        }
+        return initialDelay + 6 * 250 + i * 10;
       },
     });
 
@@ -37,7 +41,7 @@ export default function HookupLogo({ initialDelay = 3000 }: Props) {
   return (
     <div
       id="hkp-logo"
-      className="mt-[10px] stroke-blue-600 stroke-[0.2] px-[8%] pt-[10%]  pb-2 stroke-white rounded-full stroke-[0.5] border border-solid border-gray-300 bg-gradient-to-r from-cyan-500 to-blue-500 drop-shadow "
+      className="mt-[10px] stroke-blue-600 stroke-[0.2] px-[8%] pt-[5%]  pb-2 stroke-white rounded-full stroke-[0.5] border border-solid border-gray-300 bg-gradient-to-r from-sky-600 to-sky-400 drop-shadow "
     >
       <Logo />
     </div>

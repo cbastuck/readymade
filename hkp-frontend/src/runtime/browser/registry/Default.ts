@@ -66,6 +66,7 @@ import UuidGeneratorDescriptor from "../services/UuidGenerator";
 
 import PeerSocket from "../services/PeerSocket";
 import OllamaPrompt from "../services/OllamaPrompt";
+import SpeechSynth from "../services/SpeechSynth";
 
 import { ServiceModule } from "../../../types";
 
@@ -141,6 +142,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   BoardService,
   PeerSocket,
   OllamaPrompt,
+  SpeechSynth,
 
   //DEPRECATED
   /*

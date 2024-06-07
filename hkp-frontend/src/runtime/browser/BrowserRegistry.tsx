@@ -49,6 +49,7 @@ export const allowedServices = [
   "hookup.to/service/stack",
   "hookup.to/service/peer-socket",
   "hookup.to/service/ollama-prompt",
+  "hookup.to/service/speech-synth",
 ];
 
 export default class BrowserRegistry {

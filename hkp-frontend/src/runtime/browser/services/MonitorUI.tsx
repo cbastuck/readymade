@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CircleX, SquarePlay, Pencil, ScanText } from "lucide-react";
+import { CircleX, SquarePlay, Pencil, ScanText, Speech } from "lucide-react";
 import { Textarea } from "@/ui-components/primitives/textarea";
 
 import { ServiceUIProps } from "@/types";
@@ -68,6 +68,15 @@ export default function MonitorUI(props: ServiceUIProps) {
         }
         service.app.next(service, data);
       },
+    },
+    {
+      name: "Read it",
+      icon: <MenuIcon icon={Speech} />,
+      onClick: () => {
+        const utterance = new SpeechSynthesisUtterance(message);
+        speechSynthesis.speak(utterance);
+      },
+      disabled: !message || !speechSynthesis,
     },
   ];
 

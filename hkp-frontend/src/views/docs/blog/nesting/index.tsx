@@ -180,7 +180,7 @@ export default function NestingBoards() {
       <Video
         anchor="video"
         caption="Demo of the nested news board"
-        src="/assets/videos/Nesting Boards Overdub Title social.mp4"
+        src="/assets/videos/NestingBoardsOverdubbedEnhanced social.mp4"
       />
     </Article>
   );
