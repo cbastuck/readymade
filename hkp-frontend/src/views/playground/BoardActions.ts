@@ -45,7 +45,7 @@ export async function importBoard(
     ),
     registry: data.registry || {},
   };
-  console.log("BOARD", board);
+
   return board;
 }
 

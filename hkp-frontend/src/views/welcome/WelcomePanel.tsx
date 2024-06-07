@@ -38,17 +38,7 @@ export default function WelcomePanel() {
     },
     {
       element: (
-        <div className="flex flex-col gap-4 justify-center mx-10 drop-shadow-3xl">
-          <Sandbox
-            src="/assets/teaser/hkp-board-peer-sender.json"
-            hidePlaygroundLink={false}
-          />
-
-          <Sandbox
-            src="/assets/teaser/hkp-board-peer-receiver.json"
-            hidePlaygroundLink={false}
-          />
-        </div>
+        <div className="flex flex-col gap-4 justify-center mx-10 drop-shadow-3xl"></div>
       ),
       title: "Hookup two devices via peer sockets (try it out)",
       background: "/assets/teaser/sky-small2.png",

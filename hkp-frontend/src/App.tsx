@@ -24,7 +24,6 @@ export default function App() {
             <Routes />
             <Notifications />
           </div>
-
           <MessageDispatcher />
         </AppProvider>
       </AuthProvider>
