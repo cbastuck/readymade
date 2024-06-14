@@ -1,4 +1,4 @@
-import * as uuid from "uuid";
+import { v4 as uuidv4 } from "uuid";
 import UAParser from "ua-parser-js";
 import {
   RuntimeScope,
@@ -20,7 +20,7 @@ import { defaultBundles } from "./registry/Default";
 
 export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
   const { name: passedName, type, url } = rtClass;
-  const runtimeId = uuid.v4();
+  const runtimeId = uuidv4();
   const browser = new UAParser().getBrowser();
   const runtime = {
     id: runtimeId,
@@ -93,9 +93,9 @@ export async function removeService(
   const [service] = scope.findServiceInstance(instance.uuid);
   if (!service) {
     console.error(
-      `Could not find browser service to process: ${uuid} in scope: ${JSON.stringify(
-        scope
-      )}`
+      `Could not find browser service to process: ${
+        instance.uuid
+      } in scope: ${JSON.stringify(scope)}`
     );
     return null;
   }
@@ -199,7 +199,7 @@ function createService(
     );
     return null;
   }
-  const useInstanceId = instanceId || uuid.v4();
+  const useInstanceId = instanceId || uuidv4();
   const svc: ServiceInstance = module.create(
     scope.app,
     "deprecated boardname - get it from app",

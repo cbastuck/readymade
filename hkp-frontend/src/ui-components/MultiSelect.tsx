@@ -1,6 +1,6 @@
 // Source: https://shadcnui-expansions.typeart.cc/docs/multiple-selector
 
-import * as React from "react";
+import React from "react";
 import { forwardRef, useEffect } from "react";
 import { Command as CommandPrimitive, useCommandState } from "cmdk";
 import { X } from "lucide-react";

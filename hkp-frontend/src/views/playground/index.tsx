@@ -51,7 +51,7 @@ const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
 );
 
-type Props = WithRouterProps;
+type Props = WithRouterProps & { boardName?: string };
 
 type State = {
   boardName: string;
@@ -202,7 +202,7 @@ class Playground extends Component<Props, State> {
   };
 
   getInitialPlayground = async (): Promise<Partial<PlaygroundState> | null> => {
-    const board = this.props.match?.params?.board;
+    const board = this.props.match?.params?.board || this.props.boardName;
     if (board) {
       const params = Object.fromEntries(
         new URLSearchParams(document.location.search)
@@ -412,6 +412,7 @@ class Playground extends Component<Props, State> {
     };
 
     const user = (appContext && appContext?.user) || this.user;
+
     return (
       <BoardProvider
         ref={(ref) => (this.boardProviderRef = ref)}

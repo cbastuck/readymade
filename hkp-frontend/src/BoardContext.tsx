@@ -221,6 +221,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
         )
       )
     ).some((isAuthenticated) => !isAuthenticated);
+
     if (boardRequiresReauth && !this.state.user) {
       await this.waitForUserLogin();
     }
@@ -346,7 +347,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
         break;
       }
       default:
-        console.log("Unknown action", action);
+        console.warn("Unknown action", action);
         break;
     }
   };
@@ -381,7 +382,8 @@ class BoardProvider extends Component<Props, BoardContextState> {
           },
         }));
       }
-    } catch (err) {
+    } catch (err: any) {
+      console.error("BoardContext.addRuntime", err, err.stack);
       await this.waitForUserLogin();
     }
   };

@@ -1,4 +1,4 @@
-import * as uuid from "uuid";
+import { v4 as uuidv4 } from "uuid";
 
 import { replacePlaceholders } from "../../core/url";
 import {
@@ -36,7 +36,7 @@ export async function importBoard(
         ...all,
         [rid]: data[rid].services.map((svc: ServiceDescriptor) => {
           if (!svc.uuid) {
-            return { ...svc, uuid: uuid.v4() };
+            return { ...svc, uuid: uuidv4() };
           }
           return svc;
         }),
@@ -70,7 +70,7 @@ export async function createBoardFromTemplate(
     } = template;
     const patchedRuntimes = runtimes.map((rt) => ({
       ...rt,
-      id: uuid.v4(),
+      id: uuidv4(),
     }));
 
     const patchedServices = patchedRuntimes.reduce<RuntimeServiceMap>(
@@ -78,7 +78,7 @@ export async function createBoardFromTemplate(
         ...all,
         [rt.id]: services[runtimes[idx].id].map((svc) => ({
           ...svc,
-          uuid: uuid.v4(),
+          uuid: uuidv4(),
         })),
       }),
       {}

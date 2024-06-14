@@ -1,4 +1,4 @@
-import * as uuid from "uuid";
+import { v4 as uuidv4 } from "uuid";
 
 import { filterPrivateMembers } from "./helpers";
 import StackUI from "./StackUI";
@@ -69,7 +69,7 @@ class Stack {
     const ssvc = await this.app.createSubService(
       this,
       svc,
-      svc.uuid || uuid.v4()
+      svc.uuid || uuidv4()
     );
 
     ssvc.configure && (await ssvc.configure(svc));

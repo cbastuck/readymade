@@ -1,6 +1,6 @@
 import { CSSProperties, Component } from "react";
 import { Link, Location } from "react-router-dom";
-import * as uuid from "uuid";
+import { v4 as uuidv4 } from "uuid";
 
 import { withRouter } from "./common";
 import Runtime from "./components/Runtime";
@@ -127,7 +127,7 @@ class Sandbox extends Component<Props, State> {
     // add an uuid to each service if this is not present
     firstBrowserRuntimeData.services.map((s) => {
       if (!s.uuid) {
-        s.uuid = uuid.v4();
+        s.uuid = uuidv4();
       }
       return s;
     });

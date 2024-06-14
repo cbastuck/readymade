@@ -1,4 +1,4 @@
-import * as uuid from "uuid";
+import { v4 as uuidv4, v1 as uuidv1 } from "uuid";
 import { AppInstance, ServiceClass } from "@/types";
 import UuidGeneratorUI from "./UuidGeneratorUI";
 import ServiceBase from "./ServiceBase";
@@ -22,11 +22,11 @@ class UuidGenerator extends ServiceBase<State> {
     id: string
   ) {
     super(app, board, descriptor, id, {
-      uuid: uuid.v4(),
+      uuid: uuidv4(),
       method: "v4",
       mode: "plain",
     });
-    this.f = uuid.v4;
+    this.f = uuidv4;
   }
 
   async configure(config: any) {
@@ -34,11 +34,11 @@ class UuidGenerator extends ServiceBase<State> {
       this.state.method = config.method;
       switch (config.method) {
         case "v1":
-          this.f = uuid.v1;
+          this.f = uuidv1;
           break;
 
         case "v4":
-          this.f = uuid.v4;
+          this.f = uuidv4;
           break;
       }
     }

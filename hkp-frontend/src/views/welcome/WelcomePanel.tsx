@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 
 import WhatsNew from "./WhatsNew";
 import Carousel, { CarouselItem } from "@/ui-components/Carousel";
-import Sandbox from "@/Sandbox";
 import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";
 import LandingPitch from "./LandingPitch";

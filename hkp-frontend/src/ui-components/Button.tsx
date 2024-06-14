@@ -1,7 +1,4 @@
-import {
-  Button as ButtonCN,
-  ButtonProps,
-} from "@/ui-components/primitives/button";
+import { Button as ButtonCN, ButtonProps } from "./primitives/button";
 import { ReactElement } from "react";
 
 type Props = ButtonProps & {

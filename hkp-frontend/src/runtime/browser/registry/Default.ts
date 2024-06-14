@@ -158,10 +158,10 @@ export const defaultRegistry: Array<ServiceModule> = [
 ];
 
 export const defaultBundles = [
+  "hookup.to/registry/browser/Crypto",
   "hookup.to/registry/browser/Audio",
   "hookup.to/registry/browser/Graphic",
   "hookup.to/registry/browser/FileStorage",
-  "hookup.to/registry/browser/Crypto",
   "hookup.to/registry/browser/TensorFlow",
   "hookup.to/registry/browser/Fileformat",
 ];
