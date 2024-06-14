@@ -30,11 +30,8 @@ export default function LandingPitch({ onComplete }: Props) {
     >
       <div className="pitch-item">
         <div>
-          Ever felt creative, but the setup process kills your inspiration?{" "}
-        </div>
-        <div>
-          Or got frustrated after you tried to "just connect" two devices or
-          apps?
+          Ever felt creative, but the setup process kills your inspiration? Or
+          got frustrated after you tried to "just connect" two devices or apps?
         </div>
       </div>
       <div className="pitch-item">
@@ -42,8 +39,8 @@ export default function LandingPitch({ onComplete }: Props) {
         technical setup.
       </div>
       <div className="pitch-item">
-        Hookit App: Build ideas with data seamlessly flowing through reusable
-        building blocks.
+        Build ideas with data seamlessly flowing through reusable building
+        blocks.
       </div>
     </div>
   );

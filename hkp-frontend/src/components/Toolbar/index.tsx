@@ -73,10 +73,7 @@ export default function Toolbar({
           )}
 
           <NavigationBar isCompact={isNarrow || isCompact} />
-          <AppMenu
-            isCompact={isCompact}
-            includeNavigationLinks={!isCompact && isNarrow}
-          />
+          <AppMenu includeNavigationLinks={!isCompact && isNarrow} />
         </div>
       </div>
     </div>
