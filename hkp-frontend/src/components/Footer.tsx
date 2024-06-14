@@ -7,9 +7,10 @@ import Copyright from "./Copyright";
 
 type Props = {
   flex?: boolean;
+  isCompact?: boolean;
 };
 
-export default function Footer({ flex }: Props) {
+export default function Footer({ flex, isCompact }: Props) {
   const fontStyle: CSSProperties = {
     letterSpacing: 2,
     fontSize: 12,
@@ -17,6 +18,7 @@ export default function Footer({ flex }: Props) {
 
   const appContext = useContext(AppCtx);
   const isWide = appContext?.appViewMode === "wide";
+
   return (
     <div
       style={{
@@ -47,11 +49,15 @@ export default function Footer({ flex }: Props) {
             gap: "5px",
           }}
         >
-          <Link to="/about"> about </Link>
-          {" ‧ "}
-          <Link to="/terms"> terms </Link>
-          {" ‧ "}
-          <Link to="/privacy"> privacy </Link>
+          {!isCompact && (
+            <>
+              <Link to="/about"> about </Link>
+              {" ‧ "}
+              <Link to="/terms"> terms </Link>
+              {" ‧ "}
+              <Link to="/privacy"> privacy </Link>
+            </>
+          )}
 
           <Copyright isWide={isWide} />
         </div>

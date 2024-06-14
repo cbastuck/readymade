@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import WhatsNew from "./WhatsNew";
+import ClaimApp from "./ClaimApp";
 import Carousel, { CarouselItem } from "@/ui-components/Carousel";
 import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";
@@ -52,7 +52,7 @@ export default function WelcomePanel() {
       <div className="flex flex-col ">
         <div className="px-[10px] w-full flex mt-[50px]">
           <h1 className="w-full ml-auto">
-            <WelcomeWord /> <WhatsNew />
+            <WelcomeWord /> <ClaimApp />
           </h1>
         </div>
         <div className="w-[12%] min-w-[70px] mx-auto mb-10">
@@ -75,7 +75,7 @@ export default function WelcomePanel() {
           <Carousel items={carouselItems} />
         </div>
 
-        <h1 className="pt-10 m-0 text-center">About Hookitapp</h1>
+        <h1 className="pt-10 m-0 text-center">About Hookup</h1>
         <BackgroundSection />
       </div>
     </div>

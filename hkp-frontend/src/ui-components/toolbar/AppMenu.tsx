@@ -24,10 +24,10 @@ import {
 import MenuIcon from "../MenuIcon";
 
 type Props = {
-  isCompact: boolean;
+  includeNavigationLinks?: boolean;
 };
 
-export default function AppMenu({ isCompact }: Props) {
+export default function AppMenu({ includeNavigationLinks }: Props) {
   const { loginWithRedirect, logout } = useAuth0();
   const context = useContext(AppCtx);
   const currentUser = context?.user;
@@ -57,86 +57,88 @@ export default function AppMenu({ isCompact }: Props) {
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="mt-1">
-          <Menu strokeWidth={1} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-56 mx-4">
-        {isCompact && (
-          <>
-            <DropdownMenuGroup>
-              <DropdownMenuItem
-                className="text-base"
-                onClick={() => navigate("/docs")}
-              >
-                <MenuIcon icon={Forward} />
-                <span>Docs</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-base"
-                onClick={() => navigate("/examples")}
-              >
-                <MenuIcon icon={Forward} />
-                <span>Examples</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-base"
-                onClick={() => navigate("/playground")}
-              >
-                <MenuIcon icon={Forward} />
-                <span>Playground</span>
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-          </>
-        )}
+    <div className="ml-auto">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="mt-1">
+            <Menu strokeWidth={1} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56 mx-4">
+          {includeNavigationLinks && (
+            <>
+              <DropdownMenuGroup>
+                <DropdownMenuItem
+                  className="text-base"
+                  onClick={() => navigate("/docs")}
+                >
+                  <MenuIcon icon={Forward} />
+                  <span>Docs</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-base"
+                  onClick={() => navigate("/examples")}
+                >
+                  <MenuIcon icon={Forward} />
+                  <span>Examples</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-base"
+                  onClick={() => navigate("/playground")}
+                >
+                  <MenuIcon icon={Forward} />
+                  <span>Playground</span>
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+              <DropdownMenuSeparator />
+            </>
+          )}
 
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            className="text-base"
-            onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
-          >
-            {isLoggedIn ? (
-              <>
-                <MenuIcon icon={User} />
-                <span>{nickname}</span>
-              </>
-            ) : (
-              <>
-                <MenuIcon icon={LogIn} />
-                <span>Login</span>
-              </>
-            )}
-          </DropdownMenuItem>
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              className="text-base"
+              onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
+            >
+              {isLoggedIn ? (
+                <>
+                  <MenuIcon icon={User} />
+                  <span>{nickname}</span>
+                </>
+              ) : (
+                <>
+                  <MenuIcon icon={LogIn} />
+                  <span>Login</span>
+                </>
+              )}
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              className="text-base"
+              disabled={!isLoggedIn}
+              onClick={() => navigate("/dashboard")}
+            >
+              <MenuIcon icon={LayoutDashboard} />
+              <span>Dashboard</span>
+            </DropdownMenuItem>
+
+            <DropdownMenuItem className="text-base" disabled={true}>
+              <MenuIcon icon={Settings} />
+              <span>Settings</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+
+          <DropdownMenuSeparator />
 
           <DropdownMenuItem
             className="text-base"
             disabled={!isLoggedIn}
-            onClick={() => navigate("/dashboard")}
+            onClick={onLogout}
           >
-            <MenuIcon icon={LayoutDashboard} />
-            <span>Dashboard</span>
+            <MenuIcon icon={LogOut} />
+            <span>Log out</span>
           </DropdownMenuItem>
-
-          <DropdownMenuItem className="text-base" disabled={true}>
-            <MenuIcon icon={Settings} />
-            <span>Settings</span>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem
-          className="text-base"
-          disabled={!isLoggedIn}
-          onClick={onLogout}
-        >
-          <MenuIcon icon={LogOut} />
-          <span>Log out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }

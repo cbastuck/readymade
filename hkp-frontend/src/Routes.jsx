@@ -1,4 +1,9 @@
-import { Route, Routes, Navigate, useLocation } from "react-router-dom";
+import {
+  Route,
+  Routes as RouterRoutes,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
 
 import WelcomeTemplate from "./views/welcome/WelcomeTemplate";
 import WelcomePage from "./views/welcome/WelcomePage";
@@ -56,9 +61,9 @@ import Multiplication from "./views/docs/prototypes/Multiplication";
 import { generateRandomName } from "./core/board";
 import { replacePlaceholders } from "./core/url";
 
-export default function AppRoutes() {
+export default function Routes() {
   return (
-    <Routes>
+    <RouterRoutes>
       <Route path="/" exact element={<Navigate replace to="/welcome" />} />
       <Route path="/welcome" element={<WelcomePage />} />
       <Route
@@ -88,7 +93,8 @@ export default function AppRoutes() {
       <Route path="/about" element={<About />} />
 
       <Route path="/sandbox" element={<Sandbox />} />
-      {/*<Route path="/playground/:board/src" element={<BoardSource />} />*/}
+
+      <Route path="/plygrnd" element={<CompactPlayground />} />
       <Route path="/playground/:board" element={<Playground />} />
       <Route path="/playground" element={<PlaygroundRedirect />} />
 
@@ -137,7 +143,7 @@ export default function AppRoutes() {
 
       <Route path="/headless" element={<Headless />} />
       <Route path="/join/:share" element={<Join />} />
-    </Routes>
+    </RouterRoutes>
   );
 }
 
@@ -150,4 +156,8 @@ function PlaygroundRedirect() {
       replace={true}
     />
   );
+}
+
+function CompactPlayground() {
+  return <Playground compact />;
 }

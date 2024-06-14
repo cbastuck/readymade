@@ -51,7 +51,7 @@ const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
 );
 
-type Props = WithRouterProps & { boardName?: string };
+type Props = WithRouterProps & { boardName?: string; compact?: boolean };
 
 type State = {
   boardName: string;
@@ -463,7 +463,7 @@ class Playground extends Component<Props, State> {
                       )
                     )
                   }
-                  isCompact={boardContext.appContext?.appViewMode !== "wide"}
+                  isCompact={this.props.compact}
                 />
 
                 <ShareQRCodeDialog
@@ -533,7 +533,7 @@ class Playground extends Component<Props, State> {
                   />
                 )}
 
-                <Footer />
+                <Footer isCompact={this.props.compact} />
               </div>
             )
           }

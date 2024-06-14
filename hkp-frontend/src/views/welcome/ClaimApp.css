@@ -1,0 +1,16 @@
+.claim-color-change {
+  animation: color-change 15s;
+}
+
+@keyframes color-change {
+  0% {
+    color: rgb(2 132 199);
+  }
+  50% {
+    color: rgb(254, 255, 255);
+    letter-spacing: 0;
+  }
+  100% {
+    color: rgb(2 132 199);
+  }
+}

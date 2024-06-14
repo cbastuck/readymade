@@ -1,6 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 
-export default function NavigationBar() {
+type Props = {
+  isCompact?: boolean;
+};
+export default function NavigationBar({ isCompact }: Props) {
   const location = useLocation();
   const links = [
     { name: "Docs", link: "/docs" },
@@ -11,6 +14,10 @@ export default function NavigationBar() {
     "font-sans rounded-md p-[5px] m-1 text-base tracking-widest hover:no-underline";
   const nonActivestyles = `${defaultStyles} "hover:text-zinc-500"`;
   const activeStyles = `bg-sky-600 text-white hover:text-neutral-200 ${defaultStyles}`;
+
+  if (isCompact) {
+    return null;
+  }
   return (
     <div
       style={{

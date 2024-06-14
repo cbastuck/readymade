@@ -17,6 +17,7 @@ import "./index.css";
 type Props = {
   showRuntimeMenu?: boolean;
   isCompact?: boolean;
+  includeNavigationLinks?: boolean;
   onUpdateAvailableRuntimes?: (runtimeClasses: Array<RuntimeClass>) => void;
 };
 
@@ -26,6 +27,8 @@ export default function Toolbar({
   onUpdateAvailableRuntimes,
 }: Props) {
   const boardContext = useContext(BoardCtx);
+  const isNarrow = boardContext?.appContext?.appViewMode !== "wide";
+
   return (
     <div
       style={{
@@ -69,8 +72,11 @@ export default function Toolbar({
             />
           )}
 
-          {!isCompact && <NavigationBar />}
-          <AppMenu isCompact={isCompact} />
+          <NavigationBar isCompact={isNarrow || isCompact} />
+          <AppMenu
+            isCompact={isCompact}
+            includeNavigationLinks={!isCompact && isNarrow}
+          />
         </div>
       </div>
     </div>

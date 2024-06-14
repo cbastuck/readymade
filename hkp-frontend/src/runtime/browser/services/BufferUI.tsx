@@ -5,7 +5,8 @@ import Button from "hkp-frontend/src/ui-components/Button";
 
 import { ServiceUIProps } from "@/types";
 import ServiceUI from "@/ui-components/service/ServiceUI";
-import { DownloadIcon } from "lucide-react";
+import { DownloadIcon, X } from "lucide-react";
+import MenuIcon from "@/ui-components/MenuIcon";
 
 type State = {
   capacity: number;
@@ -64,12 +65,21 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
   onClear = () => this.props.service.configure({ action: "clear" });
 
   render() {
+    const customMenuEntries = [
+      {
+        name: "Clear",
+        icon: <MenuIcon icon={X} />,
+        disabled: this.state.items.length === 0,
+        onClick: this.onClear,
+      },
+    ];
     return (
       <ServiceUI
         {...this.props}
         className="pb-2"
         onInit={this.onInit}
         onNotification={this.onNotification}
+        customMenuEntries={customMenuEntries}
       >
         <div className="flex flex-col gap-1">
           <InputField
@@ -86,10 +96,6 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
           />
 
           {this.renderBuffer()}
-
-          <Button className="w-full" onClick={this.onClear}>
-            Clear
-          </Button>
         </div>
       </ServiceUI>
     );

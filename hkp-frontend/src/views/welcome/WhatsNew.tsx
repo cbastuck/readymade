@@ -1,7 +1,11 @@
+import { Link } from "react-router-dom";
+import { Star } from "lucide-react";
 import { useEffect } from "react";
 import anime from "./anime";
 
-import UpdatesButton from "./UpdatesButton";
+import { Button } from "@/ui-components/primitives/button";
+
+import "./UpdatesButton.css";
 
 export default function WhatsNew() {
   useEffect(() => {
@@ -18,7 +22,15 @@ export default function WhatsNew() {
 
   return (
     <div id="hkp-whats-new">
-      <UpdatesButton />
+      <Link
+        className="hover:no-underline flex items-end justify-center"
+        to="/docs/updates"
+      >
+        <div className="text-base whitespace-nowrap">what's new?</div>
+        <Button variant="minimal" size="icon" className="h-min w-min">
+          <Star strokeWidth={1} />
+        </Button>
+      </Link>
     </div>
   );
 }
