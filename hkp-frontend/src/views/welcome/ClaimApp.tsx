@@ -18,12 +18,11 @@ export default function ClaimApp() {
   }, []);
 
   return (
-    <div id="hkp-claim-app">
+    <div id="hkp-claim-app" className="pt-1">
       <div className="flex items-end justify-center">
         <div className="text-base whitespace-nowrap text-sky-600">
-          connect
-          <span className="claim-color-change">•idea•</span>
-          inspiration
+          hookup
+          <span className="claim-color-change pl-2">idea&inspiration</span>
         </div>
       </div>
     </div>

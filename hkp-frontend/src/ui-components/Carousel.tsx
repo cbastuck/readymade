@@ -31,7 +31,7 @@ export default function Carousel({ items }: Props) {
           <CarouselItem key={index}>
             <div className="flex items-start h-full">
               <div
-                className="rounded-xl bg-cover bg-no-repeat w-full mx-20 py-10 drop-shadow-2xl overflow-auto hover:bg-gray-200"
+                className="rounded-xl bg-cover bg-no-repeat w-full mx-2 md:mx-20 py-10 drop-shadow-2xl overflow-auto hover:bg-gray-200"
                 style={{
                   position: "relative",
                   cursor: item.action ? "pointer" : "default",

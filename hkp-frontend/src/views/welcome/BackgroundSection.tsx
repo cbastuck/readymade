@@ -1,10 +1,10 @@
 export default function BackgroundSection() {
   return (
-    <div className="gap-0.5 mx-auto mt-1 w-[80%] mb-10">
+    <div className="mb-10 text-xl overflow-hidden tracking-widest sm:text-justify md:text-center mx-auto sm:w-[100%] md:w-[80%] gap-4">
       You find a lot background info on the pages of the underyling Hookup
       project. Don't bother and stay here if you just want to build and explore.
       But in case you want to dig deeper and learn more about scope and
-      motivation follow <a href="https://hookup.to">the link</a>
+      motivation <a href="https://hookup.to">follow the link</a>
     </div>
   );
 }

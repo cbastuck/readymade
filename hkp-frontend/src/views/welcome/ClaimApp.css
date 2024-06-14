@@ -1,5 +1,5 @@
 .claim-color-change {
-  animation: color-change 15s;
+  animation: color-change 10s;
 }
 
 @keyframes color-change {

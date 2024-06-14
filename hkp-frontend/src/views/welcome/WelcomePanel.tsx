@@ -24,7 +24,7 @@ export default function WelcomePanel() {
           width="85%"
         />
       ),
-      title: "A quick game idea with HookitApp",
+      title: "Hook up a quick pong game",
       background: "/assets/teaser/blue3.png",
       action: {
         title: "Click to try it on Playground",
@@ -55,9 +55,8 @@ export default function WelcomePanel() {
             <WelcomeWord /> <ClaimApp />
           </h1>
         </div>
-        <div className="w-[12%] min-w-[70px] mx-auto mb-10">
-          <HookupLogo />
-        </div>
+
+        <HookupLogo />
 
         <LandingPitch onComplete={() => setHeaderAnimationsComplete(true)} />
       </div>
@@ -70,12 +69,16 @@ export default function WelcomePanel() {
           overflowY: "hidden",
         }}
       >
-        <h1 className="pt-10 m-0 text-center">Videos and Demos</h1>
-        <div className="mx-auto px-10 pb-10">
-          <Carousel items={carouselItems} />
+        <h1 className="pt-4 md:pt-10 m-0">Sample Boards</h1>
+        <div className="mb-10 text-xl overflow-hidden tracking-widest sm:text-justify md:text-center mx-auto sm:w-[100%] md:w-[80%] gap-4">
+          Click one of the following videos to jump into the playground and try
+          it out.
         </div>
 
-        <h1 className="pt-10 m-0 text-center">About Hookup</h1>
+        <div className="mx-auto md:px-10 pb-10">
+          <Carousel items={carouselItems} />
+        </div>
+        <h1 className="pt-4 md:pt-10 m-0">Background</h1>
         <BackgroundSection />
       </div>
     </div>

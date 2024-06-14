@@ -26,7 +26,7 @@ export default function LandingPitch({ onComplete }: Props) {
   return (
     <div
       id="pitch-points"
-      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-center mx-auto w-[50%] gap-4"
+      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest sm:text-justify md:text-center mx-auto sm:w-[100%] md:w-[80%] gap-4"
     >
       <div className="pitch-item">
         <div>
