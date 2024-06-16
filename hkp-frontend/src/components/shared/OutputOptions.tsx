@@ -1,4 +1,4 @@
-import { Component, ReactElement, useContext } from "react";
+import { Component, ReactElement } from "react";
 
 import SelectorField from "./SelectorField";
 import SidechainSelector from "./SidechainSelector";

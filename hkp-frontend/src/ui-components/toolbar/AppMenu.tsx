@@ -22,7 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
-import { ThemeCtx, useTheme } from "@/ui-components/ThemeContext";
+import { useTheme } from "@/ui-components/ThemeContext";
 
 type Props = {
   includeNavigationLinks?: boolean;
