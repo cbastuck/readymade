@@ -145,7 +145,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       svc = services[i];
       if (svc && !svc.bypass) {
         try {
+          this.app.notify(svc, { __internalState: "call-process" });
           result = await svc.process(params);
+          this.app.notify(svc, { __internalState: "call-process-finished" });
           params = result;
         } catch (err: any) {
           console.warn(

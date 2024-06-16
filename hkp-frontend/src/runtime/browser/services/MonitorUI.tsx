@@ -28,8 +28,8 @@ export default function MonitorUI(props: ServiceUIProps) {
     const undef = params === undefined && "<undefined>";
     const s = nil || undef || unroll(params);
 
-    const { bypass } = params || {};
-    if (bypass !== undefined) {
+    const { bypass, __internalState } = params || {};
+    if (bypass !== undefined || __internalState !== undefined) {
       return;
     } else {
       setMessage(isObject(s) ? JSON.stringify(s, null, 2) : s);
@@ -92,7 +92,7 @@ export default function MonitorUI(props: ServiceUIProps) {
           flexGrow: 1,
         }}
         value={message}
-        rows={10}
+        rows={8}
         cols={30}
         readOnly
       />
@@ -111,7 +111,7 @@ export default function MonitorUI(props: ServiceUIProps) {
       onInit={onInit}
       onNotification={onNotification}
       customMenuEntries={customMenuEntries}
-      initialSize={{ width: 400, height: undefined }}
+      initialSize={{ width: 278, height: undefined }}
     >
       {renderEditor()}
     </ServiceUI>

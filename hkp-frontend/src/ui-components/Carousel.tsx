@@ -10,6 +10,7 @@ import Button from "./Button";
 
 export type CarouselItem = {
   title: string;
+  description: string;
   element: ReactElement;
   background?: string;
   action?: {
@@ -20,12 +21,16 @@ export type CarouselItem = {
 
 type Props = {
   items: Array<CarouselItem>;
+  onChange?: (index: number) => void;
 };
 
-export default function Carousel({ items }: Props) {
+export default function Carousel({ items, onChange }: Props) {
   return (
     <CarouselCN className="w-full h-full mt-10">
-      <CarouselNav items={items.map((item) => item.title)} />
+      <CarouselNav
+        items={items.map((item) => item.title)}
+        onChange={onChange}
+      />
       <CarouselContent>
         {items.map((item, index) => (
           <CarouselItem key={index}>

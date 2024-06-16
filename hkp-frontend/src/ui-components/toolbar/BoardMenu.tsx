@@ -90,12 +90,12 @@ export default function BoardMenu() {
       <NavigationMenuList>
         <NavigationMenuItem>
           <NavigationMenuTrigger className="px-2 tracking-wider text-sm hover:text-white text-base capitalize ">
-            <div className="max-w-[130px] overflow-x-hidden text-ellipsis whitespace-nowrap">
+            <div className="min-w-[30px] max-w-[130px] overflow-x-hidden text-ellipsis whitespace-nowrap">
               {board || "Board"}
             </div>
           </NavigationMenuTrigger>
           <NavigationMenuContent className="font-menu">
-            <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+            <ul className="grid gap-3 p-6 w-[200px] md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
               <ListItem
                 title="New Board"
                 onClick={() =>

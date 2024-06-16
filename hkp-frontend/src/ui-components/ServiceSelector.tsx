@@ -16,7 +16,7 @@ import {
 } from "@/ui-components/primitives/popover";
 
 import { ServiceClass, ServiceRegistry } from "@/types";
-import { ThemeCtx } from "@/views/playground/ThemeContext";
+import { ThemeCtx } from "@/ui-components/ThemeContext";
 
 type Props = {
   id: string;
@@ -43,14 +43,17 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
           role="combobox"
           aria-expanded={open}
           className="w-[200px] justify-between text-base"
-          style={{ backgroundColor: theme.popoverBackgroundColor }}
+          style={{
+            backgroundColor: theme.popoverBackgroundColor,
+            borderColor: theme.borderColor,
+          }}
         >
           Add Service
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0 h-[260px] opacity-100 font-menu">
-        <Command>
+        <Command style={{ borderRadius: theme.borderRadius }}>
           <CommandInput
             className="text-base"
             placeholder="Search"

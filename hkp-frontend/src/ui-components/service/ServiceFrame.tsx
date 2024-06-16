@@ -1,4 +1,4 @@
-import { ReactNode, useContext, useEffect, useState } from "react";
+import { ReactNode, useEffect, useState } from "react";
 
 import {
   CustomMenuEntry,
@@ -10,7 +10,8 @@ import { s, t } from "@/styles";
 import ServiceHeader from "./ServiceHeader";
 import EditorDialog from "../EditorDialog";
 import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
-import { ThemeCtx } from "@/views/playground/ThemeContext";
+import { useTheme } from "@/ui-components/ThemeContext";
+import ServiceOutputWire from "./ServiceOutputWire";
 
 type Props = {
   service: ServiceInstance;
@@ -36,10 +37,26 @@ export default function ServiceFrame({
   const [configVisible, setConfigVisible] = useState(false);
   const [bypass, setBypass] = useState(service?.bypass);
 
+  const [signalOutput, setSignalOutput] = useState(false);
+  const [serviceIsProcessing, setServiceIsProcessing] = useState(false);
+
   const onNotification = (notification: any) => {
-    const { bypass } = notification || {};
+    const { bypass, __internalState } = notification || {};
     if (bypass !== undefined) {
       setBypass(bypass);
+    }
+
+    if (__internalState !== undefined) {
+      switch (__internalState) {
+        case "call-process":
+          setServiceIsProcessing(true);
+          return;
+        case "call-process-finished":
+          setServiceIsProcessing(false);
+          setSignalOutput(true);
+          setTimeout(() => setSignalOutput(false), 250);
+          return;
+      }
     }
   };
 
@@ -138,15 +155,17 @@ export default function ServiceFrame({
   }
   // TODO: enabling drop shadow on hover leads to artifacts when opening service menu
   const enableDropShadow = false ? "hover:drop-shadow-lg" : "";
-  const theme = useContext(ThemeCtx);
+  const theme = useTheme();
   return (
     <div key={`service-frame-${uuid}`}>
       <div
         className={enableDropShadow}
         style={s(t.unselectable, {
           transition: "filter 1s",
-          border: "solid 1px lightgray",
-          borderRadius: 5,
+          border: `solid 1px ${
+            serviceIsProcessing ? theme.accentColor : theme.borderColor
+          }`,
+          borderRadius: theme.borderRadius,
           textAlign: "center",
           backgroundColor: theme.serviceBackgroundColor,
           margin: "10px 0px",
@@ -183,6 +202,7 @@ export default function ServiceFrame({
             display: frameCollapsed ? "none" : undefined,
           }}
         >
+          <ServiceOutputWire isActive={signalOutput} />
           {children}
         </div>
       </div>

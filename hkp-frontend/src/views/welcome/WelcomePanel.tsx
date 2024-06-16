@@ -25,6 +25,8 @@ export default function WelcomePanel() {
         />
       ),
       title: "Hook up a quick pong game",
+      description:
+        "Here you can describe what the user should do when they click on the image",
       background: "/assets/teaser/blue3.png",
       action: {
         title: "Click to try it on Playground",
@@ -40,10 +42,12 @@ export default function WelcomePanel() {
         <div className="flex flex-col gap-4 justify-center mx-10 drop-shadow-3xl"></div>
       ),
       title: "Hookup two devices via peer sockets (try it out)",
+      description: "Bla bla bla",
       background: "/assets/teaser/sky-small2.png",
     },
   ];
 
+  const [currentCarouselItem, setCurrentCarouselItem] = useState(0);
   return (
     <div
       className="flex flex-col w-full mt-[5%]"
@@ -76,8 +80,12 @@ export default function WelcomePanel() {
         </div>
 
         <div className="mx-auto md:px-10 pb-10">
-          <Carousel items={carouselItems} />
+          <Carousel items={carouselItems} onChange={setCurrentCarouselItem} />
+          <div className="text-xl overflow-hidden tracking-widest sm:text-justify md:text-center mx-auto sm:w-[100%] md:w-[80%] gap-4 mt-2">
+            {carouselItems[currentCarouselItem].description}
+          </div>
         </div>
+
         <h1 className="pt-4 md:pt-10 m-0">Background</h1>
         <BackgroundSection />
       </div>

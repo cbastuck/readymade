@@ -22,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
+import { ThemeCtx, useTheme } from "@/ui-components/ThemeContext";
 
 type Props = {
   includeNavigationLinks?: boolean;
@@ -56,6 +57,7 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
     });
   };
 
+  const theme = useTheme();
   return (
     <div className="ml-auto">
       <DropdownMenu>
@@ -64,7 +66,10 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
             <Menu strokeWidth={1} />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56 mx-4">
+        <DropdownMenuContent
+          className="w-56 mx-4 font-menu"
+          style={{ borderRadius: theme.borderRadius }}
+        >
           {includeNavigationLinks && (
             <>
               <DropdownMenuGroup>

@@ -1,4 +1,4 @@
-import { ThemeCtx } from "@/views/playground/ThemeContext";
+import { ThemeCtx } from "@/ui-components/ThemeContext";
 import { useContext, useState } from "react";
 
 type Props = {

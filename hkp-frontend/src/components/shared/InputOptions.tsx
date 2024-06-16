@@ -3,6 +3,7 @@ import { Component } from "react";
 import SelectorField from "./SelectorField";
 import { Action } from "../../types";
 import GroupLabel from "@/ui-components/GroupLabel";
+import { ThemeCtx } from "@/ui-components/ThemeContext";
 
 const none = "No Input";
 const all = "All Peers";
@@ -15,7 +16,6 @@ type Props = {
 
   onSelect: (selected: string | null) => void;
   onAction: (action: Action) => void;
-
   onExpand?: () => void;
   onCollapse?: () => void;
 };
@@ -27,6 +27,8 @@ type State = {
 };
 
 export default class InputOptions extends Component<Props, State> {
+  static contextType = ThemeCtx;
+  declare context: React.ContextType<typeof ThemeCtx>;
   state = {
     selected: "none",
     expanded: false,
@@ -114,14 +116,14 @@ export default class InputOptions extends Component<Props, State> {
       ? "bg-sky-400" // signal color
       : expanded
       ? "bg-sky-600"
-      : "bg-white";
+      : this.context.runtimeBackgroundColor;
     const textColor = expanded ? "text-white" : "text-[#333]";
     return (
       <div className="h-full py-[10px]" style={{ minHeight: "100%" }}>
         <div
           className="flex h-full"
           style={{
-            border: "solid 1px lightgray",
+            border: `solid 1px ${this.context.borderColor}`,
             borderLeft: "none",
             borderTopLeftRadius: 0,
             borderBottomLeftRadius: 0,

@@ -1,4 +1,4 @@
-import { CSSProperties, ReactElement, ReactNode, useContext } from "react";
+import { CSSProperties, ReactElement, ReactNode } from "react";
 
 import {
   OnResult,
@@ -14,7 +14,7 @@ import RuntimeHeader from "./RuntimeHeader";
 import BrowserRuntime from "@/runtime/browser/BrowserRuntime";
 import RemoteRuntime from "@/runtime/remote/RemoteRuntime";
 import BrowserRuntimeScope from "@/runtime/browser/BrowserRuntimeScope";
-import { ThemeCtx } from "@/views/playground/ThemeContext";
+import { useTheme } from "@/ui-components/ThemeContext";
 
 type Props = {
   user: User | null;
@@ -65,12 +65,13 @@ export default function RuntimeUI({
   onArrangeService,
   onResult,
 }: Props) {
-  const theme = useContext(ThemeCtx);
+  const theme = useTheme();
   const style: CSSProperties = {
     ...passedStyled,
-    border: !frameless && !headless ? "solid 1px lightgray" : undefined,
-    borderRadius: 3,
-    // backgroundColor: frameless ? undefined : "#EEEEEE10",
+    border:
+      !frameless && !headless ? `solid 1px ${theme.borderColor}` : undefined,
+    borderRadius: theme.borderRadius,
+    backgroundColor: theme.runtimeBackgroundColor,
     color: theme.textColor,
     backgroundImage: theme.runtimeBackgroundImage,
   };

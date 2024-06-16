@@ -54,7 +54,6 @@ export default function TimerUI(props: ServiceUIProps) {
       oneShotDelayUnit,
       running,
     } = state || {};
-
     if (state.periodic === true && mode === "oneshot") {
       setMode("periodic");
     }
@@ -65,10 +64,10 @@ export default function TimerUI(props: ServiceUIProps) {
       setIntervalUnit(periodicUnit);
     }
     if (needsUpdate(oneShotDelay, delay)) {
-      setDelay(delay);
+      setDelay(oneShotDelay);
     }
     if (needsUpdate(oneShotDelayUnit, delayUnit)) {
-      setDelayUnit(delayUnit);
+      setDelayUnit(oneShotDelayUnit);
     }
     if (needsUpdate(running, isIntervalRunning)) {
       setIsIntervalRunning(running);
@@ -112,10 +111,15 @@ export default function TimerUI(props: ServiceUIProps) {
     },
   ];
 
+  const onDelayChanged = (newDelay: number) => {
+    service.configure({ oneShotDelay: newDelay });
+    setDelay(newDelay);
+  };
+
   return (
     <ServiceUI
       {...props}
-      initialSize={{ width: 400, height: 155 }}
+      initialSize={{ width: 278, height: 155 }}
       service={service}
       onInit={onInit}
       onNotification={onNotification}
@@ -136,7 +140,7 @@ export default function TimerUI(props: ServiceUIProps) {
               value={delay}
               unit={delayUnit}
               units={units}
-              onChange={setDelay}
+              onChange={onDelayChanged}
               onUnit={onDelayUnit}
               min={0}
               max={1000}

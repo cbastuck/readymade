@@ -1,4 +1,4 @@
-import { Component, ReactElement } from "react";
+import { Component, ReactElement, useContext } from "react";
 
 import SelectorField from "./SelectorField";
 import SidechainSelector from "./SidechainSelector";
@@ -10,6 +10,7 @@ import {
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
 import GroupLabel from "@/ui-components/GroupLabel";
+import { ThemeCtx } from "@/ui-components/ThemeContext";
 
 const none = "No Output";
 
@@ -35,6 +36,8 @@ type State = {
 };
 
 export default class OutputOptions extends Component<Props, State> {
+  static contextType = ThemeCtx;
+  declare context: React.ContextType<typeof ThemeCtx>;
   state = { expanded: false };
 
   componentDidUpdate(_prevPops: Props, prevState: State) {
@@ -148,7 +151,10 @@ export default class OutputOptions extends Component<Props, State> {
   render() {
     const { expanded } = this.state;
     const { id, onExpand, onCollapse } = this.props;
-    const bgColor = expanded ? "bg-sky-600" : "bg-white";
+
+    const bgColor = expanded
+      ? "bg-sky-600"
+      : this.context.runtimeBackgroundColor;
     const textColor = expanded ? "text-white" : "text-[#333]";
 
     return (
@@ -157,7 +163,7 @@ export default class OutputOptions extends Component<Props, State> {
           className="flex h-full"
           id={`output-options-${id}`}
           style={{
-            border: "solid 1px lightgray",
+            border: `solid 1px ${this.context.borderColor}`,
             borderRight: "none",
             borderTopRightRadius: 0,
             borderBottomRightRadius: 0,
