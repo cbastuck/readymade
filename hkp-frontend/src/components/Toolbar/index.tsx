@@ -27,7 +27,9 @@ export default function Toolbar({
   onUpdateAvailableRuntimes,
 }: Props) {
   const boardContext = useContext(BoardCtx);
-  const isNarrow = boardContext?.appContext?.appViewMode !== "wide";
+  const isNarrow =
+    boardContext?.appContext?.appViewMode &&
+    boardContext?.appContext?.appViewMode !== "wide";
 
   return (
     <div

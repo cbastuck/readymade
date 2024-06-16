@@ -26,14 +26,13 @@ export default function MonitorUI(props: ServiceUIProps) {
   const onNotification = (params: any) => {
     const nil = params === null && "<null>";
     const undef = params === undefined && "<undefined>";
-    const s = nil || undef || unroll(params);
-
-    const { bypass, __internalState } = params || {};
-    if (bypass !== undefined || __internalState !== undefined) {
+    const { bypass, __internal, ...rest } = params || {};
+    const s = nil || undef || unroll(rest);
+    if (bypass !== undefined || __internal !== undefined) {
       return;
-    } else {
-      setMessage(isObject(s) ? JSON.stringify(s, null, 2) : s);
     }
+
+    setMessage(isObject(s) ? JSON.stringify(s, null, 2) : s);
   };
 
   const switchEditor = () => setRenderTextEditor(!renderTextEditor);

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 export default function Intro() {
   return (
     <>
-      <h2>Basic</h2>
+      <h2 className="text-left">Basic</h2>
       <Text>
         The basic examples show a limited set of possibilities. They run in a
         Sandbox, designed for constructing flows that primarily operate locally

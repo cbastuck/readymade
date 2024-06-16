@@ -9,39 +9,53 @@ import { AppCtx } from "@/AppContext";
 type Props = {
   label: string;
   value: string;
+  renderInput?: boolean;
+  isUrl?: boolean;
 };
 
-export default function Copyable({ label, value }: Props) {
+export default function Copyable({
+  label,
+  value,
+  renderInput = true,
+  isUrl = true,
+}: Props) {
   const input = useRef<HTMLInputElement>(null);
 
   const appContext = useContext(AppCtx);
   const copyToClipboard = () => {
-    if (input.current) {
-      const url = input.current.value;
-      navigator.clipboard.writeText(url);
-      appContext?.pushNotification({
-        type: "success",
-        message: "URL copied to clipboard",
-        action: {
-          label: "open",
-          callback: () => window.open(url, "_blank"),
-        },
-      });
-    }
+    const data = renderInput && input.current ? input.current.value : value;
+    navigator.clipboard.writeText(data);
+    appContext?.pushNotification({
+      type: "success",
+      message: "Copied to clipboard",
+      action: isUrl
+        ? {
+            label: "open",
+            callback: () => window.open(data, "_blank"),
+          }
+        : undefined,
+    });
   };
 
   return (
     <div className="flex w-full items-center gap-2">
       <GroupLabel>{label}</GroupLabel>
-      <Input
-        className="font-menu"
-        ref={input}
-        value={value}
-        onChange={() => {}}
-        fullWidth
-        hideBottomBorder
+      {renderInput && (
+        <Input
+          className="font-menu"
+          ref={input}
+          value={value}
+          onChange={() => {}}
+          fullWidth
+          hideBottomBorder
+        />
+      )}
+
+      <Button
+        className="hover:text-sky-600"
+        icon={<Copy />}
+        onClick={copyToClipboard}
       />
-      <Button icon={<Copy />} onClick={copyToClipboard} />
     </div>
   );
 }

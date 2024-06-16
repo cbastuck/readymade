@@ -6,7 +6,7 @@ import Usecases from "../../components/BoardCollection/Usecases";
 export default function Showcases() {
   return (
     <div style={{ margin: "50px 0px", width: "100%", height: "100%" }}>
-      <h2>Showcases</h2>
+      <h2 className="text-left">Showcases</h2>
       <Text>
         The following showcases operate in the{" "}
         <Link to="/playground">Playground</Link>, featuring multiple local

@@ -36,25 +36,29 @@ export default function ServiceFrame({
   const [frameCollapsed, setFrameCollapsed] = useState(false);
   const [configVisible, setConfigVisible] = useState(false);
   const [bypass, setBypass] = useState(service?.bypass);
+  const [recentProgressData, setRecentProgressData] = useState<any>(undefined);
 
   const [signalOutput, setSignalOutput] = useState(false);
   const [serviceIsProcessing, setServiceIsProcessing] = useState(false);
 
   const onNotification = (notification: any) => {
-    const { bypass, __internalState } = notification || {};
+    const { bypass, __internal } = notification || {};
     if (bypass !== undefined) {
       setBypass(bypass);
     }
 
-    if (__internalState !== undefined) {
-      switch (__internalState) {
+    if (__internal !== undefined) {
+      const { state, data } = __internal;
+      switch (state) {
         case "call-process":
           setServiceIsProcessing(true);
+
           return;
         case "call-process-finished":
-          setServiceIsProcessing(false);
+          setTimeout(() => setServiceIsProcessing(false), 350);
+          setRecentProgressData(data);
           setSignalOutput(true);
-          setTimeout(() => setSignalOutput(false), 250);
+          setTimeout(() => setSignalOutput(false), 350);
           return;
       }
     }
@@ -161,8 +165,8 @@ export default function ServiceFrame({
       <div
         className={enableDropShadow}
         style={s(t.unselectable, {
-          transition: "filter 1s",
-          border: `solid 1px ${
+          transition: "border 800ms",
+          border: `solid ${theme.serviceBorderWidth}px ${
             serviceIsProcessing ? theme.accentColor : theme.borderColor
           }`,
           borderRadius: theme.borderRadius,
@@ -202,7 +206,10 @@ export default function ServiceFrame({
             display: frameCollapsed ? "none" : undefined,
           }}
         >
-          <ServiceOutputWire isActive={signalOutput} />
+          <ServiceOutputWire
+            isActive={signalOutput}
+            data={recentProgressData}
+          />
           {children}
         </div>
       </div>
