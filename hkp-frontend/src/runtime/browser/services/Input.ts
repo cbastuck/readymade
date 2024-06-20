@@ -104,7 +104,9 @@ class Input extends ServiceBase<State> {
           if (action === "ping") {
             return;
           }
+          this.onStartProcess(params);
           this.app.next(this, params);
+          this.onEndProcess(params);
         }
       },
       isSecureConnection(),

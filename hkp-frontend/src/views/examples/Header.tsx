@@ -13,7 +13,7 @@ export default function Header({ example }: Props) {
         textAlign: "center",
       }}
     >
-      <h1>Examples</h1>
+      <h1 className="text-center">Examples</h1>
       {example && (
         <Breadcrumbs
           path={[

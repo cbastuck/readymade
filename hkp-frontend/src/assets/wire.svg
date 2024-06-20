@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg width="100%" height="100%" viewBox="0 0 108 43" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:1.5;">
-    <g transform="matrix(1,0,0,1,-958.506,-581.762)">
-        <rect id="Artboard1" x="0" y="0" width="2048" height="1536" style="fill:none;"/>
-        <g id="Artboard11" serif:id="Artboard1">
-            <g transform="matrix(0.703373,0,0,1,285.802,-3)">
-                <path d="M963.506,606.893L1101.93,606.893" style="fill:none;"/>
-            </g>
-            <ellipse cx="1011.56" cy="603.185" rx="17.482" ry="16.423" style=""/>
+<svg width="100%" height="100%" viewBox="0 0 128 97" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-943.169,-915.64)">
+        <g transform="matrix(1.54395,0,0,1,-582.259,0)">
+            <path d="M988.006,981.627L988.006,947.93L1009.46,946.93L1009.46,915.64L1070.44,964.779L1009.46,1011.92L1009.46,980.627L988.006,981.627Z" />
         </g>
     </g>
 </svg>

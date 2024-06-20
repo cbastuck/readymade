@@ -10,18 +10,17 @@ import Header from "./Header";
 
 export default function Examples() {
   return (
-    <div className="h-full flex flex-col ">
+    <div className="h-full flex flex-col w-full">
       <Toolbar />
-      <div style={{ marginTop: 20 }}>
+      <div style={{ marginTop: 20, paddingBottom: 20 }}>
         <Header />
-        <div style={{ margin: 40 }}>
+        <div style={{ margin: 20 }}>
           <Intro />
           <CardContainer examples={examples} />
           <Showcases />
           <Prototypes />
         </div>
       </div>
-
       <Footer />
     </div>
   );

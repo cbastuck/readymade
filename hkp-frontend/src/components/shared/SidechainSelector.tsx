@@ -54,7 +54,7 @@ export default function SidechainSelector({
   };
 
   return (
-    <div className="p-2 flex flex-col">
+    <div className="pr-2 pt-2 flex flex-col">
       <MultipleSelector
         options={options}
         placeholder="Add Targets ..."

@@ -38,7 +38,7 @@ function Welcome({
   return (
     <BoardProvider user={null} isActionAvailable={() => false}>
       <div>
-        <Toolbar />
+        <Toolbar isCompact={false} />
         <div className="h-full w-full px-10" style={style}>
           {children}
         </div>

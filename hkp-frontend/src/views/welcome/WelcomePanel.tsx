@@ -29,7 +29,7 @@ export default function WelcomePanel() {
         "Here you can describe what the user should do when they click on the image",
       background: "/assets/teaser/blue3.png",
       action: {
-        title: "Click to try it on Playground",
+        title: "Click to try it",
         onClick: () =>
           headerAnimationsComplete &&
           navigate(
@@ -79,15 +79,17 @@ export default function WelcomePanel() {
           it out.
         </div>
 
-        <div className="mx-auto md:px-10 pb-10">
+        <div className="mx-auto md:px-10 pb-6">
           <Carousel items={carouselItems} onChange={setCurrentCarouselItem} />
           <div className="text-xl overflow-hidden tracking-widest sm:text-justify md:text-center mx-auto sm:w-[100%] md:w-[80%] gap-4 mt-2">
             {carouselItems[currentCarouselItem].description}
           </div>
         </div>
 
-        <h1 className="pt-4 md:pt-10 m-0">Background</h1>
-        <BackgroundSection />
+        <h1 className="pt-4 md:pt-10 mx-0 mb-2">Background</h1>
+        <div className="pb-14">
+          <BackgroundSection />
+        </div>
       </div>
     </div>
   );

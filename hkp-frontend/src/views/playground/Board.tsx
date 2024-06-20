@@ -415,7 +415,7 @@ export default class Board extends Component<Props, State> {
           uppercaseValues={false}
         />
         <Button
-          className="mr-2 mb-2"
+          className="mr-2 my-2"
           onClick={() => {
             if (type === "output") {
               const outputRoute = outputActivation?.route || {

@@ -115,6 +115,7 @@ export default function BoardEntryPoint({
                 fontSize: "22px",
                 margin: 0,
                 marginTop: "5%",
+                textAlign: "center",
               }}
             >
               Welcome to Playground

@@ -23,7 +23,9 @@ class Injector extends ServiceBase<State> {
     const { inject, recentInjection } = config;
     if (inject !== undefined) {
       this.state.recentInjection = inject;
+      this.onStartProcess(inject);
       this.app.next(this, inject);
+      this.onEndProcess(inject);
     }
 
     if (recentInjection !== undefined) {

@@ -23,7 +23,7 @@ type Props = {
 
 export default function Toolbar({
   showRuntimeMenu = false,
-  isCompact = false,
+  isCompact = undefined,
   onUpdateAvailableRuntimes,
 }: Props) {
   const boardContext = useContext(BoardCtx);
@@ -74,7 +74,9 @@ export default function Toolbar({
             />
           )}
 
-          <NavigationBar isCompact={isNarrow || isCompact} />
+          <NavigationBar
+            isCompact={isCompact === undefined ? isNarrow : isCompact}
+          />
           <AppMenu includeNavigationLinks={!isCompact && isNarrow} />
         </div>
       </div>

@@ -1,3 +1,10 @@
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/ui-components/primitives/accordion";
+
 import Template from "../Template";
 import Chapter from "./Chapter";
 import Article from "./Article";
@@ -12,6 +19,14 @@ export default function Docs() {
         What's new
       </Article>
 
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Is it accessible?</AccordionTrigger>
+          <AccordionContent>
+            Yes. It adheres to the WAI-ARIA design pattern.
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
       <Chapter name="Project Scope">
         <Article to="/docs/scope/what">What</Article>
         <Article to="/docs/scope/why">Why</Article>

@@ -19,20 +19,19 @@ export default function ServiceOutputWire({ isActive, data }: Props) {
     <div
       style={{
         position: "absolute",
-        top: "50px",
-        right: "-22px",
+        top: "20px",
+        right: "-20px",
         cursor: "pointer",
-        transition: "fill 800ms",
       }}
     >
       <Popover>
         <PopoverTrigger asChild>
           <button>
             <Wire
-              width="25px"
+              width="20px"
               style={{ paddingLeft: 3 }}
-              strokeWidth="5px"
-              stroke={isActive ? "#999" : theme.borderColor}
+              strokeWidth="7px"
+              stroke={isActive ? theme.accentColor : theme.borderColor}
               fill={isActive ? theme.accentColor : "white"}
             />
           </button>
