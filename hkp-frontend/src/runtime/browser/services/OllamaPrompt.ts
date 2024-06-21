@@ -112,13 +112,25 @@ class OllamaPrompt extends ServiceBase<State> {
         const r = new Response(stream, {
           headers: { "Content-Type": "text/html" },
         });
-        const a = await r.text();
+        const chunks = await r.text();
         this.app.notify(this, { busy: false });
-        return a
+
+        const plainText = chunks
           .split("\n")
           .map((x) => (x ? JSON.parse(x) : ""))
           .map((x) => x.response)
           .join("");
+        const resultAsJson = true;
+        try {
+          const result = resultAsJson ? JSON.parse(plainText) : plainText;
+          return result;
+        } catch (err) {
+          console.error(
+            "Ollama Prompt attempted to parse a buffer as JSON which is not valid json",
+            plainText
+          );
+          return null;
+        }
       }
     } else {
       const resp = await fetch(this.state.endpoint, {

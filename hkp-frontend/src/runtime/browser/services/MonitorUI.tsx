@@ -24,15 +24,20 @@ export default function MonitorUI(props: ServiceUIProps) {
   };
 
   const onNotification = (params: any) => {
-    const nil = params === null && "<null>";
-    const undef = params === undefined && "<undefined>";
-    const { bypass, __internal, ...rest } = params || {};
-    const s = nil || undef || unroll(rest);
-    if (bypass !== undefined || __internal !== undefined) {
-      return;
+    if (typeof params === "string") {
+      setMessage(params);
+    } else if (Array.isArray(params)) {
+      setMessage(JSON.stringify(params));
+    } else {
+      const nil = params === null && "<null>";
+      const undef = params === undefined && "<undefined>";
+      const { bypass, __internal, ...rest } = params || {};
+      const s = nil || undef || unroll(rest);
+      if (bypass !== undefined || __internal !== undefined) {
+        return;
+      }
+      setMessage(isObject(s) ? JSON.stringify(s, null, 2) : s);
     }
-
-    setMessage(isObject(s) ? JSON.stringify(s, null, 2) : s);
   };
 
   const switchEditor = () => setRenderTextEditor(!renderTextEditor);
@@ -122,6 +127,9 @@ function isObject(obj: any) {
 }
 
 function unroll(params: any): any {
+  if (typeof params === "string") {
+    return params;
+  }
   const isBlob = params instanceof Blob;
   if (isBlob) {
     return `Blob (${params.type} ${params.size} bytes)`;
@@ -140,6 +148,7 @@ function unroll(params: any): any {
   if (isArray) {
     return params.map((x) => unroll(x));
   }
+
   return Object.keys(params).reduce(
     (all, key) => ({
       ...all,

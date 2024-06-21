@@ -11,6 +11,7 @@ type Props = {
   value: string;
   renderInput?: boolean;
   isUrl?: boolean;
+  disabled?: boolean;
 };
 
 export default function Copyable({
@@ -18,6 +19,7 @@ export default function Copyable({
   value,
   renderInput = true,
   isUrl = true,
+  disabled = false,
 }: Props) {
   const input = useRef<HTMLInputElement>(null);
 
@@ -38,7 +40,7 @@ export default function Copyable({
   };
 
   return (
-    <div className="flex w-full items-center gap-2">
+    <div className="flex items-end gap-2">
       <GroupLabel>{label}</GroupLabel>
       {renderInput && (
         <Input
@@ -47,14 +49,15 @@ export default function Copyable({
           value={value}
           onChange={() => {}}
           fullWidth
-          hideBottomBorder
         />
       )}
 
       <Button
-        className="hover:text-sky-600"
+        className="w-10 h-10 p-2 m-0"
         icon={<Copy />}
         onClick={copyToClipboard}
+        title="Copy to clipboard"
+        disabled={disabled}
       />
     </div>
   );

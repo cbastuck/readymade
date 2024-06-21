@@ -63,9 +63,8 @@ export default function BoardEntryPoint({
       <span
         style={{ cursor: "help", color: "#4284C4" }}
         onClick={() => {
-          const selector = document.getElementById("board-dropdown");
+          const selector = document.getElementById("board-menu-trigger");
           if (selector) {
-            selector.focus();
             selector.click();
           }
         }}

@@ -53,4 +53,5 @@ export default class Editor extends Component<Props> {
   }
 
   getValue = () => this.editor && this.editor.getValue();
+  setValue = (val: string) => this.editor && val && this.editor.setValue(val);
 }

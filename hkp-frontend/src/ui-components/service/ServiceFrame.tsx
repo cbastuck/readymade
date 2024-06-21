@@ -11,7 +11,7 @@ import ServiceHeader from "./ServiceHeader";
 import EditorDialog from "../EditorDialog";
 import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 import { useTheme } from "@/ui-components/ThemeContext";
-import ServiceOutputWire from "./ServiceOutputWire";
+import ServiceOutputPlug from "./ServiceOutputPlug";
 
 type Props = {
   service: ServiceInstance;
@@ -154,6 +154,10 @@ export default function ServiceFrame({
     }
   }, [service, configVisible]);
 
+  const onInject = (data: any) => {
+    service.app.next(service, data);
+  };
+
   if (frameless) {
     return children;
   }
@@ -206,9 +210,10 @@ export default function ServiceFrame({
             display: frameCollapsed ? "none" : undefined,
           }}
         >
-          <ServiceOutputWire
+          <ServiceOutputPlug
             isActive={signalOutput}
             data={recentProgressData}
+            onInject={onInject}
           />
           {children}
         </div>
