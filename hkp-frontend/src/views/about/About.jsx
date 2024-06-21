@@ -44,7 +44,7 @@ export default class About extends Component {
         <Toolbar />
         <div className="about-image container">
           <div className="about-text">
-            <Switcher data={["About", "Intent"]} />
+            <Switcher animate={true} data={["About", "Intent"]} />
             <div
               style={{
                 marginTop: 30,

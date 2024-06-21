@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import anime from "./anime";
+import anime from "../../anime";
 
 //import Logo from "@/assets/animations/AnimatedLogo3.svg?react";
 import Logo from "@/assets/animations/AnimatedLogo6.svg?react";

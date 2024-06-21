@@ -1,9 +1,11 @@
 import { useEffect } from "react";
-import anime from "./anime";
+import anime from "@/anime";
+import Switcher from "@/components/Switcher";
 
 type Props = {
   onComplete: () => void;
 };
+
 export default function LandingPitch({ onComplete }: Props) {
   useEffect(() => {
     const initialDelay = 4000;
@@ -26,21 +28,32 @@ export default function LandingPitch({ onComplete }: Props) {
   return (
     <div
       id="pitch-points"
-      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest sm:text-justify md:text-center mx-auto sm:w-[100%] md:w-[80%] gap-4"
+      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-justify  mx-auto sm:w-[100%] md:w-[80%] gap-4"
     >
       <div className="pitch-item">
         <div>
-          Ever felt creative, but the setup process kills your inspiration? Or
-          got frustrated after you tried to "just connect" two devices or apps?
+          Have you ever felt creative, but the setup process killed your
+          inspiration? Or got annoyed when simply trying to connect{" "}
+          <Switcher
+            animate={true}
+            style={{}}
+            duration={8000}
+            data={[
+              "two devices?",
+              "two standalone apps?",
+              "a spreadsheet and a website?",
+            ]}
+            links={["#", "#", "#"]}
+          />
         </div>
       </div>
       <div className="pitch-item">
-        Imagine focusing on your ideas and the output instead of dealing with
+        Imagine focusing on your ideas and the output instead of managing the
         technical setup.
       </div>
       <div className="pitch-item">
-        Build ideas with data seamlessly flowing through reusable building
-        blocks.
+        Try Hookit and build ideas with data seamlessly flowing through reusable
+        building blocks. It is <span className="underline">your</span> choice.
       </div>
     </div>
   );

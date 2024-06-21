@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Star } from "lucide-react";
 import { useEffect } from "react";
-import anime from "./anime";
+import anime from "../../anime";
 
 import { Button } from "@/ui-components/primitives/button";
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import anime from "./anime";
+import anime from "../../anime";
 
 import WelcomeWordSVG from "@/assets/animations/WelcomeWord2.svg?react";
 import WelcomeWordFatSVG from "@/assets/animations/WelcomeWordFat2.svg?react";
