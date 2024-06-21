@@ -10,7 +10,7 @@ type Props = {
   onInject: (data: any) => void;
 };
 
-export default function ServiceOutputPlugPopup({ data, onInject }: Props) {
+export default function FlowInspectorPopup({ data, onInject }: Props) {
   const editor = useRef<any>(null);
   const [isDirty, setIsDirty] = useState(false);
   const dataAsString = useMemo(() => JSON.stringify(data, null, 2), [data]);
@@ -36,7 +36,7 @@ export default function ServiceOutputPlugPopup({ data, onInject }: Props) {
   return (
     <div className="flex flex-col gap-4">
       <div className="my-2 h-full w-full grid gap-2 border border-solid p-2 font-menu text-base overflow-y-auto">
-        <div className="h-[100px] w-full ">
+        <div className="h-[200px] w-full ">
           <Editor
             ref={editor}
             value={dataAsString}

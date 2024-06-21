@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { X, Pin, PinOff } from "lucide-react";
 
-import Wire from "@/assets/wire.svg?react";
+import Wire from "@/assets/plug.svg?react";
 
 import {
   Popover,
@@ -10,7 +10,7 @@ import {
 } from "@/ui-components/primitives/popover";
 
 import { useTheme } from "../ThemeContext";
-import ServiceOutputPlugPopup from "./ServiceOutputPlugPopup";
+import FlowInspectorPopup from "./FlowInspectorPopup";
 
 import Button from "../Button";
 
@@ -47,7 +47,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
         onOpenChange={(newOpen) => !isSticky && !newOpen && onClose()}
       >
         <PopoverTrigger asChild>
-          <button onClick={onOpen} onAuxClick={onInject}>
+          <button onClick={onOpen}>
             <Wire
               width="20px"
               style={{ paddingLeft: 3 }}
@@ -58,7 +58,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
             />
           </button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px]">
+        <PopoverContent className="w-[450px]">
           <div className="flex items-center">
             <h2 className="font-medium leading-none w-full text-left">
               Flow Inspector
@@ -69,7 +69,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
             </div>
           </div>
 
-          <ServiceOutputPlugPopup data={data} onInject={onInject} />
+          <FlowInspectorPopup data={data} onInject={onInject} />
         </PopoverContent>
       </Popover>
     </div>
