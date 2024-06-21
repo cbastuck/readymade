@@ -2,11 +2,14 @@ import { useEffect } from "react";
 import anime from "@/anime";
 import Switcher from "@/components/Switcher";
 
+export type LandingPitchUsecase = { text: string; link: string };
 type Props = {
+  usecases: Array<LandingPitchUsecase>;
   onComplete: () => void;
+  onLink: (idx: number) => void;
 };
 
-export default function LandingPitch({ onComplete }: Props) {
+export default function LandingPitch({ usecases, onComplete, onLink }: Props) {
   useEffect(() => {
     const initialDelay = 4000;
     anime({
@@ -33,17 +36,14 @@ export default function LandingPitch({ onComplete }: Props) {
       <div className="pitch-item">
         <div>
           Have you ever felt creative, but the setup process killed your
-          inspiration? Or got annoyed when simply trying to connect{" "}
+          inspiration? Or got annoyed while "simply" trying to{" "}
           <Switcher
             animate={true}
             style={{}}
             duration={8000}
-            data={[
-              "two devices?",
-              "two standalone apps?",
-              "a spreadsheet and a website?",
-            ]}
-            links={["#", "#", "#"]}
+            data={usecases.map(({ text }) => text)}
+            links={usecases.map(({ link }) => link)}
+            onLink={onLink}
           />
         </div>
       </div>

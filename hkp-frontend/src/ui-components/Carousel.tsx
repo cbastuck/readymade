@@ -21,14 +21,16 @@ export type CarouselItem = {
 
 type Props = {
   items: Array<CarouselItem>;
+  current: number;
   onChange?: (index: number) => void;
 };
 
-export default function Carousel({ items, onChange }: Props) {
+export default function Carousel({ items, current, onChange }: Props) {
   return (
     <CarouselCN className="w-full h-full mt-10">
       <CarouselNav
         items={items.map((item) => item.title)}
+        current={current}
         onChange={onChange}
       />
       <CarouselContent>

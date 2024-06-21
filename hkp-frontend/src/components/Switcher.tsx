@@ -13,6 +13,7 @@ type Props = {
   data: Array<string>;
   style?: CSSProperties;
   links?: Array<string>;
+  onLink?: (idx: number) => void;
 };
 
 type State = { counter: number };
@@ -56,11 +57,16 @@ export default class Switcher extends Component<Props, State> {
   }
 
   render() {
-    const { data, links, style = defaultStyle } = this.props;
+    const { data, links, style = defaultStyle, onLink } = this.props;
     const idx = this.state.counter % data.length;
 
     return links ? (
-      <a id="switcher-item" style={{ ...style }} href={links[idx]}>
+      <a
+        id="switcher-item"
+        style={{ ...style }}
+        href={links[idx]}
+        onClick={() => onLink?.(idx)}
+      >
         {data[idx]}
       </a>
     ) : (
