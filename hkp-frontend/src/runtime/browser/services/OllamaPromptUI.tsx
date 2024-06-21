@@ -7,6 +7,7 @@ import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 import SelectorField, {
   arrayToOptions,
 } from "@/components/shared/SelectorField";
+import Switch from "@/ui-components/Switch";
 
 export default function OllamaPromptUI(props: ServiceUIProps) {
   const [prompt, setPrompt] = useState("");
@@ -14,6 +15,7 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
   const [accumulatedUpdate, setAccumulatedUpdate] = useState("");
   const [availableModels, setAvailableModels] = useState<Array<string>>([]);
   const [usedModel, setUsedModel] = useState("");
+  const [parseResponseAsJson, setChangeParseResponse] = useState(false);
 
   const update = (state: any) => {
     if (needsUpdate(state.prompt, prompt)) {
@@ -36,6 +38,10 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
     if (needsUpdate(state.model, usedModel)) {
       setUsedModel(state.model);
     }
+
+    if (needsUpdate(state.responseIsJson, parseResponseAsJson)) {
+      setChangeParseResponse(state.responseIsJson);
+    }
   };
 
   const onInit = (state: any) => update(state);
@@ -49,6 +55,10 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
 
   const onSelectModel = ({ value: newModel }: any) => {
     props.service.configure({ model: newModel });
+  };
+
+  const onChangeParseResponse = (isJson: boolean) => {
+    props.service.configure({ responseIsJson: isJson });
   };
 
   return (
@@ -75,13 +85,18 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
           />
           <BusyIndicator isBusy={isBusy} />
         </div>
-        <div className="max-h-[100px] h-full p-2 my-2 text-md font-menu text-left overflow-y-auto border border-solid">
+        <div className=" h-full p-2 my-2 text-md font-menu text-left overflow-y-auto border border-solid">
           {accumulatedUpdate || (
             <span className="text-gray-500">
               Idle, updates appear here during progress
             </span>
           )}
         </div>
+        <Switch
+          title="Response is JSON"
+          checked={parseResponseAsJson}
+          onCheckedChange={onChangeParseResponse}
+        />
       </div>
     </ServiceUI>
   );

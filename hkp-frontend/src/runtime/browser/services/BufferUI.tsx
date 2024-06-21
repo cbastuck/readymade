@@ -5,18 +5,21 @@ import Button from "hkp-frontend/src/ui-components/Button";
 
 import { ServiceUIProps } from "@/types";
 import ServiceUI from "@/ui-components/service/ServiceUI";
-import { DownloadIcon, X } from "lucide-react";
+import { DownloadIcon, X, Eye } from "lucide-react";
 import MenuIcon from "@/ui-components/MenuIcon";
+import Editor from "@/components/shared/Editor";
 
 type State = {
   capacity: number;
   items: Array<any>;
+  displayBuffer: any;
 };
 
 export default class BufferUI extends Component<ServiceUIProps, State> {
   state: State = {
     capacity: 0,
     items: [],
+    displayBuffer: undefined,
   };
 
   onInit = (initialState: any) => {
@@ -47,7 +50,7 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
   renderBuffer = () => {
     const { items } = this.state;
     return (
-      <div className="flex flex-col h-[100px] overflow-auto border-solid border w-[400px] text-left">
+      <div className="flex flex-col w-full h-full max-h-[400px] overflow-auto border-solid border text-left">
         {items.map((item, idx) => (
           <div key={`buffer-list-item-${idx}`} className="flex">
             <div className="mx-2">{this.renderItem(item)}</div>
@@ -55,9 +58,33 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
               <Button className="h-[30px]" onClick={() => downloadBuffer(item)}>
                 <DownloadIcon size={20} />
               </Button>
+              <Button
+                className="h-[30px]"
+                onClick={() => this.setState({ displayBuffer: item })}
+              >
+                <Eye size={20} />
+              </Button>
             </div>
           </div>
         ))}
+      </div>
+    );
+  };
+
+  renderSingle = (item: any) => {
+    const valueStr = JSON.stringify(item, null, 2);
+    return (
+      <div className="h-[280px] w-full pb-12">
+        <div className="flex">
+          <h1>Item</h1>
+          <Button
+            className="ml-auto"
+            onClick={() => this.setState({ displayBuffer: undefined })}
+          >
+            <X />
+          </Button>
+        </div>
+        <Editor value={valueStr} />
       </div>
     );
   };
@@ -73,6 +100,8 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
         onClick: this.onClear,
       },
     ];
+
+    const { displayBuffer } = this.state;
     return (
       <ServiceUI
         {...this.props}
@@ -95,7 +124,9 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
             unit="items"
           />
 
-          {this.renderBuffer()}
+          {displayBuffer
+            ? this.renderSingle(displayBuffer)
+            : this.renderBuffer()}
         </div>
       </ServiceUI>
     );

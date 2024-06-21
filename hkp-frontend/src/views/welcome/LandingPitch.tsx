@@ -37,7 +37,7 @@ export default function LandingPitch({
   return (
     <div
       id="pitch-points"
-      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-justify  mx-auto sm:w-[100%] md:w-[60%] gap-4"
+      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-justify  mx-auto sm:w-[100%] md:w-[70%] gap-4"
     >
       <div className="pitch-item">
         <div className="text-left">

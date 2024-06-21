@@ -11,6 +11,8 @@ type State = {
   availableModels: Array<string>;
   model: string;
   endpoint: string;
+  responseIsJson: boolean;
+  prompt: string;
 };
 
 const defaultLocalEndpoint = "http://localhost:11434/api";
@@ -26,6 +28,8 @@ class OllamaPrompt extends ServiceBase<State> {
       availableModels: [],
       endpoint: defaultLocalEndpoint,
       model: "",
+      responseIsJson: false,
+      prompt: "",
     });
     fetch(`${this.state.endpoint}/tags`)
       .then((r) => r.json())
@@ -44,6 +48,7 @@ class OllamaPrompt extends ServiceBase<State> {
   async configure(config: any) {
     const { prompt } = config;
     if (prompt !== undefined) {
+      this.state.prompt = prompt;
       const result = await this.process(prompt);
       this.app.next(this, result);
     }
@@ -54,18 +59,32 @@ class OllamaPrompt extends ServiceBase<State> {
         this.app.notify(this, { model: this.state.model });
       }
     }
+
+    if (needsUpdate(config.responseIsJson, this.state.responseIsJson)) {
+      this.state.responseIsJson = config.responseIsJson;
+      this.app.notify(this, { responseIsJson: this.state.responseIsJson });
+    }
   }
 
   async process(params: any) {
-    if (typeof params !== "string") {
-      this.pushErrorNotification("Ollama prompt input must be of type string");
-      return null;
+    const t = typeof params;
+    if (t !== "string") {
+      if (t === "object") {
+        params = JSON.stringify(params);
+      } else {
+        this.pushErrorNotification(
+          "Ollama prompt input must be of type string"
+        );
+        return null;
+      }
     }
     this.app.notify(this, { busy: true });
 
     const body = {
       model: this.state.model,
-      prompt: params,
+      prompt: this.state.prompt
+        ? `${this.state.prompt} + '''${params}'''`
+        : params,
     };
 
     const reportProgress = (partial: string) => {
@@ -120,9 +139,10 @@ class OllamaPrompt extends ServiceBase<State> {
           .map((x) => (x ? JSON.parse(x) : ""))
           .map((x) => x.response)
           .join("");
-        const resultAsJson = true;
         try {
-          const result = resultAsJson ? JSON.parse(plainText) : plainText;
+          const result = this.state.responseIsJson
+            ? JSON.parse(plainText)
+            : plainText;
           return result;
         } catch (err) {
           console.error(
