@@ -72,7 +72,7 @@ export default function WelcomePanel() {
     >
       <div className="flex flex-col ">
         <div className="px-[10px] w-full flex mt-[50px]">
-          <h1 className="w-full ml-auto">
+          <h1 className="w-full ml-auto md:text-center">
             <WelcomeWord /> <ClaimApp />
           </h1>
         </div>
@@ -81,6 +81,7 @@ export default function WelcomePanel() {
 
         <LandingPitch
           usecases={usecaseItems}
+          switchUsecaseInterval={5000}
           onComplete={() => setHeaderAnimationsComplete(true)}
           onLink={(idx) => setCurrentCarouselItem(idx)}
         />
@@ -94,7 +95,7 @@ export default function WelcomePanel() {
           overflowY: "hidden",
         }}
       >
-        <h1 id="samples" className="pt-4 md:pt-10 m-0">
+        <h1 id="samples" className="pt-4 md:pt-10 m-0 md:text-center">
           Sample Boards
         </h1>
         <div className="mb-10 text-xl overflow-hidden tracking-widest sm:text-justify md:text-center mx-auto sm:w-[100%] md:w-[80%] gap-4">
@@ -113,7 +114,7 @@ export default function WelcomePanel() {
           </div>
         </div>
 
-        <h1 className="pt-4 md:pt-10 mx-0 mb-2">Background</h1>
+        <h1 className="pt-4 md:pt-10 mx-0 mb-2 md:text-center">Background</h1>
         <div className="pb-14">
           <BackgroundSection />
         </div>

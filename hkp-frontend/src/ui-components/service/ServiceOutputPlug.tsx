@@ -51,7 +51,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
             <Wire
               width="20px"
               style={{ paddingLeft: 3 }}
-              strokeWidth="7px"
+              strokeWidth="10px"
               stroke={isActive ? theme.accentColor : theme.borderColor}
               fill={isActive ? theme.accentColor : "white"}
               className="hover:stroke-[#666]"

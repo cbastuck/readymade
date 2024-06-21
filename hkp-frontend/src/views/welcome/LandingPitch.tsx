@@ -5,11 +5,17 @@ import Switcher from "@/components/Switcher";
 export type LandingPitchUsecase = { text: string; link: string };
 type Props = {
   usecases: Array<LandingPitchUsecase>;
+  switchUsecaseInterval: number;
   onComplete: () => void;
   onLink: (idx: number) => void;
 };
 
-export default function LandingPitch({ usecases, onComplete, onLink }: Props) {
+export default function LandingPitch({
+  usecases,
+  switchUsecaseInterval,
+  onComplete,
+  onLink,
+}: Props) {
   useEffect(() => {
     const initialDelay = 4000;
     anime({
@@ -31,16 +37,16 @@ export default function LandingPitch({ usecases, onComplete, onLink }: Props) {
   return (
     <div
       id="pitch-points"
-      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-justify  mx-auto sm:w-[100%] md:w-[80%] gap-4"
+      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-justify  mx-auto sm:w-[100%] md:w-[60%] gap-4"
     >
       <div className="pitch-item">
-        <div>
+        <div className="text-left">
           Have you ever felt creative, but the setup process killed your
-          inspiration? Or got annoyed while "simply" trying to{" "}
+          inspiration? Or got lost when you wanted to "just"{" "}
           <Switcher
             animate={true}
             style={{}}
-            duration={8000}
+            duration={switchUsecaseInterval}
             data={usecases.map(({ text }) => text)}
             links={usecases.map(({ link }) => link)}
             onLink={onLink}
@@ -52,7 +58,7 @@ export default function LandingPitch({ usecases, onComplete, onLink }: Props) {
         technical setup.
       </div>
       <div className="pitch-item">
-        Try Hookit and build ideas with data seamlessly flowing through reusable
+        Try building your ideas with data seamlessly flowing through reusable
         building blocks. It is <span className="underline">your</span> choice.
       </div>
     </div>

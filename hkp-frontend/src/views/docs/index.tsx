@@ -21,36 +21,45 @@ export default function Docs() {
 
       <Accordion type="single" collapsible>
         <AccordionItem value="item-1">
-          <AccordionTrigger>Is it accessible?</AccordionTrigger>
-          <AccordionContent>
-            Yes. It adheres to the WAI-ARIA design pattern.
+          <AccordionTrigger>Project Scope</AccordionTrigger>
+          <AccordionContent className="text-lg ml-10">
+            <Article to="/docs/scope/what">What</Article>
+            <Article to="/docs/scope/why">Why</Article>
+            <Article to="/docs/scope/how">How</Article>
+            <Article to="/docs/scope/identity">Identity</Article>
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-      <Chapter name="Project Scope">
-        <Article to="/docs/scope/what">What</Article>
-        <Article to="/docs/scope/why">Why</Article>
-        <Article to="/docs/scope/how">How</Article>
-        <Article to="/docs/scope/identity">Identity</Article>
-      </Chapter>
 
-      <Chapter name="Tracks">
-        <Article to="/docs/tracks/bridge">Bridge</Article>
-        <Article to="/docs/tracks/remote">Remote runtimes</Article>
-      </Chapter>
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Tracks</AccordionTrigger>
+          <AccordionContent className="text-lg ml-10">
+            <Article to="/docs/tracks/bridge">Bridge</Article>
+            <Article to="/docs/tracks/remote">Remote runtimes</Article>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
 
-      <Chapter name="Blog Articles">
-        <Article to="/docs/blog/nesting">
-          Nesting Boards: Each Puzzle Piece, a Puzzle Itself
-        </Article>
-        <Article to="/docs/blog/collaboration">
-          Human-machine collaboration and Determinism
-        </Article>
-        <Article to="/docs/blog/slideshow">
-          Cast photos from the phone to a Browser on the TV
-        </Article>
-        <Article to="/docs/blog/game">A playful introduction to Hookup</Article>
-      </Chapter>
+      <Accordion type="single" collapsible>
+        <AccordionItem value="item-1">
+          <AccordionTrigger>Blog Articles</AccordionTrigger>
+          <AccordionContent className="text-lg ml-10">
+            <Article to="/docs/blog/nesting">
+              Nesting Boards: Each Puzzle Piece, a Puzzle Itself
+            </Article>
+            <Article to="/docs/blog/collaboration">
+              Human-machine collaboration and Determinism
+            </Article>
+            <Article to="/docs/blog/slideshow">
+              Cast photos from the phone to a Browser on the TV
+            </Article>
+            <Article to="/docs/blog/game">
+              A playful introduction to Hookup
+            </Article>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
       <br />
     </Template>
   );
