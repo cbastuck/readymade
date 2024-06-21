@@ -6,7 +6,6 @@ import {
 } from "@/ui-components/primitives/accordion";
 
 import Template from "../Template";
-import Chapter from "./Chapter";
 import Article from "./Article";
 
 export default function Docs() {
