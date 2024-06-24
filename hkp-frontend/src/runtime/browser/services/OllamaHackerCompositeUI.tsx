@@ -4,7 +4,7 @@ import ServiceUI from "@/ui-components/service/ServiceUI";
 import OllamaPromptUI from "./OllamaPromptUI";
 import HackerUI from "./HackerUI";
 
-export default function OllamaCodeCompsiteUI(props: ServiceUIProps) {
+export default function OllamaHackerCompsiteUI(props: ServiceUIProps) {
   const onInit = (state: any) => {
     console.log("OllamaCodeCompsiteUI.onInit", state);
   };

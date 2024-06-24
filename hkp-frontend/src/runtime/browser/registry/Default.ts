@@ -43,7 +43,7 @@ import SequencerDescriptor from "../services/Sequencer";
 
 // Flows and Composites
 import BoardService from "../services/BoardService";
-import OllamaCodeComposite from "../services/OllamaCodeComposite";
+import OllamaHackerComposite from "../services/OllamaHackerComposite";
 
 // Emerging concepts
 import KeyHandlerDescriptor from "../services/KeyHandler";
@@ -148,7 +148,7 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Flows and Composites
   BoardService,
-  OllamaCodeComposite,
+  OllamaHackerComposite,
 
   //DEPRECATED
   /*

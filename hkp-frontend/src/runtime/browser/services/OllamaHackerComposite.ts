@@ -3,16 +3,16 @@ import { v4 as uuidv4 } from "uuid";
 import { AppInstance, ServiceClass } from "@/types";
 import ServiceBase from "./ServiceBase";
 
-import OllamaCodeCompositeUI from "./OllamaCodeCompositeUI";
+import OllamaHackerCompositeUI from "./OllamaHackerCompositeUI";
 import { OllamaPrompt } from "./OllamaPrompt";
 import { DangerousHacker } from "./DangerousHacker";
 
-const serviceName = "Ollama Code Composite";
-const serviceId = "hookup.to/service/ollama-code-composite";
+const serviceName = "Ollama Hacker";
+const serviceId = "hookup.to/service/ollama-hacker";
 
 type State = {};
 
-class OllamaCodeComposite extends ServiceBase<State> {
+class OllamaHackerComposite extends ServiceBase<State> {
   ollama: OllamaPrompt | undefined;
   hacker: DangerousHacker | undefined;
 
@@ -67,8 +67,8 @@ const descriptor = {
     board: string,
     descriptor: ServiceClass,
     id: string
-  ) => new OllamaCodeComposite(app, board, descriptor, id),
-  createUI: OllamaCodeCompositeUI,
+  ) => new OllamaHackerComposite(app, board, descriptor, id),
+  createUI: OllamaHackerCompositeUI,
 };
 
 export default descriptor;
