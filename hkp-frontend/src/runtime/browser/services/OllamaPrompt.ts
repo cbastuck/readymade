@@ -17,7 +17,7 @@ type State = {
 
 const defaultLocalEndpoint = "http://localhost:11434/api";
 
-class OllamaPrompt extends ServiceBase<State> {
+export class OllamaPrompt extends ServiceBase<State> {
   constructor(
     app: AppInstance,
     board: string,

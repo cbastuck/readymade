@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { ServiceUIProps } from "@/types";
-import SubmittableInput from "@/ui-components/SubmittableInput";
+import SubmittableTextarea from "@/ui-components/SubmittableTextarea";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
 import SelectorField, {
   arrayToOptions,
 } from "@/components/shared/SelectorField";
 import Switch from "@/ui-components/Switch";
+import Button from "@/ui-components/Button";
 
 export default function OllamaPromptUI(props: ServiceUIProps) {
   const [prompt, setPrompt] = useState("");
@@ -49,8 +50,13 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
 
   const omSubmitPrompt = (newPrompt: string) => {
     setPrompt(newPrompt);
-    setAccumulatedUpdate("");
     props.service.configure({ prompt: newPrompt });
+  };
+
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const onProcessButton = () => {
+    setAccumulatedUpdate("");
+    props.service.configure({ prompt: inputRef.current?.value });
   };
 
   const onSelectModel = ({ value: newModel }: any) => {
@@ -76,16 +82,21 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
           options={arrayToOptions(availableModels)}
           onChange={onSelectModel}
         />
-        <div className="flex w-full items-end gap-4 my-2">
-          <SubmittableInput
-            fullWidth
-            title="Prompt"
-            value={prompt}
-            onSubmit={omSubmitPrompt}
-          />
-          <BusyIndicator isBusy={isBusy} />
+        <SubmittableTextarea
+          ref={inputRef}
+          className="font-menu text-base h-full"
+          title="Prompt"
+          value={prompt}
+          rows={8}
+          onSubmit={omSubmitPrompt}
+        />
+        <div className=" w-full  my-2">
+          <Button className="w-full" onClick={onProcessButton}>
+            Process
+          </Button>
         </div>
-        <div className=" h-full p-2 my-2 text-md font-menu text-left overflow-y-auto border border-solid">
+        <div className="flex items-top gap-4 h-full p-2 my-2 text-md font-menu text-left overflow-y-auto border border-solid">
+          <BusyIndicator isBusy={isBusy} />
           {accumulatedUpdate || (
             <span className="text-gray-500">
               Idle, updates appear here during progress
@@ -103,10 +114,16 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
 }
 
 function BusyIndicator({ isBusy }: { isBusy: boolean }) {
-  return isBusy ? (
-    <span className="relative flex h-3 w-3 mb-2">
-      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-      <span className="relative inline-flex rounded-full h-3 w-3 bg-sky-500"></span>
+  return (
+    <span className="relative flex h-3 w-3 mb-2 pt-1">
+      {isBusy && (
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+      )}
+      <span
+        className={`relative inline-flex rounded-full h-3 w-3 ${
+          isBusy ? "bg-sky-500" : "bg-gray-200"
+        }`}
+      />
     </span>
-  ) : null;
+  );
 }

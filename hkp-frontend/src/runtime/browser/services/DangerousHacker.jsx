@@ -6,7 +6,7 @@ import { evilEval } from "hkp-services/eval";
 const serviceId = "hookup.to/service/hacker/dangerous";
 const serviceName = "Dangerous Hacker";
 
-class DangerousHacker extends Hacker {
+export class DangerousHacker extends Hacker {
   process(params) {
     return this.baseProcess((buffer) => evilEval(buffer, params));
   }

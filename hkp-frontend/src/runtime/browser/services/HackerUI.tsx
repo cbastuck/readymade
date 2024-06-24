@@ -33,6 +33,9 @@ export default function HackerUI(props: ServiceUIProps) {
     if (needsUpdate(notification.size, size)) {
       setSize(notification.size);
     }
+    if (needsUpdate(notification.buffer, buffer)) {
+      setBuffer(notification.buffer);
+    }
   };
 
   const onResize = (

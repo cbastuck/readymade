@@ -109,6 +109,7 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
         onInit={this.onInit}
         onNotification={this.onNotification}
         customMenuEntries={customMenuEntries}
+        initialSize={{ width: 280, height: undefined }}
       >
         <div className="flex flex-col gap-1">
           <InputField

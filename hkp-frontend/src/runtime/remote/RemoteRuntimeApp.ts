@@ -60,7 +60,9 @@ export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
       _parent: ServiceImpl,
       _service: ServiceClass,
       _instanceId?: string
-    ): void => {},
+    ): Promise<ServiceInstance | null> => {
+      return Promise.resolve(null);
+    },
     createSubServiceUI: (_svc: ServiceImpl): ReactElement | null => {
       return null;
     },

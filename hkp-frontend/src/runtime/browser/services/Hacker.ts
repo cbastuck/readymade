@@ -63,6 +63,7 @@ export default class Hacker extends ServiceBase<State> {
       if (this.state.healthStatus.error) {
         this.resetHealthStatus(true);
       }
+      this.app.notify(this, { buffer });
     }
 
     if (size !== undefined) {

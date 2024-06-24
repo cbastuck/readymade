@@ -48,7 +48,7 @@ export default function BoardCollection({
           {renderSearch && (
             <Search
               filter={filter}
-              onChange={(newFilter) => setFilter(newFilter)}
+              onChange={(newFilter) => setFilter(newFilter.toLowerCase())}
             />
           )}
         </div>

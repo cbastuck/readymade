@@ -81,7 +81,8 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       parent: ServiceImpl,
       service: ServiceClass,
       instanceId?: string
-    ) => appendSubservice(scope, service, parent, instanceId),
+    ): Promise<ServiceInstance | null> =>
+      appendSubservice(scope, service, parent, instanceId),
 
     createSubServiceUI: (svc: InstanceId) => {
       const ssvc = scope.getSubservice(svc.uuid);

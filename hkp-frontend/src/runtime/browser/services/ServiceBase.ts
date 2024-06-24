@@ -27,7 +27,7 @@ export default class ServiceBase<T> {
   }
 
   getConfiguration = async () => {
-    return this.state;
+    return { ...this.state, bypass: this.bypass };
   };
 
   setBypass = (bypass: boolean) => {

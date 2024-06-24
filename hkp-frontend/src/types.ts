@@ -198,7 +198,7 @@ export type AppImpl = {
     parent: ServiceImpl,
     service: ServiceClass,
     instanceId?: string
-  ) => void;
+  ) => Promise<ServiceInstance | null>;
   createSubServiceUI: (svc: ServiceInstance) => ReactElement | null;
 
   // TODO: should be available for both Brower and Remote runtime

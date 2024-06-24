@@ -167,7 +167,7 @@ export async function appendSubservice(
   service: ServiceClass,
   parent: ServiceInstance,
   instanceId?: string
-) {
+): Promise<ServiceInstance | null> {
   const scope = scope_ as BrowserRuntimeScope;
   const [ssvc] = createService(scope, service, instanceId) || [];
   if (ssvc) {

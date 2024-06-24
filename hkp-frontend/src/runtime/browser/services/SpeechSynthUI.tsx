@@ -10,7 +10,7 @@ import SelectorField, {
 
 const defaultVoiceName = "Daniel";
 
-export default function OllamaPromptUI(props: ServiceUIProps) {
+export default function SpeechSynthUI(props: ServiceUIProps) {
   const [currentVoice, setCurrentVoice] = useState<SpeechSynthesisVoice | null>(
     null
   );

@@ -40,7 +40,10 @@ import MediaPlayer from "../services/MediaPlayer";
 import DispatcherDesriptor from "../services/Dispatcher";
 import StackDescriptor from "../services/Stack";
 import SequencerDescriptor from "../services/Sequencer";
+
+// Flows and Composites
 import BoardService from "../services/BoardService";
+import OllamaCodeComposite from "../services/OllamaCodeComposite";
 
 // Emerging concepts
 import KeyHandlerDescriptor from "../services/KeyHandler";
@@ -139,10 +142,13 @@ export const defaultRegistry: Array<ServiceModule> = [
   CloudSinkDescriptor,
   CloudSourceDescriptor,
 
-  BoardService,
   PeerSocket,
   OllamaPrompt,
   SpeechSynth,
+
+  // Flows and Composites
+  BoardService,
+  OllamaCodeComposite,
 
   //DEPRECATED
   /*
