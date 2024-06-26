@@ -56,7 +56,7 @@ export default class Hacker extends ServiceBase<State> {
     }
   };
 
-  configure = (config: any) => {
+  configure = async (config: any) => {
     const { buffer, size } = config;
     if (buffer !== undefined) {
       this.state.buffer = buffer;

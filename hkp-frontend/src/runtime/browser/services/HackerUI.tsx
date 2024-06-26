@@ -12,7 +12,6 @@ export default function HackerUI(props: ServiceUIProps) {
     error: false,
   });
   const [size, setSize] = useState([300, 150]);
-  const editorRef = useRef<Editor>(null);
 
   const onInit = (service: ServiceInstance) => {
     const { buffer, size } = service;
@@ -26,6 +25,7 @@ export default function HackerUI(props: ServiceUIProps) {
   };
 
   const onNotification = (notification: any) => {
+    console.log("HackerUI.onNotification", notification);
     if (needsUpdate(notification.healthStatus, healthStatus)) {
       setHealthStatus(notification.healthStatus);
     }
@@ -46,7 +46,8 @@ export default function HackerUI(props: ServiceUIProps) {
     service.configure(resized);
   };
 
-  const { service } = props;
+  const onChange = (buffer: string) => props.service.configure({ buffer });
+
   return (
     <ServiceUI
       {...props}
@@ -55,59 +56,71 @@ export default function HackerUI(props: ServiceUIProps) {
       resizable={true}
       onResize={onResize}
     >
-      <div
-        className="select-none"
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-        }}
-      >
-        <div className="flex items-center">
-          <div>Health</div>
-          <div
-            className="ml-2"
-            style={{
-              fontFamily: "Arial",
-              fontSize: "30px",
-              color: healthStatus.error ? "red" : "green",
-            }}
-          >
-            •
-          </div>
-          <div
-            className="ml-2"
-            style={{
-              color: "orange",
-              textTransform: "none",
-            }}
-          >
-            {healthStatus.error && `[${healthStatus.message}]`}
-          </div>
-          <div
-            style={{
-              marginLeft: "auto",
-              display: !healthStatus.error ? "none" : undefined,
-            }}
-          >
-            <button
-              onClick={() =>
-                service.configure({ buffer: editorRef.current?.getValue() })
-              }
-            >
-              fixed
-            </button>
-          </div>
+      <HackerUIPanel
+        buffer={buffer}
+        healthStatus={healthStatus}
+        onChange={onChange}
+      />
+    </ServiceUI>
+  );
+}
+
+type Props = {
+  buffer: string;
+  healthStatus: { error: boolean; message?: string };
+  onChange: (updatedBuffer: string) => void;
+};
+export function HackerUIPanel({ buffer, healthStatus, onChange }: Props) {
+  const editorRef = useRef<Editor>(null);
+  return (
+    <div
+      className="select-none"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+      }}
+    >
+      <div className="flex items-center">
+        <div>Health</div>
+        <div
+          className="ml-2"
+          style={{
+            fontFamily: "Arial",
+            fontSize: "30px",
+            color: healthStatus.error ? "red" : "green",
+          }}
+        >
+          •
         </div>
-        <div className="w-full h-full mb-2">
-          <Editor
-            ref={editorRef}
-            value={buffer}
-            language="javascript"
-            onChange={(buffer) => service.configure({ buffer })}
-          />
+        <div
+          className="ml-2"
+          style={{
+            color: "orange",
+            textTransform: "none",
+          }}
+        >
+          {healthStatus.error && `[${healthStatus.message}]`}
+        </div>
+        <div
+          style={{
+            marginLeft: "auto",
+            display: !healthStatus.error ? "none" : undefined,
+          }}
+        >
+          <button onClick={() => onChange(editorRef.current?.getValue())}>
+            fixed
+          </button>
         </div>
       </div>
-    </ServiceUI>
+      <div className="w-full h-full mb-2">
+        <Editor
+          ref={editorRef}
+          value={buffer}
+          language="javascript"
+          onChange={(buffer) => buffer && onChange(buffer)}
+        />
+      </div>
+    </div>
   );
 }

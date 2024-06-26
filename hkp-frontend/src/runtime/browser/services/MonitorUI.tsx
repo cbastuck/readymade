@@ -24,8 +24,11 @@ export default function MonitorUI(props: ServiceUIProps) {
   };
 
   const onNotification = (params: any) => {
-    if (typeof params === "string") {
+    const type = typeof params;
+    if (type === "string") {
       setMessage(params);
+    } else if (type === "number") {
+      setMessage(`${params}`);
     } else if (Array.isArray(params)) {
       setMessage(JSON.stringify(params));
     } else {
@@ -127,7 +130,8 @@ function isObject(obj: any) {
 }
 
 function unroll(params: any): any {
-  if (typeof params === "string") {
+  const type = typeof params;
+  if (type === "string") {
     return params;
   }
   const isBlob = params instanceof Blob;

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { X, Pin, PinOff } from "lucide-react";
 
-import Wire from "@/assets/plug.svg?react";
+import Plug from "@/assets/plug.svg?react";
+import ArrayPlug from "@/assets/plugArray.svg?react";
 
 import {
   Popover,
@@ -48,14 +49,29 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
       >
         <PopoverTrigger asChild>
           <button onClick={onOpen}>
-            <Wire
-              width="20px"
-              style={{ paddingLeft: 3 }}
-              strokeWidth="10px"
-              stroke={isActive ? theme.accentColor : theme.borderColor}
-              fill={isActive ? theme.accentColor : "white"}
-              className="hover:stroke-[#666]"
-            />
+            <div
+              className={`flex flex-col ${
+                Array.isArray(data) ? "mr-[-13px]" : "mr-[-1px]"
+              }`}
+            >
+              {Array.isArray(data) ? (
+                <ArrayPlug
+                  width="30px"
+                  strokeWidth="10px"
+                  stroke={isActive ? theme.accentColor : theme.borderColor}
+                  fill={isActive ? theme.accentColor : "white"}
+                  className="hover:stroke-[#666]"
+                />
+              ) : (
+                <Plug
+                  width="18px"
+                  strokeWidth="10px"
+                  stroke={isActive ? theme.accentColor : theme.borderColor}
+                  fill={isActive ? theme.accentColor : "white"}
+                  className="hover:stroke-[#666]"
+                />
+              )}
+            </div>
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-[450px]">

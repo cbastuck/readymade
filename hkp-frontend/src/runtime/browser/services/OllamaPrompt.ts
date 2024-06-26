@@ -50,6 +50,7 @@ export class OllamaPrompt extends ServiceBase<State> {
     if (prompt !== undefined) {
       this.state.prompt = prompt;
       const result = await this.process(prompt);
+      this.app.notify(this, { answer: result });
       this.app.next(this, result);
     }
 

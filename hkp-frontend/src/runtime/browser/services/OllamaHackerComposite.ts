@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
-
 import { AppInstance, ServiceClass } from "@/types";
 import ServiceBase from "./ServiceBase";
 
@@ -23,17 +21,17 @@ class OllamaHackerComposite extends ServiceBase<State> {
     id: string
   ) {
     super(app, board, descriptor, id, {});
-    this.init();
+    this.init(id);
   }
 
-  async init() {
+  async init(id: string) {
     this.ollama = (await this.app.createSubService(
       this,
       {
         serviceId: "hookup.to/service/ollama-prompt",
         serviceName: "Ollama Prompt",
       },
-      uuidv4()
+      id
     )) as OllamaPrompt;
     this.hacker = (await this.app.createSubService(
       this,
@@ -41,7 +39,7 @@ class OllamaHackerComposite extends ServiceBase<State> {
         serviceId: "hookup.to/service/hacker/dangerous",
         serviceName: "Dangerous Hacker",
       },
-      uuidv4()
+      id
     )) as DangerousHacker;
   }
 
@@ -50,12 +48,16 @@ class OllamaHackerComposite extends ServiceBase<State> {
     await this.hacker?.configure(config);
   }
 
+  getConfiguration = async () => {
+    return {
+      bypass: this.bypass,
+      prompt: this.ollama?.state.prompt,
+      buffer: this.hacker?.state.buffer,
+    };
+  };
+
   async process(params: any) {
-    if (!this.hacker?.state.buffer) {
-      const buffer = await this.ollama?.process(params);
-      await this.hacker?.configure({ buffer });
-    }
-    return this.hacker?.process(params);
+    return this.hacker?.state.buffer ? this.hacker.process(params) : params;
   }
 }
 
