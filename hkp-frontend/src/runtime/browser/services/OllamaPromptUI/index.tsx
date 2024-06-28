@@ -43,7 +43,9 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
     }
   };
 
-  const onInit = (state: any) => update(state);
+  const onInit = (state: any) => {
+    update(state);
+  };
   const onNotification = (notification: any) => update(notification);
 
   const onProcessButton = (prompt: string) => {

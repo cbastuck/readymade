@@ -6,12 +6,17 @@ import PromptInput from "./OllamaPromptUI/PromptInput";
 import { useState } from "react";
 import { HackerUIPanel } from "./HackerUI";
 import RadioGroup from "@/ui-components/RadioGroup";
+import SelectorField, {
+  arrayToOptions,
+} from "@/components/shared/SelectorField";
 
 export default function OllamaHackerCompsiteUI(props: ServiceUIProps) {
   const [accumulatedUpdate, setAccumulatedUpdate] = useState("");
   const [prompt, setPrompt] = useState("");
   const [isBusy, setIsBusy] = useState(false);
   const [mode, setMode] = useState("generate"); // "generate" or "process"
+  const [availableModels, setAvailableModels] = useState<Array<string>>([]);
+  const [usedModel, setUsedModel] = useState("");
 
   const [buffer, setBuffer] = useState("");
   const [healthStatus, setHealthStatus] = useState<any>({ error: false });
@@ -46,6 +51,14 @@ export default function OllamaHackerCompsiteUI(props: ServiceUIProps) {
     if (needsUpdate(state.healthStatus, healthStatus)) {
       setHealthStatus(state.healthStatus);
     }
+
+    if (needsUpdate(state.availableModels, availableModels)) {
+      setAvailableModels(state.availableModels);
+    }
+
+    if (needsUpdate(state.model, usedModel)) {
+      setUsedModel(state.model);
+    }
   };
 
   const onInit = (state: any) => {
@@ -57,7 +70,7 @@ export default function OllamaHackerCompsiteUI(props: ServiceUIProps) {
   };
 
   const onSubmitPrompt = (prompt: string) => {
-    props.service.ollama.configure({ prompt: prompt, stopPropagation: true });
+    props.service.ollama.configure({ prompt: prompt });
   };
 
   const onCodeChange = (buffer: string) => {
@@ -70,6 +83,10 @@ export default function OllamaHackerCompsiteUI(props: ServiceUIProps) {
 
   const onBlurPrompt = (newPrompt: string) => {
     props.service.configure({ silentPrompt: newPrompt });
+  };
+
+  const onSelectModel = ({ value: newModel }: any) => {
+    props.service.configure({ model: newModel });
   };
 
   return (
@@ -88,16 +105,24 @@ export default function OllamaHackerCompsiteUI(props: ServiceUIProps) {
           onChange={onModeChange}
         />
         {mode === "generate" ? (
-          <PromptInput
-            accumulatedUpdate={accumulatedUpdate}
-            prompt={prompt}
-            isBusy={isBusy}
-            buttonText="Generate Code"
-            onProcessButton={onSubmitPrompt}
-            onSubmitPrompt={onSubmitPrompt}
-            onBlurPrompt={onBlurPrompt}
-            title="Describe the task"
-          />
+          <>
+            <SelectorField
+              label="Model"
+              value={usedModel}
+              options={arrayToOptions(availableModels)}
+              onChange={onSelectModel}
+            />
+            <PromptInput
+              accumulatedUpdate={accumulatedUpdate}
+              prompt={prompt}
+              isBusy={isBusy}
+              buttonText="Generate Code"
+              onProcessButton={onSubmitPrompt}
+              onSubmitPrompt={onSubmitPrompt}
+              onBlurPrompt={onBlurPrompt}
+              title="Describe the task"
+            />
+          </>
         ) : (
           <HackerUIPanel
             title="Code"

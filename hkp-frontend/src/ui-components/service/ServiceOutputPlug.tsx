@@ -9,6 +9,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/ui-components/primitives/popover";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/ui-components/primitives/context-menu";
 
 import { useTheme } from "../ThemeContext";
 import FlowInspectorPopup from "./FlowInspectorPopup";
@@ -47,33 +53,41 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
         open={isOpen}
         onOpenChange={(newOpen) => !isSticky && !newOpen && onClose()}
       >
-        <PopoverTrigger asChild>
-          <button onClick={onOpen}>
-            <div
-              className={`flex flex-col ${
-                Array.isArray(data) ? "mr-[-13px]" : "mr-[-1px]"
-              }`}
-            >
-              {Array.isArray(data) ? (
-                <ArrayPlug
-                  width="30px"
-                  strokeWidth="10px"
-                  stroke={isActive ? theme.accentColor : theme.borderColor}
-                  fill={isActive ? theme.accentColor : "white"}
-                  className="hover:stroke-[#666]"
-                />
-              ) : (
-                <Plug
-                  width="18px"
-                  strokeWidth="10px"
-                  stroke={isActive ? theme.accentColor : theme.borderColor}
-                  fill={isActive ? theme.accentColor : "white"}
-                  className="hover:stroke-[#666]"
-                />
-              )}
-            </div>
-          </button>
-        </PopoverTrigger>
+        <ContextMenu>
+          <ContextMenuTrigger>
+            <PopoverTrigger asChild>
+              <button onClick={onOpen}>
+                <div
+                  className={`flex flex-col ${
+                    Array.isArray(data) ? "mr-[-13px]" : "mr-[-1px]"
+                  }`}
+                >
+                  {Array.isArray(data) ? (
+                    <ArrayPlug
+                      width="30px"
+                      strokeWidth="10px"
+                      stroke={isActive ? theme.accentColor : theme.borderColor}
+                      fill={isActive ? theme.accentColor : "white"}
+                      className="hover:stroke-[#666]"
+                    />
+                  ) : (
+                    <Plug
+                      width="18px"
+                      strokeWidth="10px"
+                      stroke={isActive ? theme.accentColor : theme.borderColor}
+                      fill={isActive ? theme.accentColor : "white"}
+                      className="hover:stroke-[#666]"
+                    />
+                  )}
+                </div>
+              </button>
+            </PopoverTrigger>
+          </ContextMenuTrigger>
+          <ContextMenuContent>
+            <ContextMenuItem disabled={!data}>Rerun</ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
+
         <PopoverContent className="w-[450px]">
           <div className="flex items-center">
             <h2 className="font-medium leading-none w-full text-left">

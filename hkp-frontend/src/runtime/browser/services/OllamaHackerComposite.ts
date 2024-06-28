@@ -6,11 +6,13 @@ import { OllamaPrompt } from "./OllamaPrompt";
 import { DangerousHacker } from "./DangerousHacker";
 import { needsUpdate } from "@/ui-components/service/ServiceUI";
 
-const serviceName = "Ollama Hacker";
+const serviceName = "Ollama Code Assist";
 const serviceId = "hookup.to/service/ollama-hacker";
 
 type State = {
   mode: string; // "generate" or "process"
+  limitDataOnGenerate: number;
+  executeCodeAfterGeneration: boolean;
 };
 
 class OllamaHackerComposite extends ServiceBase<State> {
@@ -23,7 +25,11 @@ class OllamaHackerComposite extends ServiceBase<State> {
     descriptor: ServiceClass,
     id: string
   ) {
-    super(app, board, descriptor, id, { mode: "generate" });
+    super(app, board, descriptor, id, {
+      mode: "generate",
+      limitDataOnGenerate: 3,
+      executeCodeAfterGeneration: true,
+    });
     this.init(id);
   }
 
@@ -36,6 +42,7 @@ class OllamaHackerComposite extends ServiceBase<State> {
       },
       id
     )) as OllamaPrompt;
+
     this.hacker = (await this.app.createSubService(
       this,
       {
@@ -47,12 +54,15 @@ class OllamaHackerComposite extends ServiceBase<State> {
   }
 
   async configure(config: any) {
-    const { mode, buffer } = config;
+    console.log("OllamaHackerComposite.configure", config.availableModels);
+    const { mode, buffer, prompt, ...rest } = config;
     if (needsUpdate(mode, this.state.mode)) {
       this.state.mode = mode;
       this.app.notify(this, { mode });
     }
-    await this.ollama?.configure(config);
+    await this.ollama?.configure(
+      prompt ? { ...rest, silentPrompt: prompt } : config
+    );
     if (buffer !== undefined) {
       await this.hacker?.configure(
         buffer
@@ -69,17 +79,31 @@ class OllamaHackerComposite extends ServiceBase<State> {
       prompt: this.ollama?.state.prompt,
       buffer: this.hacker?.state.buffer,
       mode: this.state.mode,
+      model: this.ollama?.state.model,
+      limitDataOnGenerate: this.state.limitDataOnGenerate,
+      executeCodeAfterGeneration: this.state.executeCodeAfterGeneration,
     };
   };
 
   async process(params: any) {
     if (this.state.mode === "generate") {
-      const result = await this.ollama?.process(params);
-      await this.hacker?.configure({
-        buffer: addGeneratedFunctionCall(result),
-      });
-      await this.configure({ mode: "process" });
+      const possiblyReducedDataset =
+        this.state.limitDataOnGenerate > 0 && Array.isArray(params)
+          ? params.slice(0, this.state.limitDataOnGenerate)
+          : params;
+      const result = await this.ollama?.process(possiblyReducedDataset);
+
+      if (this.state.executeCodeAfterGeneration) {
+        await this.configure({ mode: "process" });
+        await this.hacker?.configure({
+          buffer: addGeneratedFunctionCall(result),
+        });
+      } else {
+        await this.hacker?.configure({ buffer: result });
+        return null;
+      }
     }
+
     return await this.hacker?.process(params);
   }
 }

@@ -31,29 +31,40 @@ export class OllamaPrompt extends ServiceBase<State> {
       responseIsJson: false,
       prompt: "",
     });
+  }
+
+  fetchAvailableModels = () => {
     fetch(`${this.state.endpoint}/tags`)
       .then((r) => r.json())
       .then((r) => r.models)
       .then(this.onAvailableModels);
-  }
+  };
 
   onAvailableModels = (models: Array<{ model: string }>) => {
     this.state.availableModels = models.map((m) => m.model);
-    this.state.model = this.state.availableModels[0];
     this.app.notify(this, {
       availableModels: this.state.availableModels,
-      model: this.state.model,
     });
   };
+
   async configure(config: any) {
-    const { prompt, silentPrompt } = config;
+    const { prompt, silentPrompt, model } = config;
+
+    if (needsUpdate(model, this.state.model)) {
+      this.state.model = model;
+      this.app.notify(this, { model: this.state.model });
+    }
+
+    if (needsUpdate(config.responseIsJson, this.state.responseIsJson)) {
+      this.state.responseIsJson = config.responseIsJson;
+      this.app.notify(this, { responseIsJson: this.state.responseIsJson });
+    }
+
     if (prompt !== undefined) {
       this.state.prompt = prompt;
       const result = await this.process(prompt);
       this.app.notify(this, { answer: result });
-      if (!config.stopPropagation) {
-        this.app.next(this, result);
-      }
+      this.app.next(this, result);
     }
 
     if (silentPrompt !== undefined) {
@@ -61,16 +72,11 @@ export class OllamaPrompt extends ServiceBase<State> {
       this.app.notify(this, { prompt: this.state.prompt });
     }
 
-    if (needsUpdate(config.model, this.state.model)) {
-      if (this.state.availableModels.indexOf(config.model) !== -1) {
-        this.state.model = config.model;
-        this.app.notify(this, { model: this.state.model });
-      }
-    }
-
-    if (needsUpdate(config.responseIsJson, this.state.responseIsJson)) {
-      this.state.responseIsJson = config.responseIsJson;
-      this.app.notify(this, { responseIsJson: this.state.responseIsJson });
+    if (
+      !this.state.availableModels ||
+      this.state.availableModels.length === 0
+    ) {
+      this.fetchAvailableModels();
     }
   }
 
@@ -91,10 +97,17 @@ export class OllamaPrompt extends ServiceBase<State> {
     const prompt = this.state.prompt
       ? `${this.state.prompt}\n\n'''${params}'''`
       : params;
-    console.log("OLLAMA PROMPT: ", prompt);
+
+    const seed = 1; // fixed seed
+    const temperature = 0;
+
     const body = {
       model: this.state.model,
       prompt,
+      options: {
+        seed,
+        temperature,
+      },
     };
 
     const reportProgress = (partial: string) => {
