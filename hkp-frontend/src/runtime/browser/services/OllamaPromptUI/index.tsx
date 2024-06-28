@@ -51,7 +51,7 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
     props.service.configure({ prompt });
   };
 
-  const omSubmitPrompt = (newPrompt: string) => {
+  const onSubmitPrompt = (newPrompt: string) => {
     setPrompt(newPrompt);
     props.service.configure({ prompt: newPrompt });
   };
@@ -84,7 +84,7 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
           isBusy={isBusy}
           accumulatedUpdate={accumulatedUpdate}
           onProcessButton={onProcessButton}
-          omSubmitPrompt={omSubmitPrompt}
+          onSubmitPrompt={onSubmitPrompt}
         />
         <Switch
           title="Response is JSON"

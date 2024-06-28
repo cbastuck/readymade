@@ -4,6 +4,7 @@ import ServiceUiContainer from "../ServiceUiContainer";
 
 import {
   OnResult,
+  ProcessRuntimeByName,
   RuntimeDescriptor,
   ServiceAction,
   ServiceDescriptor,
@@ -29,6 +30,7 @@ type Props = {
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
   onResult: OnResult;
+  processRuntimeByName: ProcessRuntimeByName;
 };
 
 type State = {};
@@ -97,6 +99,7 @@ export default class BrowserRuntime extends Component<Props, State> {
 
     if (scope && scope.onResult !== onResult) {
       scope.onResult = onResult;
+      scope.processRuntimeByName = this.props.processRuntimeByName;
       scope.authenticatedUser = user;
     }
 

@@ -32,6 +32,8 @@ export type OnResult = (
   resultCallback: null | ((p: any) => void)
 ) => Promise<void>;
 
+export type ProcessRuntimeByName = (name: string, params: any) => Promise<any>;
+
 export interface RuntimeScope {
   descriptor: RuntimeDescriptor;
   authenticatedUser: User | null;

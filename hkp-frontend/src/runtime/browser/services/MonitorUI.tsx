@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { CircleX, SquarePlay, Pencil, ScanText, Speech } from "lucide-react";
+import {
+  CircleX,
+  SquarePlay,
+  Pencil,
+  ScanText,
+  Speech,
+  SquareCode,
+} from "lucide-react";
 import { Textarea } from "@/ui-components/primitives/textarea";
 
 import { ServiceUIProps } from "@/types";
@@ -9,6 +16,7 @@ import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import MenuIcon from "@/ui-components/MenuIcon";
+import { onServiceEndProcess } from "@/runtime/serviceState";
 
 export default function MonitorUI(props: ServiceUIProps) {
   const [message, setMessage] = useState("");
@@ -47,6 +55,13 @@ export default function MonitorUI(props: ServiceUIProps) {
 
   const clearEditor = () => setMessage("");
 
+  const onFormatJSON = () => {
+    try {
+      const obj = JSON.parse(message);
+      setMessage(JSON.stringify(obj, null, 2));
+    } catch (err) {}
+  };
+
   const { service } = props;
   const customMenuEntries = [
     {
@@ -73,8 +88,14 @@ export default function MonitorUI(props: ServiceUIProps) {
         } catch (err) {
           data = message;
         }
+        onServiceEndProcess(service.app, service, data);
         service.app.next(service, data);
       },
+    },
+    {
+      name: "Prettify",
+      icon: <MenuIcon icon={SquareCode} />,
+      onClick: onFormatJSON,
     },
     {
       name: "Read it",

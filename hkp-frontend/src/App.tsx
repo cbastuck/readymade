@@ -15,6 +15,7 @@ export default function App() {
       <AuthProvider>
         <AppProvider>
           <div
+            className="select-none"
             style={{
               height: "100%",
               width: "100%",

@@ -4,11 +4,14 @@ import ServiceBase from "./ServiceBase";
 import OllamaHackerCompositeUI from "./OllamaHackerCompositeUI";
 import { OllamaPrompt } from "./OllamaPrompt";
 import { DangerousHacker } from "./DangerousHacker";
+import { needsUpdate } from "@/ui-components/service/ServiceUI";
 
 const serviceName = "Ollama Hacker";
 const serviceId = "hookup.to/service/ollama-hacker";
 
-type State = {};
+type State = {
+  mode: string; // "generate" or "process"
+};
 
 class OllamaHackerComposite extends ServiceBase<State> {
   ollama: OllamaPrompt | undefined;
@@ -20,7 +23,7 @@ class OllamaHackerComposite extends ServiceBase<State> {
     descriptor: ServiceClass,
     id: string
   ) {
-    super(app, board, descriptor, id, {});
+    super(app, board, descriptor, id, { mode: "generate" });
     this.init(id);
   }
 
@@ -44,8 +47,20 @@ class OllamaHackerComposite extends ServiceBase<State> {
   }
 
   async configure(config: any) {
+    const { mode, buffer } = config;
+    if (needsUpdate(mode, this.state.mode)) {
+      this.state.mode = mode;
+      this.app.notify(this, { mode });
+    }
     await this.ollama?.configure(config);
-    await this.hacker?.configure(config);
+    if (buffer !== undefined) {
+      await this.hacker?.configure(
+        buffer
+          ? { ...config, buffer: addGeneratedFunctionCall(buffer) }
+          : config
+      );
+      await this.configure({ mode: "process" });
+    }
   }
 
   getConfiguration = async () => {
@@ -53,11 +68,19 @@ class OllamaHackerComposite extends ServiceBase<State> {
       bypass: this.bypass,
       prompt: this.ollama?.state.prompt,
       buffer: this.hacker?.state.buffer,
+      mode: this.state.mode,
     };
   };
 
   async process(params: any) {
-    return this.hacker?.state.buffer ? this.hacker.process(params) : params;
+    if (this.state.mode === "generate") {
+      const result = await this.ollama?.process(params);
+      await this.hacker?.configure({
+        buffer: addGeneratedFunctionCall(result),
+      });
+      await this.configure({ mode: "process" });
+    }
+    return await this.hacker?.process(params);
   }
 }
 
@@ -74,3 +97,10 @@ const descriptor = {
 };
 
 export default descriptor;
+
+function addGeneratedFunctionCall(answer: string): string {
+  const callFnCode = "return f(params);";
+  return answer.indexOf(callFnCode) === -1
+    ? `${answer}\n${callFnCode}\n`
+    : answer;
+}

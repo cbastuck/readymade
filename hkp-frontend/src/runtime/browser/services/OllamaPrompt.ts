@@ -46,12 +46,19 @@ export class OllamaPrompt extends ServiceBase<State> {
     });
   };
   async configure(config: any) {
-    const { prompt } = config;
+    const { prompt, silentPrompt } = config;
     if (prompt !== undefined) {
       this.state.prompt = prompt;
       const result = await this.process(prompt);
       this.app.notify(this, { answer: result });
-      this.app.next(this, result);
+      if (!config.stopPropagation) {
+        this.app.next(this, result);
+      }
+    }
+
+    if (silentPrompt !== undefined) {
+      this.state.prompt = silentPrompt;
+      this.app.notify(this, { prompt: this.state.prompt });
     }
 
     if (needsUpdate(config.model, this.state.model)) {
@@ -81,11 +88,13 @@ export class OllamaPrompt extends ServiceBase<State> {
     }
     this.app.notify(this, { busy: true });
 
+    const prompt = this.state.prompt
+      ? `${this.state.prompt}\n\n'''${params}'''`
+      : params;
+    console.log("OLLAMA PROMPT: ", prompt);
     const body = {
       model: this.state.model,
-      prompt: this.state.prompt
-        ? `${this.state.prompt} + '''${params}'''`
-        : params,
+      prompt,
     };
 
     const reportProgress = (partial: string) => {

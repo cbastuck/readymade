@@ -9,6 +9,7 @@ import {
   ServiceClass,
   InstanceId,
   OnResult,
+  ProcessRuntimeByName,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 
@@ -37,6 +38,7 @@ type Props = {
   highlightServicesOnHover?: boolean;
 
   onResult: OnResult;
+  processRuntimeByName: ProcessRuntimeByName;
   onArrangeService?: (serviceUuid: string, position: number) => void;
 };
 
@@ -230,6 +232,7 @@ export default class Runtime extends Component<Props, State> {
           this.setState({ wrapServices: isWrapped })
         }
         onResult={this.props.onResult}
+        processRuntimeByName={this.props.processRuntimeByName}
       >
         {services && services.length === 0 && !headless && (
           <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence

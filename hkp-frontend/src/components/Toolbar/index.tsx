@@ -33,6 +33,7 @@ export default function Toolbar({
 
   return (
     <div
+      className="select-none"
       style={{
         position: "sticky",
         left: 0,

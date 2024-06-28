@@ -68,9 +68,15 @@ export default function HackerUI(props: ServiceUIProps) {
 type Props = {
   buffer: string;
   healthStatus: { error: boolean; message?: string };
+  title?: string;
   onChange: (updatedBuffer: string) => void;
 };
-export function HackerUIPanel({ buffer, healthStatus, onChange }: Props) {
+export function HackerUIPanel({
+  buffer,
+  healthStatus,
+  title = "Health",
+  onChange,
+}: Props) {
   const editorRef = useRef<Editor>(null);
   return (
     <div
@@ -82,7 +88,7 @@ export function HackerUIPanel({ buffer, healthStatus, onChange }: Props) {
       }}
     >
       <div className="flex items-center">
-        <div>Health</div>
+        <div>{title}</div>
         <div
           className="ml-2"
           style={{

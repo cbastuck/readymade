@@ -2,6 +2,7 @@ import { CSSProperties, ReactElement, ReactNode } from "react";
 
 import {
   OnResult,
+  ProcessRuntimeByName,
   RuntimeDescriptor,
   RuntimeScope,
   ServiceAction,
@@ -39,6 +40,7 @@ type Props = {
   onServiceAction: (command: ServiceAction) => void;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onResult: OnResult;
+  processRuntimeByName: ProcessRuntimeByName;
 };
 
 export default function RuntimeUI({
@@ -64,6 +66,7 @@ export default function RuntimeUI({
   onServiceAction,
   onArrangeService,
   onResult,
+  processRuntimeByName,
 }: Props) {
   const theme = useTheme();
   const style: CSSProperties = {
@@ -86,7 +89,7 @@ export default function RuntimeUI({
     "flex sm:flex-wrap flex-col sm:flex-row items-start"; // use flex-col and items-center on mobile
   const layout = wrapServices ? horizontalLayoutWrapped : horizontalLayout;
   return (
-    <div style={style}>
+    <div style={style} className="select-none">
       <RuntimeHeader
         isExpanded={isExpanded}
         wrapServices={wrapServices}
@@ -125,6 +128,7 @@ export default function RuntimeUI({
                 onArrangeService={onArrangeService}
                 onServiceAction={onServiceAction}
                 onResult={onResult}
+                processRuntimeByName={processRuntimeByName}
                 highlightServicesOnHover={highlightServicesOnHover}
               />
             </div>

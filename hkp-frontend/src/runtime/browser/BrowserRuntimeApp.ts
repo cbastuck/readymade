@@ -101,6 +101,8 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       });
     },
     listAvailableServices: () => scope.registry.allowedServices(),
+    processRuntimeByName: (name: string, params: any) =>
+      scope?.processRuntimeByName(name, params),
   };
 }
 

@@ -168,4 +168,8 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       (svc) => this.findServiceInstance(svc.uuid)[0]! // the instance must exist
     );
   };
+
+  processRuntimeByName = async (_name: string, _params: any) => {
+    console.warn("processRuntimeByName not implemented");
+  };
 }

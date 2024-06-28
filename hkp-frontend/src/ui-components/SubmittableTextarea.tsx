@@ -35,7 +35,6 @@ const SubmittableTextarea = forwardRef<
     selectAllOnFocus,
     disabled = false,
     placeholder,
-    submitOnBlur = false,
     rows = undefined,
     onSubmit,
     onBlur,
@@ -62,7 +61,7 @@ const SubmittableTextarea = forwardRef<
   };
 
   const onBlurInternal = () => {
-    if (submitOnBlur && internal !== lastSubmittedValue.current) {
+    if (internal !== lastSubmittedValue.current) {
       onBlur?.(internal);
     }
   };
@@ -71,7 +70,7 @@ const SubmittableTextarea = forwardRef<
     selectAllOnFocus && setTimeout(() => event.target.select(), 10);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col h-full w-full">
       {title && (
         <GroupLabel className="pt-1 whitespace-nowrap">{title}</GroupLabel>
       )}

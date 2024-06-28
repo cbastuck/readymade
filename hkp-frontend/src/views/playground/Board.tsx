@@ -480,6 +480,21 @@ export default class Board extends Component<Props, State> {
     );
   };
 
+  processRuntimeByName = async (name: string, params: any): Promise<any> => {
+    const rt = this.props.boardContext.runtimes.find((rt) => rt.name === name);
+    if (rt) {
+      const scope = this.props.boardContext.scopes[rt.id];
+      const api = this.props.boardContext.runtimeApis[rt.type];
+      if (scope && api) {
+        return api.processRuntime(scope, params, null);
+      }
+    }
+    console.error(
+      `Board.processRuntimeByName could not process runtime with name: ${name}`
+    );
+    return null;
+  };
+
   renderRuntime = (
     boardContext: BoardContextState,
     runtime: RuntimeDescriptor,
@@ -523,6 +538,7 @@ export default class Board extends Component<Props, State> {
           boardContext={boardContext}
           runtime={runtime}
           onResult={onResult}
+          processRuntimeByName={this.processRuntimeByName}
           outputs={outputs}
           inputs={inputs}
           headless={this.props.headless}
