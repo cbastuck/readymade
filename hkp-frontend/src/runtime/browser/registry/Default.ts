@@ -17,6 +17,7 @@ import GeneticDescriptor from "../services/Genetic";
 
 // Data analysis
 import MapDescriptor from "../services/Map";
+import GroupByDescriptor from "../services/GroupBy";
 import FilterDescriptor from "../services/Filter";
 import ReduceDescriptor from "../services/Reduce";
 import StatsDescriptor from "../services/Stats";
@@ -103,6 +104,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   ReduceDescriptor,
   StatsDescriptor,
   SelectDescriptor,
+  GroupByDescriptor,
 
   // Accumulation
   BufferDescriptor,

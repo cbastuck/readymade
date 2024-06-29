@@ -1,16 +1,24 @@
 import { Component } from "react";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/ui-components/primitives/accordion";
 
 import InputField from "hkp-frontend/src/components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 
 import { ServiceUIProps } from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
+import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 import { DownloadIcon, X, Eye } from "lucide-react";
 import MenuIcon from "@/ui-components/MenuIcon";
 import Editor from "@/components/shared/Editor";
+import Slider from "@/ui-components/Slider";
 
 type State = {
   capacity: number;
+  interval: number;
   items: Array<any>;
   displayBuffer: any;
 };
@@ -18,21 +26,33 @@ type State = {
 export default class BufferUI extends Component<ServiceUIProps, State> {
   state: State = {
     capacity: 0,
+    interval: 0,
     items: [],
     displayBuffer: undefined,
   };
 
+  update = (state: any) => {
+    const { capacity, interval } = state;
+
+    if (needsUpdate(capacity, this.state.capacity)) {
+      this.setState({ capacity });
+    }
+
+    if (needsUpdate(interval, this.state.interval)) {
+      this.setState({ interval });
+    }
+
+    if (state.buffer !== undefined) {
+      this.setState({ items: state.buffer });
+    }
+  };
+
   onInit = (initialState: any) => {
-    const { capacity } = initialState;
-    this.setState({
-      capacity,
-    });
+    this.update(initialState);
   };
 
   onNotification = async (notification: any) => {
-    if (notification.buffer !== undefined) {
-      this.setState({ items: notification.buffer });
-    }
+    this.update(notification);
   };
 
   renderItem = (item: any) => {
@@ -50,24 +70,36 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
   renderBuffer = () => {
     const { items } = this.state;
     return (
-      <div className="flex flex-col w-full h-full max-h-[400px] overflow-auto border-solid border text-left">
-        {items.map((item, idx) => (
-          <div key={`buffer-list-item-${idx}`} className="flex">
-            <div className="mx-2">{this.renderItem(item)}</div>
-            <div className="ml-auto">
-              <Button className="h-[30px]" onClick={() => downloadBuffer(item)}>
-                <DownloadIcon size={20} />
-              </Button>
-              <Button
-                className="h-[30px]"
-                onClick={() => this.setState({ displayBuffer: item })}
-              >
-                <Eye size={20} />
-              </Button>
+      <Accordion type="single" collapsible className="w-full" defaultValue="0">
+        <AccordionItem value="item-1">
+          <AccordionTrigger className="tracking-wider">
+            Buffer ({this.state.items.length})
+          </AccordionTrigger>
+          <AccordionContent>
+            <div className="flex flex-col w-full h-full max-h-[400px] overflow-y-auto border-solid border text-left">
+              {items.map((item, idx) => (
+                <div key={`buffer-list-item-${idx}`} className="flex">
+                  <div className="mx-2">{this.renderItem(item)}</div>
+                  <div className="ml-auto">
+                    <Button
+                      className="h-[30px]"
+                      onClick={() => downloadBuffer(item)}
+                    >
+                      <DownloadIcon size={20} />
+                    </Button>
+                    <Button
+                      className="h-[30px]"
+                      onClick={() => this.setState({ displayBuffer: item })}
+                    >
+                      <Eye size={20} />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        ))}
-      </div>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     );
   };
 
@@ -91,6 +123,10 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
 
   onClear = () => this.props.service.configure({ action: "clear" });
 
+  onChangeInterval = (newInterval: number) => {
+    this.props.service.configure({ interval: newInterval });
+  };
+
   render() {
     const customMenuEntries = [
       {
@@ -109,7 +145,7 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
         onInit={this.onInit}
         onNotification={this.onNotification}
         customMenuEntries={customMenuEntries}
-        initialSize={{ width: 280, height: undefined }}
+        initialSize={{ width: 320, height: undefined }}
       >
         <div className="flex flex-col gap-1">
           <InputField
@@ -124,7 +160,16 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
             label="Capacity"
             unit="items"
           />
-
+          <div className="flex w-full items-end">
+            <Slider
+              title="Interval"
+              min={0}
+              max={10000}
+              value={this.state.interval}
+              onChange={this.onChangeInterval}
+            />
+            <div className="ml-auto pl-2"> msec</div>
+          </div>
           {displayBuffer
             ? this.renderSingle(displayBuffer)
             : this.renderBuffer()}

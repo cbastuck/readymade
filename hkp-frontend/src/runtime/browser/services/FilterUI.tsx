@@ -6,6 +6,7 @@ import SelectorField from "@/components/shared/SelectorField";
 import { ServiceUIProps } from "@/types";
 import ServiceUI from "@/ui-components/service/ServiceUI";
 import Button from "@/ui-components/Button";
+import GroupLabel from "@/ui-components/GroupLabel";
 
 type State = {
   conditions: any;
@@ -44,12 +45,14 @@ export default class FilterUI extends Component<ServiceUIProps, State> {
     const { service } = this.props;
     return (
       <div className="filter-service" style={{ textAlign: "left" }}>
+        <GroupLabel>Conditions</GroupLabel>
         {conditions &&
           conditions.map((condition: any, cidx: number) => (
             <InputField
               key={`filter-condition-${service.uuuid}-${cidx}`}
+              className="font-menu"
               type="text"
-              label={`C${cidx + 1}`}
+              label={`${cidx + 1}`}
               value={condition || ""}
               onChange={(condition) => {
                 const updated = condition
@@ -61,23 +64,25 @@ export default class FilterUI extends Component<ServiceUIProps, State> {
               }}
             />
           ))}
-        {conditions && conditions.length > 1 && (
-          <SelectorField
-            label="Op"
-            options={{ and: "and", or: "or" }}
-            value={aggregator}
-            onChange={({ value: aggregator }) => {
-              service.configure({ aggregator });
-            }}
-          />
-        )}
         <Button
+          className="my-2 w-full"
           onClick={() => {
             service.configure({ conditions: [...conditions, ""] });
           }}
         >
           Add Condition
         </Button>
+        {conditions && conditions.length > 1 && (
+          <SelectorField
+            className="my-2 mx-0"
+            label="Operation"
+            options={{ and: "AND", or: "OR" }}
+            value={aggregator}
+            onChange={({ value: aggregator }) => {
+              service.configure({ aggregator });
+            }}
+          />
+        )}
       </div>
     );
   };
@@ -88,6 +93,7 @@ export default class FilterUI extends Component<ServiceUIProps, State> {
         {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
+        initialSize={{ width: 300, height: undefined }}
       >
         {this.renderMain()}
       </ServiceUI>

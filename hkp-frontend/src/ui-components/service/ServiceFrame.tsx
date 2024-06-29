@@ -56,9 +56,12 @@ export default function ServiceFrame({
           return;
         case "call-process-finished":
           setTimeout(() => setServiceIsProcessing(false), 350);
-          setRecentProgressData(data);
-          setSignalOutput(true);
-          setTimeout(() => setSignalOutput(false), 350);
+          if (data !== null) {
+            setRecentProgressData(data);
+            setSignalOutput(true);
+            setTimeout(() => setSignalOutput(false), 350);
+          }
+
           return;
       }
     }

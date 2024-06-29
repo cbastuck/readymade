@@ -23,6 +23,7 @@ type Props = {
   label?: string;
   options: Options;
 
+  className?: string;
   uppercaseValues?: boolean;
   uppercaseKeys?: boolean;
   disabled?: boolean;
@@ -62,7 +63,7 @@ export default class SelectorField extends Component<Props, State> {
 
     return (
       <div
-        className="items-end"
+        className={`items-end ${this.props.className || ""}`}
         style={{
           width: "100%",
           display: "flex",

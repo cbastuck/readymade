@@ -17,6 +17,7 @@ type Props = {
   unit?: string;
   labelStyle?: CSSProperties;
   style?: CSSProperties;
+  className?: string;
 
   onChange?: (value: string) => void;
   onEscape?: (value: string) => void;
@@ -68,6 +69,7 @@ export default class InputField extends Component<Props, State> {
           value={value === undefined ? "" : value}
           onSubmit={onChange}
           disabled={disabled}
+          className={this.props.className}
           fullWidth
         />
         {unit && (
