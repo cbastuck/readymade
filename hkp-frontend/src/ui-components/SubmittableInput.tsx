@@ -20,6 +20,7 @@ type SubmittableInputProps = {
   hideBottomBorder?: boolean;
   disabled?: boolean;
   placeholder?: string;
+  submitOnBlur?: boolean;
   onSubmit: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
 };
@@ -35,6 +36,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       fullWidth,
       minHeight = true,
       disabled = false,
+      submitOnBlur = true,
       placeholder,
       onSubmit,
       onChangePending,
@@ -55,12 +57,13 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         onSubmit(internal);
       }
     };
+
     const onChange = (newValue: string) => {
       setInternal(newValue);
     };
 
     const onBlur = () => {
-      if (internal !== lastSubmittedValue.current) {
+      if (submitOnBlur && internal !== lastSubmittedValue.current) {
         onSubmit(internal);
       }
     };

@@ -6,7 +6,6 @@ import {
   AccordionTrigger,
 } from "@/ui-components/primitives/accordion";
 
-import InputField from "hkp-frontend/src/components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 
 import { ServiceUIProps } from "@/types";
@@ -73,7 +72,7 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
       <Accordion type="single" collapsible className="w-full" defaultValue="0">
         <AccordionItem value="item-1">
           <AccordionTrigger className="tracking-wider">
-            Buffer ({this.state.items.length})
+            Items ({this.state.items.length})
           </AccordionTrigger>
           <AccordionContent>
             <div className="flex flex-col w-full h-full max-h-[400px] overflow-y-auto border-solid border text-left">
@@ -127,6 +126,10 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
     this.props.service.configure({ interval: newInterval });
   };
 
+  onChangeCapacity = (newCapacity: number) => {
+    this.props.service.configure({ capacity: newCapacity });
+  };
+
   render() {
     const customMenuEntries = [
       {
@@ -148,18 +151,16 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
         initialSize={{ width: 320, height: undefined }}
       >
         <div className="flex flex-col gap-1">
-          <InputField
-            value={`${this.state.capacity}`}
-            onChange={(value) => {
-              const capacity = value !== "" ? Number(value) : undefined;
-              if (capacity !== undefined) {
-                this.props.service.configure({ capacity });
-                this.setState({ capacity });
-              }
-            }}
-            label="Capacity"
-            unit="items"
-          />
+          <div className="flex w-full items-end">
+            <Slider
+              title="Capacity"
+              min={1}
+              max={1000}
+              value={this.state.capacity}
+              onChange={this.onChangeCapacity}
+            />
+            <div className="ml-auto pl-2"> items</div>
+          </div>
           <div className="flex w-full items-end">
             <Slider
               title="Interval"
@@ -168,7 +169,7 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
               value={this.state.interval}
               onChange={this.onChangeInterval}
             />
-            <div className="ml-auto pl-2"> msec</div>
+            <div className="ml-auto pl-2"> sec</div>
           </div>
           {displayBuffer
             ? this.renderSingle(displayBuffer)

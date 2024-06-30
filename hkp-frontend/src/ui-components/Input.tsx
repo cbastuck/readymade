@@ -1,4 +1,4 @@
-import { KeyboardEvent, FocusEvent, forwardRef } from "react";
+import { KeyboardEvent, FocusEvent, forwardRef, ChangeEvent } from "react";
 
 import { Input as InputCN } from "@/ui-components/primitives/input";
 import GroupLabel from "./GroupLabel";
@@ -40,6 +40,12 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
   const bottomBorder = hideBottomBorder
     ? "border-none"
     : "border-t-0 border-b-1";
+
+  const onInputChange = (ev: ChangeEvent<HTMLInputElement>) => {
+    const val = ev.target.value;
+    onChange(val);
+  };
+
   return (
     <div className="flex items-center gap-2 w-full">
       {title && (
@@ -50,7 +56,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
         type={type}
         className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h} ${className} text-ellipsis`}
         value={value}
-        onChange={(ev) => onChange(ev.target.value)}
+        onChange={onInputChange}
         disabled={disabled}
         spellCheck={false}
         placeholder={placeholder}
