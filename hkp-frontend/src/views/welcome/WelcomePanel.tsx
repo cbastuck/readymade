@@ -15,7 +15,11 @@ export default function WelcomePanel() {
   const navigate = useNavigate();
   const usecaseItems: Array<LandingPitchUsecase> = [
     {
-      text: "use the phone as controller for a desktop game",
+      text: "use the phone as controller for a game on another device",
+      link: "#samples",
+    },
+    {
+      text: "monitor realtime data and render charts",
       link: "#samples",
     },
     { text: "connect two devices over the internet?", link: "#samples" },
@@ -33,12 +37,12 @@ export default function WelcomePanel() {
           width="85%"
         />
       ),
-      title: usecaseItems[0].text,
+      title: `Example 1: ${usecaseItems[0].text}`,
       description:
         "Here you can describe what the user should do when they click on the image",
       background: "/assets/teaser/blue3.png",
       action: {
-        title: "Click to try it",
+        title: "Click to open",
         onClick: () =>
           headerAnimationsComplete &&
           navigate(
@@ -48,9 +52,15 @@ export default function WelcomePanel() {
     },
     {
       element: (
-        <div className="flex flex-col gap-4 justify-center mx-10 drop-shadow-3xl"></div>
+        <video
+          className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
+          src="/assets/teaser/WikipediaMonitoring.mp4"
+          autoPlay
+          loop
+          width="85%"
+        />
       ),
-      title: usecaseItems[1].text,
+      title: `Example 2: ${usecaseItems[1].text}`,
       description: "Bla bla bla",
       background: "/assets/teaser/sky-small2.png",
     },

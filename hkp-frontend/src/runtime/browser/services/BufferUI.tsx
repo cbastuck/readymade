@@ -14,12 +14,14 @@ import { DownloadIcon, X, Eye } from "lucide-react";
 import MenuIcon from "@/ui-components/MenuIcon";
 import Editor from "@/components/shared/Editor";
 import Slider from "@/ui-components/Slider";
+import Switch from "@/ui-components/Switch";
 
 type State = {
   capacity: number;
   interval: number;
   items: Array<any>;
   displayBuffer: any;
+  accumulatedOutput: boolean;
 };
 
 export default class BufferUI extends Component<ServiceUIProps, State> {
@@ -28,10 +30,11 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
     interval: 0,
     items: [],
     displayBuffer: undefined,
+    accumulatedOutput: false,
   };
 
   update = (state: any) => {
-    const { capacity, interval } = state;
+    const { capacity, interval, accumulatedOutput } = state;
 
     if (needsUpdate(capacity, this.state.capacity)) {
       this.setState({ capacity });
@@ -39,6 +42,10 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
 
     if (needsUpdate(interval, this.state.interval)) {
       this.setState({ interval });
+    }
+
+    if (needsUpdate(accumulatedOutput, this.state.accumulatedOutput)) {
+      this.setState({ accumulatedOutput });
     }
 
     if (state.buffer !== undefined) {
@@ -130,6 +137,10 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
     this.props.service.configure({ capacity: newCapacity });
   };
 
+  onAccumulateOutput = (newChecked: boolean) => {
+    this.props.service.configure({ accumulatedOutput: newChecked });
+  };
+
   render() {
     const customMenuEntries = [
       {
@@ -161,7 +172,7 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
             />
             <div className="ml-auto pl-2"> items</div>
           </div>
-          <div className="flex w-full items-end">
+          <div className="flex w-full items-end mt-2">
             <Slider
               title="Interval"
               min={0}
@@ -171,6 +182,14 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
             />
             <div className="ml-auto pl-2"> sec</div>
           </div>
+          <div className="mt-2">
+            <Switch
+              title="Accumulate Output"
+              checked={this.state.accumulatedOutput}
+              onCheckedChange={this.onAccumulateOutput}
+            />
+          </div>
+
           {displayBuffer
             ? this.renderSingle(displayBuffer)
             : this.renderBuffer()}
