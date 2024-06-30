@@ -524,10 +524,9 @@ class BoardProvider extends Component<Props, BoardContextState> {
   }
 
   serializeBoard = async (): Promise<BoardDescriptor | null> => {
+    const runtimeStates: { [rtId: string]: any } = {};
     const services = await Object.keys(this.state.services).reduce(
       async (all, runtimeId) => {
-        const runtimeServices = this.state.services[runtimeId];
-        const [scope, api] = this.getRuntimeScopeApi(runtimeId);
         const runtime = this.state.runtimes.find((r) => r.id === runtimeId);
         if (!runtime) {
           throw new Error(
@@ -536,10 +535,13 @@ class BoardProvider extends Component<Props, BoardContextState> {
             )}`
           );
         }
+        const [scope, api] = this.getRuntimeScopeApi(runtimeId);
+        const runtimeServices = this.state.services[runtimeId];
         const serviceConfigs = await Promise.all(
           runtimeServices.map(async (svc) => {
             const config =
               api && scope ? await api.getServiceConfig(scope, svc) : {};
+            runtimeStates[runtimeId] = scope?.serializeState?.();
             return {
               uuid: svc.uuid,
               serviceId: svc.serviceId,
@@ -555,13 +557,14 @@ class BoardProvider extends Component<Props, BoardContextState> {
       },
       Promise.resolve({})
     );
+
     const runtimes = this.state.runtimes.map((rt) => ({
       id: rt.id,
       name: rt.name,
       type: rt.type,
       url: rt.url,
       bundles: rt.bundles,
-      state: {
+      state: runtimeStates[rt.id] || {
         wrapServices: false,
         minimized: false,
       },

@@ -75,7 +75,7 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
             Items ({this.state.items.length})
           </AccordionTrigger>
           <AccordionContent>
-            <div className="flex flex-col w-full h-full max-h-[400px] overflow-y-auto border-solid border text-left">
+            <div className="flex flex-col w-full h-full max-h-[300px] overflow-y-auto border-solid border text-left">
               {items.map((item, idx) => (
                 <div key={`buffer-list-item-${idx}`} className="flex">
                   <div className="mx-2">{this.renderItem(item)}</div>

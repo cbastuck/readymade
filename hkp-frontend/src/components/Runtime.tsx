@@ -67,6 +67,10 @@ export default class Runtime extends Component<Props, State> {
       showSettings: false,
       ...initialState,
     });
+    const scope = this.props.boardContext.scopes[this.props.runtime.id];
+    if (scope) {
+      scope.setState?.(initialState);
+    }
   }
 
   onAddService = (service: ServiceClass) => {
@@ -209,6 +213,16 @@ export default class Runtime extends Component<Props, State> {
 
     const scope = boardContext.scopes[runtimeId];
 
+    const onWrapServices = (isWrapped: boolean) => {
+      this.setState({ wrapServices: isWrapped });
+      scope?.setState?.({ wrapServices: isWrapped }); // TODO: remove state duplication
+    };
+
+    const onExpand = (expanded: boolean) => {
+      this.setState({ expanded });
+      scope?.setState?.({ minimized: !expanded }); // TODO: remove state duplication
+    };
+
     return (
       <RuntimeUI
         scope={scope}
@@ -226,11 +240,9 @@ export default class Runtime extends Component<Props, State> {
         registry={registry}
         inputs={this.props.inputs}
         outputs={this.props.outputs}
-        onExpand={(expanded: boolean) => this.setState({ expanded })}
+        onExpand={onExpand}
         onAddService={this.onAddService}
-        onWrapServices={(isWrapped: boolean) =>
-          this.setState({ wrapServices: isWrapped })
-        }
+        onWrapServices={onWrapServices}
         onResult={this.props.onResult}
         processRuntimeByName={this.props.processRuntimeByName}
       >

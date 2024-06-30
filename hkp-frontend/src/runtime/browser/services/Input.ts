@@ -137,6 +137,8 @@ class Input extends ServiceBase<State> {
       }
     } catch (err) {
       console.error("Input fetch failed with error: ", err);
+      this.bypass = true;
+      this.app.notify(this, { bypass: this.bypass });
     }
   };
 

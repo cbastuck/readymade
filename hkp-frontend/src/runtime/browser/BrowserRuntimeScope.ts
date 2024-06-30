@@ -25,6 +25,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   app: AppImpl;
   registry: BrowserRegistry;
   authenticatedUser: User | null = null;
+  state: { [key: string]: any } = {};
 
   constructor(runtime: RuntimeDescriptor, registry: BrowserRegistry) {
     this.descriptor = runtime;
@@ -171,5 +172,13 @@ export default class BrowserRuntimeScope implements RuntimeScope {
 
   processRuntimeByName = async (_name: string, _params: any) => {
     console.warn("processRuntimeByName not implemented");
+  };
+
+  serializeState = () => {
+    return this.state;
+  };
+
+  setState = (partialUpdate: { [key: string]: any }) => {
+    this.state = { ...this.state, ...partialUpdate };
   };
 }

@@ -44,6 +44,9 @@ export interface RuntimeScope {
   onResult: OnResult;
   onConfig?: (instanceId: string, config: object) => void;
   onAction: (_action: ServiceAction) => boolean;
+
+  serializeState?: () => any;
+  setState?: (partialUpdate: { [key: string]: any }) => void;
 }
 
 export type ExternalInput = {
