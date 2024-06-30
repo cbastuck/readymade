@@ -143,6 +143,10 @@ class Sandbox extends Component<Props, State> {
     // console.log('Sandbox result', serviceUuid, result);
   };
 
+  processRuntimeByName = async () => {
+    console.warn("processRuntimeByName not implemented in Sandbox");
+  };
+
   renderState = (
     boardContext: BoardContextState,
     options: Options,
@@ -165,6 +169,7 @@ class Sandbox extends Component<Props, State> {
           onResult={this.onResult}
           disabledItems={["remove"]}
           highlightServicesOnHover={false}
+          processRuntimeByName={this.processRuntimeByName}
         />
 
         {url && !this.props.hidePlaygroundLink && (

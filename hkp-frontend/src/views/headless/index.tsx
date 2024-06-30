@@ -130,6 +130,10 @@ export default class Headless extends Component<Props, State> {
       remote: remoteRuntimeApi,
     };
 
+    const processRuntimeByName = async () => {
+      console.warn("processRuntimeByName not implemented in headless");
+    };
+
     return (
       <BoardProvider
         ref={(context) => (this.boardContext = context)}
@@ -153,6 +157,7 @@ export default class Headless extends Component<Props, State> {
                 headless={!expanded}
                 onResult={this.onResult}
                 initialState={{}}
+                processRuntimeByName={processRuntimeByName}
               />
             )
           }
