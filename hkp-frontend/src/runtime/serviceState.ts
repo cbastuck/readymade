@@ -1,6 +1,6 @@
 import { AppInstance, InstanceId } from "@/types";
 
-export function onServiceStartProcess(
+export function onServiceProcess(
   app: AppInstance,
   svc: InstanceId,
   params: any
@@ -8,7 +8,7 @@ export function onServiceStartProcess(
   app.notify(svc, { __internal: { state: "call-process", data: params } });
 }
 
-export function onServiceEndProcess(
+export function onServiceResult(
   app: AppInstance,
   svc: InstanceId,
   result: any

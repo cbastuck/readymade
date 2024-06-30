@@ -16,7 +16,6 @@ import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import MenuIcon from "@/ui-components/MenuIcon";
-import { onServiceEndProcess } from "@/runtime/serviceState";
 
 export default function MonitorUI(props: ServiceUIProps) {
   const [message, setMessage] = useState("");
@@ -88,7 +87,6 @@ export default function MonitorUI(props: ServiceUIProps) {
         } catch (err) {
           data = message;
         }
-        onServiceEndProcess(service.app, service, data);
         service.app.next(service, data);
       },
     },

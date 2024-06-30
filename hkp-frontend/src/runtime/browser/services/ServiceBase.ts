@@ -1,7 +1,3 @@
-import {
-  onServiceEndProcess,
-  onServiceStartProcess,
-} from "@/runtime/serviceState";
 import { AppInstance, ServiceClass } from "@/types";
 
 export default class ServiceBase<T> {
@@ -46,13 +42,5 @@ export default class ServiceBase<T> {
         message,
       },
     });
-  };
-
-  onStartProcess = (params: any) => {
-    onServiceStartProcess(this.app, this, params);
-  };
-
-  onEndProcess = (result: any) => {
-    onServiceEndProcess(this.app, this, result);
   };
 }

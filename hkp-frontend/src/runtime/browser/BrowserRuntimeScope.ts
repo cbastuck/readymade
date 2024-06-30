@@ -13,6 +13,7 @@ import {
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 import api from "./BrowserRuntimeApi";
+import { onServiceProcess, onServiceResult } from "../serviceState";
 
 export type InstanceIndexTuple = [ServiceInstance | null, number];
 
@@ -146,9 +147,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       svc = services[i];
       if (svc && !svc.bypass) {
         try {
-          svc.onStartProcess?.(params);
+          onServiceProcess(this.app, svc, params);
           result = await svc.process(params);
-          svc?.onEndProcess?.(result);
+          onServiceResult(this.app, svc, result);
           params = result;
         } catch (err: any) {
           console.warn(

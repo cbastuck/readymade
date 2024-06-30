@@ -12,12 +12,18 @@ import {
 import { appendSubservice } from "./BrowserRuntimeApi";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import NotificationTargets from "../NotificationsTargets";
+import { onServiceProcess, onServiceResult } from "../serviceState";
 
 export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
   const notificationTargets = new NotificationTargets();
-  return {
+  const app = {
     getAuthenticatedUser: () => scope.authenticatedUser,
     next: (svc: InstanceId | null, result: any) => {
+      if (svc) {
+        onServiceProcess(app, svc, undefined);
+        onServiceResult(app, svc, result);
+      }
+
       return scope.next(svc, result);
     },
 
@@ -104,6 +110,8 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     processRuntimeByName: (name: string, params: any) =>
       scope?.processRuntimeByName(name, params),
   };
+
+  return app;
 }
 
 function serviceDataKey(uuid: string, key: string) {

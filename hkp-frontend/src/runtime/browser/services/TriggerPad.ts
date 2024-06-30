@@ -47,9 +47,7 @@ class TriggerPad extends ServiceBase<State> {
   triggerPad(padIndex: number) {
     const assignment = this.padAssignment(padIndex);
     if (assignment) {
-      this.onStartProcess(assignment);
       this.app.next(this, assignment);
-      this.onEndProcess(assignment);
     } else {
       this.state.armedPad = padIndex;
     }
