@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { s, t } from "../../styles";
 
 import Logo from "./hkp-dots-braid.svg?react";
@@ -10,9 +9,10 @@ import { isBoardDescriptor } from "@/types";
 
 type Props = {
   boardName: string;
+  onChangeBoardname: (newName: string) => void;
 };
 
-export default function EmptyBoard({ boardName }: Props) {
+export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
   const boardContext = useContext(BoardCtx);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const onDragOver = (ev: DragEvent) => {
@@ -41,7 +41,7 @@ export default function EmptyBoard({ boardName }: Props) {
       });
     }
   };
-  const navigate = useNavigate();
+
   const headline = !boardName ? (
     "this is an empty board"
   ) : (
@@ -53,7 +53,7 @@ export default function EmptyBoard({ boardName }: Props) {
           fullWidth
           className="text-[#1e70bf] text-center font-menu text-xl capitalize"
           value={boardName}
-          onSubmit={(newName) => navigate(`/playground/${newName}`)}
+          onSubmit={onChangeBoardname}
         />
       </div>
       <div className="w-full text-left">is empty.</div>
@@ -105,7 +105,7 @@ export default function EmptyBoard({ boardName }: Props) {
               >
                 {" Add a Runtime "}
               </span>
-              to sketch an Idea, or Drop a downloaded board here
+              to sketch an Idea, or drop a board file here
             </div>
           </div>
         </div>

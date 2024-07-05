@@ -100,7 +100,7 @@ export default class Runtime extends Component<Props, State> {
         );
       }
       default:
-        console.log("Runtime processing unknown service action", action);
+        console.log("Runtime processing unknown service action: ", action);
     }
   };
 

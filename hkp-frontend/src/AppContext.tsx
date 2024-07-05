@@ -20,7 +20,14 @@ type Props = {
   children: JSX.Element | JSX.Element[];
 };
 
-const AppCtx = createContext<AppContextState | null>(null);
+const AppCtx = createContext<AppContextState>({
+  user: null,
+  appViewMode: "wide",
+  pushNotification: (_: Notification) => {},
+  popNotification: () => {},
+  updateToken: async (_: IdToken) => {},
+  logout: () => {},
+});
 const { Provider, Consumer: AppConsumer } = AppCtx;
 
 class AppProvider extends Component<Props, AppContextState> {

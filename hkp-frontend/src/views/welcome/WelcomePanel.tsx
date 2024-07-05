@@ -3,6 +3,12 @@ import { useNavigate } from "react-router-dom";
 
 import ClaimApp from "./ClaimApp";
 import Carousel, { CarouselItem } from "@/ui-components/Carousel";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/ui-components/primitives/accordion";
 import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";
 import LandingPitch, { LandingPitchUsecase } from "./LandingPitch";
@@ -37,7 +43,7 @@ export default function WelcomePanel() {
           width="85%"
         />
       ),
-      title: `Example 1: ${usecaseItems[0].text}`,
+      title: `Sample 1: ${usecaseItems[0].text}`,
       description:
         "Here you can describe what the user should do when they click on the image",
       background: "/assets/teaser/blue3.png",
@@ -60,8 +66,9 @@ export default function WelcomePanel() {
           width="85%"
         />
       ),
-      title: `Example 2: ${usecaseItems[1].text}`,
-      description: "Bla bla bla",
+      title: `Sample 2: ${usecaseItems[1].text}`,
+      description:
+        "Monitor incoming data and extract metric for rendering them in a graph",
       background: "/assets/teaser/sky-small2.png",
     },
     {
@@ -113,7 +120,7 @@ export default function WelcomePanel() {
           it out.
         </div>
 
-        <div className="mx-auto md:px-10 pb-6">
+        <div className="mx-auto px-[0%] lg:px-[10%] pb-6">
           <Carousel
             items={carouselItems}
             current={currentCarouselItem}
@@ -125,6 +132,63 @@ export default function WelcomePanel() {
         </div>
 
         <h1 className="pt-4 md:pt-10 mx-0 mb-2 md:text-center">Background</h1>
+        <div className="mb-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[60%] gap-4">
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="faq-1">
+              <AccordionTrigger>What is this?</AccordionTrigger>
+              <AccordionContent className="text-base font-serif">
+                It's not so easy to describe. I often find similarities with
+                existing tools and methodologies, but when looking deeper
+                inside, think, na it's different - same but different.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq-2">
+              <AccordionTrigger> Is it low-code?</AccordionTrigger>
+              <AccordionContent className="text-base font-serif">
+                Meh, I don't think replacing code is really an option. Further
+                if I write a declarative configuration file, is it really so
+                different from code? Also all the hype, the claims and the big
+                promises are a big turn-off personally
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq-3">
+              <AccordionTrigger>Is it visual programming?</AccordionTrigger>
+              <AccordionContent className="text-base font-serif">
+                Meh, yeah that's cool, but at the same time visual programming
+                restricts yourself too much. Also boxes and arrows alone feel
+                like the wrong abstraction. Like plastering you code with gotos.
+                I'm missing the structure here. Abstraction that help
+                composition that you understand in year after creation. Also the
+                focus on visual stuff hinders in the end. This visual gimmicks
+                are just cool in the beginning. But for maintainance you really
+                just want some kind of configuration that is easy to read,
+                merge, review, etc.
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq-4">
+              <AccordionTrigger>Is it rapid prototyping?</AccordionTrigger>
+              <AccordionContent className="text-base font-serif">
+                Yea, sort of. But at the same time the prototype could be enough
+                to realise your personal ideas. It might provide real value.
+                Then calling it a prototype is a bit of a turn off as it makes
+                it sounds like a toy only
+              </AccordionContent>
+            </AccordionItem>
+            <AccordionItem value="faq-5">
+              <AccordionTrigger>
+                Is a tool for connecting things?
+              </AccordionTrigger>
+              <AccordionContent className="text-base font-serif">
+                Yeah, that's close. But it sounds too abstract for people to
+                connect with it. The scope is top wide but the opposite effect
+                should be achieved. To lower the access boundaries. Bridge the
+                gap between being a user or a developer. It shouldn't be that
+                black and white. There are many gray areas that are worth
+                exploring for non CS folks
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </div>
         <div className="pb-14">
           <BackgroundSection />
         </div>

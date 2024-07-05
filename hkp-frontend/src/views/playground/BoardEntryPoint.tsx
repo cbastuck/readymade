@@ -38,6 +38,7 @@ type Props = {
     runtime: RuntimeDescriptor,
     routing: Array<SidechainRoute>
   ) => void;
+  onChangeBoardname: (newName: string) => void;
 };
 
 export default function BoardEntryPoint({
@@ -52,6 +53,7 @@ export default function BoardEntryPoint({
   onChangeOutputRouting,
   onChangeInputRouting,
   onChangeSidechainRouting,
+  onChangeBoardname,
 }: Props) {
   const [enforceLoadPanel, setEnforceLoadPanel] = useState(false);
   const isPlaygroundEmpty =
@@ -122,7 +124,10 @@ export default function BoardEntryPoint({
           )}
           <div>
             {isPlaygroundEmpty ? (
-              <EmptyBoard boardName={boardName} />
+              <EmptyBoard
+                boardName={boardName}
+                onChangeBoardname={onChangeBoardname}
+              />
             ) : (
               <Board
                 boardContext={boardContext}

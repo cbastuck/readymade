@@ -38,6 +38,7 @@ import {
   InstanceId,
   RuntimeInputRoutings,
   RuntimeOutputRoutings,
+  RuntimeClass,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
@@ -51,7 +52,13 @@ const restoredAvailableRuntimes = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
 );
 
-type Props = WithRouterProps & { boardName?: string; compact?: boolean };
+type Props = WithRouterProps & {
+  boardName?: string;
+  compact?: boolean;
+  availableRuntimes?: Array<RuntimeClass>;
+  onChangeBoardname?: (newName: string) => void;
+  onSaveBoard?: (name: string, payload: BoardDescriptor) => void;
+};
 
 type State = {
   boardName: string;
@@ -128,6 +135,10 @@ class Playground extends Component<Props, State> {
     const prevBoard = prevProps.match?.params?.board;
     if (board !== prevBoard && board) {
       this.onBoardChanged(board);
+    }
+
+    if (prevProps.boardName !== this.props.boardName && this.props.boardName) {
+      this.setState({ boardName: this.props.boardName });
     }
   }
 
@@ -307,19 +318,29 @@ class Playground extends Component<Props, State> {
     this.externalInputs = {};
   };
 
+  // save current board with shortcut Cmd+s -> see onSaveDialog
   saveBoard = async (showDialog = true) => {
     if (showDialog) {
       this.setState({ isSaveDialogVisible: true });
     } else if (this.state.boardName) {
       const { boardName: name, description } = this.state;
+      const saveName = this.props.boardName || name;
       const data = await this.boardProviderRef?.state.serializeBoard();
-      localStorage.setItem(
-        `${localStoragePrefix}${name}`,
-        JSON.stringify({ ...data, name, description })
-      );
+      if (this.props.onSaveBoard && data) {
+        this.props.onSaveBoard(saveName, {
+          ...data,
+          description,
+        });
+      } else {
+        localStorage.setItem(
+          `${localStoragePrefix}${name}`,
+          JSON.stringify({ ...data, name, description })
+        );
+      }
+
       this.context?.pushNotification({
         type: "success",
-        message: `The Board '${name}' was saved.`,
+        message: `The Board '${saveName}' was saved.`,
       });
     } else {
       this.context?.pushNotification({
@@ -392,16 +413,32 @@ class Playground extends Component<Props, State> {
     isSuggestedName: boolean
   ) => {
     const data = await this.boardProviderRef?.state.serializeBoard();
-    storeBoardToLocalStorage(
-      name,
-      JSON.stringify({ ...data, name, description })
-    );
+    if (this.props.onSaveBoard && data) {
+      this.props.onSaveBoard(name, { ...data, description });
+    } else {
+      storeBoardToLocalStorage(
+        name,
+        JSON.stringify({ ...data, name, description })
+      );
+
+      if (!isSuggestedName) {
+        setTimeout(
+          () => this.props.navigate(`/playground/${name}`, { replace: true }),
+          0
+        );
+      }
+    }
 
     this.setState(() => ({ description, isSaveDialogVisible: false }));
-    if (!isSuggestedName) {
-      this.props.navigate(`/playground/${name}`, { replace: true });
-    }
     return data;
+  };
+
+  onChangeBoardname = (newName: string) => {
+    if (!this.props.onChangeBoardname) {
+      this.props.navigate(`/playground/${newName}`);
+      return;
+    }
+    this.props.onChangeBoardname(newName);
   };
 
   render() {
@@ -412,6 +449,10 @@ class Playground extends Component<Props, State> {
     };
 
     const user = (appContext && appContext?.user) || this.user;
+
+    const playgroundRuntimes = availableRuntimes
+      .concat(restoredAvailableRuntimes)
+      .concat(this.props.availableRuntimes || []);
 
     return (
       <BoardProvider
@@ -447,7 +488,7 @@ class Playground extends Component<Props, State> {
           return false;
         }}
         onRemoveService={this.onRemoveService}
-        availableRuntimes={availableRuntimes.concat(restoredAvailableRuntimes)}
+        availableRuntimes={playgroundRuntimes}
       >
         <BoardConsumer>
           {(boardContext) =>
@@ -480,6 +521,7 @@ class Playground extends Component<Props, State> {
                     (this.props.match &&
                       this.props.match.params &&
                       this.props.match.params.board) ||
+                    this.props.boardName ||
                     generateRandomName()
                   }
                   suggestedDescription={this.state.description}
@@ -498,7 +540,7 @@ class Playground extends Component<Props, State> {
                     }
                     showLoginRequired={!!boardContext.awaitUserLogin}
                     boardContext={boardContext}
-                    boardName={this.state.boardName}
+                    boardName={this.props.boardName || this.state.boardName}
                     description={this.state.description}
                     sidechainRouting={this.state.sidechainRouting}
                     outputRouting={this.state.outputRouting}
@@ -530,6 +572,7 @@ class Playground extends Component<Props, State> {
                         },
                       });
                     }}
+                    onChangeBoardname={this.onChangeBoardname}
                   />
                 )}
 

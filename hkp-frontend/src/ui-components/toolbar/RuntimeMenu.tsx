@@ -67,7 +67,7 @@ export default function RuntimeMenu({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className={`w-[200px] p-0 ${heightConstraint} opacity-100 font-menu`}
+          className={`w-[300px] p-0 ${heightConstraint} opacity-100 font-menu`}
         >
           <Command>
             <CommandInput
@@ -93,7 +93,7 @@ export default function RuntimeMenu({
                     setSearchTerm("");
                   }}
                 >
-                  {rt.name} Runtime
+                  {rt.name}
                 </CommandItem>
               ))}
 

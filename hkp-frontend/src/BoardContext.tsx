@@ -117,7 +117,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
 
   constructor(props: Props) {
     super(props);
-    this.context = null;
+    // this.context = null;
 
     this.state = {
       // API
@@ -163,7 +163,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: BoardContextState) {
-    const { user, boardName } = this.props;
+    const { user, boardName, availableRuntimes } = this.props;
     if (prevProps.user !== user) {
       this.setState({ user });
     }
@@ -172,6 +172,13 @@ class BoardProvider extends Component<Props, BoardContextState> {
     }
     if (this.context !== prevState.appContext) {
       this.setState({ appContext: this.context });
+    }
+
+    if (
+      prevProps.availableRuntimes !== availableRuntimes &&
+      availableRuntimes
+    ) {
+      this.setState({ availableRuntimes });
     }
   }
 

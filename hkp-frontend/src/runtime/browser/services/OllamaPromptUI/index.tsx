@@ -66,6 +66,11 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
     props.service.configure({ responseIsJson: isJson });
   };
 
+  const onOpenModels = () => {
+    if (availableModels.length === 0) {
+      props.service.fetchAvailableModels();
+    }
+  };
   return (
     <ServiceUI
       className="pb-4"
@@ -78,6 +83,7 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
         <SelectorField
           label="Model"
           value={usedModel}
+          onOpen={onOpenModels}
           options={arrayToOptions(availableModels)}
           onChange={onSelectModel}
         />
@@ -89,6 +95,7 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
           onSubmitPrompt={onSubmitPrompt}
         />
         <Switch
+          className="mt-2"
           title="Response is JSON"
           checked={parseResponseAsJson}
           onCheckedChange={onChangeParseResponse}

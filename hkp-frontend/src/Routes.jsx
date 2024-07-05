@@ -159,5 +159,16 @@ function PlaygroundRedirect() {
 }
 
 function CompactPlayground() {
-  return <Playground compact />;
+  return (
+    <Playground
+      compact
+      boardName="Sketchboard"
+      onChangeBoardname={(newBoardname) =>
+        console.log("CompactPlayground.onChangeBoardname", newBoardname)
+      }
+      onSaveBoard={(name, payload) => {
+        console.log("CompactPlayground.onSaveBoard", board, payload);
+      }}
+    />
+  );
 }

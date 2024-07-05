@@ -2,8 +2,13 @@ import "../src/index.css";
 import "../app/globals.css";
 
 import Playground from "../src/views/playground";
-import AppProvider from "../src/AppContext";
+import AppProvider, { AppContextState, AppCtx } from "../src/AppContext";
 import AuthProvider from "../src/auth/Auth0Provider";
 import Notifications from "../src/Notifications";
+import { useContext } from "react";
 
-export { Playground, AppProvider, AuthProvider, Notifications };
+export function useAppContext() {
+  return useContext<AppContextState>(AppCtx);
+}
+
+export { Playground, AppProvider, AppCtx, AuthProvider, Notifications };
