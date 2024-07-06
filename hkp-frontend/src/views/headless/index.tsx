@@ -5,7 +5,7 @@ import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
 import BoardProvider, { BoardConsumer } from "../../BoardContext";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
-import { availableRuntimes } from "../playground/common";
+import { availableRuntimeEngines } from "../playground/common";
 
 import build from "../../buildNumber.json";
 import {
@@ -143,7 +143,7 @@ export default class Headless extends Component<Props, State> {
         isRuntimeInScope={() => true}
         runtimeApis={runtimeApis}
         isActionAvailable={() => false}
-        availableRuntimes={availableRuntimes}
+        availableRuntimeEngines={availableRuntimeEngines}
         fetchAfterMount={true}
       >
         <BoardConsumer>

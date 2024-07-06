@@ -172,7 +172,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
         runtimeApis={runtimeApis}
         user={user}
         boardName="board-service-board"
-        availableRuntimes={[]}
+        availableRuntimeEngines={[]}
       >
         <BoardConsumer>
           {(boardContext) =>

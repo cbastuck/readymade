@@ -11,7 +11,7 @@ export const localStoragePrefix = "hkp-playground-";
 export const defaultName = "Playground";
 
 const browser = new UAParser().getBrowser();
-export const availableRuntimes: Array<RuntimeClass> = [
+export const availableRuntimeEngines: Array<RuntimeClass> = [
   { name: `${browser.name}` || "browser", type: "browser" },
 ];
 

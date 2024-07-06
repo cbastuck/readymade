@@ -14,7 +14,7 @@ import { t } from "../../styles";
 import {
   localStoragePrefix,
   defaultName,
-  availableRuntimes,
+  availableRuntimeEngines,
   restoreBoardFromLocalStorage,
   storeBoardToLocalStorage,
 } from "./common";
@@ -48,14 +48,14 @@ import { AppCtx } from "../../AppContext";
 import BoardFetchError from "./BoardFetchError";
 import ShareQRCodeDialog from "@/components/ShareQRCodeDialog";
 
-const restoredAvailableRuntimes = JSON.parse(
+const restoredAvailableRuntimeEngines = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
 );
 
 type Props = WithRouterProps & {
   boardName?: string;
   compact?: boolean;
-  availableRuntimes?: Array<RuntimeClass>;
+  availableRuntimeEngines?: Array<RuntimeClass>;
   onChangeBoardname?: (newName: string) => void;
   onSaveBoard?: (name: string, payload: BoardDescriptor) => void;
 };
@@ -450,9 +450,9 @@ class Playground extends Component<Props, State> {
 
     const user = (appContext && appContext?.user) || this.user;
 
-    const playgroundRuntimes = availableRuntimes
-      .concat(restoredAvailableRuntimes)
-      .concat(this.props.availableRuntimes || []);
+    const playgroundRuntimeEngines = this.props.availableRuntimeEngines
+      ? this.props.availableRuntimeEngines
+      : availableRuntimeEngines.concat(restoredAvailableRuntimeEngines);
 
     return (
       <BoardProvider
@@ -488,7 +488,7 @@ class Playground extends Component<Props, State> {
           return false;
         }}
         onRemoveService={this.onRemoveService}
-        availableRuntimes={playgroundRuntimes}
+        availableRuntimeEngines={playgroundRuntimeEngines}
       >
         <BoardConsumer>
           {(boardContext) =>
@@ -496,11 +496,11 @@ class Playground extends Component<Props, State> {
               <div style={t.fill}>
                 <Toolbar
                   showRuntimeMenu={true}
-                  onUpdateAvailableRuntimes={(runtimes) =>
+                  onUpdateAvailableRuntimeEngines={(engines) =>
                     localStorage.setItem(
                       "available-remote-runtimes",
                       JSON.stringify(
-                        runtimes.filter((rt) => rt.type === "remote")
+                        engines.filter((rt) => rt.type === "remote")
                       )
                     )
                   }

@@ -56,7 +56,7 @@ export type BoardContextState = BoardContextAPI & {
   registry: { [runtimeId: string]: ServiceRegistry };
   scopes: { [runtimeId: string]: RuntimeScope };
 
-  availableRuntimes: Array<RuntimeClass>;
+  availableRuntimeEngines: Array<RuntimeClass>;
   runtimeApis: RuntimeApiMap;
 
   appContext: AppContextState | null;
@@ -70,7 +70,7 @@ type Props = {
   user: User | null;
   boardName?: string;
   children: JSX.Element | JSX.Element[];
-  availableRuntimes?: Array<RuntimeClass>;
+  availableRuntimeEngines?: Array<RuntimeClass>;
   runtimeApis?: RuntimeApiMap;
   fetchAfterMount?: boolean;
 
@@ -135,7 +135,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       releaseRuntimeScope: this.releaseRuntimeScope,
       isActionAvailable: this.isActionAvailable,
       setRuntimeName: this.setRuntimeName,
-      availableRuntimes: props.availableRuntimes || [],
+      availableRuntimeEngines: props.availableRuntimeEngines || [],
       addAvailableRuntime: this.addAvailableRuntime,
       removeAvailableRuntime: this.removeAvailableRuntime,
       serializeBoard: this.serializeBoard,
@@ -163,7 +163,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
   }
 
   componentDidUpdate(prevProps: Props, prevState: BoardContextState) {
-    const { user, boardName, availableRuntimes } = this.props;
+    const { user, boardName, availableRuntimeEngines } = this.props;
     if (prevProps.user !== user) {
       this.setState({ user });
     }
@@ -175,10 +175,10 @@ class BoardProvider extends Component<Props, BoardContextState> {
     }
 
     if (
-      prevProps.availableRuntimes !== availableRuntimes &&
-      availableRuntimes
+      prevProps.availableRuntimeEngines !== availableRuntimeEngines &&
+      availableRuntimeEngines
     ) {
-      this.setState({ availableRuntimes });
+      this.setState({ availableRuntimeEngines });
     }
   }
 
@@ -500,25 +500,25 @@ class BoardProvider extends Component<Props, BoardContextState> {
   };
 
   addAvailableRuntime = ({ name, url, type }: RuntimeClass) => {
-    const availableRuntimes = this.state.availableRuntimes.concat({
+    const availableRuntimeEngines = this.state.availableRuntimeEngines.concat({
       name,
       type,
       url,
     });
     this.setState({
-      availableRuntimes,
+      availableRuntimeEngines,
     });
-    return availableRuntimes;
+    return availableRuntimeEngines;
   };
 
   removeAvailableRuntime = ({ name }: RuntimeClass) => {
-    const availableRuntimes = this.state.availableRuntimes.filter(
+    const availableRuntimeEngines = this.state.availableRuntimeEngines.filter(
       (rt) => rt.name !== name
     );
     this.setState({
-      availableRuntimes,
+      availableRuntimeEngines,
     });
-    return availableRuntimes;
+    return availableRuntimeEngines;
   };
 
   getRuntimeScopeApi(

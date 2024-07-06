@@ -18,7 +18,7 @@ export default class Template extends Component<Props> {
     const { children, title, isRoot, parent, slug, width = "70%" } = this.props;
     const renderBreadcrumbs = (!!title || slug) && (!isRoot || !!parent);
     return (
-      <BoardProvider user={null} availableRuntimes={[]} runtimeApis={{}}>
+      <BoardProvider user={null} availableRuntimeEngines={[]} runtimeApis={{}}>
         <div
           style={{
             width: "100%",

@@ -19,14 +19,14 @@ import { RuntimeClass } from "@/types";
 import ManageRuntimesDialog from "./ManageRuntimesDialog";
 
 type Props = {
-  availableRuntimes: Array<RuntimeClass>;
+  availableRuntimeEngines: Array<RuntimeClass>;
   onAddAvailableRuntime: (desc: RuntimeClass) => void;
   onRemoveAvailableRuntime: (desc: RuntimeClass) => void;
   onAddRuntime: (rtClass: RuntimeClass) => void;
 };
 
 export default function RuntimeMenu({
-  availableRuntimes,
+  availableRuntimeEngines,
   onAddAvailableRuntime,
   onRemoveAvailableRuntime,
   onAddRuntime,
@@ -47,8 +47,12 @@ export default function RuntimeMenu({
     }
     setOpen(newOpen);
   };
-  const remoteRuntimes = availableRuntimes.filter((rt) => rt.type === "remote");
-  const localRuntimes = availableRuntimes.filter((rt) => rt.type === "browser");
+  const remoteRuntimes = availableRuntimeEngines.filter(
+    (rt) => rt.type === "remote"
+  );
+  const localRuntimes = availableRuntimeEngines.filter(
+    (rt) => rt.type === "browser"
+  );
   const heightConstraint = remoteRuntimes.length ? "h-[170px]" : "";
   return (
     <>

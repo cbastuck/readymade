@@ -18,13 +18,15 @@ type Props = {
   showRuntimeMenu?: boolean;
   isCompact?: boolean;
   includeNavigationLinks?: boolean;
-  onUpdateAvailableRuntimes?: (runtimeClasses: Array<RuntimeClass>) => void;
+  onUpdateAvailableRuntimeEngines?: (
+    runtimeClasses: Array<RuntimeClass>
+  ) => void;
 };
 
 export default function Toolbar({
   showRuntimeMenu = false,
   isCompact = undefined,
-  onUpdateAvailableRuntimes,
+  onUpdateAvailableRuntimeEngines,
 }: Props) {
   const boardContext = useContext(BoardCtx);
   const isNarrow =
@@ -57,17 +59,19 @@ export default function Toolbar({
 
           {showRuntimeMenu && (
             <RuntimeMenu
-              availableRuntimes={boardContext?.availableRuntimes || []}
+              availableRuntimeEngines={
+                boardContext?.availableRuntimeEngines || []
+              }
               onAddAvailableRuntime={(desc) => {
                 const runtimes = boardContext?.addAvailableRuntime(desc) || [];
-                onUpdateAvailableRuntimes &&
-                  onUpdateAvailableRuntimes(runtimes);
+                onUpdateAvailableRuntimeEngines &&
+                  onUpdateAvailableRuntimeEngines(runtimes);
               }}
               onRemoveAvailableRuntime={(desc) => {
                 const runtimes =
                   boardContext?.removeAvailableRuntime(desc) || [];
-                onUpdateAvailableRuntimes &&
-                  onUpdateAvailableRuntimes(runtimes);
+                onUpdateAvailableRuntimeEngines &&
+                  onUpdateAvailableRuntimeEngines(runtimes);
               }}
               onAddRuntime={(rtClass: RuntimeClass) =>
                 boardContext?.addRuntime(rtClass)
