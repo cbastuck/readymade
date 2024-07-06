@@ -7,33 +7,11 @@ import Switcher from "../../components/Switcher";
 import "./About.css";
 import Contact from "./Contact";
 
-class Profile extends Component {
-  render() {
-    return (
-      <div>
-        <h3>{this.props.name}</h3>
-        <img alt="none" src={this.props.avatar} width="150" height="150" />
-        <p>{this.props.title}</p>
-        <div>{this.props.description}</div>
-      </div>
-    );
-  }
-}
+type Props = {
+  isCompact?: boolean;
+};
 
-export default class About extends Component {
-  renderProfile(nick, image, description) {
-    return (
-      <div className="column">
-        <Profile
-          avatar={image}
-          name={nick}
-          title=""
-          description={description}
-        />
-      </div>
-    );
-  }
-
+export default class About extends Component<Props> {
   render() {
     const amp = {
       fontSize: " 22",
@@ -41,7 +19,7 @@ export default class About extends Component {
     };
     return (
       <div>
-        <Toolbar />
+        <Toolbar isCompact={!!this.props.isCompact} />
         <div className="about-image container">
           <div className="about-text">
             <Switcher animate={true} data={["About", "Intent"]} />
@@ -76,7 +54,7 @@ export default class About extends Component {
             </div>
           </div>
         </div>
-        <Footer />
+        <Footer isCompact={!!this.props.isCompact} />
       </div>
     );
   }
