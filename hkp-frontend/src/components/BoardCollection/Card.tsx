@@ -1,5 +1,6 @@
 import { ReactElement } from "react";
 import { Link } from "react-router-dom";
+
 import Image from "@/ui-components/Image";
 import { Github } from "lucide-react";
 
@@ -15,8 +16,7 @@ type Props = {
 };
 
 export default function Card({ value: item, actions, onAction }: Props) {
-  const { url, name, description, metadata, image, repo } =
-    item as UsecaseDescriptor;
+  const { url, name, description, image, repo } = item as UsecaseDescriptor;
   return (
     <div
       key={`board-card-${name}`}
@@ -28,8 +28,7 @@ export default function Card({ value: item, actions, onAction }: Props) {
     >
       <div className="flex">
         <h4>
-          {" "}
-          <Link key={`board-card-link-${name}`} to={url}>
+          <Link className="hover:no-underline" to={url}>
             {name}
           </Link>
         </h4>
@@ -52,22 +51,10 @@ export default function Card({ value: item, actions, onAction }: Props) {
         )}
       </div>
 
-      <div style={{ marginTop: 3, textAlign: "left", color: "#4183c4" }}>
-        {metadata && (
-          <div
-            className="font-sans"
-            style={{
-              margin: "5px 0px",
-              textAlign: "left",
-              textTransform: "capitalize",
-            }}
-          >
-            {metadata}
-          </div>
-        )}
-      </div>
       <div style={{ marginTop: 10 }}>
-        <Description name={name} description={description} />
+        <Link className="hover:no-underline" to={url}>
+          <Description name={name} description={description} />
+        </Link>
         <div className="mt-2">
           {actions && (
             <>

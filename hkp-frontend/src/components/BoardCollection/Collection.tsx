@@ -1,6 +1,7 @@
+import { ReactElement } from "react";
+
 import Card, { Action } from "./Card";
 import { SavedBoard, UsecaseDescriptor } from "../../types";
-import { ReactElement } from "react";
 
 type Props = {
   filter: string;

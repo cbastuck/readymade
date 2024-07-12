@@ -56,8 +56,11 @@ type Props = WithRouterProps & {
   boardName?: string;
   compact?: boolean;
   availableRuntimeEngines?: Array<RuntimeClass>;
+  boardDescriptor?: BoardDescriptor;
   onChangeBoardname?: (newName: string) => void;
   onSaveBoard?: (name: string, payload: BoardDescriptor) => void;
+  onUpdateBoardState?: (newBoard: BoardDescriptor) => void;
+  onNewBoard?: () => void;
 };
 
 type State = {
@@ -139,6 +142,13 @@ class Playground extends Component<Props, State> {
 
     if (prevProps.boardName !== this.props.boardName && this.props.boardName) {
       this.setState({ boardName: this.props.boardName });
+    }
+
+    if (
+      prevProps.boardDescriptor !== this.props.boardDescriptor &&
+      this.props.boardDescriptor
+    ) {
+      this.boardProviderRef?.setBoardState(this.props.boardDescriptor);
     }
   }
 
@@ -274,15 +284,22 @@ class Playground extends Component<Props, State> {
   };
 
   onUpdateBoardState = (newState: BoardDescriptor) => {
+    if (this.props.onUpdateBoardState) {
+      this.props.onUpdateBoardState(newState);
+    }
     this.setState((state) => ({ ...state, ...newState }));
   };
 
   newBoard = async (searchParams = "") => {
     await this.boardProviderRef?.clearBoard();
-    const name = generateRandomName();
-    this.props.navigate(`/playground/${name}${searchParams}`, {
-      replace: true,
-    });
+    if (this.props.onNewBoard) {
+      this.props.onNewBoard();
+    } else {
+      const name = generateRandomName();
+      this.props.navigate(`/playground/${name}${searchParams}`, {
+        replace: true,
+      });
+    }
   };
 
   destroyRuntime = async (runtime: RuntimeDescriptor) => {
@@ -336,12 +353,11 @@ class Playground extends Component<Props, State> {
           `${localStoragePrefix}${name}`,
           JSON.stringify({ ...data, name, description })
         );
+        this.context?.pushNotification({
+          type: "success",
+          message: `The Board '${saveName}' was saved.`,
+        });
       }
-
-      this.context?.pushNotification({
-        type: "success",
-        message: `The Board '${saveName}' was saved.`,
-      });
     } else {
       this.context?.pushNotification({
         type: "error",

@@ -4,6 +4,7 @@ import WipTag from "../../components/WipTag";
 import Text from "@/ui-components/Text";
 
 export default function Prototypes() {
+  const linkStyle = "p-5 hover:no-underline";
   return (
     <div className="w-full h-full ml-4">
       <div className="flex">
@@ -24,19 +25,19 @@ export default function Prototypes() {
       <div className="m-[10px] flex gap-[15px]">
         <div className="flex hkp-card-border font-sans align-middle">
           <Link
-            className="p-5"
+            className={linkStyle}
             to={`${window.location.protocol}//bridge.${window.location.host}`}
           >
             Bridge Pitch
           </Link>
         </div>
         <div className="flex hkp-card-border font-sans align-middle">
-          <Link className="p-5" to="/docs/proto/spotty">
+          <Link className={linkStyle} to="/docs/proto/spotty">
             Spotty
           </Link>
         </div>
         <div className="flex hkp-card-border font-sans align-middle">
-          <Link className="p-5" to="/docs/proto/multiplication">
+          <Link className={linkStyle} to="/docs/proto/multiplication">
             Multiplication rows
           </Link>
         </div>

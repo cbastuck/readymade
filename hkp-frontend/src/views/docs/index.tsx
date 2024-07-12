@@ -11,15 +11,19 @@ import Article from "./Article";
 export default function Docs() {
   return (
     <Template title="Documentation" isRoot={true}>
-      <Article isRoot={true} to="/docs/quickstart">
-        Quickstarter
-      </Article>
-      <Article isRoot={true} to="/docs/updates">
-        What's new
-      </Article>
+      <div className="mt-4 py-2">
+        <Article isRoot={true} to="/docs/quickstart">
+          Quickstarter
+        </Article>
+      </div>
+      <div className="py-2">
+        <Article isRoot={true} to="/docs/updates">
+          What's new
+        </Article>
+      </div>
 
       <Accordion type="single" collapsible>
-        <AccordionItem value="item-1">
+        <AccordionItem value="item-1" className="border-none">
           <AccordionTrigger>Project Scope</AccordionTrigger>
           <AccordionContent className="text-lg ml-10">
             <Article to="/docs/scope/what">What</Article>
@@ -31,7 +35,7 @@ export default function Docs() {
       </Accordion>
 
       <Accordion type="single" collapsible>
-        <AccordionItem value="item-1">
+        <AccordionItem value="item-1" className="border-none">
           <AccordionTrigger>Tracks</AccordionTrigger>
           <AccordionContent className="text-lg ml-10">
             <Article to="/docs/tracks/bridge">Bridge</Article>
@@ -41,7 +45,7 @@ export default function Docs() {
       </Accordion>
 
       <Accordion type="single" collapsible>
-        <AccordionItem value="item-1">
+        <AccordionItem value="item-1" className="border-none">
           <AccordionTrigger>Blog Articles</AccordionTrigger>
           <AccordionContent className="text-lg ml-10">
             <Article to="/docs/blog/nesting">

@@ -1,21 +1,22 @@
+import { ReactElement } from "react";
 import {
   Carousel as CarouselCN,
   CarouselContent,
   CarouselItem,
 } from "@/ui-components/primitives/carousel";
-import { ReactElement } from "react";
+import { Button } from "@/ui-components/primitives/button";
 
 import CarouselNav from "./CarouselNav";
-import { Button } from "@/ui-components/primitives/button";
 
 export type CarouselItem = {
   title: string;
+  headline: string;
   description: string;
   element: ReactElement;
   background?: string;
   action?: {
     title: string;
-    onClick?: () => void;
+    onClick?: { url: string };
   };
 };
 
@@ -23,9 +24,10 @@ type Props = {
   items: Array<CarouselItem>;
   current: number;
   onChange?: (index: number) => void;
+  onClick?: (item: CarouselItem) => void;
 };
 
-export default function Carousel({ items, current, onChange }: Props) {
+export default function Carousel({ items, current, onChange, onClick }: Props) {
   return (
     <CarouselCN className="w-full h-full mt-10">
       <CarouselNav
@@ -46,7 +48,7 @@ export default function Carousel({ items, current, onChange }: Props) {
                     ? `url(${item.background})`
                     : undefined,
                 }}
-                onClick={item.action?.onClick}
+                onClick={() => onClick?.(item)}
               >
                 {item.element}
                 {item.action && (

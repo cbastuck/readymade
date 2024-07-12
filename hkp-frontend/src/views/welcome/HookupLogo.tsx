@@ -39,7 +39,7 @@ export default function HookupLogo({ initialDelay = 3000 }: Props) {
   }, []);
 
   return (
-    <div className="w-[45%] md:w-[18%] min-w-[70px] mx-auto mb-10">
+    <div className="w-[45%] md:w-[18%] max-w-[180px] min-w-[70px] mx-auto mb-10">
       <div
         id="hkp-logo"
         className="mt-[10px] stroke-blue-600 stroke-[0.2] px-[8%] pt-[5%] pb-2 stroke-white rounded-full stroke-[0.5] border border-solid border-gray-300 bg-gradient-to-r from-sky-600 to-sky-400 drop-shadow "

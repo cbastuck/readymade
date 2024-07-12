@@ -25,7 +25,7 @@ export default function Welcome() {
   }, []);
 
   return (
-    <div id="hkp-welcome" className="w-[100%] md:w-[30%] min-w-[200px] mx-auto">
+    <div id="hkp-welcome" className="w-[60%] md:w-[30%] min-w-[200px] mx-auto">
       <div
         style={{ opacity: isComplete ? 0 : 1, transition: "opacity 2s ease" }}
       >

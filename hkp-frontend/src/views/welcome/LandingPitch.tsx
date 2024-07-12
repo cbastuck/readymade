@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import anime from "@/anime";
 import Switcher from "@/components/Switcher";
 
-export type LandingPitchUsecase = { text: string; link: string };
+export type LandingPitchUsecase = { headline?: string };
 type Props = {
   usecases: Array<LandingPitchUsecase>;
   switchUsecaseInterval: number;
@@ -41,14 +41,13 @@ export default function LandingPitch({
     >
       <div className="pitch-item">
         <div className="text-left">
-          Have you ever felt creative, but the setup process killed your
-          inspiration? Or got lost when you wanted to "just"{" "}
+          Do you sometimes feel creative, but the setup process destroys your
+          inspiration? Or you loose interest while trying to "just"{" "}
           <Switcher
             animate={true}
             style={{}}
             duration={switchUsecaseInterval}
-            data={usecases.map(({ text }) => text)}
-            links={usecases.map(({ link }) => link)}
+            data={usecases.map(({ headline }) => headline || "")}
             onLink={onLink}
           />
         </div>
@@ -59,7 +58,7 @@ export default function LandingPitch({
       </div>
       <div className="pitch-item">
         Try building your ideas with data seamlessly flowing through reusable
-        building blocks. It is <span className="underline">your</span> choice.
+        building blocks. It is your choice.
       </div>
     </div>
   );

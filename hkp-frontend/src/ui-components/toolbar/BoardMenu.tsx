@@ -15,6 +15,7 @@ import {
   restoreBoardFromLocalStorage,
   storeBoardToLocalStorage,
 } from "@/views/playground/common";
+import { createBoardLink } from "@/views/playground/BoardLink";
 
 export default function BoardMenu() {
   const boardContext = useContext(BoardCtx);
@@ -55,6 +56,15 @@ export default function BoardMenu() {
     link.click();
   };
 
+  const onCreateShareLinkFromSource = (src: string) => {
+    const url = createBoardLink(src);
+    navigator.clipboard.writeText(url);
+    boardContext?.appContext?.pushNotification({
+      type: "info",
+      message: "Board URL copied to clipboard",
+    });
+  };
+
   const onCreateBoardLink = () => {
     boardContext?.onAction({
       type: "createBoardLink",
@@ -84,6 +94,10 @@ export default function BoardMenu() {
           {
             label: "Download Source",
             onAction: onDownloadButton,
+          },
+          {
+            label: "Create share link",
+            onAction: onCreateShareLinkFromSource,
           },
         ]}
       />

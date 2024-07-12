@@ -75,7 +75,7 @@ export default function Quickstart() {
         })}
       >
         <Text style={{ marginBottom: 10 }}>
-          To get started with Hookup, know three things:
+          There are three important entities:
           <span style={s(t.bold, t.m(5, 0))}>
             Board, Runtime, and Service.{" "}
           </span>
@@ -93,13 +93,13 @@ export default function Quickstart() {
           <GroupItem
             title="Board"
             details={[
-              "A Board is the topmost building block. Everything happens on a board",
-              "A Board is identified by a name",
-              "A Board owns and manages an arbitrary number of runtimes",
-              "A Board can run inside of the browser independently of a backend (Playground for example)",
-              "A Board can also be managed by a remote backend which persists its state and requires the notion of a user",
-              "A Board defines the topology of the runtimes: how they are organized and their order",
-              "A Board is responsible for passing the output of a runtime to the next runtime",
+              "A Board is the topmost building block. Everything happens on a board.",
+              "A Board is identified by a name.",
+              "A Board owns and manages an arbitrary number of runtimes.",
+              "A Board can run inside the browser independently of a backend (e.g., Playground).",
+              "A Board can also be managed by a remote backend, which persists its state and requires the notion of a user.",
+              "A Board defines the topology of the runtimes: how they are organized and their order.",
+              "A Board is responsible for passing the output of a runtime to the next runtime.",
             ]}
             image={undefined}
             bottomDivider={true}
@@ -107,14 +107,14 @@ export default function Quickstart() {
           <GroupItem
             title="Runtime"
             details={[
-              "A Runtime belongs to exactly one board",
-              "A Runtime's lifetime ends with the lifetime of its parent board",
-              "A Runtime can run inside of the browser or on a remote machine",
-              "Runtimes running in the browser can be mixed with remote runtimes on the same board",
-              "A Runtime owns and manages an arbitrary number of services",
-              "A Runtime accepts data on its input and passes it to its services",
-              "A Runtime calls services in order from left to right propagating the incoming data",
-              "A Runtime provides the result of the last service as its output",
+              "A Runtime belongs to exactly one board.",
+              "A Runtime's lifetime ends with the lifetime of its parent board.",
+              "A Runtime can run inside the browser or on a remote machine.",
+              "Runtimes running in the browser can be mixed with remote runtimes on the same board.",
+              "A Runtime owns and manages an arbitrary number of services.",
+              "A Runtime accepts data on its input and passes it to its services.",
+              "A Runtime calls services in order from left to right, propagating the incoming data.",
+              "A Runtime provides the result of the last service as its output.",
             ]}
             image={undefined}
             bottomDivider={true}
@@ -122,14 +122,14 @@ export default function Quickstart() {
           <GroupItem
             title="Service"
             details={[
-              "Services are (high level) abstractions of (complex) logic",
-              "Services are supposed to feel simple and intuitive",
-              "Services have an input and an output",
-              "Services need a configuration that can be modified or retrieved at any time",
-              "A Service configuration defines the mode of the service",
-              "Services behave differently depending on their configuration",
-              "A Service can generate data spontaneously and trigger a chain reaction",
-              "A Service can also decide to stop further propagation",
+              "Services are (high-level) abstractions of (complex) logic.",
+              "Services are supposed to feel simple and intuitive.",
+              "Services have an input and an output.",
+              "Services need a configuration that can be modified or retrieved at any time.",
+              "A Service's configuration defines the mode of the service.",
+              "Services behave differently depending on their configuration.",
+              "A Service can generate data spontaneously and trigger a chain reaction.",
+              "A Service can also decide to stop further propagation.",
             ]}
             image={undefined}
           />

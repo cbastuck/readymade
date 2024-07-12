@@ -1,0 +1,24 @@
+const headline = "monitor realtime data and render charts";
+
+export const monitoring = {
+  element: (
+    <video
+      className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
+      src="/assets/teaser/WikipediaMonitoring.mp4"
+      autoPlay
+      loop
+      width="85%"
+    />
+  ),
+  headline,
+  title: `Sample 2: ${headline}`,
+  description:
+    "Monitor incoming data, extract metrics and visualise them them in a graph",
+  background: "/assets/teaser/sky-small2.png",
+  action: {
+    title: "Click to open",
+    onClick: {
+      url: "/playground/monitoring?fromLink=N4KABGBEBOCuB2AXAlgWwKYGdIC4wG1wIxRjjJkATXKAYwE4A2egZgA5KAmAWnTY+4AWAIyNG3AEYBDTul4S26RsIksJwgKwB2SABoiZSPCkYakAMpSAZlOjI9B8ogCeAB3RmJ0APYB3TOjQDmQQkJiIUogeeKQhob7QUq7mgQBuyLRYNIhw6I4QAL6ORRAAuvqhAdDpmdgxjpAMzOxcvPyUQqLi0rLyisqq6to0hHGxcZCwsFSeUlJsGoIi3FboGvRCGrQADNwyVjzbbMJsLMz00lrbwXFQVTXoAJLUeJAAFt7eANawrgB0iG8AHp7hl0EDkPBXLBEDcJqDMgA5EzRKCPKEwuEhSbQAA2ZjeiEQrkwOCBIJy6BMf18yC+aHQlGQUj+3mgAHMgalOBToFTUEC+ZkkLQ3lJ4OyPBVbpBUN5KKjIOhUugkJhvLBoJksYZXLYAgBRFVqgCCmAAUuYAPKI7K5aUTCRuKSYOpgGy4gL5MAFB3EcbYqYzV4KKSMWhsQRWFa0KQbQTKNiSYRSYTcMS0DSMSiMbarKQsHXkBFPF5QD7fX4A4EloFWZC4qJBP2GEvI0yvABiDabRdCEm8tjLkAVriFkUZYAHQ+MGDA3DAksQYGQy6sPlQYCSrj7UCk7PZfPZkTZZnF1Bb5Fo3ngTJQN7do1uoQAhHrEqhMH8B7DL7rbCYX4uO4YAALzgWAADkjKrpBkDemU3q+t6AaGEGw5SJQVgsIIEjoIIkgaOsQgSNs4j0GRBEcMItCcIwViRugFy7mEaRgs8BKfD8-yAiCbGZECqBJCxbYomYACywl-lAcoKmYfKuLiUjatJkBRKgikTjQqHYsB6CgWY76AQCbhSgh5CwFUBmvEZn5-JZgS7qE16oBgSDWVAtlfu+ASUC5bm-uZoQoIguL6YZAF2SFYXwc+yHPpATp6q6NAel6cTxSEOmhOhZ7bBIggsJQGhyFocxyAmKaSPQGg8NhbBWNIbDbFIGiUIWqklhxrwVtx1Z8dUYJAhIsBWKszbmaxg1ImJrwAEKjeNLHTtAw6juOUSUFOg6rbO6Dzou6DLqu7oblurg7qpI1jY5eD4OUk2xnqtCrs4NBiGwqmQk2qRSPieCcKpym0LAqCwEpm1WjC0KwngaXoFdzopXDf3pSEmVkNlUC5SGCxSFobCMBI3C0IIixCAW3Q7EmRFFRItBqFYjBKCJ-GlpxlY8TWbNAoeGquJIb2dWz7aKgA4j4vxzULk1jt47jQC4Zh6SxsmKm8yDhN4h4mMtSNuvDSGXljkzTMOTMsNsIicDwayMDwgisFo3DHEw3DCJwxzKbVCpEaz03sz1XFVrxtboKKtiBQlokdlAACqVRgBHEpYFOzhgCrqlq4ZyBmQlSUugbqN5BlxuTTjUBsFonBSAVLBSNwWzbM7UZHJIUYaNwsiCJwNWNac9f+w83XlsHXMDQ8w2LY5wsB6LZgLTdE35zta3oGO4cTltK2UHtB1Liua5nduy3T0Ed0PQlT3Ka9NAe9sX1IGkf00A-k3A6D4Nb1DxKYngOSwBLujMuCUK6QA9iobYGhhByE4M3aMZMrC0D2DbDo9AowRikIIPMhVaBD3YsOXqIduYB0ElJSaMdFSSUupNbOrwFJKRUpNdSmkojaSClADykAvJ-BgrCcyGNsQF2Ru6YuRsULlzNmYBmKh5h+RWCoBBwh6DIPoFYdq3AcxkQ0AxMMSC8Gz2HoQse-Uw4R0VvgmasdICIlBnhaAYBvBWDAAnQIYA+HYCzvKRU0hl4ymEUXT0QCyAlGIKUIgmUwhUHDmKSEAAlDUKAJTaUiYkmGCSYSQnZCk6UFAMSIAyUk7JMRIkKkwLQOwrh7zwDMDcSAwN16bXMM4eAtAUi3kCI+S+UA+QACtw5NJaW01UCpoBdJAAUIAA",
+    },
+  },
+};

@@ -9,6 +9,8 @@ type Props = { example: ExampleDescriptor };
 
 export default function Card({ example }: Props) {
   const fontStyle = s(t.fs13, t.tc);
+  const url = `/example/sandbox?url=${example.url}`;
+
   return (
     <div
       key={`example-card-${example.title}`}
@@ -31,11 +33,7 @@ export default function Card({ example }: Props) {
             }}
           >
             <h4>
-              <Link
-                className="color-red-100 hover:no-underline"
-                key={`example-link-${example.title}`}
-                to={`/example/sandbox?url=${example.url}`}
-              >
+              <Link className="hover:no-underline" to={url}>
                 {example.title}
               </Link>
             </h4>
@@ -55,13 +53,15 @@ export default function Card({ example }: Props) {
               marginTop: 10,
             }}
           >
-            <CardText>
-              {Array.isArray(example.description)
-                ? example.description.map((d, idx) => (
-                    <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
-                  ))
-                : example.description}
-            </CardText>
+            <Link className="hover:no-underline" to={url}>
+              <CardText>
+                {Array.isArray(example.description)
+                  ? example.description.map((d, idx) => (
+                      <p key={`example-${example.title}-desc-${idx}`}>{d}</p>
+                    ))
+                  : example.description}
+              </CardText>
+            </Link>
           </div>
         </div>
       </div>
