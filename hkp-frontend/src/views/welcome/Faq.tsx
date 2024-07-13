@@ -6,7 +6,7 @@ import {
 } from "@/ui-components/primitives/accordion";
 
 export default function Faq() {
-  const s = "pb-2 px-4";
+  const s = "pb-2 px-4 text-left tracking-widest";
   return (
     <>
       <h1 className="py-10 pt-4 md:pt-10 mx-0 mb-2 md:text-center">FAQ</h1>
@@ -22,7 +22,7 @@ export default function Faq() {
       <div className="mb-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="faq-2">
-            <AccordionTrigger> Is it a low-code thing?</AccordionTrigger>
+            <AccordionTrigger> Is this a low-code thing?</AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
                 Personally, I think fully replacing code is not a realisitc
@@ -32,13 +32,13 @@ export default function Faq() {
                 and promises feel a bit shallow.{" "}
               </div>
               <div className={s}>
-                Therefore, I feel the low-code tag does not quite match.
+                Therefore, I think the low-code tag does not really match.
               </div>
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-3">
             <AccordionTrigger>
-              Is it a visual programming thing?
+              Is this a visual programming thing?
             </AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
@@ -63,7 +63,7 @@ export default function Faq() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-4">
-            <AccordionTrigger>Is it for quick prototyping?</AccordionTrigger>
+            <AccordionTrigger>Is this for quick prototyping?</AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
                 Yes, a big part of it involves testing ideas and getting an

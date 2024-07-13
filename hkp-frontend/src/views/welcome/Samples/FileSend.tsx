@@ -17,7 +17,7 @@ export const game: CarouselItem = {
   description: <div>Peer to peer connection to the other device</div>,
   background: "/assets/teaser/blue3.png",
   action: {
-    title: "Click to open",
+    title: "Open on Playground",
     onClick: {
       url: "/playground",
     },
