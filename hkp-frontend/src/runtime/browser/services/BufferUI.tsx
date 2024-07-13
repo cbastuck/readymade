@@ -15,13 +15,18 @@ import MenuIcon from "@/ui-components/MenuIcon";
 import Editor from "@/components/shared/Editor";
 import Slider from "@/ui-components/Slider";
 import Switch from "@/ui-components/Switch";
+import { isFunction } from "./helpers";
+
+type BufferItem = any;
 
 type State = {
   capacity: number;
   interval: number;
-  items: Array<any>;
-  displayBuffer: any;
+  items: Array<BufferItem>;
+  displayItem: BufferItem;
+  displayItemContent: string;
   accumulatedOutput: boolean;
+  isAccordionOpen: boolean;
 };
 
 export default class BufferUI extends Component<ServiceUIProps, State> {
@@ -29,8 +34,10 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
     capacity: 0,
     interval: 0,
     items: [],
-    displayBuffer: undefined,
+    displayItem: undefined,
+    displayItemContent: "",
     accumulatedOutput: false,
+    isAccordionOpen: false,
   };
 
   update = (state: any) => {
@@ -63,22 +70,45 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
 
   renderItem = (item: any) => {
     const type = typeof item;
-    const isUint8Array = item instanceof Uint8Array;
-    if (isUint8Array) {
+    if (item instanceof Blob) {
+      return `Blob with size ${item.size} bytes`;
+    }
+    if (item instanceof Uint8Array) {
       return `Binary data with length ${item.length}`;
     }
     if (type === "string") {
-      return JSON.stringify(item);
+      return `String with length ${item.length}`;
     }
-    return type;
+
+    if (Array.isArray(item)) {
+      return `Array with length ${item.length}`;
+    }
+
+    if (isFunction(item)) {
+      return `Function instance`;
+    }
+
+    return "JSON";
   };
 
   renderBuffer = () => {
-    const { items } = this.state;
+    const { items, isAccordionOpen } = this.state;
     return (
-      <Accordion type="single" collapsible className="w-full" defaultValue="0">
-        <AccordionItem value="item-1">
-          <AccordionTrigger className="tracking-wider">
+      <Accordion
+        type="single"
+        collapsible
+        className="w-full"
+        value={isAccordionOpen ? "accordion-item" : ""}
+      >
+        <AccordionItem value="accordion-item">
+          <AccordionTrigger
+            className="tracking-wider"
+            onClick={() =>
+              this.setState({
+                isAccordionOpen: !isAccordionOpen,
+              })
+            }
+          >
             Items ({this.state.items.length})
           </AccordionTrigger>
           <AccordionContent>
@@ -95,7 +125,17 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
                     </Button>
                     <Button
                       className="h-[30px]"
-                      onClick={() => this.setState({ displayBuffer: item })}
+                      onClick={async () => {
+                        const data =
+                          item instanceof Blob
+                            ? await blobToString(item)
+                            : JSON.stringify(item, null, 2);
+
+                        this.setState({
+                          displayItem: item,
+                          displayItemContent: data,
+                        });
+                      }}
                     >
                       <Eye size={20} />
                     </Button>
@@ -109,20 +149,24 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  renderSingle = (item: any) => {
-    const valueStr = JSON.stringify(item, null, 2);
+  renderSingle = () => {
     return (
       <div className="h-[280px] w-full pb-12">
         <div className="flex">
           <h1>Item</h1>
           <Button
             className="ml-auto"
-            onClick={() => this.setState({ displayBuffer: undefined })}
+            onClick={() =>
+              this.setState({
+                displayItem: undefined,
+                displayItemContent: "",
+              })
+            }
           >
             <X />
           </Button>
         </div>
-        <Editor value={valueStr} />
+        <Editor value={this.state.displayItemContent} />
       </div>
     );
   };
@@ -151,7 +195,7 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
       },
     ];
 
-    const { displayBuffer } = this.state;
+    const { displayItem } = this.state;
     return (
       <ServiceUI
         {...this.props}
@@ -190,22 +234,28 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
             />
           </div>
 
-          {displayBuffer
-            ? this.renderSingle(displayBuffer)
-            : this.renderBuffer()}
+          {displayItem ? this.renderSingle() : this.renderBuffer()}
         </div>
       </ServiceUI>
     );
   }
 }
 
-function downloadBuffer(item: any) {
+function downloadBuffer(item: BufferItem) {
   const a = document.createElement("a");
-  const isUint8Array = item instanceof Uint8Array;
-  const blob = isUint8Array
-    ? new Blob([item], { type: "application/octet-stream" })
-    : new Blob([JSON.stringify(item)], { type: "application/json" });
-  a.href = window.URL.createObjectURL(blob);
+  const blob =
+    item instanceof Blob
+      ? item
+      : item instanceof Uint8Array
+      ? new Blob([item], { type: "application/octet-stream" })
+      : new Blob([JSON.stringify(item)], { type: "application/json" });
+  const url = window.URL.createObjectURL(blob);
+  a.href = url;
   a.download = "buffer";
   a.click();
+  setTimeout(() => window.URL.revokeObjectURL(url), 10);
+}
+
+function blobToString(blob: Blob) {
+  return blob.text();
 }

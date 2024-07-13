@@ -60,8 +60,7 @@ export default function WelcomePanel() {
           Get a quick impression what this means by browsing through the
           samples. Maybe it is something you tried in the past as well? Every
           sample runs as a video that can be clicked to jump directly into the
-          sample board to try it yourself.
-          <a href="#">here</a>.
+          sample board to try it yourself <a href="#">here</a>.
         </div>
 
         <div className="mx-auto px-[0%] lg:px-[10%] pb-6">
@@ -71,7 +70,7 @@ export default function WelcomePanel() {
             onChange={setCurrentCarouselItem}
             onClick={onClick}
           />
-          <div className="text-xl overflow-hidden tracking-widest sm:text-justify md:text-center mx-auto sm:w-[100%] md:w-[80%] gap-4 mt-2">
+          <div className="text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[80%] gap-4 mt-2">
             {carouselItems[currentCarouselItem].description}
           </div>
         </div>

@@ -1,6 +1,8 @@
+import { CarouselItem } from "@/ui-components/Carousel";
+
 const headline = "monitor realtime data and render charts";
 
-export const monitoring = {
+export const monitoring: CarouselItem = {
   element: (
     <video
       className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
@@ -12,8 +14,18 @@ export const monitoring = {
   ),
   headline,
   title: `Sample 2: ${headline}`,
-  description:
-    "Monitor incoming data, extract metrics and visualise them them in a graph",
+  description: (
+    <div>
+      This sample connects to the wikipedia's recent{" "}
+      <a href="https://www.mediawiki.org/wiki/API:Recent_changes_stream">
+        change stream
+      </a>
+      , filters-out bot changes, aggregates incoming data within two seconds for
+      a historgram over the changes types. The distribution of change types are
+      rendered as a pie chart, and and the number over edits are rendered as a
+      bar chart.
+    </div>
+  ),
   background: "/assets/teaser/sky-small2.png",
   action: {
     title: "Click to open",

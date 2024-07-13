@@ -11,7 +11,7 @@ import CarouselNav from "./CarouselNav";
 export type CarouselItem = {
   title: string;
   headline: string;
-  description: string;
+  description: string | ReactElement;
   element: ReactElement;
   background?: string;
   action?: {
