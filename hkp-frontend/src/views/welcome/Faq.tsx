@@ -105,11 +105,11 @@ export default function Faq() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-6">
-            <AccordionTrigger>Now, say it in one sentence?</AccordionTrigger>
+            <AccordionTrigger>Now as one sentence?</AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
-                This app enables you to compose behaviors by connecting
-                semantically meaningful building blocks.
+                This app is an integration tool, that enables you to compose
+                behaviors by connecting semantically meaningful building blocks.
               </div>
               <div className={s}>
                 That's the best one-liner, I found so far. Although it's too

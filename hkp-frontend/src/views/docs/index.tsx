@@ -10,8 +10,8 @@ import Article from "./Article";
 
 export default function Docs() {
   return (
-    <Template title="Documentation" isRoot={true}>
-      <div className="mt-4 py-2">
+    <Template title="Documentation" isRoot={true} width="50%">
+      <div className="mt-10">
         <Article isRoot={true} to="/docs/quickstart">
           Quickstarter
         </Article>

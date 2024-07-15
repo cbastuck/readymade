@@ -31,9 +31,7 @@ export default class Template extends Component<Props> {
             style={{
               height: "100%",
               width,
-              margin: "auto",
-              marginTop: 20,
-              marginBottom: 50,
+              margin: "25px auto",
             }}
           >
             <h1
