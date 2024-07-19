@@ -18,6 +18,7 @@ import {
 import { reorderService } from "./views/playground/BoardActions";
 import { isUserAuthenticated } from "./runtime/remote/RemoteRuntimeApi";
 import { AppContextState, AppCtx } from "./AppContext";
+import { connectDevTools } from "./core/DevTools";
 
 type BoardContextAPI = {
   addAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
@@ -621,6 +622,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
   };
 
   render() {
+    connectDevTools(this.state);
     const { children, user } = this.props;
     if (this.state.awaitUserLogin && user) {
       this.state.awaitUserLogin();

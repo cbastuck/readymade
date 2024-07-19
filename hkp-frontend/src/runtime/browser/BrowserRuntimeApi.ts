@@ -48,15 +48,19 @@ async function restoreRuntime(
     await Promise.all(services.map((svc) => addService(scope, svc, svc.uuid)))
   ).filter((svc) => svc && scope.findServiceInstance(svc.uuid)) as any;
 
-  const configuredServices = await Promise.all(
-    createdServices.map((svc, idx) =>
-      configureService(scope, svc, services[idx]).then(() => services[idx])
-    )
+  setTimeout(
+    () =>
+      Promise.all(
+        createdServices.map((svc, idx) =>
+          configureService(scope, svc, services[idx])
+        )
+      ),
+    5
   );
 
   return {
     runtime,
-    services: configuredServices,
+    services,
     registry: scope.registry.allServices(), // TODO: this is not used
     scope,
   };

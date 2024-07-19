@@ -1,10 +1,11 @@
 import { useState } from "react";
-import Checkbox from "@/ui-components/Checkbox";
-
-import { ServiceImpl, ServiceUIProps } from "../../../types";
+import { Fullscreen } from "lucide-react";
+import MenuIcon from "@/ui-components/MenuIcon";
+import { ServiceUIProps } from "../../../types";
+import ServiceUI from "@/ui-components/service/ServiceUI";
 
 import { t } from "../../../styles";
-import ServiceUI from "@/ui-components/service/ServiceUI";
+import Button from "@/ui-components/Button";
 
 export default function HtmlUI(props: ServiceUIProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -12,12 +13,12 @@ export default function HtmlUI(props: ServiceUIProps) {
 
   const updateState = (cfg: any) => {
     const { fullscreen, html } = cfg;
-    if (fullscreen !== undefined) {
-      setIsFullscreen(fullscreen);
-    }
 
     if (html !== undefined) {
       setHtmlDocument(html);
+    }
+    if (fullscreen !== undefined) {
+      setIsFullscreen(fullscreen);
     }
   };
 
@@ -27,13 +28,37 @@ export default function HtmlUI(props: ServiceUIProps) {
 
   const onNotification = (notification: any) => {
     updateState(notification);
-
-    if (notification.html && props.service.fullscreen) {
-      document.body.innerHTML = notification.html;
-    }
   };
 
-  const renderView = (service: ServiceImpl) => (
+  const renderFullscreen = () => {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          width: "100%",
+          height: "100%",
+          left: 0,
+          top: 0,
+          background: "white",
+          zIndex: 1000,
+        }}
+      >
+        <Button
+          className="absolute top-0 right-0"
+          onClick={() => setIsFullscreen(false)}
+        >
+          x
+        </Button>
+        <div
+          className="h-screen flex items-center justify-center"
+          dangerouslySetInnerHTML={{ __html: htmlDocument }}
+          style={t.selectable}
+        />
+      </div>
+    );
+  };
+
+  const renderView = () => (
     <div className="h-full w-full flex flex-col gap-4">
       <div
         className="text-base"
@@ -47,35 +72,37 @@ export default function HtmlUI(props: ServiceUIProps) {
       >
         {htmlDocument ? (
           <div
+            className="w-full"
             dangerouslySetInnerHTML={{ __html: htmlDocument }}
             style={t.selectable}
           />
         ) : null}
       </div>
-
-      <div className="text-left my-1">
-        <Checkbox
-          title="Fullscreen"
-          checked={isFullscreen}
-          onChange={async (checked) => {
-            service.configure({
-              fullscreen: checked,
-            });
-          }}
-        />
-      </div>
     </div>
   );
 
+  const customMenuEntries = [
+    {
+      name: "Fullscreen",
+      icon: <MenuIcon icon={Fullscreen} />,
+      disabled: isFullscreen,
+      onClick: () => {
+        props.service.configure({
+          fullscreen: true,
+        });
+      },
+    },
+  ];
   return (
     <ServiceUI
       {...props}
-      className="pb-2"
-      initialSize={{ width: 350, height: 280 }}
+      customMenuEntries={customMenuEntries}
+      className="pb-2 min-h-[100px]"
+      initialSize={{ width: 400, height: undefined }}
       onInit={onInit}
       onNotification={onNotification}
     >
-      {renderView(props.service)}
+      {isFullscreen ? renderFullscreen() : renderView()}
     </ServiceUI>
   );
 }

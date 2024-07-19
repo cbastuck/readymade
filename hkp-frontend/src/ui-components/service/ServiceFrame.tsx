@@ -169,56 +169,60 @@ export default function ServiceFrame({
   const theme = useTheme();
   return (
     <div key={`service-frame-${uuid}`}>
-      <div
-        className={enableDropShadow}
-        style={s(t.unselectable, {
-          transition: "border 800ms",
-          border: `solid ${theme.serviceBorderWidth}px ${
-            serviceIsProcessing ? theme.accentColor : theme.borderColor
-          }`,
-          borderRadius: theme.borderRadius,
-          textAlign: "center",
-          backgroundColor: theme.serviceBackgroundColor,
-          margin: "10px 0px",
-          fontSize: 15,
-          color: "black",
-        })}
-      >
-        <ServiceHeader
-          showBypassOnlyIfExplicit={!!showBypassOnlyIfExplicit}
-          bypass={bypass}
-          service={descriptor}
-          isCollapsed={frameCollapsed}
-          customMenuEntries={customMenuEntries}
-          onDoubleClick={onHeaderDoubleClick}
-          onExpand={onExpand}
-          onDelete={onDelete}
-          onBypass={onBypass}
-          onHelp={onHelp}
-          onConfig={onConfig}
-          onCustomEntry={onCustomEntry}
-        />
-
-        <EditorDialog
-          title="Service Configuration"
-          value={filteredServiceConfig}
-          isOpen={configVisible}
-          onClose={onCloseConfig}
-          actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
-        />
-
+      <div className="flex">
         <div
-          style={{
-            position: "relative",
-            display: frameCollapsed ? "none" : undefined,
-          }}
+          className={enableDropShadow}
+          style={s(t.unselectable, {
+            transition: "border 800ms",
+            border: `solid ${theme.serviceBorderWidth}px ${
+              serviceIsProcessing ? theme.accentColor : theme.borderColor
+            }`,
+            borderRadius: theme.borderRadius,
+            textAlign: "center",
+            backgroundColor: theme.serviceBackgroundColor,
+            margin: "10px 0px",
+            fontSize: 15,
+            color: "black",
+          })}
         >
+          <ServiceHeader
+            showBypassOnlyIfExplicit={!!showBypassOnlyIfExplicit}
+            bypass={bypass}
+            service={descriptor}
+            isCollapsed={frameCollapsed}
+            customMenuEntries={customMenuEntries}
+            onDoubleClick={onHeaderDoubleClick}
+            onExpand={onExpand}
+            onDelete={onDelete}
+            onBypass={onBypass}
+            onHelp={onHelp}
+            onConfig={onConfig}
+            onCustomEntry={onCustomEntry}
+          />
+
+          <EditorDialog
+            title="Service Configuration"
+            value={filteredServiceConfig}
+            isOpen={configVisible}
+            onClose={onCloseConfig}
+            actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
+          />
+
+          <div
+            style={{
+              position: "relative",
+              display: frameCollapsed ? "none" : undefined,
+            }}
+          >
+            {children}
+          </div>
+        </div>
+        <div className="mt-[25%] pl-2 w-4">
           <ServiceOutputPlug
             isActive={signalOutput}
             data={recentProgressData}
             onInject={onInject}
           />
-          {children}
         </div>
       </div>
     </div>

@@ -41,14 +41,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
   const onSticky = () => setIsSticky(!isSticky);
 
   return (
-    <div
-      style={{
-        position: "absolute",
-        top: "20px",
-        right: "-20px",
-        cursor: "pointer",
-      }}
-    >
+    <div style={{ cursor: "pointer" }}>
       <Popover
         open={isOpen}
         onOpenChange={(newOpen) => !isSticky && !newOpen && onClose()}
@@ -69,6 +62,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
                       stroke={isActive ? theme.accentColor : theme.borderColor}
                       fill={isActive ? theme.accentColor : "white"}
                       className="hover:stroke-[#666]"
+                      opacity={isActive ? 0.5 : 1}
                     />
                   ) : (
                     <Plug
@@ -77,6 +71,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
                       stroke={isActive ? theme.accentColor : theme.borderColor}
                       fill={isActive ? theme.accentColor : "white"}
                       className="hover:stroke-[#666]"
+                      opacity={isActive ? 0.5 : 1}
                     />
                   )}
                 </div>
