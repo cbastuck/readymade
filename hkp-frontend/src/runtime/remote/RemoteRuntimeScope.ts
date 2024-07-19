@@ -9,6 +9,7 @@ import {
 } from "../../types";
 import { createRemoteRuntimeApp } from "./RemoteRuntimeApp";
 import api from "./RemoteRuntimeApi";
+import { createAuthorizedURL } from "@/views/playground/common";
 
 export default class RemoteRuntimeScope implements RuntimeScope {
   app: AppImpl;
@@ -71,10 +72,10 @@ export default class RemoteRuntimeScope implements RuntimeScope {
 
     const url = new URL(this.descriptor.url!);
     url.protocol = new URL(url).protocol === "http:" ? "ws" : "wss";
-    const websocketUrl =
-      url.toString() +
-      outputUrl.slice(1) +
-      `?token=${this.authenticatedUser?.idToken}`;
+    const websocketUrl = createAuthorizedURL(
+      url.toString() + outputUrl.slice(1),
+      this.authenticatedUser
+    );
     const socket = new WebSocket(websocketUrl);
     this.socket = socket;
 

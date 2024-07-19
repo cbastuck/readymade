@@ -8,6 +8,7 @@ import {
 import InputUI from "./InputUI";
 import { AppInstance, ServiceClass } from "@/types";
 import ServiceBase from "./ServiceBase";
+import { createAuthorizedURL } from "@/views/playground/common";
 
 const serviceId = "hookup.to/service/input";
 const serviceName = "Input";
@@ -147,8 +148,10 @@ class Input extends ServiceBase<State> {
       return;
     }
 
-    const urlWithAuth =
-      url + `?token=${this.app.getAuthenticatedUser()?.idToken}`;
+    const urlWithAuth = createAuthorizedURL(
+      url,
+      this.app.getAuthenticatedUser()
+    );
     if (mode === "websocket") {
       this.doConnectWebsocket(urlWithAuth);
     } else {

@@ -5,6 +5,7 @@ import { AppInstance, ServiceClass } from "@/types";
 import ServiceBase from "./ServiceBase";
 
 import OutputUI from "./OutputUI";
+import { createAuthorizedURL } from "@/views/playground/common";
 
 const serviceId = "hookup.to/service/output";
 const serviceName = "Output";
@@ -81,8 +82,10 @@ class Output extends ServiceBase<State> {
     if (url && !this.bypass) {
       if (mode === "websocket") {
         if (!this._websocket) {
-          const urlWithAuth =
-            url + `?token=${this.app.getAuthenticatedUser()?.idToken}`;
+          const urlWithAuth = createAuthorizedURL(
+            url,
+            this.app.getAuthenticatedUser()
+          );
           this._websocket = await this.connectWebsocket(urlWithAuth);
         }
         this._websocket.send(params);

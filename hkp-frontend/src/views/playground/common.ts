@@ -1,6 +1,11 @@
 import { DragEvent } from "react";
 import UAParser from "ua-parser-js";
-import { PeerJsHostDescriptor, RuntimeClass, SavedBoard } from "../../types";
+import {
+  PeerJsHostDescriptor,
+  RuntimeClass,
+  SavedBoard,
+  User,
+} from "../../types";
 
 export function getActivationId(runtimeId: string) {
   return `peer-${runtimeId}-active`;
@@ -164,4 +169,37 @@ export function getDraggedFiles(ev: DragEvent): Array<File> {
     });
   }
   return files;
+}
+
+// TODO: read this from settings
+const allowList: Array<URL> = [new URL("http://localhost:5555")];
+
+// Important: handle with care
+export function createAuthorizedURL(url: string, user: User | null) {
+  if (!user) {
+    return url;
+  }
+
+  const parsedURL = new URL(url);
+  const allowed = !allowList.find(
+    (x) =>
+      x.host === parsedURL.host &&
+      x.protocol === parsedURL.protocol &&
+      x.port === parsedURL.port
+  );
+
+  if (!allowed) {
+    return url;
+  }
+
+  if (!isSecureProtocol(parsedURL.protocol)) {
+    console.warn(
+      `Authenticated request to an allowed but non-secure destination: ${parsedURL.href}`
+    );
+  }
+  return url + `?token=${user.idToken}`;
+}
+
+function isSecureProtocol(protocol: string) {
+  return protocol === "https" || protocol === "wss";
 }
