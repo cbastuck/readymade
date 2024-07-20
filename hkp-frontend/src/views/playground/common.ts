@@ -1,4 +1,5 @@
 import { DragEvent } from "react";
+import { v4 as uuidv4 } from "uuid";
 import UAParser from "ua-parser-js";
 import {
   PeerJsHostDescriptor,
@@ -202,4 +203,8 @@ export function createAuthorizedURL(url: string, user: User | null) {
 
 function isSecureProtocol(protocol: string) {
   return protocol === "https" || protocol === "wss";
+}
+
+export function createShortRandomString() {
+  return uuidv4().split("-")[0];
 }
