@@ -1,7 +1,7 @@
 import { CarouselItem } from "@/ui-components/Carousel";
 import { createShortRandomString } from "@/views/playground/common";
 
-const headline = "write an app for sending encrypted texts to peers";
+const headline = "send an encrypted text to peers";
 
 export const send: CarouselItem = {
   element: (
@@ -18,13 +18,13 @@ export const send: CarouselItem = {
   description: (
     <div>
       Write two small apps for sending and receiving encrypted textual data with
-      a fullscreen mode for easy access. When yo click on the video, you get to
-      the sender playground. The according receiver link can be found{" "}
+      a fullscreen mode for easy access. When you click on the video, you will
+      be guided to the sender playground. The according receiver playground{" "}
       <a
         href={`/playground/receiver-${createShortRandomString()}?fromLink=N4IgTgrgdgLglgWwKYGcQC4Dao4BMMhICGAxgIwCcZAHAKwC0AbEbQOz0AsRATEfRRWpl6ABiQcSAMxG1quRow4gANCChFkBAMpFJRMHBUgYATwAOSAgCMwAewDuKJGCMoYRGJfTAAvj+U4+OggktSsAmQAzEj0ZFZkMVzc3PREuOlMImSsjLRkHIwkIqxG6prBOnoGRqYW1naOzq7unhi+PgC6qk5gAG5wJKhthKSUNAzMbJw8fAJCouJSMnIKSligEBB4BLhkjLjkJLixuJHHHGGM-JGRKVZIZJJkRPH7IhSuzv2DAJJBIAALWy2ADWEDMADoYLYAPQ9b5IGEWZz0FC2EggpAwT59AZIAByGi8IAACkhnAACLTozHY1QIWy4YkAJSQgzgvSQFNsUAANiYjMiwITyiAjEgAB4wMCkGA-KAkWwIOBQADmABEPEQMNKIEhVFZzEQUGh0HpeU5-Bstv8kDJuIwRIx2GIHZwrLg+EQEsIKCRqLwHlZGFZuNQcQi-gQgaDwVDYfC8TCmSQwOY6SBE4MRcT1Wy02YM1ZbPp-kyzGA2R4kLgKcXS2UufQKaqsRS4DAKZI7AgKUQzGZPqmsQQjMgYEDcKbMCAiEMuiBx5OCHO0KpcHBKyR4Dydvn0yBOqpQuEqNFYvFEjwUmkMo7srl8oVihhsCBNttgtwqCQiCJqNQ9BWFY1CSJwCQcEBtDcJBFBEGEYSRBwyFECU3RfHiUbBDGYKQtCcIYYMMIAjACC8hGeI5gQAASpHkQaJZgGWSAVlWni1vWTGNhSzatp2HZdj2fYDkYkgQLyFrDkgUA6pA+ogIqUCSHAqrDJ4CBmLy1YEAAPBuvQUiQWkmgAvAA5JIvKSl2VkSvQiq8hSZh2RwLb9vQ3AUvY9CYNQIgAKQdBSCCpBA0JmQAfDpAJkBFrLspyFKeFKOnEbFFI6SqZhhe2uDmY2ZmGcZKDmcWTGUmYHmFZppBIECvJMmA5kICYFIFRSvRELyermTp-kmcFJg5hS-kRYVPIkACRBqkg5kAiCkJODAWiEUgADCPLKaqAAUIjKHtFLAEKOboElAJwCgEKdd1SA+AAlIVKAWBJk1siC5nmk4hUwhFGVZTleDmU4w4wIVRnGiVZllY1TlVU5WmDPVjVA-mWL0JiJiFddPVmX1A3A5WnajeNCpTTNc0LRCS0rbigwbUpKm7coZDKIdBNYqdE4XVdXV6vdj3Pbyr0Yh9XVfRSP0Zfpv1405+gaCgI0y8mHJRSrvQRUYvLomLwwtTmJkEHxNMIvTW1M3tZnHUSZl3UOhOG8ExurWbjN7SzZns6DduqGY8sIKaYp+PSjLEkgABWaCdH4QA`}
         target="_blank"
       >
-        here
+        is here
       </a>
     </div>
   ),

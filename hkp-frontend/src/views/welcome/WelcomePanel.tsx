@@ -59,8 +59,8 @@ export default function WelcomePanel() {
         <div className="py-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
           Get a quick impression what this means by browsing through the
           samples. Maybe it is something you tried in the past as well? Every
-          sample runs as a video that can be clicked to jump directly into the
-          sample board to try it yourself <a href="#">here</a>.
+          sample comes with a video with a link to the Playground, so can
+          directly jump into the experience and try or tweak it yourself.
         </div>
 
         <div className="mx-auto px-[0%] lg:px-[10%] pb-6">

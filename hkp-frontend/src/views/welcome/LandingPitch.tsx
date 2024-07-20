@@ -58,7 +58,7 @@ export default function LandingPitch({
       </div>
       <div className="pitch-item">
         Try building your ideas with data seamlessly flowing through reusable
-        building blocks. It is your choice.
+        building blocks. It's what you make of it.
       </div>
     </div>
   );

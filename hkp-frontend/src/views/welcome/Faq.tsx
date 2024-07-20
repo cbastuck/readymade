@@ -19,7 +19,7 @@ export default function Faq() {
         <a href="https://hookup.to">here</a>
       </div>
 
-      <div className="mb-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
+      <div className="mt-4 mb-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="faq-2">
             <AccordionTrigger> Is this a low-code thing?</AccordionTrigger>
@@ -105,17 +105,22 @@ export default function Faq() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-6">
-            <AccordionTrigger>Now as one sentence?</AccordionTrigger>
+            <AccordionTrigger>Give me a brief description!</AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
-                This app is an integration tool, that enables you to compose
+                This app is an integration tool. It enables you to compose
                 behaviors by connecting semantically meaningful building blocks.
               </div>
               <div className={s}>
-                That's the best one-liner, I found so far. Although it's too
-                abstract to be meaningful it's a working solution that will
-                evolve with the app.
+                That's the best brief, I found so far. I know it's still too
+                abstract. Still, it's a working solution that will evolve with
+                the app.
               </div>
+            </AccordionContent>
+          </AccordionItem>
+          <AccordionItem value="faq-7">
+            <AccordionTrigger>What are key characteristics!</AccordionTrigger>
+            <AccordionContent className="text-base font-serif">
               <div className={s}>
                 Composed behavior is inherently asynchronous, distributed, and
                 heterogeneous. This means, blocks operate at their own pace,
