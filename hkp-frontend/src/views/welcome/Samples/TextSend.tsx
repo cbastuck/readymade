@@ -1,7 +1,7 @@
 import { CarouselItem } from "@/ui-components/Carousel";
 import { createShortRandomString } from "@/views/playground/common";
 
-const headline = "send an encrypted text to peers";
+const headline = "write an app to send an encrypted text to peers";
 
 export const send: CarouselItem = {
   element: (

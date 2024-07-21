@@ -407,17 +407,30 @@ class Playground extends Component<Props, State> {
           services: data.services,
         })
       );
-      navigator.clipboard.writeText(url);
-      this.context?.pushNotification({
-        type: "info",
-        message: "Board URL copied to clipboard",
-        action: {
-          label: "QR Code",
-          callback: () => {
-            this.setState({ showShareBoardQRCodeURL: url });
+      try {
+        navigator.clipboard.writeText(url);
+        this.context?.pushNotification({
+          type: "info",
+          message: "Board URL copied to clipboard",
+          action: {
+            label: "QR Code",
+            callback: () => {
+              this.setState({ showShareBoardQRCodeURL: url });
+            },
           },
-        },
-      });
+        });
+      } catch (err) {
+        this.context?.pushNotification({
+          type: "info",
+          message: "Could not copy to clipboard",
+          action: {
+            label: "QR Code",
+            callback: () => {
+              this.setState({ showShareBoardQRCodeURL: url });
+            },
+          },
+        });
+      }
     }
 
     return true;

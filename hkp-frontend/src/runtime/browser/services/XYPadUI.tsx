@@ -36,12 +36,13 @@ export default class XYPadUI extends Component<ServiceUIProps> {
   padRect: Rect | null = null;
   pickOffset: Point | null = null;
 
+  touchDown: Point | undefined;
+
   onInit = (_initialState: any) => {};
 
   onNotification = async (_notification: any) => {};
 
-  getRelativePosition = (e: any) => {
-    //const { clientX, clientY } = e.type.includes("drag") ? e : e.targetTouches[0];
+  getRelativePosition = (e: any): Point => {
     const { clientX, clientY } = e.targetTouches ? e.targetTouches[0] : e;
     return {
       x: Math.min(
@@ -53,6 +54,24 @@ export default class XYPadUI extends Component<ServiceUIProps> {
         Number(this.padRect!.height!)
       ),
     };
+  };
+
+  onTouchContainerStart = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const clickPos = this.jumpDraggerToEvent(e);
+    this.updateService(this.props.service, clickPos, "start");
+    this.touchDown = clickPos;
+  };
+
+  onTouchContainerEnd = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (this.touchDown) {
+      this.updateService(this.props.service, this.touchDown, "stop");
+      this.touchDown = undefined;
+    }
   };
 
   onPanStart = (e: any) => {
@@ -99,17 +118,38 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     return false;
   };
 
-  onDblClick = (e: MouseEvent, service: ServiceInstance) => {
+  jumpDraggerToEvent = (e: MouseEvent) => {
     const clickPos = this.getRelativePosition(e);
     const draggerPos = {
       x: clickPos.x - dragger.width / 2,
       y: clickPos.y - dragger.height / 2,
     };
     this.setState(draggerPos);
+    return clickPos;
+  };
+
+  onDblClick = (e: MouseEvent, service: ServiceInstance) => {
+    const clickPos = this.jumpDraggerToEvent(e);
     this.updateService(service, clickPos);
   };
 
-  updateService = (service: ServiceInstance, clickPos: Point) => {
+  onMouseDown = (ev: MouseEvent) => {
+    if (!this.touchDown) {
+      const clickPos = this.jumpDraggerToEvent(ev);
+      this.updateService(this.props.service, clickPos, "start");
+    }
+  };
+
+  onMouseUp = (ev: MouseEvent) => {
+    const clickPos = this.jumpDraggerToEvent(ev);
+    this.updateService(this.props.service, clickPos, "stop");
+  };
+
+  updateService = (
+    service: ServiceInstance,
+    clickPos: Point,
+    eventType?: string
+  ) => {
     const normalizedClickPos = {
       x: Math.min(
         clickPos.x / Number(this.padRect!.width),
@@ -122,6 +162,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     };
     service.configure({
       position: normalizedClickPos,
+      eventType,
     });
   };
 
@@ -148,7 +189,12 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           this.onPan(e, service);
         }}
         onDrop={this.onPanEnd}
+        onMouseDown={this.onMouseDown}
+        onMouseUp={this.onMouseUp}
+        onTouchStart={this.onTouchContainerStart}
+        onTouchEnd={this.onTouchContainerEnd}
       >
+        <Raster n={7} />
         <div
           style={{
             position: "absolute",
@@ -185,4 +231,30 @@ export default class XYPadUI extends Component<ServiceUIProps> {
       </ServiceUI>
     );
   }
+}
+
+function Raster({ n }: { n: number }) {
+  const numLines = n;
+  const heightBtwLines = 1 / numLines;
+  const lines = new Array(numLines).fill(0).map((_, idx) => {
+    const y = (idx + 1) * heightBtwLines;
+    return (
+      <line x1={-1} y1={y} x2={2} y2={y} stroke="gray" strokeWidth={0.001} />
+    );
+  });
+  return (
+    <svg
+      style={{
+        position: "relative",
+        border: "solid 0.1px lightgray",
+        height: "100%",
+        width: "100%",
+      }}
+      viewBox="0 0 1 1"
+      width="100%"
+      height="100%"
+    >
+      {lines}
+    </svg>
+  );
 }

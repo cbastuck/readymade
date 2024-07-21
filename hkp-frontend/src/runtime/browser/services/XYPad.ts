@@ -16,9 +16,13 @@ class XYPad extends ServiceBase<{}> {
   }
 
   configure(config: any) {
-    const { position } = config;
+    const { position, eventType } = config;
     if (position !== undefined) {
-      this.app.next(this, position);
+      this.app.next(this, {
+        ...position,
+        eventType,
+        timestamp: performance.now(),
+      });
     }
   }
 

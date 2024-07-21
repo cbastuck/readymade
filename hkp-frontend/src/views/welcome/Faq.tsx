@@ -22,7 +22,10 @@ export default function Faq() {
       <div className="mt-4 mb-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="faq-2">
-            <AccordionTrigger> Is this a low-code thing?</AccordionTrigger>
+            <AccordionTrigger className="text-left">
+              {" "}
+              Is this a low-code thing?
+            </AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
                 Personally, I think fully replacing code is not a realisitc
@@ -37,7 +40,7 @@ export default function Faq() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-3">
-            <AccordionTrigger>
+            <AccordionTrigger className="text-left">
               Is this a visual programming thing?
             </AccordionTrigger>
             <AccordionContent className="text-base font-serif">
@@ -63,7 +66,9 @@ export default function Faq() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-4">
-            <AccordionTrigger>Is this for quick prototyping?</AccordionTrigger>
+            <AccordionTrigger className="text-left">
+              Is this for quick prototyping?
+            </AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
                 Yes, a big part of it involves testing ideas and getting an
@@ -82,7 +87,9 @@ export default function Faq() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-5">
-            <AccordionTrigger>Isn't this a job for AI?</AccordionTrigger>
+            <AccordionTrigger className="text-left">
+              Isn't this a job for AI?
+            </AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
                 I want to express my ideas and thoughts because I enjoy the
@@ -105,7 +112,9 @@ export default function Faq() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-6">
-            <AccordionTrigger>Give me a brief description!</AccordionTrigger>
+            <AccordionTrigger className="text-left">
+              Give me a brief description!
+            </AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
                 This app is an integration tool. It enables you to compose
@@ -119,7 +128,9 @@ export default function Faq() {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="faq-7">
-            <AccordionTrigger>What are key characteristics!</AccordionTrigger>
+            <AccordionTrigger className="text-left">
+              What are key characteristics!
+            </AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
                 Composed behavior is inherently asynchronous, distributed, and
