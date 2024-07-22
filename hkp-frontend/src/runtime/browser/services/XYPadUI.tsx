@@ -1,31 +1,40 @@
 import { Component, DragEvent, TouchEvent, MouseEvent } from "react";
 
+import { Fullscreen } from "lucide-react";
+import MenuIcon from "@/ui-components/MenuIcon";
+
 import { ServiceInstance, ServiceUIProps } from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
+import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 import { Point, Rect } from "@/common";
+import Button from "@/ui-components/Button";
 
 const transparentImage = new Image();
 transparentImage.src =
   "data:image/gif;base64,R0lGODlhAQABAIAAAAUEBAAAACwAAAAAAQABAAACAkQBADs=";
 
 const dragger = {
-  width: 50,
-  height: 50,
+  width: 40,
+  height: 40,
 };
 
-const container = {
-  width: 300,
+const initialSize = {
+  width: 320,
   height: 200,
 };
 
-const initialX = container.width / 2 - dragger.width / 2;
-const initialY = container.height / 2 - dragger.height / 2;
+const initialX = initialSize.width / 2 - dragger.width / 2;
+const initialY = initialSize.height / 2 - dragger.height / 2;
+
+const FULLSCREENZINDEX = 1000;
 
 export default class XYPadUI extends Component<ServiceUIProps> {
   state = {
     x: initialX,
     y: initialY,
     dragging: false,
+    horizontalGridSteps: 0,
+    verticalGridSteps: 0,
+    isFullscreen: false,
   };
 
   lastPos = {
@@ -38,9 +47,25 @@ export default class XYPadUI extends Component<ServiceUIProps> {
 
   touchDown: Point | undefined;
 
-  onInit = (_initialState: any) => {};
+  update = (newState: any) => {
+    if (
+      needsUpdate(newState.horizontalGridSteps, this.state.horizontalGridSteps)
+    ) {
+      this.setState({ horizontalGridSteps: newState.horizontalGridSteps });
+    }
 
-  onNotification = async (_notification: any) => {};
+    if (needsUpdate(newState.verticalGridSteps, this.state.verticalGridSteps)) {
+      this.setState({ verticalGridSteps: newState.verticalGridSteps });
+    }
+  };
+
+  onInit = (initialState: any) => {
+    this.update(initialState);
+  };
+
+  onNotification = async (notification: any) => {
+    this.update(notification);
+  };
 
   getRelativePosition = (e: any): Point => {
     const { clientX, clientY } = e.targetTouches ? e.targetTouches[0] : e;
@@ -168,7 +193,8 @@ export default class XYPadUI extends Component<ServiceUIProps> {
 
   renderMain = () => {
     const { service } = this.props;
-    const { x, y, dragging } = this.state;
+    const { x, y, dragging, horizontalGridSteps, verticalGridSteps } =
+      this.state;
     return (
       <div
         ref={(elem) => {
@@ -177,8 +203,9 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           }
         }}
         style={{
-          width: container.width,
-          height: container.height,
+          width: "100%",
+          height: "100%",
+          marginBottom: 10,
           position: "relative",
           overflow: "hidden",
         }}
@@ -194,7 +221,9 @@ export default class XYPadUI extends Component<ServiceUIProps> {
         onTouchStart={this.onTouchContainerStart}
         onTouchEnd={this.onTouchContainerEnd}
       >
-        <Raster n={7} />
+        {verticalGridSteps > 0 || horizontalGridSteps > 0 ? (
+          <Grid rows={horizontalGridSteps} cols={verticalGridSteps} />
+        ) : null}
         <div
           style={{
             position: "absolute",
@@ -220,30 +249,71 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     );
   };
 
+  renderFullscreen = () => {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          width: "100%",
+          height: "100%",
+          left: 0,
+          top: 0,
+          background: "white",
+          zIndex: FULLSCREENZINDEX,
+        }}
+      >
+        <Button
+          style={{ zIndex: FULLSCREENZINDEX + 1 }}
+          className="absolute top-0 right-0"
+          onClick={() => this.setState({ isFullscreen: false })}
+        >
+          x
+        </Button>
+        {this.renderMain()}
+      </div>
+    );
+  };
+
   render() {
+    const { isFullscreen } = this.state;
+    const customMenuEntries = [
+      {
+        name: "Fullscreen",
+        icon: <MenuIcon icon={Fullscreen} />,
+        disabled: isFullscreen,
+        onClick: () => this.setState({ isFullscreen: true }),
+      },
+    ];
     return (
       <ServiceUI
         {...this.props}
         onInit={this.onInit}
         onNotification={this.onNotification}
+        customMenuEntries={customMenuEntries}
+        initialSize={{ width: initialSize.width, height: initialSize.height }}
       >
-        {this.renderMain()}
+        {isFullscreen ? this.renderFullscreen() : this.renderMain()}
       </ServiceUI>
     );
   }
 }
 
-function Raster({ n }: { n: number }) {
-  const numLines = n;
-  const heightBtwLines = 1 / numLines;
-  const lines = new Array(numLines).fill(0).map((_, idx) => {
+function Grid({ rows, cols }: { rows: number; cols: number }) {
+  const heightBtwLines = 1 / rows;
+  const widthBtwLines = 1 / cols;
+  const nRowLines = cols - 1; // do not render the last line, as it comes from he border around the raster
+  const nColLines = rows - 1;
+  const verticalLines = new Array(nRowLines).fill(0).map((_, idx) => {
+    const x = (idx + 1) * widthBtwLines;
+    return <line key={`vertical-line-${idx}`} x1={x} y1={0} x2={x} y2={1} />;
+  });
+  const horizontalLines = new Array(nColLines).fill(0).map((_, idx) => {
     const y = (idx + 1) * heightBtwLines;
-    return (
-      <line x1={-1} y1={y} x2={2} y2={y} stroke="gray" strokeWidth={0.001} />
-    );
+    return <line key={`horizontal-line-${idx}`} x1={-1} y1={y} x2={2} y2={y} />;
   });
   return (
     <svg
+      preserveAspectRatio="none"
       style={{
         position: "relative",
         border: "solid 0.1px lightgray",
@@ -253,8 +323,11 @@ function Raster({ n }: { n: number }) {
       viewBox="0 0 1 1"
       width="100%"
       height="100%"
+      stroke="gray"
+      strokeWidth={0.001}
     >
-      {lines}
+      {horizontalLines}
+      {verticalLines}
     </svg>
   );
 }
