@@ -140,7 +140,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
       this.lastPos = touchPos;
     }
     e.preventDefault();
-    return false;
+    return touchPos;
   };
 
   jumpDraggerToEvent = (e: MouseEvent) => {
@@ -195,6 +195,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     const { service } = this.props;
     const { x, y, dragging, horizontalGridSteps, verticalGridSteps } =
       this.state;
+
     return (
       <div
         ref={(elem) => {
@@ -208,11 +209,13 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           marginBottom: 10,
           position: "relative",
           overflow: "hidden",
+          touchAction: "none",
         }}
         onDoubleClick={(ev) => this.onDblClick(ev, service)}
         onDragOver={(e) => {
           e.preventDefault();
           e.stopPropagation();
+          e.dataTransfer.dropEffect = "none";
           this.onPan(e, service);
         }}
         onDrop={this.onPanEnd}
@@ -220,10 +223,17 @@ export default class XYPadUI extends Component<ServiceUIProps> {
         onMouseUp={this.onMouseUp}
         onTouchStart={this.onTouchContainerStart}
         onTouchEnd={this.onTouchContainerEnd}
+        onTouchMove={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          const pos = this.onPan(e, service);
+          this.setState(pos);
+        }}
       >
         {verticalGridSteps > 0 || horizontalGridSteps > 0 ? (
           <Grid rows={horizontalGridSteps} cols={verticalGridSteps} />
         ) : null}
+
         <div
           style={{
             position: "absolute",
