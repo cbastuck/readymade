@@ -12,7 +12,7 @@
     "fix-lib": "sed -i='' 's/a as r/r: a/' build-lib/___vite-browser-external_commonjs-proxy-* && sed -i='' 's/export {/export default {/' build-lib/___vite-browser-external_commonjs-proxy-* && bash -c \"echo 'export { r }' >> build-lib/___vite-browser-external_commonjs-*.js\"",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "ftp": "sftp user@host.example:public_html/assets <<< $'put build/assets/*' && sftp user@host.example:public_html <<< $'put build/index.html'",
+    "ftp": "sftp -i ~/.ssh/id_rsa user@host.example:public_html/assets <<< $'put build/assets/*' && sftp user@host.example:public_html <<< $'put build/index.html'",
     "updateBuildNumber": "node ./updateBuildNumber.mjs"
   },
   "dependencies": {
