@@ -6,8 +6,8 @@ const serviceName = "XY Pad";
 const serviceId = "hookup.to/service/xy-pad";
 
 type State = {
-  horizontalGridSteps: number;
-  verticalGridSteps: number;
+  gridRows: number;
+  gridCols: number;
 };
 
 class XYPad extends ServiceBase<State> {
@@ -18,23 +18,22 @@ class XYPad extends ServiceBase<State> {
     id: string
   ) {
     super(app, board, descriptor, id, {
-      horizontalGridSteps: 0,
-      verticalGridSteps: 0,
+      gridRows: 0,
+      gridCols: 0,
     });
   }
 
   configure(config: any) {
-    const { position, eventType, horizontalGridSteps, verticalGridSteps } =
-      config;
+    const { position, eventType, gridRows, gridCols } = config;
 
-    if (horizontalGridSteps !== undefined) {
-      this.state.horizontalGridSteps = horizontalGridSteps;
-      this.app.notify(this, { horizontalGridSteps });
+    if (gridRows !== undefined) {
+      this.state.gridRows = gridRows;
+      this.app.notify(this, { gridRows });
     }
 
-    if (verticalGridSteps !== undefined) {
-      this.state.verticalGridSteps = verticalGridSteps;
-      this.app.notify(this, { verticalGridSteps });
+    if (gridCols !== undefined) {
+      this.state.gridCols = gridCols;
+      this.app.notify(this, { gridCols });
     }
 
     if (position !== undefined) {

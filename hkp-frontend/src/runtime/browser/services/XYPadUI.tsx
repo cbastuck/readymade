@@ -32,8 +32,8 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     x: initialX,
     y: initialY,
     dragging: false,
-    horizontalGridSteps: 0,
-    verticalGridSteps: 0,
+    gridRows: 0,
+    gridCols: 0,
     isFullscreen: false,
   };
 
@@ -48,14 +48,12 @@ export default class XYPadUI extends Component<ServiceUIProps> {
   touchDown: Point | undefined;
 
   update = (newState: any) => {
-    if (
-      needsUpdate(newState.horizontalGridSteps, this.state.horizontalGridSteps)
-    ) {
-      this.setState({ horizontalGridSteps: newState.horizontalGridSteps });
+    if (needsUpdate(newState.gridRows, this.state.gridRows)) {
+      this.setState({ gridRows: newState.gridRows });
     }
 
-    if (needsUpdate(newState.verticalGridSteps, this.state.verticalGridSteps)) {
-      this.setState({ verticalGridSteps: newState.verticalGridSteps });
+    if (needsUpdate(newState.gridCols, this.state.gridCols)) {
+      this.setState({ gridCols: newState.gridCols });
     }
   };
 
@@ -68,7 +66,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
   };
 
   getRelativePosition = (e: any): Point => {
-    const { clientX, clientY } = e.targetTouches ? e.targetTouches[0] : e;
+    const { clientX, clientY } = e.targetTouches ? e.targetTouches[0] || {} : e;
     return {
       x: Math.min(
         Math.max(0, clientX - this.padRect!.x),
@@ -100,7 +98,6 @@ export default class XYPadUI extends Component<ServiceUIProps> {
   };
 
   onPanStart = (e: any) => {
-    //e.dataTransfer.setDragImage(e.target, 0, 0);
     const { clientX, clientY } = e.type.includes("drag")
       ? e
       : e.targetTouches[0];
@@ -113,7 +110,9 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     this.setState({ dragging: true });
   };
 
-  onDragEnd = () => {
+  onDragEnd = (ev: any) => {
+    console.log("DRAG END");
+    this.onMouseUp(ev);
     this.setState({ dragging: false });
   };
 
@@ -136,7 +135,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
       touchPos.x <= Number(this.padRect!.width!) &&
       touchPos.y <= Number(this.padRect!.height!)
     ) {
-      this.updateService(service, touchPos);
+      this.updateService(service, touchPos, "move");
       this.lastPos = touchPos;
     }
     e.preventDefault();
@@ -166,6 +165,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
   };
 
   onMouseUp = (ev: MouseEvent) => {
+    console.log("MOUSE UP");
     const clickPos = this.jumpDraggerToEvent(ev);
     this.updateService(this.props.service, clickPos, "stop");
   };
@@ -193,8 +193,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
 
   renderMain = () => {
     const { service } = this.props;
-    const { x, y, dragging, horizontalGridSteps, verticalGridSteps } =
-      this.state;
+    const { x, y, dragging, gridRows, gridCols } = this.state;
 
     return (
       <div
@@ -215,7 +214,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
         onDragOver={(e) => {
           e.preventDefault();
           e.stopPropagation();
-          e.dataTransfer.dropEffect = "none";
+          e.dataTransfer.dropEffect = "move";
           this.onPan(e, service);
         }}
         onDrop={this.onPanEnd}
@@ -230,8 +229,8 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           this.setState(pos);
         }}
       >
-        {verticalGridSteps > 0 || horizontalGridSteps > 0 ? (
-          <Grid rows={horizontalGridSteps} cols={verticalGridSteps} />
+        {gridRows > 0 || gridCols > 0 ? (
+          <Grid rows={gridRows} cols={gridCols} />
         ) : null}
 
         <div
@@ -311,16 +310,23 @@ export default class XYPadUI extends Component<ServiceUIProps> {
 function Grid({ rows, cols }: { rows: number; cols: number }) {
   const heightBtwLines = 1 / rows;
   const widthBtwLines = 1 / cols;
-  const nRowLines = cols - 1; // do not render the last line, as it comes from he border around the raster
-  const nColLines = rows - 1;
-  const verticalLines = new Array(nRowLines).fill(0).map((_, idx) => {
-    const x = (idx + 1) * widthBtwLines;
-    return <line key={`vertical-line-${idx}`} x1={x} y1={0} x2={x} y2={1} />;
-  });
-  const horizontalLines = new Array(nColLines).fill(0).map((_, idx) => {
-    const y = (idx + 1) * heightBtwLines;
-    return <line key={`horizontal-line-${idx}`} x1={-1} y1={y} x2={2} y2={y} />;
-  });
+  const nRowLines = rows - 1; // do not render the last line, as it comes from he border around the raster
+  const nColLines = cols - 1;
+  const rowLines =
+    nRowLines > 0
+      ? new Array(nRowLines).fill(0).map((_, idx) => {
+          const y = (idx + 1) * heightBtwLines;
+          return <line key={`col-line-${idx}`} x1={0} y1={y} x2={1} y2={y} />;
+        })
+      : null;
+  const colLines =
+    nColLines > 0
+      ? new Array(nColLines).fill(0).map((_, idx) => {
+          const x = (idx + 1) * widthBtwLines;
+          return <line key={`row-line-${idx}`} x1={x} y1={0} x2={x} y2={1} />;
+        })
+      : null;
+
   return (
     <svg
       preserveAspectRatio="none"
@@ -336,8 +342,8 @@ function Grid({ rows, cols }: { rows: number; cols: number }) {
       stroke="gray"
       strokeWidth={0.001}
     >
-      {horizontalLines}
-      {verticalLines}
+      {rowLines}
+      {colLines}
     </svg>
   );
 }
