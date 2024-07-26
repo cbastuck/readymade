@@ -95,6 +95,7 @@ export default class XYPadUI extends Component<ServiceUIProps> {
       this.updateService(this.props.service, this.touchDown, "stop");
       this.touchDown = undefined;
     }
+    this.setState({ dragging: false });
   };
 
   onPanStart = (e: any) => {
@@ -111,9 +112,10 @@ export default class XYPadUI extends Component<ServiceUIProps> {
   };
 
   onDragEnd = (ev: any) => {
-    console.log("DRAG END");
-    this.onMouseUp(ev);
-    this.setState({ dragging: false });
+    if (!this.touchDown) {
+      this.onMouseUp(ev);
+      this.setState({ dragging: false });
+    }
   };
 
   onPanEnd = (e: DragEvent) => {
@@ -165,7 +167,6 @@ export default class XYPadUI extends Component<ServiceUIProps> {
   };
 
   onMouseUp = (ev: MouseEvent) => {
-    console.log("MOUSE UP");
     const clickPos = this.jumpDraggerToEvent(ev);
     this.updateService(this.props.service, clickPos, "stop");
   };
