@@ -176,20 +176,27 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     clickPos: Point,
     eventType?: string
   ) => {
+    const padWidth = Number(this.padRect!.width);
+    const padHeight = Number(this.padRect!.height);
     const normalizedClickPos = {
-      x: Math.min(
-        clickPos.x / Number(this.padRect!.width),
-        Number(this.padRect!.width)
-      ),
-      y: Math.min(
-        clickPos.y / Number(this.padRect!.height),
-        Number(this.padRect!.height)
-      ),
+      x: Math.min(clickPos.x / padWidth, padWidth),
+      y: Math.min(clickPos.y / padHeight, padHeight),
     };
-    service.configure({
+
+    const cfg: any = {
       position: normalizedClickPos,
       eventType,
-    });
+    };
+
+    if (this.state.gridRows > 0) {
+      const heightBtwLines = 1 / this.state.gridRows;
+      cfg.position.row = Math.floor(normalizedClickPos.y / heightBtwLines);
+    }
+    if (this.state.gridCols > 0) {
+      const widthBtwLines = 1 / this.state.gridCols;
+      cfg.position.column = Math.floor(normalizedClickPos.x / widthBtwLines);
+    }
+    service.configure(cfg);
   };
 
   renderMain = () => {
@@ -230,10 +237,6 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           this.setState(pos);
         }}
       >
-        {gridRows > 0 || gridCols > 0 ? (
-          <Grid rows={gridRows} cols={gridCols} />
-        ) : null}
-
         <div
           style={{
             position: "absolute",
@@ -255,6 +258,9 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           onDragStart={this.onPanStart}
           onDragEnd={this.onDragEnd}
         />
+        {gridRows > 0 || gridCols > 0 ? (
+          <Grid rows={gridRows} cols={gridCols} x={x} y={y} />
+        ) : null}
       </div>
     );
   };
@@ -264,8 +270,8 @@ export default class XYPadUI extends Component<ServiceUIProps> {
       <div
         style={{
           position: "fixed",
-          width: "100%",
-          height: "100%",
+          width: "100vw",
+          height: "90vh",
           left: 0,
           top: 0,
           background: "white",
@@ -308,7 +314,17 @@ export default class XYPadUI extends Component<ServiceUIProps> {
   }
 }
 
-function Grid({ rows, cols }: { rows: number; cols: number }) {
+function Grid({
+  rows,
+  cols,
+  x,
+  y,
+}: {
+  rows: number;
+  cols: number;
+  x: number;
+  y: number;
+}) {
   const heightBtwLines = 1 / rows;
   const widthBtwLines = 1 / cols;
   const nRowLines = rows - 1; // do not render the last line, as it comes from he border around the raster
@@ -343,6 +359,8 @@ function Grid({ rows, cols }: { rows: number; cols: number }) {
       stroke="gray"
       strokeWidth={0.001}
     >
+      {/* Render invisible circle outside view to avoid glitches during drag*/}
+      <circle cx={x + 1} cy={y + 1} r="0.001" />
       {rowLines}
       {colLines}
     </svg>
