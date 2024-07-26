@@ -168,7 +168,6 @@ class Sandbox extends Component<Props, State> {
           boardContext={boardContext}
           onResult={this.onResult}
           disabledItems={["remove"]}
-          highlightServicesOnHover={false}
           processRuntimeByName={this.processRuntimeByName}
         />
 

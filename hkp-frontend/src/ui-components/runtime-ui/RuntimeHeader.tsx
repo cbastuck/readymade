@@ -8,6 +8,7 @@ import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
 import ServiceSelector from "../ServiceSelector";
 import EditorDialog from "../EditorDialog";
+import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTarget";
 
 type Props = {
   runtime: RuntimeDescriptor;
@@ -87,7 +88,14 @@ export default function RuntimeHeader({
   };
 
   return (
-    <div className="flex items-center gap-3 px-2" onDoubleClick={onDblClick}>
+    <div
+      className="flex items-center gap-3 px-2 cursor-move"
+      onDoubleClick={onDblClick}
+      draggable={true}
+      onDragStart={(ev) => {
+        ev.dataTransfer.setData(HKP_DND_RUNTIME_TYPE, JSON.stringify(runtime));
+      }}
+    >
       <div className="flex items-end gap-3 px-2 min-h-10">
         <RuntimeSettings
           runtime={runtime}

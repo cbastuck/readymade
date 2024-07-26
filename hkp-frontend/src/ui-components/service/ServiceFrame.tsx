@@ -15,12 +15,10 @@ import ServiceOutputPlug from "./ServiceOutputPlug";
 
 type Props = {
   service: ServiceInstance;
-  draggable: boolean;
   showBypassOnlyIfExplicit?: boolean;
   children: ReactNode;
   customMenuEntries?: Array<CustomMenuEntry>;
   frameless?: boolean;
-  dropShadowOnHover?: boolean;
   onAction: (action: ServiceAction) => void;
 };
 
@@ -30,7 +28,6 @@ export default function ServiceFrame({
   showBypassOnlyIfExplicit,
   customMenuEntries,
   frameless = false,
-  //dropShadowOnHover = false,
   onAction,
 }: Props) {
   const [frameCollapsed, setFrameCollapsed] = useState(false);

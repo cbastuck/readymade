@@ -15,7 +15,10 @@ import {
   RuntimeApi,
   User,
 } from "./types";
-import { reorderService } from "./views/playground/BoardActions";
+import {
+  reorderRuntime,
+  reorderService,
+} from "./views/playground/BoardActions";
 import { isUserAuthenticated } from "./runtime/remote/RemoteRuntimeApi";
 import { AppContextState, AppCtx } from "./AppContext";
 import { connectDevTools } from "./core/DevTools";
@@ -32,6 +35,7 @@ type BoardContextAPI = {
   removeService: (svc: InstanceId, rt: RuntimeDescriptor) => void;
 
   arrangeService: (rt: RuntimeDescriptor, svcUuid: string, dst: number) => void;
+  arrangeRuntime: (runtimeId: string, dst: number) => void;
 
   fetchBoard: () => Promise<void>;
   isActionAvailable: (action: Action) => boolean;
@@ -126,6 +130,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       addRuntime: this.addRuntime,
       addService: this.addService,
       arrangeService: this.arrangeServices,
+      arrangeRuntime: this.arrangeRuntimes,
       removeService: this.removeService,
       removeRuntime: this.removeRuntime,
       removeAllServices: this.removeAllServices,
@@ -617,6 +622,23 @@ class BoardProvider extends Component<Props, BoardContextState> {
           ...state.services,
           [runtime.id]: rearranged,
         },
+      };
+    });
+  };
+
+  arrangeRuntimes = async (runtimeId: string, targetPosition: number) => {
+    const [scope, api] = this.getRuntimeScopeApi(runtimeId);
+    if (!scope || !api) {
+      throw new Error("BoardContext.arrangeServices, scope or api missing");
+    }
+
+    const { runtimes } = this.state;
+    const rearranged = reorderRuntime(runtimes, runtimeId, targetPosition);
+
+    this.setState((state) => {
+      return {
+        ...state,
+        runtimes: rearranged,
       };
     });
   };

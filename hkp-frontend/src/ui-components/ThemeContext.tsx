@@ -5,7 +5,7 @@ const defaultTheme = {
   backgroundColor: "white",
   borderColor: "lightgray",
   borderRadius: 0,
-  accentColor: "#0ABCFBFF",
+  accentColor: "#0ABCFB",
   buttonBackgroundColor: "transparent",
   runtimeBackgroundColor: "",
   runtimeBackgroundImage: "",

@@ -103,6 +103,10 @@ export default class XYPadUI extends Component<ServiceUIProps> {
       ? e
       : e.targetTouches[0];
 
+    if (e.type.includes("drag")) {
+      e.dataTransfer.setData("application/hkp-service-xypad", "");
+    }
+
     const elemtRect = e.target.getBoundingClientRect();
     this.pickOffset = {
       x: clientX - elemtRect.left,
@@ -220,10 +224,12 @@ export default class XYPadUI extends Component<ServiceUIProps> {
         }}
         onDoubleClick={(ev) => this.onDblClick(ev, service)}
         onDragOver={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          e.dataTransfer.dropEffect = "move";
-          this.onPan(e, service);
+          if (e.dataTransfer.types.includes("application/hkp-service-xypad")) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.dataTransfer.dropEffect = "move";
+            this.onPan(e, service);
+          }
         }}
         onDrop={this.onPanEnd}
         onMouseDown={this.onMouseDown}

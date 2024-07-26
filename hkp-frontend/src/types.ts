@@ -121,7 +121,6 @@ export type ServiceUIProps = {
   draggable?: boolean;
   resizable?: boolean;
   frameless?: boolean;
-  dropShadowOnHover?: boolean;
   customMenuEntries?: Array<CustomMenuEntry>;
   onServiceAction: (command: ServiceAction) => void;
 };

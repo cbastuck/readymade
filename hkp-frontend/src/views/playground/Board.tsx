@@ -27,6 +27,7 @@ import {
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
 import Button from "@/ui-components/Button";
+import RuntimeWithDropBars from "./RuntimeWithDropBars";
 
 const defaultDiscoveryPeer: PeerJsHostDescriptor =
   availableDiscoveryPeerHosts[0];
@@ -498,7 +499,8 @@ export default class Board extends Component<Props, State> {
   renderRuntime = (
     boardContext: BoardContextState,
     runtime: RuntimeDescriptor,
-    peersContext: PeersContextState | null
+    peersContext: PeersContextState | null,
+    runtimeIdx: number
   ) => {
     const { boardName } = this.props;
     const ownPeers = boardContext.runtimes.map(
@@ -529,21 +531,27 @@ export default class Board extends Component<Props, State> {
       runtime.type === "browser"
         ? this.renderInputs(filteredPeers, runtime, peersContext)
         : undefined;
+
+    const onDrop = (runtimeId: string, newIndex: number) => {
+      boardContext.arrangeRuntime(runtimeId, newIndex);
+    };
+
     return (
       <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
-        <Runtime
-          key={`board-${runtime.id}`}
-          initialState={runtime.state}
-          ref={(rt) => (this.runtimeInstances[runtime.id] = rt)}
-          boardContext={boardContext}
-          runtime={runtime}
-          onResult={onResult}
-          processRuntimeByName={this.processRuntimeByName}
-          outputs={outputs}
-          inputs={inputs}
-          headless={this.props.headless}
-          highlightServicesOnHover={true}
-        />
+        <RuntimeWithDropBars index={runtimeIdx} onDrop={onDrop}>
+          <Runtime
+            key={`board-${runtime.id}`}
+            initialState={runtime.state}
+            ref={(rt) => (this.runtimeInstances[runtime.id] = rt)}
+            boardContext={boardContext}
+            runtime={runtime}
+            onResult={onResult}
+            processRuntimeByName={this.processRuntimeByName}
+            outputs={outputs}
+            inputs={inputs}
+            headless={this.props.headless}
+          />
+        </RuntimeWithDropBars>
       </DragProvider>
     );
   };
@@ -559,7 +567,7 @@ export default class Board extends Component<Props, State> {
           <PeersProvider>
             <PeersConsumer>
               {(peersContext) =>
-                this.props.boardContext.runtimes.map((runtime) => {
+                this.props.boardContext.runtimes.map((runtime, runtimeIdx) => {
                   const activationId = getActivationId(runtime.id);
                   const inputActivation =
                     this.state.peerInputActivation[activationId];
@@ -670,7 +678,8 @@ export default class Board extends Component<Props, State> {
                       {this.renderRuntime(
                         this.props.boardContext,
                         runtime,
-                        peersContext
+                        peersContext,
+                        runtimeIdx
                       )}
                     </Peer>
                   );

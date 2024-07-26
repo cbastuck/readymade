@@ -25,7 +25,6 @@ type Props = {
   services: Array<ServiceDescriptor>;
   boardName: string;
   collapsed?: boolean;
-  highlightServicesOnHover?: boolean;
 
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
@@ -139,7 +138,6 @@ export default class BrowserRuntime extends Component<Props, State> {
         service,
         showBypassOnlyIfExplicit: false,
         draggable,
-        dropShadowOnHover: this.props.highlightServicesOnHover,
         onServiceAction,
       });
     };

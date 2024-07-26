@@ -27,3 +27,5 @@ build
 _.git
 .DS_Store
 *.afdesign~lock~
+
+.env

@@ -14,6 +14,7 @@ import {
 import { BoardContextState } from "../BoardContext";
 
 import RuntimeUI from "@/ui-components/runtime-ui";
+import DropTarget, { HKP_DND_SERVICE_TYPE } from "./DropTarget";
 
 type Props = {
   boardContext: BoardContextState;
@@ -35,7 +36,6 @@ type Props = {
 
   expanded?: boolean;
   frameless?: boolean;
-  highlightServicesOnHover?: boolean;
 
   onResult: OnResult;
   processRuntimeByName: ProcessRuntimeByName;
@@ -224,32 +224,37 @@ export default class Runtime extends Component<Props, State> {
     };
 
     return (
-      <RuntimeUI
-        scope={scope}
-        services={services}
-        onServiceAction={this.onServiceAction}
-        onArrangeService={onArrangeService}
-        boardName={boardName || null}
-        user={user}
-        frameless={frameless}
-        headless={headless}
-        style={style}
-        isExpanded={expanded}
-        wrapServices={wrapServices}
-        runtime={runtime}
-        registry={registry}
-        inputs={this.props.inputs}
-        outputs={this.props.outputs}
-        onExpand={onExpand}
-        onAddService={this.onAddService}
-        onWrapServices={onWrapServices}
-        onResult={this.props.onResult}
-        processRuntimeByName={this.props.processRuntimeByName}
+      <DropTarget
+        acceptedType={HKP_DND_SERVICE_TYPE}
+        disableDrag={services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
       >
-        {services && services.length === 0 && !headless && (
-          <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
-        )}
-      </RuntimeUI>
+        <RuntimeUI
+          scope={scope}
+          services={services}
+          onServiceAction={this.onServiceAction}
+          onArrangeService={onArrangeService}
+          boardName={boardName || null}
+          user={user}
+          frameless={frameless}
+          headless={headless}
+          style={style}
+          isExpanded={expanded}
+          wrapServices={wrapServices}
+          runtime={runtime}
+          registry={registry}
+          inputs={this.props.inputs}
+          outputs={this.props.outputs}
+          onExpand={onExpand}
+          onAddService={this.onAddService}
+          onWrapServices={onWrapServices}
+          onResult={this.props.onResult}
+          processRuntimeByName={this.props.processRuntimeByName}
+        >
+          {services && services.length === 0 && !headless && (
+            <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
+          )}
+        </RuntimeUI>
+      </DropTarget>
     );
   }
 }

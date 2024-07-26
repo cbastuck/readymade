@@ -25,7 +25,6 @@ type Props = {
   scope: RuntimeScope;
   children?: JSX.Element | JSX.Element[];
   collapsed?: boolean;
-  highlightServicesOnHover?: boolean;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
   onResult: OnResult;
@@ -38,7 +37,6 @@ export default function RemoteRuntime({
   runtime,
   scope,
   collapsed,
-  highlightServicesOnHover,
   onResult,
   onArrangeService,
   onServiceAction,
@@ -82,7 +80,6 @@ export default function RemoteRuntime({
     return React.createElement(ui, {
       service,
       showBypassOnlyIfExplicit: true,
-      dropShadowOnHover: highlightServicesOnHover,
       draggable: false,
       onServiceAction,
     });

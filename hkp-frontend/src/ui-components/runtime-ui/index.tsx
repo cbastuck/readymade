@@ -29,7 +29,6 @@ type Props = {
   wrapServices?: boolean;
   isExpanded?: boolean;
   style?: CSSProperties;
-  highlightServicesOnHover?: boolean;
   outputs?: ReactElement;
   inputs?: ReactElement;
   children?: ReactNode | ReactNode[];
@@ -56,7 +55,6 @@ export default function RuntimeUI({
   children,
   registry,
   isExpanded = true,
-  highlightServicesOnHover = false,
   outputs,
   inputs,
 
@@ -85,6 +83,7 @@ export default function RuntimeUI({
 
   const expanded = headless ? false : isExpanded;
   const horizontalLayout = "flex";
+  // TODO: not good on mobile - double check
   const horizontalLayoutWrapped =
     "flex sm:flex-wrap flex-col sm:flex-row items-start"; // use flex-col and items-center on mobile
   const layout = wrapServices ? horizontalLayoutWrapped : horizontalLayout;
@@ -129,7 +128,6 @@ export default function RuntimeUI({
                 onServiceAction={onServiceAction}
                 onResult={onResult}
                 processRuntimeByName={processRuntimeByName}
-                highlightServicesOnHover={highlightServicesOnHover}
               />
             </div>
             {outputs && expanded ? (
@@ -149,7 +147,6 @@ export default function RuntimeUI({
               onArrangeService={onArrangeService}
               onServiceAction={onServiceAction}
               onResult={onResult}
-              highlightServicesOnHover={highlightServicesOnHover}
             />
           </>
         )}

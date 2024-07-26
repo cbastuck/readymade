@@ -3,6 +3,7 @@ import { DragEvent } from "react";
 import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 import { ServiceDescriptor } from "@/types";
 import Editable from "../Editable";
+import { HKP_DND_SERVICE_TYPE } from "@/components/DropTarget";
 
 type Props = {
   draggable?: boolean;
@@ -18,8 +19,12 @@ export default function ServiceName({
 }: Props) {
   const onStartDrag = (ev: DragEvent) => {
     const publicService = filterPrivateMembers(service);
-    ev.dataTransfer.setData("text/plain", JSON.stringify(publicService));
+    ev.dataTransfer.setData(
+      HKP_DND_SERVICE_TYPE,
+      JSON.stringify(publicService)
+    );
   };
+
   const cursor = draggable ? "move" : undefined;
   return (
     <div

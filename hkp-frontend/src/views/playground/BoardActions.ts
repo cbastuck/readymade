@@ -202,6 +202,23 @@ export function reorderService(
   return newArr;
 }
 
+export function reorderRuntime(
+  runtimes: Array<RuntimeDescriptor>,
+  runtimeId: string,
+  targetPosition: number
+) {
+  const fromIndex = runtimes.findIndex((rt) => runtimeId === rt.id);
+  const toIndex =
+    targetPosition > fromIndex
+      ? Math.max(targetPosition - 1, 0)
+      : targetPosition;
+
+  const newArr = [...runtimes];
+  newArr.splice(fromIndex, 1);
+  newArr.splice(toIndex, 0, runtimes[fromIndex]);
+  return newArr;
+}
+
 export function importFromLink(fromLink: string) {
   const src: string = decodeBoardState(fromLink);
   return JSON.parse(src);

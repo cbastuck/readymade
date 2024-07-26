@@ -1,6 +1,6 @@
 import { Component, ReactElement } from "react";
 
-import ServiceDropBar from "./ServiceDropBar";
+import ServiceWithDropBars from "./ServiceWithDropBars";
 import { RuntimeDescriptor, ServiceInstance } from "../types";
 
 type Props = {
@@ -51,12 +51,16 @@ export default class ServiceUiContainer extends Component<Props> {
                 flexDirection: "row",
               }}
             >
-              <ServiceDropBar index={pos} onDrop={onArrangeService} />
-              {serviceElement}
+              <ServiceWithDropBars
+                index={pos}
+                onDrop={onArrangeService}
+                allowDropBehind={pos === services.length - 1}
+              >
+                {serviceElement}
+              </ServiceWithDropBars>
             </div>
           );
         })}
-        <ServiceDropBar index={services.length} onDrop={onArrangeService} />
       </>
     );
   }
