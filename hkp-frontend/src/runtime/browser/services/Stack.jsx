@@ -21,10 +21,17 @@ class Stack {
   }
 
   async configure(config) {
-    const { services, input, output } = config;
+    const { services, input, output, subservices } = config;
     if (services !== undefined) {
       this.services = services;
-      await this.createSubServices(services);
+      const svcWithState = subservices
+        ? subservices.map((svc) => ({
+            serviceId: svc.serviceId,
+            serviceName: svc.serviceName,
+            ...svc.state,
+          }))
+        : services;
+      await this.createSubServices(svcWithState);
     }
 
     if (input !== undefined) {
