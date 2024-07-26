@@ -237,6 +237,9 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           this.setState(pos);
         }}
       >
+        {gridRows > 0 || gridCols > 0 ? (
+          <Grid rows={gridRows} cols={gridCols} x={x} y={y} />
+        ) : null}
         <div
           style={{
             position: "absolute",
@@ -258,9 +261,6 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           onDragStart={this.onPanStart}
           onDragEnd={this.onDragEnd}
         />
-        {gridRows > 0 || gridCols > 0 ? (
-          <Grid rows={gridRows} cols={gridCols} x={x} y={y} />
-        ) : null}
       </div>
     );
   };
