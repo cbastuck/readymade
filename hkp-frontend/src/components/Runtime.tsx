@@ -14,7 +14,8 @@ import {
 import { BoardContextState } from "../BoardContext";
 
 import RuntimeUI from "@/ui-components/runtime-ui";
-import DropTarget, { HKP_DND_SERVICE_TYPE } from "./DropTarget";
+import DropTarget from "./DropTarget";
+import { HKP_DND_SERVICE_TYPE } from "./DropTypes";
 
 type Props = {
   boardContext: BoardContextState;
@@ -223,10 +224,15 @@ export default class Runtime extends Component<Props, State> {
       scope?.setState?.({ minimized: !expanded }); // TODO: remove state duplication
     };
 
+    const onDropService = (data: any) => {
+      console.log("DROPPED SERVICE INTO RT", data);
+    };
+
     return (
       <DropTarget
         acceptedType={HKP_DND_SERVICE_TYPE}
-        disableDrag={services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
+        disabled={services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
+        onDrop={onDropService}
       >
         <RuntimeUI
           scope={scope}

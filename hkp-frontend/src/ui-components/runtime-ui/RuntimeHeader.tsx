@@ -8,7 +8,8 @@ import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
 import ServiceSelector from "../ServiceSelector";
 import EditorDialog from "../EditorDialog";
-import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTarget";
+import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTypes";
+import DragSource from "@/components/DragSource";
 
 type Props = {
   runtime: RuntimeDescriptor;
@@ -78,23 +79,11 @@ export default function RuntimeHeader({
     console.log("Apply runtime config not implemented", newConfig);
   };
 
-  const onDblClick = (ev: MouseEvent) => {
-    const toggleCollapseOnDblClick = false;
-    if (toggleCollapseOnDblClick) {
-      onExpand(!isExpanded);
-      ev.preventDefault();
-      ev.stopPropagation();
-    }
-  };
-
   return (
-    <div
+    <DragSource
       className="flex items-center gap-3 px-2 cursor-move"
-      onDoubleClick={onDblClick}
-      draggable={true}
-      onDragStart={(ev) => {
-        ev.dataTransfer.setData(HKP_DND_RUNTIME_TYPE, JSON.stringify(runtime));
-      }}
+      value={runtime}
+      type={HKP_DND_RUNTIME_TYPE}
     >
       <div className="flex items-end gap-3 px-2 min-h-10">
         <RuntimeSettings
@@ -134,6 +123,6 @@ export default function RuntimeHeader({
         onClose={() => setIsRuntimeConfigOpen(false)}
         actions={[{ label: "Apply Changes", onAction: onApplyRuntimeConfig }]}
       />
-    </div>
+    </DragSource>
   );
 }

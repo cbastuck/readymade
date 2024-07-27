@@ -1,6 +1,6 @@
-import { DragEvent, useContext, useState } from "react";
-import { ThemeCtx } from "@/ui-components/ThemeContext";
-import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTarget";
+import DropTarget from "@/components/DropTarget";
+import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTypes";
+import { useTheme } from "@/ui-components/ThemeContext";
 
 type Props = {
   index: number;
@@ -8,48 +8,24 @@ type Props = {
   onDrop: (runtimeId: string, index: number) => void;
 };
 export default function RuntimeWithDropBar({ children, index, onDrop }: Props) {
-  const [active, setActive] = useState(false);
-  const onDropBar = (ev: DragEvent) => {
-    setActive(false);
-    const data = ev.dataTransfer.getData(HKP_DND_RUNTIME_TYPE);
+  const onDropRuntime = (data: any) => {
     if (data) {
       const rt = JSON.parse(data);
       onDrop && onDrop(rt.id, index);
     }
   };
+
+  const theme = useTheme();
+
   return (
-    <div className="flex flex-col">
-      <DropBar active={active} setActive={setActive} onDrop={onDropBar} />
+    <div className="flex flex-col w-full">
+      <DropTarget
+        className="w-full h-[5px] mt-[-5px]"
+        acceptedType={HKP_DND_RUNTIME_TYPE}
+        onDrop={onDropRuntime}
+        activeColor={theme.dropBarColor}
+      />
       {children}
     </div>
-  );
-}
-
-function DropBar({
-  active,
-  setActive,
-  onDrop,
-}: {
-  active: boolean;
-  setActive: (newActive: boolean) => void;
-  onDrop: (ev: DragEvent) => void;
-}) {
-  const theme = useContext(ThemeCtx);
-  return (
-    <div
-      className="w-full h-[5px]"
-      style={{
-        background: active ? `${theme.dropBarColor} ` : undefined,
-        marginTop: -5,
-      }}
-      onDragOver={(ev) => {
-        if (ev.dataTransfer.types.includes(HKP_DND_RUNTIME_TYPE)) {
-          setActive(true);
-          ev.preventDefault();
-        }
-      }}
-      onDragLeave={(_ev) => setActive(false)}
-      onDrop={onDrop}
-    />
   );
 }

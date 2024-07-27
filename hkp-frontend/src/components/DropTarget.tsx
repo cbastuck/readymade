@@ -1,46 +1,59 @@
 import { useTheme } from "@/ui-components/ThemeContext";
-import { useState } from "react";
+import { CSSProperties, DragEvent, useState } from "react";
 
 type Props = {
-  children: JSX.Element;
+  className?: string;
+  style?: CSSProperties;
+  children?: JSX.Element;
   acceptedType: string;
-  disableDrag?: boolean;
+  disabled?: boolean;
+  activeColor?: string;
+  onDrop: (data: any) => void;
 };
 
-export const HKP_DND_SERVICE_TYPE = "application/hkp-service";
-export const HKP_DND_RUNTIME_TYPE = "application/hkp-runtime";
-
 export default function DropTarget({
+  className,
   children,
   acceptedType,
-  disableDrag,
+  disabled,
+  activeColor,
+  style = {},
+  onDrop: onDropProp,
 }: Props) {
   const [isActive, setIsActive] = useState(false);
   const theme = useTheme();
+  const onDragOver = (ev: DragEvent) => {
+    if (ev.dataTransfer.types.includes(acceptedType) && !disabled) {
+      setIsActive(true);
+      ev.preventDefault();
+    }
+  };
+
+  const onDragLeave = (_ev: DragEvent) => {
+    setIsActive(false);
+  };
+
+  const onDrop = (ev: DragEvent) => {
+    if (!disabled) {
+      setIsActive(false);
+      onDropProp(ev.dataTransfer.getData(acceptedType));
+      ev.preventDefault();
+      ev.stopPropagation();
+    }
+  };
+
   return (
     <div
-      style={{ background: isActive ? `${theme.accentColor}0A` : undefined }}
-      onDragOver={(ev) => {
-        if (ev.dataTransfer.types.includes(acceptedType) && !disableDrag) {
-          console.log("DropTarget dragOver", acceptedType);
-          setIsActive(true);
-          ev.preventDefault();
-        }
+      className={className}
+      style={{
+        background: isActive
+          ? activeColor || `${theme.accentColor}0A`
+          : undefined,
+        ...style,
       }}
-      onDragLeave={(_ev) => {
-        setIsActive(false);
-      }}
-      onDrop={(ev) => {
-        setIsActive(false);
-        try {
-          const data = JSON.parse(ev.dataTransfer.getData(acceptedType));
-          if (data && data.serviceId) {
-            console.log("DropTarget dropped", data);
-          }
-        } catch (err) {
-          console.warn("Dropped unknown data");
-        }
-      }}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
     >
       {children}
     </div>

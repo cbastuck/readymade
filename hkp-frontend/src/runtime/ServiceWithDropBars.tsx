@@ -1,5 +1,6 @@
-import { ThemeCtx } from "@/ui-components/ThemeContext";
-import { DragEvent, useContext, useState } from "react";
+import DropTarget from "@/components/DropTarget";
+import { HKP_DND_SERVICE_TYPE, isServiceDrop } from "@/components/DropTypes";
+import { useTheme } from "@/ui-components/ThemeContext";
 
 type Props = {
   index: number;
@@ -9,69 +10,38 @@ type Props = {
 };
 
 export default function ServiceWithDropBar(props: Props) {
-  const [active, setActive] = useState(false);
-  const [lastActive, setLastActive] = useState(false);
-  const { onDrop, index } = props;
+  const { onDrop: onDropProp, index } = props;
+  const theme = useTheme();
+  const dropTargetStyle = {
+    width: 20,
+    height: "94%",
+    margin: "10px 0px",
+    borderRadius: 3,
+  };
+  const onDrop = (idx: number, data: any) => {
+    const dropData = JSON.parse(data);
+    if (isServiceDrop(dropData)) {
+      onDropProp && onDropProp(dropData.uuid, idx);
+    }
+  };
   return (
     <div className="flex">
-      <DropBar
-        active={active}
-        setActive={setActive}
-        onDrop={(ev) => {
-          setActive(false);
-          const data = ev.dataTransfer.getData("text/plain");
-          if (data) {
-            const svc = JSON.parse(data);
-            onDrop && onDrop(svc.uuid, index);
-          }
-        }}
+      <DropTarget
+        style={dropTargetStyle}
+        activeColor={`linear-gradient(to right, #ffffff00 0%, #ffffff00 30%, ${theme.dropBarColor} 50%, #ffffff00 70%)`}
+        acceptedType={HKP_DND_SERVICE_TYPE}
+        onDrop={(data) => onDrop(index, data)}
       />
+
       {props.children}
       {props.allowDropBehind && (
-        <DropBar
-          active={lastActive}
-          setActive={setLastActive}
-          onDrop={(ev) => {
-            setLastActive(false);
-            const data = ev.dataTransfer.getData("text/plain");
-            if (data) {
-              const svc = JSON.parse(data);
-              onDrop && onDrop(svc.uuid, index + 1);
-            }
-          }}
+        <DropTarget
+          style={dropTargetStyle}
+          activeColor={`linear-gradient(to right, #ffffff00 0%, #ffffff00 30%, ${theme.dropBarColor} 50%, #ffffff00 70%)`}
+          acceptedType={HKP_DND_SERVICE_TYPE}
+          onDrop={(data) => onDrop(index + 1, data)}
         />
       )}
     </div>
-  );
-}
-
-function DropBar({
-  active,
-  setActive,
-  onDrop,
-}: {
-  active: boolean;
-  setActive: (newActive: boolean) => void;
-  onDrop: (ev: DragEvent) => void;
-}) {
-  const theme = useContext(ThemeCtx);
-  return (
-    <div
-      style={{
-        width: 20,
-        height: "94%",
-        margin: "10px 0px",
-        borderRadius: 3,
-        background: active
-          ? `linear-gradient(to right, #ffffff00 0%, #ffffff00 30%, ${theme.dropBarColor} 50%, #ffffff00 70%)`
-          : undefined,
-      }}
-      onDragOver={(ev) => {
-        setActive(true);
-        ev.preventDefault();
-      }}
-      onDragLeave={(_ev) => setActive(false)}
-      onDrop={onDrop}
-    />
   );
 }

@@ -3,6 +3,9 @@ import { CustomMenuEntry, ServiceDescriptor } from "@/types";
 import BypassSwitch from "./BypassSwitch";
 import ServiceSettings from "./ServiceSettings";
 import ServiceName from "./ServiceName";
+import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
+import DragSource from "@/components/DragSource";
+import { HKP_DND_SERVICE_TYPE } from "@/components/DropTypes";
 
 type Props = {
   showBypassOnlyIfExplicit: boolean;
@@ -10,7 +13,7 @@ type Props = {
   isCollapsed: boolean;
   service: ServiceDescriptor;
   customMenuEntries?: Array<CustomMenuEntry>;
-  onDoubleClick: () => void;
+
   onExpand: (isExpanded: boolean) => void;
   onDelete: () => void;
   onBypass: (isBypass: boolean) => void;
@@ -25,7 +28,7 @@ export default function ServiceHeader({
   isCollapsed,
   customMenuEntries,
   onBypass,
-  onDoubleClick,
+
   onExpand,
   onDelete,
   onHelp,
@@ -36,8 +39,16 @@ export default function ServiceHeader({
     console.log("TODO: Implement me CHANGE SERVICE NAME", newName);
   };
   const bypassDisabled = showBypassOnlyIfExplicit && bypass === undefined;
+  const filteredSvc = filterPrivateMembers(service);
+  const cursor = "move";
+
   return (
-    <div className="flex">
+    <DragSource
+      className="flex"
+      style={{ cursor }}
+      type={HKP_DND_SERVICE_TYPE}
+      value={filteredSvc}
+    >
       <ServiceSettings
         service={service}
         isCollapsed={isCollapsed}
@@ -48,16 +59,12 @@ export default function ServiceHeader({
         onConfig={onConfig}
         onCustomEntry={onCustomEntry}
       />
-      <ServiceName
-        service={service}
-        onDoubleClick={onDoubleClick}
-        onRename={onChangeName}
-      />
+      <ServiceName service={service} onRename={onChangeName} />
       <BypassSwitch
         bypass={!!bypass}
         onChange={onBypass}
         disabled={bypassDisabled}
       />
-    </div>
+    </DragSource>
   );
 }

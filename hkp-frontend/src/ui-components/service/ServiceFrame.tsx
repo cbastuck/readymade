@@ -93,8 +93,6 @@ export default function ServiceFrame({
     setFrameCollapsed(!isExpanded);
   };
 
-  const onHeaderDoubleClick = () => setFrameCollapsed(!frameCollapsed);
-
   const onDelete = () => {
     if (onAction) {
       onAction({
@@ -188,7 +186,6 @@ export default function ServiceFrame({
             service={descriptor}
             isCollapsed={frameCollapsed}
             customMenuEntries={customMenuEntries}
-            onDoubleClick={onHeaderDoubleClick}
             onExpand={onExpand}
             onDelete={onDelete}
             onBypass={onBypass}
