@@ -45,6 +45,12 @@ export default class BrowserRuntime extends Component<Props, State> {
 
   componentDidMount() {}
 
+  componentDidUpdate(prevProps: Readonly<Props>) {
+    if (prevProps.services !== this.props.services) {
+      console.log("BrowserRuntme THE SERVICES CHANGED");
+    }
+  }
+
   componentWillUnmount() {
     this.destroyRuntime();
   }

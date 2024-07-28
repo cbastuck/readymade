@@ -178,7 +178,12 @@ export type Action = {
   params?: any;
 };
 
-const serviceActionTypes = ["remove", "getConfig", "notification"] as const;
+const serviceActionTypes = [
+  "remove",
+  "getConfig",
+  "notification",
+  "rename",
+] as const;
 export type ServiceActionType = (typeof serviceActionTypes)[number];
 export type ServiceAction = {
   action: ServiceActionType;
@@ -284,7 +289,8 @@ export type RuntimeApi = {
 
   addService: (
     scope: RuntimeScope,
-    service: ServiceClass
+    service: ServiceClass,
+    instanceId?: string
   ) => Promise<ServiceDescriptor | null>;
 
   removeService: (

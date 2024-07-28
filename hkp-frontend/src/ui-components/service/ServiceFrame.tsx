@@ -156,6 +156,10 @@ export default function ServiceFrame({
     service.app.next(service, data);
   };
 
+  const onChangeName = (newName: string) => {
+    onAction({ action: "rename", service, payload: { value: newName } });
+  };
+
   if (frameless) {
     return children;
   }
@@ -192,6 +196,7 @@ export default function ServiceFrame({
             onHelp={onHelp}
             onConfig={onConfig}
             onCustomEntry={onCustomEntry}
+            onChangeName={onChangeName}
           />
 
           <EditorDialog

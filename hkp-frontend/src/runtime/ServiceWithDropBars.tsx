@@ -21,7 +21,7 @@ export default function ServiceWithDropBar(props: Props) {
   const onDrop = (idx: number, data: any) => {
     const dropData = JSON.parse(data);
     if (isServiceDrop(dropData)) {
-      onDropProp && onDropProp(dropData.uuid, idx);
+      onDropProp && onDropProp(dropData.instance.uuid, idx);
     }
   };
   return (

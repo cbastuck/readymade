@@ -15,7 +15,7 @@ import { BoardContextState } from "../BoardContext";
 
 import RuntimeUI from "@/ui-components/runtime-ui";
 import DropTarget from "./DropTarget";
-import { HKP_DND_SERVICE_TYPE } from "./DropTypes";
+import { HKP_DND_SERVICE_TYPE, isServiceDrop } from "./DropTypes";
 
 type Props = {
   boardContext: BoardContextState;
@@ -74,11 +74,11 @@ export default class Runtime extends Component<Props, State> {
     }
   }
 
-  onAddService = (service: ServiceClass) => {
+  onAddService = (svcClass: ServiceClass, instanceId?: string) => {
     const { boardContext, runtime } = this.props;
-    if (boardContext && runtime) {
-      boardContext.addService(service, runtime);
-    }
+    return boardContext && runtime
+      ? boardContext.addService(svcClass, runtime, instanceId)
+      : null;
   };
 
   onServiceAction = (command: ServiceAction) => {
@@ -93,13 +93,21 @@ export default class Runtime extends Component<Props, State> {
       }
       case "getConfig": {
         return getServiceConfiguration(
-          // TODO: this should g  o through BoardContext
-          // This does not work for services in BeowserRuntimes
+          // TODO: this should go through the BoardContext
+          // This does not work for services in BrowserRuntimes
           boardContext.boardName,
           service,
           runtime
         );
       }
+      case "rename":
+        const {
+          payload: { value },
+        } = command;
+        if (service && value && runtime) {
+          boardContext.setServiceName(runtime.id, service.uuid, value);
+        }
+        break;
       default:
         console.log("Runtime processing unknown service action: ", action);
     }
@@ -225,13 +233,18 @@ export default class Runtime extends Component<Props, State> {
     };
 
     const onDropService = (data: any) => {
-      console.log("DROPPED SERVICE INTO RT", data);
+      const serviceData = JSON.parse(data);
+      if (isServiceDrop(serviceData)) {
+        const { instance, svcClass } = serviceData;
+        console.log("runtime ondropservice", instance, svcClass);
+        this.onAddService(svcClass, instance.uuid);
+      }
     };
 
     return (
       <DropTarget
         acceptedType={HKP_DND_SERVICE_TYPE}
-        disabled={services?.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
+        disabled={!services || services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
         onDrop={onDropService}
       >
         <RuntimeUI

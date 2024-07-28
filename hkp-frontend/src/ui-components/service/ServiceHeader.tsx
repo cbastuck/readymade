@@ -5,7 +5,7 @@ import ServiceSettings from "./ServiceSettings";
 import ServiceName from "./ServiceName";
 import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 import DragSource from "@/components/DragSource";
-import { HKP_DND_SERVICE_TYPE } from "@/components/DropTypes";
+import { HKP_DND_SERVICE_TYPE, ServiceDropType } from "@/components/DropTypes";
 
 type Props = {
   showBypassOnlyIfExplicit: boolean;
@@ -20,6 +20,7 @@ type Props = {
   onHelp: () => void;
   onConfig: () => void;
   onCustomEntry: (item: CustomMenuEntry) => void;
+  onChangeName: (newName: string) => void;
 };
 export default function ServiceHeader({
   showBypassOnlyIfExplicit,
@@ -28,26 +29,29 @@ export default function ServiceHeader({
   isCollapsed,
   customMenuEntries,
   onBypass,
-
   onExpand,
   onDelete,
   onHelp,
   onConfig,
   onCustomEntry,
+  onChangeName,
 }: Props) {
-  const onChangeName = (newName: string) => {
-    console.log("TODO: Implement me CHANGE SERVICE NAME", newName);
-  };
   const bypassDisabled = showBypassOnlyIfExplicit && bypass === undefined;
-  const filteredSvc = filterPrivateMembers(service);
+  const dragData: ServiceDropType = {
+    instance: filterPrivateMembers(service),
+    svcClass: {
+      serviceId: service.serviceId,
+      serviceName: service.serviceName,
+    },
+  };
   const cursor = "move";
 
   return (
     <DragSource
-      className="flex"
+      className="flex bg-white"
       style={{ cursor }}
       type={HKP_DND_SERVICE_TYPE}
-      value={filteredSvc}
+      value={dragData}
     >
       <ServiceSettings
         service={service}
