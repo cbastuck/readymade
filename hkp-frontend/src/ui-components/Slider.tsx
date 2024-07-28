@@ -11,29 +11,51 @@ import SubmittableInput from "./SubmittableInput";
 import { useState } from "react";
 
 type Props = {
+  className?: string;
   title?: string;
   value: number;
   unit?: string;
   units?: Array<string>;
   min?: number;
   max?: number;
+  step?: number;
   onChange: (newValue: number, unit?: string) => void;
   onUnit?: (newUnit: string) => void;
 };
 
 export default function Slider({
+  className,
   title,
-  value,
+  value: valueProp,
   units,
   unit,
-  min,
-  max,
+  min: minProp,
+  max: maxProp,
+  step,
   onChange,
   onUnit,
 }: Props) {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+  const min = !step ? minProp : 0;
+  const max = !step ? maxProp : 100;
+  const range = (maxProp || 100) - (minProp || 0);
+
+  const absoluteToRelative = (absolute: number) =>
+    Math.round((absolute / range) * 100);
+
+  const relativeToAbsolute = (relative: number) =>
+    (relative / 100) * range + (minProp || 0);
+
+  const clamp = (absolute: number) =>
+    Math.max(minProp || 0, Math.min(absolute, maxProp || 100));
+
+  const value = !step ? valueProp : absoluteToRelative(valueProp);
+  const onValueChanged = (val: number[]) => {
+    const v = !step ? val[0] : relativeToAbsolute(val[0]);
+    onChange(clamp(v));
+  };
   return (
-    <div className="flex flex-col gap-2 h-full w-full">
+    <div className={`flex flex-col gap-2 h-full w-full ${className}`}>
       <div className="flex gap-2 items-end h-min">
         {title && <PropertyLabel>{title}</PropertyLabel>}
         <div className="flex gap-2 w-full">
@@ -41,13 +63,13 @@ export default function Slider({
             min={min}
             max={max}
             value={[value]}
-            onValueChange={(val) => onChange(val[0])}
+            onValueChange={onValueChanged}
           />
 
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
             <PopoverTrigger asChild>
               <Label className="ml-auto pl-2 text-lg cursor-text hover:text-accent">
-                {` ${value} `}
+                {` ${valueProp} `}
               </Label>
             </PopoverTrigger>
             <PopoverContent className="w-80">
@@ -56,11 +78,11 @@ export default function Slider({
                 <SubmittableInput
                   className="w-full"
                   type="number"
-                  value={`${value}`}
+                  value={`${valueProp}`}
                   onSubmit={(val) => {
                     const n = Number(val);
                     if (!isNaN(n)) {
-                      onChange(n);
+                      onChange(clamp(n));
                       setIsPopoverOpen(false);
                     }
                   }}

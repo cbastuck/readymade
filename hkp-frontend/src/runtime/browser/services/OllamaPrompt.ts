@@ -13,6 +13,8 @@ type State = {
   endpoint: string;
   responseIsJson: boolean;
   prompt: string;
+  temperature: number;
+  seed: number;
 };
 
 const defaultLocalEndpoint = "http://localhost:11434/api";
@@ -30,6 +32,8 @@ export class OllamaPrompt extends ServiceBase<State> {
       model: "",
       responseIsJson: false,
       prompt: "",
+      temperature: 0,
+      seed: 0,
     });
   }
 
@@ -48,7 +52,7 @@ export class OllamaPrompt extends ServiceBase<State> {
   };
 
   async configure(config: any) {
-    const { prompt, silentPrompt, model } = config;
+    const { prompt, silentPrompt, model, temperature } = config;
 
     if (needsUpdate(model, this.state.model)) {
       this.state.model = model;
@@ -78,9 +82,18 @@ export class OllamaPrompt extends ServiceBase<State> {
     ) {
       this.fetchAvailableModels();
     }
+
+    if (needsUpdate(temperature, this.state.temperature)) {
+      this.state.temperature = temperature;
+      this.app.notify(this, { temperature });
+    }
   }
 
   async process(params: any) {
+    if (!this.state.model) {
+      throw new Error("Ollama no model specified");
+    }
+
     const t = typeof params;
     if (t !== "string") {
       if (t === "object") {
@@ -95,18 +108,15 @@ export class OllamaPrompt extends ServiceBase<State> {
     this.app.notify(this, { busy: true });
 
     const prompt = this.state.prompt
-      ? `${this.state.prompt}\n\n'''${params}'''`
+      ? `${this.state.prompt}\n\n: "${params}"`
       : params;
 
-    const seed = 1; // fixed seed
-    const temperature = 0;
-
-    const body = {
+    const body: any = {
       model: this.state.model,
       prompt,
       options: {
-        seed,
-        temperature,
+        seed: this.state.seed || undefined,
+        temperature: this.state.temperature,
       },
     };
 
@@ -168,11 +178,9 @@ export class OllamaPrompt extends ServiceBase<State> {
             : plainText;
           return result;
         } catch (err) {
-          console.error(
-            "Ollama Prompt attempted to parse a buffer as JSON which is not valid json",
-            plainText
+          throw new Error(
+            `Ollama Prompt attempted to parse a buffer as JSON which is not valid json: ${plainText}`
           );
-          return null;
         }
       }
     } else {
