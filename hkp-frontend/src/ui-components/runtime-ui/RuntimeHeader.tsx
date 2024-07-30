@@ -1,4 +1,4 @@
-import { useContext, useState, MouseEvent } from "react";
+import { useContext, useState } from "react";
 
 import { RuntimeDescriptor, ServiceClass, ServiceRegistry } from "@/types";
 import Editable from "@/ui-components/Editable";

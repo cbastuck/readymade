@@ -231,7 +231,7 @@ export default class Runtime extends Component<Props, State> {
     return (
       <DropTarget
         acceptedType={HKP_DND_SERVICE_TYPE}
-        disabled={services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
+        disabled={services?.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
         onDrop={onDropService}
       >
         <RuntimeUI
