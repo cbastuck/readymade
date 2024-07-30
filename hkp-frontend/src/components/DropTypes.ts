@@ -1,20 +1,18 @@
-import { RuntimeDescriptor, ServiceClass, ServiceInstance } from "@/types";
+import { RuntimeDescriptor, ServiceInstance } from "@/types";
 
 export const HKP_DND_SERVICE_TYPE = "application/hkp-service";
 export const HKP_DND_RUNTIME_TYPE = "application/hkp-runtime";
 
-export type ServiceDropType = {
-  svcClass: ServiceClass;
-  instance: ServiceInstance;
-};
-export function isServiceDrop(obj: any): obj is ServiceDropType {
+export type ServiceInstanceDropType = ServiceInstance;
+export function isServiceInstanceDrop(
+  obj: any
+): obj is ServiceInstanceDropType {
   return (
     !!obj &&
-    obj.svcClass &&
-    obj.svcClass.serviceId &&
-    obj.svcClass.serviceName &&
-    obj.instance &&
-    obj.instance.uuid
+    obj.descriptor &&
+    obj.descriptor.serviceId &&
+    obj.descriptor.serviceName &&
+    obj.uuid
   );
 }
 

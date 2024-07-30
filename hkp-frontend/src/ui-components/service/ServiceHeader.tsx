@@ -3,9 +3,6 @@ import { CustomMenuEntry, ServiceDescriptor } from "@/types";
 import BypassSwitch from "./BypassSwitch";
 import ServiceSettings from "./ServiceSettings";
 import ServiceName from "./ServiceName";
-import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
-import DragSource from "@/components/DragSource";
-import { HKP_DND_SERVICE_TYPE, ServiceDropType } from "@/components/DropTypes";
 
 type Props = {
   showBypassOnlyIfExplicit: boolean;
@@ -37,22 +34,8 @@ export default function ServiceHeader({
   onChangeName,
 }: Props) {
   const bypassDisabled = showBypassOnlyIfExplicit && bypass === undefined;
-  const dragData: ServiceDropType = {
-    instance: filterPrivateMembers(service),
-    svcClass: {
-      serviceId: service.serviceId,
-      serviceName: service.serviceName,
-    },
-  };
-  const cursor = "move";
-
   return (
-    <DragSource
-      className="flex bg-white"
-      style={{ cursor }}
-      type={HKP_DND_SERVICE_TYPE}
-      value={dragData}
-    >
+    <div className="flex">
       <ServiceSettings
         service={service}
         isCollapsed={isCollapsed}
@@ -69,6 +52,6 @@ export default function ServiceHeader({
         onChange={onBypass}
         disabled={bypassDisabled}
       />
-    </DragSource>
+    </div>
   );
 }

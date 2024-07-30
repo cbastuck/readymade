@@ -1,5 +1,8 @@
 import DropTarget from "@/components/DropTarget";
-import { HKP_DND_SERVICE_TYPE, isServiceDrop } from "@/components/DropTypes";
+import {
+  HKP_DND_SERVICE_TYPE,
+  isServiceInstanceDrop,
+} from "@/components/DropTypes";
 import { useTheme } from "@/ui-components/ThemeContext";
 
 type Props = {
@@ -20,8 +23,8 @@ export default function ServiceWithDropBar(props: Props) {
   };
   const onDrop = (idx: number, data: any) => {
     const dropData = JSON.parse(data);
-    if (isServiceDrop(dropData)) {
-      onDropProp && onDropProp(dropData.instance.uuid, idx);
+    if (isServiceInstanceDrop(dropData)) {
+      onDropProp && onDropProp(dropData.uuid, idx);
     }
   };
   return (

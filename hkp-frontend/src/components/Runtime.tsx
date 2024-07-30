@@ -10,12 +10,13 @@ import {
   InstanceId,
   OnResult,
   ProcessRuntimeByName,
+  ServiceInstance,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 
 import RuntimeUI from "@/ui-components/runtime-ui";
 import DropTarget from "./DropTarget";
-import { HKP_DND_SERVICE_TYPE, isServiceDrop } from "./DropTypes";
+import { HKP_DND_SERVICE_TYPE, isServiceInstanceDrop } from "./DropTypes";
 
 type Props = {
   boardContext: BoardContextState;
@@ -74,10 +75,10 @@ export default class Runtime extends Component<Props, State> {
     }
   }
 
-  onAddService = (svcClass: ServiceClass, instanceId?: string) => {
+  onAddService = (svcClass: ServiceClass, prototype?: ServiceInstance) => {
     const { boardContext, runtime } = this.props;
     return boardContext && runtime
-      ? boardContext.addService(svcClass, runtime, instanceId)
+      ? boardContext.addService(svcClass, runtime, prototype)
       : null;
   };
 
@@ -234,10 +235,10 @@ export default class Runtime extends Component<Props, State> {
 
     const onDropService = (data: any) => {
       const serviceData = JSON.parse(data);
-      if (isServiceDrop(serviceData)) {
-        const { instance, svcClass } = serviceData;
-        console.log("runtime ondropservice", instance, svcClass);
-        this.onAddService(svcClass, instance.uuid);
+      if (isServiceInstanceDrop(serviceData)) {
+        console.log("runtime ondropservice", serviceData);
+        const descriptor = serviceData.descriptor;
+        this.onAddService(descriptor, serviceData);
       }
     };
 

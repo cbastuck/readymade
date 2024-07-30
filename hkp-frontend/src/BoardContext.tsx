@@ -14,6 +14,7 @@ import {
   RestoreRuntimeResult,
   RuntimeApi,
   User,
+  ServiceInstance,
 } from "./types";
 import {
   reorderRuntime,
@@ -34,7 +35,7 @@ type BoardContextAPI = {
   addService: (
     desc: ServiceClass,
     rt: RuntimeDescriptor,
-    instanceId?: string
+    prototype?: ServiceInstance
   ) => void;
   removeService: (svc: InstanceId, rt: RuntimeDescriptor) => void;
 
@@ -447,7 +448,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
   addService = async (
     service: ServiceClass,
     runtime: RuntimeDescriptor,
-    instanceId?: string
+    prototype?: ServiceInstance
   ): Promise<ServiceDescriptor | null> => {
     const [scope, api] = this.getRuntimeScopeApi(runtime.id);
     if (!api || !scope) {
@@ -455,7 +456,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
         `BoardContext.addService() runtime api is missing: ${runtime.type}`
       );
     }
-    const svc = await api.addService(scope, service, instanceId);
+    const svc = await api.addService(scope, service, prototype?.uuid);
     if (svc) {
       this.setState((state: BoardContextState) => ({
         services: {
@@ -464,6 +465,14 @@ class BoardProvider extends Component<Props, BoardContextState> {
         },
       }));
     }
+    if (prototype) {
+      await api.configureService(
+        scope,
+        prototype,
+        prototype.state || prototype
+      );
+    }
+
     return svc;
   };
 

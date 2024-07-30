@@ -13,6 +13,12 @@ import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
 import { useTheme } from "@/ui-components/ThemeContext";
 import ServiceOutputPlug from "./ServiceOutputPlug";
 
+import DragSource from "@/components/DragSource";
+import {
+  HKP_DND_SERVICE_TYPE,
+  ServiceInstanceDropType,
+} from "@/components/DropTypes";
+
 type Props = {
   service: ServiceInstance;
   showBypassOnlyIfExplicit?: boolean;
@@ -163,14 +169,17 @@ export default function ServiceFrame({
   if (frameless) {
     return children;
   }
-  // TODO: enabling drop shadow on hover leads to artifacts when opening service menu
-  const enableDropShadow = false ? "hover:drop-shadow-lg" : "";
+
+  const dragData: ServiceInstanceDropType = filterPrivateMembers(service);
+
+  const cursor = "move";
+
   const theme = useTheme();
+
   return (
     <div key={`service-frame-${uuid}`}>
       <div className="flex">
         <div
-          className={enableDropShadow}
           style={s(t.unselectable, {
             transition: "border 800ms",
             border: `solid ${theme.serviceBorderWidth}px ${
@@ -184,37 +193,44 @@ export default function ServiceFrame({
             color: "black",
           })}
         >
-          <ServiceHeader
-            showBypassOnlyIfExplicit={!!showBypassOnlyIfExplicit}
-            bypass={bypass}
-            service={descriptor}
-            isCollapsed={frameCollapsed}
-            customMenuEntries={customMenuEntries}
-            onExpand={onExpand}
-            onDelete={onDelete}
-            onBypass={onBypass}
-            onHelp={onHelp}
-            onConfig={onConfig}
-            onCustomEntry={onCustomEntry}
-            onChangeName={onChangeName}
-          />
-
-          <EditorDialog
-            title="Service Configuration"
-            value={filteredServiceConfig}
-            isOpen={configVisible}
-            onClose={onCloseConfig}
-            actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
-          />
-
-          <div
-            style={{
-              position: "relative",
-              display: frameCollapsed ? "none" : undefined,
-            }}
+          <DragSource
+            className="bg-white"
+            style={{ cursor }}
+            type={HKP_DND_SERVICE_TYPE}
+            value={dragData}
           >
-            {children}
-          </div>
+            <ServiceHeader
+              showBypassOnlyIfExplicit={!!showBypassOnlyIfExplicit}
+              bypass={bypass}
+              service={descriptor}
+              isCollapsed={frameCollapsed}
+              customMenuEntries={customMenuEntries}
+              onExpand={onExpand}
+              onDelete={onDelete}
+              onBypass={onBypass}
+              onHelp={onHelp}
+              onConfig={onConfig}
+              onCustomEntry={onCustomEntry}
+              onChangeName={onChangeName}
+            />
+
+            <EditorDialog
+              title="Service Configuration"
+              value={filteredServiceConfig}
+              isOpen={configVisible}
+              onClose={onCloseConfig}
+              actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
+            />
+
+            <div
+              style={{
+                position: "relative",
+                display: frameCollapsed ? "none" : undefined,
+              }}
+            >
+              {children}
+            </div>
+          </DragSource>
         </div>
         <div className="mt-[25%] pl-2 w-4">
           <ServiceOutputPlug

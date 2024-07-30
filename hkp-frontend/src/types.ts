@@ -5,10 +5,7 @@ export type InstanceId = {
   uuid: string;
 };
 
-export type ServiceDescriptor = InstanceId & {
-  serviceId: string;
-  serviceName: string;
-};
+export type ServiceDescriptor = ServiceClass & InstanceId;
 
 export type RuntimeClassType = "browser" | "remote" | "node";
 
