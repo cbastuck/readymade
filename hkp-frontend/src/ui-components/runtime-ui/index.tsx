@@ -90,12 +90,12 @@ export default function RuntimeUI({
     "flex sm:flex-wrap flex-col sm:flex-row items-start"; // use flex-col and items-center on mobile
   const layout = wrapServices ? horizontalLayoutWrapped : horizontalLayout;
   return (
-    <DragSource
-      className="bg-[#FFFFFF50]"
-      value={runtime}
-      type={HKP_DND_RUNTIME_TYPE}
-    >
-      <div style={style} className="select-none">
+    <div style={style} className="select-none">
+      <DragSource
+        className="bg-[#FFFFFF50]"
+        value={runtime}
+        type={HKP_DND_RUNTIME_TYPE}
+      >
         <RuntimeHeader
           isExpanded={isExpanded}
           wrapServices={wrapServices}
@@ -105,62 +105,62 @@ export default function RuntimeUI({
           onExpand={onExpand}
           onWrapServices={onWrapServices}
         />
+      </DragSource>
 
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "row",
-            width: "100%",
-          }}
-        >
-          {runtime.type === "browser" ? (
-            <>
-              {inputs && expanded ? <>{inputs}</> : false}
-              <div
-                className={layout}
-                style={{
-                  width: "100%",
-                  overflow: wrapServices ? "hidden" : "auto",
-                }}
-              >
-                <BrowserRuntime
-                  key={`browser-runtime-${runtime.id}`}
-                  collapsed={!expanded}
-                  user={user}
-                  boardName={boardName || ""}
-                  scope={scope as BrowserRuntimeScope}
-                  runtime={runtime}
-                  services={services}
-                  onArrangeService={onArrangeService}
-                  onServiceAction={onServiceAction}
-                  onResult={onResult}
-                  processRuntimeByName={processRuntimeByName}
-                />
-              </div>
-              {outputs && expanded ? (
-                <div className="ml-auto pl-4">{outputs}</div>
-              ) : null}
-            </>
-          ) : (
-            <>
-              <RemoteRuntime
-                key={`remote-runtime-${runtime.id}`}
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          width: "100%",
+        }}
+      >
+        {runtime.type === "browser" ? (
+          <>
+            {inputs && expanded ? <>{inputs}</> : false}
+            <div
+              className={layout}
+              style={{
+                width: "100%",
+                overflow: wrapServices ? "hidden" : "auto",
+              }}
+            >
+              <BrowserRuntime
+                key={`browser-runtime-${runtime.id}`}
                 collapsed={!expanded}
-                scope={scope}
                 user={user}
                 boardName={boardName || ""}
+                scope={scope as BrowserRuntimeScope}
                 runtime={runtime}
                 services={services}
                 onArrangeService={onArrangeService}
                 onServiceAction={onServiceAction}
                 onResult={onResult}
+                processRuntimeByName={processRuntimeByName}
               />
-            </>
-          )}
-          {children}
-        </div>
-        {!isExpanded && <div className="min-h-1" />}
+            </div>
+            {outputs && expanded ? (
+              <div className="ml-auto pl-4">{outputs}</div>
+            ) : null}
+          </>
+        ) : (
+          <>
+            <RemoteRuntime
+              key={`remote-runtime-${runtime.id}`}
+              collapsed={!expanded}
+              scope={scope}
+              user={user}
+              boardName={boardName || ""}
+              runtime={runtime}
+              services={services}
+              onArrangeService={onArrangeService}
+              onServiceAction={onServiceAction}
+              onResult={onResult}
+            />
+          </>
+        )}
+        {children}
       </div>
-    </DragSource>
+      {!isExpanded && <div className="min-h-1" />}
+    </div>
   );
 }

@@ -213,24 +213,24 @@ export default function ServiceFrame({
               onCustomEntry={onCustomEntry}
               onChangeName={onChangeName}
             />
-
-            <EditorDialog
-              title="Service Configuration"
-              value={filteredServiceConfig}
-              isOpen={configVisible}
-              onClose={onCloseConfig}
-              actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
-            />
-
-            <div
-              style={{
-                position: "relative",
-                display: frameCollapsed ? "none" : undefined,
-              }}
-            >
-              {children}
-            </div>
           </DragSource>
+
+          <EditorDialog
+            title="Service Configuration"
+            value={filteredServiceConfig}
+            isOpen={configVisible}
+            onClose={onCloseConfig}
+            actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
+          />
+
+          <div
+            style={{
+              position: "relative",
+              display: frameCollapsed ? "none" : undefined,
+            }}
+          >
+            {children}
+          </div>
         </div>
         <div className="mt-[25%] pl-2 w-4">
           <ServiceOutputPlug
