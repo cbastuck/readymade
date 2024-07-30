@@ -16,6 +16,8 @@ import BrowserRuntime from "@/runtime/browser/BrowserRuntime";
 import RemoteRuntime from "@/runtime/remote/RemoteRuntime";
 import BrowserRuntimeScope from "@/runtime/browser/BrowserRuntimeScope";
 import { useTheme } from "@/ui-components/ThemeContext";
+import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTypes";
+import DragSource from "@/components/DragSource";
 
 type Props = {
   user: User | null;
@@ -88,71 +90,77 @@ export default function RuntimeUI({
     "flex sm:flex-wrap flex-col sm:flex-row items-start"; // use flex-col and items-center on mobile
   const layout = wrapServices ? horizontalLayoutWrapped : horizontalLayout;
   return (
-    <div style={style} className="select-none">
-      <RuntimeHeader
-        isExpanded={isExpanded}
-        wrapServices={wrapServices}
-        runtime={runtime}
-        registry={registry}
-        onAddService={onAddService}
-        onExpand={onExpand}
-        onWrapServices={onWrapServices}
-      />
+    <DragSource
+      className="bg-[#FFFFFF50]"
+      value={runtime}
+      type={HKP_DND_RUNTIME_TYPE}
+    >
+      <div style={style} className="select-none">
+        <RuntimeHeader
+          isExpanded={isExpanded}
+          wrapServices={wrapServices}
+          runtime={runtime}
+          registry={registry}
+          onAddService={onAddService}
+          onExpand={onExpand}
+          onWrapServices={onWrapServices}
+        />
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-        }}
-      >
-        {runtime.type === "browser" ? (
-          <>
-            {inputs && expanded ? <>{inputs}</> : false}
-            <div
-              className={layout}
-              style={{
-                width: "100%",
-                overflow: wrapServices ? "hidden" : "auto",
-              }}
-            >
-              <BrowserRuntime
-                key={`browser-runtime-${runtime.id}`}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            width: "100%",
+          }}
+        >
+          {runtime.type === "browser" ? (
+            <>
+              {inputs && expanded ? <>{inputs}</> : false}
+              <div
+                className={layout}
+                style={{
+                  width: "100%",
+                  overflow: wrapServices ? "hidden" : "auto",
+                }}
+              >
+                <BrowserRuntime
+                  key={`browser-runtime-${runtime.id}`}
+                  collapsed={!expanded}
+                  user={user}
+                  boardName={boardName || ""}
+                  scope={scope as BrowserRuntimeScope}
+                  runtime={runtime}
+                  services={services}
+                  onArrangeService={onArrangeService}
+                  onServiceAction={onServiceAction}
+                  onResult={onResult}
+                  processRuntimeByName={processRuntimeByName}
+                />
+              </div>
+              {outputs && expanded ? (
+                <div className="ml-auto pl-4">{outputs}</div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <RemoteRuntime
+                key={`remote-runtime-${runtime.id}`}
                 collapsed={!expanded}
+                scope={scope}
                 user={user}
                 boardName={boardName || ""}
-                scope={scope as BrowserRuntimeScope}
                 runtime={runtime}
                 services={services}
                 onArrangeService={onArrangeService}
                 onServiceAction={onServiceAction}
                 onResult={onResult}
-                processRuntimeByName={processRuntimeByName}
               />
-            </div>
-            {outputs && expanded ? (
-              <div className="ml-auto pl-4">{outputs}</div>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <RemoteRuntime
-              key={`remote-runtime-${runtime.id}`}
-              collapsed={!expanded}
-              scope={scope}
-              user={user}
-              boardName={boardName || ""}
-              runtime={runtime}
-              services={services}
-              onArrangeService={onArrangeService}
-              onServiceAction={onServiceAction}
-              onResult={onResult}
-            />
-          </>
-        )}
-        {children}
+            </>
+          )}
+          {children}
+        </div>
+        {!isExpanded && <div className="min-h-1" />}
       </div>
-      {!isExpanded && <div className="min-h-1" />}
-    </div>
+    </DragSource>
   );
 }

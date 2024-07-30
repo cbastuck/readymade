@@ -8,8 +8,6 @@ import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
 import ServiceSelector from "../ServiceSelector";
 import EditorDialog from "../EditorDialog";
-import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTypes";
-import DragSource from "@/components/DragSource";
 
 type Props = {
   runtime: RuntimeDescriptor;
@@ -80,11 +78,7 @@ export default function RuntimeHeader({
   };
 
   return (
-    <DragSource
-      className="flex items-center gap-3 px-2 cursor-move"
-      value={runtime}
-      type={HKP_DND_RUNTIME_TYPE}
-    >
+    <div className="flex items-center gap-3 px-2 cursor-move">
       <div className="flex items-end gap-3 px-2 min-h-10">
         <RuntimeSettings
           runtime={runtime}
@@ -123,6 +117,6 @@ export default function RuntimeHeader({
         onClose={() => setIsRuntimeConfigOpen(false)}
         actions={[{ label: "Apply Changes", onAction: onApplyRuntimeConfig }]}
       />
-    </DragSource>
+    </div>
   );
 }
