@@ -8,6 +8,7 @@ import NumberInput from "@/ui-components/NumberInput";
 import Button from "@/ui-components/Button";
 import MenuIcon from "@/ui-components/MenuIcon";
 import GroupLabel from "@/ui-components/GroupLabel";
+import SelectorField from "@/components/shared/SelectorField";
 
 type State = {
   mirror: boolean;
@@ -16,6 +17,8 @@ type State = {
   height: number;
   captureFormat: string;
   stream: MediaStream | null;
+  devices: Array<MediaDeviceInfo>;
+  currentDevice: MediaDeviceInfo | null;
 };
 
 export default class CameraUI extends Component<ServiceUIProps, State> {
@@ -26,6 +29,8 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
     height: 200,
     captureFormat: "image/png",
     stream: null,
+    devices: [],
+    currentDevice: null,
   };
   videoElement: HTMLVideoElement | null = null;
   recorder: MediaRecorder | null = null;
@@ -48,22 +53,38 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  initVideo = async (videoElement: HTMLVideoElement): Promise<MediaStream> => {
-    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    //videoElement.src = window.URL.createObjectURL(stream);
+  enumerateDevices = async () => {
+    const devices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = devices.filter(
+      (device) => device.kind === "videoinput"
+    );
+    this.setState({ devices: videoDevices, currentDevice: videoDevices[0] });
+  };
+
+  initVideo = async (
+    videoElement: HTMLVideoElement,
+    deviceId?: string
+  ): Promise<MediaStream> => {
+    const constraints: MediaStreamConstraints = !deviceId
+      ? { video: true }
+      : { video: { deviceId } };
+    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
     videoElement.srcObject = stream;
     videoElement.play();
     return stream;
   };
 
-  startVideo = async (videoElement: HTMLVideoElement) => {
-    let stream: MediaStream;
+  startVideo = async (videoElement: HTMLVideoElement, deviceId?: string) => {
     if (navigator.mediaDevices) {
-      stream = await this.initVideo(videoElement);
+      const stream = await this.initVideo(videoElement, deviceId);
+      this.setState({ stream });
+      if (!this.state.devices.length) {
+        await this.enumerateDevices();
+      }
     } else {
       throw new Error("Can not initialize video");
     }
-    this.setState({ stream });
   };
 
   stopVideo = () => {
@@ -132,6 +153,14 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
   onSnapshot = () =>
     this.props.service.configure({ action: "triggerSnapshot" });
 
+  onChangeDevice = (device: MediaDeviceInfo | null) => {
+    this.stopVideo();
+    this.startVideo(this.videoElement!, device?.deviceId);
+    this.setState({
+      currentDevice: device,
+    });
+  };
+
   renderMain = () => {
     const mirrorStyle = this.state.mirror && {
       transform: "rotateY(180deg)",
@@ -142,6 +171,19 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
     const cameraRunning = !!stream;
     return (
       <div className="flex flex-col gap-2 mb-4">
+        <div className="py-2">
+          <SelectorField
+            label="Device"
+            options={this.state.devices.reduce(
+              (all, device) => ({ ...all, [device.label]: device.label }),
+              {}
+            )}
+            value={this.state.currentDevice?.label || ""}
+            onChange={(value) =>
+              this.onChangeDevice(this.state.devices[value.index] || null)
+            }
+          />
+        </div>
         <video
           ref={(videoElement) => {
             if (!this.videoElement && videoElement) {
