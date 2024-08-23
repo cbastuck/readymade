@@ -1,33 +1,24 @@
 import { CarouselItem } from "@/ui-components/Carousel";
 
-const headline = "use your phone to control another device";
+const headline = "use your phone to control things on another device";
 
 export const game: CarouselItem = {
-  element: (
-    <video
-      className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
-      src="/assets/teaser/GameTeaser.mp4"
-      autoPlay
-      loop
-      width="85%"
-    />
-  ),
+  videoUrl: "/assets/teaser/GameTeaser.mp4",
   headline,
   title: `Sample 1: ${headline}`,
   description: (
-    <div>
+    <div className="flex flex-col gap-4">
       <div>
-        The video shows a minimal version of a game inspired by Pong, but with
-        only one paddle. A ball bounces back from each border as well as the
-        single paddle. You control the paddle using the XY pad in the first
+        The video demonstrates a minimal version of a game inspired by Pong, but
+        with only one paddle. The ball bounces off each border as well as the
+        single paddle. You control the paddle using the XY Pad in the first
         runtime.
       </div>
       <div>
         Just grab your mobile phone and scan the QR code at the bottom of the
-        board. This opens a single runtime board that is connected to the game
-        running on the other device. With the XY pad on the phone, you control
-        the paddle in the same way you controlled it from the runtime on the
-        same device.
+        board. This opens a single runtime board connected to the game running
+        on another device. Using the XY Pad on your phone, you can control the
+        paddle in the same way you did from the runtime on the same device.
       </div>
     </div>
   ),

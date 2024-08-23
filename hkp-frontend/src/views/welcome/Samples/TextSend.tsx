@@ -1,18 +1,10 @@
 import { CarouselItem } from "@/ui-components/Carousel";
 import { createShortRandomString } from "@/views/playground/common";
 
-const headline = "write an app to send an encrypted text to peers";
+const headline = "send encrypted text data from one peer to another";
 
 export const send: CarouselItem = {
-  element: (
-    <video
-      className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
-      src="/assets/teaser/TextSend2.mp4"
-      autoPlay
-      loop
-      width="85%"
-    />
-  ),
+  videoUrl: "/assets/teaser/TextSend2.mp4",
   headline,
   title: `Sample 3: ${headline}`,
   description: (

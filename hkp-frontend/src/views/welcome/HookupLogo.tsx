@@ -1,33 +1,48 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import anime from "../../anime";
 
-//import Logo from "@/assets/animations/AnimatedLogo3.svg?react";
 import Logo from "@/assets/animations/AnimatedLogo6.svg?react";
 
 type Props = {
   initialDelay?: number;
+  noAnimation?: boolean;
 };
-export default function HookupLogo({ initialDelay = 3000 }: Props) {
-  useEffect(() => {
-    anime({
-      targets: document.querySelectorAll("#hkp-logo path"),
-      loop: false,
-      direction: "forward",
-      strokeDashoffset: [anime.setDashoffset, 0],
-      easing: "easeInOutSine",
-      duration: 300,
-      delay: (_el: any, i: number) => {
-        if (i === 0) {
-          return initialDelay;
-        }
-        if (i < 6) {
-          return i * 250 + initialDelay;
-        }
-        return initialDelay + 6 * 250 + i * 10;
-      },
-    });
+export default function HookupLogo({
+  initialDelay = 3000,
+  noAnimation,
+}: Props) {
+  const animationInstances = useRef<[any, any] | null>(null);
 
-    anime({
+  useEffect(() => {
+    if (animationInstances.current && noAnimation) {
+      animationInstances.current[0].tick(10000);
+      animationInstances.current[1].tick(10000);
+    }
+  }, [noAnimation]);
+
+  useEffect(() => {
+    animationInstances.current = [
+      anime({
+        targets: document.querySelectorAll("#hkp-logo path"),
+        loop: false,
+        direction: "forward",
+        strokeDashoffset: [anime.setDashoffset, 0],
+        easing: "easeInOutSine",
+        duration: 300,
+        delay: (_el: any, i: number) => {
+          if (i === 0) {
+            return initialDelay;
+          }
+          if (i < 6) {
+            return i * 250 + initialDelay;
+          }
+          return initialDelay + 6 * 250 + i * 10;
+        },
+      }),
+      null,
+    ];
+
+    animationInstances.current[1] = anime({
       targets: document.querySelectorAll("#hkp-logo"),
       loop: false,
       direction: "forward",

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import anime from "@/anime";
 import Switcher from "@/components/Switcher";
 
@@ -6,6 +6,7 @@ export type LandingPitchUsecase = { headline?: string };
 type Props = {
   usecases: Array<LandingPitchUsecase>;
   switchUsecaseInterval: number;
+  noAnimation?: boolean;
   onComplete: () => void;
   onLink: (idx: number) => void;
 };
@@ -13,12 +14,21 @@ type Props = {
 export default function LandingPitch({
   usecases,
   switchUsecaseInterval,
+  noAnimation,
   onComplete,
   onLink,
 }: Props) {
+  const animationInstance = useRef<any>(null);
+
+  useEffect(() => {
+    if (animationInstance.current && noAnimation) {
+      animationInstance.current.seek(9000); // seek to the end of the animation
+    }
+  }, [noAnimation]);
+
   useEffect(() => {
     const initialDelay = 4000;
-    anime({
+    animationInstance.current = anime({
       targets: document.querySelectorAll("#pitch-points .pitch-item"),
       loop: false,
       direction: "forward",
@@ -34,6 +44,7 @@ export default function LandingPitch({
       complete: onComplete,
     });
   }, []);
+
   return (
     <div
       id="pitch-points"
@@ -41,24 +52,25 @@ export default function LandingPitch({
     >
       <div className="pitch-item">
         <div className="text-left">
-          Do you sometimes feel creative, but the setup process destroys your
-          inspiration? Or you loose interest while trying to "just"{" "}
+          Do you sometimes feel creative, but the setup process destroys the
+          inspiration? Maybe you just want to connect two or more things, like{" "}
           <Switcher
             animate={true}
             style={{}}
             duration={switchUsecaseInterval}
             data={usecases.map(({ headline }) => headline || "")}
             onLink={onLink}
+            suffix="?"
           />
         </div>
       </div>
       <div className="pitch-item">
-        Imagine focusing on your ideas and the output instead of managing the
-        technical setup.
+        Then this might be for you. Focus on the ideas, how to compose them and
+        the intended output. Don't bother about underlying connections.
       </div>
       <div className="pitch-item">
-        Try building your ideas with data seamlessly flowing through reusable
-        building blocks. It's what you make of it.
+        Orchestrate ideas with data seamlessly flowing through services
+        regardless of location or environment. All happens on one Board.
       </div>
     </div>
   );

@@ -12,7 +12,7 @@ export type CarouselItem = {
   title: string;
   headline: string;
   description: string | ReactElement;
-  element: ReactElement;
+  videoUrl: string;
   background?: string;
   action?: {
     title: string;
@@ -28,12 +28,23 @@ type Props = {
 };
 
 export default function Carousel({ items, current, onChange, onClick }: Props) {
+  const onChangeInternal = (newItemIdx: number) => {
+    const vids = document.getElementsByTagName("video");
+    for (let i = 0; i < vids.length; ++i) {
+      if (i !== newItemIdx) {
+        vids[i].pause();
+        vids[i].currentTime = 0;
+      }
+      vids[newItemIdx].play();
+    }
+    onChange?.(newItemIdx);
+  };
   return (
     <CarouselCN className="w-full h-full mt-10">
       <CarouselNav
         items={items.map((item) => item.title)}
         current={current}
-        onChange={onChange}
+        onChange={onChangeInternal}
       />
       <CarouselContent>
         {items.map((item, index) => (
@@ -50,7 +61,13 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
                 }}
                 onClick={() => onClick?.(item)}
               >
-                {item.element}
+                <video
+                  className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
+                  src={item.videoUrl}
+                  autoPlay={index === 0}
+                  loop
+                  width="85%"
+                />
                 {item.action && (
                   <Button
                     className="w-full h-full hover:bg-[#22222270] bg-transparent text-center text-white hover:text-white text-2xl tracking-widest pt-[5%] opacity-0 hover:opacity-100"

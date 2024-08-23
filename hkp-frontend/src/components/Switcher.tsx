@@ -12,6 +12,7 @@ type Props = {
   duration?: number;
   data: Array<string>;
   style?: CSSProperties;
+  suffix?: string;
   onLink?: (idx: number) => void;
 };
 
@@ -56,7 +57,7 @@ export default class Switcher extends Component<Props, State> {
   }
 
   render() {
-    const { data, style = defaultStyle, onLink } = this.props;
+    const { data, style = defaultStyle, suffix, onLink } = this.props;
     const idx = this.state.counter % data.length;
 
     return (
@@ -67,6 +68,7 @@ export default class Switcher extends Component<Props, State> {
         onClick={() => onLink?.(idx)}
       >
         {data[idx]}
+        {suffix || ""}
       </a>
     );
   }

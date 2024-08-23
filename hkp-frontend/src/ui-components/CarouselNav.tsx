@@ -1,9 +1,9 @@
+import { useEffect } from "react";
 import {
   useCarousel,
   CarouselNext,
   CarouselPrevious,
 } from "@/ui-components/primitives/carousel";
-import { useEffect, useRef } from "react";
 
 type Props = {
   items: string[];
@@ -18,11 +18,8 @@ export default function CarouselNav({
 }: Props) {
   const { api } = useCarousel();
   const current = api?.selectedScrollSnap() || 0;
-  const prevIdx = useRef<number>(current);
-  if (prevIdx.current !== current) {
-    prevIdx.current = current;
-    setTimeout(() => onChange?.(current), 1);
-  }
+
+  api?.on("select", () => onChange?.(api.selectedScrollSnap()));
 
   useEffect(() => api?.scrollTo(passedCurrent), [passedCurrent]);
 

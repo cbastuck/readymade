@@ -1,13 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import anime from "../../anime";
 
 import WelcomeWordSVG from "@/assets/animations/WelcomeWord2.svg?react";
 import WelcomeWordFatSVG from "@/assets/animations/WelcomeWordFat2.svg?react";
 
-export default function Welcome() {
+type Props = { noAnimation?: boolean };
+export default function Welcome({ noAnimation }: Props) {
   const [isComplete, setIsComplete] = useState(false);
+
+  const animationInstance = useRef<any>(null);
+
   useEffect(() => {
-    anime({
+    if (animationInstance.current && noAnimation) {
+      animationInstance.current.seek(10000); // seek to the end of the animation
+    }
+  }, [noAnimation]);
+
+  useEffect(() => {
+    animationInstance.current = anime({
       targets: document.querySelectorAll("#hkp-welcome path"),
       loop: false,
       direction: "forward",

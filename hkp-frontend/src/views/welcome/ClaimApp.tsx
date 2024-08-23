@@ -1,12 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import anime from "../../anime";
 
 import "./ClaimApp.css";
 
-export default function ClaimApp() {
+type Props = { noAnimation?: boolean };
+export default function ClaimApp({ noAnimation }: Props) {
+  const animationInstance = useRef<any>(null);
+
   useEffect(() => {
-    anime({
+    if (animationInstance.current && noAnimation) {
+      animationInstance.current.seek(9000); // seek to the end of the animation
+    }
+  }, [noAnimation]);
+
+  useEffect(() => {
+    animationInstance.current = anime({
       targets: document.querySelectorAll("#hkp-claim-app"),
       loop: false,
       direction: "forward",
@@ -22,9 +31,17 @@ export default function ClaimApp() {
       <div className="flex items-end justify-center">
         <div className="text-xl md:text-base whitespace-nowrap text-sky-600">
           hookup
-          <span className="claim-color-change pl-1">idea</span>
-          <span className="claim-color-change px-[2px]">&</span>
-          <span className="claim-color-change">inspiration</span>
+          <span className={`${noAnimation ? "" : "claim-color-change"} pl-1`}>
+            idea
+          </span>
+          <span
+            className={`${noAnimation ? "" : "claim-color-change"} px-[2px]`}
+          >
+            &
+          </span>
+          <span className={`${noAnimation ? "" : "claim-color-change"}`}>
+            inspiration
+          </span>
         </div>
       </div>
     </div>

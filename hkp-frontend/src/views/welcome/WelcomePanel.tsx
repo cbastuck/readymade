@@ -8,7 +8,7 @@ import Carousel, { CarouselItem } from "@/ui-components/Carousel";
 import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";
 import LandingPitch from "./LandingPitch";
-import Faq from "./Faq";
+
 import { carouselItems } from "./Samples";
 
 export default function WelcomePanel() {
@@ -31,17 +31,19 @@ export default function WelcomePanel() {
       <div className="flex flex-col ">
         <div className="px-[10px] w-full flex mt-[50px]">
           <h1 className="w-full ml-auto md:text-center">
-            <WelcomeWord /> <ClaimApp />
+            <WelcomeWord noAnimation={headerAnimationsComplete} />{" "}
+            <ClaimApp noAnimation={headerAnimationsComplete} />
           </h1>
         </div>
 
-        <HookupLogo />
+        <HookupLogo noAnimation={headerAnimationsComplete} />
 
         <LandingPitch
           usecases={carouselItems}
           switchUsecaseInterval={5000}
           onComplete={() => setHeaderAnimationsComplete(true)}
-          onLink={(idx) => setCurrentCarouselItem(idx)}
+          onLink={setCurrentCarouselItem}
+          noAnimation={headerAnimationsComplete}
         />
       </div>
 
@@ -63,7 +65,7 @@ export default function WelcomePanel() {
           directly jump into the experience and try or tweak it yourself.
         </div>
 
-        <div className="mx-auto px-[0%] lg:px-[10%] pb-6">
+        <div className="mx-auto px-[0%] lg:px-[10%] pb-14">
           <Carousel
             items={carouselItems}
             current={currentCarouselItem}
@@ -73,10 +75,6 @@ export default function WelcomePanel() {
           <div className="text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[80%] gap-4 mt-2">
             {carouselItems[currentCarouselItem].description}
           </div>
-        </div>
-
-        <div className="pb-14">
-          <Faq />
         </div>
       </div>
     </div>
