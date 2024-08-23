@@ -16,6 +16,9 @@ export default class About extends Component<Props> {
       <div className="m-4">
         <Toolbar isCompact={!!this.props.isCompact} />
         <div className="flex flex-col">
+          <h1 className="py-10 pt-4 md:pt-10 mx-0 mb-2 md:text-center">
+            About
+          </h1>
           <div className="pb-2">
             <Faq />
           </div>

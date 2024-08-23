@@ -18,6 +18,7 @@ export type CarouselItem = {
     title: string;
     onClick?: { url: string };
   };
+  scale?: string;
 };
 
 type Props = {
@@ -66,7 +67,7 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
                   src={item.videoUrl}
                   autoPlay={index === 0}
                   loop
-                  width="85%"
+                  width={item.scale ? item.scale : "85%"}
                 />
                 {item.action && (
                   <Button

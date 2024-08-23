@@ -98,6 +98,7 @@ export default class GithubSourceUI extends Component<ServiceUIProps, State> {
       <div style={{ display: "flex", flexDirection: "column" }}>
         <InputField
           label="Token"
+          type="password"
           value={token || undefined}
           onChange={(token) => this.props.service.configure({ token })}
         />

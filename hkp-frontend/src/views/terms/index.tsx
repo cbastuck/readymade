@@ -8,12 +8,13 @@ export default function Terms() {
     <Article title="Terms and Conditions" date="8.3.2024">
       <Paragraph>
         Welcome and thank you for your interest my private project and website
-        at <a href="https://hookup.to">hookup.to</a>. These terms and conditions
-        of service form a legally binding contract between you and me concerning
-        your use of the Service. Please read the following terms carefully. By
-        using, downloading, installing, or otherwise accessing or using the
-        Service, you agree that you have read and understood, and, as a
-        condition to your use of the Service, you agree to be bound by, the
+        at <a href="https://hookup.to">hookup.to</a> or{" "}
+        <a href="https://hookitapp.com">hookitapp.com</a>. These terms and
+        conditions of service form a legally binding contract between you and me
+        concerning your use of the Service. Please read the following terms
+        carefully. By using, downloading, installing, or otherwise accessing or
+        using the Service, you agree that you have read and understood, and, as
+        a condition to your use of the Service, you agree to be bound by, the
         following terms and conditions, including the privacy policy (together,
         these 'terms'). If you are not eligible or do not agree to the terms,
         then you do not have my permission to use the Service. Your use of the

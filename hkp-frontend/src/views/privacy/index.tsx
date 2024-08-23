@@ -6,12 +6,13 @@ export default function Privacy() {
     <Article title="Privacy Policy" date="8.3.2024">
       <Paragraph>
         I highly value the privacy of individuals who browse this website,
-        especially those who use the playground and additional services at
-        https://hookup.to. This privacy policy aims to explain how I collect,
-        use, and share information from users of my services. While I strive to
-        minimize tracking, it's essential to be aware that some data is
-        monitored through server logs when using this service. Your use of my
-        services is also subject to the{" "}
+        especially those who use the playground and additional services at{" "}
+        <a href="https://hookup.to">hookup.to</a> or{" "}
+        <a href="https://hookitapp.com">hookitapp.com</a> . This privacy policy
+        aims to explain how I collect, use, and share information from users of
+        my services. While I strive to minimize tracking, it's essential to be
+        aware that some data is monitored through server logs when using this
+        service. Your use of my services is also subject to the{" "}
         <a href="/terms">Terms and Conditions</a>.
       </Paragraph>
       <Paragraph headline="Information in Server Logs">
@@ -49,14 +50,14 @@ export default function Privacy() {
         updates, and responding to queries. Server logs help me maintain,
         improve, and analyze services, prevent fraud, and address safety issues,
         but there is no connection between the server logs and provided email
-        addresses. Periodically, I may ask questions in the{" "}
-        <a href="/engage">engage</a> section to understand user preferences and
-        needs. The purpose is to understand my target audience and analyze how
-        you wish to use the services, features, and functionality. Server logs
-        are also necessary to find and prevent fraud and respond to trust and
-        safety issues that may arise; for compliance purposes, including
-        enforcing my legal rights, or as may be required by applicable laws and
-        regulations or requested by any judicial process or governmental agency.
+        addresses. Periodically, I may ask questions in the engage section to
+        understand user preferences and needs. The purpose is to understand my
+        target audience and analyze how you wish to use the services, features,
+        and functionality. Server logs are also necessary to find and prevent
+        fraud and respond to trust and safety issues that may arise; for
+        compliance purposes, including enforcing my legal rights, or as may be
+        required by applicable laws and regulations or requested by any judicial
+        process or governmental agency.
       </Paragraph>
       <Paragraph headline="How I Disclose the Collected Information">
         I may disclose information as required by law, responding to legal
@@ -99,7 +100,7 @@ export default function Privacy() {
 
       <Paragraph headline="Contact">
         For any questions, comments, or concerns about our processing
-        activities, please get <a href="/contact">in contact</a>.
+        activities, please get <a href="/about">in contact</a>.
       </Paragraph>
     </Article>
   );

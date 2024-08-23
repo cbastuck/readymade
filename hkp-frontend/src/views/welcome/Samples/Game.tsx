@@ -24,7 +24,7 @@ export const game: CarouselItem = {
   ),
   background: "/assets/teaser/blue3.png",
   action: {
-    title: "Open on Playground",
+    title: "Open in Playground",
     onClick: {
       url: "/playground?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game.json&sender-board=%random-name%",
     },
