@@ -117,6 +117,7 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
               )}
             </DropdownMenuItem>
 
+            {/*
             <DropdownMenuItem
               className="text-base"
               disabled={!isLoggedIn}
@@ -125,6 +126,7 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
               <MenuIcon icon={LayoutDashboard} />
               <span>Dashboard</span>
             </DropdownMenuItem>
+            */}
 
             <DropdownMenuItem className="text-base" disabled={true}>
               <MenuIcon icon={Settings} />

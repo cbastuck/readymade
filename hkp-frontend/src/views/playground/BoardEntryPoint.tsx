@@ -2,7 +2,7 @@ import { useState } from "react";
 import { BoardContextState } from "../../BoardContext";
 import EmptyBoard from "./EmptyBoard";
 import { s, t } from "../../styles";
-import LoadPanel from "../../ui-components/boardmanager";
+
 import VSpacer from "../../components/shared/VSpacer";
 import {
   RuntimeInputRoutings,
@@ -143,11 +143,6 @@ export default function BoardEntryPoint({
             )}
             {!isPlaygroundEmpty ? saveReminder : false}
           </div>
-          {(isPlaygroundEmpty || enforceLoadPanel) && (
-            <div style={{ width: "90%", margin: "auto" }}>
-              <LoadPanel />
-            </div>
-          )}
         </div>
       </div>
       <VSpacer />

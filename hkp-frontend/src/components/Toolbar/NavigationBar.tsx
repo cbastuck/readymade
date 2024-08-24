@@ -7,8 +7,9 @@ export default function NavigationBar({ isCompact }: Props) {
   const location = useLocation();
   const links = [
     { name: "Docs", link: "/docs" },
-    { name: "Examples", link: "/examples" },
+    //{ name: "Examples", link: "/examples" },
     { name: "Playground", link: "/playground" },
+    { name: "Home", link: "/home" },
   ];
   const defaultStyles =
     "font-sans rounded-md p-[5px] m-1 text-base tracking-widest hover:no-underline";

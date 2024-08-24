@@ -20,9 +20,8 @@ export default class Template extends Component<Props> {
     return (
       <BoardProvider user={null} availableRuntimeEngines={[]} runtimeApis={{}}>
         <div
+          className="flex flex-col h-full w-full"
           style={{
-            width: "100%",
-            height: "100%",
             minHeight: "100%",
           }}
         >

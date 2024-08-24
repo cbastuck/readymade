@@ -30,7 +30,7 @@ export default function BoardManager() {
 
   return (
     <div className="flex flex-col w-full h-full">
-      <div className="flex items-center">
+      <div className="flex items-center f-[90%]">
         <h2>Local Boards</h2>
         <div className="ml-auto">
           <Search
@@ -42,7 +42,7 @@ export default function BoardManager() {
 
       <BoardTable
         boards={savedBoards}
-        className="h-[300px] border"
+        className="h-full border"
         filter={filter}
         onAction={onAction}
       />

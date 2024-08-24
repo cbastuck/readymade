@@ -21,6 +21,8 @@ import Example from "./views/examples/Example";
 import Quickstart from "./views/docs/Quickstart";
 import Docs from "./views/docs";
 
+import Home from "./views/home";
+
 import BuildBoard from "./views/BuildBoard";
 import AuthRedirect from "./views/AuthRedirect";
 import AuthRedirectAuth0 from "./views/AuthRedirectAuth0";
@@ -107,6 +109,7 @@ export default function Routes() {
       <Route path="/import" element={<Import />} />
 
       <Route path="/profile" element={<Profile />} />
+      <Route path="/home" element={<Home />} />
 
       <Route path="/service/:service" element={<ServiceReferenceView />} />
       <Route path="/datamodel/:name" element={<DataModelReferenceView />} />

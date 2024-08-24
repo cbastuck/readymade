@@ -3,21 +3,23 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import ClaimApp from "./ClaimApp";
-import Carousel, { CarouselItem } from "@/ui-components/Carousel";
+import { CarouselItem } from "@/ui-components/Carousel";
+import { carouselItems } from "@/views/sampleBoards/Samples";
 
 import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";
 import LandingPitch from "./LandingPitch";
-
-import { carouselItems } from "./Samples";
+import SampleBoards from "../sampleBoards";
 
 export default function WelcomePanel() {
+  const navigate = useNavigate();
+
   const [headerAnimationsComplete, setHeaderAnimationsComplete] =
     useState(false);
+
   const forceCompleteAnimation = () => setHeaderAnimationsComplete(true);
 
-  const navigate = useNavigate();
-  const onClick = (item: CarouselItem) =>
+  const onLoadBoard = (item: CarouselItem) =>
     headerAnimationsComplete &&
     item.action?.onClick?.url &&
     navigate(item.action?.onClick?.url);
@@ -55,27 +57,11 @@ export default function WelcomePanel() {
           overflowY: "hidden",
         }}
       >
-        <h1 id="samples" className="pt-4 md:pt-10 m-0 md:text-center">
-          Sample Boards
-        </h1>
-        <div className="py-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
-          Get a quick impression what this means by browsing through the
-          samples. Maybe it is something you tried in the past as well? Every
-          sample comes with a video with a link to the Playground, so can
-          directly jump into the experience and try or tweak it yourself.
-        </div>
-
-        <div className="mx-auto px-[0%] lg:px-[10%] pb-14">
-          <Carousel
-            items={carouselItems}
-            current={currentCarouselItem}
-            onChange={setCurrentCarouselItem}
-            onClick={onClick}
-          />
-          <div className="text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[80%] gap-4 mt-2">
-            {carouselItems[currentCarouselItem].description}
-          </div>
-        </div>
+        <SampleBoards
+          onLoad={onLoadBoard}
+          current={currentCarouselItem}
+          onCurrentChange={setCurrentCarouselItem}
+        />
       </div>
     </div>
   );
