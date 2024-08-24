@@ -54,7 +54,7 @@ export default function ServiceSettings({
 
         <DropdownMenuItem onClick={onConfig} className="text-base">
           <MenuIcon icon={FileCog} />
-          <span>Config</span>
+          <span>Configuration</span>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
