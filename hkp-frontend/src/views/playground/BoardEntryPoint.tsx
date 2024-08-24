@@ -16,6 +16,7 @@ import {
 import Board from "./Board";
 
 import LoadIndicator from "./LoadIndicator";
+import { Link } from "react-router-dom";
 
 type Props = {
   isLoading: boolean;
@@ -55,7 +56,6 @@ export default function BoardEntryPoint({
   onChangeSidechainRouting,
   onChangeBoardname,
 }: Props) {
-  const [enforceLoadPanel, setEnforceLoadPanel] = useState(false);
   const isPlaygroundEmpty =
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
@@ -73,24 +73,7 @@ export default function BoardEntryPoint({
       >
         {" save this board "}
       </span>
-      and continue later by{" "}
-      <span
-        id="load-pane-view"
-        style={{
-          color: "#4284c4",
-          cursor: "pointer",
-        }}
-        onClick={() => {
-          setEnforceLoadPanel(true);
-          setTimeout(() =>
-            document
-              .getElementById("load-pane-view")
-              ?.scrollIntoView({ behavior: "smooth" })
-          );
-        }}
-      >
-        restoring a local board
-      </span>
+      and continue later from the <Link to="/home">home view</Link>.
     </div>
   );
 

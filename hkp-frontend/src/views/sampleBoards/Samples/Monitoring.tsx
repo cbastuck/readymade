@@ -10,10 +10,11 @@ export const monitoring: CarouselItem = {
   description: (
     <div className="flex flex-col gap-4">
       <div>
-        This sample connects to the wikipedia's recent{" "}
+        This board connects to the wikipedia's recent{" "}
         <a href="https://www.mediawiki.org/wiki/API:Recent_changes_stream">
           change stream
         </a>
+        .
       </div>
       <div>
         It filters out bot changes and aggregates incoming data within two
