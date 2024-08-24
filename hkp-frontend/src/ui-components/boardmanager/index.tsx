@@ -12,7 +12,11 @@ import BoardTable, {
   BoardManagerAction,
 } from "@/ui-components/boardmanager/BoardTable";
 
-export default function BoardManager() {
+type Props = {
+  title: string;
+};
+
+export default function BoardManager({ title }: Props) {
   const [filter, setFilter] = useState("");
   const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
   useEffect(() => setSavedBoards(getLocalBoards(localStoragePrefix)), []);
@@ -31,7 +35,7 @@ export default function BoardManager() {
   return (
     <div className="flex flex-col w-full h-full">
       <div className="flex items-center f-[90%]">
-        <h2>Local Boards</h2>
+        <h2>{title}</h2>
         <div className="ml-auto">
           <Search
             filter={filter}
@@ -44,6 +48,7 @@ export default function BoardManager() {
         boards={savedBoards}
         className="h-full border"
         filter={filter}
+        pageSize={5}
         onAction={onAction}
       />
     </div>
