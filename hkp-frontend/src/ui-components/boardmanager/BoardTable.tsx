@@ -12,6 +12,7 @@ import { SavedBoard } from "@/types";
 import BoardActionButton from "./BoardActionButton";
 import { useEffect, useState } from "react";
 import Button from "../Button";
+import { Link } from "react-router-dom";
 
 export type BoardManagerAction = {
   command: string;
@@ -42,8 +43,6 @@ export default function BoardTable({
   const numPages =
     pageSize === undefined ? 0 : Math.ceil(filteredItems.length / pageSize);
 
-  console.log("NUMPAGES", numPages);
-
   const onPrevPage = () => setPageOffset(Math.max(0, pageOffset - 1));
   const onNextPage = () =>
     setPageOffset(Math.min(pageOffset + 1, numPages - 1));
@@ -73,7 +72,7 @@ export default function BoardTable({
           {items.map((board) => (
             <TableRow key={board.name}>
               <TableCell className="text-left text-base whitespace-nowrap text-ellipsis">
-                {<a href={board.url}>{board.name}</a>}
+                {<Link to={board.url}>{board.name}</Link>}
               </TableCell>
               <TableCell className="text-left text-base whitespace-nowrap text-ellipsis">
                 {typeof board.description === "string"
@@ -99,7 +98,7 @@ export default function BoardTable({
             {"<"}
           </Button>
           <span className="text-sm mx-2">
-            {pageOffset + 1}/{numPages}
+            {pageOffset + 1} / {numPages}
           </span>
           <Button className="m-1" size="sm" onClick={onNextPage}>
             {">"}

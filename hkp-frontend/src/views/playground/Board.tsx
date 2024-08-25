@@ -688,7 +688,7 @@ export default class Board extends Component<Props, State> {
             </PeersConsumer>
           </PeersProvider>
         </div>
-        {description && (
+        {description && !this.props.headless && (
           <>
             <Description description={description} boardName={boardName} />
             <VSpacer />

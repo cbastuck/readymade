@@ -52,6 +52,11 @@ const restoredAvailableRuntimeEngines = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
 );
 
+export const runtimeApis: RuntimeApiMap = {
+  browser: browserRuntimeApi,
+  remote: remoteRuntimeApi,
+};
+
 type Props = WithRouterProps & {
   boardName?: string;
   compact?: boolean;
@@ -447,7 +452,8 @@ class Playground extends Component<Props, State> {
     } else {
       storeBoardToLocalStorage(
         name,
-        JSON.stringify({ ...data, name, description })
+        JSON.stringify({ ...data, name, description }),
+        description
       );
 
       if (!isSuggestedName) {
@@ -472,11 +478,6 @@ class Playground extends Component<Props, State> {
 
   render() {
     const appContext = this.context;
-    const runtimeApis: RuntimeApiMap = {
-      browser: browserRuntimeApi,
-      remote: remoteRuntimeApi,
-    };
-
     const user = (appContext && appContext?.user) || this.user;
 
     const playgroundRuntimeEngines = this.props.availableRuntimeEngines

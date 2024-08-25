@@ -57,6 +57,7 @@ export function getLocalBoards(
             value: value.source ? value.source : value,
             id: key,
             createdAt: value.createdAt,
+            description: value.description,
           });
         } catch (err) {
           console.warn("Could not restore local board", key, err);
@@ -68,13 +69,15 @@ export function getLocalBoards(
   return savedBoards.map((item) => ({
     ...item,
     url: `/playground/${item.name}`,
-    description: item.value && item.value.description,
+    description: item.description,
+    createdAt: item.createdAt,
   }));
 }
 
 export type LocalBoard = {
   source: string;
   createdAt: string;
+  description?: string;
 };
 
 export function restoreBoardFromLocalStorage(name: string) {
@@ -90,9 +93,14 @@ export function restoreBoardFromLocalStorage(name: string) {
   }
 }
 
-export function storeBoardToLocalStorage(boardName: string, source: string) {
+export function storeBoardToLocalStorage(
+  boardName: string,
+  source: string,
+  description?: string
+) {
   const item: LocalBoard = {
     source,
+    description,
     createdAt: new Date().toISOString(),
   };
   localStorage.setItem(

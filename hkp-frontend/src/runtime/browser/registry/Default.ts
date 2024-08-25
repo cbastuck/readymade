@@ -71,6 +71,7 @@ import UuidGeneratorDescriptor from "../services/UuidGenerator";
 import PeerSocket from "../services/PeerSocket";
 import OllamaPrompt from "../services/OllamaPrompt";
 import SpeechSynth from "../services/SpeechSynth";
+import LocalStorage from "../services/LocalStorage";
 
 import { ServiceModule } from "../../../types";
 
@@ -147,6 +148,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   PeerSocket,
   OllamaPrompt,
   SpeechSynth,
+  LocalStorage,
 
   // Flows and Composites
   BoardService,

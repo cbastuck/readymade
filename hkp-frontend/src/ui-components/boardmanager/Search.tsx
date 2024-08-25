@@ -13,6 +13,7 @@ export default function Search({ filter, onChange }: Props) {
         placeholder="Search"
         value={filter}
         onChange={(ev) => onChange(ev.target.value)}
+        spellCheck={false}
       />
     </div>
   );

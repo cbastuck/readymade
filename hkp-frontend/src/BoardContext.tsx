@@ -706,6 +706,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     if (this.state.awaitUserLogin && user) {
       this.state.awaitUserLogin();
     }
+    console.log("BoardProvider", this.state);
     return <Provider value={this.state}>{children}</Provider>;
   }
 }
