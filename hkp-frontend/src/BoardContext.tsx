@@ -101,6 +101,7 @@ type Props = {
   onAction?: (action: any) => boolean;
   serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
   onUpdateBoardState?: (updated: BoardDescriptor) => void;
+  onLoad?: (context: BoardContextState) => void;
 };
 
 const BoardCtx = createContext<BoardContextState | null>(null);
@@ -216,10 +217,13 @@ class BoardProvider extends Component<Props, BoardContextState> {
       const board = await this.props.fetchBoard();
       const data = await this.restoreBoard(board);
       if (data) {
-        this.setState({
-          ...data,
-          isFetching: false,
-        });
+        this.setState(
+          {
+            ...data,
+            isFetching: false,
+          },
+          () => setTimeout(() => this.props.onLoad?.(this.state), 1)
+        );
       }
     } catch (err: any) {
       this.setState({ errorOnFetch: err, isFetching: false });
@@ -706,7 +710,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     if (this.state.awaitUserLogin && user) {
       this.state.awaitUserLogin();
     }
-    console.log("BoardProvider", this.state);
+
     return <Provider value={this.state}>{children}</Provider>;
   }
 }

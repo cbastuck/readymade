@@ -354,9 +354,10 @@ class Playground extends Component<Props, State> {
           description,
         });
       } else {
-        localStorage.setItem(
-          `${localStoragePrefix}${name}`,
-          JSON.stringify({ ...data, name, description })
+        storeBoardToLocalStorage(
+          name,
+          JSON.stringify({ ...data, name, description }),
+          description
         );
         this.context?.pushNotification({
           type: "success",

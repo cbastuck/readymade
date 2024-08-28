@@ -1,23 +1,30 @@
+import { useContext } from "react";
 import { BoardDescriptor, PlaygroundTemplate } from "@/types";
 import Board from "../playground/Board";
 import { runtimeApis } from "../playground";
-import BoardProvider, { BoardConsumer } from "@/BoardContext";
+import BoardProvider, { BoardContextState, BoardCtx } from "@/BoardContext";
 import { availableRuntimeEngines } from "../playground/common";
 
 type Props = {
   board: PlaygroundTemplate;
+  params?: any;
+  hidden?: boolean;
+  onResult: (result: any) => void;
 };
 
-export default function BoardComponent({ board }: Props) {
-  const onFetchBoard = async (): Promise<BoardDescriptor> => board;
+export default function BoardComponent(props: Props) {
+  const { board, params } = props;
 
-  const onResult = (res: any) => console.log("locaStorageREsult", res);
+  const onFetchBoard = async (): Promise<BoardDescriptor> => board;
+  const onLoad = (boardContext: BoardContextState) =>
+    boardContext.onAction({ type: "playBoard", params });
 
   return (
     <BoardProvider
       user={null}
       boardName={board.boardName}
       fetchBoard={onFetchBoard}
+      onLoad={onLoad}
       fetchAfterMount={true}
       runtimeApis={runtimeApis}
       availableRuntimeEngines={availableRuntimeEngines}
@@ -31,25 +38,31 @@ export default function BoardComponent({ board }: Props) {
       onAction={() => false}
       onRemoveService={() => {}}
     >
-      <BoardConsumer>
-        {(boardContext) =>
-          boardContext && (
-            <Board
-              boardName="localStorageBoard"
-              boardContext={boardContext}
-              inputRouting={{}}
-              outputRouting={{}}
-              sidechainRouting={{}}
-              description={board.description}
-              headless={true}
-              onResult={onResult}
-              onChangeOutputRouting={() => {}}
-              onChangeInputRouting={() => {}}
-              onChangeSidechainRouting={() => {}}
-            />
-          )
-        }
-      </BoardConsumer>
+      <WrappedBoard {...props} />
     </BoardProvider>
   );
+}
+
+function WrappedBoard({
+  board,
+  hidden,
+  onResult,
+}: Pick<Props, "board" | "onResult" | "hidden">) {
+  const boardContext = useContext(BoardCtx);
+  return boardContext ? (
+    <div style={{ display: hidden ? "none" : undefined }}>
+      <Board
+        boardName="localStorageBoard"
+        boardContext={boardContext}
+        inputRouting={{}}
+        outputRouting={{}}
+        sidechainRouting={{}}
+        description={board.description}
+        onResult={onResult}
+        onChangeOutputRouting={() => {}}
+        onChangeInputRouting={() => {}}
+        onChangeSidechainRouting={() => {}}
+      />
+    </div>
+  ) : null;
 }
