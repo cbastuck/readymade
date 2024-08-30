@@ -1,4 +1,4 @@
-import FilterDescriptor from "hkp-services/Filter";
+import FilterDescriptor from "@/runtime/browser/services/base/Filter";
 import FilterUI from "./FilterUI";
 import { AppInstance, ServiceClass } from "@/types";
 

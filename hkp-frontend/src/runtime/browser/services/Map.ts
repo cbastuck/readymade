@@ -1,4 +1,4 @@
-import MapDescriptor from "hkp-services/Map";
+import MapDescriptor from "@/runtime/browser/services/base/Map";
 
 import MapUI from "./MapUI";
 import { AppImpl, ServiceClass } from "@/types";

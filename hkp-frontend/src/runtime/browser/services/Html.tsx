@@ -1,7 +1,7 @@
 import ejs from "ejs";
 import { AppImpl, ServiceClass } from "../../../types";
 import HtmlUI from "./HtmlUI";
-import { parseAndEvalExpression } from "hkp-services/eval";
+import { parseAndEvalExpression } from "@/runtime/browser/services/base/eval";
 
 const serviceId = "hookup.to/service/html";
 const serviceName = "Html";

@@ -1,5 +1,5 @@
 import { AppInstance, ServiceClass } from "@/types";
-import BufferDescriptor from "hkp-services/Buffer";
+import BufferDescriptor from "@/runtime/browser/services/base/Buffer";
 import BufferUI from "./BufferUI";
 
 const descriptor = {

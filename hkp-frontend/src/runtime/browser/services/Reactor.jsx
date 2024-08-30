@@ -1,7 +1,10 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import ReactDOM from "react-dom/client";
 
-import { parseExpression, evalExpression } from "hkp-services/eval";
+import {
+  parseExpression,
+  evalExpression,
+} from "@/runtime/browser/services/base/eval";
 
 const serviceId = "hookup.to/service/reactor";
 const serviceName = "Reactor";

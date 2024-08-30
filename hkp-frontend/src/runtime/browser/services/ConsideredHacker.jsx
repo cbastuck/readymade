@@ -1,7 +1,10 @@
 import HackerUI from "./HackerUI";
 import Hacker from "./Hacker";
 
-import { parseExpression, evalExpression } from "hkp-services/eval";
+import {
+  parseExpression,
+  evalExpression,
+} from "@/runtime/browser/services/base/eval";
 
 const serviceId = "hookup.to/service/hacker/considered";
 const serviceName = "Considered Hacker";

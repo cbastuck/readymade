@@ -1,4 +1,4 @@
-import GroupByDescriptor from "hkp-services/GroupBy";
+import GroupByDescriptor from "@/runtime/browser/services/base/GroupBy";
 
 import { AppImpl, ServiceClass } from "@/types";
 

@@ -1,6 +1,6 @@
 import { AppImpl, ServiceClass } from "@/types";
 
-import MonitorDescriptor from "hkp-services/Monitor";
+import MonitorDescriptor from "@/runtime/browser/services/base/Monitor";
 import MonitorUI from "./MonitorUI";
 
 const { serviceName, serviceId, service: Monitor } = MonitorDescriptor;

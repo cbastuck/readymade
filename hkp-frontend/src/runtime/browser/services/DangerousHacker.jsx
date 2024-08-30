@@ -1,7 +1,7 @@
 import HackerUI from "./HackerUI";
 import Hacker from "./Hacker";
 
-import { evilEval } from "hkp-services/eval";
+import { evilEval } from "@/runtime/browser/services/base/eval";
 
 const serviceId = "hookup.to/service/hacker/dangerous";
 const serviceName = "Dangerous Hacker";

@@ -1,0 +1,144 @@
+import { flatten } from "flat";
+import { AppInstance, ServiceClass } from "@/types";
+import { parseExpression, evalExpression } from "./eval";
+
+import ServiceBase from "hkp-frontend/src/runtime/browser/services/ServiceBase";
+
+const serviceId = "hookup.to/service/map";
+const serviceName = "Map";
+
+type State = {
+  mode: "replace" | "add" | "overwrite";
+  template: { [key: string]: any };
+};
+
+class Map extends ServiceBase<State> {
+  _terms: { [key: string]: any } = {};
+  _properties: { [key: string]: any } = {};
+
+  constructor(
+    app: AppInstance,
+    board: string,
+    descriptor: ServiceClass,
+    id: string
+  ) {
+    super(app, board, descriptor, id, { mode: "replace", template: {} });
+  }
+
+  configure(config: any) {
+    const { template, mode } = config;
+    if (template !== undefined) {
+      this.state.template = flatten(template); // store as flat object for persistence
+
+      this._properties = Object.keys(template).reduce((all, cur) => {
+        const value = template[cur];
+        if (cur[cur.length - 1] !== "=") {
+          return cur.indexOf(".") !== -1
+            ? { ...merge(all, value, cur) }
+            : { ...all, [cur]: value };
+        }
+        return all;
+      }, {});
+
+      this._terms = Object.keys(template).reduce((all, cur) => {
+        const value = template[cur];
+        if (cur[cur.length - 1] === "=") {
+          // treated as a dynamic term not a static property
+          return {
+            ...all,
+            [cur.substring(0, cur.length - 1)]: parseExpression(value),
+          };
+        }
+        return all;
+      }, {});
+
+      this.app.notify(this, { template });
+    }
+
+    if (mode !== undefined) {
+      this.state.mode = mode;
+      this.app.notify(this, { mode });
+    }
+  }
+
+  mapper = async (x: any) => {
+    try {
+      const keys = this._terms ? Object.keys(this._terms) : [];
+      // map to scalar value (not an object) if only an '=', i.e. empty string
+      if (keys.length === 1 && keys[0] === "") {
+        return evalExpression(this._terms[keys[0]], { params: x });
+      }
+
+      const initial =
+        this.state.mode === "replace"
+          ? deepCopy(this._properties)
+          : this.state.mode === "overwrite"
+          ? { ...x, ...deepCopy(this._properties) }
+          : { ...deepCopy(this._properties), ...x };
+
+      return keys.reduce(async (acc, key) => {
+        const expression = this._terms[key];
+        if (!expression) {
+          return acc;
+        }
+
+        const y = await evalExpression(expression, { params: x }, this.app);
+        return key.indexOf(".") !== -1
+          ? {
+              ...merge(await acc, y, key),
+            }
+          : {
+              ...(await acc),
+              [key]: x[key] && this.state.mode === "add" ? x[key] : y, // don't overwrite in add mode
+            };
+      }, Promise.resolve(initial));
+    } catch (error) {
+      console.error(
+        "Error in Map.process",
+        error,
+        "in template",
+        JSON.stringify(this.state.template || "<empty>")
+      );
+      return x; // do not map the input - there was an error
+    }
+  };
+
+  process = async (params: any) => {
+    //TODO: who needs this??? - new concept for handling arrays ...
+    // probably generic
+    if (Array.isArray(params)) {
+      return await Promise.all(params.map(this.mapper));
+    }
+
+    if (!this._terms || !this._properties) {
+      if (this.state.mode === "replace") {
+        return {};
+      }
+      return params;
+    }
+
+    return this.mapper(params);
+  };
+}
+
+function deepCopy(x: any) {
+  return JSON.parse(JSON.stringify(x));
+}
+
+function merge(dst: any, value: any, path: string) {
+  path.split(".").reduce((branch, key, idx, src) => {
+    const isLastKey = idx + 1 >= src.length;
+    if (branch[key] !== undefined) {
+      return branch[key];
+    }
+    return (branch[key] = isLastKey ? value : {});
+  }, dst);
+  return dst;
+}
+
+export default {
+  serviceName,
+  serviceId,
+  service: Map,
+  Map,
+};
