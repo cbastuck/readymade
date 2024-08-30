@@ -1,5 +1,7 @@
 import { useEffect } from "react";
-import Button from "../Button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
+import IconButton from "./IconButton";
 
 type Props = {
   pageSize?: number;
@@ -28,16 +30,12 @@ export default function BoardTableNav({
 
   return (
     pageSize !== undefined && (
-      <div className="text-center">
-        <Button className="m-1" size="sm" onClick={onPrevPage}>
-          {"<"}
-        </Button>
-        <span className="text-sm mx-2">
+      <div className="mx-auto flex w-fit">
+        <IconButton className="mx-2" onClick={onPrevPage} icon={ChevronLeft} />
+        <div className="text-base">
           {pageOffset + 1} / {numPages}
-        </span>
-        <Button className="m-1" size="sm" onClick={onNextPage}>
-          {">"}
-        </Button>
+        </div>
+        <IconButton className="mx-2" onClick={onNextPage} icon={ChevronRight} />
       </div>
     )
   );
