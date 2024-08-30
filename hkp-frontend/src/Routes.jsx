@@ -96,7 +96,6 @@ export default function Routes() {
 
       <Route path="/sandbox" element={<Sandbox />} />
 
-      <Route path="/plygrnd" element={<CompactPlayground />} />
       <Route path="/playground/:board" element={<Playground />} />
       <Route path="/playground" element={<PlaygroundRedirect />} />
 
@@ -157,21 +156,6 @@ function PlaygroundRedirect() {
     <Navigate
       to={replacePlaceholders(`/playground/${generateRandomName()}${search}`)}
       replace={true}
-    />
-  );
-}
-
-function CompactPlayground() {
-  return (
-    <Playground
-      compact
-      boardName="Sketchboard"
-      onChangeBoardname={(newBoardname) =>
-        console.log("CompactPlayground.onChangeBoardname", newBoardname)
-      }
-      onSaveBoard={(name, payload) => {
-        console.log("CompactPlayground.onSaveBoard", board, payload);
-      }}
     />
   );
 }
