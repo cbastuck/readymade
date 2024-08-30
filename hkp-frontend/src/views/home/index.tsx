@@ -1,6 +1,6 @@
 import Template from "../Template";
 import BoardManager from "../../ui-components/boardmanager";
-import BoardComponent from "./BoardComponent";
+import BoardComponent from "../../components/BoardComponent";
 import localStorageBoard from "./localStorageRetriever.json";
 import { BoardDescriptor, PlaygroundTemplate } from "@/types";
 import { useState } from "react";
