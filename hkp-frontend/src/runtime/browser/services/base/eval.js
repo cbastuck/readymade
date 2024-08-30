@@ -1,5 +1,6 @@
 import { parse, eval as expEval } from "expression-eval";
 import moment from "moment";
+import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 
 function reformatDate(date, inputFormat, outputFormat) {
   return moment(date, inputFormat).format(outputFormat);
@@ -45,6 +46,10 @@ const globalScope = {
     return qp.get(name);
   },
   fromStorage: (name) => localStorage.getItem(name),
+  uuid: {
+    v4: uuidv4,
+    v7: uuidv7,
+  },
 };
 
 export async function parseAndEvalExpression(exp, params, app) {
