@@ -13,3 +13,10 @@ export const carouselItems: Array<CarouselItem> = [
   midi,
   spotify2Github,
 ];
+
+export function capitaliseHeadline(headline: string): string {
+  return headline
+    .split(" ")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}

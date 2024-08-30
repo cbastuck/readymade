@@ -1,4 +1,5 @@
 import { CarouselItem } from "@/ui-components/Carousel";
+import { capitaliseHeadline } from ".";
 
 const headline = "observe and extract incoming data and plot graphs";
 
@@ -6,7 +7,7 @@ export const monitoring: CarouselItem = {
   videoUrl: "/assets/teaser/WikipediaMonitoring.mp4",
   scale: "77%",
   headline,
-  title: `Sample 2: ${headline}`,
+  title: `Sample 2: ${capitaliseHeadline(headline)}`,
   description: (
     <div className="flex flex-col gap-4">
       <div>

@@ -8,6 +8,7 @@ const serviceName = "Injector";
 
 type State = {
   recentInjection: any;
+  plainText: boolean;
 };
 class Injector extends ServiceBase<State> {
   constructor(
@@ -16,11 +17,14 @@ class Injector extends ServiceBase<State> {
     descriptor: ServiceClass,
     id: string
   ) {
-    super(app, board, descriptor, id, { recentInjection: undefined });
+    super(app, board, descriptor, id, {
+      recentInjection: undefined,
+      plainText: false,
+    });
   }
 
   configure(config: any) {
-    const { inject, recentInjection } = config;
+    const { inject, recentInjection, plainText } = config;
     if (inject !== undefined) {
       this.state.recentInjection = inject;
       this.app.next(this, inject);
@@ -28,6 +32,11 @@ class Injector extends ServiceBase<State> {
 
     if (recentInjection !== undefined) {
       this.state.recentInjection = recentInjection;
+    }
+
+    if (plainText !== undefined) {
+      this.state.plainText = plainText;
+      this.app.notify(this, { plainText });
     }
   }
 

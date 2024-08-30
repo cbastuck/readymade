@@ -71,7 +71,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
   }
 
   onInit = (initialState: any) => {
-    const { recentInjection } = initialState;
+    const { recentInjection, plainText } = initialState;
     if (recentInjection !== undefined) {
       const data =
         typeof recentInjection === "string"
@@ -79,12 +79,20 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
           : JSON.stringify(recentInjection);
       this.setState({ recentInjection: data });
     }
+
+    if (plainText !== undefined) {
+      this.setState({ plainText });
+    }
   };
 
   onNotification = (notification: any) => {
-    const { recentInjection } = notification;
+    const { recentInjection, plainText } = notification;
     if (recentInjection !== undefined) {
       this.setState({ recentInjection });
+    }
+
+    if (plainText !== undefined) {
+      this.setState({ plainText });
     }
   };
 
@@ -302,8 +310,8 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     } catch (err) {}
   };
 
-  toggleTextMode = () => {
-    this.setState((state) => ({ ...state, plainText: !state.plainText }));
+  setTextMode = (textMode: boolean) => {
+    this.props.service.configure({ plainText: textMode });
   };
 
   render() {
@@ -344,10 +352,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
 
     const onFormat = (newFormat: string) => {
       if (mode === "data") {
-        this.setState((state) => ({
-          ...state,
-          plainText: newFormat === "plain",
-        }));
+        this.setTextMode(newFormat === "plain");
       } else if (mode === "file") {
         this.setState((state) => ({
           ...state,

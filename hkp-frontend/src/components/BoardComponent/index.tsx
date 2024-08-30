@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Settings, CircleX } from "lucide-react";
 
-import { BoardDescriptor, PlaygroundState } from "@/types";
+import { BoardDescriptor, PlaygroundState, User } from "@/types";
 import { runtimeApis } from "../../views/playground";
 import BoardProvider, { BoardContextState } from "@/BoardContext";
 import { availableRuntimeEngines } from "../../views/playground/common";
@@ -12,6 +12,7 @@ export type BoardAPI = {
 };
 
 type Props = {
+  user?: User | null;
   board: PlaygroundState;
   params?: any;
   title?: string;
@@ -19,19 +20,15 @@ type Props = {
 };
 
 export default function BoardComponent(props: Props) {
-  const { board, params, title, children } = props;
+  const { board, params, title, children, user } = props;
+  const [result, setResult] = useState<any>(null);
+  const [hideBoard, setHideBoard] = useState<boolean>(true);
+  const boardContextRef = useRef<BoardProvider | null>(null);
 
   const runBoard = (cs: BoardContextState) =>
     cs.onAction({ type: "playBoard", params });
   const onFetchBoard = async (): Promise<BoardDescriptor> => board;
-  const onLoad = runBoard;
-
-  const [result, setResult] = useState<any>(null);
-  const [hideBoard, setHideBoard] = useState<boolean>(true);
   const onToggleBoardVisibility = () => setHideBoard((prev) => !prev);
-  const onResult = setResult;
-
-  const boardContextRef = useRef<BoardProvider | null>(null);
   const boardApi = {
     runBoard: () => {
       boardContextRef.current && runBoard(boardContextRef.current?.state);
@@ -40,10 +37,10 @@ export default function BoardComponent(props: Props) {
   return (
     <BoardProvider
       ref={(ref) => (boardContextRef.current = ref)}
-      user={null}
+      user={user || null}
       boardName={board.boardName}
       fetchBoard={onFetchBoard}
-      onLoad={onLoad}
+      onLoad={runBoard}
       fetchAfterMount={true}
       runtimeApis={runtimeApis}
       availableRuntimeEngines={availableRuntimeEngines}
@@ -65,7 +62,7 @@ export default function BoardComponent(props: Props) {
         board={board}
         hideBoard={hideBoard}
         result={result}
-        onResult={onResult}
+        onResult={setResult}
         onToggleVisibility={onToggleBoardVisibility}
       />
     </BoardProvider>

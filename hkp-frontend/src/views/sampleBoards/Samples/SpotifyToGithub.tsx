@@ -1,12 +1,14 @@
 import { CarouselItem } from "@/ui-components/Carousel";
+import { capitaliseHeadline } from ".";
 
-const headline = "export your favorite song on Spotify to a Github repository";
+const headline =
+  "export your favorite songs from Spotify to a Github repository";
 
 export const spotify2Github: CarouselItem = {
   videoUrl: "/assets/teaser/SpotifyGithub-cut.mp4",
   scale: "56%",
   headline,
-  title: `Sample 5: ${headline}`,
+  title: `Sample 5: ${capitaliseHeadline(headline)}`,
   description: (
     <div className="flex flex-col gap-4">
       <div>Dum dum</div>

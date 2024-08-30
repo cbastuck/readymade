@@ -1,11 +1,12 @@
 import { CarouselItem } from "@/ui-components/Carousel";
+import { capitaliseHeadline } from ".";
 
 const headline = "use your phone to control things on another device";
 
 export const game: CarouselItem = {
   videoUrl: "/assets/teaser/GameTeaser.mp4",
   headline,
-  title: `Sample 1: ${headline}`,
+  title: `Sample 1: ${capitaliseHeadline(headline)}`,
   description: (
     <div className="flex flex-col gap-4">
       <div>

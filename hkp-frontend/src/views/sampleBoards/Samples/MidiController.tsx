@@ -1,4 +1,5 @@
 import { CarouselItem } from "@/ui-components/Carousel";
+import { capitaliseHeadline } from ".";
 
 const headline =
   "prototype your idea of a midi controller and listen to the outcome";
@@ -7,7 +8,7 @@ export const midi: CarouselItem = {
   videoUrl: "/assets/teaser/MidiController2.mp4",
   scale: "93%",
   headline,
-  title: `Sample 4: ${headline}`,
+  title: `Sample 4: ${capitaliseHeadline(headline)}`,
   description: (
     <div className="flex flex-col gap-4">
       <div>

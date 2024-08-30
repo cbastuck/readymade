@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { Plus } from "lucide-react";
 import Template from "../Template";
 import BoardComponent, { BoardAPI } from "../../components/BoardComponent";
@@ -11,9 +11,12 @@ import {
   removeLocalBoard,
   restoreBoardFromLocalStorage,
 } from "../playground/common";
+import { AppCtx } from "@/AppContext";
 
 export default function Home() {
   const board = localStorageBoard as PlaygroundState;
+  const appContext = useContext(AppCtx);
+
   const onLocalBoardAction = (
     api: BoardAPI,
     board: SavedBoard,
@@ -67,6 +70,7 @@ export default function Home() {
 
           {additionalBoardProviders.map((item, idx) => (
             <BoardComponent
+              user={appContext.user}
               board={item.board}
               key={`board-component-${item.name}-${idx}`}
             >

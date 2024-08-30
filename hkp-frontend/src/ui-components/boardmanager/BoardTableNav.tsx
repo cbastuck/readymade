@@ -21,6 +21,8 @@ export default function BoardTableNav({
   useEffect(() => {
     if (pageOffset >= numPages) {
       setPageOffset(numPages - 1);
+    } else if (pageOffset < 0 && numPages > 0) {
+      setPageOffset(0);
     }
   }, [numPages, pageOffset]);
 
@@ -31,11 +33,22 @@ export default function BoardTableNav({
   return (
     pageSize !== undefined && (
       <div className="mx-auto flex w-fit">
-        <IconButton className="mx-2" onClick={onPrevPage} icon={ChevronLeft} />
+        <IconButton
+          className="mx-2 px-1"
+          border
+          onClick={onPrevPage}
+          icon={ChevronLeft}
+        />
+
         <div className="text-base">
           {pageOffset + 1} / {numPages}
         </div>
-        <IconButton className="mx-2" onClick={onNextPage} icon={ChevronRight} />
+        <IconButton
+          className="mx-2 px-1"
+          border
+          onClick={onNextPage}
+          icon={ChevronRight}
+        />
       </div>
     )
   );
