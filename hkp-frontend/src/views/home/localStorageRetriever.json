@@ -5,7 +5,7 @@
       "name": "Safari",
       "type": "browser",
       "state": {
-        "wrapServices": true,
+        "wrapServices": false,
         "minimized": false
       }
     }
@@ -25,10 +25,12 @@
         "serviceName": "Map",
         "mode": "replace",
         "template": {
+          "id=": "params.key",
           "name=": "params.key.split(\"hkp-playground-\")[1]",
           "createdAt=": "parse(params.value).createdAt",
           "description=": "parse(params.value).description",
-          "source=": "parse(parse(params.value).source)"
+          "source=": "parse(parse(params.value).source || params.value)",
+          "url=": "'/playground/' + params.key.split(\"hkp-playground-\")[1]"
         },
         "bypass": false
       },
@@ -46,5 +48,6 @@
   "inputRouting": {},
   "description": "retrieve boards stored in browser's local storage",
   "acceptedSyncSenders": [],
-  "rejectedSyncSenders": []
+  "rejectedSyncSenders": [],
+  "boardName": "Local Boards"
 }

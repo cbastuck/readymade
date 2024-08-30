@@ -1,10 +1,10 @@
 import { useContext } from "react";
 import Board from "../../views/playground/Board";
 import { BoardCtx } from "@/BoardContext";
-import { PlaygroundTemplate } from "@/types";
+import { PlaygroundState } from "@/types";
 
 type Props = {
-  board: PlaygroundTemplate;
+  board: PlaygroundState;
   hidden?: boolean;
   onResult: (result: any) => void;
 };

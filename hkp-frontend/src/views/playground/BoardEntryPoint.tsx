@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { BoardContextState } from "../../BoardContext";
 import EmptyBoard from "./EmptyBoard";
 import { s, t } from "../../styles";

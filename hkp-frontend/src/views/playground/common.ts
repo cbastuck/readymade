@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import UAParser from "ua-parser-js";
 import {
   PeerJsHostDescriptor,
+  PlaygroundState,
   RuntimeClass,
   SavedBoard,
   User,
@@ -37,7 +38,9 @@ export function getLocalBoard(
 }
 
 export function removeLocalBoard(board: SavedBoard) {
-  localStorage.removeItem(board.id);
+  if (board.id) {
+    localStorage.removeItem(board.id);
+  }
 }
 
 export function getLocalBoards(
@@ -80,7 +83,9 @@ export type LocalBoard = {
   description?: string;
 };
 
-export function restoreBoardFromLocalStorage(name: string) {
+export function restoreBoardFromLocalStorage(
+  name: string
+): PlaygroundState | null {
   const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
   const data = localStorage.getItem(storageName);
   if (data) {
@@ -91,6 +96,7 @@ export function restoreBoardFromLocalStorage(name: string) {
       return item;
     }
   }
+  return null;
 }
 
 export function storeBoardToLocalStorage(

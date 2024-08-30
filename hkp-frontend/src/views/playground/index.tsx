@@ -12,7 +12,6 @@ import Board from "./Board";
 import { generateRandomName } from "../../core/board";
 import { t } from "../../styles";
 import {
-  localStoragePrefix,
   defaultName,
   availableRuntimeEngines,
   restoreBoardFromLocalStorage,

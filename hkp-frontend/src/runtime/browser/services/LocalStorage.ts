@@ -21,7 +21,7 @@ class LocalStorage extends ServiceBase<State> {
     super(app, board, descriptor, id, { filter: "" });
   }
 
-  getItems(filter?: string) {
+  retrieveAndCacheItems(filter?: string) {
     const items = [];
     for (const key in localStorage) {
       if (!filter || key.startsWith(filter)) {
@@ -32,6 +32,7 @@ class LocalStorage extends ServiceBase<State> {
       }
     }
     this.items = items;
+    return this.items;
   }
 
   configure(config: any) {
@@ -39,7 +40,7 @@ class LocalStorage extends ServiceBase<State> {
 
     if (filter !== undefined || this.items.length === 0) {
       this.state.filter = filter;
-      this.getItems(filter);
+      this.retrieveAndCacheItems(filter);
       this.app.notify(this, { items: this.items, filter });
     }
 
@@ -49,7 +50,7 @@ class LocalStorage extends ServiceBase<State> {
   }
 
   process(_params: any) {
-    return this.items;
+    return this.retrieveAndCacheItems(this.state.filter);
   }
 }
 

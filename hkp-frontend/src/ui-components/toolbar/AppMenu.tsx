@@ -1,13 +1,5 @@
 import { useContext } from "react";
-import {
-  LogIn,
-  LogOut,
-  Forward,
-  Menu,
-  Settings,
-  LayoutDashboard,
-  User,
-} from "lucide-react";
+import { LogIn, LogOut, Forward, Menu, Settings, User } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 

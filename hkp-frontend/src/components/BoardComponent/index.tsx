@@ -1,27 +1,45 @@
-import { BoardDescriptor, PlaygroundTemplate } from "@/types";
+import { useRef, useState } from "react";
+import { Settings, CircleX } from "lucide-react";
 
+import { BoardDescriptor, PlaygroundState } from "@/types";
 import { runtimeApis } from "../../views/playground";
 import BoardProvider, { BoardContextState } from "@/BoardContext";
 import { availableRuntimeEngines } from "../../views/playground/common";
 import BoardFrame from "./BoardFrame";
-import WrappedBoard from "./WrappedBoard";
+
+export type BoardAPI = {
+  runBoard: () => void;
+};
 
 type Props = {
-  board: PlaygroundTemplate;
+  board: PlaygroundState;
   params?: any;
-  hidden?: boolean;
-  onResult: (result: any) => void;
+  title?: string;
+  children?: (result: any) => React.ReactElement;
 };
 
 export default function BoardComponent(props: Props) {
-  const { board, params } = props;
+  const { board, params, title, children } = props;
 
+  const runBoard = (cs: BoardContextState) =>
+    cs.onAction({ type: "playBoard", params });
   const onFetchBoard = async (): Promise<BoardDescriptor> => board;
-  const onLoad = (boardContext: BoardContextState) =>
-    boardContext.onAction({ type: "playBoard", params });
+  const onLoad = runBoard;
 
+  const [result, setResult] = useState<any>(null);
+  const [hideBoard, setHideBoard] = useState<boolean>(true);
+  const onToggleBoardVisibility = () => setHideBoard((prev) => !prev);
+  const onResult = setResult;
+
+  const boardContextRef = useRef<BoardProvider | null>(null);
+  const boardApi = {
+    runBoard: () => {
+      boardContextRef.current && runBoard(boardContextRef.current?.state);
+    },
+  };
   return (
     <BoardProvider
+      ref={(ref) => (boardContextRef.current = ref)}
       user={null}
       boardName={board.boardName}
       fetchBoard={onFetchBoard}
@@ -39,9 +57,17 @@ export default function BoardComponent(props: Props) {
       onAction={() => false}
       onRemoveService={() => {}}
     >
-      <BoardFrame>
-        <WrappedBoard {...props} />
-      </BoardFrame>
+      <BoardFrame
+        boardApi={boardApi}
+        title={title}
+        placeholder={children}
+        toggleIcon={hideBoard ? Settings : CircleX}
+        board={board}
+        hideBoard={hideBoard}
+        result={result}
+        onResult={onResult}
+        onToggleVisibility={onToggleBoardVisibility}
+      />
     </BoardProvider>
   );
 }

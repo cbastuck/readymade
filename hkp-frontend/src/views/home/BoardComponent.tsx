@@ -1,12 +1,12 @@
 import { useContext } from "react";
-import { BoardDescriptor, PlaygroundTemplate } from "@/types";
+import { BoardDescriptor, PlaygroundState } from "@/types";
 import Board from "../playground/Board";
 import { runtimeApis } from "../playground";
 import BoardProvider, { BoardContextState, BoardCtx } from "@/BoardContext";
 import { availableRuntimeEngines } from "../playground/common";
 
 type Props = {
-  board: PlaygroundTemplate;
+  board: PlaygroundState;
   params?: any;
   hidden?: boolean;
   onResult: (result: any) => void;

@@ -7,12 +7,12 @@ import {
   TableRow,
 } from "@/ui-components/primitives/table";
 import moment from "moment";
+import { Link } from "react-router-dom";
 
 import { SavedBoard } from "@/types";
 import BoardActionButton from "./BoardActionButton";
-import { useEffect, useState } from "react";
-import Button from "../Button";
-import { Link } from "react-router-dom";
+
+import { AdditionalActionItem } from ".";
 
 export type BoardManagerAction = {
   command: string;
@@ -23,36 +23,15 @@ type Props = {
   className?: string;
   filter?: string;
   pageSize?: number;
+  additionalActions?: Array<AdditionalActionItem>;
   onAction: (board: SavedBoard, action: BoardManagerAction) => void;
 };
 export default function BoardTable({
-  boards: savedBoards,
+  boards: items,
   className,
-  filter,
-  pageSize = undefined,
+  additionalActions = [],
   onAction,
 }: Props) {
-  const [pageOffset, setPageOffset] = useState(0);
-  const filteredItems = savedBoards.filter(
-    (board) => !filter || board.name.indexOf(filter) !== -1
-  );
-  const items =
-    pageSize === undefined
-      ? filteredItems
-      : filteredItems.slice(pageOffset * pageSize, (pageOffset + 1) * pageSize);
-  const numPages =
-    pageSize === undefined ? 0 : Math.ceil(filteredItems.length / pageSize);
-
-  const onPrevPage = () => setPageOffset(Math.max(0, pageOffset - 1));
-  const onNextPage = () =>
-    setPageOffset(Math.min(pageOffset + 1, numPages - 1));
-
-  useEffect(() => {
-    if (pageOffset >= numPages) {
-      setPageOffset(numPages);
-    }
-  }, [numPages, pageOffset]);
-
   return (
     <div className={`${className} overflow-y-auto`}>
       <Table>
@@ -85,26 +64,16 @@ export default function BoardTable({
                   : "-"}
               </TableCell>
               <TableCell className="text-right text-base w-min">
-                <BoardActionButton board={board} onAction={onAction} />
+                <BoardActionButton
+                  board={board}
+                  onAction={onAction}
+                  additionalActions={additionalActions}
+                />
               </TableCell>
             </TableRow>
           ))}
         </TableBody>
       </Table>
-      <hr />
-      {pageSize !== undefined && (
-        <div className="text-center">
-          <Button className="m-1" size="sm" onClick={onPrevPage}>
-            {"<"}
-          </Button>
-          <span className="text-sm mx-2">
-            {pageOffset + 1} / {numPages}
-          </span>
-          <Button className="m-1" size="sm" onClick={onNextPage}>
-            {">"}
-          </Button>
-        </div>
-      )}
     </div>
   );
 }
