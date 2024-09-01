@@ -1,5 +1,7 @@
 import { ReactElement } from "react";
 
+import Icon from "./Icon";
+
 type Props = {
   className?: string;
   children?: ReactElement | undefined | string;
@@ -11,7 +13,7 @@ type Props = {
 export default function IconButton({
   className,
   children,
-  icon: Icon,
+  icon,
   border,
   onClick,
 }: Props) {
@@ -22,7 +24,7 @@ export default function IconButton({
       }`}
       onClick={onClick}
     >
-      {Icon ? <Icon className="hover:stroke-black" size={16} /> : children}
+      {icon ? <Icon className="hover:stroke-black" value={icon} /> : children}
     </button>
   );
 }

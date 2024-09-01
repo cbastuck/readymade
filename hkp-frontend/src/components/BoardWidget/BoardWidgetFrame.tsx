@@ -2,8 +2,9 @@ import { RotateCw } from "lucide-react";
 
 import { PlaygroundState } from "@/types";
 import WrappedBoard from "./WrappedBoard";
-import { BoardAPI } from ".";
-import IconButton from "@/ui-components/boardmanager/IconButton";
+import { BoardWidgetAPI } from ".";
+import IconButton from "@/ui-components/IconButton";
+import BoardWidgetSettings from "./BoardWidgetSettings";
 
 type Props = {
   title?: string;
@@ -12,12 +13,13 @@ type Props = {
   hideBoard?: boolean;
   result: any;
   toggleIcon?: React.ComponentType;
-  boardApi: BoardAPI | null;
-  onResult: (result: { result: any; api: BoardAPI }) => void;
+  boardApi: BoardWidgetAPI | null;
+  onResult: (result: { result: any; api: BoardWidgetAPI }) => void;
   onToggleVisibility: () => void;
+  onRemoveWidget?: () => void;
 };
 
-export default function BoardFrame({
+export default function BoardWidgetFrame({
   title,
   placeholder,
   board,
@@ -27,19 +29,23 @@ export default function BoardFrame({
   boardApi,
   onResult,
   onToggleVisibility,
+  onRemoveWidget,
 }: Props) {
   const onRunBoard = () => {
     boardApi && boardApi.runBoard();
   };
+
   return (
     <div
       className={
-        hideBoard ? "border border-white" : "solid border border-gray w-full"
+        hideBoard
+          ? "border border-gray px-0"
+          : "solid border border-gray w-full"
       }
     >
-      <div className="flex w-full p-1 gap-2">
-        <span className="w-full text-2xl">{title}</span>
-
+      <div className="flex w-full py-2 px-2 m-0 gap-2 bg-gray-100">
+        <span className="w-full text-base ">{title}</span>
+        <BoardWidgetSettings onRemoveWidget={onRemoveWidget} />
         <IconButton onClick={onRunBoard} icon={RotateCw} />
         <IconButton onClick={onToggleVisibility} icon={toggleIcon} />
       </div>
@@ -47,7 +53,10 @@ export default function BoardFrame({
       <div className="px-4">
         <WrappedBoard board={board} hidden={hideBoard} onResult={onResult} />
       </div>
-      {(hideBoard && placeholder?.({ result, api: boardApi })) || null}
+
+      <div className="p-1">
+        {(hideBoard && placeholder?.({ result, api: boardApi })) || null}
+      </div>
     </div>
   );
 }

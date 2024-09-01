@@ -5,9 +5,9 @@ import { BoardDescriptor, PlaygroundState, User } from "@/types";
 import { runtimeApis } from "../../views/playground";
 import BoardProvider, { BoardContextState } from "@/BoardContext";
 import { availableRuntimeEngines } from "../../views/playground/common";
-import BoardFrame from "./BoardFrame";
+import BoardWidgetFrame from "./BoardWidgetFrame";
 
-export type BoardAPI = {
+export type BoardWidgetAPI = {
   runBoard: () => void;
 };
 
@@ -17,10 +17,11 @@ type Props = {
   params?: any;
   title?: string;
   children?: (result: any) => React.ReactElement;
+  onRemoveWidget?: () => void;
 };
 
-export default function BoardComponent(props: Props) {
-  const { board, params, title, children, user } = props;
+export default function BoardWidget(props: Props) {
+  const { board, params, title, children, user, onRemoveWidget } = props;
   const [result, setResult] = useState<any>(null);
   const [hideBoard, setHideBoard] = useState<boolean>(true);
   const boardContextRef = useRef<BoardProvider | null>(null);
@@ -54,7 +55,7 @@ export default function BoardComponent(props: Props) {
       onAction={() => false}
       onRemoveService={() => {}}
     >
-      <BoardFrame
+      <BoardWidgetFrame
         boardApi={boardApi}
         title={title}
         placeholder={children}
@@ -64,6 +65,7 @@ export default function BoardComponent(props: Props) {
         result={result}
         onResult={setResult}
         onToggleVisibility={onToggleBoardVisibility}
+        onRemoveWidget={onRemoveWidget}
       />
     </BoardProvider>
   );

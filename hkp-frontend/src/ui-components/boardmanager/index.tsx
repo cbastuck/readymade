@@ -14,7 +14,7 @@ export type AdditionalActionItem = {
 };
 
 type Props = {
-  title: string;
+  title?: string;
   boards: Array<SavedBoard>;
   additionalActions?: Array<AdditionalActionItem>;
   onAction: (board: SavedBoard, action: BoardManagerAction) => void;
@@ -46,8 +46,8 @@ export default function BoardManager({
   return (
     <div className="flex flex-col w-full h-full">
       <div className="flex items-center f-[90%]">
-        <h2 className="whitespace-nowrap">{title}</h2>
-        <div className="w-full text-center">
+        <h2 className="whitespace-nowrap pl-1 min-w-[20%]">{title}</h2>
+        <div className="w-full text-center ">
           <BoardTableNav
             numItems={filteredItems.length}
             pageSize={pageSize}

@@ -37,14 +37,16 @@ export default function BoardTable({
       <Table>
         <TableHeader className="sticky top-0 h-10 bg-white">
           <TableRow>
-            <TableHead className="text-left text-base w-[40%]">
+            <TableHead className="text-left text-base text-gray-600 w-[40%]">
               Boardname
             </TableHead>
-            <TableHead className="text-left text-base w-[40%]">
+            <TableHead className="text-left text-base text-gray-600 w-[40%]">
               Description
             </TableHead>
-            <TableHead className="text-left text-base w-[15%]">Date</TableHead>
-            <TableHead className="text-right text-base w-[5%]"></TableHead>
+            <TableHead className="text-left text-base text-gray-600 w-[15%]">
+              Date
+            </TableHead>
+            <TableHead className="text-right text-base text-gray-600 w-[5%]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

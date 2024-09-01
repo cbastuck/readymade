@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { Plus } from "lucide-react";
 import Template from "../Template";
-import BoardComponent, { BoardAPI } from "../../components/BoardComponent";
+import BoardWidget, { BoardWidgetAPI } from "../../components/BoardWidget";
 import { PlaygroundState, SavedBoard } from "@/types";
 import BoardManager from "@/ui-components/boardmanager";
 
@@ -18,7 +18,7 @@ export default function Home() {
   const appContext = useContext(AppCtx);
 
   const onLocalBoardAction = (
-    api: BoardAPI,
+    api: BoardWidgetAPI,
     board: SavedBoard,
     { command }: BoardManagerAction
   ) => {
@@ -48,14 +48,22 @@ export default function Home() {
   >([]);
 
   const additionalActions = [
-    { label: "Add to Home", value: "add-provider", icon: Plus },
+    { label: "Add Widget to Home", value: "add-provider", icon: Plus },
   ];
 
+  const onRemoveWidget = (widgetIdx: number) => {
+    setAdditionalBoardProviders((all) =>
+      all.filter((_, idx) => idx !== widgetIdx)
+    );
+  };
   return (
     <Template title="Home" isRoot={true}>
       <div className="flex flex-col h-full">
         <div className="m-auto w-full h-full">
-          <BoardComponent board={board}>
+          <BoardWidget
+            title="Widget listing the boards stored on this Browser"
+            board={board}
+          >
             {({ result: boards, api }) => (
               <BoardManager
                 title="Local Boards"
@@ -66,20 +74,21 @@ export default function Home() {
                 }
               />
             )}
-          </BoardComponent>
+          </BoardWidget>
 
           {additionalBoardProviders.map((item, idx) => (
-            <BoardComponent
+            <BoardWidget
               user={appContext.user}
               board={item.board}
               key={`board-component-${item.name}-${idx}`}
+              onRemoveWidget={() => onRemoveWidget(idx)}
             >
               {({ result: boards }) => (
                 <div key={`board-output-${item.name}-${idx}`}>
                   {JSON.stringify(boards)}
                 </div>
               )}
-            </BoardComponent>
+            </BoardWidget>
           ))}
         </div>
       </div>

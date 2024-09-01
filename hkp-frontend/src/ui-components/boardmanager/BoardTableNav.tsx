@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-import IconButton from "./IconButton";
+import IconButton from "../IconButton";
 
 type Props = {
   pageSize?: number;
