@@ -73,7 +73,7 @@ export default function RuntimeHeader({
     2
   );
 
-  const onApplyRuntimeConfig = (newConfig: string) => {
+  const onApplyRuntimeConfig = (newConfig: string | object) => {
     console.log("Apply runtime config not implemented", newConfig);
   };
 

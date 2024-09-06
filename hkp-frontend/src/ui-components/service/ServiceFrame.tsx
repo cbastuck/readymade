@@ -18,6 +18,7 @@ import {
   HKP_DND_SERVICE_TYPE,
   ServiceInstanceDropType,
 } from "@/components/DropTypes";
+import { assureJSON } from "@/common";
 
 type Props = {
   service: ServiceInstance;
@@ -125,9 +126,9 @@ export default function ServiceFrame({
     setConfigVisible(false);
   };
 
-  const onApplyConfig = async (newConfig: string) => {
+  const onApplyConfig = async (newConfig: string | object) => {
     try {
-      const config = JSON.parse(newConfig);
+      const config = assureJSON(newConfig);
       await service.configure?.(config); // TODO: not here
       setConfigVisible(false);
     } catch (err) {}

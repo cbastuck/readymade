@@ -16,6 +16,8 @@ import {
   storeBoardToLocalStorage,
 } from "@/views/playground/common";
 import { createBoardLink } from "@/views/playground/BoardLink";
+import { assureJSON, stringifyIfNeeded } from "@/common";
+import { BoardDescriptor } from "@/types";
 
 export default function BoardMenu() {
   const boardContext = useContext(BoardCtx);
@@ -33,22 +35,24 @@ export default function BoardMenu() {
   };
 
   const onCloseBoardSource = () => setShowBoardSource(false);
-  const onApplyBoardSource = (newSource: string) => {
-    const src = JSON.parse(newSource);
-    boardContext?.setBoardState(src);
+  const onApplyBoardSource = (newSource: string | object) => {
+    const src = assureJSON(newSource);
+    boardContext?.setBoardState(src as BoardDescriptor); // TODO: validation
     onCloseBoardSource();
   };
 
   const [boardSource, setBoardSource] = useState("");
 
-  const onSaveBoardSource = (newSource: string) => {
+  const onSaveBoardSource = (newSource: string | object) => {
     if (board) {
-      storeBoardToLocalStorage(board, newSource);
+      storeBoardToLocalStorage(board, stringifyIfNeeded(newSource));
     }
   };
 
-  const onDownloadButton = (src: string) => {
-    const dataUrl = "data:text/json;charset=utf-8," + encodeURIComponent(src);
+  const onDownloadButton = (src: string | object) => {
+    const dataUrl =
+      "data:text/json;charset=utf-8," +
+      encodeURIComponent(stringifyIfNeeded(src));
     const link = document.createElement("a");
     const filename = `hkp-board-${board}.json`;
     link.setAttribute("href", dataUrl);
@@ -56,8 +60,8 @@ export default function BoardMenu() {
     link.click();
   };
 
-  const onCreateShareLinkFromSource = (src: string) => {
-    const url = createBoardLink(src);
+  const onCreateShareLinkFromSource = (src: string | object) => {
+    const url = createBoardLink(stringifyIfNeeded(src));
     navigator.clipboard.writeText(url);
     boardContext?.appContext?.pushNotification({
       type: "info",

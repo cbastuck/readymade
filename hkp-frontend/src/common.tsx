@@ -53,3 +53,11 @@ export type Size = {
   width: string | number | undefined;
   height: string | number | undefined;
 };
+
+export function assureJSON(value: string | object): object {
+  return typeof value === "string" ? JSON.parse(value) : value;
+}
+
+export function stringifyIfNeeded(value: string | object): string {
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
