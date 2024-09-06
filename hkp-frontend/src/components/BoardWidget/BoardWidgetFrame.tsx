@@ -49,8 +49,9 @@ export default function BoardWidgetFrame({
           : "solid border border-gray w-full"
       }
     >
-      <div className="flex w-full py-2 px-2 m-0 gap-2 bg-gray-100">
-        <span className="w-full text-base ">{title}</span>
+      <div className="flex w-full py-2 px-2 m-0 gap-2 bg-gray-100 items-center">
+        <span className="w-full text-base">{title}</span>
+
         <BoardWidgetSettings
           removable={removable}
           params={params}
