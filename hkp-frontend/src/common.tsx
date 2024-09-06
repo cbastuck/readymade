@@ -5,6 +5,7 @@ import {
   NavigateFunction,
   Location,
 } from "react-router-dom";
+import * as lzstring from "lz-string";
 
 export function isTouchDevice() {
   return "ontouchstart" in window;
@@ -60,4 +61,14 @@ export function assureJSON(value: string | object): object {
 
 export function stringifyIfNeeded(value: string | object): string {
   return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+export function compressAndEncodeState(state: string): string {
+  return lzstring.compressToEncodedURIComponent(state);
+}
+
+export function decompressAndDecodeState(encoded: string): string {
+  return lzstring.decompressFromEncodedURIComponent(
+    decodeURIComponent(encoded)
+  );
 }

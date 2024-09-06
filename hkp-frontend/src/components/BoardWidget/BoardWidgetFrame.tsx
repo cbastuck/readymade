@@ -56,6 +56,7 @@ export default function BoardWidgetFrame({
           params={params}
           onRemoveWidget={onRemoveWidget}
           onConfig={onConfig}
+          board={board}
         />
         <IconButton onClick={onRunBoard} icon={RotateCw} />
         <IconButton onClick={onToggleVisibility} icon={toggleIcon} />

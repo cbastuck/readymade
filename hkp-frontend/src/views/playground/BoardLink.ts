@@ -1,8 +1,8 @@
+import { decompressAndDecodeState, compressAndEncodeState } from "@/common";
 import { generateRandomName } from "../../core/board";
-import * as lzstring from "lz-string";
 
 export function encodeBoardState(src: string) {
-  return lzstring.compressToEncodedURIComponent(src);
+  return compressAndEncodeState(src);
 }
 
 export function createBoardLink(src: string) {
@@ -21,9 +21,7 @@ export function createBoardSrcLink(src: string) {
 }
 
 export function decodeBoardState(compressedEncoded: string): string {
-  return lzstring.decompressFromEncodedURIComponent(
-    decodeURIComponent(compressedEncoded)
-  );
+  return decompressAndDecodeState(compressedEncoded);
 }
 
 function openLink(url: string) {

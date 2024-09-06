@@ -22,6 +22,7 @@ import Quickstart from "./views/docs/Quickstart";
 import Docs from "./views/docs";
 
 import Home from "./views/home";
+import HomeWidgetImport from "./views/home/ImportWidget.tsx";
 
 import BuildBoard from "./views/BuildBoard";
 import AuthRedirect from "./views/AuthRedirect";
@@ -109,6 +110,7 @@ export default function Routes() {
 
       <Route path="/profile" element={<Profile />} />
       <Route path="/home" element={<Home />} />
+      <Route path="/home/import-widget" element={<HomeWidgetImport />} />
 
       <Route path="/service/:service" element={<ServiceReferenceView />} />
       <Route path="/datamodel/:name" element={<DataModelReferenceView />} />

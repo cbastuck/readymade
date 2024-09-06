@@ -13,8 +13,11 @@ import {
 } from "../playground/common";
 import { AppCtx } from "@/AppContext";
 import GenericWidgetResult from "./GenericWidgetResult";
-
-type WidgetDescriptor = { name: string; board: PlaygroundState; params: any };
+import {
+  restoreAdditionalWidgetsFromLocalStorage,
+  storeAdditionalWidgetsToLocalStorage,
+  WidgetDescriptor,
+} from "./common";
 
 export default function Home() {
   const board = localStorageBoard as PlaygroundState;
@@ -111,18 +114,4 @@ export default function Home() {
       </div>
     </Template>
   );
-}
-
-function storeAdditionalWidgetsToLocalStorage(
-  additionalWidgets: Array<WidgetDescriptor>
-) {
-  localStorage.setItem(
-    "hkp-home-additional-widgets",
-    JSON.stringify(additionalWidgets)
-  );
-}
-
-function restoreAdditionalWidgetsFromLocalStorage() {
-  const item = localStorage.getItem("hkp-home-additional-widgets");
-  return item ? JSON.parse(item) : [];
 }
