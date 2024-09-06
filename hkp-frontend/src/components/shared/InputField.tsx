@@ -54,7 +54,8 @@ export default class InputField extends Component<Props, State> {
     type: InputFieldType,
     label: string
   ) => {
-    const { disabled, unit, onChange = () => {} } = this.props;
+    const { disabled, unit, onChange = () => {}, className = "" } = this.props;
+
     return (
       <div
         style={{
@@ -69,7 +70,7 @@ export default class InputField extends Component<Props, State> {
           value={value === undefined ? "" : value}
           onSubmit={onChange}
           disabled={disabled}
-          className={this.props.className}
+          className={`${className} font-menu`}
           fullWidth
         />
         {unit && (

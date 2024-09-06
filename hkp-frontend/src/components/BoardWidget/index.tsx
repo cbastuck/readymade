@@ -16,12 +16,23 @@ type Props = {
   board: PlaygroundState;
   params?: any;
   title?: string;
-  children?: (result: any) => React.ReactElement;
+  removable?: boolean;
+  children?: (result: any) => React.ReactElement | null;
   onRemoveWidget?: () => void;
+  onConfig?: (config: any) => void;
 };
 
 export default function BoardWidget(props: Props) {
-  const { board, params, title, children, user, onRemoveWidget } = props;
+  const {
+    board,
+    params,
+    title,
+    children,
+    user,
+    removable,
+    onRemoveWidget,
+    onConfig,
+  } = props;
   const [result, setResult] = useState<any>(null);
   const [hideBoard, setHideBoard] = useState<boolean>(true);
   const boardContextRef = useRef<BoardProvider | null>(null);
@@ -63,9 +74,12 @@ export default function BoardWidget(props: Props) {
         board={board}
         hideBoard={hideBoard}
         result={result}
+        removable={removable}
+        params={params}
         onResult={setResult}
         onToggleVisibility={onToggleBoardVisibility}
         onRemoveWidget={onRemoveWidget}
+        onConfig={onConfig}
       />
     </BoardProvider>
   );

@@ -70,8 +70,8 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     this.debouncer.clear();
   }
 
-  onInit = (initialState: any) => {
-    const { recentInjection, plainText } = initialState;
+  onUpdate = (config: any) => {
+    const { recentInjection, plainText } = config;
     if (recentInjection !== undefined) {
       const data =
         typeof recentInjection === "string"
@@ -85,16 +85,9 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  onNotification = (notification: any) => {
-    const { recentInjection, plainText } = notification;
-    if (recentInjection !== undefined) {
-      this.setState({ recentInjection });
-    }
+  onInit = (initialState: any) => this.onUpdate(initialState);
 
-    if (plainText !== undefined) {
-      this.setState({ plainText });
-    }
-  };
+  onNotification = (notification: any) => this.onUpdate(notification);
 
   getDroppedItemLabels = () => {
     const { items, dropName } = this.state;

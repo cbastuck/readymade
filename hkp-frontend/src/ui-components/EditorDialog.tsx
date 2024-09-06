@@ -8,10 +8,10 @@ import {
 import Editor from "@/components/shared/Editor/index";
 import { Button } from "@/ui-components/primitives/button";
 
-type Action = { label: string; onAction: (buf: string) => void };
+type Action = { label: string; onAction: (buf: string | object) => void };
 type Props = {
   title: string;
-  value: string;
+  value: string | object;
   isOpen: boolean;
   actions: Array<Action>;
   onClose: () => void;
@@ -36,15 +36,21 @@ export default function EditorDialog({
   };
 
   const onButton = (action: Action) => {
-    const value = editor.current?.getValue();
-    if (value) {
-      action.onAction(value);
+    const newValue = editor.current?.getValue();
+    if (newValue) {
+      if (typeof value === "string") {
+        action.onAction(newValue);
+      } else {
+        action.onAction(JSON.parse(newValue));
+      }
     }
   };
 
   const avoidDefaultDomBehavior = (e: Event) => {
     e.preventDefault();
   };
+
+  const v = typeof value === "string" ? value : JSON.stringify(value, null, 2);
 
   return (
     <Dialog open={isOpen} onOpenChange={onChangeDialogOpen}>
@@ -54,7 +60,7 @@ export default function EditorDialog({
         onInteractOutside={avoidDefaultDomBehavior}
       >
         <h2>{title}</h2>
-        <Editor ref={editor} value={value} language="json" />
+        <Editor ref={editor} value={v} language="json" />
         <DialogFooter className="flex">
           {actions.map((action) => (
             <Button

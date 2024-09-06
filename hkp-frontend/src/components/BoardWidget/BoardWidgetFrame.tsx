@@ -8,15 +8,18 @@ import BoardWidgetSettings from "./BoardWidgetSettings";
 
 type Props = {
   title?: string;
-  placeholder?: (result: any) => React.ReactElement;
+  placeholder?: (result: any) => React.ReactElement | null;
   board: PlaygroundState;
   hideBoard?: boolean;
   result: any;
   toggleIcon?: React.ComponentType;
   boardApi: BoardWidgetAPI | null;
+  removable?: boolean;
+  params?: any;
   onResult: (result: { result: any; api: BoardWidgetAPI }) => void;
   onToggleVisibility: () => void;
   onRemoveWidget?: () => void;
+  onConfig?: (config: any) => void;
 };
 
 export default function BoardWidgetFrame({
@@ -27,9 +30,12 @@ export default function BoardWidgetFrame({
   result,
   toggleIcon,
   boardApi,
+  params,
+  removable = true,
   onResult,
   onToggleVisibility,
   onRemoveWidget,
+  onConfig,
 }: Props) {
   const onRunBoard = () => {
     boardApi && boardApi.runBoard();
@@ -45,7 +51,12 @@ export default function BoardWidgetFrame({
     >
       <div className="flex w-full py-2 px-2 m-0 gap-2 bg-gray-100">
         <span className="w-full text-base ">{title}</span>
-        <BoardWidgetSettings onRemoveWidget={onRemoveWidget} />
+        <BoardWidgetSettings
+          removable={removable}
+          params={params}
+          onRemoveWidget={onRemoveWidget}
+          onConfig={onConfig}
+        />
         <IconButton onClick={onRunBoard} icon={RotateCw} />
         <IconButton onClick={onToggleVisibility} icon={toggleIcon} />
       </div>

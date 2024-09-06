@@ -32,6 +32,7 @@ class Injector extends ServiceBase<State> {
 
     if (recentInjection !== undefined) {
       this.state.recentInjection = recentInjection;
+      this.app.notify(this, { recentInjection });
     }
 
     if (plainText !== undefined) {
