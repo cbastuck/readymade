@@ -54,6 +54,7 @@ export default ({
         <Popover open={showNewRuntimePanel}>
           <PopoverTrigger asChild>
             <Button
+              className="text-md"
               variant="outline"
               onClick={() => setShowNewRuntimePanel(true)}
             >

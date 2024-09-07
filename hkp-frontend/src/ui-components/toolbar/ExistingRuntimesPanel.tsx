@@ -31,16 +31,16 @@ export default ({ remoteRuntimes, onRemoveRuntime }: Props) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[100px] font-sans">Name</TableHead>
-          <TableHead className="font-sans">Url</TableHead>
-          <TableHead className="text-right font-sans">Action</TableHead>
+          <TableHead className="w-[100px] font-sans text-md">Name</TableHead>
+          <TableHead className="font-sans text-md">Url</TableHead>
+          <TableHead className="text-right font-sans text-md">Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {remoteRuntimes.map((rt) => (
           <TableRow key={`${rt.name}-${rt.url}`}>
-            <TableCell className="font-medium">{rt.name}</TableCell>
-            <TableCell className="font-medium">{rt.url}</TableCell>
+            <TableCell className="font-menu text-md">{rt.name}</TableCell>
+            <TableCell className="font-menu text-md">{rt.url}</TableCell>
 
             <TableCell className="text-right">
               <DropdownMenu>
