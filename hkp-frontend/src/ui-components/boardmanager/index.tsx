@@ -22,6 +22,7 @@ type Props = {
   pageSize?: number;
   hideSearch?: boolean;
   startCollapsed?: boolean;
+  dateFormat?: string;
   onAction?: (board: SavedBoard, action: BoardManagerAction) => void;
 };
 
@@ -32,6 +33,7 @@ export default function BoardManager({
   pageSize,
   hideSearch,
   startCollapsed,
+  dateFormat,
   onAction,
 }: Props) {
   const [filter, setFilter] = useState("");
@@ -95,6 +97,7 @@ export default function BoardManager({
           boards={paginatedItems}
           className="h-full border"
           filter={filter}
+          dateFormat={dateFormat}
           actions={actions}
           onAction={onAction}
         />

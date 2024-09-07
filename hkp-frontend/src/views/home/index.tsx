@@ -120,6 +120,7 @@ export default function Home() {
           boards={samples}
           hideSearch
           startCollapsed={true}
+          dateFormat="DD/MM/YYYY"
         />
       </div>
     </Template>

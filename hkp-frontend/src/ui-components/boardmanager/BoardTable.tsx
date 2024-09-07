@@ -24,11 +24,13 @@ type Props = {
   filter?: string;
   pageSize?: number;
   actions?: Array<ActionItem>;
+  dateFormat?: string;
   onAction?: (board: SavedBoard, action: BoardManagerAction) => void;
 };
 export default function BoardTable({
   boards: items,
   className,
+  dateFormat = "DD/MM/YYYY hh:mm",
   actions = [],
   onAction,
 }: Props) {
@@ -62,7 +64,7 @@ export default function BoardTable({
               </TableCell>
               <TableCell className="text-left text-base whitespace-nowrap text-ellipsis">
                 {board.createdAt
-                  ? moment(board.createdAt).format("DD/MM/YYYY hh:mm")
+                  ? moment(board.createdAt).format(dateFormat)
                   : "-"}
               </TableCell>
               <TableCell className="text-right text-base w-min">
