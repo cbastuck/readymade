@@ -90,14 +90,13 @@ export default function Slider({
                     }
                   }}
                   submitOnBlur={false}
-                  disabled={disabled}
                 />
               </div>
             </PopoverContent>
           </Popover>
 
           {units && onUnit && (
-            <Select options={units} value={unit} onChange={onUnit} dis />
+            <Select options={units} value={unit} onChange={onUnit} />
           )}
         </div>
       </div>
