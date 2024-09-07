@@ -209,14 +209,14 @@ export function createAuthorizedURL(url: string, user: User | null) {
 
   if (!isSecureProtocol(parsedURL.protocol)) {
     console.warn(
-      `Authenticated request to an allowed but non-secure destination: ${parsedURL.href}`
+      `Authenticated request to an allowed but non-secure destination: ${parsedURL.protocol}`
     );
   }
   return url + `?token=${user.idToken}`;
 }
 
 function isSecureProtocol(protocol: string) {
-  return protocol === "https" || protocol === "wss";
+  return protocol === "https:" || protocol === "wss:";
 }
 
 export function createShortRandomString() {
