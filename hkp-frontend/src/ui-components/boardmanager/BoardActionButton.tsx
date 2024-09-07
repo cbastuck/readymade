@@ -1,4 +1,4 @@
-import { Ellipsis, Trash } from "lucide-react";
+import { Ellipsis } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,19 +10,15 @@ import { Button } from "@/ui-components/primitives/button";
 
 import { SavedBoard } from "@/types";
 import MenuIcon from "../MenuIcon";
-import { AdditionalActionItem } from ".";
+import { ActionItem } from ".";
 
 type Props = {
   board: SavedBoard;
-  additionalActions: Array<AdditionalActionItem>;
-  onAction: (board: SavedBoard, action: any) => void;
+  actions: Array<ActionItem>;
+  onAction?: (board: SavedBoard, action: any) => void;
 };
 
-export default function BoardActionButton({
-  board,
-  additionalActions,
-  onAction,
-}: Props) {
+export default function BoardActionButton({ board, actions, onAction }: Props) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -31,22 +27,13 @@ export default function BoardActionButton({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 font-menu">
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            className="text-base"
-            onClick={() => onAction(board, { command: "delete" })}
-          >
-            <MenuIcon icon={Trash} />
-            <span>Delete</span>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        {additionalActions && (
+        {actions && (
           <DropdownMenuGroup>
-            {additionalActions.map((actionItem: AdditionalActionItem) => (
+            {actions.map((actionItem: ActionItem) => (
               <DropdownMenuItem
                 key={actionItem.value}
                 className="text-base"
-                onClick={() => onAction(board, { command: actionItem.value })}
+                onClick={() => onAction?.(board, { command: actionItem.value })}
               >
                 <MenuIcon icon={actionItem.icon} />
                 <span>{actionItem.label}</span>

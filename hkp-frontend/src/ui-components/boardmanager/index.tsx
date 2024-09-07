@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { SavedBoard } from "../../types";
 import Search from "@/ui-components/boardmanager/Search";
@@ -6,8 +7,9 @@ import BoardTable, {
   BoardManagerAction,
 } from "@/ui-components/boardmanager/BoardTable";
 import BoardTableNav from "./BoardTableNav";
+import IconButton from "../IconButton";
 
-export type AdditionalActionItem = {
+export type ActionItem = {
   label: string;
   value: string;
   icon: any;
@@ -16,24 +18,30 @@ export type AdditionalActionItem = {
 type Props = {
   title?: string;
   boards: Array<SavedBoard>;
-  additionalActions?: Array<AdditionalActionItem>;
-  onAction: (board: SavedBoard, action: BoardManagerAction) => void;
+  actions?: Array<ActionItem>;
+  pageSize?: number;
+  hideSearch?: boolean;
+  startCollapsed?: boolean;
+  onAction?: (board: SavedBoard, action: BoardManagerAction) => void;
 };
 
 export default function BoardManager({
   title,
   boards,
-  additionalActions,
+  actions,
+  pageSize,
+  hideSearch,
+  startCollapsed,
   onAction,
 }: Props) {
   const [filter, setFilter] = useState("");
   const [pageOffset, setPageOffset] = useState(0);
+  const [isCollapsed, setIsCollapsed] = useState(startCollapsed);
 
   if (!boards || boards.length === 0) {
     return null;
   }
 
-  const pageSize = 5;
   const filteredItems = boards.filter(
     (board) => !filter || board.name.indexOf(filter) !== -1
   );
@@ -43,10 +51,28 @@ export default function BoardManager({
       ? filteredItems
       : filteredItems.slice(pageOffset * pageSize, (pageOffset + 1) * pageSize);
 
+  const isCollapsable = isCollapsed !== undefined;
+  const onToggleCollapse = () => setIsCollapsed(!isCollapsed);
+
   return (
     <div className="flex flex-col w-full h-full">
       <div className="flex items-center f-[90%]">
-        <h2 className="whitespace-nowrap pl-1 min-w-[20%]">{title}</h2>
+        <h2
+          className={`whitespace-nowrap pl-1 text-xl my-2 ${
+            isCollapsable ? "cursor-pointer" : ""
+          }`}
+          onClick={isCollapsable ? onToggleCollapse : undefined}
+        >
+          {title}
+        </h2>
+        {isCollapsable && (
+          <IconButton
+            className="mx-2"
+            icon={isCollapsed ? ChevronDown : ChevronUp}
+            onClick={onToggleCollapse}
+            border
+          />
+        )}
         <div className="w-full text-center ">
           <BoardTableNav
             numItems={filteredItems.length}
@@ -56,20 +82,23 @@ export default function BoardManager({
           />
         </div>
         <div className="ml-auto">
-          <Search
-            filter={filter}
-            onChange={(newFilter) => setFilter(newFilter)}
-          />
+          {!hideSearch && (
+            <Search
+              filter={filter}
+              onChange={(newFilter) => setFilter(newFilter)}
+            />
+          )}
         </div>
       </div>
-
-      <BoardTable
-        boards={paginatedItems}
-        className="h-full border"
-        filter={filter}
-        additionalActions={additionalActions}
-        onAction={onAction}
-      />
+      {!isCollapsed && (
+        <BoardTable
+          boards={paginatedItems}
+          className="h-full border"
+          filter={filter}
+          actions={actions}
+          onAction={onAction}
+        />
+      )}
     </div>
   );
 }

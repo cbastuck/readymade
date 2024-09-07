@@ -40,7 +40,7 @@ export default function PromptInput({
   }
 
   return (
-    <>
+    <div className="flex flex-col h-full w-full">
       <SubmittableTextarea
         ref={inputRef}
         className="font-menu text-base resize-none h-full w-full"
@@ -75,6 +75,6 @@ export default function PromptInput({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

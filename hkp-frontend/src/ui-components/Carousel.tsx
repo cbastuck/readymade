@@ -9,6 +9,7 @@ import { Button } from "@/ui-components/primitives/button";
 import CarouselNav from "./CarouselNav";
 
 export type CarouselItem = {
+  boardUrl: string;
   title: string;
   headline: string;
   description: string | ReactElement;
@@ -19,6 +20,7 @@ export type CarouselItem = {
     onClick?: { url: string };
   };
   scale?: string;
+  createdAt?: string;
 };
 
 type Props = {

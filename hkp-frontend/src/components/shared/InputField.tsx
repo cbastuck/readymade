@@ -70,7 +70,7 @@ export default class InputField extends Component<Props, State> {
           value={value === undefined ? "" : value}
           onSubmit={onChange}
           disabled={disabled}
-          className={`${className} font-menu`}
+          className={`my-0 ${className} font-menu`}
           fullWidth
         />
         {unit && (

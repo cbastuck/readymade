@@ -19,6 +19,7 @@ type Props = {
   min?: number;
   max?: number;
   step?: number;
+  disabled?: boolean;
   onChange: (newValue: number, unit?: string) => void;
   onUnit?: (newUnit: string) => void;
 };
@@ -32,6 +33,7 @@ export default function Slider({
   min: minProp,
   max: maxProp,
   step,
+  disabled,
   onChange,
   onUnit,
 }: Props) {
@@ -64,6 +66,7 @@ export default function Slider({
             max={max}
             value={[value]}
             onValueChange={onValueChanged}
+            disabled={disabled}
           />
 
           <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
@@ -87,13 +90,14 @@ export default function Slider({
                     }
                   }}
                   submitOnBlur={false}
+                  disabled={disabled}
                 />
               </div>
             </PopoverContent>
           </Popover>
 
           {units && onUnit && (
-            <Select options={units} value={unit} onChange={onUnit} />
+            <Select options={units} value={unit} onChange={onUnit} dis />
           )}
         </div>
       </div>

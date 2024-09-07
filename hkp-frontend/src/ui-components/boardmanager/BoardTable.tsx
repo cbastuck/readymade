@@ -12,7 +12,7 @@ import { Link } from "react-router-dom";
 import { SavedBoard } from "@/types";
 import BoardActionButton from "./BoardActionButton";
 
-import { AdditionalActionItem } from ".";
+import { ActionItem } from ".";
 
 export type BoardManagerAction = {
   command: string;
@@ -23,13 +23,13 @@ type Props = {
   className?: string;
   filter?: string;
   pageSize?: number;
-  additionalActions?: Array<AdditionalActionItem>;
-  onAction: (board: SavedBoard, action: BoardManagerAction) => void;
+  actions?: Array<ActionItem>;
+  onAction?: (board: SavedBoard, action: BoardManagerAction) => void;
 };
 export default function BoardTable({
   boards: items,
   className,
-  additionalActions = [],
+  actions = [],
   onAction,
 }: Props) {
   return (
@@ -66,11 +66,13 @@ export default function BoardTable({
                   : "-"}
               </TableCell>
               <TableCell className="text-right text-base w-min">
-                <BoardActionButton
-                  board={board}
-                  onAction={onAction}
-                  additionalActions={additionalActions}
-                />
+                {actions.length > 0 && (
+                  <BoardActionButton
+                    board={board}
+                    onAction={onAction}
+                    actions={actions}
+                  />
+                )}
               </TableCell>
             </TableRow>
           ))}

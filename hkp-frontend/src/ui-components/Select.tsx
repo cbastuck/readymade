@@ -12,12 +12,19 @@ type Props = {
   title?: string;
   options: Array<string>;
   value?: string;
+  disabled?: boolean;
   onChange: (newValue: string) => void;
 };
 
-export default function Select({ title, options, value, onChange }: Props) {
+export default function Select({
+  title,
+  options,
+  value,
+  disabled,
+  onChange,
+}: Props) {
   return (
-    <SelectCN value={value} onValueChange={onChange}>
+    <SelectCN value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger className="w-min border-none border-0 text-lg p-0 h-min">
         <SelectValue placeholder={value || title} />
       </SelectTrigger>

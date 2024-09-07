@@ -3,7 +3,11 @@ import { capitaliseHeadline } from ".";
 
 const headline = "use your phone to control things on another device";
 
+const boardUrl =
+  "/playground?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game.json&sender-board=%random-name%";
+
 export const game: CarouselItem = {
+  boardUrl,
   videoUrl: "/assets/teaser/GameTeaser.mp4",
   headline,
   title: `Sample 1: ${capitaliseHeadline(headline)}`,
@@ -27,7 +31,8 @@ export const game: CarouselItem = {
   action: {
     title: "Open in Playground",
     onClick: {
-      url: "/playground?template=https://raw.githubusercontent.com/cbastuck/hkp/master/usecases/game.json&sender-board=%random-name%",
+      url: boardUrl,
     },
   },
+  createdAt: "Sun Aug 8 2021",
 };

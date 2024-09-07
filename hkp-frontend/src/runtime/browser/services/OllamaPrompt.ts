@@ -17,8 +17,6 @@ type State = {
   seed: number;
 };
 
-const defaultLocalEndpoint = "http://localhost:11434/api";
-
 export class OllamaPrompt extends ServiceBase<State> {
   constructor(
     app: AppInstance,
@@ -28,7 +26,7 @@ export class OllamaPrompt extends ServiceBase<State> {
   ) {
     super(app, board, descriptor, id, {
       availableModels: [],
-      endpoint: defaultLocalEndpoint,
+      endpoint: "http://localhost:11434/api",
       model: "",
       responseIsJson: false,
       prompt: "",
@@ -52,8 +50,12 @@ export class OllamaPrompt extends ServiceBase<State> {
   };
 
   async configure(config: any) {
-    const { prompt, silentPrompt, model, temperature } = config;
+    const { prompt, silentPrompt, model, temperature, endpoint } = config;
 
+    if (needsUpdate(endpoint, this.state.endpoint)) {
+      this.state.endpoint = endpoint;
+      this.app.notify(this, { endpoint: this.state.endpoint });
+    }
     if (needsUpdate(model, this.state.model)) {
       this.state.model = model;
       this.app.notify(this, { model: this.state.model });
@@ -66,9 +68,10 @@ export class OllamaPrompt extends ServiceBase<State> {
 
     if (prompt !== undefined) {
       this.state.prompt = prompt;
-      const result = await this.process(prompt);
-      this.app.notify(this, { answer: result });
-      this.app.next(this, result);
+      this.app.notify(this, { prompt: this.state.prompt });
+      if (this.state.model) {
+        this.processAndInject(prompt);
+      }
     }
 
     if (silentPrompt !== undefined) {
@@ -88,6 +91,12 @@ export class OllamaPrompt extends ServiceBase<State> {
       this.app.notify(this, { temperature });
     }
   }
+
+  processAndInject = async (prompt: string) => {
+    const result = await this.process(prompt);
+    this.app.notify(this, { answer: result });
+    this.app.next(this, result);
+  };
 
   async process(params: any) {
     if (!this.state.model) {

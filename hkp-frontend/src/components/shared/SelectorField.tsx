@@ -91,12 +91,11 @@ export default class SelectorField extends Component<Props, State> {
           }
         >
           <SelectTrigger className="w-full mr-2 h-min">
-            <SelectValue placeholder="Select ..." />
+            <SelectValue className="font-menu" placeholder="Select ..." />
           </SelectTrigger>
           <SelectContent className="font-menu">
             <SelectGroup>
-              {/*<SelectLabel>SOME LABLE COULD BE HERE</SelectLabel>*/}
-
+              {/*<SelectLabel>SOME LABEL COULD GO HERE</SelectLabel>*/}
               {options.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.text}

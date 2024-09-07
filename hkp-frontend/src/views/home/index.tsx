@@ -1,5 +1,6 @@
 import { useContext, useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash } from "lucide-react";
+
 import Template from "../Template";
 import BoardWidget, { BoardWidgetAPI } from "../../components/BoardWidget";
 import { PlaygroundState, SavedBoard } from "@/types";
@@ -18,6 +19,7 @@ import {
   storeAdditionalWidgetsToLocalStorage,
   WidgetDescriptor,
 } from "./common";
+import samples from "./samples";
 
 export default function Home() {
   const board = localStorageBoard as PlaygroundState;
@@ -62,7 +64,8 @@ export default function Home() {
     storeAdditionalWidgetsToLocalStorage(additionalWidgets);
   }, [additionalWidgets]);
 
-  const additionalActions = [
+  const actions = [
+    { label: "Delete", value: "delete", icon: Trash },
     { label: "Add Widget to Home", value: "add-widget", icon: Plus },
   ];
 
@@ -88,7 +91,7 @@ export default function Home() {
             <BoardManager
               title="Local Boards"
               boards={boards}
-              additionalActions={additionalActions}
+              actions={actions}
               onAction={(board: SavedBoard, action: BoardManagerAction) =>
                 onLocalBoardAction(api, board, action)
               }
@@ -111,6 +114,13 @@ export default function Home() {
             }
           </BoardWidget>
         ))}
+
+        <BoardManager
+          title="Sample Boards"
+          boards={samples}
+          hideSearch
+          startCollapsed={true}
+        />
       </div>
     </Template>
   );
