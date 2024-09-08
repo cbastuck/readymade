@@ -6,14 +6,17 @@ type Props = {
   children: ReactNode;
 };
 
-export function WelcomeHeroVideo({ value: video, children }: Props) {
-  const videoStyle = {
-    backgroundImage: `url(${video.url})`,
-    backgroundSize: video.backgroundSize,
-    backgroundPosition: video.backgroundPosition,
-    backgroundAttachment: video.backgroundAttachment,
-    backgroundRepeat: video.backgroundRepeat,
-  };
+export function WelcomeHeroVideo({ value, children }: Props) {
+  const imageStyle =
+    value.type === "image"
+      ? {
+          backgroundImage: `url(${value.url})`,
+          backgroundSize: value.backgroundSize,
+          backgroundPosition: value.backgroundPosition,
+          backgroundRepeat: value.backgroundRepeat,
+          backgroundAttachment: "fixed",
+        }
+      : {};
   return (
     <div
       style={{
@@ -21,23 +24,29 @@ export function WelcomeHeroVideo({ value: video, children }: Props) {
         width: "100%",
         zIndex: 1,
         overflowY: "hidden",
+        ...imageStyle,
       }}
     >
       {children}
-
-      <div
-        style={{
-          width: "100%",
-          height: "100%",
-          position: "absolute",
-          top: 0,
-          zIndex: -1,
-        }}
-      >
-        <video className="w-full h-full object-cover" autoPlay loop muted>
-          <source src={video.url} type="video/mp4" />
-        </video>
-      </div>
+      {value.type === "video" && (
+        <div
+          className="w-full h-full"
+          style={{
+            position: "absolute",
+            top: 0,
+            zIndex: -1,
+          }}
+        >
+          <video
+            className="w-full h-full object-cover"
+            autoPlay
+            loop={value.loop}
+            muted
+          >
+            <source src={value.url} type="video/mp4" />
+          </video>
+        </div>
+      )}
     </div>
   );
 }
