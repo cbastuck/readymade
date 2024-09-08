@@ -71,10 +71,11 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     const onFocus = (event: FocusEvent<HTMLInputElement>) =>
       selectAllOnFocus && setTimeout(() => event.target.select(), 10);
 
+    const cls = `font-menu text-md ${className}`;
     return (
       <Input
         ref={ref}
-        className={className}
+        className={cls}
         type={type}
         fullWidth={fullWidth}
         minHeight={minHeight}

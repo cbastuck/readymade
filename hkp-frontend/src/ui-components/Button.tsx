@@ -7,13 +7,15 @@ type Props = ButtonProps & {
 };
 export default function Button(props: Props) {
   // const theme = useTheme();
+  const { className, ...rest } = props;
   return (
     <ButtonCN
       variant="outline"
       //style={{
       //  backgroundColor: theme.buttonBackgroundColor,
       //}}
-      {...props}
+      className={`text-base tracking-widest ${className}`}
+      {...rest}
     >
       {props.icon ? props.icon : props.children}
     </ButtonCN>

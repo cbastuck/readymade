@@ -82,7 +82,7 @@ export default function OllamaHackerCompsiteUI(props: ServiceUIProps) {
   };
 
   const onBlurPrompt = (newPrompt: string) => {
-    props.service.configure({ silentPrompt: newPrompt });
+    props.service.configure({ prompt: newPrompt, injectPrompt: false });
   };
 
   const onSelectModel = ({ value: newModel }: any) => {

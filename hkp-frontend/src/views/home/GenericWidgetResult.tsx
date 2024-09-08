@@ -33,7 +33,7 @@ function GenericWidgetItem({ value }: any) {
 
   return keys.map((key, idx) => (
     <div key={`${key}-${idx}`} className="flex flex-col ">
-      <div className="flex px-2 capitalize items-end tracking-2">
+      <div className="flex px-2 capitalize items-end tracking-widest">
         <h3>{key}</h3>
         <div className="ml-2 font-menu">{values[idx]}</div>
       </div>

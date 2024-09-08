@@ -50,7 +50,7 @@ export class OllamaPrompt extends ServiceBase<State> {
   };
 
   async configure(config: any) {
-    const { prompt, silentPrompt, model, temperature, endpoint } = config;
+    const { prompt, injectPrompt, model, temperature, endpoint } = config;
 
     if (needsUpdate(endpoint, this.state.endpoint)) {
       this.state.endpoint = endpoint;
@@ -69,14 +69,9 @@ export class OllamaPrompt extends ServiceBase<State> {
     if (prompt !== undefined) {
       this.state.prompt = prompt;
       this.app.notify(this, { prompt: this.state.prompt });
-      if (this.state.model) {
+      if (injectPrompt) {
         this.processAndInject(prompt);
       }
-    }
-
-    if (silentPrompt !== undefined) {
-      this.state.prompt = silentPrompt;
-      this.app.notify(this, { prompt: this.state.prompt });
     }
 
     if (

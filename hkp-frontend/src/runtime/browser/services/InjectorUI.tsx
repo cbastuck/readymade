@@ -56,8 +56,6 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
   };
 
   buttonStyle = {
-    fontSize: 12,
-    letterSpacing: 1,
     width: "100%",
     marginTop: 5,
   };

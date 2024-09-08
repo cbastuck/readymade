@@ -61,7 +61,7 @@ class OllamaHackerComposite extends ServiceBase<State> {
       this.app.notify(this, { mode });
     }
     await this.ollama?.configure(
-      prompt ? { ...rest, silentPrompt: prompt } : config
+      prompt ? { ...rest, prompt, injectPrompt: false } : config
     );
     if (buffer !== undefined) {
       await this.hacker?.configure(

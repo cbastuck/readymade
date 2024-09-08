@@ -52,7 +52,7 @@ export default function PromptInput({
       />
       <div className="w-full my-2">
         <Button
-          className="w-full"
+          className="w-full tracking-widest"
           onClick={() =>
             inputRef.current && onProcessButton(inputRef.current.value)
           }

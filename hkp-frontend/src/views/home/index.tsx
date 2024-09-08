@@ -95,6 +95,7 @@ export default function Home() {
               onAction={(board: SavedBoard, action: BoardManagerAction) =>
                 onLocalBoardAction(api, board, action)
               }
+              pageSize={5}
             />
           )}
         </BoardWidget>

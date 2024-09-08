@@ -59,7 +59,7 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
 
   const onProcessButton = (prompt: string) => {
     setAccumulatedUpdate("");
-    props.service.configure({ prompt });
+    props.service.configure({ prompt, injectPrompt: true });
   };
 
   const onSubmitPrompt = (newPrompt: string) => {
@@ -67,7 +67,7 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
   };
 
   const onBlurPrompt = (newPrompt: string) => {
-    props.service.configure({ silentPrompt: newPrompt });
+    props.service.configure({ prompt: newPrompt, injectPrompt: false });
   };
 
   const onSelectModel = ({ value: newModel }: any) => {

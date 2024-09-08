@@ -63,11 +63,11 @@ export default function SaveBoardDialog({
           onChange={(ev) => setDescription(ev.target.value)}
         />
         <div className="flex gap-2">
-          <Button className="w-full" onClick={onCancel}>
+          <Button className="w-full tracking-widest" onClick={onCancel}>
             Cancel
           </Button>
           <Button
-            className="w-full"
+            className="w-full tracking-widest"
             onClick={() => onSave(name, description, name === suggestedName)}
           >
             Save

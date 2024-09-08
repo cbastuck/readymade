@@ -64,6 +64,7 @@ export default function EditorDialog({
         <DialogFooter className="flex">
           {actions.map((action) => (
             <Button
+              className="tracking-widest"
               key={action.label}
               variant="outline"
               onClick={() => onButton(action)}
