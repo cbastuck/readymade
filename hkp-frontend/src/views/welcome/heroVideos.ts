@@ -16,7 +16,7 @@ export type HeroVideoDescriptor = {
 // source https://www.pexels.com/video/person-using-a-tablet-5190552/
 const personUsingTablet: HeroVideoDescriptor = {
   type: "video",
-  url: "/assets/images/5190552-sd_960_506_25fps.mp4",
+  url: "/assets/heros/5190552-sd_960_506_25fps.mp4",
   landingPitchTextStyle: "text-gray-600",
   logoBackground: "bg-gradient-to-r from-sky-600 to-sky-400",
 };
@@ -24,7 +24,7 @@ const personUsingTablet: HeroVideoDescriptor = {
 //source https://www.pexels.com/video/a-monochromatic-video-of-clouds-of-paint-underwater-9707164/
 const diffuse: HeroVideoDescriptor = {
   type: "video",
-  url: "/assets/images/9707164-sd_506_960_30fps.mp4", //"https://videos.pexels.com/video-files/9707164/9707164-sd_506_960_30fps.mp4",
+  url: "/assets/heros/9707164-sd_506_960_30fps.mp4", //"https://videos.pexels.com/video-files/9707164/9707164-sd_506_960_30fps.mp4",
   welcomeWordStyle: "stroke-gray-500 stroke-[4px]",
   claimTextStyle: "text-gray-500  px-2 mt-2",
   landingPitchTextStyle: "bg-[#f3f4f6db] text-gray-600 p-2",
@@ -34,7 +34,7 @@ const diffuse: HeroVideoDescriptor = {
 // https://www.pexels.com/video/blue-food-coloring-mixing-with-liquid-3864191/
 const dropDistribution: HeroVideoDescriptor = {
   type: "video",
-  url: "/assets/images/3864191-sd_640_360_25fps.mp4", //"https://videos.pexels.com/video-files/3864191/3864191-hd_1920_1080_25fps.mp4",
+  url: "/assets/heros/3864191-sd_640_360_25fps.mp4", //"https://videos.pexels.com/video-files/3864191/3864191-hd_1920_1080_25fps.mp4",
   landingPitchTextStyle: "text-gray-600 p-2 rounded px-10",
   welcomeWordStyle: "stroke-sky-700 stroke-[4px]",
   logoBackground: "bg-sky-700",
@@ -44,7 +44,7 @@ const dropDistribution: HeroVideoDescriptor = {
 // source: https://www.pexels.com/video/a-black-and-white-image-of-a-red-arrow-4965980/
 const shapes: HeroVideoDescriptor = {
   type: "video",
-  url: "/assets/images/4965980-sd_426_226_25fps.mp4", //"https://videos.pexels.com/video-files/4965980/4965980-sd_960_506_25fps.mp4",
+  url: "/assets/heros/4965980-sd_426_226_25fps.mp4", //"https://videos.pexels.com/video-files/4965980/4965980-sd_960_506_25fps.mp4",
   welcomeWordStyle: "stroke-white stroke-[3px]",
   landingPitchTextStyle: "text-gray-600 bg-[#d4e2ebf0] p-2 text-[17px]",
   logoBackground: "bg-[#333] drop-shadow-no",
@@ -54,7 +54,7 @@ const shapes: HeroVideoDescriptor = {
 // https://www.pexels.com/video/best-free-glitch-effect-footage-noise-vhs-layer-tv-effects-16181150/
 const fastly: HeroVideoDescriptor = {
   type: "video",
-  url: "/assets/images/16181150-sd_426_240_30fps.mp4", //"https://videos.pexels.com/video-files/16181150/16181150-uhd_2560_1440_30fps.mp4",
+  url: "/assets/heros/16181150-sd_426_240_30fps.mp4", //"https://videos.pexels.com/video-files/16181150/16181150-uhd_2560_1440_30fps.mp4",
   landingPitchTextStyle: "text-white text-lg bg-black px-2 py-0 my-0 px-4",
   welcomeWordStyle: "stroke-white stroke-[6px]",
   logoBackground: "bg-black",
@@ -64,7 +64,7 @@ const fastly: HeroVideoDescriptor = {
 // https://www.pexels.com/photo/abstract-painting-1495321/
 const wildImage: HeroVideoDescriptor = {
   type: "image",
-  url: "/assets/images/pexels-steve-1495321%20md.jpg", //"https://images.pexels.com/photos/1495321/pexels-photo-1495321.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
+  url: "/assets/heros/pexels-steve-1495321%20md.jpg", //"https://images.pexels.com/photos/1495321/pexels-photo-1495321.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2",
   backgroundSize: "cover",
   backgroundPosition: "",
   backgroundRepeat: "",
