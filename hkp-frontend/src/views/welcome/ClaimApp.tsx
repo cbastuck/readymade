@@ -3,9 +3,11 @@ import { useEffect, useRef } from "react";
 import anime from "../../anime";
 
 import "./ClaimApp.css";
+import { HeroVideoDescriptor } from "./heroVideos";
 
-type Props = { noAnimation?: boolean };
-export default function ClaimApp({ noAnimation }: Props) {
+type Props = { noAnimation?: boolean; heroVideo: HeroVideoDescriptor };
+
+export default function ClaimApp({ noAnimation, heroVideo }: Props) {
   const animationInstance = useRef<any>(null);
 
   useEffect(() => {
@@ -26,10 +28,12 @@ export default function ClaimApp({ noAnimation }: Props) {
     });
   }, []);
 
+  const textColor = heroVideo.claimTextStyle || "text-sky-600";
+
   return (
     <div id="hkp-claim-app" className="pt-1">
       <div className="flex items-end justify-center">
-        <div className="text-xl md:text-base whitespace-nowrap text-sky-600">
+        <div className={`text-xl md:text-base whitespace-nowrap ${textColor}`}>
           hookup
           <span className={`${noAnimation ? "" : "claim-color-change"} pl-1`}>
             idea

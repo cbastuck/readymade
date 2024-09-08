@@ -1,12 +1,15 @@
 import { useEffect, useRef } from "react";
 import anime from "@/anime";
 import Switcher from "@/components/Switcher";
+import { welcomeBlockClassname } from "./WelcomePanel";
+import { HeroVideoDescriptor } from "./heroVideos";
 
 export type LandingPitchUsecase = { headline?: string };
 type Props = {
   usecases: Array<LandingPitchUsecase>;
   switchUsecaseInterval: number;
   noAnimation?: boolean;
+  heroVideo: HeroVideoDescriptor;
   onComplete: () => void;
   onLink: (idx: number) => void;
 };
@@ -15,6 +18,7 @@ export default function LandingPitch({
   usecases,
   switchUsecaseInterval,
   noAnimation,
+  heroVideo,
   onComplete,
   onLink,
 }: Props) {
@@ -46,29 +50,24 @@ export default function LandingPitch({
   }, []);
 
   return (
-    <div
-      id="pitch-points"
-      className="flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-justify  mx-auto sm:w-[100%] md:w-[70%] gap-4"
-    >
-      <div className="pitch-item">
-        <div className="text-left">
-          Do you sometimes feel creative, but the setup process destroys the
-          inspiration? Maybe you just want to connect two or more things, like{" "}
-          <Switcher
-            animate={true}
-            style={{}}
-            duration={switchUsecaseInterval}
-            data={usecases.map(({ headline }) => headline || "")}
-            onLink={onLink}
-            suffix="?"
-          />
-        </div>
+    <div id="pitch-points" className={`${welcomeBlockClassname}`}>
+      <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
+        Do you sometimes feel creative, but the setup process destroys the
+        inspiration? Maybe you just want to connect two or more things, like{" "}
+        <Switcher
+          animate={true}
+          style={{}}
+          duration={switchUsecaseInterval}
+          data={usecases.map(({ headline }) => headline || "")}
+          onLink={onLink}
+          suffix="?"
+        />
       </div>
-      <div className="pitch-item">
+      <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
         Then this might be for you. Focus on the ideas, how to compose them and
         the intended output. Don't bother about underlying connections.
       </div>
-      <div className="pitch-item">
+      <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
         Orchestrate ideas with data seamlessly flowing through services
         regardless of location or environment. All happens on one Board.
       </div>

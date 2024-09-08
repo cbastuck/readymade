@@ -2,14 +2,17 @@ import { useEffect, useRef } from "react";
 import anime from "../../anime";
 
 import Logo from "@/assets/animations/AnimatedLogo6.svg?react";
+import { HeroVideoDescriptor } from "./heroVideos";
 
 type Props = {
+  heroVideo: HeroVideoDescriptor;
   initialDelay?: number;
   noAnimation?: boolean;
 };
 export default function HookupLogo({
-  initialDelay = 3000,
   noAnimation,
+  heroVideo,
+  initialDelay = 3000,
 }: Props) {
   const animationInstances = useRef<[any, any] | null>(null);
 
@@ -57,7 +60,7 @@ export default function HookupLogo({
     <div className="w-[45%] md:w-[18%] max-w-[180px] min-w-[70px] mx-auto mb-10">
       <div
         id="hkp-logo"
-        className="mt-[10px] stroke-blue-600 stroke-[0.2] px-[8%] pt-[5%] pb-2 stroke-white rounded-full stroke-[0.5] border border-solid border-gray-300 bg-gradient-to-r from-sky-600 to-sky-400 drop-shadow "
+        className={`mt-[10px] px-[8%] pt-[5%] pb-2 rounded-full border border-solid border-gray-300 ${heroVideo.logoBackground} drop-shadow`}
       >
         <Logo />
       </div>

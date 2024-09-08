@@ -1,5 +1,6 @@
 import Carousel, { CarouselItem } from "@/ui-components/Carousel";
 import { carouselItems } from "./Samples";
+import { welcomeBlockClassname } from "../welcome/WelcomePanel";
 
 type Props = {
   current: number;
@@ -17,7 +18,7 @@ export default function SampleBoards({
       <h1 id="samples" className="pt-4 md:pt-10 m-0 md:text-center">
         Sample Boards
       </h1>
-      <div className="py-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
+      <div className={`py-10 ${welcomeBlockClassname}`}>
         Get a quick impression what this means by browsing through the samples.
         Maybe it is something you tried in the past as well? Every sample comes
         with a video with a link to the Playground, so can directly jump into
@@ -31,7 +32,7 @@ export default function SampleBoards({
           onChange={onCurrentChange}
           onClick={onLoad}
         />
-        <div className="text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[80%] gap-4 mt-2">
+        <div className={`pt-2 px-5 ${welcomeBlockClassname}`}>
           {carouselItems[current].description}
         </div>
       </div>
