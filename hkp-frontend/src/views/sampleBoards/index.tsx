@@ -19,10 +19,10 @@ export default function SampleBoards({
         Sample Boards
       </h1>
       <div className={`py-10 ${welcomeBlockClassname}`}>
-        Get a quick impression what this means by browsing through the samples.
-        Maybe it is something you tried in the past as well? Every sample comes
-        with a video with a link to the Playground, so can directly jump into
-        the experience and try or tweak it yourself.
+        Get a quick impression what this means by browsing through the samples
+        below. Maybe it is something you tried in the past as well? Every sample
+        comes with a video with a link to the Playground, so can directly jump
+        into the experience and try or tweak it yourself.
       </div>
 
       <div className="mx-auto px-[0%] lg:px-[10%] pb-14">

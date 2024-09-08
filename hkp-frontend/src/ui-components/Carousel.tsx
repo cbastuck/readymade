@@ -33,12 +33,14 @@ type Props = {
 export default function Carousel({ items, current, onChange, onClick }: Props) {
   const onChangeInternal = (newItemIdx: number) => {
     const vids = document.getElementsByTagName("video");
+    const currentVideoId = `sample-video-${newItemIdx}`;
     for (let i = 0; i < vids.length; ++i) {
-      if (i !== newItemIdx) {
+      if (vids[i].id !== currentVideoId) {
         vids[i].pause();
         vids[i].currentTime = 0;
+      } else {
+        vids[i].play();
       }
-      vids[newItemIdx].play();
     }
     onChange?.(newItemIdx);
   };
@@ -65,6 +67,7 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
                 onClick={() => onClick?.(item)}
               >
                 <video
+                  id={`sample-video-${index}`}
                   className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
                   src={item.videoUrl}
                   autoPlay={index === 0}
