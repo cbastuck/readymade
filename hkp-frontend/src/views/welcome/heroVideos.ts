@@ -10,6 +10,17 @@ export type HeroVideoDescriptor = {
   claimTextStyle?: string;
 };
 
+// source:  // source https://www.pexels.com/video/person-using-a-tablet-5190552/
+const personUsingTablet: HeroVideoDescriptor = {
+  url: "/assets/images/5190552-sd_960_506_25fps.mp4",
+  backgroundSize: "cover",
+  backgroundPosition: "50% -110px",
+  backgroundAttachment: "fixed",
+  backgroundRepeat: "no-repeat",
+  landingPitchTextStyle: "text-gray-600",
+  logoBackground: "bg-gradient-to-r from-sky-600 to-sky-400",
+};
+
 const diffuse: HeroVideoDescriptor = {
   url: "https://videos.pexels.com/video-files/9707164/9707164-sd_506_960_30fps.mp4",
   backgroundSize: "",
@@ -20,17 +31,6 @@ const diffuse: HeroVideoDescriptor = {
   claimTextStyle: "text-gray-500  px-2 mt-2",
   landingPitchTextStyle: "bg-gray-100 text-gray-600 p-2",
   logoBackground: "bg-gradient-to-r from-gray-100 to-gray-500",
-};
-
-// source:  // source https://www.pexels.com/video/person-using-a-tablet-5190552/
-const personUsingTablet: HeroVideoDescriptor = {
-  url: "/assets/images/5190552-sd_960_506_25fps.mp4",
-  backgroundSize: "cover",
-  backgroundPosition: "50% -110px",
-  backgroundAttachment: "fixed",
-  backgroundRepeat: "no-repeat",
-  landingPitchTextStyle: "text-gray-600",
-  logoBackground: "bg-gradient-to-r from-sky-600 to-sky-400",
 };
 
 // https://www.pexels.com/photo/abstract-painting-1495321/
@@ -94,7 +94,7 @@ const heroVideos: Array<HeroVideoDescriptor> = [
 ];
 
 export function currentHeroVideo(): HeroVideoDescriptor {
-  return heroVideos[3];
+  return heroVideos[5];
 }
 
 const videoUrl =

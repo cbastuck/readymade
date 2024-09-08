@@ -14,5 +14,30 @@ export function WelcomeHeroVideo({ value: video, children }: Props) {
     backgroundAttachment: video.backgroundAttachment,
     backgroundRepeat: video.backgroundRepeat,
   };
-  return <div style={videoStyle}>{children}</div>;
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        zIndex: 1,
+        overflowY: "hidden",
+      }}
+    >
+      {children}
+
+      <div
+        style={{
+          width: "100%",
+          height: "100%",
+          position: "absolute",
+          top: 0,
+          zIndex: -1,
+        }}
+      >
+        <video className="w-full h-full object-cover" autoPlay loop muted>
+          <source src={video.url} type="video/mp4" />
+        </video>
+      </div>
+    </div>
+  );
 }
