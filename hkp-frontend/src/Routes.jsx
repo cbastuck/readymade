@@ -55,6 +55,8 @@ import Track from "./views/docs/tracks";
 import BridgeTrack from "./views/docs/tracks/bridge";
 import RemoteTrack from "./views/docs/tracks/remote";
 
+import StarterTutorial from "./views/docs/tutorials/StarterTutorial";
+
 import ServiceRedirect from "./views/ServiceRedirect";
 
 import Prototypes from "./views/docs/prototypes";
@@ -132,6 +134,8 @@ export default function Routes() {
       <Route path="/docs/buildingblock/board" element={<BoardBlock />} />
       <Route path="/docs/buildingblock/runtime" element={<RuntimeBlock />} />
       <Route path="/docs/buildingblock/service" element={<ServiceBlock />} />
+
+      <Route path="/docs/tutorials/starter" element={<StarterTutorial />} />
 
       <Route path="/docs/proto" element={<Prototypes />}>
         <Route path="spotty" element={<Spotty />} />

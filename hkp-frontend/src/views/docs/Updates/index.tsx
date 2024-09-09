@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -11,8 +11,10 @@ import Text from "@/ui-components/Text";
 import NewsItem from "./NewsItem";
 
 import Template from "../../Template";
+import Button from "@/ui-components/Button";
 
 export default function Updates() {
+  const navigate = useNavigate();
   return (
     <Template title="What's new">
       <Table className="mt-8">
@@ -141,6 +143,12 @@ export default function Updates() {
           />
         </TableBody>
       </Table>
+      <Button
+        onClick={() => navigate("/docs/tutorials/starter")}
+        style={{ marginBottom: "50px", width: "100%" }}
+      >
+        Next: Starter's Tutorial
+      </Button>
     </Template>
   );
 }

@@ -14,7 +14,17 @@ export const spotify2Github: CarouselItem = {
   title: `Sample 5: ${capitaliseHeadline(headline)}`,
   description: (
     <div className="flex flex-col gap-4">
-      <div>TODO</div>
+      <div>
+        Over the time I discovered many songs on Spotify and added them to my
+        favorites. What if some of them would disappear from one day to the
+        other? Maybe due to an accident or updated terms between Spotify and
+        smaller labels? I might notice it much later or don't remember a
+        particular missing song at all.
+      </div>
+      <div>
+        This board creates a backup of your favorite songs on Spotify and adds
+        them as a new commit to an existing Github repository.
+      </div>
     </div>
   ),
   background: "/assets/teaser/blue3.png",

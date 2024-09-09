@@ -48,7 +48,7 @@ export default function Quickstart() {
         <Claim
           s="Knowing"
           c="”I can't do this all on my own”"
-          link="https://www.youtube.com/watch?v=SBl2l3GIFD4"
+          link="https://www.youtube.com/watch?v=U4zMv-yAxtQ"
           cite="Lazlo Bane"
         />
       </div>
@@ -96,10 +96,9 @@ export default function Quickstart() {
               "A Board is the topmost building block. Everything happens on a board.",
               "A Board is identified by a name.",
               "A Board owns and manages an arbitrary number of runtimes.",
-              "A Board can run inside the browser independently of a backend (e.g., Playground).",
-              "A Board can also be managed by a remote backend, which persists its state and requires the notion of a user.",
-              "A Board defines the topology of the runtimes: how they are organized and their order.",
-              "A Board is responsible for passing the output of a runtime to the next runtime.",
+              "A Board runs inside the browser or a standalone desktop (or later mobile) application.",
+              "A Board defines the topology of the runtimes, meaning how the runtimes are ordered and how they are executed.",
+              "A Board is responsible for passing the output of one runtime to the following, or return the data as the board result if no runtime follows.",
             ]}
             image={undefined}
             bottomDivider={true}
@@ -109,8 +108,7 @@ export default function Quickstart() {
             details={[
               "A Runtime belongs to exactly one board.",
               "A Runtime's lifetime ends with the lifetime of its parent board.",
-              "A Runtime can run inside the browser or on a remote machine.",
-              "Runtimes running in the browser can be mixed with remote runtimes on the same board.",
+              "A Runtime can run inside the browser or a standalone application, either on the same or a remote machine.",
               "A Runtime owns and manages an arbitrary number of services.",
               "A Runtime accepts data on its input and passes it to its services.",
               "A Runtime calls services in order from left to right, propagating the incoming data.",
@@ -122,14 +120,13 @@ export default function Quickstart() {
           <GroupItem
             title="Service"
             details={[
-              "Services are (high-level) abstractions of (complex) logic.",
+              "Services are abstractions of meaningful high-level behavior.",
               "Services are supposed to feel simple and intuitive.",
               "Services have an input and an output.",
-              "Services need a configuration that can be modified or retrieved at any time.",
-              "A Service's configuration defines the mode of the service.",
-              "Services behave differently depending on their configuration.",
-              "A Service can generate data spontaneously and trigger a chain reaction.",
-              "A Service can also decide to stop further propagation.",
+              "Services keep a configuration that can be modified or retrieved at any time.",
+              "A Service's configuration defines the details of the produced behavior.",
+              "A Service can generate data spontaneously and with this trigger a chain reaction.",
+              "A Service can decide to stop propagating incoming data and cancel the whole flow.",
             ]}
             image={undefined}
           />
@@ -137,10 +134,10 @@ export default function Quickstart() {
       </div>
 
       <Button
-        onClick={() => navigate("/examples")}
+        onClick={() => navigate("/docs/updates")}
         style={{ marginBottom: "50px", width: "100%" }}
       >
-        Examples
+        Next: What's new
       </Button>
     </Template>
   );
