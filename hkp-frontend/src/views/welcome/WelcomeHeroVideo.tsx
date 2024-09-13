@@ -42,6 +42,7 @@ export function WelcomeHeroVideo({ value, children }: Props) {
             autoPlay
             loop={value.loop}
             muted
+            playsInline
           >
             <source src={value.url} type="video/mp4" />
           </video>
