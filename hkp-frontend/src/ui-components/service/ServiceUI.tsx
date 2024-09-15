@@ -1,4 +1,4 @@
-import { ReactElement, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 
 import Resizable from "@/components/Resizable";
 import { ServiceInstance, ServiceUIProps } from "@/types";
@@ -6,7 +6,7 @@ import ServiceFrame from "./ServiceFrame";
 import { Size } from "@/common";
 
 type Props = ServiceUIProps & {
-  children: ReactElement;
+  children: ReactNode;
   initialSize?: Size;
   className?: string;
   onInit?: (initialState: any) => void;

@@ -49,7 +49,7 @@ const SubmittableTextarea = forwardRef<
     [onChangePending, isChangePending]
   );
 
-  const lastSubmittedValue = useRef("");
+  const lastSubmittedValue = useRef<string | null>(null);
   const onKeyDown = (ev: KeyboardEvent) => {
     if (ev.key === "Enter" && ev.metaKey) {
       lastSubmittedValue.current = internal;

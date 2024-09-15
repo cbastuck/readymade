@@ -72,6 +72,7 @@ import PeerSocket from "../services/PeerSocket";
 import OllamaPrompt from "../services/OllamaPrompt";
 import SpeechSynth from "../services/SpeechSynth";
 import LocalStorage from "../services/LocalStorage";
+import Looper from "../services/Looper";
 
 import { ServiceModule } from "../../../types";
 
@@ -153,6 +154,8 @@ export const defaultRegistry: Array<ServiceModule> = [
   // Flows and Composites
   BoardService,
   OllamaHackerComposite,
+
+  Looper,
 
   //DEPRECATED
   /*

@@ -105,7 +105,7 @@ export default function OllamaPromptUI(props: ServiceUIProps) {
 
   return (
     <ServiceUI
-      className="pb-4"
+      className="pb-4 min-w-[400px]"
       {...props}
       onInit={update}
       onNotification={update}

@@ -19,6 +19,7 @@ import FilterUI from "./runtime/browser/services/FilterUI";
 import FetcherUI from "./runtime/browser/services/FetcherUI";
 import BufferUI from "./runtime/browser/services/BufferUI";
 import OllamaPromptUI from "./runtime/browser/services/OllamaPromptUI";
+import LooperUI from "./runtime/browser/services/LooperUI";
 
 import { SequencerUI } from "./runtime/browser/services/Sequencer";
 
@@ -69,6 +70,8 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return GithubSinkUI;
     case "hookup.to/service/ollama-prompt":
       return OllamaPromptUI;
+    case "hookup.to/service/looper":
+      return LooperUI;
     default:
       return null;
   }

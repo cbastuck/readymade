@@ -10,7 +10,7 @@ function isFunction(functionToCheck: any): functionToCheck is StringReturner {
   );
 }
 
-function replaceAll(
+export function replaceAll(
   input: string,
   needle: string,
   replacement: string | StringReturner

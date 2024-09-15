@@ -70,7 +70,7 @@ export class OllamaPrompt extends ServiceBase<State> {
       this.state.prompt = prompt;
       this.app.notify(this, { prompt: this.state.prompt });
       if (injectPrompt) {
-        this.processAndInject(prompt);
+        this.processAndInject("");
       }
     }
 
@@ -111,13 +111,20 @@ export class OllamaPrompt extends ServiceBase<State> {
     }
     this.app.notify(this, { busy: true });
 
-    const prompt = this.state.prompt
-      ? `${this.state.prompt}\n\n: "${params}"`
-      : params;
-
+    const messages = [
+      {
+        role: "system",
+        content: this.state.prompt,
+      },
+      {
+        role: "user",
+        content: `${params}`,
+      },
+    ];
+    console.log("OLLAMA PROMPT", messages);
     const body: any = {
       model: this.state.model,
-      prompt,
+      messages,
       options: {
         seed: this.state.seed || undefined,
         temperature: this.state.temperature,
@@ -133,7 +140,7 @@ export class OllamaPrompt extends ServiceBase<State> {
 
     const readAsStream = true;
     if (readAsStream) {
-      const resp = await fetch(`${this.state.endpoint}/generate`, {
+      const resp = await fetch(`${this.state.endpoint}/chat`, {
         method: "POST",
         body: JSON.stringify({ ...body, stream: true }),
       });
@@ -149,13 +156,17 @@ export class OllamaPrompt extends ServiceBase<State> {
                 controller.enqueue(value);
                 const str = uint8arrayToStringMethod(value);
                 try {
-                  const partialResponse = str ? JSON.parse(str).response : "";
+                  const partialResponse = str
+                    ? JSON.parse(str)?.message?.content
+                    : "";
                   reportProgress(partialResponse);
                 } catch (err) {
+                  /*
                   console.error(
                     "Could not parse the following partial JSON response",
                     str
                   );
+                  */
                 }
 
                 push();
@@ -174,8 +185,9 @@ export class OllamaPrompt extends ServiceBase<State> {
         const plainText = chunks
           .split("\n")
           .map((x) => (x ? JSON.parse(x) : ""))
-          .map((x) => x.response)
+          .map((x) => x.message?.content)
           .join("");
+
         try {
           const result = this.state.responseIsJson
             ? JSON.parse(plainText)

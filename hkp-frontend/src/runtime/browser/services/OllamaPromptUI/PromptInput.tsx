@@ -61,18 +61,29 @@ export default function PromptInput({
         </Button>
       </div>
       <div className="flex items-top gap-4 border border-solid">
-        <div className="my-2 mx-2">
+        <div className="my-2 ml-2">
           <BusyIndicator isBusy={isBusy} />
         </div>
         <div
           ref={busyPreview}
-          className="min-h-9 max-h-9 w-full p-2 my-0 text-md font-menu text-left overflow-y-auto "
+          className="w-full min-h-9 max-h-9 py-2 my-0 text-md font-menu text-left w-full overflow-y-auto"
+          style={{ position: "relative" }}
         >
-          {accumulatedUpdate || (
-            <span className="text-gray-500">
-              Idle, updates appear here during progress
-            </span>
-          )}
+          <div
+            className="text-gray-500"
+            style={{
+              position: "absolute",
+              textOverflow: "ellipsis",
+              overflowX: "hidden",
+              whiteSpace: "nowrap",
+              width: "100%",
+              direction: "rtl",
+              textAlign: "left",
+              minWidth: "500px",
+            }}
+          >
+            Idle, updates appear here during process {accumulatedUpdate}
+          </div>
         </div>
       </div>
     </div>
