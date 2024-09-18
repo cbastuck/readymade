@@ -9,18 +9,23 @@ import {
   ServiceInstance,
 } from "@/types";
 import ServiceBase from "./ServiceBase";
+import { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { parseExpression, Expression, evalExpression } from "./base/eval";
 
 const serviceId = "hookup.to/service/looper";
 const serviceName = "Looper";
 
 type State = {
   services: Array<ServiceDescriptor>;
-  numIterations: number;
   iterationResults: Array<any>;
+  interactiveMode: boolean;
+  incrementalOutput: boolean;
+  loopCondition: string;
 };
 
 class Stack extends ServiceBase<State> {
   _instances: Array<ServiceInstance> = [];
+  _loopExpression: Expression | null = null;
 
   constructor(
     app: AppInstance,
@@ -30,22 +35,25 @@ class Stack extends ServiceBase<State> {
   ) {
     super(app, board, _descriptor, id, {
       services: [],
-      numIterations: 1,
       iterationResults: [],
+      interactiveMode: false,
+      incrementalOutput: false,
+      loopCondition: "",
     });
   }
 
   async configure(config: any) {
-    const { services, numIterations, command } = config;
+    const {
+      services,
+      command,
+      incrementalOutput,
+      interactiveMode,
+      loopCondition,
+    } = config;
     if (services !== undefined) {
       this.state.services = services;
       await this.restoreInstances(this.state.services);
       this.app.notify(this, { instances: this._instances });
-    }
-
-    if (numIterations !== undefined) {
-      this.state.numIterations = numIterations;
-      this.app.notify(this, { numIterations: this.state.numIterations });
     }
 
     if (command !== undefined) {
@@ -53,14 +61,35 @@ class Stack extends ServiceBase<State> {
         this.doLoop();
       }
     }
+
+    if (needsUpdate(incrementalOutput, this.state.incrementalOutput)) {
+      this.state.incrementalOutput = incrementalOutput;
+      this.app.notify(this, {
+        incrementalOutput: this.state.incrementalOutput,
+      });
+    }
+
+    if (needsUpdate(interactiveMode, this.state.interactiveMode)) {
+      this.state.interactiveMode = interactiveMode;
+      this.app.notify(this, { interactiveMode: this.state.interactiveMode });
+    }
+
+    if (needsUpdate(loopCondition, this.state.loopCondition)) {
+      this.state.loopCondition = loopCondition;
+      const exp = parseExpression(this.state.loopCondition);
+      if (exp !== "syntax-error") {
+        this._loopExpression = exp;
+      }
+
+      this.app.notify(this, { loopCondition: this.state.loopCondition });
+    }
   }
 
   getConfiguration = async () => {
     return {
+      ...this.state,
       bypass: this.bypass,
       services: this._instances.map((ssvc) => filterPrivateMembers(ssvc)),
-      numIterations: this.state.numIterations,
-      iterationResults: this.state.iterationResults,
     };
   };
 
@@ -129,17 +158,39 @@ class Stack extends ServiceBase<State> {
     const recentResult =
       this.state.iterationResults[this.state.iterationResults.length - 1];
     const r = await this.processInternal(recentResult);
-    this.app.next(this, r);
+    if (this.state.incrementalOutput) {
+      this.app.next(this, r);
+    }
   }
+
+  shouldLoop = async (iteration: number, params: any) => {
+    if (this.state.interactiveMode) {
+      return iteration === 0; // in interactive mode the first iteration is always executed
+    }
+
+    if (!this.state.loopCondition) {
+      return false;
+    }
+
+    if (this._loopExpression === null) {
+      throw new Error("Invalid loop expression");
+    }
+
+    const p = { params, iteration, i: iteration };
+    return await evalExpression(this._loopExpression, p, this.app);
+  };
 
   async processInternal(params: any) {
     let result = params;
-    for (let i = 0; i < this.state.numIterations; ++i) {
+    for (let i = 0; await this.shouldLoop(i, params); ++i) {
       result = await this.processBody(result);
       this.state.iterationResults.push(result);
       this.app.notify(this, {
         iterationResults: this.state.iterationResults.slice(),
       });
+      if (this.state.incrementalOutput) {
+        this.app.next(this, result);
+      }
     }
     return result;
   }

@@ -19,6 +19,8 @@ import {
   AccordionTrigger,
 } from "@/ui-components/primitives/accordion";
 import Button from "@/ui-components/Button";
+import Switch from "@/ui-components/Switch";
+import SubmittableInput from "@/ui-components/SubmittableInput";
 
 type InstancesState = {
   instances: Array<ServiceInstance>;
@@ -55,6 +57,18 @@ export default function LooperUI(props: ServiceUIProps) {
     if (state.iterationResults !== undefined) {
       setIterationResults(state.iterationResults);
     }
+
+    if (needsUpdate(state.incrementalOutput, isIncrementalOutput)) {
+      setIsIncrementalOutput(state.incrementalOutput);
+    }
+
+    if (needsUpdate(state.interactiveMode, isInterativeMode)) {
+      setIsInteractiveMode(state.interactiveMode);
+    }
+
+    if (needsUpdate(state.loopCondition, loopCondition)) {
+      setLoopCondition(state.loopCondition);
+    }
   };
 
   const onAppendService = (svc: ServiceClass) => service.appendSubService(svc);
@@ -87,6 +101,21 @@ export default function LooperUI(props: ServiceUIProps) {
     service.configure({ command: { action: "loop" } });
   };
 
+  const [isInterativeMode, setIsInteractiveMode] = useState(false);
+  const onChangeInteractiveMode = (checked: boolean) => {
+    service.configure({ interactiveMode: checked });
+  };
+
+  const [isIncrementalOutput, setIsIncrementalOutput] = useState(false);
+  const onChangeIncrementalOutput = (checked: boolean) => {
+    service.configure({ incrementalOutput: checked });
+  };
+
+  const [loopCondition, setLoopCondition] = useState("");
+  const onChangeLoopCondition = (newCondition: string) => {
+    service.configure({ loopCondition: newCondition });
+  };
+
   return (
     <ServiceUI
       {...props}
@@ -95,14 +124,34 @@ export default function LooperUI(props: ServiceUIProps) {
       initialSize={{ width: 550, height: undefined }}
     >
       <div className="w-full h-full my-4 flex flex-col gap-4">
-        <div className="w-full flex items-center gap-4">
-          <Button
-            className="w-full"
-            onClick={onIterate}
-            disabled={iterationResults.length === 0}
-          >
-            Iterate
-          </Button>
+        <div className="w-full flex flex-col gap-4">
+          <div className="w-full flex items-center gap-4">
+            <Switch
+              title="Interactive"
+              checked={isInterativeMode}
+              onCheckedChange={onChangeInteractiveMode}
+            />
+            <Switch
+              title="Incremental Output"
+              checked={isIncrementalOutput}
+              onCheckedChange={onChangeIncrementalOutput}
+            />
+          </div>
+          <div className="w-full flex items-center gap-4">
+            <SubmittableInput
+              fullWidth
+              title="Condition"
+              disabled={isInterativeMode}
+              value={loopCondition}
+              onSubmit={onChangeLoopCondition}
+            />
+            <Button
+              onClick={onIterate}
+              disabled={!isInterativeMode || iterationResults.length === 0}
+            >
+              Iterate
+            </Button>
+          </div>
         </div>
         <Accordion
           className="mx-4"

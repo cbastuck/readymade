@@ -217,6 +217,7 @@ export type AppImpl = {
     onNotification: (notification: any) => void
   ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
+  processRuntimeByName?: (name: string, params: any) => Promise<any>;
 };
 
 export type CustomMenuEntry = {
