@@ -10,6 +10,7 @@ const serviceName = "Map";
 type State = {
   mode: "replace" | "add" | "overwrite";
   template: { [key: string]: any };
+  sensingMode: boolean;
 };
 
 class Map extends ServiceBase<State> {
@@ -22,44 +23,61 @@ class Map extends ServiceBase<State> {
     descriptor: ServiceClass,
     id: string
   ) {
-    super(app, board, descriptor, id, { mode: "replace", template: {} });
+    super(app, board, descriptor, id, {
+      mode: "replace",
+      template: {},
+      sensingMode: false,
+    });
   }
 
   configure(config: any) {
-    const { template, mode } = config;
+    const { template, mode, sensingMode } = config;
     if (template !== undefined) {
-      this.state.template = flatten(template); // store as flat object for persistence
-
-      this._properties = Object.keys(template).reduce((all, cur) => {
-        const value = template[cur];
-        if (cur[cur.length - 1] !== "=") {
-          return cur.indexOf(".") !== -1
-            ? { ...merge(all, value, cur) }
-            : { ...all, [cur]: value };
-        }
-        return all;
-      }, {});
-
-      this._terms = Object.keys(template).reduce((all, cur) => {
-        const value = template[cur];
-        if (cur[cur.length - 1] === "=") {
-          // treated as a dynamic term not a static property
-          return {
-            ...all,
-            [cur.substring(0, cur.length - 1)]: parseExpression(value),
-          };
-        }
-        return all;
-      }, {});
-
-      this.app.notify(this, { template });
+      this.updateTemplate(template);
     }
 
     if (mode !== undefined) {
       this.state.mode = mode;
       this.app.notify(this, { mode });
     }
+
+    if (sensingMode !== undefined) {
+      this.updateSensingMode(sensingMode);
+    }
   }
+
+  updateTemplate(template: any) {
+    this.state.template = flatten(template); // store as flat object for persistence
+
+    this._properties = Object.keys(template).reduce((all, cur) => {
+      const value = template[cur];
+      if (cur[cur.length - 1] !== "=") {
+        return cur.indexOf(".") !== -1
+          ? { ...merge(all, value, cur) }
+          : { ...all, [cur]: value };
+      }
+      return all;
+    }, {});
+
+    this._terms = Object.keys(template).reduce((all, cur) => {
+      const value = template[cur];
+      if (cur[cur.length - 1] === "=") {
+        // treated as a dynamic term not a static property
+        return {
+          ...all,
+          [cur.substring(0, cur.length - 1)]: parseExpression(value),
+        };
+      }
+      return all;
+    }, {});
+
+    this.app.notify(this, { template });
+  }
+
+  updateSensingMode = (isActive: boolean) => {
+    this.state.sensingMode = isActive;
+    this.app.notify(this, { sensingMode: isActive });
+  };
 
   mapper = async (x: any) => {
     try {
@@ -83,12 +101,15 @@ class Map extends ServiceBase<State> {
         }
 
         const y = await evalExpression(expression, { params: x }, this.app);
+        const accumulated = await acc;
         return key.indexOf(".") !== -1
           ? {
-              ...merge(await acc, y, key),
+              ...(this.state.mode === "replace"
+                ? accumulated
+                : merge(accumulated, y, key)),
             }
           : {
-              ...(await acc),
+              ...accumulated,
               [key]: x[key] && this.state.mode === "add" ? x[key] : y, // don't overwrite in add mode
             };
       }, Promise.resolve(initial));
@@ -99,11 +120,17 @@ class Map extends ServiceBase<State> {
         "in template",
         JSON.stringify(this.state.template || "<empty>")
       );
-      return x; // do not map the input - there was an error
+      return x; // do not map the input - there was an error - return identity
     }
   };
 
   process = async (params: any) => {
+    if (this.state.sensingMode) {
+      this.updateTemplate(flatten(params));
+      this.updateSensingMode(false);
+      return null;
+    }
+
     //TODO: who needs this??? - new concept for handling arrays ...
     // probably generic
     if (Array.isArray(params)) {

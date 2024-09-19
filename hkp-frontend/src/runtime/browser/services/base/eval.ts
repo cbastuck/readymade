@@ -62,7 +62,7 @@ const globalScope = {
 export async function parseAndEvalExpression(
   exp: string,
   params: any,
-  app: AppInstance
+  app?: AppInstance
 ) {
   return evalExpression(parseExpression(exp), params, app);
 }
@@ -70,7 +70,7 @@ export async function parseAndEvalExpression(
 export async function evalExpression(
   ast: Expression | "syntax-error",
   params: any,
-  app: AppImpl
+  app?: AppImpl
 ) {
   if (ast === "syntax-error") {
     return "syntax-error";

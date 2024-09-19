@@ -7,15 +7,15 @@ import {
   TableHeader,
   TableRow,
 } from "@/ui-components/primitives/table";
-import { Trash, Plus } from "lucide-react";
+import { Trash, Plus, CircleDotDashed, CircleDot } from "lucide-react";
 
 import { ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
-import { Button } from "@/ui-components/primitives/button";
 import GroupLabel from "@/ui-components/GroupLabel";
 import RadioGroup from "@/ui-components/RadioGroup";
 import SubmittableInput from "@/ui-components/SubmittableInput";
+import Button from "@/ui-components/Button";
 
 export default function MapUI(props: ServiceUIProps) {
   const { service } = props;
@@ -29,6 +29,7 @@ export default function MapUI(props: ServiceUIProps) {
   const [mode, setMode] = useState<Mode>(Mode.REPLACE);
   const [isMappingChangePending, setIsMappingChangePending] = useState(false);
   const valueInputRef = useRef<HTMLInputElement>(null);
+  const [isSensingMode, setIsSensingMode] = useState(false);
 
   const updateState = (newState: any) => {
     if (needsUpdate(newState.mode, mode)) {
@@ -37,6 +38,10 @@ export default function MapUI(props: ServiceUIProps) {
 
     if (needsUpdate(newState.template, template)) {
       setTemplate(newState.template);
+    }
+
+    if (needsUpdate(newState.sensingMode, isSensingMode)) {
+      setIsSensingMode(newState.sensingMode);
     }
   };
 
@@ -101,6 +106,10 @@ export default function MapUI(props: ServiceUIProps) {
   };
 
   const mappingOptions = [Mode.REPLACE, Mode.OVERWRITE, Mode.ADD];
+
+  const onToggleSensingMode = () => {
+    service.configure({ sensingMode: !isSensingMode });
+  };
   const renderMapping = () => {
     return (
       <div
@@ -122,13 +131,28 @@ export default function MapUI(props: ServiceUIProps) {
         <div className="flex flex-col col-2 mt-2">
           <div className="flex h-min items-end">
             <GroupLabel>Mapping</GroupLabel>
-            <Button
-              className="h-[24px] ml-auto"
-              variant="outline"
-              onClick={onNewProperty}
-            >
-              <Plus size="20px" />
-            </Button>
+            <div className="flex ml-auto">
+              <Button
+                className="h-[24px]"
+                variant="outline"
+                onClick={onToggleSensingMode}
+                tooltip="Sense incoming data"
+              >
+                {isSensingMode ? (
+                  <CircleDot size="20px" stroke="red" />
+                ) : (
+                  <CircleDotDashed size="20px" />
+                )}
+              </Button>
+
+              <Button
+                className="h-[24px]"
+                variant="outline"
+                onClick={onNewProperty}
+              >
+                <Plus size="20px" />
+              </Button>
+            </div>
           </div>
           <Table className="my-2">
             <TableHeader>
