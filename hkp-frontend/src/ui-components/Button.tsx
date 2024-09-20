@@ -1,16 +1,12 @@
 // import { useTheme } from "@/ui-components/ThemeContext";
 import { Button as ButtonCN, ButtonProps } from "./primitives/button";
 import { ReactElement, useMemo } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./primitives/tooltip";
+import { TooltipProvider } from "./primitives/tooltip";
+import Tooltip, { TooltipContent } from "./Tooltip";
 
 type Props = ButtonProps & {
   icon?: ReactElement;
-  tooltip?: string;
+  tooltip?: TooltipContent;
 };
 export default function Button(props: Props) {
   // const theme = useTheme();
@@ -34,10 +30,7 @@ export default function Button(props: Props) {
 
   return tooltip ? (
     <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>{buttonComponent}</TooltipTrigger>
-        <TooltipContent>{tooltip}</TooltipContent>
-      </Tooltip>
+      <Tooltip value={tooltip}>{buttonComponent}</Tooltip>
     </TooltipProvider>
   ) : (
     buttonComponent

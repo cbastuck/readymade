@@ -16,14 +16,17 @@ import GroupLabel from "@/ui-components/GroupLabel";
 import RadioGroup from "@/ui-components/RadioGroup";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import Button from "@/ui-components/Button";
+import { createDetailedTooltip } from "@/ui-components/ExpandableTooltip";
+import { delayedExec } from "@/common";
+
+enum Mode {
+  REPLACE = "replace",
+  OVERWRITE = "overwrite",
+  ADD = "add",
+}
 
 export default function MapUI(props: ServiceUIProps) {
   const { service } = props;
-  enum Mode {
-    REPLACE = "replace",
-    OVERWRITE = "overwrite",
-    ADD = "add",
-  }
 
   const [template, setTemplate] = useState<any>({});
   const [mode, setMode] = useState<Mode>(Mode.REPLACE);
@@ -110,7 +113,12 @@ export default function MapUI(props: ServiceUIProps) {
   const onToggleSensingMode = () => {
     service.configure({ sensingMode: !isSensingMode });
   };
+
   const renderMapping = () => {
+    const rows = Object.keys(template).filter(
+      (key) => typeof template[key] !== "object"
+    );
+
     return (
       <div
         style={{
@@ -123,69 +131,94 @@ export default function MapUI(props: ServiceUIProps) {
         <RadioGroup
           id="MapMode"
           title="Mode"
+          tooltip="Select the mode of mapping"
           options={mappingOptions}
           value={mode}
           onChange={onModeChange}
+          valueTooltips={mappingOptions.map(mapModeToTooltip)}
         />
 
         <div className="flex flex-col col-2 mt-2">
           <div className="flex h-min items-end">
-            <GroupLabel>Mapping</GroupLabel>
+            <GroupLabel tooltip="Map the incoming data to something else">
+              Mapping
+            </GroupLabel>
             <div className="flex ml-auto">
               <Button
-                className="h-[24px]"
+                className={`h-[24px] hover:bg-red-500 hover:stroke-white ${
+                  isSensingMode ? "bg-red-500 stroke-white" : ""
+                }`}
                 variant="outline"
                 onClick={onToggleSensingMode}
-                tooltip="Sense incoming data"
+                tooltip={
+                  isSensingMode
+                    ? "End listening to incoming data"
+                    : "Start listening to incoming data"
+                }
               >
                 {isSensingMode ? (
-                  <CircleDot size="20px" stroke="red" />
+                  <CircleDot height="16px" className="stroke-white" />
                 ) : (
-                  <CircleDotDashed size="20px" />
+                  <CircleDotDashed height="16px" />
                 )}
               </Button>
-
               <Button
                 className="h-[24px]"
                 variant="outline"
                 onClick={onNewProperty}
+                disabled={isSensingMode}
+                tooltip={detailedAddMappingTooltip}
               >
                 <Plus size="20px" />
               </Button>
             </div>
           </div>
-          <Table className="my-2">
-            <TableHeader>
-              <TableRow>
-                <TableHead className="font-sans tracking-widest text-base text-left p-0">
-                  Property
-                </TableHead>
-                <TableHead className="font-sans tracking-widest text-base text-left p-0">
-                  Value
-                </TableHead>
-                <TableHead className="font-sans tracking-widest text-base text-right p-0 w-min"></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Object.keys(template)
-                .filter((key) => typeof template[key] !== "object")
-                .map((key, idx) => (
+
+          {rows.length > 0 ? (
+            <Table className="my-2">
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-sans tracking-widest text-base text-left p-0">
+                    Property
+                  </TableHead>
+                  <TableHead className="font-sans tracking-widest text-base text-left p-0">
+                    Value
+                  </TableHead>
+                  <TableHead className="font-sans tracking-widest text-base text-right p-0 w-min"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((key, idx) => (
                   <TableRow
                     className="hover:bg-white font-sans-clean"
                     key={`${key}-${idx}`}
                   >
                     <TableCell className="text-left p-0">
                       <SubmittableInput
+                        id={`map-key-${service.uuid}-${idx}`}
                         fullWidth
                         hideBottomBorder
                         value={key}
-                        onSubmit={(newKey) => onChangeKey(key, newKey)}
+                        onSubmit={(newKey) => {
+                          onChangeKey(key, newKey);
+                          delayedExec(
+                            () =>
+                              document
+                                .getElementById(
+                                  `map-value-${service.uuid}-${idx}`
+                                )
+                                ?.focus(),
+                            10
+                          );
+                        }}
                         onChangePending={setIsMappingChangePending}
                         selectAllOnFocus={true}
+                        onTab={(newKey) => onChangeKey(key, newKey)}
                       />
                     </TableCell>
                     <TableCell className="text-left p-0">
                       <SubmittableInput
+                        id={`map-value-${service.uuid}-${idx}`}
                         fullWidth
                         hideBottomBorder
                         ref={valueInputRef}
@@ -193,6 +226,7 @@ export default function MapUI(props: ServiceUIProps) {
                         onSubmit={(newValue) => onChangeValue(key, newValue)}
                         onChangePending={setIsMappingChangePending}
                         selectAllOnFocus={true}
+                        onTab={(newValue) => onChangeValue(key, newValue)}
                       />
                     </TableCell>
                     <TableCell className="text-right p-0">
@@ -200,14 +234,22 @@ export default function MapUI(props: ServiceUIProps) {
                         variant="ghost"
                         onClick={() => onRemoveProperty(key)}
                         disabled={isMappingChangePending}
+                        tooltip="Remove this property"
+                        className="stroke-gray-600 hover:stroke-red-500"
+                        tabIndex={-1}
                       >
-                        <Trash size="16px" />
+                        <Trash className="stroke-inherit" size="16px" />
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
-            </TableBody>
-          </Table>
+              </TableBody>
+            </Table>
+          ) : (
+            <div className="text-left py-2 text-gray-300">
+              No mapping available
+            </div>
+          )}
         </div>
       </div>
     );
@@ -223,4 +265,20 @@ export default function MapUI(props: ServiceUIProps) {
       {renderMapping()}
     </ServiceUI>
   );
+}
+
+const detailedAddMappingTooltip = createDetailedTooltip(
+  "Add a mapped property",
+  <div>Add a new property to the mapping</div>
+);
+
+function mapModeToTooltip(mode: Mode) {
+  switch (mode) {
+    case Mode.REPLACE:
+      return "Replace the whole incoming data with the mapped properties";
+    case Mode.OVERWRITE:
+      return "Overwrite the mapped properties to the incoming data";
+    case Mode.ADD:
+      return "Add the mapped properties to the incoming data";
+  }
 }

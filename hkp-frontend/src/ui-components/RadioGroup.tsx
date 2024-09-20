@@ -1,8 +1,6 @@
 import { Label } from "@/ui-components/primitives/label";
-import {
-  RadioGroup as RadioGroupCN,
-  RadioGroupItem,
-} from "@/ui-components/primitives/radio-group";
+import { RadioGroup as RadioGroupCN } from "@/ui-components/primitives/radio-group";
+import RadioGroupItem from "./RadioGroupItem";
 import GroupLabel from "./GroupLabel";
 
 type Props = {
@@ -14,18 +12,22 @@ type Props = {
   disabled?: boolean;
   alignRight?: boolean;
   vertical?: boolean;
+  tooltip?: string;
+  valueTooltips?: Array<string> | { [value: string]: string };
   onChange: (value: string) => void;
 };
 
 export default function RadioGroup({
   id,
   title,
+  tooltip,
   options,
   value,
   disabled,
   className = "",
   alignRight,
   vertical,
+  valueTooltips,
   onChange,
 }: Props) {
   const uniqueId = id || crypto.randomUUID();
@@ -39,6 +41,7 @@ export default function RadioGroup({
         className={`${disabled && "text-gray-300"} ${
           alignRight && "text-right"
         }`}
+        tooltip={tooltip}
       >
         {title}
       </GroupLabel>
@@ -49,6 +52,11 @@ export default function RadioGroup({
       >
         {values.map((item, idx) => {
           const optionId = `${uniqueId || title}-option-${idx}`;
+          const tooltip =
+            valueTooltips &&
+            (Array.isArray(valueTooltips)
+              ? valueTooltips[idx]
+              : valueTooltips[item]);
           return (
             <div key={`${item}.${idx}`} className="flex items-center space-x-2">
               <RadioGroupItem
@@ -56,6 +64,7 @@ export default function RadioGroup({
                 id={optionId}
                 onClick={() => onChange(item)}
                 disabled={disabled}
+                tooltip={tooltip}
               />
               <Label
                 htmlFor={optionId}

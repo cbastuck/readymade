@@ -72,3 +72,12 @@ export function decompressAndDecodeState(encoded: string): string {
     decodeURIComponent(encoded)
   );
 }
+
+export function delayedExec(fn: Function, delay: number) {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      fn();
+      resolve();
+    }, delay);
+  });
+}

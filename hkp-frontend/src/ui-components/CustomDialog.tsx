@@ -1,9 +1,9 @@
 import { Dialog, DialogContent } from "@/ui-components/primitives/dialog";
-import { ReactElement } from "react";
+import { ReactNode } from "react";
 
 type Props = {
   title?: string;
-  children: ReactElement;
+  children: ReactNode;
   isOpen: boolean;
   onOpenChange: (newIsOpen: boolean) => void;
 };

@@ -4,6 +4,7 @@ import { Input as InputCN } from "@/ui-components/primitives/input";
 import GroupLabel from "./GroupLabel";
 
 type Props = {
+  id?: string;
   className?: string;
   title?: string;
   type?: string;
@@ -15,12 +16,14 @@ type Props = {
   placeholder?: string;
   onChange: (newValue: string) => void;
   onKeyUp?: (ev: KeyboardEvent) => void;
+  onKeyDown?: (ev: KeyboardEvent) => void;
   onBlur?: (ev: FocusEvent<HTMLInputElement>) => void;
   onFocus?: (ev: FocusEvent<HTMLInputElement>) => void;
 };
 
 const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
   const {
+    id,
     className,
     title,
     type,
@@ -32,6 +35,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
     placeholder,
     onChange,
     onKeyUp,
+    onKeyDown,
     onBlur,
     onFocus,
   } = props;
@@ -52,6 +56,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
         <GroupLabel className="pt-1 whitespace-nowrap">{title}</GroupLabel>
       )}
       <InputCN
+        id={id}
         ref={ref}
         type={type}
         className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h} ${className} text-ellipsis`}
@@ -63,6 +68,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
         onKeyUp={onKeyUp}
         onBlur={onBlur}
         onFocus={onFocus}
+        onKeyDown={onKeyDown}
       />
     </div>
   );

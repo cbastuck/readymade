@@ -10,6 +10,7 @@ import {
 import Input from "./Input";
 
 type SubmittableInputProps = {
+  id?: string;
   className?: string;
   title?: string;
   type?: string;
@@ -22,11 +23,13 @@ type SubmittableInputProps = {
   placeholder?: string;
   submitOnBlur?: boolean;
   onSubmit: (val: string) => void;
+  onTab?: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
 };
 const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
   (props, ref) => {
     const {
+      id,
       className,
       type,
       title,
@@ -39,6 +42,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       submitOnBlur = true,
       placeholder,
       onSubmit,
+      onTab,
       onChangePending,
     } = props;
     const [internal, setInternal] = useState(value);
@@ -51,10 +55,19 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     );
 
     const lastSubmittedValue = useRef("");
+
+    const onKeyDown = (ev: KeyboardEvent) => {
+      if (onTab && ev.key === "Tab") {
+        ev.preventDefault();
+        ev.stopPropagation();
+        onTab(internal);
+      }
+    };
     const onKeyUp = (ev: KeyboardEvent) => {
       if (ev.key === "Enter") {
         lastSubmittedValue.current = internal;
         onSubmit(internal);
+        return;
       }
     };
 
@@ -68,12 +81,14 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       }
     };
 
-    const onFocus = (event: FocusEvent<HTMLInputElement>) =>
-      selectAllOnFocus && setTimeout(() => event.target.select(), 10);
+    const onFocus = (event: FocusEvent<HTMLInputElement>) => {
+      selectAllOnFocus && setTimeout(() => event.target.select(), 100);
+    };
 
     const cls = `font-menu text-md ${className}`;
     return (
       <Input
+        id={id}
         ref={ref}
         className={cls}
         type={type}
@@ -86,6 +101,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         placeholder={placeholder}
         onChange={onChange}
         onKeyUp={onKeyUp}
+        onKeyDown={onKeyDown}
         onBlur={onBlur}
         onFocus={onFocus}
       />
