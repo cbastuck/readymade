@@ -46,7 +46,7 @@ class Html {
       if (cur.endsWith("=")) {
         return {
           ...(await all),
-          [cur.slice(0, -1)]: await parseAndEvalExpression(val),
+          [cur.slice(0, -1)]: await parseAndEvalExpression(val, {}),
         };
       }
       return Promise.resolve({ ...(await all), [cur]: val });

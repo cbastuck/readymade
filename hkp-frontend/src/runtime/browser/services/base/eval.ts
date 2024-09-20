@@ -36,7 +36,7 @@ const globalScope = {
   encodeURI,
   blobToUint8Array: async (x: Blob) => new Uint8Array(await x.arrayBuffer()),
   slice: (arr: Array<any>, offset: number, step: number, end: number) =>
-    arr.slice(offset, end).filter((x, i) => i % step === 0),
+    arr.slice(offset, end).filter((_, i) => i % step === 0),
   sum: (x: Array<number>) =>
     x && x.reduce ? x.reduce((acc, v) => acc + v, 0) : x,
   avg: (x: Array<number>) =>
