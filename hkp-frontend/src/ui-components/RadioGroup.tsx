@@ -2,6 +2,7 @@ import { Label } from "@/ui-components/primitives/label";
 import { RadioGroup as RadioGroupCN } from "@/ui-components/primitives/radio-group";
 import RadioGroupItem from "./RadioGroupItem";
 import GroupLabel from "./GroupLabel";
+import { TooltipContentType } from "./Tooltip";
 
 type Props = {
   id?: string;
@@ -12,7 +13,7 @@ type Props = {
   disabled?: boolean;
   alignRight?: boolean;
   vertical?: boolean;
-  tooltip?: string;
+  tooltip?: TooltipContentType;
   valueTooltips?: Array<string> | { [value: string]: string };
   onChange: (value: string) => void;
 };

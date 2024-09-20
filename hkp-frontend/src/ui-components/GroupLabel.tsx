@@ -1,16 +1,12 @@
 import { ReactNode, useMemo } from "react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "./primitives/tooltip";
+
+import Tooltip, { TooltipContentType } from "./Tooltip";
 
 type Props = {
   children: string | ReactNode;
   className?: string;
   size?: 1 | 2 | 3 | 4;
-  tooltip?: string | ReactNode;
+  tooltip?: TooltipContentType;
 };
 
 export default function GroupLabel({
@@ -22,14 +18,9 @@ export default function GroupLabel({
   const c = useMemo(
     () =>
       tooltip ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>{children}</div>
-            </TooltipTrigger>
-            <TooltipContent>{tooltip}</TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip value={tooltip}>
+          <div>{children}</div>
+        </Tooltip>
       ) : (
         children
       ),

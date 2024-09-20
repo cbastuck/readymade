@@ -233,7 +233,7 @@ export default function ServiceFrame({
             {children}
           </div>
         </div>
-        <div className="mt-[25%] pl-2 w-4">
+        <div className="mt-[30px] pl-2 w-4 mx-1">
           <ServiceOutputPlug
             isActive={signalOutput}
             data={recentProgressData}

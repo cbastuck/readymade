@@ -35,9 +35,9 @@ export default function ExpandableTooltip({
   );
 }
 
-export function createDetailedTooltip(
+export function createExpandableTooltip(
   text: string,
-  details: ReactNode
+  expandedContent: ReactNode
 ): ExpandableTooltipContent {
-  return { text, details };
+  return { text, details: expandedContent };
 }

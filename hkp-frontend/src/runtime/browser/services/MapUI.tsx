@@ -16,8 +16,9 @@ import GroupLabel from "@/ui-components/GroupLabel";
 import RadioGroup from "@/ui-components/RadioGroup";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import Button from "@/ui-components/Button";
-import { createDetailedTooltip } from "@/ui-components/ExpandableTooltip";
+import { createExpandableTooltip } from "@/ui-components/ExpandableTooltip";
 import { delayedExec } from "@/common";
+import MapUIModeAssist from "./MapUIModeAssist";
 
 enum Mode {
   REPLACE = "replace",
@@ -73,7 +74,7 @@ export default function MapUI(props: ServiceUIProps) {
     });
   };
 
-  const onChangeKey = (key: string, newKey: string) => {
+  const updateKey = (key: string, newKey: string) => {
     const newTemplate = Object.keys(template).reduce(
       (acc, cur) =>
         cur === key
@@ -82,7 +83,6 @@ export default function MapUI(props: ServiceUIProps) {
       {}
     );
     service.configure({ template: newTemplate });
-    // setTimeout(() => valueInputRef.current?.focus(), 10);
   };
 
   const onChangeValue = (key: string, newValue: string) => {
@@ -119,6 +119,15 @@ export default function MapUI(props: ServiceUIProps) {
       (key) => typeof template[key] !== "object"
     );
 
+    const onKeyChange = (oldKey: string, newKey: string, propIdx: number) => {
+      updateKey(oldKey, newKey);
+      const valueInputElementId = `map-value-${service.uuid}-${propIdx}`;
+      delayedExec(
+        () => document.getElementById(valueInputElementId)?.focus(),
+        10
+      );
+    };
+
     return (
       <div
         style={{
@@ -131,7 +140,10 @@ export default function MapUI(props: ServiceUIProps) {
         <RadioGroup
           id="MapMode"
           title="Mode"
-          tooltip="Select the mode of mapping"
+          tooltip={createExpandableTooltip(
+            "Select the mode of mapping",
+            <MapUIModeAssist />
+          )}
           options={mappingOptions}
           value={mode}
           onChange={onModeChange}
@@ -152,8 +164,8 @@ export default function MapUI(props: ServiceUIProps) {
                 onClick={onToggleSensingMode}
                 tooltip={
                   isSensingMode
-                    ? "End listening to incoming data"
-                    : "Start listening to incoming data"
+                    ? "Stop listening to incoming data"
+                    : "Derive a mapping from incoming data"
                 }
               >
                 {isSensingMode ? (
@@ -167,7 +179,7 @@ export default function MapUI(props: ServiceUIProps) {
                 variant="outline"
                 onClick={onNewProperty}
                 disabled={isSensingMode}
-                tooltip={detailedAddMappingTooltip}
+                tooltip="Add a mapped property"
               >
                 <Plus size="20px" />
               </Button>
@@ -195,25 +207,13 @@ export default function MapUI(props: ServiceUIProps) {
                   >
                     <TableCell className="text-left p-0">
                       <SubmittableInput
-                        id={`map-key-${service.uuid}-${idx}`}
                         fullWidth
                         hideBottomBorder
                         value={key}
-                        onSubmit={(newKey) => {
-                          onChangeKey(key, newKey);
-                          delayedExec(
-                            () =>
-                              document
-                                .getElementById(
-                                  `map-value-${service.uuid}-${idx}`
-                                )
-                                ?.focus(),
-                            10
-                          );
-                        }}
+                        onSubmit={(newKey) => onKeyChange(key, newKey, idx)}
                         onChangePending={setIsMappingChangePending}
                         selectAllOnFocus={true}
-                        onTab={(newKey) => onChangeKey(key, newKey)}
+                        onTab={(newKey) => onKeyChange(key, newKey, idx)}
                       />
                     </TableCell>
                     <TableCell className="text-left p-0">
@@ -266,11 +266,6 @@ export default function MapUI(props: ServiceUIProps) {
     </ServiceUI>
   );
 }
-
-const detailedAddMappingTooltip = createDetailedTooltip(
-  "Add a mapped property",
-  <div>Add a new property to the mapping</div>
-);
 
 function mapModeToTooltip(mode: Mode) {
   switch (mode) {

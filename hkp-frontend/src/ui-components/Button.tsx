@@ -1,12 +1,12 @@
 // import { useTheme } from "@/ui-components/ThemeContext";
 import { Button as ButtonCN, ButtonProps } from "./primitives/button";
 import { ReactElement, useMemo } from "react";
-import { TooltipProvider } from "./primitives/tooltip";
-import Tooltip, { TooltipContent } from "./Tooltip";
+
+import Tooltip, { TooltipContentType } from "./Tooltip";
 
 type Props = ButtonProps & {
   icon?: ReactElement;
-  tooltip?: TooltipContent;
+  tooltip?: TooltipContentType;
 };
 export default function Button(props: Props) {
   // const theme = useTheme();
@@ -29,9 +29,7 @@ export default function Button(props: Props) {
   );
 
   return tooltip ? (
-    <TooltipProvider>
-      <Tooltip value={tooltip}>{buttonComponent}</Tooltip>
-    </TooltipProvider>
+    <Tooltip value={tooltip}>{buttonComponent}</Tooltip>
   ) : (
     buttonComponent
   );
