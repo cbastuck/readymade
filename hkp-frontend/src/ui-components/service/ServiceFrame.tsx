@@ -82,8 +82,8 @@ export default function ServiceFrame({
 
   const uuid = service && service.uuid;
   const serviceName =
-    service?.__descriptor?.serviceName ||
     service.serviceName ||
+    service?.__descriptor?.serviceName ||
     "unnamed service";
   const serviceId =
     service?.__descriptor?.serviceId ||

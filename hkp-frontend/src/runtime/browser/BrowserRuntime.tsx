@@ -45,12 +45,6 @@ export default class BrowserRuntime extends Component<Props, State> {
 
   componentDidMount() {}
 
-  componentDidUpdate(prevProps: Readonly<Props>) {
-    if (prevProps.services !== this.props.services) {
-      console.log("BrowserRuntime.componentDidUpdate services");
-    }
-  }
-
   componentWillUnmount() {
     this.destroyRuntime();
   }
@@ -96,7 +90,7 @@ export default class BrowserRuntime extends Component<Props, State> {
       ? rawServices.flatMap((x) => {
           const svc = scope.findServiceInstance(x.uuid);
           if (svc && svc[0]) {
-            return [svc[0]];
+            return [{ ...svc[0], serviceName: x.serviceName }]; // The service name might have chnanged in the descriptor
           }
           return [];
         })
