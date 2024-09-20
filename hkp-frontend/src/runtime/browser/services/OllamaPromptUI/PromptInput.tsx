@@ -13,6 +13,7 @@ type Props = {
   isDisabled?: boolean;
   buttonText?: string;
   title?: string | null;
+  displayPreview?: boolean;
   onProcessButton: (prompt: string) => void;
   onSubmitPrompt: (prompt: string) => void;
   onBlurPrompt?: (prompt: string) => void;
@@ -25,6 +26,7 @@ export default function PromptInput({
   isDisabled,
   title,
   buttonText = "Process",
+  displayPreview = true,
   onProcessButton,
   onSubmitPrompt,
   onBlurPrompt,
@@ -56,12 +58,14 @@ export default function PromptInput({
           {buttonText}
         </Button>
       </div>
-      <div className="flex items-top gap-4 border border-solid">
-        <div className="my-2 ml-2">
-          <BusyIndicator isBusy={isBusy} />
+      {displayPreview && (
+        <div className="flex items-top gap-4 border border-solid">
+          <div className="my-2 ml-2">
+            <BusyIndicator isBusy={isBusy} />
+          </div>
+          <StreamingPreview value={accumulatedUpdate} />
         </div>
-        <StreamingPreview value={accumulatedUpdate} />
-      </div>
+      )}
     </div>
   );
 }

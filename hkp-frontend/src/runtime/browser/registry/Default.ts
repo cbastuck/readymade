@@ -70,6 +70,7 @@ import UuidGeneratorDescriptor from "../services/UuidGenerator";
 
 import PeerSocket from "../services/PeerSocket";
 import OllamaPrompt from "../services/OllamaPrompt";
+import OpenAIPrompt from "../services/OpenAIPrompt";
 import SpeechSynth from "../services/SpeechSynth";
 import LocalStorage from "../services/LocalStorage";
 import Looper from "../services/Looper";
@@ -148,6 +149,7 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   PeerSocket,
   OllamaPrompt,
+  OpenAIPrompt,
   SpeechSynth,
   LocalStorage,
 

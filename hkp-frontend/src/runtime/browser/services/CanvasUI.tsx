@@ -97,7 +97,10 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     });
   };
 
-  createImage = (blob: Blob) => {
+  createImage = (blob: Blob | typeof Image) => {
+    if (blob instanceof Image) {
+      return Promise.resolve(blob); // already an image
+    }
     return new Promise((resolve) => {
       const imageUrl = createObjectURL(blob);
       if (imageUrl) {

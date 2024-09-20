@@ -81,6 +81,10 @@ export function needsUpdate<T>(newValue: T, oldValue: T) {
   return newValue !== undefined && newValue !== oldValue;
 }
 
+export function needsUpdateStrict<T>(newValue: T, oldValue: T) {
+  return !!newValue && newValue !== oldValue;
+}
+
 function useInitOnFirstRender(
   service: ServiceInstance,
   onInit?: (state: any) => void,
