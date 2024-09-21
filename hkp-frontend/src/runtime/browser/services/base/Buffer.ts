@@ -39,7 +39,7 @@ class Buffer {
   };
 
   configure(config: any) {
-    const { capacity, action, interval, accumulatedOutput } = config;
+    const { capacity, action, command, interval, accumulatedOutput } = config;
 
     if (capacity !== undefined) {
       this.capacity = capacity;
@@ -49,6 +49,12 @@ class Buffer {
     if (action === "clear") {
       this.buffer = [];
       this.app.notify(this, { buffer: this.buffer });
+    }
+
+    if (command !== undefined) {
+      if (command.action === "inject") {
+        this.app.next(this, command.params);
+      }
     }
 
     if (needsUpdate(interval, this.interval)) {

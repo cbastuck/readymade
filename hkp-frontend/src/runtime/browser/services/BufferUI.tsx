@@ -10,7 +10,7 @@ import Button from "hkp-frontend/src/ui-components/Button";
 
 import { ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
-import { DownloadIcon, X, Eye } from "lucide-react";
+import { DownloadIcon, X, Eye, BugPlay } from "lucide-react";
 import MenuIcon from "@/ui-components/MenuIcon";
 import Editor from "@/components/shared/Editor";
 import Slider from "@/ui-components/Slider";
@@ -91,6 +91,12 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
     return "JSON";
   };
 
+  onInjectItem = (item: any) => {
+    this.props.service.configure({
+      command: { action: "inject", params: item },
+    });
+  };
+
   renderBuffer = () => {
     const { items, isAccordionOpen } = this.state;
     return (
@@ -114,17 +120,24 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
           <AccordionContent>
             <div className="flex flex-col w-full h-full max-h-[300px] overflow-y-auto border-solid border text-left">
               {items.map((item, idx) => (
-                <div key={`buffer-list-item-${idx}`} className="flex">
+                <div
+                  key={`buffer-list-item-${idx}`}
+                  className="flex items-center"
+                >
                   <div className="mx-2">{this.renderItem(item)}</div>
-                  <div className="ml-auto">
+                  <div className="ml-auto mr-2 flex gap-3">
                     <Button
-                      className="h-[30px]"
+                      size="xs"
+                      variant="ghost"
+                      className="h-[25px]"
                       onClick={() => downloadBuffer(item)}
                     >
-                      <DownloadIcon size={20} />
+                      <DownloadIcon size={16} />
                     </Button>
                     <Button
-                      className="h-[30px]"
+                      size="xs"
+                      variant="ghost"
+                      className="h-[25px]"
                       onClick={async () => {
                         const data =
                           item instanceof Blob
@@ -137,7 +150,15 @@ export default class BufferUI extends Component<ServiceUIProps, State> {
                         });
                       }}
                     >
-                      <Eye size={20} />
+                      <Eye size={16} />
+                    </Button>
+                    <Button
+                      size="xs"
+                      variant="ghost"
+                      className="h-[25px]"
+                      onClick={() => this.onInjectItem(item)}
+                    >
+                      <BugPlay size={16} />
                     </Button>
                   </div>
                 </div>

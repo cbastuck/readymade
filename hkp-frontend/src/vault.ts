@@ -38,7 +38,7 @@ export function secretId(vaultId: "uservault", svc: InstanceId, key: string) {
   return `${vaultId}.${svc.uuid}.${key}`;
 }
 
-// TODO: real safety please
+// TODO: real safety needed
 const dummy = 200;
 function encrypt(value: string) {
   return value

@@ -1,24 +1,14 @@
-import { useRef, useState } from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/ui-components/primitives/table";
-import { Trash, Plus, CircleDotDashed, CircleDot } from "lucide-react";
+import { useState } from "react";
 
 import { ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
-import GroupLabel from "@/ui-components/GroupLabel";
 import RadioGroup from "@/ui-components/RadioGroup";
-import SubmittableInput from "@/ui-components/SubmittableInput";
-import Button from "@/ui-components/Button";
+
 import { createExpandableTooltip } from "@/ui-components/ExpandableTooltip";
-import { delayedExec } from "@/common";
+
 import MapUIModeAssist from "./MapUIModeAssist";
+import MappingTable, { Template } from "../../../components/MappingTable";
 
 enum Mode {
   REPLACE = "replace",
@@ -31,8 +21,7 @@ export default function MapUI(props: ServiceUIProps) {
 
   const [template, setTemplate] = useState<any>({});
   const [mode, setMode] = useState<Mode>(Mode.REPLACE);
-  const [isMappingChangePending, setIsMappingChangePending] = useState(false);
-  const valueInputRef = useRef<HTMLInputElement>(null);
+
   const [isSensingMode, setIsSensingMode] = useState(false);
 
   const updateState = (newState: any) => {
@@ -53,60 +42,8 @@ export default function MapUI(props: ServiceUIProps) {
 
   const onNotification = (notification: any) => updateState(notification);
 
-  const onNewProperty = () => {
-    const newKey = "key";
-    const keys = Object.keys(template)
-      .flatMap((k) => {
-        const n = k.startsWith(newKey) && k.slice(newKey.length);
-        if (n === "" || !isNaN(Number(n))) {
-          return [Number(n)];
-        }
-        return [];
-      })
-      .sort((a, b) => Number(a) - Number(b));
-    const x = keys.length ? keys.pop() || 0 : null;
-    const incKey = x !== null ? newKey + `${x + 1}` : newKey;
-    service.configure({
-      template: {
-        ...template,
-        [incKey]: "value",
-      },
-    });
-  };
-
-  const updateKey = (key: string, newKey: string) => {
-    const newTemplate = Object.keys(template).reduce(
-      (acc, cur) =>
-        cur === key
-          ? { ...acc, [newKey]: template[cur] }
-          : { ...acc, [cur]: template[cur] },
-      {}
-    );
-    service.configure({ template: newTemplate });
-  };
-
-  const onChangeValue = (key: string, newValue: string) => {
-    const newTemplate = Object.keys(template).reduce(
-      (acc, cur) =>
-        cur === key
-          ? { ...acc, [cur]: newValue }
-          : { ...acc, [cur]: template[cur] },
-      {}
-    );
-    service.configure({ template: newTemplate });
-    setTimeout(() => valueInputRef.current?.blur(), 10);
-  };
-
   const onModeChange = (newMode: string) =>
     service.configure({ mode: newMode as Mode });
-
-  const onRemoveProperty = (key: string) => {
-    const newTemplate = Object.keys(template).reduce(
-      (acc, cur) => (cur === key ? acc : { ...acc, [cur]: template[cur] }),
-      {}
-    );
-    service.configure({ template: newTemplate });
-  };
 
   const mappingOptions = [Mode.REPLACE, Mode.OVERWRITE, Mode.ADD];
 
@@ -114,21 +51,13 @@ export default function MapUI(props: ServiceUIProps) {
     service.configure({ sensingMode: !isSensingMode });
   };
 
-  const renderMapping = () => {
-    const rows = Object.keys(template).filter(
-      (key) => typeof template[key] !== "object"
-    );
-
-    const onKeyChange = (oldKey: string, newKey: string, propIdx: number) => {
-      updateKey(oldKey, newKey);
-      const valueInputElementId = `map-value-${service.uuid}-${propIdx}`;
-      delayedExec(
-        () => document.getElementById(valueInputElementId)?.focus(),
-        10
-      );
-    };
-
-    return (
+  return (
+    <ServiceUI
+      {...props}
+      initialSize={{ width: 380, height: undefined }}
+      onInit={onInit}
+      onNotification={onNotification}
+    >
       <div
         style={{
           width: "100%",
@@ -150,119 +79,18 @@ export default function MapUI(props: ServiceUIProps) {
           valueTooltips={mappingOptions.map(mapModeToTooltip)}
         />
 
-        <div className="flex flex-col col-2 mt-2">
-          <div className="flex h-min items-end">
-            <GroupLabel tooltip="Map the incoming data to something else">
-              Mapping
-            </GroupLabel>
-            <div className="flex ml-auto">
-              <Button
-                className={`h-[24px] hover:bg-red-500 hover:stroke-white ${
-                  isSensingMode ? "bg-red-500 stroke-white" : ""
-                }`}
-                variant="outline"
-                onClick={onToggleSensingMode}
-                tooltip={
-                  isSensingMode
-                    ? "Stop listening to incoming data"
-                    : "Derive a mapping from incoming data"
-                }
-              >
-                {isSensingMode ? (
-                  <CircleDot height="16px" className="stroke-white" />
-                ) : (
-                  <CircleDotDashed height="16px" />
-                )}
-              </Button>
-              <Button
-                className="h-[24px]"
-                variant="outline"
-                onClick={onNewProperty}
-                disabled={isSensingMode}
-                tooltip="Add a mapped property"
-              >
-                <Plus size="20px" />
-              </Button>
-            </div>
-          </div>
-
-          {rows.length > 0 ? (
-            <Table className="my-2">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-sans tracking-widest text-base text-left p-0">
-                    Property
-                  </TableHead>
-                  <TableHead className="font-sans tracking-widest text-base text-left p-0">
-                    Value
-                  </TableHead>
-                  <TableHead className="font-sans tracking-widest text-base text-right p-0 w-min"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((key, idx) => (
-                  <TableRow
-                    className="hover:bg-white font-sans-clean"
-                    key={`${key}-${idx}`}
-                  >
-                    <TableCell className="text-left p-0">
-                      <SubmittableInput
-                        fullWidth
-                        hideBottomBorder
-                        value={key}
-                        onSubmit={(newKey) => onKeyChange(key, newKey, idx)}
-                        onChangePending={setIsMappingChangePending}
-                        selectAllOnFocus={true}
-                        onTab={(newKey) => onKeyChange(key, newKey, idx)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-left p-0">
-                      <SubmittableInput
-                        id={`map-value-${service.uuid}-${idx}`}
-                        fullWidth
-                        hideBottomBorder
-                        ref={valueInputRef}
-                        value={template[key]}
-                        onSubmit={(newValue) => onChangeValue(key, newValue)}
-                        onChangePending={setIsMappingChangePending}
-                        selectAllOnFocus={true}
-                        onTab={(newValue) => onChangeValue(key, newValue)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right p-0">
-                      <Button
-                        variant="ghost"
-                        onClick={() => onRemoveProperty(key)}
-                        disabled={isMappingChangePending}
-                        tooltip="Remove this property"
-                        className="stroke-gray-600 hover:stroke-red-500"
-                        tabIndex={-1}
-                      >
-                        <Trash className="stroke-inherit" size="16px" />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          ) : (
-            <div className="text-left py-2 text-gray-300">
-              No mapping available
-            </div>
-          )}
-        </div>
+        <MappingTable
+          id={service.uuid}
+          title="Mapping"
+          tooltip="Map the incoming data to something else"
+          sensingMode={isSensingMode}
+          onToggleSensingMode={onToggleSensingMode}
+          template={template}
+          onTemplateChanged={(newTemplate: Template) =>
+            service.configure({ template: newTemplate })
+          }
+        />
       </div>
-    );
-  };
-
-  return (
-    <ServiceUI
-      {...props}
-      initialSize={{ width: 380, height: undefined }}
-      onInit={onInit}
-      onNotification={onNotification}
-    >
-      {renderMapping()}
     </ServiceUI>
   );
 }

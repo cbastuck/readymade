@@ -1,0 +1,208 @@
+import { useRef, useState } from "react";
+
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/ui-components/primitives/table";
+import { Trash, Plus, CircleDotDashed, CircleDot } from "lucide-react";
+
+import SubmittableInput from "@/ui-components/SubmittableInput";
+import Button from "@/ui-components/Button";
+import GroupLabel from "@/ui-components/GroupLabel";
+import { delayedExec } from "@/common";
+
+export type Template = { [key: string]: string };
+
+type Props = {
+  id: string;
+  title: string;
+  template: { [key: string]: string };
+  tooltip?: string;
+  sensingMode?: boolean;
+  onToggleSensingMode?: () => void;
+  onTemplateChanged: (template: Template) => void;
+};
+
+export default function MappingTable({
+  id,
+  title,
+  template,
+  sensingMode,
+  tooltip,
+  onToggleSensingMode,
+  onTemplateChanged,
+}: Props) {
+  const [isMappingChangePending, setIsMappingChangePending] = useState(false);
+  const valueInputRef = useRef<HTMLInputElement>(null);
+
+  const rows = Object.keys(template).filter(
+    (key) => typeof template[key] !== "object"
+  );
+
+  const onNewProperty = () => {
+    const newKey = "key";
+    const keys = Object.keys(template)
+      .flatMap((k) => {
+        const n = k.startsWith(newKey) && k.slice(newKey.length);
+        if (n === "" || !isNaN(Number(n))) {
+          return [Number(n)];
+        }
+        return [];
+      })
+      .sort((a, b) => Number(a) - Number(b));
+    const x = keys.length ? keys.pop() || 0 : null;
+    const incKey = x !== null ? newKey + `${x + 1}` : newKey;
+    onTemplateChanged({
+      ...template,
+      [incKey]: "value",
+    });
+  };
+
+  const updateKey = (key: string, newKey: string) => {
+    const newTemplate = Object.keys(template).reduce(
+      (acc, cur) =>
+        cur === key
+          ? { ...acc, [newKey]: template[cur] }
+          : { ...acc, [cur]: template[cur] },
+      {}
+    );
+    onTemplateChanged(newTemplate);
+  };
+
+  const onChangeValue = (key: string, newValue: string) => {
+    const newTemplate = Object.keys(template).reduce(
+      (acc, cur) =>
+        cur === key
+          ? { ...acc, [cur]: newValue }
+          : { ...acc, [cur]: template[cur] },
+      {}
+    );
+    onTemplateChanged(newTemplate);
+    setTimeout(() => valueInputRef.current?.blur(), 10);
+  };
+
+  const onRemoveProperty = (key: string) => {
+    const newTemplate = Object.keys(template).reduce(
+      (acc, cur) => (cur === key ? acc : { ...acc, [cur]: template[cur] }),
+      {}
+    );
+    onTemplateChanged(newTemplate);
+  };
+
+  const onKeyChange = (oldKey: string, newKey: string, propIdx: number) => {
+    updateKey(oldKey, newKey);
+    const valueInputElementId = `map-value-${id}-${propIdx}`;
+    delayedExec(
+      () => document.getElementById(valueInputElementId)?.focus(),
+      10
+    );
+  };
+
+  return (
+    <div className="flex flex-col col-2 mt-2 gap-2">
+      <div className="flex h-min items-end">
+        <GroupLabel tooltip={tooltip}>{title}</GroupLabel>
+        <div className="flex ml-auto">
+          {onToggleSensingMode && (
+            <Button
+              className={`h-[24px] hover:bg-red-500 hover:stroke-white ${
+                sensingMode ? "bg-red-500 stroke-white" : ""
+              }`}
+              variant="outline"
+              onClick={onToggleSensingMode}
+              tooltip={
+                sensingMode
+                  ? "Stop listening to incoming data"
+                  : "Derive a mapping from incoming data"
+              }
+            >
+              {sensingMode ? (
+                <CircleDot height="16px" className="stroke-white" />
+              ) : (
+                <CircleDotDashed height="16px" />
+              )}
+            </Button>
+          )}
+          <Button
+            className="h-[24px]"
+            variant="outline"
+            onClick={onNewProperty}
+            disabled={sensingMode}
+            tooltip="Add a property"
+          >
+            <Plus size="20px" />
+          </Button>
+        </div>
+      </div>
+
+      {rows.length > 0 ? (
+        <div className="mx-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="font-sans tracking-widest text-base text-left p-0 h-min">
+                  Property
+                </TableHead>
+                <TableHead className="font-sans tracking-widest text-base text-left p-0 h-min">
+                  Value
+                </TableHead>
+                <TableHead className="font-sans tracking-widest text-base text-right p-0 w-min h-min"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map((key, idx) => (
+                <TableRow
+                  className="hover:bg-white font-sans-clean"
+                  key={`${key}-${idx}`}
+                >
+                  <TableCell className="text-left p-0">
+                    <SubmittableInput
+                      fullWidth
+                      hideBottomBorder
+                      value={key}
+                      onSubmit={(newKey) => onKeyChange(key, newKey, idx)}
+                      onChangePending={setIsMappingChangePending}
+                      selectAllOnFocus={true}
+                      onTab={(newKey) => onKeyChange(key, newKey, idx)}
+                    />
+                  </TableCell>
+                  <TableCell className="text-left p-0">
+                    <SubmittableInput
+                      id={`map-value-${id}-${idx}`}
+                      fullWidth
+                      hideBottomBorder
+                      ref={valueInputRef}
+                      value={template[key]}
+                      onSubmit={(newValue) => onChangeValue(key, newValue)}
+                      onChangePending={setIsMappingChangePending}
+                      selectAllOnFocus={true}
+                      onTab={(newValue) => onChangeValue(key, newValue)}
+                    />
+                  </TableCell>
+                  <TableCell className="text-right p-0">
+                    <Button
+                      variant="ghost"
+                      onClick={() => onRemoveProperty(key)}
+                      disabled={isMappingChangePending}
+                      tooltip="Remove this property"
+                      className="stroke-gray-600 hover:stroke-red-500"
+                      tabIndex={-1}
+                    >
+                      <Trash className="stroke-inherit" size="16px" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <div className="text-left py-2 text-gray-300">No mapping available</div>
+      )}
+    </div>
+  );
+}
