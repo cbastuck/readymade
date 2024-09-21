@@ -10,8 +10,6 @@ import Editor from "@/components/shared/Editor";
 import GroupLabel from "@/ui-components/GroupLabel";
 
 export default function FetcherUI(props: ServiceUIProps) {
-  const idleState = "Idle";
-
   const [url, setUrl] = useState("");
 
   const update = (config: any) => {
