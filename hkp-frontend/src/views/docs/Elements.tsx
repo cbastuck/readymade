@@ -3,7 +3,7 @@ import { CSSProperties } from "react";
 import TextComp from "@/ui-components/Text";
 
 type ParagraphProps = {
-  children: string | string[];
+  children: any;
   brief: string;
   headline: string;
 };

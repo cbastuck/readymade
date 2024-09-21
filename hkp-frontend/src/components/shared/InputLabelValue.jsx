@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { Input } from "semantic-ui-react";
 
 import InputField from "../../components/shared/InputField";
 
@@ -40,7 +39,7 @@ export default class InputLabelValue extends Component {
     const { onCommit } = this.props;
     const { value = "", editLabel, renamedLabelBuffer } = this.state || {};
     return (
-      <Input
+      <input
         style={s(t.fs12, { width: 80 })}
         value={renamedLabelBuffer === null ? editLabel : renamedLabelBuffer}
         ref={(element) => element && element.focus()}

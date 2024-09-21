@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { Input, Button } from "semantic-ui-react";
 
 import ServiceUI from "../../services/ServiceUI";
 import Annotations from "../../../components/shared/Annotations";
@@ -20,7 +19,7 @@ export default class GeneticOptimizerUI extends Component {
     const vspace = { marginBottom: 5 };
     return (
       <div style={{ textAlign: "left" }}>
-        <Input
+        <input
           style={{ ...vspace, width: "100%" }}
           type="text"
           value={this.state.dataRoot || ""}
@@ -30,7 +29,7 @@ export default class GeneticOptimizerUI extends Component {
           }}
           label="Root"
         />
-        <Input
+        <input
           style={{ ...vspace, width: "100%" }}
           type="number"
           value={this.state.ttl || ""}
@@ -41,7 +40,7 @@ export default class GeneticOptimizerUI extends Component {
           }
           label="TTL"
         />
-        <Button
+        <button
           style={{ ...vspace, width: "100%" }}
           onClick={() =>
             service.configure({
@@ -50,7 +49,7 @@ export default class GeneticOptimizerUI extends Component {
           }
         >
           Reset
-        </Button>
+        </button>
       </div>
     );
   };

@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
 
 import { BoardConsumer } from "../../../BoardContext";
 
@@ -41,7 +40,7 @@ class ChunkedFileProviderUI extends Component {
               />
             </div>
             <div>
-              <Button
+              <button
                 onClick={() => this.processFile(boardContext, this.state.file)}
                 disabled={!this.state.file}
                 style={{
@@ -50,7 +49,7 @@ class ChunkedFileProviderUI extends Component {
                 }}
               >
                 Process
-              </Button>
+              </button>
             </div>
           </div>
         )}

@@ -53,8 +53,6 @@ import HtmlDescriptor from "../services/Html";
 import ArrayTransformDescriptor from "../services/ArrayTransform";
 import TimelineDescriptor from "../services/Timeline";
 import ChunkedFileProviderDescriptor from "../services/ChunkedFileProvider";
-import FeedbackProviderDesriptor from "../services/FeedbackProvider";
-import FeedbackTakerDesriptor from "../services/FeedbackTaker";
 
 // 3rd party APIs
 import SpotifyDescriptor from "../services/Spotify";
@@ -140,8 +138,6 @@ export const defaultRegistry: Array<ServiceModule> = [
   ArrayTransformDescriptor,
   TimelineDescriptor,
   ChunkedFileProviderDescriptor,
-  FeedbackProviderDesriptor,
-  FeedbackTakerDesriptor,
 
   // cloud
   CloudSinkDescriptor,

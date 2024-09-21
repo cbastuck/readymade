@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { Button, Input } from "semantic-ui-react";
 
 import { WritableStream } from "web-streams-polyfill/ponyfill";
 import StreamSaver from "streamsaver";
@@ -49,7 +48,7 @@ class DownloaderUI extends Component {
     >
       <div style={s(t.ls1, t.fs12)}>Filename</div>
       <div style={t.mt3}>
-        <Input
+        <input
           style={s(t.w100, { margin: 0 })}
           value={this.state.filename || service.filename}
           onChange={(_, { value }) => this.setState({ filename: value })}
@@ -63,13 +62,13 @@ class DownloaderUI extends Component {
         />
       </div>
       <div style={t.mt3}>
-        <Button
+        <button
           style={s(t.ls1, t.fs12, t.w100)}
           disabled={!this.state.running}
           onClick={() => this.onClose(service)}
         >
           Close
-        </Button>
+        </button>
       </div>
     </div>
   );

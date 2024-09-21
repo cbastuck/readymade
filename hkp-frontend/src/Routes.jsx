@@ -32,8 +32,6 @@ import Profile from "./views/profile";
 
 import Headless from "./views/headless";
 import Join from "./Join";
-import ServiceReferenceView from "./views/ServiceReferenceView";
-import DataModelReferenceView from "./views/DataModelReferenceView";
 
 import Dashboard from "./views/dashboard";
 import WhatPitch from "./views/docs/scope/What";
@@ -113,9 +111,6 @@ export default function Routes() {
       <Route path="/profile" element={<Profile />} />
       <Route path="/home" element={<Home />} />
       <Route path="/home/import-widget" element={<HomeWidgetImport />} />
-
-      <Route path="/service/:service" element={<ServiceReferenceView />} />
-      <Route path="/datamodel/:name" element={<DataModelReferenceView />} />
 
       <Route path="/docs" element={<Docs />} />
       <Route path="/docs/updates" element={<Updates />} />

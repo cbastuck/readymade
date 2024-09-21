@@ -44,7 +44,6 @@ export default class Editor extends Component<Props> {
             if (editor) {
               editor.updateOptions({ wordWrap: "on" }); // TODO: provide an option
             }
-
             this.editor = editor;
             setTimeout(() => this.setState({ height: "100%" }));
           }}

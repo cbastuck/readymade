@@ -1,7 +1,5 @@
 import { useState } from "react";
 
-import ServiceReference from "../../components/ServiceReference";
-import DataModelReference from "../../components/DataModelReference";
 import Text from "@/ui-components/Text";
 import { s, t } from "../../styles";
 import CustomDialog from "@/ui-components/CustomDialog";
@@ -23,29 +21,8 @@ export default function Explanation({ value: explanation }: Props) {
     return false;
   }
 
-  const isServiceReference =
-    modalReferenceDatamodel &&
-    modalReferenceDatamodel.link.startsWith("/service");
-  const isDatamodelReference =
-    modalReferenceDatamodel &&
-    modalReferenceDatamodel.link.startsWith("/datamodel");
-  const id =
-    modalReferenceDatamodel && modalReferenceDatamodel.link.split("/").pop();
-
   let title;
   let component = <div />;
-  if (isDatamodelReference) {
-    title = `${id} Datamodel Documentation`;
-    component = (
-      <DataModelReference datamodel={id} name={modalReferenceDatamodel.name} />
-    );
-  }
-  if (isServiceReference) {
-    title = `${id} Service Documentation`;
-    component = (
-      <ServiceReference service={id} name={modalReferenceDatamodel.name} />
-    );
-  }
 
   return (
     <div

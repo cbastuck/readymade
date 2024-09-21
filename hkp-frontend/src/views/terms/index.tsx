@@ -283,30 +283,6 @@ export default function Terms() {
       <Paragraph headline="Imprint">
         <Imprint />
       </Paragraph>
-      <Paragraph headline="Credits">
-        <div style={{ textAlign: "left" }}>
-          <div>
-            Icons are from
-            <a href="https://fontawesome.com/license/free"> Font Awesome </a>
-          </div>
-          <div>
-            Special Elite is used as a{" "}
-            <a href="https://fonts.google.com/specimen/Special+Elite/about">
-              font
-            </a>
-          </div>
-          <div>
-            Using{" "}
-            <a href="https://microsoft.github.io/monaco-editor/">Monaco</a> as
-            code editor
-          </div>
-          <div>
-            <a href="https://react.dev/">React</a> and{" "}
-            <a href="https://react.semantic-ui.com/">Semantic-UI React</a> are
-            used
-          </div>
-        </div>
-      </Paragraph>
     </Article>
   );
 }

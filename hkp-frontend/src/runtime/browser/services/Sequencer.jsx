@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import { Input, Checkbox, TextArea, Button } from "semantic-ui-react";
 
 import ServiceUI from "../../services/ServiceUI";
 
@@ -97,7 +96,7 @@ export class SequencerUI extends Component {
         <div>
           {this.renderStepBar(service)}
           <div>
-            <Input
+            <input
               type="number"
               label="Steps"
               value={this.state.numSteps}
@@ -113,7 +112,8 @@ export class SequencerUI extends Component {
             />
           </div>
           <div style={{ marginTop: 10 }}>
-            <Checkbox
+            <input
+              type="checkbox"
               label="Repeat"
               checked={this.state.repeat}
               onChange={(_, { checked }) =>
@@ -164,7 +164,7 @@ export class SequencerUI extends Component {
     return (
       <div>
         {this.renderStepBar(service)}
-        <TextArea
+        <textarea
           style={{ width: "100%" }}
           value={this.state.editBuffer}
           onChange={(_, data) =>
@@ -173,7 +173,7 @@ export class SequencerUI extends Component {
             })
           }
         />
-        <Button
+        <button
           style={{ width: "100%", marginTop: 10 }}
           onClick={() => {
             service.steps[this.state.editBufferStep] = JSON.parse(
@@ -182,7 +182,7 @@ export class SequencerUI extends Component {
           }}
         >
           Update Step
-        </Button>
+        </button>
       </div>
     );
   };

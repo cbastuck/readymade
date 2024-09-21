@@ -1,6 +1,6 @@
 import React, { Component } from "react";
-import { Button } from "semantic-ui-react";
 
+import Button from "@/ui-components/Button";
 import InputLabelValue from "./InputLabelValue";
 
 import "./Annotations.css";
