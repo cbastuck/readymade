@@ -9,10 +9,11 @@ export function isServiceInstanceDrop(
 ): obj is ServiceInstanceDropType {
   return (
     !!obj &&
-    obj.descriptor &&
-    obj.descriptor.serviceId &&
-    obj.descriptor.serviceName &&
-    obj.uuid
+    obj.uuid &&
+    ((obj.descriptor &&
+      obj.descriptor.serviceId &&
+      obj.descriptor.serviceName) ||
+      (obj.serviceId && obj.serviceName))
   );
 }
 

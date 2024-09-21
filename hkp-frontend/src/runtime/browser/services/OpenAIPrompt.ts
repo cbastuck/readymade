@@ -25,10 +25,10 @@ type State = {
   prompt: string;
   temperature: number;
   seed: number;
-  apiKey: string;
 };
 
 export class OpenAIPrompt extends ServiceBase<State> {
+  _apiKey: string = "";
   constructor(
     app: AppInstance,
     board: string,
@@ -66,7 +66,6 @@ export class OpenAIPrompt extends ServiceBase<State> {
       availableVoices: ["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
       model: "gpt-4o-mini",
       voice: "alloy",
-      apiKey: "",
       responseIsJson: false,
       prompt: "",
       temperature: 0,
@@ -95,9 +94,8 @@ export class OpenAIPrompt extends ServiceBase<State> {
       }
     }
 
-    if (needsUpdate(apiKey, this.state.apiKey)) {
-      this.state.apiKey = apiKey;
-      this.app.notify(this, { apiKey });
+    if (needsUpdate(apiKey, this._apiKey)) {
+      this._apiKey = apiKey;
     }
 
     if (needsUpdate(voice, this.state.voice)) {
@@ -113,7 +111,7 @@ export class OpenAIPrompt extends ServiceBase<State> {
   };
 
   async process(params: any) {
-    if (!this.state.apiKey) {
+    if (!this._apiKey) {
       console.error("OpenAIPrompt - no API key provided");
       return null;
     }
@@ -171,7 +169,7 @@ export class OpenAIPrompt extends ServiceBase<State> {
       headers: {
         Accept: "application/json",
         "Content-Type": "application/json",
-        Authorization: `Bearer ${this.state.apiKey}`,
+        Authorization: `Bearer ${this._apiKey}`,
       },
       body: JSON.stringify(getBody()),
     });

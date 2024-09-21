@@ -8,7 +8,7 @@ type InputValueType = string | undefined;
 
 type InputFieldType = "text" | "password";
 
-type Props = {
+export type Props = {
   value: InputValueType;
   label: string;
   type?: InputFieldType | undefined;

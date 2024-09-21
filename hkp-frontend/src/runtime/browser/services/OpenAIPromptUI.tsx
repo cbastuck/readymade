@@ -10,8 +10,9 @@ import SelectorField, {
 import Slider from "@/ui-components/Slider";
 import MenuIcon from "@/ui-components/MenuIcon";
 import { FileJson, FileText } from "lucide-react";
-import InputField from "@/components/shared/InputField";
 import { OpenAIModel } from "./OpenAIPrompt";
+import SecretField from "@/components/shared/SecretField";
+import { secretId } from "@/vault";
 
 export default function OpenAIPromptUI(props: ServiceUIProps) {
   const [prompt, setPrompt] = useState("");
@@ -132,11 +133,11 @@ export default function OpenAIPromptUI(props: ServiceUIProps) {
     >
       <div className="flex flex-col w-full h-full">
         <div className="flex flex-col">
-          <InputField
+          <SecretField
             className="mr-3"
             label="Api-Key"
-            value={apiKey}
-            type="password"
+            value={secretId("uservault", props.service, "apiKey")}
+            fallbackValue={apiKey}
             onChange={onChangeApiKey}
           />
           <SelectorField
