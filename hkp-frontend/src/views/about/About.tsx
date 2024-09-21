@@ -19,9 +19,7 @@ export default class About extends Component<Props> {
           <h1 className="py-10 pt-4 md:pt-10 mx-0 mb-2 md:text-center">
             About
           </h1>
-          <div className="pb-2">
-            <Faq />
-          </div>
+          <Faq />
 
           <div className="pb-10">
             <h1 className="py-4 pt-4 md:pt-10 mx-0 mb-2 md:text-center">
@@ -38,12 +36,12 @@ export default class About extends Component<Props> {
               <a href="https://fonts.google.com/specimen/Special+Elite/about">
                 Special Elite
               </a>
-              ,<a href="https://font.download/font/walkway">Walkway Black</a>,{" "}
+              , <a href="https://font.download/font/walkway">Walkway Black</a>,{" "}
               <a href="https://font.download/font/Cutive">Cutive</a>,{" "}
               <a href="https://fonts.google.com/specimen/Cabin">Cabin</a> and{" "}
               <a href="https://fonts.google.com/specimen/Lato">Lato</a> are used
               <div>
-                Used images and videos are from Cottonbro studio{" "}
+                Images and videos from the startpage come from Cottonbro studio{" "}
                 <a href="https://www.pexels.com/video/person-using-a-tablet-5190552">
                   #1
                 </a>

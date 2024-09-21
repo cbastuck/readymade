@@ -1,10 +1,10 @@
 import { useContext } from "react";
 import Board from "../../views/playground/Board";
 import { BoardCtx } from "@/BoardContext";
-import { PlaygroundState } from "@/types";
+import { BoardDescriptor } from "@/types";
 
 type Props = {
-  board: PlaygroundState;
+  board: BoardDescriptor;
   hidden?: boolean;
   onResult: (result: any) => void;
 };

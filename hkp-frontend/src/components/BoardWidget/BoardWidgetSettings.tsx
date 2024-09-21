@@ -13,13 +13,13 @@ import {
 import { Button } from "@/ui-components/primitives/button";
 import EditorDialog from "@/ui-components/EditorDialog";
 import ShareQRCodeDialog from "../ShareQRCodeDialog";
-import { PlaygroundState } from "@/types";
+import { BoardDescriptor } from "@/types";
 import { compressAndEncodeState } from "@/common";
 
 type Props = {
   removable?: boolean;
   params?: any;
-  board: PlaygroundState;
+  board: BoardDescriptor;
   onRemoveWidget?: () => void;
   onConfig?: (cfg: any) => void;
 };

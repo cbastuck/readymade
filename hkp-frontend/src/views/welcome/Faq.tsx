@@ -8,7 +8,7 @@ import {
 export default function Faq() {
   const s = "pb-2 px-4 text-left tracking-widest";
   return (
-    <>
+    <div className="flex flex-col">
       <div className="text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
         Describing this app in one sentence is challenging. Although, there are
         many similarities to existing tools and approaches. However, most of
@@ -150,6 +150,6 @@ export default function Faq() {
           </AccordionItem>
         </Accordion>
       </div>
-    </>
+    </div>
   );
 }

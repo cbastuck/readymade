@@ -1,6 +1,6 @@
 import { RotateCw } from "lucide-react";
 
-import { PlaygroundState } from "@/types";
+import { BoardDescriptor } from "@/types";
 import WrappedBoard from "./WrappedBoard";
 import { BoardWidgetAPI } from ".";
 import IconButton from "@/ui-components/IconButton";
@@ -9,7 +9,7 @@ import BoardWidgetSettings from "./BoardWidgetSettings";
 type Props = {
   title?: string;
   placeholder?: (result: any) => React.ReactElement | null;
-  board: PlaygroundState;
+  board: BoardDescriptor;
   hideBoard?: boolean;
   result: any;
   toggleIcon?: React.ComponentType;

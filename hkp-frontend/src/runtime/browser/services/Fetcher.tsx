@@ -62,25 +62,32 @@ class Fetcher extends ServiceBase<State> {
     const {
       url = this.state.url,
       method = this.state.method,
-      body = this.state.body,
+      body: passedBody = this.state.body,
       headers = this.state.headers,
       variables,
     } = params;
+
     if (!url) {
       console.warn("Fetcher no url incoming", params);
       return params;
     }
 
+    const getBody = () => {
+      const bdy = passedBody || this.state.body || params;
+      return bdy
+        ? typeof bdy === "string"
+          ? bdy
+          : JSON.stringify(bdy)
+        : undefined;
+    };
+
+    const body = getBody();
     const substitutedUrl = variables ? substituteUrl(url, variables) : url;
     this.app.notify(this, { status: `fetch ${substitutedUrl}` });
     try {
       const res = await fetch(substitutedUrl, {
         method,
-        body: body
-          ? typeof body === "string"
-            ? body
-            : JSON.stringify(body)
-          : undefined,
+        body,
         headers,
       });
       this.app.notify(this, { status: null });

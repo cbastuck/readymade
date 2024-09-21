@@ -1,22 +1,25 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Settings, CircleX } from "lucide-react";
 
-import { BoardDescriptor, PlaygroundState, User } from "@/types";
+import { BoardDescriptor, User } from "@/types";
 import { runtimeApis } from "../../views/playground";
 import BoardProvider, { BoardContextState } from "@/BoardContext";
 import { availableRuntimeEngines } from "../../views/playground/common";
 import BoardWidgetFrame from "./BoardWidgetFrame";
 
 export type BoardWidgetAPI = {
-  runBoard: () => void;
+  runBoard: (params?: any) => void;
 };
 
 type Props = {
   user?: User | null;
-  board: PlaygroundState;
+  board: BoardDescriptor;
   params?: any;
   title?: string;
   removable?: boolean;
+  boardHiddenOnInit?: boolean;
+  runBoardAfterLoad?: boolean;
+  apiRef?: any;
   children?: (result: any) => React.ReactElement | null;
   onRemoveWidget?: () => void;
   onConfig?: (config: any) => void;
@@ -30,29 +33,40 @@ export default function BoardWidget(props: Props) {
     children,
     user,
     removable,
+    apiRef,
+    boardHiddenOnInit = true,
+    runBoardAfterLoad = true,
     onRemoveWidget,
     onConfig,
   } = props;
   const [result, setResult] = useState<any>(null);
-  const [hideBoard, setHideBoard] = useState<boolean>(true);
+  const [hideBoard, setHideBoard] = useState<boolean>(boardHiddenOnInit);
   const boardContextRef = useRef<BoardProvider | null>(null);
 
-  const runBoard = (cs: BoardContextState) =>
-    cs.onAction({ type: "playBoard", params });
+  const runBoard = (cs: BoardContextState, p?: any) =>
+    cs.onAction({ type: "playBoard", params: p ?? params });
   const onFetchBoard = async (): Promise<BoardDescriptor> => board;
   const onToggleBoardVisibility = () => setHideBoard((prev) => !prev);
-  const boardApi = {
-    runBoard: () => {
-      boardContextRef.current && runBoard(boardContextRef.current?.state);
+  const boardApi: BoardWidgetAPI = {
+    runBoard: (p: any) => {
+      boardContextRef.current && runBoard(boardContextRef.current?.state, p);
     },
   };
+  if (apiRef) {
+    apiRef.current = boardApi;
+  }
+
+  useEffect(() => {
+    boardContextRef.current?.fetchBoard();
+  }, [board]);
+
   return (
     <BoardProvider
       ref={(ref) => (boardContextRef.current = ref)}
       user={user || null}
       boardName={board.boardName}
       fetchBoard={onFetchBoard}
-      onLoad={runBoard}
+      onLoad={runBoardAfterLoad ? runBoard : undefined}
       fetchAfterMount={true}
       runtimeApis={runtimeApis}
       availableRuntimeEngines={availableRuntimeEngines}

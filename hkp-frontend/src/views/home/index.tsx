@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Send } from "lucide-react";
 
 import Template from "../Template";
 import BoardWidget, { BoardWidgetAPI } from "../../components/BoardWidget";
@@ -20,15 +20,19 @@ import {
   WidgetDescriptor,
 } from "./common";
 import samples from "./samples";
+import PostBoardDialog from "./PostBoardDialog";
 
 export default function Home() {
   const board = localStorageBoard as PlaygroundState;
   const appContext = useContext(AppCtx);
+  const [visibleTargetBoards, setVisibleTargetBoards] =
+    useState<null | Array<string>>(null);
 
   const onLocalBoardAction = (
     api: BoardWidgetAPI,
     board: SavedBoard,
-    { command }: BoardManagerAction
+    { command }: BoardManagerAction,
+    boards: Array<SavedBoard>
   ) => {
     switch (command) {
       case "delete":
@@ -45,6 +49,9 @@ export default function Home() {
           ]);
         }
         return;
+      case "post-to":
+        setVisibleTargetBoards(boards.map((b) => b.name));
+        break;
       default:
         console.warn("Unhandled action", command);
         break;
@@ -67,6 +74,7 @@ export default function Home() {
   const actions = [
     { label: "Delete", value: "delete", icon: Trash },
     { label: "Add Widget to Home", value: "add-widget", icon: Plus },
+    { label: "Post to", value: "post-to", icon: Send },
   ];
 
   const onRemoveWidget = (widgetIdx: number) => {
@@ -78,6 +86,10 @@ export default function Home() {
       all.map((item, idx) => (idx === widgetIdx ? { ...item, params } : item))
     );
   };
+
+  const [selectedTargetBoard, setSelectedTargetBoard] = useState<string | null>(
+    null
+  );
 
   return (
     <Template title="Home" isRoot={true}>
@@ -93,7 +105,7 @@ export default function Home() {
               boards={boards}
               actions={actions}
               onAction={(board: SavedBoard, action: BoardManagerAction) =>
-                onLocalBoardAction(api, board, action)
+                onLocalBoardAction(api, board, action, boards)
               }
               pageSize={5}
             />
@@ -122,6 +134,14 @@ export default function Home() {
           hideSearch
           startCollapsed={true}
           dateFormat="DD/MM/YYYY"
+        />
+
+        <PostBoardDialog
+          user={appContext.user}
+          boards={visibleTargetBoards}
+          selectedBoard={selectedTargetBoard}
+          onSelectionChanged={setSelectedTargetBoard}
+          onClose={() => setVisibleTargetBoards(null)}
         />
       </div>
     </Template>
