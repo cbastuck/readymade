@@ -1,56 +1,82 @@
 import { useRef, useState } from "react";
+import { Send } from "lucide-react";
+
 import CustomDialog from "@/ui-components/CustomDialog";
-import SelectorField, {
-  arrayToOptions,
-} from "@/components/shared/SelectorField";
 import Button from "@/ui-components/Button";
 import BoardWidget, { BoardWidgetAPI } from "@/components/BoardWidget";
 import { BoardDescriptor, User } from "@/types";
 import { restoreBoardFromLocalStorage } from "../playground/common";
+import SearchableSelect from "@/ui-components/SearchableSelect";
 
 type Props = {
   user: User | null;
-  boards: Array<string> | null;
+  sourceBoard: string | null;
+  targetBoards: Array<string> | null;
   selectedBoard: string | null;
-  value?: any;
   onClose: () => void;
   onSelectionChanged: (board: string) => void;
 };
 
 export default function PostBoardDialog({
   user,
-  boards,
+  sourceBoard,
+  targetBoards,
   selectedBoard,
-
   onClose,
   onSelectionChanged,
 }: Props) {
   const [loadedBoard, setLoadedBoard] = useState<BoardDescriptor | null>(null);
-  const onSelectBoard = async (item: { value: string }) => {
-    const b = restoreBoardFromLocalStorage(item.value);
+  const [selectedTargetBoard, setSelectedTargetBoard] = useState<string | null>(
+    null
+  );
+  const onSelectBoard = async (value: string) => {
+    const b = restoreBoardFromLocalStorage(value);
     if (b) {
+      setSelectedTargetBoard(value);
       setLoadedBoard(b);
-      onSelectionChanged(item.value);
+      onSelectionChanged(value);
     }
   };
 
   const apiRef = useRef<BoardWidgetAPI | null>(null);
   const onPostBoard = () => {
-    apiRef.current?.runBoard(loadedBoard);
+    if (sourceBoard) {
+      const source = restoreBoardFromLocalStorage(sourceBoard);
+      if (source) {
+        apiRef.current?.runBoard(source);
+      }
+    }
   };
 
   return (
-    <CustomDialog isOpen={boards !== null} onOpenChange={onClose}>
+    <CustomDialog isOpen={targetBoards !== null} onOpenChange={onClose}>
       <div className="flex flex-col">
-        <SelectorField
-          className="whitespace-nowrap p-4 w-full"
-          label="Target Board"
-          options={boards ? arrayToOptions(boards!) : {}}
-          onChange={onSelectBoard}
-          value={selectedBoard}
-        />
+        <SearchableSelect
+          className="w-[300px]"
+          title={
+            <div className="flex whitespace-nowrap items-center">
+              Post the source of{" "}
+              <pre className="bg-gray-100 rounded p-1 mx-2">{sourceBoard}</pre>{" "}
+              to Board
+            </div>
+          }
+          label="Target boards"
+          value={selectedTargetBoard || ""}
+          options={targetBoards || []}
+          onSelect={onSelectBoard}
+        >
+          <div>as shown below</div>
+          <Button
+            className="min-w-[200px] text-base"
+            onClick={onPostBoard}
+            disabled={!selectedTargetBoard}
+          >
+            Process <Send className="ml-2" size="18" />
+          </Button>
+        </SearchableSelect>
+
         {loadedBoard && selectedBoard && (
-          <div className="border-gray border p-10 w-full h-full max-h-[400px] overflow-y-auto">
+          <div className="border-gray border my-2 p-10 w-full h-full max-h-[400px] overflow-y-auto">
             <BoardWidget
               apiRef={apiRef}
               user={user}
@@ -63,9 +89,6 @@ export default function PostBoardDialog({
             </BoardWidget>
           </div>
         )}
-        <Button className="my-4" onClick={onPostBoard}>
-          Post Board
-        </Button>
       </div>
     </CustomDialog>
   );

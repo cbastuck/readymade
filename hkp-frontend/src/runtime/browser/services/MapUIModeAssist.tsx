@@ -29,7 +29,7 @@ export default function MapUIModeAssist() {
       <div className="flex flex-col gap-2 py-6 font-serif text-[14px] w-[80%]">
         <div>
           Typically you use the Map service to adapt incoming, structured JSON
-          data, to generate a different shape. By this you can select , remove
+          data, to generate a different shape. By this you can select, remove
           others, or rename properties freely. You do this by defining mapping
           properties. Each mapping row defines a property that will be part in
           the transformed data.

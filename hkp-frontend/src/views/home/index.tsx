@@ -22,11 +22,17 @@ import {
 import samples from "./samples";
 import PostBoardDialog from "./PostBoardDialog";
 
+type PostBoardState = {
+  selectedBoard: string;
+  targetBoards: Array<string>;
+};
+
 export default function Home() {
   const board = localStorageBoard as PlaygroundState;
   const appContext = useContext(AppCtx);
-  const [visibleTargetBoards, setVisibleTargetBoards] =
-    useState<null | Array<string>>(null);
+  const [postBoardState, setPostBoardState] = useState<PostBoardState | null>(
+    null
+  );
 
   const onLocalBoardAction = (
     api: BoardWidgetAPI,
@@ -50,7 +56,10 @@ export default function Home() {
         }
         return;
       case "post-to":
-        setVisibleTargetBoards(boards.map((b) => b.name));
+        setPostBoardState({
+          targetBoards: boards.map((b) => b.name),
+          selectedBoard: board.name,
+        });
         break;
       default:
         console.warn("Unhandled action", command);
@@ -138,10 +147,11 @@ export default function Home() {
 
         <PostBoardDialog
           user={appContext.user}
-          boards={visibleTargetBoards}
+          sourceBoard={postBoardState?.selectedBoard || null}
+          targetBoards={postBoardState?.targetBoards || null}
           selectedBoard={selectedTargetBoard}
           onSelectionChanged={setSelectedTargetBoard}
-          onClose={() => setVisibleTargetBoards(null)}
+          onClose={() => setPostBoardState(null)}
         />
       </div>
     </Template>
