@@ -30,7 +30,7 @@ class Map extends ServiceBase<State> {
     });
   }
 
-  configure(config: any) {
+  async configure(config: any) {
     const { template, mode, sensingMode } = config;
     if (template !== undefined) {
       this.updateTemplate(template);
@@ -43,6 +43,13 @@ class Map extends ServiceBase<State> {
 
     if (sensingMode !== undefined) {
       this.updateSensingMode(sensingMode);
+    }
+
+    if (config.command) {
+      if (config.command.action === "inject") {
+        const data = await this.process(config.command.params);
+        this.app.next(this, data);
+      }
     }
   }
 

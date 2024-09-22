@@ -1,14 +1,14 @@
 import { useState } from "react";
+import { SquarePlay } from "lucide-react";
 
 import { ServiceUIProps } from "@/types";
 import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
 
 import RadioGroup from "@/ui-components/RadioGroup";
-
 import { createExpandableTooltip } from "@/ui-components/ExpandableTooltip";
-
 import MapUIModeAssist from "./MapUIModeAssist";
 import MappingTable, { Template } from "../../../components/MappingTable";
+import MenuIcon from "@/ui-components/MenuIcon";
 
 enum Mode {
   REPLACE = "replace",
@@ -51,12 +51,27 @@ export default function MapUI(props: ServiceUIProps) {
     service.configure({ sensingMode: !isSensingMode });
   };
 
+  const customMenuEntries = [
+    {
+      name: "Inject Data",
+      icon: <MenuIcon icon={SquarePlay} />,
+      onClick: () => {
+        service.configure({
+          command: {
+            action: "inject",
+            params: {},
+          },
+        });
+      },
+    },
+  ];
   return (
     <ServiceUI
       {...props}
       initialSize={{ width: 380, height: undefined }}
       onInit={onInit}
       onNotification={onNotification}
+      customMenuEntries={customMenuEntries}
     >
       <div
         style={{
@@ -80,6 +95,7 @@ export default function MapUI(props: ServiceUIProps) {
         />
 
         <MappingTable
+          className="mb-2"
           id={service.uuid}
           title="Mapping"
           tooltip="Map the incoming data to something else"

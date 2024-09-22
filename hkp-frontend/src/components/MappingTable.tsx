@@ -19,6 +19,7 @@ export type Template = { [key: string]: string };
 
 type Props = {
   id: string;
+  className?: string;
   title: string;
   template: { [key: string]: string };
   tooltip?: string;
@@ -29,6 +30,7 @@ type Props = {
 
 export default function MappingTable({
   id,
+  className,
   title,
   template,
   sensingMode,
@@ -103,7 +105,7 @@ export default function MappingTable({
   };
 
   return (
-    <div className="flex flex-col col-2 mt-2 gap-2">
+    <div className={`flex flex-col col-2 mt-2 gap-2 ${className}`}>
       <div className="flex h-min items-end">
         <GroupLabel tooltip={tooltip}>{title}</GroupLabel>
         <div className="flex ml-auto">

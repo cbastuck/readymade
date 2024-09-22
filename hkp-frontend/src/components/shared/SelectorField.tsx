@@ -22,7 +22,6 @@ type Props = {
   value: string | null;
   label?: string;
   options: Options;
-
   className?: string;
   uppercaseValues?: boolean;
   uppercaseKeys?: boolean;
@@ -90,7 +89,7 @@ export default class SelectorField extends Component<Props, State> {
             })
           }
         >
-          <SelectTrigger className="w-full mr-2 h-min">
+          <SelectTrigger className="w-full h-min rounded-none">
             <SelectValue className="font-menu" placeholder="Select ..." />
           </SelectTrigger>
           <SelectContent className="font-menu">

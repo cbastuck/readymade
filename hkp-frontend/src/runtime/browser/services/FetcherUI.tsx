@@ -8,6 +8,11 @@ import RadioGroup from "@/ui-components/RadioGroup";
 import MappingTable, { Template } from "../../../components/MappingTable";
 import Editor from "@/components/shared/Editor";
 import GroupLabel from "@/ui-components/GroupLabel";
+import SelectorField, {
+  arrayToOptions,
+  OnChangeValue,
+} from "@/components/shared/SelectorField";
+import { BodyFormat } from "./Fetcher";
 
 export default function FetcherUI(props: ServiceUIProps) {
   const [url, setUrl] = useState("");
@@ -27,6 +32,10 @@ export default function FetcherUI(props: ServiceUIProps) {
 
     if (needsUpdate(config?.body, body)) {
       setBody(config.body);
+    }
+
+    if (needsUpdate(config?.bodyFormat, bodyFormat)) {
+      setBodyFormat(config.bodyFormat);
     }
   };
 
@@ -56,6 +65,10 @@ export default function FetcherUI(props: ServiceUIProps) {
     props.service.configure({ body: body || null });
   };
 
+  const [bodyFormat, setBodyFormat] = useState<BodyFormat>("text");
+  const onChangeBodyFormat = ({ value: bodyFormat }: OnChangeValue) =>
+    props.service.configure({ bodyFormat });
+
   return (
     <ServiceUI
       {...props}
@@ -68,6 +81,7 @@ export default function FetcherUI(props: ServiceUIProps) {
         style={{ width: "100%", textAlign: "left", textOverflow: "ellipsis" }}
       >
         <InputField value={url} label="URL" onChange={onChangeUrl} />
+
         <RadioGroup
           title="Method"
           options={methods}
@@ -82,10 +96,23 @@ export default function FetcherUI(props: ServiceUIProps) {
           onTemplateChanged={onHeadersChanged}
         />
 
-        <div>
-          <GroupLabel>Body</GroupLabel>
-          <div className="h-[80px] w-full">
-            <Editor value={body} onChange={onChangeBody} />
+        <div className="flex flex-col gap-2">
+          <div className="flex items-end">
+            <GroupLabel>Body</GroupLabel>
+            <SelectorField
+              className="max-w-[100px] ml-auto"
+              value={bodyFormat}
+              options={arrayToOptions(["json", "text"])}
+              onChange={onChangeBodyFormat}
+            />
+          </div>
+
+          <div className="h-[100px] w-full">
+            <Editor
+              value={body}
+              onChange={onChangeBody}
+              language={bodyFormat}
+            />
           </div>
         </div>
 

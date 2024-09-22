@@ -6,12 +6,15 @@ import { needsUpdate } from "@/ui-components/service/ServiceUI";
 const serviceId = "hookup.to/service/fetcher";
 const serviceName = "Fetcher";
 
+export type BodyFormat = "json" | "text";
+
 type State = {
   status: string | null;
-  url?: string;
+  url: string | null;
   method: string;
   headers: { [name: string]: string };
   body: string | null;
+  bodyFormat: BodyFormat;
 };
 
 class Fetcher extends ServiceBase<State> {
@@ -22,10 +25,12 @@ class Fetcher extends ServiceBase<State> {
     id: string
   ) {
     super(app, board, descriptor, id, {
+      url: null,
       status: null,
       method: "GET",
       headers: {},
       body: null,
+      bodyFormat: "text",
     });
   }
 
@@ -45,6 +50,11 @@ class Fetcher extends ServiceBase<State> {
       this.app.notify(this, { headers: this.state.headers });
     }
 
+    if (needsUpdate(config.bodyFormat, this.state.bodyFormat)) {
+      this.state.bodyFormat = config.bodyFormat;
+      this.app.notify(this, { bodyFormat: this.state.bodyFormat });
+    }
+
     if (needsUpdate(config.body, this.state.body)) {
       this.state.body = config.body;
       this.app.notify(this, { body: this.state.body });
@@ -58,36 +68,45 @@ class Fetcher extends ServiceBase<State> {
     }
   }
 
+  getStateBody = () => {
+    if (!this.state.body) {
+      return null;
+    }
+    return this.state.bodyFormat === "json"
+      ? JSON.parse(this.state.body)
+      : this.state.body;
+  };
+
+  getBody = (params: any) => {
+    const stateBody = this.getStateBody();
+    if (stateBody) {
+      if (typeof params === "object") {
+        return { ...stateBody, ...params };
+      }
+      return stateBody;
+    }
+    return params;
+  };
+
   async process(params: any) {
     const {
-      url = this.state.url,
       method = this.state.method,
-      body: passedBody = this.state.body,
       headers = this.state.headers,
       variables,
     } = params;
-
+    const url = this.state.url || params.url;
     if (!url) {
       console.warn("Fetcher no url incoming", params);
       return params;
     }
 
-    const getBody = () => {
-      const bdy = passedBody || this.state.body || params;
-      return bdy
-        ? typeof bdy === "string"
-          ? bdy
-          : JSON.stringify(bdy)
-        : undefined;
-    };
-
-    const body = getBody();
+    const body = this.getBody(params);
     const substitutedUrl = variables ? substituteUrl(url, variables) : url;
     this.app.notify(this, { status: `fetch ${substitutedUrl}` });
     try {
       const res = await fetch(substitutedUrl, {
         method,
-        body,
+        body: typeof body === "string" ? body : JSON.stringify(body),
         headers,
       });
       this.app.notify(this, { status: null });
