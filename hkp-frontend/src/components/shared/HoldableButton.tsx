@@ -15,7 +15,7 @@ type Props = {
   style?: CSSProperties;
   onUp: () => void;
   onDown: () => void;
-  onRightClick?: () => void;
+  onRightClick?: (ev: MouseEvent) => void;
 };
 
 export default function HoldableButton({
@@ -45,7 +45,7 @@ export default function HoldableButton({
     ev.preventDefault();
     ev.stopPropagation();
     setIsDown(true);
-    onRightClickProp?.();
+    onRightClickProp?.(ev);
   };
 
   return (

@@ -45,7 +45,10 @@ export default class TriggerPadUI extends Component<ServiceUIProps, State> {
     const isPadAssigned = this.state.assignments[index];
     const isPadArmed = this.state.armedPad === index;
     const onPush = () => {
-      service.triggerPad(index);
+      // service.triggerPad(index);
+      service.configure({
+        command: { action: "trigger-pad", params: { padIndex: index } },
+      });
       this.setState({
         triggeredPads: {
           ...this.state.triggeredPads,
@@ -97,7 +100,10 @@ export default class TriggerPadUI extends Component<ServiceUIProps, State> {
           onDown={onPush}
           onUp={onEnd}
           onRightClick={() => {
-            service.clearPad(index);
+            // service.clearPad(index);
+            service.configure({
+              command: { action: "clear-pad", params: { padIndex: index } },
+            });
           }}
         />
       </div>

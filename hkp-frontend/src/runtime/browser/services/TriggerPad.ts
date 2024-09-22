@@ -37,6 +37,14 @@ class TriggerPad extends ServiceBase<State> {
       this.state.armedPad = notification.armedPad = armedPad;
     }
 
+    if (config.command) {
+      if (config.command.action === "trigger-pad") {
+        this.triggerPad(config.command.params.padIndex);
+      } else if (config.command.action === "clear-pad") {
+        this.clearPad(config.command.params.padIndex);
+      }
+    }
+
     this.app.notify(this, notification);
   }
 
