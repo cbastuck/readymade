@@ -41,15 +41,19 @@ export default class About extends Component<Props> {
               <a href="https://fonts.google.com/specimen/Cabin">Cabin</a> and{" "}
               <a href="https://fonts.google.com/specimen/Lato">Lato</a> are used
               <div>
-                Images and videos from the startpage come from Cottonbro studio{" "}
+                Images and videos from the startpage come from{" "}
+                <a href="https://www.pexels.com/de-de/@cottonbro/">
+                  cottonbro studio
+                </a>{" "}
+                [
                 <a href="https://www.pexels.com/video/person-using-a-tablet-5190552">
-                  #1
+                  1
                 </a>
                 ,{" "}
                 <a href="https://www.pexels.com/video/a-black-and-white-image-of-a-red-arrow-4965980">
-                  #2
+                  2
                 </a>
-                ,{" "}
+                ],{" "}
                 <a href="https://www.pexels.com/video/a-monochromatic-video-of-clouds-of-paint-underwater-9707164">
                   Engin Akyurt
                 </a>
