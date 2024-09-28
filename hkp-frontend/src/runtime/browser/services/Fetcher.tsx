@@ -118,7 +118,7 @@ class Fetcher extends ServiceBase<State> {
         const resolvedAcc = await acc;
         if (key.endsWith("=")) {
           const value = headers[key];
-          const processed = await parseAndEvalExpression(value, {});
+          const processed = await parseAndEvalExpression(value, {}, this.app);
           return Promise.resolve({
             ...resolvedAcc,
             [key.slice(0, -1)]: processed,

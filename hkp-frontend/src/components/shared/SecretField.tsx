@@ -10,7 +10,7 @@ export default function SecretField(props: Props) {
   const { value, fallbackValue, onChange, ...rest } = props;
 
   const [vaultId, instanceId, key] = value?.split(".") || [];
-  const vault = useVault(vaultId);
+  const vault = useVault(vaultId as "uservault"); // TODO:
 
   const secret = (vault && vault.get(instanceId, key)) || "";
 
