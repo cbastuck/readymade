@@ -2,6 +2,7 @@ import { AppInstance, ServiceClass } from "@/types";
 import FetcherUI from "./FetcherUI";
 import ServiceBase from "./ServiceBase";
 import { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { parseAndEvalExpression } from "./base/eval";
 
 const serviceId = "hookup.to/service/fetcher";
 const serviceName = "Fetcher";
@@ -112,6 +113,23 @@ class Fetcher extends ServiceBase<State> {
 
     const method = paramsMethod || this.state.method;
     const headers = paramsHeaders || this.state.headers;
+    const processedHeaders = await Object.keys(headers).reduce(
+      async (acc, key) => {
+        const resolvedAcc = await acc;
+        if (key.endsWith("=")) {
+          const value = headers[key];
+          const processed = await parseAndEvalExpression(value, {});
+          return Promise.resolve({
+            ...resolvedAcc,
+            [key.slice(0, -1)]: processed,
+          });
+        } else {
+          return Promise.resolve({ ...resolvedAcc, [key]: headers[key] });
+        }
+      },
+      Promise.resolve({})
+    );
+
     this.app.notify(this, { status: `fetch ${substitutedUrl}` });
     const body = payload
       ? typeof payload === "string"
@@ -122,7 +140,7 @@ class Fetcher extends ServiceBase<State> {
       const res = await fetch(substitutedUrl, {
         method,
         body,
-        headers,
+        headers: processedHeaders,
       });
       this.app.notify(this, { status: null });
       const contentType = res.headers.get("content-type");

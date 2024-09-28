@@ -20,7 +20,7 @@ export class Vault {
   }
 }
 
-export function useVault(vaultId: string) {
+export function useVault(vaultId: "uservault") {
   const restoredData = localStorage.getItem(`hkp-vault-${vaultId}`);
   const vault = new Vault(vaultId, restoredData || "{}");
   return {

@@ -1,4 +1,5 @@
 import { BoardContextState } from "@/BoardContext";
+import { fromVault, toVault } from "@/runtime/browser/services/base/eval";
 
 type Id = string | number;
 
@@ -120,6 +121,8 @@ export function connectDevTools(context?: BoardContextState) {
     processRuntime,
     processService,
     processNext,
+    fromVault,
+    toVault,
   };
 
   if (firstRun) {

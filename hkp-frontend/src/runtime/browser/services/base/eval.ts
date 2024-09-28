@@ -3,6 +3,7 @@ import moment from "moment";
 import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import jsep from "jsep";
 import { AppImpl, AppInstance } from "@/types";
+import { useVault } from "@/vault";
 
 export type Expression = jsep.Expression;
 
@@ -16,6 +17,17 @@ export function parseExpression(f: string): Expression | "syntax-error" {
   } catch (err) {
     return "syntax-error";
   }
+}
+
+export function fromVault(globalId: string) {
+  const vault = useVault("uservault");
+  return vault.get("global", globalId);
+}
+
+export function toVault(globalId: string, value: string) {
+  const vault = useVault("uservault");
+  vault.set("global", globalId, value);
+  vault.save();
 }
 
 const globalScope = {
@@ -57,6 +69,8 @@ const globalScope = {
     v4: uuidv4,
     v7: uuidv7,
   },
+  fromVault,
+  toVault,
 };
 
 export const globalScopeFunctions = Object.keys(globalScope).reduce(
