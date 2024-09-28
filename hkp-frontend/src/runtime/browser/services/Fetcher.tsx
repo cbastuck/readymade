@@ -89,24 +89,39 @@ class Fetcher extends ServiceBase<State> {
   };
 
   async process(params: any) {
+    const { config: { serviceId = "", data = null } = {} } = params;
+
     const {
-      method = this.state.method,
-      headers = this.state.headers,
-      variables,
-    } = params;
-    const url = this.state.url || params.url;
+      url: paramsUrl = "",
+      method: paramsMethod = "",
+      headers: paramsHeaders = "",
+      body: paramsBody = null,
+    } = serviceId === "hookup.to/service/fetcher" ? data : {};
+
+    const url = this.state.url || paramsUrl;
     if (!url) {
       console.warn("Fetcher no url incoming", params);
       return params;
     }
 
-    const body = this.getBody(params);
-    const substitutedUrl = variables ? substituteUrl(url, variables) : url;
+    const payload = this.getBody(paramsBody);
+
+    const substitutedUrl = data.variables
+      ? substituteUrl(url, data.variables)
+      : url;
+
+    const method = paramsMethod || this.state.method;
+    const headers = paramsHeaders || this.state.headers;
     this.app.notify(this, { status: `fetch ${substitutedUrl}` });
+    const body = payload
+      ? typeof payload === "string"
+        ? payload
+        : JSON.stringify(payload)
+      : undefined;
     try {
       const res = await fetch(substitutedUrl, {
         method,
-        body: typeof body === "string" ? body : JSON.stringify(body),
+        body,
         headers,
       });
       this.app.notify(this, { status: null });
