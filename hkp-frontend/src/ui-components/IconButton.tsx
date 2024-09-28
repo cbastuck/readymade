@@ -3,6 +3,7 @@ import { ReactElement } from "react";
 import Icon from "./Icon";
 
 type Props = {
+  style?: React.CSSProperties;
   className?: string;
   children?: ReactElement | undefined | string;
   icon?: React.ComponentType<any>;
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default function IconButton({
+  style,
   className,
   children,
   icon,
@@ -21,6 +23,7 @@ export default function IconButton({
 }: Props) {
   return (
     <button
+      style={style}
       className={`${className || ""} ${
         border ? "border rounded hover:border-black" : ""
       }`}

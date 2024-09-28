@@ -14,6 +14,7 @@ type Props = {
   minHeight?: boolean;
   hideBottomBorder?: boolean;
   placeholder?: string;
+  autoCompleteValues?: Array<string>;
   onChange: (newValue: string) => void;
   onKeyUp?: (ev: KeyboardEvent) => void;
   onKeyDown?: (ev: KeyboardEvent) => void;
@@ -33,6 +34,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
     value,
     disabled,
     placeholder,
+    autoCompleteValues,
     onChange,
     onKeyUp,
     onKeyDown,
@@ -65,6 +67,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
         disabled={disabled}
         spellCheck={false}
         placeholder={placeholder}
+        autoCompleteValues={autoCompleteValues}
         onKeyUp={onKeyUp}
         onBlur={onBlur}
         onFocus={onFocus}

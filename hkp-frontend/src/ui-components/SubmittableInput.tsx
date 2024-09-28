@@ -9,7 +9,7 @@ import {
 
 import Input from "./Input";
 
-type SubmittableInputProps = {
+export type SubmittableInputProps = {
   id?: string;
   className?: string;
   title?: string;
@@ -22,10 +22,12 @@ type SubmittableInputProps = {
   disabled?: boolean;
   placeholder?: string;
   submitOnBlur?: boolean;
+  autoCompleteValues?: Array<string>;
   onSubmit: (val: string) => void;
   onTab?: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
 };
+
 const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
   (props, ref) => {
     const {
@@ -41,6 +43,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       disabled = false,
       submitOnBlur = true,
       placeholder,
+      autoCompleteValues,
       onSubmit,
       onTab,
       onChangePending,
@@ -99,6 +102,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         value={internal}
         disabled={disabled}
         placeholder={placeholder}
+        autoCompleteValues={autoCompleteValues}
         onChange={onChange}
         onKeyUp={onKeyUp}
         onKeyDown={onKeyDown}

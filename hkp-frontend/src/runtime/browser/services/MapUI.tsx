@@ -9,6 +9,7 @@ import { createExpandableTooltip } from "@/ui-components/ExpandableTooltip";
 import MapUIModeAssist from "./MapUIModeAssist";
 import MappingTable, { Template } from "../../../components/MappingTable";
 import MenuIcon from "@/ui-components/MenuIcon";
+import { globalScopeFunctions } from "@/runtime/browser/services/base/eval.ts";
 
 enum Mode {
   REPLACE = "replace",
@@ -21,8 +22,8 @@ export default function MapUI(props: ServiceUIProps) {
 
   const [template, setTemplate] = useState<any>({});
   const [mode, setMode] = useState<Mode>(Mode.REPLACE);
-
   const [isSensingMode, setIsSensingMode] = useState(false);
+  const [lastIncomingParams, setLastIncomingParams] = useState<any>();
 
   const updateState = (newState: any) => {
     if (needsUpdate(newState.mode, mode)) {
@@ -35,6 +36,10 @@ export default function MapUI(props: ServiceUIProps) {
 
     if (needsUpdate(newState.sensingMode, isSensingMode)) {
       setIsSensingMode(newState.sensingMode);
+    }
+
+    if (needsUpdate(newState.incoming, lastIncomingParams)) {
+      setLastIncomingParams(newState.incoming);
     }
   };
 
@@ -65,6 +70,7 @@ export default function MapUI(props: ServiceUIProps) {
       },
     },
   ];
+
   return (
     <ServiceUI
       {...props}
@@ -105,6 +111,10 @@ export default function MapUI(props: ServiceUIProps) {
           onTemplateChanged={(newTemplate: Template) =>
             service.configure({ template: newTemplate })
           }
+          autoCompleteValueSuggestions={{
+            params: lastIncomingParams,
+            ...globalScopeFunctions,
+          }}
         />
       </div>
     </ServiceUI>

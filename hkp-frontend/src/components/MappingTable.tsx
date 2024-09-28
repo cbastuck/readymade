@@ -10,10 +10,11 @@ import {
 } from "@/ui-components/primitives/table";
 import { Trash, Plus, CircleDotDashed, CircleDot } from "lucide-react";
 
-import SubmittableInput from "@/ui-components/SubmittableInput";
 import Button from "@/ui-components/Button";
 import GroupLabel from "@/ui-components/GroupLabel";
 import { delayedExec } from "@/common";
+import AutoInputField from "./shared/AutoInputField";
+import SubmittableInputWithToggle from "@/ui-components/SubmittableInputWithToggle";
 
 export type Template = { [key: string]: string };
 
@@ -24,6 +25,7 @@ type Props = {
   template: { [key: string]: string };
   tooltip?: string;
   sensingMode?: boolean;
+  autoCompleteValueSuggestions?: any;
   onToggleSensingMode?: () => void;
   onTemplateChanged: (template: Template) => void;
 };
@@ -35,6 +37,7 @@ export default function MappingTable({
   template,
   sensingMode,
   tooltip,
+  autoCompleteValueSuggestions,
   onToggleSensingMode,
   onTemplateChanged,
 }: Props) {
@@ -44,6 +47,8 @@ export default function MappingTable({
   const rows = Object.keys(template).filter(
     (key) => typeof template[key] !== "object"
   );
+
+  const rowIsDynamic = rows.map((key) => key.endsWith("="));
 
   const onNewProperty = () => {
     const newKey = "key";
@@ -104,6 +109,14 @@ export default function MappingTable({
     );
   };
 
+  const onToggleKeyDynamics = (key: string, propIdx: number) => {
+    if (key.endsWith("=")) {
+      onKeyChange(key, key.slice(0, -1), propIdx);
+    } else {
+      onKeyChange(key, key + "=", propIdx);
+    }
+  };
+
   return (
     <div className={`flex flex-col col-2 mt-2 gap-2 ${className}`}>
       <div className="flex h-min items-end">
@@ -162,7 +175,7 @@ export default function MappingTable({
                   key={`${key}-${idx}`}
                 >
                   <TableCell className="text-left p-0">
-                    <SubmittableInput
+                    <SubmittableInputWithToggle
                       fullWidth
                       hideBottomBorder
                       value={key}
@@ -170,19 +183,22 @@ export default function MappingTable({
                       onChangePending={setIsMappingChangePending}
                       selectAllOnFocus={true}
                       onTab={(newKey) => onKeyChange(key, newKey, idx)}
+                      onToggle={() => onToggleKeyDynamics(key, idx)}
+                      toggleValue={rowIsDynamic[idx]}
                     />
                   </TableCell>
                   <TableCell className="text-left p-0">
-                    <SubmittableInput
+                    <AutoInputField
                       id={`map-value-${id}-${idx}`}
-                      fullWidth
-                      hideBottomBorder
                       ref={valueInputRef}
                       value={template[key]}
                       onSubmit={(newValue) => onChangeValue(key, newValue)}
+                      onTab={(newValue) => onChangeValue(key, newValue)}
                       onChangePending={setIsMappingChangePending}
                       selectAllOnFocus={true}
-                      onTab={(newValue) => onChangeValue(key, newValue)}
+                      autoCompleteValueSuggestions={
+                        rowIsDynamic[idx] && autoCompleteValueSuggestions
+                      }
                     />
                   </TableCell>
                   <TableCell className="text-right p-0">
@@ -190,7 +206,7 @@ export default function MappingTable({
                       variant="ghost"
                       onClick={() => onRemoveProperty(key)}
                       disabled={isMappingChangePending}
-                      tooltip="Remove this property"
+                      tooltip="Remove this row"
                       className="stroke-gray-600 hover:stroke-red-500"
                       tabIndex={-1}
                     >

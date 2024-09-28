@@ -59,6 +59,11 @@ const globalScope = {
   },
 };
 
+export const globalScopeFunctions = Object.keys(globalScope).reduce(
+  (acc, key) => ({ ...acc, [key]: "" }),
+  {}
+);
+
 export async function parseAndEvalExpression(
   exp: string,
   params: any,
