@@ -60,7 +60,10 @@ const globalScope = {
 };
 
 export const globalScopeFunctions = Object.keys(globalScope).reduce(
-  (acc, key) => ({ ...acc, [key]: "" }),
+  (acc, key) => {
+    const value = ""; // TODO: document arguments
+    return { ...acc, [key]: value };
+  },
   {}
 );
 

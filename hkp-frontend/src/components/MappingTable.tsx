@@ -174,7 +174,7 @@ export default function MappingTable({
                   className="hover:bg-white font-sans-clean"
                   key={`${key}-${idx}`}
                 >
-                  <TableCell className="text-left p-0">
+                  <TableCell className="text-left p-0 w-[50%]">
                     <SubmittableInputWithToggle
                       fullWidth
                       hideBottomBorder
@@ -185,9 +185,14 @@ export default function MappingTable({
                       onTab={(newKey) => onKeyChange(key, newKey, idx)}
                       onToggle={() => onToggleKeyDynamics(key, idx)}
                       toggleValue={rowIsDynamic[idx]}
+                      toggleTooltip={
+                        rowIsDynamic[idx]
+                          ? "Deactivate Javascript and switch to static mapping"
+                          : "Activate to enable Javascript in the value field"
+                      }
                     />
                   </TableCell>
-                  <TableCell className="text-left p-0">
+                  <TableCell className="text-left p-0 w-[50%]">
                     <AutoInputField
                       id={`map-value-${id}-${idx}`}
                       ref={valueInputRef}
@@ -198,6 +203,11 @@ export default function MappingTable({
                       selectAllOnFocus={true}
                       autoCompleteValueSuggestions={
                         rowIsDynamic[idx] && autoCompleteValueSuggestions
+                      }
+                      className={
+                        rowIsDynamic[idx]
+                          ? "bg-gray-100 rounded-xl p-2"
+                          : undefined
                       }
                     />
                   </TableCell>

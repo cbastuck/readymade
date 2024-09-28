@@ -4,6 +4,7 @@ import { flatten } from "flat";
 
 type Props = {
   id?: string;
+  className?: string;
   value: string;
   autoCompleteValueSuggestions?: Array<string>;
   selectAllOnFocus?: boolean;
@@ -16,6 +17,7 @@ type Props = {
 const AutoInputField = forwardRef<HTMLInputElement, Props>((props, ref) => {
   const {
     id,
+    className,
     value,
     autoCompleteValueSuggestions,
     selectAllOnFocus = true,
@@ -58,6 +60,7 @@ const AutoInputField = forwardRef<HTMLInputElement, Props>((props, ref) => {
   return (
     <SubmittableInput
       ref={ref}
+      className={className}
       id={id}
       autoCompleteValues={autoCompleteValues}
       value={value}
