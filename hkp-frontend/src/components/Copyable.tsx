@@ -7,6 +7,7 @@ import { AppCtx } from "@/AppContext";
 import IconButton from "@/ui-components/IconButton";
 
 type Props = {
+  className?: string;
   label: string;
   value: string;
   renderInput?: boolean;
@@ -15,6 +16,7 @@ type Props = {
 };
 
 export default function Copyable({
+  className,
   label,
   value,
   renderInput = true,
@@ -40,7 +42,7 @@ export default function Copyable({
   };
 
   return (
-    <div className="w-[70%]">
+    <div className={`w-[100%] ${className}`}>
       <div className="flex items-end gap-2 w-full">
         <GroupLabel>{label}</GroupLabel>
         {renderInput && (

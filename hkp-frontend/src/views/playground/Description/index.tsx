@@ -13,7 +13,7 @@ export default function Description({ description, boardName }: Props) {
   }
   const arr = Array.isArray(description) ? description : [description];
   return (
-    <div className="my-[10px]">
+    <div className="py-2 my-4 mx-0 border">
       <Info headline="Description">
         <div className="w-[90%] mx-auto my-[10px]">
           {arr.map((item, idx) => createDescription({ boardName, item, idx }))}
