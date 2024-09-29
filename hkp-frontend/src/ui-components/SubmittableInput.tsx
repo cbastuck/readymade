@@ -5,6 +5,7 @@ import {
   forwardRef,
   FocusEvent,
   useRef,
+  useMemo,
 } from "react";
 
 import Input from "./Input";
@@ -52,9 +53,14 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       onChangePending,
     } = props;
     const [internal, setInternal] = useState(value);
+
+    const isChangePending = useMemo(
+      () => value !== internal,
+      [value, internal]
+    );
+
     useEffect(() => setInternal(value), [value]);
 
-    const isChangePending = value !== internal;
     useEffect(
       () => onChangePending?.(isChangePending),
       [onChangePending, isChangePending]
