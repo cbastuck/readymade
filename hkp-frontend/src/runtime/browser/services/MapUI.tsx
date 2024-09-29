@@ -23,7 +23,6 @@ export default function MapUI(props: ServiceUIProps) {
   const [template, setTemplate] = useState<any>({});
   const [mode, setMode] = useState<Mode>(Mode.REPLACE);
   const [isSensingMode, setIsSensingMode] = useState(false);
-  const [lastIncomingParams, setLastIncomingParams] = useState<any>();
 
   const updateState = (newState: any) => {
     if (needsUpdate(newState.mode, mode)) {
@@ -36,10 +35,6 @@ export default function MapUI(props: ServiceUIProps) {
 
     if (needsUpdate(newState.sensingMode, isSensingMode)) {
       setIsSensingMode(newState.sensingMode);
-    }
-
-    if (needsUpdate(newState.incoming, lastIncomingParams)) {
-      setLastIncomingParams(newState.incoming);
     }
   };
 
@@ -112,7 +107,7 @@ export default function MapUI(props: ServiceUIProps) {
             service.configure({ template: newTemplate })
           }
           autoCompleteValueSuggestions={{
-            params: lastIncomingParams,
+            params: "the incoming data",
             ...globalScopeFunctions,
           }}
         />

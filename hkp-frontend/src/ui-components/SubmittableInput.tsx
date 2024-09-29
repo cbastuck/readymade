@@ -59,7 +59,9 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       [value, internal]
     );
 
-    useEffect(() => setInternal(value), [value]);
+    useEffect(() => {
+      setInternal(value);
+    }, [value]);
 
     useEffect(
       () => onChangePending?.(isChangePending),
