@@ -1,6 +1,7 @@
 import { CSSProperties } from "react";
 
 type Props = {
+  className?: string;
   month: string;
   day: String;
   year: string;
@@ -9,6 +10,7 @@ type Props = {
 };
 
 export default function Date({
+  className = "w-[33%]",
   month,
   day,
   year,
@@ -28,7 +30,7 @@ export default function Date({
     textTransform: "capitalize",
   };
   return (
-    <div className="font-sans text-right" style={style}>
+    <div className={`font-sans ${className}`} style={style}>
       {isUpdate && (
         <span style={{ textTransform: "none" }}> last edited on </span>
       )}

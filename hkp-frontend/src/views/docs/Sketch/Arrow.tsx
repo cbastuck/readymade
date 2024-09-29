@@ -1,9 +1,9 @@
 import { ChevronRight } from "lucide-react";
 
-type Props = {
-  yOffset: number;
-};
-
-export default function Arrow({ yOffset }: Props) {
-  return <ChevronRight style={{ margin: 5, marginTop: yOffset }} />;
+export default function Arrow({ className }: { className?: string }) {
+  return (
+    <div className={`${className} max-w-[30px]`}>
+      <ChevronRight style={{ margin: 5 }} />
+    </div>
+  );
 }

@@ -64,12 +64,13 @@ export default function LandingPitch({
         />
       </div>
       <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
-        Then this might be for you. Focus on the idea, and how to compose it or
-        the intended output. Do not bother about underlying connections.
+        Then this might be for you. Focus on the idea, and how to compose it. Do
+        not think to much about underlying connections.
       </div>
       <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
         Orchestrate ideas with data seamlessly flowing through services
-        regardless of location or environment. All happens on one Board.
+        regardless of their location or platform. Manage everything from one
+        Board.
       </div>
     </div>
   );

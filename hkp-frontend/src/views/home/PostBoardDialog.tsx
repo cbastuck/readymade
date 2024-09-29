@@ -50,24 +50,23 @@ export default function PostBoardDialog({
 
   return (
     <CustomDialog isOpen={targetBoards !== null} onOpenChange={onClose}>
-      <div className="flex flex-col">
+      <div className="flex flex-col overflow-hidden">
         <SearchableSelect
           className="w-[300px]"
           title={
             <div className="flex whitespace-nowrap items-center">
-              Post the source of{" "}
+              Post{" "}
               <pre className="bg-gray-100 rounded p-1 mx-2">{sourceBoard}</pre>{" "}
-              to Board
+              source to
             </div>
           }
-          label="Target boards"
+          label="Select Target"
           value={selectedTargetBoard || ""}
           options={targetBoards || []}
           onSelect={onSelectBoard}
         >
-          <div>as shown below</div>
           <Button
-            className="min-w-[200px] text-base"
+            className="w-[100%] text-base"
             onClick={onPostBoard}
             disabled={!selectedTargetBoard}
           >

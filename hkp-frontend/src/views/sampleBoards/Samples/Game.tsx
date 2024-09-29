@@ -15,9 +15,8 @@ export const game: CarouselItem = {
     <div className="flex flex-col gap-4">
       <div>
         The video demonstrates a minimal version of a game inspired by Pong, but
-        with only one paddle. The ball bounces off each border as well as the
-        single paddle. You control the paddle using the XY Pad in the first
-        runtime.
+        with only one paddle. The ball bounces off the padde and each border.
+        You control the paddle using the XY Pad in the first runtime.
       </div>
       <div>
         Just grab your mobile phone and scan the QR code at the bottom of the

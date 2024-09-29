@@ -29,7 +29,8 @@ export default class About extends Component<Props> {
               Using <a href="https://react.dev/">React</a>,{" "}
               <a href="https://microsoft.github.io/monaco-editor/">Monaco</a> as
               code editor,
-              <a href="https://ui.shadcn.com">shadcn/ui</a>. Icons are from
+              <a href="https://ui.shadcn.com">shadcn/ui</a> as UI framework.
+              Icons are from
               <a href="https://fontawesome.com/license/free"> Font Awesome </a>
               and <a href="https://lucide.dev/icons/bug-play">Lucide</a>. The
               fonts{" "}
@@ -40,7 +41,8 @@ export default class About extends Component<Props> {
               <a href="https://font.download/font/Cutive">Cutive</a>,{" "}
               <a href="https://fonts.google.com/specimen/Cabin">Cabin</a> and{" "}
               <a href="https://fonts.google.com/specimen/Lato">Lato</a> are used
-              <div>
+              throughout the site.
+              <div className="mt-2">
                 Images and videos from the startpage come from{" "}
                 <a href="https://www.pexels.com/de-de/@cottonbro/">
                   cottonbro studio

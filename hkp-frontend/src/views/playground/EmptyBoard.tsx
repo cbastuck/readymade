@@ -78,7 +78,8 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
       >
         <div style={s(t.tc, t.mt0, t.mb30)}>
           <div
-            className="hkp-card-border"
+            //className="hkp-card-border"
+            className="border"
             style={{
               padding: "50px 20px",
               width: "90%",

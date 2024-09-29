@@ -14,7 +14,8 @@ export const monitoring: CarouselItem = {
   description: (
     <div className="flex flex-col gap-4">
       <div>
-        This board connects to the wikipedia's recent{" "}
+        This board visualises canges on wikipedia's by connecting to the
+        available{" "}
         <a href="https://www.mediawiki.org/wiki/API:Recent_changes_stream">
           change stream
         </a>

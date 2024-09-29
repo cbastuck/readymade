@@ -13,16 +13,13 @@ export const send: CarouselItem = {
   description: (
     <div className="flex flex-col gap-2">
       <div>
-        Sometimes, there is a need to pass a secret access code, serial number,
-        or even a password from one device to another. Ideally, without taking a
-        detour through the public internet.
+        Sometimes I want pass a password, or access code from one device to
+        another. Ideally, without taking a detour through the public internet.
       </div>
       <div>
-        This video demonstrates two boards that appear almost like small apps
-        using the fullscreen mode of the HTML service for easier access: one for
-        sending and one for receiving textual data. Click on the video, and you
-        will be directed to the sender's playground. The according receiver
-        board{" "}
+        This video demonstrates two boards in fullscreen mode: one for sending
+        and one for receiving textual data. Click on the video, and you will be
+        directed to the sender's playground. The according receiver board{" "}
         <a
           href={`/playground/receiver-${createShortRandomString()}?fromLink=N4IgTgrgdgLglgWwKYGcQC4Dao4BMMhICGAxgIwCcZAHAKwC0AbEbQOz0AsRATEfRRWpl6ABiQcSAMxG1quRow4gANCChFkBAMpFJRMHBUgYATwAOSAgCMwAewDuKJGCMoYRGJfTAAvj+U4+OggktSsAmQAzEj0ZFZkMVzc3PREuOlMImSsjLRkHIwkIqxG6prBOnoGRqYW1naOzq7unhi+PgC6qk5gAG5wJKhthKSUNAzMbJw8fAJCouJSMnIKSligEBB4BLhkjLjkJLixuJHHHGGM-JGRKVZIZJJkRPH7IhSuzv2DAJJBIAALWy2ADWEDMADoYLYAPQ9b5IGEWZz0FC2EggpAwT59AZIAByGi8IAACkhnAACLTozHY1QIWy4YkAJSQgzgvSQFNsUAANiYjMiwITyiAjEgAB4wMCkGA-KAkWwIOBQADmABEPEQMNKIEhVFZzEQUGh0HpeU5-Bstv8kDJuIwRIx2GIHZwrLg+EQEsIKCRqLwHlZGFZuNQcQi-gQgaDwVDYfC8TCmSQwOY6SBE4MRcT1Wy02YM1ZbPp-kyzGA2R4kLgKcXS2UufQKaqsRS4DAKZI7AgKUQzGZPqmsQQjMgYEDcKbMCAiEMuiBx5OCHO0KpcHBKyR4Dydvn0yBOqpQuEqNFYvFEjwUmkMo7srl8oVihhsCBNttgtwqCQiCJqNQ9BWFY1CSJwCQcEBtDcJBFBEGEYSRBwyFECU3RfHiUbBDGYKQtCcIYYMMIAjACC8hGeI5gQAASpHkQaJZgGWSAVlWni1vWTGNhSzatp2HZdj2fYDkYkgQLyFrDkgUA6pA+ogIqUCSHAqrDJ4CBmLy1YEAAPBuvQUiQWkmgAvAA5JIvKSl2VkSvQiq8hSZh2RwLb9vQ3AUvY9CYNQIgAKQdBSCCpBA0JmQAfDpAJkBFrLspyFKeFKOnEbFFI6SqZhhe2uDmY2ZmGcZKDmcWTGUmYHmFZppBIECvJMmA5kICYFIFRSvRELyermTp-kmcFJg5hS-kRYVPIkACRBqkg5kAiCkJODAWiEUgADCPLKaqAAUIjKHtFLAEKOboElAJwCgEKdd1SA+AAlIVKAWBJk1siC5nmk4hUwhFGVZTleDmU4w4wIVRnGiVZllY1TlVU5WmDPVjVA-mWL0JiJiFddPVmX1A3A5WnajeNCpTTNc0LRCS0rbigwbUpKm7coZDKIdBNYqdE4XVdXV6vdj3Pbyr0Yh9XVfRSP0Zfpv1405+gaCgI0y8mHJRSrvQRUYvLomLwwtTmJkEHxNMIvTW1M3tZnHUSZl3UOhOG8ExurWbjN7SzZns6DduqGY8sIKaYp+PSjLEkgABWaCdH4QA`}
           target="_blank"
@@ -32,9 +29,9 @@ export const send: CarouselItem = {
         .
       </div>
       <div>
-        Now assign a unique name to the receiver and configure the sender with
-        this name, along with an encryption key for the session. The receiver
-        will be configured accordingly to decode incoming data.
+        Usage: first, assign a unique name to the receiver and configure the
+        sender with that name. Second, think of an encryption key and set it on
+        the sender and receiver board.
       </div>
     </div>
   ),

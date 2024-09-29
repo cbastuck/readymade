@@ -17,22 +17,21 @@ export const midi: CarouselItem = {
       <div>
         The example uses a local XY Pad configured with seven rows and columns.
         Based on the row and column of the touch or press event on the pad, two
-        MIDI notes from the A minor scale are generated and sent to a MIDI
-        output service. The MIDI output service then transmits these notes as
-        MIDI messages to the configured MIDI port, which in this case is Logic's
-        virtual MIDI input port.
+        MIDI notes from the a-minor scale are generated and sent to a MIDI
+        output service. The MIDI output service transmits the notes as to the
+        configured MIDI port; in this case it's Logic's virtual MIDI input port.
       </div>
+
       <div>
-        The two mapping services in the stack translate the press, touch, and
-        move events into MIDI note numbers from the A minor scale (i.e., [69,
-        71, 72, 74, 76, 77, 79], which correspond to [A4, B4, C5, D5, E5, F5,
-        G5]).
+        The two mapping services in the stack translate click, touch, and move
+        events into MIDI note numbers from the a-minor scale [69, 71, 72, 74,
+        76, 77, 79], which correspond to the notes [A4, B4, C5, D5, E5, F5, G5].
       </div>
       <div>
         Playing with a touchpad or mouse can be cumbersome. For this reason, a
-        PeerSocket is placed after the pad but is disabled by default.
-        Connecting an XY Pad on a touch device to the PeerSocket provides a much
-        better experience.
+        PeerSocket is placed after the pad and disabled by default. Connecting
+        an XY Pad on a touch device to the PeerSocket provides a much better
+        experience.
       </div>
     </div>
   ),

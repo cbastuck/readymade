@@ -25,8 +25,14 @@ export default function NewsItem({ content, date, type = "done" }: Props) {
         <Badge variant={type}>{type}</Badge>
       </TableCell>
 
-      <TableCell className="text-left">
-        <Date month={month} day={day} year={year} size="m" />
+      <TableCell>
+        <Date
+          className="text-left"
+          month={month}
+          day={day}
+          year={year}
+          size="m"
+        />
       </TableCell>
     </TableRow>
   );
