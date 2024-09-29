@@ -44,7 +44,7 @@ export default function FlowInspectorPopup({ data, onInject }: Props) {
           />
         </div>
       </div>
-      <div className="flex">
+      <div className="flex items-center">
         <ResetButton isDisabled={!isDirty} onClick={onResetDirty} />
 
         <Button

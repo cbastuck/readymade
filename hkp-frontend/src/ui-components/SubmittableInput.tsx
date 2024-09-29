@@ -8,6 +8,7 @@ import {
 } from "react";
 
 import Input from "./Input";
+import Tooltip, { TooltipContentType } from "./Tooltip";
 
 export type SubmittableInputProps = {
   id?: string;
@@ -23,6 +24,7 @@ export type SubmittableInputProps = {
   placeholder?: string;
   submitOnBlur?: boolean;
   autoCompleteValues?: Array<string>;
+  tooltip?: TooltipContentType;
   onSubmit: (val: string) => void;
   onTab?: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
@@ -44,6 +46,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       submitOnBlur = true,
       placeholder,
       autoCompleteValues,
+      tooltip,
       onSubmit,
       onTab,
       onChangePending,
@@ -90,25 +93,27 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
 
     const cls = `font-menu text-md ${className}`;
     return (
-      <Input
-        id={id}
-        ref={ref}
-        className={cls}
-        type={type}
-        fullWidth={fullWidth}
-        minHeight={minHeight}
-        hideBottomBorder={hideBottomBorder}
-        title={title}
-        value={internal}
-        disabled={disabled}
-        placeholder={placeholder}
-        autoCompleteValues={autoCompleteValues}
-        onChange={onChange}
-        onKeyUp={onKeyUp}
-        onKeyDown={onKeyDown}
-        onBlur={onBlur}
-        onFocus={onFocus}
-      />
+      <Tooltip value={tooltip}>
+        <Input
+          id={id}
+          ref={ref}
+          className={cls}
+          type={type}
+          fullWidth={fullWidth}
+          minHeight={minHeight}
+          hideBottomBorder={hideBottomBorder}
+          title={title}
+          value={internal}
+          disabled={disabled}
+          placeholder={placeholder}
+          autoCompleteValues={autoCompleteValues}
+          onChange={onChange}
+          onKeyUp={onKeyUp}
+          onKeyDown={onKeyDown}
+          onBlur={onBlur}
+          onFocus={onFocus}
+        />
+      </Tooltip>
     );
   }
 );

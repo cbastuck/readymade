@@ -42,7 +42,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
     onFocus,
   } = props;
   const w = fullWidth ? "" : "w-[80px]";
-  const h = minHeight ? "h-min mt-2 pl-1 text-base" : "h-[25px]";
+  const h = minHeight ? "h-min pl-1 text-base" : "h-[25px]";
   const bottomBorder = hideBottomBorder
     ? "border-none"
     : "border-t-0 border-b-1";

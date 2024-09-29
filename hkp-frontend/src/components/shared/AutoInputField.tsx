@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import { flatten } from "flat";
+import { TooltipContentType } from "@/ui-components/Tooltip";
 
 type Props = {
   id?: string;
@@ -9,6 +10,7 @@ type Props = {
   autoCompleteValueSuggestions?: Array<string>;
   selectAllOnFocus?: boolean;
   showCompletionsOnTab?: boolean;
+  tooltip?: TooltipContentType;
   onSubmit: (newValue: string) => void;
   onTab: (curValue: string) => void;
   onChangePending: (isChangePending: boolean) => void;
@@ -20,6 +22,7 @@ const AutoInputField = forwardRef<HTMLInputElement, Props>((props, ref) => {
     className,
     value,
     autoCompleteValueSuggestions,
+    tooltip,
     selectAllOnFocus = true,
     showCompletionsOnTab = false,
     onSubmit,
@@ -65,6 +68,7 @@ const AutoInputField = forwardRef<HTMLInputElement, Props>((props, ref) => {
       autoCompleteValues={autoCompleteValues}
       value={value}
       selectAllOnFocus={selectAllOnFocus}
+      tooltip={tooltip}
       fullWidth
       hideBottomBorder
       onSubmit={onSubmit}

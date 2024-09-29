@@ -107,13 +107,13 @@ class Map extends ServiceBase<State> {
           return acc;
         }
 
-        const y = await evalExpression(expression, { params: x }, this.app);
         const accumulated = await acc;
-        return key.indexOf(".") !== -1
+        const y = await evalExpression(expression, { params: x }, this.app);
+        return key.indexOf(".") !== -1 // dynamic expression
           ? {
-              ...(this.state.mode === "replace"
+              .../*this.state.mode === "replace"
                 ? accumulated
-                : merge(accumulated, y, key)),
+                : */ merge(accumulated, y, key), // why shouldn't we merge in replace mode?
             }
           : {
               ...accumulated,

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import {
   Table,
@@ -15,6 +15,7 @@ import GroupLabel from "@/ui-components/GroupLabel";
 import { delayedExec } from "@/common";
 import AutoInputField from "./shared/AutoInputField";
 import SubmittableInputWithToggle from "@/ui-components/SubmittableInputWithToggle";
+import { checkSyntax } from "@/runtime/browser/services/base/eval";
 
 export type Template = { [key: string]: string };
 
@@ -49,6 +50,11 @@ export default function MappingTable({
   );
 
   const rowIsDynamic = rows.map((key) => key.endsWith("="));
+  const rowIsSyntacxCheck = useMemo(
+    () =>
+      rows.map((key, idx) => !rowIsDynamic[idx] || checkSyntax(template[key])),
+    [template]
+  );
 
   const onNewProperty = () => {
     const newKey = "key";
@@ -165,7 +171,9 @@ export default function MappingTable({
                 <TableHead className="font-sans tracking-widest text-base text-left p-0 h-min">
                   Value
                 </TableHead>
-                <TableHead className="font-sans tracking-widest text-base text-right p-0 w-min h-min"></TableHead>
+                <TableHead className="font-sans tracking-widest text-base text-center p-0 w-min h-min">
+                  Action
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -206,8 +214,17 @@ export default function MappingTable({
                       }
                       className={
                         rowIsDynamic[idx]
-                          ? "bg-gray-100 rounded-xl p-2"
+                          ? `rounded-xl p-1 px-2 ${
+                              rowIsSyntacxCheck[idx] === true
+                                ? "bg-gray-100"
+                                : "bg-red-200 text-gray-800"
+                            }`
                           : undefined
+                      }
+                      tooltip={
+                        rowIsSyntacxCheck[idx] === true
+                          ? undefined
+                          : rowIsSyntacxCheck[idx]
                       }
                     />
                   </TableCell>

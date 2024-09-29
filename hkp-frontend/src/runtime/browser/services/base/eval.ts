@@ -11,7 +11,9 @@ function reformatDate(date: string, inputFormat: string, outputFormat: string) {
   return moment(date, inputFormat).format(outputFormat);
 }
 
-export function parseExpression(f: string): Expression | "syntax-error" {
+export type SyntaxError = "syntax-error";
+
+export function parseExpression(f: string): Expression | SyntaxError {
   try {
     return parse(f);
   } catch (err) {
@@ -78,7 +80,10 @@ export const globalScopeFunctions = Object.keys(globalScope).reduce(
     const value = ""; // TODO: document arguments
     return { ...acc, [key]: value };
   },
-  {}
+  {
+    getServiceConfig: "", // TODO: this will be added when running with an app
+    processRuntime: "",
+  }
 );
 
 export async function parseAndEvalExpression(
@@ -89,13 +94,26 @@ export async function parseAndEvalExpression(
   return evalExpression(parseExpression(exp), params, app);
 }
 
+export function checkSyntax(statement: string | SyntaxError): true | string {
+  if (statement === "syntax-error") {
+    return statement;
+  }
+  try {
+    parse(statement);
+    return true;
+  } catch (err: any) {
+    console.error("isSyntacticallyValid", err.message);
+    return err.message;
+  }
+}
+
 export async function evalExpression(
-  ast: Expression | "syntax-error",
+  ast: Expression | SyntaxError,
   params: any,
   app?: AppImpl
 ) {
   if (ast === "syntax-error") {
-    return "syntax-error";
+    throw new Error("evalExpression with syntax error");
   }
 
   const processRuntime =
