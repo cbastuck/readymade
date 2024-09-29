@@ -21,9 +21,9 @@ const initialSize = {
   width: 320,
   height: 200,
 };
-
-const initialX = initialSize.width / 2 - dragger.width / 2;
-const initialY = initialSize.height / 2 - dragger.height / 2;
+const offset = 20;
+const initialX = initialSize.width / 2 - dragger.width / 2 - offset;
+const initialY = initialSize.height / 2 - dragger.height / 2 - offset;
 
 const FULLSCREENZINDEX = 1000;
 
@@ -115,10 +115,17 @@ export default class XYPadUI extends Component<ServiceUIProps> {
     this.setState({ dragging: true });
   };
 
-  onDragEnd = (ev: any) => {
+  onDragEnd = (_ev: any) => {
     if (!this.touchDown) {
-      this.onMouseUp(ev);
-      this.setState({ dragging: false });
+      //can't not use this.onMouseUp(ev); as the drop pos from _ev seems in a different coordintate system than I expected
+      const dropPos = {
+        x: this.state.x + dragger.width / 2,
+        y: this.state.y + dragger.width / 2,
+      };
+      this.updateService(this.props.service, dropPos, "stop");
+      this.setState({
+        dragging: false,
+      });
     }
   };
 
