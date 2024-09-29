@@ -50,7 +50,7 @@ export default function MappingTable({
   );
 
   const rowIsDynamic = rows.map((key) => key.endsWith("="));
-  const rowIsSyntacxCheck = useMemo(
+  const rowIsSyntaxCheck = useMemo(
     () =>
       rows.map((key, idx) => !rowIsDynamic[idx] || checkSyntax(template[key])),
     [template]
@@ -215,16 +215,16 @@ export default function MappingTable({
                       className={
                         rowIsDynamic[idx]
                           ? `rounded-xl p-1 px-2 ${
-                              rowIsSyntacxCheck[idx] === true
+                              rowIsSyntaxCheck[idx] === true
                                 ? "bg-gray-100"
                                 : "bg-red-200 text-gray-800"
                             }`
                           : undefined
                       }
                       tooltip={
-                        rowIsSyntacxCheck[idx] === true
+                        rowIsSyntaxCheck[idx] === true
                           ? undefined
-                          : rowIsSyntacxCheck[idx]
+                          : (rowIsSyntaxCheck[idx] as string)
                       }
                     />
                   </TableCell>
