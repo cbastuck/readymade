@@ -132,7 +132,6 @@ class Map extends ServiceBase<State> {
   };
 
   process = async (params: any) => {
-    this.app.notify(this, { incoming: params });
     if (this.state.sensingMode) {
       this.updateTemplate(flatten(params));
       this.updateSensingMode(false);
