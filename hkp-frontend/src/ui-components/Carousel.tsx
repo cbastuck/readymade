@@ -56,15 +56,14 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
           <CarouselItem key={index}>
             <div className="flex items-start w-full h-full">
               <div
-                className="rounded-xl bg-cover bg-no-repeat w-full mx-2 md:mx-20 py-10 drop-shadow-xl overflow-auto hover:bg-gray-200 mb-6"
+                className="rounded-xl bg-cover bg-no-repeat w-full h-full mx-2 md:mx-20 py-10 drop-shadow-xl overflow-auto hover:bg-gray-200 mb-6 overflow-hidden"
                 style={{
                   position: "relative",
-                  cursor: item.action ? "pointer" : "default",
+
                   backgroundImage: item.background
                     ? `url(${item.background})`
                     : undefined,
                 }}
-                onClick={() => onClick?.(item)}
               >
                 <video
                   id={`sample-video-${index}`}
@@ -73,16 +72,21 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
                   autoPlay={index === 0}
                   loop
                   width={item.scale ? item.scale : "85%"}
+                  controls
                 />
                 {item.action && (
                   <Button
-                    className="w-full h-full hover:bg-[#22222270] bg-transparent text-center text-white hover:text-white text-2xl tracking-widest pt-[5%] opacity-0 hover:opacity-100"
+                    className="hover:bg-[#22222270] bg-transparent text-center text-white hover:text-white text-2xl tracking-widest opacity-0 hover:opacity-100 rounded-xl"
                     style={{
                       position: "absolute",
-                      top: 0,
-                      left: 0,
+                      top: "15%",
+                      left: "8%",
+                      width: "84%",
+                      height: "65%",
                       transition: "opacity, background-color 0.5s ease-in-out",
+                      cursor: item.action ? "pointer" : "default",
                     }}
+                    onClick={() => onClick?.(item)}
                   >
                     {item.action?.title}
                   </Button>
