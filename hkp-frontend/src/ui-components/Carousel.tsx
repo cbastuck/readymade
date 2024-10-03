@@ -76,13 +76,13 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
                 />
                 {item.action && (
                   <Button
-                    className="hover:bg-[#22222270] bg-transparent text-center text-white hover:text-white text-2xl tracking-widest opacity-0 hover:opacity-100 rounded-xl"
+                    className="hover:bg-gradient-to-t from-[#FFFF] to-[#000A] bg-transparent text-center text-white hover:text-white text-xl tracking-widest opacity-0 hover:opacity-70 rounded"
                     style={{
                       position: "absolute",
-                      top: "15%",
-                      left: "8%",
-                      width: "84%",
-                      height: "65%",
+                      top: "6%",
+                      left: "7%",
+                      width: "86%",
+                      height: "60%",
                       transition: "opacity, background-color 0.5s ease-in-out",
                       cursor: item.action ? "pointer" : "default",
                     }}
