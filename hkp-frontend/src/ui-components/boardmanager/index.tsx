@@ -58,7 +58,7 @@ export default function BoardManager({
 
   return (
     <div className="flex flex-col w-full h-full">
-      <div className="flex items-center f-[90%]">
+      <div className="flex items-center f-[90%] overflow-auto">
         <h2
           className={`whitespace-nowrap pl-1 text-xl my-2 ${
             isCollapsable ? "cursor-pointer" : ""
@@ -75,7 +75,7 @@ export default function BoardManager({
             border
           />
         )}
-        <div className="w-full text-center ">
+        <div className="w-full text-center">
           <BoardTableNav
             numItems={filteredItems.length}
             pageSize={pageSize}

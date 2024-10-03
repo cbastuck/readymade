@@ -74,10 +74,10 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-base"
-                  onClick={() => navigate("/examples")}
+                  onClick={() => navigate("/home")}
                 >
                   <MenuIcon icon={Forward} />
-                  <span>Examples</span>
+                  <span>Home</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-base"

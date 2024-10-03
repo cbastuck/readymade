@@ -32,7 +32,7 @@ export default function BoardTableNav({
 
   return (
     pageSize !== undefined && (
-      <div className="mx-auto flex w-fit">
+      <div className="mx-auto flex w-fit whitespace-nowrap">
         <IconButton
           className="mx-2 px-1"
           border

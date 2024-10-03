@@ -52,7 +52,7 @@ export default function LandingPitch({
   return (
     <div id="pitch-points" className={`${welcomeBlockClassname}`}>
       <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
-        Do you sometimes feel creative, but the setup process destroys the
+        Do you sometimes feel creative, but setting everything up destroys the
         inspiration? Maybe you just want to connect two or more things, like{" "}
         <Switcher
           animate={true}

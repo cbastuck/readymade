@@ -6,6 +6,7 @@ import Dots from "./Dots";
 export default function Sketch() {
   return (
     <div
+      className="leading-5"
       style={{
         width: "95%",
         margin: "auto",

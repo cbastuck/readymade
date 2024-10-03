@@ -9,32 +9,27 @@ export default function Faq() {
   const s = "pb-2 px-4 text-left tracking-widest";
   return (
     <div className="flex flex-col">
-      <div className="text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
-        Describing this app in one sentence is challenging. Although, there are
-        many similarities to existing tools and approaches. However, most of
-        them take a different turn eventually. In this section, I try to answer
-        common questions about the scope and motivation of this project.
-        Hopefully, it helps to figure it out. If not, more details can be found{" "}
-        <a href="https://hookup.to">here</a>.
+      <div className="flex flex-col text-xl overflow-hidden tracking-widest text-justify mt-10">
+        <h2>Frequently asked Questions</h2>
       </div>
-
-      <div className="mt-4 mb-10 text-xl overflow-hidden tracking-widest text-justify mx-auto sm:w-[100%] md:w-[70%] gap-4">
+      <div className="mt-4 mb-10 text-xl overflow-hidden tracking-widest text-justify gap-4">
         <Accordion type="single" collapsible className="w-full">
           <AccordionItem value="faq-2">
             <AccordionTrigger className="text-left">
               {" "}
-              Is this a low-code thing?
+              Is this a low/no-code thing?
             </AccordionTrigger>
             <AccordionContent className="text-base font-serif">
               <div className={s}>
                 Personally, I think fully replacing code is not a realisitc
                 option. Additionally, what is considered code? A declarative
-                configuration document can be quite similar to programming
-                language code. In this context some low-code™ marketing claims
-                and promises feel a bit shallow.{" "}
+                configuration document can be challenging to read, similar to
+                code of an unknown programming language.
               </div>
               <div className={s}>
-                Therefore, I think the low-code tag does not really match.
+                Further I feel some no-code™ marketing claims and promises
+                appear a bit shallow and optimistic. Therefore, I think the
+                low-code tag does not really match.
               </div>
             </AccordionContent>
           </AccordionItem>
@@ -107,44 +102,6 @@ export default function Faq() {
                 would prefer breaking it into smaller blocks where I can author
                 some and understand or tweak others that are generated. These
                 aspects and values should be reflected in this app.
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="faq-6">
-            <AccordionTrigger className="text-left">
-              Give me a brief description!
-            </AccordionTrigger>
-            <AccordionContent className="text-base font-serif">
-              <div className={s}>
-                This app is an integration tool. It enables you to compose
-                behaviors by connecting semantically meaningful building blocks.
-              </div>
-              <div className={s}>
-                That's the best brief, I found so far. I know it's still too
-                abstract. Still, it's a working solution that will evolve with
-                the app.
-              </div>
-            </AccordionContent>
-          </AccordionItem>
-          <AccordionItem value="faq-7">
-            <AccordionTrigger className="text-left">
-              What are key characteristics!
-            </AccordionTrigger>
-            <AccordionContent className="text-base font-serif">
-              <div className={s}>
-                Everything you build with this app is inherently asynchronous,
-                distributed, and heterogeneous. This means, the smallest
-                building blocks (services) operate at their own pace, some run
-                on the device while others operate on remote devices - and they
-                can be implemented in any programming language compatible with
-                existing adapters. Think of these building blocks as functions
-                that receive data, process it, and pass on the result. Data
-                flows through subsequent blocks as a continuous stream.
-              </div>
-              <div className={s}>
-                Personally, I like the metaphor of water carrying small rocks,
-                minerals, and other elements along its flow, constantly changing
-                and transforming according to the environment it passes through.
               </div>
             </AccordionContent>
           </AccordionItem>

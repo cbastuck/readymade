@@ -15,6 +15,7 @@ import { currentHeroVideo } from "./heroVideos";
 
 export const welcomeBlockClassname =
   "flex flex-col mb-10 text-xl overflow-hidden tracking-widest text-left mx-auto w-[100%] md:w-[70%] md:max-w-[800px] gap-4";
+
 export default function WelcomePanel() {
   const navigate = useNavigate();
 

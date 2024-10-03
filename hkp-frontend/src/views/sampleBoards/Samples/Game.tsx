@@ -22,7 +22,7 @@ export const game: CarouselItem = {
         Just grab your mobile phone and scan the QR code at the bottom of the
         board. This opens a single runtime board connected to the game running
         on another device. Using the XY Pad on your phone, you can control the
-        paddle in the same way you did from the runtime on the same device.
+        paddle in the same way you did using the runtime on top.
       </div>
     </div>
   ),

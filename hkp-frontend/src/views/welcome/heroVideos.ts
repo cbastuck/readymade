@@ -26,7 +26,7 @@ const diffuse: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/9707164-sd_506_960_30fps.mp4", //"https://videos.pexels.com/video-files/9707164/9707164-sd_506_960_30fps.mp4",
   welcomeWordStyle: "stroke-gray-500 stroke-[4px]",
-  claimTextStyle: "text-gray-500  px-2 mt-2",
+  claimTextStyle: "text-black  px-2 mt-2",
   landingPitchTextStyle: "bg-[#f3f4f6db] text-gray-600 p-2",
   logoBackground: "bg-gradient-to-r from-[#f3f4f6db] to-[#6b72809e]",
 };
