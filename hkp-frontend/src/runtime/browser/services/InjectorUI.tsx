@@ -214,7 +214,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
             this.setState({ recentInjection: code });
           }}
         >
-          Inject
+          Inject Data
         </Button>
       </div>
     );

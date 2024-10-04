@@ -42,7 +42,10 @@ export default class Editor extends Component<Props> {
         <MonacoEditor
           onMount={(editor) => {
             if (editor) {
-              editor.updateOptions({ wordWrap: "on" }); // TODO: provide an option
+              editor.updateOptions({
+                wordWrap: "on",
+                autoClosingBrackets: "never",
+              }); // TODO: provide an option
             }
             this.editor = editor;
             setTimeout(() => this.setState({ height: "100%" }));
