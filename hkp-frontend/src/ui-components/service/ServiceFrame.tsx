@@ -178,7 +178,7 @@ export default function ServiceFrame({
   const theme = useTheme();
 
   return (
-    <div key={`service-frame-${uuid}`}>
+    <div key={`service-frame-${uuid}`} id={`service-frame-${uuid}`}>
       <div className="flex">
         <div
           style={s(t.unselectable, {
