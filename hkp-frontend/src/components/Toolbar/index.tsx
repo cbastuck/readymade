@@ -73,9 +73,14 @@ export default function Toolbar({
                 onUpdateAvailableRuntimeEngines &&
                   onUpdateAvailableRuntimeEngines(runtimes);
               }}
-              onAddRuntime={(rtClass: RuntimeClass) =>
-                boardContext?.addRuntime(rtClass)
-              }
+              onAddRuntime={(rtClass: RuntimeClass) => {
+                if (boardContext) {
+                  boardContext.addRuntime({
+                    ...rtClass,
+                    name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
+                  });
+                }
+              }}
             />
           )}
 

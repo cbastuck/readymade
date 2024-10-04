@@ -92,7 +92,12 @@ export default function RuntimeHeader({
           onConfiguration={onConfiguration}
         />
         <div className="flex items-end font-sans">
-          <Editable value={name} title={runtimeId} onChange={onChangeName} />
+          <Editable
+            id={`runtime-name-${runtimeId}`}
+            value={name}
+            title={runtimeId}
+            onChange={onChangeName}
+          />
         </div>
       </div>
 

@@ -1,6 +1,5 @@
 import { DragEvent } from "react";
 import { v4 as uuidv4 } from "uuid";
-import UAParser from "ua-parser-js";
 import {
   PeerJsHostDescriptor,
   PlaygroundState,
@@ -17,9 +16,8 @@ export const localStoragePrefix = "hkp-playground-";
 
 export const defaultName = "Playground";
 
-const browser = new UAParser().getBrowser();
 export const availableRuntimeEngines: Array<RuntimeClass> = [
-  { name: `${browser.name}` || "browser", type: "browser" },
+  { name: "Browser Runtime" || "browser", type: "browser" },
 ];
 
 export function getLocalBoard(

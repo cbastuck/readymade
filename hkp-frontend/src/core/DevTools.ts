@@ -137,4 +137,6 @@ export function connectDevTools(context?: BoardContextState) {
 
   const global: any = window;
   global["hkp"] = api;
+
+  //console.log("DevTools connected", global["hkp"]);
 }

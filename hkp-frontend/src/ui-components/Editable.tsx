@@ -5,12 +5,14 @@ import { Input } from "@/ui-components/primitives/input";
 import { Button } from "@/ui-components/primitives/button";
 
 type Props = {
+  id?: string;
   value: string;
   title?: string;
   onChange: (newValue: string) => void;
 };
 
 export default function Editable({
+  id,
   value,
   title,
   onChange: onChangeProp,
@@ -37,6 +39,7 @@ export default function Editable({
     <>
       {!editableBuffer ? (
         <Button
+          id={id}
           variant="ghost"
           title={title}
           className="cursor-text p-0 h-min rounded-none whitespace-nowrap text-base font-sans tracking-widest"
@@ -47,6 +50,7 @@ export default function Editable({
       ) : (
         <>
           <Input
+            id={id}
             className="h-min w-min p-0 border-none rounded-none font-sans text-base tracking-widest"
             style={{ borderBottom: "solid 1px", paddingBottom: "1px" }}
             ref={(elem) => elem && elem.focus()}

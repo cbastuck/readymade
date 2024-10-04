@@ -54,8 +54,9 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
       <PopoverContent className="w-[200px] p-0 h-[260px] opacity-100 font-menu">
         <Command style={{ borderRadius: theme.borderRadius }}>
           <CommandInput
+            id={`service-selector-search-${id}`}
             className="text-base"
-            placeholder="Search"
+            placeholder="Search Service"
             value={searchTerm}
             onValueChange={setSearchTerm}
           />

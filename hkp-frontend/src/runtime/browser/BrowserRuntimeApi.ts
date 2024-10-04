@@ -1,5 +1,4 @@
 import { v4 as uuidv4 } from "uuid";
-import UAParser from "ua-parser-js";
 import {
   RuntimeScope,
   Bundles,
@@ -21,10 +20,9 @@ import { defaultBundles } from "./registry/Default";
 export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
   const { name: passedName, type, url } = rtClass;
   const runtimeId = uuidv4();
-  const browser = new UAParser().getBrowser();
   const runtime = {
     id: runtimeId,
-    name: browser.name || passedName,
+    name: passedName || "Browser Runtime",
     type,
     url,
   };
