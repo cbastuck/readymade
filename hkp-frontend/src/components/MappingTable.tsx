@@ -58,7 +58,15 @@ export default function MappingTable({
 
   const onNewProperty = () => {
     const newKey = "key";
-    const keys = Object.keys(template)
+    const allKeys = Object.keys(template);
+    if (!allKeys.includes(newKey)) {
+      onTemplateChanged({
+        ...template,
+        [newKey]: "value",
+      });
+      return;
+    }
+    const keys = allKeys
       .flatMap((k) => {
         const n = k.startsWith(newKey) && k.slice(newKey.length);
         if (n === "" || !isNaN(Number(n))) {
@@ -154,6 +162,7 @@ export default function MappingTable({
             onClick={onNewProperty}
             disabled={sensingMode}
             tooltip="Add a property"
+            aria-label="Add property"
           >
             <Plus size="20px" />
           </Button>
@@ -189,7 +198,7 @@ export default function MappingTable({
                       value={key}
                       onSubmit={(newKey) => onKeyChange(key, newKey, idx)}
                       onChangePending={setIsMappingChangePending}
-                      selectAllOnFocus={true}
+                      selectAllOnFocus={false}
                       onTab={(newKey) => onKeyChange(key, newKey, idx)}
                       onToggle={() => onToggleKeyDynamics(key, idx)}
                       toggleValue={rowIsDynamic[idx]}
@@ -198,6 +207,7 @@ export default function MappingTable({
                           ? "Deactivate Javascript and switch to static mapping"
                           : "Activate to enable Javascript in the value field"
                       }
+                      aria-label={`Map key ${idx}`}
                     />
                   </TableCell>
                   <TableCell className="text-left p-0 w-[50%]">
@@ -208,7 +218,7 @@ export default function MappingTable({
                       onSubmit={(newValue) => onChangeValue(key, newValue)}
                       onTab={(newValue) => onChangeValue(key, newValue)}
                       onChangePending={setIsMappingChangePending}
-                      selectAllOnFocus={true}
+                      selectAllOnFocus={false}
                       autoCompleteValueSuggestions={
                         rowIsDynamic[idx] && autoCompleteValueSuggestions
                       }
@@ -236,6 +246,7 @@ export default function MappingTable({
                       tooltip="Remove this row"
                       className="stroke-gray-600 hover:stroke-red-500"
                       tabIndex={-1}
+                      aria-label="Remove row"
                     >
                       <Trash className="stroke-inherit" size="16px" />
                     </Button>

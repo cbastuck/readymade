@@ -76,9 +76,16 @@ class AppProvider extends Component<Props, AppContextState> {
     window.removeEventListener("unhandledrejection", this.onUnhandledException);
   }
 
-  onError = (event: any) => {
+  onError = (err: any) => {
     // event.preventDefault(); // This will not print the error in the console });
-    this.state.pushNotification({ message: event.message, type: "error" });
+    if (
+      err.message.includes(
+        "ResizeObserver loop completed with undelivered notifications"
+      )
+    ) {
+      return; // don't show this error
+    }
+    this.state.pushNotification({ message: err.message, type: "error" });
   };
 
   onUnhandledException = (event: any) => {

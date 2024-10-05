@@ -73,18 +73,21 @@ const globalScope = {
   },
   fromVault,
   toVault,
+  moment: () => moment(),
 };
 
-export const globalScopeFunctions = Object.keys(globalScope).reduce(
-  (acc, key) => {
-    const value = ""; // TODO: document arguments
-    return { ...acc, [key]: value };
-  },
-  {
+export const globalScopeFunctions = Object.keys({
+  ...globalScope,
+  ...{
     getServiceConfig: "", // TODO: this will be added when running with an app
     processRuntime: "",
-  }
-);
+  },
+})
+  .sort()
+  .reduce((acc, key) => {
+    const value = ""; // TODO: document arguments
+    return { ...acc, [key]: value };
+  }, {});
 
 export async function parseAndEvalExpression(
   exp: string,

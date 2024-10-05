@@ -84,6 +84,21 @@ export function connectDevTools(context?: BoardContextState) {
       : undefined;
   };
 
+  const processBoard = (params: any) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const firstRuntime = context.runtimes[0];
+        if (firstRuntime) {
+          const { scope, api } = getRuntimeApi(firstRuntime.id);
+          const result = await api.processRuntime(scope, params, null);
+          scope.onResult(null, result, null, resolve);
+        }
+      } catch (err) {
+        reject(err);
+      }
+    });
+  };
+
   const processRuntime = (runtimeId: Id, params: any) => {
     const { api } = getRuntimeApi(runtimeId);
     return api.processRuntime(context.scopes[runtimeId], params, null);
@@ -99,18 +114,6 @@ export function connectDevTools(context?: BoardContextState) {
     );
   };
 
-  const processNext = (runtimeId: Id, instanceId: Id, params: any) => {
-    return new Promise((resolve, reject) => {
-      try {
-        const { svc, scope } = getServiceApi(runtimeId, instanceId);
-        const resolver = (res: any) => () => resolve(res);
-        scope.onResult(svc.uuid, params, null, resolver);
-      } catch (err) {
-        reject(err);
-      }
-    });
-  };
-
   const api = {
     getRuntime,
     getRuntimes,
@@ -118,9 +121,9 @@ export function connectDevTools(context?: BoardContextState) {
     getService,
     getServiceConfig,
     setServiceConfig,
+    processBoard,
     processRuntime,
     processService,
-    processNext,
     fromVault,
     toVault,
   };
