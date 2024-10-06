@@ -144,7 +144,6 @@ export default class Board extends Component<Props, State> {
     return runtime || null;
   };
 
-  pendingResultCallback: null | ((p: any) => void) = null;
   onResult = async (
     runtime: RuntimeDescriptor,
     peersContext: PeersContextState | null,
@@ -184,10 +183,6 @@ export default class Board extends Component<Props, State> {
       }
     }
 
-    if (resultCallback) {
-      this.pendingResultCallback = resultCallback;
-    }
-
     const runtimeOutput = outputRouting[runtime.id] || {};
     const flow = runtimeOutput?.flow || "pass";
     if (flow === "pass") {
@@ -199,9 +194,8 @@ export default class Board extends Component<Props, State> {
       if (nextApi) {
         nextApi.processRuntime(nextScope, result, null);
       } else {
-        if (this.pendingResultCallback) {
-          this.pendingResultCallback(result);
-          this.pendingResultCallback = null;
+        if (resultCallback) {
+          resultCallback(result);
         }
         if (this.props.onResult) {
           if (result !== null) {

@@ -1,5 +1,6 @@
 import { BoardContextState } from "@/BoardContext";
 import { fromVault, toVault } from "@/runtime/browser/services/base/eval";
+import { BoardDescriptor } from "@/types";
 
 type Id = string | number;
 
@@ -9,6 +10,9 @@ export function connectDevTools(context?: BoardContextState) {
   if (!context) {
     return;
   }
+  const loadBoard = (source: BoardDescriptor) => {
+    context.setBoardState(source);
+  };
 
   const getRuntimeApi = (runtimeId: Id) => {
     const rt = getRuntime(runtimeId);
@@ -88,9 +92,11 @@ export function connectDevTools(context?: BoardContextState) {
     return new Promise(async (resolve, reject) => {
       try {
         const firstRuntime = context.runtimes[0];
+        console.log("FIRST RUNTIME", firstRuntime);
         if (firstRuntime) {
           const { scope, api } = getRuntimeApi(firstRuntime.id);
           const result = await api.processRuntime(scope, params, null);
+          console.log("CALLING NEXT", result);
           scope.onResult(null, result, null, resolve);
         }
       } catch (err) {
@@ -115,6 +121,7 @@ export function connectDevTools(context?: BoardContextState) {
   };
 
   const api = {
+    loadBoard,
     getRuntime,
     getRuntimes,
     getServices,
