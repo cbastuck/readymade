@@ -11,7 +11,7 @@ export function connectDevTools(context?: BoardContextState) {
     return;
   }
   const loadBoard = (source: BoardDescriptor) => {
-    context.setBoardState(source);
+    return context.setBoardState(source);
   };
 
   const getRuntimeApi = (runtimeId: Id) => {
@@ -92,11 +92,9 @@ export function connectDevTools(context?: BoardContextState) {
     return new Promise(async (resolve, reject) => {
       try {
         const firstRuntime = context.runtimes[0];
-        console.log("FIRST RUNTIME", firstRuntime);
         if (firstRuntime) {
           const { scope, api } = getRuntimeApi(firstRuntime.id);
           const result = await api.processRuntime(scope, params, null);
-          console.log("CALLING NEXT", result);
           scope.onResult(null, result, null, resolve);
         }
       } catch (err) {

@@ -47,7 +47,7 @@ type BoardContextAPI = {
   onAction: (action: Action) => void;
 
   serializeBoard: () => Promise<BoardDescriptor | null>;
-  setBoardState: (newState: BoardDescriptor) => void;
+  setBoardState: (newState: BoardDescriptor) => Promise<void>;
 
   isRuntimeInScope: (runtime: RuntimeDescriptor) => boolean;
   acquireRuntimeScope: (boardname: string, runtime: RuntimeDescriptor) => void;
