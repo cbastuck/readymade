@@ -2,6 +2,8 @@ import Template from "../Template";
 import Article from "./Article";
 import Tutorials from "./tutorials";
 
+import SampleBoards from "./SampleBoards";
+
 // import LegacyDocs from "./LegacyDocs";
 
 export default function Docs() {
@@ -20,6 +22,8 @@ export default function Docs() {
       </div>
 
       <Tutorials />
+
+      <SampleBoards />
 
       <br />
     </Template>

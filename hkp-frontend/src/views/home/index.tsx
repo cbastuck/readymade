@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react";
-import { Plus, Trash, Send } from "lucide-react";
+import { Plus, Trash, Send, Settings } from "lucide-react";
 
 import Template from "../Template";
 import BoardWidget, { BoardWidgetAPI } from "../../components/BoardWidget";
@@ -19,7 +19,7 @@ import {
   storeAdditionalWidgetsToLocalStorage,
   WidgetDescriptor,
 } from "./common";
-import samples from "./samples";
+
 import PostBoardDialog from "./PostBoardDialog";
 
 type PostBoardState = {
@@ -102,7 +102,17 @@ export default function Home() {
 
   return (
     <Template title="Home" isRoot={true}>
-      <div className="flex flex-col h-full gap-4">
+      <div className="text-base tracking-widest leading-6 flex flex-col h-full gap-4 mt-2 mb-8">
+        <div className="my-8">
+          This is your space, you can add your boards as widgets here.
+          Everything here, is based on the output of a board. By default you
+          only see a single widget. This displays boards you stored locally
+          whithin this particular browser.
+          <div className="flex flex-row mt-2">
+            Click on the <Settings size={16} className="mt-1 mx-1" /> Icon to
+            peek into the board that produces the data for this prebuild widget.
+          </div>
+        </div>
         <BoardWidget
           title="A widget enumerating boards stored in the local storage of this Browser"
           board={board}
@@ -136,14 +146,6 @@ export default function Home() {
             }
           </BoardWidget>
         ))}
-
-        <BoardManager
-          title="Sample Boards"
-          boards={samples}
-          hideSearch
-          startCollapsed={true}
-          dateFormat="DD/MM/YYYY"
-        />
 
         <PostBoardDialog
           user={appContext.user}
