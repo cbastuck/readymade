@@ -236,6 +236,7 @@ export default function MappingTable({
                           ? undefined
                           : (rowIsSyntaxCheck[idx] as string)
                       }
+                      isExpandable
                     />
                   </TableCell>
                   <TableCell className="text-right p-0">

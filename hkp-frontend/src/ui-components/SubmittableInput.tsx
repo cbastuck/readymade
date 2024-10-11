@@ -7,9 +7,11 @@ import {
   useRef,
   useMemo,
 } from "react";
+import { Maximize } from "lucide-react";
 
 import Input from "./Input";
 import Tooltip, { TooltipContentType } from "./Tooltip";
+import EditorDialog from "./EditorDialog";
 
 export type SubmittableInputProps = {
   id?: string;
@@ -26,6 +28,7 @@ export type SubmittableInputProps = {
   submitOnBlur?: boolean;
   autoCompleteValues?: Array<string>;
   tooltip?: TooltipContentType;
+  isExpandable?: boolean;
   onSubmit: (val: string) => void;
   onTab?: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
@@ -48,6 +51,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       placeholder,
       autoCompleteValues,
       tooltip,
+      isExpandable,
       onSubmit,
       onTab,
       onChangePending,
@@ -89,39 +93,65 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       setInternal(newValue);
     };
 
+    const [hasFocus, setHasFocus] = useState(false);
     const onBlur = () => {
       if (submitOnBlur && internal !== lastSubmittedValue.current) {
         onSubmit(internal);
       }
+      setHasFocus(false);
     };
 
     const onFocus = (event: FocusEvent<HTMLInputElement>) => {
       selectAllOnFocus && setTimeout(() => event.target.select(), 100);
+      setHasFocus(true);
     };
 
+    const [expandedInputIsOpen, setExpandedInputIsOpen] = useState(false);
+    const onApplyDetail = (newValue: string | object) => {
+      const val =
+        typeof newValue === "string" ? newValue : JSON.stringify(newValue);
+      onSubmit(val);
+      setExpandedInputIsOpen(false);
+    };
     const cls = `font-menu text-md ${className}`;
     return (
-      <Tooltip value={tooltip}>
-        <Input
-          id={id}
-          ref={ref}
-          className={cls}
-          type={type}
-          fullWidth={fullWidth}
-          minHeight={minHeight}
-          hideBottomBorder={hideBottomBorder}
-          title={title}
-          value={internal}
-          disabled={disabled}
-          placeholder={placeholder}
-          autoCompleteValues={autoCompleteValues}
-          onChange={onChange}
-          onKeyUp={onKeyUp}
-          onKeyDown={onKeyDown}
-          onBlur={onBlur}
-          onFocus={onFocus}
-        />
-      </Tooltip>
+      <div className="flex">
+        <Tooltip value={tooltip}>
+          <Input
+            id={id}
+            ref={ref}
+            className={cls}
+            type={type}
+            fullWidth={fullWidth}
+            minHeight={minHeight}
+            hideBottomBorder={hideBottomBorder}
+            title={title}
+            value={internal}
+            disabled={disabled}
+            placeholder={placeholder}
+            autoCompleteValues={autoCompleteValues}
+            onChange={onChange}
+            onKeyUp={onKeyUp}
+            onKeyDown={onKeyDown}
+            onBlur={onBlur}
+            onFocus={onFocus}
+          />
+        </Tooltip>
+        {!hasFocus && isExpandable && (
+          <>
+            <button onClick={() => setExpandedInputIsOpen(true)}>
+              <Maximize className="hover:stroke-sky-600" size={14} />
+            </button>
+            <EditorDialog
+              title="Detail Input View"
+              value={value}
+              isOpen={expandedInputIsOpen}
+              onClose={() => setExpandedInputIsOpen(false)}
+              actions={[{ label: "Apply", onAction: onApplyDetail }]}
+            />
+          </>
+        )}
+      </div>
     );
   }
 );
