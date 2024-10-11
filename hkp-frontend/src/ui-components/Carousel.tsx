@@ -50,6 +50,7 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
         items={items.map((item) => item.title)}
         current={current}
         onChange={onChangeInternal}
+        onClick={() => onClick?.(items[current])}
       />
       <CarouselContent>
         {items.map((item, index) => (
@@ -76,13 +77,10 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
                 />
                 {item.action && (
                   <Button
-                    className="hover:bg-gradient-to-t from-[#FFFF] to-[#000A] bg-transparent text-center text-white hover:text-white text-xl tracking-widest opacity-0 hover:opacity-70 rounded"
+                    className="md:hover:bg-gradient-to-t from-[#FFFF] to-[#000A] bg-transparent text-center md:text-white hover:text-white text-xl tracking-widest opacity-0 hover:opacity-70 rounded absolute top-[6%] md:h-[60%] h-[8%]"
                     style={{
-                      position: "absolute",
-                      top: "6%",
                       left: "7%",
                       width: "86%",
-                      height: "60%",
                       transition: "opacity, background-color 0.5s ease-in-out",
                       cursor: item.action ? "pointer" : "default",
                     }}

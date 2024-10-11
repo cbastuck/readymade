@@ -10,7 +10,7 @@ import BoardManager from "@/ui-components/boardmanager";
 
 export default function SampleBoards() {
   return (
-    <Accordion type="single" collapsible defaultValue="item-1">
+    <Accordion type="single" collapsible>
       <AccordionItem value="item-1" className="border-none">
         <AccordionTrigger>Sample Boards</AccordionTrigger>
         <AccordionContent className="text-lg">
