@@ -13,7 +13,7 @@ import { Trash, Plus, CircleDotDashed, CircleDot } from "lucide-react";
 import Button from "@/ui-components/Button";
 import GroupLabel from "@/ui-components/GroupLabel";
 import { delayedExec } from "@/common";
-import AutoInputField from "./shared/AutoInputField";
+import AutocompleteInputField from "./shared/AutocompleteInputField";
 import SubmittableInputWithToggle from "@/ui-components/SubmittableInputWithToggle";
 import { checkSyntax } from "@/runtime/browser/services/base/eval";
 
@@ -211,7 +211,7 @@ export default function MappingTable({
                     />
                   </TableCell>
                   <TableCell className="text-left p-0 w-[50%]">
-                    <AutoInputField
+                    <AutocompleteInputField
                       id={`map-value-${id}-${idx}`}
                       ref={valueInputRef}
                       value={template[key]}

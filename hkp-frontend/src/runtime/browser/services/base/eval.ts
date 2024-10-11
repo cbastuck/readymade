@@ -73,7 +73,7 @@ const globalScope = {
   },
   fromVault,
   toVault,
-  moment: () => moment(),
+  moment,
 };
 
 export const globalScopeFunctions = Object.keys({

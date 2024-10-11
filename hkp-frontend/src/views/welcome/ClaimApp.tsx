@@ -34,9 +34,9 @@ export default function ClaimApp({ noAnimation, heroVideo }: Props) {
     <div id="hkp-claim-app" className="pt-1">
       <div className="flex items-end justify-center">
         <div className={`text-xl md:text-base whitespace-nowrap ${textColor}`}>
-          Hookitapp to
+          Hookitapp
           <span className={`${noAnimation ? "" : "claim-color-change"} pl-1`}>
-            {" make  your"}
+            {" to make  your"}
           </span>
           <span className={`${noAnimation ? "" : "claim-color-change"}`}>
             {" Tools "}

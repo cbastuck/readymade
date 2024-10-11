@@ -90,8 +90,7 @@ class Fetcher extends ServiceBase<State> {
   };
 
   async process(params: any) {
-    const { config: { serviceId = "", data = null } = {} } = params;
-
+    const { config: { serviceId = "", data = null } = {} } = params || {};
     const {
       url: paramsUrl = "",
       method: paramsMethod = "",
@@ -107,7 +106,7 @@ class Fetcher extends ServiceBase<State> {
 
     const payload = this.getBody(paramsBody);
 
-    const substitutedUrl = data.variables
+    const substitutedUrl = data?.variables
       ? substituteUrl(url, data.variables)
       : url;
 

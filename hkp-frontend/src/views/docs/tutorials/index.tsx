@@ -12,9 +12,7 @@ export default function Tutorials() {
       <AccordionItem value="item-1" className="border-none">
         <AccordionTrigger>Tutorials</AccordionTrigger>
         <AccordionContent className="text-lg ml-10">
-          <Article to="/docs/tutorials/starter">
-            Lesson 1: Map and Monitor
-          </Article>
+          <Article to="/docs/tutorials/starter">Lesson 1: Leave Lamp</Article>
         </AccordionContent>
       </AccordionItem>
     </Accordion>

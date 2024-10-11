@@ -13,7 +13,7 @@ type Props = {
   title: string;
   value: string | object;
   isOpen: boolean;
-  actions: Array<Action>;
+  actions?: Array<Action>;
   onClose: () => void;
 };
 
@@ -62,7 +62,7 @@ export default function EditorDialog({
         <h2>{title}</h2>
         <Editor ref={editor} value={v} language="json" />
         <DialogFooter className="flex">
-          {actions.map((action) => (
+          {actions?.map((action) => (
             <Button
               className="tracking-widest"
               key={action.label}
