@@ -4,7 +4,6 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/ui-components/primitives/carousel";
-import Button from "./Button";
 
 type Props = {
   items: string[];
@@ -29,14 +28,13 @@ export default function CarouselNav({
   return (
     <div className="justify-center flex gap-8 text-md font-serif w-full">
       <CarouselPrevious />
-      <Button
-        className="w-[60%] text-center first-letter:uppercase hover:text-sky-600 h-2 mt-[-8px]"
+      <div
+        className="w-[60%] text-center first-letter:uppercase hover:text-sky-600 h-min mt-[-10px] hover:underline"
         style={{ cursor: "pointer" }}
         onClick={onClick}
-        variant="ghost"
       >
         {items[current]}
-      </Button>
+      </div>
       <CarouselNext />
     </div>
   );

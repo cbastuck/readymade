@@ -20,8 +20,8 @@ export default function SampleBoards({
       </h1>
       <div className={`py-10 ${welcomeBlockClassname}`}>
         Get a quick impression by browsing through the samples below. Every
-        sample comes with a video and a link to a Playground board. Click on a
-        video to jump into the experience and try it for yourself.
+        sample comes with a video and a link to a Playground board. Click on the
+        headline to jump into the experience and try it for yourself.
       </div>
 
       <div className="mx-auto px-[0%] lg:px-[10%] pb-14">

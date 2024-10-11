@@ -4,7 +4,6 @@ import {
   CarouselContent,
   CarouselItem,
 } from "@/ui-components/primitives/carousel";
-import { Button } from "@/ui-components/primitives/button";
 
 import CarouselNav from "./CarouselNav";
 
@@ -39,7 +38,7 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
         vids[i].pause();
         vids[i].currentTime = 0;
       } else {
-        vids[i].play();
+        // vids[i].play();
       }
     }
     onChange?.(newItemIdx);
@@ -70,25 +69,11 @@ export default function Carousel({ items, current, onChange, onClick }: Props) {
                   id={`sample-video-${index}`}
                   className="rounded-xl border-solid border mx-auto drop-shadow-3xl"
                   src={item.videoUrl}
-                  autoPlay={index === 0}
+                  autoPlay={false}
                   loop
                   width={item.scale ? item.scale : "85%"}
                   controls
                 />
-                {item.action && (
-                  <Button
-                    className="md:hover:bg-gradient-to-t from-[#FFFF] to-[#000A] bg-transparent text-center md:text-white hover:text-white text-xl tracking-widest opacity-0 hover:opacity-70 rounded absolute top-[6%] md:h-[60%] h-[8%]"
-                    style={{
-                      left: "7%",
-                      width: "86%",
-                      transition: "opacity, background-color 0.5s ease-in-out",
-                      cursor: item.action ? "pointer" : "default",
-                    }}
-                    onClick={() => onClick?.(item)}
-                  >
-                    {item.action?.title}
-                  </Button>
-                )}
               </div>
             </div>
           </CarouselItem>
