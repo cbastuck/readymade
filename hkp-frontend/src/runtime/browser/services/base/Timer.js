@@ -63,6 +63,7 @@ class Timer {
 
     if (periodicValue !== undefined) {
       this.periodicValue = periodicValue;
+      this.app.notify(this, { periodicValue });
       if (doStart === undefined && running) {
         doStart = true;
       } else if (this.running) {
@@ -72,6 +73,7 @@ class Timer {
 
     if (periodicUnit !== undefined) {
       this.periodicUnit = periodicUnit;
+      this.app.notify(this, { periodicUnit });
       if (doStart === undefined && running) {
         doStart = true;
       } else if (this.running) {
@@ -81,6 +83,7 @@ class Timer {
 
     if (periodic !== undefined) {
       this.periodic = periodic;
+      this.app.notify(this, { periodic });
       if (doStart === undefined && running) {
         doStart = true;
       }
@@ -88,7 +91,7 @@ class Timer {
 
     if (oneShotDelay !== undefined) {
       this.oneShotDelay = oneShotDelay;
-      this.app.notify(this, { oneShotDelay });
+      this.app.notify(this, { oneShotDelay, periodic: false });
     }
 
     if (counter !== undefined) {

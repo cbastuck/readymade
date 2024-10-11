@@ -14,14 +14,7 @@ export default function App() {
     <Router>
       <AuthProvider>
         <AppProvider>
-          <div
-            className="select-none"
-            style={{
-              height: "100%",
-              width: "100%",
-              overflow: "auto",
-            }}
-          >
+          <div className="select-none h-full w-full">
             <Routes />
             <Notifications />
           </div>

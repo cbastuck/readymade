@@ -116,6 +116,9 @@ export default function TimerUI(props: ServiceUIProps) {
     setDelay(newDelay);
   };
 
+  const onChangeMode = (newMode: string) => {
+    service.configure({ periodic: newMode === "periodic" });
+  };
   return (
     <ServiceUI
       {...props}
@@ -131,7 +134,7 @@ export default function TimerUI(props: ServiceUIProps) {
           title="Mode"
           options={modes}
           value={mode}
-          onChange={setMode}
+          onChange={onChangeMode}
         />
         <OneOfVisible current={modeIdx}>
           <div className="flex flex-col gap-4">
