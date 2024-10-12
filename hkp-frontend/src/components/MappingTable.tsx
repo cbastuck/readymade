@@ -1,4 +1,11 @@
 import { useMemo, useRef, useState } from "react";
+import {
+  Trash,
+  Plus,
+  CircleDotDashed,
+  CircleDot,
+  Ellipsis,
+} from "lucide-react";
 
 import {
   Table,
@@ -8,7 +15,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/ui-components/primitives/table";
-import { Trash, Plus, CircleDotDashed, CircleDot } from "lucide-react";
 
 import Button from "@/ui-components/Button";
 import GroupLabel from "@/ui-components/GroupLabel";
@@ -181,7 +187,7 @@ export default function MappingTable({
                   Value
                 </TableHead>
                 <TableHead className="font-sans tracking-widest text-base text-center p-0 w-min h-min">
-                  Action
+                  <Ellipsis size={16} className="pl-1" />
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -241,15 +247,15 @@ export default function MappingTable({
                   </TableCell>
                   <TableCell className="text-right p-0">
                     <Button
+                      className="stroke-gray-600 hover:stroke-red-500 w-win px-1"
                       variant="ghost"
                       onClick={() => onRemoveProperty(key)}
                       disabled={isMappingChangePending}
                       tooltip="Remove this row"
-                      className="stroke-gray-600 hover:stroke-red-500"
                       tabIndex={-1}
                       aria-label="Remove row"
                     >
-                      <Trash className="stroke-inherit" size="16px" />
+                      <Trash className="stroke-inherit" size={16} />
                     </Button>
                   </TableCell>
                 </TableRow>

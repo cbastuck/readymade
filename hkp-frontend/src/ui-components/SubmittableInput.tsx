@@ -12,6 +12,7 @@ import { Maximize } from "lucide-react";
 import Input from "./Input";
 import Tooltip, { TooltipContentType } from "./Tooltip";
 import EditorDialog from "./EditorDialog";
+import Button from "./Button";
 
 export type SubmittableInputProps = {
   id?: string;
@@ -75,12 +76,16 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     const lastSubmittedValue = useRef("");
 
     const onKeyDown = (ev: KeyboardEvent) => {
-      if (onTab && ev.key === "Tab") {
+      if (ev.key === "f" && ev.metaKey) {
+        ev.preventDefault();
+        setExpandedInputIsOpen(true);
+      } else if (onTab && ev.key === "Tab") {
         ev.preventDefault();
         ev.stopPropagation();
         onTab(internal);
       }
     };
+
     const onKeyUp = (ev: KeyboardEvent) => {
       if (ev.key === "Enter") {
         lastSubmittedValue.current = internal;
@@ -137,13 +142,19 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
             onFocus={onFocus}
           />
         </Tooltip>
-        {!hasFocus && isExpandable && (
+        {isExpandable && (
           <>
-            <button onClick={() => setExpandedInputIsOpen(true)}>
-              <Maximize className="hover:stroke-sky-600" size={14} />
-            </button>
+            <Button
+              className={!hasFocus ? "w-0" : "w-min"}
+              variant="ghost"
+              onClick={() => setExpandedInputIsOpen(true)}
+              tooltip={"Expand to input area - or use Cmd + F"}
+            >
+              <Maximize size={14} />
+            </Button>
+
             <EditorDialog
-              title="Detail Input View"
+              title="Expanded Input View"
               value={value}
               isOpen={expandedInputIsOpen}
               onClose={() => setExpandedInputIsOpen(false)}

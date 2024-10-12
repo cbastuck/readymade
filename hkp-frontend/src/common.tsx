@@ -81,3 +81,7 @@ export function delayedExec(fn: Function, delay: number) {
     }, delay);
   });
 }
+
+export function runDeferred(f: () => void, delay: number) {
+  return setTimeout(f, delay);
+}

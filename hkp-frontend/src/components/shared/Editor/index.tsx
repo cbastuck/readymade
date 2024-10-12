@@ -48,7 +48,10 @@ export default class Editor extends Component<Props> {
               }); // TODO: provide an option
             }
             this.editor = editor;
-            setTimeout(() => this.setState({ height: "100%" }));
+            setTimeout(() => {
+              this.editor.focus();
+              this.setState({ height: "100%" });
+            });
           }}
           onChange={onChange}
           language={language}
