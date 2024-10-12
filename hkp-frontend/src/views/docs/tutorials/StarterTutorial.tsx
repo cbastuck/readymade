@@ -120,11 +120,13 @@ export default function StarterTutorial() {
           <Video src="/assets/tutorials/leavelamp-map-4.mp4" />
         </P>
         <P>
+          {/*
           curl -X 'GET' \
           'https://v6.bvg.transport.rest/stops/900056104/departures?direction=900025202&duration=10&linesOfStops=false&remarks=true&language=en'
           \ -H 'accept: application/json' curl -X 'GET'
           'https://v6.bvg.transport.rest/stops/900056104/departures?direction=900025202&duration=10&linesOfStops=false&remarks=true&language=en'
           -H 'accept: application/json'
+        */}
         </P>
       </div>
     </Template>

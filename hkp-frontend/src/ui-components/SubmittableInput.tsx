@@ -118,6 +118,9 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       onSubmit(val);
       setExpandedInputIsOpen(false);
     };
+    const onExpandInput = () => {
+      setExpandedInputIsOpen(true);
+    };
     const cls = `font-menu text-md ${className}`;
     return (
       <div className="flex">
@@ -145,10 +148,12 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         {isExpandable && (
           <>
             <Button
-              className={!hasFocus ? "w-0" : "w-min"}
+              className={hasFocus ? "w-min px-1" : "w-0 p-0 m-0"}
               variant="ghost"
-              onClick={() => setExpandedInputIsOpen(true)}
-              tooltip={"Expand to input area - or use Cmd + F"}
+              onMouseDown={onExpandInput}
+              tooltip={
+                hasFocus ? "Expand to input area - or use Cmd + F" : undefined
+              }
             >
               <Maximize size={14} />
             </Button>
