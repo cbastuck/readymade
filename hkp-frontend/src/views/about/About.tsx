@@ -16,17 +16,13 @@ type Props = {
 export default class About extends Component<Props> {
   render() {
     return (
-      <div>
+      <div className="flex flex-col h-full w-full">
         <Toolbar isCompact={!!this.props.isCompact} />
-        <div className="flex flex-col sm:w-[100%] md:w-[60%] mx-auto">
-          <h1 className="py-10 pt-4 md:pt-10 mx-0 mb-2 md:text-center">
-            About
-          </h1>
+        <div className="flex flex-col sm:w-[100%] md:w-[60%] mx-auto px-8">
+          <h1 className="pb-4 pt-4 md:pt-10 mx-0 mb-2 md:text-center">About</h1>
           <Mission />
           <Faq />
-
           <Credits />
-
           <Contact />
           <Footer isCompact={!!this.props.isCompact} />
         </div>

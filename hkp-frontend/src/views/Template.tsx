@@ -28,11 +28,18 @@ export default class Template extends Component<Props> {
           <Toolbar />
           <div
             style={{
-              height: "100%",
               width,
+              height: "100%",
               margin: "25px auto",
             }}
           >
+            {renderBreadcrumbs && (
+              <div className="pb-4">
+                <Breadcrumbs
+                  path={makeBreadcrumbsPath(title || slug!, parent)}
+                />
+              </div>
+            )}
             <h1
               style={{
                 width: "100%",
@@ -42,9 +49,7 @@ export default class Template extends Component<Props> {
             >
               {title}
             </h1>
-            {renderBreadcrumbs && (
-              <Breadcrumbs path={makeBreadcrumbsPath(title || slug!, parent)} />
-            )}
+
             <div
               className="font-serif"
               style={{

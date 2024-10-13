@@ -8,7 +8,7 @@ import { FunctionSquare } from "lucide-react";
 
 export default function StarterTutorial() {
   return (
-    <Template title="Lesson 1" parent="Tutorials">
+    <Template title="On-Boarding - Leave Lamp" parent="Tutorials">
       <div className="flex flex-col h-full gap-4 text-base tracking-wider leading-6">
         <h2 className="mt-6">Basic structure</h2>
         <div>
@@ -53,7 +53,7 @@ export default function StarterTutorial() {
             You don't need to do anything for that to work.
           </P>
         </div>
-        <h2 className="mt-6">The Project: Leave Lamp</h2>
+        <h2 className="mt-6">The Project</h2>
         <P>
           For the following starter tutorial, I'll pick an example to make the
           introduction more interesting and realistic. The idea is to have a
