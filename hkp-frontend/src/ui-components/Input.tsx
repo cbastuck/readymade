@@ -53,7 +53,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
   };
 
   return (
-    <div className="flex items-center gap-2 w-full">
+    <div className={`flex items-center w-full gap-2`}>
       {title && (
         <GroupLabel className="pt-1 whitespace-nowrap">{title}</GroupLabel>
       )}

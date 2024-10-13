@@ -12,6 +12,7 @@ type Props = {
   showCompletionsOnTab?: boolean;
   tooltip?: TooltipContentType;
   isExpandable?: boolean;
+  showBackground?: boolean;
   onSubmit: (newValue: string) => void;
   onTab: (curValue: string) => void;
   onChangePending: (isChangePending: boolean) => void;
@@ -28,6 +29,7 @@ const AutocompleteInputField = forwardRef<HTMLInputElement, Props>(
       selectAllOnFocus = true,
       showCompletionsOnTab = false,
       isExpandable = false,
+      showBackground = false,
       onSubmit,
       onTab,
       onChangePending,
@@ -75,6 +77,7 @@ const AutocompleteInputField = forwardRef<HTMLInputElement, Props>(
         fullWidth
         hideBottomBorder
         isExpandable={isExpandable}
+        showBackground={showBackground}
         onSubmit={onSubmit}
         onChangePending={onChangePending}
         onTab={onTabInternal}

@@ -228,13 +228,12 @@ export default function MappingTable({
                       autoCompleteValueSuggestions={
                         rowIsDynamic[idx] && autoCompleteValueSuggestions
                       }
+                      showBackground={!!rowIsDynamic[idx]}
                       className={
                         rowIsDynamic[idx]
-                          ? `rounded-xl p-1 px-2 ${
-                              rowIsSyntaxCheck[idx] === true
-                                ? "bg-gray-100"
-                                : "bg-red-200 text-gray-800"
-                            }`
+                          ? rowIsSyntaxCheck[idx] === true
+                            ? "bg-gray-100"
+                            : "bg-red-200 text-gray-800"
                           : undefined
                       }
                       tooltip={

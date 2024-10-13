@@ -30,6 +30,7 @@ export type SubmittableInputProps = {
   autoCompleteValues?: Array<string>;
   tooltip?: TooltipContentType;
   isExpandable?: boolean;
+  showBackground?: boolean;
   onSubmit: (val: string) => void;
   onTab?: (val: string) => void;
   onChangePending?: (isChangePending: boolean) => void;
@@ -53,6 +54,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       autoCompleteValues,
       tooltip,
       isExpandable,
+      showBackground,
       onSubmit,
       onTab,
       onChangePending,
@@ -121,9 +123,12 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     const onExpandInput = () => {
       setExpandedInputIsOpen(true);
     };
-    const cls = `font-menu text-md ${className}`;
+
+    const cls = `font-menu text-md ${
+      showBackground ? "rounded-xl py-1 px-2" : ""
+    } ${className}`;
     return (
-      <div className="flex">
+      <div className="flex relative">
         <Tooltip value={tooltip}>
           <Input
             id={id}
@@ -146,9 +151,13 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
           />
         </Tooltip>
         {isExpandable && (
-          <>
+          <div
+            className={`absolute top-0 right-1.5 ${
+              showBackground ? "p-1" : "p-0"
+            } m-0 ${hasFocus ? "inline" : "hidden"}`}
+          >
             <Button
-              className={hasFocus ? "w-min px-1" : "w-0 p-0 m-0"}
+              className="p-0 h-min"
               variant="ghost"
               onMouseDown={onExpandInput}
               tooltip={
@@ -165,7 +174,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
               onClose={() => setExpandedInputIsOpen(false)}
               actions={[{ label: "Apply", onAction: onApplyDetail }]}
             />
-          </>
+          </div>
         )}
       </div>
     );
