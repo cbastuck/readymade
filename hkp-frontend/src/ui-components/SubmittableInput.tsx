@@ -125,7 +125,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     };
 
     const cls = `font-menu text-md ${
-      showBackground ? "rounded-xl py-1 px-2" : ""
+      showBackground ? "rounded-xl py-1 px-2" : "mr-6"
     } ${className}`;
     return (
       <div className="flex relative">
@@ -153,8 +153,8 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         {isExpandable && (
           <div
             className={`absolute top-0 right-1.5 ${
-              showBackground ? "p-1" : "p-0"
-            } m-0 ${hasFocus ? "inline" : "hidden"}`}
+              showBackground ? "pt-1" : "pt-0"
+            } ${hasFocus ? "inline" : "hidden"}`}
           >
             <Button
               className="p-0 h-min"
