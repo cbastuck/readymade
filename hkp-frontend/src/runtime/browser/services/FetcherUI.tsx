@@ -80,7 +80,12 @@ export default function FetcherUI(props: ServiceUIProps) {
         className="h-full flex flex-col my-2 gap-2"
         style={{ width: "100%", textAlign: "left", textOverflow: "ellipsis" }}
       >
-        <InputField value={url} label="URL" onChange={onChangeUrl} />
+        <InputField
+          value={url}
+          label="URL"
+          onChange={onChangeUrl}
+          isExpandable
+        />
 
         <RadioGroup
           title="Method"

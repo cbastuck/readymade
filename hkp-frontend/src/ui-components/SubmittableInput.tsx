@@ -125,10 +125,10 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     };
 
     const cls = `font-menu text-md ${
-      showBackground ? "rounded-xl py-1 px-2" : "mr-6"
+      showBackground ? "bg-gray-100 rounded-lg py-1 px-2" : "mr-6"
     } ${className}`;
     return (
-      <div className="flex relative">
+      <div className="flex relative w-full">
         <Tooltip value={tooltip}>
           <Input
             id={id}
@@ -153,7 +153,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
         {isExpandable && (
           <div
             className={`absolute top-0 right-1.5 ${
-              showBackground ? "pt-1" : "pt-0"
+              showBackground ? "pt-[5px] bg-gray-100" : "pt-[2px]"
             } ${hasFocus ? "inline" : "hidden"}`}
           >
             <Button

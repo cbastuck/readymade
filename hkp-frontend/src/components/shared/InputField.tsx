@@ -17,6 +17,7 @@ export type Props = {
   unit?: string;
   labelStyle?: CSSProperties;
   style?: CSSProperties;
+  isExpandable?: boolean;
   className?: string;
 
   onChange?: (value: string) => void;
@@ -54,7 +55,13 @@ export default class InputField extends Component<Props, State> {
     type: InputFieldType,
     label: string
   ) => {
-    const { disabled, unit, onChange = () => {}, className = "" } = this.props;
+    const {
+      disabled,
+      unit,
+      onChange = () => {},
+      className = "",
+      isExpandable = false,
+    } = this.props;
 
     return (
       <div
@@ -72,6 +79,7 @@ export default class InputField extends Component<Props, State> {
           disabled={disabled}
           className={`my-0 ${className} font-menu`}
           fullWidth
+          isExpandable={isExpandable}
         />
         {unit && (
           <div

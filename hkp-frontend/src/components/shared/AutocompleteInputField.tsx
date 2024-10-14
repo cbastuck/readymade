@@ -68,8 +68,8 @@ const AutocompleteInputField = forwardRef<HTMLInputElement, Props>(
     return (
       <SubmittableInput
         ref={ref}
-        className={className}
         id={id}
+        className={className}
         autoCompleteValues={autoCompleteValues}
         value={value}
         selectAllOnFocus={selectAllOnFocus}

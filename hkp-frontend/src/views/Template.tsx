@@ -34,17 +34,17 @@ export default class Template extends Component<Props> {
             }}
           >
             {renderBreadcrumbs && (
-              <div className="pb-4">
+              <div className="pb-6">
                 <Breadcrumbs
                   path={makeBreadcrumbsPath(title || slug!, parent)}
                 />
               </div>
             )}
             <h1
+              className="p-4"
               style={{
                 width: "100%",
                 textAlign: "center",
-                padding: "5px 0px",
               }}
             >
               {title}

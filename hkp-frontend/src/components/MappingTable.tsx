@@ -232,7 +232,7 @@ export default function MappingTable({
                       className={
                         rowIsDynamic[idx]
                           ? rowIsSyntaxCheck[idx] === true
-                            ? "bg-gray-100"
+                            ? ""
                             : "bg-red-200 text-gray-800"
                           : undefined
                       }
