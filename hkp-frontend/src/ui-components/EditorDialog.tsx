@@ -13,6 +13,7 @@ type Props = {
   title: string;
   value: string | object;
   isOpen: boolean;
+  additionalHeaderButtons?: Array<any>;
   actions?: Array<Action>;
   onClose: () => void;
 };
@@ -21,6 +22,7 @@ export default function EditorDialog({
   title,
   value,
   isOpen,
+  additionalHeaderButtons,
   actions,
   onClose,
 }: Props) {
@@ -58,6 +60,7 @@ export default function EditorDialog({
         className="sm:max-w-[80%] h-[80%] flex flex-col"
         onPointerDownOutside={avoidDefaultDomBehavior}
         onInteractOutside={avoidDefaultDomBehavior}
+        additionalHeaderButtons={additionalHeaderButtons}
       >
         <h2>{title}</h2>
         <Editor ref={editor} value={v} language="json" />

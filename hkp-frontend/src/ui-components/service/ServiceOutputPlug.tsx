@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Pin, PinOff } from "lucide-react";
+import { X, Pin, PinOff, Maximize } from "lucide-react";
 
 import Plug from "@/assets/plug.svg?react";
 import ArrayPlug from "@/assets/plugArray.svg?react";
@@ -20,6 +20,7 @@ import { useTheme } from "../ThemeContext";
 import FlowInspectorPopup from "./FlowInspectorPopup";
 
 import Button from "../Button";
+import EditorDialog from "../EditorDialog";
 
 type Props = {
   isActive?: boolean;
@@ -31,14 +32,35 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const onOpen = () => setIsOpen(true);
 
   const onClose = () => {
     setIsOpen(false);
     setIsSticky(false);
+    setIsFullscreen(false);
   };
   const onSticky = () => setIsSticky(!isSticky);
+  const onMaximize = () => setIsFullscreen(true);
+
+  if (isFullscreen) {
+    return (
+      <EditorDialog
+        title="Flow Inspector"
+        isOpen={true}
+        value={data}
+        additionalHeaderButtons={[
+          <MaximizeButton
+            variant="ghost"
+            active={true}
+            onClick={() => setIsFullscreen(false)}
+          />,
+        ]}
+        onClose={onClose}
+      />
+    );
+  }
 
   return (
     <div style={{ cursor: "pointer" }}>
@@ -89,6 +111,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
               Flow Inspector
             </h2>
             <div className="flex">
+              <MaximizeButton onClick={onMaximize} />
               <StickyButton isSticky={isSticky} onClick={onSticky} />
               <CloseButton onClick={onClose} />
             </div>
@@ -106,6 +129,16 @@ function CloseButton({ onClick }: any) {
     <div className="text-right">
       <Button className="w-9 p-2 m-0" onClick={onClick}>
         <X />
+      </Button>
+    </div>
+  );
+}
+
+function MaximizeButton({ onClick, variant = "outline", active = false }: any) {
+  return (
+    <div className="text-right">
+      <Button className="w-9 p-2 m-0" variant={variant} onClick={onClick}>
+        <Maximize className={active ? "stroke-sky-600" : "currentColor"} />
       </Button>
     </div>
   );
