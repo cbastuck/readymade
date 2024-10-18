@@ -1,5 +1,5 @@
-import { CarouselItem } from "@/ui-components/Carousel";
 import { capitaliseHeadline } from ".";
+import { CarouselItem } from "..";
 
 const headline = "use your phone to control things on another device";
 

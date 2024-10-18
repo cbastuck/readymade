@@ -41,7 +41,7 @@ export default function Updates() {
         onClick={() => navigate("/docs/tutorials/starter")}
         style={{ marginBottom: "50px", width: "100%" }}
       >
-        Next: Starter's Tutorial
+        Next: On-Boarding Tutorial
       </Button>
     </Template>
   );

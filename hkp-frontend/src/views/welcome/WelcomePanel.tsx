@@ -3,13 +3,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import ClaimApp from "./ClaimApp";
-import { CarouselItem } from "@/ui-components/Carousel";
-import { carouselItems } from "@/views/sampleBoards/Samples";
+
+import { carouselItems } from "@/views/SampleCarousel/Samples";
 
 import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";
 import LandingPitch from "./LandingPitch";
-import SampleBoards from "../sampleBoards";
+import SampleCarousel, { CarouselItem } from "../SampleCarousel";
 import { WelcomeHeroVideo } from "./WelcomeHeroVideo";
 import { currentHeroVideo } from "./heroVideos";
 
@@ -78,7 +78,7 @@ export default function WelcomePanel() {
           overflowY: "hidden",
         }}
       >
-        <SampleBoards
+        <SampleCarousel
           onLoad={onLoadBoard}
           current={currentCarouselItem}
           onCurrentChange={setCurrentCarouselItem}

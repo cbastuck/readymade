@@ -53,7 +53,7 @@ import Track from "./views/docs/tracks";
 import BridgeTrack from "./views/docs/tracks/bridge";
 import RemoteTrack from "./views/docs/tracks/remote";
 
-import StarterTutorial from "./views/docs/tutorials/StarterTutorial";
+import StarterTutorial from "./views/docs/tutorials/1-Onboarding";
 
 import ServiceRedirect from "./views/ServiceRedirect";
 

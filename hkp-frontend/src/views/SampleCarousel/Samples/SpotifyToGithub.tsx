@@ -1,5 +1,5 @@
-import { CarouselItem } from "@/ui-components/Carousel";
 import { capitaliseHeadline } from ".";
+import { CarouselItem } from "..";
 
 const headline =
   "export your favorite songs from Spotify to a Github repository";

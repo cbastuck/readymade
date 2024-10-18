@@ -1,6 +1,6 @@
-import { CarouselItem } from "@/ui-components/Carousel";
 import { createShortRandomString } from "@/views/playground/common";
 import { capitaliseHeadline } from ".";
+import { CarouselItem } from "..";
 
 const headline = "send encrypted text data from one peer to another";
 

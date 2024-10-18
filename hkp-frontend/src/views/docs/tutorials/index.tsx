@@ -20,3 +20,16 @@ export default function Tutorials() {
     </Accordion>
   );
 }
+
+export function P({ children, className, title }: any) {
+  return (
+    <div className={`py-2 ${className}`}>
+      {title && <h3 className="my-2 p-0">{title}</h3>}
+      {children}
+    </div>
+  );
+}
+
+export function Note({ children }: any) {
+  return <P className="bg-gray-100 p-4 rounded my-2">{children}</P>;
+}

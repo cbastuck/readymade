@@ -1,12 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
 
 import examplesData from "../examples/ExamplesData";
-import { game } from "../sampleBoards/Samples/Game";
+import { game } from "../SampleCarousel/Samples/Game";
 import { SavedBoard } from "@/types";
-import { midi } from "../sampleBoards/Samples/MidiController";
-import { monitoring } from "../sampleBoards/Samples/Monitoring";
-import { spotify2Github } from "../sampleBoards/Samples/SpotifyToGithub";
-import { send } from "../sampleBoards/Samples/TextSend";
+import { midi } from "../SampleCarousel/Samples/MidiController";
+import { monitoring } from "../SampleCarousel/Samples/Monitoring";
+import { spotify2Github } from "../SampleCarousel/Samples/SpotifyToGithub";
+import { send } from "../SampleCarousel/Samples/TextSend";
 
 const samples: Array<SavedBoard> = [
   {

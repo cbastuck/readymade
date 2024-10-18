@@ -1,5 +1,5 @@
-import { CarouselItem } from "@/ui-components/Carousel";
 import { capitaliseHeadline } from ".";
+import { CarouselItem } from "..";
 
 const headline =
   "prototype your idea of a midi controller and listen to the outcome";
