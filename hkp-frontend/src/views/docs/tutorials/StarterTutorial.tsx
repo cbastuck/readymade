@@ -4,6 +4,8 @@ import Template from "@/views/Template";
 import Sketch from "../Sketch";
 import MediaParagraph from "./MediaParagraph";
 import Shortcut from "@/ui-components/Shortcut";
+import Plug from "@/assets/plug.svg?react";
+import ArrayPlug from "@/assets/plugArray.svg?react";
 
 import {
   leaveLampBoard2,
@@ -11,9 +13,12 @@ import {
   leaveLampBoard4,
   leaveLampBoard5,
   leaveLampBoard6,
+  leaveLampBoard7,
 } from "./boards";
+import { useTheme } from "@/ui-components/ThemeContext";
 
 export default function StarterTutorial() {
+  const theme = useTheme();
   return (
     <Template title="On-Boarding - Leave Lamp" parent="Tutorials">
       <div className="flex flex-col h-full gap-4 text-base tracking-wider leading-6">
@@ -194,21 +199,98 @@ export default function StarterTutorial() {
         </MediaParagraph>
 
         <MediaParagraph
-          title="Putting it all together"
+          title="Putting it together"
           video="/assets/tutorials/leavelamp-map-6.mp4"
           board={{ name: "LeaveLamp", src: leaveLampBoard6 }}
         >
-          WIP
+          Let's bring both runtimes into the sames board, first the runtime that
+          maps the light color based on the time left until the next departure
+          and second the runtime that actually fetches the next departures and
+          computes the time difference in minutes. Also, let's add a second
+          condition in which case the lamp turns red, which is when the next
+          departure is more than five minutes away from now. Further, I'll add
+          some context information, so I'm able to debug the lamp color based on
+          the received data. The debug information can be made visible by
+          changing the mode of the map service in the first runtime from
+          'replace' to 'add'.
+          <P>
+            Normally the result of the first runtime would flow into the second
+            runtime. Since I invoke the second runtime in the map service of the
+            first runtime, I use the first runtime's output options to stop
+            further processing.
+          </P>
         </MediaParagraph>
+
+        <MediaParagraph
+          title="Array and Object Mapping"
+          video="/assets/tutorials/leavelamp-map-7.mp4"
+          board={{ name: "LeaveLamp", src: leaveLampBoard7 }}
+        >
+          Let's remove another simplification which makes the leave lamp mostyl
+          unusable at the moment: I only consider the upcoming departure,
+          although there might be multiple upcoming departures in the fetched
+          time window. So, if the next departure would leave in one minute, the
+          lamp would show a red light, even if another departure would leave in
+          four minutes. Let's fix this by mapping the whole array of departures
+          instead of just the first one. The map service can handle both arrays
+          and objects. If the input is an array, the map service will iterate
+          over each element and apply the mapping to each element. If the input
+          is an object, the map service will apply the mapping to the object
+          itself. By introducing a new map service that takes the array of
+          departures from the resulting json structure and puts this into the
+          following services, the runtime generates a multiple time diffs,
+          including debug information for each upcoming departure.
+          <P>
+            By using just <code>=</code> as mapping key, the service can replace
+            the whole input (<code>params</code>) by the mapped value without
+            wrapping it into an object.
+            <P>
+              For example: <code>=</code> as key and{" "}
+              <code>params.departures</code> as value, will replace the whole
+              input by the departures array. In contrast <code>x=</code> as key
+              and <code>params.departures</code> as value, will create on object
+              with a property x, and this contains the departures array.
+            </P>
+          </P>
+          <Note>
+            Whether a service outputs scaler data type, or an array, is
+            visualised at the output of a service. The single{" "}
+            <Plug
+              className="inline"
+              width="15px"
+              stroke={theme.accentColor}
+              fill={theme.accentColor}
+            />{" "}
+            symbol indicates a scalar output. The double{" "}
+            <ArrayPlug
+              className="inline"
+              width="20px"
+              fill={theme.accentColor}
+            />{" "}
+            symbol indicates an array output.
+          </Note>
+        </MediaParagraph>
+        <P title="Next steps">
+          So far, in this tutorial I mostly touched on the map service. The
+          leave lamp as far from being ready. Even if it is more a thought model
+          at some point making a real leave lamp, could become a small step. So,
+          I will pick up this project in follow-up tutorials that look into
+          other services in more detail.
+        </P>
       </div>
     </Template>
   );
 }
 
-function P({ children, className }: any) {
-  return <div className={`py-2 ${className}`}>{children}</div>;
+function P({ children, className, title }: any) {
+  return (
+    <div className={`py-2 ${className}`}>
+      {title && <h3 className="my-2 p-0">{title}</h3>}
+      {children}
+    </div>
+  );
 }
 
 function Note({ children }: any) {
-  return <P className="bg-gray-100 p-4 rounded mx-10 my-2">{children}</P>;
+  return <P className="bg-gray-100 p-4 rounded my-2">{children}</P>;
 }
