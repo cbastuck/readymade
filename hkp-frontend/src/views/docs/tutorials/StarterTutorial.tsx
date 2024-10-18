@@ -1,12 +1,16 @@
 import { Link } from "react-router-dom";
-import { FunctionSquare, Equal } from "lucide-react";
+import { FunctionSquare, Equal, CircleDotDashed } from "lucide-react";
 import Template from "@/views/Template";
 import Sketch from "../Sketch";
 import MediaParagraph from "./MediaParagraph";
 import Shortcut from "@/ui-components/Shortcut";
 
-import { leaveLampBoard2, leaveLampBoard3, leaveLampBoard4 } from "./boards";
-import Code from "@/components/Code";
+import {
+  leaveLampBoard2,
+  leaveLampBoard3,
+  leaveLampBoard4,
+  leaveLampBoard5,
+} from "./boards";
 
 export default function StarterTutorial() {
   return (
@@ -138,34 +142,55 @@ export default function StarterTutorial() {
 
         <MediaParagraph
           title="Map the result from another runtime "
-          video="/assets/tutorials/leavelamp-map-4.mp4"
-          board={{ name: "LeaveLamp", src: leaveLampBoard4 }}
+          video="/assets/tutorials/leavelamp-map-5.mp4"
+          board={{ name: "LeaveLamp", src: leaveLampBoard5 }}
         >
-          In the next step, I'll remove some simplification and base the
-          produced output color on the actual public transport schedule of
-          Berlin. Assume I live close to Bülowstrasse and I regularily take the
-          U2 to Pankow. To get the next departures from my station in the
-          preferred direction I'll make a call to{" "}
+          In the next step, let's remove some prior simplifications and base the
+          color of the lamp on an actual public transport schedule. Assume I
+          live in Berlin close to Bülowstrasse and I regularily take the U2 to
+          Pankow. To get the next departures in my preferred direction I need to
+          make a call to{" "}
           <a
             href="https://v6.bvg.transport.rest/stops/900056104/departures?direction=900130002&duration=10&linesOfStops=false&remarks=true&language=en"
             target="_blank"
           >
             this
           </a>{" "}
-          API and parse the output. The result looks like the information I'm
-          looking for is available by following this path:{" "}
-          <code>departures[0]?.when</code>. Hence, I'll create a separate
-          runtime that computes the time difference in minutes and I'll use that
-          runtime for mapping the color of my leave lamp.
+          API and parse the output. From the result it looks like the
+          information I'm searching is available via the following path:{" "}
+          <code>departures[0].when</code>.
+          <P>
+            So, let's create a separate runtime that fetches the API and
+            computes the time difference between now and the next departure in
+            minutes. Later, I'll use that runtime when mapping the color of the
+            leave lamp.
+          </P>
+          <P>
+            The Fetcher service for this case just needs a URL which already
+            contains identifiers for the departing and destination stations.
+            This service can do more than just calling an API, but this will be
+            covered in follow-up tutorials. Next in the video, we enter the
+            "sensing mode" of the map service by clicking on the{" "}
+            <CircleDotDashed className="inline" size={16} /> button. In this
+            mode, the map service generates a mapping based on the data that
+            arrives on the next call. Afterwards the map service leaves the
+            sensing mode.
+          </P>
+          <P className="bg-gray-100 p-4 rounded">
+            We could have just used a monitor at the end to inspect the result
+            structure and identify the path from where to pick up the upcoming
+            departure time, but I used the sensing mode to show you how it
+            works.
+          </P>
+          <P>
+            Once we have the departure time, let's use the{" "}
+            <a href="https://momentjs.com" target="_blank">
+              <code>MomentJS</code>
+            </a>{" "}
+            APIs to compute the difference between the next departure and the
+            current time in minutes using an additional map service
+          </P>
         </MediaParagraph>
-        <P>
-          {/*
-        https://v6.bvg.transport.rest/stops/900056104/departures?direction=900130002&duration=10&linesOfStops=false&remarks=true&language=en
-        */}
-          {/*
-        http://localhost:3000/playground/limited-sparrow?fromLink=N4IgTgrgdgLglgWwKYGcQC4Dao4BMMgAcAhgGxKECcATAIwC0tAZgKyn0AsADMbvQEbUA7P3pJKQ6rnIdSxAMaEQAGhBRiyAgCEwAewDuKJGAAEAJWjxkJ2ipAwAngAckBfnsPG7KGMRiv0YABfIOUcfHQQeQlKFlxxemJqeSFOXABmagFqSlFCJnT02PSWGmY7dU1IpiQYeQALO0cXNw8jMG9ffwxgoIBdVXaANzh5VB6iMgoyxlZ2bl5skTEJKRk5RQxsEAgIPAIuEVwhQiEkekJSFnOOW-PKUnSOehZL3A4mGuJKJFtB4xGYwAkhEQPVdLoANYQJwAOhgugA9MNRkhEXAoAArJDyBEdf5gQFIAByGgCICBWJxeLsYBxSFglOxuLguigPVCICcABtiBiACpIAAeMAwTGI3KMqn4zmIKDQ6HFkqQoVAu321Vo-Ae3GeQjO6U4HGoTESwkNq0IHGItBYtC4hW8ANRIII4KhMPhSJRY0RCGITidhNRpKqIAAsgG7AhdPECHSeQpXKp-AhE91AlFdNzdGAALwEJx6MbyiywRBIAAUAB0QDU6vVawBKECcoxQFAYgDm4djASVUpAMqccoVA5VYR2e1B6WIDsILGIxHo6SYJE4xGW30u9CES6QQmupH4XGoyZAPqQrsi7uhcIRyOdvpjUDgNIJRND5N7r-fQ90xBgKC8RFjifhILgJj8ABQGVEgJj0CYXa1CYb4mEwegICYAaBqoOZdvyugAMJsig2b9hKRj9Ko0RCLE8SUGaKRpJk2S5BcBRFCwJRlEwWxqtOBCkKePwHgwYz6pwPyGsQ-DpKIHCroQ1AcO8hDiOkQZEteYIQneXqPsGvr1g0XgfiGZIEAAYrUpn4jsYDcm6MAwE4KDoIiiJDKQsL8EMXbwmAxAdk4uYwLCdI+MiCJuYilBcAlbD2hwiIgYBMAQJFAD8uBwHSLJsnm8UJdQLDUKeABkuCZX4rJQHm9oVdyGKoAA8kwADKMUoHm44VXS-pgJCPUwJASBNcFXYQMQyF5gynR+BACpQBA3LcqoyAwOCoIAOIAKL8nY9RILwxgKqA8hsv4sD0M05I4c18i1WyiKYmR7KctBuAOBgK1rdKsYOFZub+qKkT+CKdjDqOYqUROAkaiAtonekSDUFkHCULgDAcPIrACGVXD0NQwmCDQe5CEw-BaS6oK3p6D6Xn6UbmWMX4EJGuEgDGcaRAmvJjE0SBpryGagGlYAZXSBaRCOQUICgsIS1LqCYFwfSwvox0ff8Hbdr2vPjtKsryrDyqqlOiPJLE1DECwCm4FwLBSfIhqENqzspFwnHahwaP4KzV503pDPek+aL+lzl7s5EnPRn2BC8AH9jC+mATi3Anwy9zujILAlZyxoivK5lSBNkrmdMJWMZ5zAlZNsoJi1ggGIQP4KDNq2uudlAPYJ4qcPGyOpsD+bk7qqC5DUOphCFPQKS4IxxoUBcpDLJQTDY-IzCEFwtDTzTwLBx695h0ZEdsm+uaHySlmx5ff7QYBwFIKBT3+JBT+wWSCFIShaEYVzthJwXN8KERIh2ciZsqJ9BCEAA 
-        */}
-        </P>
       </div>
     </Template>
   );
