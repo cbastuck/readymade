@@ -173,6 +173,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
               isOpen={expandedInputIsOpen}
               onClose={() => setExpandedInputIsOpen(false)}
               actions={[{ label: "Apply", onAction: onApplyDetail }]}
+              autofocus={true}
             />
           </div>
         )}

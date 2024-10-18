@@ -9,6 +9,7 @@ type Props = {
   language?: string;
   style?: object;
   initialWidth?: number;
+  autofocus?: boolean;
   onChange?: (updated: string | undefined) => void;
 };
 
@@ -24,6 +25,7 @@ export default class Editor extends Component<Props> {
       language = "json",
       style = {},
       initialWidth = 300,
+      autofocus = false,
       onChange,
     } = this.props;
 
@@ -49,7 +51,10 @@ export default class Editor extends Component<Props> {
             }
             this.editor = editor;
             setTimeout(() => {
-              this.editor.focus();
+              if (autofocus) {
+                this.editor.focus();
+              }
+
               this.setState({ height: "100%" });
             });
           }}

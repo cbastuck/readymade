@@ -15,6 +15,7 @@ type Props = {
   isOpen: boolean;
   additionalHeaderButtons?: Array<any>;
   actions?: Array<Action>;
+  autofocus?: boolean;
   onClose: () => void;
 };
 
@@ -24,6 +25,7 @@ export default function EditorDialog({
   isOpen,
   additionalHeaderButtons,
   actions,
+  autofocus,
   onClose,
 }: Props) {
   const editor = useRef<any>(null);
@@ -63,7 +65,7 @@ export default function EditorDialog({
         additionalHeaderButtons={additionalHeaderButtons}
       >
         <h2>{title}</h2>
-        <Editor ref={editor} value={v} language="json" />
+        <Editor ref={editor} value={v} language="json" autofocus={autofocus} />
         <DialogFooter className="flex">
           {actions?.map((action) => (
             <Button
