@@ -358,7 +358,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
         onInit={this.onInit}
         onNotification={this.onNotification}
         customMenuEntries={customMenuEntries}
-        initialSize={{ width: 500, height: 300 }}
+        initialSize={{ width: 380, height: 280 }}
       >
         <>
           <div className="flex w-full">

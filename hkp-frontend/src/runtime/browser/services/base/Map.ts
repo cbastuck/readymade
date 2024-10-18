@@ -91,7 +91,8 @@ class Map extends ServiceBase<State> {
       const keys = this._terms ? Object.keys(this._terms) : [];
       // map to scalar value (not an object) if only an '=', i.e. empty string
       if (keys.length === 1 && keys[0] === "") {
-        return evalExpression(this._terms[keys[0]], { params: x });
+        const expression = this._terms[keys[0]];
+        return evalExpression(expression, { params: x }, this.app);
       }
 
       const initial =

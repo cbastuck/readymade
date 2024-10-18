@@ -10,6 +10,7 @@ import {
   leaveLampBoard3,
   leaveLampBoard4,
   leaveLampBoard5,
+  leaveLampBoard6,
 } from "./boards";
 
 export default function StarterTutorial() {
@@ -141,7 +142,7 @@ export default function StarterTutorial() {
         </MediaParagraph>
 
         <MediaParagraph
-          title="Map the result from another runtime "
+          title="Map the result from another runtime"
           video="/assets/tutorials/leavelamp-map-5.mp4"
           board={{ name: "LeaveLamp", src: leaveLampBoard5 }}
         >
@@ -176,12 +177,12 @@ export default function StarterTutorial() {
             arrives on the next call. Afterwards the map service leaves the
             sensing mode.
           </P>
-          <P className="bg-gray-100 p-4 rounded">
+          <Note>
             We could have just used a monitor at the end to inspect the result
             structure and identify the path from where to pick up the upcoming
             departure time, but I used the sensing mode to show you how it
             works.
-          </P>
+          </Note>
           <P>
             Once we have the departure time, let's use the{" "}
             <a href="https://momentjs.com" target="_blank">
@@ -191,6 +192,14 @@ export default function StarterTutorial() {
             current time in minutes using an additional map service
           </P>
         </MediaParagraph>
+
+        <MediaParagraph
+          title="Putting it all together"
+          video="/assets/tutorials/leavelamp-map-6.mp4"
+          board={{ name: "LeaveLamp", src: leaveLampBoard6 }}
+        >
+          WIP
+        </MediaParagraph>
       </div>
     </Template>
   );
@@ -198,4 +207,8 @@ export default function StarterTutorial() {
 
 function P({ children, className }: any) {
   return <div className={`py-2 ${className}`}>{children}</div>;
+}
+
+function Note({ children }: any) {
+  return <P className="bg-gray-100 p-4 rounded mx-10 my-2">{children}</P>;
 }
