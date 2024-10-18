@@ -24,7 +24,7 @@ export default function BypassSwitch({ bypass, disabled, onChange }: Props) {
     >
       {disabled ? null : (
         <Icon
-          className={`mt-0 mr-0 w-min h-min ${hoverIconColor} ${iconColor}`}
+          className={`mt-0 mb-1 mr-0 w-min h-min ${hoverIconColor} ${iconColor}`}
           name={disabled ? "power on" : "power off"}
         />
       )}

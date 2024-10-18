@@ -8,7 +8,7 @@ type Props = {
 };
 export default function ServiceName({ service, onRename }: Props) {
   return (
-    <div className="w-full flex items-center pt-2 font-sans">
+    <div className="w-full flex mb-4 font-sans">
       <Editable
         value={service.serviceName}
         title={service.uuid}

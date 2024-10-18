@@ -48,7 +48,7 @@ export default function Editable({
           {value}
         </Button>
       ) : (
-        <>
+        <div className="flex items-end">
           <Input
             id={id}
             className="h-min w-min p-0 border-none rounded-none font-sans text-base tracking-widest"
@@ -59,13 +59,14 @@ export default function Editable({
             onKeyUp={onKeyUp}
           />
           <Button
+            className="w-min h-min"
             variant="ghost"
             size="icon"
             onClick={() => setEditableBuffer("")}
           >
             <X strokeWidth={1} style={{ margin: 0 }} />
           </Button>
-        </>
+        </div>
       )}
     </>
   );
