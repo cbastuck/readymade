@@ -6,6 +6,7 @@ import MediaParagraph from "./MediaParagraph";
 import Shortcut from "@/ui-components/Shortcut";
 
 import { leaveLampBoard2, leaveLampBoard3, leaveLampBoard4 } from "./boards";
+import Code from "@/components/Code";
 
 export default function StarterTutorial() {
   return (
@@ -134,13 +135,32 @@ export default function StarterTutorial() {
             and the light should be red.
           </P>
         </MediaParagraph>
+
+        <MediaParagraph
+          title="Map the result from another runtime "
+          video="/assets/tutorials/leavelamp-map-4.mp4"
+          board={{ name: "LeaveLamp", src: leaveLampBoard4 }}
+        >
+          In the next step, I'll remove some simplification and base the
+          produced output color on the actual public transport schedule of
+          Berlin. Assume I live close to Bülowstrasse and I regularily take the
+          U2 to Pankow. To get the next departures from my station in the
+          preferred direction I'll make a call to{" "}
+          <a
+            href="https://v6.bvg.transport.rest/stops/900056104/departures?direction=900130002&duration=10&linesOfStops=false&remarks=true&language=en"
+            target="_blank"
+          >
+            this
+          </a>{" "}
+          API and parse the output. The result looks like the information I'm
+          looking for is available by following this path:{" "}
+          <code>departures[0]?.when</code>. Hence, I'll create a separate
+          runtime that computes the time difference in minutes and I'll use that
+          runtime for mapping the color of my leave lamp.
+        </MediaParagraph>
         <P>
           {/*
-          curl -X 'GET' \
-          'https://v6.bvg.transport.rest/stops/900056104/departures?direction=900025202&duration=10&linesOfStops=false&remarks=true&language=en'
-          \ -H 'accept: application/json' curl -X 'GET'
-          'https://v6.bvg.transport.rest/stops/900056104/departures?direction=900025202&duration=10&linesOfStops=false&remarks=true&language=en'
-          -H 'accept: application/json'
+        https://v6.bvg.transport.rest/stops/900056104/departures?direction=900130002&duration=10&linesOfStops=false&remarks=true&language=en
         */}
           {/*
         http://localhost:3000/playground/limited-sparrow?fromLink=N4IgTgrgdgLglgWwKYGcQC4Dao4BMMgAcAhgGxKECcATAIwC0tAZgKyn0AsADMbvQEbUA7P3pJKQ6rnIdSxAMaEQAGhBRiyAgCEwAewDuKJGAAEAJWjxkJ2ipAwAngAckBfnsPG7KGMRiv0YABfIOUcfHQQeQlKFlxxemJqeSFOXABmagFqSlFCJnT02PSWGmY7dU1IpiQYeQALO0cXNw8jMG9ffwxgoIBdVXaANzh5VB6iMgoyxlZ2bl5skTEJKRk5RQxsEAgIPAIuEVwhQiEkekJSFnOOW-PKUnSOehZL3A4mGuJKJFtB4xGYwAkhEQPVdLoANYQJwAOhgugA9MNRkhEXAoAArJDyBEdf5gQFIAByGgCICBWJxeLsYBxSFglOxuLguigPVCICcABtiBiACpIAAeMAwTGI3KMqn4zmIKDQ6HFkqQoVAu321Vo-Ae3GeQjO6U4HGoTESwkNq0IHGItBYtC4hW8ANRIII4KhMPhSJRY0RCGITidhNRpKqIAAsgG7AhdPECHSeQpXKp-AhE91AlFdNzdGAALwEJx6MbyiywRBIAAUAB0QDU6vVawBKECcoxQFAYgDm4djASVUpAMqccoVA5VYR2e1B6WIDsILGIxHo6SYJE4xGW30u9CES6QQmupH4XGoyZAPqQrsi7uhcIRyOdvpjUDgNIJRND5N7r-fQ90xBgKC8RFjifhILgJj8ABQGVEgJj0CYXa1CYb4mEwegICYAaBqoOZdvyugAMJsig2b9hKRj9Ko0RCLE8SUGaKRpJk2S5BcBRFCwJRlEwWxqtOBCkKePwHgwYz6pwPyGsQ-DpKIHCroQ1AcO8hDiOkQZEteYIQneXqPsGvr1g0XgfiGZIEAAYrUpn4jsYDcm6MAwE4KDoIiiJDKQsL8EMXbwmAxAdk4uYwLCdI+MiCJuYilBcAlbD2hwiIgYBMAQJFAD8uBwHSLJsnm8UJdQLDUKeABkuCZX4rJQHm9oVdyGKoAA8kwADKMUoHm44VXS-pgJCPUwJASBNcFXYQMQyF5gynR+BACpQBA3LcqoyAwOCoIAOIAKL8nY9RILwxgKqA8hsv4sD0M05I4c18i1WyiKYmR7KctBuAOBgK1rdKsYOFZub+qKkT+CKdjDqOYqUROAkaiAtonekSDUFkHCULgDAcPIrACGVXD0NQwmCDQe5CEw-BaS6oK3p6D6Xn6UbmWMX4EJGuEgDGcaRAmvJjE0SBpryGagGlYAZXSBaRCOQUICgsIS1LqCYFwfSwvox0ff8Hbdr2vPjtKsryrDyqqlOiPJLE1DECwCm4FwLBSfIhqENqzspFwnHahwaP4KzV503pDPek+aL+lzl7s5EnPRn2BC8AH9jC+mATi3Anwy9zujILAlZyxoivK5lSBNkrmdMJWMZ5zAlZNsoJi1ggGIQP4KDNq2uudlAPYJ4qcPGyOpsD+bk7qqC5DUOphCFPQKS4IxxoUBcpDLJQTDY-IzCEFwtDTzTwLBx695h0ZEdsm+uaHySlmx5ff7QYBwFIKBT3+JBT+wWSCFIShaEYVzthJwXN8KERIh2ciZsqJ9BCEAA 
