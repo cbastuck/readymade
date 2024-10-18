@@ -189,7 +189,7 @@ export default function MappingTable({
       </div>
 
       {rows.length > 0 ? (
-        <div className="mx-2">
+        <div className="mx-2 max-h-[250px] overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
