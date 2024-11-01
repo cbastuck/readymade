@@ -91,17 +91,17 @@ export default function Faq() {
                 tennis for me if I enjoy playing the game.
               </div>
               <div className={s}>
-                Generative AI models can be excellent assistants — ideal rubber
-                ducks, supportive proof-readers, and much more. The
-                collaborative nature of AI-assisted workflows sounds much more
-                appealing to me than fully outsourcing to AI.{" "}
+                Generative AI models can serve as excellent assistants—ideal
+                rubber ducks, supportive proofreaders, and much more. The
+                collaborative nature of AI-assisted workflows is much more
+                appealing to me than fully outsourcing tasks to AI.
               </div>
               <div className={s}>
-                The degree of control feels important. Instead of opting for a
-                black box that for example fully manages and optimizes my day, I
-                would prefer breaking it into smaller blocks where I can author
-                some and understand or tweak others that are generated. These
-                aspects and values should be reflected in this app.
+                Control is an important factor for me. Instead of opting for a
+                black box that fully manages and optimizes my day, I would
+                prefer to break it into smaller segments where I can author some
+                tasks and understand or tweak others that are generated. These
+                aspects and values of control should be reflected in this app.
               </div>
             </AccordionContent>
           </AccordionItem>
