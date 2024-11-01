@@ -21,7 +21,7 @@ const claim = "A Tool to make Tools";
 const personUsingTablet: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/5190552-sd_960_506_25fps.mp4",
-  landingPitchTextStyle: "text-gray-600",
+  landingPitchTextStyle: "text-gray-600 px-2",
   welcomeWordStyle: "stroke-[rgb(74,141,203)] stroke-[6px] px-10",
   logoBackground: "bg-gradient-to-r from-sky-600 to-sky-400",
   still: "/assets/heros/5190552-sd_960_506_25fps-still.png",
@@ -33,11 +33,11 @@ const diffuse: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/9707164-sd_506_960_30fps.mp4", //"https://videos.pexels.com/video-files/9707164/9707164-sd_506_960_30fps.mp4",
   welcomeWordStyle: "stroke-gray-500 stroke-[3px] px-10",
-  claimTextStyle: "text-black  px-2 mt-2",
-  landingPitchTextStyle: "bg-[#f3f4f6db] text-gray-600 p-2",
+  claimTextStyle: "text-black px-2 mt-2",
+  landingPitchTextStyle: "text-gray-600 p-2",
   logoBackground: "bg-gradient-to-r from-[#f3f4f6db] to-[#6b72809e]",
   still: "/assets/heros/9707164-sd_506_960_30fps-still.png",
-  claim: "A Tool for vague Ideas",
+  claim: "Prototype diffuse Ideas",
 };
 
 // https://www.pexels.com/video/blue-food-coloring-mixing-with-liquid-3864191/
@@ -57,7 +57,7 @@ const shapes: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/4965980-sd_426_226_25fps.mp4", //"https://videos.pexels.com/video-files/4965980/4965980-sd_960_506_25fps.mp4",
   welcomeWordStyle: "stroke-white stroke-[5px] px-2",
-  landingPitchTextStyle: "text-gray-600 bg-[#d4e2ebf0] p-2 text-[17px]",
+  landingPitchTextStyle: "text-gray-600 p-2 text-[17px]",
   logoBackground: "bg-[#333] drop-shadow-no",
   claimTextStyle: "text-gray-500  px-2 mt-2",
   still: "/assets/heros/4965980-sd_426_226_25fps-still.png",
@@ -68,12 +68,12 @@ const shapes: HeroVideoDescriptor = {
 const fastly: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/16181150-sd_426_240_30fps.mp4", //"https://videos.pexels.com/video-files/16181150/16181150-uhd_2560_1440_30fps.mp4",
-  landingPitchTextStyle: "text-white text-lg bg-black px-2 py-0 my-0 px-4",
+  landingPitchTextStyle: "text-black text-lg px-2 py-0 my-0 px-4",
   welcomeWordStyle: "stroke-white stroke-[6px] px-1",
   logoBackground: "bg-black",
-  claimTextStyle: "text-white px-2 mt-2",
+  claimTextStyle: "text-white bg-black px-2 mt-2",
   still: "/assets/heros/16181150-sd_426_240_30fps-still.png",
-  claim,
+  claim: "From Noise to Idea",
 };
 
 // https://www.pexels.com/photo/abstract-painting-1495321/
@@ -83,7 +83,7 @@ const wildImage: HeroVideoDescriptor = {
   backgroundSize: "cover",
   backgroundPosition: "",
   backgroundRepeat: "",
-  landingPitchTextStyle: "bg-[#f4f4f6eb] text-gray-600 py-2 px-4 rounded",
+  landingPitchTextStyle: "px-4 py-1", //"bg-[#f4f4f6eb] text-gray-600 py-2 px-4 rounded",
   welcomeWordStyle: "stroke-white stroke-[5px] px-2",
   logoBackground: "bg-[#e4ba5e]",
   claimTextStyle: "text-black bg-white px-2 rounded-full",

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import anime from "@/anime";
 import Switcher from "@/components/Switcher";
 import { welcomeBlockClassname } from "./WelcomePanel";
@@ -27,6 +27,7 @@ export default function LandingPitch({
   useEffect(() => {
     if (animationInstance.current && noAnimation) {
       animationInstance.current.seek(9000); // seek to the end of the animation
+      setOpacity("opacity-100");
     }
   }, [noAnimation]);
 
@@ -49,28 +50,37 @@ export default function LandingPitch({
     });
   }, []);
 
+  useEffect(() => {
+    setTimeout(() => setOpacity("opacity-100"), 4000);
+  }, []);
+  const [opacity, setOpacity] = useState("opacity-0");
+
   return (
     <div id="pitch-points" className={`${welcomeBlockClassname}`}>
-      <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
-        Do you sometimes feel creative, but setting everything up destroys the
-        inspiration? Maybe you just want to connect two or more things, like{" "}
-        <Switcher
-          animate={true}
-          style={{}}
-          duration={switchUsecaseInterval}
-          data={usecases.map(({ headline }) => headline || "")}
-          onLink={onLink}
-          suffix="?"
-        />
-      </div>
-      <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
-        Then this might be for you. Focus on the idea, and how to compose it. Do
-        not think to much about underlying connections.
-      </div>
-      <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
-        Orchestrate ideas with data seamlessly flowing through services
-        regardless of their location or platform. Manage everything from one
-        Board.
+      <div
+        className={`flex flex-col py-4 gap-2 bg-[#FFFFFFF5] rounded border border-gray-200 transition-opacity ease-in duration-700 ${opacity}`}
+      >
+        <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
+          Do you sometimes feel creative, but setting everything up destroys the
+          inspiration? Maybe you just want to connect two or more things, like{" "}
+          <Switcher
+            animate={true}
+            style={{}}
+            duration={switchUsecaseInterval}
+            data={usecases.map(({ headline }) => headline || "")}
+            onLink={onLink}
+            suffix="?"
+          />
+        </div>
+        <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
+          Then this might be for you. Focus on the idea, and how to compose it.
+          Do not think to much about underlying connections.
+        </div>
+        <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
+          Orchestrate ideas with data seamlessly flowing through services
+          regardless of their location or platform. Manage everything from one
+          Board.
+        </div>
       </div>
     </div>
   );
