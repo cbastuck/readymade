@@ -104,14 +104,14 @@ export default function Home() {
     <Template title="Home" isRoot={true}>
       <div className="text-base tracking-widest leading-6 flex flex-col h-full gap-4 mt-2 mb-8">
         <div className="my-8">
-          This is your space. Everything here, is based on the output of a board
-          display through widgets. Currently, there are only two widget types
-          and initially your home space contains exactly one widget. This lists
-          boards that you stored locally whithin this particular browser.
+          This is your space. Everything here is based on the output of a board
+          displayed through widgets. Currently, there are only two widget types,
+          and your home space initially contains exactly one widget that lists
+          the boards you have stored locally within this particular browser.
           <div className="mt-2">
-            Click on the <Settings size={16} className="inline" /> Icon to peek
-            into the board that produces the data for this prebuild widget. More
-            and custom widget types will be added in the future.
+            Click on the <Settings size={16} className="inline" /> icon to peek
+            into the board that produces the data for this prebuilt widget. More
+            widget types, including custom ones, will be added in the future.
           </div>
         </div>
         <BoardWidget
