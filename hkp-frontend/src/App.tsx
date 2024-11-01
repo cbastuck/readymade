@@ -14,7 +14,7 @@ export default function App() {
     <Router>
       <AuthProvider>
         <AppProvider>
-          <div className="select-none h-full w-full">
+          <div className="h-full w-full">
             <Routes />
             <Notifications />
           </div>

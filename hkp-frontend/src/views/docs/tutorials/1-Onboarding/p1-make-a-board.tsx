@@ -6,8 +6,9 @@ export default function MakeABoard() {
       title="How to make a Board"
       video="/assets/tutorials/leavelamp-map-1.mp4"
     >
-      Let's create a new board, add a browser runtime, and inside three
-      services: Injector, Map, and Monitor. This video shows how to do that.
+      Let's create a new board and add a browser runtime with three services
+      inside: Injector, Map, and Monitor. This video demonstrates how to set up
+      each step.
     </MediaParagraph>
   );
 }

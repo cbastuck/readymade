@@ -9,12 +9,12 @@ export default function RenameSaveBoard() {
       video="/assets/tutorials/leavelamp-map-2.mp4"
       board={{ name: "LeaveLamp", src: leaveLampBoard2 }}
     >
-      When creating a new board as shown above, the created board gets a random
-      name. This name serves as a placeholder until you feel like assigning a
-      meaningful name. Further, the state of a board is not automatically saved.
-      You need to save by using the board menu or the keyboard shortcut{" "}
-      <Shortcut type="command" char="s" />. Let's do this and reload the page
-      afterwards to verify it worked.
+      When creating a new board as described above, it initially receives a
+      random name as a placeholder until you decide to assign it a meaningful
+      name. Additionally, the board’s state is not saved automatically; you'll
+      need to save it manually by using the board menu or the keyboard shortcut{" "}
+      <Shortcut type="command" char="s" />. Let's do this, then reload the page
+      to verify that it saved correctly.
     </MediaParagraph>
   );
 }

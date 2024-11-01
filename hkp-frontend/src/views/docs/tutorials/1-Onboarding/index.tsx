@@ -11,6 +11,7 @@ import DynamicMapping from "./p4-dynamic-mapping";
 import MapRuntimeResults from "./p5-map-runtime-results";
 import PuttingTogether from "./p6-putting-together";
 import NextSteps from "./p8-next-steps";
+import ArrayObjectMapping from "./p7-array-object-mapping";
 
 export default function StarterTutorial() {
   return (
@@ -19,71 +20,70 @@ export default function StarterTutorial() {
         <h2 className="mt-6">The Board's Structure</h2>
         <div>
           <P>
-            First, make sure you've had a look at the{" "}
-            <Link to="/docs/quickstart">Quickstarter</Link> page, especially at
+            First, make sure to check out the
+            <Link to="/docs/quickstart">Quickstarter</Link> page, particularly
             the following image:
           </P>
           <div className="w-[80%] mx-auto py-2">
             <Sketch />
           </div>
           <P>
-            It shows the basic structure of a board, i.e., the runtimes, and
-            inside the runtimes, a sequence of services. Data flows from left to
-            right. A runtime passes incoming data sequentially to each of its
-            hosted services. Every service can read and modify the incoming
-            data. A service can also decide to stop the chain based on the data
-            it receives. Once the end of a runtime is reached, the data is
-            passed to the next runtime, unless configured otherwise.
+            This graphic shows the basic structure of a board, which includes
+            the runtimes and, within each runtime, a sequence of services. Data
+            flows from left to right, with each runtime passing incoming data
+            sequentially to its hosted services. Each service can read and
+            modify the incoming data, and may choose to stop the chain based on
+            what it receives. Once a runtime completes its sequence, it passes
+            the data to the next runtime, unless configured otherwise.
           </P>
           <P>
-            The important thing to keep in mind is that if you use the web
-            version of Hookitapp, the board is managed by the browser.
-            Therefore, by closing the browser (or tab), you stop and destroy all
-            runtimes, including the services they host.
+            An important point to remember is that if you're using the web
+            version of Hookitapp, the board is managed by the browser. Closing
+            the browser or tab will stop and destroy all runtimes and the
+            services they host.
           </P>
           <P>
-            Besides the web version, there is a standalone version of Hookitapp,
-            which runs as a native application on Mac and Windows. The
-            Playground view of this version appears almost exactly like the web
-            version, but it offers many benefits that will be covered in
-            upcoming tutorials.
+            Hookitapp also has a standalone version, which runs as a native
+            application on Mac, Windows and Linux. The Playground view in this
+            version is nearly identical to the web version, but it offers many
+            additional benefits that will be covered in upcoming tutorials.
           </P>
           <P>
-            What you should remember, though, is that not all runtimes are
-            browser runtimes. You can mix remote and browser runtimes on the
-            same board. While browser runtimes can only access resources
-            available through the sandbox of the browser, remote runtimes can do
-            more, and run on the same machine, on different machines in your
-            local network, or in the cloud. Passing outgoing data from a browser
-            runtime to a remote runtime and vice versa is handled transparently.
-            You don't need to do anything for that to work.
+            It's also worth noting that not all runtimes are browser-based; you
+            can mix remote and browser runtimes on the same board. Browser
+            runtimes are limited to resources accessible within the browser's
+            sandbox, while remote runtimes can access more resources and can run
+            locally, on other devices within the network, or in the cloud.
+            Passing data between browser and remote runtimes is handled
+            seamlessly, so no additional configuration is required.
           </P>
         </div>
         <h2 className="mt-6">The Project</h2>
         <P>
-          For the following starter tutorial, I'll pick an example to make the
-          introduction more interesting and realistic. The idea is to have a
+          For this starter tutorial, I'll use a relatable example to make the
+          introduction more interesting and realistic. The idea is to create a
           lamp that shows a green light when it's a good time to leave the house
-          or red when it's a bad time. Whether the time is good or bad depends
-          on the schedule of the bus or UBahn I usually take. I like it when
-          things are in flow, so I want to avoid situations when I arrive at the
-          station a bit too late and I have to wait a full cycle. Leaving three
-          minutes before the next ride is usually good enough to arrive on time.
+          and a red light when it's not. Whether it's a good or bad time depends
+          on the schedule of the bus or U-Bahn I usually take. I prefer to keep
+          things in flow, so I'd like to avoid arriving just a bit too late and
+          then waiting a full cycle. Leaving about three minutes before the next
+          ride typically gives me enough time to arrive on schedule.
         </P>
         <P>
-          I'll artificially simplify the problem to show some basic services in
-          action. The goal is to create an initial understanding of how things
-          work with Hookitapp.
+          To keep things simple and to showcase some basic services, I'll
+          simplify the setup a lot. The goal is to create an initial
+          understanding of how Hookitapp works.
         </P>
         <h2 className="mt-6">The Map Service</h2>
-        The following paragraphs will dive a bit deeper into the map service and
-        how it could be used to realise the leave lamp.
+        The following paragraphs will introduce the map service and demonstrate
+        how it can be used to implement the leave lamp.
         <MakeABoard />
         <RenameSaveBoard />
         <HowItWorks />
         <DynamicMapping />
         <MapRuntimeResults />
         <PuttingTogether />
+        <ArrayObjectMapping />
         <NextSteps />
       </div>
     </Template>

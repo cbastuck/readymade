@@ -13,42 +13,41 @@ export default function ArrayObjectMapping() {
       video="/assets/tutorials/leavelamp-map-7.mp4"
       board={{ name: "LeaveLamp", src: leaveLampBoard7 }}
     >
-      Let's remove another simplification which makes the leave lamp mostyl
-      unusable at the moment: I only consider the upcoming departure, although
-      there might be multiple upcoming departures in the fetched time window.
-      So, if the next departure would leave in one minute, the lamp would show a
-      red light, even if another departure would leave in four minutes. Let's
-      fix this by mapping the whole array of departures instead of just the
-      first one. The map service can handle both arrays and objects. If the
+      Let's address another simplification that currently makes the leave lamp
+      mostly unusable: it only considers the next departure, even though there
+      may be multiple upcoming departures within the fetched time window. For
+      example, if the nearest departure is in one minute, the lamp would show a
+      red light, even if another departure is scheduled in four minutes. To fix
+      this, we should map the entire array of departures instead of just the
+      first one. The map service can handle both arrays and objects: if the
       input is an array, the map service will iterate over each element and
-      apply the mapping to each element. If the input is an object, the map
-      service will apply the mapping to the object itself. By introducing a new
-      map service that takes the array of departures from the resulting json
-      structure and puts this into the following services, the runtime generates
-      a multiple time diffs, including debug information for each upcoming
-      departure.
+      apply the mapping; if the input is an object, the map service will apply
+      the mapping directly to the object. By introducing a new map service that
+      takes the array of departures from the resulting JSON structure and passes
+      it to the subsequent services, the runtime generates multiple time
+      differences, including debug information for each upcoming departure.
       <P>
-        By using just <code>=</code> as mapping key, the service can replace the
-        whole input (<code>params</code>) by the mapped value without wrapping
-        it into an object.
+        By using <code>=</code> as the mapping key, the service can replace the
+        entire input (<code>params</code>) with the mapped value, avoiding any
+        wrapping into an object.
         <P>
-          For example: <code>=</code> as key and <code>params.departures</code>{" "}
-          as value, will replace the whole input by the departures array. In
-          contrast <code>x=</code> as key and <code>params.departures</code> as
-          value, will create on object with a property x, and this contains the
-          departures array.
+          For example: using <code>=</code> as key and{" "}
+          <code>params.departures</code> as value will replace the entire input
+          with the departures array. In contrast using <code>x=</code> as the
+          key and <code>params.departures</code> as the value will create an
+          object with a property x containing the departures array.
         </P>
       </P>
       <Note>
-        Whether a service outputs scaler data type, or an array, is visualised
-        at the output of a service. The single{" "}
+        Whether a service outputs a scalar data type or an array is indicated at
+        the service's output. A single{" "}
         <Plug
           className="inline"
           width="15px"
           stroke={theme.accentColor}
           fill={theme.accentColor}
         />{" "}
-        symbol indicates a scalar output. The double{" "}
+        symbol represents a scalar output, while a double{" "}
         <ArrayPlug className="inline" width="20px" fill={theme.accentColor} />{" "}
         symbol indicates an array output.
       </Note>
