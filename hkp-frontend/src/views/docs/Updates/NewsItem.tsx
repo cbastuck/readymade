@@ -20,11 +20,6 @@ export default function NewsItem({ content, date, type = "done" }: Props) {
 
   return (
     <TableRow>
-      <TableCell>{content}</TableCell>
-      <TableCell>
-        <Badge variant={type}>{type}</Badge>
-      </TableCell>
-
       <TableCell>
         <Date
           className="text-left"
@@ -33,6 +28,10 @@ export default function NewsItem({ content, date, type = "done" }: Props) {
           year={year}
           size="m"
         />
+      </TableCell>
+      <TableCell>{content}</TableCell>
+      <TableCell>
+        <Badge variant={type}>{type}</Badge>
       </TableCell>
     </TableRow>
   );

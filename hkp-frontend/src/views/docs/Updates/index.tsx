@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   Table,
   TableBody,
@@ -20,12 +20,23 @@ export default function Updates() {
       <Table className="mt-8">
         <TableHeader>
           <TableRow>
-            <TableHead className="font-sans text-xl w-[33%]">Update</TableHead>
-            <TableHead className="font-sans text-xl w-[33%]">State</TableHead>
-            <TableHead className="font-sans text-xl w-[33%]">Date</TableHead>
+            <TableHead className="font-sans text-xl w-[25%]">Date</TableHead>
+            <TableHead className="font-sans text-xl w-[55%]">Update</TableHead>
+            <TableHead className="font-sans text-xl w-[20%]">State</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
+          <NewsItem
+            date="1.11.2024"
+            content={
+              <Text>
+                <Link to="/docs/tutorials/starter">
+                  {" "}
+                  On-Boarding Tutorial - Leave Lamp
+                </Link>
+              </Text>
+            }
+          />
           <NewsItem
             date="29.9.2024"
             content={
@@ -39,7 +50,7 @@ export default function Updates() {
       </Table>
       <Button
         onClick={() => navigate("/docs/tutorials/starter")}
-        style={{ marginBottom: "50px", width: "100%" }}
+        className="my-10 w-full"
       >
         Next: On-Boarding Tutorial
       </Button>
