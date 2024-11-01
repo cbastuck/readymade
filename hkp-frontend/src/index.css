@@ -27,19 +27,12 @@ font-face {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/*
-html {
-  overscroll-behavior: none; 
-}
-*/
-
 body {
   margin: 0;
   display: flex;
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  /* overscroll-behavior: none; */
 }
 
 @media (prefers-color-scheme: light) {

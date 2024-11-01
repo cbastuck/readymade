@@ -22,7 +22,7 @@ export default defineConfig({
       formats: ["es"],
     },
   },
-  plugins: [svgr(), react(), dts({ include: ["lib", "src"] })],
+  plugins: [svgr(), react() /*, dts({ include: ["lib", "src"] })*/], // disable types as they seem to have a wrong root
   server: {
     port: 3000,
   },

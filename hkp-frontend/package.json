@@ -8,7 +8,7 @@
     "build": "npm run updateBuildNumber && tsc && vite build",
     "build-lib": "tsc --p ./tsconfig-lib.json && vite --config ./vite.config-lib.ts build ",
     "copy-lib": "cp -r build-lib ../hkp-go/app/wails/frontend/src",
-    "buildncopy-lib": "npm run build-lib &&  npm run copy-lib",
+    "buildncopy-lib": "npm run build-lib && npm run copy-lib",
     "fix-lib": "sed -i='' 's/a as r/r: a/' build-lib/___vite-browser-external_commonjs-proxy-* && sed -i='' 's/export {/export default {/' build-lib/___vite-browser-external_commonjs-proxy-* && bash -c \"echo 'export { r }' >> build-lib/___vite-browser-external_commonjs-*.js\"",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",

@@ -1,5 +1,6 @@
 import "../src/index.css";
 import "../app/globals.css";
+import "./lib.css";
 
 import About from "../src/views/about/About";
 import Playground from "../src/views/playground";
