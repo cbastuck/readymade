@@ -5,9 +5,13 @@ import anime from "../../anime";
 import "./ClaimApp.css";
 import { HeroVideoDescriptor } from "./heroVideos";
 
-type Props = { noAnimation?: boolean; heroVideo: HeroVideoDescriptor };
+type Props = {
+  claim: string;
+  noAnimation?: boolean;
+  heroVideo: HeroVideoDescriptor;
+};
 
-export default function ClaimApp({ noAnimation, heroVideo }: Props) {
+export default function ClaimApp({ noAnimation, heroVideo, claim }: Props) {
   const animationInstance = useRef<any>(null);
 
   useEffect(() => {
@@ -34,12 +38,9 @@ export default function ClaimApp({ noAnimation, heroVideo }: Props) {
     <div id="hkp-claim-app" className="pt-1">
       <div className="flex items-end justify-center">
         <div className={`text-xl md:text-base whitespace-nowrap ${textColor}`}>
-          Hookitapp
+          Hookitapp -
           <span className={`${noAnimation ? "" : "claim-color-change"} pl-1`}>
-            {" to make  your"}
-          </span>
-          <span className={`${noAnimation ? "" : "claim-color-change"}`}>
-            {" Tools "}
+            {claim}
           </span>
         </div>
       </div>

@@ -45,6 +45,7 @@ export default function WelcomePanel() {
                 noAnimation={headerAnimationsComplete}
               />{" "}
               <ClaimApp
+                claim={video.claim}
                 heroVideo={video}
                 noAnimation={headerAnimationsComplete}
               />
