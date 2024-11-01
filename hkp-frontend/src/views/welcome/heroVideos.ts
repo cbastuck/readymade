@@ -1,6 +1,7 @@
 export type HeroVideoDescriptor = {
   type: "video" | "image";
   url: string;
+  still: string;
   landingPitchTextStyle: string;
   logoBackground: string;
   welcomeWordStyle?: string;
@@ -19,6 +20,7 @@ const personUsingTablet: HeroVideoDescriptor = {
   url: "/assets/heros/5190552-sd_960_506_25fps.mp4",
   landingPitchTextStyle: "text-gray-600",
   logoBackground: "bg-gradient-to-r from-sky-600 to-sky-400",
+  still: "/assets/heros/5190552-sd_960_506_25fps-still.png",
 };
 
 //source https://www.pexels.com/video/a-monochromatic-video-of-clouds-of-paint-underwater-9707164/
@@ -29,6 +31,7 @@ const diffuse: HeroVideoDescriptor = {
   claimTextStyle: "text-black  px-2 mt-2",
   landingPitchTextStyle: "bg-[#f3f4f6db] text-gray-600 p-2",
   logoBackground: "bg-gradient-to-r from-[#f3f4f6db] to-[#6b72809e]",
+  still: "/assets/heros/9707164-sd_506_960_30fps-still.png",
 };
 
 // https://www.pexels.com/video/blue-food-coloring-mixing-with-liquid-3864191/
@@ -39,6 +42,7 @@ const dropDistribution: HeroVideoDescriptor = {
   welcomeWordStyle: "stroke-sky-700 stroke-[4px]",
   logoBackground: "bg-sky-700",
   claimTextStyle: "text-gray-700  px-2 mt-2",
+  still: "/assets/heros/sd_640_360_25fps-still.png",
 };
 
 // source: https://www.pexels.com/video/a-black-and-white-image-of-a-red-arrow-4965980/
@@ -49,6 +53,7 @@ const shapes: HeroVideoDescriptor = {
   landingPitchTextStyle: "text-gray-600 bg-[#d4e2ebf0] p-2 text-[17px]",
   logoBackground: "bg-[#333] drop-shadow-no",
   claimTextStyle: "text-gray-500  px-2 mt-2",
+  still: "/assets/heros/4965980-sd_426_226_25fps-still.png",
 };
 
 // https://www.pexels.com/video/best-free-glitch-effect-footage-noise-vhs-layer-tv-effects-16181150/
@@ -59,6 +64,7 @@ const fastly: HeroVideoDescriptor = {
   welcomeWordStyle: "stroke-white stroke-[6px]",
   logoBackground: "bg-black",
   claimTextStyle: "text-white px-2 mt-2",
+  still: "/assets/heros/16181150-sd_426_240_30fps-still.png",
 };
 
 // https://www.pexels.com/photo/abstract-painting-1495321/
@@ -72,6 +78,7 @@ const wildImage: HeroVideoDescriptor = {
   welcomeWordStyle: "stroke-white stroke-[5px]",
   logoBackground: "bg-[#e4ba5e]",
   claimTextStyle: "text-black bg-white px-2 rounded-full",
+  still: "/assets/heros/pexels-steve-1495321md-still.png",
 };
 
 const heroVideos: Array<HeroVideoDescriptor> = [

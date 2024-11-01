@@ -29,7 +29,6 @@ export const monitoring: CarouselItem = {
       </div>
     </div>
   ),
-  background: "/assets/teaser/sky-small2.png",
   action: {
     title: "Open in Playground",
     onClick: {

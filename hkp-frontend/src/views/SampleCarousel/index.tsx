@@ -10,7 +10,6 @@ export type CarouselItem = {
   headline: string;
   description: string | ReactElement;
   videoUrl: string;
-  background?: string;
   action?: {
     title: string;
     onClick?: { url: string };
@@ -21,12 +20,14 @@ export type CarouselItem = {
 
 type Props = {
   current: number;
+  background: string;
   onCurrentChange: (index: number) => void;
   onLoad: (item: CarouselItem) => void;
 };
 
 export default function SampleCarousel({
   current,
+  background,
   onCurrentChange,
   onLoad,
 }: Props) {
@@ -34,7 +35,13 @@ export default function SampleCarousel({
     () =>
       carouselItems.map((item, index) => ({
         value: item,
-        node: <SampleCarouselItem item={item} index={index} />,
+        node: (
+          <SampleCarouselItem
+            item={item}
+            index={index}
+            background={background}
+          />
+        ),
       })),
     [carouselItems]
   );

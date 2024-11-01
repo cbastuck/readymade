@@ -26,7 +26,6 @@ export const game: CarouselItem = {
       </div>
     </div>
   ),
-  background: "/assets/teaser/blue3.png",
   action: {
     title: "Open in Playground",
     onClick: {

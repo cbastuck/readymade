@@ -3,19 +3,19 @@ import { CarouselItem } from ".";
 type Props = {
   item: CarouselItem;
   index: number;
+  background: string;
 };
 
-export default function SampleCarouselItem({ item, index }: Props) {
+export default function SampleCarouselItem({ item, index, background }: Props) {
   return (
     <div className="flex items-start w-full h-full">
       <div
-        className="rounded-xl bg-cover bg-no-repeat w-full h-full mx-2 md:mx-20 py-10 drop-shadow-xl overflow-auto hover:bg-gray-200 mb-6 overflow-hidden"
+        className="rounded-xl bg-cover bg-no-repeat w-full h-full mx-2 md:mx-20 py-10 drop-shadow-xl overflow-auto mb-6 overflow-hidden"
         style={{
           position: "relative",
-
-          backgroundImage: item.background
-            ? `url(${item.background})`
-            : undefined,
+          backgroundImage: `url(${background})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
         }}
       >
         <video

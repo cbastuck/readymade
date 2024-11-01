@@ -35,7 +35,6 @@ export const midi: CarouselItem = {
       </div>
     </div>
   ),
-  background: "/assets/teaser/blue3.png",
   action: {
     title: "Open in Playground (Chrome only)",
     onClick: {

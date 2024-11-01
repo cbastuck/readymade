@@ -79,8 +79,9 @@ export default function WelcomePanel() {
         }}
       >
         <SampleCarousel
-          onLoad={onLoadBoard}
+          background={video.still} //"/assets/heros/pexels-steve-1495321%20md.jpg" //"/assets/teaser/blue3.png"
           current={currentCarouselItem}
+          onLoad={onLoadBoard}
           onCurrentChange={setCurrentCarouselItem}
         />
       </div>
