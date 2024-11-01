@@ -21,7 +21,7 @@ const claim = "A Tool to make Tools";
 const personUsingTablet: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/5190552-sd_960_506_25fps.mp4",
-  landingPitchTextStyle: "text-gray-600 px-2",
+  landingPitchTextStyle: "px-2",
   welcomeWordStyle: "stroke-[rgb(74,141,203)] stroke-[6px] px-10",
   logoBackground: "bg-gradient-to-r from-sky-600 to-sky-400",
   still: "/assets/heros/5190552-sd_960_506_25fps-still.png",
@@ -34,7 +34,7 @@ const diffuse: HeroVideoDescriptor = {
   url: "/assets/heros/9707164-sd_506_960_30fps.mp4", //"https://videos.pexels.com/video-files/9707164/9707164-sd_506_960_30fps.mp4",
   welcomeWordStyle: "stroke-gray-500 stroke-[3px] px-10",
   claimTextStyle: "text-black px-2 mt-2",
-  landingPitchTextStyle: "text-gray-600 p-2",
+  landingPitchTextStyle: "p-2",
   logoBackground: "bg-gradient-to-r from-[#f3f4f6db] to-[#6b72809e]",
   still: "/assets/heros/9707164-sd_506_960_30fps-still.png",
   claim: "Prototype diffuse Ideas",
@@ -44,10 +44,10 @@ const diffuse: HeroVideoDescriptor = {
 const dropDistribution: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/3864191-sd_640_360_25fps.mp4", //"https://videos.pexels.com/video-files/3864191/3864191-hd_1920_1080_25fps.mp4",
-  landingPitchTextStyle: "text-gray-600 p-2 rounded px-10",
+  landingPitchTextStyle: "px-2 rounded",
   welcomeWordStyle: "stroke-sky-700 stroke-[6px] px-9",
   logoBackground: "bg-sky-700",
-  claimTextStyle: "text-gray-700  px-2 mt-2",
+  claimTextStyle: "text-gray-700 px-2 mt-2",
   still: "/assets/heros/sd_640_360_25fps-still.png",
   claim,
 };
@@ -57,9 +57,9 @@ const shapes: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/4965980-sd_426_226_25fps.mp4", //"https://videos.pexels.com/video-files/4965980/4965980-sd_960_506_25fps.mp4",
   welcomeWordStyle: "stroke-white stroke-[5px] px-2",
-  landingPitchTextStyle: "text-gray-600 p-2 text-[17px]",
+  landingPitchTextStyle: "p-2",
   logoBackground: "bg-[#333] drop-shadow-no",
-  claimTextStyle: "text-gray-500  px-2 mt-2",
+  claimTextStyle: "text-gray-500 px-2 mt-2",
   still: "/assets/heros/4965980-sd_426_226_25fps-still.png",
   claim: "Make Creative Tools",
 };

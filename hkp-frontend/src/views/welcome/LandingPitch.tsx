@@ -58,7 +58,7 @@ export default function LandingPitch({
   return (
     <div id="pitch-points" className={`${welcomeBlockClassname}`}>
       <div
-        className={`flex flex-col py-4 gap-2 bg-[#FFFFFFF5] rounded border border-gray-200 transition-opacity ease-in duration-700 ${opacity}`}
+        className={`flex flex-col py-4 gap-2 bg-[#FFFFFFF5] rounded border border-gray-200 transition-opacity ease-in duration-700 ${opacity} `}
       >
         <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
           Do you sometimes feel creative, but setting everything up destroys the
