@@ -57,10 +57,10 @@ export default function HookupLogo({
   }, []);
 
   return (
-    <div className="w-[45%] md:w-[18%] max-w-[180px] min-w-[70px] mx-auto mb-10">
+    <div className="w-[45%] md:w-[18%] max-w-[180px] min-w-[70px] mx-auto">
       <div
         id="hkp-logo"
-        className={`mt-[10px] px-[8%] pt-[5%] pb-2 rounded-full border border-solid border-gray-300 ${heroVideo.logoBackground} drop-shadow`}
+        className={`px-[8%] pt-[5%] pb-2 rounded-full border border-solid border-gray-300 ${heroVideo.logoBackground} drop-shadow`}
       >
         <Logo />
       </div>

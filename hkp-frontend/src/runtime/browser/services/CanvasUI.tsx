@@ -6,6 +6,8 @@ import { zLayers } from "../../../styles";
 import ServiceUI from "@/ui-components/service/ServiceUI";
 import { ServiceAction, ServiceInstance, ServiceUIProps } from "@/types";
 import { Rect, Size } from "@/common";
+import { BinaryIcon } from "lucide-react";
+import MenuIcon from "@/ui-components/MenuIcon";
 
 const TWO_PI = 2 * Math.PI;
 
@@ -680,6 +682,21 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
   render() {
     const { resizable } = this.state;
     const { service } = this.props;
+
+    const onCopyDataURL = () => {
+      if (this.canvas) {
+        const dataUrl = this.canvas.toDataURL();
+        navigator.clipboard.writeText(dataUrl);
+        console.log("dataUrl", dataUrl);
+      }
+    };
+    const customMenuEntries = [
+      {
+        name: "As DataURL",
+        icon: <MenuIcon icon={BinaryIcon} />,
+        onClick: onCopyDataURL,
+      },
+    ];
     return (
       <ServiceUI
         {...this.props}
@@ -687,6 +704,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
         onNotification={this.onNotification}
         onResize={this.onResize}
         resizable={resizable}
+        customMenuEntries={customMenuEntries}
       >
         <div
           style={{

@@ -14,7 +14,7 @@ import { WelcomeHeroVideo } from "./WelcomeHeroVideo";
 import { currentHeroVideo } from "./heroVideos";
 
 export const welcomeBlockClassname =
-  "flex flex-col mb-10 text-lg overflow-hidden tracking-widest text-left mx-auto w-[100%] md:w-[70%] md:max-w-[800px] gap-4";
+  "flex flex-col mb-4 text-lg overflow-hidden tracking-widest text-left mx-auto w-[100%] md:w-[70%] md:max-w-[800px] gap-4";
 
 export default function WelcomePanel() {
   const navigate = useNavigate();
@@ -39,11 +39,13 @@ export default function WelcomePanel() {
       <div className="flex flex-col">
         <WelcomeHeroVideo value={video}>
           <div className="px-[10px] w-full flex mt-[50px]">
+            <WelcomeWord
+              heroVideo={video}
+              noAnimation={headerAnimationsComplete}
+            />{" "}
+          </div>
+          <div className="mb-4 mt-3">
             <h1 className="w-full ml-auto md:text-center">
-              <WelcomeWord
-                heroVideo={video}
-                noAnimation={headerAnimationsComplete}
-              />{" "}
               <ClaimApp
                 claim={video.claim}
                 heroVideo={video}
@@ -52,18 +54,19 @@ export default function WelcomePanel() {
             </h1>
           </div>
 
-          <HookupLogo
-            heroVideo={video}
-            noAnimation={headerAnimationsComplete}
-          />
-
-          <div className="px-10">
+          <div className="mt-4 px-10">
             <LandingPitch
               heroVideo={video}
               usecases={carouselItems}
               switchUsecaseInterval={5000}
               onComplete={() => setHeaderAnimationsComplete(true)}
               onLink={setCurrentCarouselItem}
+              noAnimation={headerAnimationsComplete}
+            />
+          </div>
+          <div className="my-8">
+            <HookupLogo
+              heroVideo={video}
               noAnimation={headerAnimationsComplete}
             />
           </div>

@@ -35,7 +35,7 @@ export default function ClaimApp({ noAnimation, heroVideo, claim }: Props) {
   const textColor = heroVideo.claimTextStyle || "text-sky-600";
 
   return (
-    <div id="hkp-claim-app" className="pt-1">
+    <div id="hkp-claim-app">
       <div className="flex items-end justify-center">
         <div className={`text-base whitespace-nowrap ${textColor}`}>
           Hookitapp -
