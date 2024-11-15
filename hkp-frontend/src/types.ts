@@ -25,8 +25,7 @@ export type RuntimeDescriptor = RuntimeClass & {
 export type OnResult = (
   uuid: string | null,
   result: any,
-  requestId: string | null,
-  resultCallback: null | ((p: any) => void)
+  context?: ProcessContext | null
 ) => Promise<void>;
 
 export type ProcessRuntimeByName = (name: string, params: any) => Promise<any>;
@@ -262,9 +261,18 @@ export type ServiceImpl = { [key: string]: any } & {
 export type RuntimeImpl = {
   configureService: (uuid: string, config: any) => Promise<void>;
   getServiceById: (uuid: string) => ServiceImpl | null;
-  processRuntime: (params: any, svc: InstanceId | null) => Promise<any>;
+  processRuntime: (
+    params: any,
+    svc: InstanceId | null,
+    context?: ProcessContext | null
+  ) => Promise<any>;
   destroyService: (svcUuid: string) => Promise<void>;
   destroyRuntime: () => Promise<void>;
+};
+
+export type ProcessContext = {
+  requestId: string;
+  onResolve?: (result: any) => void;
 };
 
 export type RuntimeApi = {
@@ -282,8 +290,9 @@ export type RuntimeApi = {
   processRuntime: (
     scope: RuntimeScope,
     params: any,
-    svc: InstanceId | null
-  ) => Promise<any>;
+    svc: InstanceId | null,
+    context?: ProcessContext | null
+  ) => Promise<void>;
 
   addService: (
     scope: RuntimeScope,
@@ -308,7 +317,7 @@ export type RuntimeApi = {
     scope: RuntimeScope,
     service: InstanceId,
     params: any,
-    requestId: string | null
+    context?: ProcessContext | null
   ) => Promise<any>;
 
   rearrangeServices: (
@@ -435,6 +444,7 @@ export type RejectedSyncSenders = Array<any>;
 export enum RemoteRuntimeMessageType {
   PONG = "pong",
   RESULT = "result",
+  PROCESS_BOARD_FROM_RT = "process-board-from-runtime",
   CONFIGURATION = "config",
   NOTIFICATION = "notification",
 }

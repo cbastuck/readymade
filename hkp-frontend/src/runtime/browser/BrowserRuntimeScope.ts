@@ -1,6 +1,7 @@
 import {
   AppImpl,
   InstanceId,
+  ProcessContext,
   RuntimeApi,
   RuntimeDescriptor,
   RuntimeScope,
@@ -47,8 +48,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   onResult = async (
     _instanceId: string | null,
     _result: any,
-    _requestId: string | null,
-    _resultCallback: null | ((p: any) => void)
+    _context?: ProcessContext | null
   ): Promise<void> => {
     console.warn("BrowserRuntimeScope.onResult not set");
   };
@@ -126,7 +126,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   next = async (
     service: InstanceId | null,
     params: any,
-    requestId: string | null = null,
+    context?: ProcessContext | null,
     advanceBeforeProcess: boolean = true
   ) => {
     const services = this.serviceInstances;
@@ -161,7 +161,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       }
     }
 
-    this.onResult(svc ? svc.uuid : null, result, requestId, null);
+    this.onResult(svc ? svc.uuid : null, result, context);
     return result;
   };
 

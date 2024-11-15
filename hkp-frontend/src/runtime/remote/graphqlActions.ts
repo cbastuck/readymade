@@ -1,5 +1,6 @@
 import {
   InstanceId,
+  ProcessContext,
   RuntimeClass,
   RuntimeDescriptor,
   ServiceClass,
@@ -220,18 +221,21 @@ export async function configureService(
 export async function processRuntime(
   runtime: RuntimeDescriptor,
   params: any,
-  service: InstanceId | null
+  service: InstanceId | null,
+  context?: ProcessContext | null
 ) {
   const url = `${runtime.url}/query`;
   const serviceInput = service
     ? `instanceId: "${service.uuid}"`
     : "instanceId: null";
+  const requestId = `requestId: "${context?.requestId || null}"`;
   const payload = `query processRuntime {
     runtimeById(runtimeId: "${runtime.id}") {
       process(
-        input: { 
+        input: {
           params: ${encodeAny(params)}, 
-          ${serviceInput}
+          ${serviceInput},
+          ${requestId}
         }
       ) { id }
     }

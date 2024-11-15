@@ -12,6 +12,7 @@ import DragProvider from "./DragContext";
 
 import {
   BoardDescriptor,
+  ProcessContext,
   RuntimeApiMap,
   RuntimeDescriptor,
   RuntimeImpl,
@@ -138,7 +139,7 @@ class Sandbox extends Component<Props, State> {
   onResult = async (
     _uuid: string | null,
     _result: any,
-    _requestId: string | null
+    _context?: ProcessContext | null
   ) => {
     // console.log('Sandbox result', serviceUuid, result);
   };

@@ -76,7 +76,11 @@ export default function ServiceSettings({
             <span>Expand</span>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={onHelp} className="text-base">
+        <DropdownMenuItem
+          onClick={onHelp}
+          className="text-base"
+          disabled={true}
+        >
           <MenuIcon icon={Info} />
           <span>Documentation</span>
         </DropdownMenuItem>

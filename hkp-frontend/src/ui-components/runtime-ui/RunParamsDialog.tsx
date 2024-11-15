@@ -1,3 +1,4 @@
+import MappingTable, { Template } from "@/components/MappingTable";
 import { Button } from "@/ui-components/primitives/button";
 import {
   Dialog,
@@ -7,8 +8,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/ui-components/primitives/dialog";
-import { Input } from "@/ui-components/primitives/input";
-import { Label } from "@/ui-components/primitives/label";
 import { useState } from "react";
 
 type Props = {
@@ -18,11 +17,10 @@ type Props = {
 };
 
 export default function RunParamsDialog({ open, onClose, onRun }: Props) {
-  const [key, setKey] = useState("key");
-  const [value, setValue] = useState("value");
-  const onSubmit = () => {
-    onRun({ [key]: value });
-  };
+  const [template, setTemplate] = useState<Template>({});
+
+  const onSubmit = () => onRun(template);
+
   return (
     <Dialog open={open} onOpenChange={(open: boolean) => !open && onClose()}>
       <DialogContent className="sm:max-w-[425px]">
@@ -33,25 +31,15 @@ export default function RunParamsDialog({ open, onClose, onRun }: Props) {
           </DialogDescription>
         </DialogHeader>
         <div className="grid gap-4 py-4">
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Key</Label>
-            <Input
-              value={key}
-              onChange={(ev) => setKey(ev.target.value)}
-              className="col-span-3"
-            />
-          </div>
-          <div className="grid grid-cols-4 items-center gap-4">
-            <Label className="text-right">Value</Label>
-            <Input
-              value={value}
-              onChange={(ev) => setValue(ev.target.value)}
-              className="col-span-3"
-            />
-          </div>
+          <MappingTable
+            id="process-runtime-params"
+            title="Params"
+            template={template}
+            onTemplateChanged={setTemplate}
+          />
         </div>
         <DialogFooter>
-          <Button onClick={onSubmit}>Run</Button>
+          <Button onClick={onSubmit}>Process Runtime</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -9,10 +9,11 @@ import Slider from "../../components/shared/Slider";
 import ServiceUI from "@/ui-components/service/ServiceUI";
 import Button from "@/ui-components/Button";
 import SubmittableInput from "@/ui-components/SubmittableInput";
+import Switch from "@/ui-components/Switch";
 
 export default function RemoteServiceUI(props: ServiceUIProps) {
   const { service } = props;
-  const meta = service["__meta__"];
+  const meta = service.state?.["__meta__"];
   const [properties, setProperties] = useState<any>(extractProperties(service));
 
   useEffect(() => setProperties(extractProperties(service)), [service]);
@@ -86,6 +87,19 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
               />
             );
           }
+
+          if (!metaInfo && t === "boolean") {
+            return (
+              <Switch
+                className="py-2"
+                key={prop}
+                title={prop}
+                checked={val}
+                onCheckedChange={() => service.configure({ [prop]: !val })}
+              />
+            );
+          }
+
           const visibility =
             metaInfo && metaInfo.type === "text" && metaInfo.data.visibility;
 
@@ -99,7 +113,10 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
               : (t as any);
 
           return (
-            <div key={`RemoteServiceUI-${service.uuid}.${prop}`}>
+            <div
+              className="flex items-end"
+              key={`RemoteServiceUI-${service.uuid}.${prop}`}
+            >
               <SubmittableInput
                 fullWidth
                 title={prop}
@@ -112,12 +129,9 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
               />
               {readonly && (
                 <Button
-                  style={{
-                    margin: 3,
-                    border: "solid 1px rgb(186, 186, 186)",
-                  }}
-                  icon={<Copy />}
-                  size="sm"
+                  className="h-min w-min"
+                  variant="ghost"
+                  icon={<Copy size={14} />}
                   onClick={() => navigator.clipboard.writeText(val)}
                 />
               )}
@@ -129,8 +143,9 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
   };
 
   const onInit = () => {};
-  const onNotification = (_notification: any) => {};
-
+  const onNotification = (_notification: any) => {
+    console.log("RemoteServiceUI - received notification", _notification);
+  };
   return (
     <ServiceUI
       {...props}
@@ -148,14 +163,15 @@ function extractProperties(service: any) {
     return {};
   }
 
-  return Object.keys(service)
+  const src = service.state || {};
+  return Object.keys(src)
     .filter(
       (key) => ["uuid", "serviceId", "serviceName", "board"].indexOf(key) === -1
     )
     .reduce((all, key) => {
-      const val = service[key];
+      const val = src[key];
       const t = typeof val;
-      if (t === "string" || t === "number") {
+      if (t === "string" || t === "number" || t === "boolean") {
         return { ...all, [key]: val };
       }
       return all;

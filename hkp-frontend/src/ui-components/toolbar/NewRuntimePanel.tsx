@@ -40,7 +40,7 @@ export default ({ onAddRuntime }: Props) => {
           onClick={() => onAddRuntime({ type: "remote", name, url: host })}
           disabled={!name || !host}
         >
-          Add
+          Register Runtime
         </Button>
       </div>
     </div>

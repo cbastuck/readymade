@@ -24,6 +24,7 @@ import {
   RuntimeOutputOptions,
   SidechainRoute,
   SidechainRouting,
+  ProcessContext,
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
 import Button from "@/ui-components/Button";
@@ -144,13 +145,32 @@ export default class Board extends Component<Props, State> {
     return runtime || null;
   };
 
+  // Board callbacks
+  pendingBoardCallbacks: { [reqId: string]: (result: any) => void } = {};
+
+  registerPendingBoardCallback = (context?: ProcessContext | null) => {
+    if (context?.onResolve) {
+      this.pendingBoardCallbacks[context.requestId] = context.onResolve;
+    }
+  };
+
+  processPendingBoardCallbacks = (
+    context: ProcessContext | null | undefined,
+    result: any
+  ) => {
+    const callback = context && this.pendingBoardCallbacks[context.requestId];
+    if (callback) {
+      callback(result);
+      delete this.pendingBoardCallbacks[context.requestId];
+    }
+  };
+
   onResult = async (
     runtime: RuntimeDescriptor,
     peersContext: PeersContextState | null,
     _svcUuid: string | null,
     result: any,
-    _requestId: string | null,
-    resultCallback: null | ((p: any) => void)
+    context?: ProcessContext | null
   ) => {
     const { sidechainRouting, outputRouting, boardName } = this.props;
     const sroute = sidechainRouting && sidechainRouting[runtime.id];
@@ -183,6 +203,8 @@ export default class Board extends Component<Props, State> {
       }
     }
 
+    this.registerPendingBoardCallback(context);
+
     const runtimeOutput = outputRouting[runtime.id] || {};
     const flow = runtimeOutput?.flow || "pass";
     if (flow === "pass") {
@@ -192,11 +214,9 @@ export default class Board extends Component<Props, State> {
       const nextApi =
         nextScope && this.props.boardContext.runtimeApis[nextRuntime.type];
       if (nextApi) {
-        nextApi.processRuntime(nextScope, result, null);
+        nextApi.processRuntime(nextScope, result, null, context);
       } else {
-        if (resultCallback) {
-          resultCallback(result);
-        }
+        this.processPendingBoardCallbacks(context, result);
         if (this.props.onResult) {
           if (result !== null) {
             // null means stop the process
@@ -506,17 +526,8 @@ export default class Board extends Component<Props, State> {
     const onResult = (
       uuid: string | null,
       result: any,
-      requestId: string | null,
-      resultCallback: null | ((p: any) => void)
-    ) =>
-      this.onResult(
-        runtime,
-        peersContext,
-        uuid,
-        result,
-        requestId,
-        resultCallback
-      );
+      context?: ProcessContext | null
+    ) => this.onResult(runtime, peersContext, uuid, result, context);
     const outputs =
       runtime.type === "browser"
         ? this.renderOutputs(filteredPeers, runtime, peersContext, boardContext)

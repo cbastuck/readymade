@@ -11,6 +11,7 @@ import {
 } from "./graphqlActions";
 import {
   InstanceId,
+  ProcessContext,
   RuntimeApi,
   RuntimeClass,
   RuntimeDescriptor,
@@ -95,13 +96,17 @@ export async function restoreRuntime(
 export async function processRuntime(
   scope_: RuntimeScope,
   params: any,
-  svc: InstanceId | null
-): Promise<any> {
+  svc: InstanceId | null,
+  context?: ProcessContext | null
+): Promise<void> {
   const scope = scope_ as RemoteRuntimeScope;
   if (!scope.isConnected()) {
     await scope.reconnect();
   }
-  return processRuntime_gql(scope.descriptor, params, svc);
+  if (context) {
+    scope.registerProcessContext(context);
+  }
+  return processRuntime_gql(scope.descriptor, params, svc, context);
 }
 
 export async function addService(scope: RuntimeScope, service: ServiceClass) {
@@ -136,7 +141,7 @@ export async function processService(
   _scope: RuntimeScope,
   _service: InstanceId,
   _params: any,
-  _requestId: string | null
+  _context?: ProcessContext | null
 ): Promise<any> {
   throw new Error("RemoteRuntime processService no implemented");
 }

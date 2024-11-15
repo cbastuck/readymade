@@ -1,3 +1,5 @@
+import { v4 as uuidv4 } from "uuid";
+
 import { BoardContextState } from "@/BoardContext";
 import { fromVault, toVault } from "@/runtime/browser/services/base/eval";
 import { BoardDescriptor } from "@/types";
@@ -89,13 +91,16 @@ export function connectDevTools(context?: BoardContextState) {
   };
 
   const processBoard = (params: any) => {
-    return new Promise(async (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       try {
         const firstRuntime = context.runtimes[0];
         if (firstRuntime) {
           const { scope, api } = getRuntimeApi(firstRuntime.id);
-          const result = await api.processRuntime(scope, params, null);
-          scope.onResult(null, result, null, resolve);
+          const context = {
+            requestId: uuidv4(),
+            onResolve: resolve,
+          };
+          api.processRuntime(scope, params, null, context);
         }
       } catch (err) {
         reject(err);

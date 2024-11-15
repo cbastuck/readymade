@@ -50,7 +50,12 @@ export default function RuntimeSettings({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="p-0 h-min w-min" variant="ghost" size="icon">
+        <Button
+          className="p-0 h-min w-min"
+          variant="ghost"
+          size="icon"
+          aria-label={`runtime-settings-${runtime.id}`}
+        >
           <Menu strokeWidth={1} />
         </Button>
       </DropdownMenuTrigger>

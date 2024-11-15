@@ -11,6 +11,7 @@ import {
   RestoreRuntimeResult,
   ServiceInstance,
   User,
+  ProcessContext,
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
@@ -67,10 +68,11 @@ async function restoreRuntime(
 export function processRuntime(
   scope_: RuntimeScope,
   params: any,
-  svc: InstanceId | null
+  svc: InstanceId | null,
+  context?: ProcessContext | null
 ) {
   const scope = scope_ as BrowserRuntimeScope;
-  return scope.next(svc, params, null, false);
+  return scope.next(svc, params, context, false);
 }
 
 export async function addService(
@@ -134,7 +136,7 @@ export async function processService(
   scope_: RuntimeScope,
   svc: InstanceId,
   params: any,
-  requestId: string | null
+  context?: ProcessContext | null
 ) {
   const scope = scope_ as BrowserRuntimeScope;
   const { uuid } = svc;
@@ -160,7 +162,7 @@ export async function processService(
 
   const data = params;
   if (service) {
-    return scope.next(service, data, requestId, false);
+    return scope.next(service, data, context, false);
   }
 }
 

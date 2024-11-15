@@ -1,5 +1,6 @@
 import {
   AppImpl,
+  ProcessContext,
   RemoteRuntimeMessageType,
   RuntimeApi,
   RuntimeDescriptor,
@@ -13,12 +14,13 @@ import { createAuthorizedURL } from "@/views/playground/common";
 
 export default class RemoteRuntimeScope implements RuntimeScope {
   app: AppImpl;
-  descriptor: RuntimeDescriptor; // TODO: better keep the whole runtime descriptor - change API
+  descriptor: RuntimeDescriptor;
   outputUrl: string;
   socket: WebSocket | null;
   pendingReconnectPromise: [() => void, () => void] | null; // resolve/reject callbacks
   authenticatedUser: User | null = null;
   pingTimer: NodeJS.Timeout | undefined;
+  processContexts: { [requestId: string]: ProcessContext } = {};
 
   constructor(runtime: RuntimeDescriptor, outputUrl: string) {
     this.app = createRemoteRuntimeApp(this);
@@ -43,8 +45,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   onResult = async (
     _instanceId: string | null,
     _result: any,
-    _requestId: string | null,
-    _resultCallback: null | ((p: any) => void)
+    _context?: ProcessContext | null
   ): Promise<void> => {
     console.warn("RemoteRuntimeScope.onResult not set");
   };
@@ -54,11 +55,24 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     return false;
   };
 
-  onResultWithCallback = async (data: any) => {
-    const boardResult = await new Promise<any>((resolve) =>
-      this.onResult(null, data, null, resolve)
+  // some remove services like ingress can start processing their runtime
+  // but need the result of the surrounding board
+  processBoardFromRuntime = async (data: any, requestId: string) => {
+    const context = {
+      requestId,
+    };
+    const boardResult = await new Promise<any>((onResolve) =>
+      this.onResult(null, data, { ...context, onResolve })
     );
-    this.reportBoardResult(boardResult);
+    if (this.socket) {
+      this.socket.send(
+        JSON.stringify({
+          type: "boardResult",
+          result: JSON.stringify(boardResult),
+          requestId: context.requestId,
+        })
+      );
+    }
   };
 
   onConfig = (_instanceId: string, _config: object) => {
@@ -154,11 +168,17 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     if (message.type === RemoteRuntimeMessageType.PONG) {
       // console.log("Received a pong message");
     } else if (message.type === RemoteRuntimeMessageType.RESULT) {
-      if (message.expectCallback) {
-        this.onResultWithCallback(message.data);
-      } else {
-        this.onResult(null, message.data, null, null);
-      }
+      this.onResult(
+        null,
+        message.data,
+        this.consumeProcessContext(message.requestId) // consumer the context if one exists
+      );
+    } else if (
+      message.type === RemoteRuntimeMessageType.PROCESS_BOARD_FROM_RT
+    ) {
+      // This actually is the case when a remote service (eg. ingress) starts processing its runtime, which could have more runtimes on that board
+      // Since this Webapp is the board owner the remote runtime does not know about other runtimes
+      this.processBoardFromRuntime(message.data, message.requestId);
     } else if (message.type === RemoteRuntimeMessageType.CONFIGURATION) {
       this.onConfig(message.data.instanceId, message.data.config);
     } else if (message.type === RemoteRuntimeMessageType.NOTIFICATION) {
@@ -181,14 +201,25 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     }
   };
 
-  reportBoardResult = (result: any) => {
-    if (this.socket) {
-      this.socket.send(
-        JSON.stringify({
-          type: "boardResult",
-          result: JSON.stringify(result),
-        })
+  registerProcessContext = (context: ProcessContext) => {
+    if (this.processContexts[context.requestId]) {
+      console.warn(
+        `RemoteRuntimeScope.registerProcessContext: context with requestId ${context.requestId} already registered and not yet consumed`
       );
     }
+    this.processContexts[context.requestId] = context;
+  };
+
+  consumeProcessContext = (requestId: string): ProcessContext | null => {
+    const ctx = this.processContexts[requestId] || null;
+    if (ctx) {
+      this._unregisterProcessContext(ctx);
+    }
+    return ctx || null;
+  };
+
+  // should only called by consumeProcessContext (?)
+  _unregisterProcessContext = (context: ProcessContext) => {
+    delete this.processContexts[context.requestId];
   };
 }
