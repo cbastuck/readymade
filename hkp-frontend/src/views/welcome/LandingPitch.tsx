@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import anime from "@/anime";
 import Switcher from "@/components/Switcher";
-import { welcomeBlockClassname } from "./WelcomePanel";
 import { HeroVideoDescriptor } from "./heroVideos";
 
 export type LandingPitchUsecase = { headline?: string };
@@ -54,30 +53,33 @@ export default function LandingPitch({
     setTimeout(() => setOpacity("opacity-100"), 4000);
   }, []);
   const [opacity, setOpacity] = useState("opacity-0");
-
   return (
-    <div id="pitch-points" className={`${welcomeBlockClassname}`}>
+    <div id="pitch-points" className="w-full">
       <div
-        className={`flex flex-col py-4 gap-4 bg-[#FFFFFFF5] rounded border border-gray-200 transition-opacity ease-in duration-700 ${opacity} `}
+        className={`py-4 bg-[#FFFFFFE0] transition-opacity ease-in duration-700 ${opacity} `}
       >
-        <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
-          Feeling creative but sometimes lose inspiration during setup? Want to
-          connect devices effortlessly, like{" "}
-          <Switcher
-            animate={true}
-            style={{}}
-            duration={switchUsecaseInterval}
-            data={usecases.map(({ headline }) => headline || "")}
-            onLink={onLink}
-            suffix="?"
-          />
-        </div>
-        <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
-          Build tools that bring ideas to life, not just connections.
-        </div>
-        <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
-          Seamlessly connect data across sevices and platforms. Manage all from
-          one Board.
+        <div className="w-[50%] mx-auto flex flex-col gap-4">
+          <div
+            className={`pitch-item ${heroVideo.landingPitchTextStyle} min-h-[72px] 2lg:min-h-0`}
+          >
+            Feeling creative but lose inspiration during setup? You want to
+            connect devices effortlessly, like{" "}
+            <Switcher
+              animate={true}
+              style={{}}
+              duration={switchUsecaseInterval}
+              data={usecases.map(({ headline }) => headline || "")}
+              onLink={onLink}
+              suffix="?"
+            />
+          </div>
+          <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
+            Build tools that bring ideas to life, not just connections.
+          </div>
+          <div className={`pitch-item ${heroVideo.landingPitchTextStyle}`}>
+            Seamlessly connect data and sevices across platforms. Manage all
+            from one Board.
+          </div>
         </div>
       </div>
     </div>

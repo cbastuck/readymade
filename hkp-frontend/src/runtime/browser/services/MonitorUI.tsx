@@ -16,6 +16,7 @@ import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import MenuIcon from "@/ui-components/MenuIcon";
+import { isBlob } from "./helpers";
 
 export default function MonitorUI(props: ServiceUIProps) {
   const [message, setMessage] = useState("");
@@ -38,6 +39,8 @@ export default function MonitorUI(props: ServiceUIProps) {
       setMessage(`${params}`);
     } else if (Array.isArray(params)) {
       setMessage(JSON.stringify(params));
+    } else if (isBlob(params)) {
+      setMessage(`Blob (${params.type} ${params.size} bytes)`);
     } else {
       const nil = params === null && "<null>";
       const undef = params === undefined && "<undefined>";

@@ -38,10 +38,7 @@ export default function ClaimApp({ noAnimation, heroVideo, claim }: Props) {
     <div id="hkp-claim-app">
       <div className="flex items-end justify-center">
         <div className={`text-base whitespace-nowrap ${textColor}`}>
-          Hookitapp -
-          <span className={`${noAnimation ? "" : "claim-color-change"} pl-1`}>
-            {claim}
-          </span>
+          Hookitapp -<span className="pl-1">{claim}</span>
         </div>
       </div>
     </div>

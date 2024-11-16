@@ -44,10 +44,9 @@ export default function Toolbar({
       }}
     >
       <div
-        className="bg-white"
+        className="bg-white mb-0 md:mb-[5px]"
         style={{
           marginTop: 0,
-          marginBottom: 5,
           textAlign: "left",
           borderBottom: "1px solid rgba(34,36,38,.15)",
           borderTop: "1px solid #ddd",

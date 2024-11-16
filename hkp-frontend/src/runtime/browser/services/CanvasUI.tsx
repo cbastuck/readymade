@@ -6,7 +6,7 @@ import { zLayers } from "../../../styles";
 import ServiceUI from "@/ui-components/service/ServiceUI";
 import { ServiceAction, ServiceInstance, ServiceUIProps } from "@/types";
 import { Rect, Size } from "@/common";
-import { BinaryIcon } from "lucide-react";
+import { BinaryIcon, ToggleLeft, ToggleRight } from "lucide-react";
 import MenuIcon from "@/ui-components/MenuIcon";
 
 const TWO_PI = 2 * Math.PI;
@@ -21,6 +21,7 @@ type State = {
   canvasWidth: number;
   canvasHeight: number;
   resizable: boolean;
+  capture: boolean;
 };
 
 export default class CanvasUI extends Component<ServiceUIProps, State> {
@@ -32,6 +33,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     canvasWidth: 400,
     canvasHeight: 250,
     resizable: true,
+    capture: false,
   };
 
   imageCache: { [key: string]: any } = {};
@@ -635,12 +637,16 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
   };
 
   onNotification = (notification: any) => {
-    const { render, size } = notification;
+    const { render, size, capture } = notification;
     if (size !== undefined) {
       const [canvasWidth, canvasHeight] = size;
       this.setState({ canvasWidth, canvasHeight }, () =>
         this.update(this.recentData)
       );
+    }
+
+    if (capture !== undefined) {
+      this.setState({ capture });
     }
     if (render) {
       const { captureMime, frameID } = notification;
@@ -687,14 +693,26 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
       if (this.canvas) {
         const dataUrl = this.canvas.toDataURL();
         navigator.clipboard.writeText(dataUrl);
-        console.log("dataUrl", dataUrl);
       }
     };
+
+    const onToggleOutputImage = () =>
+      service.configure({ capture: !this.state.capture });
     const customMenuEntries = [
       {
-        name: "As DataURL",
+        name: "Copy Data URL",
         icon: <MenuIcon icon={BinaryIcon} />,
         onClick: onCopyDataURL,
+      },
+      {
+        name: `Output Blob ${this.state.capture ? "[is on]" : "[is off]"}`,
+        icon: (
+          <MenuIcon
+            icon={this.state.capture ? ToggleRight : ToggleLeft}
+            className={this.state.capture ? "stroke-sky-600" : ""}
+          />
+        ),
+        onClick: onToggleOutputImage,
       },
     ];
     return (

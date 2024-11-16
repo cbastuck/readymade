@@ -53,6 +53,7 @@ class Canvas extends ServiceBase<any> {
 
     if (capture !== undefined) {
       this.state.capture = capture;
+      this.app.notify(this, { capture });
     }
 
     if (capturedFrame !== undefined) {

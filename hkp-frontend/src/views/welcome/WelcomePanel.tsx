@@ -33,7 +33,7 @@ export default function WelcomePanel() {
   const video = currentHeroVideo();
   return (
     <div
-      className="flex flex-col w-full mt-[5%]"
+      className="flex flex-col w-full mt-0 md:mt-[5%]"
       onClick={forceCompleteAnimation}
     >
       <div className="flex flex-col">
@@ -54,7 +54,7 @@ export default function WelcomePanel() {
             </h1>
           </div>
 
-          <div className="mt-4 px-10">
+          <div className="mt-4">
             <LandingPitch
               heroVideo={video}
               usecases={carouselItems}
@@ -64,7 +64,7 @@ export default function WelcomePanel() {
               noAnimation={headerAnimationsComplete}
             />
           </div>
-          <div className="my-8">
+          <div className="mb-8 mt-4">
             <HookupLogo
               heroVideo={video}
               noAnimation={headerAnimationsComplete}
