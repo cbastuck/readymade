@@ -20,7 +20,7 @@ export default function StarterTutorial() {
         <h2 className="mt-6">The Board's Structure</h2>
         <div>
           <P>
-            First, make sure to check out the
+            First, make sure to check out the{" "}
             <Link to="/docs/quickstart">Quickstarter</Link> page, particularly
             the following image:
           </P>
