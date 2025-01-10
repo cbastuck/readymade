@@ -13,8 +13,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/ui-components/primitives/dropdown-menu";
 
@@ -26,14 +24,17 @@ type Props = {
   onRemoveRuntime: (rt: RuntimeClass) => void;
 };
 
-export default ({ remoteRuntimes, onRemoveRuntime }: Props) => {
+export default function ExistingRuntimesPanel({
+  remoteRuntimes,
+  onRemoveRuntime,
+}: Props) {
   return (
     <Table>
       <TableHeader>
-        <TableRow>
-          <TableHead className="w-[100px] font-sans text-md">Name</TableHead>
-          <TableHead className="font-sans text-md">Url</TableHead>
-          <TableHead className="text-right font-sans text-md">Action</TableHead>
+        <TableRow className="tracking-widest font-sans text-md">
+          <TableHead className="w-[100px]">Name</TableHead>
+          <TableHead>Url</TableHead>
+          <TableHead className="text-right ">Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -51,9 +52,10 @@ export default ({ remoteRuntimes, onRemoveRuntime }: Props) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => onRemoveRuntime(rt)}>
+                  <DropdownMenuItem
+                    className="tracking-widest"
+                    onClick={() => onRemoveRuntime(rt)}
+                  >
                     Remove
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -64,4 +66,4 @@ export default ({ remoteRuntimes, onRemoveRuntime }: Props) => {
       </TableBody>
     </Table>
   );
-};
+}

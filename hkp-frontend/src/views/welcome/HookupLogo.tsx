@@ -54,7 +54,7 @@ export default function HookupLogo({
       duration: 2000,
       delay: 2500,
     });
-  }, []);
+  }, [initialDelay]);
 
   return (
     <div className="w-[45%] md:w-[18%] max-w-[180px] min-w-[70px] mx-auto">

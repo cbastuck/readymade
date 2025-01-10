@@ -6,6 +6,7 @@ import {
   getRuntimeServiceConfig,
   configureService as configureService_gql,
   processRuntime as processRuntime_gql,
+  rearrangeServices as rearrangeServices_gql,
   getRuntimeOutputUrl,
   getHealth as getHealth_gql,
 } from "./graphqlActions";
@@ -58,6 +59,14 @@ export async function addRuntime(rtClass: RuntimeClass, user: User | null) {
     registry,
     scope,
   };
+}
+
+export async function removeRuntime(
+  _scope_: RuntimeScope,
+  _rt: RuntimeDescriptor,
+  _user: User | null
+): Promise<void> {
+  throw new Error("RemoteRuntime removeRuntime no implemented");
 }
 
 export async function restoreRuntime(
@@ -147,14 +156,16 @@ export async function processService(
 }
 
 export async function rearrangeServices(
-  _scope: RuntimeScope,
-  _newOrder: Array<ServiceDescriptor>
+  scope: RuntimeScope,
+  newOrder: Array<ServiceDescriptor>
 ): Promise<Array<ServiceDescriptor>> {
-  return []; // TODO: implement me
+  const rearranged = await rearrangeServices_gql(scope.descriptor, newOrder);
+  return rearranged.map((svc) => newOrder.find((s) => s.uuid === svc.uuid)!);
 }
 
 const api: RuntimeApi = {
   addRuntime,
+  removeRuntime,
   restoreRuntime,
   processRuntime,
   addService,

@@ -18,7 +18,7 @@ type State = {
 };
 
 class Output extends ServiceBase<State> {
-  _websocket: any;
+  _websocket: WebsocketChannel | null = null;
 
   constructor(
     app: AppInstance,
@@ -69,7 +69,9 @@ class Output extends ServiceBase<State> {
   connectWebsocket = async (url: string) => {
     const ws = new WebsocketChannel(
       `output-service-${this.uuid}`,
-      (_params: any) => {},
+      (params: any) => {
+        console.log("Output.onAction", params);
+      },
       isSecureConnection()
     );
     await ws.open({ absolute: url });

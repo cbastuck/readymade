@@ -45,7 +45,7 @@ export default function Home() {
         removeLocalBoard(board);
         api.runBoard();
         break;
-      case "add-widget":
+      case "add-widget": {
         const source = restoreBoardFromLocalStorage(board.name);
         const params = null;
         if (source) {
@@ -55,6 +55,7 @@ export default function Home() {
           ]);
         }
         return;
+      }
       case "post-to":
         setPostBoardState({
           targetBoards: boards.map((b) => b.name),

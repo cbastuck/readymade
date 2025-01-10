@@ -81,9 +81,11 @@ export default class WebsocketChannel {
 
       const action = message.json
         ? rebuild(message.json.payload, message) // message is a multipart/form
-        : JSON.parse(message);
+        : typeof message === "string"
+        ? JSON.parse(message)
+        : message;
 
-      return this.onAction(action);
+      return this.onAction(action, message);
     }
   };
 }

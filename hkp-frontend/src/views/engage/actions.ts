@@ -19,6 +19,7 @@ export async function postAnswers(payload: AnswerPayload): Promise<true> {
       throw new Error(res.statusText);
     }
   } catch (err: any) {
+    console.error("Failed to post answers", err);
     throw err;
   }
   return true;

@@ -48,4 +48,5 @@ function Welcome({
   );
 }
 
-export default withRouter(Welcome);
+const WelcomeWithRouter = withRouter(Welcome);
+export default WelcomeWithRouter;

@@ -47,7 +47,7 @@ export default function LandingPitch({
       },
       complete: onComplete,
     });
-  }, []);
+  }, [onComplete]);
 
   useEffect(() => {
     setTimeout(() => setOpacity("opacity-100"), 4000);

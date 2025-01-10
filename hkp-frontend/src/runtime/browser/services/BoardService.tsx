@@ -32,7 +32,7 @@ class BoardService {
   }
 
   async configure(config: Partial<Config>) {
-    if (config.hasOwnProperty("result")) {
+    if (Object.prototype.hasOwnProperty.call(config, "result")) {
       this.app.next(this, config.result);
     }
 

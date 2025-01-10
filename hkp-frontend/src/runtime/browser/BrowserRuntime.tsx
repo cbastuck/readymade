@@ -32,9 +32,7 @@ type Props = {
   processRuntimeByName: ProcessRuntimeByName;
 };
 
-type State = {};
-
-export default class BrowserRuntime extends Component<Props, State> {
+export default class BrowserRuntime extends Component<Props> {
   static contextType = BoardCtx;
   declare context: React.ContextType<typeof BoardCtx>;
 

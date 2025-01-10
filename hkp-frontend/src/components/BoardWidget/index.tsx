@@ -71,7 +71,7 @@ export default function BoardWidget(props: Props) {
       runtimeApis={runtimeApis}
       availableRuntimeEngines={availableRuntimeEngines}
       isRuntimeInScope={() => true}
-      removeRuntime={async () => {}}
+      onRemoveRuntime={async () => {}}
       newBoard={() => {}}
       clearBoard={async () => {}}
       saveBoard={() => {}}

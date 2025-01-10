@@ -1,0 +1,22 @@
+{
+  "name": "producer",
+  "id": "rt1",
+  "services": [
+    {
+      "instanceId": "audio-input",
+      "serviceId": "core-input",
+      "config": {
+        "running": true
+      }
+    },
+    {
+      "instanceId": "websocket-writer",
+      "serviceId": "websocket-writer",
+      "config": {
+        "host": "192.168.178.78",
+        "port": "5555",
+        "path": "/runtime/9a94f0e0-887c-4549-b8af-39a1e7a1a990/service/81338b7b-c912-4970-96a4-875b103406b1/in"
+      }
+    }
+  ]
+}

@@ -56,7 +56,8 @@ export async function queryFreeRuntime(
 ): Promise<(RuntimeDescriptor & RegistryProp & ServicesProp) | null> {
   const url = `${rt.url}/query`;
   // TODO: resolve single runtime by ID not ALL
-  const payload = `mutation allRuntimes { 
+  // TODO: why is this a mutation?
+  const payload = `mutation allRuntimes {  
     runtimes{
       id
       name
@@ -244,6 +245,27 @@ export async function processRuntime(
   return data?.runtimeById?.process;
 }
 
+export async function rearrangeServices(
+  runtime: RuntimeDescriptor,
+  newOrder: Array<InstanceId>
+): Promise<Array<InstanceId>> {
+  const url = `${runtime.url}/query`;
+
+  const payload = `query rearrangeServices {
+    runtimeById(runtimeId: "${runtime.id}") {
+      rearrangeServices(
+        input: {
+          newOrder: ${JSON.stringify(newOrder.map((x) => x.uuid))} ,
+        }
+      ) { instanceId }
+    }
+  }`;
+  const data = await processQuery(url, payload, runtime.user);
+  return data?.runtimeById?.rearrangeServices?.map((x: any) => ({
+    uuid: x.instanceId,
+  }));
+}
+
 export async function getRuntimeOutputUrl(runtime: RuntimeDescriptor) {
   const url = `${runtime.url}/query`;
   const payload = `query getRuntimeOutputUrl {
@@ -265,9 +287,7 @@ export async function getHealth(rtClass: RuntimeClass, user: User | null) {
     headers["authorization"] = `Bearer ${user.idToken}`;
   }
 
-  const res = await fetch(`${url}/health`, {
-    headers,
-  });
+  const res = await fetch(`${url}/health`, { headers });
   return res.status.toString();
 }
 

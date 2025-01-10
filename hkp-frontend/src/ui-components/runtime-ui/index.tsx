@@ -15,6 +15,7 @@ import RuntimeHeader from "./RuntimeHeader";
 import BrowserRuntime from "@/runtime/browser/BrowserRuntime";
 import RemoteRuntime from "@/runtime/remote/RemoteRuntime";
 import BrowserRuntimeScope from "@/runtime/browser/BrowserRuntimeScope";
+import RealtimeRuntime from "@/runtime/realtime/RealtimeRuntime";
 import { useTheme } from "@/ui-components/ThemeContext";
 import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTypes";
 import DragSource from "@/components/DragSource";
@@ -142,7 +143,7 @@ export default function RuntimeUI({
               <div className="ml-auto pl-4">{outputs}</div>
             ) : null}
           </>
-        ) : (
+        ) : runtime.type === "remote" ? (
           <>
             <RemoteRuntime
               key={`remote-runtime-${runtime.id}`}
@@ -157,7 +158,20 @@ export default function RuntimeUI({
               onResult={onResult}
             />
           </>
-        )}
+        ) : runtime.type === "realtime" ? (
+          <RealtimeRuntime
+            key={`realtime-runtime-${runtime.id}`}
+            collapsed={!expanded}
+            scope={scope}
+            user={user}
+            boardName={boardName || ""}
+            runtime={runtime}
+            services={services}
+            onArrangeService={onArrangeService}
+            onServiceAction={onServiceAction}
+            onResult={onResult}
+          />
+        ) : null}
         {children}
       </div>
       {!isExpanded && <div className="min-h-1" />}

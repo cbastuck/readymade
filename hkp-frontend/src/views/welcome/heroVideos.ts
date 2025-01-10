@@ -15,7 +15,7 @@ export type HeroVideoDescriptor = {
   backgroundRepeat?: "";
 };
 
-const claim = "A Tool to make Tools";
+const claim = "An App to make Apps";
 
 // source https://www.pexels.com/video/person-using-a-tablet-5190552/
 const personUsingTablet: HeroVideoDescriptor = {
@@ -32,8 +32,8 @@ const personUsingTablet: HeroVideoDescriptor = {
 const diffuse: HeroVideoDescriptor = {
   type: "video",
   url: "/assets/heros/9707164-sd_506_960_30fps.mp4", //"https://videos.pexels.com/video-files/9707164/9707164-sd_506_960_30fps.mp4",
-  welcomeWordStyle: "stroke-gray-500 stroke-[4px] px-10",
-  claimTextStyle: "text-[#0094ff] px-2",
+  welcomeWordStyle: "stroke-gray-600 stroke-[4px] px-10",
+  claimTextStyle: "text-[#0094ff] px-2 bg-[#f3f4f6db] rounded px-2",
   landingPitchTextStyle: "px-2",
   logoBackground: "bg-gradient-to-r from-[#f3f4f6db] to-[#6b72809e]",
   still: "/assets/heros/9707164-sd_506_960_30fps-still.png",
@@ -61,7 +61,7 @@ const shapes: HeroVideoDescriptor = {
   logoBackground: "bg-[#333] drop-shadow-no",
   claimTextStyle: "text-gray-500 px-2 ",
   still: "/assets/heros/4965980-sd_426_226_25fps-still.png",
-  claim: "Make Creative Tools",
+  claim: "Build Creative Apps",
 };
 
 // https://www.pexels.com/video/best-free-glitch-effect-footage-noise-vhs-layer-tv-effects-16181150/

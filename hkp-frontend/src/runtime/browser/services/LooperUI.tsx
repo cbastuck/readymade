@@ -94,7 +94,7 @@ export default function LooperUI(props: ServiceUIProps) {
   const instances = instancesState.instances;
   const instanceUIs = useMemo(
     () => instances.map((ssvc) => service.app.createSubServiceUI(ssvc)),
-    [instances]
+    [instances, service]
   );
 
   const onIterate = () => {

@@ -43,7 +43,7 @@ export default function SampleCarousel({
           />
         ),
       })),
-    [carouselItems]
+    [background]
   );
 
   const onChangeInternal = (newItemIdx: number) => {

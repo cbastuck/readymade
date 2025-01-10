@@ -5,9 +5,12 @@ export type InstanceId = {
   uuid: string;
 };
 
-export type ServiceDescriptor = ServiceClass & InstanceId;
+export type ServiceDescriptor = ServiceClass &
+  InstanceId & {
+    state?: any;
+  };
 
-export type RuntimeClassType = "browser" | "remote" | "node";
+export type RuntimeClassType = "browser" | "remote" | "realtime";
 
 export type RuntimeClass = {
   type: RuntimeClassType;
@@ -286,6 +289,12 @@ export type RuntimeApi = {
     services: Array<ServiceDescriptor>,
     user: User | null
   ) => Promise<RestoreRuntimeResult | null>;
+
+  removeRuntime: (
+    scope: RuntimeScope,
+    runtime: RuntimeDescriptor,
+    user: User | null
+  ) => Promise<void>;
 
   processRuntime: (
     scope: RuntimeScope,

@@ -8,6 +8,7 @@ import {
 type Props = {
   items: string[];
   current: number;
+  className?: string;
   onChange?: (idx: number) => void;
   onClick: () => void;
 };
@@ -15,6 +16,7 @@ type Props = {
 export default function CarouselNav({
   items,
   current: passedCurrent,
+  className = "",
   onChange,
   onClick,
 }: Props) {
@@ -23,10 +25,12 @@ export default function CarouselNav({
 
   api?.on("select", () => onChange?.(api.selectedScrollSnap()));
 
-  useEffect(() => api?.scrollTo(passedCurrent), [passedCurrent]);
+  useEffect(() => api?.scrollTo(passedCurrent), [passedCurrent, api]);
 
   return (
-    <div className="justify-center flex gap-8 text-md font-serif w-full">
+    <div
+      className={`justify-center flex gap-8 text-base font-serif w-full ${className}`}
+    >
       <CarouselPrevious />
       <div
         className="w-[60%] text-center first-letter:uppercase hover:text-sky-600 h-min mt-[-10px] hover:underline"
@@ -34,6 +38,7 @@ export default function CarouselNav({
         onClick={onClick}
       >
         {items[current]}
+        <div className="text-sky-600">Click to open on Playground</div>
       </div>
       <CarouselNext />
     </div>

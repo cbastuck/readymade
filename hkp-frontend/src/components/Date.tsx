@@ -3,7 +3,7 @@ import { CSSProperties } from "react";
 type Props = {
   className?: string;
   month: string;
-  day: String;
+  day: string;
   year: string;
   size?: string | number;
   isUpdate?: boolean;

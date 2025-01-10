@@ -104,7 +104,7 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
   startRecording = (stream: MediaStream) => {
     return new Promise((resolve, reject) => {
       this.recorder = new MediaRecorder(stream);
-      let data: Array<any> = [];
+      const data: Array<any> = [];
 
       this.recorder.ondataavailable = (event) => data.push(event.data);
       this.recorder.start();

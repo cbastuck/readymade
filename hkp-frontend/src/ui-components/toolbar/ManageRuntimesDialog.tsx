@@ -21,13 +21,13 @@ type Props = {
   onClose: () => void;
 };
 
-export default ({
+export default function ManageRuntimesDialog({
   isOpen,
   remoteRuntimes,
   onRemoveRuntime,
   onAddAvailableRuntime,
   onClose,
-}: Props) => {
+}: Props) {
   const [showNewRuntimePanel, setShowNewRuntimePanel] = useState(false);
   const onAddRuntime = (rt: RuntimeClass) => {
     onAddAvailableRuntime(rt);
@@ -54,11 +54,11 @@ export default ({
         <Popover open={showNewRuntimePanel}>
           <PopoverTrigger asChild>
             <Button
-              className="text-md"
+              className="text-md tracking-widest"
               variant="outline"
               onClick={() => setShowNewRuntimePanel(true)}
             >
-              Add Remote Runtime
+              Add an external Runtime
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-80">
@@ -68,4 +68,4 @@ export default ({
       </DialogContent>
     </Dialog>
   );
-};
+}

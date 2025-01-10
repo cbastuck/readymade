@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useRef } from "react";
+import { ReactNode, useCallback, useEffect, useRef } from "react";
 
 import Resizable from "@/components/Resizable";
 import { ServiceInstance, ServiceUIProps } from "@/types";
@@ -90,7 +90,7 @@ function useInitOnFirstRender(
   onInit?: (state: any) => void,
   onNotification?: (svc: ServiceInstance, notification: any) => void
 ) {
-  const notify = async () => {
+  const notify = useCallback(async () => {
     const config = await (service.getConfiguration?.() ||
       Promise.resolve(service));
     if (onInit) {
@@ -98,7 +98,7 @@ function useInitOnFirstRender(
     } else if (onNotification) {
       onNotification(service, config);
     }
-  };
+  }, [onNotification, onInit, service]);
 
   const isFirstRender = useRef<boolean>(true);
   useEffect(() => {

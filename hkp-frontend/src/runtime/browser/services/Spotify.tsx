@@ -56,22 +56,25 @@ class Spotify {
 
   async dispatchAction(action: any) {
     switch (action) {
-      case "injectSavedSongs":
+      case "injectSavedSongs": {
         const liked = await getMySavedSongs(this.token).catch(
           this.onRequestFail
         );
         return liked && this.app.next(this, liked);
-      case "injectRecentSongs":
+      }
+      case "injectRecentSongs": {
         const recents = await getRecentSongs(this.token).catch(
           this.onRequestFail
         );
         return recents && this.app.next(this, recents);
-      case "getProfile":
+      }
+      case "getProfile": {
         const profile = await getUserProfile(this.token).catch(
           this.onRequestFail
         );
         this.app.notify(this, { profile });
         break;
+      }
       case "logout":
         this.app.removeServiceData(this.uuid, loginStateId);
         break;

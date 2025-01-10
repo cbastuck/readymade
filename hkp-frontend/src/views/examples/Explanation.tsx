@@ -21,8 +21,7 @@ export default function Explanation({ value: explanation }: Props) {
     return false;
   }
 
-  let title;
-  let component = <div />;
+  const component = <div />;
 
   return (
     <div
@@ -54,7 +53,7 @@ export default function Explanation({ value: explanation }: Props) {
         </Text>
       ))}
       <CustomDialog
-        title={title || ""}
+        title={""}
         //component={component}
         //url={modalReferenceDatamodel ? modalReferenceDatamodel.link : ""}
         onOpenChange={(open: boolean) =>

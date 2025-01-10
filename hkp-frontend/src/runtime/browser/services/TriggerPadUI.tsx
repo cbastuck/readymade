@@ -170,7 +170,7 @@ function dataURItoBlob(dataURI_: string) {
 
   // Create a typed array out of the array buffer representing each character from as a 8-bit unsigned integer
   const intArray = new Uint8Array(ab);
-  for (var i = 0; i < byteStringLen; i++) {
+  for (let i = 0; i < byteStringLen; i++) {
     intArray[i] = byteString.charCodeAt(i);
   }
   return new Blob([intArray], { type });

@@ -73,7 +73,7 @@ export function decompressAndDecodeState(encoded: string): string {
   );
 }
 
-export function delayedExec(fn: Function, delay: number) {
+export function delayedExec(fn: () => any, delay: number) {
   return new Promise<void>((resolve) => {
     setTimeout(() => {
       fn();

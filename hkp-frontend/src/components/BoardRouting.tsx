@@ -15,7 +15,7 @@ type Props = {
   onChange: (routing: Routing) => void;
 };
 
-type State = Routing & {};
+type State = Routing;
 
 export default class BoardRouting extends Component<Props, State> {
   state = {

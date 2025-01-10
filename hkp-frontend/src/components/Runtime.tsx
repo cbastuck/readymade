@@ -101,7 +101,7 @@ export default class Runtime extends Component<Props, State> {
           runtime
         );
       }
-      case "rename":
+      case "rename": {
         const {
           payload: { value },
         } = command;
@@ -109,6 +109,7 @@ export default class Runtime extends Component<Props, State> {
           boardContext.setServiceName(runtime.id, service.uuid, value);
         }
         break;
+      }
       default:
         console.log("Runtime processing unknown service action: ", action);
     }

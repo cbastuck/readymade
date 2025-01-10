@@ -45,9 +45,9 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
   const headline = !boardName ? (
     "this is an empty board"
   ) : (
-    <div className="w-full text-center flex items-end gap-4 font-sans tracking-wider">
+    <div className="w-full text-center flex items-center gap-4 font-sans tracking-wider">
       <div className="w-full text-right">This board</div>
-      <div className="w-[40%]">
+      <div className="w-[50%]">
         <SubmittableInput
           selectAllOnFocus
           fullWidth

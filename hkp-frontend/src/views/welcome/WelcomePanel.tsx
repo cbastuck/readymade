@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -22,7 +22,15 @@ export default function WelcomePanel() {
   const [headerAnimationsComplete, setHeaderAnimationsComplete] =
     useState(false);
 
-  const forceCompleteAnimation = () => setHeaderAnimationsComplete(true);
+  const forceCompleteAnimation = useCallback(
+    () => setHeaderAnimationsComplete(true),
+    []
+  );
+
+  const onLandingPitchComplete = useCallback(
+    () => setHeaderAnimationsComplete(true),
+    []
+  );
 
   const onLoadBoard = (item: CarouselItem) =>
     headerAnimationsComplete &&
@@ -59,7 +67,7 @@ export default function WelcomePanel() {
               heroVideo={video}
               usecases={carouselItems}
               switchUsecaseInterval={5000}
-              onComplete={() => setHeaderAnimationsComplete(true)}
+              onComplete={onLandingPitchComplete}
               onLink={setCurrentCarouselItem}
               noAnimation={headerAnimationsComplete}
             />

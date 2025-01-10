@@ -12,7 +12,7 @@ type EJSConfig = {
 };
 
 function isEJSConfig(obj: any): obj is EJSConfig {
-  return typeof obj.template === "string" && typeof obj.locals !== undefined;
+  return typeof obj.template === "string" && typeof obj.locals !== "undefined";
 }
 
 class Html {

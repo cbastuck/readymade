@@ -61,7 +61,9 @@ export default function MonitorUI(props: ServiceUIProps) {
     try {
       const obj = JSON.parse(message);
       setMessage(JSON.stringify(obj, null, 2));
-    } catch (err) {}
+    } catch (err) {
+      console.error("MonitorUI.onFormatJSON", err);
+    }
   };
 
   const { service } = props;
@@ -87,7 +89,7 @@ export default function MonitorUI(props: ServiceUIProps) {
         let data;
         try {
           data = JSON.parse(message);
-        } catch (err) {
+        } catch (_err) {
           data = message;
         }
         service.app.next(service, data);

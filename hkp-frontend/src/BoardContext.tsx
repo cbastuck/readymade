@@ -91,7 +91,7 @@ type Props = {
 
   fetchBoard?: () => Promise<BoardDescriptor>;
   isRuntimeInScope?: () => boolean;
-  removeRuntime?: (runtime: RuntimeDescriptor) => Promise<void>;
+  onRemoveRuntime?: (runtime: RuntimeDescriptor) => Promise<void>;
   newBoard?: (searchParams?: string) => void; // TODO: why search params ??
   clearBoard?: (board: BoardDescriptor) => Promise<void>;
   saveBoard?: () => void;
@@ -177,6 +177,11 @@ class BoardProvider extends Component<Props, BoardContextState> {
   componentDidMount() {
     if (this.props.fetchAfterMount) {
       this.fetchBoard();
+    }
+
+    const { boardName } = this.props;
+    if (boardName) {
+      document.title = boardName;
     }
   }
 
@@ -484,7 +489,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const [scope, api] = this.getRuntimeScopeApi(runtime.id);
     if (!api || !scope) {
       throw new Error(
-        `BoardContext.const() runtime api is missing: ${runtime.type}`
+        `BoardContext.removeService() runtime api is missing: ${runtime.type}`
       );
     }
 
@@ -517,11 +522,20 @@ class BoardProvider extends Component<Props, BoardContextState> {
   };
 
   removeRuntime = async (runtime: RuntimeDescriptor) => {
-    const { removeRuntime } = this.props;
-    if (!removeRuntime) {
-      throw new Error("BoardContext misses prop: removeRuntime");
+    const { onRemoveRuntime } = this.props;
+    if (!onRemoveRuntime) {
+      throw new Error("BoardContext misses prop: onRemoveRuntime");
     }
-    await removeRuntime(runtime);
+    await onRemoveRuntime(runtime);
+
+    const [scope, api] = this.getRuntimeScopeApi(runtime.id);
+    if (!api || !scope) {
+      throw new Error(
+        `BoardContext.removeRuntime() runtime api is missing: ${runtime.type}`
+      );
+    }
+
+    api.removeRuntime(scope, runtime, this.state.user);
 
     this.setState((state) => {
       const updatedRuntimes = state.runtimes.filter((r) => r.id !== runtime.id);
@@ -620,6 +634,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
               uuid: svc.uuid,
               serviceId: svc.serviceId,
               serviceName: svc.serviceName,
+              state: svc.state || {},
               ...config,
             };
           })

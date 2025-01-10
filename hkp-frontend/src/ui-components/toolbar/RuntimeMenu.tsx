@@ -48,12 +48,12 @@ export default function RuntimeMenu({
     setOpen(newOpen);
   };
   const remoteRuntimes = availableRuntimeEngines.filter(
-    (rt) => rt.type === "remote"
+    (rt) => rt.type === "remote" || rt.type === "realtime"
   );
   const localRuntimes = availableRuntimeEngines.filter(
     (rt) => rt.type === "browser"
   );
-  const heightConstraint = remoteRuntimes.length ? "h-[170px]" : "";
+  const heightConstraint = undefined; // remoteRuntimes.length ? "h-[170px]" : "";
   return (
     <>
       <Popover open={open} onOpenChange={onOpenChange}>
@@ -63,7 +63,7 @@ export default function RuntimeMenu({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-[300px] justify-between my-1 text-base"
+            className="w-[300px] justify-between my-1 text-base tracking-widest"
             onClick={() => open && setSearchTerm("")}
           >
             Add Runtime

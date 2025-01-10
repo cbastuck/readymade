@@ -161,7 +161,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
       // TODO: binary data is currently not supported with this logic
       message = JSON.parse(event.data);
     } catch (err) {
-      console.error("Received invalid message", event.data);
+      console.error("Received invalid message", err, event.data);
       return;
     }
 

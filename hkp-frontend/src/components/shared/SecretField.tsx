@@ -1,7 +1,7 @@
 import InputField, {
   Props as InputFieldProps,
 } from "@/components/shared/InputField";
-import { useVault } from "@/vault";
+import { getVault } from "@/vault";
 
 type Props = InputFieldProps & {
   fallbackValue?: string;
@@ -10,7 +10,7 @@ export default function SecretField(props: Props) {
   const { value, fallbackValue, onChange, ...rest } = props;
 
   const [vaultId, instanceId, key] = value?.split(".") || [];
-  const vault = useVault(vaultId as "uservault"); // TODO:
+  const vault = getVault(vaultId as "uservault"); // TODO:
 
   const secret = (vault && vault.get(instanceId, key)) || "";
 

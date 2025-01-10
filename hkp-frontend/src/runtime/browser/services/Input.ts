@@ -118,7 +118,7 @@ class Input extends ServiceBase<State> {
       });
       this.setBypass(false);
       // this._websocket.send({ topic });
-    } catch (err) {
+    } catch (_err) {
       this.setBypass(true);
     }
   };
@@ -190,9 +190,7 @@ class Input extends ServiceBase<State> {
   }
 
   destroy() {
-    if (this.closeEventSourceConnection) {
-      this.closeEventSourceConnection();
-    }
+    this.closeConection();
   }
 
   async process(params: any) {

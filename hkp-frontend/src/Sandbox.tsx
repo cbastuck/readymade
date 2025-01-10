@@ -246,4 +246,5 @@ function extractFirstRuntime(
   return firstBrowserRuntimeData;
 }
 
-export default withRouter(Sandbox);
+const SandboxWithRouter = withRouter(Sandbox);
+export default SandboxWithRouter;

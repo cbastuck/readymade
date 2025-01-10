@@ -93,6 +93,7 @@ export default function RuntimeHeader({
         />
         <div className="flex items-end font-sans">
           <Editable
+            className="text-base-plus"
             id={`runtime-name-${runtimeId}`}
             value={name}
             title={runtimeId}

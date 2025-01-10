@@ -33,6 +33,7 @@ export default function FlowInspectorPopup({
       try {
         onInject(JSON.parse(buffer));
       } catch (err) {
+        console.error("FlowInspectorPopup.onInjectInternal", err);
         onInject(buffer);
       }
     }

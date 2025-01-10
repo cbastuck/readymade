@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useCallback, useEffect, useState } from "react";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import { flatten } from "flat";
 import { TooltipContentType } from "@/ui-components/Tooltip";
@@ -38,20 +38,23 @@ const AutocompleteInputField = forwardRef<HTMLInputElement, Props>(
       Array<string> | undefined
     >(undefined);
 
-    const computeAutoCompleteValues = (data: any) => {
-      if (typeof data === "object") {
-        const keys = Object.keys(flatten(data));
-        if (keys.length > 0) {
-          setAutoCompleteValues(keys);
-          // trigger the autocomplete menu
-          setTimeout(() => id && document.getElementById(id)?.click(), 100);
+    const computeAutoCompleteValues = useCallback(
+      (data: any) => {
+        if (typeof data === "object") {
+          const keys = Object.keys(flatten(data));
+          if (keys.length > 0) {
+            setAutoCompleteValues(keys);
+            // trigger the autocomplete menu
+            setTimeout(() => id && document.getElementById(id)?.click(), 100);
+          }
         }
-      }
-    };
+      },
+      [id]
+    );
 
     useEffect(() => {
       computeAutoCompleteValues(autoCompleteValueSuggestions);
-    }, [autoCompleteValueSuggestions]);
+    }, [computeAutoCompleteValues, autoCompleteValueSuggestions]);
 
     const onTabInternal = (newValue: string) => {
       if (showCompletionsOnTab) {

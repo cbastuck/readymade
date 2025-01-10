@@ -209,6 +209,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
               const obj = JSON.parse(code);
               service.configure({ inject: obj });
             } catch (err) {
+              console.error("InjectorUI.renderDataEditor", err);
               service.configure({ inject: code }); // can we check of the text is valid JSON from the editor?
             }
             this.setState({ recentInjection: code });
@@ -298,7 +299,9 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
       this.setState({
         recentInjection: JSON.stringify(obj, null, 2),
       });
-    } catch (err) {}
+    } catch (err) {
+      console.error("InjectorUI.onFormatCode", err);
+    }
   };
 
   setTextMode = (textMode: boolean) => {

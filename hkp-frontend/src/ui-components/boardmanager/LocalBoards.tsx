@@ -11,9 +11,7 @@ import { SavedBoard } from "../../types";
 import { BoardManagerAction } from "@/ui-components/boardmanager/BoardTable";
 import BoardManager from ".";
 
-type Props = {};
-
-export default function LocalBoards({}: Props) {
+export default function LocalBoards() {
   const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
   useEffect(() => setSavedBoards(getLocalBoards(localStoragePrefix)), []);
 

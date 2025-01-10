@@ -4,7 +4,7 @@ export default function Mission() {
       <h2>Purpose and Objective</h2>
       <div>
         Hookitapp aims to minimise the distance between "Using" and "Making".
-        It's a tool to build tools.
+        It's an app to build small, personal, creative, distributed, ... apps.
       </div>
       <div>
         Short iteration cycles between using and making tools maximise their

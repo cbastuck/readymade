@@ -8,6 +8,7 @@ type Props = {
   id?: string;
   value: string;
   title?: string;
+  className?: string;
   onChange: (newValue: string) => void;
 };
 
@@ -15,6 +16,7 @@ export default function Editable({
   id,
   value,
   title,
+  className,
   onChange: onChangeProp,
 }: Props) {
   const [editableBuffer, setEditableBuffer] = useState("");
@@ -42,7 +44,9 @@ export default function Editable({
           id={id}
           variant="ghost"
           title={title}
-          className="cursor-text p-0 h-min rounded-none whitespace-nowrap text-base font-sans tracking-widest"
+          className={`cursor-text p-0 h-min rounded-none whitespace-nowrap text-base font-sans tracking-widest ${
+            className || ""
+          }`}
           onClick={onEdit}
         >
           {value}
@@ -51,7 +55,9 @@ export default function Editable({
         <div className="flex items-end">
           <Input
             id={id}
-            className="h-min w-min p-0 border-none rounded-none font-sans text-base tracking-widest"
+            className={`h-min w-min p-0 border-none rounded-none font-sans text-base tracking-widest ${
+              className || ""
+            }`}
             style={{ borderBottom: "solid 1px", paddingBottom: "1px" }}
             ref={(elem) => elem && elem.focus()}
             value={editableBuffer}

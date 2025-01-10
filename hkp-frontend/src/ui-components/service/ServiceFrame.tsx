@@ -116,6 +116,7 @@ export default function ServiceFrame({
     const serviceId = service.serviceId || service.__descriptor?.serviceId;
     const parts = serviceId?.split("/") || [];
     if (parts.length > 1) {
+      console.log("ServiceFrame.onHelp", parts);
     }
   };
 
@@ -131,7 +132,9 @@ export default function ServiceFrame({
       const config = assureJSON(newConfig);
       await service.configure?.(config); // TODO: not here
       setConfigVisible(false);
-    } catch (err) {}
+    } catch (err) {
+      console.error("ServiceFrame.onApplyConfig", err);
+    }
   };
 
   const onCustomEntry = (item: CustomMenuEntry) => {
@@ -167,6 +170,8 @@ export default function ServiceFrame({
     onAction({ action: "rename", service, payload: { value: newName } });
   };
 
+  const theme = useTheme();
+
   if (frameless) {
     return children;
   }
@@ -174,8 +179,6 @@ export default function ServiceFrame({
   const dragData: ServiceInstanceDropType = filterPrivateMembers(service);
 
   const cursor = "move";
-
-  const theme = useTheme();
 
   return (
     <div key={`service-frame-${uuid}`} id={`service-frame-${uuid}`}>
@@ -190,8 +193,6 @@ export default function ServiceFrame({
             textAlign: "center",
             backgroundColor: theme.serviceBackgroundColor,
             margin: "10px 0px",
-            fontSize: 15,
-            color: "black",
           })}
         >
           <DragSource

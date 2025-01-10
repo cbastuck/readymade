@@ -26,18 +26,19 @@ export default function Carousel<T extends CarouselItemType>({
   onClick,
 }: Props<T>) {
   return (
-    <CarouselCN className="w-full h-full mt-10">
-      <CarouselNav
-        items={items.map((item) => item.value.title)}
-        current={current}
-        onChange={onChange}
-        onClick={() => onClick?.(items[current])}
-      />
+    <CarouselCN className="w-full h-full">
       <CarouselContent>
         {items.map((item, index) => (
           <CarouselItem key={index}>{item.node}</CarouselItem>
         ))}
       </CarouselContent>
+      <CarouselNav
+        className="mt-8"
+        items={items.map((item) => item.value.title)}
+        current={current}
+        onChange={onChange}
+        onClick={() => onClick?.(items[current])}
+      />
     </CarouselCN>
   );
 }

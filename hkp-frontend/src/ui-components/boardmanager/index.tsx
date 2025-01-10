@@ -8,6 +8,7 @@ import BoardTable, {
 } from "@/ui-components/boardmanager/BoardTable";
 import BoardTableNav from "./BoardTableNav";
 import IconButton from "../IconButton";
+import moment from "moment";
 
 export type ActionItem = {
   label: string;
@@ -48,10 +49,14 @@ export default function BoardManager({
     (board) => !filter || board.name.indexOf(filter) !== -1
   );
 
+  const sortedByAge = filteredItems
+    .map((x) => ({ ...x, age: moment().diff(x.createdAt || moment("1979")) }))
+    .sort((a, b) => a.age - b.age);
+
   const paginatedItems =
     pageSize === undefined
-      ? filteredItems
-      : filteredItems.slice(pageOffset * pageSize, (pageOffset + 1) * pageSize);
+      ? sortedByAge
+      : sortedByAge.slice(pageOffset * pageSize, (pageOffset + 1) * pageSize);
 
   const isCollapsable = isCollapsed !== undefined;
   const onToggleCollapse = () => setIsCollapsed(!isCollapsed);

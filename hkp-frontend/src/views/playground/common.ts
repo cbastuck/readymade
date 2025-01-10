@@ -17,7 +17,7 @@ export const localStoragePrefix = "hkp-playground-";
 export const defaultName = "Playground";
 
 export const availableRuntimeEngines: Array<RuntimeClass> = [
-  { name: "Browser Runtime" || "browser", type: "browser" },
+  { name: "Browser Runtime", type: "browser" },
 ];
 
 export function getLocalBoard(

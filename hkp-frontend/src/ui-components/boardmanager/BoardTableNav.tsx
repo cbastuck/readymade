@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 import IconButton from "../IconButton";
@@ -16,7 +16,10 @@ export default function BoardTableNav({
   numItems,
   setPageOffset,
 }: Props) {
-  const numPages = pageSize === undefined ? 0 : Math.ceil(numItems / pageSize);
+  const numPages = useMemo(
+    () => (pageSize === undefined ? 0 : Math.ceil(numItems / pageSize)),
+    [pageSize, numItems]
+  );
 
   useEffect(() => {
     if (pageOffset >= numPages) {
@@ -24,7 +27,7 @@ export default function BoardTableNav({
     } else if (pageOffset < 0 && numPages > 0) {
       setPageOffset(0);
     }
-  }, [numPages, pageOffset]);
+  }, [numPages, pageOffset, setPageOffset]);
 
   const onPrevPage = () => setPageOffset(Math.max(0, pageOffset - 1));
   const onNextPage = () =>

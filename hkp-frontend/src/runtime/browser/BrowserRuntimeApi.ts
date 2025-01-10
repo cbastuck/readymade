@@ -5,13 +5,13 @@ import {
   RuntimeApi,
   RuntimeClass,
   RuntimeDescriptor,
-  ServiceDescriptor,
   InstanceId,
   ServiceClass,
   RestoreRuntimeResult,
   ServiceInstance,
   User,
   ProcessContext,
+  ServiceDescriptor,
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
@@ -35,6 +35,14 @@ export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
     registry: scope.registry.allowedServices(),
     scope,
   };
+}
+
+export async function removeRuntime(
+  _scope_: RuntimeScope,
+  _runtime: RuntimeDescriptor,
+  _user: User | null
+): Promise<void> {
+  throw new Error("BrowserRuntime removeRuntime no implemented");
 }
 
 async function restoreRuntime(
@@ -248,6 +256,7 @@ function rearrangeServices(
 
 const api: RuntimeApi = {
   addRuntime,
+  removeRuntime,
   restoreRuntime,
   processRuntime,
   addService,

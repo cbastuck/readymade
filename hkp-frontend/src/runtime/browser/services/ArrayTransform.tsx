@@ -95,6 +95,7 @@ export function processConfig(cfg: any, params: any): string {
           try {
             return !!resolveValue(x, filter); // TODO: not a nice way of using exceptions
           } catch (err) {
+            console.error("ArrayTransform.processConfig", err);
             return false;
           }
         })

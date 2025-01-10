@@ -59,7 +59,7 @@ export default function MappingTable({
   const rowIsSyntaxCheck = useMemo(
     () =>
       rows.map((key, idx) => !rowIsDynamic[idx] || checkSyntax(template[key])),
-    [template]
+    [template, rowIsDynamic, rows]
   );
 
   const onNewProperty = () => {

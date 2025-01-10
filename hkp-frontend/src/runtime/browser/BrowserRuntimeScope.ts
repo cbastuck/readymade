@@ -130,13 +130,14 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     advanceBeforeProcess: boolean = true
   ) => {
     const services = this.serviceInstances;
-    let [svc, position] = this.findServiceInstance(service?.uuid || null);
+    const [svc_, position] = this.findServiceInstance(service?.uuid || null);
     if (position === -1) {
       return console.error(
         `Called next() in browser but could not find current service: ${service?.uuid} in scope:`,
         this
       );
     }
+    let svc = svc_;
 
     let result = params;
     for (

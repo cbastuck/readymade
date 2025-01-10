@@ -32,5 +32,5 @@ export const spotify2Github: CarouselItem = {
       url: boardUrl,
     },
   },
-  createdAt: "Aug 23, 2024",
+  createdAt: "Nov 12, 2021",
 };

@@ -9,17 +9,18 @@ export default function ImportWidget() {
   const src = searchParams.get("src");
   const navigate = useNavigate();
 
+  const state = src && decompressAndDecodeState(src);
+  const { board, params } = state && JSON.parse(state);
+
+  importAdditionalWidgetToLocalStorage({ board, name: board.name, params });
+  useEffect(() => navigate("/home"), [navigate]);
+
   if (!src) {
     return <h1>Invalid URL</h1>;
   }
 
-  const state = decompressAndDecodeState(src);
-  const { board, params } = JSON.parse(state);
   if (!board || !params) {
     console.error("Invalid payload", { board, params });
     return <h1>Invalid payload</h1>;
   }
-
-  importAdditionalWidgetToLocalStorage({ board, name: board.name, params });
-  useEffect(() => navigate("/home"), []);
 }

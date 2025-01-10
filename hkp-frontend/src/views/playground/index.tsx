@@ -42,6 +42,7 @@ import {
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
+import realtimeRuntimeApi from "../../runtime/realtime/RealtimeRuntimeApi";
 import BoardEntryPoint from "./BoardEntryPoint";
 import { AppCtx } from "../../AppContext";
 import BoardFetchError from "./BoardFetchError";
@@ -54,6 +55,7 @@ const restoredAvailableRuntimeEngines = JSON.parse(
 export const runtimeApis: RuntimeApiMap = {
   browser: browserRuntimeApi,
   remote: remoteRuntimeApi,
+  realtime: realtimeRuntimeApi,
 };
 
 type Props = WithRouterProps & {
@@ -323,7 +325,7 @@ class Playground extends Component<Props, State> {
     */
   };
 
-  removeRuntime = async (runtime: RuntimeDescriptor) => {
+  onRemoveRuntime = async (runtime: RuntimeDescriptor) => {
     return this.destroyRuntime(runtime);
   };
 
@@ -347,6 +349,7 @@ class Playground extends Component<Props, State> {
       const { boardName: name, description } = this.state;
       const saveName = this.props.boardName || name;
       const data = await this.boardProviderRef?.state.serializeBoard();
+
       if (this.props.onSaveBoard && data) {
         this.props.onSaveBoard(saveName, {
           ...data,
@@ -424,7 +427,7 @@ class Playground extends Component<Props, State> {
             },
           },
         });
-      } catch (err) {
+      } catch (_err) {
         this.context?.pushNotification({
           type: "info",
           message: "Could not copy to clipboard",
@@ -492,7 +495,7 @@ class Playground extends Component<Props, State> {
         fetchBoard={this.fetchBoard}
         isRuntimeInScope={() => true}
         runtimeApis={runtimeApis}
-        removeRuntime={this.removeRuntime}
+        onRemoveRuntime={this.onRemoveRuntime}
         newBoard={this.newBoard}
         clearBoard={this.clearPlayground}
         saveBoard={this.saveBoard}
@@ -526,14 +529,16 @@ class Playground extends Component<Props, State> {
               <div style={t.fill}>
                 <Toolbar
                   showRuntimeMenu={true}
-                  onUpdateAvailableRuntimeEngines={(engines) =>
+                  onUpdateAvailableRuntimeEngines={(engines) => {
+                    const filteredEngines = engines.filter(
+                      (rt) => rt.type === "remote" || rt.type === "realtime"
+                    );
+
                     localStorage.setItem(
                       "available-remote-runtimes",
-                      JSON.stringify(
-                        engines.filter((rt) => rt.type === "remote")
-                      )
-                    )
-                  }
+                      JSON.stringify(filteredEngines)
+                    );
+                  }}
                   isCompact={this.props.compact}
                 />
 
@@ -616,4 +621,5 @@ class Playground extends Component<Props, State> {
   }
 }
 
-export default withRouter(Playground);
+const PlaygroundWithRouter = withRouter(Playground);
+export default PlaygroundWithRouter;

@@ -21,7 +21,7 @@ export default function Copyright({ isWide }: Props) {
             <a href="https://cbastuck.de" target="_blank">
               cbastuck
             </a>{" "}
-            2024
+            2025
           </>
         ) : (
           "2024"

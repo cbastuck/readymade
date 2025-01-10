@@ -132,7 +132,7 @@ class PeersProvider extends Component<Props, PeersContextState> {
       data,
     };
     const srcConnections = connections[src] || {};
-    let connection = srcConnections[dst]; // use connectionId
+    const connection = srcConnections[dst]; // use connectionId
     if (connection) {
       connection.send(envelope);
       return;
@@ -164,7 +164,7 @@ class PeersProvider extends Component<Props, PeersContextState> {
         },
       });
     } catch (err) {
-      console.log("Connection is not available anymore", src, dst);
+      console.log("Connection is not available anymore", src, dst, err);
       this.updatePeers();
     }
     delete this.pendingConnections[connectionId];

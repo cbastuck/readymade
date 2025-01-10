@@ -109,9 +109,9 @@ export default function BoardMenu() {
         <NavigationMenuItem>
           <NavigationMenuTrigger
             id="board-menu-trigger"
-            className="px-2 tracking-wider text-sm hover:text-white text-base capitalize "
+            className="px-2 hover:text-white text-base-plus capitalize tracking-wider"
           >
-            <div className="min-w-[30px] max-w-[130px] overflow-x-hidden text-ellipsis whitespace-nowrap">
+            <div className="min-w-[30px] max-w-[130px] overflow-x-hidden text-ellipsis whitespace-nowrap text-base-plus tracking-wider">
               {board || "Board"}
             </div>
           </NavigationMenuTrigger>

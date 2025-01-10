@@ -160,7 +160,7 @@ export class OllamaPrompt extends ServiceBase<State> {
                     ? JSON.parse(str)?.message?.content
                     : "";
                   reportProgress(partialResponse);
-                } catch (err) {
+                } catch (_err) {
                   /*
                   console.error(
                     "Could not parse the following partial JSON response",
@@ -194,6 +194,7 @@ export class OllamaPrompt extends ServiceBase<State> {
             : plainText;
           return result;
         } catch (err) {
+          console.error("OllamaPrompt", err);
           throw new Error(
             `Ollama Prompt attempted to parse a buffer as JSON which is not valid json: ${plainText}`
           );
