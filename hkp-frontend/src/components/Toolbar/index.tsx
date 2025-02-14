@@ -33,27 +33,57 @@ export default function Toolbar({
     boardContext?.appContext?.appViewMode &&
     boardContext?.appContext?.appViewMode !== "wide";
 
+  const onAddRuntime = (rtClass: RuntimeClass) => {
+    if (boardContext) {
+      boardContext.addRuntime({
+        ...rtClass,
+        name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
+      });
+    }
+  };
+
+  const onAddRuntimeEngine = (
+    desc: RuntimeClass,
+    overwriteIfExists: boolean = false
+  ) => {
+    const runtimes =
+      boardContext?.addAvailableRuntime(desc, overwriteIfExists) || [];
+    onUpdateAvailableRuntimeEngines &&
+      onUpdateAvailableRuntimeEngines(runtimes);
+  };
+
+  const onRemoveRuntimeEngine = (desc: RuntimeClass) => {
+    const runtimes = boardContext?.removeAvailableRuntime(desc) || [];
+    onUpdateAvailableRuntimeEngines &&
+      onUpdateAvailableRuntimeEngines(runtimes);
+  };
+
+  const onUpdateRuntimeEngine = (updated: RuntimeClass) => {
+    onAddRuntimeEngine(updated, true);
+  };
   return (
     <div
-      className="select-none"
+      className="select-none w-full bg-gradient-to-r from-white from-20% to-zinc-100 to-100% shadow-[0_2px_3px_rgba(0,0,0,0.10)]"
       style={{
         position: "sticky",
         left: 0,
         top: 0,
         zIndex: 100,
+        borderTop: "1px solid #ddd",
       }}
     >
       <div
-        className="bg-white mb-0 md:mb-[5px]"
+        className="w-full mb-0 mt-0"
         style={{
-          marginTop: 0,
           textAlign: "left",
-          borderBottom: "1px solid rgba(34,36,38,.15)",
-          borderTop: "1px solid #ddd",
+          borderBottom: "1px solid #ccc",
         }}
       >
-        <div className="w-full flex">
-          <HomeIcon />
+        <div className="w-full flex items-center">
+          <div className="pr-1.5">
+            <HomeIcon />
+          </div>
+
           <BoardMenu />
 
           {showRuntimeMenu && (
@@ -61,31 +91,17 @@ export default function Toolbar({
               availableRuntimeEngines={
                 boardContext?.availableRuntimeEngines || []
               }
-              onAddAvailableRuntime={(desc) => {
-                const runtimes = boardContext?.addAvailableRuntime(desc) || [];
-                onUpdateAvailableRuntimeEngines &&
-                  onUpdateAvailableRuntimeEngines(runtimes);
-              }}
-              onRemoveAvailableRuntime={(desc) => {
-                const runtimes =
-                  boardContext?.removeAvailableRuntime(desc) || [];
-                onUpdateAvailableRuntimeEngines &&
-                  onUpdateAvailableRuntimeEngines(runtimes);
-              }}
-              onAddRuntime={(rtClass: RuntimeClass) => {
-                if (boardContext) {
-                  boardContext.addRuntime({
-                    ...rtClass,
-                    name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
-                  });
-                }
-              }}
+              onAddAvailableRuntimeEngine={onAddRuntimeEngine}
+              onRemoveAvailableRuntimeEngine={onRemoveRuntimeEngine}
+              onUpdateRuntimeEngine={onUpdateRuntimeEngine}
+              onAddRuntime={onAddRuntime}
             />
           )}
 
           <NavigationBar
             isCompact={isCompact === undefined ? isNarrow : isCompact}
           />
+
           <AppMenu includeNavigationLinks={!isCompact && isNarrow} />
         </div>
       </div>

@@ -79,3 +79,22 @@ inline std::optional<RuntimeConfiguration> validateRuntime(json config)
   }
   return std::optional<RuntimeConfiguration>(conf);
 }
+
+
+inline std::optional<std::vector<std::string> > validateServiceOrdering(json config)
+{
+  if (!config.is_array())
+  {
+    return std::nullopt;
+  }
+  std::vector<std::string> ordering;
+  for (auto &service : config)
+  {
+    if (!service.is_string())
+    {
+      return std::nullopt;
+    }
+    ordering.push_back(service);
+  }
+  return std::optional<std::vector<std::string> >(ordering);
+}

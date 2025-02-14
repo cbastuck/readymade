@@ -21,15 +21,25 @@ public:
         m_ws(net::make_strand(ioc)),
         m_host(host),
         m_port(port),
-        m_path(path)
+        m_path(path),
+        m_guard(m_ws.get_executor())
   {
   }
 
-  void start(std::string text, std::shared_ptr<FloatRingBuffer> target)
+  void start(std::string id, std::function<void(Data data)> callback)
   {
-    m_text = text;
-    m_receiveBuffer = target;
+    m_callback = callback;
+    startImpl(id);
+  }
 
+  void start(std::string id, std::shared_ptr<FloatRingBuffer> target)
+  {
+    m_receiveBuffer = target;
+    startImpl(id);
+  }
+
+  void startImpl(const std::string &id)
+  {
     auto const results = m_resolver.resolve(m_host, m_port);
 
     // Make the connection on the IP address we get from a lookup
@@ -47,21 +57,22 @@ public:
 
     m_ws.handshake(hostAndPort, m_path);
 
-    m_ws.write(net::buffer(std::string(text)));
+    std::string protocol = json{{"id", id}, {"type", "reader"}}.dump();
+    m_ws.write(net::buffer(protocol));
 
     m_isConnected.test_and_set();
 
     // start reading into our buffer
-    auto readBinary = true;
     m_ws.async_read(
         m_buffer,
         beast::bind_front_handler(
-            readBinary ? &ReceiverSession::read_binary : &ReceiverSession::on_read_messages,
+             &ReceiverSession::on_read,
             shared_from_this()));
   }
 
   void close()
   {
+    std::cout << "Receiver session - closing connection" << std::endl;
     // Close the WebSocket connection
     m_ws.async_close(websocket::close_code::normal,
                      beast::bind_front_handler(
@@ -70,6 +81,18 @@ public:
   }
 
 private:
+  void on_read(beast::error_code ec, std::size_t bytes_transferred)
+  {
+    if (m_ws.got_text())
+    {
+      on_read_messages(ec, bytes_transferred);
+    } 
+    else 
+    {
+      read_binary(ec, bytes_transferred);
+    }
+  }
+
   void on_read_messages(beast::error_code ec, std::size_t bytes_transferred)
   {
     boost::ignore_unused(bytes_transferred);
@@ -78,30 +101,21 @@ private:
       return fail(ec, "on_read_messages");
     }
 
-    auto data = beast::make_printable(m_buffer.data());
-    m_buffer.consume(m_buffer.size());
-
-    std::stringstream s;
-    s << data;
-    unsigned int size = s.tellp();
-    s.seekg(0, std::ios::beg);
-    char dummy[10]; // read json prefix part (array notation)
-    memset(dummy, 0, sizeof(dummy));
-    s.readsome(dummy, sizeof(dummy) - 1);
-
-    while (s.tellg() != -1 && s.tellg() < size - 3)
+    if (m_callback) 
     {
-      float f;
-      s >> f;
-      m_receiveBuffer->append(f);
-      char comma;
-      s >> comma;
+      auto data = flatBufferToData(m_buffer, false);
+      m_buffer.consume(m_buffer.size());
+      m_callback(data);
+    } 
+    else 
+    {
+      // TODO: text data does not fit in floating point ring buffer
     }
 
     m_ws.async_read(
         m_buffer,
         beast::bind_front_handler(
-            &ReceiverSession::on_read_messages,
+            &ReceiverSession::on_read,
             shared_from_this()));
   }
 
@@ -119,7 +133,7 @@ private:
     m_ws.async_read(
         m_buffer,
         beast::bind_front_handler(
-            &ReceiverSession::read_binary,
+            &ReceiverSession::on_read,
             shared_from_this()));
   }
 
@@ -143,10 +157,11 @@ private:
   tcp::resolver m_resolver;
   websocket::stream<tcp::socket> m_ws;
   beast::flat_buffer m_buffer;
-  std::string m_text;
   std::string m_host;
   std::string m_port;
   std::string m_path;
   std::shared_ptr<FloatRingBuffer> m_receiveBuffer;
+  std::function<void(Data)> m_callback;
   std::atomic_flag m_isConnected = ATOMIC_FLAG_INIT;
+  boost::asio::executor_work_guard<websocket::stream<tcp::socket>::executor_type> m_guard;
 };

@@ -109,14 +109,16 @@ export default function BoardMenu() {
         <NavigationMenuItem>
           <NavigationMenuTrigger
             id="board-menu-trigger"
-            className="px-2 hover:text-white text-base-plus capitalize tracking-wider"
+            className="px-2 hover:text-white data-[state=open]:text-white text-base-plus capitalize tracking-wider bg-transparent"
           >
             <div className="min-w-[30px] max-w-[130px] overflow-x-hidden text-ellipsis whitespace-nowrap text-base-plus tracking-wider">
               {board || "Board"}
             </div>
           </NavigationMenuTrigger>
           <NavigationMenuContent className="font-menu">
-            <ul className="grid gap-3 p-6 w-[200px] md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
+            <h3 className="px-3 my-[4px] text-sky-600">{board}</h3>
+            <hr />
+            <ul className="grid gap-1 w-[200px] md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr] m-1">
               <ListItem
                 title="New Board"
                 onClick={() =>
@@ -181,8 +183,8 @@ const ListItem = React.forwardRef<
           )}
           {...props}
         >
-          <div className="text-base font-medium leading-none">{title}</div>
-          <p className="line-clamp-2 text-sm leading-snug  hover:text-accent-foreground">
+          <div className="text-base leading-none underline">{title}</div>
+          <p className="line-clamp-2 text-[0.8rem] leading-snug  hover:text-accent-foreground">
             {children}
           </p>
         </div>

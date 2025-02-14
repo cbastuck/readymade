@@ -119,19 +119,27 @@ export default class InputOptions extends Component<Props, State> {
       : this.context.runtimeBackgroundColor;
     const textColor = expanded ? "text-white" : "text-[#333]";
     return (
-      <div className="h-full py-[10px]" style={{ minHeight: "100%" }}>
+      <div
+        className="h-full py-[10px] pr-8 mb-5"
+        style={{
+          position: "relative",
+          height: "350px",
+        }}
+      >
         <div
-          className="flex h-full"
+          className="flex h-full bg-white rounded-lg shadow-sm"
           style={{
-            border: `solid 1px ${this.context.borderColor}`,
+            border: `solid 1px #ccc`,
             borderLeft: "none",
             borderTopLeftRadius: 0,
             borderBottomLeftRadius: 0,
+            position: "absolute",
+            zIndex: 1,
           }}
         >
           {this.renderExpanded()}
           <button
-            className={`text-base min-h-[100%] ml-auto w-[33px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
+            className={`text-base min-h-[100%] ml-auto w-[22px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
             onClick={() => {
               this.setState({ expanded: !expanded }, () => {
                 if (expanded) {

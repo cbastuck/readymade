@@ -17,6 +17,7 @@ export type RuntimeClass = {
   name: string;
   url?: string;
   bundles?: Array<string>;
+  color?: string;
 };
 
 export type RuntimeDescriptor = RuntimeClass & {
@@ -284,6 +285,7 @@ export type RuntimeApi = {
     runtime: RuntimeClass,
     user: User | null
   ) => Promise<AddRuntimeResult | null>;
+
   restoreRuntime: (
     runtime: RuntimeDescriptor,
     services: Array<ServiceDescriptor>,
@@ -354,8 +356,10 @@ export type User = {
   idToken: string;
 };
 
+export type NotificationType = "success" | "info" | "error";
+
 export type Notification = {
-  type: "success" | "info" | "error";
+  type: NotificationType;
   message: string;
   action?: {
     label: string;
@@ -368,6 +372,15 @@ export type Notification = {
 export type RuntimeServiceMap = {
   [runtimeId: string]: Array<ServiceDescriptor>;
 };
+
+export type RuntimeConfiguration = {
+  runtime: RuntimeDescriptor;
+  services: Array<ServiceDescriptor>;
+};
+
+export function isRuntimeConfiguration(obj: any): obj is RuntimeConfiguration {
+  return obj.runtime && obj.services && Array.isArray(obj.services);
+}
 
 export type BoardDescriptor = {
   runtimes: Array<RuntimeDescriptor>;

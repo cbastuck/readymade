@@ -9,17 +9,15 @@
 #include <types/owns_me.h>
 #include <types/data.h>
 
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+#include "./websocket_protocol.h"
 
-class Websocket;
+class WebsocketServer;
 
-class SocketSession
+class WebsocketServerSession
 {
 public:
-  explicit SocketSession(tcp::socket&& socket, OwnsMe<Websocket> service);
-  ~SocketSession();
+  explicit WebsocketServerSession(boost::asio::ip::tcp::socket&& socket, OwnsMe<WebsocketServer> service);
+  ~WebsocketServerSession();
 
   bool isOpen() const;
   void send(const Data& data);
@@ -39,7 +37,11 @@ private:
   void fail(beast::error_code ec, char const* what);
 
   unsigned int m_sessionId;
-  std::unique_ptr<websocket::stream<beast::tcp_stream>> m_ws;
-  beast::flat_buffer buffer_;
-  OwnsMe<Websocket> m_owner;
+  std::optional<WebsocketProtocol> m_protocol;
+  std::unique_ptr<beast::websocket::stream<boost::beast::tcp_stream>> m_ws;
+  beast::flat_buffer m_readBuffer;
+  OwnsMe<WebsocketServer> m_owner;
+
+  volatile bool m_isSending = false;
+  boost::asio::executor_work_guard<beast::websocket::stream<boost::asio::ip::tcp::socket>::executor_type> m_guard;
 };

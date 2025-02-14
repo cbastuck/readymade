@@ -34,9 +34,24 @@ void Server::setupRoutes()
 
   CROW_ROUTE(m_crow, "/runtimes")
       .methods("POST"_method)([this](const crow::request &req) -> crow::response { return createRuntime(req); }); 
+
+  CROW_ROUTE(m_crow, "/runtimes/<string>/services")
+      .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return createService(req, runtimeId); });
+
+  CROW_ROUTE(m_crow, "/runtimes/<string>/services/<string>")
+      .methods("DELETE"_method)([this](const crow::request &req, std::string runtimeId, std::string instanceId) -> crow::response { return deleteService(runtimeId, instanceId); });
+
+  CROW_ROUTE(m_crow, "/runtimes/<string>/rearrange")
+      .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return rearrangeServices(req, runtimeId); });
+
+  CROW_ROUTE(m_crow, "/runtimes/<string>")
+      .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return processRuntime(req, runtimeId); });
   
   CROW_ROUTE(m_crow, "/runtimes/<string>/services/<string>")
       .methods("POST"_method)([this](const crow::request &req, std::string runtimeId, std::string instanceId) -> crow::response { return configureService(req, runtimeId, instanceId); }); 
+
+  CROW_ROUTE(m_crow, "/runtimes/<string>/services/<string>")
+      .methods("GET"_method)([this](const crow::request &req, std::string runtimeId, std::string instanceId) -> crow::response { return getServiceState(runtimeId, instanceId); }); 
 }
 
 void Server::start(unsigned int port)
@@ -114,6 +129,68 @@ crow::response Server::configureService(const crow::request &req, const std::str
   return jsonresponse{config};
 }
 
+crow::response Server::getServiceState(const std::string& runtimeId, const std::string& instanceId)
+{
+  auto rt = m_app->getRuntime(runtimeId);
+  if (!rt)
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+  auto state = m_app->getServiceState(runtimeId, instanceId);
+  if (state.is_null())
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+  return jsonresponse{state};
+}
+
+crow::response Server::createService(const crow::request &req, const std::string& runtimeId)
+{
+  auto rt = m_app->getRuntime(runtimeId);
+  if (!rt)
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+
+  if (req.body.empty())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto arr = json::array();
+  auto body = json::parse(req.body);
+  if (body.is_null())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+  
+  auto serviceConfig = validateService(body);
+  if (!serviceConfig)
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto res = m_app->appendService(runtimeId, *serviceConfig);
+  if (res.is_null())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  return jsonresponse{res};
+}
+
+crow::response Server::deleteService(const std::string& runtimeId, const std::string& instanceId)
+{
+  auto rt = m_app->getRuntime(runtimeId);
+  if (!rt)
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+
+  auto res = m_app->removeService(runtimeId, instanceId);
+  return jsonresponse{res};
+}
+
 crow::response Server::getRuntimeById(const std::string& id)
 {
   auto rt = m_app->getRuntime(id);
@@ -122,4 +199,63 @@ crow::response Server::getRuntimeById(const std::string& id)
     return crow::response{crow::status::NOT_FOUND};
   }
   return jsonresponse{jsonSerialise(*rt)};
+}
+
+crow::response Server::rearrangeServices(const crow::request &req, const std::string& runtimeId)
+{
+  auto rt = m_app->getRuntime(runtimeId);
+  if (!rt)
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+  
+  auto body = json::parse(req.body);
+  if (!body.is_array())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto serviceOrdering = validateServiceOrdering(body);
+  if (!serviceOrdering)
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto res = m_app->rearrangeServices(runtimeId, *serviceOrdering);
+  if (res.is_null())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  return jsonresponse{res};
+}
+
+crow::response Server::processRuntime(const crow::request &req, const std::string& runtimeId)
+{
+  auto rt = m_app->getRuntime(runtimeId);
+  if (!rt)
+  {
+    return crow::response{crow::status::NOT_FOUND};
+  }
+
+  if (req.body.empty())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto contentType = req.get_header_value("Content-Type");
+  if (contentType != "application/json")
+  {
+    std::cout << "Content type not supported yet: " << contentType << std::endl;
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  auto body = json::parse(req.body);
+  if (!body.is_object())
+  {
+    return crow::response(crow::status::BAD_REQUEST);
+  }
+
+  m_app->processRuntime(runtimeId, Data(body));
+  return crow::response(crow::status::OK);
 }

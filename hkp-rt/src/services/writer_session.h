@@ -26,11 +26,8 @@ public:
   {
   }
 
-  void start(std::string text, FloatRingBuffer *target)
-  {
-    m_text = text;
-    m_receiveBuffer = target;
-
+  void start(std::string id)
+  {    
     auto const results = m_resolver.resolve(m_host, m_port);
 
     // Make the connection on the IP address we get from a lookup
@@ -49,7 +46,30 @@ public:
     m_ws.handshake(hostAndPort, m_path);
     m_isConnected.test_and_set();
 
-    m_ws.write(net::buffer(std::string(text)));
+    std::string protocol = json{{"id", id}, {"type", "writer"}}.dump();
+    m_ws.write(net::buffer(protocol));
+
+     m_ws.async_read(
+        m_incomingBuffer,
+        beast::bind_front_handler(
+             &WriterSession::on_read_incoming,
+            shared_from_this()));
+  }
+
+  void on_read_incoming(beast::error_code ec, std::size_t bytes_transferred)
+  {
+    if (ec)
+    {
+      return fail(ec, "read_dummy");
+    }
+
+    std::cout << "WriterSession::on_read_incoming(): " << beast::buffers_to_string(m_incomingBuffer.data()) << std::endl;
+    m_incomingBuffer.consume(bytes_transferred);
+    m_ws.async_read(
+        m_incomingBuffer,
+        beast::bind_front_handler(
+            &WriterSession::on_read_incoming,
+            shared_from_this()));
   }
 
   void stop()
@@ -61,40 +81,67 @@ public:
     }
   }
 
-  bool isConnected()
+  bool isConnected() const
   {
     return m_isConnected.test();
   }
 
-  void signalSend(FloatRingBuffer &buffer)
+  void signalSend(const Data &data)
   {
+    if (!isConnected())
+    {
+      std::cout << "WriterSession::signalSend: Send binary skipped because not connected" << std::endl;
+      return;
+    }
     if (m_isSending.test())
     {
-      std::cout << "\rSend binary skipped because already sending  ..." << std::endl;
+      std::cout << "\rWriterSession::signalSend: Send binary skipped because already sending  ..." << std::endl;
       return;
     }
-    boost::asio::post(m_ws.get_executor(),
-                      [this, &buffer]()
-                      { sendBuffer(buffer); });
-  }
 
-  void sendBuffer(FloatRingBuffer &buffer)
-  {
-    if (!m_isConnected.test())
+
+    if (auto buffer = getRingBufferFromData(data)) 
     {
-      std::cout << "Send binary skipped because not connected" << std::endl;
-      return;
+      if (buffer->availableCount() > 0)
+      {
+        boost::asio::post(m_ws.get_executor(),
+                      [this, &buffer]()
+                      { sendRingBuffer(*buffer); });
+      }
+      else
+      {
+        std::cout << "WriterSession::signalSend: Not enough data in RingBuffer available" << std::endl;
+      }
     }
-
-    auto numSamples = buffer.availableCount();
-    m_ws.binary(true);
-    buffer.resyncIfNeeded();
-    auto buf = buffer.serialise(); 
-
-    m_isSending.test_and_set();
-    m_ws.write(
-        boost::asio::buffer(buf.data.get(), buf.size));
-    m_isSending.clear();
+    else if (auto binary = getBinaryFromData(data))
+    {
+      m_ws.binary(true);
+      m_isSending.test_and_set();
+      m_ws.write(net::buffer(&(*binary)[0], binary->size()));
+      m_isSending.clear();
+    }
+    else if (isUndefined(data) || isNull(data))
+    {
+      std::cout << "WriterSession::signalSend: Undefined or null data currently not available" << std::endl;
+    }
+    else if (auto str = getStringFromData(data))
+    {
+      m_ws.text(true);
+      m_isSending.test_and_set();
+      m_ws.write(net::buffer(*str));
+      m_isSending.clear();
+    }
+    else if (auto json = getJSONFromData(data))
+    {
+      m_ws.text(true);
+      m_isSending.test_and_set();
+      m_ws.write(net::buffer(json->dump()));
+      m_isSending.clear();
+    }
+    else 
+    {
+      std::cout << "WriterSession::signalSend: Data type not supported available: " << data.which() << std::endl;
+    }
   }
 
   void close()
@@ -106,7 +153,21 @@ public:
                          shared_from_this()));
   }
 
+
 private:
+  void sendRingBuffer(FloatRingBuffer &buffer)
+  {
+    auto numSamples = buffer.availableCount();
+    m_ws.binary(true);
+    buffer.resyncIfNeeded();
+    auto buf = buffer.serialise(); 
+
+    m_isSending.test_and_set();
+    m_ws.write(
+        boost::asio::buffer(buf.data.get(), buf.size));
+    m_isSending.clear();
+  }
+
   void on_close(beast::error_code ec)
   {
     if (ec)
@@ -124,12 +185,13 @@ private:
 private:
   tcp::resolver m_resolver;
   websocket::stream<tcp::socket> m_ws;
-  std::string m_text;
   std::string m_host;
   std::string m_port;
   std::string m_path;
-  FloatRingBuffer *m_receiveBuffer;
+  
   std::atomic_flag m_isSending = ATOMIC_FLAG_INIT;
   std::atomic_flag m_isConnected = ATOMIC_FLAG_INIT;
   boost::asio::executor_work_guard<websocket::stream<tcp::socket>::executor_type> m_guard;
+
+  beast::flat_buffer m_incomingBuffer;
 };

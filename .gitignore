@@ -3,4 +3,4 @@ node_modules
 build-lib
 .env
 cypress/downloads
-build
+build*

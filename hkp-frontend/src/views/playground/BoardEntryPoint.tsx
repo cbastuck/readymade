@@ -18,6 +18,7 @@ import LoadIndicator from "./LoadIndicator";
 import { Link } from "react-router-dom";
 
 type Props = {
+  className?: string;
   isLoading: boolean;
   showLoginRequired: boolean;
   boardContext: BoardContextState;
@@ -42,6 +43,7 @@ type Props = {
 };
 
 export default function BoardEntryPoint({
+  className,
   isLoading,
   showLoginRequired,
   boardContext,
@@ -59,7 +61,7 @@ export default function BoardEntryPoint({
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
   const saveReminder = (
-    <div className="" style={{ margin: "10px 0px", fontSize: 14 }}>
+    <div style={{ margin: "10px 0px", fontSize: 14 }}>
       Remember to
       <span
         style={{ cursor: "help", color: "#4284C4" }}
@@ -84,7 +86,7 @@ export default function BoardEntryPoint({
     );
   }
   return (
-    <div style={t.w100}>
+    <div style={t.w100} className={className}>
       <div
         style={{
           width: "99%",

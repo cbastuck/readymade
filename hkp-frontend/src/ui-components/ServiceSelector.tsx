@@ -41,7 +41,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between text-base tracking-widest"
+          className="w-[200px] justify-between text-base tracking-widest border-none bg-transparent"
           style={{
             backgroundColor: theme.popoverBackgroundColor,
             borderColor: theme.borderColor,

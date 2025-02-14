@@ -11,9 +11,12 @@
 class CoreInput : public Service
 {
 public:
-  CoreInput(std::string instanceId) : Service(instanceId),
-                                      m_buffer(std::make_shared<FloatRingBuffer>(instanceId)),
-                                      m_state({{"running", false}}) 
+  static std::string serviceId() { return "core-input"; }
+
+  CoreInput(const std::string& instanceId) 
+    : Service(instanceId, serviceId())
+    , m_buffer(std::make_shared<FloatRingBuffer>(instanceId))
+    , m_state({{"running", false}}) 
   {
   }
 
@@ -25,12 +28,12 @@ public:
   json configure(Data data) override
   {
     auto buf = getJSONFromData(data);
-    if (buf.is_null())
+    if (!buf)
     {
       return false;
     }
 
-    if (updateIfNeeded(m_state["running"], buf["running"]))
+    if (updateIfNeeded(m_state["running"], (*buf)["running"]))
     {
       m_state["running"] == true ? start() : stop();      
     }
@@ -40,33 +43,81 @@ public:
 
   std::string getServiceId() const override
   {
-    return "core-input";
+    return serviceId();
   }
 
   json getState() const override
   {
-    return m_state;
+    auto state = m_state;
+    return Service::mergeBypassState(state);
+  }
+
+  Data process(Data data = Undefined()) override
+  {
+    return data;
   }
 
 private:
   void start()
   {
-    CoreAudioGetDefaultInputDevice(&m_inputDeviceID);
+    OSStatus status;
+    if (m_inputIOProcID != NULL)
+    {
+      std::cerr << "CoreInput::start: already started" << std::endl;
+      stop();
+    }
+    
+    status = CoreAudioGetDefaultInputDevice(&m_inputDeviceID);
+    if (status != 0)
+    {
+      std::cerr << "Failed to get default input device" << std::endl;
+      return;
+    }
 
-    UInt32 bufferSize = 0;
-    CoreAudioGetBufferSize(m_inputDeviceID, &bufferSize);
+    status = CoreAudioSetBufferSize(m_inputDeviceID, BUFFER_SIZE);
+    if (status != 0)
+    {
+      std::cerr << "Failed to set input device buffer size" << std::endl;
+      return;
+    }
 
-    bufferSize = BUFFER_SIZE;
-    CoreAudioSetBufferSize(m_inputDeviceID, bufferSize);
+    status = AudioDeviceCreateIOProcID(m_inputDeviceID, onAudioInput, this, &m_inputIOProcID);
+    if (status != 0)
+    {
+      std::cerr << "Failed to create input device IO proc" << std::endl;
+      return;
+    }
 
-    AudioDeviceCreateIOProcID(m_inputDeviceID, onAudioInput, this, &m_inputIOProcID);
-
-    AudioDeviceStart(m_inputDeviceID, m_inputIOProcID);
+    status = AudioDeviceStart(m_inputDeviceID, m_inputIOProcID);
+    if (status != 0)
+    {
+      std::cerr << "Failed to start input device" << std::endl;
+      return;
+    }
   }
 
   void stop()
   {
-    AudioDeviceStop(m_inputDeviceID, m_inputIOProcID);
+    if (m_inputIOProcID == NULL)
+    {
+      std::cerr << "CoreInput::stop: already stopped" << std::endl;
+      return;
+    }
+
+    OSStatus status = AudioDeviceStop(m_inputDeviceID, m_inputIOProcID);
+    if (status != 0)
+    {
+      std::cerr << "Failed to stop input device" << std::endl;
+      return;
+    }
+
+    status = AudioDeviceDestroyIOProcID(m_inputDeviceID, m_inputIOProcID);
+    if (status != 0)
+    {
+      std::cerr << "Failed to destroy input device IO proc" << std::endl;
+      return;
+    }
+    m_inputIOProcID = NULL;
   }
 
   static OSStatus onAudioInput(AudioDeviceID device,

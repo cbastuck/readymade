@@ -1,19 +1,27 @@
 import { useContext, useState } from "react";
 
-import { RuntimeDescriptor, ServiceClass, ServiceRegistry } from "@/types";
+import {
+  isRuntimeConfiguration,
+  RuntimeConfiguration,
+  RuntimeDescriptor,
+  ServiceClass,
+  ServiceRegistry,
+} from "@/types";
 import Editable from "@/ui-components/Editable";
 import { BoardCtx } from "@/BoardContext";
 
 import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
 import ServiceSelector from "../ServiceSelector";
-import EditorDialog from "../EditorDialog";
+
+import RuntimeConfigurationDialog from "./RuntimeConfigurationDialog";
 
 type Props = {
   runtime: RuntimeDescriptor;
   registry: ServiceRegistry;
   isExpanded?: boolean;
   wrapServices?: boolean;
+  backgroundColor?: string;
   onAddService: (svc: ServiceClass) => void;
   onExpand: (isExpanded: boolean) => void;
   onWrapServices: (isWrapped: boolean) => void;
@@ -24,6 +32,7 @@ export default function RuntimeHeader({
   registry,
   isExpanded,
   wrapServices,
+  backgroundColor,
   onAddService,
   onExpand,
   onWrapServices,
@@ -67,19 +76,33 @@ export default function RuntimeHeader({
     setIsRuntimeConfigOpen(true);
   };
 
-  const runtimeConfig = JSON.stringify(
-    { runtime, services: boardContext?.services[runtime.id] },
-    null,
-    2
-  );
+  const onApplyRuntimeConfig = (
+    newConfig: string | object,
+    closeDialog = true
+  ) => {
+    const config =
+      typeof newConfig === "string" ? JSON.parse(newConfig) : newConfig;
+    if (isRuntimeConfiguration(config)) {
+      boardContext?.updateRuntime(runtime.id, config);
+      if (closeDialog) {
+        setIsRuntimeConfigOpen(false);
+      }
+    } else {
+      throw new Error("Invalid runtime configuration");
+    }
+  };
 
-  const onApplyRuntimeConfig = (newConfig: string | object) => {
-    console.log("Apply runtime config not implemented", newConfig);
+  const runtimeConfig: RuntimeConfiguration = {
+    runtime,
+    services: boardContext?.services[runtime.id] || [],
   };
 
   return (
-    <div className="flex items-center gap-3 px-2 cursor-move">
-      <div className="flex items-end gap-3 px-2 min-h-10">
+    <div
+      className="flex items-center gap-3 pl-2 cursor-move w-full overflow-clip"
+      style={{ backgroundColor }}
+    >
+      <div className="flex items-end gap-3 px-2 mr-auto">
         <RuntimeSettings
           runtime={runtime}
           isExpanded={isExpanded}
@@ -91,24 +114,21 @@ export default function RuntimeHeader({
           onDelete={onDelete}
           onConfiguration={onConfiguration}
         />
-        <div className="flex items-end font-sans">
-          <Editable
-            className="text-base-plus"
-            id={`runtime-name-${runtimeId}`}
-            value={name}
-            title={runtimeId}
-            onChange={onChangeName}
-          />
-        </div>
-      </div>
 
-      <div className="ml-auto my-2">
-        <ServiceSelector
-          id={runtimeId}
-          registry={registry}
-          onAddService={onAddService}
+        <Editable
+          className="text-base-plus"
+          id={`runtime-name-${runtimeId}`}
+          value={name}
+          title={runtimeId}
+          onChange={onChangeName}
         />
       </div>
+
+      <ServiceSelector
+        id={runtimeId}
+        registry={registry}
+        onAddService={onAddService}
+      />
 
       <RunParamsDialog
         open={showRunWithParams}
@@ -116,12 +136,11 @@ export default function RuntimeHeader({
         onRun={runWithParams}
       />
 
-      <EditorDialog
-        title="Runtime Configuration"
-        value={runtimeConfig}
+      <RuntimeConfigurationDialog
         isOpen={isRuntimeConfigOpen}
         onClose={() => setIsRuntimeConfigOpen(false)}
-        actions={[{ label: "Apply Changes", onAction: onApplyRuntimeConfig }]}
+        config={runtimeConfig}
+        onApply={onApplyRuntimeConfig}
       />
     </div>
   );

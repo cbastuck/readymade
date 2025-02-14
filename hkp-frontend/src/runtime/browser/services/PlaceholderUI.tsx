@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import InputField from "../../../components/shared/InputField";
 import { isFunction, filterPrivateMembers } from "./helpers";
@@ -9,16 +9,14 @@ type State = {
   properties: { [key: string]: any };
 };
 
-export default class PlaceholderUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    properties: {},
-  };
+export default function PlaceholderUI(props: ServiceUIProps) {
+  const [state, setState] = useState<State>({ properties: {} });
 
-  extractProperties = (config: any) => {
+  const extractProperties = (config: any) => {
     if (!config) {
       return {};
     }
-    const additionalFiters = ["uuid", "board"];
+    const additionalFiters = ["uuid", "board", "bypass"];
     return Object.keys(filterPrivateMembers(config))
       .filter((x) => additionalFiters.indexOf(x) === -1)
       .filter((x) => !isFunction(config[x]))
@@ -32,27 +30,32 @@ export default class PlaceholderUI extends Component<ServiceUIProps, State> {
       }, {});
   };
 
-  onInit = (initialState: any) => {
-    this.setState({ properties: this.extractProperties(initialState) });
+  const onInit = (initialState: any) => {
+    const initialProps = extractProperties(initialState);
+    setState({ properties: initialProps });
   };
 
-  onNotification = (notification: any) => {
-    const { properties } = this.state;
-    this.setState({
-      properties: {
-        ...properties,
-        ...this.extractProperties(notification),
-      },
-    });
+  const onNotification = (notification: any) => {
+    if (notification?.properties !== undefined) {
+      setState({
+        properties: {
+          ...extractProperties(notification),
+        },
+      });
+    }
   };
 
-  renderMain = () => {
-    const { properties } = this.state;
-    const { service } = this.props;
-    return (
+  const { service } = props;
+  return (
+    <ServiceUI
+      {...props}
+      className="pb-2"
+      onInit={onInit}
+      onNotification={onNotification}
+    >
       <div key={service.uuid} id={service.uuid} style={{ minWidth: 200 }}>
-        {Object.keys(properties).map((prop) => {
-          const val = properties[prop];
+        {Object.keys(state.properties).map((prop) => {
+          const val = state.properties[prop];
           return (
             <InputField
               key={`PlaceholderUI-${service.uuid}.${prop}`}
@@ -65,19 +68,6 @@ export default class PlaceholderUI extends Component<ServiceUIProps, State> {
           );
         })}
       </div>
-    );
-  };
-
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        className="pb-2"
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-      >
-        {this.renderMain()}
-      </ServiceUI>
-    );
-  }
+    </ServiceUI>
+  );
 }

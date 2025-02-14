@@ -9,3 +9,7 @@
 # Compile sources
 
 - cmake --build . --config Release --target ALL_BUILD
+
+# Compile for Intel architecture on Apple Silicon
+
+- cmake -DBUILD_MAC_INTEL=ON ..

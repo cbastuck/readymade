@@ -45,8 +45,34 @@ struct WebsocketConfig
     return *this;
   }
 
+  bool update(json& buf)
+  {
+    if (buf.is_null())
+    {
+      return false;
+    }
+    if (buf.contains("host"))
+    {
+      host = buf["host"];
+    }
+    if (buf.contains("port"))
+    {
+      port = buf["port"];
+    }
+    if (buf.contains("path"))
+    {
+      path = buf["path"];
+    }
+
+    return isValid();
+  }
+
   unsigned short portAsNumber() const
   {
+    if (port.empty())
+    {
+      return 0;
+    }
     return std::stoi(port);
   }
 
@@ -76,3 +102,10 @@ struct WebsocketConfig
     return buf;
   }
 };
+
+
+ inline std::ostream& operator<<(std::ostream& os, const WebsocketConfig& c)
+ {
+  os << "Host: " << c.host << " Path: " << c.path << " Port: " << c.port << std::endl;
+  return os;
+ } 

@@ -20,19 +20,21 @@ import ManageRuntimesDialog from "./ManageRuntimesDialog";
 
 type Props = {
   availableRuntimeEngines: Array<RuntimeClass>;
-  onAddAvailableRuntime: (desc: RuntimeClass) => void;
-  onRemoveAvailableRuntime: (desc: RuntimeClass) => void;
+  onAddAvailableRuntimeEngine: (desc: RuntimeClass) => void;
+  onRemoveAvailableRuntimeEngine: (desc: RuntimeClass) => void;
   onAddRuntime: (rtClass: RuntimeClass) => void;
+  onUpdateRuntimeEngine: (updated: RuntimeClass) => void;
 };
 
 export default function RuntimeMenu({
   availableRuntimeEngines,
-  onAddAvailableRuntime,
-  onRemoveAvailableRuntime,
+  onAddAvailableRuntimeEngine,
+  onRemoveAvailableRuntimeEngine,
+  onUpdateRuntimeEngine,
   onAddRuntime,
 }: Props) {
   const onAddNewRemoteRuntime = (rt: RuntimeClass) => {
-    onAddAvailableRuntime(rt);
+    onAddAvailableRuntimeEngine(rt);
   };
 
   const [open, setOpen] = useState(false);
@@ -63,7 +65,7 @@ export default function RuntimeMenu({
             variant="outline"
             role="combobox"
             aria-expanded={open}
-            className="w-[300px] justify-between my-1 text-base tracking-widest"
+            className="w-[300px] justify-between text-base tracking-widest border-none bg-transparent"
             onClick={() => open && setSearchTerm("")}
           >
             Add Runtime
@@ -135,8 +137,9 @@ export default function RuntimeMenu({
         remoteRuntimes={remoteRuntimes}
         isOpen={showManageRuntimesDialog}
         onClose={() => setShowManageRuntimesDialog(false)}
-        onRemoveRuntime={onRemoveAvailableRuntime}
-        onAddAvailableRuntime={onAddNewRemoteRuntime}
+        onRemoveRuntimeEngine={onRemoveAvailableRuntimeEngine}
+        onAddRuntimeEngine={onAddNewRemoteRuntime}
+        onUpdateRuntimeEngine={onUpdateRuntimeEngine}
       />
     </>
   );

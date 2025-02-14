@@ -1,5 +1,6 @@
 import { ChangeEvent, KeyboardEvent, useState } from "react";
 import { X } from "lucide-react";
+import Tooltip, { TooltipContentType } from "./Tooltip";
 
 import { Input } from "@/ui-components/primitives/input";
 import { Button } from "@/ui-components/primitives/button";
@@ -9,6 +10,7 @@ type Props = {
   value: string;
   title?: string;
   className?: string;
+  tooltip?: TooltipContentType;
   onChange: (newValue: string) => void;
 };
 
@@ -17,6 +19,7 @@ export default function Editable({
   value,
   title,
   className,
+  tooltip,
   onChange: onChangeProp,
 }: Props) {
   const [editableBuffer, setEditableBuffer] = useState("");
@@ -49,16 +52,25 @@ export default function Editable({
           }`}
           onClick={onEdit}
         >
-          {value}
+          {tooltip ? (
+            <Tooltip value={tooltip}>
+              <div>{value}</div>
+            </Tooltip>
+          ) : (
+            value
+          )}
         </Button>
       ) : (
         <div className="flex items-end">
           <Input
             id={id}
-            className={`h-min w-min p-0 border-none rounded-none font-sans text-base tracking-widest ${
+            className={`h-min w-min p-0 border-none rounded-none font-sans text-base tracking-widest bg-transparent ${
               className || ""
             }`}
-            style={{ borderBottom: "solid 1px", paddingBottom: "1px" }}
+            style={{
+              borderBottom: "solid 1px",
+              paddingBottom: "1px",
+            }}
             ref={(elem) => elem && elem.focus()}
             value={editableBuffer}
             onChange={onChange}

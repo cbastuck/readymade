@@ -11,8 +11,11 @@
 class WebsocketReader : public Service
 {
 public:
-  WebsocketReader(std::string instanceId) : Service(instanceId),
-                                            m_buffer(std::make_shared<FloatRingBuffer>(instanceId))
+  static std::string serviceId() { return "websocket-reader"; }
+
+  WebsocketReader(const std::string& instanceId) 
+    : Service(instanceId, serviceId())
+    , m_buffer(std::make_shared<FloatRingBuffer>(instanceId))
   {
   }
 
@@ -25,7 +28,8 @@ public:
   {
     if (m_session)
     {
-      throw std::runtime_error("WebsocketReader: already started");
+      stop();
+      m_ioc.restart();
     }
 
     if (!m_config.isValid())
@@ -43,22 +47,36 @@ public:
       m_session->close();
       m_ioc.stop();
       m_t.join();
+      std::cout << "WebsocketReader::stop() thread joined" << std::endl;
     }
   }
 
   json configure(Data data) override
   {
     auto buf = getJSONFromData(data);
-    if (!buf.is_null())
+    if (buf)
     {
-      auto cfg = WebsocketConfig::fromJSON(buf);
-      if (cfg)
-      {
-        m_config = *cfg;
-        start();
-      }
+      m_config.update(*buf);
     }
-    return getState();
+    return Service::configure(data);
+  }
+
+
+  bool onBypassChanged(bool bypass) override
+  {
+    if (bypass)
+    {
+      stop();
+    }
+    else // request to start websocket
+    {
+      if (!m_config.isValid())
+      {
+        return true; // still bypassed
+      }
+      start();
+    }
+    return bypass;
   }
 
   Data process(Data data) override
@@ -68,12 +86,13 @@ public:
 
   std::string getServiceId() const override
   {
-    return "websocket-reader";
+    return serviceId();
   }
 
   json getState() const override
   {
-    return m_config.serialise();
+    auto state = m_config.serialise();
+    return Service::mergeBypassState(state);
   }
 
 private:
@@ -81,12 +100,26 @@ private:
   {
     try
     {
-      m_session->start("reader", m_buffer);
+      auto runWithCallback = true; // otherwise collect incoming data in shared ring buffer
+      if (runWithCallback)
+      {
+        m_session->start("reader", [this](Data data){ next(data); });
+      }
+      else 
+      {
+        m_session->start("reader", m_buffer);
+      }
+      
       m_ioc.run();
+      std::cout << "Finishing Websocket Reader" << std::endl;
     } 
-    catch (...)
+    catch (std::runtime_error err)
     {
-      std::cerr << "WebsocketReader: " << std::endl;
+      std::cerr << "WebsocketReader runtime error: " << err.what() << " config: " << m_config << std::endl;
+    }
+    catch (...) 
+    {
+      std::cerr << "WebsocketReader unknown error: " << m_config << std::endl;
     }
   }
 

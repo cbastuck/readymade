@@ -80,21 +80,65 @@ async function restoreRuntime(
 }
 
 export async function processRuntime(
-  _scope_: RuntimeScope,
-  _params: any,
+  scope: RuntimeScope,
+  params: any,
   _svc: InstanceId | null,
   _context?: ProcessContext | null
-): Promise<void> {}
+): Promise<void> {
+  const runtime = scope.descriptor;
 
-export async function addService(_scope: RuntimeScope, _service: ServiceClass) {
-  return null;
+  // TODO what if params is not an object?
+
+  const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) {
+    throw new Error(
+      `Failed to process ${runtime.id} runtime: ${res.statusText}`
+    );
+  }
+}
+
+export async function addService(scope: RuntimeScope, service: ServiceClass) {
+  const runtime = scope.descriptor;
+  const payload = {
+    ...service,
+    uuid: uuidv4(),
+  };
+  const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/services`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to configure service" + res.statusText);
+  }
+
+  const config = await res.json();
+  const createdService = { ...service, state: config, uuid: payload.uuid };
+  return createdService;
 }
 
 export async function removeService(
-  _scope: RuntimeScope,
-  _service: InstanceId
+  scope: RuntimeScope,
+  service: InstanceId
 ): Promise<Array<ServiceDescriptor> | null> {
-  return null;
+  const runtime = scope.descriptor;
+  const res = await fetch(
+    `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
+    {
+      method: "DELETE",
+    }
+  );
+  if (!res.ok) {
+    throw new Error("Failed to remove service from runtime" + res.statusText);
+  }
+
+  const data = await res.json();
+  return data.services;
 }
 
 export async function configureService(
@@ -121,10 +165,19 @@ export async function configureService(
 }
 
 export async function getServiceConfig(
-  _scope: RuntimeScope,
-  _service: InstanceId
+  scope: RuntimeScope,
+  service: InstanceId
 ): Promise<any> {
-  return {};
+  const runtime = scope.descriptor;
+  const res = await fetch(
+    `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`
+  );
+  if (!res.ok) {
+    throw new Error("Failed to get service configure" + res.statusText);
+  }
+
+  const state = await res.json();
+  return state;
 }
 
 export async function processService(
@@ -137,10 +190,20 @@ export async function processService(
 }
 
 export async function rearrangeServices(
-  _scope: RuntimeScope,
+  scope: RuntimeScope,
   newOrder: Array<ServiceDescriptor>
 ): Promise<Array<ServiceDescriptor>> {
-  return newOrder;
+  const runtime = scope.descriptor;
+  const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/rearrange`, {
+    method: "POST",
+    body: JSON.stringify(newOrder.map((s) => s.uuid)),
+  });
+  if (!res.ok) {
+    throw new Error("Failed to rearrange services" + res.statusText);
+  }
+
+  const state = await res.json();
+  return state.services;
 }
 
 async function createRuntimeRequest(

@@ -7,15 +7,25 @@ import Breadcrumbs, { BreadcrumbItem } from "@/ui-components/Breadcrumbs";
 
 type Props = {
   children: ReactNode[] | ReactNode;
+  className?: string;
   width?: string;
   title?: string;
   slug?: string;
   isRoot?: boolean;
   parent?: string;
+  compactToolbar?: boolean;
 };
 export default class Template extends Component<Props> {
   render() {
-    const { children, title, isRoot, parent, slug, width = "70%" } = this.props;
+    const {
+      children,
+      title,
+      isRoot,
+      parent,
+      slug,
+      compactToolbar,
+      width = "70%",
+    } = this.props;
     const renderBreadcrumbs = (!!title || slug) && (!isRoot || !!parent);
     return (
       <BoardProvider user={null} availableRuntimeEngines={[]} runtimeApis={{}}>
@@ -25,7 +35,7 @@ export default class Template extends Component<Props> {
             minHeight: "100%",
           }}
         >
-          <Toolbar />
+          <Toolbar isCompact={compactToolbar} />
           <div
             style={{
               width,

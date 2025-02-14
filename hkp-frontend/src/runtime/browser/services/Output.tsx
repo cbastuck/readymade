@@ -36,7 +36,7 @@ class Output extends ServiceBase<State> {
   }
 
   configure(config: any) {
-    const { url, flow, headers, mode } = config;
+    const { url, flow, headers, mode, bypass } = config;
 
     if (url !== undefined) {
       this.state.url = replacePlaceholders(url);
@@ -57,6 +57,11 @@ class Output extends ServiceBase<State> {
       this.state.headers = headers;
       this.app.notify(this, { headers });
     }
+
+    if (bypass !== undefined) {
+      this.bypass = bypass;
+      this.app.notify(this, { bypass });
+    }
   }
 
   destroy() {
@@ -69,13 +74,28 @@ class Output extends ServiceBase<State> {
   connectWebsocket = async (url: string) => {
     const ws = new WebsocketChannel(
       `output-service-${this.uuid}`,
-      (params: any) => {
-        console.log("Output.onAction", params);
-      },
+      this.onReceive,
       isSecureConnection()
     );
+
+    ws.onError = (err) => {
+      console.log("Output websocket on error triggered", err);
+      this.destroy();
+      this.bypass = true;
+      this.app.notify(this, { bypass: this.bypass });
+    };
+
+    ws.onClose = () => {
+      console.log("Output websocket connection closed");
+      this.destroy();
+    };
+
     await ws.open({ absolute: url });
     return ws;
+  };
+
+  onReceive = (data: any) => {
+    console.log("Output.onReceive", data);
   };
 
   async process(params: any) {

@@ -133,10 +133,16 @@ export async function getServiceConfig(
 ): Promise<any> {
   const scope = scope_ as BrowserRuntimeScope;
   const [svc] = scope.findServiceInstance(service.uuid);
-  if (svc && svc.getConfiguration) {
-    return await svc.getConfiguration();
+  if (svc) {
+    if (svc.getConfiguration) {
+      return await svc.getConfiguration();
+    } else if (svc.state) {
+      return svc.state;
+    } else {
+      return filterPrivateMembers(svc);
+    }
   } else {
-    return svc ? filterPrivateMembers(svc) : {};
+    return {};
   }
 }
 
@@ -239,7 +245,7 @@ function createService(
       svc.bypass = bypass;
       scope.app.notify(svc, { bypass });
     }
-    return configure && configure(config || {});
+    return configure && configure(config.state ? config.state : config || {});
   };
 
   return [svc, descriptor];

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import { cn } from "@/ui-components";
@@ -10,7 +10,10 @@ export interface InputProps
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, autoCompleteValues, ...props }, ref) => {
-    const autoCompleteId = autoCompleteValues ? uuidv4() : undefined;
+    const autoCompleteId = useMemo(
+      () => (autoCompleteValues ? uuidv4() : undefined),
+      [autoCompleteValues]
+    );
     return (
       <>
         <input

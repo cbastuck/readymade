@@ -79,6 +79,7 @@ export default class InputField extends Component<Props, State> {
           disabled={disabled}
           className={`my-0 ${className} font-menu`}
           fullWidth
+          minHeight={false}
           isExpandable={isExpandable}
         />
         {unit && (

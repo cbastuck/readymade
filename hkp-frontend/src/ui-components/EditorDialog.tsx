@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { ReactNode, useRef } from "react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ type Props = {
   additionalHeaderButtons?: Array<any>;
   actions?: Array<Action>;
   autofocus?: boolean;
+  children?: ReactNode;
   onClose: () => void;
 };
 
@@ -26,6 +27,7 @@ export default function EditorDialog({
   additionalHeaderButtons,
   actions,
   autofocus,
+  children,
   onClose,
 }: Props) {
   const editor = useRef<any>(null);
@@ -59,12 +61,13 @@ export default function EditorDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onChangeDialogOpen}>
       <DialogContent
-        className="sm:max-w-[80%] h-[80%] flex flex-col"
+        className="sm:max-w-[80%] h-[80%] flex flex-col overflow-scroll"
         onPointerDownOutside={avoidDefaultDomBehavior}
         onInteractOutside={avoidDefaultDomBehavior}
         additionalHeaderButtons={additionalHeaderButtons}
       >
         <h2>{title}</h2>
+        {children && <div>{children}</div>}
         <Editor ref={editor} value={v} language="json" autofocus={autofocus} />
         <DialogFooter className="flex">
           {actions?.map((action) => (

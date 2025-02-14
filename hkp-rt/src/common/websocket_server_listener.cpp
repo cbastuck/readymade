@@ -1,15 +1,19 @@
-#include "./socket_listener.h"
+#include "./websocket_server_listener.h"
 
-#include "./websocket.h"
-#include "./socket_session.h"
+#include "./websocket_server.h"
+#include "./websocket_server_session.h"
 
-SocketListener::SocketListener(Websocket& owner)
+namespace net = boost::asio;            // from <boost/asio.hpp>
+namespace beast = boost::beast;         // from <boost/beast.hpp>
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+
+WebsocketServerListener::WebsocketServerListener(WebsocketServer& owner)
         : m_ioc{1}
         , m_acceptor(m_ioc)
         , m_owner(&owner)
 {
   const auto& config = m_owner->getConfig();
-  unsigned short port = port = config.portAsNumber();
+  unsigned short port = config.portAsNumber();
   auto const address = net::ip::make_address(config.host);
   tcp::endpoint endpoint{address, port};
 
@@ -48,20 +52,20 @@ SocketListener::SocketListener(Websocket& owner)
   m_t = std::thread([this] { run(); });
 }
 
-SocketListener::~SocketListener()
+WebsocketServerListener::~WebsocketServerListener()
 {
   m_acceptor.close();
   m_ioc.stop();
   m_t.join();
 }
 
-unsigned short SocketListener::getBoundPort() const
+unsigned short WebsocketServerListener::getBoundPort() const
 {
   return m_acceptor.local_endpoint().port();
 }
 
 // Start accepting incoming connections
-void SocketListener::run()
+void WebsocketServerListener::run()
 {
   auto port = getBoundPort();
   std::cout << "SocketListener::run() start: "<< port << std::endl;
@@ -70,17 +74,17 @@ void SocketListener::run()
   std::cout << "SocketListener::run() finished: "<< port << std::endl;
 }
 
-void SocketListener::do_accept()
+void WebsocketServerListener::do_accept()
 {
   // The new connection gets its own strand
   m_acceptor.async_accept(
       net::make_strand(m_ioc),
       beast::bind_front_handler(
-          &SocketListener::on_accept,
+          &WebsocketServerListener::on_accept,
           this));
 }
 
-void SocketListener::on_accept(beast::error_code ec, tcp::socket socket)
+void WebsocketServerListener::on_accept(beast::error_code ec, tcp::socket socket)
 {
   if (ec == net::error::operation_aborted)
   {
@@ -90,7 +94,7 @@ void SocketListener::on_accept(beast::error_code ec, tcp::socket socket)
   if (!ec)
   {
      m_owner->onNewSession(
-      std::make_shared<SocketSession>(std::move(socket), m_owner)
+      std::make_shared<WebsocketServerSession>(std::move(socket), m_owner)
     );
   } 
   else
@@ -101,7 +105,7 @@ void SocketListener::on_accept(beast::error_code ec, tcp::socket socket)
 }
 
 
-void SocketListener::fail(beast::error_code ec, char const* what)
+void WebsocketServerListener::fail(beast::error_code ec, char const* what)
 {
   std::cerr << what << ": " << ec.message() << "\n";
 }

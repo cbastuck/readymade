@@ -24,7 +24,23 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
       this.runtimeOutput = new WebSocket(runtimeOutputUrl);
       this.runtimeOutput.onmessage = (event) => {
         const msg = JSON.parse(event.data);
-        console.log("RealtimeRuntimeScope.runtimeOutput.onmessage", msg);
+        if (msg.type === "notification") {
+          const { instanceId, value } = msg;
+          if (value) {
+            let data;
+            try {
+              data = JSON.parse(value);
+            } catch (_err) {
+              data = value;
+            }
+            this.app.notify({ uuid: instanceId }, data);
+          }
+        } else {
+          console.warn(
+            "RealtimeRuntimeScope.runtimeOutput.onmessage unknown message type",
+            msg
+          );
+        }
       };
       this.runtimeOutput.onerror = (event) => {
         console.error("RealtimeRuntimeScope.runtimeOutput.onerror", event);

@@ -10,7 +10,7 @@ import SaveBoardDialog from "../../components/SaveBoardDialog";
 import Board from "./Board";
 
 import { generateRandomName } from "../../core/board";
-import { t } from "../../styles";
+
 import {
   defaultName,
   availableRuntimeEngines,
@@ -526,7 +526,7 @@ class Playground extends Component<Props, State> {
         <BoardConsumer>
           {(boardContext) =>
             boardContext && (
-              <div style={t.fill}>
+              <div className="w-full h-full bg-neutral-50 flex flex-col">
                 <Toolbar
                   showRuntimeMenu={true}
                   onUpdateAvailableRuntimeEngines={(engines) => {
@@ -570,6 +570,7 @@ class Playground extends Component<Props, State> {
                   />
                 ) : (
                   <BoardEntryPoint
+                    className="pt-2"
                     isLoading={
                       boardContext.isFetching || !!boardContext.awaitUserLogin
                     }

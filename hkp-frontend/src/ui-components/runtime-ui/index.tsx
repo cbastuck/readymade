@@ -60,7 +60,6 @@ export default function RuntimeUI({
   isExpanded = true,
   outputs,
   inputs,
-
   onExpand,
   onWrapServices,
   onAddService,
@@ -75,7 +74,7 @@ export default function RuntimeUI({
     border:
       !frameless && !headless ? `solid 1px ${theme.borderColor}` : undefined,
     borderRadius: theme.borderRadius,
-    backgroundColor: theme.runtimeBackgroundColor,
+    backgroundColor: runtime.state?.color || theme.runtimeBackgroundColor,
     color: theme.textColor,
     backgroundImage: theme.runtimeBackgroundImage,
   };
@@ -91,9 +90,9 @@ export default function RuntimeUI({
     "flex sm:flex-wrap flex-col sm:flex-row items-start"; // use flex-col and items-center on mobile
   const layout = wrapServices ? horizontalLayoutWrapped : horizontalLayout;
   return (
-    <div style={style} className="select-none">
+    <div style={style} className="select-none mt-1 mb-2 mx-2">
       <DragSource
-        className="bg-[#FFFFFF50]"
+        className="bg-[#FFFFFF8F] border-b border-gray-300 shadow-[0_1px_3px_rgba(0,0,0,0.10)]"
         value={runtime}
         type={HKP_DND_RUNTIME_TYPE}
       >
@@ -108,37 +107,24 @@ export default function RuntimeUI({
         />
       </DragSource>
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "row",
-          width: "100%",
-        }}
-      >
+      <div className="flex flex-row w-full">
         {runtime.type === "browser" ? (
           <>
             {inputs && expanded ? <>{inputs}</> : false}
-            <div
+            <BrowserRuntime
               className={layout}
-              style={{
-                width: "100%",
-                overflow: wrapServices ? "hidden" : "auto",
-              }}
-            >
-              <BrowserRuntime
-                key={`browser-runtime-${runtime.id}`}
-                collapsed={!expanded}
-                user={user}
-                boardName={boardName || ""}
-                scope={scope as BrowserRuntimeScope}
-                runtime={runtime}
-                services={services}
-                onArrangeService={onArrangeService}
-                onServiceAction={onServiceAction}
-                onResult={onResult}
-                processRuntimeByName={processRuntimeByName}
-              />
-            </div>
+              key={`browser-runtime-${runtime.id}`}
+              collapsed={!expanded}
+              user={user}
+              boardName={boardName || ""}
+              scope={scope as BrowserRuntimeScope}
+              runtime={runtime}
+              services={services}
+              onArrangeService={onArrangeService}
+              onServiceAction={onServiceAction}
+              onResult={onResult}
+              processRuntimeByName={processRuntimeByName}
+            />
             {outputs && expanded ? (
               <div className="ml-auto pl-4">{outputs}</div>
             ) : null}

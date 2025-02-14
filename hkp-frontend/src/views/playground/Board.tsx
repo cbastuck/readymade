@@ -567,7 +567,7 @@ export default class Board extends Component<Props, State> {
   render() {
     const { description, boardName } = this.props;
     return (
-      <div>
+      <div className="flex flex-col h-full">
         <div style={s(t.w100)}>
           <PeersProvider>
             <PeersConsumer>

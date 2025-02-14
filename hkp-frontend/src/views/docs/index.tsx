@@ -8,7 +8,12 @@ import SampleBoards from "./SampleBoards";
 
 export default function Docs() {
   return (
-    <Template title="Documentation" isRoot={true} width="50%">
+    <Template
+      title="Documentation"
+      isRoot={true}
+      width="90%"
+      compactToolbar={false}
+    >
       <div className="mt-10">
         <Article isRoot={true} to="/docs/quickstart">
           Quickstarter

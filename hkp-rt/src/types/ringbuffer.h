@@ -7,9 +7,9 @@
 
 #include <yas/buffers.hpp>
 
-namespace beast = boost::beast;
+#include "./audio.h"
 
-constexpr unsigned int BUFFER_SIZE = 64 * 2;
+namespace beast = boost::beast;
 
 class FloatRingBuffer
 {
@@ -32,6 +32,12 @@ public:
   unsigned int id() const { return m_id; }
   uint64_t timestamp() const { return m_timestamp; }
 
+  unsigned int getReadIndex() const { return m_readIndex.load(std::memory_order_relaxed); }
+  unsigned int getWriteIndex() const { return m_writeIndex.load(std::memory_order_relaxed); }
+
+  unsigned int getInternalBufferSize() const { return N; }
+
+  friend std::ostream& operator<<(std::ostream& os, const FloatRingBuffer& data);
 private:
   static unsigned int m_bufferAutoId;
   inline static const unsigned int N = 44100 * 2;

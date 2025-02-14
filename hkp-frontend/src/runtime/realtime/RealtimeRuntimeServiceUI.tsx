@@ -11,7 +11,11 @@ import Button from "@/ui-components/Button";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import Switch from "@/ui-components/Switch";
 
-export default function RealtimeRuntimeServiceUI(props: ServiceUIProps) {
+type Props = ServiceUIProps & {
+  onNotification?: (notification: any) => void;
+  children?: any;
+};
+export default function RealtimeRuntimeServiceUI(props: Props) {
   const { service } = props;
   const meta = service.state?.["__meta__"];
   const [properties, setProperties] = useState<any>(extractProperties(service));
@@ -20,7 +24,11 @@ export default function RealtimeRuntimeServiceUI(props: ServiceUIProps) {
 
   const renderMain = (service: ServiceInstance) => {
     return (
-      <div key={service.uuid} id={service.uuid} style={{ minWidth: 200 }}>
+      <div
+        key={service.uuid}
+        id={service.uuid}
+        style={{ minWidth: 200, paddingBottom: 12 }}
+      >
         {Object.keys(properties).map((prop) => {
           const val = properties[prop];
           const t = typeof val;
@@ -122,7 +130,9 @@ export default function RealtimeRuntimeServiceUI(props: ServiceUIProps) {
                 title={prop}
                 value={val}
                 onSubmit={(value) => {
-                  service.configure({ [prop]: value });
+                  service.configure({
+                    [prop]: type === "number" ? Number(value) : value,
+                  });
                 }}
                 type={type}
                 disabled={readonly}
@@ -138,16 +148,14 @@ export default function RealtimeRuntimeServiceUI(props: ServiceUIProps) {
             </div>
           );
         })}
+        {props.children || null}
       </div>
     );
   };
 
   const onInit = () => {};
-  const onNotification = (_notification: any) => {
-    console.log(
-      "RealtimeRuntimeServiceUI - received notification",
-      _notification
-    );
+  const onNotification = (notification: any) => {
+    props.onNotification?.(notification);
   };
   return (
     <ServiceUI
@@ -155,6 +163,7 @@ export default function RealtimeRuntimeServiceUI(props: ServiceUIProps) {
       service={service}
       onInit={onInit}
       onNotification={onNotification}
+      showBypassOnlyIfExplicit={true}
     >
       {renderMain(service)}
     </ServiceUI>
@@ -169,7 +178,9 @@ function extractProperties(service: any) {
   const src = service.state || {};
   return Object.keys(src)
     .filter(
-      (key) => ["uuid", "serviceId", "serviceName", "board"].indexOf(key) === -1
+      (key) =>
+        ["uuid", "serviceId", "serviceName", "board", "bypass"].indexOf(key) ===
+        -1
     )
     .reduce((all, key) => {
       const val = src[key];

@@ -51,65 +51,64 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
 
   const theme = useTheme();
   return (
-    <div className="ml-auto">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="mt-1">
-            <Menu strokeWidth={1} />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent
-          className="w-56 mx-4 font-menu"
-          style={{ borderRadius: theme.borderRadius }}
-        >
-          {includeNavigationLinks && (
-            <>
-              <DropdownMenuGroup>
-                <DropdownMenuItem
-                  className="text-base"
-                  onClick={() => navigate("/docs")}
-                >
-                  <MenuIcon icon={Forward} />
-                  <span>Docs</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-base"
-                  onClick={() => navigate("/home")}
-                >
-                  <MenuIcon icon={Forward} />
-                  <span>Home</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  className="text-base"
-                  onClick={() => navigate("/playground")}
-                >
-                  <MenuIcon icon={Forward} />
-                  <span>Playground</span>
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-              <DropdownMenuSeparator />
-            </>
-          )}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild className="ml-auto">
+        <Button variant="ghost">
+          <Menu strokeWidth={1} />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        className="w-56 mx-4 font-menu"
+        style={{ borderRadius: theme.borderRadius }}
+      >
+        {includeNavigationLinks && (
+          <>
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                className="text-base"
+                onClick={() => navigate("/docs")}
+              >
+                <MenuIcon icon={Forward} />
+                <span>Docs</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-base"
+                onClick={() => navigate("/home")}
+              >
+                <MenuIcon icon={Forward} />
+                <span>Home</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="text-base"
+                onClick={() => navigate("/playground")}
+              >
+                <MenuIcon icon={Forward} />
+                <span>Playground</span>
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+          </>
+        )}
 
-          <DropdownMenuGroup>
-            <DropdownMenuItem
-              className="text-base"
-              onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
-            >
-              {isLoggedIn ? (
-                <>
-                  <MenuIcon icon={User} />
-                  <span>{nickname}</span>
-                </>
-              ) : (
-                <>
-                  <MenuIcon icon={LogIn} />
-                  <span>Login</span>
-                </>
-              )}
-            </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            className="text-base"
+            onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
+          >
+            {isLoggedIn ? (
+              <>
+                <MenuIcon icon={User} />
+                <span>{nickname}</span>
+              </>
+            ) : (
+              <>
+                <MenuIcon icon={LogIn} />
+                <span>Login</span>
+              </>
+            )}
+          </DropdownMenuItem>
 
-            {/*
+          {/*
             <DropdownMenuItem
               className="text-base"
               disabled={!isLoggedIn}
@@ -120,24 +119,23 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
             </DropdownMenuItem>
             */}
 
-            <DropdownMenuItem className="text-base" disabled={true}>
-              <MenuIcon icon={Settings} />
-              <span>Settings</span>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-
-          <DropdownMenuSeparator />
-
-          <DropdownMenuItem
-            className="text-base"
-            disabled={!isLoggedIn}
-            onClick={onLogout}
-          >
-            <MenuIcon icon={LogOut} />
-            <span>Log out</span>
+          <DropdownMenuItem className="text-base" disabled={true}>
+            <MenuIcon icon={Settings} />
+            <span>Settings</span>
           </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+        </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          className="text-base"
+          disabled={!isLoggedIn}
+          onClick={onLogout}
+        >
+          <MenuIcon icon={LogOut} />
+          <span>Log out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

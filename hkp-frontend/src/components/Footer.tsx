@@ -28,6 +28,7 @@ export default function Footer({ flex, isCompact }: Props) {
         // height: flex ? 45 : 30,
         bottom: !flex ? 0 : undefined,
         left: !flex ? 0 : undefined,
+        zIndex: 2,
       }}
     >
       <div

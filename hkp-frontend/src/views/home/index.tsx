@@ -102,7 +102,7 @@ export default function Home() {
   );
 
   return (
-    <Template title="Home" isRoot={true}>
+    <Template title="Home" isRoot={true} compactToolbar={false}>
       <div className="text-base tracking-widest leading-6 flex flex-col h-full gap-4 mt-2 mb-8">
         <div className="my-8">
           This is your space. Everything here is based on the output of a board

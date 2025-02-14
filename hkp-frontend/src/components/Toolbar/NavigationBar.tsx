@@ -12,7 +12,7 @@ export default function NavigationBar({ isCompact }: Props) {
     { name: "Playground", link: "/playground" },
   ];
   const defaultStyles =
-    "font-sans rounded-md p-[5px] m-1 text-base tracking-widest hover:no-underline";
+    "font-sans rounded-md p-[5px] mx-1 text-base tracking-widest hover:no-underline";
   const nonActivestyles = `${defaultStyles} "hover:text-zinc-500"`;
   const activeStyles = `bg-sky-600 text-white hover:text-neutral-200 ${defaultStyles}`;
 
@@ -21,14 +21,12 @@ export default function NavigationBar({ isCompact }: Props) {
   }
   return (
     <div
+      className="flex w-full"
       style={{
-        marginTop: 10,
-        width: "100%",
         textAlign: "right",
-        marginRight: 10,
       }}
     >
-      <div>
+      <div className="ml-auto">
         {links.map(({ link, name }) => (
           <Link
             className={

@@ -42,7 +42,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
     onFocus,
   } = props;
   const w = fullWidth ? "" : "w-[80px]";
-  const h = minHeight ? "h-min pl-1 text-base" : "h-[25px]";
+  const h = minHeight ? "h-min pl-1 text-base" : "h-full"; //"h-[25px]";
   const bottomBorder = hideBottomBorder
     ? "border-none"
     : "border-t-0 border-b-1";
@@ -53,15 +53,21 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
   };
 
   return (
-    <div className={`flex items-center w-full gap-2`}>
+    <div className={`flex items-center h-full w-full gap-2`}>
       {title && (
-        <GroupLabel className="pt-1 whitespace-nowrap">{title}</GroupLabel>
+        <GroupLabel
+          size={4}
+          className="pt-0 whitespace-nowrap"
+          disabled={disabled}
+        >
+          {title}
+        </GroupLabel>
       )}
       <InputCN
         id={id}
         ref={ref}
         type={type}
-        className={`m-0 p-0 text-base border-x-0 ${bottomBorder} rounded-none ${w} ${h} ${className} text-ellipsis`}
+        className={`m-0 p-0 border-x-0 ${bottomBorder} rounded-none ${w} ${h} ${className} text-ellipsis `}
         value={value}
         onChange={onInputChange}
         disabled={disabled}

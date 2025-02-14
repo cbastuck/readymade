@@ -14,8 +14,8 @@ export function createRealtimeRuntimeApp(scope: RealtimeRuntimeScope): AppImpl {
   const notificationTargets = new NotificationTargets();
   return {
     getAuthenticatedUser: () => scope.authenticatedUser,
-    notify: (_service: InstanceId, _notification: any): void => {
-      notificationTargets.notify(_service, _notification);
+    notify: (service: InstanceId, notification: any): void => {
+      notificationTargets.notify(service, notification);
     },
     next: (_svc: InstanceId | null, _result: any): void => {},
     getServiceById: (uuid: string): ServiceImpl | null => {

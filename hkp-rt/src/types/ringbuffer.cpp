@@ -22,10 +22,10 @@ void FloatRingBuffer::append(float value)
 void FloatRingBuffer::appendBinary(const char *data, unsigned int count)
 {
   // std::cout << "FloatRingBuffer.appendBinary: " << m_name << " count: " << count / sizeof(float) << " readpos: " << m_readIndex << " writepos: " << m_writeIndex << std::endl;
-  auto numSamples = count / sizeof(float);
+  auto numItems = count / sizeof(float);
 
   const float *src = reinterpret_cast<const float *>(data);
-  for (unsigned int i = 0; i < numSamples; ++i, ++src)
+  for (unsigned int i = 0; i < numItems; ++i, ++src)
   {
     m_buffer[m_writeIndex++ % N] = *src;
   }
@@ -55,7 +55,7 @@ void FloatRingBuffer::consumeBinary(float *outputBuffer, unsigned int frameCount
         outputBuffer[(framesToCopy + i) * numChannels + j] = 0;
       }
     }
-    std::cout << "Filled " << numFillFrames << " samples\r" << std::flush;
+    std::cout << "Filled " << numFillFrames << " samples (w: "<< m_writeIndex << ") \r" << std::flush;
   }
 }
 
@@ -74,7 +74,8 @@ yas::shared_buffer FloatRingBuffer::serialise() const
   unsigned int availableSamples = m_writeIndex - m_readIndex;
   if (availableSamples > N)
   {
-    throw std::runtime_error("FloatRingBuffer::serialise the write buffer wrapped twice - increase the buffer size - Resetting indices");
+    std::cerr << "FloatRingBuffer::serialise the write buffer wrapped twice - increase the buffer size - Resetting indices" << std::endl;
+    m_readIndex.store(m_writeIndex - N);
   }
 
   auto numSavedSamples = std::min(availableSamples, N);
@@ -92,6 +93,7 @@ yas::shared_buffer FloatRingBuffer::serialise() const
   return yas::save<flags>(o);
 }
 
+// TODO: should be renamed to not contain create in the name
 void FloatRingBuffer::createFromSerialised(beast::flat_buffer buffer, unsigned int size, FloatRingBuffer& target)
 {
   const char *rawData = reinterpret_cast<const char *>(buffer.data().data());
@@ -141,4 +143,16 @@ uint64_t FloatRingBuffer::age() const
 unsigned int FloatRingBuffer::availableCount() const
 {
   return m_writeIndex - m_readIndex;
+}
+
+std::ostream& operator<<(std::ostream& os, const FloatRingBuffer& data)
+{
+  os << "FloatRingBuffer: " << data.id() << " " << data.availableCount() << std::endl;
+  os << "ReadIndex: " << data.getReadIndex() << " WriteIndex: " << data.getWriteIndex() << std::endl;
+  for (unsigned int i = 0, idx=data.m_readIndex; i < data.availableCount(); ++i, ++idx)
+  {
+    os << data.m_buffer[idx] << " ";
+  }
+  os << std::endl;
+  return os;
 }

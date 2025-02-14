@@ -1,5 +1,14 @@
 import { ServiceUIComponent } from "@/types";
 
-export function findServiceUI(_serviceId: string): ServiceUIComponent | null {
+import MonitorUI from "../../runtime/browser/services/MonitorUI";
+import AudioOutputUI from "./ui/AudioOutputUI";
+
+export function findServiceUI(serviceId: string): ServiceUIComponent | null {
+  switch (serviceId) {
+    case "monitor":
+      return MonitorUI;
+    case "core-output":
+      return AudioOutputUI;
+  }
   return null;
 }

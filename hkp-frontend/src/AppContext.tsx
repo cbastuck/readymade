@@ -2,7 +2,7 @@ import { Component, createContext } from "react";
 import { IdToken } from "@auth0/auth0-react";
 import { toast } from "sonner";
 
-import ResizeObserver from "./ResizeObserver";
+import ResizeObserver, { OnChangeEvent } from "./ResizeObserver";
 import { processToken } from "./core/Auth";
 import { User, Notification, AppViewMode } from "./types";
 import RestoredUser from "./RestoredUser";
@@ -123,6 +123,12 @@ class AppProvider extends Component<Props, AppContextState> {
     this.setState({ user: null });
   };
 
+  onResize = ({ appViewMode }: OnChangeEvent) => {
+    if (appViewMode !== this.state.appViewMode) {
+      this.setState({ appViewMode });
+    }
+  };
+
   render() {
     const { children } = this.props;
     return (
@@ -131,9 +137,7 @@ class AppProvider extends Component<Props, AppContextState> {
           ...this.state,
         }}
       >
-        <ResizeObserver
-          onChange={({ appViewMode }) => this.setState({ appViewMode })}
-        />
+        <ResizeObserver onChange={this.onResize} />
         <RestoredUser onToken={this.onToken} />
         {children}
       </Provider>

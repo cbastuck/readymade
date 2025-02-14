@@ -1,49 +1,92 @@
 #include "registry.h"
 
+#include <type_traits>
+#include <vector>
+
+#include "./services/websocket_writer.h"
+#include "./services/websocket_reader.h"
+#include "./services/websocket_server_service.h"
+#include "./services/websocket_client_service.h"
+#include "./services/pro54/pro54_service.h"
+#include "./services/monitor.h"
+#include "./services/timer.h"
+
 #if IS_MACOS
   #include "./services/core_input.h"
   #include "./services/core_output.h"
 #endif
 
-#include "./services/websocket_writer.h"
-#include "./services/websocket_reader.h"
-#include "./services/websocket_service.h"
+
+template<typename... Ts>
+struct TypeList {};
+
+using ServiceTypes = TypeList<
+#if IS_MACOS
+  CoreInput,
+  CoreOutput,
+#endif
+  WebsocketWriter,
+  WebsocketReader,
+  WebsocketServerService,
+  WebsocketClientService,
+  Pro54Service,
+  Monitor,
+  Timer
+>;
+
+typedef std::shared_ptr<Service> (*ServiceFactory)(std::string, std::string);
+typedef std::tuple<std::string, ServiceFactory> ServiceTuple;
+typedef std::vector<ServiceTuple> ServiceFactoryList;
+
+template<typename T>
+void registerService(ServiceFactoryList& services)
+{
+  ServiceTuple tuple = ServiceTuple(
+    T::serviceId(), 
+    [](std::string serviceId, std::string instanceId) -> std::shared_ptr<Service>
+    { 
+      return std::make_shared<T>(instanceId); 
+    }
+  );
+  services.push_back(tuple);
+}
+
+template<typename... Ts>
+void registerServices(TypeList<Ts...>, ServiceFactoryList& services)
+{
+  (registerService<Ts>(services), ...);
+}
+
+ServiceFactoryList createServiceList()
+{
+  ServiceFactoryList list;
+  registerServices(ServiceTypes{}, list);
+  return list;
+}
+
+static ServiceFactoryList registry = createServiceList();
 
 std::shared_ptr<Service> Registry::create(std::string serviceId, std::string instanceId)
 {
-#if IS_MACOS
-  if (serviceId == "core-input")
+  for (auto& [id, factory] : registry)
   {
-    return std::make_shared<CoreInput>(instanceId);
-  }
-  if (serviceId == "core-output")
-  {
-    return std::make_shared<CoreOutput>(instanceId);
-  }
-#endif
-  if (serviceId == "websocket-writer")
-  {
-    return std::make_shared<WebsocketWriter>(instanceId);
-  }
-  if (serviceId == "websocket-reader")
-  {
-    return std::make_shared<WebsocketReader>(instanceId);
-  }
-  if (serviceId == "websocket-socket")
-  {
-    return std::make_shared<WebsocketService>(instanceId);
+    if (id == serviceId)
+    {
+      return factory(serviceId, instanceId);
+    }
   }
   return nullptr;
 }
 
 std::vector<ServiceClass> Registry::availableServices()
 {
-  return {
-#if IS_MACOS
-      {"core-input"},
-      {"core-output"},
-#endif
-      {"websocket-writer"},
-      {"websocket-reader"},
-      {"websocket-socket"}};
+  static std::vector<ServiceClass> availableServices;
+  if (availableServices.empty())
+  {
+    for (auto& [id, _] : registry)
+    {
+      availableServices.push_back(ServiceClass{id});
+    }
+  }
+  return availableServices;
 }

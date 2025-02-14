@@ -94,6 +94,7 @@ export default function RealtimeRuntime({
     !collapsed && (
       <div className="flex overflow-x-auto">
         <ServiceUiContainer
+          className="flex"
           userId={user?.userId}
           boardName={boardName}
           runtime={runtime}

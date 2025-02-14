@@ -7,6 +7,7 @@ type Props = {
   className?: string;
   size?: 1 | 2 | 3 | 4;
   tooltip?: TooltipContentType;
+  disabled?: boolean;
 };
 
 export default function GroupLabel({
@@ -14,6 +15,7 @@ export default function GroupLabel({
   size = 3,
   className = "",
   tooltip,
+  disabled,
 }: Props) {
   const c = useMemo(
     () =>
@@ -27,7 +29,8 @@ export default function GroupLabel({
     [tooltip, children]
   );
 
-  const cn = `text-left tracking-[6px] ${className}`;
+  const textColor = disabled ? "text-gray-400" : "";
+  const cn = `text-left tracking-[6px] ${textColor} ${className}`;
   switch (size) {
     case 1:
       return <h1 className={cn}>{c}</h1>;

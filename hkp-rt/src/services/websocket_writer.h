@@ -11,8 +11,10 @@
 class WebsocketWriter : public Service
 {
 public:
-  WebsocketWriter(std::string instanceId)
-      : Service(instanceId)
+  static std::string serviceId() { return "websocket-writer"; } 
+  
+  WebsocketWriter(const std::string& instanceId)
+      : Service(instanceId, serviceId())
   {
   }
 
@@ -25,7 +27,8 @@ public:
   {
     if (m_session)
     {
-      throw std::runtime_error("WebsocketWriter: already started");
+      stop();
+      m_ioc.restart();
     }
 
     if (m_config.host.empty() || m_config.port.empty() || m_config.path.empty())
@@ -50,37 +53,50 @@ public:
   json configure(Data data) override
   {
     auto buf = getJSONFromData(data);
-    if (!buf.is_null())
+    if (buf)
     { 
-      auto cfg = WebsocketConfig::fromJSON(buf);
-      if (cfg)
-      {
-        m_config = *cfg;
-        start();
-      }
+      m_config.update(*buf);
     }
     
-    return getState();;
+    return Service::configure(data);
+  }
+
+  bool onBypassChanged(bool bypass) override
+  {
+    if (bypass)
+    {
+      stop();
+    }
+    else // request to start websocket
+    {
+      if (!m_config.isValid())
+      {
+        return true; // still bypassed
+      }
+      start();
+    }
+    return bypass;
   }
 
   Data process(Data data) override
   {
-    std::shared_ptr<FloatRingBuffer> buffer = getRingBufferFromData(data);
-    if (buffer && buffer->availableCount() > 0 && m_session->isConnected())
+    if (m_session->isConnected()) 
     {
-      m_session->signalSend(*buffer);
+      m_session->signalSend(data);
     }
+
     return data;
   }
 
   std::string getServiceId() const override
   {
-    return "websocket-writer";
+    return serviceId();
   }
 
   json getState() const override
   {
-    return m_config.serialise();
+    auto state = m_config.serialise();
+    return Service::mergeBypassState(state);
   }
 
 private:
@@ -88,9 +104,10 @@ private:
   {
     try
     {
-      m_session->start(m_instanceId, nullptr);
+      m_session->start("writer");
       m_ioc.run();
-    } catch (...)
+    } 
+    catch (...)
     {
       std::cerr << "WebsocketWriter: " << std::endl;
     }

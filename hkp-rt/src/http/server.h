@@ -21,12 +21,14 @@ private:
   crow::response deleteRuntime(const std::string& runtimeId);
   crow::response deleteAllRuntimes();
   crow::response createRuntime(const crow::request &req);
-  crow::response configureService(
-    const crow::request &req,
-    const std::string& runtimeId, 
-    const std::string& instanceId
-  );
+  crow::response configureService(const crow::request &req, const std::string& runtimeId,  const std::string& instanceId);
+  crow::response getServiceState(const std::string& runtimeId, const std::string& instanceId);
+  crow::response createService(const crow::request &req, const std::string& runtimeId);
+  crow::response deleteService(const std::string& runtimeId, const std::string& instanceId);
   crow::response getRuntimeById(const std::string& id);
+  crow::response rearrangeServices(const crow::request &req, const std::string& runtimeId);
+  crow::response processRuntime(const crow::request &req, const std::string& runtimeId);
+
 
 private:
   crow::Crow<crow::CORSHandler> m_crow;

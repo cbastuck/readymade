@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15...3.31)
 project(hkp-rt VERSION 1.0 LANGUAGES CXX)
 
+option(BUILD_MAC_INTEL "Build for intel architecture on Apple Silicon" OFF)
+
 find_package(Boost 1.86 REQUIRED COMPONENTS
   date_time 
   filesystem 
@@ -15,6 +17,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set(PLATFORM_SRC src/services/core_audio.cpp)
+  if (BUILD_MAC_INTEL)
+    message("Building for Intel architecture on Apple Silicon")
+    set(CMAKE_OSX_ARCHITECTURES "x86_64")
+  else()
+    message("Building for Apple Silicon")
+    set(CMAKE_OSX_ARCHITECTURES "arm64")
+  endif()
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
@@ -28,13 +37,15 @@ add_executable(hkp-rt
   src/types/models.cpp 
   src/types/data.cpp 
   src/types/ringbuffer.cpp
-  src/common/socket_listener.cpp
-  src/common/socket_session.cpp
-  src/common/websocket.cpp
+  src/common/websocket_server_listener.cpp
+  src/common/websocket_server_session.cpp
+  src/common/websocket_server.cpp
+  src/common/websocket_client_session.cpp
   ${PLATFORM_SRC}
 )
 
-set_property(TARGET hkp-rt PROPERTY CXX_STANDARD 20)
+target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
+set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   target_compile_definitions(hkp-rt PUBLIC "IS_LINUX")
@@ -56,6 +67,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   #if (NOT COREFOUNDATION)
   #    message(FATAL_ERROR "CoreFoundation not found")
   #endif()
+
   set(PLATFORM_LIBS ${COREAUDIO} ${AUDIOTOOLBOX})
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")

@@ -15,6 +15,7 @@ import {
   RuntimeApi,
   User,
   ServiceInstance,
+  RuntimeConfiguration,
 } from "./types";
 import {
   reorderRuntime,
@@ -25,11 +26,18 @@ import { AppContextState, AppCtx } from "./AppContext";
 import { connectDevTools } from "./core/DevTools";
 
 type BoardContextAPI = {
-  addAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
+  addAvailableRuntime: (
+    c: RuntimeClass,
+    overwriteIfExists: boolean
+  ) => Array<RuntimeClass>;
   removeAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
 
   addRuntime: (rtClass: RuntimeClass) => void;
   removeRuntime: (runtime: RuntimeDescriptor) => void;
+  updateRuntime: (
+    runtimeId: string,
+    updated: RuntimeConfiguration
+  ) => Promise<void>;
   removeAllServices: (runtime: RuntimeDescriptor) => void;
 
   addService: (
@@ -144,6 +152,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       arrangeRuntime: this.arrangeRuntimes,
       removeService: this.removeService,
       removeRuntime: this.removeRuntime,
+      updateRuntime: this.updateRuntime,
       removeAllServices: this.removeAllServices,
 
       onAction: this.onAction,
@@ -431,7 +440,11 @@ class BoardProvider extends Component<Props, BoardContextState> {
       const result = await api.addRuntime(rtClass, user);
       if (result) {
         const { runtime, services, registry = [], scope } = result;
-        const runtimeWithUser = { ...runtime, user };
+        const runtimeWithUser = {
+          ...runtime,
+          user,
+          state: { ...runtime.state, color: rtClass.color },
+        };
         this.setState((state: BoardContextState) => ({
           runtimes: [...state.runtimes, runtimeWithUser],
           services: {
@@ -549,6 +562,40 @@ class BoardProvider extends Component<Props, BoardContextState> {
     });
   };
 
+  getRuntimeById = (runtimeId: string) => {
+    return this.state.runtimes.find((rt) => rt.id === runtimeId);
+  };
+
+  updateRuntime = async (runtimeId: string, updated: RuntimeConfiguration) => {
+    const [scope, api] = this.getRuntimeScopeApi(runtimeId);
+    if (!api || !scope) {
+      throw new Error(
+        `BoardContext.updateRuntime() runtime api is missing: ${runtimeId}`
+      );
+    }
+    const runtime = this.getRuntimeById(runtimeId);
+    if (!runtime) {
+      throw new Error(
+        `BoardContext.updateRuntime() runtime not found: ${runtimeId}`
+      );
+    }
+    if (runtimeId !== updated.runtime.id) {
+      await api.removeRuntime(scope, runtime, this.state.user);
+    }
+    await api.restoreRuntime(
+      updated.runtime,
+      updated.services,
+      this.state.user
+    );
+    scope.setState?.(updated.runtime.state);
+    this.setState((state) => {
+      const runtimes = state.runtimes.map((rt) =>
+        rt.id === runtimeId ? updated.runtime : rt
+      );
+      return { runtimes };
+    });
+  };
+
   isRuntimeInScope = (runtime: RuntimeDescriptor) => {
     if (runtime.type !== "browser") {
       return true; // TODO: take user into account if shared
@@ -580,11 +627,18 @@ class BoardProvider extends Component<Props, BoardContextState> {
     }
   };
 
-  addAvailableRuntime = ({ name, url, type }: RuntimeClass) => {
-    const availableRuntimeEngines = this.state.availableRuntimeEngines.concat({
+  addAvailableRuntime = (
+    { name, url, type, color }: RuntimeClass,
+    overwriteIfExists: boolean
+  ) => {
+    const engines = overwriteIfExists
+      ? this.state.availableRuntimeEngines.filter((rt) => rt.name !== name)
+      : this.state.availableRuntimeEngines;
+    const availableRuntimeEngines = engines.concat({
       name,
       type,
       url,
+      color,
     });
     this.setState({
       availableRuntimeEngines,
@@ -629,13 +683,20 @@ class BoardProvider extends Component<Props, BoardContextState> {
           runtimeServices.map(async (svc) => {
             const config =
               api && scope ? await api.getServiceConfig(scope, svc) : {};
-            runtimeStates[runtimeId] = scope?.serializeState?.();
+            const runtimeState = {
+              ...runtime.state,
+              ...scope?.serializeState?.(),
+            };
+            runtimeStates[runtimeId] = runtimeState;
             return {
               uuid: svc.uuid,
               serviceId: svc.serviceId,
               serviceName: svc.serviceName,
-              state: svc.state || {},
-              ...config,
+              state:
+                svc.state || scope?.descriptor.type !== "browser"
+                  ? config
+                  : undefined,
+              ...(svc.state ? {} : config), // add config plain if state is missing (old browser services)
             };
           })
         );

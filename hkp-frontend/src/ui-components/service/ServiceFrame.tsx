@@ -39,7 +39,9 @@ export default function ServiceFrame({
 }: Props) {
   const [frameCollapsed, setFrameCollapsed] = useState(false);
   const [configVisible, setConfigVisible] = useState(false);
-  const [bypass, setBypass] = useState(service?.bypass);
+  const [bypass, setBypass] = useState(
+    service?.bypass ?? service?.state?.bypass
+  );
   const [recentProgressData, setRecentProgressData] = useState<any>(undefined);
 
   const [signalOutput, setSignalOutput] = useState(false);
@@ -194,6 +196,7 @@ export default function ServiceFrame({
             backgroundColor: theme.serviceBackgroundColor,
             margin: "10px 0px",
           })}
+          className="shadow-md"
         >
           <DragSource
             className="bg-white"
@@ -216,7 +219,6 @@ export default function ServiceFrame({
               onChangeName={onChangeName}
             />
           </DragSource>
-
           <EditorDialog
             title="Service Configuration"
             value={filteredServiceConfig}
@@ -234,7 +236,7 @@ export default function ServiceFrame({
             {children}
           </div>
         </div>
-        <div className="mt-[30px] pl-2 w-4 mx-1">
+        <div className="mt-[30px] px-4 w-7">
           <ServiceOutputPlug
             isActive={signalOutput}
             data={recentProgressData}

@@ -25,6 +25,7 @@ type Props = {
   services: Array<ServiceDescriptor>;
   boardName: string;
   collapsed?: boolean;
+  className?: string;
 
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
@@ -79,6 +80,7 @@ export default class BrowserRuntime extends Component<Props> {
       scope,
       services: rawServices,
       collapsed = false,
+      className,
       onResult,
       onArrangeService,
       onServiceAction,
@@ -143,8 +145,10 @@ export default class BrowserRuntime extends Component<Props> {
     if (services?.length === 0) {
       return <EmptyRuntimePlaceholder runtime={runtime} />;
     }
+
     return (
       <ServiceUiContainer
+        className={className}
         collapsed={collapsed}
         boardName={boardName}
         runtime={runtime}

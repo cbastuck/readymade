@@ -1,4 +1,4 @@
-import { forwardRef, useCallback, useEffect, useState } from "react";
+import { forwardRef, useMemo } from "react";
 import SubmittableInput from "@/ui-components/SubmittableInput";
 import { flatten } from "flat";
 import { TooltipContentType } from "@/ui-components/Tooltip";
@@ -9,7 +9,6 @@ type Props = {
   value: string;
   autoCompleteValueSuggestions?: Array<string>;
   selectAllOnFocus?: boolean;
-  showCompletionsOnTab?: boolean;
   tooltip?: TooltipContentType;
   isExpandable?: boolean;
   showBackground?: boolean;
@@ -27,46 +26,20 @@ const AutocompleteInputField = forwardRef<HTMLInputElement, Props>(
       autoCompleteValueSuggestions,
       tooltip,
       selectAllOnFocus = true,
-      showCompletionsOnTab = false,
       isExpandable = false,
       showBackground = false,
       onSubmit,
       onTab,
       onChangePending,
     } = props;
-    const [autoCompleteValues, setAutoCompleteValues] = useState<
-      Array<string> | undefined
-    >(undefined);
-
-    const computeAutoCompleteValues = useCallback(
-      (data: any) => {
-        if (typeof data === "object") {
-          const keys = Object.keys(flatten(data));
-          if (keys.length > 0) {
-            setAutoCompleteValues(keys);
-            // trigger the autocomplete menu
-            setTimeout(() => id && document.getElementById(id)?.click(), 100);
-          }
+    const autoCompleteValues = useMemo(() => {
+      if (typeof autoCompleteValueSuggestions === "object") {
+        const keys = Object.keys(flatten(autoCompleteValueSuggestions));
+        if (keys.length > 0) {
+          return keys;
         }
-      },
-      [id]
-    );
-
-    useEffect(() => {
-      computeAutoCompleteValues(autoCompleteValueSuggestions);
-    }, [computeAutoCompleteValues, autoCompleteValueSuggestions]);
-
-    const onTabInternal = (newValue: string) => {
-      if (showCompletionsOnTab) {
-        if (autoCompleteValueSuggestions) {
-          computeAutoCompleteValues(autoCompleteValueSuggestions);
-        } else {
-          onTab(newValue);
-        }
-      } else {
-        onTab(newValue);
       }
-    };
+    }, [autoCompleteValueSuggestions]);
 
     return (
       <SubmittableInput
@@ -83,7 +56,7 @@ const AutocompleteInputField = forwardRef<HTMLInputElement, Props>(
         showBackground={showBackground}
         onSubmit={onSubmit}
         onChangePending={onChangePending}
-        onTab={onTabInternal}
+        onTab={onTab}
       />
     );
   }

@@ -158,20 +158,25 @@ export default class OutputOptions extends Component<Props, State> {
     const textColor = expanded ? "text-white" : "text-[#333]";
 
     return (
-      <div className="h-full py-[10px]">
+      <div
+        className="h-full py-[10px] mb-5"
+        style={{ position: "relative", height: "350px" }}
+      >
         <div
-          className="flex h-full"
+          className="flex h-full bg-white rounded-lg shadow-sm"
           id={`output-options-${id}`}
           style={{
-            border: `solid 1px ${this.context.borderColor}`,
+            border: `solid 1px #ccc`,
             borderRight: "none",
             borderTopRightRadius: 0,
             borderBottomRightRadius: 0,
-            maxHeight: 350,
+            position: "absolute",
+            right: 0,
+            zIndex: 1,
           }}
         >
           <button
-            className={`text-base min-h-[100%] ml-auto w-[33px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
+            className={`text-base min-h-[100%] ml-auto w-[22px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
             onClick={() => {
               this.setState({ expanded: !expanded }, () => {
                 if (expanded) {

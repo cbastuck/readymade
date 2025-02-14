@@ -16,23 +16,26 @@ import { useState } from "react";
 type Props = {
   remoteRuntimes: Array<RuntimeClass>;
   isOpen: boolean;
-  onRemoveRuntime: (rt: RuntimeClass) => void;
-  onAddAvailableRuntime: (desc: RuntimeClass) => void;
+  onRemoveRuntimeEngine: (rt: RuntimeClass) => void;
+  onAddRuntimeEngine: (desc: RuntimeClass) => void;
+  onUpdateRuntimeEngine: (updated: RuntimeClass) => void;
   onClose: () => void;
 };
 
 export default function ManageRuntimesDialog({
   isOpen,
   remoteRuntimes,
-  onRemoveRuntime,
-  onAddAvailableRuntime,
+  onRemoveRuntimeEngine,
+  onAddRuntimeEngine,
+  onUpdateRuntimeEngine,
   onClose,
 }: Props) {
   const [showNewRuntimePanel, setShowNewRuntimePanel] = useState(false);
   const onAddRuntime = (rt: RuntimeClass) => {
-    onAddAvailableRuntime(rt);
+    onAddRuntimeEngine(rt);
     setShowNewRuntimePanel(false);
   };
+
   const onChangeDialogOpen = (newOpen: boolean) => {
     if (!newOpen) {
       if (showNewRuntimePanel) {
@@ -42,13 +45,19 @@ export default function ManageRuntimesDialog({
       }
     }
   };
+
+  const onChangeRuntimeColor = (rt: RuntimeClass, color: string) => {
+    onUpdateRuntimeEngine({ ...rt, color });
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onChangeDialogOpen}>
-      <DialogContent className="sm:max-w-[525px] h-[80%] flex flex-col">
+      <DialogContent className="sm:max-w-[825px] h-[80vh] flex flex-col overflow-y-scroll">
         <h2>Manage runtimes</h2>
         <ExistingRuntimesPanel
           remoteRuntimes={remoteRuntimes}
-          onRemoveRuntime={onRemoveRuntime}
+          onRemoveRuntime={onRemoveRuntimeEngine}
+          onChangeRuntimeColor={onChangeRuntimeColor}
         />
 
         <Popover open={showNewRuntimePanel}>

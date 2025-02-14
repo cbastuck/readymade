@@ -59,6 +59,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       onTab,
       onChangePending,
     } = props;
+    const lastSubmittedValue = useRef<string | null>(null);
     const [internal, setInternal] = useState(value);
 
     const isChangePending = useMemo(
@@ -68,14 +69,15 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
 
     useEffect(() => {
       setInternal(value);
+      if (lastSubmittedValue.current === null && value) {
+        lastSubmittedValue.current = value;
+      }
     }, [value]);
 
     useEffect(
       () => onChangePending?.(isChangePending),
       [onChangePending, isChangePending]
     );
-
-    const lastSubmittedValue = useRef("");
 
     const onKeyDown = (ev: KeyboardEvent) => {
       if (ev.key === "f" && ev.metaKey) {
@@ -124,8 +126,10 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
       setExpandedInputIsOpen(true);
     };
 
-    const cls = `font-menu text-md ${
-      showBackground ? "py-1 pl-2 bg-gray-100 rounded-lg" : "mr-2"
+    const cls = `font-menu text-[0.87rem] ${
+      showBackground
+        ? "py-1 pl-2 bg-gray-100 rounded-lg"
+        : "mr-2 bg-transparent"
     } ${className}`;
     return (
       <div

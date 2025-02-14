@@ -104,6 +104,7 @@ export default class OutputUI extends Component<ServiceUIProps, State> {
         )}
 
         <SelectorField
+          className="py-1"
           label="Flow"
           style={t.m(0, 10)}
           options={{
