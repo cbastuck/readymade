@@ -1,3 +1,3 @@
 #pragma once
 
-constexpr unsigned int BUFFER_SIZE = 64 * 2;
+constexpr unsigned int BUFFER_SIZE = 256 * 2;
