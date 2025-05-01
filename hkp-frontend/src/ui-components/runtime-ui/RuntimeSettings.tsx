@@ -9,6 +9,7 @@ import {
   ArrowRightLeft,
   Menu,
   Settings,
+  Save,
 } from "lucide-react";
 
 import {
@@ -35,6 +36,7 @@ type Props = {
   onClear: () => void;
   onDelete: () => void;
   onConfiguration: () => void;
+  onSave: () => void;
 };
 export default function RuntimeSettings({
   runtime,
@@ -46,6 +48,7 @@ export default function RuntimeSettings({
   onDelete,
   onProcess,
   onConfiguration,
+  onSave,
 }: Props) {
   return (
     <DropdownMenu>
@@ -125,6 +128,12 @@ export default function RuntimeSettings({
           <DropdownMenuItem className="text-base" onClick={onDelete}>
             <MenuIcon icon={Trash} />
             <span>Delete</span>
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="text-base" onClick={onSave}>
+            <MenuIcon icon={Save} />
+            <span>Save to Disk</span>
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

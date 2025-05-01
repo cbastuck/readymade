@@ -188,6 +188,15 @@ function extractProperties(service: any) {
       if (t === "string" || t === "number" || t === "boolean") {
         return { ...all, [key]: val };
       }
+      if (t === "object") {
+        const obj: { [k: string]: string } = {};
+        for (const k in val) {
+          if (val[k] !== undefined) {
+            obj[`${key}.${k}`] = val[k];
+          }
+        }
+        return { ...all, ...obj };
+      }
       return all;
     }, {});
 }

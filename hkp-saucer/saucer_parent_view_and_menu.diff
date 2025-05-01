@@ -1,0 +1,164 @@
+diff --git a/include/saucer/webview.hpp b/include/saucer/webview.hpp
+index 8f62479..6ad4b38 100644
+--- a/include/saucer/webview.hpp
++++ b/include/saucer/webview.hpp
+@@ -64,6 +64,9 @@ namespace saucer
+       protected:
+         using window::m_parent;
+ 
++      public:
++        void forwardEventToParent(void *event);
++
+       public:
+         using events = ereignis::manager<                                     //
+             ereignis::event<web_event::dom_ready, void()>,                    //
+diff --git a/include/saucer/window.hpp b/include/saucer/window.hpp
+index 6822a1e..8966a18 100644
+--- a/include/saucer/window.hpp
++++ b/include/saucer/window.hpp
+@@ -58,6 +58,7 @@ namespace saucer
+         fs::path storage_path;
+         std::string user_agent;
+         std::set<std::string> browser_flags;
++        void* parentView;
+     };
+ 
+     struct window
+diff --git a/src/cocoa.app.mm b/src/cocoa.app.mm
+index 88cd7cb..f73a060 100644
+--- a/src/cocoa.app.mm
++++ b/src/cocoa.app.mm
+@@ -10,7 +10,23 @@
+         [NSApp activateIgnoringOtherApps:YES];
+         [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
+ 
+-        impl::init_menu();
++        bool noMenu = false;
++        if (opts.argv && opts.argc)
++        {
++            for (unsigned int i=0; i<*opts.argc; i++)
++            {
++              std::string s = (*opts.argv)[i];
++              if (s == "no-menu")
++              {
++                  printf("no-menu\n");
++                  noMenu = true;
++              }
++            }
++        }
++        if (!noMenu)
++        {
++          impl::init_menu();
++        }
+     }
+ 
+     application::~application() = default;
+diff --git a/src/cocoa.window.mm b/src/cocoa.window.mm
+index e629154..d1b2bb8 100644
+--- a/src/cocoa.window.mm
++++ b/src/cocoa.window.mm
+@@ -22,15 +22,18 @@
+ 
+         const utils::autorelease_guard guard{};
+ 
+-        m_impl->window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 800, 600)
++        if (!prefs.parentView)
++        {
++          m_impl->window = [[NSWindow alloc] initWithContentRect:NSMakeRect(0, 0, 800, 600)
+                                                      styleMask:mask
+                                                        backing:NSBackingStoreBuffered
+                                                          defer:NO];
+ 
+-        m_impl->delegate = [[WindowDelegate alloc] initWithParent:this];
++          m_impl->delegate = [[WindowDelegate alloc] initWithParent:this];
+ 
+-        [m_impl->window setDelegate:m_impl->delegate.get()];
+-        [m_impl->window center];
++          [m_impl->window setDelegate:m_impl->delegate.get()];
++          [m_impl->window center];
++        }
+     }
+ 
+     window::~window()
+@@ -43,9 +46,11 @@
+         }
+ 
+         // We hide-on-close, so we call trigger two different close calls to properly quit.
+-
+         close();
+-        [m_impl->window close];
++        if (m_impl->window)
++        {
++          [m_impl->window close];
++        }
+     }
+ 
+     bool window::visible() const
+diff --git a/src/wk.webview.mm b/src/wk.webview.mm
+index 038b35d..922767d 100644
+--- a/src/wk.webview.mm
++++ b/src/wk.webview.mm
+@@ -58,6 +58,8 @@
+         [uuid autorelease];
+ 
+         [m_impl->config.get() setWebsiteDataStore:store];
++        
++        auto parent = prefs.parentView ? (NSView*)prefs.parentView : nullptr;
+ 
+ #ifdef SAUCER_WEBKIT_PRIVATE
+         auto *const settings = m_impl->config.get().preferences;
+@@ -82,14 +84,17 @@
+             m_impl->web_view.get().customUserAgent = [NSString stringWithUTF8String:prefs.user_agent.c_str()];
+         }
+ 
+-        m_impl->view = [[NSView alloc] init];
++        m_impl->view = parent ? parent : [[NSView alloc] init];
+ 
+         [m_impl->view.get() setAutoresizesSubviews:YES];
+         [m_impl->view.get() addSubview:m_impl->web_view.get()];
+         [m_impl->web_view.get() setFrame:m_impl->view.get().bounds];
+ 
+-        window::m_impl->window.contentView = m_impl->view.get();
+-        m_impl->appearance                 = window::m_impl->window.appearance;
++        if (!parent)
++        {
++          window::m_impl->window.contentView = m_impl->view.get();
++          m_impl->appearance                 = window::m_impl->window.appearance;
++        }        
+ 
+         window::m_impl->on_closed = [this]
+         {
+@@ -119,6 +124,33 @@
+         [window::m_impl->window setContentView:nil];
+     }
+ 
++    void webview::forwardEventToParent(void *event)
++    {
++        //NSEvent* ev = (NSEvent*)event;
++
++        auto deltaX = 0;
++        auto deltaY = 100;
++        
++        auto targetView = m_impl->view.get();
++        NSEvent *ev = [NSEvent scrollWheelEventWithDeltaX:deltaX
++                                                    deltaY:deltaY
++                                                    deltaZ:0
++                                                 location:[targetView convertPoint:targetView.bounds.origin toView:nil]
++                                            modifierFlags:0
++                                                timestamp:[NSDate timeIntervalSinceReferenceDate]
++                                             windowNumber:targetView.window.windowNumber
++                                                  context:[NSGraphicsContext currentContext]
++                                                   phase:NSEventPhaseBegan
++                                          momentumPhase:NSEventPhaseNone
++                          isDirectionInvertedFromDevice:NO];
++
++
++        if (window::m_impl->window)
++        {
++            [window::m_impl->window sendEvent:ev];
++        }
++    }
++
+     icon webview::favicon() const // NOLINT(*-static)
+     {
+         return {};

@@ -24,6 +24,7 @@ type Props = {
   hideSearch?: boolean;
   startCollapsed?: boolean;
   dateFormat?: string;
+  hideDate?: boolean;
   onAction?: (board: SavedBoard, action: BoardManagerAction) => void;
 };
 
@@ -35,6 +36,7 @@ export default function BoardManager({
   hideSearch,
   startCollapsed,
   dateFormat,
+  hideDate,
   onAction,
 }: Props) {
   const [filter, setFilter] = useState("");
@@ -104,6 +106,7 @@ export default function BoardManager({
           filter={filter}
           dateFormat={dateFormat}
           actions={actions}
+          hideDate={hideDate}
           onAction={onAction}
         />
       )}

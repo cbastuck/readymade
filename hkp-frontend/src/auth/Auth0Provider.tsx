@@ -9,8 +9,8 @@ type Props = {
 
 export default function AuthProvider({
   children,
-  domain = "dev-ziwr7mkwtcnqrsjp.us.auth0.com",
-  clientId = "boZq5bft9A8Tyxq3hdugkuqG8RqnyisZ",
+  domain = "hookitapp.eu.auth0.com",
+  clientId = "gpk8IFPKfaOTQUzpDRO7vBajOnB72rkM",
   redirectUri = `${location.protocol}//${location.host}/authRedirect`,
 }: Props) {
   const disableAuth = location.href.startsWith("http://192.168.");

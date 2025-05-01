@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { ReactNode, useContext } from "react";
 
 import { BoardCtx } from "../../BoardContext";
 
@@ -16,6 +16,7 @@ import "./index.css";
 
 type Props = {
   showRuntimeMenu?: boolean;
+  children?: ReactNode;
   isCompact?: boolean;
   includeNavigationLinks?: boolean;
   onUpdateAvailableRuntimeEngines?: (
@@ -25,6 +26,7 @@ type Props = {
 
 export default function Toolbar({
   showRuntimeMenu = false,
+  children = false,
   isCompact = undefined,
   onUpdateAvailableRuntimeEngines,
 }: Props) {
@@ -86,7 +88,7 @@ export default function Toolbar({
 
           <BoardMenu />
 
-          {showRuntimeMenu && (
+          {!children && showRuntimeMenu && (
             <RuntimeMenu
               availableRuntimeEngines={
                 boardContext?.availableRuntimeEngines || []
@@ -97,6 +99,8 @@ export default function Toolbar({
               onAddRuntime={onAddRuntime}
             />
           )}
+
+          {children ? children : null}
 
           <NavigationBar
             isCompact={isCompact === undefined ? isNarrow : isCompact}

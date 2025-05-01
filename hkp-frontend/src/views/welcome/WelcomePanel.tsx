@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
@@ -12,9 +12,10 @@ import LandingPitch from "./LandingPitch";
 import SampleCarousel, { CarouselItem } from "../SampleCarousel";
 import { WelcomeHeroVideo } from "./WelcomeHeroVideo";
 import { currentHeroVideo } from "./heroVideos";
+import SampleBoards from "../docs/SampleBoards";
 
 export const welcomeBlockClassname =
-  "flex flex-col mb-4 text-lg overflow-hidden tracking-widest text-left mx-auto w-[100%] md:w-[70%] md:max-w-[800px] gap-4";
+  "flex flex-col mb-4 text-lg overflow-hidden tracking-widest text-left mx-auto w-[100%] md:w-[85%] md:max-w-[800px] gap-4";
 
 export default function WelcomePanel() {
   const navigate = useNavigate();
@@ -39,6 +40,15 @@ export default function WelcomePanel() {
 
   const [currentCarouselItem, setCurrentCarouselItem] = useState(0);
   const video = currentHeroVideo();
+
+  const [sampleAppsVisible, setSampleAppsVisible] = useState(false);
+  useEffect(() => {
+    const to = setTimeout(() => {
+      setSampleAppsVisible(true);
+    }, 1000);
+    return () => clearTimeout(to);
+  }, []);
+
   return (
     <div
       className="flex flex-col w-full mt-0 md:mt-[5%]"
@@ -82,20 +92,38 @@ export default function WelcomePanel() {
       </div>
 
       <div
-        className="px-10"
+        className="px-10 pt-10"
         style={{
-          maxHeight: headerAnimationsComplete ? undefined : 530, // this show the scrollbar by default, but does not scroll much and avoids horiontal jumping when scrollbar comes in
-          opacity: headerAnimationsComplete ? 1 : 0,
+          maxHeight: sampleAppsVisible ? undefined : 530, // this show the scrollbar by default, but does not scroll much and avoids horiontal jumping when scrollbar comes in
+          opacity: sampleAppsVisible ? 1 : 0,
           transition: "opacity 2s ease",
           overflowY: "hidden",
         }}
       >
+        <h1 id="samples" className="pt-4 md:pt-10 m-0 md:text-center">
+          Example Apps
+        </h1>
         <SampleCarousel
           background={video.still} //"/assets/heros/pexels-steve-1495321%20md.jpg" //"/assets/teaser/blue3.png"
           current={currentCarouselItem}
           onLoad={onLoadBoard}
           onCurrentChange={setCurrentCarouselItem}
         />
+      </div>
+
+      <div
+        className={`pb-20 px-10 mx-auto font-menu ${welcomeBlockClassname}`}
+        style={{
+          opacity: sampleAppsVisible ? 1 : 0,
+          transition: "opacity 2s ease",
+        }}
+      >
+        <h1 id="samples" className="md:pt-10 m-0 md:text-center">
+          All Demo Apps
+        </h1>
+        <div className="px-4">
+          <SampleBoards headline="" hideDate />
+        </div>
       </div>
     </div>
   );

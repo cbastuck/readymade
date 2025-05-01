@@ -4,3 +4,5 @@ build-lib
 .env
 cypress/downloads
 build*
+xbuild
+!.github/workflows/*

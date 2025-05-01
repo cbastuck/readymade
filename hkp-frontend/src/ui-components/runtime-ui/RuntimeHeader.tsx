@@ -25,6 +25,7 @@ type Props = {
   onAddService: (svc: ServiceClass) => void;
   onExpand: (isExpanded: boolean) => void;
   onWrapServices: (isWrapped: boolean) => void;
+  onSave: () => void;
 };
 
 export default function RuntimeHeader({
@@ -36,6 +37,7 @@ export default function RuntimeHeader({
   onAddService,
   onExpand,
   onWrapServices,
+  onSave,
 }: Props) {
   const [showRunWithParams, setShowRunWithParams] = useState(false);
   const [isRuntimeConfigOpen, setIsRuntimeConfigOpen] = useState(false);
@@ -113,6 +115,7 @@ export default function RuntimeHeader({
           onClear={onClear}
           onDelete={onDelete}
           onConfiguration={onConfiguration}
+          onSave={onSave}
         />
 
         <Editable

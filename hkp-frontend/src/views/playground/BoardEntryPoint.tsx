@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import { BoardContextState } from "../../BoardContext";
 import EmptyBoard from "./EmptyBoard";
 import { s, t } from "../../styles";
@@ -15,7 +17,6 @@ import {
 import Board from "./Board";
 
 import LoadIndicator from "./LoadIndicator";
-import { Link } from "react-router-dom";
 
 type Props = {
   className?: string;
@@ -103,7 +104,7 @@ export default function BoardEntryPoint({
                 textAlign: "center",
               }}
             >
-              Welcome to Playground
+              Welcome to the Playground
             </h1>
           )}
           <div>

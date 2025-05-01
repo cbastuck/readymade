@@ -24,6 +24,7 @@ import {
 import { isUserAuthenticated } from "./runtime/remote/RemoteRuntimeApi";
 import { AppContextState, AppCtx } from "./AppContext";
 import { connectDevTools } from "./core/DevTools";
+import { restoreAvailableRuntimeEngines } from "./common";
 
 type BoardContextAPI = {
   addAvailableRuntime: (
@@ -69,25 +70,28 @@ type BoardContextAPI = {
   ) => void;
 };
 
-export type BoardContextState = BoardContextAPI & {
-  user: User | null;
-
-  boardName?: string;
-
+export type EngineState = {
   runtimes: Array<RuntimeDescriptor>;
   services: { [runtimeId: string]: Array<ServiceDescriptor> };
   registry: { [runtimeId: string]: ServiceRegistry };
   scopes: { [runtimeId: string]: RuntimeScope };
-
-  availableRuntimeEngines: Array<RuntimeClass>;
-  runtimeApis: RuntimeApiMap;
-
-  appContext: AppContextState | null;
-  awaitUserLogin: (() => void) | null;
-
-  errorOnFetch?: Error;
-  isFetching: boolean;
 };
+
+export type BoardContextState = BoardContextAPI &
+  EngineState & {
+    user: User | null;
+
+    boardName?: string;
+
+    availableRuntimeEngines: Array<RuntimeClass>;
+    runtimeApis: RuntimeApiMap;
+
+    appContext: AppContextState | null;
+    awaitUserLogin: (() => void) | null;
+
+    errorOnFetch?: Error;
+    isFetching: boolean;
+  };
 
 type Props = {
   user: User | null;
@@ -96,6 +100,7 @@ type Props = {
   availableRuntimeEngines?: Array<RuntimeClass>;
   runtimeApis?: RuntimeApiMap;
   fetchAfterMount?: boolean;
+  initialState?: EngineState;
 
   fetchBoard?: () => Promise<BoardDescriptor>;
   isRuntimeInScope?: () => boolean;
@@ -162,7 +167,8 @@ class BoardProvider extends Component<Props, BoardContextState> {
       isActionAvailable: this.isActionAvailable,
       setRuntimeName: this.setRuntimeName,
       setServiceName: this.setServiceName,
-      availableRuntimeEngines: props.availableRuntimeEngines || [],
+      availableRuntimeEngines:
+        props.availableRuntimeEngines || restoreAvailableRuntimeEngines(),
       addAvailableRuntime: this.addAvailableRuntime,
       removeAvailableRuntime: this.removeAvailableRuntime,
       serializeBoard: this.serializeBoard,
@@ -180,6 +186,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       awaitUserLogin: null,
       isFetching: false,
       errorOnFetch: undefined,
+      ...(this.props.initialState || {}),
     };
   }
 

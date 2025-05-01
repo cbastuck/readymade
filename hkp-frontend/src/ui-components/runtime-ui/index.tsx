@@ -1,6 +1,7 @@
 import { CSSProperties, ReactElement, ReactNode } from "react";
 
 import {
+  InitialServiceFrameState,
   OnResult,
   ProcessRuntimeByName,
   RuntimeDescriptor,
@@ -21,8 +22,8 @@ import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTypes";
 import DragSource from "@/components/DragSource";
 
 type Props = {
-  user: User | null;
-  boardName: string | null;
+  user?: User | null;
+  boardName?: string | null;
   runtime: RuntimeDescriptor;
   registry: ServiceRegistry;
   scope: RuntimeScope;
@@ -35,6 +36,7 @@ type Props = {
   outputs?: ReactElement;
   inputs?: ReactElement;
   children?: ReactNode | ReactNode[];
+  initialServiceFrameState?: InitialServiceFrameState;
 
   onExpand: (isExpanded: boolean) => void;
   onWrapServices: (isWrapped: boolean) => void;
@@ -43,11 +45,12 @@ type Props = {
   onArrangeService: (serviceUuid: string, position: number) => void;
   onResult: OnResult;
   processRuntimeByName: ProcessRuntimeByName;
+  onSave: () => void;
 };
 
 export default function RuntimeUI({
-  user,
-  boardName,
+  user = null,
+  boardName = null,
   runtime,
   services,
   scope,
@@ -60,6 +63,7 @@ export default function RuntimeUI({
   isExpanded = true,
   outputs,
   inputs,
+  initialServiceFrameState,
   onExpand,
   onWrapServices,
   onAddService,
@@ -67,6 +71,7 @@ export default function RuntimeUI({
   onArrangeService,
   onResult,
   processRuntimeByName,
+  onSave,
 }: Props) {
   const theme = useTheme();
   const style: CSSProperties = {
@@ -104,6 +109,7 @@ export default function RuntimeUI({
           onAddService={onAddService}
           onExpand={onExpand}
           onWrapServices={onWrapServices}
+          onSave={onSave}
         />
       </DragSource>
 
@@ -153,6 +159,8 @@ export default function RuntimeUI({
             boardName={boardName || ""}
             runtime={runtime}
             services={services}
+            initialServiceFrameState={initialServiceFrameState}
+            wrapServices={wrapServices}
             onArrangeService={onArrangeService}
             onServiceAction={onServiceAction}
             onResult={onResult}

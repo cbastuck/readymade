@@ -25,6 +25,7 @@ type Props = {
   pageSize?: number;
   actions?: Array<ActionItem>;
   dateFormat?: string;
+  hideDate?: boolean;
   onAction?: (board: SavedBoard, action: BoardManagerAction) => void;
 };
 export default function BoardTable({
@@ -32,6 +33,7 @@ export default function BoardTable({
   className,
   dateFormat = "DD/MM/YYYY hh:mm",
   actions = [],
+  hideDate,
   onAction,
 }: Props) {
   return (
@@ -45,15 +47,18 @@ export default function BoardTable({
             <TableHead className="text-left text-base text-gray-600 w-[40%]">
               Description
             </TableHead>
-            <TableHead className="text-left text-base text-gray-600 w-[15%]">
-              Date
-            </TableHead>
+            {!hideDate && (
+              <TableHead className="text-left text-base text-gray-600 w-[15%]">
+                Date
+              </TableHead>
+            )}
+
             <TableHead className="text-right text-base text-gray-600 w-[5%]"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {items.map((board) => (
-            <TableRow key={board.name}>
+          {items.map((board, idx) => (
+            <TableRow key={`${board.name}.${idx}`}>
               <TableCell className="text-left text-base whitespace-nowrap text-ellipsis">
                 {<Link to={board.url}>{board.name}</Link>}
               </TableCell>
@@ -62,11 +67,13 @@ export default function BoardTable({
                   ? board.description
                   : JSON.stringify(board.description)}
               </TableCell>
-              <TableCell className="text-left text-base whitespace-nowrap text-ellipsis">
-                {board.createdAt
-                  ? moment(board.createdAt).format(dateFormat)
-                  : "-"}
-              </TableCell>
+              {!hideDate && (
+                <TableCell className="text-left text-base whitespace-nowrap text-ellipsis">
+                  {board.createdAt
+                    ? moment(board.createdAt).format(dateFormat)
+                    : "-"}
+                </TableCell>
+              )}
               <TableCell className="text-right text-base w-min">
                 {actions.length > 0 && (
                   <BoardActionButton

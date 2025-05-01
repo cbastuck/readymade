@@ -9,13 +9,17 @@ import Notifications from "./Notifications";
 import "./index.css";
 import "../app/globals.css";
 
-export default function App() {
+type Props = {
+  children?: React.ReactNode;
+};
+
+export default function App({ children }: Props) {
   return (
     <Router>
       <AuthProvider>
         <AppProvider>
           <div className="h-full w-full">
-            <Routes />
+            {children || <Routes />}
             <Notifications />
           </div>
           <MessageDispatcher />

@@ -59,6 +59,7 @@ export default function RuntimeConfigurationDialog({
           label="Id"
           value={config.runtime.id}
           onChange={(id) => onChange({ id })}
+          disabled={true}
         />
         <InputField
           label="Name"
@@ -71,6 +72,7 @@ export default function RuntimeConfigurationDialog({
           label="Type"
           value={config.runtime.type}
           onChange={(url) => onChange({ url })}
+          disabled={true}
         />
 
         <InputField
@@ -79,7 +81,7 @@ export default function RuntimeConfigurationDialog({
           disabled={!config.runtime.url}
         />
       </div>
-      <div className="flex gap-1 items-begin mt-1 w-full">
+      <div className="flex gap-1 items-begin mt-1 w-[120px]">
         <GroupLabel size={4}>Color</GroupLabel>
         <ColorPicker
           className="h-6 w-full"

@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from "uuid";
 import { BoardContextState } from "@/BoardContext";
 import { fromVault, toVault } from "@/runtime/browser/services/base/eval";
 import { BoardDescriptor } from "@/types";
+import { storeBoardToLocalStorage } from "@/views/playground/common";
 
 type Id = string | number;
 
@@ -108,6 +109,11 @@ export function connectDevTools(context?: BoardContextState) {
     });
   };
 
+  const processNext = (runtimeId: Id, instanceId: Id, params: any) => {
+    const { svc, scope } = getServiceApi(runtimeId, instanceId);
+    scope.onResult(svc.uuid, params, null);
+  };
+
   const processRuntime = (runtimeId: Id, params: any) => {
     const { api } = getRuntimeApi(runtimeId);
     return api.processRuntime(context.scopes[runtimeId], params, null);
@@ -133,9 +139,11 @@ export function connectDevTools(context?: BoardContextState) {
     setServiceConfig,
     processBoard,
     processRuntime,
+    processNext,
     processService,
     fromVault,
     toVault,
+    storeBoardToLocalStorage,
   };
 
   if (firstRun) {

@@ -1,5 +1,13 @@
 import { useContext } from "react";
-import { LogIn, LogOut, Forward, Menu, Settings, User } from "lucide-react";
+import {
+  LogIn,
+  LogOut,
+  Forward,
+  Menu,
+  Settings,
+  User,
+  Server,
+} from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
@@ -41,10 +49,8 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
 
   const onLogout = async () => {
     await logout({
-      openUrl: () => {
-        if (context) {
-          context.logout();
-        }
+      logoutParams: {
+        returnTo: `${window.location.protocol}//${window.location.host}/logout`,
       },
     });
   };
@@ -61,9 +67,16 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
         className="w-56 mx-4 font-menu"
         style={{ borderRadius: theme.borderRadius }}
       >
-        {includeNavigationLinks && (
-          <>
-            <DropdownMenuGroup>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            className="text-base"
+            onClick={() => navigate("/remotes")}
+          >
+            <MenuIcon icon={Server} />
+            <span>Remotes</span>
+          </DropdownMenuItem>
+          {includeNavigationLinks && (
+            <>
               <DropdownMenuItem
                 className="text-base"
                 onClick={() => navigate("/docs")}
@@ -85,10 +98,10 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
                 <MenuIcon icon={Forward} />
                 <span>Playground</span>
               </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-          </>
-        )}
+            </>
+          )}
+        </DropdownMenuGroup>
+        <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
           <DropdownMenuItem

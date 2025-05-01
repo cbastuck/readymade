@@ -27,8 +27,11 @@ import HomeWidgetImport from "./views/home/ImportWidget.tsx";
 import BuildBoard from "./views/BuildBoard";
 import AuthRedirect from "./views/AuthRedirect";
 import AuthRedirectAuth0 from "./views/AuthRedirectAuth0";
+import Login from "./views/LoginAuth0";
+import Logout from "./views/LogoutAuth0";
 import Import from "./Import";
 import Profile from "./views/profile";
+import Remotes from "./views/remotes";
 
 import Headless from "./views/headless";
 import Join from "./Join";
@@ -104,6 +107,8 @@ export default function Routes() {
       <Route path="/examples" element={<Examples />} />
 
       {/*<Route path="/new" exact element={<BuildBoard />} />*/}
+      <Route path="/login" element={<Login />} />
+      <Route path="/logout" element={<Logout />} />
       <Route path="/auth2app" element={<AuthRedirect />} />
       <Route path="/authRedirect" element={<AuthRedirectAuth0 />} />
       <Route path="/import" element={<Import />} />
@@ -146,6 +151,8 @@ export default function Routes() {
 
       <Route path="/headless" element={<Headless />} />
       <Route path="/join/:share" element={<Join />} />
+      <Route path="/remotes" element={<Remotes />} />
+      <Route path="/remotes/:remote" element={<Remotes />} />
     </RouterRoutes>
   );
 }

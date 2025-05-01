@@ -12,7 +12,3 @@ COPY . .
 WORKDIR /build
 RUN BOOST_ROOT=/root/boost cmake /hkp
 RUN make
-
-
-
-

@@ -64,9 +64,6 @@ export default function SampleCarousel({
 
   return (
     <>
-      <h1 id="samples" className="pt-4 md:pt-10 m-0 md:text-center">
-        Sample Boards
-      </h1>
       <div className={`py-10 ${welcomeBlockClassname}`}>
         Get a quick impression by browsing through the samples below. Every
         sample comes with a video and a link to a Playground board. Click on the

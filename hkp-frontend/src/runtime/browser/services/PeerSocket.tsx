@@ -1,5 +1,3 @@
-import { v4 as uuidv4 } from "uuid";
-
 import { AppInstance, ServiceClass } from "@/types";
 
 import PeerSocketUI from "./PeerSocketUI";
@@ -25,7 +23,7 @@ class PeerSocket extends ServiceBase<State> {
   ) {
     super(app, board, descriptor, id, {
       mode: "Receive only",
-      peerName: uuidv4(),
+      peerName: `NoName${Math.floor(Math.random() * 100)}`,
       targetPeer: undefined,
       extractIncomingData: false,
     });

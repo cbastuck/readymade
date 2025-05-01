@@ -11,6 +11,7 @@ import {
   OnResult,
   ProcessRuntimeByName,
   ServiceInstance,
+  InitialServiceFrameState,
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 
@@ -24,6 +25,7 @@ type Props = {
     wrapServices?: boolean;
     minimized?: boolean;
   };
+  initialServiceFrameState?: InitialServiceFrameState;
   runtime: RuntimeDescriptor;
   outputs?: ReactElement;
   inputs?: ReactElement;
@@ -237,12 +239,34 @@ export default class Runtime extends Component<Props, State> {
     const onDropService = (data: any) => {
       const serviceData = JSON.parse(data);
       if (isServiceInstanceDrop(serviceData)) {
-        console.log("runtime ondropservice", serviceData);
         const descriptor = serviceData.descriptor;
         this.onAddService(descriptor, serviceData);
       }
     };
 
+    const onSaveRuntime = async () => {
+      const saveLink = document.createElement("a");
+      const payload = {
+        ...runtime,
+        services: services?.map(({ serviceId, serviceName, state, uuid }) => ({
+          uuid,
+          serviceId,
+          name: serviceName,
+          state,
+        })),
+      };
+
+      const blob = new Blob([JSON.stringify(payload)], {
+        type: "application/json",
+      });
+      saveLink.href = URL.createObjectURL(blob);
+      saveLink.download = `runtime-${runtime.name}.json`;
+      saveLink.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(saveLink.href);
+        saveLink.remove();
+      }, 60000);
+    };
     return (
       <DropTarget
         acceptedType={HKP_DND_SERVICE_TYPE}
@@ -270,6 +294,8 @@ export default class Runtime extends Component<Props, State> {
           onWrapServices={onWrapServices}
           onResult={this.props.onResult}
           processRuntimeByName={this.props.processRuntimeByName}
+          initialServiceFrameState={this.props.initialServiceFrameState}
+          onSave={onSaveRuntime}
         >
           {services && services.length === 0 && !headless && (
             <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence

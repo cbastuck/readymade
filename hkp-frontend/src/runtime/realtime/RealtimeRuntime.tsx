@@ -9,6 +9,7 @@ import {
   User,
   RuntimeApi,
   ServiceInstance,
+  InitialServiceFrameState,
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
@@ -25,6 +26,8 @@ type Props = {
   scope: RuntimeScope;
   children?: JSX.Element | JSX.Element[];
   collapsed?: boolean;
+  initialServiceFrameState?: InitialServiceFrameState;
+  wrapServices?: boolean;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onServiceAction: (command: ServiceAction) => void;
   onResult: OnResult;
@@ -37,6 +40,8 @@ export default function RealtimeRuntime({
   runtime,
   scope,
   collapsed,
+  initialServiceFrameState,
+  wrapServices,
   onResult,
   onArrangeService,
   onServiceAction,
@@ -83,6 +88,7 @@ export default function RealtimeRuntime({
       showBypassOnlyIfExplicit: true,
       draggable: false,
       onServiceAction,
+      serviceFrameState: initialServiceFrameState,
     });
   };
 
@@ -99,6 +105,7 @@ export default function RealtimeRuntime({
           boardName={boardName}
           runtime={runtime}
           services={servicesWithConfig}
+          wrapServices={wrapServices}
           onArrangeService={onArrangeService}
           onCreateServiceUi={onCreateServiceUi}
         />

@@ -13,6 +13,7 @@ import {
   User,
 } from "@/types";
 import RealtimeRuntimeScope from "./RealtimeRuntimeScope";
+import { EngineState } from "@/BoardContext";
 
 async function createScope(
   runtime: RuntimeDescriptor,
@@ -77,6 +78,53 @@ async function restoreRuntime(
     scope,
     registry,
   };
+}
+
+type RestRuntimeData = {
+  id: string;
+  name: string;
+  services: Array<{
+    serviceId: string;
+    serviceName: string;
+    state: any;
+    uuid: string;
+  }>;
+  outputUrl: string;
+};
+
+export async function attachRuntimes(
+  rtClass: RuntimeClass,
+  _user: User | null
+): Promise<EngineState> {
+  const initState: EngineState = {
+    runtimes: [],
+    services: {},
+    scopes: {},
+    registry: {},
+  };
+  if (!rtClass) {
+    return initState;
+  }
+  const url = `${rtClass.url}/runtimes`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error("Failed to fetch runtimes" + res.statusText);
+  }
+  const data = await res.json();
+
+  // TODO: get rid of the any type
+  return data?.reduce((acc: any, cur: RestRuntimeData) => {
+    const rt: RuntimeDescriptor = { ...rtClass, ...cur };
+    return {
+      ...acc,
+      runtimes: [...acc.runtimes, rt],
+      services: { ...acc.services, [cur.id]: cur.services },
+      scopes: {
+        ...acc.scopes,
+        [cur.id]: new RealtimeRuntimeScope(rt, cur.outputUrl),
+      },
+    };
+  }, initState);
 }
 
 export async function processRuntime(
@@ -245,6 +293,7 @@ const api: RuntimeApi = {
   addRuntime,
   removeRuntime,
   restoreRuntime,
+  attachRuntimes,
   processRuntime,
   addService,
   removeService,

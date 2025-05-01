@@ -33,6 +33,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
     }
   };
   const theme = useContext(ThemeCtx);
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -46,6 +47,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
             backgroundColor: theme.popoverBackgroundColor,
             borderColor: theme.borderColor,
           }}
+          disabled={!registry || registry.length === 0}
         >
           Add Service
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />

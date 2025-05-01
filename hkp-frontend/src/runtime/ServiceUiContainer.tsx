@@ -10,6 +10,7 @@ type Props = {
   services: Array<ServiceInstance>;
   collapsed?: boolean;
   className?: string;
+  wrapServices?: boolean;
   onArrangeService: (serviceUuid: string, position: number) => void;
   onCreateServiceUi: (
     boardName: string,
@@ -26,6 +27,7 @@ export default function ServiceUiContainer(props: Props) {
     services,
     className,
     collapsed = false,
+    wrapServices = false,
     onArrangeService,
     onCreateServiceUi,
   } = props;
@@ -44,7 +46,11 @@ export default function ServiceUiContainer(props: Props) {
   }
 
   return (
-    <div className={`overflow-y-hidden w-full pb-4 mt-3 ${className || ""}`}>
+    <div
+      className={`overflow-y-hidden w-full pb-4 mt-3 ${className || ""} ${
+        wrapServices ? "flex-wrap" : ""
+      }`}
+    >
       {serviceElements.map((serviceElement, pos) => {
         return (
           <div

@@ -3,10 +3,16 @@
   "private": true,
   "version": "0.9.0",
   "type": "module",
+  "files": [
+    "build-lib/"
+  ],
+  "main": "build-lib/hkp-frontend.js",
   "scripts": {
+    "start": "npm run dev",
     "dev": "vite --host",
     "build": "npm run updateBuildNumber && tsc && vite build",
     "build-lib": "tsc --p ./tsconfig-lib.json && vite --config ./vite.config-lib.ts build ",
+    "pack-lib": "npm run build-lib && npm pack --pack-destination build-lib",
     "copy-lib": "cp -r build-lib ../hkp-go/app/wails/frontend/src",
     "buildncopy-lib": "npm run build-lib && npm run copy-lib",
     "fix-lib": "sed -i='' 's/a as r/r: a/' build-lib/___vite-browser-external_commonjs-proxy-* && sed -i='' 's/export {/export default {/' build-lib/___vite-browser-external_commonjs-proxy-* && bash -c \"echo 'export { r }' >> build-lib/___vite-browser-external_commonjs-*.js\"",
@@ -58,6 +64,7 @@
     "resize-observer-polyfill": "^1.5.1",
     "setimmediate": "^1.0.5",
     "sonner": "^1.4.41",
+    "swr": "^2.3.3",
     "tailwind-merge": "^2.2.2",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.2.2",

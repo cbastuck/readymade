@@ -1,11 +1,32 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth0 } from "@auth0/auth0-react";
+import { Link } from "react-router-dom";
 import LoadIndicator from "./playground/LoadIndicator";
 
 export default function AuthRedirectAuth0() {
-  const { getIdTokenClaims } = useAuth0();
+  const { getIdTokenClaims, error } = useAuth0();
   const [receivedToken, setReceivedToken] = useState<boolean>(false);
+
+  if (error) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <h1>Login Error</h1>
+        <div>{error.message}</div>
+        <div>
+          <Link to="/">Return to Start</Link>
+        </div>
+      </div>
+    );
+  }
 
   const resolveToken = async () => {
     const claims = await getIdTokenClaims();
@@ -30,7 +51,7 @@ export default function AuthRedirectAuth0() {
     );
   }
   /* auth0 framework already puts the right target location into
-   * the window without navigating to it. Check appState in AuthEntries.tsx
+   * the window without navigating to it.
    */
   return <Navigate to={window.location.pathname} />;
 }

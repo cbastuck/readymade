@@ -6,6 +6,7 @@ import {
   Location,
 } from "react-router-dom";
 import * as lzstring from "lz-string";
+import { RuntimeClass } from "./types";
 
 export function isTouchDevice() {
   return "ontouchstart" in window;
@@ -84,4 +85,19 @@ export function delayedExec(fn: () => any, delay: number) {
 
 export function runDeferred(f: () => void, delay: number) {
   return setTimeout(f, delay);
+}
+
+export function restoreAvailableRuntimeEngines(): Array<RuntimeClass> {
+  return JSON.parse(localStorage.getItem("available-remote-runtimes") || "[]");
+}
+
+export function storeAvailableRuntimeEngines(engines: RuntimeClass[]) {
+  const filteredEngines = engines.filter(
+    (rt) => rt.type === "remote" || rt.type === "realtime"
+  );
+
+  localStorage.setItem(
+    "available-remote-runtimes",
+    JSON.stringify(filteredEngines)
+  );
 }

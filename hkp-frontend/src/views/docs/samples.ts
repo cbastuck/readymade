@@ -7,6 +7,7 @@ import { midi } from "../SampleCarousel/Samples/MidiController";
 import { monitoring } from "../SampleCarousel/Samples/Monitoring";
 import { spotify2Github } from "../SampleCarousel/Samples/SpotifyToGithub";
 import { send } from "../SampleCarousel/Samples/TextSend";
+import { receive } from "../SampleCarousel/Samples/TextReceive";
 
 const samples: Array<SavedBoard> = [
   {
@@ -40,6 +41,14 @@ const samples: Array<SavedBoard> = [
     value: {} as any, // TODO: fix this
     name: "Spotify2Github",
     createdAt: spotify2Github.createdAt,
+  },
+  {
+    id: uuidv4(),
+    url: receive.boardUrl,
+    description: receive.headline,
+    value: {} as any, // TODO: fix this
+    name: "Receive Encrypted Text",
+    createdAt: receive.createdAt,
   },
   {
     id: uuidv4(),

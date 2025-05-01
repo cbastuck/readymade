@@ -1,5 +1,6 @@
 import { Component, FunctionComponent, ReactElement, ReactNode } from "react";
 import PeerJs, { DataConnection } from "peerjs";
+import { EngineState } from "./BoardContext";
 
 export type InstanceId = {
   uuid: string;
@@ -115,6 +116,10 @@ export type RuntimeOutputRoutings = { [id: string]: RuntimeOutputOptions };
 
 export type ServiceURI = string;
 
+export type InitialServiceFrameState = {
+  collapsed: boolean;
+};
+
 export type ServiceUIProps = {
   service: ServiceInstance;
   showBypassOnlyIfExplicit?: boolean;
@@ -122,6 +127,7 @@ export type ServiceUIProps = {
   resizable?: boolean;
   frameless?: boolean;
   customMenuEntries?: Array<CustomMenuEntry>;
+  serviceFrameState?: InitialServiceFrameState;
   onServiceAction: (command: ServiceAction) => void;
 };
 
@@ -291,6 +297,11 @@ export type RuntimeApi = {
     services: Array<ServiceDescriptor>,
     user: User | null
   ) => Promise<RestoreRuntimeResult | null>;
+
+  attachRuntimes?: (
+    runtime: RuntimeClass,
+    user: User | null
+  ) => Promise<EngineState>;
 
   removeRuntime: (
     scope: RuntimeScope,

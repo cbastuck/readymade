@@ -25,6 +25,7 @@ export default function ServiceUI({
   customMenuEntries,
   resizable = true,
   frameless = false,
+  serviceFrameState,
   onInit,
   onTimer,
   onNotification,
@@ -61,6 +62,7 @@ export default function ServiceUI({
       onAction={onServiceAction}
       showBypassOnlyIfExplicit={showBypassOnlyIfExplicit}
       customMenuEntries={customMenuEntries}
+      serviceFrameState={serviceFrameState}
     >
       <Resizable
         initialSize={initialSize}

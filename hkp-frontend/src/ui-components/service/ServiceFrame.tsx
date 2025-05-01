@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 
 import {
   CustomMenuEntry,
+  InitialServiceFrameState,
   ServiceAction,
   ServiceDescriptor,
   ServiceInstance,
@@ -26,6 +27,7 @@ type Props = {
   children: ReactNode;
   customMenuEntries?: Array<CustomMenuEntry>;
   frameless?: boolean;
+  serviceFrameState?: InitialServiceFrameState;
   onAction: (action: ServiceAction) => void;
 };
 
@@ -35,9 +37,12 @@ export default function ServiceFrame({
   showBypassOnlyIfExplicit,
   customMenuEntries,
   frameless = false,
+  serviceFrameState,
   onAction,
 }: Props) {
-  const [frameCollapsed, setFrameCollapsed] = useState(false);
+  const [frameCollapsed, setFrameCollapsed] = useState(
+    serviceFrameState?.collapsed || false
+  );
   const [configVisible, setConfigVisible] = useState(false);
   const [bypass, setBypass] = useState(
     service?.bypass ?? service?.state?.bypass
