@@ -18,7 +18,7 @@ public:
   Data process(Data data) override;
 
 private:
-  Data processAudioDecodeEncode(const std::string& input, const std::string& out);
+  bool processAudioDecodeEncode(const std::string& input, const std::string& out);
 
   std::string m_outputFolder;
 };

@@ -62,13 +62,16 @@ Data Ffmpeg::process(Data data)
   if (std::filesystem::exists(outPath))
   {
     std::cout << "Ffmpeg service: output file already exists: " << outPath << std::endl;
-    return Null();
+    return json{{ "output", outPath }};
   }
-  return processAudioDecodeEncode(input, outPath);
+  
+  return processAudioDecodeEncode(input, outPath) ?
+    json{{ "output", outPath }} :
+    json{{ "error", "Failed to process audio" }};
 }
 
 
-Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::string& out)
+bool Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::string& out)
 {
   using namespace std;
   using namespace av;
@@ -92,7 +95,7 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
     ictx.openInput(input, ec);
     if (ec) {
         cerr << "Can't open input\n";
-        return Null();
+        return false;
     }
 
     ictx.findStreamInfo();
@@ -110,7 +113,7 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
 
     if (ast.isNull()) {
         cerr << "Audio stream not found\n";
-        return Null();
+        return false;
     }
 
     if (ast.isValid()) {
@@ -125,7 +128,7 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
 
       if (ec) {
           cerr << "Can't open codec\n";
-          return Null();
+          return false;
       }
     }
 
@@ -200,14 +203,14 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
       enc.open(ec);
       if (ec) {
           cerr << "Can't open encoder\n";
-          return 1;
+          return false;
       }
 
       Stream ost = octx.addStream(enc);
       octx.openOutput(out, ec);
       if (ec) {
           cerr << "Can't open output\n";
-          return 1;
+          return false;
       }
 
       clog << "Encoder frame size: " << enc.frameSize() << '\n';
@@ -258,7 +261,7 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
 
           if (ec) {
               cerr << "Decode error: " << ec << ", " << ec.message() << endl;
-              return 1;
+              return false;
           } else if (!samples) {
               cerr << "Empty samples set\n";
 
@@ -318,7 +321,7 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
               Packet opkt = enc.encode(ouSamples, ec);
               if (ec) {
                   cerr << "Encoding error: " << ec << ", " << ec.message() << endl;
-                  return 1;
+                  return false;
               } else if (!opkt) {
                   //cerr << "Empty packet\n";
                   continue;
@@ -331,7 +334,7 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
               octx.writePacket(opkt, ec);
               if (ec) {
                   cerr << "Error write packet: " << ec << ", " << ec.message() << endl;
-                  return 1;
+                  return false;
               }
           }
 
@@ -362,7 +365,7 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
           octx.writePacket(opkt, ec);
           if (ec) {
               cerr << "Error write packet: " << ec << ", " << ec.message() << endl;
-              return 1;
+              return false;
           }
 
       }
@@ -371,8 +374,5 @@ Data Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
       octx.writeTrailer();
   }
 
-  return json{
-    {"status", "ok"},
-    {"message", "done"},
-  };
+  return true;
 }
