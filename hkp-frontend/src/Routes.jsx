@@ -67,6 +67,8 @@ import Multiplication from "./views/docs/prototypes/Multiplication";
 import { generateRandomName } from "./core/board";
 import { replacePlaceholders } from "./core/url";
 
+import Spreadsheet from "./views/spreadsheet";
+
 export default function Routes() {
   return (
     <RouterRoutes>
@@ -153,6 +155,8 @@ export default function Routes() {
       <Route path="/join/:share" element={<Join />} />
       <Route path="/remotes" element={<Remotes />} />
       <Route path="/remotes/:remote" element={<Remotes />} />
+
+      <Route path="/spreadsheet" element={<Spreadsheet />} />
     </RouterRoutes>
   );
 }
