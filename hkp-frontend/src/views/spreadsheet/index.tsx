@@ -1,5 +1,53 @@
 import { useState } from "react";
 
+const model = [
+  {
+    name: "Fetch Data",
+  },
+  {
+    name: "Augment Data",
+    children: [
+      {
+        name: "Augment Derived Data",
+        children: [
+          {
+            name: "Augment Derived Data 1",
+          },
+          {
+            name: "Augment Derived Data 2",
+          },
+        ],
+      },
+      {
+        name: "Augment External Data",
+        children: [
+          {
+            name: "Fetch External Data",
+          },
+          {
+            name: "Map Data",
+          },
+          {
+            name: "Filter Data",
+          },
+          {
+            name: "Reduce Data",
+          },
+          {
+            name: "Verify Data",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    name: "Aggregate Data",
+  },
+  {
+    name: "Visualize Data",
+  },
+];
+
 export default function Spreadsheet() {
   const [activeCells, setActiveCells] = useState<Array<number | undefined>>([]);
 
@@ -20,14 +68,12 @@ export default function Spreadsheet() {
   const getActiveCellStyle = (rowIndex: number, cellIndex: number) =>
     activeCells[rowIndex] === cellIndex ? "bg-gray-200" : "bg-white";
 
-  const getIsNestedCellStyle = (rowIndex: number, cellIndex: number) => {
-    const isNestedCell = rows[rowIndex][cellIndex];
-    return isNestedCell ? "text-gray-400" : "";
-  };
+  const getNestedCellStyle = (rowIndex: number, cellIndex: number) =>
+    rows[rowIndex][cellIndex]?.hasChildren ? "underline" : "";
 
   return (
-    <div className="w-full h-full m-4">
-      <table className="table-auto border-collapse border w-full">
+    <div className="w-full h-full m-1 font-menu">
+      <table>
         <tbody>
           {rows.map((row, rowIndex) => (
             <tr key={rowIndex}>
@@ -42,10 +88,10 @@ export default function Spreadsheet() {
                   className={`border p-2 cursor-pointer text-black select-none ${getActiveCellStyle(
                     rowIndex,
                     cellIndex
-                  )} ${getIsNestedCellStyle(rowIndex, cellIndex)}`}
+                  )} ${getNestedCellStyle(rowIndex, cellIndex)}`}
                   onClick={() => onClickCell(rowIndex, cellIndex)}
                 >
-                  <div className="w-[100px] overflow-hidden">{cell}</div>
+                  <div className="w-[180px] text-left">{cell.name}</div>
                 </td>
               ))}
             </tr>
@@ -56,54 +102,7 @@ export default function Spreadsheet() {
   );
 }
 
-type Cell = string;
-
-const model = [
-  {
-    name: "eins",
-  },
-  {
-    name: "zwei",
-    children: [
-      {
-        name: "zwei.eins",
-        children: [
-          {
-            name: "zwei.eins.eins",
-          },
-          {
-            name: "zwei.eins.zwei",
-          },
-        ],
-      },
-      {
-        name: "zwei.zwei",
-        children: [
-          {
-            name: "zwei.zwei.eins",
-          },
-          {
-            name: "zwei.zwei.zwei",
-          },
-        ],
-      },
-    ],
-  },
-  {
-    name: "drei",
-  },
-  {
-    name: "vier",
-  },
-  {
-    name: "fünf",
-    children: [
-      {
-        name: "fünf.eins",
-      },
-    ],
-  },
-];
+type Cell = { name: string; hasChildren: boolean };
 
 function getTable(activeCells: Array<number | undefined>): Array<Array<Cell>> {
   const lowerLevels: Array<Array<Cell>> = [];
@@ -114,7 +113,10 @@ function getTable(activeCells: Array<number | undefined>): Array<Array<Cell>> {
         : [];
   }
 
-  return [model.map((x) => x.name), ...lowerLevels];
+  return [
+    model.map((x) => ({ name: x.name, hasChildren: !!x.children })),
+    ...lowerLevels,
+  ];
 }
 
 function getChildren(
@@ -122,7 +124,10 @@ function getChildren(
   activeCells: Array<number | undefined>
 ): Array<Cell> {
   if (activeCells.length === 0) {
-    return model.map(({ name }) => name);
+    return model.map(({ name, children }) => ({
+      name,
+      hasChildren: !!children,
+    }));
   }
   const selectChild = activeCells[0];
   if (selectChild === undefined) {
