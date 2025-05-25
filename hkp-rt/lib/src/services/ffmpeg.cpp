@@ -451,36 +451,45 @@ void Ffmpeg::resampleBuffer(AudioData& io, unsigned int dstSampleRate)
   av::SampleFormat sampleFormat("fltp"); // see https://ffmpeg.org/doxygen/trunk/samplefmt_8c.html
   auto& src = io.samples;
   auto srcSampleRate = io.sampleRate;
-  auto numChannels = 1;
-  unsigned int numSamplesPerChannel = src[0].size();
+
+  int numChannels = 2;
+  unsigned int numSamplesPerChannel = static_cast<unsigned int>(src[0].size());
+
+  uint64_t channelLayout = AV_CH_LAYOUT_STEREO;
+  int sampleRate = srcSampleRate; // your input sample rate
+
+  // Create AudioSamples with allocated internal buffers
+  av::AudioSamples samples(sampleFormat, numSamplesPerChannel, channelLayout, sampleRate);
+
+  // Copy your vectors into AudioSamples planar buffers
+  for (int ch = 0; ch < numChannels; ++ch) 
+  {
+      float* dst = reinterpret_cast<float*>(samples.data(ch)); // pointer to channel buffer
+      std::memcpy(dst, src[ch].data(), numSamplesPerChannel * sizeof(float));
+  }
 
   av::AudioResampler resampler(
-    numChannels, dstSampleRate, sampleFormat,
-    numChannels, srcSampleRate, sampleFormat
-  );
-
-  auto sizeInBytes = numSamplesPerChannel * numChannels * sizeof(float);
-  av::AudioSamples samples(
-    reinterpret_cast<uint8_t*>(src[0].data()), sizeInBytes, 
-    sampleFormat, numSamplesPerChannel, numChannels, srcSampleRate, av::SampleFormat::AlignNone
+    channelLayout, dstSampleRate, sampleFormat,
+    channelLayout, srcSampleRate, sampleFormat
   );
   resampler.push(samples, ec);
 
   double factor = static_cast<double>(dstSampleRate) / srcSampleRate;
 
-  av::AudioSamples out(sampleFormat, numSamplesPerChannel * factor, numChannels, dstSampleRate);
+  av::AudioSamples out(sampleFormat, numSamplesPerChannel * factor, channelLayout, dstSampleRate);
   bool hasFrame = resampler.pop(out, true, ec);
 
   auto n = out.samplesCount();
-  io.samples[0].resize(n);
-  io.samples[1].resize(n);
   if (hasFrame && n > 0)
   {
-    auto* outData = reinterpret_cast<float*>(out.data());
+    io.samples[0].resize(n);
+    io.samples[1].resize(n);
+    auto* outDataL = reinterpret_cast<float*>(out.data());
+    auto* outDataR = reinterpret_cast<float*>(out.data(1));
     for (size_t i = 0; i < n; ++i)
     {
-      io.samples[0][i] = outData[i];
-      io.samples[1][i] = outData[i];
+      io.samples[0][i] = outDataL[i];
+      io.samples[1][i] = outDataR[i];
     }
   }
 }
