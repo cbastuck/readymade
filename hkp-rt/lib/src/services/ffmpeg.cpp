@@ -462,23 +462,25 @@ void Ffmpeg::resampleBuffer(AudioData& io, unsigned int dstSampleRate)
   auto sizeInBytes = numSamplesPerChannel * numChannels * sizeof(float);
   av::AudioSamples samples(
     reinterpret_cast<uint8_t*>(src[0].data()), sizeInBytes, 
-    sampleFormat, numSamplesPerChannel, numChannels, srcSampleRate, 1
+    sampleFormat, numSamplesPerChannel, numChannels, srcSampleRate, av::SampleFormat::AlignNone
   );
   resampler.push(samples, ec);
 
-  av::AudioSamples out(sampleFormat, numSamplesPerChannel, numChannels, dstSampleRate);
+  double factor = static_cast<double>(dstSampleRate) / srcSampleRate;
+
+  av::AudioSamples out(sampleFormat, numSamplesPerChannel * factor, numChannels, dstSampleRate);
   bool hasFrame = resampler.pop(out, true, ec);
 
-  io.samples[0].resize(out.samplesCount());
-  io.samples[1].resize(out.samplesCount());
-  if (hasFrame && out.samplesCount() > 0)
+  auto n = out.samplesCount();
+  io.samples[0].resize(n);
+  io.samples[1].resize(n);
+  if (hasFrame && n > 0)
   {
     auto* outData = reinterpret_cast<float*>(out.data());
-    for (size_t i = 0; i < out.samplesCount(); ++i)
+    for (size_t i = 0; i < n; ++i)
     {
       io.samples[0][i] = outData[i];
       io.samples[1][i] = outData[i];
     }
   }
-  
 }
