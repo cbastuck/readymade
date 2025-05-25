@@ -467,8 +467,7 @@ void Ffmpeg::resampleBuffer(AudioData& io, unsigned int dstSampleRate)
   resampler.push(samples, ec);
 
   av::AudioSamples out(sampleFormat, numSamplesPerChannel, numChannels, dstSampleRate);
-  auto getAllSamples = true;
-  bool hasFrame = resampler.pop(out, getAllSamples, ec);
+  bool hasFrame = resampler.pop(out, true, ec);
 
   io.samples[0].resize(out.samplesCount());
   io.samples[1].resize(out.samplesCount());
