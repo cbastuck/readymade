@@ -17,8 +17,17 @@ public:
   json getState() const override;
   Data process(Data data) override;
 
+  struct AudioData
+  {
+    unsigned int numChannels;
+    unsigned int sampleRate;
+    std::vector<std::vector<float> > samples;
+  };
+
 private:
-  bool processAudioDecodeEncode(const std::string& input, const std::string& out);
+  bool processAudioDecodeEncode(const std::string& input, const std::string& out, unsigned int sampleRate);
+  void resampleBuffer(AudioData& io, unsigned int dstSampleRate);
 
   std::string m_outputFolder;
+  int m_targetSampleRate;
 };

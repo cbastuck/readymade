@@ -5,6 +5,13 @@
 namespace hkp
 {
 
+Service::Service(const std::string& instanceName)
+  : m_instanceId(generateUUID())
+  , m_instanceName(instanceName)
+{
+
+}
+
 Service::Service(const std::string& instanceId, const std::string& instanceName)
     : m_instanceId(instanceId)
     , m_instanceName(instanceName)
@@ -118,12 +125,15 @@ bool Service::isBypass() const
 
 void Service::sendNotification(const Data& value) const
 {
-  auto n = json{
-    {"type", "notification"},
-    {"instanceId", m_instanceId},
-    {"value", stringify(value)}
-  };
-  notifyRuntime(Data(n));
+  if (m_runtime)
+  {
+    auto n = json{
+      {"type", "notification"},
+      {"instanceId", m_instanceId},
+      {"value", stringify(value)}
+    };
+    notifyRuntime(Data(n));
+  }
 }
 
 bool Service::onBypassChanged(bool bypass)

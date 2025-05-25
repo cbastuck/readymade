@@ -88,6 +88,14 @@ std::optional<const std::string> getStringFromData(const Data& data)
     std::nullopt;
 }
 
+std::optional<CustomData> getCustomDataFromData(const Data& data)
+{
+  auto isCustom = data.type() == typeid(CustomData);
+  return isCustom ? 
+    std::optional<CustomData>(boost::get<CustomData>(data)) :
+    std::nullopt;
+}
+
 Data getControlFlowData(const Data &data)
 {
   auto isCtrlFlow = data.type() == typeid(ControlFlowData);
@@ -103,6 +111,11 @@ bool isEarlyReturn(const Data& data)
     return cf.impl->type == ControlFlowData::Type::kEarlyReturn;
   }
   return false;
+}
+
+bool isCustomData(const Data& data)
+{
+  return data.type() == typeid(CustomData);
 }
 
 bool isUndefined(const Data& data)

@@ -2,8 +2,6 @@
 
 #include <types/types.h>
 
-#include "./uuid.h"
-
 namespace hkp {
 
 class Runtime;
@@ -11,7 +9,8 @@ class Runtime;
 class Service
 {
 public:
-  Service(const std::string& instanceId = generateUUID(), const std::string& instanceName = "");
+  Service(const std::string& instanceName = "");
+  Service(const std::string& instanceId, const std::string& instanceName);
   virtual json configure(Data data);
   virtual json getState() const;
 
@@ -29,8 +28,8 @@ public:
   // or in general any "-T-shaped" service.
   virtual std::vector<ExternalServiceInput> getExternalInputs() const;
 
-protected:
   virtual Data process(Data data = Undefined()) = 0;
+protected:
   virtual bool onBypassChanged(bool bypass);
   json& mergeBypassState(json &state) const;
   void sendNotification(const Data& params) const;

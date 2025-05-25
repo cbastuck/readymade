@@ -31,6 +31,15 @@ public:
   std::shared_ptr<Impl> impl;
 };
 
+struct CustomData
+{
+  CustomData(const char* t, void* d)
+    : type(t), data(d) {}
+  
+  const char* type; // type of the custom data describing the data structure
+  void* data; // pointer to custom data, can be anything
+};
+
 typedef boost::variant<
   Undefined, 
   std::shared_ptr<FloatRingBuffer>, 
@@ -38,7 +47,9 @@ typedef boost::variant<
   BinaryData, 
   std::string, 
   Null,
-  ControlFlowData> Data;
+  ControlFlowData,
+  CustomData
+> Data;
 
 std::string stringify(const Data& data);
 
@@ -54,11 +65,14 @@ std::optional<json> getJSONFromData(const Data &data);
 std::shared_ptr<FloatRingBuffer> getRingBufferFromData(const Data &data);
 std::optional<const BinaryData> getBinaryFromData(const Data& data);
 std::optional<const std::string> getStringFromData(const Data& data);
+std::optional<CustomData> getCustomDataFromData(const Data& data);
+
 Data getControlFlowData(const Data &data);
 bool isUndefined(const Data& data);
 bool isNull(const Data& data);
 bool isControlFlowData(const Data& data);
 bool isEarlyReturn(const Data& data);
+bool isCustomData(const Data& data);
 // from specific types to Data
 Data flatBufferToData(flat_buffer& buffer, bool isBinary);
 

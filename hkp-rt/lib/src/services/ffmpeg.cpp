@@ -21,8 +21,61 @@
 #include "codec.h"
 #include "codeccontext.h"
 
+class MemoryIO : public av::CustomIO {
+public:
+    MemoryIO(const uint8_t* data, size_t buf_size)
+        : m_data(data)
+        , m_size(buf_size)
+        , m_pos(0) 
+    {
+    }
+
+    int read(uint8_t *data, size_t buf_size) override 
+    {
+        if (m_pos >= m_size)
+        {
+          return AVERROR_EOF;
+        }
+            
+        int toRead = std::min(buf_size, static_cast<size_t>(m_size - m_pos));
+        memcpy(data, m_data + m_pos, toRead);
+        m_pos += toRead;
+        return toRead;
+    }
+
+    int64_t seek(int64_t offset, int whence) override 
+    {
+        switch (whence) {
+            case SEEK_SET:
+                m_pos = offset;
+                break;
+            case SEEK_CUR:
+                m_pos += offset;
+                break;
+            case SEEK_END:
+                m_pos = m_size + offset;
+                break;
+            default:
+                return -1;
+        }
+        if (m_pos < 0 || m_pos > m_size)
+        {
+          return -1;
+        }
+            
+        return m_pos;
+    }
+
+private:
+    const uint8_t* m_data;
+    size_t m_size;
+    size_t m_pos;
+};
+
+
 Ffmpeg::Ffmpeg(const std::string& instanceId)
     : hkp::Service(instanceId, serviceId())
+    , m_targetSampleRate(-1)
 {
 }
 
@@ -31,8 +84,10 @@ json Ffmpeg::configure(Data data)
   auto buf = getJSONFromData(data);
   if (buf)
   {
-    updateIfNeeded(m_outputFolder, (*buf)["outputFolder"]);   
+    updateIfNeeded(m_outputFolder, (*buf)["outputFolder"]);
+    updateIfNeeded(m_targetSampleRate, (*buf)["targetSampleRate"]);
   }
+
   return Service::configure(data);
 }
 
@@ -53,25 +108,37 @@ Data Ffmpeg::process(Data data)
   auto j = getJSONFromData(data);
   if (!j)
   {
+    auto custom = getCustomDataFromData(data);
+    if (custom && std::string(custom->type) == "murea/AudioData" && custom->data)
+    {
+      if (m_targetSampleRate == -1)
+      {
+        std::cerr << "Ffmpeg service: target sample rate not set, cannot resample." << std::endl;
+        return Null(); 
+      }
+      auto buffer = static_cast<AudioData*>(custom->data);
+      resampleBuffer(*buffer, m_targetSampleRate);
+    }
     return data;
   }
   std::string input = (*j)["input"];
   std::string output = (*j)["output"];
+  unsigned int sampleRate = j->contains("sampleRate") ? (*j)["sampleRate"].get<unsigned int>() : 48000;
   auto outPath = (std::filesystem::path(m_outputFolder) / output).string(); 
-  // check if output already exists
+  // check if output already exists;
   if (std::filesystem::exists(outPath))
   {
     std::cout << "Ffmpeg service: output file already exists: " << outPath << std::endl;
     return json{{ "output", outPath }};
   }
   
-  return processAudioDecodeEncode(input, outPath) ?
+  
+  return processAudioDecodeEncode(input, outPath, sampleRate) ?
     json{{ "output", outPath }} :
     json{{ "error", "Failed to process audio" }};
 }
 
-
-bool Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::string& out)
+bool Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::string& out, unsigned int sampleRate)
 {
   using namespace std;
   using namespace av;
@@ -184,7 +251,7 @@ bool Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
 
       // Settings
 #if 1
-      enc.setSampleRate(48000);
+      enc.setSampleRate(sampleRate);
       enc.setSampleFormat(sampleFmts[0]);
       // Layout
       //enc.setChannelLayout(adec.channelLayout());
@@ -375,4 +442,44 @@ bool Ffmpeg::processAudioDecodeEncode(const std::string& input, const std::strin
   }
 
   return true;
+}
+
+void Ffmpeg::resampleBuffer(AudioData& io, unsigned int dstSampleRate)
+{
+  std::error_code ec;
+
+  av::SampleFormat sampleFormat("fltp"); // see https://ffmpeg.org/doxygen/trunk/samplefmt_8c.html
+  auto& src = io.samples;
+  auto srcSampleRate = io.sampleRate;
+  auto numChannels = 1;
+  unsigned int numSamplesPerChannel = src[0].size();
+
+  av::AudioResampler resampler(
+    numChannels, dstSampleRate, sampleFormat,
+    numChannels, srcSampleRate, sampleFormat
+  );
+
+  auto sizeInBytes = numSamplesPerChannel * numChannels * sizeof(float);
+  av::AudioSamples samples(
+    reinterpret_cast<uint8_t*>(src[0].data()), sizeInBytes, 
+    sampleFormat, numSamplesPerChannel, numChannels, srcSampleRate, 1
+  );
+  resampler.push(samples, ec);
+
+  av::AudioSamples out(sampleFormat, numSamplesPerChannel, numChannels, dstSampleRate);
+  auto getAllSamples = true;
+  bool hasFrame = resampler.pop(out, getAllSamples, ec);
+
+  io.samples[0].resize(out.samplesCount());
+  io.samples[1].resize(out.samplesCount());
+  if (hasFrame && out.samplesCount() > 0)
+  {
+    auto* outData = reinterpret_cast<float*>(out.data());
+    for (size_t i = 0; i < out.samplesCount(); ++i)
+    {
+      io.samples[0][i] = outData[i];
+      io.samples[1][i] = outData[i];
+    }
+  }
+  
 }

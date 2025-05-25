@@ -2,6 +2,7 @@
 
 #include "./registry.h"
 #include "./runtime.h"
+#include "./uuid.h"
 
 namespace hkp 
 {
@@ -187,6 +188,11 @@ std::shared_ptr<Runtime> App::appendRuntime(const RuntimeConfiguration& config)
   rt->load(config);
   m_runtimes.push_back(rt); 
   return rt;
+}
+
+std::shared_ptr<Service> App::createService(const std::string& serviceId)
+{
+  return m_registry->create(serviceId, generateUUID());
 }
 
 std::shared_ptr<Service> App::createService(const std::string& serviceId, const std::string& instanceId)
