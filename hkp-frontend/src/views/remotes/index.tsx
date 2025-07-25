@@ -2,15 +2,15 @@ import { useRef } from "react";
 import useSWR from "swr";
 import { useParams, useNavigate } from "react-router-dom";
 
-import BoardProvider from "@/BoardContext";
-import Toolbar from "@/components/Toolbar";
+import BoardProvider from "hkp-frontend/src/BoardContext";
+import Toolbar from "hkp-frontend/src/components/Toolbar";
 import RemotesMenu from "./RemotesMenu";
-import { RuntimeClass } from "@/types";
+import { RuntimeClass } from "hkp-frontend/src/types";
 import RemoteControl from "./RemoteControl";
 import {
   restoreAvailableRuntimeEngines,
   storeAvailableRuntimeEngines,
-} from "@/common";
+} from "hkp-frontend/src/common";
 import { runtimeApis } from "../playground";
 
 export default function Remotes() {

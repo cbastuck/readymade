@@ -4,6 +4,7 @@
 #include <iostream>
 #include <atomic>
 #include <cstdint>
+#include <vector>
 
 #include "./audio.h"
 
@@ -18,19 +19,27 @@ namespace boost {
   }
 }
 
-using flat_buffer = boost::beast::basic_flat_buffer<std::allocator<char>>;
+namespace hkp {
 
 class FloatRingBuffer
 {
 public:
-  static void createFromSerialised(flat_buffer& buffer, unsigned int size, FloatRingBuffer& target);
+  
+  using BufferType = boost::beast::basic_flat_buffer<std::allocator<char>>;
+  static void createFromSerialised(BufferType& buffer, unsigned int size, FloatRingBuffer& target);
   static uint64_t timeSinceEpochMillisec();
 
   FloatRingBuffer(std::string name = "unnamed buffer");
 
   void append(float value);
-  void appendBinary(const char *data, unsigned int count);
-  void consumeBinary(float *outputBuffer, unsigned int frameCount, unsigned int numChannels);
+  unsigned int appendBinary(const char *data, unsigned int count);
+  unsigned int appendAvailable(FloatRingBuffer& source, bool advanceReadIndex = false);
+
+  unsigned int consumeBinary(float *outputBuffer, unsigned int frameCount, unsigned int numChannels);
+  unsigned int consumeAvailable(std::vector<float>& target, bool advanceReadIndex) const;
+  unsigned int consumeAvailable(std::vector<uint8_t>& target, bool advanceReadIndex) const;
+  unsigned int consumeAvailable(FloatRingBuffer& target);
+  unsigned int consumeAvailableByAppend(std::vector<uint8_t>& target);
 
   unsigned int availableCount() const;
   yas::shared_buffer serialise() const;
@@ -57,3 +66,5 @@ private:
   unsigned int m_id;
   uint64_t m_timestamp;
 };
+
+}

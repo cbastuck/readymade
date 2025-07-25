@@ -1,4 +1,4 @@
-import ReduceDescriptor from "@/runtime/browser/services/base/Reduce";
+import ReduceDescriptor from "hkp-frontend/src/runtime/browser/services/base/Reduce";
 
 const descriptor = {
   serviceName: ReduceDescriptor.serviceName,

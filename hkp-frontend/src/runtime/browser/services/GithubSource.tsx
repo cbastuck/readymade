@@ -1,4 +1,4 @@
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import GithubSourceUI from "./GithubSourceUI";
 
 const serviceId = "hookup.to/service/github-source";

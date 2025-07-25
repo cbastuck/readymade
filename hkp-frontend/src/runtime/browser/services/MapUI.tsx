@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { SquarePlay } from "lucide-react";
 
-import { ServiceUIProps } from "@/types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 
-import RadioGroup from "@/ui-components/RadioGroup";
-import { createExpandableTooltip } from "@/ui-components/ExpandableTooltip";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import { createExpandableTooltip } from "hkp-frontend/src/ui-components/ExpandableTooltip";
 import MapUIModeAssist from "./MapUIModeAssist";
 import MappingTable, { Template } from "../../../components/MappingTable";
-import MenuIcon from "@/ui-components/MenuIcon";
-import { globalScopeFunctions } from "@/runtime/browser/services/base/eval.ts";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
+import { globalScopeFunctions } from "hkp-frontend/src/runtime/browser/services/base/eval.ts";
 
 enum Mode {
   REPLACE = "replace",

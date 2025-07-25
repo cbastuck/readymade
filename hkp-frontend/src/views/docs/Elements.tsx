@@ -1,6 +1,6 @@
 import { CSSProperties } from "react";
 
-import TextComp from "@/ui-components/Text";
+import TextComp from "hkp-frontend/src/ui-components/Text";
 
 type ParagraphProps = {
   children: any;

@@ -1,4 +1,4 @@
-import { ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "hkp-frontend/src/types";
 import RealtimeRuntimeServiceUI from "../RealtimeRuntimeServiceUI";
 import { useState } from "react";
 

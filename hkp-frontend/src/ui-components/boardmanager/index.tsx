@@ -2,10 +2,10 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 import { SavedBoard } from "../../types";
-import Search from "@/ui-components/boardmanager/Search";
+import Search from "hkp-frontend/src/ui-components/boardmanager/Search";
 import BoardTable, {
   BoardManagerAction,
-} from "@/ui-components/boardmanager/BoardTable";
+} from "hkp-frontend/src/ui-components/boardmanager/BoardTable";
 import BoardTableNav from "./BoardTableNav";
 import IconButton from "../IconButton";
 import moment from "moment";

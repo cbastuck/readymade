@@ -1,10 +1,10 @@
 import { useContext, useRef } from "react";
 import { Copy } from "lucide-react";
 
-import GroupLabel from "@/ui-components/GroupLabel";
-import Input from "@/ui-components/Input";
-import { AppCtx } from "@/AppContext";
-import IconButton from "@/ui-components/IconButton";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
+import Input from "hkp-frontend/src/ui-components/Input";
+import { AppCtx } from "hkp-frontend/src/AppContext";
+import IconButton from "hkp-frontend/src/ui-components/IconButton";
 
 type Props = {
   className?: string;

@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import SubmittableInput from "@/ui-components/SubmittableInput";
-import { Textarea } from "@/ui-components/primitives/textarea";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
+import { Textarea } from "hkp-frontend/src/ui-components/primitives/textarea";
 
-import CustomDialog from "@/ui-components/CustomDialog";
-import GroupLabel from "@/ui-components/GroupLabel";
-import Button from "@/ui-components/Button";
+import CustomDialog from "hkp-frontend/src/ui-components/CustomDialog";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 type Props = {
   suggestedName: string;

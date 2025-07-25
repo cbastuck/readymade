@@ -10,13 +10,16 @@
 #include <boost/asio.hpp>
 #include <boost/bind/bind.hpp>
 
-class Timer : public hkp::Service 
+namespace hkp {
+
+
+class Timer : public Service 
 {
 public:
   static std::string serviceId() { return "timer"; }
 
   Timer(const std::string& instanceId)
-    : hkp::Service(instanceId, serviceId())
+    : Service(instanceId, serviceId())
     , io_context_()
     , timer_(io_context_, boost::posix_time::microseconds(0))
   {
@@ -129,5 +132,7 @@ private:
   std::thread io_service_thread_;
 
   unsigned int m_triggerCount = 0;
-  unsigned int m_delayInMicroseconds = 2000;
+  unsigned int m_delayInMicroseconds = 1000000; // 1 second in microseconds
 };
+
+}

@@ -1,5 +1,5 @@
-import { Label } from "@/ui-components/primitives/label";
-import { Checkbox } from "@/ui-components/primitives/checkbox";
+import { Label } from "hkp-frontend/src/ui-components/primitives/label";
+import { Checkbox } from "hkp-frontend/src/ui-components/primitives/checkbox";
 import GroupLabel from "./GroupLabel";
 
 type Props = {

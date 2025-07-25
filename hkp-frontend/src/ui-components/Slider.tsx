@@ -1,12 +1,12 @@
-import { Label } from "@/ui-components/primitives/label";
-import Select from "@/ui-components/Select";
-import { Slider as SliderCN } from "@/ui-components/primitives/slider";
+import { Label } from "hkp-frontend/src/ui-components/primitives/label";
+import Select from "hkp-frontend/src/ui-components/Select";
+import { Slider as SliderCN } from "hkp-frontend/src/ui-components/primitives/slider";
 import PropertyLabel from "./GroupLabel";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/ui-components/primitives/popover";
+} from "hkp-frontend/src/ui-components/primitives/popover";
 import SubmittableInput from "./SubmittableInput";
 import { useState } from "react";
 
@@ -59,7 +59,7 @@ export default function Slider({
   return (
     <div className={`flex flex-col gap-2 h-full w-full ${className}`}>
       <div className="flex gap-2 items-end h-min">
-        {title && <PropertyLabel>{title}</PropertyLabel>}
+        {title && <PropertyLabel size={4}>{title}</PropertyLabel>}
         <div className="flex gap-2 w-full">
           <SliderCN
             min={min}
@@ -94,7 +94,6 @@ export default function Slider({
               </div>
             </PopoverContent>
           </Popover>
-
           {units && onUnit && (
             <Select options={units} value={unit} onChange={onUnit} />
           )}

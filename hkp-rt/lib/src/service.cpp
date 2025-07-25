@@ -75,11 +75,16 @@ void Service::setParentRuntime(Runtime &runtime)
   m_runtime = OwnsMe<Runtime>(&runtime);
 }
 
-Data Service::next(Data data)
+Data Service::next(Data data, bool immediately)
 {
   if (!m_runtime)
   {
     throw std::runtime_error("Service::next: runtime not set");
+  }
+  if (!immediately)
+  {
+    m_runtime->scheduleProcessFrom(*this, data);
+    return Null(); // no immediate result - stop processing
   }
   return m_runtime->processFrom(*this, data);
 }
@@ -95,11 +100,10 @@ bool Service::isConnected() const
 
 void Service::notifyRuntime(Data data) const
 {
-  if (!m_runtime)
+  if (m_runtime)
   {
-    throw std::runtime_error("Service::notifyRuntime: runtime not set");
+    m_runtime->sendData(data);
   }
-  m_runtime->onServiceNotification(m_instanceId, data);
 }
 
 json& Service::mergeBypassState(json &state) const

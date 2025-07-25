@@ -1,17 +1,19 @@
 import { useState } from "react";
 
-import InputField from "@/components/shared/InputField";
-import { ServiceUIProps } from "@/types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
-import Button from "@/ui-components/Button";
-import RadioGroup from "@/ui-components/RadioGroup";
+import InputField from "hkp-frontend/src/components/shared/InputField";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
+import Button from "hkp-frontend/src/ui-components/Button";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 import MappingTable, { Template } from "../../../components/MappingTable";
-import Editor from "@/components/shared/Editor";
-import GroupLabel from "@/ui-components/GroupLabel";
+import Editor from "hkp-frontend/src/components/shared/Editor";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import SelectorField, {
   arrayToOptions,
   OnChangeValue,
-} from "@/components/shared/SelectorField";
+} from "hkp-frontend/src/components/shared/SelectorField";
 import { BodyFormat } from "./Fetcher";
 
 export default function FetcherUI(props: ServiceUIProps) {

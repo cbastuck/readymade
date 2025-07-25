@@ -1,4 +1,4 @@
-import { InstanceId, ServiceInstance } from "@/types";
+import { InstanceId, ServiceInstance } from "hkp-frontend/src/types";
 
 type Callback = (notification: any) => void;
 

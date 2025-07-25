@@ -6,10 +6,11 @@ import {
   AppInstance,
   ServiceClass,
   ServiceDescriptor,
+  ServiceImpl,
   ServiceInstance,
-} from "@/types";
+} from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
-import { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { parseExpression, Expression, evalExpression } from "./base/eval";
 
 const serviceId = "hookup.to/service/looper";
@@ -103,7 +104,7 @@ class Stack extends ServiceBase<State> {
   };
 
   restoreInstances = async (services: Array<ServiceDescriptor>) => {
-    const instances = [];
+    const instances: Array<ServiceImpl> = [];
     for (const svc of services) {
       const ssvc = await this.createSubService(svc);
       if (ssvc) {

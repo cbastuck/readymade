@@ -1,4 +1,4 @@
-import { CustomMenuEntry, ServiceDescriptor } from "@/types";
+import { CustomMenuEntry, ServiceDescriptor } from "hkp-frontend/src/types";
 
 import BypassSwitch from "./BypassSwitch";
 import ServiceSettings from "./ServiceSettings";

@@ -1,5 +1,5 @@
 import Toolbar from "../../components/Toolbar";
-import Footer from "@/components/Footer";
+import Footer from "hkp-frontend/src/components/Footer";
 import CardContainer from "./CardContainer";
 import Intro from "./Intro";
 

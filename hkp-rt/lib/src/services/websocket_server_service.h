@@ -10,13 +10,15 @@
 
 namespace net = boost::asio;
 
-class WebsocketServerService : public hkp::Service
+namespace hkp {
+
+class WebsocketServerService : public Service
 {
 public:
   static std::string serviceId() { return "websocket-socket"; }  //TODO: rename
 
   WebsocketServerService(const std::string& instanceId) 
-    : hkp::Service(instanceId, "websocket")
+    : Service(instanceId, "websocket")
     , m_state{{ "mode", "writeOnly" }}
   {
   }
@@ -133,10 +135,10 @@ public:
     return bypass;
   }
 
-  std::vector<hkp::ExternalServiceInput> getExternalInputs() const override
+  std::vector<ExternalServiceInput> getExternalInputs() const override
   {
-    return std::vector<hkp::ExternalServiceInput>{
-      hkp::ExternalServiceInput{
+    return std::vector<ExternalServiceInput>{
+      ExternalServiceInput{
         .id=getName() + "-input",
         .url = m_config.toString(),
       }
@@ -158,7 +160,7 @@ private:
       return; 
     }
 
-    m_websocket = std::make_unique<hkp::WebsocketServer>(
+    m_websocket = std::make_unique<WebsocketServer>(
       m_config, 
       std::bind(&WebsocketServerService::onSessionData, this, std::placeholders::_1, std::placeholders::_2)
     );
@@ -166,10 +168,12 @@ private:
   }
 
 private:
-  hkp::WebsocketConfig m_config;
-  std::unique_ptr<hkp::WebsocketServer> m_websocket;
+  WebsocketConfig m_config;
+  std::unique_ptr<WebsocketServer> m_websocket;
   json m_state;
 
   std::shared_ptr<FloatRingBuffer> m_accumulated; // only available when accumulating data mode
   std::string m_proto;
 };
+
+}

@@ -8,7 +8,9 @@
 
 #include "./writer_session.h"
 
-class WebsocketWriter : public hkp::Service
+namespace hkp {
+
+class WebsocketWriter : public Service
 {
 public:
   static std::string serviceId();
@@ -34,5 +36,7 @@ private:
   std::shared_ptr<WriterSession> m_session;
   std::thread m_t;
 
-  hkp::WebsocketConfig m_config;
+  WebsocketConfig m_config;
 };
+
+}

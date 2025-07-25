@@ -1,14 +1,16 @@
 import { Component } from "react";
 import { Video, VideoOff, FlipHorizontal } from "lucide-react";
 
-import { ServiceUIProps } from "@/types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 
-import NumberInput from "@/ui-components/NumberInput";
-import Button from "@/ui-components/Button";
-import MenuIcon from "@/ui-components/MenuIcon";
-import GroupLabel from "@/ui-components/GroupLabel";
-import SelectorField from "@/components/shared/SelectorField";
+import NumberInput from "hkp-frontend/src/ui-components/NumberInput";
+import Button from "hkp-frontend/src/ui-components/Button";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 
 type State = {
   mirror: boolean;

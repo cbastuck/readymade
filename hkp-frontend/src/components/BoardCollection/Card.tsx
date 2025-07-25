@@ -1,12 +1,12 @@
 import { ReactElement } from "react";
 import { Link } from "react-router-dom";
 
-import Image from "@/ui-components/Image";
+import Image from "hkp-frontend/src/ui-components/Image";
 import { Github } from "lucide-react";
 
 import Description from "./Description";
 import { SavedBoard, UsecaseDescriptor } from "../../types";
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 export type Action = { name: string; icon: ReactElement };
 type Props = {

@@ -1,4 +1,4 @@
-import SubmittableInput from "@/ui-components/SubmittableInput";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 
 import { SubmittableInputProps } from "./SubmittableInput";
 import IconButton from "./IconButton";

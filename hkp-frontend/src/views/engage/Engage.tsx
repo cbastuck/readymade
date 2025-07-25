@@ -11,7 +11,7 @@ import PersonalForm from "./PersonalForm";
 import { convertAnswers, postAnswers } from "./actions";
 
 import { feedbackQuestions } from "./forms/engageForm1";
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 type Props = {
   withTemplate?: boolean;

@@ -1,5 +1,5 @@
 //import Breadcrumbs from "./Breadcrumbs";
-import Breadcrumbs from "@/ui-components/Breadcrumbs";
+import Breadcrumbs from "hkp-frontend/src/ui-components/Breadcrumbs";
 import { ExampleDescriptor } from "./types";
 
 type Props = {

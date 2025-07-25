@@ -1,4 +1,4 @@
-import { Checkbox } from "@/ui-components/primitives/checkbox";
+import { Checkbox } from "hkp-frontend/src/ui-components/primitives/checkbox";
 
 import Personals, { PersonalData } from "./Personals";
 import { useCallback } from "react";

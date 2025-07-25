@@ -4,7 +4,9 @@ import {
   ServiceDescriptor,
   SidechainRoute,
 } from "../../types";
-import MultipleSelector, { Option } from "@/ui-components/MultiSelect";
+import MultipleSelector, {
+  Option,
+} from "hkp-frontend/src/ui-components/MultiSelect";
 
 type FlatServices = {
   rt: RuntimeDescriptor;

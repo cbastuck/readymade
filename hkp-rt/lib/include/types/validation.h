@@ -126,6 +126,12 @@ inline std::optional<RuntimeConfiguration> validateRuntime(json config)
       }
     }    
   }
+
+  auto boardName = config["boardName"];
+  if (!boardName.is_null() && config["boardName"].is_string())
+  {
+    conf.boardName = config["boardName"];
+  }
   return std::optional<RuntimeConfiguration>(conf);
 }
 

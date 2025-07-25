@@ -1,7 +1,10 @@
 import { ReactElement } from "react";
-import { TableCell, TableRow } from "@/ui-components/primitives/table";
+import {
+  TableCell,
+  TableRow,
+} from "hkp-frontend/src/ui-components/primitives/table";
 
-import { Badge } from "@/ui-components/primitives/badge";
+import { Badge } from "hkp-frontend/src/ui-components/primitives/badge";
 
 import moment from "moment";
 

@@ -1,9 +1,9 @@
 import { Component } from "react";
 import moment from "moment";
-import Image from "@/ui-components/Image";
+import Image from "hkp-frontend/src/ui-components/Image";
 
 import MessageReceiver from "../../../MessageReceiver";
-import SelectorField from "@/components/shared/SelectorField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import InputField from "../../../components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import Tree from "../../../components/shared/Tree";
@@ -16,9 +16,9 @@ import {
   getAuthURL,
   exchangeCode,
 } from "./GithubAPI";
-import { ServiceUIProps } from "@/types";
-import RadioGroup from "@/ui-components/RadioGroup";
-import SubmittableInput from "@/ui-components/SubmittableInput";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 
 const loginStateId = "github-login";
 

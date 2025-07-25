@@ -3,7 +3,7 @@ import {
   useCarousel,
   CarouselNext,
   CarouselPrevious,
-} from "@/ui-components/primitives/carousel";
+} from "hkp-frontend/src/ui-components/primitives/carousel";
 
 type Props = {
   items: string[];

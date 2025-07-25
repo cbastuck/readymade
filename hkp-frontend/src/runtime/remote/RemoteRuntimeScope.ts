@@ -10,7 +10,7 @@ import {
 } from "../../types";
 import { createRemoteRuntimeApp } from "./RemoteRuntimeApp";
 import api from "./RemoteRuntimeApi";
-import { createAuthorizedURL } from "@/views/playground/common";
+import { createAuthorizedURL } from "hkp-frontend/src/views/playground/common";
 
 export default class RemoteRuntimeScope implements RuntimeScope {
   app: AppImpl;

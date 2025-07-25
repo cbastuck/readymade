@@ -3,7 +3,7 @@ import { Star } from "lucide-react";
 import { useEffect } from "react";
 import anime from "../../anime";
 
-import { Button } from "@/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 
 import "./UpdatesButton.css";
 

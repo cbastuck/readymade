@@ -2,7 +2,7 @@ import moment from "moment";
 
 import { commit } from "./GithubAPI";
 import GithubSinkUI from "./GithubSinkUI";
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 
 const serviceId = "hookup.to/service/github-sink";

@@ -11,9 +11,10 @@ import {
   ServiceClass,
   ServiceDescriptor,
   User,
-} from "@/types";
+} from "hkp-frontend/src/types";
 import RealtimeRuntimeScope from "./RealtimeRuntimeScope";
-import { EngineState } from "@/BoardContext";
+import { EngineState } from "hkp-frontend/src/BoardContext";
+import { isData, serializeRingBufferYAS } from "./Data";
 
 async function createScope(
   runtime: RuntimeDescriptor,
@@ -22,7 +23,11 @@ async function createScope(
   return new RealtimeRuntimeScope(runtime, runtimeOutputUrl);
 }
 
-export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
+export async function addRuntime(
+  rtClass: RuntimeClass,
+  _user: User | null,
+  boardName = ""
+) {
   const { name: passedName, type, url } = rtClass;
   const runtimeId = uuidv4();
   const runtime = {
@@ -32,7 +37,11 @@ export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
     url,
   };
 
-  const { scope, registry } = await createRuntimeRequest(runtime, []);
+  const { scope, registry } = await createRuntimeRequest(
+    runtime,
+    [],
+    boardName
+  );
   return {
     runtime,
     services: [],
@@ -42,10 +51,13 @@ export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
 }
 
 export async function removeRuntime(
-  _scope: RuntimeScope,
+  scope_: RuntimeScope,
   runtime: RuntimeDescriptor,
   _user: User | null
 ): Promise<void> {
+  const scope = scope_ as RealtimeRuntimeScope;
+  scope.close();
+
   const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
     method: "DELETE",
     headers: {},
@@ -58,7 +70,8 @@ export async function removeRuntime(
 async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
-  _user: User | null
+  _user: User | null,
+  boardName?: string
 ): Promise<RestoreRuntimeResult | null> {
   const svcs = services.map((s) => ({
     uuid: s.uuid || uuidv4(),
@@ -71,7 +84,7 @@ async function restoreRuntime(
     registry,
     scope,
     services: createdServices,
-  } = await createRuntimeRequest(runtime, svcs);
+  } = await createRuntimeRequest(runtime, svcs, boardName);
   return {
     runtime,
     services: createdServices,
@@ -128,26 +141,41 @@ export async function attachRuntimes(
 }
 
 export async function processRuntime(
-  scope: RuntimeScope,
+  scope_: RuntimeScope,
   params: any,
   _svc: InstanceId | null,
   _context?: ProcessContext | null
 ): Promise<void> {
+  const scope = scope_ as RealtimeRuntimeScope;
   const runtime = scope.descriptor;
 
-  // TODO what if params is not an object?
+  if (scope.runtimeOutput) {
+    if (isData(params)) {
+      // if params is a Data object, we send it as binary data
+      scope.runtimeOutput.send(serializeRingBufferYAS(params));
+    } else {
+      scope.runtimeOutput.send(
+        JSON.stringify({
+          type: "processRuntime",
+          params,
+        })
+      );
+    }
+  } else {
+    // TODO what if params is not an object?
 
-  const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(params),
-  });
-  if (!res.ok) {
-    throw new Error(
-      `Failed to process ${runtime.id} runtime: ${res.statusText}`
-    );
+    const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(params),
+    });
+    if (!res.ok) {
+      throw new Error(
+        `Failed to process ${runtime.id} runtime: ${res.statusText}`
+      );
+    }
   }
 }
 
@@ -160,6 +188,9 @@ export async function addService(scope: RuntimeScope, service: ServiceClass) {
   const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/services`, {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: {
+      "content-type": "application/json",
+    },
   });
   if (!res.ok) {
     throw new Error("Failed to configure service" + res.statusText);
@@ -179,6 +210,9 @@ export async function removeService(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
     {
       method: "DELETE",
+      headers: {
+        "content-type": "application/json",
+      },
     }
   );
   if (!res.ok) {
@@ -200,6 +234,9 @@ export async function configureService(
     {
       method: "POST",
       body: JSON.stringify(config),
+      headers: {
+        "content-type": "application/json",
+      },
     }
   );
   if (!res.ok) {
@@ -245,6 +282,9 @@ export async function rearrangeServices(
   const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/rearrange`, {
     method: "POST",
     body: JSON.stringify(newOrder.map((s) => s.uuid)),
+    headers: {
+      "content-type": "application/json",
+    },
   });
   if (!res.ok) {
     throw new Error("Failed to rearrange services" + res.statusText);
@@ -256,7 +296,8 @@ export async function rearrangeServices(
 
 async function createRuntimeRequest(
   runtime: RuntimeDescriptor,
-  services: Array<ServiceDescriptor>
+  services: Array<ServiceDescriptor>,
+  boardName?: string
 ) {
   const payload = {
     name: runtime.name,
@@ -266,10 +307,14 @@ async function createRuntimeRequest(
       serviceId: s.serviceId,
       state: (s as any).state, // TODO:
     })),
+    boardName: boardName || undefined,
   };
   const res = await fetch(`${runtime.url}/runtimes`, {
     method: "POST",
     body: JSON.stringify(payload),
+    headers: {
+      "content-type": "application/json",
+    },
   });
   if (!res.ok) {
     throw new Error("Failed to create runtime" + res.statusText);

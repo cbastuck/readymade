@@ -1,12 +1,12 @@
 import { Component } from "react";
 
 import InputField from "hkp-frontend/src/components/shared/InputField";
-import SelectorField from "@/components/shared/SelectorField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 
-import { ServiceUIProps } from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import Button from "@/ui-components/Button";
-import GroupLabel from "@/ui-components/GroupLabel";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import Button from "hkp-frontend/src/ui-components/Button";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 
 type State = {
   conditions: any;

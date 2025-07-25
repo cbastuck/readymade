@@ -1,9 +1,11 @@
 import { useState } from "react";
 
 import { ServiceUIProps } from "../../../types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
-import SubmittableInput from "@/ui-components/SubmittableInput";
-import Button from "@/ui-components/Button";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function LocalStorageUI(props: ServiceUIProps) {
   const [items, setItems] = useState<Array<{ key: string; value: string }>>([]);

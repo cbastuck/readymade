@@ -3,7 +3,7 @@ import { Location } from "react-router-dom";
 
 import BoardProvider from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
-import Footer from "@/components/Footer";
+import Footer from "hkp-frontend/src/components/Footer";
 
 import { withRouter } from "../../common";
 

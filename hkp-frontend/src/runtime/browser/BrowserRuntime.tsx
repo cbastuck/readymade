@@ -14,9 +14,9 @@ import {
 import { findServiceUI } from "../../UIFactory";
 import { BoardCtx } from "../../BoardContext";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
-import { removeService } from "./BrowserRuntimeApi";
+import { removeRuntime } from "./BrowserRuntimeApi";
 import PlaceholderUI from "./services/PlaceholderUI";
-import EmptyRuntimePlaceholder from "@/ui-components/runtime-ui/EmptyRuntimePlaceholder";
+import EmptyRuntimePlaceholder from "hkp-frontend/src/ui-components/runtime-ui/EmptyRuntimePlaceholder";
 
 type Props = {
   scope: BrowserRuntimeScope;
@@ -45,7 +45,7 @@ export default class BrowserRuntime extends Component<Props> {
   componentDidMount() {}
 
   componentWillUnmount() {
-    this.destroyRuntime();
+    //this.destroyRuntime();
   }
 
   // TODO: remove - but still used in headless and elsewhere
@@ -56,8 +56,6 @@ export default class BrowserRuntime extends Component<Props> {
   };
 
   destroyRuntime = async () => {
-    const { services = [], scope } = this.props;
-
     if (this.eventSource) {
       this.eventSource.close();
       this.eventSource = undefined;
@@ -67,9 +65,8 @@ export default class BrowserRuntime extends Component<Props> {
       this.websocket = undefined;
     }
 
-    for (const service of services) {
-      await removeService(scope, service);
-    }
+    const { scope } = this.props;
+    removeRuntime(scope, scope.descriptor, scope.authenticatedUser);
   };
 
   render() {
@@ -143,7 +140,11 @@ export default class BrowserRuntime extends Component<Props> {
     };
 
     if (services?.length === 0) {
-      return <EmptyRuntimePlaceholder runtime={runtime} />;
+      return collapsed ? (
+        <div />
+      ) : (
+        <EmptyRuntimePlaceholder runtime={runtime} />
+      );
     }
 
     return (

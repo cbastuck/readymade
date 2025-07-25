@@ -13,7 +13,7 @@ import DragProvider from "../../DragContext";
 import OutputOptions from "../../components/shared/OutputOptions";
 import InputOptions from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
-import SelectorField from "@/components/shared/SelectorField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
 import {
   RuntimeInputRoutings,
@@ -27,7 +27,7 @@ import {
   ProcessContext,
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 import RuntimeWithDropBars from "./RuntimeWithDropBars";
 
 const defaultDiscoveryPeer: PeerJsHostDescriptor =
@@ -207,7 +207,7 @@ export default class Board extends Component<Props, State> {
 
     const runtimeOutput = outputRouting[runtime.id] || {};
     const flow = runtimeOutput?.flow || "pass";
-    if (flow === "pass") {
+    if (flow === "pass" && result !== null) {
       const nextRuntime = this.getNextRuntime(runtime);
       const nextScope =
         nextRuntime && this.props.boardContext.scopes[nextRuntime.id];

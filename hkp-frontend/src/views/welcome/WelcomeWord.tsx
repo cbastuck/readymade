@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import anime from "../../anime";
 
-import WelcomeWordSVG from "@/assets/animations/WelcomeWord2.svg?react";
-import WelcomeWordFatSVG from "@/assets/animations/WelcomeWordFat2.svg?react";
+import WelcomeWordSVG from "hkp-frontend/src/assets/animations/WelcomeWord2.svg?react";
+import WelcomeWordFatSVG from "hkp-frontend/src/assets/animations/WelcomeWordFat2.svg?react";
 import { HeroVideoDescriptor } from "./heroVideos";
 
 type Props = {

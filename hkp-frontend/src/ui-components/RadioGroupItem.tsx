@@ -1,4 +1,4 @@
-import { RadioGroupItem } from "@/ui-components/primitives/radio-group";
+import { RadioGroupItem } from "hkp-frontend/src/ui-components/primitives/radio-group";
 import {
   Tooltip,
   TooltipContent,

@@ -11,7 +11,7 @@ class Service;
 class Registry
 {
 private:
-  typedef std::shared_ptr<hkp::Service> (*ServiceFactory)(std::string, std::string);
+  typedef std::shared_ptr<Service> (*ServiceFactory)(std::string, std::string);
   typedef std::tuple<std::string, ServiceFactory> ServiceTuple;
 
 public:
@@ -35,7 +35,7 @@ public:
   {
     ServiceTuple tuple = ServiceTuple(
       T::serviceId(), 
-      [](std::string serviceId, std::string instanceId) -> std::shared_ptr<hkp::Service>
+      [](std::string serviceId, std::string instanceId) -> std::shared_ptr<Service>
       { 
         return std::make_shared<T>(instanceId); 
       }
@@ -48,7 +48,6 @@ public:
     public:
       X()
       {
-        std::cout << "DRIN3" << std::endl;
         Registry r;
         r.registerService<T>();
       }

@@ -2,10 +2,10 @@ import { Component } from "react";
 
 import { s, t } from "../../../styles";
 import InputField from "../../../components/shared/InputField";
-import SelectorField from "@/components/shared/SelectorField";
-import { ServiceUIProps } from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import RadioGroup from "@/ui-components/RadioGroup";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
 type State = {
   bypass: boolean;

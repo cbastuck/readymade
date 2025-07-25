@@ -6,7 +6,9 @@
 #include <service.h>
 #include <types/data.h>
 
-class Static : public hkp::Service 
+namespace hkp {
+
+class Static : public Service 
 {
 public:
   static std::string serviceId() { return "static"; }
@@ -23,3 +25,5 @@ public:
 private:
   json m_output;
 };
+
+}

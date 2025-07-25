@@ -1,4 +1,4 @@
-import { AppImpl, AppInstance, ServiceClass } from "@/types";
+import { AppImpl, AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import LocalStorageUI from "./LocalStorageUI";
 
@@ -22,7 +22,7 @@ class LocalStorage extends ServiceBase<State> {
   }
 
   retrieveAndCacheItems(filter?: string) {
-    const items = [];
+    const items: Array<{ key: string; value: string }> = [];
     for (const key in localStorage) {
       if (!filter || key.startsWith(filter)) {
         const value = localStorage.getItem(key);

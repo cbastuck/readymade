@@ -1,4 +1,4 @@
-import Info from "@/components/Info";
+import Info from "hkp-frontend/src/components/Info";
 import { createDescription } from "./factory";
 import { BaseType } from "./types";
 

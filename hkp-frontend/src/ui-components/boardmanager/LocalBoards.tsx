@@ -8,7 +8,7 @@ import {
 
 import { SavedBoard } from "../../types";
 
-import { BoardManagerAction } from "@/ui-components/boardmanager/BoardTable";
+import { BoardManagerAction } from "hkp-frontend/src/ui-components/boardmanager/BoardTable";
 import BoardManager from ".";
 
 export default function LocalBoards() {

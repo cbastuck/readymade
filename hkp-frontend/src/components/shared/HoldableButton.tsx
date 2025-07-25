@@ -7,7 +7,7 @@ import {
 } from "react";
 import "./HoldableButton.css";
 
-import { Button } from "@/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 const isTouch = "ontouchstart" in window;
 
 type Props = {

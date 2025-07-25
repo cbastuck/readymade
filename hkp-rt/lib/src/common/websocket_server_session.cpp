@@ -52,9 +52,16 @@ void WebsocketServerSession::send(const Data& data)
     return;
   }
 
+  // TODO: is the following assumption correct? The protocol specifies the role of the client
+  // so the server should not send data to sesseions that are connected to a writer
   if (m_protocol && m_protocol->type == "writer")
   {
     return;
+  }
+
+  if (isNull(data)) 
+  {
+    return; // do not send null data 
   }
 
   if (m_isSending)
@@ -78,9 +85,9 @@ void WebsocketServerSession::send(const Data& data)
       auto buf = rb->serialise();
       m_ws->write(boost::asio::buffer(buf.data.get(), buf.size));
     }
-    else if (isUndefined(data) || isNull(data))
+    else if (isUndefined(data))
     {
-      std::cout << "SocketSession::send: undefined or null data currently not available" << std::endl;
+      std::cout << "SocketSession::send undefined data currently not available" << std::endl;
     }
     else 
     {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import anime from "@/anime";
-import Switcher from "@/components/Switcher";
+import anime from "hkp-frontend/src/anime";
+import Switcher from "hkp-frontend/src/components/Switcher";
 import { HeroVideoDescriptor } from "./heroVideos";
 
 export type LandingPitchUsecase = { headline?: string };

@@ -3,13 +3,13 @@ import { Copy } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "../../types";
 
-import SelectorField from "@/components/shared/SelectorField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import InputText from "../../components/shared/InputText";
 import Slider from "../../components/shared/Slider";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import Button from "@/ui-components/Button";
-import SubmittableInput from "@/ui-components/SubmittableInput";
-import Switch from "@/ui-components/Switch";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import Button from "hkp-frontend/src/ui-components/Button";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
+import Switch from "hkp-frontend/src/ui-components/Switch";
 
 export default function RemoteServiceUI(props: ServiceUIProps) {
   const { service } = props;

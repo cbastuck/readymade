@@ -51,12 +51,15 @@ type BoardContextAPI = {
   arrangeService: (rt: RuntimeDescriptor, svcUuid: string, dst: number) => void;
   arrangeRuntime: (runtimeId: string, dst: number) => void;
 
+  clearBoard: (emptyBoardName?: string) => Promise<void>;
+
   fetchBoard: () => Promise<void>;
   isActionAvailable: (action: Action) => boolean;
   onAction: (action: Action) => void;
 
   serializeBoard: () => Promise<BoardDescriptor | null>;
   setBoardState: (newState: BoardDescriptor) => Promise<void>;
+  setBoardName: (name: string) => void;
 
   isRuntimeInScope: (runtime: RuntimeDescriptor) => boolean;
   acquireRuntimeScope: (boardname: string, runtime: RuntimeDescriptor) => void;
@@ -106,7 +109,10 @@ type Props = {
   isRuntimeInScope?: () => boolean;
   onRemoveRuntime?: (runtime: RuntimeDescriptor) => Promise<void>;
   newBoard?: (searchParams?: string) => void; // TODO: why search params ??
-  clearBoard?: (board: BoardDescriptor) => Promise<void>;
+  onClearBoard?: (
+    board: BoardDescriptor,
+    newBoardName: string
+  ) => Promise<void>;
   saveBoard?: () => void;
   shareBoard?: () => void;
   onRemoveService?: (service: InstanceId, runtime: RuntimeDescriptor) => void;
@@ -159,6 +165,8 @@ class BoardProvider extends Component<Props, BoardContextState> {
       removeRuntime: this.removeRuntime,
       updateRuntime: this.updateRuntime,
       removeAllServices: this.removeAllServices,
+      setBoardName: this.setBoardName,
+      clearBoard: this.clearBoard,
 
       onAction: this.onAction,
       isRuntimeInScope: props.isRuntimeInScope || this.isRuntimeInScope,
@@ -218,6 +226,19 @@ class BoardProvider extends Component<Props, BoardContextState> {
       availableRuntimeEngines
     ) {
       this.setState({ availableRuntimeEngines });
+    }
+  }
+
+  componentWillUnmount(): void {
+    for (const runtime of this.state.runtimes) {
+      const [scope, api] = this.getRuntimeScopeApi(runtime.id);
+      if (api && scope) {
+        api.removeRuntime(scope, runtime, this.state.user);
+      } else {
+        console.warn(
+          `BoardProvider.componentWillUnmount runtime api or scope missing for runtime: ${runtime.id}`
+        );
+      }
     }
   }
 
@@ -289,7 +310,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
           );
           return Promise.resolve(null);
         }
-        return api.restoreRuntime(rt, services[rt.id], user);
+        return api.restoreRuntime({ ...rt }, services[rt.id], user, boardName);
       })
     );
 
@@ -375,23 +396,33 @@ class BoardProvider extends Component<Props, BoardContextState> {
   };
 
   newBoard = (searchParams: string = "") => {
-    if (this.props && this.props.newBoard) {
-      this.props.newBoard(searchParams);
+    if (this.props?.newBoard) {
+      this.props.newBoard?.(searchParams);
+    } else {
+      this.clearBoard("New Board");
     }
   };
 
-  clearBoard = async () => {
-    const { clearBoard } = this.props;
-    if (!clearBoard) {
-      throw new Error("BoardContext misses prop: clearBoard");
-    }
+  clearBoard = async (newBoardName: string = "New Idea") => {
     const { runtimes, services, registry, boardName } = this.state;
+    const { onClearBoard } = this.props;
+    for (const runtime of runtimes) {
+      await this.removeRuntime(runtime);
+    }
+
+    if (onClearBoard) {
+      await onClearBoard(
+        { runtimes, services, registry, boardName },
+        newBoardName
+      );
+    }
+
     this.setState(() => ({
       runtimes: [],
       services: {},
       registry: {},
+      boardName: newBoardName || "",
     }));
-    await clearBoard({ runtimes, services, registry, boardName });
   };
 
   saveBoard = async () => {
@@ -442,15 +473,16 @@ class BoardProvider extends Component<Props, BoardContextState> {
       );
     }
     const user = this.state.user;
-
+    const boardName = this.getBoardName();
     try {
-      const result = await api.addRuntime(rtClass, user);
+      const result = await api.addRuntime(rtClass, user, boardName);
       if (result) {
         const { runtime, services, registry = [], scope } = result;
         const runtimeWithUser = {
           ...runtime,
           user,
           state: { ...runtime.state, color: rtClass.color },
+          boardName,
         };
         this.setState((state: BoardContextState) => ({
           runtimes: [...state.runtimes, runtimeWithUser],
@@ -539,6 +571,10 @@ class BoardProvider extends Component<Props, BoardContextState> {
         [runtime.id]: [],
       },
     }));
+  };
+
+  setBoardName = (name: string) => {
+    this.setState({ boardName: name });
   };
 
   removeRuntime = async (runtime: RuntimeDescriptor) => {

@@ -1,11 +1,11 @@
 import { isSecureConnection } from "../../../core/url";
 import WebsocketChannel from "../../WebsocketChannel";
 import { replacePlaceholders } from "../../../core/url";
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 
 import OutputUI from "./OutputUI";
-import { createAuthorizedURL } from "@/views/playground/common";
+import { createAuthorizedURL } from "hkp-frontend/src/views/playground/common";
 
 const serviceId = "hookup.to/service/output";
 const serviceName = "Output";

@@ -2,8 +2,8 @@ import { parse, eval as expEval } from "expression-eval";
 import moment from "moment";
 import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import jsep from "jsep";
-import { AppImpl, AppInstance } from "@/types";
-import { getVault } from "@/vault";
+import { AppImpl, AppInstance } from "hkp-frontend/src/types";
+import { getVault } from "hkp-frontend/src/vault";
 
 export type Expression = jsep.Expression;
 

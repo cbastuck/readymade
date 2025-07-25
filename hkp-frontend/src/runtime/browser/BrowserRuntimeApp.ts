@@ -76,7 +76,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
 
     notify: (service: InstanceId, notification: any) => {
       if (!notificationTargets.hasCallbacks(service)) {
-        console.warn("BrowserRuntimeApp.notify no targets for", service.uuid);
+        // console.warn("BrowserRuntimeApp.notify no targets for", service.uuid);
         return;
       }
 

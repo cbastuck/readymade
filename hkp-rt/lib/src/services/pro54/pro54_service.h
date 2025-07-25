@@ -8,13 +8,15 @@
 
 #include "./pro54.h"
 
+namespace hkp {
+
 struct NoteEvent{
   bool noteOn;
   unsigned int pitch;
   unsigned int velocity;
 };
   
- class Pro54Service : public hkp::Service 
+ class Pro54Service : public Service 
 {
 public:
   static std::string serviceId() { return "pro54"; }
@@ -39,3 +41,5 @@ private:
   std::shared_ptr<FloatRingBuffer> m_buffer;
   std::array<std::optional<NoteEvent>, 8> m_scheduledEvents;
 };
+
+}

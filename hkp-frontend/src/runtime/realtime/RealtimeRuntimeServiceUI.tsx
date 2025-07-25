@@ -3,13 +3,13 @@ import { Copy } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "../../types";
 
-import SelectorField from "@/components/shared/SelectorField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import InputText from "../../components/shared/InputText";
 import Slider from "../../components/shared/Slider";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import Button from "@/ui-components/Button";
-import SubmittableInput from "@/ui-components/SubmittableInput";
-import Switch from "@/ui-components/Switch";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import Button from "hkp-frontend/src/ui-components/Button";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
+import Switch from "hkp-frontend/src/ui-components/Switch";
 
 type Props = ServiceUIProps & {
   onNotification?: (notification: any) => void;
@@ -100,6 +100,7 @@ export default function RealtimeRuntimeServiceUI(props: Props) {
             return (
               <Switch
                 className="py-2"
+                labelClassName="tracking-[1px] text-base2"
                 key={prop}
                 title={prop}
                 checked={val}
@@ -114,11 +115,7 @@ export default function RealtimeRuntimeServiceUI(props: Props) {
           const readonly = visibility === "readonly";
 
           const type =
-            t === "string"
-              ? visibility === "hide"
-                ? "password"
-                : "text"
-              : (t as any);
+            t === "string" ? (visibility === "hide" ? "password" : "text") : t;
 
           return (
             <div
@@ -126,9 +123,10 @@ export default function RealtimeRuntimeServiceUI(props: Props) {
               key={`RealtimeRuntimeServiceUI-${service.uuid}.${prop}`}
             >
               <SubmittableInput
+                labelClassName="tracking-[1px]"
                 fullWidth
                 title={prop}
-                value={val}
+                value={renderValueWithType(val, type)}
                 onSubmit={(value) => {
                   service.configure({
                     [prop]: type === "number" ? Number(value) : value,
@@ -188,6 +186,15 @@ function extractProperties(service: any) {
       if (t === "string" || t === "number" || t === "boolean") {
         return { ...all, [key]: val };
       }
+      if (Array.isArray(val)) {
+        const arr: { [k: string]: string } = {};
+        val.forEach((v, i) => {
+          if (v !== undefined) {
+            arr[`${key}[${i}]`] = v;
+          }
+        });
+        return { ...all, ...arr };
+      }
       if (t === "object") {
         const obj: { [k: string]: string } = {};
         for (const k in val) {
@@ -199,4 +206,20 @@ function extractProperties(service: any) {
       }
       return all;
     }, {});
+}
+
+function renderValueWithType(value: any, type: string) {
+  if (type === "number") {
+    return value.toString();
+  }
+  if (type === "boolean") {
+    return value ? "true" : "false";
+  }
+  if (type === "string") {
+    return value;
+  }
+  if (type === "object") {
+    return JSON.stringify(value);
+  }
+  return value;
 }

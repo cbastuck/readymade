@@ -1,9 +1,11 @@
 import { useRef, useState } from "react";
 
 import Editor from "../../../components/shared/Editor/index";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
-import { ServiceInstance, ServiceUIProps } from "@/types";
-import { Size } from "@/common";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
+import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
+import { Size } from "hkp-frontend/src/common";
 import { HealthStatus } from "./Hacker";
 
 export default function HackerUI(props: ServiceUIProps) {

@@ -1,12 +1,14 @@
 import { useState } from "react";
 
-import { ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "hkp-frontend/src/types";
 
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 import SelectorField, {
   OnChangeValue,
   arrayToOptions,
-} from "@/components/shared/SelectorField";
+} from "hkp-frontend/src/components/shared/SelectorField";
 
 const defaultVoiceName = "Daniel";
 

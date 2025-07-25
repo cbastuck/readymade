@@ -20,9 +20,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/ui-components/primitives/dropdown-menu";
-import { RuntimeDescriptor } from "@/types";
-import { Button } from "@/ui-components/primitives/button";
+} from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
+import { RuntimeDescriptor } from "hkp-frontend/src/types";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import MenuIcon from "../MenuIcon";
 
 type Props = {

@@ -1,4 +1,4 @@
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import CanvasUI from "./CanvasUI";
 import ServiceBase from "./ServiceBase";
 

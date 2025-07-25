@@ -4,8 +4,8 @@ import InputField from "../../../components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
 import { GithubUser, GithubObject, GithubOAuth } from "./GithubComponents";
 import { getFile, getFileFromBranch } from "./GithubAPI";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import { ServiceUIProps } from "@/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
 
 const clientID = "f2b34053a831baa056e8";
 const clientSecret = "";

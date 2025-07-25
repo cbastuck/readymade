@@ -5,7 +5,7 @@ import {
   ServiceClass,
   ServiceImpl,
   ServiceInstance,
-} from "@/types";
+} from "hkp-frontend/src/types";
 import RealtimeRuntimeScope from "./RealtimeRuntimeScope";
 import { ReactElement } from "react";
 import NotificationTargets from "../NotificationsTargets";

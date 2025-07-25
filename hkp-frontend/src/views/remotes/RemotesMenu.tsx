@@ -2,19 +2,19 @@ import { useState } from "react";
 import { ChevronsUpDown, Settings } from "lucide-react";
 import { CommandGroup, CommandList } from "cmdk";
 
-import { Button } from "@/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import {
   Command,
   CommandEmpty,
   CommandItem,
   CommandSeparator,
-} from "@/ui-components/primitives/command";
+} from "hkp-frontend/src/ui-components/primitives/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/ui-components/primitives/popover";
-import { RuntimeClass } from "@/types";
+} from "hkp-frontend/src/ui-components/primitives/popover";
+import { RuntimeClass } from "hkp-frontend/src/types";
 import ManageRuntimesDialog from "../../ui-components/toolbar/ManageRuntimesDialog.tsx";
 
 type Props = {

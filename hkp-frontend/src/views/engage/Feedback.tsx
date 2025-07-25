@@ -1,5 +1,5 @@
-import CheckboxGroup from "@/ui-components/CheckboxGroup";
-import RadioGroup from "@/ui-components/RadioGroup";
+import CheckboxGroup from "hkp-frontend/src/ui-components/CheckboxGroup";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
 export type FeedbackQuestionMode = "single" | "many";
 export type FeedbackType = "reaction" | "answer";

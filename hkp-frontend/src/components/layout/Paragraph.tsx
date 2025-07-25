@@ -1,4 +1,4 @@
-import Text from "@/ui-components/Text";
+import Text from "hkp-frontend/src/ui-components/Text";
 import { CSSProperties } from "react";
 
 type Props = {

@@ -4,8 +4,10 @@
 
 #include <format>
 
+using json = nlohmann::json;
 namespace beast = boost::beast;
-
+namespace hkp
+{
 struct ControlFlowData::Impl 
 {
   Data data;
@@ -133,7 +135,7 @@ bool isControlFlowData(const Data& data)
   return data.type() == typeid(ControlFlowData);
 }
 
-Data flatBufferToData(flat_buffer& buffer, bool isBinary) 
+Data flatBufferToData(FloatRingBuffer::BufferType& buffer, bool isBinary) 
 {
   auto data = static_cast<const uint8_t*>(buffer.data().data());
   if (isBinary)
@@ -154,7 +156,7 @@ template <>
 std::optional<bool> getProperty(const json& j, const std::string& key)
 {
   auto it = j.find(key);
-  if (it == j.end()) 
+  if (it == j.end() || it->is_null() || !it->is_boolean()) 
   {
     return std::nullopt;
   }
@@ -201,4 +203,6 @@ ControlFlowData makeEarlyReturn(const Data& data)
   cf.impl->type = ControlFlowData::Type::kEarlyReturn;
   cf.impl->data = data;
   return cf;
+}
+
 }

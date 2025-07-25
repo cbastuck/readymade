@@ -1,4 +1,4 @@
-import { Switch } from "@/ui-components/primitives/switch";
+import { Switch } from "hkp-frontend/src/ui-components/primitives/switch";
 
 type Props = {
   label: string;

@@ -1,12 +1,14 @@
 import { useRef, useState } from "react";
 import { Send } from "lucide-react";
 
-import CustomDialog from "@/ui-components/CustomDialog";
-import Button from "@/ui-components/Button";
-import BoardWidget, { BoardWidgetAPI } from "@/components/BoardWidget";
-import { BoardDescriptor, User } from "@/types";
+import CustomDialog from "hkp-frontend/src/ui-components/CustomDialog";
+import Button from "hkp-frontend/src/ui-components/Button";
+import BoardWidget, {
+  BoardWidgetAPI,
+} from "hkp-frontend/src/components/BoardWidget";
+import { BoardDescriptor, User } from "hkp-frontend/src/types";
 import { restoreBoardFromLocalStorage } from "../playground/common";
-import SearchableSelect from "@/ui-components/SearchableSelect";
+import SearchableSelect from "hkp-frontend/src/ui-components/SearchableSelect";
 
 type Props = {
   user: User | null;

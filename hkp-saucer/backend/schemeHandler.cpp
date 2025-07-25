@@ -1,0 +1,271 @@
+#include "./schemeHandler.h"
+
+#include <nlohmann/json.hpp>
+
+#include <crow.h>
+#include <crow/common.h>
+
+#include "server.h"
+#include <saucer/modules/desktop.hpp>
+
+using json = nlohmann::json;
+
+SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, saucer::modules::desktop& desktop)
+    : m_server(server)
+    , m_defaultHeaders(
+        {
+            {"Access-Control-Allow-Origin", server->allowedOrigins()},
+            {"Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE"},
+            {"Access-Control-Allow-Headers", "Content-Type"},
+        }
+    )
+    , m_desktop(desktop)
+{
+  m_router.register_route(
+    "GET",
+    "/remotes/", 
+    std::bind(&SchemeHandler::handleGetRemotes, this, std::placeholders::_1, std::placeholders::_2)
+  );
+
+  m_router.register_route(
+    "*",
+    "/remotes/:remote/*",
+    std::bind(&SchemeHandler::handleRemoteForward, this, std::placeholders::_1, std::placeholders::_2)
+  );
+
+  m_router.register_route(
+    "POST",
+    "/boards/:board",
+    std::bind(&SchemeHandler::handleSaveBoard, this, std::placeholders::_1, std::placeholders::_2)
+  );
+
+  m_router.register_route(
+    "GET",
+    "/boards",
+    std::bind(&SchemeHandler::handleListBoards, this, std::placeholders::_1, std::placeholders::_2)
+  );
+
+  m_router.register_route(
+    "GET",
+    "/boards/:board",
+    std::bind(&SchemeHandler::handleLoadBoard, this, std::placeholders::_1, std::placeholders::_2)
+  );
+
+    m_router.register_route(
+    "DELETE",
+    "/boards/:board",
+    std::bind(&SchemeHandler::handleDeleteBoard, this, std::placeholders::_1, std::placeholders::_2)
+  );
+}
+
+void SchemeHandler::addRoute(const Router::Method& method, const std::string& path, Router::Handler handler)
+{
+  m_router.register_route(method, path, handler);
+}
+
+saucer::scheme::response SchemeHandler::handleRequest(const saucer::scheme::request &req)
+{
+  auto res = m_router.route(req);
+  if (res)
+  {
+    return *res;
+  }
+  return saucer::scheme::response{
+    .status = 404,
+    .data = saucer::make_stash((json{
+      { "url", req.url() }
+    }).dump()),
+    .mime = "application/json",
+    .headers = m_defaultHeaders,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleGetRemotes(const Router::Params& p, const saucer::scheme::request& req) const
+{
+  auto remotesArr = json{
+    {
+      { "url", "hkp://remotes/" + m_server->name() },
+      { "port", m_server->port() },
+      { "name", m_server->name() },
+    },
+  };
+  return saucer::scheme::response{
+      .data = saucer::make_stash(remotesArr.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleRemoteForward(const Router::Params& p, const saucer::scheme::request& req) const
+{
+  crow::request crowReq;
+  auto forwardedUrl = std::string("/") + p.at("*");
+  crowReq.url = forwardedUrl;
+  crowReq.method = method_from_string(req.method().c_str());
+
+  crowReq.body = std::string(reinterpret_cast<const char*>(req.content().data()), req.content().size());
+  for (const auto& [key, value] : req.headers()) 
+  {
+    crowReq.headers.insert({key, value});
+  }
+
+  crow::response crowRes;
+  m_server->handleRequest(crowReq, crowRes);
+  std::map<std::string, std::string> resHeaders;
+  for (const auto& [key, value] : crowRes.headers) 
+  {
+    resHeaders[key] = value;
+  }
+  return saucer::scheme::response{
+      .data = saucer::make_stash(crowRes.body),
+      .headers = resHeaders,
+      .status = static_cast<int>(crowRes.code),
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleListBoards(const Router::Params& p, const saucer::scheme::request& req) const
+{
+  auto vec = m_settings.getSavedBoards();
+  if (vec.empty())
+  {
+    return saucer::scheme::response{
+      .status = 200,
+      .data = saucer::make_stash("[]"),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+    };
+  }
+  json boardsArr = json::array();
+  for (const auto& board : vec)
+  {
+    boardsArr.push_back({
+      { "name", board },
+      { "url", "hkp://boards/" + board },
+    });
+  }
+  return saucer::scheme::response{
+    .data = saucer::make_stash(boardsArr.dump()),
+    .mime = "application/json",
+    .status = 200,
+    .headers = m_defaultHeaders,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleLoadBoard(const Router::Params& p, const saucer::scheme::request& req) const
+{
+  //using saucer::modules::picker::type;
+  //auto file = m_desktop.pick<type::file>({.filters = {"*.hkp"}});
+  auto boardName = p.at("board");
+  if (!boardName.empty())
+  {
+    std::ifstream file(m_settings.getBoardsSavePath(boardName));
+    if (!file.is_open())
+    {
+      return saucer::scheme::response{
+        .status = 404,
+        .data = saucer::make_stash("Board not found"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+      };
+    }
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    file.close();
+    if (content.empty())
+    {
+      return saucer::scheme::response{
+        .status = 404,
+        .data = saucer::make_stash("Board is empty"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+      };
+    }
+    return saucer::scheme::response{
+      .data = saucer::make_stash(content),
+      .mime = "application/json",
+      .status = 200,
+      .headers = m_defaultHeaders,
+    };
+  }
+
+  return saucer::scheme::response{
+    .data = saucer::make_stash("List of boards"),
+    .mime = "text/plain",
+    .status = 200,
+    .headers = m_defaultHeaders,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleSaveBoard(const Router::Params& p, const saucer::scheme::request& req) const
+{
+  auto boardName = p.at("board");
+  auto content = req.content();
+  if (content.size() == 0)
+  {
+    return saucer::scheme::response{
+      .status = 400,
+      .data = saucer::make_stash("No content provided"),
+      .mime = "text/plain",
+      .headers = m_defaultHeaders,
+    };
+  }
+
+  auto savePath = m_settings.getBoardsSavePath(boardName);
+  std::ofstream file(savePath);
+  if (!file.is_open())
+  {
+    return saucer::scheme::response{
+      .status = 400,
+      .data = saucer::make_stash("Failed to open file for writing"),
+      .mime = "text/plain",
+      .headers = m_defaultHeaders,
+    };
+  }
+  file.write(reinterpret_cast<const char*>(content.data()), content.size());
+
+  return saucer::scheme::response{
+    .status = 201,
+    .mime = "application/json",
+    .headers = m_defaultHeaders,
+    .data = saucer::make_stash(json{
+      { "message", "Board saved successfully" },
+      { "board", boardName },
+      { "path", savePath }
+    }.dump())
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleDeleteBoard(const Router::Params& p, const saucer::scheme::request& req) const
+{
+  auto boardName = p.at("board");
+  if (boardName.empty())
+  {
+    return saucer::scheme::response{
+      .status = 400,
+      .data = saucer::make_stash("Board name is required"),
+      .mime = "text/plain",
+      .headers = m_defaultHeaders,
+    };
+  }
+
+  auto path = m_settings.getBoardsSavePath(boardName);
+  if (!std::filesystem::remove(path))
+  {
+    return saucer::scheme::response{
+      .status = 404,
+      .data = saucer::make_stash("Board not found"),
+      .mime = "text/plain",
+      .headers = m_defaultHeaders,
+    };
+  }
+
+  return saucer::scheme::response{
+    .status = 204,
+    .headers = m_defaultHeaders,
+    .mime = "application/json",
+    .data = saucer::make_stash(json{
+      { "message", "Board deleted successfully" },
+      { "board", boardName },
+      { "path", path }
+    }.dump())
+  };
+}

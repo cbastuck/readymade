@@ -1,4 +1,4 @@
-import React, { useContext, useState } from "react";
+import React, { useCallback, useContext, useMemo, useState } from "react";
 
 import {
   NavigationMenu,
@@ -7,24 +7,32 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from "@/ui-components/primitives/navigation-menu";
-import { cn } from "@/ui-components";
-import { BoardCtx } from "@/BoardContext";
+} from "hkp-frontend/src/ui-components/primitives/navigation-menu";
+import { cn } from "hkp-frontend/src/ui-components";
+import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import EditorDialog from "../EditorDialog";
 import {
   restoreBoardFromLocalStorage,
   storeBoardToLocalStorage,
-} from "@/views/playground/common";
-import { createBoardLink } from "@/views/playground/BoardLink";
-import { assureJSON, stringifyIfNeeded } from "@/common";
-import { BoardDescriptor } from "@/types";
+} from "hkp-frontend/src/views/playground/common";
+import { createBoardLink } from "hkp-frontend/src/views/playground/BoardLink";
+import { assureJSON, stringifyIfNeeded } from "hkp-frontend/src/common";
+import {
+  BoardDescriptor,
+  BoardMenuItem,
+  BoardMenuItemFactory,
+} from "hkp-frontend/src/types";
 
-export default function BoardMenu() {
+type Props = {
+  menuItemFactory?: BoardMenuItemFactory;
+};
+
+export default function BoardMenu({ menuItemFactory }: Props) {
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
   const [showBoardSource, setShowBoardSource] = useState(false);
 
-  const onEditBoardSource = async () => {
+  const onEditBoardSource = useCallback(async () => {
     if (boardContext && board) {
       const src = boardContext.errorOnFetch
         ? restoreBoardFromLocalStorage(board)
@@ -32,7 +40,7 @@ export default function BoardMenu() {
       setBoardSource(JSON.stringify(src, null, 2));
       setShowBoardSource(true);
     }
-  };
+  }, [boardContext, board]);
 
   const onCloseBoardSource = () => setShowBoardSource(false);
   const onApplyBoardSource = (newSource: string | object) => {
@@ -69,11 +77,60 @@ export default function BoardMenu() {
     });
   };
 
-  const onCreateBoardLink = () => {
+  const onCreateBoardLink = useCallback(() => {
     boardContext?.onAction({
       type: "createBoardLink",
     });
-  };
+  }, [boardContext]);
+
+  const menuItems: Array<BoardMenuItem> = useMemo(
+    () =>
+      menuItemFactory && boardContext
+        ? menuItemFactory(boardContext)
+        : [
+            {
+              title: "New Board",
+              description: "Create a new board.",
+              onClick: () =>
+                boardContext?.onAction({
+                  type: "newBoard",
+                }),
+              disabled: false,
+            },
+            {
+              title: "Clear Board",
+              description: "Clear the current Board",
+              onClick: () =>
+                boardContext?.onAction({
+                  type: "clearBoard",
+                }),
+              disabled:
+                !boardContext ||
+                !boardContext.isActionAvailable({ type: "clearBoard" }),
+            },
+            {
+              title: "Save Board as",
+              description: "Save the current board to the browser",
+              onClick: () =>
+                boardContext?.onAction({
+                  type: "saveBoard",
+                }),
+              disabled: false,
+            },
+            {
+              title: "Edit Board Source",
+              description: "Edit the current board's source in a text editor",
+              onClick: onEditBoardSource,
+            },
+            {
+              title: "Create Board Link",
+              description:
+                "Create a link or QR code allowing to share and clone the board on another device",
+              onClick: onCreateBoardLink,
+            },
+          ],
+    [menuItemFactory, boardContext, onCreateBoardLink, onEditBoardSource]
+  );
 
   if (!board) {
     return null;
@@ -119,47 +176,16 @@ export default function BoardMenu() {
             <h3 className="px-3 my-[4px] text-sky-600">{board}</h3>
             <hr />
             <ul className="grid gap-1 w-[200px] md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr] m-1">
-              <ListItem
-                title="New Board"
-                onClick={() =>
-                  boardContext?.onAction({
-                    type: "newBoard",
-                  })
-                }
-              >
-                Create a new board.
-              </ListItem>
-              <ListItem
-                title="Clear Board"
-                onClick={() =>
-                  boardContext?.onAction({
-                    type: "clearBoard",
-                  })
-                }
-                disabled={
-                  !boardContext ||
-                  !boardContext.isActionAvailable({ type: "clearBoard" })
-                }
-              >
-                Clear the current Board
-              </ListItem>
-              <ListItem
-                title="Save Board as"
-                onClick={() =>
-                  boardContext?.onAction({
-                    type: "saveBoard",
-                  })
-                }
-              >
-                Save the current board to the browser
-              </ListItem>
-              <ListItem title="Edit Board Source" onClick={onEditBoardSource}>
-                Edit the current board's source in a text editor
-              </ListItem>
-              <ListItem title="Create Board Link" onClick={onCreateBoardLink}>
-                Create a link or QR code allowing to share and clone the board
-                on another device
-              </ListItem>
+              {menuItems.map((item) => (
+                <ListItem
+                  key={item.title}
+                  title={item.title}
+                  onClick={item.onClick}
+                  disabled={item.disabled}
+                >
+                  {item.description}
+                </ListItem>
+              ))}
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>

@@ -1,5 +1,7 @@
-import MappingTable, { Template } from "@/components/MappingTable";
-import { Button } from "@/ui-components/primitives/button";
+import MappingTable, {
+  Template,
+} from "hkp-frontend/src/components/MappingTable";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import {
   Dialog,
   DialogContent,
@@ -7,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/ui-components/primitives/dialog";
+} from "hkp-frontend/src/ui-components/primitives/dialog";
 import { useState } from "react";
 
 type Props = {

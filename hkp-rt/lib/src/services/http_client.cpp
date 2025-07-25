@@ -1,7 +1,8 @@
 #include "./http_client.h"
 
 #include <boost/beast/core.hpp>
-#include <boost/json/src.hpp>
+//#include <boost/json/src.hpp>
+#include <boost/json.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
@@ -26,6 +27,8 @@ namespace ssl = net::ssl;       // from <boost/asio/ssl.hpp>
 namespace urls = boost::urls; // from <boost/url.hpp>
 using tcp = net::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+namespace hkp {
+
 auto USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15";
 
 struct HttpClient::Impl
@@ -36,7 +39,7 @@ struct HttpClient::Impl
 };
 
 HttpClient::HttpClient(const std::string& instanceId)
-     : hkp::Service(instanceId, serviceId())
+     : Service(instanceId, serviceId())
      , m_impl(std::make_unique<Impl>())
 { 
 }
@@ -203,4 +206,6 @@ http::verb HttpClient::Impl::getMethodFromString(const std::string& s)
     return http::verb::delete_;
   }
   return http::verb::unknown;
+}
+
 }

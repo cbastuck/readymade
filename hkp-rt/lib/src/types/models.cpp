@@ -7,6 +7,7 @@ json jsonSerialise(const RuntimeConfiguration& conf)
   json j;
   j["id"] = conf.runtimeId;
   j["name"] = conf.runtimeName;
+  j["boardName"] = conf.boardName;
   json services = json::array();
   for (auto& svc : conf.services)
   {

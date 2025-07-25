@@ -6,12 +6,6 @@ import svgr from "vite-plugin-svgr";
 export default defineConfig({
   build: {
     outDir: "build",
-    /*
-    lib: {
-      entry: path.resolve(__dirname, "lib/main.ts"),
-      formats: ["es"],
-    },
-    */
   },
   plugins: [svgr(), react()],
   server: {

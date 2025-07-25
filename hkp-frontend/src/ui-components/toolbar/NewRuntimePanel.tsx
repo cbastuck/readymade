@@ -1,10 +1,10 @@
-import { Button } from "@/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 
-import { Input } from "@/ui-components/primitives/input";
-import { Label } from "@/ui-components/primitives/label";
-import { RuntimeClass } from "@/types";
+import { Input } from "hkp-frontend/src/ui-components/primitives/input";
+import { Label } from "hkp-frontend/src/ui-components/primitives/label";
+import { RuntimeClass } from "hkp-frontend/src/types";
 import { useState } from "react";
-import SelectorField from "@/components/shared/SelectorField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 
 type Props = {
   onAddRuntime: (rtClass: RuntimeClass) => void;

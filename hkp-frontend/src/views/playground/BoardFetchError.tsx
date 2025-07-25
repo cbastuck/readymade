@@ -1,5 +1,5 @@
 import { TriangleAlert } from "lucide-react";
-import Alert from "@/ui-components/Alert";
+import Alert from "hkp-frontend/src/ui-components/Alert";
 
 type Props = {
   boardName: string;

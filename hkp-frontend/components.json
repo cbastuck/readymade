@@ -11,7 +11,7 @@
     "prefix": ""
   },
   "aliases": {
-    "components": "@/ui-components/primitives",
-    "utils": "@/ui-components"
+    "components": "hkp-frontend/src/ui-components/primitives",
+    "utils": "hkp-frontend/src/ui-components"
   }
 }

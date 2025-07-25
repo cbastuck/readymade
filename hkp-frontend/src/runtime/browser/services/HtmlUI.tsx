@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Fullscreen } from "lucide-react";
-import MenuIcon from "@/ui-components/MenuIcon";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import { ServiceUIProps } from "../../../types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 import { t } from "../../../styles";
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function HtmlUI(props: ServiceUIProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);

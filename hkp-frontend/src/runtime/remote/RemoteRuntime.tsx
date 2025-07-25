@@ -15,7 +15,7 @@ import ServiceUiContainer from "../ServiceUiContainer";
 import RemoteServiceUI from "./RemoteServiceUI";
 import { findServiceUI } from "./UIRegistry";
 import React from "react";
-import EmptyRuntimePlaceholder from "@/ui-components/runtime-ui/EmptyRuntimePlaceholder";
+import EmptyRuntimePlaceholder from "hkp-frontend/src/ui-components/runtime-ui/EmptyRuntimePlaceholder";
 
 type Props = {
   user: User | null;

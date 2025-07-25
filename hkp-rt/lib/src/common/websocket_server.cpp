@@ -42,7 +42,11 @@ void WebsocketServer::start()
 
 void WebsocketServer::stop()
 {
-  m_connections.clear();
+  {
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_connections.clear(); // TODO: not thread safe, should be protected by mutex
+  }
+  
   if (m_socketListener)
   {
     m_socketListener.reset();
@@ -51,7 +55,13 @@ void WebsocketServer::stop()
 
 void WebsocketServer::send(const Data& data) 
 {
-  for (auto& c : m_connections)
+  std::unique_lock<std::mutex> lock(m_mutex, std::try_to_lock);
+  if (!lock.owns_lock()) {
+    // Handle the case where the lock could not be acquired
+    return;
+  }
+
+  for (auto& c : m_connections) 
   {
     c->send(data);
   }

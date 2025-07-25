@@ -1,18 +1,20 @@
 import { useState } from "react";
 
-import { ServiceUIProps } from "@/types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 import PromptInput from "./OllamaPromptUI/PromptInput";
 import SelectorField, {
   arrayToOptions,
-} from "@/components/shared/SelectorField";
+} from "hkp-frontend/src/components/shared/SelectorField";
 
-import Slider from "@/ui-components/Slider";
-import MenuIcon from "@/ui-components/MenuIcon";
+import Slider from "hkp-frontend/src/ui-components/Slider";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import { FileJson, FileText } from "lucide-react";
 import { OpenAIModel } from "./OpenAIPrompt";
-import SecretField from "@/components/shared/SecretField";
-import { secretId } from "@/vault";
+import SecretField from "hkp-frontend/src/components/shared/SecretField";
+import { secretId } from "hkp-frontend/src/vault";
 
 export default function OpenAIPromptUI(props: ServiceUIProps) {
   const [prompt, setPrompt] = useState("");

@@ -1,5 +1,5 @@
-import JSONCode from "@/ui-components/JSONCode";
-import SimpleTable from "@/ui-components/SimpleTable";
+import JSONCode from "hkp-frontend/src/ui-components/JSONCode";
+import SimpleTable from "hkp-frontend/src/ui-components/SimpleTable";
 
 export default function MapUIModeAssist() {
   return (

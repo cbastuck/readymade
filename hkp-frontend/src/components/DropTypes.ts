@@ -1,4 +1,4 @@
-import { RuntimeDescriptor, ServiceInstance } from "@/types";
+import { RuntimeDescriptor, ServiceInstance } from "hkp-frontend/src/types";
 
 export const HKP_DND_SERVICE_TYPE = "application/hkp-service";
 export const HKP_DND_RUNTIME_TYPE = "application/hkp-runtime";

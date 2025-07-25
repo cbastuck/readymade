@@ -1,16 +1,19 @@
-import { Dialog, DialogContent } from "@/ui-components/primitives/dialog";
+import {
+  Dialog,
+  DialogContent,
+} from "hkp-frontend/src/ui-components/primitives/dialog";
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/ui-components/primitives/popover";
+} from "hkp-frontend/src/ui-components/primitives/popover";
 
-import { RuntimeClass } from "@/types";
+import { RuntimeClass } from "hkp-frontend/src/types";
 
 import NewRuntimePanel from "./NewRuntimePanel";
 import ExistingRuntimesPanel from "./ExistingRuntimesPanel";
-import { Button } from "@/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { useState } from "react";
 
 type Props = {

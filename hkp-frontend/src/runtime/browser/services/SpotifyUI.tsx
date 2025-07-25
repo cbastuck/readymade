@@ -4,10 +4,10 @@ import { SpotifyOAuth } from "./SpotifyComponents";
 
 import { s, t } from "../../../styles";
 import Button from "hkp-frontend/src/ui-components/Button";
-import Image from "@/ui-components/Image";
-import { ServiceInstance, ServiceUIProps } from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import RadioGroup from "@/ui-components/RadioGroup";
+import Image from "hkp-frontend/src/ui-components/Image";
+import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
 const loginStateId = "spotify-login";
 

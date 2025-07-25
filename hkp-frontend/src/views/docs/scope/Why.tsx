@@ -2,7 +2,7 @@ import Template from "../../Template";
 import TemplateButton from "../../TemplateButton";
 
 import { HStack } from "../../../styles";
-import Text from "@/ui-components/Text";
+import Text from "hkp-frontend/src/ui-components/Text";
 import Date from "../../../components/Date";
 
 export default function Why() {

@@ -1,8 +1,8 @@
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 
 import PeerSocketUI from "./PeerSocketUI";
 import ServiceBase from "./ServiceBase";
-import { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const serviceName = "Peer Socket";
 const serviceId = "hookup.to/service/peer-socket";

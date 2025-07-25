@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { decompressAndDecodeState } from "@/common";
+import { decompressAndDecodeState } from "hkp-frontend/src/common";
 import { importAdditionalWidgetToLocalStorage } from "./common";
 
 export default function ImportWidget() {

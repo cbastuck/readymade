@@ -8,13 +8,15 @@
 
 #include "./receiver_session.h"
 
-class WebsocketReader : public hkp::Service
+namespace hkp {
+
+class WebsocketReader : public Service
 {
 public:
   static std::string serviceId() { return "websocket-reader"; }
 
   WebsocketReader(const std::string& instanceId) 
-    : hkp::Service(instanceId, serviceId())
+    : Service(instanceId, serviceId())
     , m_buffer(std::make_shared<FloatRingBuffer>(instanceId))
   {
   }
@@ -128,5 +130,7 @@ private:
   std::shared_ptr<ReceiverSession> m_session;
   std::shared_ptr<FloatRingBuffer> m_buffer;
   std::thread m_t;
-  hkp::WebsocketConfig m_config;
+  WebsocketConfig m_config;
 };
+
+}

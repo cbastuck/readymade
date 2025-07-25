@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
-import Text from "@/ui-components/Text";
+import Text from "hkp-frontend/src/ui-components/Text";
 import Sketch from "./Sketch";
 import Template from "../Template";
 import { s, t } from "../../styles";
 import Claim from "./Claim";
 import GroupItem from "./GroupItem";
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function Quickstart() {
   const navigate = useNavigate();
@@ -75,7 +75,7 @@ export default function Quickstart() {
         })}
       >
         <Text style={{ marginBottom: 10 }}>
-          There are three important entities:
+          There are three important entities that are your building blocks:
           <span style={s(t.bold, t.m(5, 0))}>
             Board, Runtime, and Service.{" "}
           </span>

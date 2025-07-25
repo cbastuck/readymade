@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import LoadIndicator from "@/views/playground/LoadIndicator";
+import LoadIndicator from "hkp-frontend/src/views/playground/LoadIndicator";
 
 import BoardCollection from ".";
 import { UsecaseDescriptor } from "../../types";

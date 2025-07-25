@@ -1,8 +1,8 @@
 import { useRef } from "react";
 
-import SubmittableTextarea from "@/ui-components/SubmittableTextarea";
+import SubmittableTextarea from "hkp-frontend/src/ui-components/SubmittableTextarea";
 
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 import BusyIndicator from "./BusyIndicator";
 import StreamingPreview from "./StreamingPreview";
 

@@ -1,8 +1,8 @@
 import { useContext } from "react";
 
-import { BoardCtx } from "@/BoardContext";
-import Runtime from "@/components/Runtime";
-import { ProcessContext, RuntimeClass } from "@/types";
+import { BoardCtx } from "hkp-frontend/src/BoardContext";
+import Runtime from "hkp-frontend/src/components/Runtime";
+import { ProcessContext, RuntimeClass } from "hkp-frontend/src/types";
 
 type Props = {
   runtimeClass: RuntimeClass;

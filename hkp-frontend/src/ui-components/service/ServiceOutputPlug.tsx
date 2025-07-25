@@ -1,20 +1,20 @@
 import { useState } from "react";
 import { X, Pin, PinOff, Maximize } from "lucide-react";
 
-import Plug from "@/assets/plug.svg?react";
-import ArrayPlug from "@/assets/plugArray.svg?react";
+import Plug from "hkp-frontend/src/assets/plug.svg?react";
+import ArrayPlug from "hkp-frontend/src/assets/plugArray.svg?react";
 
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/ui-components/primitives/popover";
+} from "hkp-frontend/src/ui-components/primitives/popover";
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuTrigger,
-} from "@/ui-components/primitives/context-menu";
+} from "hkp-frontend/src/ui-components/primitives/context-menu";
 
 import { useTheme } from "../ThemeContext";
 import FlowInspectorPopup from "./FlowInspectorPopup";

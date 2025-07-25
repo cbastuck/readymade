@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { RotateCcw } from "lucide-react";
 
-import { ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
-import { Button } from "@/ui-components/primitives/button";
-import RadioGroup from "@/ui-components/RadioGroup";
-import Slider from "@/ui-components/Slider";
-import OneOfVisible from "@/ui-components/OneOfVisible";
-import MenuIcon from "@/ui-components/MenuIcon";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import Slider from "hkp-frontend/src/ui-components/Slider";
+import OneOfVisible from "hkp-frontend/src/ui-components/OneOfVisible";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 
 export default function TimerUI(props: ServiceUIProps) {
   const { service } = props;
@@ -54,8 +54,11 @@ export default function TimerUI(props: ServiceUIProps) {
       oneShotDelayUnit,
       running,
     } = state || {};
-    if (state.periodic === true && mode === "oneshot") {
+    if (state.periodic === true && mode !== "periodic") {
       setMode("periodic");
+    }
+    if (state.periodic === false && mode !== "oneshot") {
+      setMode("oneshot");
     }
     if (needsUpdate(periodicValue, interval)) {
       setInterval(periodicValue);

@@ -1,12 +1,14 @@
 import { Component, DragEvent, TouchEvent, MouseEvent } from "react";
 
 import { Fullscreen } from "lucide-react";
-import MenuIcon from "@/ui-components/MenuIcon";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 
-import { ServiceInstance, ServiceUIProps } from "@/types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
-import { Point, Rect } from "@/common";
-import Button from "@/ui-components/Button";
+import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
+import { Point, Rect } from "hkp-frontend/src/common";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 const transparentImage = new Image();
 transparentImage.src =

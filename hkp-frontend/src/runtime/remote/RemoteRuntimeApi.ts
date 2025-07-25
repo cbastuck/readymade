@@ -44,14 +44,18 @@ export async function getHealth(rtClass: RuntimeClass, user: User | null) {
   return getHealth_gql(rtClass, user);
 }
 
-export async function addRuntime(rtClass: RuntimeClass, user: User | null) {
+export async function addRuntime(
+  rtClass: RuntimeClass,
+  user: User | null,
+  boardName?: string
+) {
   const desc = await createRuntime(rtClass, user);
   if (!desc) {
     return null;
   }
 
   const { registry, ...rest } = desc;
-  const runtime = { ...rtClass, ...rest, user };
+  const runtime = { ...rtClass, ...rest, user, boardName };
   const scope = await createScope(runtime);
   return {
     runtime,
@@ -72,7 +76,8 @@ export async function removeRuntime(
 export async function restoreRuntime(
   rt: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
-  user: User | null
+  user: User | null,
+  boardName?: string
 ) {
   const restoredRuntime = await restoreRuntime_gql(rt, services, user);
   if (!restoredRuntime || restoredRuntime.id !== rt.id) {
@@ -91,7 +96,7 @@ export async function restoreRuntime(
     }
   );
 
-  const runtime = { ...rt, ...restoredRuntime, user };
+  const runtime = { ...rt, ...restoredRuntime, user, boardName };
 
   const scope = await createScope(runtime);
   return {

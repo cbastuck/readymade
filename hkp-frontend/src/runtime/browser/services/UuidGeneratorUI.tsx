@@ -1,9 +1,11 @@
 import { useState } from "react";
-import Copyable from "@/components/Copyable";
-import { ServiceUIProps } from "@/types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
-import RadioGroup from "@/ui-components/RadioGroup";
-import Button from "@/ui-components/Button";
+import Copyable from "hkp-frontend/src/components/Copyable";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function UuidGeneratorUI(props: ServiceUIProps) {
   const [uuid, setUuid] = useState("");

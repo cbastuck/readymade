@@ -1,9 +1,11 @@
 import { useState } from "react";
 
-import { ServiceUIProps } from "@/types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 
-import RadioGroup from "@/ui-components/RadioGroup";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 import { State as ServiceState } from "./KeyHandler";
 
 type State = ServiceState;

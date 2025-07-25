@@ -4,7 +4,7 @@ import {
   BreadcrumbItem,
   BreadcrumbList,
   BreadcrumbSeparator,
-} from "@/ui-components/primitives/breadcrumb";
+} from "hkp-frontend/src/ui-components/primitives/breadcrumb";
 import { Link } from "react-router-dom";
 
 export type BreadcrumbItem = {

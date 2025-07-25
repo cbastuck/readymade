@@ -1,7 +1,7 @@
 import { CSSProperties } from "react";
 import { Power, PowerOff } from "lucide-react";
 
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 type Props = {
   bypass: boolean;

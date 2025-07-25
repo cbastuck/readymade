@@ -1,4 +1,4 @@
-import { Toaster } from "@/ui-components/primitives/sonner";
+import { Toaster } from "hkp-frontend/src/ui-components/primitives/sonner";
 import { useContext } from "react";
 import { BoardCtx } from "./BoardContext";
 import { NotificationType } from "./types";

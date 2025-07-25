@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import Template from "@/views/Template";
+import Template from "hkp-frontend/src/views/Template";
 import Sketch from "../../Sketch";
 import { P } from "..";
 import MakeABoard from "./p1-make-a-board";

@@ -1,4 +1,4 @@
-import { Button } from "@/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 
 import {
   Table,
@@ -7,16 +7,16 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/ui-components/primitives/table";
+} from "hkp-frontend/src/ui-components/primitives/table";
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/ui-components/primitives/dropdown-menu";
+} from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 
-import { RuntimeClass } from "@/types";
+import { RuntimeClass } from "hkp-frontend/src/types";
 import { MoreHorizontal } from "lucide-react";
 import { ColorPicker } from "../ColorPicker";
 

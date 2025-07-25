@@ -1,4 +1,4 @@
-import { createShortRandomString } from "@/views/playground/common";
+import { createShortRandomString } from "hkp-frontend/src/views/playground/common";
 import { capitaliseHeadline } from ".";
 import { CarouselItem } from "..";
 

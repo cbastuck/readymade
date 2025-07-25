@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { Tree } from "react-arborist";
 
 import HtmlConfigTreeNode from "./HtmlConfigTreeNode";
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 type TreeNode = {
   html: string;

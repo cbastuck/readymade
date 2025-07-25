@@ -1,4 +1,4 @@
-import Shortcut from "@/ui-components/Shortcut";
+import Shortcut from "hkp-frontend/src/ui-components/Shortcut";
 import MediaParagraph from "../MediaParagraph";
 import { leaveLampBoard2 } from "./boards";
 

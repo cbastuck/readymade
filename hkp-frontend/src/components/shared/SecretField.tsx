@@ -1,7 +1,7 @@
 import InputField, {
   Props as InputFieldProps,
-} from "@/components/shared/InputField";
-import { getVault } from "@/vault";
+} from "hkp-frontend/src/components/shared/InputField";
+import { getVault } from "hkp-frontend/src/vault";
 
 type Props = InputFieldProps & {
   fallbackValue?: string;

@@ -1,7 +1,7 @@
 import React from "react";
 import * as TabsPrimitive from "@radix-ui/react-tabs";
 
-import { cn } from "@/ui-components";
+import { cn } from "hkp-frontend/src/ui-components";
 
 const Tabs = TabsPrimitive.Root;
 

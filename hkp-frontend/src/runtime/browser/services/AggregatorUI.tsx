@@ -1,10 +1,12 @@
 import { Component } from "react";
 
 import { ServiceInstance, ServiceUIProps } from "../../../types";
-import Input from "@/ui-components/Input";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
-import NumberInput from "@/ui-components/NumberInput";
-import RadioGroup from "@/ui-components/RadioGroup";
+import Input from "hkp-frontend/src/ui-components/Input";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
+import NumberInput from "hkp-frontend/src/ui-components/NumberInput";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
 type State = {
   interval: number;

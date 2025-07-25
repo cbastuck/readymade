@@ -1,19 +1,23 @@
 import { Component, MouseEvent } from "react";
 import { Trash } from "lucide-react";
 
-import { ServiceClass, ServiceInstance, ServiceUIProps } from "@/types";
+import {
+  ServiceClass,
+  ServiceInstance,
+  ServiceUIProps,
+} from "hkp-frontend/src/types";
 
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import GroupLabel from "@/ui-components/GroupLabel";
-import ServiceSelector from "@/ui-components/ServiceSelector";
-import RadioGroup from "@/ui-components/RadioGroup";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
+import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/ui-components/primitives/accordion";
-import { Button } from "@/ui-components/primitives/button";
+} from "hkp-frontend/src/ui-components/primitives/accordion";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 
 const defaultInput = "multiplex";
 const defaultOutput = "array";

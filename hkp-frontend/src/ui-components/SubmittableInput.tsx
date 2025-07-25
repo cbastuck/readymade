@@ -17,6 +17,7 @@ import Button from "./Button";
 export type SubmittableInputProps = {
   id?: string;
   className?: string;
+  labelClassName?: string;
   title?: string;
   type?: string;
   value: string;
@@ -41,6 +42,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     const {
       id,
       className,
+      labelClassName,
       type,
       title,
       value,
@@ -142,6 +144,7 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
             id={id}
             ref={ref}
             className={cls}
+            labelClassName={labelClassName}
             type={type}
             fullWidth={fullWidth}
             minHeight={minHeight}

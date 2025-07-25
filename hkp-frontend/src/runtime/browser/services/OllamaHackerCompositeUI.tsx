@@ -1,14 +1,16 @@
-import { ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "hkp-frontend/src/types";
 
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 import PromptInput from "./OllamaPromptUI/PromptInput";
 import { useState } from "react";
 import { HackerUIPanel } from "./HackerUI";
-import RadioGroup from "@/ui-components/RadioGroup";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 import SelectorField, {
   arrayToOptions,
-} from "@/components/shared/SelectorField";
+} from "hkp-frontend/src/components/shared/SelectorField";
 
 export default function OllamaHackerCompsiteUI(props: ServiceUIProps) {
   const [accumulatedUpdate, setAccumulatedUpdate] = useState("");

@@ -10,8 +10,15 @@
 #include "./services/monitor.h"
 #include "./services/timer.h"
 #include "./services/http_client.h"
+#include "./services/http_server/http_server.h"
 #include "./services/static.h"
 #include "./services/cache.h"
+#include "./services/buffer_service.h"
+#include "./services/filter.h"
+#include "./services/fft_service.h"
+#include "./services/ifft_service.h"
+#include "./services/transient_detector.h"
+#include "./services/wav_reader.h"
 
 #if IS_MACOS
   #include "./services/core_input.h"
@@ -19,10 +26,11 @@
 #endif
 
 #ifdef AVCPP_FOUND
-  #include "./services/ffmpeg.h"
+  #include "./services/ffmpeg/ffmpeg.h"
 #endif
 
-using ServiceTypes = hkp::Registry::TypeList<
+namespace hkp {
+using ServiceTypes = Registry::TypeList<
    WebsocketWriter
   ,WebsocketReader
   ,WebsocketServerService
@@ -31,8 +39,15 @@ using ServiceTypes = hkp::Registry::TypeList<
   ,Monitor
   ,Timer
   ,HttpClient
+  ,HttpServer
   ,Static
   ,Cache
+  ,FFTService
+  ,IFFTService
+  ,Buffer
+  ,Filter
+  ,TransientDetector
+  ,WavReader
 #ifdef AVCPP_FOUND 
   ,Ffmpeg
 #endif
@@ -42,7 +57,6 @@ using ServiceTypes = hkp::Registry::TypeList<
 #endif
 >;
 
-namespace hkp {
 
 Registry::Registry()
 {

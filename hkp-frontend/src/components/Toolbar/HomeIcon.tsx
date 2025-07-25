@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 
-import { Button } from "@/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 
-import IconH from "./assets/hkp-single-dot-h.svg?react";
+import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 
 export default function HomeIcon() {
   const size = 24;

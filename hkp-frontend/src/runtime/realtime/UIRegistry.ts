@@ -1,4 +1,4 @@
-import { ServiceUIComponent } from "@/types";
+import { ServiceUIComponent } from "hkp-frontend/src/types";
 
 import MonitorUI from "../../runtime/browser/services/MonitorUI";
 import AudioOutputUI from "./ui/AudioOutputUI";

@@ -2,15 +2,15 @@ import { ReactNode, useContext } from "react";
 
 import { BoardCtx } from "../../BoardContext";
 
-import RuntimeMenu from "@/ui-components/toolbar/RuntimeMenu";
+import RuntimeMenu from "hkp-frontend/src/ui-components/toolbar/RuntimeMenu";
 import HomeIcon from "./HomeIcon";
 import NavigationBar from "./NavigationBar";
 
-import AppMenu from "@/ui-components/toolbar/AppMenu";
+import AppMenu from "hkp-frontend/src/ui-components/toolbar/AppMenu";
 
-import { RuntimeClass } from "../../types";
+import { BoardMenuItemFactory, RuntimeClass } from "../../types";
 
-import BoardMenu from "@/ui-components/toolbar/BoardMenu";
+import BoardMenu from "hkp-frontend/src/ui-components/toolbar/BoardMenu";
 
 import "./index.css";
 
@@ -18,7 +18,9 @@ type Props = {
   showRuntimeMenu?: boolean;
   children?: ReactNode;
   isCompact?: boolean;
+  hideNavigation?: boolean;
   includeNavigationLinks?: boolean;
+  menuItemFactory?: BoardMenuItemFactory;
   onUpdateAvailableRuntimeEngines?: (
     runtimeClasses: Array<RuntimeClass>
   ) => void;
@@ -28,6 +30,8 @@ export default function Toolbar({
   showRuntimeMenu = false,
   children = false,
   isCompact = undefined,
+  hideNavigation = false,
+  menuItemFactory,
   onUpdateAvailableRuntimeEngines,
 }: Props) {
   const boardContext = useContext(BoardCtx);
@@ -86,7 +90,7 @@ export default function Toolbar({
             <HomeIcon />
           </div>
 
-          <BoardMenu />
+          <BoardMenu menuItemFactory={menuItemFactory} />
 
           {!children && showRuntimeMenu && (
             <RuntimeMenu
@@ -102,11 +106,17 @@ export default function Toolbar({
 
           {children ? children : null}
 
-          <NavigationBar
-            isCompact={isCompact === undefined ? isNarrow : isCompact}
-          />
+          {!hideNavigation && (
+            <NavigationBar
+              isCompact={isCompact === undefined ? isNarrow : isCompact}
+            />
+          )}
 
-          <AppMenu includeNavigationLinks={!isCompact && isNarrow} />
+          {!hideNavigation && (
+            <AppMenu
+              includeNavigationLinks={!hideNavigation && !isCompact && isNarrow}
+            />
+          )}
         </div>
       </div>
     </div>

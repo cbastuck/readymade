@@ -6,7 +6,7 @@ import BoardProvider, {
   BoardContextState,
 } from "../../../BoardContext";
 
-import SelectorField from "@/components/shared/SelectorField";
+import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import browserRuntimeApi from "../BrowserRuntimeApi";
 import remoteRuntimeApi from "../../remote/RemoteRuntimeApi";
 import {
@@ -24,8 +24,8 @@ import {
   getLocalBoards,
 } from "../../../views/playground/common";
 
-import Button from "@/ui-components/Button";
-import ServiceUI from "@/ui-components/service/ServiceUI";
+import Button from "hkp-frontend/src/ui-components/Button";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 type Config = {
   result: any;
@@ -84,7 +84,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
 
   const process = async (params: any | Array<any>) => {
     if (Array.isArray(params)) {
-      const results = [];
+      const results: Array<{ params: any; value: any }> = [];
       for (const p of params) {
         const r: any = await processSingle(p);
         const input = p; // typeof p === "string" ? p : JSON.stringify(p);

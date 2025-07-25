@@ -2,10 +2,12 @@
 
 #include <yas/buffers.hpp>
 
+namespace hkp {
+
 std::string WebsocketWriter::serviceId() { return "websocket-writer"; } 
 
 WebsocketWriter::WebsocketWriter(const std::string& instanceId)
-      : hkp::Service(instanceId, serviceId())
+      : Service(instanceId, serviceId())
 {
 }
 
@@ -101,4 +103,6 @@ void WebsocketWriter::run()
   {
     std::cerr << "WebsocketWriter: " << std::endl;
   }
+}
+
 }

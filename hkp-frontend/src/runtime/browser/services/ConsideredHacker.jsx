@@ -4,7 +4,7 @@ import Hacker from "./Hacker";
 import {
   parseExpression,
   evalExpression,
-} from "@/runtime/browser/services/base/eval";
+} from "hkp-frontend/src/runtime/browser/services/base/eval";
 
 const serviceId = "hookup.to/service/hacker/considered";
 const serviceName = "Considered Hacker";

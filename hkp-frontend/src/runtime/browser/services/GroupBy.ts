@@ -1,6 +1,6 @@
-import GroupByDescriptor from "@/runtime/browser/services/base/GroupBy";
+import GroupByDescriptor from "hkp-frontend/src/runtime/browser/services/base/GroupBy";
 
-import { AppImpl, ServiceClass } from "@/types";
+import { AppImpl, ServiceClass } from "hkp-frontend/src/types";
 
 const descriptor = {
   serviceName: GroupByDescriptor.serviceName,

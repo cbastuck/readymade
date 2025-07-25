@@ -3,16 +3,16 @@ import { Plus, Trash, Send, Settings } from "lucide-react";
 
 import Template from "../Template";
 import BoardWidget, { BoardWidgetAPI } from "../../components/BoardWidget";
-import { PlaygroundState, SavedBoard } from "@/types";
-import BoardManager from "@/ui-components/boardmanager";
+import { PlaygroundState, SavedBoard } from "hkp-frontend/src/types";
+import BoardManager from "hkp-frontend/src/ui-components/boardmanager";
 
 import localStorageBoard from "./localStorageRetriever.json";
-import { BoardManagerAction } from "@/ui-components/boardmanager/BoardTable";
+import { BoardManagerAction } from "hkp-frontend/src/ui-components/boardmanager/BoardTable";
 import {
   removeLocalBoard,
   restoreBoardFromLocalStorage,
 } from "../playground/common";
-import { AppCtx } from "@/AppContext";
+import { AppCtx } from "hkp-frontend/src/AppContext";
 import GenericWidgetResult from "./GenericWidgetResult";
 import {
   restoreAdditionalWidgetsFromLocalStorage,

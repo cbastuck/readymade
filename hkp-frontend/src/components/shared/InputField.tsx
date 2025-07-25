@@ -1,6 +1,6 @@
 import { Component, CSSProperties } from "react";
 
-import SubmittableInput from "@/ui-components/SubmittableInput";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 
 import { s, t } from "../../styles";
 

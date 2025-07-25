@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import WipTag from "../../components/WipTag";
 
-import Text from "@/ui-components/Text";
+import Text from "hkp-frontend/src/ui-components/Text";
 
 export default function Prototypes() {
   const linkStyle = "p-5 hover:no-underline";

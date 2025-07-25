@@ -1,5 +1,5 @@
 import { s, t } from "../../styles";
-import CardText from "@/ui-components/CardText";
+import CardText from "hkp-frontend/src/ui-components/CardText";
 
 type Props = {
   name: string;

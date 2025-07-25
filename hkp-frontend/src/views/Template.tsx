@@ -2,8 +2,10 @@ import { Component, ReactNode } from "react";
 
 import BoardProvider from "../BoardContext";
 import Toolbar from "../components/Toolbar";
-import Footer from "@/components/Footer";
-import Breadcrumbs, { BreadcrumbItem } from "@/ui-components/Breadcrumbs";
+import Footer from "hkp-frontend/src/components/Footer";
+import Breadcrumbs, {
+  BreadcrumbItem,
+} from "hkp-frontend/src/ui-components/Breadcrumbs";
 
 type Props = {
   children: ReactNode[] | ReactNode;

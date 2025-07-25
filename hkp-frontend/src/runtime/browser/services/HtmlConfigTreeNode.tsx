@@ -1,7 +1,7 @@
 import { NodeRendererProps } from "react-arborist";
 import { Plus, Minus } from "lucide-react";
 
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function Node({
   node,

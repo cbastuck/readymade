@@ -6,9 +6,9 @@ import {
   RuntimeDescriptor,
   ServiceClass,
   ServiceRegistry,
-} from "@/types";
-import Editable from "@/ui-components/Editable";
-import { BoardCtx } from "@/BoardContext";
+} from "hkp-frontend/src/types";
+import Editable from "hkp-frontend/src/ui-components/Editable";
+import { BoardCtx } from "hkp-frontend/src/BoardContext";
 
 import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";

@@ -1,7 +1,7 @@
 import { forwardRef, useMemo } from "react";
-import SubmittableInput from "@/ui-components/SubmittableInput";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import { flatten } from "flat";
-import { TooltipContentType } from "@/ui-components/Tooltip";
+import { TooltipContentType } from "hkp-frontend/src/ui-components/Tooltip";
 
 type Props = {
   id?: string;

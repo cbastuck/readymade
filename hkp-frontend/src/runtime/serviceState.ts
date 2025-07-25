@@ -1,4 +1,4 @@
-import { AppInstance, InstanceId } from "@/types";
+import { AppInstance, InstanceId } from "hkp-frontend/src/types";
 
 export function onServiceProcess(
   app: AppInstance,

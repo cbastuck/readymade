@@ -3,7 +3,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/ui-components/primitives/accordion";
+} from "hkp-frontend/src/ui-components/primitives/accordion";
 import Article from "../Article";
 
 export default function Tutorials() {

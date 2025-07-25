@@ -1,9 +1,9 @@
 import { Link } from "react-router-dom";
 
-import Image from "@/ui-components/Image";
+import Image from "hkp-frontend/src/ui-components/Image";
 import { ExampleDescriptor } from "./types";
 import { s, t } from "../../styles";
-import CardText from "@/ui-components/CardText";
+import CardText from "hkp-frontend/src/ui-components/CardText";
 
 type Props = { example: ExampleDescriptor };
 

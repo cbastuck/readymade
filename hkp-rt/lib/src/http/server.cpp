@@ -6,34 +6,33 @@
 #include <app.h>
 #include <types/validation.h>
 
-struct jsonresponse : crow::response
+namespace hkp
 {
-  jsonresponse(const json &_body)
+
+struct JsonResponse : crow::response
+{
+  JsonResponse(const json &_body, const std::string allowedOrigins)
       : crow::response{_body.dump()}
   {
-    add_header("Access-Control-Allow-Origin", "*");
+    add_header("Access-Control-Allow-Origin", allowedOrigins);
     add_header("Access-Control-Allow-Headers", "Content-Type");
     add_header("Content-Type", "application/json");
   }
 };
-
-namespace hkp
-{
-
 struct Server::impl
 {
-  impl(std::shared_ptr<App> a) : app(a)
+  impl(std::shared_ptr<App> a, const std::string& n, const std::string& ao = "*")
+    : app(a)
+    , name(n)
+    , allowedOrigins(ao)
   {
-    setupRoutes();
+    setupRoutes(allowedOrigins);
   }
 
-  void setupRoutes()
+  void setupRoutes(const std::string& allowedOrigins)
   {
     auto& cors = crow.get_middleware<crow::CORSHandler>();
-    cors.global()
-          .origin("*"); // "http://localhost:3000"
-          //.headers("Origin", "Content-Type", "Content-Length", "Accept", "Authorization", "Referer", "Sec-Fetch-Dest", "Sec-Fetch-Mode", "Sec-Fetch-Site", "User-Agent", "Accept-Encoding", "Accept-Language", "Connection", "Host", "sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform", "Cache-Control");
-          //.methods("GET"_method, "POST"_method, "DELETE"_method, "PUT"_method, "OPTIONS"_method);
+    cors.global().origin(allowedOrigins);
   
     CROW_ROUTE(crow, "/runtimes")
         .methods("GET"_method)([this]() { return getRuntimes(); }); 
@@ -42,7 +41,7 @@ struct Server::impl
         .methods("DELETE"_method)([this](const crow::request &req) { return deleteAllRuntimes(); });
   
     CROW_ROUTE(crow, "/runtimes")
-        .methods("POST"_method)([this](const crow::request &req) -> crow::response { return createRuntime(req); }); 
+        .methods("POST"_method)([this](const crow::request &req) -> crow::response { return createRuntimes(req); }); 
   
     CROW_ROUTE(crow, "/runtimes/<string>")
         .methods("GET"_method)([this](const crow::request &req, std::string id) { return getRuntimeById(id); }); 
@@ -84,7 +83,7 @@ struct Server::impl
   crow::response getRuntimes();
   crow::response deleteRuntime(const std::string& runtimeId);
   crow::response deleteAllRuntimes();
-  crow::response createRuntime(const crow::request &req);
+  crow::response createRuntimes(const crow::request &req);
   crow::response configureService(const crow::request &req, const std::string& runtimeId,  const std::string& instanceId);
   crow::response getServiceState(const std::string& runtimeId, const std::string& instanceId);
   crow::response getServiceStateProperty(const std::string& runtimeId, const std::string& instanceId, const std::string& propertyId);
@@ -97,12 +96,23 @@ struct Server::impl
   crow::response getRuntimeInputs(const crow::request &req, const std::string& runtimeId);
   crow::response getRuntimeInput(const crow::request &req, const std::string& runtimeId, const std::string& inputId);
 
+  JsonResponse makeJsonResponse(const json &_body)
+  {
+    return JsonResponse(_body, allowedOrigins);
+  }
+
   crow::Crow<crow::CORSHandler> crow;
   std::shared_ptr<App> app;
+  std::string name;
+  std::string allowedOrigins;
 };
 
-Server::Server(std::shared_ptr<App> app)
-    : m_impl(std::make_unique<impl>(app))
+Server::Server(
+  std::shared_ptr<App> app, 
+  const std::string& name,
+  const std::string& allowedOrigins
+)
+    : m_impl(std::make_unique<impl>(app, name, allowedOrigins))
 {
   
 }
@@ -110,6 +120,11 @@ Server::Server(std::shared_ptr<App> app)
 Server::~Server()
 {
 
+}
+
+void Server::handleRequest(crow::request& req, crow::response& res)
+{
+  m_impl->crow.handle_full(req, res);
 }
 
 void Server::start(unsigned int port)
@@ -122,6 +137,21 @@ void Server::stop()
   m_impl->crow.stop();
 }
 
+unsigned int Server::port() const
+{
+  return m_impl->crow.port();
+}
+
+const std::string& Server::name() const
+{
+  return m_impl->name;
+}
+
+const std::string& Server::allowedOrigins() const
+{
+  return m_impl->allowedOrigins;
+}
+
 crow::response Server::impl::getRuntimes()
 {
   auto arr = json::array();
@@ -129,14 +159,18 @@ crow::response Server::impl::getRuntimes()
   {
     arr.push_back(jsonSerialise(rt));
   }
-  return jsonresponse{arr};
+  return makeJsonResponse(arr);
 }
 
 
 crow::response Server::impl::deleteRuntime(const std::string& runtimeId)
 {
   bool removedSuccessfully = app->removeRuntime(runtimeId);
-  return removedSuccessfully ? crow::response{crow::status::OK} : crow::response{crow::status::NOT_FOUND} ;  
+  if (!removedSuccessfully)
+  {
+    return crow::response{crow::status::NOT_FOUND} ;      
+  }
+  return makeJsonResponse(json{{"id", runtimeId}});
 }
 
 crow::response Server::impl::deleteAllRuntimes()
@@ -145,7 +179,7 @@ crow::response Server::impl::deleteAllRuntimes()
   return crow::response{crow::status::OK};
 }
 
-crow::response Server::impl::createRuntime(const crow::request &req)
+crow::response Server::impl::createRuntimes(const crow::request &req)
 {
   if (req.body.empty())
   {
@@ -161,15 +195,15 @@ crow::response Server::impl::createRuntime(const crow::request &req)
   auto runtimeBody = body.is_array() ? body : json::array({body});
   for (auto it : runtimeBody)
   {
-    auto rt = validateRuntime(it);
-    if (!rt) 
+    auto rtConfig = validateRuntime(it);
+    if (!rtConfig) 
     {
       return crow::response(crow::status::BAD_REQUEST); 
     }
-    auto conf = app->createRuntime(*rt);
-    arr.push_back(jsonSerialise(conf));
+    auto createdConfig = app->createRuntime(*rtConfig);
+    arr.push_back(jsonSerialise(createdConfig));
   }
-  return jsonresponse{json {{"runtimes", arr}, {"registry", app->getRegistry()}}};
+  return makeJsonResponse({json {{"runtimes", arr}, {"registry", app->getRegistry()}}});
 }
 
 crow::response Server::impl::configureService(const crow::request &req, const std::string& runtimeId, const std::string& instanceId)
@@ -190,7 +224,7 @@ crow::response Server::impl::configureService(const crow::request &req, const st
     return crow::response(crow::status::NOT_FOUND);
   }
 
-  return jsonresponse{config};
+  return makeJsonResponse({config});
 }
 
 crow::response Server::impl::getServiceState(const std::string& runtimeId, const std::string& instanceId)
@@ -205,7 +239,7 @@ crow::response Server::impl::getServiceState(const std::string& runtimeId, const
   {
     return crow::response{crow::status::NOT_FOUND};
   }
-  return jsonresponse{state};
+  return makeJsonResponse({state});
 }
 
 crow::response Server::impl::getServiceStateProperty(const std::string& runtimeId, const std::string& instanceId, const std::string& propertyId)
@@ -226,7 +260,7 @@ crow::response Server::impl::getServiceStateProperty(const std::string& runtimeI
     std::cout << "Propety not found in: " << state << std::endl;
     return crow::response{crow::status::NOT_FOUND};
   }
-  return jsonresponse{property};
+  return makeJsonResponse(property);
 }
 
 crow::response Server::impl::getServices(const crow::request &req, const std::string& runtimeId)
@@ -237,7 +271,7 @@ crow::response Server::impl::getServices(const crow::request &req, const std::st
     return crow::response{crow::status::NOT_FOUND};
   }
   auto services = app->getServices(runtimeId);
-  return jsonresponse{services};
+  return makeJsonResponse(services);
 }
 
 crow::response Server::impl::createService(const crow::request &req, const std::string& runtimeId)
@@ -272,7 +306,7 @@ crow::response Server::impl::createService(const crow::request &req, const std::
     return crow::response(crow::status::BAD_REQUEST);
   }
 
-  return jsonresponse{res};
+  return makeJsonResponse(res);
 }
 
 crow::response Server::impl::deleteService(const std::string& runtimeId, const std::string& instanceId)
@@ -284,7 +318,7 @@ crow::response Server::impl::deleteService(const std::string& runtimeId, const s
   }
 
   auto res = app->removeService(runtimeId, instanceId);
-  return jsonresponse{res};
+  return makeJsonResponse(res);
 }
 
 crow::response Server::impl::getRuntimeById(const std::string& id)
@@ -294,7 +328,7 @@ crow::response Server::impl::getRuntimeById(const std::string& id)
   {
     return crow::response{crow::status::NOT_FOUND};
   }
-  return jsonresponse{jsonSerialise(*rt)};
+  return makeJsonResponse(jsonSerialise(*rt));
 }
 
 crow::response Server::impl::rearrangeServices(const crow::request &req, const std::string& runtimeId)
@@ -323,7 +357,7 @@ crow::response Server::impl::rearrangeServices(const crow::request &req, const s
     return crow::response(crow::status::BAD_REQUEST);
   }
 
-  return jsonresponse{res};
+  return makeJsonResponse(res);
 }
 
 crow::response Server::impl::processRuntime(const crow::request &req, const std::string& runtimeId)
@@ -357,7 +391,7 @@ crow::response Server::impl::processRuntime(const crow::request &req, const std:
     auto j = getJSONFromData(data);
     if (j)
     {
-      return jsonresponse{*j};
+      return makeJsonResponse(*j);
     }
     return crow::response(crow::status::OK);
   }
@@ -381,7 +415,7 @@ crow::response Server::impl::getRuntimeInputs(const crow::request &req, const st
   {
     arr.push_back(jsonSerialise(input));
   }
-  return jsonresponse{arr};
+  return makeJsonResponse(arr);
 }
 
 crow::response Server::impl::getRuntimeInput(const crow::request &req, const std::string& runtimeId, const std::string& inputId)
@@ -395,7 +429,7 @@ crow::response Server::impl::getRuntimeInput(const crow::request &req, const std
   {
     if (input.id == inputId)
     {
-      return jsonresponse{jsonSerialise(input)};
+      return makeJsonResponse(jsonSerialise(input));
     }
   }
   return crow::response{crow::status::NOT_FOUND};

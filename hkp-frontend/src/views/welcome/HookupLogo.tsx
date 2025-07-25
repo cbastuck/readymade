@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import anime from "../../anime";
 
-import Logo from "@/assets/animations/AnimatedLogo6.svg?react";
+import Logo from "hkp-frontend/src/assets/animations/AnimatedLogo6.svg?react";
 import { HeroVideoDescriptor } from "./heroVideos";
 
 type Props = {

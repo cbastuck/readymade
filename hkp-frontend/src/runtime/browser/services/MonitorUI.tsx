@@ -7,15 +7,15 @@ import {
   Speech,
   SquareCode,
 } from "lucide-react";
-import { Textarea } from "@/ui-components/primitives/textarea";
+import { Textarea } from "hkp-frontend/src/ui-components/primitives/textarea";
 
-import { ServiceUIProps } from "@/types";
+import { ServiceUIProps } from "hkp-frontend/src/types";
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
 
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
-import MenuIcon from "@/ui-components/MenuIcon";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import { isBlob } from "./helpers";
 
 export default function MonitorUI(props: ServiceUIProps) {
@@ -37,6 +37,9 @@ export default function MonitorUI(props: ServiceUIProps) {
       setMessage(params);
     } else if (type === "number") {
       setMessage(`${params}`);
+    } else if (params instanceof ArrayBuffer) {
+      const hexView = createHexView(params);
+      setMessage(`ArrayBuffer (${params.byteLength} bytes): \n\n${hexView}`);
     } else if (Array.isArray(params)) {
       setMessage(JSON.stringify(params));
     } else if (isBlob(params)) {
@@ -184,4 +187,36 @@ function unroll(params: any): any {
     }),
     {}
   );
+}
+
+function createHexView(buffer: ArrayBuffer): string {
+  const view = new Uint8Array(buffer);
+  const hexArray = Array.from(view, (byte) =>
+    byte.toString(16).padStart(2, "0")
+  );
+  // Prepare offset labels for each line
+  const offsetLabels = [];
+  for (let i = 0; i < view.length; i += 16) {
+    const from = i;
+    const to = Math.min(i + 15, view.length - 1);
+    offsetLabels.push(
+      `${from.toString().padStart(4, "0")}-${to.toString().padStart(4, "0")}`
+    );
+  }
+  // First columns are hex values, 16 bytes per line
+  const hexLines = [];
+  for (let i = 0; i < hexArray.length; i += 16) {
+    const line = hexArray.slice(i, i + 16).join(" ");
+    hexLines.push(line);
+  }
+
+  // Add ASCII representation as a second column
+  for (let i = 0; i < view.length; i += 16) {
+    const hex = hexArray.slice(i, i + 16).join(" ");
+    const ascii = Array.from(view.slice(i, i + 16))
+      .map((b) => (b >= 32 && b <= 126 ? String.fromCharCode(b) : "."))
+      .join("");
+    hexLines[i / 16] = `${offsetLabels[i / 16]}: ${hex.padEnd(47)}  |${ascii}|`;
+  }
+  return hexLines.join("\n");
 }

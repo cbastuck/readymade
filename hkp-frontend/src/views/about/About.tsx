@@ -1,7 +1,7 @@
 import { Component } from "react";
 
 import Toolbar from "../../components/Toolbar";
-import Footer from "@/components/Footer";
+import Footer from "hkp-frontend/src/components/Footer";
 
 import "./About.css";
 import Faq from "../welcome/Faq";

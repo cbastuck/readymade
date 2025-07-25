@@ -1,4 +1,4 @@
-import CustomDialog from "@/ui-components/CustomDialog";
+import CustomDialog from "hkp-frontend/src/ui-components/CustomDialog";
 
 import QR from "./QR";
 import Copyable from "./Copyable";

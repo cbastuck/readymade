@@ -73,6 +73,11 @@ import SpeechSynth from "../services/SpeechSynth";
 import LocalStorage from "../services/LocalStorage";
 import Looper from "../services/Looper";
 
+import Analyzer from "../services/Analyzer";
+import FFT from "../services/FFT";
+import Moog from "../services/Moog";
+import Delay from "../services/Delay";
+
 import { ServiceModule } from "../../../types";
 
 // Modules with additional dependencies
@@ -154,6 +159,10 @@ export const defaultRegistry: Array<ServiceModule> = [
   OllamaHackerComposite,
 
   Looper,
+  Analyzer,
+  FFT,
+  Moog,
+  Delay,
 
   //DEPRECATED
   /*

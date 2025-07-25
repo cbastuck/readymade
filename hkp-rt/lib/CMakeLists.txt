@@ -9,7 +9,10 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set (PLATFORM_SRC src/services/core_audio.cpp)
   if (AVCPP_FOUND)
-    set (PLATFORM_SRC ${PLATFORM_SRC} src/services/ffmpeg.cpp)
+    set (PLATFORM_SRC ${PLATFORM_SRC} 
+          src/services/ffmpeg/ffmpeg.cpp 
+          src/services/ffmpeg/detail.cpp 
+    )
     set (PLATFORM_DEFINES ${PLATFORM_DEFINES} "AVCPP_FOUND")
   endif()
   if (BUILD_MAC_INTEL)
@@ -41,6 +44,11 @@ target_sources(${PROJECT_NAME}
       #services
       src/common/websocket_server.cpp
       src/services/static.cpp
+      src/services/http_client.cpp
+      src/services/http_server/http_server.cpp
+      src/services/http_server/http_server_impl.cpp
+      src/services/http_server/http_listener.cpp
+      src/services/http_server/http_session.cpp
       src/services/http_client.cpp
       src/services/websocket_writer.cpp
       src/services/writer_session.cpp

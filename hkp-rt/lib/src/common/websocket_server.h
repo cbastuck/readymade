@@ -42,7 +42,7 @@ public:
   unsigned short getBoundPort() const;
 
   void onSessionData(flat_buffer& buffer, bool isBinary);
-  void onNewSession(const std::shared_ptr<hkp::WebsocketServerSession>& session);
+  void onNewSession(const std::shared_ptr<WebsocketServerSession>& session);
 
 private:
   WebsocketConfig m_config;

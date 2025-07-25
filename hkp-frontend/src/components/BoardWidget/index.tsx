@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Settings, CircleX } from "lucide-react";
 
-import { BoardDescriptor, User } from "@/types";
+import { BoardDescriptor, User } from "hkp-frontend/src/types";
 
-import BoardProvider, { BoardContextState } from "@/BoardContext";
+import BoardProvider, {
+  BoardContextState,
+} from "hkp-frontend/src/BoardContext";
 import { availableRuntimeEngines } from "../../views/playground/common";
 import BoardWidgetFrame from "./BoardWidgetFrame";
-import { runtimeApis } from "@/views/playground";
+import { runtimeApis } from "hkp-frontend/src/views/playground";
 
 export type BoardWidgetAPI = {
   runBoard: (params?: any) => void;
@@ -74,7 +76,7 @@ export default function BoardWidget(props: Props) {
       isRuntimeInScope={() => true}
       onRemoveRuntime={async () => {}}
       newBoard={() => {}}
-      clearBoard={async () => {}}
+      onClearBoard={async () => {}}
       saveBoard={() => {}}
       isActionAvailable={() => false}
       serializeBoard={async () => null}

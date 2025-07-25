@@ -6,9 +6,10 @@
 #include "ringbuffer.h"
 
 #include <nlohmann/json.hpp>
-using json = nlohmann::json;
 
-// TODO namespace hkp
+namespace hkp {
+
+using json = nlohmann::json;
 
 struct Undefined
 {
@@ -74,7 +75,7 @@ bool isControlFlowData(const Data& data);
 bool isEarlyReturn(const Data& data);
 bool isCustomData(const Data& data);
 // from specific types to Data
-Data flatBufferToData(flat_buffer& buffer, bool isBinary);
+Data flatBufferToData(FloatRingBuffer::BufferType& buffer, bool isBinary);
 
 // convert between specific types
 
@@ -93,3 +94,38 @@ std::optional<T> getPropertyUpdate(const json& j, const std::string& key, const 
 }
 
 ControlFlowData makeEarlyReturn(const Data& data);
+
+
+
+template <typename T>
+struct TypeId;
+
+template <> struct TypeId<Undefined> { static constexpr unsigned int value = 0; };
+template <> struct TypeId<FloatRingBuffer> { static constexpr unsigned int value = 1; };
+template <> struct TypeId<std::shared_ptr<FloatRingBuffer>> { static constexpr unsigned int value = 1; };
+template <> struct TypeId<json> { static constexpr unsigned int value = 2; };
+template <> struct TypeId<BinaryData> { static constexpr unsigned int value = 3; };
+template <> struct TypeId<std::string> { static constexpr unsigned int value = 4; };
+template <> struct TypeId<Null> { static constexpr unsigned int value = 5; };
+template <> struct TypeId<ControlFlowData> { static constexpr unsigned int value = 6; };
+template <> struct TypeId<CustomData> { static constexpr unsigned int value = 7; };
+
+template <typename T>
+constexpr unsigned int getTypeId() {
+  if constexpr (std::is_base_of_v<TypeId<T>, TypeId<T>>) 
+  {
+    return TypeId<T>::value;
+  } 
+  else 
+  {
+    return static_cast<unsigned int>(-1); // undefined type
+  }
+}
+
+inline bool isPlatformLittleEndian() 
+{
+  uint32_t num = 1;
+  return *(reinterpret_cast<uint8_t*>(&num)) == 1;
+};
+
+}

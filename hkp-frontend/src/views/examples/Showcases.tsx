@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import Text from "@/ui-components/Text";
+import Text from "hkp-frontend/src/ui-components/Text";
 import Usecases from "../../components/BoardCollection/Usecases";
 
 export default function Showcases() {

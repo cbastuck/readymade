@@ -1,4 +1,4 @@
-import { Checkbox as CheckboxCN } from "@/ui-components/primitives/checkbox";
+import { Checkbox as CheckboxCN } from "hkp-frontend/src/ui-components/primitives/checkbox";
 
 type Props = {
   id?: string;

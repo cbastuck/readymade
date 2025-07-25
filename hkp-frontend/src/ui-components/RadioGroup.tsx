@@ -1,5 +1,5 @@
-import { Label } from "@/ui-components/primitives/label";
-import { RadioGroup as RadioGroupCN } from "@/ui-components/primitives/radio-group";
+import { Label } from "hkp-frontend/src/ui-components/primitives/label";
+import { RadioGroup as RadioGroupCN } from "hkp-frontend/src/ui-components/primitives/radio-group";
 import RadioGroupItem from "./RadioGroupItem";
 import GroupLabel from "./GroupLabel";
 import { TooltipContentType } from "./Tooltip";

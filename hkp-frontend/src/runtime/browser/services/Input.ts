@@ -6,9 +6,9 @@ import {
 } from "../../../core/url";
 
 import InputUI from "./InputUI";
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
-import { createAuthorizedURL } from "@/views/playground/common";
+import { createAuthorizedURL } from "hkp-frontend/src/views/playground/common";
 
 const serviceId = "hookup.to/service/input";
 const serviceName = "Input";

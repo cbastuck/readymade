@@ -1,5 +1,5 @@
 import { CSSProperties, Component } from "react";
-import anime from "@/anime";
+import anime from "hkp-frontend/src/anime";
 
 const defaultStyle = {
   fontSize: 45,

@@ -11,14 +11,14 @@ import {
   ServiceInstance,
   ServiceUIProps,
   User,
-} from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import RadioGroup from "@/ui-components/RadioGroup";
-import Button from "@/ui-components/Button";
-import MenuIcon from "@/ui-components/MenuIcon";
-import { Label } from "@/ui-components/primitives/label";
-import { Checkbox } from "@/ui-components/primitives/checkbox";
-import { Progress } from "@/ui-components/primitives/progress";
+} from "hkp-frontend/src/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import Button from "hkp-frontend/src/ui-components/Button";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
+import { Label } from "hkp-frontend/src/ui-components/primitives/label";
+import { Checkbox } from "hkp-frontend/src/ui-components/primitives/checkbox";
+import { Progress } from "hkp-frontend/src/ui-components/primitives/progress";
 
 type State = {
   files: Array<File>;

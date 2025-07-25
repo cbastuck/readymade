@@ -11,8 +11,8 @@ import {
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
-import { AppCtx } from "@/AppContext";
-import { Button } from "@/ui-components/primitives/button";
+import { AppCtx } from "hkp-frontend/src/AppContext";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,9 +20,9 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/ui-components/primitives/dropdown-menu";
+} from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
-import { useTheme } from "@/ui-components/ThemeContext";
+import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 
 type Props = {
   includeNavigationLinks?: boolean;

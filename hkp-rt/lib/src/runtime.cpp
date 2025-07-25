@@ -14,14 +14,55 @@
 namespace hkp
 {
 
-Runtime::Runtime(OwnsMe<hkp::App> app, const std::string& runtimeId, const std::string& runtimeName)
+Runtime::Runtime(OwnsMe<App> app, const std::string& runtimeId, const std::string& runtimeName)
   : m_app(app)
   , m_runtimeId(runtimeId)
   , m_runtimeName(runtimeName)
   , m_websocket(std::make_unique<WebsocketServer>(
       WebsocketConfig::withHost("0.0.0.0").withPath("/" + runtimeId).withRandomPort(),
       [this](boost::beast::flat_buffer& buffer, bool isBinary){ 
-        std::cout << "Websocket::onSessionData" << std::endl; 
+        if (isBinary)
+        {
+          // TODO: assume it's a FloatRingBuffer binary data
+          // This is just for testing, we should not assume this
+          auto data = std::make_shared<FloatRingBuffer>(m_runtimeId + "-binary");
+          auto size = buffer.size();
+          FloatRingBuffer::createFromSerialised(buffer, size, *data);
+          try 
+          {
+            this->process(data);
+          } 
+          catch (const std::exception& e) 
+          {
+            std::cerr << "Runtime::Runtime.onWebsocket Failed to process incoming binary buffer: " << e.what() << std::endl;
+          }
+        }
+        else
+        {
+          auto data = boost::beast::buffers_to_string(buffer.data()); // handle JSON data
+          json msg;
+          try 
+          {
+            msg = json::parse(data);
+          }
+          catch (const std::exception& e) 
+          {
+            std::cerr << "Runtime::Runtime.onWebsocket Failed to process incoming data: " << e.what() << std::endl;
+          }
+          try
+          {
+            if (!msg.is_object())
+            {
+              std::cerr << "Runtime::m_websocket::onSessionData: Invalid JSON object received" << data << std::endl;
+              return;
+            }
+            this->onSessionData(msg);
+          }
+          catch (const std::exception& e)
+          {
+            std::cerr << "Runtime::Runtime.onWebsocket Failed to process incoming JSON message: " << e.what() << std::endl;
+          }
+        }
       })
     )
 {
@@ -58,11 +99,14 @@ void Runtime::load(const json& buffer)
   load(*rt);
 }
 
-
 void Runtime::load(const RuntimeConfiguration& config)
 {
   m_services.clear();
 
+  if (!config.boardName.empty())
+  {
+    m_boardName = config.boardName;
+  }
   m_runtimeId = config.runtimeId;
   m_runtimeName = config.runtimeName;
   auto services = config.services;
@@ -101,6 +145,7 @@ RuntimeConfiguration Runtime::getConfiguration() const
   RuntimeConfiguration config;
   config.runtimeId = m_runtimeId;
   config.runtimeName = m_runtimeName; 
+  config.boardName = m_boardName;
 
   for (auto &svc : m_services)
   {
@@ -173,22 +218,32 @@ json Runtime::getServices() const
   return services; 
 }
 
-void Runtime::onServiceNotification(const std::string &instanceId, Data data)
+void Runtime::sendData(Data data)
 {
-  m_websocket->send(data);
+  // do not send directly, but schedule the notification to be sent
+  // writing to websocket is not thread-safe
+  m_app->postCallback([this, data]() {
+    if (m_websocket)
+    {
+      m_websocket->send(data);
+    }
+  });   
 }
 
 Data Runtime::process(Data data)
 {
+  onProcessBegin();
   if (m_services.empty())
   {
     return data;
   }
-  return processFrom(*m_services.front(), data, false);
+  auto result = processFrom(*m_services.front(), data, false);
+  return onProcessEnd(result);
 }
 
 Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore)
 {
+  onProcessBegin();
   auto it = findServiceById(service.getId());
   if (it == m_services.cend())
   {
@@ -202,16 +257,46 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore)
     data = (*next)->startProcess(data);
     if (isNull(data)) // stop processing on null
     {
-      return data;
+      return onProcessEnd(data);
     }
     if (isEarlyReturn(data))
     {
-      return getControlFlowData(data);
+      return onProcessEnd(getControlFlowData(data));
     }
   }
-  return data;
+  return onProcessEnd(data);;
 }
 
+void Runtime::scheduleProcessFrom(const Service &service, Data data, bool advanceBefore)
+{
+  auto pService = &service;
+  for (size_t idx = 0; idx < m_scheduledProcesses.size(); ++idx) 
+  {
+    if (!m_scheduledProcesses[idx]) 
+    {
+       m_scheduledProcesses[idx] = [this, pService, data, advanceBefore]() {
+        return this->processFrom(*pService, data, advanceBefore);
+      };
+      m_app->postCallback([this]() {  processScheduled(); });
+      return;
+    }
+  }
+  
+  std::cout << "Runtime::scheduleProcessFrom() No empty slot available in m_scheduledProcesses" << std::endl;
+}
+
+void Runtime::processScheduled()
+{
+  auto cpy = m_scheduledProcesses;
+  m_scheduledProcesses.fill(nullptr); // clear scheduled processes
+  for (auto &process : cpy)
+  {
+    if (process)
+    {
+      process();
+    }
+  }
+}
 
 json Runtime::appendService(const ServiceConfiguration& newService)
 {
@@ -304,6 +389,56 @@ std::string Runtime::replaceHostWithExternalAddress(std::string url) const
 std::string Runtime::getRuntimeUrl() const
 {
   return m_app->getExternalIP() + ":" + std::to_string(m_app->getExternalPort()) + "/runtimes/" + m_runtimeId;
+}
+
+void Runtime::onProcessBegin()
+{
+  m_processContext.increment();
+}
+
+const Data& Runtime::onProcessEnd(const Data& data)
+{
+  if (m_processContext.decrement() == 0)
+  {  
+    // if we are the last initiator, we should communicate the result
+    if (!m_boardName.empty())
+    {
+      auto j = getJSONFromData(data);
+      if (j)
+      {
+        sendData(
+          json{
+            {"type", "result"},
+            {"runtimeId", m_runtimeId},
+            {"boardName", m_boardName},
+            {"data", *j}
+          }
+        );
+      }
+      else
+      {
+        // std::cout << "Runtime::onProcessEnd: non JSON data us not supported: " << stringify(data) << std::endl;
+        sendData(data);
+      }
+    }
+  }
+  return data;
+}
+
+void Runtime::onSessionData(json msg)
+{
+  if (msg["type"] != "processRuntime")
+  {
+    std::cout << "Runtime::onSessionData: unsupported message type: " << msg["type"] << std::endl;
+    return;
+  }
+  auto data = msg["params"];
+  if (data.is_null())
+  {
+    std::cout << "Runtime::onSessionData: received null data: " << msg.dump() << std::endl;
+    return;
+  }
+  process(data);
 }
 
 }

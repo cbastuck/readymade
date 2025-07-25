@@ -2,8 +2,8 @@ import { Component } from "react";
 
 import SelectorField from "./SelectorField";
 import { Action } from "../../types";
-import GroupLabel from "@/ui-components/GroupLabel";
-import { ThemeCtx } from "@/ui-components/ThemeContext";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
+import { ThemeCtx } from "hkp-frontend/src/ui-components/ThemeContext";
 
 const none = "No Input";
 const all = "All Peers";

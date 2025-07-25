@@ -1,11 +1,11 @@
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 
 import OpenAIPromptUI from "./OpenAIPromptUI";
 import {
   needsUpdate,
   needsUpdateStrict,
-} from "@/ui-components/service/ServiceUI";
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const serviceName = "OpenAI Prompt";
 const serviceId = "hookup.to/service/openai-prompt";

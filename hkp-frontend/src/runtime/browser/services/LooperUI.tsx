@@ -6,21 +6,23 @@ import {
   ServiceInstance,
   ServiceModule,
   ServiceUIProps,
-} from "@/types";
+} from "hkp-frontend/src/types";
 
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 
-import ServiceSelector from "@/ui-components/ServiceSelector";
+import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
 
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/ui-components/primitives/accordion";
-import Button from "@/ui-components/Button";
-import Switch from "@/ui-components/Switch";
-import SubmittableInput from "@/ui-components/SubmittableInput";
+} from "hkp-frontend/src/ui-components/primitives/accordion";
+import Button from "hkp-frontend/src/ui-components/Button";
+import Switch from "hkp-frontend/src/ui-components/Switch";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 
 type InstancesState = {
   instances: Array<ServiceInstance>;

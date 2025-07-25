@@ -1,7 +1,7 @@
 import React from "react";
 import * as ProgressPrimitive from "@radix-ui/react-progress";
 
-import { cn } from "@/ui-components";
+import { cn } from "hkp-frontend/src/ui-components";
 
 const Progress = React.forwardRef<
   React.ElementRef<typeof ProgressPrimitive.Root>,

@@ -14,14 +14,14 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/ui-components/primitives/table";
+} from "hkp-frontend/src/ui-components/primitives/table";
 
-import Button from "@/ui-components/Button";
-import GroupLabel from "@/ui-components/GroupLabel";
-import { delayedExec } from "@/common";
+import Button from "hkp-frontend/src/ui-components/Button";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
+import { delayedExec } from "hkp-frontend/src/common";
 import AutocompleteInputField from "./shared/AutocompleteInputField";
-import SubmittableInputWithToggle from "@/ui-components/SubmittableInputWithToggle";
-import { checkSyntax } from "@/runtime/browser/services/base/eval";
+import SubmittableInputWithToggle from "hkp-frontend/src/ui-components/SubmittableInputWithToggle";
+import { checkSyntax } from "hkp-frontend/src/runtime/browser/services/base/eval";
 
 export type Template = { [key: string]: string };
 

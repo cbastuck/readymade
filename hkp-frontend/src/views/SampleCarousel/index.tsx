@@ -1,4 +1,4 @@
-import Carousel from "@/ui-components/Carousel";
+import Carousel from "hkp-frontend/src/ui-components/Carousel";
 import { carouselItems } from "./Samples";
 import { welcomeBlockClassname } from "../welcome/WelcomePanel";
 import SampleCarouselItem from "./SampleCarouselItem";

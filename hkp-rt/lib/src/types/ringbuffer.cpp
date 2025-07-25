@@ -6,7 +6,11 @@
 #include <yas/serialize.hpp>
 #include <yas/std_types.hpp>
 
+#include <types/data.h>
+
 namespace beast = boost::beast;
+
+namespace hkp {
 
 unsigned int FloatRingBuffer::m_bufferAutoId = 0;
 
@@ -24,7 +28,7 @@ void FloatRingBuffer::append(float value)
   m_buffer[m_writeIndex++ % N] = value;
 }
 
-void FloatRingBuffer::appendBinary(const char *data, unsigned int count)
+unsigned int FloatRingBuffer::appendBinary(const char *data, unsigned int count)
 {
   // std::cout << "FloatRingBuffer.appendBinary: " << m_name << " count: " << count / sizeof(float) << " readpos: " << m_readIndex << " writepos: " << m_writeIndex << std::endl;
   auto numItems = count / sizeof(float);
@@ -34,10 +38,66 @@ void FloatRingBuffer::appendBinary(const char *data, unsigned int count)
   {
     m_buffer[m_writeIndex++ % N] = *src;
   }
-  return;
+  return numItems;
 }
 
-void FloatRingBuffer::consumeBinary(float *outputBuffer, unsigned int frameCount, unsigned int numChannels)
+unsigned int FloatRingBuffer::appendAvailable(FloatRingBuffer& source, bool advanceReadIndex)
+{
+  auto srcReadIndex = source.m_readIndex.load(std::memory_order_relaxed);
+  auto srcWriteIndex = source.m_writeIndex.load(std::memory_order_relaxed);
+  unsigned int availableSamples = srcWriteIndex - srcReadIndex;
+
+  if (availableSamples > N)
+  {
+    std::cerr << "FloatRingBuffer::appendAvailable the source buffer wrapped twice - increase the buffer size - Resetting indices" << std::endl;
+    srcReadIndex = source.m_writeIndex - N;
+    availableSamples = N; // reset to max size
+  }
+
+  for (unsigned int i = 0; i < availableSamples; ++i)
+  {
+    m_buffer[m_writeIndex++ % N] = source.m_buffer[(srcReadIndex + i) % N];
+  } 
+
+  if (advanceReadIndex)
+  {
+    source.m_readIndex += availableSamples; // move read index forward
+  }
+  return availableSamples;
+}
+
+unsigned int FloatRingBuffer::consumeAvailable(FloatRingBuffer& target)
+{
+  return target.appendAvailable(*this, true); // append to self
+}
+
+unsigned int FloatRingBuffer::consumeAvailableByAppend(std::vector<uint8_t>& target)
+{
+  auto srcReadIndex = m_readIndex.load(std::memory_order_relaxed);
+  auto srcWriteIndex = m_writeIndex.load(std::memory_order_relaxed);
+  unsigned int availableSamples = srcWriteIndex - srcReadIndex;
+  if (availableSamples > N)
+  {
+    std::cerr << "FloatRingBuffer::appendAvailable the source buffer wrapped twice - increase the buffer size - Resetting indices" << std::endl;
+    srcReadIndex = m_writeIndex - N;
+    availableSamples = N; // reset to max size
+  }
+  target.reserve(target.size() + availableSamples * sizeof(float));
+  for (unsigned int i = 0; i < availableSamples; ++i)
+  {
+    float value = m_buffer[(srcReadIndex + i) % N];
+    target.insert(
+      target.end(),
+      reinterpret_cast<const uint8_t*>(&value),
+      reinterpret_cast<const uint8_t*>(&value) + sizeof(float)
+    );
+  } 
+
+  m_readIndex += availableSamples; // move read index forward
+  return availableSamples;
+}
+
+unsigned int FloatRingBuffer::consumeBinary(float *outputBuffer, unsigned int frameCount, unsigned int numChannels)
 {
   // std::cout << "FloatRingBuffer.consume: " << m_name << " count: " << frameCount << " readpos: " << m_readIndex << " writepos: " << m_writeIndex << std::endl;
   auto availableSamples = m_writeIndex - m_readIndex;
@@ -62,6 +122,62 @@ void FloatRingBuffer::consumeBinary(float *outputBuffer, unsigned int frameCount
     }
     std::cout << "Filled " << numFillFrames << " samples (w: "<< m_writeIndex << ") \r" << std::flush;
   }
+  return framesToCopy;
+}
+
+unsigned int FloatRingBuffer::consumeAvailable(std::vector<float>& target, bool advanceReadIndex) const
+{
+  unsigned int availableSamples = m_writeIndex - m_readIndex;
+  if (availableSamples > N)
+  {
+    std::cerr << "FloatRingBuffer::copyAvailable the write buffer wrapped twice - increase the buffer size - Resetting indices" << std::endl;
+    if (advanceReadIndex)
+    {
+      m_readIndex.store(m_writeIndex - N);
+    }
+    availableSamples = N; // reset to max size
+  }
+
+  target.resize(availableSamples);
+  for (unsigned int i = 0; i < availableSamples; ++i)
+  {
+    target[i] = m_buffer[(m_readIndex + i) % N];
+  }
+
+  if (advanceReadIndex)
+  {
+    m_readIndex += availableSamples; // move read index forward
+  }
+    
+  return availableSamples;
+}
+
+unsigned int FloatRingBuffer::consumeAvailable(std::vector<uint8_t>& target, bool advanceReadIndex) const
+{
+  unsigned int availableSamples = m_writeIndex - m_readIndex;
+  if (availableSamples > N)
+  {
+    std::cerr << "FloatRingBuffer::copyAvailable the write buffer wrapped twice - increase the buffer size - Resetting indices" << std::endl;
+    if (advanceReadIndex)
+    {
+      m_readIndex.store(m_writeIndex - N);
+    }
+    availableSamples = N; // reset to max size
+  }
+
+  target.resize(availableSamples * sizeof(float));
+  for (unsigned int i = 0; i < availableSamples; ++i)
+  {
+    float value = m_buffer[(m_readIndex + i) % N];
+    std::memcpy(&target[i * sizeof(float)], &value, sizeof(float));
+  }
+
+  if (advanceReadIndex)
+  {
+    m_readIndex += availableSamples; // move read index forward
+  }
+    
+  return availableSamples;
 }
 
 void FloatRingBuffer::resyncIfNeeded() 
@@ -91,15 +207,20 @@ yas::shared_buffer FloatRingBuffer::serialise() const
   }
   m_readIndex += numSavedSamples;
 
+  char endianTag = isPlatformLittleEndian() ? 0 : 1; // 0 for little-endian, 1 for big-endian
   constexpr std::size_t flags = yas::mem | yas::binary;
   auto o = YAS_OBJECT_NVP(nullptr,
+                          ("endian", endianTag),
+                          ("type", getTypeId<FloatRingBuffer>()),
                           ("array", yas::array(&continuousBuffer[0], numSavedSamples)),
-                          ("id", m_id), ("ts", timeSinceEpochMillisec()));
+                          ("id", m_id), 
+                          ("ts", timeSinceEpochMillisec())
+                        );
   return yas::save<flags>(o);
 }
 
 // TODO: should be renamed to not contain create in the name
-void FloatRingBuffer::createFromSerialised(flat_buffer& buffer, unsigned int size, FloatRingBuffer& target)
+void FloatRingBuffer::createFromSerialised(BufferType& buffer, unsigned int size, FloatRingBuffer& target)
 {
   const char *rawData = reinterpret_cast<const char *>(buffer.data().data());
   yas::shared_buffer buf(rawData, size);
@@ -110,7 +231,33 @@ void FloatRingBuffer::createFromSerialised(flat_buffer& buffer, unsigned int siz
 
   unsigned int id = 0;
   uint64_t ts = 0;
-  auto iobj = YAS_OBJECT_NVP(nullptr, ("array", arrholder), ("id", id), ("ts", ts));
+  unsigned int type;
+  char endianTag = 0;
+  auto iobj = YAS_OBJECT_NVP(
+    nullptr,
+    ("endian", endianTag),
+    ("type", type),
+    ("array", arrholder), 
+    ("id", id), 
+    ("ts", ts)
+  );
+
+  if (endianTag != (isPlatformLittleEndian() ? 0 : 1))
+  {
+    std::cerr << "FloatRingBuffer::createFromSerialised: endian mismatch - expected " 
+              << (isPlatformLittleEndian() ? "little-endian" : "big-endian") 
+              << " but got " << (endianTag == 0 ? "little-endian" : "big-endian") << std::endl;
+    return;
+  }
+
+  auto expected = getTypeId<FloatRingBuffer>();
+  if (type != expected)
+  {
+    std::cerr << "FloatRingBuffer::createFromSerialised: type mismatch - expected " << expected << " but got " << type << std::endl;
+    return;
+  }
+  
+
   constexpr std::size_t flags = yas::mem | yas::binary;
   yas::load<flags>(buf, iobj);
 
@@ -124,7 +271,7 @@ void FloatRingBuffer::createFromSerialised(flat_buffer& buffer, unsigned int siz
   averageTs += delta;
   if (++count % 10 == 0)
   {
-    std::cout << "Average round-trip latency: " << averageTs / static_cast<float>(count) << "msec\r" << std::flush;
+    std::cout << "FloatRingBuffer::createFromSerialised round-trip latency: " << averageTs / static_cast<float>(count) << "msec" << std::endl;
     averageTs = 0;
     count = 0;
   }
@@ -160,4 +307,6 @@ std::ostream& operator<<(std::ostream& os, const FloatRingBuffer& data)
   }
   os << std::endl;
   return os;
+}
+
 }

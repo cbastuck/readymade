@@ -1,8 +1,8 @@
 import { BugPlay, UndoDot } from "lucide-react";
 
-import Copyable from "@/components/Copyable";
+import Copyable from "hkp-frontend/src/components/Copyable";
 import Button from "../Button";
-import Editor from "@/components/shared/Editor";
+import Editor from "hkp-frontend/src/components/shared/Editor";
 import { useMemo, useRef, useState } from "react";
 
 type Props = {

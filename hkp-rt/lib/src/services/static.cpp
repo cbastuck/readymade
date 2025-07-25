@@ -1,7 +1,9 @@
 #include "./static.h"
 
+namespace hkp {
+
 Static::Static(const std::string& instanceId)
-  : hkp::Service(instanceId, serviceId())
+  : Service(instanceId, serviceId())
 {
 
 }
@@ -38,4 +40,6 @@ json Static::getState() const
 Data Static::process(Data data)
 {
   return Data(m_output);
+}
+
 }

@@ -1,11 +1,12 @@
 import { KeyboardEvent, FocusEvent, forwardRef, ChangeEvent } from "react";
 
-import { Input as InputCN } from "@/ui-components/primitives/input";
+import { Input as InputCN } from "hkp-frontend/src/ui-components/primitives/input";
 import GroupLabel from "./GroupLabel";
 
 type Props = {
   id?: string;
   className?: string;
+  labelClassName?: string;
   title?: string;
   type?: string;
   value: string;
@@ -26,6 +27,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
   const {
     id,
     className,
+    labelClassName,
     title,
     type,
     fullWidth,
@@ -57,7 +59,7 @@ const InputWithRef = forwardRef<HTMLInputElement, Props>((props, ref) => {
       {title && (
         <GroupLabel
           size={4}
-          className="pt-0 whitespace-nowrap"
+          className={`pt-0 whitespace-nowrap ${labelClassName}`}
           disabled={disabled}
         >
           {title}

@@ -1,12 +1,12 @@
 import { MouseEvent } from "react";
 import { Copy } from "lucide-react";
 
-import { ServiceDescriptor } from "@/types";
+import { ServiceDescriptor } from "hkp-frontend/src/types";
 import Editable from "../Editable";
 
 import { CustomTooltipActions } from "../Tooltip";
 import IconButton from "../IconButton";
-import { usePushNotifications } from "@/Notifications";
+import { usePushNotifications } from "hkp-frontend/src/Notifications";
 
 type Props = {
   draggable?: boolean;

@@ -1,5 +1,5 @@
-import { s, t } from "@/styles";
-import { RuntimeDescriptor } from "@/types";
+import { s, t } from "hkp-frontend/src/styles";
+import { RuntimeDescriptor } from "hkp-frontend/src/types";
 
 type Props = {
   runtime: RuntimeDescriptor;

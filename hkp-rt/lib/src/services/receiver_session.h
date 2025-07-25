@@ -13,6 +13,8 @@ namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+namespace hkp {
+
 class ReceiverSession : public std::enable_shared_from_this<ReceiverSession>
 {
 public:
@@ -165,3 +167,5 @@ private:
   std::atomic_flag m_isConnected = ATOMIC_FLAG_INIT;
   boost::asio::executor_work_guard<websocket::stream<tcp::socket>::executor_type> m_guard;
 };
+
+}

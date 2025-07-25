@@ -1,7 +1,7 @@
 import { Component } from "react";
 
-import { ServiceInstance, ServiceUIProps } from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
+import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import HoldableButton from "hkp-frontend/src/components/shared/HoldableButton";
 
 type State = {

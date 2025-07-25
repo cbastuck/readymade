@@ -1,6 +1,6 @@
-import FilterDescriptor from "@/runtime/browser/services/base/Filter";
+import FilterDescriptor from "hkp-frontend/src/runtime/browser/services/base/Filter";
 import FilterUI from "./FilterUI";
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 
 const descriptor = {
   serviceName: FilterDescriptor.serviceName,

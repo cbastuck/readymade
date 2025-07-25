@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import Board from "../../views/playground/Board";
-import { BoardCtx } from "@/BoardContext";
-import { BoardDescriptor } from "@/types";
+import { BoardCtx } from "hkp-frontend/src/BoardContext";
+import { BoardDescriptor } from "hkp-frontend/src/types";
 
 type Props = {
   board: BoardDescriptor;

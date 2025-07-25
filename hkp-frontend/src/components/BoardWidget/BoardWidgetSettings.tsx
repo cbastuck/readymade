@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Menu, Trash2, Settings, Share } from "lucide-react";
-import MenuIcon from "@/ui-components/MenuIcon";
-import Icon from "@/ui-components/Icon";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
+import Icon from "hkp-frontend/src/ui-components/Icon";
 
 import {
   DropdownMenu,
@@ -9,12 +9,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuItem,
   DropdownMenuSeparator,
-} from "@/ui-components/primitives/dropdown-menu";
-import { Button } from "@/ui-components/primitives/button";
-import EditorDialog from "@/ui-components/EditorDialog";
+} from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
+import EditorDialog from "hkp-frontend/src/ui-components/EditorDialog";
 import ShareQRCodeDialog from "../ShareQRCodeDialog";
-import { BoardDescriptor } from "@/types";
-import { compressAndEncodeState } from "@/common";
+import { BoardDescriptor } from "hkp-frontend/src/types";
+import { compressAndEncodeState } from "hkp-frontend/src/common";
 
 type Props = {
   removable?: boolean;

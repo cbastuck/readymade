@@ -1,7 +1,7 @@
 import React, { useMemo } from "react";
 import { v4 as uuidv4 } from "uuid";
 
-import { cn } from "@/ui-components";
+import { cn } from "hkp-frontend/src/ui-components";
 
 export interface InputProps
   extends React.InputHTMLAttributes<HTMLInputElement> {

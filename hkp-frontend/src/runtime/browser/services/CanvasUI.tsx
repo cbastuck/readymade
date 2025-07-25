@@ -3,11 +3,15 @@ import ResizeObserver from "resize-observer-polyfill";
 
 import { createObjectURL, revokeObjectURL } from "./helpers";
 import { zLayers } from "../../../styles";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import { ServiceAction, ServiceInstance, ServiceUIProps } from "@/types";
-import { Rect, Size } from "@/common";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import {
+  ServiceAction,
+  ServiceInstance,
+  ServiceUIProps,
+} from "hkp-frontend/src/types";
+import { Rect, Size } from "hkp-frontend/src/common";
 import { BinaryIcon, ToggleLeft, ToggleRight } from "lucide-react";
-import MenuIcon from "@/ui-components/MenuIcon";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 
 const TWO_PI = 2 * Math.PI;
 

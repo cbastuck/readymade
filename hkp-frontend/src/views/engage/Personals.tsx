@@ -5,10 +5,10 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/ui-components/primitives/card";
-import { Input } from "@/ui-components/primitives/input";
-import { Label } from "@/ui-components/primitives/label";
-import Text from "@/ui-components/Text";
+} from "hkp-frontend/src/ui-components/primitives/card";
+import { Input } from "hkp-frontend/src/ui-components/primitives/input";
+import { Label } from "hkp-frontend/src/ui-components/primitives/label";
+import Text from "hkp-frontend/src/ui-components/Text";
 
 export type PersonalData = {
   firstName: string;

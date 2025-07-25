@@ -4,7 +4,7 @@ import {
   Alert as AlertCN,
   AlertDescription,
   AlertTitle,
-} from "@/ui-components/primitives/alert";
+} from "hkp-frontend/src/ui-components/primitives/alert";
 
 type Props = {
   className?: string;

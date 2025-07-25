@@ -2,8 +2,8 @@ import { useState } from "react";
 
 import InputField from "../../../components/shared/InputField";
 import { isFunction, filterPrivateMembers } from "./helpers";
-import { ServiceUIProps } from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 type State = {
   properties: { [key: string]: any };

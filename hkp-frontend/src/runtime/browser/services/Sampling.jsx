@@ -1,8 +1,8 @@
 import React, { Component } from "react";
 import jstat from "jstat";
 
-import { Input } from "@/ui-components/primitives/input";
-import { Checkbox } from "@/ui-components/primitives/checkbox";
+import { Input } from "hkp-frontend/src/ui-components/primitives/input";
+import { Checkbox } from "hkp-frontend/src/ui-components/primitives/checkbox";
 import ServiceUI from "../../services/ServiceUI";
 import Annotations from "../../../components/shared/Annotations";
 

@@ -11,15 +11,15 @@ import {
   ServiceDescriptor,
   ServiceRegistry,
   User,
-} from "@/types";
+} from "hkp-frontend/src/types";
 import RuntimeHeader from "./RuntimeHeader";
-import BrowserRuntime from "@/runtime/browser/BrowserRuntime";
-import RemoteRuntime from "@/runtime/remote/RemoteRuntime";
-import BrowserRuntimeScope from "@/runtime/browser/BrowserRuntimeScope";
-import RealtimeRuntime from "@/runtime/realtime/RealtimeRuntime";
-import { useTheme } from "@/ui-components/ThemeContext";
-import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTypes";
-import DragSource from "@/components/DragSource";
+import BrowserRuntime from "hkp-frontend/src/runtime/browser/BrowserRuntime";
+import RemoteRuntime from "hkp-frontend/src/runtime/remote/RemoteRuntime";
+import BrowserRuntimeScope from "hkp-frontend/src/runtime/browser/BrowserRuntimeScope";
+import RealtimeRuntime from "hkp-frontend/src/runtime/realtime/RealtimeRuntime";
+import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
+import { HKP_DND_RUNTIME_TYPE } from "hkp-frontend/src/components/DropTypes";
+import DragSource from "hkp-frontend/src/components/DragSource";
 
 type Props = {
   user?: User | null;

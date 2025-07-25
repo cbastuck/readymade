@@ -4,9 +4,9 @@ import { ServiceInstance, ServiceUIProps } from "../../../types";
 import InputField from "../../../components/shared/InputField";
 
 import { AppCtx } from "../../../AppContext";
-import Checkbox from "@/ui-components/Checkbox";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import Button from "@/ui-components/Button";
+import Checkbox from "hkp-frontend/src/ui-components/Checkbox";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 type Config = {
   resourceType: string;

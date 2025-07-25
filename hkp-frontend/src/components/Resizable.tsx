@@ -1,4 +1,4 @@
-import { Size } from "@/common";
+import { Size } from "hkp-frontend/src/common";
 import { ReactElement, useRef, useState } from "react";
 
 type Props = {

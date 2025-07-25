@@ -1,4 +1,4 @@
-import { useTheme } from "@/ui-components/ThemeContext";
+import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 import { CSSProperties, DragEvent, useState } from "react";
 
 type Props = {

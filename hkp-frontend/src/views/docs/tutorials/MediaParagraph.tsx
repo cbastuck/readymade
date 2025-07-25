@@ -1,4 +1,4 @@
-import Video from "@/components/layout/Video";
+import Video from "hkp-frontend/src/components/layout/Video";
 
 import { Link } from "react-router-dom";
 

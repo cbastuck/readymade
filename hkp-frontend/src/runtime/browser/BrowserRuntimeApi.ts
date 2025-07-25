@@ -18,7 +18,11 @@ import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { filterPrivateMembers } from "./services/helpers";
 import { defaultBundles } from "./registry/Default";
 
-export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
+export async function addRuntime(
+  rtClass: RuntimeClass,
+  _user: User | null,
+  boardName?: string
+) {
   const { name: passedName, type, url } = rtClass;
   const runtimeId = uuidv4();
   const runtime = {
@@ -26,6 +30,7 @@ export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
     name: passedName || "Browser Runtime",
     type,
     url,
+    boardName,
   };
 
   const scope = await createScope(runtime, rtClass.bundles);
@@ -38,22 +43,28 @@ export async function addRuntime(rtClass: RuntimeClass, _user: User | null) {
 }
 
 export async function removeRuntime(
-  _scope_: RuntimeScope,
+  scope: RuntimeScope,
   _runtime: RuntimeDescriptor,
   _user: User | null
 ): Promise<void> {
-  throw new Error("BrowserRuntime removeRuntime no implemented");
+  const scope_ = scope as BrowserRuntimeScope;
+  for (const service of scope_.serviceInstances) {
+    await removeService(scope, service);
+  }
 }
 
 async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
-  _user: User | null
+  _user: User | null,
+  boardName?: string
 ): Promise<RestoreRuntimeResult | null> {
   const scope = await createScope(runtime, runtime.bundles);
   const createdServices: Array<ServiceInstance> = (
     await Promise.all(services.map((svc) => addService(scope, svc, svc.uuid)))
-  ).filter((svc) => svc && scope.findServiceInstance(svc.uuid)) as any;
+  ).filter((svc) => {
+    return svc && scope.findServiceInstance(svc.uuid);
+  }) as any;
 
   setTimeout(
     () =>
@@ -66,7 +77,7 @@ async function restoreRuntime(
   );
 
   return {
-    runtime,
+    runtime: { ...runtime, boardName },
     services,
     registry: scope.registry.allServices(), // TODO: this is not used
     scope,

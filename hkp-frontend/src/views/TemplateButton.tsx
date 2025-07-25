@@ -1,4 +1,4 @@
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 import { CSSProperties } from "react";
 import { useNavigate } from "react-router-dom";
 

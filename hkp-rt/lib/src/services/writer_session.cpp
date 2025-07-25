@@ -2,6 +2,8 @@
 
 #include <yas/buffers.hpp>
 
+namespace hkp {
+
 WriterSession::WriterSession(net::io_context &ioc, std::string host, std::string port, std::string path)
       : m_resolver(net::make_strand(ioc)),
         m_ws(net::make_strand(ioc)),
@@ -164,4 +166,6 @@ void WriterSession::on_close(beast::error_code ec)
 void WriterSession::fail(beast::error_code ec, char const *what)
 {
   std::cerr << what << ": " << ec.message() << "\n";
+}
+
 }

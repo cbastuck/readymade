@@ -5,10 +5,10 @@ import {
   DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/ui-components/primitives/dropdown-menu";
-import { Button } from "@/ui-components/primitives/button";
+} from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 
-import { SavedBoard } from "@/types";
+import { SavedBoard } from "hkp-frontend/src/types";
 import MenuIcon from "../MenuIcon";
 import { ActionItem } from ".";
 

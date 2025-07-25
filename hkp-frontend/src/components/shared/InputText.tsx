@@ -1,6 +1,6 @@
 import { Component, CSSProperties } from "react";
 
-import { Textarea } from "@/ui-components/primitives/textarea";
+import { Textarea } from "hkp-frontend/src/ui-components/primitives/textarea";
 
 import SyncIndicator from "./SyncIndicator";
 

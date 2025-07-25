@@ -3,7 +3,7 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/ui-components/primitives/accordion";
+} from "hkp-frontend/src/ui-components/primitives/accordion";
 
 export default function Faq() {
   const s = "pb-2 px-4 text-left tracking-widest";

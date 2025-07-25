@@ -1,4 +1,7 @@
-import { decompressAndDecodeState, compressAndEncodeState } from "@/common";
+import {
+  decompressAndDecodeState,
+  compressAndEncodeState,
+} from "hkp-frontend/src/common";
 import { generateRandomName } from "../../core/board";
 
 export function encodeBoardState(src: string) {

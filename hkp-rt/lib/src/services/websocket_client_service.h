@@ -8,13 +8,15 @@
 #include <common/websocket_config.h>
 #include <common/websocket_client_session.h>
 
-class WebsocketClientService : public hkp::Service
+namespace hkp {
+
+class WebsocketClientService : public Service
 {
 public:
   static std::string serviceId() { return "websocket-client"; } 
   
   WebsocketClientService(const std::string& instanceId)
-      : hkp::Service(instanceId, serviceId())
+      : Service(instanceId, serviceId())
       , m_state{{ "mode", "writeOnly" }}
   {
   }
@@ -37,7 +39,7 @@ public:
       throw std::runtime_error("WebsockeClient: not configured correctly");
     }
 
-    m_session = std::make_shared<hkp::WebsocketClientSession>(m_ioc, m_config.host, m_config.port, m_config.path);
+    m_session = std::make_shared<WebsocketClientSession>(m_ioc, m_config.host, m_config.port, m_config.path);
     m_t = std::thread(&WebsocketClientService::run, this);
   }
 
@@ -158,9 +160,11 @@ private:
 private:
   json m_state;
   boost::asio::io_context m_ioc;
-  std::shared_ptr<hkp::WebsocketClientSession> m_session;
+  std::shared_ptr<WebsocketClientSession> m_session;
   std::thread m_t;
-  hkp::WebsocketConfig m_config;
+  WebsocketConfig m_config;
 
   std::shared_ptr<FloatRingBuffer> m_accumulated; // only available when accumulating data mode
 };
+
+}

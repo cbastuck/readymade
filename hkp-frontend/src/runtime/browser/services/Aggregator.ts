@@ -1,6 +1,6 @@
 import AggregatorUI from "./AggregatorUI";
 import ServiceBase from "./ServiceBase";
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 
 const serviceId = "hookup.to/service/aggregator";
 const serviceName = "Aggregator";

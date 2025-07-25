@@ -1,11 +1,11 @@
 import { s, t } from "../../styles";
 
 import Logo from "./hkp-dots-braid.svg?react";
-import SubmittableInput from "@/ui-components/SubmittableInput";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import { DragEvent, useContext, useState } from "react";
 import { getDraggedFiles, readFile } from "./common";
-import { BoardCtx } from "@/BoardContext";
-import { isBoardDescriptor } from "@/types";
+import { BoardCtx } from "hkp-frontend/src/BoardContext";
+import { isBoardDescriptor } from "hkp-frontend/src/types";
 
 type Props = {
   boardName: string;

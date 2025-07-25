@@ -2,8 +2,8 @@ import { ChangeEvent, KeyboardEvent, useState } from "react";
 import { X } from "lucide-react";
 import Tooltip, { TooltipContentType } from "./Tooltip";
 
-import { Input } from "@/ui-components/primitives/input";
-import { Button } from "@/ui-components/primitives/button";
+import { Input } from "hkp-frontend/src/ui-components/primitives/input";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 
 type Props = {
   id?: string;

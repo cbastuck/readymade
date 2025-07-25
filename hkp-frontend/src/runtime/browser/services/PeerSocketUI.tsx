@@ -2,25 +2,25 @@ import { useContext, useRef, useState } from "react";
 import { QrCode } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-import { CustomMenuEntry, ServiceUIProps } from "@/types";
-import MenuIcon from "@/ui-components/MenuIcon";
+import { CustomMenuEntry, ServiceUIProps } from "hkp-frontend/src/types";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
-import PeersProvider from "@/PeersContext";
-import Peer from "@/components/Peer";
-import { availableDiscoveryPeerHosts } from "@/views/playground/common";
-import SubmittableInput from "@/ui-components/SubmittableInput";
+import PeersProvider from "hkp-frontend/src/PeersContext";
+import Peer from "hkp-frontend/src/components/Peer";
+import { availableDiscoveryPeerHosts } from "hkp-frontend/src/views/playground/common";
+import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 
-import RadioGroup from "@/ui-components/RadioGroup";
-import { AppCtx } from "@/AppContext";
-import Switch from "@/ui-components/Switch";
-import ShareQRCodeDialog from "@/components/ShareQRCodeDialog";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import { AppCtx } from "hkp-frontend/src/AppContext";
+import Switch from "hkp-frontend/src/ui-components/Switch";
+import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
 
 import peerSocketReceiverTemplate from "./PeerSocketReceiverTemplate.json";
-import { createBoardLink } from "@/views/playground/BoardLink";
-import { replacePlaceholders } from "@/core/url";
-import Button from "@/ui-components/Button";
+import { createBoardLink } from "hkp-frontend/src/views/playground/BoardLink";
+import { replacePlaceholders } from "hkp-frontend/src/core/url";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function PeerSocketUI(props: ServiceUIProps) {
   const [bypass, setBypass] = useState(false);

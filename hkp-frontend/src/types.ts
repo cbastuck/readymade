@@ -1,6 +1,6 @@
 import { Component, FunctionComponent, ReactElement, ReactNode } from "react";
 import PeerJs, { DataConnection } from "peerjs";
-import { EngineState } from "./BoardContext";
+import { BoardContextState, EngineState } from "./BoardContext";
 
 export type InstanceId = {
   uuid: string;
@@ -25,6 +25,7 @@ export type RuntimeDescriptor = RuntimeClass & {
   id: string;
   state?: any; // TODO: should this be here? Only for persisted Runtime states?
   user?: User | null;
+  boardName?: string;
 };
 
 export type OnResult = (
@@ -289,13 +290,15 @@ export type RuntimeApi = {
   getHealth?: (runtime: RuntimeClass, user: User | null) => void;
   addRuntime: (
     runtime: RuntimeClass,
-    user: User | null
+    user: User | null,
+    boardName?: string
   ) => Promise<AddRuntimeResult | null>;
 
   restoreRuntime: (
     runtime: RuntimeDescriptor,
     services: Array<ServiceDescriptor>,
-    user: User | null
+    user: User | null,
+    boardName?: string
   ) => Promise<RestoreRuntimeResult | null>;
 
   attachRuntimes?: (
@@ -481,3 +484,14 @@ export enum RemoteRuntimeMessageType {
   CONFIGURATION = "config",
   NOTIFICATION = "notification",
 }
+
+export type BoardMenuItem = {
+  title: string;
+  description: string;
+  disabled?: boolean;
+  onClick: () => void;
+};
+
+export type BoardMenuItemFactory = (
+  boardContext: BoardContextState
+) => Array<BoardMenuItem>;

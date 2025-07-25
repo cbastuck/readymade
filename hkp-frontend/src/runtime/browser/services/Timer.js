@@ -1,4 +1,4 @@
-import TimerDescriptor from "@/runtime/browser/services/base/Timer";
+import TimerDescriptor from "hkp-frontend/src/runtime/browser/services/base/Timer";
 
 import TimerUI from "./TimerUI";
 

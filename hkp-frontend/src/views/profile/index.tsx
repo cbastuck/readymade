@@ -1,7 +1,11 @@
 import { useContext } from "react";
 
-import { Card, CardHeader, CardContent } from "@/ui-components/primitives/card";
-import Image from "@/ui-components/Image";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+} from "hkp-frontend/src/ui-components/primitives/card";
+import Image from "hkp-frontend/src/ui-components/Image";
 
 import Template from "../Template";
 import { AppCtx } from "../../AppContext";

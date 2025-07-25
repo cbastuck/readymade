@@ -5,13 +5,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/ui-components/primitives/table";
+} from "hkp-frontend/src/ui-components/primitives/table";
 
-import Text from "@/ui-components/Text";
+import Text from "hkp-frontend/src/ui-components/Text";
 import NewsItem from "./NewsItem";
 
 import Template from "../../Template";
-import Button from "@/ui-components/Button";
+import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function Updates() {
   const navigate = useNavigate();

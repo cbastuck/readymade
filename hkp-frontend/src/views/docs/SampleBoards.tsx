@@ -4,10 +4,10 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/ui-components/primitives/accordion";
+} from "hkp-frontend/src/ui-components/primitives/accordion";
 
 import samples from "./samples";
-import BoardManager from "@/ui-components/boardmanager";
+import BoardManager from "hkp-frontend/src/ui-components/boardmanager";
 
 type Props = {
   headline?: string;

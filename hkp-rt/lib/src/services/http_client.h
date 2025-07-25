@@ -6,7 +6,9 @@
 #include <service.h>
 #include <types/data.h>
 
-class HttpClient : public hkp::Service 
+namespace hkp {
+
+  class HttpClient : public Service 
 {
 public:
   static std::string serviceId() { return "http-client"; }
@@ -23,3 +25,5 @@ private:
   struct Impl;
   std::unique_ptr<Impl> m_impl;
 };
+
+}

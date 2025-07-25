@@ -3,8 +3,8 @@ import { Component } from "react";
 import InputField from "../../../components/shared/InputField";
 import { GithubUser, GithubObject, GithubOAuth } from "./GithubComponents";
 
-import { ServiceUIProps } from "@/types";
-import ServiceUI from "@/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const clientID = "f2b34053a831baa056e8";
 const clientSecret = "";

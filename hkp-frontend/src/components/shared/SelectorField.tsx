@@ -6,10 +6,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/ui-components/primitives/select";
+} from "hkp-frontend/src/ui-components/primitives/select";
 
 import "./SelectorField.css";
-import GroupLabel from "@/ui-components/GroupLabel";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 
 export type OnChangeValue = {
   value: string;

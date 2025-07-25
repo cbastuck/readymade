@@ -1,4 +1,4 @@
-import { Input } from "@/ui-components/primitives/input";
+import { Input } from "hkp-frontend/src/ui-components/primitives/input";
 
 type Props = {
   filter: string;

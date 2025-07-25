@@ -9,8 +9,8 @@ import {
   isValidFlowOption,
 } from "../../types";
 import { BoardContextState } from "../../BoardContext";
-import GroupLabel from "@/ui-components/GroupLabel";
-import { ThemeCtx } from "@/ui-components/ThemeContext";
+import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
+import { ThemeCtx } from "hkp-frontend/src/ui-components/ThemeContext";
 
 const none = "No Output";
 

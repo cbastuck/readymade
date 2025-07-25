@@ -1,6 +1,6 @@
-import DropTarget from "@/components/DropTarget";
-import { HKP_DND_RUNTIME_TYPE } from "@/components/DropTypes";
-import { useTheme } from "@/ui-components/ThemeContext";
+import DropTarget from "hkp-frontend/src/components/DropTarget";
+import { HKP_DND_RUNTIME_TYPE } from "hkp-frontend/src/components/DropTypes";
+import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 
 type Props = {
   index: number;

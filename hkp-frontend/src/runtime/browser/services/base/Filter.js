@@ -36,31 +36,42 @@ class Filter {
   }
 
   async process(params) {
-    const filter = async (x) => {
-      if (this._parsedConditions.length > 0 && x) {
-        const results = await Promise.all(
-          this._parsedConditions.map(async (pc) =>
-            evalExpression(pc, { params: x })
-          )
-        );
-
-        switch (this.aggregator) {
-          case "and":
-            return results.some((r) => !r) ? null : params;
-          case "or":
-            return results.some((r) => !!r) ? params : null;
-          default:
-            console.log(`Unknown filter aggregator: ${this.aggregator}`);
-        }
+    const predicate = async (x) => {
+      // no conditions defined - gate everything
+      if (this._parsedConditions.length === 0 || !x) {
+        return false;
       }
-      return false;
+
+      const results = await Promise.all(
+        this._parsedConditions.map(async (pc) =>
+          evalExpression(pc, { params: x })
+        )
+      );
+
+      // if only one condition, return its result directly
+      if (this._parsedConditions.length === 1) {
+        return results[0];
+      }
+
+      // otherwise aggregate results from multiple conditions
+      switch (this.aggregator) {
+        case "and":
+          return results.some((r) => !r);
+        case "or":
+          return results.some((r) => !!r);
+        default:
+          console.log(`Unknown filter aggregator: ${this.aggregator}`);
+          return false;
+      }
     };
 
     if (Array.isArray(params)) {
-      return Promise.all(params.filter(filter));
+      const results = await Promise.all(params.map(predicate));
+      const filtered = params.filter((r, idx) => !!results[idx]);
+      return filtered.length === 0 ? null : filtered;
     }
 
-    return filter(params);
+    return predicate(params) ? params : null;
   }
 }
 

@@ -1,5 +1,5 @@
-import { AppInstance, ServiceClass } from "@/types";
-import { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
+import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const serviceId = "hookup.to/service/buffer";
 const serviceName = "Buffer";

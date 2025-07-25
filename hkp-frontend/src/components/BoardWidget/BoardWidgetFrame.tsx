@@ -1,9 +1,9 @@
 import { RotateCw } from "lucide-react";
 
-import { BoardDescriptor } from "@/types";
+import { BoardDescriptor } from "hkp-frontend/src/types";
 import WrappedBoard from "./WrappedBoard";
 import { BoardWidgetAPI } from ".";
-import IconButton from "@/ui-components/IconButton";
+import IconButton from "hkp-frontend/src/ui-components/IconButton";
 import BoardWidgetSettings from "./BoardWidgetSettings";
 
 type Props = {

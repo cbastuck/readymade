@@ -1,7 +1,10 @@
 import { useContext } from "react";
-import { BoardDescriptor, PlaygroundState } from "@/types";
+import { BoardDescriptor, PlaygroundState } from "hkp-frontend/src/types";
 import Board from "../playground/Board";
-import BoardProvider, { BoardContextState, BoardCtx } from "@/BoardContext";
+import BoardProvider, {
+  BoardContextState,
+  BoardCtx,
+} from "hkp-frontend/src/BoardContext";
 import { availableRuntimeEngines } from "../playground/common";
 import { runtimeApis } from "../playground";
 
@@ -31,7 +34,7 @@ export default function BoardComponent(props: Props) {
       isRuntimeInScope={() => true}
       onRemoveRuntime={async () => {}}
       newBoard={() => {}}
-      clearBoard={async () => {}}
+      onClearBoard={async () => {}}
       saveBoard={() => {}}
       isActionAvailable={() => false}
       serializeBoard={async () => null}

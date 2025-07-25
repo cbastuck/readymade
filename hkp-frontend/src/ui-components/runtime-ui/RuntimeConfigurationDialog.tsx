@@ -1,6 +1,9 @@
-import { RuntimeConfiguration, RuntimeDescriptor } from "@/types";
+import {
+  RuntimeConfiguration,
+  RuntimeDescriptor,
+} from "hkp-frontend/src/types";
 import EditorDialog from "../EditorDialog";
-import InputField from "@/components/shared/InputField";
+import InputField from "hkp-frontend/src/components/shared/InputField";
 import { ColorPicker } from "../ColorPicker";
 import GroupLabel from "../GroupLabel";
 

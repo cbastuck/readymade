@@ -1,8 +1,8 @@
 import { useState } from "react";
 
-import Text from "@/ui-components/Text";
+import Text from "hkp-frontend/src/ui-components/Text";
 import { s, t } from "../../styles";
-import CustomDialog from "@/ui-components/CustomDialog";
+import CustomDialog from "hkp-frontend/src/ui-components/CustomDialog";
 
 type Props = {
   value: string | string[];

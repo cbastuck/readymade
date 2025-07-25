@@ -16,7 +16,7 @@ public:
 
   Data startProcess(const Data& data = Undefined());
   void setParentRuntime(Runtime &runtime);
-  Data next(Data data = Undefined());
+  Data next(Data data = Undefined(), bool immediately = true);
   bool isConnected() const;
 
   inline const std::string &getId() const { return m_instanceId; }
@@ -29,6 +29,7 @@ public:
   virtual std::vector<ExternalServiceInput> getExternalInputs() const;
 
   virtual Data process(Data data = Undefined()) = 0;
+  
 protected:
   virtual bool onBypassChanged(bool bypass);
   json& mergeBypassState(json &state) const;

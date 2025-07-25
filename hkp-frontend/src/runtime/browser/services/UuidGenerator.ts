@@ -1,8 +1,8 @@
 import { v4 as uuidv4, v1 as uuidv1 } from "uuid";
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import UuidGeneratorUI from "./UuidGeneratorUI";
 import ServiceBase from "./ServiceBase";
-import { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const serviceId = "hookup.to/service/uuid-generator";
 const serviceName = "Uuid Generator";

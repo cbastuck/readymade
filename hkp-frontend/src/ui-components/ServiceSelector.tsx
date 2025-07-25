@@ -1,21 +1,21 @@
 import { useContext, useState } from "react";
 import { ChevronsUpDown } from "lucide-react";
 import { CommandList } from "cmdk";
-import { Button } from "@/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import {
   Command,
   CommandEmpty,
   CommandInput,
   CommandItem,
-} from "@/ui-components/primitives/command";
+} from "hkp-frontend/src/ui-components/primitives/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/ui-components/primitives/popover";
+} from "hkp-frontend/src/ui-components/primitives/popover";
 
-import { ServiceClass, ServiceRegistry } from "@/types";
-import { ThemeCtx } from "@/ui-components/ThemeContext";
+import { ServiceClass, ServiceRegistry } from "hkp-frontend/src/types";
+import { ThemeCtx } from "hkp-frontend/src/ui-components/ThemeContext";
 
 type Props = {
   id: string;

@@ -1,6 +1,6 @@
 import { useContext, useEffect } from "react";
 
-import { AppCtx } from "@/AppContext";
+import { AppCtx } from "hkp-frontend/src/AppContext";
 
 export default function LoginAuth0() {
   const context = useContext(AppCtx);

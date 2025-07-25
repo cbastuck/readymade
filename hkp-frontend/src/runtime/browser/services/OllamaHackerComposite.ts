@@ -1,10 +1,10 @@
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 
 import OllamaHackerCompositeUI from "./OllamaHackerCompositeUI";
 import { OllamaPrompt } from "./OllamaPrompt";
 import { DangerousHacker } from "./DangerousHacker";
-import { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const serviceName = "Ollama Code Assist";
 const serviceId = "hookup.to/service/ollama-hacker";

@@ -1,4 +1,4 @@
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 
 export default class ServiceBase<T> {
   uuid: string;

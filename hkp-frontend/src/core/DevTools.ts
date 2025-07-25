@@ -1,9 +1,12 @@
 import { v4 as uuidv4 } from "uuid";
 
-import { BoardContextState } from "@/BoardContext";
-import { fromVault, toVault } from "@/runtime/browser/services/base/eval";
-import { BoardDescriptor } from "@/types";
-import { storeBoardToLocalStorage } from "@/views/playground/common";
+import { BoardContextState } from "hkp-frontend/src/BoardContext";
+import {
+  fromVault,
+  toVault,
+} from "hkp-frontend/src/runtime/browser/services/base/eval";
+import { BoardDescriptor } from "hkp-frontend/src/types";
+import { storeBoardToLocalStorage } from "hkp-frontend/src/views/playground/common";
 
 type Id = string | number;
 

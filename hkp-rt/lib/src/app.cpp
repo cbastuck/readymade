@@ -4,19 +4,49 @@
 #include "./runtime.h"
 #include "./uuid.h"
 
-namespace hkp 
+namespace hkp
 {
 
 App::App(const std::string& externalIP, unsigned int port) 
     : m_externalAddress(std::make_pair(externalIP, port))
     , m_registry(std::make_unique<Registry>())
+    , m_work_guard(boost::asio::make_work_guard(m_io))
 {
-  
+    startEventLoop();
 }
 
 App::~App()
 {
+  stopEventLoop(); 
+}
 
+void App::startEventLoop()
+{
+  m_eventThread = std::thread(
+    [this]() { 
+      std::cout << "App event loop..." << std::endl;
+      m_io.run(); 
+      std::cout << "App finished event loop..." << std::endl;
+    }
+  );
+}
+
+
+void App::stopEventLoop()
+{
+  m_io.stop();
+  m_work_guard.reset(); // allow the io_context to stop
+  m_eventThread.join();
+  m_eventThread = std::thread(); // reset the thread
+  std::cout << "App stopped event loop..." << std::endl;
+}
+
+void App::postCallback(std::function<void()> callback)
+{
+  if (callback)
+  {
+    boost::asio::post(m_io, callback);
+  }
 }
 
 RuntimeConfiguration App::createRuntime(json config)

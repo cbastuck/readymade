@@ -1,9 +1,9 @@
 import { ReactNode, useCallback, useEffect, useRef } from "react";
 
-import Resizable from "@/components/Resizable";
-import { ServiceInstance, ServiceUIProps } from "@/types";
+import Resizable from "hkp-frontend/src/components/Resizable";
+import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceFrame from "./ServiceFrame";
-import { Size } from "@/common";
+import { Size } from "hkp-frontend/src/common";
 
 type Props = ServiceUIProps & {
   children: ReactNode;

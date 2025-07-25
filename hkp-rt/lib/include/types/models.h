@@ -61,6 +61,7 @@ struct RuntimeConfiguration
   // describe the runtime state
   std::string runtimeId;
   std::string runtimeName;
+  std::string boardName;
   std::vector<ServiceConfiguration> services;
 
   // readonly values 

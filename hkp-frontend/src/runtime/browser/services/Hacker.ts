@@ -1,6 +1,6 @@
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
-import { Size } from "@/common";
+import { Size } from "hkp-frontend/src/common";
 
 export type HealthStatus = {
   error: boolean;

@@ -6,3 +6,6 @@ cypress/downloads
 build*
 xbuild
 !.github/workflows/*
+marketing
+design
+pkgroot

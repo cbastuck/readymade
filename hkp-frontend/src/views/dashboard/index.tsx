@@ -5,7 +5,7 @@ import { s, t } from "../../styles";
 import { AppCtx } from "../../AppContext";
 
 import Toolbar from "../../components/Toolbar";
-import Footer from "@/components/Footer";
+import Footer from "hkp-frontend/src/components/Footer";
 import BoardCollection from "../../components/BoardCollection";
 import { SavedBoard, UsecaseDescriptor, User, isSavedBoard } from "../../types";
 import { makeRequest as getRequest } from "../../runtime/browser/services/CloudSource";

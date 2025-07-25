@@ -1,0 +1,119 @@
+{
+  "runtimes": [
+    {
+      "id": "d32351d8-c2af-4bc3-a057-bc91f1fcbb28",
+      "name": "Remote Runtime 1 1",
+      "type": "realtime",
+      "url": "hkp://remotes/realtime",
+      "state": {}
+    },
+    {
+      "id": "ef4b19a6-a20b-4c21-9b7b-c7fb1f3f2977",
+      "name": "Browser Runtime 2",
+      "type": "browser",
+      "state": {}
+    },
+    {
+      "id": "41d7b400-8c6a-4f41-b1ee-dfac363db752",
+      "name": "Remote Runtime 1 3",
+      "type": "realtime",
+      "url": "hkp://remotes/realtime",
+      "state": {}
+    }
+  ],
+  "services": {
+    "d32351d8-c2af-4bc3-a057-bc91f1fcbb28": [
+      {
+        "uuid": "8a3b56f4-aa80-45c0-9bf2-a76814f814b5",
+        "serviceId": "core-input",
+        "serviceName": "core-input",
+        "state": {
+          "availableDevices": [
+            {
+              "deviceID": 86,
+              "deviceName": "BlackHole 2ch",
+              "type": "input"
+            },
+            {
+              "deviceID": 81,
+              "deviceName": "MacBook Pro Microphone",
+              "type": "input"
+            },
+            {
+              "deviceID": 74,
+              "deviceName": "MacBook Pro Speakers",
+              "type": "output"
+            }
+          ],
+          "bypass": null,
+          "currentDeviceName": "MacBook Pro Microphone",
+          "running": false
+        }
+      },
+      {
+        "uuid": "56628643-a3bc-4e2b-8009-d995218ecb4e",
+        "serviceId": "fft",
+        "serviceName": "fft",
+        "state": {
+          "bypass": false,
+          "windowLength": 512
+        }
+      }
+    ],
+    "ef4b19a6-a20b-4c21-9b7b-c7fb1f3f2977": [
+      {
+        "uuid": "e1cd9398-76fe-44d9-adee-7427af072152",
+        "serviceId": "hookup.to/service/analyzer",
+        "serviceName": "Analyzer",
+        "bypass": false
+      },
+      {
+        "uuid": "8ba094eb-e33d-42a0-a3f2-0c3e28d290da",
+        "serviceId": "hookup.to/service/filter",
+        "serviceName": "Filter",
+        "board": "deprecated boardname - get it from app",
+        "aggregator": "and",
+        "conditions": [
+          "params > 6"
+        ],
+        "bypass": true
+      }
+    ],
+    "41d7b400-8c6a-4f41-b1ee-dfac363db752": [
+      {
+        "uuid": "b5a8fe6c-48b0-429a-9b40-7e0702fdb79a",
+        "serviceId": "ifft",
+        "serviceName": "ifft",
+        "state": {
+          "bypass": false,
+          "windowLength": 512
+        }
+      },
+      {
+        "uuid": "1b4298e9-6562-41a0-8b22-3f06c3ec0905",
+        "serviceId": "monitor",
+        "serviceName": "monitor",
+        "state": {
+          "bypass": false,
+          "logToConsole": false
+        }
+      },
+      {
+        "uuid": "d2a866cb-d3d5-407e-b388-27675ab7c409",
+        "serviceId": "core-output",
+        "serviceName": "core-output",
+        "state": {
+          "bypass": null,
+          "mode": "buffer-incoming",
+          "running": false
+        }
+      }
+    ]
+  },
+  "sidechainRouting": {},
+  "outputRouting": {},
+  "inputRouting": {},
+  "description": "",
+  "acceptedSyncSenders": [],
+  "rejectedSyncSenders": []
+}

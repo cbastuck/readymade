@@ -5,14 +5,14 @@ import { forwardRef, useEffect } from "react";
 import { Command as CommandPrimitive, useCommandState } from "cmdk";
 import { X } from "lucide-react";
 
-import { cn } from "@/ui-components";
-import { Badge } from "@/ui-components/primitives/badge";
+import { cn } from "hkp-frontend/src/ui-components";
+import { Badge } from "hkp-frontend/src/ui-components/primitives/badge";
 import {
   Command,
   CommandGroup,
   CommandItem,
   CommandList,
-} from "@/ui-components/primitives/command";
+} from "hkp-frontend/src/ui-components/primitives/command";
 
 export interface Option {
   value: string;

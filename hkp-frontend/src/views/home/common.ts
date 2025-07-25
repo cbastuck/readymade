@@ -1,4 +1,4 @@
-import { PlaygroundState } from "@/types";
+import { PlaygroundState } from "hkp-frontend/src/types";
 
 export type WidgetDescriptor = {
   name: string;

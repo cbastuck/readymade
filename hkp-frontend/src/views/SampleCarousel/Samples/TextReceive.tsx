@@ -1,4 +1,4 @@
-import { createShortRandomString } from "@/views/playground/common";
+import { createShortRandomString } from "hkp-frontend/src/views/playground/common";
 
 const headline = "receive encrypted text data from one peer to another";
 

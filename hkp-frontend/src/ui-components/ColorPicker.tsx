@@ -1,15 +1,15 @@
 import { forwardRef, useMemo, useState, useEffect, useRef } from "react";
 
 import { HexColorPicker } from "react-colorful";
-import { cn } from "@/ui-components";
-import type { ButtonProps } from "@/ui-components/primitives/button";
-import { Button } from "@/ui-components/primitives/button";
+import { cn } from "hkp-frontend/src/ui-components";
+import type { ButtonProps } from "hkp-frontend/src/ui-components/primitives/button";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/ui-components/primitives/popover";
-import { Input } from "@/ui-components/primitives/input";
+} from "hkp-frontend/src/ui-components/primitives/popover";
+import { Input } from "hkp-frontend/src/ui-components/primitives/input";
 import ColorPalette from "./ColorPalette";
 
 interface ColorPickerProps {

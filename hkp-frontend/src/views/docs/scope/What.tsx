@@ -3,7 +3,7 @@ import TemplateButton from "../../TemplateButton";
 
 import { HStack } from "../../../styles";
 import Date from "../../../components/Date";
-import Text from "@/ui-components/Text";
+import Text from "hkp-frontend/src/ui-components/Text";
 
 export default function What() {
   return (

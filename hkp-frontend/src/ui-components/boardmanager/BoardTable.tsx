@@ -5,11 +5,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/ui-components/primitives/table";
+} from "hkp-frontend/src/ui-components/primitives/table";
 import moment from "moment";
 import { Link } from "react-router-dom";
 
-import { SavedBoard } from "@/types";
+import { SavedBoard } from "hkp-frontend/src/types";
 import BoardActionButton from "./BoardActionButton";
 
 import { ActionItem } from ".";

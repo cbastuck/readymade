@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { Textarea } from "@/ui-components/primitives/textarea";
+import { Textarea } from "hkp-frontend/src/ui-components/primitives/textarea";
 
 import { ServiceInstance } from "../../../types";
 
 import HtmlConfigTree, { TreeConfig } from "./HtmlConfigTree";
-import ServiceUI from "@/ui-components/service/ServiceUI";
-import RadioGroup from "@/ui-components/RadioGroup";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
 export default function ArrayTransformUI(props: any) {
   const [transformedData, setTransformedData] = useState("");

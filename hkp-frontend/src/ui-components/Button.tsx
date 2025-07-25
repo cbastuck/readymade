@@ -1,4 +1,4 @@
-// import { useTheme } from "@/ui-components/ThemeContext";
+// import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 import { Button as ButtonCN, ButtonProps } from "./primitives/button";
 import { ReactElement, useMemo } from "react";
 

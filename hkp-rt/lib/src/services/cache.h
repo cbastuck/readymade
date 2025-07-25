@@ -9,13 +9,15 @@
 
 #include "./sha256_openssl.h"
 
-class Cache : public hkp::Service 
+namespace hkp {
+
+class Cache : public Service 
 {
 public:
   static std::string serviceId() { return "cache"; }
 
   Cache(const std::string& instanceId)
-     : hkp::Service(instanceId, serviceId())
+     : Service(instanceId, serviceId())
   { 
   }
 
@@ -101,3 +103,5 @@ private:
   std::map<std::string, Data> m_cache;
   std::string m_persistRoot;
 };
+
+}

@@ -44,7 +44,7 @@ export function removeLocalBoard(board: SavedBoard) {
 export function getLocalBoards(
   prefix: string = localStoragePrefix
 ): Array<SavedBoard> {
-  const savedBoards = [];
+  const savedBoards: Array<SavedBoard> = [];
   for (const key in localStorage) {
     if (key.startsWith(prefix)) {
       const data = localStorage.getItem(key);
@@ -59,6 +59,7 @@ export function getLocalBoards(
             id: key,
             createdAt: value.createdAt,
             description: value.description,
+            url: "",
           });
         } catch (err) {
           console.warn("Could not restore local board", key, err);

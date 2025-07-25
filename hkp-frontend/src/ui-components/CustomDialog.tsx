@@ -1,4 +1,7 @@
-import { Dialog, DialogContent } from "@/ui-components/primitives/dialog";
+import {
+  Dialog,
+  DialogContent,
+} from "hkp-frontend/src/ui-components/primitives/dialog";
 import { ReactNode } from "react";
 
 type Props = {

@@ -7,15 +7,18 @@
 #include <service.h>
 #include <types/types.h>
 
-class CoreOutput : public hkp::Service
+namespace hkp {
+
+class CoreOutput : public Service
 {
 public:
   static std::string serviceId() { return "core-output"; }
 
   CoreOutput(const std::string& instanceId)
-      : hkp::Service(instanceId, serviceId())
-      , m_state({{"running", false}})
+      : Service(instanceId, serviceId())
+      , m_state({{"mode", "acquire-buffer"}})
   {
+    m_bypass = true; // Start in bypass mode 
   }
 
   ~CoreOutput()
@@ -26,15 +29,22 @@ public:
   json configure(Data data) override
   {
     auto buf = getJSONFromData(data);
-    if (!buf)
+    if (buf)
     {
-      return false;
+      auto mode = (*buf)["mode"];
+      if (mode == "buffer-incoming")
+      {
+        if (!m_buffer)
+        {
+          m_buffer = std::make_shared<FloatRingBuffer>(getId());
+        }
+      }
+      else if (mode == "acquire-buffer" && m_buffer)
+      {
+        m_buffer.reset();
+      }
     }
-    if (updateIfNeeded(m_state["running"], (*buf)["running"]))
-    {
-      m_state["running"] == true ? start() : stop();      
-    }
-    return getState();
+    return Service::configure(data);
   }
 
   std::string getServiceId() const override
@@ -45,11 +55,17 @@ public:
   json getState() const override
   {
     auto state = m_state;
+    state["mode"] = m_buffer ? "buffer-incoming" : "no-buffer";
     return Service::mergeBypassState(state);
   }
 
   Data process(Data data = Undefined()) override
   {
+    auto rb = getRingBufferFromData(data);
+    if (rb && m_buffer) // true if we hold the buffer and append process data
+    {
+      rb->consumeAvailable(*m_buffer);
+    }
     return data;
   }
 
@@ -63,6 +79,9 @@ private:
       std::cerr << "CoreOutput::start(): Failed to get default output device" << std::endl;
       return;
     }
+
+    std::string deviceName = CoreAudioGetOutputDeviceName(m_outputDeviceID);
+    std::cout << "Using output device: " << deviceName << std::endl;
 
     UInt32 bufferSize = 0;
     status = CoreAudioGetBufferSize(m_outputDeviceID, &bufferSize);
@@ -120,6 +139,19 @@ private:
     m_outputIOProcID = NULL;
   }
 
+  bool onBypassChanged(bool bypass) override
+  {
+    if (bypass)
+    {
+      stop();
+    }
+    else
+    {
+      start(); 
+    }
+    return bypass;
+  }
+
   static OSStatus onAudioOutput(AudioDeviceID device,
                                 const AudioTimeStamp *now,
                                 const AudioBufferList *inputData,
@@ -154,14 +186,29 @@ private:
 
     if (pThis->isConnected())
     {
-      Data data = pThis->next(json{{"frameCount", frameCount}, {"channelCount", channelCount}});
-      auto buffer = getRingBufferFromData(data);
-      if (buffer && pThis->isBufferReady(*buffer, frameCount, channelCount))
+      if (pThis->m_buffer)
       {
-        buffer->consumeBinary(outputBuffer, frameCount, channelCount);
-      } else 
+        if (pThis->isBufferReady(*pThis->m_buffer, frameCount, channelCount))
+        {
+          pThis->m_buffer->consumeBinary(outputBuffer, frameCount, channelCount);
+        }
+        else 
+        {
+          pThis->generateSilence(outputBuffer, frameCount, channelCount);
+        }
+      }
+      else  // acquire data from the runtime
       {
-        pThis->generateSilence(outputBuffer, frameCount, channelCount);
+        Data data = pThis->next(json{{"frameCount", frameCount}, {"channelCount", channelCount}});
+        auto buffer = getRingBufferFromData(data);
+        if (buffer && pThis->isBufferReady(*buffer, frameCount, channelCount))
+        {
+          buffer->consumeBinary(outputBuffer, frameCount, channelCount);
+        } 
+        else 
+        {
+          pThis->generateSilence(outputBuffer, frameCount, channelCount);
+        }
       }
     }
     return 0;
@@ -184,7 +231,7 @@ private:
     sendNotification(json{{"availableSamples", availableSamples}});
     if (availableSamples < frameCount)
     {
-      std::cout << "CoreOutput::isBufferReady: not enough samples available - " << availableSamples << " < " << frameCount << std::endl;
+      // std::cout << "CoreOutput::isBufferReady: not enough samples available - " << availableSamples << " < " << frameCount << std::endl;
       return false;
     }
     return true;
@@ -194,4 +241,7 @@ private:
   AudioDeviceID m_outputDeviceID = 0;
   AudioDeviceIOProcID m_outputIOProcID = NULL;
   json m_state;
+  std::shared_ptr<FloatRingBuffer> m_buffer; // Optional buffer to hold audio data
 };
+
+}

@@ -6,20 +6,20 @@ import {
   ServiceAction,
   ServiceDescriptor,
   ServiceInstance,
-} from "@/types";
-import { s, t } from "@/styles";
+} from "hkp-frontend/src/types";
+import { s, t } from "hkp-frontend/src/styles";
 import ServiceHeader from "./ServiceHeader";
 import EditorDialog from "../EditorDialog";
-import { filterPrivateMembers } from "@/runtime/browser/services/helpers";
-import { useTheme } from "@/ui-components/ThemeContext";
+import { filterPrivateMembers } from "hkp-frontend/src/runtime/browser/services/helpers";
+import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 import ServiceOutputPlug from "./ServiceOutputPlug";
 
-import DragSource from "@/components/DragSource";
+import DragSource from "hkp-frontend/src/components/DragSource";
 import {
   HKP_DND_SERVICE_TYPE,
   ServiceInstanceDropType,
-} from "@/components/DropTypes";
-import { assureJSON } from "@/common";
+} from "hkp-frontend/src/components/DropTypes";
+import { assureJSON } from "hkp-frontend/src/common";
 
 type Props = {
   service: ServiceInstance;

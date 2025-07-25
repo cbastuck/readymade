@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 import ClaimApp from "./ClaimApp";
 
-import { carouselItems } from "@/views/SampleCarousel/Samples";
+import { carouselItems } from "hkp-frontend/src/views/SampleCarousel/Samples";
 
 import HookupLogo from "./HookupLogo";
 import WelcomeWord from "./WelcomeWord";

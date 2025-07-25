@@ -1,9 +1,9 @@
 import { Note, P } from "..";
 import MediaParagraph from "../MediaParagraph";
 import { leaveLampBoard7 } from "./boards";
-import Plug from "@/assets/plug.svg?react";
-import ArrayPlug from "@/assets/plugArray.svg?react";
-import { useTheme } from "@/ui-components/ThemeContext";
+import Plug from "hkp-frontend/src/assets/plug.svg?react";
+import ArrayPlug from "hkp-frontend/src/assets/plugArray.svg?react";
+import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 
 export default function ArrayObjectMapping() {
   const theme = useTheme();

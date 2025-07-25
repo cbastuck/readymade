@@ -1,7 +1,7 @@
 import SpotifyUI from "./SpotifyUI";
 
 import { getMySavedSongs, getUserProfile, getRecentSongs } from "./SpotifyAPI";
-import { AppInstance, ServiceClass } from "@/types";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 
 const serviceId = "hookup.to/service/spotify";
 const serviceName = "Spotify";

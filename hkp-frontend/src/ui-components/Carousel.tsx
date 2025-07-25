@@ -3,7 +3,7 @@ import {
   Carousel as CarouselCN,
   CarouselContent,
   CarouselItem,
-} from "@/ui-components/primitives/carousel";
+} from "hkp-frontend/src/ui-components/primitives/carousel";
 
 import CarouselNav from "./CarouselNav";
 

@@ -15,7 +15,7 @@ import {
 } from "../types";
 import { BoardContextState } from "../BoardContext";
 
-import RuntimeUI from "@/ui-components/runtime-ui";
+import RuntimeUI from "hkp-frontend/src/ui-components/runtime-ui";
 import DropTarget from "./DropTarget";
 import { HKP_DND_SERVICE_TYPE, isServiceInstanceDrop } from "./DropTypes";
 

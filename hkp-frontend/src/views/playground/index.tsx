@@ -2,9 +2,12 @@ import { Component } from "react";
 
 import { withRouter, WithRouterProps } from "../../common";
 
-import BoardProvider, { BoardConsumer } from "../../BoardContext";
+import BoardProvider, {
+  BoardConsumer,
+  BoardContextState,
+} from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
-import Footer from "@/components/Footer";
+import Footer from "hkp-frontend/src/components/Footer";
 import BrowserRegistry from "../../runtime/browser/BrowserRegistry";
 import SaveBoardDialog from "../../components/SaveBoardDialog";
 import Board from "./Board";
@@ -38,6 +41,7 @@ import {
   RuntimeInputRoutings,
   RuntimeOutputRoutings,
   RuntimeClass,
+  BoardMenuItemFactory,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
@@ -46,7 +50,7 @@ import realtimeRuntimeApi from "../../runtime/realtime/RealtimeRuntimeApi";
 import BoardEntryPoint from "./BoardEntryPoint";
 import { AppCtx } from "../../AppContext";
 import BoardFetchError from "./BoardFetchError";
-import ShareQRCodeDialog from "@/components/ShareQRCodeDialog";
+import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
 
 const restoredAvailableRuntimeEngines = JSON.parse(
   localStorage.getItem("available-remote-runtimes") || "[]"
@@ -63,10 +67,13 @@ type Props = WithRouterProps & {
   compact?: boolean;
   availableRuntimeEngines?: Array<RuntimeClass>;
   boardDescriptor?: BoardDescriptor;
+  children?: React.ReactNode;
+  hideNavigation?: boolean;
+  menuItemFactory?: BoardMenuItemFactory;
   onChangeBoardname?: (newName: string) => void;
   onSaveBoard?: (name: string, payload: BoardDescriptor) => void;
   onUpdateBoardState?: (newBoard: BoardDescriptor) => void;
-  onNewBoard?: () => void;
+  onNewBoard?: (ctx?: BoardContextState) => void;
 };
 
 type State = {
@@ -297,10 +304,10 @@ class Playground extends Component<Props, State> {
   };
 
   newBoard = async (searchParams = "") => {
-    await this.boardProviderRef?.clearBoard();
     if (this.props.onNewBoard) {
-      this.props.onNewBoard();
+      this.props.onNewBoard(this.boardProviderRef?.state);
     } else {
+      await this.boardProviderRef?.clearBoard();
       const name = generateRandomName();
       this.props.navigate(`/playground/${name}${searchParams}`, {
         replace: true,
@@ -308,33 +315,15 @@ class Playground extends Component<Props, State> {
     }
   };
 
-  destroyRuntime = async (runtime: RuntimeDescriptor) => {
+  onRemoveRuntime = async (runtime: RuntimeDescriptor) => {
     const externalInput = this.externalInputs[runtime.id];
     if (externalInput) {
       externalInput.close();
       delete this.externalInputs[runtime.id];
     }
-
-    /*
-    const rt = this.board && this.board.getRuntimeById(runtime.id);
-    if (!rt) {
-      return;
-    }
-
-    return rt.destroyRuntime();
-    */
   };
 
-  onRemoveRuntime = async (runtime: RuntimeDescriptor) => {
-    return this.destroyRuntime(runtime);
-  };
-
-  clearPlayground = async (board: BoardDescriptor) => {
-    const { runtimes = [] } = board;
-    for (const runtime of runtimes) {
-      await this.destroyRuntime(runtime);
-    }
-
+  onClearPlayground = async () => {
     for (const ext of Object.keys(this.externalInputs)) {
       this.externalInputs[ext].close();
     }
@@ -497,7 +486,7 @@ class Playground extends Component<Props, State> {
         runtimeApis={runtimeApis}
         onRemoveRuntime={this.onRemoveRuntime}
         newBoard={this.newBoard}
-        clearBoard={this.clearPlayground}
+        onClearBoard={this.onClearPlayground}
         saveBoard={this.saveBoard}
         isActionAvailable={this.isActionAvailable}
         serializeBoard={this.serializeBoard}
@@ -540,6 +529,9 @@ class Playground extends Component<Props, State> {
                     );
                   }}
                   isCompact={this.props.compact}
+                  menuItemFactory={this.props.menuItemFactory}
+                  hideNavigation={this.props.hideNavigation}
+                  includeNavigationLinks={!this.props.hideNavigation}
                 />
 
                 <ShareQRCodeDialog
@@ -549,7 +541,6 @@ class Playground extends Component<Props, State> {
                     this.setState({ showShareBoardQRCodeURL: null })
                   }
                 />
-
                 <SaveBoardDialog
                   isOpen={this.state.isSaveDialogVisible}
                   suggestedName={
@@ -611,8 +602,10 @@ class Playground extends Component<Props, State> {
                     onChangeBoardname={this.onChangeBoardname}
                   />
                 )}
-
-                <Footer isCompact={this.props.compact} />
+                <Footer
+                  isCompact={this.props.hideNavigation || this.props.compact}
+                />
+                {this.props.children || null}
               </div>
             )
           }

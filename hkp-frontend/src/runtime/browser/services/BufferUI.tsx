@@ -4,17 +4,19 @@ import {
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@/ui-components/primitives/accordion";
+} from "hkp-frontend/src/ui-components/primitives/accordion";
 
 import Button from "hkp-frontend/src/ui-components/Button";
 
-import { ServiceUIProps } from "@/types";
-import ServiceUI, { needsUpdate } from "@/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI, {
+  needsUpdate,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { DownloadIcon, X, Eye, BugPlay } from "lucide-react";
-import MenuIcon from "@/ui-components/MenuIcon";
-import Editor from "@/components/shared/Editor";
-import Slider from "@/ui-components/Slider";
-import Switch from "@/ui-components/Switch";
+import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
+import Editor from "hkp-frontend/src/components/shared/Editor";
+import Slider from "hkp-frontend/src/ui-components/Slider";
+import Switch from "hkp-frontend/src/ui-components/Switch";
 import { isFunction } from "./helpers";
 
 type BufferItem = any;
