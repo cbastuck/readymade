@@ -138,10 +138,7 @@ saucer::scheme::response SchemeHandler::handleListBoards(const Router::Params& p
   json boardsArr = json::array();
   for (const auto& board : vec)
   {
-    boardsArr.push_back({
-      { "name", board },
-      { "url", "hkp://boards/" + board },
-    });
+    boardsArr.push_back(board);
   }
   return saucer::scheme::response{
     .data = saucer::make_stash(boardsArr.dump()),

@@ -17,7 +17,15 @@ export function createRealtimeRuntimeApp(scope: RealtimeRuntimeScope): AppImpl {
     notify: (service: InstanceId, notification: any): void => {
       notificationTargets.notify(service, notification);
     },
-    next: (_svc: InstanceId | null, _result: any): void => {},
+    next: (svc: InstanceId | null, result: any): void => {
+      // scope.onResult(svc?.uuid || null, result);
+      scope.getApi().processRuntime(
+        scope,
+        result,
+        svc,
+        null // we don't have a service here, so we pass null
+      );
+    },
     getServiceById: (uuid: string): ServiceImpl | null => {
       return { uuid } as any; // TODO:  see above, mabye we don't need this at all
     },

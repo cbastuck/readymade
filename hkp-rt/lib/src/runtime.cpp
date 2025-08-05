@@ -9,6 +9,7 @@
 #include "./common/websocket_server.h"
 
 #include <types/validation.h>
+#include <types/message.h>
 #include "common.h"
 
 namespace hkp
@@ -23,19 +24,16 @@ Runtime::Runtime(OwnsMe<App> app, const std::string& runtimeId, const std::strin
       [this](boost::beast::flat_buffer& buffer, bool isBinary){ 
         if (isBinary)
         {
-          // TODO: assume it's a FloatRingBuffer binary data
-          // This is just for testing, we should not assume this
-          auto data = std::make_shared<FloatRingBuffer>(m_runtimeId + "-binary");
-          auto size = buffer.size();
-          FloatRingBuffer::createFromSerialised(buffer, size, *data);
           try 
           {
+            auto data = Message::deserialize(buffer);
             this->process(data);
           } 
           catch (const std::exception& e) 
           {
             std::cerr << "Runtime::Runtime.onWebsocket Failed to process incoming binary buffer: " << e.what() << std::endl;
           }
+        
         }
         else
         {
@@ -218,14 +216,14 @@ json Runtime::getServices() const
   return services; 
 }
 
-void Runtime::sendData(Data data)
+void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sender)
 {
   // do not send directly, but schedule the notification to be sent
   // writing to websocket is not thread-safe
-  m_app->postCallback([this, data]() {
+  m_app->postCallback([this, data, purpose, sender]() {
     if (m_websocket)
     {
-      m_websocket->send(data);
+      m_websocket->send(data, purpose, sender);
     }
   });   
 }
@@ -403,23 +401,7 @@ const Data& Runtime::onProcessEnd(const Data& data)
     // if we are the last initiator, we should communicate the result
     if (!m_boardName.empty())
     {
-      auto j = getJSONFromData(data);
-      if (j)
-      {
-        sendData(
-          json{
-            {"type", "result"},
-            {"runtimeId", m_runtimeId},
-            {"boardName", m_boardName},
-            {"data", *j}
-          }
-        );
-      }
-      else
-      {
-        // std::cout << "Runtime::onProcessEnd: non JSON data us not supported: " << stringify(data) << std::endl;
-        sendData(data);
-      }
+        sendData(data, MessagePurpose::RESULT, "RUNTIME"); // TODO: sender ok? 
     }
   }
   return data;

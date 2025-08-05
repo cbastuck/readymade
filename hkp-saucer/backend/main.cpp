@@ -45,14 +45,13 @@ int main(int argc, char* argv[])
     });
 
     SchemeHandler handler(server, desktop);
-
     smartview.handle_scheme(
       "hkp",
       [&handler](const saucer::scheme::request &req) -> saucer::scheme::response
       {
           return handler.handleRequest(req);
       });
-
+    
     if (!argument.empty())
     {
       smartview.inject({

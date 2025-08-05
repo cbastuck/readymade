@@ -14,7 +14,8 @@ import {
 } from "hkp-frontend/src/types";
 import RealtimeRuntimeScope from "./RealtimeRuntimeScope";
 import { EngineState } from "hkp-frontend/src/BoardContext";
-import { isData, serializeRingBufferYAS } from "./Data";
+import { isData } from "./Data";
+import { serializeYasMessage } from "./Message";
 
 async function createScope(
   runtime: RuntimeDescriptor,
@@ -143,16 +144,17 @@ export async function attachRuntimes(
 export async function processRuntime(
   scope_: RuntimeScope,
   params: any,
-  _svc: InstanceId | null,
+  svc: InstanceId | null,
   _context?: ProcessContext | null
 ): Promise<void> {
   const scope = scope_ as RealtimeRuntimeScope;
   const runtime = scope.descriptor;
 
+  // TODO: move this functionality into scope?
   if (scope.runtimeOutput) {
     if (isData(params)) {
-      // if params is a Data object, we send it as binary data
-      scope.runtimeOutput.send(serializeRingBufferYAS(params));
+      const blob = serializeYasMessage(params, svc?.uuid || "");
+      scope.runtimeOutput.send(blob);
     } else {
       scope.runtimeOutput.send(
         JSON.stringify({
@@ -162,8 +164,8 @@ export async function processRuntime(
       );
     }
   } else {
+    // if we don't have a runtimeOutput, we send a REST request
     // TODO what if params is not an object?
-
     const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
       method: "POST",
       headers: {

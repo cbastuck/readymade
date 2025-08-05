@@ -207,10 +207,8 @@ yas::shared_buffer FloatRingBuffer::serialise() const
   }
   m_readIndex += numSavedSamples;
 
-  char endianTag = isPlatformLittleEndian() ? 0 : 1; // 0 for little-endian, 1 for big-endian
   constexpr std::size_t flags = yas::mem | yas::binary;
   auto o = YAS_OBJECT_NVP(nullptr,
-                          ("endian", endianTag),
                           ("type", getTypeId<FloatRingBuffer>()),
                           ("array", yas::array(&continuousBuffer[0], numSavedSamples)),
                           ("id", m_id), 
@@ -223,7 +221,7 @@ yas::shared_buffer FloatRingBuffer::serialise() const
 void FloatRingBuffer::createFromSerialised(BufferType& buffer, unsigned int size, FloatRingBuffer& target)
 {
   const char *rawData = reinterpret_cast<const char *>(buffer.data().data());
-  yas::shared_buffer buf(rawData, size);
+  yas::intrusive_buffer buf(rawData, buffer.size());
 
   float *iptr = nullptr;
   std::size_t isize = 0;
@@ -232,34 +230,23 @@ void FloatRingBuffer::createFromSerialised(BufferType& buffer, unsigned int size
   unsigned int id = 0;
   uint64_t ts = 0;
   unsigned int type;
-  char endianTag = 0;
   auto iobj = YAS_OBJECT_NVP(
     nullptr,
-    ("endian", endianTag),
     ("type", type),
     ("array", arrholder), 
     ("id", id), 
     ("ts", ts)
   );
-
-  if (endianTag != (isPlatformLittleEndian() ? 0 : 1))
-  {
-    std::cerr << "FloatRingBuffer::createFromSerialised: endian mismatch - expected " 
-              << (isPlatformLittleEndian() ? "little-endian" : "big-endian") 
-              << " but got " << (endianTag == 0 ? "little-endian" : "big-endian") << std::endl;
-    return;
-  }
-
-  auto expected = getTypeId<FloatRingBuffer>();
-  if (type != expected)
-  {
-    std::cerr << "FloatRingBuffer::createFromSerialised: type mismatch - expected " << expected << " but got " << type << std::endl;
-    return;
-  }
   
 
   constexpr std::size_t flags = yas::mem | yas::binary;
   yas::load<flags>(buf, iobj);
+  
+  if (type != getTypeId<FloatRingBuffer>())
+  {
+    std::cerr << "FloatRingBuffer::createFromSerialised: type mismatch - got: " << type << std::endl;
+    return;
+  }
 
   target.appendBinary(reinterpret_cast<char *>(iptr), isize * sizeof(float));
   target.m_id = id;

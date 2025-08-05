@@ -1,18 +1,15 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { BoardMenuItem } from "hkp-frontend/src/types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import { SavedBoardDescriptor } from "./types";
 
-export async function loadBoard(
-  item: SavedBoardDescriptor
-): Promise<BoardDescriptor> {
-  const response = await fetch(`hkp://boards/${item.name}`);
+export async function loadBoard(boardName: string): Promise<BoardDescriptor> {
+  const response = await fetch(`hkp://boards/${boardName}`);
   if (!response.ok) {
     throw new Error(`Failed to load board: ${response.statusText}`);
   }
   const board = await response.json();
   // TODO: make sure it is a valid board descriptor
-  return board.boardName ? board : { ...board, boardName: item.name };
+  return board.boardName ? board : { ...board, boardName };
 }
 
 export async function deleteBoard(name: string) {
@@ -44,7 +41,7 @@ export async function getRemotes() {
 }
 
 export function createMenuItems(
-  setLoadBoardItems: (items: Array<SavedBoardDescriptor>) => void,
+  setLoadBoardItems: (items: Array<string>) => void,
   setBoardSource: (source: string) => void
 ) {
   return (boardContext: BoardContextState): Array<BoardMenuItem> => [
@@ -100,11 +97,9 @@ export function createMenuItems(
   ];
 }
 
-export async function fetchSavedBoards(): Promise<Array<SavedBoardDescriptor>> {
+export async function fetchSavedBoards(): Promise<Array<string>> {
   const boards = await fetch("hkp://boards/");
-  const boardsData = await boards.json();
-  return boardsData.map((item: SavedBoardDescriptor) => ({
-    ...item,
-    name: decodeURIComponent(item.name),
-  }));
+  const boardNames: Array<string> = await boards.json();
+  // TODO: Validate the response
+  return boardNames.map((boardName) => decodeURIComponent(boardName));
 }

@@ -10,7 +10,7 @@ import {
 
 import api from "./RealtimeRuntimeApi";
 import { createRealtimeRuntimeApp } from "./RealtimeRuntimeApp";
-import { deserializeYASBuffer } from "./Data";
+import { MessagePurpose, deserializeYasMessage } from "./Message";
 
 export default class RealtimeRuntimeScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;
@@ -25,34 +25,36 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
       this.runtimeOutput = new WebSocket(runtimeOutputUrl);
 
       this.runtimeOutput.onmessage = async (event) => {
-        const isBlob = event.data instanceof Blob;
-        const isArrayBuffer = event.data instanceof ArrayBuffer;
-        const isBinary = isBlob || isArrayBuffer;
-        // binary data is always a result from the runtime
+        const isBinary = typeof event.data !== "string";
         if (isBinary) {
-          const data = isBlob ? await deserializeYASBuffer(event) : event.data;
-          this.onResult(null, data, null);
-          return;
-        }
-        const msg = JSON.parse(event.data);
-        if (msg.type === "notification") {
-          const { instanceId, value } = msg;
-          if (value) {
-            let data;
-            try {
-              data = JSON.parse(value);
-            } catch (_err) {
-              data = value;
-            }
-            this.app.notify({ uuid: instanceId }, data);
+          const message = deserializeYasMessage(await event.data.arrayBuffer());
+          if (message.purpose === MessagePurpose.RESULT) {
+            this.onResult(null, message.data, null);
+          } else if (message.purpose === MessagePurpose.NOTIFICATION) {
+            this.app.notify({ uuid: message.sender }, message.data);
           }
-        } else if (msg.type === "result") {
-          this.onResult(null, msg.data, null);
         } else {
-          console.warn(
-            "RealtimeRuntimeScope.runtimeOutput.onmessage unknown message type",
-            msg
-          );
+          // old JSON format
+          const msg = JSON.parse(event.data);
+          if (msg.type === "notification") {
+            const { instanceId, value } = msg;
+            if (value) {
+              let data;
+              try {
+                data = JSON.parse(value);
+              } catch (_err) {
+                data = value;
+              }
+              this.app.notify({ uuid: instanceId }, data);
+            }
+          } else if (msg.type === "result") {
+            this.onResult(null, msg.data, null);
+          } else {
+            console.warn(
+              "RealtimeRuntimeScope.runtimeOutput.onmessage unknown message type",
+              msg
+            );
+          }
         }
       };
       this.runtimeOutput.onerror = (event) => {

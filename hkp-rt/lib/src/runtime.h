@@ -3,6 +3,7 @@
 #include <list>
 
 #include <types/types.h>
+#include <types/message.h>
 
 #include "./uuid.h"
 #include "./process_context.h"
@@ -33,7 +34,7 @@ public:
   json configureService(const std::string &instanceId, json config);
   json getServiceState(const std::string &instanceId) const;
   json getServices() const;
-  void sendData(Data data);
+  void sendData(Data data, MessagePurpose purpose, const std::string& sender);
 
   Data process(Data data);
   Data processFrom(const Service &service, Data data, bool advanceBefore=true);

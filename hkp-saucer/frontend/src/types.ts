@@ -3,8 +3,3 @@ export type Remote = {
   url: string;
   name: string;
 };
-
-export type SavedBoardDescriptor = {
-  name: string;
-  url: string;
-};

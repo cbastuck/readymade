@@ -45,7 +45,6 @@ protected:
   }
   
 private:
-  void notifyRuntime(Data data) const;
   OwnsMe<Runtime> m_runtime;  
 
 protected:

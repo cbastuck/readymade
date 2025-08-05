@@ -3,13 +3,14 @@ import { useEffect, useMemo, useState } from "react";
 import HkpApp from "hkp-frontend/src/App";
 import Playground from "hkp-frontend/src/views/playground";
 
-import { Remote, SavedBoardDescriptor } from "./types";
+import { Remote } from "./types";
 import {
   getRemotes,
   saveBoard,
   createMenuItems,
   deleteBoard,
   fetchSavedBoards,
+  loadBoard,
 } from "./actions";
 import Board from "./Board";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
@@ -18,8 +19,9 @@ import { BoardDescriptor } from "hkp-frontend/src/types";
 function App() {
   const [boardName, setBoardName] = useState("Idea");
   const [remotes, setRemotes] = useState<any>(null);
-  const [loadBoardItems, setLoadBoardItems] =
-    useState<Array<SavedBoardDescriptor> | null>(null);
+  const [loadBoardItems, setLoadBoardItems] = useState<Array<string> | null>(
+    null
+  );
 
   const [boardSource, setBoardSource] = useState("");
 
@@ -33,11 +35,11 @@ function App() {
         type: "browser",
         name: "Browser Runtime",
       },
-      {
+      /*{
         type: "realtime",
         name: "Node.js Runtime",
         url: "http://localhost:3200", // TODO: static URL for demo purposes
-      },
+      },*/
       ...(remotes || [])?.map((remote: Remote, idx) => {
         return {
           type: "realtime",
@@ -84,9 +86,36 @@ function App() {
     setBoardName(name);
   };
 
+  const [restoredRecentBoard, setRestoredRecentBoard] =
+    useState<BoardDescriptor | null>(null);
+  const restoreRecentBoard = async () => {
+    const lastBoardName = localStorage.getItem("recentlyLoadedBoard");
+    if (lastBoardName) {
+      const savedBoardNames = await fetchSavedBoards();
+      const savedBoard = savedBoardNames.find(
+        (boardName) => boardName === lastBoardName
+      );
+      if (savedBoard) {
+        const board = await loadBoard(savedBoard);
+        setRestoredRecentBoard(board);
+      }
+    }
+  };
+
+  useEffect(() => {
+    restoreRecentBoard();
+  }, []);
+
+  const onBoardLoaded = (board: BoardDescriptor) => {
+    if (board.boardName) {
+      localStorage.setItem("recentlyLoadedBoard", board.boardName);
+    }
+  };
+
   return (
     <HkpApp>
       <Playground
+        boardDescriptor={restoredRecentBoard}
         boardName={boardName}
         availableRuntimeEngines={availableRuntimeEngines}
         onSaveBoard={onSaveBoard}
@@ -103,6 +132,7 @@ function App() {
           onCloseBoardSource={onCloseBoardSource}
           onChangeLoadDialogVisibility={onChangeLoadDialogVisibility}
           onDeleteBoard={onDeleteBoard}
+          onBoardLoaded={onBoardLoaded}
         />
       </Playground>
     </HkpApp>

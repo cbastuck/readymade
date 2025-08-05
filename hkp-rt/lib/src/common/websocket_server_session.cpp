@@ -8,6 +8,8 @@
 
 #include "./websocket_server.h"
 
+#include <types/message.h>
+
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace net = boost::asio;
@@ -44,7 +46,7 @@ bool WebsocketServerSession::isOpen() const
   return m_ws && m_ws->is_open();
 }
 
-void WebsocketServerSession::send(const Data& data)
+void WebsocketServerSession::send(const Data& data, MessagePurpose purpose, const std::string& sender)
 {
   if (!isOpen())
   {
@@ -71,30 +73,9 @@ void WebsocketServerSession::send(const Data& data)
   }
 
   m_isSending = true;
-  try 
+  try
   {
-    auto binary = getBinaryFromData(data);
-    if (binary) 
-    {
-      m_ws->binary(true);
-      m_ws->write(net::buffer(&(*binary)[0], binary->size())) ;
-    } 
-    else if (auto rb = getRingBufferFromData(data)) 
-    {
-      m_ws->binary(true);
-      auto buf = rb->serialise();
-      m_ws->write(boost::asio::buffer(buf.data.get(), buf.size));
-    }
-    else if (isUndefined(data))
-    {
-      std::cout << "SocketSession::send undefined data currently not available" << std::endl;
-    }
-    else 
-    {
-      m_ws->text(true);
-      auto str = stringify(data);
-      m_ws->write(net::buffer(str));
-    }
+    Message::serialize(data, purpose, sender, *m_ws);
   }
   catch(...) 
   {

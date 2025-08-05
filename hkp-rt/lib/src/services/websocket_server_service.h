@@ -80,7 +80,7 @@ public:
     std::string mode = m_state["mode"];
     if (mode == "writeOnly" || mode == "writeAndAcc") 
     {
-      m_websocket->send(data);
+      m_websocket->send(data, MessagePurpose::RESULT, getId());
     }
 
     return (mode == "writeAndAcc") ? m_accumulated : data;
@@ -113,7 +113,7 @@ public:
       auto result = next(data);
       if (!isNull(result))
       {
-        m_websocket->send(result);
+        m_websocket->send(result, MessagePurpose::RESULT, getId());
       }
     }
   }

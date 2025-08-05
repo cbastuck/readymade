@@ -1,6 +1,7 @@
 #pragma once
 
 #include <types/types.h>
+#include <types/message.h>
 
 #include <list>
 #include <thread>
@@ -36,7 +37,7 @@ public:
   void start();
   void stop();
 
-  void send(const Data& data);
+  void send(const Data& data, MessagePurpose purpose, const std::string& sender);
 
   const WebsocketConfig& getConfig() const;
   unsigned short getBoundPort() const;

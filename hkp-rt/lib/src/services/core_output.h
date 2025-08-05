@@ -228,12 +228,12 @@ private:
   bool isBufferReady(const FloatRingBuffer& buffer, unsigned int frameCount, unsigned int numChannels) const 
   {
     unsigned int availableSamples = buffer.availableCount();
-    sendNotification(json{{"availableSamples", availableSamples}});
     if (availableSamples < frameCount)
     {
       // std::cout << "CoreOutput::isBufferReady: not enough samples available - " << availableSamples << " < " << frameCount << std::endl;
       return false;
     }
+    sendNotification(json{{"availableSamples", availableSamples}});
     return true;
   }
 

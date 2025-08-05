@@ -63,7 +63,8 @@ public:
     {
       logToFile(data);
     }
-    sendNotification(data);
+    json notification = stringify(data);
+    sendNotification(notification);
     return data;
   }
 

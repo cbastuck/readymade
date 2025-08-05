@@ -98,14 +98,6 @@ bool Service::isConnected() const
   return m_runtime->isConnected(*this);
 }
 
-void Service::notifyRuntime(Data data) const
-{
-  if (m_runtime)
-  {
-    m_runtime->sendData(data);
-  }
-}
-
 json& Service::mergeBypassState(json &state) const
 {
   state.update(json{{"bypass", m_bypass}});
@@ -131,12 +123,7 @@ void Service::sendNotification(const Data& value) const
 {
   if (m_runtime)
   {
-    auto n = json{
-      {"type", "notification"},
-      {"instanceId", m_instanceId},
-      {"value", stringify(value)}
-    };
-    notifyRuntime(Data(n));
+    m_runtime->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
   }
 }
 

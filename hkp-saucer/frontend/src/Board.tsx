@@ -1,14 +1,15 @@
 import EditorDialog from "hkp-frontend/src/ui-components/EditorDialog";
 import LoadBoardDialog from "./LoadBoardDialog";
-import { SavedBoardDescriptor } from "./types";
 import { useJsApi } from "./hooks";
+import { BoardDescriptor } from "hkp-frontend/src/types";
 
 type Props = {
   boardSource?: string;
-  loadBoardItems?: Array<SavedBoardDescriptor> | null;
+  loadBoardItems?: Array<string> | null;
   onCloseBoardSource?: () => void;
   onChangeLoadDialogVisibility?: (visible: boolean) => void;
   onDeleteBoard?: (saveName: string) => Promise<void>;
+  onBoardLoaded?: (board: BoardDescriptor) => void;
 };
 
 export default function Board({
@@ -17,6 +18,7 @@ export default function Board({
   onCloseBoardSource = () => {},
   onChangeLoadDialogVisibility = () => {},
   onDeleteBoard = async () => {},
+  onBoardLoaded = () => {},
 }: Props) {
   useJsApi();
   return (
@@ -32,6 +34,7 @@ export default function Board({
         items={loadBoardItems || []}
         onSetVisible={onChangeLoadDialogVisibility}
         onDeleteBoard={onDeleteBoard}
+        onBoardLoaded={onBoardLoaded}
       />
     </>
   );

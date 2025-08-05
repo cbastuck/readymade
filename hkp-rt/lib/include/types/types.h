@@ -31,4 +31,3 @@ inline bool updateIfNeeded(json& target, json& update)
   target = update;
   return true;
 }
-

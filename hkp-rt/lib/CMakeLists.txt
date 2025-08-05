@@ -36,6 +36,7 @@ target_sources(${PROJECT_NAME}
       src/app.cpp
       src/http/server.cpp
       src/types/models.cpp 
+      src/types/message.cpp
       src/types/data.cpp 
       src/types/ringbuffer.cpp
       src/common/websocket_server_listener.cpp

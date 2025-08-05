@@ -53,7 +53,7 @@ void WebsocketServer::stop()
   }
 }
 
-void WebsocketServer::send(const Data& data) 
+void WebsocketServer::send(const Data& data, MessagePurpose purpose, const std::string& sender) 
 {
   std::unique_lock<std::mutex> lock(m_mutex, std::try_to_lock);
   if (!lock.owns_lock()) {
@@ -63,7 +63,7 @@ void WebsocketServer::send(const Data& data)
 
   for (auto& c : m_connections) 
   {
-    c->send(data);
+    c->send(data, purpose, sender);
   }
 }
 

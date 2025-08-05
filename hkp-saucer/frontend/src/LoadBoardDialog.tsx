@@ -7,15 +7,17 @@ import { useContext } from "react";
 import { Trash } from "lucide-react";
 
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
-import { SavedBoardDescriptor } from "./types";
+
 import { loadBoard } from "./actions";
 import Button from "hkp-frontend/src/ui-components/Button";
+import { BoardDescriptor } from "hkp-frontend/src/types";
 
 type Props = {
   visible: boolean;
-  items: Array<SavedBoardDescriptor>;
+  items: Array<string>;
   onSetVisible: (visible: boolean) => void;
   onDeleteBoard: (saveName: string) => Promise<void>;
+  onBoardLoaded?: (board: BoardDescriptor) => void;
 };
 
 export default function LoadBoardDialog({
@@ -23,14 +25,25 @@ export default function LoadBoardDialog({
   items,
   onSetVisible,
   onDeleteBoard,
+  onBoardLoaded,
 }: Props) {
   const avoidDefaultDomBehavior = (e: Event) => {
     e.preventDefault();
   };
 
   const boardContext = useContext(BoardCtx);
-  const onLoadSavedBoard = async (item: SavedBoardDescriptor) => {
-    boardContext?.setBoardState(await loadBoard(item));
+  const onLoadSavedBoard = async (item: string) => {
+    const board = await loadBoard(item);
+    boardContext?.setBoardState(board);
+    return board;
+  };
+
+  const onLoad = async (item: string) => {
+    const board = await onLoadSavedBoard(item);
+    onSetVisible(false);
+    if (onBoardLoaded) {
+      onBoardLoaded(board);
+    }
   };
 
   if (!visible) {
@@ -47,19 +60,16 @@ export default function LoadBoardDialog({
         <h2>Select a Board</h2>
         {items.map((item, idx) => (
           <div
-            key={`{${item.name}.${idx}`}
+            key={`{${item}.${idx}`}
             className="py-4 px-10 border-b border-gray-200 hover:bg-gray-100 cursor-pointer flex flex-row"
-            onClick={() => {
-              onLoadSavedBoard(item);
-              onSetVisible(false);
-            }}
+            onClick={() => onLoad(item)}
           >
-            <div className="text-lg font-semibold">{item.name}</div>
+            <div className="text-lg font-semibold">{item}</div>
             <Button
               className="ml-auto"
               onClick={(e) => {
                 e.stopPropagation();
-                onDeleteBoard(item.name);
+                onDeleteBoard(item);
               }}
             >
               <Trash className="ml-auto"></Trash>

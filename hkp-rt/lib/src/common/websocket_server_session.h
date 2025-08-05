@@ -8,9 +8,9 @@
 
 #include <types/owns_me.h>
 #include <types/data.h>
+#include <types/message.h>
 
 #include "./websocket_protocol.h"
-
 namespace hkp
 {
 
@@ -23,7 +23,7 @@ public:
   ~WebsocketServerSession();
 
   bool isOpen() const;
-  void send(const Data& data);
+  void send(const Data& data, MessagePurpose purpose, const std::string& sender);
 
   inline unsigned int getSessionId() const { return m_sessionId; }
 
