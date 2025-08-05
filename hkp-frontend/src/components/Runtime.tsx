@@ -203,7 +203,7 @@ export default class Runtime extends Component<Props, State> {
     const runtimeId = runtime && runtime.id;
 
     const services =
-      runtime && boardContext && boardContext.services[runtime.id];
+      (runtime && boardContext && boardContext.services[runtime.id]) || [];
     const user = (boardContext && boardContext.appContext?.user) || null;
     const boardName = boardContext && boardContext.boardName;
     const registry =

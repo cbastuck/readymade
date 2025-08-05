@@ -7,6 +7,9 @@
 #include "types/data.h"
 #include "./schemeHandler.h"
 
+#if USE_PYTHON_INTEGRATION
+  #include "./python/pythonIntegration.h"
+#endif
 
 #if USE_SAUCER_EMBEDDED
   #include "embedded/all.hpp"
@@ -14,11 +17,39 @@
 
 int main(int argc, char* argv[])
 {
-    std::string argument = "";
-    if (argc > 1) 
+    std::string projectFile = "";
+    std::string pythonBundle = "";
+
+    // Parse command line arguments
+    for (int i = 1; i < argc; ++i) 
     {
-      argument = argv[1];
+        std::string arg = argv[i];
+        if (arg == "--project" && i + 1 < argc) 
+        {
+            projectFile = argv[++i];
+        } 
+        else if (arg == "--python" && i + 1 < argc) 
+        {
+            pythonBundle = argv[++i];
+        }
     }
+
+#if USE_PYTHON_INTEGRATION
+    if (!pythonBundle.empty()) 
+    {
+        PythonIntegration pythonIntegration;
+        auto p = std::thread(
+          [&pythonBundle, &pythonIntegration]()
+          {
+              if (pythonIntegration.start(pythonBundle) != 0) 
+              {
+                  std::cerr << "Failed to start python command" << std::endl;
+              }
+          }
+        );
+        p.detach(); 
+    }
+#endif
 
     saucer::webview::register_scheme("hkp");
     auto app = saucer::application::init({     
@@ -26,9 +57,7 @@ int main(int argc, char* argv[])
     });
     auto& desktop = app->add_module<saucer::modules::desktop>();
 
-    saucer::smartview smartview{{
-        .application = app,
-    }};
+    saucer::smartview smartview{{ .application = app }};
 
     smartview.set_title("HookitApp"); 
     smartview.set_dev_tools(true);
@@ -52,12 +81,12 @@ int main(int argc, char* argv[])
           return handler.handleRequest(req);
       });
     
-    if (!argument.empty())
+    if (!projectFile.empty())
     {
-      smartview.inject({
-        .code = "setTimeout(() => { window.hkpJS.loadBoard('" + argument + "'); }, 500);",
-        .time = saucer::load_time::ready,
-      });
+        smartview.inject({
+            .code = "setTimeout(() => { window.hkpJS.loadBoard('" + projectFile + "'); }, 500);",
+            .time = saucer::load_time::ready,
+        });
     }
 
 #if USE_SAUCER_EMBEDDED

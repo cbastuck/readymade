@@ -195,11 +195,15 @@ export async function addService(scope: RuntimeScope, service: ServiceClass) {
     },
   });
   if (!res.ok) {
-    throw new Error("Failed to configure service" + res.statusText);
+    throw new Error("Failed to add service: " + res.statusText);
   }
 
   const config = await res.json();
-  const createdService = { ...service, state: config, uuid: payload.uuid };
+  const createdService = {
+    ...service,
+    state: config,
+    uuid: payload.uuid,
+  };
   return createdService;
 }
 
@@ -217,10 +221,10 @@ export async function removeService(
       },
     }
   );
+
   if (!res.ok) {
     throw new Error("Failed to remove service from runtime" + res.statusText);
   }
-
   const data = await res.json();
   return data.services;
 }
@@ -260,7 +264,7 @@ export async function getServiceConfig(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`
   );
   if (!res.ok) {
-    throw new Error("Failed to get service configure" + res.statusText);
+    throw new Error("Failed to get service configure: " + res.statusText);
   }
 
   const state = await res.json();
@@ -322,7 +326,7 @@ async function createRuntimeRequest(
     throw new Error("Failed to create runtime" + res.statusText);
   }
   const { registry, runtimes } = await res.json();
-  const rt = runtimes[0];
+  const rt = runtimes[0]; // TODO only considering the first runtime here
   if (!rt) {
     throw new Error("Failed to create runtime - no runtime was addeed");
   }

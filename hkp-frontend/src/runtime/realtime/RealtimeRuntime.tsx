@@ -1,4 +1,4 @@
-import { ReactElement, useCallback, useEffect, useState } from "react";
+import React, { ReactElement, useCallback, useEffect, useState } from "react";
 
 import {
   RuntimeDescriptor,
@@ -15,7 +15,6 @@ import ServiceUiContainer from "../ServiceUiContainer";
 
 import RemoteServiceUI from "./RealtimeRuntimeServiceUI";
 import { findServiceUI } from "./UIRegistry";
-import React from "react";
 import EmptyRuntimePlaceholder from "hkp-frontend/src/ui-components/runtime-ui/EmptyRuntimePlaceholder";
 
 type Props = {

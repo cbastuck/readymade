@@ -32,12 +32,18 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
             this.onResult(null, message.data, null);
           } else if (message.purpose === MessagePurpose.NOTIFICATION) {
             this.app.notify({ uuid: message.sender }, message.data);
+          } else {
+            console.log(
+              "RealtimeRuntimeScope.runtimeOutput.onmessage unknown message purpose",
+              message
+            );
           }
         } else {
           // old JSON format
           const msg = JSON.parse(event.data);
           if (msg.type === "notification") {
             const { instanceId, value } = msg;
+
             if (value) {
               let data;
               try {

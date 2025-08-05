@@ -15,7 +15,6 @@ if (COMILE_USING_SAUCER_EMBEDDINGS)
   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_SAUCER_EMBEDDED)
 endif()
 
-
 #CPMAddPackage("gh:fmtlib/fmt#7.1.3")
 #CPMAddPackage("gh:nlohmann/json@3.10.5")
 #CPMAddPackage("gh:catchorg/Catch2@3.4.0")
@@ -41,6 +40,24 @@ add_executable(
   backend/router.cpp
   ${EMBEDDED_SOURCES}
 )
+
+
+option(INTEGRATE_HKP_PYTHON "Integrate hkp-python remote" ON)
+if (INTEGRATE_HKP_PYTHON)
+  find_package(Boost 1.86 REQUIRED COMPONENTS python3) 
+  if (Boost_FOUND)
+    message(STATUS "Found Boost Python: ${Boost_INCLUDE_DIRS}")
+    target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE Boost::python3)
+    find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+    include_directories(${Python3_INCLUDE_DIRS})
+    target_link_libraries(${PROJECT_NAME} PRIVATE Python3::Python)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_PYTHON_INTEGRATION)
+  else()
+    message(FATAL_ERROR "Boost Python not found. Please install Boost with Python support.")
+  endif()
+endif()
+
 
 
 set(APP_ICON "${CMAKE_SOURCE_DIR}/hkp-saucer/hkp.icns")

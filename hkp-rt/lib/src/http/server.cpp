@@ -73,6 +73,7 @@ struct Server::impl
     CROW_ROUTE(crow, "/runtimes/<string>/services")
         .methods("GET"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return getServices(req, runtimeId); });
 
+    // TODO this should be a PUT and the POST should replace all services
     CROW_ROUTE(crow, "/runtimes/<string>/services")
         .methods("POST"_method)([this](const crow::request &req, std::string runtimeId) -> crow::response { return createService(req, runtimeId); });
   

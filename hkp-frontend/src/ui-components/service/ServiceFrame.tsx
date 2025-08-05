@@ -60,10 +60,10 @@ export default function ServiceFrame({
 
     if (__internal !== undefined) {
       const { state, data } = __internal;
+
       switch (state) {
         case "call-process":
           setServiceIsProcessing(true);
-
           return;
         case "call-process-finished":
           setTimeout(() => setServiceIsProcessing(false), 350);

@@ -16,11 +16,8 @@ export function useJsApi() {
   const boardContext = useContext(BoardCtx);
   const hkp: JsApi = {
     loadBoard: async (path: string) => {
-      const item = {
-        name: (path.split("/").pop() || "unknown").split(".")[0],
-        url: path,
-      };
-      boardContext?.setBoardState(await loadBoard(item));
+      const name = (path.split("/").pop() || "unknown").split(".")[0];
+      boardContext?.setBoardState(await loadBoard(name));
     },
   };
   window.hkpJS = hkp;
