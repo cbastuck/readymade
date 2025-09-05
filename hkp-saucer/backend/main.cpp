@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
     auto server = std::make_shared<hkp::Server>(hkpApp, "realtime", allowedOrigins);
     auto t = std::make_shared<std::thread>([&server, usePort]()
     {
-      server->start(usePort); 
+      server->start("127.0.0.1", usePort); 
     });
 
     SchemeHandler handler(server, desktop);
