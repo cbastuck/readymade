@@ -23,7 +23,7 @@ endif()
 
 CPMAddPackage(
   NAME      saucer
-  VERSION   6.0.2
+  VERSION   6.0.3
   GIT_REPOSITORY "https://github.com/cbastuck/saucer"
 )
 
