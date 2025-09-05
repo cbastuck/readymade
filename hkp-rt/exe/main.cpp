@@ -22,7 +22,7 @@ int main(int argc, char **argv)
     externalIP = argv[2];
   }
 
-  auto app = std::make_shared<hkp::App>(externalIP, port);
+  auto app = std::make_shared<hkp::App>();
   hkp::Server server(app, "hkp-rt", "*");
 
   if (argc > 3) 
@@ -38,5 +38,5 @@ int main(int argc, char **argv)
     }
   }
 
-  server.start(port);
+  server.start(externalIP, port);
 }
