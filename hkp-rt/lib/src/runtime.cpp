@@ -6,6 +6,7 @@
 #include "./app.h"
 #include "./registry.h"
 #include "./service.h"
+#include "./server.h"
 #include "./common/websocket_server.h"
 
 #include <types/validation.h>
@@ -174,7 +175,13 @@ RuntimeConfiguration Runtime::getConfiguration() const
     input.runtimeUrl = getRuntimeUrl();
     config.inputs.push_back(input);
   }
-  config.outputUrl = "ws://" + m_app->getExternalIP() + ":" + std::to_string(m_websocket->getBoundPort()) + "/" + m_runtimeId;
+
+  auto server = m_app->getServer();
+  if (server)
+  {
+    config.outputUrl = "ws://" + server->externalIP() + ":" + std::to_string(m_websocket->getBoundPort()) + "/" + m_runtimeId;
+  }
+  
   return config;
 }
 
@@ -381,12 +388,21 @@ std::list<std::shared_ptr<Service>>::const_iterator Runtime::findServiceById(con
 
 std::string Runtime::replaceHostWithExternalAddress(std::string url) const
 {
-  return replaceAll(url, "0.0.0.0", m_app->getExternalIP());
+  if (!m_app->getServer())
+  {
+    return url;
+  }
+  return replaceAll(url, "0.0.0.0", m_app->getServer()->externalIP());
 }
 
 std::string Runtime::getRuntimeUrl() const
 {
-  return m_app->getExternalIP() + ":" + std::to_string(m_app->getExternalPort()) + "/runtimes/" + m_runtimeId;
+  if (!m_app->getServer())
+  {
+    std::cerr << "Runtime::getRuntimeUrl: no server available" << std::endl;
+     return "";
+  }
+  return m_app->getServer()->externalIP() + ":" + std::to_string(m_app->getServer()->port()) + "/runtimes/" + m_runtimeId;
 }
 
 void Runtime::onProcessBegin()

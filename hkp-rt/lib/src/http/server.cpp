@@ -103,6 +103,7 @@ struct Server::impl
   }
 
   crow::Crow<crow::CORSHandler> crow;
+  std::string externalIP;
   std::shared_ptr<App> app;
   std::string name;
   std::string allowedOrigins;
@@ -112,15 +113,14 @@ Server::Server(
   std::shared_ptr<App> app, 
   const std::string& name,
   const std::string& allowedOrigins
-)
-    : m_impl(std::make_unique<impl>(app, name, allowedOrigins))
+) : m_impl(std::make_unique<impl>(app, name, allowedOrigins))
 {
-  
+  app->setServer(this);
 }
 
 Server::~Server()
 {
-
+  m_impl->app->setServer(nullptr);
 }
 
 void Server::handleRequest(crow::request& req, crow::response& res)
@@ -128,8 +128,9 @@ void Server::handleRequest(crow::request& req, crow::response& res)
   m_impl->crow.handle_full(req, res);
 }
 
-void Server::start(unsigned int port)
+void Server::start(const std::string& externalIP, unsigned int port)
 {
+  m_impl->externalIP = externalIP;
   m_impl->crow.port(port).run();
 }
 
@@ -141,6 +142,11 @@ void Server::stop()
 unsigned int Server::port() const
 {
   return m_impl->crow.port();
+}
+
+const std::string& Server::externalIP() const
+{
+  return m_impl->externalIP;
 }
 
 const std::string& Server::name() const

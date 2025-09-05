@@ -7,9 +7,8 @@
 namespace hkp
 {
 
-App::App(const std::string& externalIP, unsigned int port) 
-    : m_externalAddress(std::make_pair(externalIP, port))
-    , m_registry(std::make_unique<Registry>())
+App::App() 
+    : m_registry(std::make_unique<Registry>())
     , m_work_guard(boost::asio::make_work_guard(m_io))
 {
     startEventLoop();
@@ -188,16 +187,6 @@ std::list<std::shared_ptr<Runtime>>::const_iterator App::findRuntime(const std::
     m_runtimes.cend(), 
     [runtimeId](auto rt){ return rt->getId() == runtimeId; }
   );
-}
-
-const std::string& App::getExternalIP() const 
-{
-  return m_externalAddress.first;
-}
-
-unsigned int App::getExternalPort() const 
-{
-  return m_externalAddress.second;
 }
 
 json App::rearrangeServices(const std::string& runtimeId, const std::vector<std::string>& newOrder)
