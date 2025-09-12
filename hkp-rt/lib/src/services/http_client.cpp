@@ -97,7 +97,7 @@ Data HttpClient::process(Data data)
     }
 
     auto host = std::string(u->encoded_host());
-    auto port = u->port();
+    std::string port = u->port();
     if (port.empty())
     {
       port = std::string(u->scheme_id() == urls::scheme::https ? "443" : "80" );

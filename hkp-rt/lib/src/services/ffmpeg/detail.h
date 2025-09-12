@@ -5,6 +5,11 @@
 
 #include "codeccontext.h"
 
+
+#ifdef _MSC_VER
+    using ssize_t = int;
+#endif
+
 namespace hkp {
 
 namespace detail {

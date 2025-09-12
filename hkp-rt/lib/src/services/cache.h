@@ -82,6 +82,10 @@ public:
     }
     
     auto value = next(data);
+    if (isNull(value))
+    {
+        return value;
+    }
     m_cache[*key] = value;
 
     if (!m_persistRoot.empty())

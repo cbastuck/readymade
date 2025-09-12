@@ -27,12 +27,6 @@ CPMAddPackage(
   GIT_REPOSITORY "https://github.com/cbastuck/saucer"
 )
 
-CPMFindPackage(
-  NAME           saucer-desktop
-  VERSION        2.0.0
-  GIT_REPOSITORY "https://github.com/saucer/desktop"
-)
-
 add_executable(
   ${PROJECT_NAME}
   backend/main.cpp
@@ -80,4 +74,16 @@ if (COMILE_USING_SAUCER_EMBEDDINGS)
 endif()
 
 #target_link_libraries(main fmt::fmt nlohmann_json::nlohmann_json Catch2::Catch2WithMain)
-target_link_libraries(${PROJECT_NAME} PUBLIC saucer::desktop hkp-rt-lib)
+if (APPLE)
+  set(PLATFORM_LIBS )
+else()
+  set(PLATFORM_LIBS Crypt32)
+endif()
+
+target_link_libraries(
+  ${PROJECT_NAME} 
+  PUBLIC
+  saucer::saucer 
+  hkp-rt-lib
+  ${PLATFORM_LIBS}
+)

@@ -8,13 +8,6 @@ endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set (PLATFORM_SRC src/services/core_audio.cpp)
-  if (AVCPP_FOUND)
-    set (PLATFORM_SRC ${PLATFORM_SRC} 
-          src/services/ffmpeg/ffmpeg.cpp 
-          src/services/ffmpeg/detail.cpp 
-    )
-    set (PLATFORM_DEFINES ${PLATFORM_DEFINES} "AVCPP_FOUND")
-  endif()
   if (BUILD_MAC_INTEL)
     message("Building for Intel architecture on Apple Silicon")
     set(CMAKE_OSX_ARCHITECTURES "x86_64")
@@ -24,12 +17,21 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   endif()
 endif()
 
+if (AVCPP_FOUND)
+    set (PLATFORM_SRC ${PLATFORM_SRC} 
+          src/services/ffmpeg/ffmpeg.cpp 
+          src/services/ffmpeg/detail.cpp 
+    )
+    set (PLATFORM_DEFINES ${PLATFORM_DEFINES} "AVCPP_FOUND")
+endif()
+
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
 add_library(${PROJECT_NAME} STATIC)
 target_sources(${PROJECT_NAME}
     PRIVATE
+      src/common/websocket_server_session.cpp
       src/runtime.cpp
       src/registry.cpp 
       src/service.cpp
@@ -39,8 +41,7 @@ target_sources(${PROJECT_NAME}
       src/types/message.cpp
       src/types/data.cpp 
       src/types/ringbuffer.cpp
-      src/common/websocket_server_listener.cpp
-      src/common/websocket_server_session.cpp
+      src/common/websocket_server_listener.cpp      
       src/common/websocket_client_session.cpp
       #services
       src/common/websocket_server.cpp
@@ -71,6 +72,7 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_WINDOWS" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
   add_definitions(-D_WIN32_WINNT=0x0600)
+  target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
 endif()
 
 target_include_directories(${PROJECT_NAME}
