@@ -95,7 +95,7 @@ export default class PeerComponent extends Component<Props> {
 
     peer.on("close", () => {
       const { onClose } = this.props;
-      onClose && onClose(name);
+      onClose?.(name);
     });
 
     // called when a remote peer is connecting to this peer
@@ -105,14 +105,14 @@ export default class PeerComponent extends Component<Props> {
         onData(data as DataEnvelope, connection.peer)
       );
       connection.on("close", () => {
-        onConnectionClosed && onConnectionClosed(name);
+        onConnectionClosed?.(name);
       });
-      onConnectionOpened && onConnectionOpened(name, connection);
+      onConnectionOpened?.(name, connection);
     });
 
     peer.on("disconnected", () => {
       const { onDisconnect } = this.props;
-      onDisconnect && onDisconnect(name);
+      onDisconnect?.(name);
     });
 
     peer.on("error", (err) => {

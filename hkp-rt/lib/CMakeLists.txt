@@ -8,7 +8,11 @@ endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   set (PLATFORM_SRC src/services/core_audio.cpp)
-  if (BUILD_MAC_INTEL)
+  
+  # Check if CMAKE_OSX_ARCHITECTURES is already set by parent (e.g., via arch -x86_64)
+  if(CMAKE_OSX_ARCHITECTURES)
+    message("Using parent-specified architecture: ${CMAKE_OSX_ARCHITECTURES}")
+  elseif (BUILD_MAC_INTEL)
     message("Building for Intel architecture on Apple Silicon")
     set(CMAKE_OSX_ARCHITECTURES "x86_64")
   else()
@@ -17,12 +21,16 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   endif()
 endif()
 
-if (AVCPP_FOUND)
+option(ENABLE_FFMPEG "Enable FFMPEG support" ON)
+
+if (AVCPP_FOUND AND ENABLE_FFMPEG)
     set (PLATFORM_SRC ${PLATFORM_SRC} 
           src/services/ffmpeg/ffmpeg.cpp 
           src/services/ffmpeg/detail.cpp 
     )
     set (PLATFORM_DEFINES ${PLATFORM_DEFINES} "AVCPP_FOUND")
+
+    add_subdirectory(hkp-bundles) # bundles depend on ffmpeg
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -44,6 +52,7 @@ target_sources(${PROJECT_NAME}
       src/common/websocket_server_listener.cpp      
       src/common/websocket_client_session.cpp
       #services
+      src/common/inja.h
       src/common/websocket_server.cpp
       src/services/static.cpp
       src/services/http_client.cpp
@@ -55,6 +64,10 @@ target_sources(${PROJECT_NAME}
       src/services/websocket_writer.cpp
       src/services/writer_session.cpp
       src/services/pro54/pro54_service.cpp
+      src/services/filesystem.h
+      src/services/map.h
+      src/services/filter.h
+      src/services/cache.h
       ${PLATFORM_SRC}
 )
 

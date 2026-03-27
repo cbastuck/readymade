@@ -8,6 +8,7 @@
 
 namespace hkp {
 
+class Session;
 class HttpServerImpl;
 
 class HttpServer : public Service 
@@ -26,12 +27,15 @@ public:
 protected:
   bool onBypassChanged(bool bypass) override;
 
+  void onNewSession(std::shared_ptr<Session> session, const std::string& path, const std::string& method, bool awaitResponse = true);
+
 private:  
   bool start();
   bool stop();
 
 private:
   std::shared_ptr<HttpServerImpl> m_impl;
+  std::string m_mode;
 };
 
 }

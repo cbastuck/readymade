@@ -123,7 +123,7 @@ class Stack extends ServiceBase<State> {
     );
 
     if (ssvc) {
-      ssvc.configure && (await ssvc.configure((svc as any).state || svc)); // TODO: we're missing a type for the Service Descriptor with state?
+      await ssvc.configure((svc as any).state || svc); // TODO: we're missing a type for the Service Descriptor with state?
     }
 
     return ssvc;

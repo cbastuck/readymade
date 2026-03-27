@@ -27,14 +27,14 @@ Runtime::Runtime(OwnsMe<App> app, const std::string& runtimeId, const std::strin
         {
           try 
           {
-            auto data = Message::deserialize(buffer);
-            this->process(data);
+            MessageHeader header;
+            auto data = Message::deserialize(buffer, &header);
+            this->onSessionBinaryData(data, header);
           } 
           catch (const std::exception& e) 
           {
             std::cerr << "Runtime::Runtime.onWebsocket Failed to process incoming binary buffer: " << e.what() << std::endl;
           }
-        
         }
         else
         {
@@ -55,7 +55,7 @@ Runtime::Runtime(OwnsMe<App> app, const std::string& runtimeId, const std::strin
               std::cerr << "Runtime::m_websocket::onSessionData: Invalid JSON object received" << data << std::endl;
               return;
             }
-            this->onSessionData(msg);
+            this->onSessionJSONData(msg);
           }
           catch (const std::exception& e)
           {
@@ -223,11 +223,11 @@ json Runtime::getServices() const
   return services; 
 }
 
-void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sender)
+void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sender, std::function<void(Data)> callback)
 {
   // do not send directly, but schedule the notification to be sent
   // writing to websocket is not thread-safe
-  m_app->postCallback([this, data, purpose, sender]() {
+  m_app->postCallback([this, data, purpose, sender, callback]() {
     if (m_websocket)
     {
       m_websocket->send(data, purpose, sender);
@@ -235,7 +235,7 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
   });   
 }
 
-Data Runtime::process(Data data)
+Data Runtime::process(Data data, json context)
 {
   onProcessBegin();
   if (m_services.empty())
@@ -243,10 +243,10 @@ Data Runtime::process(Data data)
     return data;
   }
   auto result = processFrom(*m_services.front(), data, false);
-  return onProcessEnd(result);
+  return onProcessEnd(result, context);
 }
 
-Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore)
+Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore, std::function<void(Data)> callback)
 {
   onProcessBegin();
   auto it = findServiceById(service.getId());
@@ -269,7 +269,7 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore)
       return onProcessEnd(getControlFlowData(data));
     }
   }
-  return onProcessEnd(data);;
+  return onProcessEnd(data, nullptr, callback);;
 }
 
 void Runtime::scheduleProcessFrom(const Service &service, Data data, bool advanceBefore)
@@ -410,33 +410,125 @@ void Runtime::onProcessBegin()
   m_processContext.increment();
 }
 
-const Data& Runtime::onProcessEnd(const Data& data)
+const Data& Runtime::onProcessEnd(const Data& data, json context, std::function<void(Data)> callback)
 {
   if (m_processContext.decrement() == 0)
   {  
     // if we are the last initiator, we should communicate the result
     if (!m_boardName.empty())
     {
-        sendData(data, MessagePurpose::RESULT, "RUNTIME"); // TODO: sender ok? 
+        std::string requestId = "RUNTIME";
+        auto contextId = context["requestId"];
+        auto purpose = MessagePurpose::RESULT;
+        if (callback)
+        {
+          requestId = generateUUID();
+        }
+        else if (contextId.is_string())
+        {
+          requestId = contextId.get<std::string>();
+        }
+        if (callback)
+        {
+          purpose = MessagePurpose::RESULT_AWAITING_RESPONSE;
+          std::cout << "Await pending resolve for request: " << requestId << std::endl;
+          if (!storePendingCallback(requestId, callback))
+          {
+            std::cerr << "Runtime::onProcessEnd: No empty slot available in m_pendingResolve" << std::endl;
+          }
+        }
+        else if (contextId.is_string())
+        {
+          purpose = MessagePurpose::RESULT_WITH_REQUEST_ID;
+        }
+        sendData(data, purpose, requestId, callback);
     }
   }
   return data;
 }
 
-void Runtime::onSessionData(json msg)
+bool Runtime::storePendingCallback(const std::string& requestId, std::function<void(Data)> callback)
 {
-  if (msg["type"] != "processRuntime")
+  for (auto& slot : m_pendingResolve)
   {
-    std::cout << "Runtime::onSessionData: unsupported message type: " << msg["type"] << std::endl;
-    return;
+    if (slot.callback == nullptr)
+    {
+      slot.requestId = requestId;
+      slot.callback = callback;
+      return true;
+    }
   }
+  return false;
+}
+
+std::function<void(Data)> Runtime::findAndRemovePendingCallback(const std::string& requestId)
+{
+  for (auto& slot : m_pendingResolve)
+  {
+    if (slot.callback != nullptr && slot.requestId == requestId)
+    {
+      auto callback = slot.callback;
+      slot.callback = nullptr;
+      slot.requestId.clear();
+      return callback;
+    }
+  }
+  return nullptr;
+}
+
+void Runtime::onSessionBinaryData(Data data, MessageHeader header)
+{
+  if (header.messagePurpose == MessagePurpose::NOTIFICATION)
+  {
+      auto requestId = header.sender;
+      auto callback = findAndRemovePendingCallback(requestId);
+      if (callback)
+      {
+        callback(data);
+      }
+      else
+      {
+        std::cout << "Runtime::onSessionBinaryData: no pending resolve available" << std::endl;
+      }
+  }
+  else
+  {
+    this->process(data);
+  }
+}
+
+void Runtime::onSessionJSONData(json msg)
+{
   auto data = msg["params"];
   if (data.is_null())
   {
-    std::cout << "Runtime::onSessionData: received null data: " << msg.dump() << std::endl;
+    std::cout << "Runtime::onSessionJSONData: received null data: " << msg.dump() << std::endl;
     return;
   }
-  process(data);
+  auto context = msg["context"];
+  auto type = msg["type"].get<std::string>();
+  if (type == "processRuntime")
+  {
+    process(data, context);
+  }
+  else if (type == "resolveResult")
+  {
+    std::cout << "Need to resolve the result: " << data << context << std::endl;
+    auto requestId = context["requestId"].get<std::string>();
+    auto callback = findAndRemovePendingCallback(requestId);
+    if (callback)
+    {
+      callback(data);
+    }
+    else
+    {
+      std::cout << "Runtime::onSessionJSONData: no pending resolve available" << std::endl;
+    }
+  }
+  else
+  {
+    std::cout << "Runtime::onSessionJSONData: unsupported message type: " << msg["type"] << std::endl;
+  }
 }
 
 }

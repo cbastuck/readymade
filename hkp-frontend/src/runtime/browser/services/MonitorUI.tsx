@@ -195,7 +195,7 @@ function createHexView(buffer: ArrayBuffer): string {
     byte.toString(16).padStart(2, "0")
   );
   // Prepare offset labels for each line
-  const offsetLabels = [];
+  const offsetLabels: Array<string> = [];
   for (let i = 0; i < view.length; i += 16) {
     const from = i;
     const to = Math.min(i + 15, view.length - 1);
@@ -204,7 +204,7 @@ function createHexView(buffer: ArrayBuffer): string {
     );
   }
   // First columns are hex values, 16 bytes per line
-  const hexLines = [];
+  const hexLines: Array<string> = [];
   for (let i = 0; i < hexArray.length; i += 16) {
     const line = hexArray.slice(i, i + 16).join(" ");
     hexLines.push(line);

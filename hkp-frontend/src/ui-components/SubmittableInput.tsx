@@ -113,7 +113,9 @@ const SubmittableInput = forwardRef<HTMLInputElement, SubmittableInputProps>(
     };
 
     const onFocus = (event: FocusEvent<HTMLInputElement>) => {
-      selectAllOnFocus && setTimeout(() => event.target.select(), 100);
+      if (selectAllOnFocus) {
+        setTimeout(() => event.target.select(), 100);
+      }
       setHasFocus(true);
     };
 

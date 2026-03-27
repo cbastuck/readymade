@@ -14,8 +14,6 @@ import {
 } from "hkp-frontend/src/types";
 import RealtimeRuntimeScope from "./RealtimeRuntimeScope";
 import { EngineState } from "hkp-frontend/src/BoardContext";
-import { isData } from "./Data";
-import { serializeYasMessage } from "./Message";
 
 async function createScope(
   runtime: RuntimeDescriptor,
@@ -144,27 +142,16 @@ export async function attachRuntimes(
 export async function processRuntime(
   scope_: RuntimeScope,
   params: any,
-  svc: InstanceId | null,
-  _context?: ProcessContext | null
+  _svc: InstanceId | null,
+  context?: ProcessContext | null
 ): Promise<void> {
   const scope = scope_ as RealtimeRuntimeScope;
   const runtime = scope.descriptor;
 
-  // TODO: move this functionality into scope?
-  if (scope.runtimeOutput) {
-    if (isData(params)) {
-      const blob = serializeYasMessage(params, svc?.uuid || "");
-      scope.runtimeOutput.send(blob);
-    } else {
-      scope.runtimeOutput.send(
-        JSON.stringify({
-          type: "processRuntime",
-          params,
-        })
-      );
-    }
-  } else {
-    // if we don't have a runtimeOutput, we send a REST request
+  if (
+    !scope.sendMessageViaWebsocket(params, context || null, "processRuntime")
+  ) {
+    // if sending failed, we probably don't have a runtimeOutput, we send a REST request
     // TODO what if params is not an object?
     const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
       method: "POST",

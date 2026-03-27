@@ -92,10 +92,12 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
   stopVideo = () => {
     const { stream } = this.state;
     if (stream) {
-      stream.getTracks && stream.getTracks().forEach((track) => track.stop());
-      stream.getVideoTracks &&
+      if (stream.getTracks) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (stream.getVideoTracks) {
         stream.getVideoTracks().forEach((track) => track.stop());
-
+      }
       if (this.videoElement) {
         this.videoElement.srcObject = null;
       }
@@ -142,10 +144,11 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
     const { stream } = this.state;
     this.setState({ recording: !this.state.recording }, () => {
       if (this.state.recording) {
-        stream &&
+        if (stream) {
           this.startRecording(stream).then((data: any) =>
             this.props.service.inject(new Blob(data, { type: "video/webm" }))
           );
+        }
       } else {
         this.stopRecording();
       }

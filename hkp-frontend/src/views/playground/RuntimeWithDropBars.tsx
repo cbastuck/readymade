@@ -11,7 +11,7 @@ export default function RuntimeWithDropBar({ children, index, onDrop }: Props) {
   const onDropRuntime = (data: any) => {
     if (data) {
       const rt = JSON.parse(data);
-      onDrop && onDrop(rt.id, index);
+      onDrop?.(rt.id, index);
     }
   };
 

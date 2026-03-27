@@ -75,6 +75,16 @@ void Service::setParentRuntime(Runtime &runtime)
   m_runtime = OwnsMe<Runtime>(&runtime);
 }
 
+void Service::nextAsync(Data data, std::function<void(Data)> callback)
+{
+  if (!m_runtime)
+  {
+    throw std::runtime_error("Service::nextAsync: runtime not set");
+  }
+
+  m_runtime->processFrom(*this, data, true, callback);
+}
+
 Data Service::next(Data data, bool immediately)
 {
   if (!m_runtime)

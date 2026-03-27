@@ -1,6 +1,14 @@
 #include "registry.h"
 
 #include <vector>
+#include <iostream>
+
+// Platform-specific dynamic library loading
+#ifdef _WIN32
+  // Nothing to include, handled in registry.cpp
+#else
+    #include <dlfcn.h>
+#endif
 
 #include "./services/websocket_writer.h"
 #include "./services/websocket_reader.h"
@@ -19,6 +27,8 @@
 #include "./services/ifft_service.h"
 #include "./services/transient_detector.h"
 #include "./services/wav_reader.h"
+#include "./services/filesystem.h"
+#include "./services/map.h"
 
 #if IS_MACOS
   #include "./services/core_input.h"
@@ -48,6 +58,8 @@ using ServiceTypes = Registry::TypeList<
   ,Filter
   ,TransientDetector
   ,WavReader
+  ,Filesystem
+  , Map
 #ifdef AVCPP_FOUND 
   ,Ffmpeg
 #endif
@@ -90,6 +102,94 @@ const std::vector<ServiceClass>& Registry::availableServices()
     }
   }
   return m_availableServices;
+}
+
+bool Registry::loadPlugin(const std::string& path)
+{
+  if (path.empty()) 
+  {
+    std::cerr << "Registry::loadPlugin: Empty path provided" << std::endl;
+    return false;
+  }
+
+#ifdef _WIN32
+  HMODULE handle = LoadLibraryA(path.c_str());
+  if (!handle) 
+  {
+    std::cerr << "Registry::loadPlugin: Failed to load library: " << path 
+              << " Error: " << GetLastError() << std::endl;
+    return false;
+  }
+  
+  // Look for the registration function
+  typedef void (*RegisterFunc)(Registry*);
+  RegisterFunc registerPlugin = (RegisterFunc)GetProcAddress(handle, "hkp_register_plugin");
+  
+  if (!registerPlugin) 
+  {
+    std::cerr << "Registry::loadPlugin: Could not find 'hkp_register_plugin' function in " 
+              << path << " Error: " << GetLastError() << std::endl;
+    FreeLibrary(handle);
+    return false;
+  }
+#else
+  void* handle = dlopen(path.c_str(), RTLD_NOW | RTLD_GLOBAL);
+  if (!handle) 
+  {
+    std::cerr << "Registry::loadPlugin: Failed to load library: " << path 
+              << " Error: " << dlerror() << std::endl;
+    return false;
+  }
+  
+  // Look for the hkp_plugin_info function
+  typedef const char* (*InfoFunc)();
+  InfoFunc pluginInfo = (InfoFunc)dlsym(handle, "hkp_plugin_info");
+  if (pluginInfo) 
+  {
+    const char* info = pluginInfo();
+    std::cout << "Plugin info: " << info << std::endl;
+  }
+
+  // parse the json if available
+  json pluginJson;
+  if (pluginInfo) 
+  {
+    const char* info = pluginInfo();
+    try 
+    {
+      pluginJson = json::parse(info);
+      std::cout << "Parsed plugin info JSON: " << pluginJson.dump(2) << std::endl;
+    } 
+    catch (const json::parse_error& e) 
+    {
+      std::cerr << "Failed to parse plugin info JSON: " << e.what() << std::endl;
+    }
+  }
+
+  if (!pluginJson.contains("type") || !(pluginJson["type"] == "bundle")) 
+  {
+    std::cerr << "Registry::loadPlugin: Plugin is not of type 'bundle': " << path << std::endl;
+    dlclose(handle);
+    return false;
+  }
+
+  // Look for the registration function
+  typedef void (*RegisterFunc)(Registry*);
+  RegisterFunc registerPlugin = (RegisterFunc)dlsym(handle, "hkp_register_plugin");
+  if (!registerPlugin) 
+  {
+    std::cerr << "Registry::loadPlugin: Could not find 'hkp_register_plugin' function in " 
+              << path << " Error: " << dlerror() << std::endl;
+    dlclose(handle);
+    return false;
+  }
+#endif
+
+  // Call the registration function with this registry instance
+  registerPlugin(this);
+  
+  std::cout << "Registry::loadPlugin: Successfully loaded and registered plugin from " << path << std::endl;
+  return true;
 }
 
 }

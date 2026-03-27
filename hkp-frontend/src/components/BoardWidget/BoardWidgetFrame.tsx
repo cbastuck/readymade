@@ -38,7 +38,7 @@ export default function BoardWidgetFrame({
   onConfig,
 }: Props) {
   const onRunBoard = () => {
-    boardApi && boardApi.runBoard();
+    boardApi?.runBoard();
   };
 
   return (

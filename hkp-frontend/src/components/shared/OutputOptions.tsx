@@ -96,7 +96,9 @@ export default class OutputOptions extends Component<Props, State> {
         }}
         value={flow}
         onChange={({ value: flow }) => {
-          isValidFlowOption(flow) && onAction({ type: "flow-changed", flow });
+          if (isValidFlowOption(flow)) {
+            onAction({ type: "flow-changed", flow });
+          }
         }}
       />
     );
@@ -180,9 +182,9 @@ export default class OutputOptions extends Component<Props, State> {
             onClick={() => {
               this.setState({ expanded: !expanded }, () => {
                 if (expanded) {
-                  onCollapse && onCollapse();
+                  onCollapse?.();
                 } else {
-                  onExpand && onExpand();
+                  onExpand?.();
                   const elem = document.getElementById(`output-options-${id}`);
                   if (elem) {
                     setTimeout(

@@ -173,7 +173,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
         <Button
           onClick={() => {
             if (blob) {
-              blob && this.readFile(service, blob, false);
+              this.readFile(service, blob, false);
             } else {
               service.configure({
                 inject: itemsSelection.map((idx) => items?.[idx]),

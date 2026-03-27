@@ -1,6 +1,5 @@
 import { BrowserRouter as Router } from "react-router-dom";
 
-import Routes from "./Routes";
 import AppProvider from "./AppContext";
 import MessageDispatcher from "./MessageDispatcher";
 import AuthProvider from "./auth/Auth0Provider";
@@ -10,7 +9,7 @@ import "./index.css";
 import "../app/globals.css";
 
 type Props = {
-  children?: React.ReactNode;
+  children: React.ReactNode;
 };
 
 export default function App({ children }: Props) {
@@ -19,7 +18,7 @@ export default function App({ children }: Props) {
       <AuthProvider>
         <AppProvider>
           <div className="h-full w-full">
-            {children || <Routes />}
+            {children}
             <Notifications />
           </div>
           <MessageDispatcher />

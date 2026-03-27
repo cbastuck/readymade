@@ -9,6 +9,16 @@ namespace http = beast::http;
 
 namespace hkp {
 
+ void HttpServerImpl::resetOnSessionOpenedCallback()
+{
+  m_onSessionOpenedCallback = nullptr;
+}
+
+void HttpServerImpl::setOnSessionOpenedCallback(std::function<void(std::shared_ptr<Session>, const std::string&, const std::string&)> callback)
+{
+  m_onSessionOpenedCallback = callback;
+}
+
 unsigned short HttpServerImpl::start()
 {
   m_thread = std::thread([this]() {
@@ -33,6 +43,7 @@ unsigned short HttpServerImpl::start()
 
 bool HttpServerImpl::stop()
 {
+  std::cout << "HttpServerImpl::stop() Stopping HTTP server on port: " << m_port << std::endl;
   for (auto & session : m_sessions)
   {
     session.reset();
@@ -64,6 +75,15 @@ void HttpServerImpl::processData(Data& data)
 
 void HttpServerImpl::onSessionOpened(std::shared_ptr<Session> session)
 {
+  // If a callback is set, just notify about the new session
+  if (m_onSessionOpenedCallback)
+  {
+    auto path = session->getRequestPath();
+    auto method = session->getRequestMethod();
+    m_onSessionOpenedCallback(session, path, method);
+    return; // no need to store the session here - handler will take care of it
+  }
+  
   for (auto& existingSession : m_sessions)
   {
     if (!existingSession)
@@ -83,6 +103,8 @@ void HttpServerImpl::onSessionClosed(std::shared_ptr<Session> session)
     *it = nullptr; // Mark the session as closed
     return;
   }
+  // TODO: investigate further, saw this for regualar curl requests that got the correct response
+  // maybe the connection is alreaedy resetted somewhere else?
   std::cerr << "HttpServerImpl::onSessionClosed() Session not found in the list of sessions." << std::endl;
 }
 

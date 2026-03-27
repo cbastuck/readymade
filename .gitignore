@@ -1,13 +1,3 @@
-node_modules
-.DS_Store
-build-lib
-.env
-cypress/downloads
 build*
-xbuild
-!.github/workflows/*
-marketing
-design
-pkgroot
-.vs
-.vscode
+hkp-rt/3rdparty/
+.DS_Store

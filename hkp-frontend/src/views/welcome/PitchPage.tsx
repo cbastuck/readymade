@@ -22,7 +22,7 @@ export default function PitchPage() {
           if (checkpoint === "@last-slide") {
             setTimeout(() => setIntroFinished(true), 500);
           } else if (checkpoint) {
-            progressRef.current && progressRef.current.triggerAnimation();
+            progressRef.current?.triggerAnimation();
           }
         }}
       />

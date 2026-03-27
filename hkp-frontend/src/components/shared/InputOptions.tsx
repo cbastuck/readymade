@@ -143,9 +143,9 @@ export default class InputOptions extends Component<Props, State> {
             onClick={() => {
               this.setState({ expanded: !expanded }, () => {
                 if (expanded) {
-                  onCollapse && onCollapse();
+                  onCollapse?.();
                 } else {
-                  onExpand && onExpand();
+                  onExpand?.();
                 }
               });
             }}

@@ -5,11 +5,17 @@ import {
   FloatRingBufferSymbol,
   getDataTypeId,
   isFloatRingBuffer,
+  isNull,
+  makeNull,
+  makeText,
+  TextData,
 } from "./Data";
 
 export enum MessagePurpose {
   NOTIFICATION = 0,
   RESULT = 1,
+  RESULT_AWAITING_RESPONSE = 2,
+  RESULT_WITH_REQUEST_ID = 3,
 }
 
 export type YASHeaderDetails = {
@@ -62,6 +68,13 @@ export function serializeYasMessage(data: Data, sender: string): Blob {
     return new Blob([header, serializeYasRingBuffer(data)]);
   }
 
+  if (isNull(data)) {
+    const payload: ArrayBuffer = new ArrayBuffer(1);
+    const view = new Uint8Array(payload);
+    view[0] = 0;
+    return new Blob([header, payload]);
+  }
+
   // If data is not a FloatRingBuffer, we throw an error
   throw new Error("serializeYasMessage: data is not a FloatRingBuffer");
 }
@@ -101,10 +114,36 @@ export function deserializeYasMessage(buffer: ArrayBuffer): Message {
       data: deserializeYasJson(view, offset),
       sender,
     };
+  } else if (dataType === DataTypeId.Null) {
+    return {
+      purpose,
+      data: makeNull(),
+      sender,
+    };
+  } else if (dataType === DataTypeId.String) {
+    //const data = new TextDecoder().decode(buffer.slice(offset));
+    //console.log("deserializeYasMessage: String data type", data);
+    return {
+      purpose,
+      data: deserializeYasText(view, offset),
+      sender,
+    };
   }
   throw new Error(
     `deserializeYasMessage: unsupported type: ${dataType} ${buffer}`
   );
+}
+
+function deserializeYasText(view: DataView, offset: number): TextData {
+  offset += parseYasHeader(view, offset);
+  const isLittleEndian = true; // optional: read from yas header
+  const textLength = Number(view.getBigUint64(offset, isLittleEndian));
+  offset += 8;
+
+  const textString = new TextDecoder().decode(
+    view.buffer.slice(offset, offset + textLength)
+  );
+  return makeText(textString);
 }
 
 function deserializeYasJson(view: DataView, offset: number) {

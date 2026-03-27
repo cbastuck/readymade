@@ -8,7 +8,9 @@
 
 namespace hkp {
 
-  class HttpClient : public Service 
+struct HttpClientImpl;
+
+class HttpClient : public Service 
 {
 public:
   static std::string serviceId() { return "http-client"; }
@@ -22,8 +24,7 @@ public:
   Data process(Data data) override;
 
 private:
-  struct Impl;
-  std::unique_ptr<Impl> m_impl;
+  std::unique_ptr<HttpClientImpl> m_impl;
 };
 
 }

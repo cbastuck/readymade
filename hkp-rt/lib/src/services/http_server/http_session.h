@@ -62,13 +62,22 @@ public:
   void on_write(bool close, boost::beast::error_code ec, std::size_t bytes_transferred);
   void do_close(bool notify = true);
 
-  void sendDataSync(Data& data);
+  void sendDataSync(Data& data, bool useEventStream = false);
   void sendDataAsync(json data);
 
-private:
-void sendJsonData(const json& j);
-void sendBinaryData(const BinaryData& binary);
+  std::string getRequestPath() const
+  {
+    return req_.target();
+  }
 
+  std::string getRequestMethod() const
+  {
+    return req_.method_string();
+  }
+
+private:
+  void sendJsonData(const json& j, bool useEventStream = false);
+  void sendBinaryData(const BinaryData& binary);
 
 private:
   boost::beast::tcp_stream stream_;
@@ -79,7 +88,7 @@ private:
   Listener& listener_;
   unsigned int m_sessionId;
 
-  bool m_bHeadersSent = false;
+  bool m_eventSourceHeadersSent = false;
 };
 
 } // namespace hkp

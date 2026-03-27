@@ -17,6 +17,7 @@ public:
   Data startProcess(const Data& data = Undefined());
   void setParentRuntime(Runtime &runtime);
   Data next(Data data = Undefined(), bool immediately = true);
+  void nextAsync(Data data = Undefined(), std::function<void(Data)> callback = nullptr);
   bool isConnected() const;
 
   inline const std::string &getId() const { return m_instanceId; }

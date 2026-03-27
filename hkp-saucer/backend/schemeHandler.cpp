@@ -9,13 +9,14 @@
 
 using json = nlohmann::json;
 
-SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server)
+SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, Settings settings)
     : m_server(server), m_defaultHeaders(
                             {
                                 {"Access-Control-Allow-Origin", server->allowedOrigins()},
                                 {"Access-Control-Allow-Methods", "GET, POST, OPTIONS, DELETE"},
                                 {"Access-Control-Allow-Headers", "Content-Type"},
                             })
+    , m_settings(settings)
 {
   m_router.register_route(
       "GET",
@@ -61,9 +62,11 @@ saucer::scheme::response SchemeHandler::handleRequest(const saucer::scheme::requ
     return *res;
   }
   return saucer::scheme::response{
-      .data = saucer::make_stash((json{
-                                      {"url", req.url()}})
-                                     .dump()),
+      .data = saucer::make_stash((
+        json{
+          {"url", req.url()}
+        }).dump()
+      ),
       .mime = "application/json",
       .headers = m_defaultHeaders,
       .status = 404,
@@ -116,15 +119,6 @@ saucer::scheme::response SchemeHandler::handleRemoteForward(const Router::Params
 saucer::scheme::response SchemeHandler::handleListBoards(const Router::Params &p, const saucer::scheme::request &req) const
 {
   auto vec = m_settings.getSavedBoards();
-  if (vec.empty())
-  {
-    return saucer::scheme::response{
-        .data = saucer::make_stash("[]"),
-        .mime = "application/json",
-        .headers = m_defaultHeaders,
-        .status = 200,
-    };
-  }
   json boardsArr = json::array();
   for (const auto &board : vec)
   {

@@ -162,7 +162,7 @@ export type AddRuntimeResult = {
 
 export type RestoreRuntimeResult = AddRuntimeResult;
 
-const actionTypes = [
+const _actionTypes = [
   "logout",
   "newBoard",
   "clearBoard",
@@ -177,7 +177,7 @@ const actionTypes = [
   "flow-changed",
   "playBoard",
 ] as const;
-export type ActionType = (typeof actionTypes)[number];
+export type ActionType = (typeof _actionTypes)[number];
 export type Action = {
   type: ActionType;
   board?: string;
@@ -185,13 +185,13 @@ export type Action = {
   params?: any;
 };
 
-const serviceActionTypes = [
+const _serviceActionTypes = [
   "remove",
   "getConfig",
   "notification",
   "rename",
 ] as const;
-export type ServiceActionType = (typeof serviceActionTypes)[number];
+export type ServiceActionType = (typeof _serviceActionTypes)[number];
 export type ServiceAction = {
   action: ServiceActionType;
   service: ServiceInstance;

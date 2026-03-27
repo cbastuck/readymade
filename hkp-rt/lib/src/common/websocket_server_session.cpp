@@ -60,12 +60,6 @@ void WebsocketServerSession::send(const Data& data, MessagePurpose purpose, cons
   {
     return;
   }
-
-  if (isNull(data)) 
-  {
-    return; // do not send null data 
-  }
-
   if (m_isSending)
   {
     std::cout << "SocketSession::send: already sending" << std::endl;

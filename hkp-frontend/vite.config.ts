@@ -17,6 +17,9 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // In the monorepo this package was referenced by its full workspace path.
+      // Map it back to the local src directory when building standalone.
+      "hkp-frontend/src": path.resolve(__dirname, "./src"),
     },
   },
 });

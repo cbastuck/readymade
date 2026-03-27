@@ -8,6 +8,7 @@
 #include <types/data.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/deadline_timer.hpp>
 #include <boost/bind/bind.hpp>
 
 namespace hkp {

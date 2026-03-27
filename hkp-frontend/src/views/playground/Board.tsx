@@ -207,13 +207,13 @@ export default class Board extends Component<Props, State> {
 
     const runtimeOutput = outputRouting[runtime.id] || {};
     const flow = runtimeOutput?.flow || "pass";
-    if (flow === "pass" && result !== null) {
+    if (flow === "pass") {
       const nextRuntime = this.getNextRuntime(runtime);
       const nextScope =
         nextRuntime && this.props.boardContext.scopes[nextRuntime.id];
       const nextApi =
         nextScope && this.props.boardContext.runtimeApis[nextRuntime.type];
-      if (nextApi) {
+      if (nextApi && result !== null) {
         nextApi.processRuntime(nextScope, result, null, context);
       } else {
         this.processPendingBoardCallbacks(context, result);
@@ -259,7 +259,7 @@ export default class Board extends Component<Props, State> {
               const dstPeer = outputActivation.route.peer;
               peersContext?.closeConnection(srcPeer, dstPeer);
             }
-            outputActivation &&
+            if (outputActivation) {
               this.props.onChangeOutputRouting(runtime, {
                 ...outputActivation,
                 route: {
@@ -267,6 +267,7 @@ export default class Board extends Component<Props, State> {
                   peer,
                 },
               });
+            }
           }
         }}
         onAction={(action) => {

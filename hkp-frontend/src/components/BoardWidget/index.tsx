@@ -52,7 +52,9 @@ export default function BoardWidget(props: Props) {
   const onToggleBoardVisibility = () => setHideBoard((prev) => !prev);
   const boardApi: BoardWidgetAPI = {
     runBoard: (p: any) => {
-      boardContextRef.current && runBoard(boardContextRef.current?.state, p);
+      if (boardContextRef.current) {
+        runBoard(boardContextRef.current?.state, p);
+      }
     },
   };
   if (apiRef) {

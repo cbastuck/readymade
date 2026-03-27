@@ -6,7 +6,7 @@
 
 #include <boost/asio.hpp>
 
-
+#include "./registry.h"
 #include <types/types.h>
 #include <types/validation.h>
 
@@ -14,7 +14,6 @@ namespace hkp
 {
 
 class Service;
-class Registry;
 class Runtime;
 class Server;
 
@@ -52,6 +51,13 @@ public:
 
   void setServer(Server* server) { m_server = server; }
   Server* getServer() const { return m_server; }
+  
+  template<typename T>
+  void registerService() { m_registry->registerService<T>(); }
+
+  unsigned int scanForPlugins(const std::string& bundleRoot);
+  bool loadPlugin(const std::string& path);
+  
 private:
   std::list<std::shared_ptr<Runtime>>::iterator findRuntime(const std::string& runtimeId);
   std::list<std::shared_ptr<Runtime>>::const_iterator findRuntime(const std::string& runtimeId) const;

@@ -13,15 +13,24 @@ import Switch from "hkp-frontend/src/ui-components/Switch";
 
 type Props = ServiceUIProps & {
   onNotification?: (notification: any) => void;
+  onInit?: (state: any) => void;
   children?: any;
+  genericUI?: boolean;
 };
 export default function RealtimeRuntimeServiceUI(props: Props) {
-  const { service } = props;
+  const { service, onNotification } = props;
   const meta = service.state?.["__meta__"];
   const [properties, setProperties] = useState<any>(extractProperties(service));
 
   useEffect(() => setProperties(extractProperties(service)), [service]);
 
+  useEffect(() => {
+    console.debug(
+      `RealtimeRuntimeServiceUI: '${service.serviceName}' state changed`,
+      service.state
+    );
+    onNotification?.(service.state);
+  }, [properties, service.state, service.serviceName, onNotification]);
   const renderMain = (service: ServiceInstance) => {
     return (
       <div
@@ -151,19 +160,15 @@ export default function RealtimeRuntimeServiceUI(props: Props) {
     );
   };
 
-  const onInit = () => {};
-  const onNotification = (notification: any) => {
-    props.onNotification?.(notification);
-  };
   return (
     <ServiceUI
       {...props}
       service={service}
-      onInit={onInit}
-      onNotification={onNotification}
+      onInit={props.onInit}
+      onNotification={props.onNotification}
       showBypassOnlyIfExplicit={true}
     >
-      {renderMain(service)}
+      {props.genericUI === false ? props.children : renderMain(service)}
     </ServiceUI>
   );
 }

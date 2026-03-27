@@ -51,6 +51,7 @@ export default class SelectorField extends Component<Props, State> {
       label,
       minWidth = undefined, //"100%",
       options: optionsMap,
+      disabled = false,
       onChange,
     } = this.props;
 
@@ -78,6 +79,7 @@ export default class SelectorField extends Component<Props, State> {
           ))}
 
         <Select
+          disabled={disabled}
           value={value || undefined}
           onOpenChange={(isOpen) =>
             isOpen && this.props.onOpen?.(this.props.options)

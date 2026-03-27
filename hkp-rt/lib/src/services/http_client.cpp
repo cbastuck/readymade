@@ -1,4 +1,5 @@
 #include "./http_client.h"
+#include "./http_client_impl.h"
 
 #include <boost/beast/core.hpp>
 //#include <boost/json/src.hpp>
@@ -19,6 +20,8 @@
 #include <string>
 
 #include "./root_certificates.h"
+#include "../common/inja.h"
+#include "../common/string_util.h"  
 
 namespace beast = boost::beast; // from <boost/beast.hpp>
 namespace http = beast::http;   // from <boost/beast/http.hpp>
@@ -26,21 +29,11 @@ namespace net = boost::asio;    // from <boost/asio.hpp>
 namespace ssl = net::ssl;       // from <boost/asio/ssl.hpp>
 namespace urls = boost::urls; // from <boost/url.hpp>
 using tcp = net::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
 namespace hkp {
-
-auto USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15";
-
-struct HttpClient::Impl
-{
-  net::io_context ioc;
-
-  http::verb getMethodFromString(const std::string& s);
-};
 
 HttpClient::HttpClient(const std::string& instanceId)
      : Service(instanceId, serviceId())
-     , m_impl(std::make_unique<Impl>())
+     , m_impl(std::make_unique<HttpClientImpl>())
 { 
 }
 
@@ -51,6 +44,26 @@ HttpClient::~HttpClient()
 
 json HttpClient::configure(Data data)
 {
+  auto buf = getJSONFromData(data);
+  if (buf)
+  {
+    updateIfNeeded(m_impl->url, (*buf)["url"]);
+    updateIfNeeded(m_impl->userAgent, (*buf)["userAgent"]);
+    updateIfNeeded(m_impl->method, (*buf)["method"]);
+    if (buf->contains("headers"))
+    {
+      auto headersJson = (*buf)["headers"];
+      if (headersJson.is_object())
+      {
+        m_impl->headers.clear(); // Clear existing headers before adding new ones
+        for (auto& [key, value] : headersJson.items())
+        {
+          m_impl->headers[key] = value;
+        }
+      }
+    }
+    updateIfNeeded(m_impl->body, (*buf)["body"]);
+  };
   return Service::configure(data);
 }
 
@@ -61,8 +74,16 @@ std::string HttpClient::getServiceId() const
 
 json HttpClient::getState() const
 {
-  return Service::getState();
+  return Service::mergeStateWith(json{
+    { "url", m_impl->url },
+    { "userAgent", m_impl->userAgent },
+    { "method", m_impl->method },
+    { "headers", m_impl->headers },
+    { "body", m_impl->body }
+  });
 }
+
+
 
 Data HttpClient::process(Data data)
 {
@@ -73,19 +94,36 @@ Data HttpClient::process(Data data)
     return data;
   }
   auto j = *d;
+
+  if (j.is_array())
+  {
+    auto resultArray = json::array();
+    for (const auto& item : j)
+    {
+      auto partialResult = process(Data(item));
+      auto partialData = getJSONFromData(partialResult);
+      if (partialData)
+      {
+        resultArray.push_back(partialData);
+      }
+    }
+    return Data(resultArray);
+  }
+
   if (!j.is_object())
   {
     std::cerr << "HTTPClient service: JSON data is not an object" << std::endl;
     return data;
   }
 
-  if (!j.contains("url"))
+  if (!j.contains("url") && m_impl->url.empty())
   {
     std::cerr << "HTTPClient service: JSON data does not contain required fields: " << j.dump() <<  std::endl;
     return data;
   }
-  std::string url = j["url"]; 
-  std::string method = j.contains("method") ? j["method"] : "get"; 
+  std::string urlOrTemplate = j.value("url", m_impl->url);
+  std::string url = processInjaTemplate(urlOrTemplate, j);
+  std::string method = j.contains("method") ? j["method"] : "get";
    
   try
   {
@@ -103,7 +141,7 @@ Data HttpClient::process(Data data)
       port = std::string(u->scheme_id() == urls::scheme::https ? "443" : "80" );
     }
     
-    auto path = std::string(u->encoded_path()); // j["path"]; //"/music/collections/732207";
+    auto path = std::string(u->encoded_path());
     auto query = std::string(u->encoded_query());
     int version = 11;
 
@@ -129,16 +167,28 @@ Data HttpClient::process(Data data)
       beast::get_lowest_layer(stream).connect(results); // Make the connection on the IP address we get from a lookup
       stream.handshake(ssl::stream_base::client); // Perform the SSL handshake
 
-  
-      // Set up an HTTP GET request message    
       http::request<http::string_body> req{m_impl->getMethodFromString(method), path + "?" + query, version};
       req.set(http::field::host, host);
-      req.set(http::field::user_agent, USER_AGENT);
-      //req.set(http::field::content_type, "application/json");
-      //req.set(http::field::accept, "application/json");
-      // req.body() = {{"type", "test"}, {"content", "pure awesomeness"}};
-      // req.set(http::field::content_length, req.body().size());
-      //req.prepare_payload();
+      req.set(http::field::user_agent, m_impl->userAgent);
+      auto headers = j.value("headers", m_impl->headers);
+      for (const auto& header : headers) 
+      {
+        req.set(header.first, processInjaTemplate(header.second, j));
+      }
+
+      auto body = j.value("body", m_impl->body);
+      auto methodVerb = http::string_to_verb(method);
+      if (!body.empty() && (methodVerb == http::verb::post || methodVerb == http::verb::put))
+      {
+        req.body() = body;
+        req.set(http::field::content_length, std::to_string(body.size()));
+        req.prepare_payload();
+      }
+      if (methodVerb != http::verb::unknown)
+      {
+        req.method(methodVerb);
+      }
+      
       http::write(stream, req);
       http::read(stream, buffer, res);
       stream.shutdown(ec);   // Gracefully close the stream
@@ -152,7 +202,7 @@ Data HttpClient::process(Data data)
       stream.connect(results);
       http::request<http::string_body> req{m_impl->getMethodFromString(method), path + "?" + query, version};
       req.set(http::field::host, host);
-      req.set(http::field::user_agent, USER_AGENT);
+      req.set(http::field::user_agent, m_impl->userAgent);
       http::write(stream, req);
       beast::flat_buffer buffer;
       http::read(stream, buffer, res);
@@ -173,8 +223,8 @@ Data HttpClient::process(Data data)
 
     std::string contentType = res.at(boost::beast::http::field::content_type);
     auto isJson = contentType.starts_with("application/json");
-    auto isText = contentType == "text/html" ||  contentType == "text/plain";
-    if (isJson || isText) 
+    auto isText = contentType.find("text/html") != std::string::npos ||  contentType.find("text/plain") != std::string::npos;
+    if (isJson || isText)
     {
       std::string responseBody = boost::beast::buffers_to_string(res.body().data());
       return (isJson) ? Data(json::parse(responseBody)) : Data(responseBody);
@@ -189,23 +239,6 @@ Data HttpClient::process(Data data)
       std::cerr << "HTTPClient service Error: " << e.what() << std::endl;
       return Null();
   }
-}
-
-http::verb HttpClient::Impl::getMethodFromString(const std::string& s)
-{
-  if (s == "get") {
-    return http::verb::get;
-  }
-  if (s == "post") {
-    return http::verb::post;
-  }
-  if (s == "put") {
-    return http::verb::put;
-  }
-  if (s == "delete") {
-    return http::verb::delete_;
-  }
-  return http::verb::unknown;
 }
 
 }

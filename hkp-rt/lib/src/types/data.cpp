@@ -196,6 +196,17 @@ std::optional<std::string> getProperty(const json& j, const std::string& key)
   return it->get<std::string>();
 }
 
+template <>
+std::optional<json> getProperty(const json& j, const std::string& key)
+{
+  auto it = j.find(key);
+  if (it == j.end()) 
+  {
+    return std::nullopt;
+  }
+  return it->get<json>();
+}
+
 ControlFlowData makeEarlyReturn(const Data& data)
 {
   ControlFlowData cf;

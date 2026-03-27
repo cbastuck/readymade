@@ -1,11 +1,19 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import { isFloatRingBuffer } from "../../realtime/Data";
+import FFTUI from "./FFTUI";
 
 const serviceId = "hookup.to/service/fft";
 const serviceName = "FFT";
 
-type State = unknown;
+type WindowFunction = "none" | "hann" | "hamming" | "blackman" | "rectangular";
+type OutputFormat = "magnitude" | "power" | "db";
+
+type State = {
+  windowFunction: WindowFunction;
+  outputFormat: OutputFormat;
+  fftSize: number | null;
+};
 
 class FFT extends ServiceBase<State> {
   constructor(
@@ -14,25 +22,113 @@ class FFT extends ServiceBase<State> {
     descriptor: ServiceClass,
     id: string
   ) {
-    super(app, board, descriptor, id, {});
+    super(app, board, descriptor, id, {
+      windowFunction: "none",
+      outputFormat: "magnitude",
+      fftSize: null,
+    });
   }
 
   async configure(config: any) {
-    return config;
+    const { windowFunction, outputFormat, fftSize } = config;
+    if (windowFunction !== undefined) {
+      this.state.windowFunction = windowFunction;
+      this.app.notify(this, { windowFunction });
+    }
+    if (outputFormat !== undefined) {
+      this.state.outputFormat = outputFormat;
+      this.app.notify(this, { outputFormat });
+    }
+    if (fftSize !== undefined) {
+      if (fftSize === "auto") {
+        this.state.fftSize = null;
+      } else {
+        this.state.fftSize = fftSize;
+      }
+      this.app.notify(this, { fftSize });
+    }
+
+    return this.state;
   }
 
   async process(params: any) {
     if (isFloatRingBuffer(params)) {
       const array: Uint8Array = params.array;
-      const floatArray = new Float32Array(
+      let floatArray = new Float32Array(
         array.buffer,
         array.byteOffset,
         array.length / 4
       );
-      return realFFT(floatArray).magnitude;
+
+      // Resize to FFT size (zero-pad or truncate) - only if fftSize is set
+      if (
+        this.state.fftSize !== null &&
+        floatArray.length !== this.state.fftSize
+      ) {
+        const resized = new Float32Array(this.state.fftSize);
+        const copyLength = Math.min(floatArray.length, this.state.fftSize);
+        resized.set(floatArray.subarray(0, copyLength));
+        floatArray = resized;
+      }
+
+      // Apply window function - only if windowFunction is set
+      const processArray =
+        this.state.windowFunction !== null
+          ? applyWindow(floatArray, this.state.windowFunction)
+          : floatArray;
+
+      // Perform FFT
+      const fftResult = realFFT(processArray);
+
+      switch (this.state.outputFormat) {
+        case "magnitude":
+          return fftResult.magnitude;
+        case "power":
+          return fftResult.magnitude.map((m: number) => m * m);
+        case "db":
+          return fftResult.magnitude.map(
+            (m: number) => 20 * Math.log10(Math.max(m, 1e-10))
+          );
+        default:
+          return fftResult.magnitude;
+      }
     }
     return params;
   }
+}
+
+function applyWindow(
+  signal: Float32Array,
+  windowType: WindowFunction
+): Float32Array {
+  const N = signal.length;
+  const windowed = new Float32Array(N);
+
+  for (let i = 0; i < N; i++) {
+    let w = 1.0;
+
+    switch (windowType) {
+      case "hann":
+        w = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (N - 1)));
+        break;
+      case "hamming":
+        w = 0.54 - 0.46 * Math.cos((2 * Math.PI * i) / (N - 1));
+        break;
+      case "blackman":
+        w =
+          0.42 -
+          0.5 * Math.cos((2 * Math.PI * i) / (N - 1)) +
+          0.08 * Math.cos((4 * Math.PI * i) / (N - 1));
+        break;
+      case "rectangular":
+        w = 1.0;
+        break;
+    }
+
+    windowed[i] = signal[i] * w;
+  }
+
+  return windowed;
 }
 
 function realFFT(signal: any) {
@@ -134,6 +230,7 @@ const descriptor = {
     descriptor: ServiceClass,
     id: string
   ) => new FFT(app, board, descriptor, id),
+  createUI: FFTUI,
 };
 
 export default descriptor;

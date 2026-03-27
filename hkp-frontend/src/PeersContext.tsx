@@ -149,7 +149,9 @@ class PeersProvider extends Component<Props, PeersContextState> {
       const { connection, srcPeer } = await this.connectToPeer(src, dst);
 
       console.log("PeersContext: Opened connection from", src, "to", dst);
-      srcPeer.onConnectionOpened && srcPeer.onConnectionOpened(dst, connection);
+      if (srcPeer.onConnectionOpened) {
+        srcPeer.onConnectionOpened(dst, connection);
+      }
 
       connection.on("close", () => this.closeConnection(src, dst));
 

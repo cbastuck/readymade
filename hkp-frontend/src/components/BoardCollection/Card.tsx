@@ -62,7 +62,7 @@ export default function Card({ value: item, actions, onAction }: Props) {
                 <Button
                   key={action.name}
                   onClick={(ev) => {
-                    onAction && onAction(action, item);
+                    onAction?.(action, item);
                     ev.stopPropagation();
                     ev.preventDefault();
                   }}

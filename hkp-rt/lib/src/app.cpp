@@ -236,4 +236,44 @@ Data App::processRuntimeWithName(const std::string& name, const Data& params) co
   return (*pos)->process(params);
 }
 
+unsigned int App::scanForPlugins(const std::string& bundleRoot)
+{
+  // scan the bundle root for plugins
+  namespace fs = std::filesystem;
+  if (!fs::exists(bundleRoot) || !fs::is_directory(bundleRoot))
+  {
+    std::cerr << "App::scanForPlugins: Bundle root does not exist or is not a directory: " << bundleRoot << std::endl;
+    return false;
+  }
+  unsigned int count = 0;
+  for (const auto& entry : fs::directory_iterator(bundleRoot))
+  {
+    if (entry.is_regular_file())
+    {
+      auto path = entry.path().string();
+      if (path.substr(path.find_last_of(".") + 1) == "dll" ||
+          path.substr(path.find_last_of(".") + 1) == "so" ||
+          path.substr(path.find_last_of(".") + 1) == "dylib")
+      {
+        std::cout << "App::scanForPlugins: loading plugin: " << path << std::endl;
+        if (!loadPlugin(path))
+        {
+          std::cerr << "App::scanForPlugins: Failed to load plugin: " << path << std::endl;
+        }
+        else
+        {
+          std::cout << "App::scanForPlugins: Loaded plugin: " << path << std::endl;
+          count++;
+        }
+      }
+    }
+  }
+  return count;
+}
+
+bool App::loadPlugin(const std::string& path)
+{
+  return m_registry->loadPlugin(path);
+}
+
 }

@@ -6,9 +6,9 @@
 
 namespace hkp { 
 
-Data Message::deserialize(BufferType& buffer)
+Data Message::deserialize(BufferType& buffer, MessageHeader* outHeader)
 {
-  auto size = buffer.size();
+  unsigned int size = static_cast<unsigned int>(buffer.size()); // TODO: check for size limits
   const char *rawData = reinterpret_cast<const char *>(buffer.data().data());
   yas::intrusive_buffer buf(rawData, size);
 
@@ -31,12 +31,25 @@ Data Message::deserialize(BufferType& buffer)
     + 8 // length of type for storing sender string
     + sender.size();
   buffer.consume(messageHeaderSize); // consume the header
+
+  if (outHeader)
+  {
+    outHeader->messagePurpose = purposeValue;
+    outHeader->dataType = dataType;
+    outHeader->sender = sender;
+  }
+  
   if (dataType == getTypeId<FloatRingBuffer>())
   {
     auto data = std::make_shared<FloatRingBuffer>("Result.FloatRingBuffer");
     FloatRingBuffer::createFromSerialised(buffer, size, *data);
     return data;
   }
+  else if (dataType == getTypeId<Null>())
+  {
+    return Null();
+  }
+  
   std::cerr << "Message::deserialize data type is not suported" << std::endl;
   return Null();
 }
@@ -65,6 +78,9 @@ void Message::serialize(const Data& data, MessagePurpose purpose, const std::str
   }
   else if (isUndefined(data))
   {
+    payload = yas::shared_buffer("0", 1);
+  }
+  else if (isNull(data)) {
     payload = yas::shared_buffer("0", 1);
   }
   else 

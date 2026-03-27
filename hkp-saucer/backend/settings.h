@@ -44,7 +44,7 @@ public:
     
     for (const auto& entry : fs::directory_iterator(saveDir))
     {
-      if (entry.is_regular_file() && entry.path().extension() == ".hkp")
+      if (entry.is_regular_file() && entry.path().extension() == ".hkpp")
       {
         boardNames.push_back(entry.path().stem().string());
       }
@@ -56,8 +56,19 @@ public:
   std::string getBoardsSavePath(const std::string& boardName) const
   {
     namespace fs = std::filesystem;
-    fs::path savePath = m_hkpDirPath / (boardName + ".hkp");
+    fs::path savePath = m_hkpDirPath / (boardName + ".hkpp");
     return savePath.string();
+  }
+
+  std::string getBundlesPath() const
+  {
+    namespace fs = std::filesystem;
+    fs::path bundlesPath = m_hkpDirPath / "bundles";
+    if (!fs::exists(bundlesPath)) 
+    {
+      fs::create_directory(bundlesPath);
+    }
+    return bundlesPath.string();
   }
 
 private:

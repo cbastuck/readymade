@@ -18,6 +18,9 @@ class HttpServerImpl
 {
   using tcp = boost::asio::ip::tcp;
 public:
+  void resetOnSessionOpenedCallback();
+  void setOnSessionOpenedCallback(std::function<void(std::shared_ptr<Session>, const std::string& path, const std::string& method)> callback);
+
   unsigned short start();
   bool stop();
   void processData(Data& data);
@@ -38,6 +41,8 @@ private:
   std::thread m_thread;
   std::shared_ptr<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work_guard;
   boost::asio::io_context m_ioc;
+
+  std::function<void(std::shared_ptr<Session>, const std::string& path, const std::string& method)> m_onSessionOpenedCallback;
 };
 
 } // namespace hkp

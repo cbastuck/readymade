@@ -11,6 +11,12 @@ import ReactDOM from "react-dom/client";
 
 import App from "./App.tsx";
 
+import Routes from "./Routes";
+
 import "setimmediate";
 
-ReactDOM.createRoot(document.getElementById("root")!).render(<App />);
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <App>
+    <Routes />
+  </App>
+);

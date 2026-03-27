@@ -10,7 +10,12 @@ import {
 
 import api from "./RealtimeRuntimeApi";
 import { createRealtimeRuntimeApp } from "./RealtimeRuntimeApp";
-import { MessagePurpose, deserializeYasMessage } from "./Message";
+import {
+  MessagePurpose,
+  deserializeYasMessage,
+  serializeYasMessage,
+} from "./Message";
+import { isData } from "./Data";
 
 export default class RealtimeRuntimeScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;
@@ -28,8 +33,37 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
         const isBinary = typeof event.data !== "string";
         if (isBinary) {
           const message = deserializeYasMessage(await event.data.arrayBuffer());
-          if (message.purpose === MessagePurpose.RESULT) {
-            this.onResult(null, message.data, null);
+          if (
+            message.purpose === MessagePurpose.RESULT ||
+            message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE ||
+            message.purpose === MessagePurpose.RESULT_WITH_REQUEST_ID
+          ) {
+            let context: ProcessContext | null = null;
+            if (
+              message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE ||
+              message.purpose === MessagePurpose.RESULT_WITH_REQUEST_ID
+            ) {
+              console.log(
+                "RealtimeRuntimeScope.onmessage with context or awaiting!!",
+                message
+              );
+              context = {
+                onResolve:
+                  message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE
+                    ? (data: any) => {
+                        console.log("RealtimeRuntimeScope.onResolve", data);
+                        const context = { requestId: message.sender };
+                        this.sendMessageViaWebsocket(
+                          data,
+                          context,
+                          "resolveResult"
+                        );
+                      }
+                    : undefined, // only resolve the runtime that is actually awaiting the result
+                requestId: message.sender,
+              };
+            }
+            this.onResult(null, message.data, context);
           } else if (message.purpose === MessagePurpose.NOTIFICATION) {
             this.app.notify({ uuid: message.sender }, message.data);
           } else {
@@ -73,6 +107,30 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
         this.runtimeOutput?.send(protocol);
       };
     }
+  }
+
+  sendMessageViaWebsocket(
+    params: any,
+    context: ProcessContext | null,
+    type: "processRuntime" | "resolveResult"
+  ): boolean {
+    if (!this.runtimeOutput) {
+      return false;
+    }
+    if (isData(params)) {
+      // TODO: add support to resolve results with binary Data
+      const blob = serializeYasMessage(params, context?.requestId || "");
+      this.runtimeOutput.send(blob);
+    } else {
+      this.runtimeOutput.send(
+        JSON.stringify({
+          type,
+          params,
+          context,
+        })
+      );
+    }
+    return true;
   }
 
   getApi(): RuntimeApi {

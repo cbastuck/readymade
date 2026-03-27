@@ -34,10 +34,10 @@ public:
   json configureService(const std::string &instanceId, json config);
   json getServiceState(const std::string &instanceId) const;
   json getServices() const;
-  void sendData(Data data, MessagePurpose purpose, const std::string& sender);
+  void sendData(Data data, MessagePurpose purpose, const std::string& sender, std::function<void(Data)> callback = nullptr);
 
-  Data process(Data data);
-  Data processFrom(const Service &service, Data data, bool advanceBefore=true);
+  Data process(Data data, json context = nullptr);
+  Data processFrom(const Service &service, Data data, bool advanceBefore=true, std::function<void(Data)> callback = nullptr);
   void scheduleProcessFrom(const Service &service, Data data, bool advanceBefore=true);
   void processScheduled();
   bool isConnected(const Service &svc) const;
@@ -62,9 +62,13 @@ private:
   std::string getRuntimeUrl() const;
 
   void onProcessBegin();
-  const Data& onProcessEnd(const Data& result);
+  const Data& onProcessEnd(const Data& result, json context = nullptr, std::function<void(Data)> callback = nullptr);
 
-  void onSessionData(json msg);
+  void onSessionJSONData(json msg);
+  void onSessionBinaryData(Data data, MessageHeader header);
+  
+  bool storePendingCallback(const std::string& requestId, std::function<void(Data)> callback);
+  std::function<void(Data)> findAndRemovePendingCallback(const std::string& requestId);
 
 private:
   OwnsMe<App> m_app;
@@ -76,6 +80,12 @@ private:
   std::vector<RuntimeInput> m_inputs;
   ProcessContext m_processContext;
   std::array<std::function<void()>, 100> m_scheduledProcesses;
+
+  struct PendingResolve {
+    std::string requestId;
+    std::function<void(Data)> callback;
+  };
+  std::array<PendingResolve, 8> m_pendingResolve;
 };
 
 }

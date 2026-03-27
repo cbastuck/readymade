@@ -54,14 +54,12 @@ export default function Toolbar({
   ) => {
     const runtimes =
       boardContext?.addAvailableRuntime(desc, overwriteIfExists) || [];
-    onUpdateAvailableRuntimeEngines &&
-      onUpdateAvailableRuntimeEngines(runtimes);
+    onUpdateAvailableRuntimeEngines?.(runtimes);
   };
 
   const onRemoveRuntimeEngine = (desc: RuntimeClass) => {
     const runtimes = boardContext?.removeAvailableRuntime(desc) || [];
-    onUpdateAvailableRuntimeEngines &&
-      onUpdateAvailableRuntimeEngines(runtimes);
+    onUpdateAvailableRuntimeEngines?.(runtimes);
   };
 
   const onUpdateRuntimeEngine = (updated: RuntimeClass) => {

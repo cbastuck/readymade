@@ -13,12 +13,16 @@ export enum DataTypeId {
 export function getDataTypeId(data: Data): DataTypeId {
   if (isFloatRingBuffer(data)) {
     return DataTypeId.FloatRingBuffer;
+  } else if (isNull(data)) {
+    return DataTypeId.Null;
   }
   // Add other data types as needed
   throw new Error("Unsupported data type");
 }
 
 export const FloatRingBufferSymbol = Symbol("FloatRingBuffer");
+export const NullSymbol = Symbol("Null");
+export const TextSymbol = Symbol("Text");
 
 export type FloatRingBuffer = {
   type: typeof FloatRingBufferSymbol;
@@ -27,14 +31,35 @@ export type FloatRingBuffer = {
   ts: number;
 };
 
-export type Data = FloatRingBuffer;
+export type TextData = {
+  type: typeof TextSymbol;
+  text: string;
+};
+
+export function makeText(text: string): TextData {
+  return { type: TextSymbol, text };
+}
+
+export type Null = {
+  type: typeof NullSymbol;
+};
+
+export function makeNull(): Null {
+  return { type: NullSymbol };
+}
+
+export type Data = FloatRingBuffer | Null | TextData;
 
 export function isFloatRingBuffer(data: any): data is FloatRingBuffer {
   return data.type === FloatRingBufferSymbol;
 }
 
+export function isNull(data: any): data is Null {
+  return data.type === NullSymbol;
+}
+
 export function isData(data: any): data is Data {
-  return isFloatRingBuffer(data);
+  return isFloatRingBuffer(data) || isNull(data);
 }
 
 export function convertToUint8Array(floatArray: Float32Array): Uint8Array {

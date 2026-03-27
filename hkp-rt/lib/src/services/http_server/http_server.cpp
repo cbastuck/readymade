@@ -22,11 +22,40 @@ HttpServer::HttpServer(const std::string& instanceId)
   , m_impl(std::make_shared<HttpServerImpl>())
 {
   m_bypass = true; // Start in bypass mode
+  m_mode = "process_on_session"; // alternative: "process_on_data"
+  m_impl->setOnSessionOpenedCallback(
+    [this](std::shared_ptr<Session> session, const std::string& path, const std::string& method){ onNewSession(session, path, method); }
+  );
 }
 
 HttpServer::~HttpServer()
 {
-  stop();
+  m_impl->stop();
+}
+
+void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::string& path, const std::string& method, bool awaitResponse)
+{
+  if (m_mode == "process_on_session" && session) 
+  {
+    auto req = json{{"path", path}, {"method", method}};
+    auto data = Data(req);
+    if (!awaitResponse)
+    {
+      Data result = next(data, true);
+      session->sendDataSync(result);
+    }
+    else
+    {
+      std::cout << "HttpServer::onNewSession" << std::endl;
+      nextAsync(data, [session](Data result) {
+        session->sendDataSync(result); 
+      });
+    }
+  }
+  else 
+  {
+    std::cerr << "HttpServer::onNewSession: should not be called in mode" << m_mode << std::endl;
+  }
 }
 
 std::string HttpServer::getServiceId() const
@@ -36,13 +65,26 @@ std::string HttpServer::getServiceId() const
 
 json HttpServer::configure(Data data)
 {
-  auto buf = getJSONFromData(data);
-  if (buf)
+  if (auto buf = getJSONFromData(data))
   {
     unsigned short port = m_impl->port();
     if (updateIfNeeded(port, (*buf)["port"])) 
     {
       m_impl->setPort(port);
+    }
+
+    if (updateIfNeeded(m_mode, (*buf)["mode"]))
+    {
+      if (m_mode == "process_on_session")
+      {
+        m_impl->setOnSessionOpenedCallback(
+          [this](std::shared_ptr<Session> session, const std::string& path, const std::string& method) { onNewSession(session, path, method ); }
+        );
+      }
+      else
+      {
+        m_impl->resetOnSessionOpenedCallback();
+      }
     }
   }
   return Service::configure(data);
@@ -78,7 +120,11 @@ bool HttpServer::onBypassChanged(bool bypass)
 
 Data HttpServer::process(Data data)
 {
-  m_impl->processData(data);
+  if (m_mode == "process_on_data")
+  {
+    m_impl->processData(data);
+  }
+  
   return data;
 }
 

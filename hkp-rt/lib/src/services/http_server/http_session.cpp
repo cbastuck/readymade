@@ -152,7 +152,7 @@ void Session::sendDataAsync(json data)
   auto res = createHttpResponse(data);
   res_ = res; // Store the response so it lives until the async operation completes // TODO: this created issues with multiple requests around the same time
 
-  m_bHeadersSent = true;
+  m_eventSourceHeadersSent = true;
   // TODO: check that where not already sending and retry
   bool closeAfterSending = true;
   boost::beast::http::async_write(
@@ -166,15 +166,15 @@ void Session::sendDataAsync(json data)
   );
 }
 
-void Session::sendDataSync(Data& data)
+void Session::sendDataSync(Data& data, bool useEventStream)
 {
   if (auto json = getJSONFromData(data); json)
   {
-    sendJsonData(*json);
+    sendJsonData(*json, useEventStream);
   }
   else if (auto binary = getBinaryFromData(data); binary)
   {
-      sendBinaryData(*binary);
+    sendBinaryData(*binary);
   }
   else if (auto rb = getRingBufferFromData(data); rb)
   {
@@ -194,20 +194,20 @@ void Session::sendDataSync(Data& data)
   }
 }
 
-void Session::sendJsonData(const json& j)
+void Session::sendJsonData(const json& j, bool useEventStream)
 {
-  bool useEventStream = true;
-  if (useEventStream && m_bHeadersSent)
+  if (useEventStream && m_eventSourceHeadersSent)
   {
     auto update = "data: " + j.dump() + "\n\n"; // Event stream format
     boost::asio::write(stream_.socket(), boost::asio::buffer(update)); 
     return;
   }
+
   auto res = useEventStream ? createHttpEventStreamHeaders() : createHttpResponse(j);
   boost::beast::http::write(stream_, *res);
   if (useEventStream)
   {
-    m_bHeadersSent = true;
+    m_eventSourceHeadersSent = true;
   }
   else
   {
@@ -219,7 +219,7 @@ void Session::sendBinaryData(const BinaryData& binary)
 {
   try 
   {
-    if (!m_bHeadersSent)
+    if (!m_eventSourceHeadersSent)
     {
       std::string mp3Headers = "HTTP/1.1 200 OK\r\n"
         "Content-Type: audio/mpeg\r\n"
@@ -240,7 +240,7 @@ void Session::sendBinaryData(const BinaryData& binary)
         "Access-Control-Allow-Origin: *\r\n"
         "\r\n";
       boost::asio::write(stream_.socket(), boost::asio::buffer(octetStreamHeaders));
-      m_bHeadersSent = true;
+      m_eventSourceHeadersSent = true;
     }
 
     std::cout << "Session::sendDataSync: Sending binary data of size " << binary.size() << std::endl;

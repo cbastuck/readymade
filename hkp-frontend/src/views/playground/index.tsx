@@ -497,13 +497,14 @@ class Playground extends Component<Props, State> {
             return true;
           } else if (action.type === "showBoardSource") {
             this.boardProviderRef?.state.serializeBoard().then((data) => {
-              data &&
+              if (data) {
                 createBoardSrcLink(
                   JSON.stringify({
                     runtimes: data.runtimes,
                     services: data.services,
                   })
                 );
+              }
             });
             return true;
           }

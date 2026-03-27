@@ -1,10 +1,14 @@
 cmake_minimum_required(VERSION 3.21)
 project(hkp-saucer LANGUAGES CXX VERSION 1.0)
 
-include(cmake/CPM.cmake)
+# CPM is already included by the root CMakeLists.txt when built from there.
+# When building standalone, include it from the sibling project's copy.
+if(NOT COMMAND CPMAddPackage)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/../hkp-rt/3rdparty/cmake/CPM.cmake)
+endif()
 
 # Custom target to run npm build and generate backend/embedded/all.hpp
-option(COMILE_USING_SAUCER_EMBEDDINGS "Build and use embedded webapp" )
+option(COMILE_USING_SAUCER_EMBEDDINGS "Build and use embedded webapp" OFF)
 if (COMILE_USING_SAUCER_EMBEDDINGS)
   add_custom_target(run ALL
     COMMAND npm run build-hkp-saucer
@@ -15,46 +19,50 @@ if (COMILE_USING_SAUCER_EMBEDDINGS)
   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_SAUCER_EMBEDDED)
 endif()
 
-#CPMAddPackage("gh:fmtlib/fmt#7.1.3")
-#CPMAddPackage("gh:nlohmann/json@3.10.5")
-#CPMAddPackage("gh:catchorg/Catch2@3.4.0")
-
-#set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64") # optional for universal builds
-
-CPMAddPackage(
-  NAME      saucer
-  VERSION   6.0.3
-  GIT_REPOSITORY "https://github.com/cbastuck/saucer"
-)
+# Saucer is fetched by the root CMakeLists.txt when building from there.
+# Guard against re-fetching in standalone builds.
+if(NOT TARGET saucer::saucer)
+    CPMAddPackage(
+        NAME      saucer
+        VERSION   6.0.5
+        GIT_REPOSITORY "https://github.com/cbastuck/saucer"
+        OPTIONS  "saucer_prefer_remote ON"
+    )
+endif()
 
 add_executable(
   ${PROJECT_NAME}
   backend/main.cpp
+  backend/main.mm
   backend/schemeHandler.cpp
   backend/router.cpp
   ${EMBEDDED_SOURCES}
 )
 
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -g0" CACHE STRING "Release flags" FORCE)
+set(CMAKE_C_FLAGS_RELEASE   "-O3 -DNDEBUG -g0" CACHE STRING "Release flags" FORCE)
+if(CMAKE_GENERATOR STREQUAL "Xcode")
+  set(CMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Release] "NO")
+  set(CMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=Release] "dwarf")
 
-option(INTEGRATE_HKP_PYTHON "Integrate hkp-python remote" ON)
-if (INTEGRATE_HKP_PYTHON)
-  find_package(Boost 1.86 REQUIRED COMPONENTS python3) 
-  if (Boost_FOUND)
-    message(STATUS "Found Boost Python: ${Boost_INCLUDE_DIRS}")
-    target_include_directories(${PROJECT_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Boost::python3)
-    find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-    include_directories(${Python3_INCLUDE_DIRS})
-    target_link_libraries(${PROJECT_NAME} PRIVATE Python3::Python)
-    target_compile_definitions(${PROJECT_NAME} PRIVATE USE_PYTHON_INTEGRATION)
-  else()
-    message(FATAL_ERROR "Boost Python not found. Please install Boost with Python support.")
-  endif()
+  set_target_properties(${PROJECT_NAME} PROPERTIES
+    XCODE_ATTRIBUTE_DEPLOYMENT_POSTPROCESSING[variant=Release] "YES"
+    XCODE_ATTRIBUTE_STRIP_INSTALLED_PRODUCT[variant=Release] "YES"
+    XCODE_ATTRIBUTE_STRIP_STYLE[variant=Release] "all"
+    XCODE_ATTRIBUTE_DEAD_CODE_STRIPPING[variant=Release] "YES"
+    XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=Release] "dwarf"
+    XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Release] "NO"
+  )
+
+  set_property(TARGET ${PROJECT_NAME} PROPERTY INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 endif()
 
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 
-set(APP_ICON "${CMAKE_SOURCE_DIR}/hkp-saucer/hkp.icns")
+# Use CMAKE_CURRENT_SOURCE_DIR so paths are correct whether built from root or standalone
+set(APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/hkp.icns")
 set_source_files_properties(${APP_ICON} PROPERTIES
     MACOSX_PACKAGE_LOCATION "Resources"
 )
@@ -63,7 +71,10 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_ICON_FILE "hkp.icns"
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.hookitapp.hkp-saucer"
-    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/hkp-saucer/macos/Info.plist"
+    MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/macos/Info.plist"
+)
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.hookitapp.hkp-saucer"
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
@@ -73,7 +84,6 @@ if (COMILE_USING_SAUCER_EMBEDDINGS)
   target_include_directories(${PROJECT_NAME} PRIVATE "frontend/embedded")
 endif()
 
-#target_link_libraries(main fmt::fmt nlohmann_json::nlohmann_json Catch2::Catch2WithMain)
 if (APPLE)
   set(PLATFORM_LIBS )
 else()
@@ -81,9 +91,9 @@ else()
 endif()
 
 target_link_libraries(
-  ${PROJECT_NAME} 
+  ${PROJECT_NAME}
   PUBLIC
-  saucer::saucer 
+  saucer::saucer
   hkp-rt-lib
   ${PLATFORM_LIBS}
 )

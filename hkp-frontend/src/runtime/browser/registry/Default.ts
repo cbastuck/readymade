@@ -79,6 +79,7 @@ import Moog from "../services/Moog";
 import Delay from "../services/Delay";
 
 import { ServiceModule } from "../../../types";
+import AudioEditor from "../services/AudioEditor";
 
 // Modules with additional dependencies
 // import GeneticOptimizerDescriptor from "../services/GeneticOptimizer";
@@ -164,24 +165,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   Moog,
   Delay,
 
-  //DEPRECATED
-  /*
-  import SwitchDescriptor from "../services/Switch";
-  import FileSourceDescriptor from "../services/FileSource";
-  import RemoteWindowDescriptor from "../services/RemoteWindow";
-  */
-
-  // UNSURE
-  /*
-  import StateDescriptor from "../services/State";
-  */
+  AudioEditor,
 ];
 
-export const defaultBundles = [
-  "hookup.to/registry/browser/Crypto",
-  "hookup.to/registry/browser/Audio",
-  "hookup.to/registry/browser/Graphic",
-  "hookup.to/registry/browser/FileStorage",
-  "hookup.to/registry/browser/TensorFlow",
-  "hookup.to/registry/browser/Fileformat",
-];
+export const defaultBundles = [];
