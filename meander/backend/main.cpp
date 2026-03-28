@@ -9,9 +9,7 @@
 
 #include <csignal>
 
-#define _USE_SAUCER_EMBEDDED USE_SAUCER_EMBEDDED || NDEBUG
-
-#if _USE_SAUCER_EMBEDDED
+#if USE_SAUCER_EMBEDDED
 #include "../embedded/saucer/embedded/all.hpp"
 #endif
 
@@ -129,7 +127,7 @@ int real_main(int argc, char *argv[])
     });
   }
 
-#if _USE_SAUCER_EMBEDDED
+#if USE_SAUCER_EMBEDDED
   webview->embed(saucer::embedded::all());
   webview->serve("/index.html");
 #else

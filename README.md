@@ -2,7 +2,7 @@
 
 Quick instructions for building the project from the repository root.
 
-To build for dev-server mode (no embedded frontend) with the script, use `./build.sh Release OFF` on a clean `build/` directory.
+To build for dev-server mode (no embedded frontend) with the script, use `./build.sh Debug OFF` on a clean `build/` directory.
 
 ## Prerequisites
 
