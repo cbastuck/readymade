@@ -71,9 +71,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23 CXX_EXTENSIONS OFF CXX_STANDARD_REQUIRED ON)
 
-# Build the frontend and embed it using saucer_embed
-saucer_embed("frontend/dist" TARGET ${PROJECT_NAME})
-target_compile_definitions(${PROJECT_NAME} PRIVATE USE_SAUCER_EMBEDDED)
+# Build the frontend and embed it using saucer_embed when enabled
+option(MEANDER_USE_EMBEDDED_FRONTEND "Build and embed frontend assets into the app bundle" ON)
+if(MEANDER_USE_EMBEDDED_FRONTEND)
+  saucer_embed("frontend/dist" TARGET ${PROJECT_NAME})
+  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_SAUCER_EMBEDDED)
+endif()
 
 if (APPLE)
   set(PLATFORM_LIBS )
@@ -86,11 +89,10 @@ target_link_libraries(
   PUBLIC
   saucer::saucer
   saucer::loop
-  saucer::embedded
   hkp-rt-lib
   ${PLATFORM_LIBS}
 )
 
-if (COMPILE_USING_SAUCER_EMBEDDINGS)
+if(MEANDER_USE_EMBEDDED_FRONTEND)
   target_link_libraries(${PROJECT_NAME} PUBLIC saucer::embedded)
 endif()

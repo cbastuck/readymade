@@ -6,6 +6,7 @@ BUILD_DIR="${REPO_ROOT}/build"
 TOOLCHAIN="${REPO_ROOT}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
 FRONTEND_DIR="${REPO_ROOT}/meander/frontend"
 CONFIG="${1:-Release}"
+EMBEDDED_FRONTEND="${2:-ON}"
 
 echo "==> Building meander frontend"
 echo "    frontend: ${FRONTEND_DIR}"
@@ -18,6 +19,7 @@ fi
 npm --prefix "${FRONTEND_DIR}" run build
 
 echo "==> Building meander (config: ${CONFIG})"
+echo "    embedded frontend: ${EMBEDDED_FRONTEND}"
 echo "    repo: ${REPO_ROOT}"
 echo "    build: ${BUILD_DIR}"
 
@@ -27,6 +29,7 @@ if [[ ! -d "${BUILD_DIR}" ]]; then
         -S "${REPO_ROOT}" \
         -DCMAKE_BUILD_TYPE="${CONFIG}" \
         -DBUILD_HKP_SAUCER=ON \
+        -DMEANDER_USE_EMBEDDED_FRONTEND="${EMBEDDED_FRONTEND}" \
         -DENABLE_FFMPEG=OFF
 else
     echo "==> Skipping configure; build directory already exists"
