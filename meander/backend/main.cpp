@@ -23,7 +23,7 @@
 
 void handle_signal(int sig)
 {
-    std::cerr << "hkp-saucer handle_signal called: " << sig << std::endl;
+    std::cerr << "meander handle_signal called: " << sig << std::endl;
     // optionally exit or continue
 }
 
@@ -72,13 +72,13 @@ int real_main(int argc, char *argv[])
 #endif
 
   saucer::webview::register_scheme("hkp");
-  auto app  = saucer::application::create({.id = "HookitApp"});
+  auto app  = saucer::application::create({.id = "Meander"});
   auto loop = saucer::modules::loop{app.value()};
 
   auto window  = saucer::window::create(loop.application()).value();
   auto webview = saucer::smartview::create({.window = window});
 
-  window->set_title("HookitApp");
+  window->set_title("Meander");
   webview->set_dev_tools(isDebugBuild);
   window->set_size({1024, 600});
   window->set_background({255, 255, 255, 255}); // white background
@@ -120,7 +120,7 @@ int real_main(int argc, char *argv[])
     }
   );
   
-  std::cout << "Launched hkp-saucer with project file: " << projectFile << std::endl;
+  std::cout << "Launched meander with project file: " << projectFile << std::endl;
   if (!projectFile.empty())
   {
     webview->inject({

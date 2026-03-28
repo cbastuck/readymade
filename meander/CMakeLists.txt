@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(hkp-saucer LANGUAGES CXX VERSION 1.0)
+project(meander LANGUAGES CXX VERSION 1.0)
 
 # CPM is already included by the root CMakeLists.txt when built from there.
 # When building standalone, include it from the sibling project's copy.
@@ -61,11 +61,11 @@ target_sources(${PROJECT_NAME} PRIVATE ${APP_ICON})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_ICON_FILE "hkp.icns"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.hookitapp.hkp-saucer"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.meander.app"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/macos/Info.plist"
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.hookitapp.hkp-saucer"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.meander.app"
 )
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)

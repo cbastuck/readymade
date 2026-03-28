@@ -1,13 +1,13 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>HKP Saucer</string>
+    <string>Meander</string>
 
     <key>CFBundleIdentifier</key>
     <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 
     <key>CFBundleExecutable</key>
-    <string>hkp-saucer</string>
+    <string>meander</string>
 
     <key>CFBundleVersion</key>
     <string>1.0</string>
@@ -26,7 +26,7 @@
     <array>
         <dict>
             <key>UTTypeIdentifier</key>
-            <string>com.hookitapp.hkpp</string>
+            <string>com.meander.app</string>
             <key>UTTypeDescription</key>
             <string>HKP Application File</string>
             <key>UTTypeConformsTo</key>
@@ -58,7 +58,7 @@
 
             <key>LSItemContentTypes</key>
             <array>
-                <string>com.hookitapp.hkpp</string>
+                <string>com.meander.app</string>
             </array>
         </dict>
     </array>

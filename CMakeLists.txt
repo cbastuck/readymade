@@ -3,4 +3,4 @@ project(hkp LANGUAGES CXX OBJCXX VERSION 1.0)
 
 add_subdirectory(3rdparty)
 add_subdirectory(hkp-rt)
-add_subdirectory(hkp-saucer)
+add_subdirectory(meander)

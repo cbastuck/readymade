@@ -15,7 +15,7 @@ int real_main(int argc, char* argv[]);
     std::vector<std::string> args;
 
     // First argument: executable path
-    char exe[] = "hkp-saucer";
+    char exe[] = "meander";
     args.push_back(exe);
 
     // Append filenames from Apple Event
