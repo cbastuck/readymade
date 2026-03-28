@@ -4,7 +4,18 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD_DIR="${REPO_ROOT}/build"
 TOOLCHAIN="${REPO_ROOT}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
+FRONTEND_DIR="${REPO_ROOT}/hkp-saucer/frontend"
 CONFIG="${1:-Release}"
+
+echo "==> Building hkp-saucer frontend"
+echo "    frontend: ${FRONTEND_DIR}"
+
+if [[ ! -d "${FRONTEND_DIR}/node_modules" ]]; then
+    echo "==> Installing frontend dependencies"
+    npm --prefix "${FRONTEND_DIR}" ci
+fi
+
+npm --prefix "${FRONTEND_DIR}" run build
 
 echo "==> Building hkp-saucer (config: ${CONFIG})"
 echo "    repo: ${REPO_ROOT}"

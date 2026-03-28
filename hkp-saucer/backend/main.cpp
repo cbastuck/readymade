@@ -16,7 +16,7 @@
 #endif
 
 #ifdef NDEBUG
-    const bool isDebugBuild = true;
+    const bool isDebugBuild = false;
 #else
     const bool isDebugBuild = true;
 #endif  
