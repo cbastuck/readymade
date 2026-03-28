@@ -14,7 +14,6 @@
 #include "./services/websocket_reader.h"
 #include "./services/websocket_server_service.h"
 #include "./services/websocket_client_service.h"
-#include "./services/pro54/pro54_service.h"
 #include "./services/monitor.h"
 #include "./services/timer.h"
 #include "./services/http_client.h"
@@ -35,17 +34,12 @@
   #include "./services/core_output.h"
 #endif
 
-#ifdef AVCPP_FOUND
-  #include "./services/ffmpeg/ffmpeg.h"
-#endif
-
 namespace hkp {
 using ServiceTypes = Registry::TypeList<
    WebsocketWriter
   ,WebsocketReader
   ,WebsocketServerService
   ,WebsocketClientService
-  ,Pro54Service
   ,Monitor
   ,Timer
   ,HttpClient
@@ -60,9 +54,6 @@ using ServiceTypes = Registry::TypeList<
   ,WavReader
   ,Filesystem
   , Map
-#ifdef AVCPP_FOUND 
-  ,Ffmpeg
-#endif
 #if IS_MACOS
   ,CoreInput
   ,CoreOutput

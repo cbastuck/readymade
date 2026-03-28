@@ -21,7 +21,14 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* Path aliases — mirror the vite.config.ts aliases so tsc can resolve them */
+    "baseUrl": ".",
+    "paths": {
+      "hkp-frontend/src/*": ["../../hkp-frontend/src/*"],
+      "hkp-frontend/app/*": ["../../hkp-frontend/app/*"]
+    }
   },
   "include": ["src", "custom.d.ts"]
 }

@@ -104,7 +104,7 @@ Data HttpClient::process(Data data)
       auto partialData = getJSONFromData(partialResult);
       if (partialData)
       {
-        resultArray.push_back(partialData);
+        resultArray.push_back(*partialData);
       }
     }
     return Data(resultArray);

@@ -1,4 +1,5 @@
 #include <saucer/smartview.hpp>
+#include <saucer/modules/loop.hpp>
 
 // hkp-rt
 #include "app.h"
@@ -8,17 +9,14 @@
 
 #include <csignal>
 
-#if USE_PYTHON_INTEGRATION
-#include "./python/pythonIntegration.h"
-#endif
-
 #define _USE_SAUCER_EMBEDDED USE_SAUCER_EMBEDDED || NDEBUG
+
 #if _USE_SAUCER_EMBEDDED
-#include "embedded/all.hpp"
+#include "../embedded/saucer/embedded/all.hpp"
 #endif
 
 #ifdef NDEBUG
-    const bool isDebugBuild = false;
+    const bool isDebugBuild = true;
 #else
     const bool isDebugBuild = true;
 #endif  
@@ -74,17 +72,17 @@ int real_main(int argc, char *argv[])
 #endif
 
   saucer::webview::register_scheme("hkp");
-  auto app = saucer::application::init({
-      .id = "HookitApp",
-  });
+  auto app  = saucer::application::create({.id = "HookitApp"});
+  auto loop = saucer::modules::loop{app.value()};
 
-  saucer::smartview smartview{{.application = app}};
-  smartview.set_title("HookitApp");
+  auto window  = saucer::window::create(loop.application()).value();
+  auto webview = saucer::smartview::create({.window = window});
 
-  smartview.set_dev_tools(isDebugBuild);
-  smartview.set_size(1024, 600);
-  smartview.set_background({255, 255, 255, 255}); // white background
-  smartview.show();
+  window->set_title("HookitApp");
+  webview->set_dev_tools(isDebugBuild);
+  window->set_size({1024, 600});
+  window->set_background({255, 255, 255, 255}); // white background
+  window->show();
 
   auto allowedOrigins = "*"; // allow all origins for CORS
   auto usePort = 0; // start with random port
@@ -101,44 +99,44 @@ int real_main(int argc, char *argv[])
   std::cout << "Loaded " << numLoadedPlugins << " plugins from bundles path: " << settings.getBundlesPath() << std::endl;
 
   SchemeHandler handler(server, settings);
-  smartview.handle_scheme(
+  webview->handle_scheme(
     "hkp",
-    [&handler](const saucer::scheme::request &req) -> saucer::scheme::response
+    [&handler](const saucer::scheme::request &req, saucer::scheme::executor executor)
     {
+      auto [resolve, reject] = executor;
       try
       {
-        return handler.handleRequest(req);
+        resolve(handler.handleRequest(req));
       }
       catch(...)
       {
         std::cerr << "Scheme handler exception" << std::endl;
-        return saucer::scheme::response{
-          .data = saucer::make_stash("Internal error"),
-          .headers = {},  
+        resolve(saucer::scheme::response{
+          .data = saucer::stash::from_str("Internal error"),
+          .headers = {},
           .status = 500
-        };
+        });
       }
-      
     }
   );
   
   std::cout << "Launched hkp-saucer with project file: " << projectFile << std::endl;
   if (!projectFile.empty())
   {
-    smartview.inject({
+    webview->inject({
         .code = "setTimeout(() => { window.hkpJS.loadBoard('" + projectFile + "'); }, 500);",
-        .time = saucer::load_time::ready,
+        .run_at = saucer::script::time::ready,
     });
   }
 
 #if _USE_SAUCER_EMBEDDED
-  smartview.embed(saucer::embedded::all());
-  smartview.serve("index.html");
+  webview->embed(saucer::embedded::all());
+  webview->serve("/index.html");
 #else
-  smartview.set_url("http://localhost:5555");
+  webview->set_url("http://localhost:5555");
 #endif
-  
-  app->run();
+
+  loop.run();
 
   server->stop();
   t->join();

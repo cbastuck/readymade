@@ -62,9 +62,9 @@ saucer::scheme::response SchemeHandler::handleRequest(const saucer::scheme::requ
     return *res;
   }
   return saucer::scheme::response{
-      .data = saucer::make_stash((
+      .data = saucer::stash::from_str((
         json{
-          {"url", req.url()}
+          {"url", req.url().string()}
         }).dump()
       ),
       .mime = "application/json",
@@ -83,7 +83,7 @@ saucer::scheme::response SchemeHandler::handleGetRemotes(const Router::Params &p
       },
   };
   return saucer::scheme::response{
-      .data = saucer::make_stash(remotesArr.dump()),
+      .data = saucer::stash::from_str(remotesArr.dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
   };
@@ -110,7 +110,7 @@ saucer::scheme::response SchemeHandler::handleRemoteForward(const Router::Params
     resHeaders[key] = value;
   }
   return saucer::scheme::response{
-      .data = saucer::make_stash(crowRes.body),
+      .data = saucer::stash::from_str(crowRes.body),
       .headers = resHeaders,
       .status = static_cast<int>(crowRes.code),
   };
@@ -125,7 +125,7 @@ saucer::scheme::response SchemeHandler::handleListBoards(const Router::Params &p
     boardsArr.push_back(board);
   }
   return saucer::scheme::response{
-      .data = saucer::make_stash(boardsArr.dump()),
+      .data = saucer::stash::from_str(boardsArr.dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
       .status = 200,
@@ -141,7 +141,7 @@ saucer::scheme::response SchemeHandler::handleLoadBoard(const Router::Params &p,
     if (!file.is_open())
     {
       return saucer::scheme::response{
-          .data = saucer::make_stash("Board not found"),
+          .data = saucer::stash::from_str("Board not found"),
           .mime = "text/plain",
           .headers = m_defaultHeaders,
           .status = 404,
@@ -152,14 +152,14 @@ saucer::scheme::response SchemeHandler::handleLoadBoard(const Router::Params &p,
     if (content.empty())
     {
       return saucer::scheme::response{
-          .data = saucer::make_stash("Board is empty"),
+          .data = saucer::stash::from_str("Board is empty"),
           .mime = "text/plain",
           .headers = m_defaultHeaders,
           .status = 404,
       };
     }
     return saucer::scheme::response{
-        .data = saucer::make_stash(content),
+        .data = saucer::stash::from_str(content),
         .mime = "application/json",
         .headers = m_defaultHeaders,
         .status = 200,
@@ -167,7 +167,7 @@ saucer::scheme::response SchemeHandler::handleLoadBoard(const Router::Params &p,
   }
 
   return saucer::scheme::response{
-      .data = saucer::make_stash("List of boards"),
+      .data = saucer::stash::from_str("List of boards"),
       .mime = "text/plain",
       .headers = m_defaultHeaders,
       .status = 200,
@@ -181,7 +181,7 @@ saucer::scheme::response SchemeHandler::handleSaveBoard(const Router::Params &p,
   if (content.size() == 0)
   {
     return saucer::scheme::response{
-        .data = saucer::make_stash("No content provided"),
+        .data = saucer::stash::from_str("No content provided"),
         .mime = "text/plain",
         .headers = m_defaultHeaders,
         .status = 400,
@@ -193,7 +193,7 @@ saucer::scheme::response SchemeHandler::handleSaveBoard(const Router::Params &p,
   if (!file.is_open())
   {
     return saucer::scheme::response{
-        .data = saucer::make_stash("Failed to open file for writing"),
+        .data = saucer::stash::from_str("Failed to open file for writing"),
         .mime = "text/plain",
         .headers = m_defaultHeaders,
         .status = 400,
@@ -202,7 +202,7 @@ saucer::scheme::response SchemeHandler::handleSaveBoard(const Router::Params &p,
   file.write(reinterpret_cast<const char *>(content.data()), content.size());
 
   return saucer::scheme::response{
-      .data = saucer::make_stash(json{
+      .data = saucer::stash::from_str(json{
           {"message", "Board saved successfully"},
           {"board", boardName},
           {"path", savePath}}.dump()),
@@ -217,7 +217,7 @@ saucer::scheme::response SchemeHandler::handleDeleteBoard(const Router::Params &
   if (boardName.empty())
   {
     return saucer::scheme::response{
-        .data = saucer::make_stash("Board name is required"),
+        .data = saucer::stash::from_str("Board name is required"),
         .mime = "text/plain",
         .headers = m_defaultHeaders,
         .status = 400,
@@ -228,7 +228,7 @@ saucer::scheme::response SchemeHandler::handleDeleteBoard(const Router::Params &
   if (!std::filesystem::remove(path))
   {
     return saucer::scheme::response{
-        .data = saucer::make_stash("Board not found"),
+        .data = saucer::stash::from_str("Board not found"),
         .mime = "text/plain",
         .headers = m_defaultHeaders,
         .status = 404,
@@ -236,7 +236,7 @@ saucer::scheme::response SchemeHandler::handleDeleteBoard(const Router::Params &
   }
 
   return saucer::scheme::response{
-      .data = saucer::make_stash(json{
+      .data = saucer::stash::from_str(json{
           {"message", "Board deleted successfully"},
           {"board", boardName},
           {"path", path}}.dump()),

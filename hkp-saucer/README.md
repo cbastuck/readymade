@@ -27,5 +27,5 @@ codesign -d --entitlements :- hkp-saucer.app
 In hookup root folder
 
 1. cmake --build build_arm64 --target clean --config Release
-2. cmake -B build_arm64 -G Xcode -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 -DJAMBA_ENABLE_XCODE_UNIVERSAL_BUILD=OFF -DCMAKE_TOOLCHAIN_FILE=./hkp-rt/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-osx -DVCPKG_MANIFEST_DIR=./hkp-rt/3rdparty -DINTEGRATE_HKP_PYTHON=OFF
+2. cmake -B build_arm64 -G Xcode -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64 -DCMAKE_TOOLCHAIN_FILE=./hkp-rt/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_TARGET_TRIPLET=arm64-osx -DVCPKG_MANIFEST_DIR=./hkp-rt/3rdparty -DINTEGRATE_HKP_PYTHON=OFF
 3. cmake --build build_arm64 --config Release

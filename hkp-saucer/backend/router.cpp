@@ -19,7 +19,7 @@ std::optional<saucer::scheme::response> Router::route(const saucer::scheme::requ
     return std::nullopt;
   }
 
-  boost::system::result< boost::url > u = boost::urls::parse_uri_reference(req.url()).value();
+  boost::system::result< boost::url > u = boost::urls::parse_uri_reference(req.url().string()).value();
   auto path = std::string(u->encoded_path());
   auto host = std::string(u->encoded_host());
   std::string full = host + "/" + path;

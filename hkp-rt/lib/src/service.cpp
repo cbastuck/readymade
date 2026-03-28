@@ -110,7 +110,7 @@ bool Service::isConnected() const
 
 json& Service::mergeBypassState(json &state) const
 {
-  state.update(json{{"bypass", m_bypass}});
+  state.update(json{{"bypass", m_bypass.has_value() ? json(*m_bypass) : json(nullptr)}});
   return state;
 }
 

@@ -4,19 +4,7 @@ project(hkp-saucer LANGUAGES CXX VERSION 1.0)
 # CPM is already included by the root CMakeLists.txt when built from there.
 # When building standalone, include it from the sibling project's copy.
 if(NOT COMMAND CPMAddPackage)
-    include(${CMAKE_CURRENT_SOURCE_DIR}/../hkp-rt/3rdparty/cmake/CPM.cmake)
-endif()
-
-# Custom target to run npm build and generate backend/embedded/all.hpp
-option(COMILE_USING_SAUCER_EMBEDDINGS "Build and use embedded webapp" OFF)
-if (COMILE_USING_SAUCER_EMBEDDINGS)
-  add_custom_target(run ALL
-    COMMAND npm run build-hkp-saucer
-    BYPRODUCTS ${CMAKE_CURRENT_SOURCE_DIR}/backend/embedded/all.hpp
-    COMMENT "Running npm build-hkp-saucer to generate backend/embedded/all.hpp"
-  )
-  SET(EMBEDDED_SOURCES, "backend/embedded/all.hpp")
-  target_compile_definitions(${PROJECT_NAME} PRIVATE USE_SAUCER_EMBEDDED)
+    include(${CMAKE_CURRENT_SOURCE_DIR}/../3rdparty/cmake/CPM.cmake)
 endif()
 
 # Saucer is fetched by the root CMakeLists.txt when building from there.
@@ -24,9 +12,13 @@ endif()
 if(NOT TARGET saucer::saucer)
     CPMAddPackage(
         NAME      saucer
-        VERSION   6.0.5
-        GIT_REPOSITORY "https://github.com/cbastuck/saucer"
-        OPTIONS  "saucer_prefer_remote ON"
+        VERSION   8.0.5
+        GIT_REPOSITORY "https://github.com/saucer/saucer"
+    )
+    CPMAddPackage(
+        NAME      saucer-loop
+        VERSION   2.1.0
+        GIT_REPOSITORY "https://github.com/saucer/loop"
     )
 endif()
 
@@ -36,7 +28,6 @@ add_executable(
   backend/main.mm
   backend/schemeHandler.cpp
   backend/router.cpp
-  ${EMBEDDED_SOURCES}
 )
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -g0" CACHE STRING "Release flags" FORCE)
@@ -80,9 +71,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23 CXX_EXTENSIONS OFF CXX_STANDARD_REQUIRED ON)
 
-if (COMILE_USING_SAUCER_EMBEDDINGS)
-  target_include_directories(${PROJECT_NAME} PRIVATE "frontend/embedded")
-endif()
+# Build the frontend and embed it using saucer_embed
+saucer_embed("frontend/dist" TARGET ${PROJECT_NAME})
+target_compile_definitions(${PROJECT_NAME} PRIVATE USE_SAUCER_EMBEDDED)
 
 if (APPLE)
   set(PLATFORM_LIBS )
@@ -94,6 +85,12 @@ target_link_libraries(
   ${PROJECT_NAME}
   PUBLIC
   saucer::saucer
+  saucer::loop
+  saucer::embedded
   hkp-rt-lib
   ${PLATFORM_LIBS}
 )
+
+if (COMPILE_USING_SAUCER_EMBEDDINGS)
+  target_link_libraries(${PROJECT_NAME} PUBLIC saucer::embedded)
+endif()

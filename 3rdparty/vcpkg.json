@@ -1,0 +1,25 @@
+{
+  "name": "hkp-3rdparty",
+  "version-string": "0.1.0",
+  "dependencies": [
+    "ffmpeg",
+    "openssl",
+    "boost-chrono",
+    "boost-container",
+    "boost-context",
+    "boost-date-time",
+    "boost-filesystem",
+    "boost-iostreams",
+    "boost-json",
+    "boost-random",
+    "boost-system",
+    "boost-thread",
+    "boost-url",
+    "boost-variant",
+    "boost-asio",
+    "boost-beast",
+    "boost-uuid",
+    "boost-format"
+  ],
+  "builtin-baseline": "b1b19307e2d2ec1eefbdb7ea069de7d4bcd31f01"
+}

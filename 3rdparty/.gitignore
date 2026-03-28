@@ -1,0 +1,5 @@
+boost
+OpenSSL*
+DELETE-ME
+vcpkg/
+.DS_Store

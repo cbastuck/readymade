@@ -43,7 +43,7 @@ public:
         m_delayInMicroseconds = (unsigned int)(f);
       }
 
-      auto countUpdate = getPropertyUpdate(json, "triggerCount", m_triggerCount);
+      auto countUpdate = getPropertyUpdate(*json, "triggerCount", m_triggerCount);
       if (countUpdate)
       {
         m_triggerCount = *countUpdate;

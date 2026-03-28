@@ -63,7 +63,6 @@ target_sources(${PROJECT_NAME}
       src/services/http_client.cpp
       src/services/websocket_writer.cpp
       src/services/writer_session.cpp
-      src/services/pro54/pro54_service.cpp
       src/services/filesystem.h
       src/services/map.h
       src/services/filter.h

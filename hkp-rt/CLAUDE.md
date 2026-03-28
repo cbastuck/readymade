@@ -9,7 +9,7 @@ The canonical build entry point is the **root `/hkp/` directory**, not `hkp-rt/`
 ```bash
 # From the repo root (/hkp/)
 mkdir build && cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=../hkp-rt/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake ..
+cmake -DCMAKE_TOOLCHAIN_FILE=../3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake ..
 cmake --build . --config Release
 
 # Skip the GUI app (hkp-saucer)
@@ -29,7 +29,7 @@ cmake --build . --config Release --target ALL_BUILD
 docker build --platform linux/amd64 -f hkp-rt/Dockerfile.linux -t hkp/rt-base .
 ```
 
-`hkp-rt/` can still be built standalone (its CMakeLists.txt falls back to `3rdparty/` for deps when not invoked from root).
+`hkp-rt/` can still be built standalone (its CMakeLists.txt falls back to `../3rdparty/` when not invoked from root).
 
 ## Dependency Layout
 
@@ -40,9 +40,9 @@ All dependency management lives in the **root `CMakeLists.txt`** and **root `vcp
 | Boost, OpenSSL, FFmpeg | vcpkg | root `vcpkg.json` |
 | Inja (template engine) | CPM | fetched at configure time |
 | Saucer (GUI framework) | CPM | fetched at configure time (custom fork) |
-| Crow HTTP | vendored header | `hkp-rt/3rdparty/crow.h` |
-| avcpp (FFmpeg C++ wrapper) | git subdir | `hkp-rt/3rdparty/avcpp/` |
-| vcpkg itself | git subdir | `hkp-rt/3rdparty/vcpkg/` |
+| Crow HTTP | vendored header | `3rdparty/crow.h` |
+| avcpp (FFmpeg C++ wrapper) | local subdir | `3rdparty/avcpp/` |
+| vcpkg itself | local subdir | `3rdparty/vcpkg/` |
 
 The root CMakeLists.txt creates a single `hkp-rt-deps` INTERFACE target that aggregates all of the above. Both `hkp-rt-lib` and `hkp-rt-bundle` link against it.
 
