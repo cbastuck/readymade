@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 
-import ServiceUI from "../../services/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { AppImpl, ServiceClass, ServiceUIProps } from "../../../types";
 
 const serviceId = "hookup.to/service/media-player";
@@ -16,7 +16,7 @@ export function MediaPlayerUI(props: ServiceUIProps) {
     };
   }, []);
 
-  const onInit = (initialState: object) => {
+  const onInit = (_initialState: object) => {
     // no-op: original just called setState with spread
   };
 
@@ -67,8 +67,9 @@ export function MediaPlayerUI(props: ServiceUIProps) {
       {...props}
       onInit={onInit}
       onNotification={onNotification}
-      segments={[{ name: "Main", render: renderMain }]}
-    />
+    >
+      {renderMain()}
+    </ServiceUI>
   );
 }
 

@@ -87,7 +87,9 @@ export default class BrowserRuntime extends Component<Props> {
       ? rawServices.flatMap((x) => {
           const svc = scope.findServiceInstance(x.uuid);
           if (svc && svc[0]) {
-            return [{ ...svc[0], serviceName: x.serviceName }]; // The service name might have chnanged in the descriptor
+            // Keep instance identity stable so service UIs stay connected to the same service object.
+            svc[0].serviceName = x.serviceName || svc[0].serviceName;
+            return [svc[0]];
           }
           return [];
         })

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Copy } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "../../types";
@@ -6,7 +6,9 @@ import { ServiceInstance, ServiceUIProps } from "../../types";
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import InputText from "../../components/shared/InputText";
 import Slider from "../../components/shared/Slider";
-import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import ServiceUI, {
+  useServiceLifecycle,
+} from "hkp-frontend/src/ui-components/service/ServiceUI";
 import Button from "hkp-frontend/src/ui-components/Button";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import Switch from "hkp-frontend/src/ui-components/Switch";
@@ -16,7 +18,16 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
   const meta = service.state?.["__meta__"];
   const [properties, setProperties] = useState<any>(extractProperties(service));
 
-  useEffect(() => setProperties(extractProperties(service)), [service]);
+  const onInit = (state: any) => {
+    setProperties(extractProperties(state));
+  };
+
+  const onNotification = (notification: any) => {
+    console.log("RemoteServiceUI - received notification", notification);
+    setProperties(extractProperties(notification));
+  };
+
+  useServiceLifecycle(service, { onInit, onNotification });
 
   const renderMain = (service: ServiceInstance) => {
     return (
@@ -48,7 +59,7 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
           if (metaInfo && metaInfo.type === "enum") {
             const options = metaInfo.data.options.reduce(
               (acc: object, cur: string) => ({ ...acc, [cur]: cur }),
-              {}
+              {},
             );
             return (
               <div key={prop} style={{ marginBottom: 3 }}>
@@ -142,17 +153,8 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
     );
   };
 
-  const onInit = () => {};
-  const onNotification = (_notification: any) => {
-    console.log("RemoteServiceUI - received notification", _notification);
-  };
   return (
-    <ServiceUI
-      {...props}
-      service={service}
-      onInit={onInit}
-      onNotification={onNotification}
-    >
+    <ServiceUI {...props} service={service}>
       {renderMain(service)}
     </ServiceUI>
   );
@@ -166,7 +168,8 @@ function extractProperties(service: any) {
   const src = service.state || {};
   return Object.keys(src)
     .filter(
-      (key) => ["uuid", "serviceId", "serviceName", "board"].indexOf(key) === -1
+      (key) =>
+        ["uuid", "serviceId", "serviceName", "board"].indexOf(key) === -1,
     )
     .reduce((all, key) => {
       const val = src[key];

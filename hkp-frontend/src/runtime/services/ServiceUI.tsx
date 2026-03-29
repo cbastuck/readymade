@@ -34,7 +34,10 @@ type ServiceUIState = {
 /*
  * THIS IS DEPRECATED
  */
-export default class ServiceUI extends Component<ServiceUIProps, ServiceUIState> {
+export default class ServiceUI extends Component<
+  ServiceUIProps,
+  ServiceUIState
+> {
   state: ServiceUIState = {
     currentSegmentName: undefined,
   };
@@ -53,41 +56,68 @@ export default class ServiceUI extends Component<ServiceUIProps, ServiceUIState>
 
   componentWillUnmount(): void {
     this.cleanupNotificationTarget();
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = undefined;
-    }
+    this.cleanupTimer();
   }
 
   cleanupNotificationTarget = (): void => {
-    const { service } = this.props;
-    if (service && service.app && this.onNotification) {
-      service.app.unregisterNotificationTarget?.(service, this.onNotification);
+    if (this.service && this.service.app && this.onNotification) {
+      this.service.app.unregisterNotificationTarget?.(
+        this.service,
+        this.onNotification,
+      );
       this.onNotification = null;
+    }
+  };
+
+  cleanupTimer = (): void => {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = undefined;
     }
   };
 
   setup = (
     _boardContext: any,
-    { runtimeId: _runtimeId, service: _backendService, onTimer, onInit, onNotification }: ServiceUIProps
+    {
+      runtimeId: _runtimeId,
+      service: _backendService,
+      onTimer,
+      onInit,
+      onNotification,
+    }: ServiceUIProps,
   ): any => {
     const { service } = this.props;
-    if (!this.service) {
-      if (service) {
-        this.service = service;
-        if (onInit) {
-          setTimeout(() => onInit(service), 0);
-        }
-        if (onTimer) {
-          this.timer = setInterval(() => onTimer(service), 1000);
-        }
-        if (onNotification) {
-          this.cleanupNotificationTarget();
-          service.app.registerNotificationTarget?.(service, onNotification);
-          this.onNotification = onNotification;
-        }
+    const hasServiceChanged = !!service && this.service !== service;
+
+    if (hasServiceChanged) {
+      this.cleanupNotificationTarget();
+      this.cleanupTimer();
+      this.service = service;
+      if (onInit) {
+        setTimeout(() => onInit(service), 0);
+      }
+      if (onTimer) {
+        this.timer = setInterval(() => onTimer(service), 1000);
       }
     }
+
+    if (
+      this.service &&
+      onNotification &&
+      this.onNotification !== onNotification
+    ) {
+      this.cleanupNotificationTarget();
+      this.service.app?.registerNotificationTarget?.(
+        this.service,
+        onNotification,
+      );
+      this.onNotification = onNotification;
+    }
+
+    if (!onNotification) {
+      this.cleanupNotificationTarget();
+    }
+
     return this.service;
   };
 
@@ -107,18 +137,26 @@ export default class ServiceUI extends Component<ServiceUIProps, ServiceUIState>
     }
   };
 
-  renderSegments = ({ service }: { service: any }, segments: Segment[], resizable: boolean, onResize: ((service: any, size: any) => void) | undefined, _style: React.CSSProperties): React.ReactNode => {
+  renderSegments = (
+    { service }: { service: any },
+    segments: Segment[],
+    resizable: boolean,
+    onResize: ((service: any, size: any) => void) | undefined,
+    _style: React.CSSProperties,
+  ): React.ReactNode => {
     if (!service) {
       return false;
     }
     const currentSegmentName = this.getCurrentSegmentName();
     const segment = segments.find(
-      (segment) => segment.name === currentSegmentName
+      (segment) => segment.name === currentSegmentName,
     );
     return (
       <Resizable
         hideHandle={!resizable}
-        onResize={onResize ? (size: any) => onResize(this.service, size) : undefined}
+        onResize={
+          onResize ? (size: any) => onResize(this.service, size) : undefined
+        }
       >
         <div
           style={{
@@ -144,7 +182,10 @@ export default class ServiceUI extends Component<ServiceUIProps, ServiceUIState>
     );
   };
 
-  renderSegmentsHeader = (segments: Segment[], currentSegmentName: string | undefined): React.ReactNode => {
+  renderSegmentsHeader = (
+    segments: Segment[],
+    currentSegmentName: string | undefined,
+  ): React.ReactNode => {
     if (segments.length < 2) {
       return null;
     }
@@ -203,7 +244,7 @@ export default class ServiceUI extends Component<ServiceUIProps, ServiceUIState>
     children: (ctx: { boardContext: any; service: any }) => React.ReactNode,
     resizable: boolean,
     onResize: ((service: any, size: any) => void) | undefined,
-    _style: React.CSSProperties
+    _style: React.CSSProperties,
   ): React.ReactNode => {
     const { setup } = this.props;
     const c = children({
@@ -214,7 +255,9 @@ export default class ServiceUI extends Component<ServiceUIProps, ServiceUIState>
     });
     return resizable ? (
       <Resizable
-        onResize={onResize ? (size: any) => onResize(this.service, size) : undefined}
+        onResize={
+          onResize ? (size: any) => onResize(this.service, size) : undefined
+        }
       >
         {c as React.ReactElement}
       </Resizable>
@@ -245,18 +288,17 @@ export default class ServiceUI extends Component<ServiceUIProps, ServiceUIState>
                 segments,
                 resizable,
                 onResize,
-                style
+                style,
               )
             : this.renderSingleSegment(
                 boardContext,
                 children!,
                 resizable,
                 onResize,
-                style
+                style,
               )
         }
       </BoardConsumer>
     );
   }
 }
-

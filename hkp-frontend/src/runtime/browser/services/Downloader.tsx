@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { WritableStream } from "web-streams-polyfill/ponyfill";
 import StreamSaver from "streamsaver";
 
-import ServiceUI from "../../services/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { s, t } from "../../../styles";
 
 const serviceId = "hookup.to/service/downloader";

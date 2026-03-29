@@ -17,8 +17,9 @@ export default function TimerUI(props: ServiceUIProps) {
   const modes = ["oneshot", "periodic"];
   const units = ["ms", "s", "m", "h", "d"];
 
-  const [mode, setMode] = useState(modes[0]);
-  const modeIdx = modes.indexOf(mode);
+  const [periodic, setPeriodic] = useState(false);
+  const mode = periodic ? "periodic" : "oneshot";
+  const modeIdx = periodic ? 1 : 0;
 
   const [interval, setInterval] = useState(1);
   const [intervalUnit, setIntervalUnit] = useState(units[1]);
@@ -48,17 +49,15 @@ export default function TimerUI(props: ServiceUIProps) {
 
   const update = (state: any) => {
     const {
+      periodic,
       periodicValue,
       periodicUnit,
       oneShotDelay,
       oneShotDelayUnit,
       running,
     } = state || {};
-    if (state.periodic === true && mode !== "periodic") {
-      setMode("periodic");
-    }
-    if (state.periodic === false && mode !== "oneshot") {
-      setMode("oneshot");
+    if (periodic !== undefined) {
+      setPeriodic(!!periodic);
     }
     if (needsUpdate(periodicValue, interval)) {
       setInterval(periodicValue);
@@ -120,7 +119,7 @@ export default function TimerUI(props: ServiceUIProps) {
   };
 
   const onChangeMode = (newMode: string) => {
-    setMode(newMode);
+    setPeriodic(newMode === "periodic");
     service.configure({ periodic: newMode === "periodic" });
   };
   return (

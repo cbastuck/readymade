@@ -95,6 +95,9 @@ export default class Runtime extends Component<Props, State> {
         break;
       }
       case "getConfig": {
+          if (!boardContext || !boardContext.boardName || !runtime || !service) {
+            return;
+          }
         return getServiceConfiguration(
           // TODO: this should go through the BoardContext
           // This does not work for services in BrowserRuntimes

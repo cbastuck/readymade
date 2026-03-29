@@ -3,7 +3,7 @@ import jstat from "jstat";
 
 import { Input } from "hkp-frontend/src/ui-components/primitives/input";
 import { Checkbox } from "hkp-frontend/src/ui-components/primitives/checkbox";
-import ServiceUI from "../../services/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import Annotations from "../../../components/shared/Annotations";
 
 const serviceId = "hookup.to/service/sampling";

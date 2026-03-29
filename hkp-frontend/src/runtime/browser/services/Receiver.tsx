@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import InputField from "../../../components/shared/InputField";
-import ServiceUI from "../../services/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { s, t } from "../../../styles";
 
 const serviceId = "hookup.to/service/receiver";

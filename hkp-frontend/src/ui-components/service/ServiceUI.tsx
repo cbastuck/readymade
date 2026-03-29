@@ -16,6 +16,11 @@ type Props = ServiceUIProps & {
   onResize?: (svc: ServiceInstance, size: Size) => void;
 };
 
+type ServiceLifecycleHandlers = {
+  onInit?: (initialState: any) => void;
+  onNotification?: (notification: any) => void;
+};
+
 export default function ServiceUI({
   service,
   children,
@@ -36,18 +41,7 @@ export default function ServiceUI({
     ? (size: Size) => onResizeProp(service, size)
     : undefined;
 
-  useEffect(() => {
-    if (service.app && onNotification) {
-      service.app.registerNotificationTarget?.(service, onNotification);
-    }
-    return () => {
-      if (service.app && onNotification) {
-        service.app.unregisterNotificationTarget?.(service, onNotification);
-      }
-    };
-  }, [service, onNotification]);
-
-  useInitOnServiceChange(service, onInit, onNotification);
+  useServiceLifecycle(service, { onInit, onNotification });
 
   useEffect(() => {
     if (onTimer) {
@@ -88,17 +82,30 @@ export function needsUpdateStrict<T>(newValue: T, oldValue: T) {
   return !!newValue && newValue !== oldValue;
 }
 
-function useInitOnServiceChange(
+export function useServiceLifecycle(
   service: ServiceInstance,
-  onInit?: (state: any) => void,
-  onNotification?: (svc: ServiceInstance, notification: any) => void,
+  handlers: ServiceLifecycleHandlers = {},
 ) {
-  const onInitRef = useRef(onInit);
-  const onNotificationRef = useRef(onNotification);
+  const onInitRef = useRef(handlers.onInit);
+  const onNotificationRef = useRef(handlers.onNotification);
   const initializedForService = useRef<ServiceInstance | null>(null);
+  onInitRef.current = handlers.onInit;
+  onNotificationRef.current = handlers.onNotification;
 
-  onInitRef.current = onInit;
-  onNotificationRef.current = onNotification;
+  useEffect(() => {
+    if (!service.app) {
+      return;
+    }
+
+    const target = (notification: any) => {
+      onNotificationRef.current?.(notification);
+    };
+
+    service.app.registerNotificationTarget?.(service, target);
+    return () => {
+      service.app.unregisterNotificationTarget?.(service, target);
+    };
+  }, [service]);
 
   const notify = async () => {
     const config = await (service.getConfiguration?.() ||
@@ -106,7 +113,7 @@ function useInitOnServiceChange(
     if (onInitRef.current) {
       onInitRef.current(config);
     } else if (onNotificationRef.current) {
-      onNotificationRef.current(service, config);
+      onNotificationRef.current(config);
     }
   };
 

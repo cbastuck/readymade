@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import ServiceUI from "../../services/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import Annotations from "../../../components/shared/Annotations";
 
 export default function GeneticOptimizerUI(props: any): JSX.Element {

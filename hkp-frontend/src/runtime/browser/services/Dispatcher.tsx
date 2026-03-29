@@ -1,4 +1,4 @@
-import ServiceUI from "../../services/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const serviceId = "hookup.to/service/dispatcher";
 const serviceName = "Dispatcher";

@@ -1,6 +1,6 @@
 import React from "react";
 
-import ServiceUI from "../../services/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 
 const serviceId = "hookup.to/service/file-source";
 const serviceName = "File Source";

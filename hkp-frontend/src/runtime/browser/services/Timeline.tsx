@@ -1,7 +1,8 @@
 import { Component } from "react";
 
 import Button from "hkp-frontend/src/ui-components/Button";
-import ServiceUI from "../../services/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import { ServiceUIProps } from "hkp-frontend/src/types";
 
 const serviceId = "hookup.to/service/timeline";
 const serviceName = "Timeline";
@@ -16,7 +17,7 @@ type TimelineUIState = {
   capture: boolean;
 };
 
-class TimelineUI extends Component<any, TimelineUIState> {
+class TimelineUI extends Component<ServiceUIProps, TimelineUIState> {
   state: TimelineUIState = {
     events: [],
     capture: false,
@@ -119,8 +120,9 @@ class TimelineUI extends Component<any, TimelineUIState> {
         {...this.props}
         onInit={this.onInit.bind(this)}
         onNotification={this.onNotification.bind(this)}
-        segments={[{ name: "Main", render: this.renderMain }]}
-      />
+      >
+        {this.renderMain(this.props.service)}
+      </ServiceUI>
     );
   }
 }

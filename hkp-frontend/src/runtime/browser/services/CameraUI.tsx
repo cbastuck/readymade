@@ -292,6 +292,7 @@ export default function CameraUI(props: ServiceUIProps) {
     <ServiceUI
       {...props}
       onInit={onInit}
+      onNotification={onNotification}
       initialSize={{ width: 480, height: undefined }}
       customMenuEntries={customMenuEntries}
     >
