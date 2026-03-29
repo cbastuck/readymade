@@ -1,5 +1,4 @@
 import { CSSProperties, useContext } from "react";
-import { Link } from "react-router-dom";
 
 import "./Footer.css";
 import { AppCtx } from "../AppContext";
@@ -7,10 +6,9 @@ import Copyright from "./Copyright";
 
 type Props = {
   flex?: boolean;
-  isCompact?: boolean;
 };
 
-export default function Footer({ flex, isCompact }: Props) {
+export default function Footer({ flex }: Props) {
   const fontStyle: CSSProperties = {
     letterSpacing: 2,
     fontSize: 12,
@@ -50,16 +48,6 @@ export default function Footer({ flex, isCompact }: Props) {
             gap: "5px",
           }}
         >
-          {!isCompact && (
-            <>
-              <Link to="/about"> about </Link>
-              {" ‧ "}
-              <Link to="/terms"> terms </Link>
-              {" ‧ "}
-              <Link to="/privacy"> privacy </Link>
-            </>
-          )}
-
           <Copyright isWide={isWide} />
         </div>
       </div>

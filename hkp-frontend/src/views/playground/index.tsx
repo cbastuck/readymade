@@ -53,7 +53,7 @@ import BoardFetchError from "./BoardFetchError";
 import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
 
 const restoredAvailableRuntimeEngines = JSON.parse(
-  localStorage.getItem("available-remote-runtimes") || "[]"
+  localStorage.getItem("available-remote-runtimes") || "[]",
 );
 
 export const runtimeApis: RuntimeApiMap = {
@@ -185,7 +185,7 @@ class Playground extends Component<Props, State> {
         boardName: board,
         initialFetched: false,
       },
-      this.tryFetch
+      this.tryFetch,
     );
   };
 
@@ -239,7 +239,7 @@ class Playground extends Component<Props, State> {
     const board = this.props.match?.params?.board || this.props.boardName;
     if (board) {
       const params = Object.fromEntries(
-        new URLSearchParams(document.location.search)
+        new URLSearchParams(document.location.search),
       );
 
       if (params.template) {
@@ -265,7 +265,7 @@ class Playground extends Component<Props, State> {
   };
 
   serializeBoard = async (
-    descriptor: BoardDescriptor
+    descriptor: BoardDescriptor,
   ): Promise<PlaygroundState | null> => {
     const {
       description = "",
@@ -284,11 +284,11 @@ class Playground extends Component<Props, State> {
           ...acc,
           [cur]: { ...outputRouting[cur] },
         }),
-        {}
+        {},
       ),
       inputRouting: Object.keys(inputRouting).reduce(
         (acc, cur) => ({ ...acc, [cur]: inputRouting[cur]?.route || null }),
-        {}
+        {},
       ),
       description,
       acceptedSyncSenders,
@@ -348,7 +348,7 @@ class Playground extends Component<Props, State> {
         storeBoardToLocalStorage(
           name,
           JSON.stringify({ ...data, name, description }),
-          description
+          description,
         );
         this.context?.pushNotification({
           type: "success",
@@ -386,11 +386,11 @@ class Playground extends Component<Props, State> {
         return {
           ...all,
           [rtId]: routings.filter(
-            (routing) => routing.serviceUuid !== instance.uuid
+            (routing) => routing.serviceUuid !== instance.uuid,
           ),
         };
       },
-      {}
+      {},
     );
     this.setState({ sidechainRouting: updatedRoutings });
   };
@@ -402,7 +402,7 @@ class Playground extends Component<Props, State> {
         JSON.stringify({
           runtimes: data.runtimes,
           services: data.services,
-        })
+        }),
       );
       try {
         navigator.clipboard.writeText(url);
@@ -436,7 +436,7 @@ class Playground extends Component<Props, State> {
   onSaveDialog = async (
     name: string,
     description: string,
-    isSuggestedName: boolean
+    isSuggestedName: boolean,
   ) => {
     const data = await this.boardProviderRef?.state.serializeBoard();
     if (this.props.onSaveBoard && data) {
@@ -445,13 +445,13 @@ class Playground extends Component<Props, State> {
       storeBoardToLocalStorage(
         name,
         JSON.stringify({ ...data, name, description }),
-        description
+        description,
       );
 
       if (!isSuggestedName) {
         setTimeout(
           () => this.props.navigate(`/playground/${name}`, { replace: true }),
-          0
+          0,
         );
       }
     }
@@ -502,7 +502,7 @@ class Playground extends Component<Props, State> {
                   JSON.stringify({
                     runtimes: data.runtimes,
                     services: data.services,
-                  })
+                  }),
                 );
               }
             });
@@ -521,12 +521,12 @@ class Playground extends Component<Props, State> {
                   showRuntimeMenu={true}
                   onUpdateAvailableRuntimeEngines={(engines) => {
                     const filteredEngines = engines.filter(
-                      (rt) => rt.type === "remote" || rt.type === "realtime"
+                      (rt) => rt.type === "remote" || rt.type === "realtime",
                     );
 
                     localStorage.setItem(
                       "available-remote-runtimes",
-                      JSON.stringify(filteredEngines)
+                      JSON.stringify(filteredEngines),
                     );
                   }}
                   isCompact={this.props.compact}
@@ -575,7 +575,7 @@ class Playground extends Component<Props, State> {
                     inputRouting={this.state.inputRouting}
                     onChangeSidechainRouting={(
                       runtime: RuntimeDescriptor,
-                      routing: Array<SidechainRoute>
+                      routing: Array<SidechainRoute>,
                     ) =>
                       this.setState({
                         sidechainRouting: {
@@ -603,9 +603,7 @@ class Playground extends Component<Props, State> {
                     onChangeBoardname={this.onChangeBoardname}
                   />
                 )}
-                <Footer
-                  isCompact={this.props.hideNavigation || this.props.compact}
-                />
+                <Footer />
                 {this.props.children || null}
               </div>
             )

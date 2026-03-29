@@ -1,4 +1,3 @@
-import build from "../buildNumber.json";
 import { Copyright as CopyrightIcon } from "lucide-react";
 
 type Props = {
@@ -21,13 +20,12 @@ export default function Copyright({ isWide }: Props) {
             <a href="https://cbastuck.de" target="_blank">
               cbastuck
             </a>{" "}
-            2025
+            2026
           </>
         ) : (
-          "2024"
+          "2026"
         )}
       </span>
-      <span className="px-1">v{build.version}</span>
     </div>
   );
 }
