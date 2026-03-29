@@ -79,6 +79,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_MACOS" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
+  find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+  target_link_libraries(${PROJECT_NAME} ${COREFOUNDATION_FRAMEWORK})
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")

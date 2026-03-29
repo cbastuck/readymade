@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.15...3.31)
 project(hkp-cpp VERSION 1.0 LANGUAGES CXX)
 
+include(CTest)
+
 # When built standalone (not via the root CMakeLists.txt), bootstrap dependencies
 # from the 3rdparty directory.  When built from root, hkp-rt-deps is already
 # defined there and 3rdparty is skipped.
@@ -10,3 +12,7 @@ endif()
 
 add_subdirectory(lib)
 add_subdirectory(exe)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()

@@ -17,7 +17,7 @@ struct OpenSSLFree {
 template <typename T>
 using OpenSSLPointer = std::unique_ptr<T, OpenSSLFree>;
 
-std::string sha256(const std::string& unhashed) {
+inline std::string sha256(const std::string& unhashed) {
     OpenSSLPointer<EVP_MD_CTX> context(EVP_MD_CTX_new());
 
     if(context.get() == NULL) {
