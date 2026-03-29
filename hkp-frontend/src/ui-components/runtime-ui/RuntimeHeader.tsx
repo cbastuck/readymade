@@ -41,6 +41,8 @@ export default function RuntimeHeader({
 }: Props) {
   const [showRunWithParams, setShowRunWithParams] = useState(false);
   const [isRuntimeConfigOpen, setIsRuntimeConfigOpen] = useState(false);
+  const [enrichedConfig, setEnrichedConfig] =
+    useState<RuntimeConfiguration | null>(null);
 
   const { name, id: runtimeId } = runtime;
   const boardContext = useContext(BoardCtx);
@@ -74,13 +76,29 @@ export default function RuntimeHeader({
     boardContext?.removeRuntime(runtime);
   };
 
-  const onConfiguration = () => {
+  const onConfiguration = async () => {
+    const scope = boardContext?.scopes[runtimeId];
+    const api = boardContext?.runtimeApis[runtime.type];
+    const rawServices = boardContext?.services[runtime.id] || [];
+    const enrichedServices = await Promise.all(
+      rawServices.map(async (svc) => {
+        const state =
+          scope && api ? await api.getServiceConfig(scope, svc) : undefined;
+        return {
+          uuid: svc.uuid,
+          serviceId: svc.serviceId,
+          serviceName: svc.serviceName,
+          state,
+        };
+      }),
+    );
+    setEnrichedConfig({ runtime, services: enrichedServices });
     setIsRuntimeConfigOpen(true);
   };
 
   const onApplyRuntimeConfig = (
     newConfig: string | object,
-    closeDialog = true
+    closeDialog = true,
   ) => {
     const config =
       typeof newConfig === "string" ? JSON.parse(newConfig) : newConfig;
@@ -142,7 +160,7 @@ export default function RuntimeHeader({
       <RuntimeConfigurationDialog
         isOpen={isRuntimeConfigOpen}
         onClose={() => setIsRuntimeConfigOpen(false)}
-        config={runtimeConfig}
+        config={enrichedConfig || runtimeConfig}
         onApply={onApplyRuntimeConfig}
       />
     </div>

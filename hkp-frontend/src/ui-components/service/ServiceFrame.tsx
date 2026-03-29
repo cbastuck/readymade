@@ -140,7 +140,9 @@ export default function ServiceFrame({
   const onApplyConfig = async (newConfig: string | object) => {
     try {
       const config = assureJSON(newConfig);
-      await service.configure?.(config); // TODO: not here
+      const actualConfig =
+        (config as any)?.state !== undefined ? (config as any).state : config;
+      await service.configure?.(actualConfig); // TODO: not here
       setConfigVisible(false);
     } catch (err) {
       console.error("ServiceFrame.onApplyConfig", err);
@@ -186,7 +188,9 @@ export default function ServiceFrame({
     return children;
   }
 
-  const dragData: ServiceInstanceDropType = filterPrivateMembers(service);
+  const dragData = filterPrivateMembers(
+    service,
+  ) as unknown as ServiceInstanceDropType;
 
   const cursor = "move";
 

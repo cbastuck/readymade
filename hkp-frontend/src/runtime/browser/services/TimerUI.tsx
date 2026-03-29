@@ -120,6 +120,7 @@ export default function TimerUI(props: ServiceUIProps) {
   };
 
   const onChangeMode = (newMode: string) => {
+    setMode(newMode);
     service.configure({ periodic: newMode === "periodic" });
   };
   return (

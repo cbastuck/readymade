@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useEffect, useRef } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 
 import Resizable from "hkp-frontend/src/components/Resizable";
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
@@ -47,7 +47,7 @@ export default function ServiceUI({
     };
   }, [service, onNotification]);
 
-  useInitOnFirstRender(service, onInit, onNotification);
+  useInitOnServiceChange(service, onInit, onNotification);
 
   useEffect(() => {
     if (onTimer) {
@@ -88,26 +88,32 @@ export function needsUpdateStrict<T>(newValue: T, oldValue: T) {
   return !!newValue && newValue !== oldValue;
 }
 
-function useInitOnFirstRender(
+function useInitOnServiceChange(
   service: ServiceInstance,
   onInit?: (state: any) => void,
   onNotification?: (svc: ServiceInstance, notification: any) => void,
 ) {
-  const notify = useCallback(async () => {
+  const onInitRef = useRef(onInit);
+  const onNotificationRef = useRef(onNotification);
+  const initializedForService = useRef<ServiceInstance | null>(null);
+
+  onInitRef.current = onInit;
+  onNotificationRef.current = onNotification;
+
+  const notify = async () => {
     const config = await (service.getConfiguration?.() ||
       Promise.resolve(extractServiceConfiguration(service)));
-    if (onInit) {
-      onInit(config);
-    } else if (onNotification) {
-      onNotification(service, config);
+    if (onInitRef.current) {
+      onInitRef.current(config);
+    } else if (onNotificationRef.current) {
+      onNotificationRef.current(service, config);
     }
-  }, [onNotification, onInit, service]);
+  };
 
-  const isFirstRender = useRef<boolean>(true);
   useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
+    if (initializedForService.current !== service) {
+      initializedForService.current = service;
       notify();
     }
-  }, [notify]);
+  }, [service]);
 }

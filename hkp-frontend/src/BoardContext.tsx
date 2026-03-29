@@ -632,19 +632,34 @@ class BoardProvider extends Component<Props, BoardContextState> {
     }
     if (runtimeId !== updated.runtime.id) {
       await api.removeRuntime(scope, runtime, this.state.user);
-    }
-    await api.restoreRuntime(
-      updated.runtime,
-      updated.services,
-      this.state.user,
-    );
-    scope.setState?.(updated.runtime.state);
-    this.setState((state) => {
-      const runtimes = state.runtimes.map((rt) =>
-        rt.id === runtimeId ? updated.runtime : rt,
+      const result = await api.restoreRuntime(
+        updated.runtime,
+        updated.services,
+        this.state.user,
       );
-      return { runtimes };
-    });
+      if (result) {
+        this.setState((state) => ({
+          runtimes: state.runtimes.map((rt) =>
+            rt.id === runtimeId ? updated.runtime : rt,
+          ),
+          services: {
+            ...state.services,
+            [updated.runtime.id]: updated.services,
+          },
+          scopes: { ...state.scopes, [updated.runtime.id]: result.scope },
+        }));
+      }
+    } else {
+      await Promise.all(
+        updated.services.map((svc) => api.configureService(scope, svc, svc)),
+      );
+      scope.setState?.(updated.runtime.state);
+      this.setState((state) => ({
+        runtimes: state.runtimes.map((rt) =>
+          rt.id === runtimeId ? updated.runtime : rt,
+        ),
+      }));
+    }
   };
 
   isRuntimeInScope = (runtime: RuntimeDescriptor) => {
@@ -743,11 +758,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
               uuid: svc.uuid,
               serviceId: svc.serviceId,
               serviceName: svc.serviceName,
-              state:
-                svc.state || scope?.descriptor.type !== "browser"
-                  ? config
-                  : undefined,
-              ...(svc.state ? {} : config), // add config plain if state is missing (old browser services)
+              state: config,
             };
           }),
         );

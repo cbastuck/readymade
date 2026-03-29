@@ -134,7 +134,8 @@ export async function configureService(
   const scope = scope_ as BrowserRuntimeScope;
   const [svc] = scope.findServiceInstance(service.uuid);
   if (svc) {
-    return svc.configure?.(config);
+    const actualConfig = config?.state !== undefined ? config.state : config;
+    return svc.configure?.(actualConfig);
   }
 }
 
