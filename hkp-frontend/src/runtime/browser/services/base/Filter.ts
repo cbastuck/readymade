@@ -1,10 +1,24 @@
-import { parseExpression, evalExpression } from "./eval";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
+import { parseExpression, evalExpression, Expression, SyntaxError } from "./eval";
 
 const serviceId = "hookup.to/service/filter";
 const serviceName = "Filter";
 
 class Filter {
-  constructor(app, board, descriptor, id) {
+  uuid: string;
+  board: string;
+  app: AppInstance;
+
+  aggregator: string;
+  _parsedConditions: Array<Expression | SyntaxError>;
+  conditions: string | string[];
+
+  constructor(
+    app: AppInstance,
+    board: string,
+    _descriptor: ServiceClass,
+    id: string
+  ) {
     this.uuid = id;
     this.board = board;
     this.app = app;
@@ -14,13 +28,13 @@ class Filter {
     this.conditions = [];
   }
 
-  parseConditions(conditions) {
+  parseConditions(conditions: string | string[]): string[] {
     const arr = Array.isArray(conditions) ? conditions : [conditions];
     this._parsedConditions = arr.map((cond) => parseExpression(cond));
     return arr;
   }
 
-  configure(config) {
+  configure(config: any): void {
     const { conditions, aggregator } = config;
 
     if (conditions !== undefined) {
@@ -35,8 +49,8 @@ class Filter {
     }
   }
 
-  async process(params) {
-    const predicate = async (x) => {
+  async process(params: any): Promise<any> {
+    const predicate = async (x: any): Promise<any> => {
       // no conditions defined - gate everything
       if (this._parsedConditions.length === 0 || !x) {
         return false;
@@ -67,11 +81,11 @@ class Filter {
 
     if (Array.isArray(params)) {
       const results = await Promise.all(params.map(predicate));
-      const filtered = params.filter((r, idx) => !!results[idx]);
+      const filtered = params.filter((_r, idx) => !!results[idx]);
       return filtered.length === 0 ? null : filtered;
     }
 
-    return predicate(params) ? params : null;
+    return (await predicate(params)) ? params : null;
   }
 }
 

@@ -1,17 +1,24 @@
 import { parseExpression, evalExpression } from "./eval";
+import MapDescriptor from "./Map";
+import ReduceDescriptor from "./Reduce";
+import MatchFilterDescriptor from "./MatchFilter";
+import FilterDescriptor from "./Filter";
+import TimerDescriptor from "./Timer";
+import BatcherDescriptor from "./Batcher";
+import MonitorDescriptor from "./Monitor";
 
 // TODO: do we need this entry point at all?
 
-function createServiceFactory(rt, descriptor) {
+function createServiceFactory(rt: any, descriptor: any): any {
   const { serviceId, serviceName, service: Service } = descriptor;
   return {
     serviceId,
     serviceName,
-    create: (board, descriptor, id) => new Service(rt, board, descriptor, id),
+    create: (board: any, descriptor: any, id: string) => new Service(rt, board, descriptor, id),
   };
 }
 
-function createRegistry(rt) {
+function createRegistry(rt: any): any[] {
   return [
     createServiceFactory(rt, MapDescriptor),
     createServiceFactory(rt, ReduceDescriptor),

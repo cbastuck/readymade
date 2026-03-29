@@ -1,10 +1,25 @@
-import { parseExpression, evalExpression } from "./eval";
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
+import { parseExpression, evalExpression, Expression, SyntaxError } from "./eval";
 
 const serviceId = "hookup.to/service/reduce";
 const serviceName = "Reduce";
 
 class Reduce {
-  constructor(app, board, descriptor, id) {
+  uuid: string;
+  board: string;
+  app: AppInstance;
+
+  initialState: any;
+  reducer: string;
+  reducedState: any;
+  _reduceExpression: Expression | SyntaxError | undefined;
+
+  constructor(
+    app: AppInstance,
+    board: string,
+    _descriptor: ServiceClass,
+    id: string
+  ) {
     this.uuid = id;
     this.board = board;
     this.app = app;
@@ -15,7 +30,7 @@ class Reduce {
     this._reduceExpression = undefined;
   }
 
-  configure(config) {
+  configure(config: any): void {
     const { initialState, reducer, resetReducer = false } = config;
 
     let reducedStateChanged = false;
@@ -41,7 +56,7 @@ class Reduce {
     }
   }
 
-  process(_params) {
+  process(_params: any): any {
     if (!this._reduceExpression) {
       return _params;
     }

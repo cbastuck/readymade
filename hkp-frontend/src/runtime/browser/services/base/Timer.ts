@@ -1,5 +1,6 @@
-import moment from "moment";
+import moment, { unitOfTime } from "moment";
 
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import { sleep } from "./helpers";
 
 const serviceId = "hookup.to/service/timer";
@@ -8,7 +9,28 @@ const serviceName = "Timer";
 const IMMEDIATE_DELAY = 1;
 
 class Timer {
-  constructor(app, board, descriptor, id) {
+  uuid: string;
+  board: string;
+  app: AppInstance;
+
+  __timer: ReturnType<typeof setInterval> | undefined;
+  counter: number;
+  periodic: boolean;
+  periodicValue: number;
+  periodicUnit: string;
+  oneShotDelay: number;
+  oneShotDelayUnit: string;
+  running: boolean;
+  conditionUntilTriggercount: number | undefined;
+  isSleeping: boolean | undefined;
+  sleeping: ReturnType<typeof setTimeout> | undefined;
+
+  constructor(
+    app: AppInstance,
+    board: string,
+    _descriptor: ServiceClass,
+    id: string
+  ) {
     this.uuid = id;
     this.board = board;
     this.app = app;
@@ -23,7 +45,7 @@ class Timer {
     this.running = false;
   }
 
-  clearTimer() {
+  clearTimer(): void {
     if (this.__timer) {
       clearInterval(this.__timer);
       this.__timer = undefined;
@@ -33,7 +55,7 @@ class Timer {
     }
   }
 
-  configure(config) {
+  configure(config: any): void {
     const {
       periodicValue,
       periodicUnit,
@@ -132,7 +154,7 @@ class Timer {
         this.clearTimer();
         const timeBetween = moment.duration(
           this.periodicValue,
-          this.periodicUnit,
+          this.periodicUnit as unitOfTime.DurationConstructor,
         );
 
         this.__timer = setInterval(process, timeBetween.asMilliseconds());
@@ -148,7 +170,7 @@ class Timer {
         } else {
           const delayBetween = moment.duration(
             this.oneShotDelay,
-            this.oneShotDelayUnit,
+            this.oneShotDelayUnit as unitOfTime.DurationConstructor,
           );
           setTimeout(process, delayBetween.asMilliseconds());
         }
@@ -159,18 +181,18 @@ class Timer {
     this.app.notify(this, { running: this.running });
   }
 
-  destroy() {
+  destroy(): void {
     this.clearTimer();
   }
 
-  nextTimerArgument(params = {}) {
+  nextTimerArgument(params: Record<string, any> = {}): Record<string, any> {
     return {
       ...params,
       triggerCount: ++this.counter,
     };
   }
 
-  async process(params) {
+  async process(params: any): Promise<any> {
     if (this.periodic || this.oneShotDelay === undefined) {
       return params;
     }

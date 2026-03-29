@@ -1,12 +1,28 @@
+import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
+
 const serviceId = "hookup.to/shared/batcher";
 const serviceName = "Batcher";
 
-function getTimestamp() {
+function getTimestamp(): number {
   return new Date().getTime();
 }
 
 class Batcher {
-  constructor(app, board, descriptor, id) {
+  uuid: string;
+  board: string;
+  app: AppInstance;
+
+  lastProcess: number | undefined;
+  batch: any[];
+  minDelayInMsec: number;
+  timer: ReturnType<typeof setTimeout> | undefined;
+
+  constructor(
+    app: AppInstance,
+    board: string,
+    _descriptor: ServiceClass,
+    id: string
+  ) {
     this.uuid = id;
     this.board = board;
     this.app = app;
@@ -16,14 +32,14 @@ class Batcher {
     this.minDelayInMsec = 1000;
   }
 
-  configure(config) {
+  configure(config: any): void {
     const { minDelayInMsec } = config;
     if (minDelayInMsec !== undefined) {
       this.minDelayInMsec = minDelayInMsec;
     }
   }
 
-  process(params) {
+  process(params: any): null {
     if (params) {
       this.batch.push(params);
     }
@@ -31,7 +47,7 @@ class Batcher {
     return null; // stop the chain
   }
 
-  scheduleProcess() {
+  scheduleProcess(): void {
     if (this.timer) {
       return; // timer already scheduled
     }
@@ -47,7 +63,7 @@ class Batcher {
     this.timer = setTimeout(this.sendBatch.bind(this), delay);
   }
 
-  sendBatch() {
+  sendBatch(): void {
     this.app.next(this, this.batch), (this.batch = []);
     this.timer = undefined;
   }
