@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-import Editor from "../../../components/shared/Editor/index";
+import Editor, { EditorHandle } from "../../../components/shared/Editor/index";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
@@ -79,7 +79,7 @@ export function HackerUIPanel({
   title = "Health",
   onChange,
 }: Props) {
-  const editorRef = useRef<Editor>(null);
+  const editorRef = useRef<EditorHandle>(null);
   return (
     <div
       className="select-none"

@@ -1,4 +1,4 @@
-import { Component, CSSProperties } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 
 import { Textarea } from "hkp-frontend/src/ui-components/primitives/textarea";
 
@@ -26,95 +26,77 @@ type Props = {
   onLabelClicked?: (ev: OnChangeEvent, value: OnChangeValue) => void;
 };
 
-type State = { value: string };
+export default function InputText({
+  value: propValue,
+  label,
+  synced = true,
+  labelStyle,
+  style,
+  resizeable = true,
+  onChange,
+  onLabelClicked = () => {},
+}: Props) {
+  const [value, setValue] = useState("");
 
-export default class InputText extends Component<Props, State> {
-  state = {
-    value: "",
-  };
-
-  componentDidMount() {
-    const { value, synced = true } = this.props;
+  useEffect(() => {
     if (synced) {
-      this.setState({
-        value,
-      });
+      setValue(propValue);
     }
-  }
+  }, [propValue, synced]);
 
-  componentDidUpdate(prevProps: Props) {
-    const { value, synced = true } = this.props;
-    if (synced) {
-      if (value !== prevProps.value) {
-        this.setState({ value });
-      }
-    }
-  }
+  const resolvedValue = synced ? value : propValue;
+  const inSync = synced ? resolvedValue === propValue : true;
+  const fontSize = 11;
 
-  render() {
-    const {
-      label,
-      labelStyle,
-      style,
-      value: syncedValue,
-      resizeable = true,
-      synced = true,
-      onChange,
-      onLabelClicked = () => {},
-    } = this.props;
-    const value = synced ? this.state.value : syncedValue;
-    const inSync = synced ? value === syncedValue : true;
-    const fontSize = 11;
-    return (
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          margin: "3px 0px",
-          ...style,
-          minWidth: "350px",
-        }}
-      >
-        <div style={{ width: "100%", textAlign: "left" }}>
-          <SyncIndicator
-            onClick={(ev) =>
-              inSync ? onLabelClicked(ev, { value }) : onChange(ev, { value })
-            }
-            inSync={synced ? inSync : true}
-            label={label}
-            style={{
-              ...labelStyle,
-              letterSpacing: 1,
-              fontSize,
-              width: "100%",
-              textAlign: "left",
-            }}
-          />
-        </div>
-        <Textarea
+  return (
+    <div
+      style={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+        margin: "3px 0px",
+        ...style,
+        minWidth: "350px",
+      }}
+    >
+      <div style={{ width: "100%", textAlign: "left" }}>
+        <SyncIndicator
+          onClick={(ev) =>
+            inSync ? onLabelClicked(ev, { value: resolvedValue }) : onChange(ev, { value: resolvedValue })
+          }
+          inSync={synced ? inSync : true}
+          label={label}
           style={{
+            ...labelStyle,
+            letterSpacing: 1,
+            fontSize,
             width: "100%",
-            fontSize: 14,
-            resize: resizeable ? "both" : "none",
-            border: "none",
-            borderBottom: "1px solid lightgray",
-          }}
-          value={value === undefined ? "" : value}
-          onChange={(ev) => this.setState({ value: ev.target.value })}
-          onKeyUp={(ev: React.KeyboardEvent) => {
-            switch (ev.key) {
-              case "Enter":
-                if (ev.ctrlKey && value !== "") {
-                  return onChange(ev, { value });
-                }
-                break;
-              default:
-                break;
-            }
+            textAlign: "left",
           }}
         />
       </div>
-    );
-  }
+      <Textarea
+        style={{
+          width: "100%",
+          fontSize: 14,
+          resize: resizeable ? "both" : "none",
+          border: "none",
+          borderBottom: "1px solid lightgray",
+        }}
+        value={resolvedValue === undefined ? "" : resolvedValue}
+        onChange={(ev) => setValue(ev.target.value)}
+        onKeyUp={(ev: React.KeyboardEvent) => {
+          switch (ev.key) {
+            case "Enter":
+              if (ev.ctrlKey && resolvedValue !== "") {
+                return onChange(ev, { value: resolvedValue });
+              }
+              break;
+            default:
+              break;
+          }
+        }}
+      />
+    </div>
+  );
 }

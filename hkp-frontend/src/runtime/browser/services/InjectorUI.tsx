@@ -2,7 +2,7 @@ import { Component } from "react";
 import { SquareCode } from "lucide-react";
 
 import { s, t } from "../../../styles";
-import Editor from "../../../components/shared/Editor/index";
+import Editor, { EditorHandle } from "../../../components/shared/Editor/index";
 import DropZone from "../../../components/shared/DropZone";
 
 import { Debouncer } from "./helpers";
@@ -62,7 +62,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
 
   debouncer: Debouncer = new Debouncer(100);
 
-  editor: Editor | null = null;
+  editor: EditorHandle | null = null;
 
   componentWillUnmount() {
     this.debouncer.clear();

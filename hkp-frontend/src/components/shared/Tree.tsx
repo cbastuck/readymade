@@ -1,4 +1,3 @@
-import { Component } from "react";
 import { Save, Folder } from "lucide-react";
 
 import { t } from "../../styles";
@@ -14,42 +13,51 @@ type Props = {
   onPath: (p: any) => void;
 };
 
-export class Tree extends Component<Props> {
-  renderFile = (file: any, selected: any, onChange: OnChange) => {
-    const { path } = this.props;
-    const absoluteFn = path.concat(file.name).join("/");
-    const isSelected = absoluteFn === selected;
-    const spacing = { padding: "1px 2px" };
-    return (
-      <div
-        key={absoluteFn}
-        style={{ cursor: "pointer" }}
-        className="flex gap-1"
-        onClick={(ev) => onChange(ev, { selected: absoluteFn })}
-      >
-        <Save />
-        <div>
-          <div
-            style={{
-              backgroundColor: isSelected ? "#4183c4" : undefined,
-              ...spacing,
-            }}
-          >
-            <span style={{ color: isSelected ? "white" : "" }}>
-              {file.name}
-            </span>
-          </div>
+function renderFile(
+  file: any,
+  selected: any,
+  onChange: OnChange,
+  path: any
+) {
+  const absoluteFn = path.concat(file.name).join("/");
+  const isSelected = absoluteFn === selected;
+  const spacing = { padding: "1px 2px" };
+  return (
+    <div
+      key={absoluteFn}
+      style={{ cursor: "pointer" }}
+      className="flex gap-1"
+      onClick={(ev) => onChange(ev, { selected: absoluteFn })}
+    >
+      <Save />
+      <div>
+        <div
+          style={{
+            backgroundColor: isSelected ? "#4183c4" : undefined,
+            ...spacing,
+          }}
+        >
+          <span style={{ color: isSelected ? "white" : "" }}>
+            {file.name}
+          </span>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+}
 
-  renderFolder = (folder: any, _selected: any, _onChange: OnChange) => (
+function renderFolder(
+  folder: any,
+  _selected: any,
+  _onChange: OnChange,
+  onExpand: (folder: any) => void
+) {
+  return (
     <div
       key={folder.name}
       className="flex gap-1"
       style={{ cursor: "pointer" }}
-      onClick={() => this.props.onExpand(folder)}
+      onClick={() => onExpand(folder)}
     >
       <Folder />
       <div>
@@ -58,50 +66,56 @@ export class Tree extends Component<Props> {
       </div>
     </div>
   );
+}
 
-  renderItems = (items: any, selected: any, onChange: OnChange) => (
+function renderItems(
+  items: any,
+  selected: any,
+  onChange: OnChange,
+  path: any,
+  onExpand: (folder: any) => void
+) {
+  return (
     <div className="flex flex-col">
       {items.map((item: any) =>
         item.type === "file"
-          ? this.renderFile(item, selected, onChange)
-          : this.renderFolder(item, selected, onChange)
+          ? renderFile(item, selected, onChange, path)
+          : renderFolder(item, selected, onChange, onExpand)
       )}
     </div>
   );
+}
 
-  renderBreadcrumbs = () => {
-    const { path = [], onPath } = this.props;
-    return (
-      <div className="flex border-b mb-2">
-        <div style={t.m(3, 0)} onClick={() => onPath(null)}>
-          /
+function renderBreadcrumbs(path: any[], onPath: (p: any) => void) {
+  return (
+    <div className="flex border-b mb-2">
+      <div style={t.m(3, 0)} onClick={() => onPath(null)}>
+        /
+      </div>
+      {path.map((part: any) => (
+        <div key={`tree-breadcrumb-${part}`}>
+          <div onClick={() => onPath(part)}>{part}</div>
         </div>
-        {path.map((part: any) => (
-          <div key={`tree-breadcrumb-${part}`}>
-            <div onClick={() => onPath(part)}>{part}</div>
-          </div>
-        ))}
-      </div>
-    );
-  };
+      ))}
+    </div>
+  );
+}
 
-  render() {
-    const { values: files, selected, onChange } = this.props;
-    return (
-      <div
-        style={{
-          border: "solid 1px lightgray",
-          borderRadius: 5,
-          padding: 5,
-          overflow: "auto",
-          maxHeight: 200,
-        }}
-      >
-        {this.renderBreadcrumbs()}
-        {this.renderItems(files, selected, onChange)}
-      </div>
-    );
-  }
+export function Tree({ values: files, path, selected, onChange, onExpand, onPath }: Props) {
+  return (
+    <div
+      style={{
+        border: "solid 1px lightgray",
+        borderRadius: 5,
+        padding: 5,
+        overflow: "auto",
+        maxHeight: 200,
+      }}
+    >
+      {renderBreadcrumbs(path || [], onPath)}
+      {renderItems(files, selected, onChange, path, onExpand)}
+    </div>
+  );
 }
 
 export default Tree;

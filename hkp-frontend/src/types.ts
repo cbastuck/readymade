@@ -413,20 +413,6 @@ export function isBoardDescriptor(data: any): data is BoardDescriptor {
   );
 }
 
-export type SandboxRuntimeDescriptor = RuntimeDescriptor & {
-  services: Array<ServiceDescriptor>;
-};
-
-export function isSandboxRuntimeDescriptor(
-  obj: any
-): obj is SandboxRuntimeDescriptor {
-  return obj.id && obj.type && obj.services && Array.isArray(obj.services);
-}
-
-export type SandboxRuntimeDescriptorMap = {
-  [id: string]: SandboxRuntimeDescriptor;
-};
-
 export type DeprecatedInputRouting = { [runtimeId: string]: string }; // old format with just a peer string
 
 export type PlaygroundTemplate = BoardDescriptor & {

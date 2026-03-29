@@ -1,4 +1,3 @@
-import { Component } from "react";
 import {
   Select,
   SelectContent,
@@ -36,78 +35,68 @@ type Props = {
   onOpen?: (options: Options) => void;
 };
 
-type State = {
-  optionsVisible: boolean;
-};
+export default function SelectorField({
+  value,
+  label,
+  minWidth = undefined,
+  options: optionsMap,
+  disabled = false,
+  className,
+  onChange,
+  onOpen,
+}: Props) {
+  const useDefaultLabel = typeof label !== "object";
+  const options = Object.keys(optionsMap).map((key) => ({
+    text: optionsMap[key],
+    value: key,
+  }));
 
-export default class SelectorField extends Component<Props, State> {
-  state: State = {
-    optionsVisible: false,
-  };
+  return (
+    <div
+      className={`items-end ${className || ""}`}
+      style={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        minWidth,
+      }}
+    >
+      {label &&
+        (useDefaultLabel ? (
+          <GroupLabel className="mb-1">{label}</GroupLabel>
+        ) : (
+          label
+        ))}
 
-  render() {
-    const {
-      value,
-      label,
-      minWidth = undefined, //"100%",
-      options: optionsMap,
-      disabled = false,
-      onChange,
-    } = this.props;
-
-    const useDefaultLabel = typeof label !== "object";
-    const options = Object.keys(optionsMap).map((key) => ({
-      text: optionsMap[key],
-      value: key,
-    }));
-
-    return (
-      <div
-        className={`items-end ${this.props.className || ""}`}
-        style={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "row",
-          minWidth,
-        }}
+      <Select
+        disabled={disabled}
+        value={value || undefined}
+        onOpenChange={(isOpen) =>
+          isOpen && onOpen?.(optionsMap)
+        }
+        onValueChange={(newValue) =>
+          onChange({
+            index: options.findIndex((x) => x.value === newValue),
+            value: newValue,
+          })
+        }
       >
-        {label &&
-          (useDefaultLabel ? (
-            <GroupLabel className="mb-1">{label}</GroupLabel>
-          ) : (
-            label
-          ))}
-
-        <Select
-          disabled={disabled}
-          value={value || undefined}
-          onOpenChange={(isOpen) =>
-            isOpen && this.props.onOpen?.(this.props.options)
-          }
-          onValueChange={(newValue) =>
-            onChange({
-              index: options.findIndex((x) => x.value === newValue),
-              value: newValue,
-            })
-          }
-        >
-          <SelectTrigger className="w-full h-min rounded-none">
-            <SelectValue className="font-menu" placeholder="Select ..." />
-          </SelectTrigger>
-          <SelectContent className="font-menu">
-            <SelectGroup>
-              {/*<SelectLabel>SOME LABEL COULD GO HERE</SelectLabel>*/}
-              {options.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.text}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
-      </div>
-    );
-  }
+        <SelectTrigger className="w-full h-min rounded-none">
+          <SelectValue className="font-menu" placeholder="Select ..." />
+        </SelectTrigger>
+        <SelectContent className="font-menu">
+          <SelectGroup>
+            {/*<SelectLabel>SOME LABEL COULD GO HERE</SelectLabel>*/}
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.text}
+              </SelectItem>
+            ))}
+          </SelectGroup>
+        </SelectContent>
+      </Select>
+    </div>
+  );
 }
 
 export function arrayToOptions(arr: Array<string>): { [key: string]: string } {

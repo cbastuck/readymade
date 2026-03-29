@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useRef, useEffect } from "react";
 
 import QRCode from "qrcode";
 
@@ -6,25 +6,11 @@ type Props = {
   url: string;
 };
 
-type State = {
-  canvas: null | HTMLCanvasElement;
-};
+export default function QR({ url = window.location.href }: Props) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-export default class QR extends Component<Props, State> {
-  state = {
-    canvas: null,
-  };
-
-  setCanvas = (canvas: null | HTMLCanvasElement) => {
-    if (!this.state.canvas) {
-      this.setState({ canvas });
-    }
-  };
-
-  render() {
-    const { url = window.location.href } = this.props;
-    const { canvas } = this.state;
-
+  useEffect(() => {
+    const canvas = canvasRef.current;
     if (canvas) {
       QRCode.toCanvas(canvas, url, (error: Error | null | undefined) => {
         if (error) {
@@ -32,7 +18,7 @@ export default class QR extends Component<Props, State> {
         }
       });
     }
+  }, [url]);
 
-    return <canvas ref={this.setCanvas} width="100%" height="100%" />;
-  }
+  return <canvas ref={canvasRef} width="100%" height="100%" />;
 }

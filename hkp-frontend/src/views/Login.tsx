@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 import { redirectUri } from "../core/actions";
@@ -11,22 +11,28 @@ type Props = {
   board: string;
 };
 
-type State = {
-  pkceChallenge: string | undefined;
-  pkceVerifier: string | undefined;
-};
+export default function Login(props: Props) {
+  const { board } = props;
+  const [pkceChallenge, setPkceChallenge] = useState<string | undefined>(undefined);
+  const [pkceVerifier, setPkceVerifier] = useState<string | undefined>(undefined);
 
-export default class Login extends Component<Props, State> {
-  state = { pkceChallenge: undefined, pkceVerifier: undefined };
+  useEffect(() => {
+    generatePkceChallenge();
+  }, []);
 
-  componentDidMount() {
-    this.generatePkceChallenge();
+  async function generatePkceChallenge() {
+    if (pkceChallenge) {
+      return;
+    }
+
+    const { challenge, verifier } = await createChallengeAndVerifier();
+    setPkceChallenge(challenge);
+    setPkceVerifier(verifier);
   }
 
-  renderOpenIdLogin(pkceChallenge: string, pkceVerifier: string) {
-    const { board } = this.props;
+  function renderOpenIdLogin(challenge: string, verifier: string) {
     const query = new URLSearchParams({
-      code_challenge: pkceChallenge,
+      code_challenge: challenge,
       code_challenge_method: "S256",
       client_id: "hookup",
       response_type: "code",
@@ -34,7 +40,7 @@ export default class Login extends Component<Props, State> {
       redirect_uri: redirectUri(),
       state: board || "",
     }).toString();
-    storeItem("pkce_verifier", pkceVerifier);
+    storeItem("pkce_verifier", verifier);
     return (
       <div
         style={{
@@ -56,7 +62,7 @@ export default class Login extends Component<Props, State> {
     );
   }
 
-  renderPlaceholder() {
+  function renderPlaceholder() {
     return (
       <div
         style={s(
@@ -77,29 +83,14 @@ export default class Login extends Component<Props, State> {
     );
   }
 
-  async generatePkceChallenge() {
-    if (this.state.pkceChallenge) {
-      return;
-    }
-
-    const { challenge, verifier } = await createChallengeAndVerifier();
-    this.setState({
-      pkceChallenge: challenge,
-      pkceVerifier: verifier,
-    });
+  const loginEnabled = restoreItem("__allowlogin");
+  if (!loginEnabled) {
+    return renderPlaceholder();
   }
 
-  render() {
-    const loginEnabled = restoreItem("__allowlogin");
-    if (!loginEnabled) {
-      return this.renderPlaceholder();
-    }
-
-    const { pkceChallenge, pkceVerifier } = this.state;
-    if (!pkceChallenge || !pkceVerifier) {
-      return false;
-    }
-
-    return this.renderOpenIdLogin(pkceChallenge, pkceVerifier);
+  if (!pkceChallenge || !pkceVerifier) {
+    return false;
   }
+
+  return renderOpenIdLogin(pkceChallenge, pkceVerifier);
 }

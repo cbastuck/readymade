@@ -1,4 +1,4 @@
-import { CSSProperties, Component } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import anime from "hkp-frontend/src/anime";
 
 const defaultStyle = {
@@ -16,15 +16,18 @@ type Props = {
   onLink?: (idx: number) => void;
 };
 
-type State = { counter: number };
+export default function Switcher({
+  animate = false,
+  duration = 5000,
+  data,
+  style = defaultStyle,
+  suffix,
+  onLink,
+}: Props) {
+  const [counter, setCounter] = useState(0);
+  const counterRef = useRef(0);
 
-export default class Switcher extends Component<Props, State> {
-  state: State = {
-    counter: 0,
-  };
-
-  componentDidMount() {
-    const { animate = false, duration = 5000 } = this.props;
+  useEffect(() => {
     if (animate) {
       const animStepDuration = Math.floor(duration / 10);
       const triggerAnimation = () =>
@@ -45,31 +48,27 @@ export default class Switcher extends Component<Props, State> {
               duration: animStepDuration,
               delay: duration - animStepDuration,
               complete: () => {
-                this.setState(
-                  { counter: this.state.counter + 1 },
-                  triggerAnimation
-                );
+                counterRef.current = counterRef.current + 1;
+                setCounter(counterRef.current);
+                triggerAnimation();
               },
             }),
         });
       triggerAnimation();
     }
-  }
+  }, [animate, duration]);
 
-  render() {
-    const { data, style = defaultStyle, suffix, onLink } = this.props;
-    const idx = this.state.counter % data.length;
+  const idx = counter % data.length;
 
-    return (
-      <a
-        id="switcher-item"
-        style={{ ...style }}
-        href={"#samples"}
-        onClick={() => onLink?.(idx)}
-      >
-        {data[idx]}
-        {suffix || ""}
-      </a>
-    );
-  }
+  return (
+    <a
+      id="switcher-item"
+      style={{ ...style }}
+      href={"#samples"}
+      onClick={() => onLink?.(idx)}
+    >
+      {data[idx]}
+      {suffix || ""}
+    </a>
+  );
 }

@@ -1,4 +1,4 @@
-import { Component, CSSProperties } from "react";
+import { CSSProperties, useEffect, useState } from "react";
 
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 
@@ -23,46 +23,40 @@ export type Props = {
   onChange?: (value: string) => void;
   onEscape?: (value: string) => void;
   onFocus?: () => void;
+  onLabelClicked?: () => void;
 };
 
-type State = { value: InputValueType };
+export default function InputField({
+  value: propValue,
+  label,
+  type = "text",
+  synced = true,
+  disabled,
+  unit,
+  labelStyle: _labelStyle,
+  style,
+  isExpandable = false,
+  className = "",
+  onChange = () => {},
+  onEscape: _onEscape,
+  onFocus: _onFocus,
+  onLabelClicked: _onLabelClicked,
+}: Props) {
+  const [value, setValue] = useState<InputValueType>("");
 
-export default class InputField extends Component<Props, State> {
-  state = {
-    value: "",
-  };
-
-  componentDidMount() {
-    const { value, synced = true } = this.props;
+  useEffect(() => {
     if (synced) {
-      this.setState({
-        value,
-      });
+      setValue(propValue);
     }
-  }
+  }, [propValue, synced]);
 
-  componentDidUpdate(prevProps: Props) {
-    const { value, synced = true } = this.props;
-    if (synced) {
-      if (value !== prevProps.value) {
-        this.setState({ value });
-      }
-    }
-  }
+  const resolvedValue = synced ? value : propValue;
 
-  renderInputType = (
-    value: InputValueType,
-    type: InputFieldType,
-    label: string
+  const renderInputType = (
+    val: InputValueType,
+    inputType: InputFieldType,
+    lbl: string
   ) => {
-    const {
-      disabled,
-      unit,
-      onChange = () => {},
-      className = "",
-      isExpandable = false,
-    } = this.props;
-
     return (
       <div
         style={{
@@ -72,9 +66,9 @@ export default class InputField extends Component<Props, State> {
         }}
       >
         <SubmittableInput
-          title={label}
-          type={type}
-          value={value === undefined ? "" : value}
+          title={lbl}
+          type={inputType}
+          value={val === undefined ? "" : val}
           onSubmit={onChange}
           disabled={disabled}
           className={`my-0 ${className} font-menu`}
@@ -97,29 +91,17 @@ export default class InputField extends Component<Props, State> {
     );
   };
 
-  render() {
-    const {
-      type = "text",
-      label,
-
-      style,
-      value: syncedValue,
-      synced = true,
-    } = this.props;
-    const value = synced ? this.state.value : syncedValue;
-
-    return (
-      <div
-        style={{
-          width: "100%",
-          display: "flex",
-          flexDirection: "row",
-          margin: "3px 0px",
-          ...style,
-        }}
-      >
-        {this.renderInputType(value, type, label)}
-      </div>
-    );
-  }
+  return (
+    <div
+      style={{
+        width: "100%",
+        display: "flex",
+        flexDirection: "row",
+        margin: "3px 0px",
+        ...style,
+      }}
+    >
+      {renderInputType(resolvedValue, type, label)}
+    </div>
+  );
 }
