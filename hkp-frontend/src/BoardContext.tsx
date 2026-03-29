@@ -29,7 +29,7 @@ import { restoreAvailableRuntimeEngines } from "./common";
 type BoardContextAPI = {
   addAvailableRuntime: (
     c: RuntimeClass,
-    overwriteIfExists: boolean
+    overwriteIfExists: boolean,
   ) => Array<RuntimeClass>;
   removeAvailableRuntime: (c: RuntimeClass) => Array<RuntimeClass>;
 
@@ -37,14 +37,14 @@ type BoardContextAPI = {
   removeRuntime: (runtime: RuntimeDescriptor) => void;
   updateRuntime: (
     runtimeId: string,
-    updated: RuntimeConfiguration
+    updated: RuntimeConfiguration,
   ) => Promise<void>;
   removeAllServices: (runtime: RuntimeDescriptor) => void;
 
   addService: (
     desc: ServiceClass,
     rt: RuntimeDescriptor,
-    prototype?: ServiceInstance
+    prototype?: ServiceInstance,
   ) => void;
   removeService: (svc: InstanceId, rt: RuntimeDescriptor) => void;
 
@@ -69,7 +69,7 @@ type BoardContextAPI = {
   setServiceName: (
     runtimeId: string,
     instanceId: string,
-    newName: string
+    newName: string,
   ) => void;
 };
 
@@ -111,7 +111,7 @@ type Props = {
   newBoard?: (searchParams?: string) => void; // TODO: why search params ??
   onClearBoard?: (
     board: BoardDescriptor,
-    newBoardName: string
+    newBoardName: string,
   ) => Promise<void>;
   saveBoard?: () => void;
   shareBoard?: () => void;
@@ -133,18 +133,18 @@ class BoardProvider extends Component<Props, BoardContextState> {
   static registerBrowserRuntime(boardName: string, runtimeId: string) {
     // remember id of created runtime, it belongs to 'this' browser
     const existing = JSON.parse(
-      localStorage.getItem(`runtimes-${boardName}`) || "[]"
+      localStorage.getItem(`runtimes-${boardName}`) || "[]",
     );
     localStorage.setItem(
       `runtimes-${boardName}`,
-      JSON.stringify(existing.concat(runtimeId))
+      JSON.stringify(existing.concat(runtimeId)),
     );
   }
 
   static unregisterBrowserRuntime(boardName: string, runtimeId: string) {
     // unremember that the id belongs to 'this' browser
     const existing = JSON.parse(
-      localStorage.getItem(`runtimes-${boardName}`) || "[]"
+      localStorage.getItem(`runtimes-${boardName}`) || "[]",
     );
     const pruned = existing.filter((id: string) => id !== runtimeId);
     localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(pruned));
@@ -236,7 +236,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
         api.removeRuntime(scope, runtime, this.state.user);
       } else {
         console.warn(
-          `BoardProvider.componentWillUnmount runtime api or scope missing for runtime: ${runtime.id}`
+          `BoardProvider.componentWillUnmount runtime api or scope missing for runtime: ${runtime.id}`,
         );
       }
     }
@@ -264,7 +264,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
             ...data,
             isFetching: false,
           },
-          () => setTimeout(() => this.props.onLoad?.(this.state), 1)
+          () => setTimeout(() => this.props.onLoad?.(this.state), 1),
         );
       }
     } catch (err: any) {
@@ -287,8 +287,8 @@ class BoardProvider extends Component<Props, BoardContextState> {
             ? isUserAuthenticated(rtClass, this.props.user).catch((err) => {
                 throw new Error(`${err.message} for runtime ${rtClass.url}`);
               })
-            : Promise.resolve(true)
-        )
+            : Promise.resolve(true),
+        ),
       )
     ).some((isAuthenticated) => !isAuthenticated);
 
@@ -303,15 +303,15 @@ class BoardProvider extends Component<Props, BoardContextState> {
         if (!api) {
           console.error(
             `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
-              rt
+              rt,
             )} with type: ${rt.type} with registered apis: ${JSON.stringify(
-              Object.keys(this.props.runtimeApis || {})
-            )}`
+              Object.keys(this.props.runtimeApis || {}),
+            )}`,
           );
           return Promise.resolve(null);
         }
         return api.restoreRuntime({ ...rt }, services[rt.id], user, boardName);
-      })
+      }),
     );
 
     const scopes = reduceByRuntimeId(restored, "scope");
@@ -320,7 +320,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const validRuntimes = restored.flatMap((restoreResult) =>
       restoreResult && !!scopes[restoreResult?.runtime.id]
         ? [restoreResult.runtime]
-        : []
+        : [],
     );
 
     return {
@@ -336,7 +336,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const runtimes = this.state.runtimes.map((rt) => {
       if (rt.id === runtimeId && rt.type !== "browser") {
         throw new Error(
-          "BoardContext.setRuntimeName() only supported for browser runtimes"
+          "BoardContext.setRuntimeName() only supported for browser runtimes",
         );
       }
       return rt.id === runtimeId ? { ...rt, name: newName } : rt;
@@ -347,18 +347,18 @@ class BoardProvider extends Component<Props, BoardContextState> {
   setServiceName = async (
     runtimeId: string,
     instanceId: string,
-    newName: string
+    newName: string,
   ) => {
     const rt = this.state.runtimes.find((rt) => rt.id === runtimeId);
     if (!rt || rt.type !== "browser") {
       throw new Error(
-        "BoardContext.setServiceName() only supported for browser runtimes"
+        "BoardContext.setServiceName() only supported for browser runtimes",
       );
     }
     const svc = this.state.services[rt.id]?.find((s) => s.uuid === instanceId);
     if (!svc) {
       throw new Error(
-        `BoardContext.setServiceName() service not found: ${instanceId}"`
+        `BoardContext.setServiceName() service not found: ${instanceId}"`,
       );
     }
 
@@ -371,7 +371,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
                 ...s,
                 serviceName: newName,
               }
-            : s
+            : s,
         ),
       },
     });
@@ -413,7 +413,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     if (onClearBoard) {
       await onClearBoard(
         { runtimes, services, registry, boardName },
-        newBoardName
+        newBoardName,
       );
     }
 
@@ -469,7 +469,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const api = this.props.runtimeApis?.[rtClass.type];
     if (!api) {
       throw new Error(
-        `BoardContext.addRuntime() runtime api is missing: ${rtClass.type}`
+        `BoardContext.addRuntime() runtime api is missing: ${rtClass.type}`,
       );
     }
     const user = this.state.user;
@@ -509,12 +509,12 @@ class BoardProvider extends Component<Props, BoardContextState> {
   addService = async (
     service: ServiceClass,
     runtime: RuntimeDescriptor,
-    prototype?: ServiceInstance
+    prototype?: ServiceInstance,
   ): Promise<ServiceDescriptor | null> => {
     const [scope, api] = this.getRuntimeScopeApi(runtime.id);
     if (!api || !scope) {
       throw new Error(
-        `BoardContext.addService() runtime api is missing: ${runtime.type}`
+        `BoardContext.addService() runtime api is missing: ${runtime.type}`,
       );
     }
     const svc = await api.addService(scope, service, prototype?.uuid);
@@ -530,7 +530,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       await api.configureService(
         scope,
         prototype,
-        prototype.state || prototype
+        prototype.state || prototype,
       );
     }
 
@@ -541,7 +541,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const [scope, api] = this.getRuntimeScopeApi(runtime.id);
     if (!api || !scope) {
       throw new Error(
-        `BoardContext.removeService() runtime api is missing: ${runtime.type}`
+        `BoardContext.removeService() runtime api is missing: ${runtime.type}`,
       );
     }
 
@@ -554,7 +554,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
       services: {
         ...state.services,
         [runtime.id]: state.services[runtime.id].filter(
-          (svc) => svc.uuid !== service.uuid
+          (svc) => svc.uuid !== service.uuid,
         ),
       },
     }));
@@ -587,20 +587,28 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const [scope, api] = this.getRuntimeScopeApi(runtime.id);
     if (!api || !scope) {
       throw new Error(
-        `BoardContext.removeRuntime() runtime api is missing: ${runtime.type}`
+        `BoardContext.removeRuntime() runtime api is missing: ${runtime.type}`,
       );
     }
 
-    api.removeRuntime(scope, runtime, this.state.user);
+    await api.removeRuntime(scope, runtime, this.state.user);
 
     this.setState((state) => {
       const updatedRuntimes = state.runtimes.filter((r) => r.id !== runtime.id);
       const updatedServices = Object.keys(state.services)
         .filter((rid) => rid !== runtime.id)
         .reduce((all, key) => ({ ...all, [key]: state.services[key] }), {});
+      const updatedScopes = Object.keys(state.scopes)
+        .filter((rid) => rid !== runtime.id)
+        .reduce((all, key) => ({ ...all, [key]: state.scopes[key] }), {});
+      const updatedRegistry = Object.keys(state.registry)
+        .filter((rid) => rid !== runtime.id)
+        .reduce((all, key) => ({ ...all, [key]: state.registry[key] }), {});
       return {
         runtimes: updatedRuntimes,
         services: updatedServices,
+        scopes: updatedScopes,
+        registry: updatedRegistry,
       };
     });
   };
@@ -613,13 +621,13 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const [scope, api] = this.getRuntimeScopeApi(runtimeId);
     if (!api || !scope) {
       throw new Error(
-        `BoardContext.updateRuntime() runtime api is missing: ${runtimeId}`
+        `BoardContext.updateRuntime() runtime api is missing: ${runtimeId}`,
       );
     }
     const runtime = this.getRuntimeById(runtimeId);
     if (!runtime) {
       throw new Error(
-        `BoardContext.updateRuntime() runtime not found: ${runtimeId}`
+        `BoardContext.updateRuntime() runtime not found: ${runtimeId}`,
       );
     }
     if (runtimeId !== updated.runtime.id) {
@@ -628,12 +636,12 @@ class BoardProvider extends Component<Props, BoardContextState> {
     await api.restoreRuntime(
       updated.runtime,
       updated.services,
-      this.state.user
+      this.state.user,
     );
     scope.setState?.(updated.runtime.state);
     this.setState((state) => {
       const runtimes = state.runtimes.map((rt) =>
-        rt.id === runtimeId ? updated.runtime : rt
+        rt.id === runtimeId ? updated.runtime : rt,
       );
       return { runtimes };
     });
@@ -646,10 +654,10 @@ class BoardProvider extends Component<Props, BoardContextState> {
 
     const board = this.getBoardName();
     const ownedRuntimes = JSON.parse(
-      localStorage.getItem(`runtimes-${board}`) || "[]"
+      localStorage.getItem(`runtimes-${board}`) || "[]",
     );
     return !!ownedRuntimes.find(
-      (runtimeId: string) => runtimeId === runtime.id
+      (runtimeId: string) => runtimeId === runtime.id,
     );
   };
 
@@ -672,7 +680,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
 
   addAvailableRuntime = (
     { name, url, type, color }: RuntimeClass,
-    overwriteIfExists: boolean
+    overwriteIfExists: boolean,
   ) => {
     const engines = overwriteIfExists
       ? this.state.availableRuntimeEngines.filter((rt) => rt.name !== name)
@@ -691,7 +699,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
 
   removeAvailableRuntime = ({ name }: RuntimeClass) => {
     const availableRuntimeEngines = this.state.availableRuntimeEngines.filter(
-      (rt) => rt.name !== name
+      (rt) => rt.name !== name,
     );
     this.setState({
       availableRuntimeEngines,
@@ -700,7 +708,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
   };
 
   getRuntimeScopeApi(
-    runtimeId: string
+    runtimeId: string,
   ): [RuntimeScope | null, RuntimeApi | null] {
     const runtime =
       this.state.runtimes.find((rt) => rt.id === runtimeId) || null;
@@ -716,8 +724,8 @@ class BoardProvider extends Component<Props, BoardContextState> {
         if (!runtime) {
           throw new Error(
             `BoardContext.serializeBoard runtime with id: ${runtimeId} in: ${JSON.stringify(
-              this.state.runtimes
-            )}`
+              this.state.runtimes,
+            )}`,
           );
         }
         const [scope, api] = this.getRuntimeScopeApi(runtimeId);
@@ -741,14 +749,14 @@ class BoardProvider extends Component<Props, BoardContextState> {
                   : undefined,
               ...(svc.state ? {} : config), // add config plain if state is missing (old browser services)
             };
-          })
+          }),
         );
         return {
           ...(await all),
           [runtimeId]: serviceConfigs,
         };
       },
-      Promise.resolve({})
+      Promise.resolve({}),
     );
 
     const runtimes = this.state.runtimes.map((rt) => ({
@@ -783,7 +791,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
   arrangeServices = async (
     runtime: RuntimeDescriptor,
     serviceUuid: string,
-    targetPosition: number
+    targetPosition: number,
   ) => {
     const [scope, api] = this.getRuntimeScopeApi(runtime.id);
     if (!scope || !api) {
@@ -793,7 +801,7 @@ class BoardProvider extends Component<Props, BoardContextState> {
     const { services } = this.state;
     const rearranged = await api.rearrangeServices(
       scope,
-      reorderService(services, runtime, serviceUuid, targetPosition)
+      reorderService(services, runtime, serviceUuid, targetPosition),
     );
 
     this.setState((state) => {
@@ -839,7 +847,7 @@ export default BoardProvider;
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
   arr: Array<RestoreRuntimeResult | null>,
-  prop: T
+  prop: T,
 ): { [runtimeId: string]: RestoreRuntimeResult[T] } {
   return arr.reduce((all, cur) => {
     if (cur === null) {

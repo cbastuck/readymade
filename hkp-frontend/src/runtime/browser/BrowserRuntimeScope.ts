@@ -48,7 +48,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   onResult = async (
     _instanceId: string | null,
     _result: any,
-    _context?: ProcessContext | null
+    _context?: ProcessContext | null,
   ): Promise<void> => {
     console.warn("BrowserRuntimeScope.onResult not set");
   };
@@ -74,20 +74,25 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   };
 
   removeService = async (
-    service: ServiceImpl
+    service: ServiceImpl,
   ): Promise<Array<ServiceDescriptor>> => {
-    const subservices = Object.keys(this.subservices).reduce<ServiceImpl[]>(
-      (all, ssvcUuid) => {
-        const ssvc = this.subservices[ssvcUuid];
-        return ssvc && ssvc.parent === service ? [...all, ssvc.service] : all;
-      },
-      []
-    );
+    const subserviceIds = Object.keys(this.subservices).filter((ssvcUuid) => {
+      const ssvc = this.subservices[ssvcUuid];
+      return !!ssvc && ssvc.parent === service;
+    });
+
+    const subservices = subserviceIds.reduce<ServiceImpl[]>((all, ssvcUuid) => {
+      const ssvc = this.subservices[ssvcUuid];
+      return ssvc && ssvc.parent === service ? [...all, ssvc.service] : all;
+    }, []);
 
     if (subservices.length > 0) {
       await Promise.all(
-        subservices.map(async (ssvc) => ssvc.destroy && ssvc.destroy())
+        subservices.map(async (ssvc) => ssvc.destroy && ssvc.destroy()),
       );
+      for (const ssvcUuid of subserviceIds) {
+        delete this.subservices[ssvcUuid];
+      }
     }
 
     if (service.destroy) {
@@ -95,7 +100,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     }
 
     this.serviceInstances = this.serviceInstances.filter(
-      (svc) => svc.uuid !== service.uuid
+      (svc) => svc.uuid !== service.uuid,
     );
 
     return this.serviceInstances.map(
@@ -103,7 +108,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
         uuid,
         serviceId,
         serviceName,
-      })
+      }),
     );
   };
 
@@ -127,14 +132,14 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     service: InstanceId | null,
     params: any,
     context?: ProcessContext | null,
-    advanceBeforeProcess: boolean = true
+    advanceBeforeProcess: boolean = true,
   ) => {
     const services = this.serviceInstances;
     const [svc_, position] = this.findServiceInstance(service?.uuid || null);
     if (position === -1) {
       return console.error(
         `Called next() in browser but could not find current service: ${service?.uuid} in scope:`,
-        this
+        this,
       );
     }
     let svc = svc_;
@@ -156,7 +161,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
           console.warn(
             `Seriously: service ${
               svc.serviceName
-            } caused error: ${JSON.stringify(err.message)}`
+            } caused error: ${JSON.stringify(err.message)}`,
           );
         }
       }
@@ -168,7 +173,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
 
   rearrangeServices = (rearranged: Array<ServiceDescriptor>) => {
     this.serviceInstances = rearranged.map(
-      (svc) => this.findServiceInstance(svc.uuid)[0]! // the instance must exist
+      (svc) => this.findServiceInstance(svc.uuid)[0]!, // the instance must exist
     );
   };
 

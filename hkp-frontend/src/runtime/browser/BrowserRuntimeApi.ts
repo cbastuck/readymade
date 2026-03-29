@@ -21,7 +21,7 @@ import { defaultBundles } from "./registry/Default";
 export async function addRuntime(
   rtClass: RuntimeClass,
   _user: User | null,
-  boardName?: string
+  boardName?: string,
 ) {
   const { name: passedName, type, url } = rtClass;
   const runtimeId = uuidv4();
@@ -45,11 +45,11 @@ export async function addRuntime(
 export async function removeRuntime(
   scope: RuntimeScope,
   _runtime: RuntimeDescriptor,
-  _user: User | null
+  _user: User | null,
 ): Promise<void> {
   const scope_ = scope as BrowserRuntimeScope;
-  for (const service of scope_.serviceInstances) {
-    await removeService(scope, service);
+  while (scope_.serviceInstances.length > 0) {
+    await removeService(scope, scope_.serviceInstances[0]);
   }
 }
 
@@ -57,7 +57,7 @@ async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
   _user: User | null,
-  boardName?: string
+  boardName?: string,
 ): Promise<RestoreRuntimeResult | null> {
   const scope = await createScope(runtime, runtime.bundles);
   const createdServices: Array<ServiceInstance> = (
@@ -70,10 +70,10 @@ async function restoreRuntime(
     () =>
       Promise.all(
         createdServices.map((svc, idx) =>
-          configureService(scope, svc, services[idx])
-        )
+          configureService(scope, svc, services[idx]),
+        ),
       ),
-    5
+    5,
   );
 
   return {
@@ -88,7 +88,7 @@ export function processRuntime(
   scope_: RuntimeScope,
   params: any,
   svc: InstanceId | null,
-  context?: ProcessContext | null
+  context?: ProcessContext | null,
 ) {
   const scope = scope_ as BrowserRuntimeScope;
   return scope.next(svc, params, context, false);
@@ -97,7 +97,7 @@ export function processRuntime(
 export async function addService(
   scope_: RuntimeScope,
   service: ServiceClass,
-  instanceId?: string
+  instanceId?: string,
 ): Promise<ServiceDescriptor | null> {
   const scope = scope_ as BrowserRuntimeScope;
   const [svc, descriptor] = createService(scope, service, instanceId) || [];
@@ -110,7 +110,7 @@ export async function addService(
 
 export async function removeService(
   scope_: RuntimeScope,
-  instance: InstanceId
+  instance: InstanceId,
 ): Promise<Array<ServiceDescriptor> | null> {
   const scope = scope_ as BrowserRuntimeScope;
   const [service] = scope.findServiceInstance(instance.uuid);
@@ -118,7 +118,7 @@ export async function removeService(
     console.error(
       `Could not find browser service to process: ${
         instance.uuid
-      } in scope: ${JSON.stringify(scope)}`
+      } in scope: ${JSON.stringify(scope)}`,
     );
     return null;
   }
@@ -129,7 +129,7 @@ export async function removeService(
 export async function configureService(
   scope_: RuntimeScope,
   service: InstanceId,
-  config: any
+  config: any,
 ): Promise<void> {
   const scope = scope_ as BrowserRuntimeScope;
   const [svc] = scope.findServiceInstance(service.uuid);
@@ -140,7 +140,7 @@ export async function configureService(
 
 export async function getServiceConfig(
   scope_: RuntimeScope,
-  service: InstanceId
+  service: InstanceId,
 ): Promise<any> {
   const scope = scope_ as BrowserRuntimeScope;
   const [svc] = scope.findServiceInstance(service.uuid);
@@ -161,7 +161,7 @@ export async function processService(
   scope_: RuntimeScope,
   svc: InstanceId,
   params: any,
-  context?: ProcessContext | null
+  context?: ProcessContext | null,
 ) {
   const scope = scope_ as BrowserRuntimeScope;
   const { uuid } = svc;
@@ -169,8 +169,8 @@ export async function processService(
   if (position === -1) {
     return console.error(
       `Could not find browser service to process: ${uuid} in scope: ${JSON.stringify(
-        scope
-      )}`
+        scope,
+      )}`,
     );
   }
 
@@ -195,7 +195,7 @@ export async function appendSubservice(
   scope_: RuntimeScope,
   service: ServiceClass,
   parent: ServiceInstance,
-  instanceId?: string
+  instanceId?: string,
 ): Promise<ServiceInstance | null> {
   const scope = scope_ as BrowserRuntimeScope;
   const [ssvc] = createService(scope, service, instanceId) || [];
@@ -208,7 +208,7 @@ export async function appendSubservice(
 
 async function createScope(
   runtime: RuntimeDescriptor,
-  bundles: Bundles = defaultBundles
+  bundles: Bundles = defaultBundles,
 ): Promise<BrowserRuntimeScope> {
   const registry = await BrowserRegistry.create(bundles);
   return new BrowserRuntimeScope(runtime, registry);
@@ -217,14 +217,14 @@ async function createScope(
 function createService(
   scope: BrowserRuntimeScope,
   service: ServiceClass,
-  instanceId?: string
+  instanceId?: string,
 ): [ServiceInstance, ServiceDescriptor] | null {
   const module = scope.registry.findServiceModule(service.serviceId);
   if (!module) {
     console.error(
       `Could not create service: ${JSON.stringify(
-        service
-      )} in scope: ${JSON.stringify(scope)}`
+        service,
+      )} in scope: ${JSON.stringify(scope)}`,
     );
     return null;
   }
@@ -233,7 +233,7 @@ function createService(
     scope.app,
     "deprecated boardname - get it from app",
     module,
-    useInstanceId
+    useInstanceId,
   );
   if (!svc) {
     console.error(`Could not create service module: ${JSON.stringify(module)}`);
@@ -264,7 +264,7 @@ function createService(
 
 function rearrangeServices(
   scope_: RuntimeScope,
-  rearranged: Array<ServiceDescriptor>
+  rearranged: Array<ServiceDescriptor>,
 ): Promise<Array<ServiceDescriptor>> {
   const scope = scope_ as BrowserRuntimeScope;
   scope.rearrangeServices(rearranged);
