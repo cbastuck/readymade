@@ -82,7 +82,7 @@ describe("Service UI Behavioral Tests", () => {
     let AggregatorUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./AggregatorUI");
+      const mod = await import("../AggregatorUI");
       AggregatorUI = mod.default;
     });
 
@@ -145,7 +145,7 @@ describe("Service UI Behavioral Tests", () => {
     let TimerUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./TimerUI");
+      const mod = await import("../TimerUI");
       TimerUI = mod.default;
     });
 
@@ -201,7 +201,7 @@ describe("Service UI Behavioral Tests", () => {
     let InputUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./InputUI");
+      const mod = await import("../InputUI");
       InputUI = mod.default;
     });
 
@@ -260,7 +260,7 @@ describe("Service UI Behavioral Tests", () => {
     let OutputUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./OutputUI");
+      const mod = await import("../OutputUI");
       OutputUI = mod.default;
     });
 
@@ -290,7 +290,7 @@ describe("Service UI Behavioral Tests", () => {
     let LooperUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./LooperUI");
+      const mod = await import("../LooperUI");
       LooperUI = mod.default;
     });
 
@@ -325,7 +325,7 @@ describe("Service UI Behavioral Tests", () => {
     let BufferUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./BufferUI");
+      const mod = await import("../BufferUI");
       BufferUI = mod.default;
     });
 

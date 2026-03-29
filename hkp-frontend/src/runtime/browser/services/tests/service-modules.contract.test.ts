@@ -7,7 +7,7 @@ type ServiceDescriptor = {
   createUI?: unknown;
 };
 
-const moduleLoaders = import.meta.glob("./*.{ts,tsx}");
+const moduleLoaders = import.meta.glob("../*.{ts,tsx}");
 
 const SERVICE_DESCRIPTOR_FILES = new Set([
   "Aggregator.ts",

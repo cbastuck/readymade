@@ -66,7 +66,7 @@ describe("Service UI Future Enhancements", () => {
     let InputUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./InputUI");
+      const mod = await import("../InputUI");
       InputUI = mod.default;
     });
 
@@ -102,8 +102,8 @@ describe("Service UI Future Enhancements", () => {
 
     beforeEach(async () => {
       const [agg, input] = await Promise.all([
-        import("./AggregatorUI"),
-        import("./InputUI"),
+        import("../AggregatorUI"),
+        import("../InputUI"),
       ]);
       AggregatorUI = agg.default;
       InputUI = input.default;
@@ -144,7 +144,7 @@ describe("Service UI Future Enhancements", () => {
     let InputUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./InputUI");
+      const mod = await import("../InputUI");
       InputUI = mod.default;
     });
 
@@ -209,7 +209,7 @@ describe("Service UI Future Enhancements", () => {
     let LooperUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("./LooperUI");
+      const mod = await import("../LooperUI");
       LooperUI = mod.default;
     });
 

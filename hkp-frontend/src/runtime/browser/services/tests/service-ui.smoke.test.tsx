@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 type AnyComponent = (props: any) => React.ReactElement | null;
 
-const serviceModuleLoaders = import.meta.glob("./*.{ts,tsx,js,jsx}");
+const serviceModuleLoaders = import.meta.glob("../*.{ts,tsx,js,jsx}");
 const candidateEntries = Object.entries(serviceModuleLoaders).filter(
   ([modulePath]) => {
     if (modulePath.includes(".test.")) {
