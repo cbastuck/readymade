@@ -1,7 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { render, waitFor } from "@testing-library/react";
 
 import { ServiceUIProps, ServiceInstance } from "hkp-frontend/src/types";
 
@@ -108,7 +107,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { rerender } = await renderServiceUIAndWait(AggregatorUI, props);
+      await renderServiceUIAndWait(AggregatorUI, props);
 
       // The ServiceUI wrapper manages the configure calls
       // We verify the service.configure API exists and is callable
