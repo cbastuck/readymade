@@ -1,4 +1,11 @@
-export async function serializeObject(body) {
+export type SerializedObject = {
+  contentType: string | undefined;
+  body: string | ArrayBuffer | FormData | undefined;
+};
+
+export async function serializeObject(
+  body: any
+): Promise<SerializedObject> {
   if (!body) {
     return {
       contentType: undefined,
@@ -30,7 +37,7 @@ export async function serializeObject(body) {
     };
   }
 
-  const createBlobKey = (key) => `+binary-data-@${key}`;
+  const createBlobKey = (key: string) => `+binary-data-@${key}`;
   const formData = new FormData();
   formData.append(
     "json",
@@ -53,16 +60,19 @@ export async function serializeObject(body) {
   };
 }
 
-export async function serializeWebsocketBuffer(data, passedHeaders = {}) {
+export async function serializeWebsocketBuffer(
+  data: any,
+  passedHeaders: Record<string, string> = {}
+): Promise<ArrayBuffer> {
   const { body: serialisedBody, contentType } = await serializeObject(data);
-  const binaryBody =
+  const binaryBody: ArrayBuffer =
     serialisedBody instanceof ArrayBuffer
       ? serialisedBody
-      : await new Response(serialisedBody).arrayBuffer();
+      : await new Response(serialisedBody as any).arrayBuffer();
 
-  const headers = {
+  const headers: Record<string, string> = {
     ...passedHeaders,
-    "content-type": contentType,
+    "content-type": contentType as string,
   };
 
   if (contentType === "multipart/form-data") {

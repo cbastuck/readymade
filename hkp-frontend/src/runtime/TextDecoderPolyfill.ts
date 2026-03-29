@@ -16,9 +16,9 @@
 
 // http://encoding.spec.whatwg.org/#textencoder
 
-function TextDecoderPolyfill() {}
+function TextDecoderPolyfill(this: any): void {}
 
-TextDecoderPolyfill.prototype.decode = function (octets) {
+TextDecoderPolyfill.prototype.decode = function (octets: Uint8Array): string {
   var string = "";
   var i = 0;
   while (i < octets.length) {
@@ -55,6 +55,6 @@ TextDecoderPolyfill.prototype.decode = function (octets) {
   return string;
 };
 
-export default typeof TextDecoder === "undefined"
+export default (typeof TextDecoder === "undefined"
   ? TextDecoderPolyfill
-  : TextDecoder;
+  : TextDecoder) as typeof TextDecoder;

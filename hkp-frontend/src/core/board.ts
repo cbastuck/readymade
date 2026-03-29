@@ -9,6 +9,6 @@ const config = {
   length: 2,
 };
 
-export function generateRandomName() {
+export function generateRandomName(): string {
   return uniqueNamesGenerator(config);
 }

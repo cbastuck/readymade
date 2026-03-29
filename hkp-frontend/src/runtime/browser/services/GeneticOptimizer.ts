@@ -1,20 +1,39 @@
 import jstat from "jstat";
 
 import GeneticOptimizerUI from "./GeneticOptimizerUI";
+import { AppInstance, ServiceClass } from "../../../types";
 
 const serviceId = "hookup.to/service/genetic-optimizer";
 const serviceName = "Genetic Optimizer";
 
-function rand(upper) {
+type GenomeInternal = { ttl: number; fitness?: number };
+type Genome = [GenomeInternal, ...number[]];
+
+function rand(upper: number): number {
   return Math.floor(Math.random() * upper);
 }
 
-function deepCopy(x) {
+function deepCopy<T>(x: T): T {
   return JSON.parse(JSON.stringify(x));
 }
 
 class GeneticOptimizer {
-  constructor(app, board, descriptor, id) {
+  uuid: string;
+  board: string;
+  app: AppInstance;
+  generation: number;
+  population: Genome[];
+  ttl: number;
+  dataRoot: string | undefined;
+  annotations: any;
+  initialPopulation: Genome[] | undefined;
+
+  constructor(
+    app: AppInstance,
+    board: string,
+    _descriptor: ServiceClass,
+    id: string
+  ) {
     this.uuid = id;
     this.board = board;
     this.app = app;
@@ -25,7 +44,7 @@ class GeneticOptimizer {
     this.dataRoot = undefined;
   }
 
-  configure(config) {
+  configure(config: any): void {
     const { initialPopulation, dataRoot, annotations, ttl } = config || {};
 
     if (dataRoot !== undefined) {
@@ -46,33 +65,33 @@ class GeneticOptimizer {
     }
   }
 
-  pickGenome() {
+  pickGenome(): Genome {
     const idx = rand(this.population.length - 1);
     return this.population[idx];
   }
 
-  mixGenomes(a, b) {
+  mixGenomes(a: Genome, b: Genome): Genome {
     return a.map((xa, i) => {
       if (i === 0) {
         // first item is internal, contains: ttl, fitness, etc.
         return { ttl: this.ttl };
       }
       const alpha = Math.random();
-      return alpha * xa + (1 - alpha) * b[i];
-    });
+      return alpha * (xa as number) + (1 - alpha) * (b[i] as number);
+    }) as Genome;
   }
 
-  applyMutation(genome) {
+  applyMutation(genome: Genome): Genome {
     const r = Math.random();
     if (r < 0.9) {
       return genome;
     }
     return genome.map((g, idx) =>
       idx > 0 && Math.random() > 0.3 ? Math.random() : g
-    );
+    ) as Genome;
   }
 
-  nextGeneration(population) {
+  nextGeneration(population: Genome[]): Genome[] {
     const father = this.pickGenome();
     const mother = this.pickGenome();
     if (!father || !mother) {
@@ -83,7 +102,7 @@ class GeneticOptimizer {
     return population.concat([mutatedChild]);
   }
 
-  computeFitness(targetDistribution, genome) {
+  computeFitness(targetDistribution: any[], genome: Genome): number {
     const probabilities = targetDistribution.map((sample) => {
       //TODO: std equals 1
       const probX = jstat.normal.pdf(sample[0], genome[1], 1); // [1] = x
@@ -92,7 +111,7 @@ class GeneticOptimizer {
       return probX * probY;
     });
 
-    function mean(arr) {
+    function mean(arr: number[]): number {
       return arr.reduce((a, c) => a + c, 0) / arr.length;
     }
 
@@ -111,7 +130,7 @@ class GeneticOptimizer {
     return ratio * meanAboveMeanP;
   }
 
-  applySelection(population, fitness) {
+  applySelection(population: Genome[], fitness: number[]): Genome[] {
     const meanFitness = fitness.reduce((a, c) => a + c, 0) / fitness.length;
     const varFitness =
       fitness.reduce((a, c) => {
@@ -131,12 +150,12 @@ class GeneticOptimizer {
     });
   }
 
-  removeDuplicates(population) {
-    const deduplicated = [];
-    return population.reduce((acc, g) => {
-      const quantizePoint = (x, y) =>
+  removeDuplicates(population: Genome[]): Genome[] {
+    const deduplicated: number[] = [];
+    return population.reduce<Genome[]>((acc, g) => {
+      const quantizePoint = (x: number, y: number) =>
         Math.floor(x * 100) * 100 + Math.floor(y * 100);
-      const id = quantizePoint(g[1], g[2]);
+      const id = quantizePoint(g[1] as number, g[2] as number);
       if (deduplicated.indexOf(id) === -1) {
         deduplicated.push(id);
         return [...acc, g];
@@ -145,9 +164,9 @@ class GeneticOptimizer {
     }, []);
   }
 
-  process(params) {
+  process(params: any[]): any[] {
     const targetDistribution = this.dataRoot
-      ? params.map((x) => x[this.dataRoot])
+      ? params.map((x) => x[this.dataRoot as string])
       : params;
 
     ++this.generation;
@@ -163,7 +182,7 @@ class GeneticOptimizer {
     // generate shapes out of population
     const annotations = this.annotations || {};
     return survivors
-      .map((genome, idx) => ({
+      .map((genome) => ({
         ...annotations,
         genome,
       }))
@@ -174,8 +193,8 @@ class GeneticOptimizer {
 const descriptor = {
   serviceName,
   serviceId,
-  create: (app, board, descriptor, id) =>
-    new GeneticOptimizer(app, board, descriptor, id),
+  create: (app: AppInstance, board: string, desc: ServiceClass, id: string) =>
+    new GeneticOptimizer(app, board, desc, id),
   createUI: GeneticOptimizerUI,
 };
 

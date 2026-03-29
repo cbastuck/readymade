@@ -1,8 +1,20 @@
+import { AppInstance, ServiceClass } from "../../../types";
+
 const serviceId = "hookup.to/service/select";
 const serviceName = "Select";
 
 class Select {
-  constructor(app, board, descriptor, id) {
+  uuid: string;
+  board: string;
+  app: AppInstance;
+  arrayIndex: number | undefined;
+
+  constructor(
+    app: AppInstance,
+    board: string,
+    _descriptor: ServiceClass,
+    id: string
+  ) {
     this.uuid = id;
     this.board = board;
     this.app = app;
@@ -10,14 +22,14 @@ class Select {
     this.arrayIndex = undefined;
   }
 
-  configure(config) {
+  configure(config: { arrayIndex?: number }): void {
     const { arrayIndex } = config;
     if (arrayIndex !== undefined) {
       this.arrayIndex = arrayIndex;
     }
   }
 
-  process(params) {
+  process(params: any): any {
     if (Array.isArray(params) && this.arrayIndex !== undefined) {
       return params[this.arrayIndex];
     }
@@ -29,8 +41,8 @@ class Select {
 const descriptor = {
   serviceName,
   serviceId,
-  create: (app, board, descriptor, id) =>
-    new Select(app, board, descriptor, id),
+  create: (app: AppInstance, board: string, desc: ServiceClass, id: string) =>
+    new Select(app, board, desc, id),
   createUI: undefined,
 };
 

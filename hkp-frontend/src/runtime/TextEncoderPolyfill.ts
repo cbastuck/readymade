@@ -16,14 +16,14 @@
 
 // http://encoding.spec.whatwg.org/#textencoder
 
-function TextEncoderPolyfill() {}
+function TextEncoderPolyfill(this: any): void {}
 
-TextEncoderPolyfill.prototype.encode = function (string) {
-  var octets = [];
+TextEncoderPolyfill.prototype.encode = function (string: string): number[] {
+  var octets: number[] = [];
   var length = string.length;
   var i = 0;
   while (i < length) {
-    var codePoint = string.codePointAt(i);
+    var codePoint = string.codePointAt(i) as number;
     var c = 0;
     var bits = 0;
     if (codePoint <= 0x0000007f) {
@@ -50,6 +50,6 @@ TextEncoderPolyfill.prototype.encode = function (string) {
   return octets;
 };
 
-export default typeof TextEncoder === "undefined"
+export default (typeof TextEncoder === "undefined"
   ? TextEncoderPolyfill
-  : TextEncoder;
+  : TextEncoder) as typeof TextEncoder;

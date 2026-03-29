@@ -4,8 +4,8 @@ import {
   isSomeObject,
 } from "../runtime/browser/services/helpers";
 
-function reconstructData(incoming) {
-  return Object.keys(incoming).reduce((all, key) => {
+function reconstructData(incoming: Record<string, any>): Record<string, any> {
+  return Object.keys(incoming).reduce<Record<string, any>>((all, key) => {
     const value = incoming[key];
     if (isSomeObject(value)) {
       return value.__typeTag === "blob"
@@ -20,22 +20,22 @@ function reconstructData(incoming) {
 }
 
 export function mergeBoardState(
-  oldBoardState,
-  updatedBoardState,
-  defaultBrowserRegistry
-) {
+  _oldBoardState: any,
+  updatedBoardState: any,
+  defaultBrowserRegistry: any
+): any {
   const { services, runtimes } = updatedBoardState;
   const updatedState = {
-    services: Object.keys(services).reduce(
+    services: Object.keys(services).reduce<Record<string, any[]>>(
       (acc, runtimeId) => ({
         ...acc,
-        [runtimeId]: services[runtimeId].map((svc) => reconstructData(svc)),
+        [runtimeId]: services[runtimeId].map((svc: any) => reconstructData(svc)),
       }),
       {}
     ),
     runtimes,
     registry: runtimes.reduce(
-      (all, rt) => ({
+      (all: Record<string, any>, rt: any) => ({
         ...all,
         [rt.id]: defaultBrowserRegistry.availableServices,
       }),
@@ -45,8 +45,8 @@ export function mergeBoardState(
   return Object.keys(updatedState).length > 0 ? updatedState : undefined;
 }
 
-function prepareData(obj) {
-  return Object.keys(obj).reduce((all, key) => {
+function prepareData(obj: Record<string, any>): Record<string, any> {
+  return Object.keys(obj).reduce<Record<string, any>>((all, key) => {
     const value = obj[key];
     if (isFunction(value)) {
       return all;
@@ -57,7 +57,7 @@ function prepareData(obj) {
         ...all,
         [key]: {
           __typeTag: "blob",
-          __mimetype: value.type,
+          __mimetype: (value as Blob).type,
           value,
         },
       };
@@ -66,20 +66,20 @@ function prepareData(obj) {
   }, {});
 }
 
-export function extractSyncState(data) {
+export function extractSyncState(data: any): any {
   return {
     inputRouting: data.inputRouting,
     outputRouting: data.outputRouting,
     sidechainRouting: data.sidechainRouting,
-    runtimes: data.runtimes.map((rt) => ({
+    runtimes: data.runtimes.map((rt: any) => ({
       id: rt.id,
       name: rt.name,
       type: rt.type,
     })),
-    services: Object.keys(data.services).reduce(
+    services: Object.keys(data.services).reduce<Record<string, any[]>>(
       (all, runtimeId) => ({
         ...all,
-        [runtimeId]: data.services[runtimeId].map((svc) => prepareData(svc)),
+        [runtimeId]: data.services[runtimeId].map((svc: any) => prepareData(svc)),
       }),
       {}
     ),

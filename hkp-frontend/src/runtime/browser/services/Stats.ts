@@ -1,18 +1,42 @@
+import { AppInstance, ServiceClass } from "../../../types";
+
 const serviceId = "hookup.to/service/stats";
 const serviceName = "Stats";
 
-function square(x) {
+function square(x: number): number {
   return x * x;
 }
 
+interface StatsConfig {
+  property?: string;
+  features?: {
+    mean?: string;
+    std?: string;
+    max?: string;
+  };
+  copyProps?: any;
+}
+
 class Stats {
-  constructor(app, board, descriptor, id) {
+  uuid: string;
+  board: string;
+  app: AppInstance;
+  property: string | undefined;
+  features: StatsConfig["features"];
+  copyProps: any;
+
+  constructor(
+    app: AppInstance,
+    board: string,
+    _descriptor: ServiceClass,
+    id: string
+  ) {
     this.uuid = id;
     this.board = board;
     this.app = app;
   }
 
-  configure(config) {
+  configure(config: StatsConfig): void {
     const { property, features, copyProps } = config;
     if (property !== undefined) {
       this.property = property;
@@ -27,7 +51,7 @@ class Stats {
     }
   }
 
-  process(params) {
+  process(params: any): any {
     if (!this.property && params) {
       return params;
     }
@@ -37,8 +61,8 @@ class Stats {
     }
 
     const stats = params.reduce(
-      (acc, cur) => {
-        const val = cur[this.property];
+      (acc: { type: string; n: number; sum: number; values: number[] }, cur: any) => {
+        const val = cur[this.property as string];
         if (val === undefined) {
           return acc;
         }
@@ -57,7 +81,7 @@ class Stats {
       }
     );
 
-    const result = {};
+    const result: Record<string, any> = {};
     if (this.features) {
       const meanProperty = this.features.mean;
       if (meanProperty) {
@@ -66,14 +90,17 @@ class Stats {
 
       const stdProperty = this.features.std;
       if (stdProperty) {
-        const mx = stats[meanProperty] || stats.sum / stats.n;
-        const sx = stats.values.reduce((p, c) => p + square(c - mx), 0);
+        const mx = (stats as any)[meanProperty as string] || stats.sum / stats.n;
+        const sx = stats.values.reduce(
+          (p: number, c: number) => p + square(c - mx),
+          0
+        );
         result[stdProperty] = Math.sqrt(sx / stats.sum);
       }
 
       const maxProperty = this.features.max;
       if (maxProperty) {
-        const mx = params.reduce((p, c) => {
+        const mx = params.reduce((p: any, c: any) => {
           const v = c[maxProperty];
           if (p === undefined) {
             return v;
@@ -91,7 +118,8 @@ class Stats {
 const descriptor = {
   serviceName,
   serviceId,
-  create: (app, board, descriptor, id) => new Stats(app, board, descriptor, id),
+  create: (app: AppInstance, board: string, desc: ServiceClass, id: string) =>
+    new Stats(app, board, desc, id),
 };
 
 export default descriptor;

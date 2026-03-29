@@ -1,5 +1,5 @@
-export const p1 = ["264653", "2a9d8f", "e9c46a", "f4a261", "e76f51"];
-export const p2 = [
+export const p1: string[] = ["264653", "2a9d8f", "e9c46a", "f4a261", "e76f51"];
+export const p2: string[] = [
   "ffadad",
   "ffd6a5",
   "fdffb6",
@@ -10,7 +10,7 @@ export const p2 = [
   "ffc6ff",
   "fffffc",
 ];
-export const p3 = [
+export const p3: string[] = [
   "f94144",
   "f3722c",
   "f8961e",
@@ -23,4 +23,4 @@ export const p3 = [
   "277da1",
 ];
 
-export const p = [...p1, ...p2, ...p3];
+export const p: string[] = [...p1, ...p2, ...p3];
