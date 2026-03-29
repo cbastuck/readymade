@@ -10,7 +10,10 @@ import {
 import { s, t } from "hkp-frontend/src/styles";
 import ServiceHeader from "./ServiceHeader";
 import EditorDialog from "../EditorDialog";
-import { filterPrivateMembers } from "hkp-frontend/src/runtime/browser/services/helpers";
+import {
+  extractServiceConfiguration,
+  filterPrivateMembers,
+} from "hkp-frontend/src/runtime/browser/services/helpers";
 import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 import ServiceOutputPlug from "./ServiceOutputPlug";
 
@@ -41,11 +44,11 @@ export default function ServiceFrame({
   onAction,
 }: Props) {
   const [frameCollapsed, setFrameCollapsed] = useState(
-    serviceFrameState?.collapsed || false
+    serviceFrameState?.collapsed || false,
   );
   const [configVisible, setConfigVisible] = useState(false);
   const [bypass, setBypass] = useState(
-    service?.bypass ?? service?.state?.bypass
+    service?.bypass ?? service?.state?.bypass,
   );
   const [recentProgressData, setRecentProgressData] = useState<any>(undefined);
 
@@ -163,7 +166,7 @@ export default function ServiceFrame({
         });
       } else {
         setFilteredServiceConfig(
-          JSON.stringify(filterPrivateMembers(service), null, 2)
+          JSON.stringify(extractServiceConfiguration(service), null, 2),
         );
       }
     }

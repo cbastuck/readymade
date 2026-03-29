@@ -4,6 +4,7 @@ import Resizable from "hkp-frontend/src/components/Resizable";
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceFrame from "./ServiceFrame";
 import { Size } from "hkp-frontend/src/common";
+import { extractServiceConfiguration } from "hkp-frontend/src/runtime/browser/services/helpers";
 
 type Props = ServiceUIProps & {
   children: ReactNode;
@@ -90,11 +91,11 @@ export function needsUpdateStrict<T>(newValue: T, oldValue: T) {
 function useInitOnFirstRender(
   service: ServiceInstance,
   onInit?: (state: any) => void,
-  onNotification?: (svc: ServiceInstance, notification: any) => void
+  onNotification?: (svc: ServiceInstance, notification: any) => void,
 ) {
   const notify = useCallback(async () => {
     const config = await (service.getConfiguration?.() ||
-      Promise.resolve(service));
+      Promise.resolve(extractServiceConfiguration(service)));
     if (onInit) {
       onInit(config);
     } else if (onNotification) {

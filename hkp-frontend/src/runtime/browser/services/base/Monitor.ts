@@ -13,7 +13,7 @@ class Monitor {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;

@@ -44,31 +44,65 @@ export function toArrayBuffer(blobOrFile: Blob | File): Promise<ArrayBuffer> {
 export function encodeBlobBase64(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onloadend = () =>
-      resolve((reader.result as string).split(",")[1]);
+    reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
 }
 
 export function filterPrivateMembers(
-  service: Record<string, any> | null | undefined
+  service: Record<string, any> | null | undefined,
 ): Record<string, any> | undefined {
   if (!service) {
     return undefined;
   }
   return Object.keys(service).reduce<Record<string, any>>(
     (res, cur) =>
-      cur[0] === "_" || cur === "app"
-        ? res
-        : { ...res, [cur]: service[cur] },
-    {}
+      cur[0] === "_" || cur === "app" ? res : { ...res, [cur]: service[cur] },
+    {},
   );
+}
+
+const nonConfigServiceKeys = new Set([
+  "uuid",
+  "serviceId",
+  "serviceName",
+  "board",
+  "app",
+  "descriptor",
+  "__descriptor",
+  "state",
+]);
+
+export function extractServiceConfiguration(
+  service: Record<string, any> | null | undefined,
+): Record<string, any> {
+  if (!service) {
+    return {};
+  }
+
+  const publicMembers = filterPrivateMembers(service) || {};
+  const state =
+    service.state && typeof service.state === "object" ? service.state : {};
+  const merged = {
+    ...publicMembers,
+    ...state,
+  };
+
+  return Object.keys(merged).reduce<Record<string, any>>((acc, key) => {
+    if (nonConfigServiceKeys.has(key) || isFunction(merged[key])) {
+      return acc;
+    }
+    return {
+      ...acc,
+      [key]: merged[key],
+    };
+  }, {});
 }
 
 export function createObjectURL(
   object: ArrayBuffer | Uint8Array | Blob,
-  type?: BlobPropertyBag
+  type?: BlobPropertyBag,
 ): string | undefined {
   const b =
     isArrayBuffer(object) || object instanceof Uint8Array
@@ -91,9 +125,7 @@ export function revokeObjectURL(object: string): void {
 
 function getMobileOperatingSystem(): string {
   var userAgent =
-    navigator.userAgent ||
-    navigator.vendor ||
-    (window as any).opera;
+    navigator.userAgent || navigator.vendor || (window as any).opera;
 
   // Windows Phone must come first because its UA also contains "Android"
   if (/windows phone/i.test(userAgent)) {
@@ -118,7 +150,7 @@ export function detectBrowserIOS(): boolean {
 
 export function removeKeyFromObject(
   obj: Record<string, any>,
-  key: string
+  key: string,
 ): Record<string, any> {
   return Object.keys(obj).reduce<Record<string, any>>(
     (acc, k) =>
@@ -128,7 +160,7 @@ export function removeKeyFromObject(
             ...acc,
             [k]: obj[k],
           },
-    {}
+    {},
   );
 }
 
@@ -140,7 +172,7 @@ export function makeQueryString(obj: Record<string, any>): string {
           ? `${str}&${key}=${obj[key]}`
           : `${key}=${obj[key]}`
         : str,
-    ""
+    "",
   );
 }
 

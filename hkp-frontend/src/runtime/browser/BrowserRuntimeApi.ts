@@ -15,7 +15,7 @@ import {
 } from "../../types";
 import BrowserRegistry from "./BrowserRegistry";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
-import { filterPrivateMembers } from "./services/helpers";
+import { extractServiceConfiguration } from "./services/helpers";
 import { defaultBundles } from "./registry/Default";
 
 export async function addRuntime(
@@ -150,7 +150,7 @@ export async function getServiceConfig(
     } else if (svc.state) {
       return svc.state;
     } else {
-      return filterPrivateMembers(svc);
+      return extractServiceConfiguration(svc);
     }
   } else {
     return {};
