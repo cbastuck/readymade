@@ -68,6 +68,20 @@ function createStandardProps(service: ServiceInstance): ServiceUIProps {
   };
 }
 
+async function renderServiceUIAndWait(
+  Component: AnyComponent,
+  props: ServiceUIProps,
+) {
+  const rendered = render(React.createElement(Component, props));
+  await waitFor(() => {
+    expect(props.service.getConfiguration).toHaveBeenCalled();
+  });
+  await act(async () => {
+    await Promise.resolve();
+  });
+  return rendered;
+}
+
 describe("Service UI Advanced Behavior Tests", () => {
   describe("User Interaction Tests", () => {
     let TimerUI: AnyComponent;
@@ -90,7 +104,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup();
 
-      const { container } = render(React.createElement(TimerUI, props));
+      const { container } = await renderServiceUIAndWait(TimerUI, props);
 
       // Find and interact with numeric inputs
       const inputs = container.querySelectorAll("input[type='number']");
@@ -118,7 +132,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup({ delay: null }); // No delay for rapid input
 
-      const { container } = render(React.createElement(TimerUI, props));
+      const { container } = await renderServiceUIAndWait(TimerUI, props);
 
       // Simulate rapid input changes
       const input = container.querySelector("input");
@@ -149,7 +163,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup();
 
-      render(React.createElement(TimerUI, props));
+      await renderServiceUIAndWait(TimerUI, props);
 
       // In real scenario, repeated changes should not cause excessive configure calls
       // This test verifies the behavior is reasonable
@@ -175,7 +189,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup();
 
-      const { container } = render(React.createElement(InputUI, props));
+      const { container } = await renderServiceUIAndWait(InputUI, props);
 
       // Find input field
       const input = container.querySelector("input");
@@ -202,7 +216,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup();
 
-      const { container } = render(React.createElement(InputUI, props));
+      const { container } = await renderServiceUIAndWait(InputUI, props);
 
       // Find radio buttons for mode selection
       const radios = container.querySelectorAll("input[type='radio']");
@@ -253,7 +267,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(LooperUI, props));
+      const { container } = await renderServiceUIAndWait(LooperUI, props);
 
       // Component should render with instances
       expect(container).toBeTruthy();
@@ -275,7 +289,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup();
 
-      const { container } = render(React.createElement(LooperUI, props));
+      const { container } = await renderServiceUIAndWait(LooperUI, props);
 
       // In a real integration, there would be an "Add Service" button
       // This test verifies the infrastructure is in place
@@ -291,7 +305,7 @@ describe("Service UI Advanced Behavior Tests", () => {
 
       const props = createStandardProps(service);
 
-      const { rerender } = render(React.createElement(LooperUI, props));
+      const { rerender } = await renderServiceUIAndWait(LooperUI, props);
 
       // Simulate notification of new instance added by updating service state
       service.state.instances = [
@@ -325,7 +339,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup();
 
-      const { container } = render(React.createElement(LooperUI, props));
+      const { container } = await renderServiceUIAndWait(LooperUI, props);
 
       // Verify the component rendered for testing other interactions
       expect(container).toBeTruthy();
@@ -395,7 +409,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
 
       const startTime = performance.now();
-      const { container } = render(React.createElement(AggregatorUI, props));
+      const { container } = await renderServiceUIAndWait(AggregatorUI, props);
       const endTime = performance.now();
 
       const initTime = endTime - startTime;
@@ -419,13 +433,18 @@ describe("Service UI Advanced Behavior Tests", () => {
         return React.createElement(AggregatorUI, p);
       };
 
-      const { rerender } = render(React.createElement(TrackedComponent, props));
+      const { rerender } = await renderServiceUIAndWait(
+        TrackedComponent,
+        props,
+      );
 
       const initialRenderCount = renderSpy.mock.calls.length;
 
       // Call configure multiple times
-      service.configure({ interval: 200 });
-      service.configure({ interval: 300 });
+      await act(async () => {
+        service.configure({ interval: 200 });
+        service.configure({ interval: 300 });
+      });
 
       rerender(React.createElement(TrackedComponent, props));
 
@@ -477,9 +496,8 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
 
       // Component should still render even if configure fails
-      expect(() => {
-        render(React.createElement(InputUI, props));
-      }).not.toThrow();
+      const { container } = await renderServiceUIAndWait(InputUI, props);
+      expect(container).toBeTruthy();
     });
 
     it("should initialize with safe default values when state is incomplete", async () => {
@@ -491,6 +509,9 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
 
       const { container } = render(React.createElement(InputUI, props));
+      await waitFor(() => {
+        expect(service.getConfiguration).toHaveBeenCalled();
+      });
       expect(container).toBeTruthy();
     });
 
@@ -503,10 +524,13 @@ describe("Service UI Advanced Behavior Tests", () => {
 
       const props = createStandardProps(service);
       const { container } = render(React.createElement(InputUI, props));
+      await waitFor(() => {
+        expect(service.getConfiguration).toHaveBeenCalled();
+      });
 
       // Try to set invalid values - getConfiguration should handle gracefully
       const result = service.getConfiguration();
-      expect(result).resolves.toBeDefined();
+      await expect(result).resolves.toBeDefined();
     });
 
     it("should handle getConfiguration returning empty object", async () => {
@@ -517,6 +541,9 @@ describe("Service UI Advanced Behavior Tests", () => {
 
       // Should initialize with defaults
       const { container } = render(React.createElement(InputUI, props));
+      await waitFor(() => {
+        expect(service.getConfiguration).toHaveBeenCalled();
+      });
       expect(container).toBeTruthy();
     });
 
@@ -534,6 +561,9 @@ describe("Service UI Advanced Behavior Tests", () => {
 
       // Component should handle gracefully
       const { container } = render(React.createElement(InputUI, props));
+      await waitFor(() => {
+        expect(service.getConfiguration).toHaveBeenCalled();
+      });
       expect(container).toBeTruthy();
     });
 
@@ -563,7 +593,7 @@ describe("Service UI Advanced Behavior Tests", () => {
       });
 
       const props = createStandardProps(service);
-      render(React.createElement(InputUI, props));
+      await renderServiceUIAndWait(InputUI, props);
 
       // These should not throw
       expect(() => {
@@ -581,10 +611,15 @@ describe("Service UI Advanced Behavior Tests", () => {
 
       const props = createStandardProps(service);
       render(React.createElement(InputUI, props));
+      await waitFor(() => {
+        expect(service.getConfiguration).toHaveBeenCalled();
+      });
 
       // Notification with missing properties should not crash
-      service.app.notify(service, {
-        /* empty notification */
+      await act(async () => {
+        service.app.notify(service, {
+          /* empty notification */
+        });
       });
       expect(service.app.notify).toHaveBeenCalled();
     });

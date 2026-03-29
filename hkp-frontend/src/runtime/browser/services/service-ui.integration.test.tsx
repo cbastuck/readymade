@@ -66,6 +66,17 @@ function createStandardProps(service: ServiceInstance): ServiceUIProps {
   };
 }
 
+async function renderServiceUIAndWait(
+  Component: AnyComponent,
+  props: ServiceUIProps,
+) {
+  const rendered = render(React.createElement(Component, props));
+  await waitFor(() => {
+    expect(props.service.getConfiguration).toHaveBeenCalled();
+  });
+  return rendered;
+}
+
 describe("Service UI Behavioral Tests", () => {
   describe("AggregatorUI - Configuration API", () => {
     let AggregatorUI: AnyComponent;
@@ -83,7 +94,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(AggregatorUI, props));
+      const { container } = await renderServiceUIAndWait(AggregatorUI, props);
 
       // Component rendered successfully
       expect(container.querySelector(".flex")).toBeTruthy();
@@ -97,7 +108,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { rerender } = render(React.createElement(AggregatorUI, props));
+      const { rerender } = await renderServiceUIAndWait(AggregatorUI, props);
 
       // The ServiceUI wrapper manages the configure calls
       // We verify the service.configure API exists and is callable
@@ -112,7 +123,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      render(React.createElement(AggregatorUI, props));
+      await renderServiceUIAndWait(AggregatorUI, props);
 
       // Verify the interface accepts configure calls with these keys
       expect(service.configure).toBeDefined();
@@ -149,7 +160,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(TimerUI, props));
+      const { container } = await renderServiceUIAndWait(TimerUI, props);
 
       expect(container).toBeTruthy();
     });
@@ -179,7 +190,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(TimerUI, props));
+      const { container } = await renderServiceUIAndWait(TimerUI, props);
 
       // Should have controls for both modes
       expect(container).toBeTruthy();
@@ -202,7 +213,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(InputUI, props));
+      const { container } = await renderServiceUIAndWait(InputUI, props);
 
       expect(container).toBeTruthy();
     });
@@ -225,7 +236,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      render(React.createElement(InputUI, props));
+      await renderServiceUIAndWait(InputUI, props);
 
       // The component should be renderable
       expect(service).toBeDefined();
@@ -239,7 +250,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(InputUI, props));
+      const { container } = await renderServiceUIAndWait(InputUI, props);
 
       expect(container).toBeTruthy();
     });
@@ -260,7 +271,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(OutputUI, props));
+      const { container } = await renderServiceUIAndWait(OutputUI, props);
 
       expect(container).toBeTruthy();
     });
@@ -294,7 +305,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(LooperUI, props));
+      const { container } = await renderServiceUIAndWait(LooperUI, props);
 
       expect(container).toBeTruthy();
     });
@@ -325,7 +336,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = render(React.createElement(BufferUI, props));
+      const { container } = await renderServiceUIAndWait(BufferUI, props);
 
       expect(container).toBeTruthy();
     });
