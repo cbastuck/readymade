@@ -7,8 +7,6 @@
 #include "types/data.h"
 #include "./schemeHandler.h"
 
-#include <csignal>
-
 #if USE_SAUCER_EMBEDDED
 #include "../embedded/saucer/embedded/all.hpp"
 #endif
@@ -17,68 +15,31 @@
     const bool isDebugBuild = false;
 #else
     const bool isDebugBuild = true;
-#endif  
-
-void handle_signal(int sig)
-{
-    std::cerr << "meander handle_signal called: " << sig << std::endl;
-    // optionally exit or continue
-}
+#endif
 
 int real_main(int argc, char *argv[])
 {
-  std::signal(SIGSEGV, handle_signal);
-  std::signal(SIGABRT, handle_signal);
-
-  std::string projectFile = "";
-  std::string pythonBundle = "";
-
-  // If exactly one argument is provided, treat it as the project file
-  if (argc == 2 && argv[1][0] != '-')
-  {
-    projectFile = argv[1];
-  }
-  
-  // Parse command line arguments
-  for (int i = 1; i < argc; ++i)
-  {
-    std::string arg = argv[i];
-    if (arg == "--project" && i + 1 < argc)
-    {
-      projectFile = argv[++i];
-    }
-    else if (arg == "--python" && i + 1 < argc)
-    {
-      pythonBundle = argv[++i];
-    }
-  }
-
-#if USE_PYTHON_INTEGRATION
-  if (!pythonBundle.empty())
-  {
-    PythonIntegration pythonIntegration;
-    auto p = std::thread(
-        [&pythonBundle, &pythonIntegration]()
-        {
-          if (pythonIntegration.start(pythonBundle) != 0)
-          {
-            std::cerr << "Failed to start python command" << std::endl;
-          }
-        });
-    p.detach();
-  }
-#endif
-
   saucer::webview::register_scheme("hkp");
-  auto app  = saucer::application::create({.id = "Meander"});
+  auto app = saucer::application::create({.id = "Meander"});
+  if (!app.has_value())
+  {
+    std::cerr << "Failed to create saucer application" << std::endl;
+    return 1;
+  }
   auto loop = saucer::modules::loop{app.value()};
 
-  auto window  = saucer::window::create(loop.application()).value();
+  auto windowResult = saucer::window::create(loop.application());
+  if (!windowResult.has_value())
+  {
+    std::cerr << "Failed to create window" << std::endl;
+    return 1;
+  }
+  auto window  = windowResult.value();
   auto webview = saucer::smartview::create({.window = window});
 
   window->set_title("Meander");
   webview->set_dev_tools(isDebugBuild);
-  window->set_size({1024, 600});
+  window->set_size({1024, 800});
   window->set_background({255, 255, 255, 255}); // white background
   window->show();
 
@@ -118,14 +79,7 @@ int real_main(int argc, char *argv[])
     }
   );
   
-  std::cout << "Launched meander with project file: " << projectFile << std::endl;
-  if (!projectFile.empty())
-  {
-    webview->inject({
-        .code = "setTimeout(() => { window.hkpJS.loadBoard('" + projectFile + "'); }, 500);",
-        .run_at = saucer::script::time::ready,
-    });
-  }
+  std::cout << "Launched meander" << std::endl;
 
 #if USE_SAUCER_EMBEDDED
   webview->embed(saucer::embedded::all());

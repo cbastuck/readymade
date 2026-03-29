@@ -16,7 +16,7 @@ namespace hkp
 class SchemeHandler
 {
 public:
-  SchemeHandler(std::shared_ptr<hkp::Server> server, Settings settings);
+  SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings& settings);
 
   saucer::scheme::response handleRequest(const saucer::scheme::request &req);
   void addRoute(const Router::Method &method, const std::string &path, Router::Handler handler);

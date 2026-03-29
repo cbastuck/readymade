@@ -9,7 +9,7 @@
 
 using json = nlohmann::json;
 
-SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, Settings settings)
+SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings& settings)
     : m_server(server), m_defaultHeaders(
                             {
                                 {"Access-Control-Allow-Origin", server->allowedOrigins()},
@@ -135,6 +135,15 @@ saucer::scheme::response SchemeHandler::handleListBoards(const Router::Params &p
 saucer::scheme::response SchemeHandler::handleLoadBoard(const Router::Params &p, const saucer::scheme::request &req) const
 {
   auto boardName = p.at("board");
+  if (!Settings::isValidBoardName(boardName))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
   if (!boardName.empty())
   {
     std::ifstream file(m_settings.getBoardsSavePath(boardName));
@@ -148,7 +157,6 @@ saucer::scheme::response SchemeHandler::handleLoadBoard(const Router::Params &p,
       };
     }
     std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
-    file.close();
     if (content.empty())
     {
       return saucer::scheme::response{
@@ -177,6 +185,15 @@ saucer::scheme::response SchemeHandler::handleLoadBoard(const Router::Params &p,
 saucer::scheme::response SchemeHandler::handleSaveBoard(const Router::Params &p, const saucer::scheme::request &req) const
 {
   auto boardName = p.at("board");
+  if (!Settings::isValidBoardName(boardName))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
   auto content = req.content();
   if (content.size() == 0)
   {
@@ -214,10 +231,10 @@ saucer::scheme::response SchemeHandler::handleSaveBoard(const Router::Params &p,
 saucer::scheme::response SchemeHandler::handleDeleteBoard(const Router::Params &p, const saucer::scheme::request &req) const
 {
   auto boardName = p.at("board");
-  if (boardName.empty())
+  if (!Settings::isValidBoardName(boardName))
   {
     return saucer::scheme::response{
-        .data = saucer::stash::from_str("Board name is required"),
+        .data = saucer::stash::from_str("Invalid board name"),
         .mime = "text/plain",
         .headers = m_defaultHeaders,
         .status = 400,
@@ -242,6 +259,6 @@ saucer::scheme::response SchemeHandler::handleDeleteBoard(const Router::Params &
           {"path", path}}.dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
-      .status = 204,
+      .status = 200,
   };
 }

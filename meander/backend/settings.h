@@ -12,7 +12,7 @@ public:
 
     // Try to get HOME or USERPROFILE environment variable in a platform-independent way
     const char* homeEnv = getenv(
-    #if IS_MACOS
+    #if defined(__APPLE__)
       "HOME"
     #else
       "USERPROFILE"
@@ -53,10 +53,32 @@ public:
     return boardNames;
   }
 
+  static bool isValidBoardName(const std::string& boardName)
+  {
+    if (boardName.empty())
+    {
+      return false;
+    }
+    for (char c : boardName)
+    {
+      if (!std::isalnum(static_cast<unsigned char>(c)) && c != '-' && c != '_')
+      {
+        return false;
+      }
+    }
+    return true;
+  }
+
   std::string getBoardsSavePath(const std::string& boardName) const
   {
     namespace fs = std::filesystem;
     fs::path savePath = m_hkpDirPath / (boardName + ".hkpp");
+    // Verify the resolved path is still inside the intended directory
+    fs::path canonical = fs::weakly_canonical(savePath);
+    if (canonical.string().find(m_hkpDirPath.string()) != 0)
+    {
+      return "";
+    }
     return savePath.string();
   }
 
