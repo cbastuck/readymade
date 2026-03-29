@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import Button from "hkp-frontend/src/ui-components/Button";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
@@ -12,33 +12,25 @@ type TimelineEvent = {
   event: Record<string, any>;
 };
 
-type TimelineUIState = {
-  events: TimelineEvent[];
-  capture: boolean;
-};
+function TimelineUI(props: ServiceUIProps) {
+  const [events, setEvents] = useState<TimelineEvent[]>([]);
+  const [capture, setCapture] = useState(false);
 
-class TimelineUI extends Component<ServiceUIProps, TimelineUIState> {
-  state: TimelineUIState = {
-    events: [],
-    capture: false,
-  };
-
-  onInit = (initialState: {
+  const onInit = (initialState: {
     capture: boolean;
     events: TimelineEvent[];
   }): void => {
-    const { capture, events } = initialState;
-    this.setState({ events, capture });
+    setEvents(initialState.events);
+    setCapture(initialState.capture);
   };
 
-  onNotification = (notification: { events?: TimelineEvent[] }): void => {
-    const { events } = notification;
-    if (events !== undefined) {
-      this.setState({ events });
+  const onNotification = (notification: { events?: TimelineEvent[] }): void => {
+    if (notification.events !== undefined) {
+      setEvents(notification.events);
     }
   };
 
-  renderEvent = (
+  const renderEvent = (
     event: TimelineEvent,
     timelineStart: number,
     timelineEnd: number,
@@ -61,19 +53,19 @@ class TimelineUI extends Component<ServiceUIProps, TimelineUIState> {
     );
   };
 
-  renderEvents = (events: TimelineEvent[]): JSX.Element[] | false => {
-    if (!events || events.length < 1) {
+  const renderEvents = (evts: TimelineEvent[]): JSX.Element[] | false => {
+    if (!evts || evts.length < 1) {
       return false;
     }
 
-    const firstEvent = events[0];
-    const lastEvent = events[events.length - 1];
-    return events.map((ev, index) =>
-      this.renderEvent(ev, firstEvent.timestamp, lastEvent.timestamp, index),
+    const firstEvent = evts[0];
+    const lastEvent = evts[evts.length - 1];
+    return evts.map((ev, index) =>
+      renderEvent(ev, firstEvent.timestamp, lastEvent.timestamp, index),
     );
   };
 
-  renderTimeline = (events: TimelineEvent[]): JSX.Element => {
+  const renderTimeline = (evts: TimelineEvent[]): JSX.Element => {
     return (
       <div style={{ height: "100%" }}>
         <div style={{ height: "50%" }} />
@@ -90,13 +82,13 @@ class TimelineUI extends Component<ServiceUIProps, TimelineUIState> {
             transform: " translateY(-50%)",
           }}
         >
-          {this.renderEvents(events)}
+          {renderEvents(evts)}
         </div>
       </div>
     );
   };
 
-  renderMain = (service: any): JSX.Element => {
+  const renderMain = (service: any): JSX.Element => {
     return (
       <div
         style={{
@@ -105,34 +97,32 @@ class TimelineUI extends Component<ServiceUIProps, TimelineUIState> {
         }}
       >
         <div style={{ height: "70%" }}>
-          {this.renderTimeline(service.events)}
+          {renderTimeline(events)}
         </div>
         <div style={{ height: "30%", margin: "auto" }}>
           <Button
             onClick={() => {
-              const capture = !this.state.capture;
-              service.configure({ capture });
-              this.setState({ capture });
+              const newCapture = !capture;
+              service.configure({ capture: newCapture });
+              setCapture(newCapture);
             }}
           >
-            {this.state.capture ? "Stop Capture" : "Start Capture"}
+            {capture ? "Stop Capture" : "Start Capture"}
           </Button>
         </div>
       </div>
     );
   };
 
-  render(): JSX.Element {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit.bind(this)}
-        onNotification={this.onNotification.bind(this)}
-      >
-        {this.renderMain(this.props.service)}
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+    >
+      {renderMain(props.service)}
+    </ServiceUI>
+  );
 }
 
 class Timeline {

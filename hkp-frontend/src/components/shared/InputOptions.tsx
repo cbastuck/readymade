@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { forwardRef, useContext, useImperativeHandle, useRef, useState } from "react";
 
 import SelectorField from "./SelectorField";
 import { Action } from "../../types";
@@ -20,48 +20,47 @@ type Props = {
   onCollapse?: () => void;
 };
 
-type State = {
-  selected: string;
-  expanded: boolean;
-  incoming: boolean | string | undefined;
+export type InputOptionsHandle = {
+  signalIncoming: (sender: string) => void;
 };
 
-export default class InputOptions extends Component<Props, State> {
-  static contextType = ThemeCtx;
-  declare context: React.ContextType<typeof ThemeCtx>;
-  state = {
-    selected: "none",
-    expanded: false,
-    incoming: false,
+const InputOptions = forwardRef<InputOptionsHandle, Props>(function InputOptions(props, ref) {
+  const context = useContext(ThemeCtx);
+  const [expanded, setExpanded] = useState(false);
+  const [incoming, setIncoming] = useState<boolean | string | undefined>(false);
+
+  const incomingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetIncoming = () => {
+    setIncoming(undefined);
   };
 
-  static updatePeersAction = "update-peers" as const;
-  static allInputsWildcard = "*";
-
-  getSelectorOptions = () => {
-    const { items } = this.props;
-    return items.reduce((a, c) => ({ ...a, [c]: c }), {
-      none,
-      [InputOptions.allInputsWildcard]: all,
-    });
-  };
-
-  signalIncoming = (sender: string) => {
-    if (!this.state.incoming) {
-      this.setState({ incoming: sender }, () =>
-        setTimeout(this.resetIncoming, 1000)
-      );
+  const signalIncoming = (sender: string) => {
+    if (!incoming) {
+      setIncoming(sender);
+      incomingTimerRef.current = setTimeout(resetIncoming, 1000);
     }
   };
 
-  resetIncoming = () => {
-    this.setState({ incoming: undefined });
+  useImperativeHandle(ref, () => ({
+    signalIncoming,
+  }));
+
+  const allInputsWildcard = "*";
+  const updatePeersAction = "update-peers" as const;
+
+  const getSelectorOptions = () => {
+    const { items } = props;
+    return items.reduce((a, c) => ({ ...a, [c]: c }), {
+      none,
+      [allInputsWildcard]: all,
+    });
   };
 
-  renderExpanded = () => {
-    const { expanded } = this.state;
-    const { value, onSelect, onAction, children, disabled } = this.props;
-    const peerOptions = this.getSelectorOptions();
+  const { value, onSelect, onAction, children, disabled, onExpand, onCollapse } = props;
+  const peerOptions = getSelectorOptions();
+
+  const renderExpanded = () => {
     return (
       <div
         style={{
@@ -81,14 +80,12 @@ export default class InputOptions extends Component<Props, State> {
               options={peerOptions}
               value={value === null ? "none" : value}
               disabled={disabled}
-              onChange={({ value: selected }) =>
-                this.setState({ selected }, () =>
-                  onSelect(selected === "none" ? null : selected)
-                )
-              }
-              onOpen={() => onAction({ type: InputOptions.updatePeersAction })}
+              onChange={({ value: newSelected }) => {
+                onSelect(newSelected === "none" ? null : newSelected);
+              }}
+              onOpen={() => onAction({ type: updatePeersAction })}
             />
-            <div>{this.props.children}</div>
+            <div>{children}</div>
           </div>
         ) : (
           <div className="pt-4 pl-4">
@@ -108,59 +105,62 @@ export default class InputOptions extends Component<Props, State> {
     );
   };
 
-  render() {
-    const { expanded, incoming } = this.state;
-    const { onExpand, onCollapse } = this.props;
+  const bgColor = incoming
+    ? "bg-sky-400" // signal color
+    : expanded
+    ? "bg-sky-600"
+    : context.runtimeBackgroundColor;
+  const textColor = expanded ? "text-white" : "text-[#333]";
 
-    const bgColor = incoming
-      ? "bg-sky-400" // signal color
-      : expanded
-      ? "bg-sky-600"
-      : this.context.runtimeBackgroundColor;
-    const textColor = expanded ? "text-white" : "text-[#333]";
-    return (
+  return (
+    <div
+      className="h-full py-[10px] pr-8 mb-5"
+      style={{
+        position: "relative",
+        height: "350px",
+      }}
+    >
       <div
-        className="h-full py-[10px] pr-8 mb-5"
+        className="flex h-full bg-white rounded-lg shadow-sm"
         style={{
-          position: "relative",
-          height: "350px",
+          border: `solid 1px #ccc`,
+          borderLeft: "none",
+          borderTopLeftRadius: 0,
+          borderBottomLeftRadius: 0,
+          position: "absolute",
+          zIndex: 1,
         }}
       >
-        <div
-          className="flex h-full bg-white rounded-lg shadow-sm"
-          style={{
-            border: `solid 1px #ccc`,
-            borderLeft: "none",
-            borderTopLeftRadius: 0,
-            borderBottomLeftRadius: 0,
-            position: "absolute",
-            zIndex: 1,
+        {renderExpanded()}
+        <button
+          className={`text-base min-h-[100%] ml-auto w-[22px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
+          onClick={() => {
+            const wasExpanded = expanded;
+            setExpanded(!wasExpanded);
+            if (wasExpanded) {
+              onCollapse?.();
+            } else {
+              onExpand?.();
+            }
           }}
         >
-          {this.renderExpanded()}
-          <button
-            className={`text-base min-h-[100%] ml-auto w-[22px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
-            onClick={() => {
-              this.setState({ expanded: !expanded }, () => {
-                if (expanded) {
-                  onCollapse?.();
-                } else {
-                  onExpand?.();
-                }
-              });
+          <div
+            className="tracking-[4px] text-sm font-sans mt-[-25px]"
+            style={{
+              transform: "rotate(90deg)",
             }}
           >
-            <div
-              className="tracking-[4px] text-sm font-sans mt-[-25px]"
-              style={{
-                transform: "rotate(90deg)",
-              }}
-            >
-              INPUT
-            </div>
-          </button>
-        </div>
+            INPUT
+          </div>
+        </button>
       </div>
-    );
-  }
-}
+    </div>
+  );
+});
+
+const InputOptionsWithStatics = Object.assign(InputOptions, {
+  updatePeersAction: "update-peers" as const,
+  allInputsWildcard: "*",
+});
+
+export default InputOptionsWithStatics;

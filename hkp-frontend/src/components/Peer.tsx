@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useEffect, useRef, useContext } from "react";
 
 import Peerjs, { DataConnection } from "peerjs";
 
@@ -26,52 +26,42 @@ type Props = {
   onError?: (err: Error) => void;
 };
 
-export default class PeerComponent extends Component<Props> {
-  static contextType = PeersCtx;
-  declare context: React.ContextType<typeof PeersCtx>;
+export default function PeerComponent(props: Props) {
+  const context = useContext(PeersCtx);
+  const peerRef = useRef<Peer | null>(null);
 
-  peer: Peer | null = null;
+  // Keep a ref to props so event handlers always have fresh values
+  const propsRef = useRef(props);
+  propsRef.current = props;
 
-  componentDidMount() {
-    const { active, peerHost } = this.props;
-    if (active && !!peerHost) {
-      this.initPeer(peerHost);
-    }
-  }
+  const contextRef = useRef(context);
+  contextRef.current = context;
 
-  componentWillUnmount() {
-    this.closePeer();
-  }
-
-  componentDidUpdate(prevProps: Props) {
-    const { name, active, peerHost } = this.props;
-    if (name !== prevProps.name && !!peerHost) {
-      this.closePeer(prevProps.name);
-      this.initPeer(peerHost);
-    }
-    if (active !== prevProps.active) {
-      this.closePeer();
-      if (active && !!peerHost) {
-        this.initPeer(peerHost);
+  const closePeerRef = useRef((name?: string) => {
+    if (peerRef.current) {
+      peerRef.current.destroy();
+      peerRef.current = null;
+      const n = name || propsRef.current.name;
+      if (n) {
+        contextRef.current?.onPeerClosed(n);
       }
     }
-  }
+  });
 
-  initPeer = (peerHost: string) => {
-    if (this.peer) {
+  const initPeerRef = useRef((peerHost: string) => {
+    if (peerRef.current) {
       console.warn(
         "Peer.initPeer previous peer did not shutdown - closing now"
       );
-      this.closePeer();
+      closePeerRef.current();
     }
     const {
       name,
       onData,
-
       usePeerPort,
       usePeerRoutePath,
       isSecure,
-    } = this.props;
+    } = propsRef.current;
     if (!name) {
       return;
     }
@@ -84,23 +74,23 @@ export default class PeerComponent extends Component<Props> {
 
     peer.on("open", () => {
       // Allow PeerContext signaling connections to this instance
-      peer.onConnectionOpened = this.props.onConnectionOpened;
-      peer.onConnectionClosed = this.props.onConnectionClosed;
-      this.peer = peer;
-      this.context?.onPeer(name, peer);
-      if (this.props.onOpen) {
-        this.props.onOpen();
+      peer.onConnectionOpened = propsRef.current.onConnectionOpened;
+      peer.onConnectionClosed = propsRef.current.onConnectionClosed;
+      peerRef.current = peer;
+      contextRef.current?.onPeer(name, peer);
+      if (propsRef.current.onOpen) {
+        propsRef.current.onOpen();
       }
     });
 
     peer.on("close", () => {
-      const { onClose } = this.props;
+      const { onClose } = propsRef.current;
       onClose?.(name);
     });
 
     // called when a remote peer is connecting to this peer
     peer.on("connection", (connection: DataConnection) => {
-      const { onConnectionOpened, onConnectionClosed } = this.props;
+      const { onConnectionOpened, onConnectionClosed } = propsRef.current;
       connection.on("data", (data: unknown) =>
         onData(data as DataEnvelope, connection.peer)
       );
@@ -111,35 +101,57 @@ export default class PeerComponent extends Component<Props> {
     });
 
     peer.on("disconnected", () => {
-      const { onDisconnect } = this.props;
+      const { onDisconnect } = propsRef.current;
       onDisconnect?.(name);
     });
 
     peer.on("error", (err) => {
-      const { onError = logError } = this.props;
+      const { onError = logError } = propsRef.current;
       onError(err);
 
       /*
-      if (this.peer) {
-        this.peer.reconnect();
+      if (peerRef.current) {
+        peerRef.current.reconnect();
       }*/
     });
-  };
+  });
 
-  closePeer = (name?: string) => {
-    if (this.peer) {
-      this.peer.destroy();
-      this.peer = null;
-      const n = name || this.props.name;
-      if (n) {
-        this.context?.onPeerClosed(n);
+  // componentDidMount + componentWillUnmount
+  useEffect(() => {
+    const { active, peerHost } = propsRef.current;
+    if (active && !!peerHost) {
+      initPeerRef.current(peerHost);
+    }
+    return () => {
+      closePeerRef.current();
+    };
+  }, []);
+
+  // componentDidUpdate: react to changes in name and active
+  const prevNameRef = useRef(props.name);
+  const prevActiveRef = useRef(props.active);
+
+  useEffect(() => {
+    const prevName = prevNameRef.current;
+    const prevActive = prevActiveRef.current;
+    const { name, active, peerHost } = props;
+
+    if (name !== prevName && !!peerHost) {
+      closePeerRef.current(prevName);
+      initPeerRef.current(peerHost);
+    }
+    if (active !== prevActive) {
+      closePeerRef.current();
+      if (active && !!peerHost) {
+        initPeerRef.current(peerHost);
       }
     }
-  };
 
-  render() {
-    return <div>{this.props.children || null}</div>;
-  }
+    prevNameRef.current = name;
+    prevActiveRef.current = active;
+  });
+
+  return <div>{props.children || null}</div>;
 }
 
 function logError(err: Error) {

@@ -5,6 +5,7 @@ import { withRouter, WithRouterProps } from "../../common";
 import BoardProvider, {
   BoardConsumer,
   BoardContextState,
+  BoardProviderHandle,
 } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "hkp-frontend/src/components/Footer";
@@ -77,7 +78,7 @@ type Props = WithRouterProps & {
 function Playground(props: Props) {
   const appContext = useContext(AppCtx);
 
-  const boardProviderRef = useRef<BoardProvider | null>(null);
+  const boardProviderRef = useRef<BoardProviderHandle | null>(null);
   const externalInputs = useRef<{ [runtimeId: string]: ExternalInput }>({});
   const user = useRef(null);
 
@@ -480,7 +481,7 @@ function Playground(props: Props) {
 
   return (
     <BoardProvider
-      ref={(ref) => (boardProviderRef.current = ref)}
+      ref={boardProviderRef}
       user={currentUser}
       boardName={boardName}
       fetchBoard={fetchBoard}

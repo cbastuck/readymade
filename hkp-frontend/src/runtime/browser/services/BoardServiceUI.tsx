@@ -4,6 +4,7 @@ import { ExternalLink, ChevronUp, ChevronDown } from "lucide-react";
 import BoardProvider, {
   BoardConsumer,
   BoardContextState,
+  BoardProviderHandle,
 } from "../../../BoardContext";
 
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
@@ -49,7 +50,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
 
   const [selectedSavedBoard, setSelectedSavedBoard] = useState("");
 
-  const boardProviderRef = useRef<BoardProvider | null>(null);
+  const boardProviderRef = useRef<BoardProviderHandle | null>(null);
 
   const [isExpanded, setIsExpanded] = useState(false);
 

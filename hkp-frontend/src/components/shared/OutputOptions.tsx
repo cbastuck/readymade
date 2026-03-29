@@ -1,4 +1,4 @@
-import { Component, ReactElement } from "react";
+import { ReactElement, useContext, useEffect, useRef, useState } from "react";
 
 import SelectorField from "./SelectorField";
 import SidechainSelector from "./SidechainSelector";
@@ -31,29 +31,28 @@ type Props = {
   onCollapse?: () => void;
 };
 
-type State = {
-  expanded: boolean;
-};
+export default function OutputOptions(props: Props) {
+  const context = useContext(ThemeCtx);
+  const [expanded, setExpanded] = useState(false);
 
-export default class OutputOptions extends Component<Props, State> {
-  static contextType = ThemeCtx;
-  declare context: React.ContextType<typeof ThemeCtx>;
-  state = { expanded: false };
+  const prevExpandedRef = useRef(expanded);
 
-  componentDidUpdate(_prevPops: Props, prevState: State) {
-    if (prevState.expanded !== this.state.expanded) {
-      this.props.onAction({ type: "update-peers" });
+  // componentDidUpdate: fire onAction when expanded changes
+  useEffect(() => {
+    if (prevExpandedRef.current !== expanded) {
+      props.onAction({ type: "update-peers" });
     }
-  }
+    prevExpandedRef.current = expanded;
+  });
 
-  getSelectorOptions = () => {
-    const { items } = this.props;
+  const getSelectorOptions = () => {
+    const { items } = props;
     return items.reduce((a, c) => ({ ...a, [c]: c }), {
       [none]: none,
     });
   };
 
-  renderOptions = (label: string, selector: ReactElement) => {
+  const renderOptions = (label: string, selector: ReactElement) => {
     return (
       <div className="pt-4 pl-4">
         <GroupLabel>{label}</GroupLabel>
@@ -62,12 +61,12 @@ export default class OutputOptions extends Component<Props, State> {
     );
   };
 
-  renderPeerOptions = () => {
-    const { onSelect, onAction, value = "pass" } = this.props;
-    const peerOptions = this.getSelectorOptions();
+  const renderPeerOptions = () => {
+    const { onSelect, onAction, value = "pass" } = props;
+    const peerOptions = getSelectorOptions();
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
-        {this.renderOptions(
+        {renderOptions(
           "Peers",
           <SelectorField
             label="Target"
@@ -79,14 +78,14 @@ export default class OutputOptions extends Component<Props, State> {
             onOpen={() => onAction({ type: "update-peers" })}
           />
         )}
-        <div style={{ paddingBottom: 20 }}>{this.props.children}</div>
+        <div style={{ paddingBottom: 20 }}>{props.children}</div>
       </div>
     );
   };
 
-  renderFlowOptions = () => {
-    const { onAction, flow = "pass" } = this.props;
-    return this.renderOptions(
+  const renderFlowOptions = () => {
+    const { onAction, flow = "pass" } = props;
+    return renderOptions(
       "Flow",
       <SelectorField
         options={{
@@ -95,24 +94,24 @@ export default class OutputOptions extends Component<Props, State> {
           // stopIf: 'stop-if'
         }}
         value={flow}
-        onChange={({ value: flow }) => {
-          if (isValidFlowOption(flow)) {
-            onAction({ type: "flow-changed", flow });
+        onChange={({ value: flowVal }) => {
+          if (isValidFlowOption(flowVal)) {
+            onAction({ type: "flow-changed", flow: flowVal });
           }
         }}
       />
     );
   };
 
-  renderSidechainOptions = () => {
+  const renderSidechainOptions = () => {
     const {
       boardContext,
       sidechainRouting = [],
       onSidechangeRouting,
-    } = this.props;
-    return this.renderOptions(
+    } = props;
+    return renderOptions(
       "Sidechain",
-      <div style={{ display: this.state.expanded ? undefined : "none" }}>
+      <div style={{ display: expanded ? undefined : "none" }}>
         <SidechainSelector
           boardContext={boardContext}
           values={sidechainRouting}
@@ -122,9 +121,8 @@ export default class OutputOptions extends Component<Props, State> {
     );
   };
 
-  renderExpanded = () => {
-    const { disabled } = this.props;
-    const { expanded } = this.state;
+  const renderExpanded = () => {
+    const { disabled } = props;
     return (
       <div
         style={{
@@ -135,83 +133,80 @@ export default class OutputOptions extends Component<Props, State> {
           overflowY: "auto",
         }}
       >
-        {this.renderFlowOptions()}
-        {this.renderSidechainOptions()}
+        {renderFlowOptions()}
+        {renderSidechainOptions()}
 
         {disabled ? (
           <div className="pt-4 pl-4 flex flex-col gap-2">
             <GroupLabel>Peers</GroupLabel>
-            <div className="p-0 text-base">{this.props.children}</div>
+            <div className="p-0 text-base">{props.children}</div>
           </div>
         ) : (
-          this.renderPeerOptions()
+          renderPeerOptions()
         )}
       </div>
     );
   };
 
-  render() {
-    const { expanded } = this.state;
-    const { id, onExpand, onCollapse } = this.props;
+  const { id, onExpand, onCollapse } = props;
 
-    const bgColor = expanded
-      ? "bg-sky-600"
-      : this.context.runtimeBackgroundColor;
-    const textColor = expanded ? "text-white" : "text-[#333]";
+  const bgColor = expanded
+    ? "bg-sky-600"
+    : context.runtimeBackgroundColor;
+  const textColor = expanded ? "text-white" : "text-[#333]";
 
-    return (
+  return (
+    <div
+      className="h-full py-[10px] mb-5"
+      style={{ position: "relative", height: "350px" }}
+    >
       <div
-        className="h-full py-[10px] mb-5"
-        style={{ position: "relative", height: "350px" }}
+        className="flex h-full bg-white rounded-lg shadow-sm"
+        id={`output-options-${id}`}
+        style={{
+          border: `solid 1px #ccc`,
+          borderRight: "none",
+          borderTopRightRadius: 0,
+          borderBottomRightRadius: 0,
+          position: "absolute",
+          right: 0,
+          zIndex: 1,
+        }}
       >
-        <div
-          className="flex h-full bg-white rounded-lg shadow-sm"
-          id={`output-options-${id}`}
-          style={{
-            border: `solid 1px #ccc`,
-            borderRight: "none",
-            borderTopRightRadius: 0,
-            borderBottomRightRadius: 0,
-            position: "absolute",
-            right: 0,
-            zIndex: 1,
+        <button
+          className={`text-base min-h-[100%] ml-auto w-[22px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
+          onClick={() => {
+            const wasExpanded = expanded;
+            setExpanded(!wasExpanded);
+            if (wasExpanded) {
+              onCollapse?.();
+            } else {
+              onExpand?.();
+              const elem = document.getElementById(`output-options-${id}`);
+              if (elem) {
+                setTimeout(
+                  () =>
+                    elem.scrollIntoView({
+                      behavior: "smooth",
+                      block: "nearest",
+                    }),
+                  400
+                );
+              }
+            }
           }}
         >
-          <button
-            className={`text-base min-h-[100%] ml-auto w-[22px] ${bgColor} ${textColor} hover:bg-sky-600 hover:text-white`}
-            onClick={() => {
-              this.setState({ expanded: !expanded }, () => {
-                if (expanded) {
-                  onCollapse?.();
-                } else {
-                  onExpand?.();
-                  const elem = document.getElementById(`output-options-${id}`);
-                  if (elem) {
-                    setTimeout(
-                      () =>
-                        elem.scrollIntoView({
-                          behavior: "smooth",
-                          block: "nearest",
-                        }),
-                      400
-                    );
-                  }
-                }
-              });
+          <div
+            className="tracking-[4px] text-sm font-sans mt-[-25px]"
+            style={{
+              transform: "rotate(90deg)",
             }}
           >
-            <div
-              className="tracking-[4px] text-sm font-sans mt-[-25px]"
-              style={{
-                transform: "rotate(90deg)",
-              }}
-            >
-              OUTPUT
-            </div>
-          </button>
-          {this.renderExpanded()}
-        </div>
+            OUTPUT
+          </div>
+        </button>
+        {renderExpanded()}
       </div>
-    );
-  }
+    </div>
+  );
 }

@@ -1,70 +1,55 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import HoldableButton from "hkp-frontend/src/components/shared/HoldableButton";
 
-type State = {
-  triggeredPads: { [key: string]: any };
-  assignments: { [key: string]: any };
-  armedPad: string | undefined;
-};
+export default function TriggerPadUI(props: ServiceUIProps) {
+  const [triggeredPads, setTriggeredPads] = useState<{ [key: string]: any }>({});
+  const [assignments, setAssignments] = useState<{ [key: string]: any }>({});
+  const [armedPad, setArmedPad] = useState<string | undefined>(undefined);
 
-export default class TriggerPadUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    triggeredPads: {},
-    assignments: {},
-    armedPad: undefined,
+  const onInit = (initialState: any) => {
+    setArmedPad(`${initialState.armedPad}`);
+    setAssignments(initialState.padAssignments);
   };
 
-  onInit = (initialState: any) => {
-    this.setState({
-      armedPad: `${initialState.armedPad}`,
-      assignments: initialState.padAssignments,
-    });
-  };
-
-  onNotification = (notification: any) => {
-    const { assignments, armedPad } = notification;
-    if (assignments) {
-      this.setState({ assignments });
+  const onNotification = (notification: any) => {
+    if (notification.assignments) {
+      setAssignments(notification.assignments);
     }
 
-    if (armedPad !== undefined) {
-      this.setState({ armedPad: `${armedPad}` });
+    if (notification.armedPad !== undefined) {
+      setArmedPad(`${notification.armedPad}`);
     }
   };
 
-  renderPad = (
+  const renderPad = (
     service: ServiceInstance,
     rowIndex: number,
     colIndex: number
   ) => {
     const index = makeIndex(rowIndex, colIndex);
-    const isPadTriggered = this.state.triggeredPads[index];
-    const isPadAssigned = this.state.assignments[index];
-    const isPadArmed = this.state.armedPad === index;
+    const isPadTriggered = triggeredPads[index];
+    const isPadAssigned = assignments[index];
+    const isPadArmed = armedPad === index;
     const onPush = () => {
       // service.triggerPad(index);
       service.configure({
         command: { action: "trigger-pad", params: { padIndex: index } },
       });
-      this.setState({
-        triggeredPads: {
-          ...this.state.triggeredPads,
-          [index]: true,
-        },
-      });
+      setTriggeredPads((prev) => ({
+        ...prev,
+        [index]: true,
+      }));
       return true;
     };
     const onEnd = () => {
-      if (this.state.triggeredPads[index]) {
-        this.setState({
-          triggeredPads: {
-            ...this.state.triggeredPads,
-            [index]: false,
-          },
-        });
+      if (triggeredPads[index]) {
+        setTriggeredPads((prev) => ({
+          ...prev,
+          [index]: false,
+        }));
       }
       return true;
     };
@@ -79,7 +64,7 @@ export default class TriggerPadUI extends Component<ServiceUIProps, State> {
           const blob = dataURItoBlob(item);
           service.configure({
             padAssignments: {
-              ...this.state.assignments,
+              ...assignments,
               [`${index}`]: blob,
             },
           });
@@ -110,7 +95,7 @@ export default class TriggerPadUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  renderRow = (service: ServiceInstance, rowIndex: number) => {
+  const renderRow = (service: ServiceInstance, rowIndex: number) => {
     return (
       <div
         style={{
@@ -118,36 +103,34 @@ export default class TriggerPadUI extends Component<ServiceUIProps, State> {
           flexDirection: "row",
         }}
       >
-        {this.renderPad(service, rowIndex, 0)}
-        {this.renderPad(service, rowIndex, 1)}
-        {this.renderPad(service, rowIndex, 2)}
-        {this.renderPad(service, rowIndex, 3)}
+        {renderPad(service, rowIndex, 0)}
+        {renderPad(service, rowIndex, 1)}
+        {renderPad(service, rowIndex, 2)}
+        {renderPad(service, rowIndex, 3)}
       </div>
     );
   };
 
-  renderMain = (service: ServiceInstance) => {
+  const renderMain = (service: ServiceInstance) => {
     return (
       <div className="flex flex-col mb-2">
-        {this.renderRow(service, 0)}
-        {this.renderRow(service, 1)}
-        {this.renderRow(service, 2)}
-        {this.renderRow(service, 3)}
+        {renderRow(service, 0)}
+        {renderRow(service, 1)}
+        {renderRow(service, 2)}
+        {renderRow(service, 3)}
       </div>
     );
   };
 
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-      >
-        {this.renderMain(this.props.service)}
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+    >
+      {renderMain(props.service)}
+    </ServiceUI>
+  );
 }
 
 function makeIndex(rowIndex: number, colIndex: number) {

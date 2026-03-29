@@ -1,4 +1,10 @@
-import { CSSProperties, Component, ReactNode, createContext } from "react";
+import {
+  CSSProperties,
+  ReactNode,
+  createContext,
+  useContext,
+  useState,
+} from "react";
 
 import { s, t } from "./styles";
 
@@ -13,43 +19,44 @@ type DragContextState = {
   resizeable?: Resizable | null;
 };
 
-const { Provider, Consumer: DragConsumer } = createContext<DragContextState>(
-  {}
-);
+const DragCtx = createContext<DragContextState>({});
+const { Provider, Consumer: DragConsumer } = DragCtx;
 
 type Props = {
   children: ReactNode;
   style?: CSSProperties;
 };
 
-class DragContext extends Component<Props> {
-  state: DragContextState = {
-    // API
-    setResizable: (resizeable: Resizable) => this.setState({ resizeable }),
-    clearResizable: () => this.setState({ resizeable: null }),
+function DragContext({ children, style }: Props) {
+  const [resizeable, setResizeable] = useState<Resizable | null>(null);
 
-    // Data
-    resizeable: null,
+  const setResizable = (res: Resizable) => setResizeable(res);
+  const clearResizable = () => setResizeable(null);
+
+  const value: DragContextState = {
+    setResizable,
+    clearResizable,
+    resizeable,
   };
 
-  render() {
-    const { resizeable, clearResizable } = this.state;
-    const { children, style } = this.props;
-    return (
-      <div
-        style={s(style, t.fill)}
-        onMouseMove={(ev) => resizeable && resizeable.onMove(ev)}
-        onMouseUp={() => {
-          if (resizeable && clearResizable) {
-            resizeable.onEnd();
-            clearResizable();
-          }
-        }}
-      >
-        <Provider value={this.state}>{children}</Provider>
-      </div>
-    );
-  }
+  return (
+    <div
+      style={s(style, t.fill)}
+      onMouseMove={(ev) => resizeable && resizeable.onMove(ev)}
+      onMouseUp={() => {
+        if (resizeable) {
+          resizeable.onEnd();
+          clearResizable();
+        }
+      }}
+    >
+      <Provider value={value}>{children}</Provider>
+    </div>
+  );
+}
+
+export function useDragContext() {
+  return useContext(DragCtx);
 }
 
 export { DragConsumer };

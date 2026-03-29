@@ -7,7 +7,9 @@ import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
-import PeersProvider from "hkp-frontend/src/PeersContext";
+import PeersProvider, {
+  PeersProviderHandle,
+} from "hkp-frontend/src/PeersContext";
 import Peer from "hkp-frontend/src/components/Peer";
 import { availableDiscoveryPeerHosts } from "hkp-frontend/src/views/playground/common";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
@@ -53,7 +55,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const onInit = (state: any) => update(state);
   const onNotification = (notification: any) => update(notification);
 
-  const provider = useRef<PeersProvider | null>(null);
+  const provider = useRef<PeersProviderHandle | null>(null);
   const sendData = (data: any) => {
     if (provider.current && targetPeer) {
       provider.current.sendData(peerName, targetPeer, data);
@@ -106,7 +108,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
       onNotification={onNotification}
       initialSize={{ width: 400, height: undefined }}
     >
-      <PeersProvider ref={(p) => (provider.current = p)}>
+      <PeersProvider ref={provider}>
         <div className="flex flex-col gap-2">
           <RadioGroup
             title="Mode"

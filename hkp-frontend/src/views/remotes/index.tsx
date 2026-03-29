@@ -2,7 +2,9 @@ import { useRef } from "react";
 import useSWR from "swr";
 import { useParams, useNavigate } from "react-router-dom";
 
-import BoardProvider from "hkp-frontend/src/BoardContext";
+import BoardProvider, {
+  BoardProviderHandle,
+} from "hkp-frontend/src/BoardContext";
 import Toolbar from "hkp-frontend/src/components/Toolbar";
 import RemotesMenu from "./RemotesMenu";
 import { RuntimeClass } from "hkp-frontend/src/types";
@@ -17,7 +19,7 @@ export default function Remotes() {
   const { remote } = useParams();
   const navigate = useNavigate();
 
-  const context = useRef<BoardProvider>(null);
+  const context = useRef<BoardProviderHandle>(null);
   const availableEngines = restoreAvailableRuntimeEngines() || [];
 
   const user = null;

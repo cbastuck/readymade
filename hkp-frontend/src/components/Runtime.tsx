@@ -1,4 +1,4 @@
-import { CSSProperties, Component, ReactElement } from "react";
+import { CSSProperties, ReactElement, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 import { getServiceConfiguration } from "../core/actions";
 
@@ -46,46 +46,55 @@ type Props = {
   onArrangeService?: (serviceUuid: string, position: number) => void;
 };
 
-type State = {
-  showSettings: boolean;
-  expanded: boolean;
-  wrapServices: boolean | undefined;
+export type RuntimeHandle = {
+  processRuntime: (params: any, svc?: InstanceId | null) => Promise<any>;
+  processService: (serviceUuid: string, params: any) => void;
+  configureService: (serviceUuid: string, config: any) => Promise<void>;
+  destroyService: (serviceUuid: string) => any;
+  destroyRuntime: () => any;
+  scrollRuntimeContainerToRight: () => void;
+  scrollRuntimeContainerTo: (x: number, y: number) => void;
 };
 
-export default class Runtime extends Component<Props, State> {
-  state: State = {
-    showSettings: false,
-    expanded: false,
-    wrapServices: undefined,
-  };
+const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
+  const {
+    style,
+    runtime,
+    boardContext,
+    frameless = false,
+    onArrangeService: onArrangeServiceCustom = undefined,
+    headless = false,
+    initialState = {},
+    expanded: expandedProp,
+  } = props;
 
-  impl: RuntimeImpl | null = null;
-  runtimeContainer: HTMLDivElement | null = null;
+  const [showSettings, setShowSettings] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [wrapServices, setWrapServices] = useState<boolean | undefined>(undefined);
 
-  componentDidMount() {
-    const { initialState = {}, expanded } = this.props;
-    this.setState({
-      wrapServices: initialState.wrapServices,
-      expanded:
-        expanded !== undefined ? expanded : initialState.minimized !== true,
-      showSettings: false,
-      ...initialState,
-    });
-    const scope = this.props.boardContext.scopes[this.props.runtime.id];
+  const implRef = useRef<RuntimeImpl | null>(null);
+  const runtimeContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setWrapServices(initialState.wrapServices);
+    setExpanded(
+      expandedProp !== undefined ? expandedProp : initialState.minimized !== true
+    );
+    setShowSettings(false);
+    const scope = boardContext.scopes[runtime.id];
     if (scope) {
       scope.setState?.(initialState);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  onAddService = (svcClass: ServiceClass, prototype?: ServiceInstance) => {
-    const { boardContext, runtime } = this.props;
+  const onAddService = (svcClass: ServiceClass, prototype?: ServiceInstance) => {
     return boardContext && runtime
       ? boardContext.addService(svcClass, runtime, prototype)
       : null;
   };
 
-  onServiceAction = (command: ServiceAction) => {
-    const { boardContext, runtime } = this.props;
+  const onServiceAction = (command: ServiceAction) => {
     const { service, action } = command;
     switch (action) {
       case "remove": {
@@ -120,28 +129,28 @@ export default class Runtime extends Component<Props, State> {
     }
   };
 
-  // TODO: this.impl is null
-  getServiceById = (serviceUuid: string) => {
+  // TODO: implRef.current is null
+  const getServiceById = (serviceUuid: string) => {
     return (
-      this.impl &&
-      this.impl.getServiceById &&
-      this.impl.getServiceById(serviceUuid)
+      implRef.current &&
+      implRef.current.getServiceById &&
+      implRef.current.getServiceById(serviceUuid)
     );
   };
 
   // TODO: NOBODY SHOULD CALL THIS ANYMORE
-  processRuntime = (
+  const processRuntime = (
     params: any,
     svc: InstanceId | null = null,
   ): Promise<any> => {
-    if (!this.impl || !this.impl.processRuntime) {
+    if (!implRef.current || !implRef.current.processRuntime) {
       throw new Error("Runtime.processRuntime() impl is missing");
     }
-    return this.impl.processRuntime(params, svc);
+    return implRef.current.processRuntime(params, svc);
   };
 
-  processService = (serviceUuid: string, params: any) => {
-    const service = this.getServiceById(serviceUuid);
+  const processService = (serviceUuid: string, params: any) => {
+    const service = getServiceById(serviceUuid);
     if (service) {
       service.process(params);
     } else {
@@ -149,162 +158,163 @@ export default class Runtime extends Component<Props, State> {
     }
   };
 
-  configureService = async (serviceUuid: string, config: any) => {
-    const service = this.getServiceById(serviceUuid);
+  const configureService = async (serviceUuid: string, config: any) => {
+    const service = getServiceById(serviceUuid);
     if (service) {
       service.configure?.(config);
     } else {
       console.error(
         "configureService() Can not find service by id: ",
         serviceUuid,
-        this.props.boardContext.services,
-        this.props.runtime,
+        boardContext.services,
+        runtime,
       );
     }
   };
 
   // TODO: this should not happen here. Is a command to the backend not the UI component
   // Probably the boardContext should be the receiver
-  destroyService = (serviceUuid: string) => {
-    if (!this.impl || !this.impl.destroyService) {
+  const destroyService = (serviceUuid: string) => {
+    if (!implRef.current || !implRef.current.destroyService) {
       throw new Error("Runtime.destroyService() impl is missing");
     }
-    return this.impl.destroyService(serviceUuid);
+    return implRef.current.destroyService(serviceUuid);
   };
 
-  // TODO: this.impl is NULL
-  destroyRuntime = () => {
-    if (!this.impl || !this.impl.destroyRuntime) {
+  // TODO: implRef.current is NULL
+  const destroyRuntime = () => {
+    if (!implRef.current || !implRef.current.destroyRuntime) {
       throw new Error("Runtime.destroyRuntime() impl is missing");
     }
-    return this.impl.destroyRuntime();
+    return implRef.current.destroyRuntime();
   };
 
-  scrollRuntimeContainerToRight = () => {
-    if (this.runtimeContainer) {
-      this.scrollRuntimeContainerTo(this.runtimeContainer.scrollWidth, 0);
+  const scrollRuntimeContainerToRight = () => {
+    if (runtimeContainerRef.current) {
+      scrollRuntimeContainerTo(runtimeContainerRef.current.scrollWidth, 0);
     }
   };
 
-  scrollRuntimeContainerTo = (x: number, y: number) => {
-    if (this.runtimeContainer) {
-      this.runtimeContainer.scroll(x, y);
+  const scrollRuntimeContainerTo = (x: number, y: number) => {
+    if (runtimeContainerRef.current) {
+      runtimeContainerRef.current.scroll(x, y);
     }
   };
 
-  render() {
-    const {
-      style,
-      runtime,
-      boardContext,
-      frameless = false,
+  useImperativeHandle(_ref, () => ({
+    processRuntime,
+    processService,
+    configureService,
+    destroyService,
+    destroyRuntime,
+    scrollRuntimeContainerToRight,
+    scrollRuntimeContainerTo,
+  }));
 
-      onArrangeService: onArrangeServiceCustom = undefined,
-      headless = false,
-    } = this.props;
+  const runtimeId = runtime && runtime.id;
 
-    const runtimeId = runtime && runtime.id;
+  const services =
+    (runtime && boardContext && boardContext.services[runtime.id]) || [];
+  const user = (boardContext && boardContext.appContext?.user) || null;
+  const boardName = boardContext && boardContext.boardName;
+  const registry =
+    runtime && boardContext && boardContext.registry[runtime.id];
 
-    const services =
-      (runtime && boardContext && boardContext.services[runtime.id]) || [];
-    const user = (boardContext && boardContext.appContext?.user) || null;
-    const boardName = boardContext && boardContext.boardName;
-    const registry =
-      runtime && boardContext && boardContext.registry[runtime.id];
+  const appViewMode = boardContext && boardContext.appContext?.appViewMode;
+  const wide = boardContext ? appViewMode === "wide" : true;
 
-    const appViewMode = boardContext && boardContext.appContext?.appViewMode;
-    const wide = boardContext ? appViewMode === "wide" : true;
+  const effectiveWrapServices = wrapServices !== undefined ? wrapServices : !wide;
 
-    const { wrapServices = !wide, showSettings, expanded } = this.state;
+  const onArrangeServiceDefault = (serviceUuid: string, position: number) =>
+    runtime &&
+    boardContext &&
+    boardContext.arrangeService(runtime, serviceUuid, position);
 
-    const onArrangeServiceDefault = (serviceUuid: string, position: number) =>
-      runtime &&
-      boardContext &&
-      boardContext.arrangeService(runtime, serviceUuid, position);
+  const onArrangeService =
+    onArrangeServiceCustom !== undefined
+      ? onArrangeServiceCustom
+      : onArrangeServiceDefault;
 
-    const onArrangeService =
-      onArrangeServiceCustom !== undefined
-        ? onArrangeServiceCustom
-        : onArrangeServiceDefault;
+  const scope = boardContext.scopes[runtimeId];
 
-    const scope = boardContext.scopes[runtimeId];
+  const onWrapServices = (isWrapped: boolean) => {
+    setWrapServices(isWrapped);
+    scope?.setState?.({ wrapServices: isWrapped }); // TODO: remove state duplication
+  };
 
-    const onWrapServices = (isWrapped: boolean) => {
-      this.setState({ wrapServices: isWrapped });
-      scope?.setState?.({ wrapServices: isWrapped }); // TODO: remove state duplication
+  const onExpand = (isExpanded: boolean) => {
+    setExpanded(isExpanded);
+    scope?.setState?.({ minimized: !isExpanded }); // TODO: remove state duplication
+  };
+
+  const onDropService = (data: any) => {
+    const serviceData = JSON.parse(data);
+    if (isServiceInstanceDrop(serviceData)) {
+      const descriptor = serviceData.descriptor;
+      onAddService(descriptor, serviceData);
+    }
+  };
+
+  const onSaveRuntime = async () => {
+    const saveLink = document.createElement("a");
+    const payload = {
+      ...runtime,
+      services: services?.map(({ serviceId, serviceName, state, uuid }) => ({
+        uuid,
+        serviceId,
+        name: serviceName,
+        state,
+      })),
     };
 
-    const onExpand = (expanded: boolean) => {
-      this.setState({ expanded });
-      scope?.setState?.({ minimized: !expanded }); // TODO: remove state duplication
-    };
+    const blob = new Blob([JSON.stringify(payload)], {
+      type: "application/json",
+    });
+    saveLink.href = URL.createObjectURL(blob);
+    saveLink.download = `runtime-${runtime.name}.json`;
+    saveLink.click();
+    setTimeout(() => {
+      URL.revokeObjectURL(saveLink.href);
+      saveLink.remove();
+    }, 60000);
+  };
 
-    const onDropService = (data: any) => {
-      const serviceData = JSON.parse(data);
-      if (isServiceInstanceDrop(serviceData)) {
-        const descriptor = serviceData.descriptor;
-        this.onAddService(descriptor, serviceData);
-      }
-    };
-
-    const onSaveRuntime = async () => {
-      const saveLink = document.createElement("a");
-      const payload = {
-        ...runtime,
-        services: services?.map(({ serviceId, serviceName, state, uuid }) => ({
-          uuid,
-          serviceId,
-          name: serviceName,
-          state,
-        })),
-      };
-
-      const blob = new Blob([JSON.stringify(payload)], {
-        type: "application/json",
-      });
-      saveLink.href = URL.createObjectURL(blob);
-      saveLink.download = `runtime-${runtime.name}.json`;
-      saveLink.click();
-      setTimeout(() => {
-        URL.revokeObjectURL(saveLink.href);
-        saveLink.remove();
-      }, 60000);
-    };
-    return (
-      <DropTarget
-        acceptedType={HKP_DND_SERVICE_TYPE}
-        disabled={!services || services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
-        onDrop={onDropService}
+  return (
+    <DropTarget
+      acceptedType={HKP_DND_SERVICE_TYPE}
+      disabled={!services || services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
+      onDrop={onDropService}
+    >
+      <RuntimeUI
+        scope={scope}
+        services={services}
+        onServiceAction={onServiceAction}
+        onArrangeService={onArrangeService}
+        boardName={boardName || null}
+        user={user}
+        frameless={frameless}
+        headless={headless}
+        style={style}
+        isExpanded={expanded}
+        wrapServices={effectiveWrapServices}
+        runtime={runtime}
+        registry={registry}
+        inputs={props.inputs}
+        outputs={props.outputs}
+        onExpand={onExpand}
+        onAddService={onAddService}
+        onWrapServices={onWrapServices}
+        onResult={props.onResult}
+        processRuntimeByName={props.processRuntimeByName}
+        initialServiceFrameState={props.initialServiceFrameState}
+        onSave={onSaveRuntime}
       >
-        <RuntimeUI
-          scope={scope}
-          services={services}
-          onServiceAction={this.onServiceAction}
-          onArrangeService={onArrangeService}
-          boardName={boardName || null}
-          user={user}
-          frameless={frameless}
-          headless={headless}
-          style={style}
-          isExpanded={expanded}
-          wrapServices={wrapServices}
-          runtime={runtime}
-          registry={registry}
-          inputs={this.props.inputs}
-          outputs={this.props.outputs}
-          onExpand={onExpand}
-          onAddService={this.onAddService}
-          onWrapServices={onWrapServices}
-          onResult={this.props.onResult}
-          processRuntimeByName={this.props.processRuntimeByName}
-          initialServiceFrameState={this.props.initialServiceFrameState}
-          onSave={onSaveRuntime}
-        >
-          {services && services.length === 0 && !headless && (
-            <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
-          )}
-        </RuntimeUI>
-      </DropTarget>
-    );
-  }
-}
+        {services && services.length === 0 && !headless && (
+          <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
+        )}
+      </RuntimeUI>
+    </DropTarget>
+  );
+});
+
+export default Runtime;

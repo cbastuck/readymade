@@ -1,4 +1,4 @@
-import { Component, createContext } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { IdToken } from "@auth0/auth0-react";
 import { toast } from "sonner";
 
@@ -30,86 +30,48 @@ const AppCtx = createContext<AppContextState>({
 });
 const { Provider, Consumer: AppConsumer } = AppCtx;
 
-class AppProvider extends Component<Props, AppContextState> {
-  constructor(props: Props) {
-    super(props);
+function AppProvider({ children }: Props) {
+  const [user, setUser] = useState<User | null>(null);
+  const [appViewMode, setAppViewMode] = useState<AppViewMode>("wide");
 
-    this.state = {
-      // state members
-      user: null,
-      appViewMode: "wide",
+  // Keep a ref to user so callbacks always access the latest value without
+  // being re-created on every render.
+  const userRef = useRef<User | null>(user);
+  userRef.current = user;
 
-      pushNotification: (notification) => {
-        const action = notification.action
-          ? {
-              label: notification.action.label,
-              onClick: notification.action.callback,
-            }
-          : undefined;
+  const pushNotification = (notification: Notification) => {
+    const action = notification.action
+      ? {
+          label: notification.action.label,
+          onClick: notification.action.callback,
+        }
+      : undefined;
 
-        const description = "";
-        const toastFunc =
-          notification.type === "info"
-            ? toast.info
-            : notification.type === "success"
-            ? toast.success
-            : toast.error;
-        toastFunc(notification.message, {
-          description,
-          action,
-        });
-      },
-      popNotification: () => {},
-      // modifying functions
-      updateToken: this.onToken,
-      logout: this.logout,
-    };
-  }
-
-  componentDidMount(): void {
-    window.addEventListener("error", this.onError);
-    window.addEventListener("unhandledrejection", this.onUnhandledException);
-  }
-
-  componentWillUnmount(): void {
-    window.removeEventListener("error", this.onError);
-    window.removeEventListener("unhandledrejection", this.onUnhandledException);
-  }
-
-  onError = (err: any) => {
-    // event.preventDefault(); // This will not print the error in the console });
-    if (
-      err.message.includes(
-        "ResizeObserver loop completed with undelivered notifications"
-      )
-    ) {
-      return; // don't show this error
-    }
-    this.state.pushNotification({ message: err.message, type: "error" });
-  };
-
-  onUnhandledException = (event: any) => {
-    //event.preventDefault(); // This will not print the error in the console });
-    this.state.pushNotification({
-      message: `Unhandled rejection: ${event.reason}`,
-      type: "error",
+    const description = "";
+    const toastFunc =
+      notification.type === "info"
+        ? toast.info
+        : notification.type === "success"
+        ? toast.success
+        : toast.error;
+    toastFunc(notification.message, {
+      description,
+      action,
     });
   };
 
-  onToken = (idToken: IdToken): Promise<void> => {
+  const popNotification = () => {};
+
+  const onToken = (idToken: IdToken): Promise<void> => {
     return new Promise((resolve, reject) => {
       const idJwt = idToken.__raw;
-      if (idJwt && idJwt !== this.state.user?.idToken) {
+      if (idJwt && idJwt !== userRef.current?.idToken) {
         try {
           const { username, userId, features, picture } = processToken(idJwt);
-          setTimeout(() =>
-            this.setState(
-              {
-                user: { username, userId, features, picture, idToken: idJwt },
-              },
-              resolve
-            )
-          );
+          setTimeout(() => {
+            setUser({ username, userId, features, picture, idToken: idJwt });
+            resolve();
+          });
         } catch (err) {
           reject(err);
           return;
@@ -119,30 +81,63 @@ class AppProvider extends Component<Props, AppContextState> {
     });
   };
 
-  logout = async () => {
-    this.setState({ user: null });
+  const logout = async () => {
+    setUser(null);
   };
 
-  onResize = ({ appViewMode }: OnChangeEvent) => {
-    if (appViewMode !== this.state.appViewMode) {
-      this.setState({ appViewMode });
+  const onResize = ({ appViewMode: newMode }: OnChangeEvent) => {
+    setAppViewMode((prev) => (newMode !== prev ? newMode : prev));
+  };
+
+  const onError = useRef((err: any) => {
+    if (
+      err.message.includes(
+        "ResizeObserver loop completed with undelivered notifications"
+      )
+    ) {
+      return;
     }
+    pushNotification({ message: err.message, type: "error" });
+  });
+
+  const onUnhandledException = useRef((event: any) => {
+    pushNotification({
+      message: `Unhandled rejection: ${event.reason}`,
+      type: "error",
+    });
+  });
+
+  useEffect(() => {
+    const onErr = onError.current;
+    const onUnhandled = onUnhandledException.current;
+    window.addEventListener("error", onErr);
+    window.addEventListener("unhandledrejection", onUnhandled);
+    return () => {
+      window.removeEventListener("error", onErr);
+      window.removeEventListener("unhandledrejection", onUnhandled);
+    };
+  }, []);
+
+  const value: AppContextState = {
+    user,
+    appViewMode,
+    pushNotification,
+    popNotification,
+    updateToken: onToken,
+    logout,
   };
 
-  render() {
-    const { children } = this.props;
-    return (
-      <Provider
-        value={{
-          ...this.state,
-        }}
-      >
-        <ResizeObserver onChange={this.onResize} />
-        <RestoredUser onToken={this.onToken} />
-        {children}
-      </Provider>
-    );
-  }
+  return (
+    <Provider value={value}>
+      <ResizeObserver onChange={onResize} />
+      <RestoredUser onToken={onToken} />
+      {children}
+    </Provider>
+  );
+}
+
+export function useAppContext() {
+  return useContext(AppCtx);
 }
 
 export { AppConsumer, AppCtx };

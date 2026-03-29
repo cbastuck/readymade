@@ -5,6 +5,7 @@ import { BoardDescriptor, User } from "hkp-frontend/src/types";
 
 import BoardProvider, {
   BoardContextState,
+  BoardProviderHandle,
 } from "hkp-frontend/src/BoardContext";
 import { availableRuntimeEngines } from "../../views/playground/common";
 import BoardWidgetFrame from "./BoardWidgetFrame";
@@ -44,7 +45,7 @@ export default function BoardWidget(props: Props) {
   } = props;
   const [result, setResult] = useState<any>(null);
   const [hideBoard, setHideBoard] = useState<boolean>(boardHiddenOnInit);
-  const boardContextRef = useRef<BoardProvider | null>(null);
+  const boardContextRef = useRef<BoardProviderHandle | null>(null);
 
   const runBoard = (cs: BoardContextState, p?: any) =>
     cs.onAction({ type: "playBoard", params: p ?? params });
@@ -53,7 +54,7 @@ export default function BoardWidget(props: Props) {
   const boardApi: BoardWidgetAPI = {
     runBoard: (p: any) => {
       if (boardContextRef.current) {
-        runBoard(boardContextRef.current?.state, p);
+        runBoard(boardContextRef.current.state, p);
       }
     },
   };
@@ -67,7 +68,7 @@ export default function BoardWidget(props: Props) {
 
   return (
     <BoardProvider
-      ref={(ref) => (boardContextRef.current = ref)}
+      ref={boardContextRef}
       user={user || null}
       boardName={board.boardName}
       fetchBoard={onFetchBoard}

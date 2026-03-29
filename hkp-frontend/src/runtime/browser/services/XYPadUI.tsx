@@ -1,4 +1,4 @@
-import { Component, DragEvent, TouchEvent, MouseEvent } from "react";
+import { useState, useRef, DragEvent, TouchEvent, MouseEvent } from "react";
 
 import { Fullscreen } from "lucide-react";
 import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
@@ -29,168 +29,57 @@ const initialY = initialSize.height / 2 - dragger.height / 2 - offset;
 
 const FULLSCREENZINDEX = 1000;
 
-export default class XYPadUI extends Component<ServiceUIProps> {
-  state = {
-    x: initialX,
-    y: initialY,
-    dragging: false,
-    gridRows: 0,
-    gridCols: 0,
-    isFullscreen: false,
-  };
+export default function XYPadUI(props: ServiceUIProps) {
+  const [x, setX] = useState(initialX);
+  const [y, setY] = useState(initialY);
+  const [dragging, setDragging] = useState(false);
+  const [gridRows, setGridRows] = useState(0);
+  const [gridCols, setGridCols] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
-  lastPos = {
-    x: initialX,
-    y: initialY,
-  };
+  const lastPosRef = useRef<Point>({ x: initialX, y: initialY });
+  const padRectRef = useRef<Rect | null>(null);
+  const pickOffsetRef = useRef<Point | null>(null);
+  const touchDownRef = useRef<Point | undefined>(undefined);
 
-  padRect: Rect | null = null;
-  pickOffset: Point | null = null;
-
-  touchDown: Point | undefined;
-
-  update = (newState: any) => {
-    if (needsUpdate(newState.gridRows, this.state.gridRows)) {
-      this.setState({ gridRows: newState.gridRows });
+  const update = (newState: any) => {
+    if (needsUpdate(newState.gridRows, gridRows)) {
+      setGridRows(newState.gridRows);
     }
-
-    if (needsUpdate(newState.gridCols, this.state.gridCols)) {
-      this.setState({ gridCols: newState.gridCols });
+    if (needsUpdate(newState.gridCols, gridCols)) {
+      setGridCols(newState.gridCols);
     }
   };
 
-  onInit = (initialState: any) => {
-    this.update(initialState);
+  const onInit = (initialState: any) => {
+    update(initialState);
   };
 
-  onNotification = async (notification: any) => {
-    this.update(notification);
+  const onNotification = async (notification: any) => {
+    update(notification);
   };
 
-  getRelativePosition = (e: any): Point => {
+  const getRelativePosition = (e: any): Point => {
     const { clientX, clientY } = e.targetTouches ? e.targetTouches[0] || {} : e;
     return {
       x: Math.min(
-        Math.max(0, clientX - this.padRect!.x),
-        Number(this.padRect!.width!)
+        Math.max(0, clientX - padRectRef.current!.x),
+        Number(padRectRef.current!.width!)
       ),
       y: Math.min(
-        Math.max(0, clientY - this.padRect!.y),
-        Number(this.padRect!.height!)
+        Math.max(0, clientY - padRectRef.current!.y),
+        Number(padRectRef.current!.height!)
       ),
     };
   };
 
-  onTouchContainerStart = (e: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const clickPos = this.jumpDraggerToEvent(e);
-    this.updateService(this.props.service, clickPos, "start");
-    this.touchDown = clickPos;
-  };
-
-  onTouchContainerEnd = (e: any) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (this.touchDown) {
-      this.updateService(this.props.service, this.touchDown, "stop");
-      this.touchDown = undefined;
-    }
-    this.setState({ dragging: false });
-  };
-
-  onPanStart = (e: any) => {
-    const { clientX, clientY } = e.type.includes("drag")
-      ? e
-      : e.targetTouches[0];
-
-    if (e.type.includes("drag")) {
-      e.dataTransfer.setData("application/hkp-service-xypad", "");
-    }
-
-    const elemtRect = e.target.getBoundingClientRect();
-    this.pickOffset = {
-      x: clientX - elemtRect.left,
-      y: clientY - elemtRect.top,
-    };
-    this.setState({ dragging: true });
-  };
-
-  onDragEnd = (_ev: any) => {
-    if (!this.touchDown) {
-      //can't not use this.onMouseUp(ev); as the drop pos from _ev seems in a different coordintate system than I expected
-      const dropPos = {
-        x: this.state.x + dragger.width / 2,
-        y: this.state.y + dragger.width / 2,
-      };
-      this.updateService(this.props.service, dropPos, "stop");
-      this.setState({
-        dragging: false,
-      });
-    }
-  };
-
-  onPanEnd = (e: DragEvent) => {
-    const dropPos = this.getRelativePosition(e);
-
-    this.setState({
-      dragging: false,
-      x: dropPos.x - (this.pickOffset?.x || 0),
-      y: dropPos.y - (this.pickOffset?.y || 0),
-    });
-    this.pickOffset = null;
-    e.preventDefault();
-  };
-
-  onPan = (e: DragEvent | TouchEvent, service: ServiceInstance) => {
-    const touchPos = this.getRelativePosition(e);
-    if (
-      (touchPos.x !== this.lastPos.x || touchPos.y !== this.lastPos.y) &&
-      touchPos.x <= Number(this.padRect!.width!) &&
-      touchPos.y <= Number(this.padRect!.height!)
-    ) {
-      this.updateService(service, touchPos, "move");
-      this.lastPos = touchPos;
-    }
-    e.preventDefault();
-    return touchPos;
-  };
-
-  jumpDraggerToEvent = (e: MouseEvent) => {
-    const clickPos = this.getRelativePosition(e);
-    const draggerPos = {
-      x: clickPos.x - dragger.width / 2,
-      y: clickPos.y - dragger.height / 2,
-    };
-    this.setState(draggerPos);
-    return clickPos;
-  };
-
-  onDblClick = (e: MouseEvent, service: ServiceInstance) => {
-    const clickPos = this.jumpDraggerToEvent(e);
-    this.updateService(service, clickPos);
-  };
-
-  onMouseDown = (ev: MouseEvent) => {
-    if (!this.touchDown) {
-      const clickPos = this.jumpDraggerToEvent(ev);
-      this.updateService(this.props.service, clickPos, "start");
-    }
-  };
-
-  onMouseUp = (ev: MouseEvent) => {
-    const clickPos = this.jumpDraggerToEvent(ev);
-    this.updateService(this.props.service, clickPos, "stop");
-  };
-
-  updateService = (
+  const updateService = (
     service: ServiceInstance,
     clickPos: Point,
     eventType?: string
   ) => {
-    const padWidth = Number(this.padRect!.width);
-    const padHeight = Number(this.padRect!.height);
+    const padWidth = Number(padRectRef.current!.width);
+    const padHeight = Number(padRectRef.current!.height);
     const normalizedClickPos = {
       x: Math.min(clickPos.x / padWidth, padWidth),
       y: Math.min(clickPos.y / padHeight, padHeight),
@@ -201,26 +90,125 @@ export default class XYPadUI extends Component<ServiceUIProps> {
       eventType,
     };
 
-    if (this.state.gridRows > 0) {
-      const heightBtwLines = 1 / this.state.gridRows;
+    if (gridRows > 0) {
+      const heightBtwLines = 1 / gridRows;
       cfg.position.row = Math.floor(normalizedClickPos.y / heightBtwLines);
     }
-    if (this.state.gridCols > 0) {
-      const widthBtwLines = 1 / this.state.gridCols;
+    if (gridCols > 0) {
+      const widthBtwLines = 1 / gridCols;
       cfg.position.column = Math.floor(normalizedClickPos.x / widthBtwLines);
     }
     service.configure(cfg);
   };
 
-  renderMain = () => {
-    const { service } = this.props;
-    const { x, y, dragging, gridRows, gridCols } = this.state;
+  const jumpDraggerToEvent = (e: MouseEvent) => {
+    const clickPos = getRelativePosition(e);
+    const draggerPos = {
+      x: clickPos.x - dragger.width / 2,
+      y: clickPos.y - dragger.height / 2,
+    };
+    setX(draggerPos.x);
+    setY(draggerPos.y);
+    return clickPos;
+  };
+
+  const onTouchContainerStart = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const clickPos = jumpDraggerToEvent(e);
+    updateService(props.service, clickPos, "start");
+    touchDownRef.current = clickPos;
+  };
+
+  const onTouchContainerEnd = (e: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (touchDownRef.current) {
+      updateService(props.service, touchDownRef.current, "stop");
+      touchDownRef.current = undefined;
+    }
+    setDragging(false);
+  };
+
+  const onPanStart = (e: any) => {
+    const { clientX, clientY } = e.type.includes("drag")
+      ? e
+      : e.targetTouches[0];
+
+    if (e.type.includes("drag")) {
+      e.dataTransfer.setData("application/hkp-service-xypad", "");
+    }
+
+    const elemtRect = e.target.getBoundingClientRect();
+    pickOffsetRef.current = {
+      x: clientX - elemtRect.left,
+      y: clientY - elemtRect.top,
+    };
+    setDragging(true);
+  };
+
+  const onDragEnd = (_ev: any) => {
+    if (!touchDownRef.current) {
+      //can't not use this.onMouseUp(ev); as the drop pos from _ev seems in a different coordintate system than I expected
+      const dropPos = {
+        x: x + dragger.width / 2,
+        y: y + dragger.width / 2,
+      };
+      updateService(props.service, dropPos, "stop");
+      setDragging(false);
+    }
+  };
+
+  const onPanEnd = (e: DragEvent) => {
+    const dropPos = getRelativePosition(e);
+
+    setDragging(false);
+    setX(dropPos.x - (pickOffsetRef.current?.x || 0));
+    setY(dropPos.y - (pickOffsetRef.current?.y || 0));
+    pickOffsetRef.current = null;
+    e.preventDefault();
+  };
+
+  const onPan = (e: DragEvent | TouchEvent, service: ServiceInstance) => {
+    const touchPos = getRelativePosition(e);
+    if (
+      (touchPos.x !== lastPosRef.current.x || touchPos.y !== lastPosRef.current.y) &&
+      touchPos.x <= Number(padRectRef.current!.width!) &&
+      touchPos.y <= Number(padRectRef.current!.height!)
+    ) {
+      updateService(service, touchPos, "move");
+      lastPosRef.current = touchPos;
+    }
+    e.preventDefault();
+    return touchPos;
+  };
+
+  const onDblClick = (e: MouseEvent, service: ServiceInstance) => {
+    const clickPos = jumpDraggerToEvent(e);
+    updateService(service, clickPos);
+  };
+
+  const onMouseDown = (ev: MouseEvent) => {
+    if (!touchDownRef.current) {
+      const clickPos = jumpDraggerToEvent(ev);
+      updateService(props.service, clickPos, "start");
+    }
+  };
+
+  const onMouseUp = (ev: MouseEvent) => {
+    const clickPos = jumpDraggerToEvent(ev);
+    updateService(props.service, clickPos, "stop");
+  };
+
+  const renderMain = () => {
+    const { service } = props;
 
     return (
       <div
         ref={(elem) => {
           if (elem) {
-            this.padRect = elem.getBoundingClientRect();
+            padRectRef.current = elem.getBoundingClientRect();
           }
         }}
         style={{
@@ -231,25 +219,26 @@ export default class XYPadUI extends Component<ServiceUIProps> {
           overflow: "hidden",
           touchAction: "none",
         }}
-        onDoubleClick={(ev) => this.onDblClick(ev, service)}
+        onDoubleClick={(ev) => onDblClick(ev, service)}
         onDragOver={(e) => {
           if (e.dataTransfer.types.includes("application/hkp-service-xypad")) {
             e.preventDefault();
             e.stopPropagation();
             e.dataTransfer.dropEffect = "move";
-            this.onPan(e, service);
+            onPan(e, service);
           }
         }}
-        onDrop={this.onPanEnd}
-        onMouseDown={this.onMouseDown}
-        onMouseUp={this.onMouseUp}
-        onTouchStart={this.onTouchContainerStart}
-        onTouchEnd={this.onTouchContainerEnd}
+        onDrop={onPanEnd}
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
+        onTouchStart={onTouchContainerStart}
+        onTouchEnd={onTouchContainerEnd}
         onTouchMove={(e) => {
           e.stopPropagation();
           e.preventDefault();
-          const pos = this.onPan(e, service);
-          this.setState(pos);
+          const pos = onPan(e, service);
+          setX(pos.x);
+          setY(pos.y);
         }}
       >
         {gridRows > 0 || gridCols > 0 ? (
@@ -270,17 +259,17 @@ export default class XYPadUI extends Component<ServiceUIProps> {
             touchAction: "none",
           }}
           draggable={true}
-          onTouchStart={this.onPanStart}
-          onTouchMove={(e) => this.onPan(e, service)}
-          onTouchEnd={this.onDragEnd}
-          onDragStart={this.onPanStart}
-          onDragEnd={this.onDragEnd}
+          onTouchStart={onPanStart}
+          onTouchMove={(e) => onPan(e, service)}
+          onTouchEnd={onDragEnd}
+          onDragStart={onPanStart}
+          onDragEnd={onDragEnd}
         />
       </div>
     );
   };
 
-  renderFullscreen = () => {
+  const renderFullscreen = () => {
     return (
       <div
         style={{
@@ -296,37 +285,35 @@ export default class XYPadUI extends Component<ServiceUIProps> {
         <Button
           style={{ zIndex: FULLSCREENZINDEX + 1 }}
           className="absolute top-0 right-0"
-          onClick={() => this.setState({ isFullscreen: false })}
+          onClick={() => setIsFullscreen(false)}
         >
           x
         </Button>
-        {this.renderMain()}
+        {renderMain()}
       </div>
     );
   };
 
-  render() {
-    const { isFullscreen } = this.state;
-    const customMenuEntries = [
-      {
-        name: "Fullscreen",
-        icon: <MenuIcon icon={Fullscreen} />,
-        disabled: isFullscreen,
-        onClick: () => this.setState({ isFullscreen: true }),
-      },
-    ];
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        customMenuEntries={customMenuEntries}
-        initialSize={{ width: initialSize.width, height: initialSize.height }}
-      >
-        {isFullscreen ? this.renderFullscreen() : this.renderMain()}
-      </ServiceUI>
-    );
-  }
+  const customMenuEntries = [
+    {
+      name: "Fullscreen",
+      icon: <MenuIcon icon={Fullscreen} />,
+      disabled: isFullscreen,
+      onClick: () => setIsFullscreen(true),
+    },
+  ];
+
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      customMenuEntries={customMenuEntries}
+      initialSize={{ width: initialSize.width, height: initialSize.height }}
+    >
+      {isFullscreen ? renderFullscreen() : renderMain()}
+    </ServiceUI>
+  );
 }
 
 function Grid({

@@ -8,10 +8,10 @@ import Peer from "../../components/Peer";
 import { s, t } from "../../styles";
 import Description from "./Description";
 import VSpacer from "../../components/shared/VSpacer";
-import Runtime from "../../components/Runtime";
+import Runtime, { RuntimeHandle } from "../../components/Runtime";
 import DragProvider from "../../DragContext";
 import OutputOptions from "../../components/shared/OutputOptions";
-import InputOptions from "../../components/shared/InputOptions";
+import InputOptions, { InputOptionsHandle } from "../../components/shared/InputOptions";
 import { getActivationId } from "./common";
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import { availableDiscoveryPeerHosts } from "./common";
@@ -61,8 +61,8 @@ export default function Board(props: Props) {
   const [peerOutputActivation, setPeerOutputActivation] = useState<RuntimeOutputRoutings>({});
   const [peerInputActivation, setPeerInputActivation] = useState<RuntimeInputRoutings>({});
 
-  const runtimeInstances = useRef<{ [runtimeId: string]: Runtime | null }>({});
-  const inputSelectors = useRef<{ [runtimeId: string]: InputOptions | null }>({});
+  const runtimeInstances = useRef<{ [runtimeId: string]: RuntimeHandle | null }>({});
+  const inputSelectors = useRef<{ [runtimeId: string]: InputOptionsHandle | null }>({});
   const pendingBoardCallbacks = useRef<{ [reqId: string]: (result: any) => void }>({});
 
   const updateInputActivation = (inputRoutingArg: RuntimeInputRoutings) => {
