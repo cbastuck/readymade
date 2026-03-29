@@ -1,27 +1,27 @@
-import { ServiceUIComponent } from "./types";
-import MapUI from "./runtime/browser/services/MapUI";
-import TimerUI from "./runtime/browser/services/TimerUI";
-import MonitorUI from "./runtime/browser/services/MonitorUI";
-import CanvasUI from "./runtime/browser/services/CanvasUI";
-import InputUI from "./runtime/browser/services/InputUI";
-import StackUI from "./runtime/browser/services/StackUI";
-import CameraUI from "./runtime/browser/services/CameraUI";
-import XYPadUI from "./runtime/browser/services/XYPadUI";
-import AggregatorUI from "./runtime/browser/services/AggregatorUI";
-import InjectorUI from "./runtime/browser/services/InjectorUI";
-import HackerUI from "./runtime/browser/services/HackerUI";
-import SpotifyUI from "./runtime/browser/services/SpotifyUI";
-import TriggerPadUI from "./runtime/browser/services/TriggerPadUI";
-import GithubSinkUI from "./runtime/browser/services/GithubSinkUI";
-import GithubSourceUI from "./runtime/browser/services/GithubSourceUI";
-import OutputUI from "./runtime/browser/services/OutputUI";
-import FilterUI from "./runtime/browser/services/FilterUI";
-import FetcherUI from "./runtime/browser/services/FetcherUI";
-import BufferUI from "./runtime/browser/services/BufferUI";
-import OllamaPromptUI from "./runtime/browser/services/OllamaPromptUI";
-import LooperUI from "./runtime/browser/services/LooperUI";
+import { ServiceUIComponent } from "../../types";
+import MapUI from "./services/MapUI";
+import TimerUI from "./services/TimerUI";
+import MonitorUI from "./services/MonitorUI";
+import CanvasUI from "./services/CanvasUI";
+import InputUI from "./services/InputUI";
+import StackUI from "./services/StackUI";
+import CameraUI from "./services/CameraUI";
+import XYPadUI from "./services/XYPadUI";
+import AggregatorUI from "./services/AggregatorUI";
+import InjectorUI from "./services/InjectorUI";
+import HackerUI from "./services/HackerUI";
+import SpotifyUI from "./services/SpotifyUI";
+import TriggerPadUI from "./services/TriggerPadUI";
+import GithubSinkUI from "./services/GithubSinkUI";
+import GithubSourceUI from "./services/GithubSourceUI";
+import OutputUI from "./services/OutputUI";
+import FilterUI from "./services/FilterUI";
+import FetcherUI from "./services/FetcherUI";
+import BufferUI from "./services/BufferUI";
+import OllamaPromptUI from "./services/OllamaPromptUI";
+import LooperUI from "./services/LooperUI";
 
-import { SequencerUI } from "./runtime/browser/services/Sequencer";
+import { SequencerUI } from "./services/Sequencer";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {

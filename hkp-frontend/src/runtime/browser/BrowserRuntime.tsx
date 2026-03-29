@@ -11,7 +11,7 @@ import {
   ServiceInstance,
   User,
 } from "../../types";
-import { findServiceUI } from "../../UIFactory";
+import { findServiceUI } from "./UIRegistry";
 import { BoardCtx } from "../../BoardContext";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
 import { removeRuntime } from "./BrowserRuntimeApi";
@@ -117,12 +117,12 @@ export default class BrowserRuntime extends Component<Props> {
       _boardName: string,
       service: ServiceInstance,
       _runtimeId: string,
-      _userId: string | undefined
+      _userId: string | undefined,
     ): ReactElement => {
       const serviceId = service.serviceId || service.__descriptor?.serviceId;
       if (!serviceId) {
         throw new Error(
-          `ServiceId missing for service: ${JSON.stringify(service)}`
+          `ServiceId missing for service: ${JSON.stringify(service)}`,
         );
       }
       const ui =

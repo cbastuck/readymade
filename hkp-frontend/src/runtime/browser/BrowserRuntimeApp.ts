@@ -1,5 +1,5 @@
 import React from "react";
-import { findServiceUI } from "../../UIFactory";
+import { findServiceUI } from "./UIRegistry";
 import {
   AppImpl,
   InstanceId,
@@ -59,14 +59,14 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
 
     registerNotificationTarget: (
       svc: ServiceInstance,
-      onNotification: (notification: any) => void
+      onNotification: (notification: any) => void,
     ) => {
       notificationTargets.register(svc, onNotification);
     },
 
     unregisterNotificationTarget: (
       svc: ServiceInstance,
-      onNotification: (notification: any) => void
+      onNotification: (notification: any) => void,
     ) => {
       notificationTargets.unregister(svc, onNotification);
     },
@@ -86,7 +86,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     createSubService: (
       parent: ServiceImpl,
       service: ServiceClass,
-      instanceId?: string
+      instanceId?: string,
     ): Promise<ServiceInstance | null> =>
       appendSubservice(scope, service, parent, instanceId),
 
