@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useContext, useCallback } from "react";
 import { withRouter, WithRouterProps } from "../../common";
 
 import BoardProvider, {
-  BoardConsumer,
+  useBoardContext,
   BoardContextState,
   BoardProviderHandle,
 } from "../../BoardContext";
@@ -74,6 +74,111 @@ type Props = WithRouterProps & {
   onUpdateBoardState?: (newBoard: BoardDescriptor) => void;
   onNewBoard?: (ctx?: BoardContextState) => void;
 };
+
+type PlaygroundInnerProps = {
+  boardName: string;
+  description: string;
+  compact?: boolean;
+  hideNavigation?: boolean;
+  menuItemFactory?: BoardMenuItemFactory;
+  showShareBoardQRCodeURL: string | null;
+  setShowShareBoardQRCodeURL: (url: string | null) => void;
+  isSaveDialogVisible: boolean;
+  suggestedName: string;
+  onSaveDialog: (name: string, desc: string, isSuggestedName: boolean) => Promise<any>;
+  setIsSaveDialogVisible: (v: boolean) => void;
+  sidechainRouting: SidechainRouting;
+  outputRouting: RuntimeOutputRoutings;
+  inputRouting: RuntimeInputRoutings;
+  setSidechainRouting: React.Dispatch<React.SetStateAction<SidechainRouting>>;
+  setInputRouting: React.Dispatch<React.SetStateAction<RuntimeInputRoutings>>;
+  setOutputRouting: React.Dispatch<React.SetStateAction<RuntimeOutputRoutings>>;
+  onChangeBoardname: (newName: string) => void;
+  propBoardName?: string;
+  children?: React.ReactNode;
+};
+
+function PlaygroundInner(props: PlaygroundInnerProps) {
+  const boardContext = useBoardContext();
+  if (!boardContext) return null;
+  return (
+    <div className="w-full h-full bg-neutral-50 flex flex-col">
+      <Toolbar
+        showRuntimeMenu={true}
+        onUpdateAvailableRuntimeEngines={(engines) => {
+          const filteredEngines = engines.filter(
+            (rt) => rt.type === "remote" || rt.type === "realtime",
+          );
+          localStorage.setItem(
+            "available-remote-runtimes",
+            JSON.stringify(filteredEngines),
+          );
+        }}
+        isCompact={props.compact}
+        menuItemFactory={props.menuItemFactory}
+        hideNavigation={props.hideNavigation}
+        includeNavigationLinks={!props.hideNavigation}
+      />
+
+      <ShareQRCodeDialog
+        isOpen={props.showShareBoardQRCodeURL !== null}
+        url={props.showShareBoardQRCodeURL}
+        onClose={() => props.setShowShareBoardQRCodeURL(null)}
+      />
+      <SaveBoardDialog
+        isOpen={props.isSaveDialogVisible}
+        suggestedName={props.suggestedName}
+        suggestedDescription={props.description}
+        onSave={props.onSaveDialog}
+        onCancel={() => props.setIsSaveDialogVisible(false)}
+      />
+      {boardContext.errorOnFetch ? (
+        <BoardFetchError
+          boardName={props.boardName}
+          error={boardContext.errorOnFetch}
+        />
+      ) : (
+        <BoardEntryPoint
+          className="pt-2"
+          isLoading={
+            boardContext.isFetching || !!boardContext.awaitUserLogin
+          }
+          showLoginRequired={!!boardContext.awaitUserLogin}
+          boardContext={boardContext}
+          boardName={props.propBoardName || props.boardName}
+          description={props.description}
+          sidechainRouting={props.sidechainRouting}
+          outputRouting={props.outputRouting}
+          inputRouting={props.inputRouting}
+          onChangeSidechainRouting={(
+            runtime: RuntimeDescriptor,
+            routing: Array<SidechainRoute>,
+          ) =>
+            props.setSidechainRouting((prev) => ({
+              ...prev,
+              [runtime.id]: routing,
+            }))
+          }
+          onChangeInputRouting={(runtime, value) => {
+            props.setInputRouting((prev) => ({
+              ...prev,
+              [runtime.id]: value,
+            }));
+          }}
+          onChangeOutputRouting={(runtime, routing) => {
+            props.setOutputRouting((prev) => ({
+              ...prev,
+              [runtime.id]: routing,
+            }));
+          }}
+          onChangeBoardname={props.onChangeBoardname}
+        />
+      )}
+      <Footer />
+      {props.children || null}
+    </div>
+  );
+}
 
 function Playground(props: Props) {
   const appContext = useContext(AppCtx);
@@ -516,94 +621,35 @@ function Playground(props: Props) {
       onRemoveService={onRemoveService}
       availableRuntimeEngines={playgroundRuntimeEngines}
     >
-      <BoardConsumer>
-        {(boardContext) =>
-          boardContext && (
-            <div className="w-full h-full bg-neutral-50 flex flex-col">
-              <Toolbar
-                showRuntimeMenu={true}
-                onUpdateAvailableRuntimeEngines={(engines) => {
-                  const filteredEngines = engines.filter(
-                    (rt) => rt.type === "remote" || rt.type === "realtime",
-                  );
-
-                  localStorage.setItem(
-                    "available-remote-runtimes",
-                    JSON.stringify(filteredEngines),
-                  );
-                }}
-                isCompact={props.compact}
-                menuItemFactory={props.menuItemFactory}
-                hideNavigation={props.hideNavigation}
-                includeNavigationLinks={!props.hideNavigation}
-              />
-
-              <ShareQRCodeDialog
-                isOpen={showShareBoardQRCodeURL !== null}
-                url={showShareBoardQRCodeURL}
-                onClose={() => setShowShareBoardQRCodeURL(null)}
-              />
-              <SaveBoardDialog
-                isOpen={isSaveDialogVisible}
-                suggestedName={
-                  (props.match &&
-                    props.match.params &&
-                    props.match.params.board) ||
-                  props.boardName ||
-                  generateRandomName()
-                }
-                suggestedDescription={description}
-                onSave={onSaveDialog}
-                onCancel={() => setIsSaveDialogVisible(false)}
-              />
-              {boardContext.errorOnFetch ? (
-                <BoardFetchError
-                  boardName={boardName}
-                  error={boardContext.errorOnFetch}
-                />
-              ) : (
-                <BoardEntryPoint
-                  className="pt-2"
-                  isLoading={
-                    boardContext.isFetching || !!boardContext.awaitUserLogin
-                  }
-                  showLoginRequired={!!boardContext.awaitUserLogin}
-                  boardContext={boardContext}
-                  boardName={props.boardName || boardName}
-                  description={description}
-                  sidechainRouting={sidechainRouting}
-                  outputRouting={outputRouting}
-                  inputRouting={inputRouting}
-                  onChangeSidechainRouting={(
-                    runtime: RuntimeDescriptor,
-                    routing: Array<SidechainRoute>,
-                  ) =>
-                    setSidechainRouting((prev) => ({
-                      ...prev,
-                      [runtime.id]: routing,
-                    }))
-                  }
-                  onChangeInputRouting={(runtime, value) => {
-                    setInputRouting((prev) => ({
-                      ...prev,
-                      [runtime.id]: value,
-                    }));
-                  }}
-                  onChangeOutputRouting={(runtime, routing) => {
-                    setOutputRouting((prev) => ({
-                      ...prev,
-                      [runtime.id]: routing,
-                    }));
-                  }}
-                  onChangeBoardname={onChangeBoardname}
-                />
-              )}
-              <Footer />
-              {props.children || null}
-            </div>
-          )
+      <PlaygroundInner
+        boardName={boardName}
+        description={description}
+        compact={props.compact}
+        hideNavigation={props.hideNavigation}
+        menuItemFactory={props.menuItemFactory}
+        showShareBoardQRCodeURL={showShareBoardQRCodeURL}
+        setShowShareBoardQRCodeURL={setShowShareBoardQRCodeURL}
+        isSaveDialogVisible={isSaveDialogVisible}
+        suggestedName={
+          (props.match &&
+            props.match.params &&
+            props.match.params.board) ||
+          props.boardName ||
+          generateRandomName()
         }
-      </BoardConsumer>
+        onSaveDialog={onSaveDialog}
+        setIsSaveDialogVisible={setIsSaveDialogVisible}
+        sidechainRouting={sidechainRouting}
+        outputRouting={outputRouting}
+        inputRouting={inputRouting}
+        setSidechainRouting={setSidechainRouting}
+        setInputRouting={setInputRouting}
+        setOutputRouting={setOutputRouting}
+        onChangeBoardname={onChangeBoardname}
+        propBoardName={props.boardName}
+      >
+        {props.children}
+      </PlaygroundInner>
     </BoardProvider>
   );
 }

@@ -205,6 +205,5 @@ export function usePeersContext() {
   return useContext(PeersCtx);
 }
 
-const PeersConsumer = PeersCtx.Consumer;
-export { PeersConsumer, PeersCtx };
+export { PeersCtx };
 export default PeersProvider;

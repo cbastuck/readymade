@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ExternalLink, ChevronUp, ChevronDown } from "lucide-react";
 
 import BoardProvider, {
-  BoardConsumer,
+  useBoardContext,
   BoardContextState,
   BoardProviderHandle,
 } from "../../../BoardContext";
@@ -27,6 +27,16 @@ import {
 
 import Button from "hkp-frontend/src/ui-components/Button";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+
+type BoardServiceInnerProps = {
+  renderContent: (boardContext: BoardContextState) => React.ReactNode;
+};
+
+function BoardServiceInner({ renderContent }: BoardServiceInnerProps) {
+  const boardContext = useBoardContext();
+  if (!boardContext) return null;
+  return <>{renderContent(boardContext)}</>;
+}
 
 type Config = {
   result: any;
@@ -175,91 +185,89 @@ export default function BoardServiceUI(props: ServiceUIProps) {
         boardName="board-service-board"
         availableRuntimeEngines={[]}
       >
-        <BoardConsumer>
-          {(boardContext) =>
-            boardContext && (
+        <BoardServiceInner
+          renderContent={(boardContext) => (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                width: "100%",
+                height: "100%",
+                marginBottom: "5px",
+                minWidth: "250px",
+              }}
+            >
+              <div className="flex items-center">
+                <SelectorField
+                  label="Board"
+                  value={selectedBoard}
+                  options={savedBoards.reduce(
+                    (all, board) => ({
+                      ...all,
+                      [board.name]: board.name,
+                    }),
+                    {}
+                  )}
+                  onChange={({ value: board }) => {
+                    service.configure({ selectedBoard: board });
+                    onChangeSavedBoard(boardContext, board);
+                  }}
+                />
+                <Button
+                  className="h-min w-min p-2 m-0"
+                  icon={<ExternalLink className="h-4 w-4" />}
+                  onClick={onEdit}
+                />
+              </div>
+
+              <SelectorField
+                label="Input"
+                value="array"
+                options={{
+                  array: "process array items",
+                  whole: "process whole array ",
+                }}
+                onChange={() => {}}
+              />
+
+              <Button
+                style={{
+                  height: "15px",
+                  marginTop: 5,
+                  padding: 0,
+                  width: "100%",
+                  borderRadius: 1,
+                }}
+                onClick={onToggleExpandCollapse}
+                icon={isExpanded ? <ChevronUp /> : <ChevronDown />}
+              />
+
               <div
                 style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  width: "100%",
                   height: "100%",
-                  marginBottom: "5px",
-                  minWidth: "250px",
+                  maxHeight: isExpanded ? 1000 : 0,
+                  opacity: isExpanded ? 1 : 0,
+                  width: "100%",
+                  maxWidth: isExpanded ? 1000 : 10,
+                  transition: "max-height 1s, max-width 0.5s, opacity 2.0s",
                 }}
               >
-                <div className="flex items-center">
-                  <SelectorField
-                    label="Board"
-                    value={selectedBoard}
-                    options={savedBoards.reduce(
-                      (all, board) => ({
-                        ...all,
-                        [board.name]: board.name,
-                      }),
-                      {}
-                    )}
-                    onChange={({ value: board }) => {
-                      service.configure({ selectedBoard: board });
-                      onChangeSavedBoard(boardContext, board);
-                    }}
-                  />
-                  <Button
-                    className="h-min w-min p-2 m-0"
-                    icon={<ExternalLink className="h-4 w-4" />}
-                    onClick={onEdit}
-                  />
-                </div>
-
-                <SelectorField
-                  label="Input"
-                  value="array"
-                  options={{
-                    array: "process array items",
-                    whole: "process whole array ",
-                  }}
-                  onChange={() => {}}
+                <Board
+                  inputRouting={inputRouting}
+                  outputRouting={outputRouting}
+                  boardContext={boardContext}
+                  sidechainRouting={sidechainRouting}
+                  boardName={selectedBoard}
+                  onChangeOutputRouting={() => {}}
+                  onChangeInputRouting={() => {}}
+                  onChangeSidechainRouting={() => {}}
+                  onResult={onResult}
+                  headless={!isExpanded}
                 />
-
-                <Button
-                  style={{
-                    height: "15px",
-                    marginTop: 5,
-                    padding: 0,
-                    width: "100%",
-                    borderRadius: 1,
-                  }}
-                  onClick={onToggleExpandCollapse}
-                  icon={isExpanded ? <ChevronUp /> : <ChevronDown />}
-                />
-
-                <div
-                  style={{
-                    height: "100%",
-                    maxHeight: isExpanded ? 1000 : 0,
-                    opacity: isExpanded ? 1 : 0,
-                    width: "100%",
-                    maxWidth: isExpanded ? 1000 : 10,
-                    transition: "max-height 1s, max-width 0.5s, opacity 2.0s",
-                  }}
-                >
-                  <Board
-                    inputRouting={inputRouting}
-                    outputRouting={outputRouting}
-                    boardContext={boardContext}
-                    sidechainRouting={sidechainRouting}
-                    boardName={selectedBoard}
-                    onChangeOutputRouting={() => {}}
-                    onChangeInputRouting={() => {}}
-                    onChangeSidechainRouting={() => {}}
-                    onResult={onResult}
-                    headless={!isExpanded}
-                  />
-                </div>
               </div>
-            )
-          }
-        </BoardConsumer>
+            </div>
+          )}
+        />
       </BoardProvider>
     );
   };

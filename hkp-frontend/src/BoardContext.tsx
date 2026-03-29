@@ -132,7 +132,7 @@ type Props = {
 };
 
 const BoardCtx = createContext<BoardContextState | null>(null);
-const { Provider, Consumer: BoardConsumer } = BoardCtx;
+const { Provider } = BoardCtx;
 
 /**
  * Imperative handle exposed via ref on BoardProvider.
@@ -952,7 +952,7 @@ export function useBoardContext() {
   return useContext(BoardCtx);
 }
 
-export { BoardConsumer, BoardCtx };
+export { BoardCtx };
 export default BoardProvider;
 
 function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(

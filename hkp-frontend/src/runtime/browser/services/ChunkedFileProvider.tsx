@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-import { BoardConsumer } from "../../../BoardContext";
+import { useBoardContext } from "../../../BoardContext";
 
 const serviceId = "hookup.to/service/chunked-file-provider";
 const serviceName = "Chunked File Provider";
@@ -12,8 +12,9 @@ type ChunkedFileProviderUIProps = {
 
 function ChunkedFileProviderUI(props: ChunkedFileProviderUIProps): JSX.Element {
   const [file, setFile] = useState<File | undefined>(undefined);
+  const boardContext = useBoardContext() as any;
 
-  const processFile = (boardContext: any, f: File | undefined): void => {
+  const processFile = (f: File | undefined): void => {
     const runtime = boardContext.getCurrentBrowserRuntime(props.runtimeId);
     if (runtime) {
       const service = runtime.getServiceById(props.service.uuid);
@@ -24,36 +25,32 @@ function ChunkedFileProviderUI(props: ChunkedFileProviderUIProps): JSX.Element {
   };
 
   return (
-    <BoardConsumer>
-      {(boardContext: any) => (
-        <div
+    <div
+      style={{
+        margin: 10,
+      }}
+    >
+      <div>
+        <input
+          type="file"
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setFile(e.target && e.target.files && e.target.files[0] || undefined)
+          }
+        />
+      </div>
+      <div>
+        <button
+          onClick={() => processFile(file)}
+          disabled={!file}
           style={{
-            margin: 10,
+            width: "100%",
+            marginTop: 10,
           }}
         >
-          <div>
-            <input
-              type="file"
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                setFile(e.target && e.target.files && e.target.files[0] || undefined)
-              }
-            />
-          </div>
-          <div>
-            <button
-              onClick={() => processFile(boardContext, file)}
-              disabled={!file}
-              style={{
-                width: "100%",
-                marginTop: 10,
-              }}
-            >
-              Process
-            </button>
-          </div>
-        </div>
-      )}
-    </BoardConsumer>
+          Process
+        </button>
+      </div>
+    </div>
   );
 }
 

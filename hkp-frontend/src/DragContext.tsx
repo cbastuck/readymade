@@ -20,7 +20,7 @@ type DragContextState = {
 };
 
 const DragCtx = createContext<DragContextState>({});
-const { Provider, Consumer: DragConsumer } = DragCtx;
+const { Provider } = DragCtx;
 
 type Props = {
   children: ReactNode;
@@ -59,5 +59,4 @@ export function useDragContext() {
   return useContext(DragCtx);
 }
 
-export { DragConsumer };
 export default DragContext;

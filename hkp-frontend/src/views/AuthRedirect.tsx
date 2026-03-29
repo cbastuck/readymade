@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 
 import { withRouter } from "../common";
-import { AppConsumer } from "../AppContext";
+import { useAppContext } from "../AppContext";
 import { redirectUri } from "../core/actions";
 import { popItem } from "../core/storage";
 import LoginCheckMail from "./LoginCheckMails";
@@ -15,6 +15,7 @@ type AuthRedirectProps = {
 };
 
 function AuthRedirect(props: AuthRedirectProps) {
+  const appContext = useAppContext();
   const queryParamsRef = useRef<Record<string, string> | undefined>(undefined);
 
   // Initialize queryParams once on mount (mirrors constructor logic)
@@ -96,23 +97,17 @@ function AuthRedirect(props: AuthRedirectProps) {
     return false;
   }
 
-  return (
-    <AppConsumer>
-      {(appContext: any) => {
-        if (!tokenUpdated) {
-          appContext
-            .updateToken(token)
-            .then(() => setTokenUpdated(true));
-          return false;
-        } else {
-          return queryParams!.state ? (
-            <Navigate to={`/${queryParams!.state}`} />
-          ) : (
-            <Navigate to="/" />
-          );
-        }
-      }}
-    </AppConsumer>
+  if (!tokenUpdated) {
+    (appContext as any)
+      .updateToken(token)
+      .then(() => setTokenUpdated(true));
+    return false;
+  }
+
+  return queryParams!.state ? (
+    <Navigate to={`/${queryParams!.state}`} />
+  ) : (
+    <Navigate to="/" />
   );
 }
 

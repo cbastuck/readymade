@@ -28,7 +28,7 @@ const AppCtx = createContext<AppContextState>({
   updateToken: async (_: IdToken) => {},
   logout: () => {},
 });
-const { Provider, Consumer: AppConsumer } = AppCtx;
+const { Provider } = AppCtx;
 
 function AppProvider({ children }: Props) {
   const [user, setUser] = useState<User | null>(null);
@@ -140,5 +140,5 @@ export function useAppContext() {
   return useContext(AppCtx);
 }
 
-export { AppConsumer, AppCtx };
+export { AppCtx };
 export default AppProvider;

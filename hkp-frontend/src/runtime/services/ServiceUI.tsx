@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 
-import { BoardConsumer } from "../../BoardContext";
+import { useBoardContext } from "../../BoardContext";
 import Resizable from "../../components/Resizable";
 
 type Segment = {
@@ -31,6 +31,7 @@ type ServiceUIProps = {
  * THIS IS DEPRECATED
  */
 export default function ServiceUI(props: ServiceUIProps) {
+  const boardContext = useBoardContext();
   const {
     service: serviceProp,
     initialSegment,
@@ -276,28 +277,26 @@ export default function ServiceUI(props: ServiceUIProps) {
   };
 
   return (
-    <BoardConsumer>
-      {(boardContext: any) =>
-        segments
-          ? renderSegments(
-              {
-                service: setupProp
-                  ? setupProp(boardContext, props)
-                  : setup(boardContext, props),
-              },
-              segments,
-              resizable,
-              onResize,
-              style,
-            )
-          : renderSingleSegment(
-              boardContext,
-              children!,
-              resizable,
-              onResize,
-              style,
-            )
-      }
-    </BoardConsumer>
+    <>
+      {segments
+        ? renderSegments(
+            {
+              service: setupProp
+                ? setupProp(boardContext, props)
+                : setup(boardContext, props),
+            },
+            segments,
+            resizable,
+            onResize,
+            style,
+          )
+        : renderSingleSegment(
+            boardContext,
+            children!,
+            resizable,
+            onResize,
+            style,
+          )}
+    </>
   );
 }

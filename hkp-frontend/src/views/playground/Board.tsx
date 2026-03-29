@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
 import PeersProvider, {
-  PeersConsumer,
+  usePeersContext,
   PeersContextState,
 } from "../../PeersContext";
 import Peer from "../../components/Peer";
@@ -32,6 +32,15 @@ import RuntimeWithDropBars from "./RuntimeWithDropBars";
 
 const defaultDiscoveryPeer: PeerJsHostDescriptor =
   availableDiscoveryPeerHosts[0];
+
+type BoardRuntimesListProps = {
+  renderRuntimes: (peersContext: PeersContextState | null) => React.ReactNode;
+};
+
+function BoardRuntimesList({ renderRuntimes }: BoardRuntimesListProps) {
+  const peersContext = usePeersContext();
+  return <>{renderRuntimes(peersContext)}</>;
+}
 
 type Props = {
   inputRouting: RuntimeInputRoutings;
@@ -581,8 +590,8 @@ export default function Board(props: Props) {
     <div className="flex flex-col h-full">
       <div style={s(t.w100)}>
         <PeersProvider>
-          <PeersConsumer>
-            {(peersContext) =>
+          <BoardRuntimesList
+            renderRuntimes={(peersContext) =>
               props.boardContext.runtimes.map((runtime, runtimeIdx) => {
                 const activationId = getActivationId(runtime.id);
                 const inputActivation =
@@ -703,7 +712,7 @@ export default function Board(props: Props) {
                 );
               })
             }
-          </PeersConsumer>
+          />
         </PeersProvider>
       </div>
       {description && !props.headless && (
