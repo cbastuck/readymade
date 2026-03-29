@@ -20,7 +20,9 @@ export default function CameraUI(props: ServiceUIProps) {
   const [captureFormat, setCaptureFormat] = useState<string>("image/png");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [devices, setDevices] = useState<Array<MediaDeviceInfo>>([]);
-  const [currentDevice, setCurrentDevice] = useState<MediaDeviceInfo | null>(null);
+  const [currentDevice, setCurrentDevice] = useState<MediaDeviceInfo | null>(
+    null,
+  );
 
   const videoElementRef = useRef<HTMLVideoElement | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -31,10 +33,18 @@ export default function CameraUI(props: ServiceUIProps) {
   const captureFormatRef = useRef<string>("image/png");
 
   // Keep refs in sync with state for use in callbacks
-  useEffect(() => { streamRef.current = stream; }, [stream]);
-  useEffect(() => { widthRef.current = width; }, [width]);
-  useEffect(() => { heightRef.current = height; }, [height]);
-  useEffect(() => { captureFormatRef.current = captureFormat; }, [captureFormat]);
+  useEffect(() => {
+    streamRef.current = stream;
+  }, [stream]);
+  useEffect(() => {
+    widthRef.current = width;
+  }, [width]);
+  useEffect(() => {
+    heightRef.current = height;
+  }, [height]);
+  useEffect(() => {
+    captureFormatRef.current = captureFormat;
+  }, [captureFormat]);
 
   useEffect(() => {
     return () => {
@@ -59,13 +69,23 @@ export default function CameraUI(props: ServiceUIProps) {
   const onInit = (initialState: any) => {
     props.service.registerScreenshooter(triggerScreenshot);
     setMirror(initialState.mirror !== undefined ? initialState.mirror : true);
-    setRecording(initialState.recording !== undefined ? initialState.recording : false);
+    setRecording(
+      initialState.recording !== undefined ? initialState.recording : false,
+    );
     setWidth(initialState.width !== undefined ? initialState.width : 320);
     setHeight(initialState.height !== undefined ? initialState.height : 200);
-    setCaptureFormat(initialState.captureFormat !== undefined ? initialState.captureFormat : "image/png");
+    setCaptureFormat(
+      initialState.captureFormat !== undefined
+        ? initialState.captureFormat
+        : "image/png",
+    );
     setStream(initialState.stream !== undefined ? initialState.stream : null);
     setDevices(initialState.devices !== undefined ? initialState.devices : []);
-    setCurrentDevice(initialState.currentDevice !== undefined ? initialState.currentDevice : null);
+    setCurrentDevice(
+      initialState.currentDevice !== undefined
+        ? initialState.currentDevice
+        : null,
+    );
   };
 
   const onNotification = (notification: any) => {
@@ -77,7 +97,7 @@ export default function CameraUI(props: ServiceUIProps) {
   const enumerateDevices = async () => {
     const allDevices = await navigator.mediaDevices.enumerateDevices();
     const videoDevices = allDevices.filter(
-      (device) => device.kind === "videoinput"
+      (device) => device.kind === "videoinput",
     );
     setDevices(videoDevices);
     setCurrentDevice(videoDevices[0]);
@@ -85,7 +105,7 @@ export default function CameraUI(props: ServiceUIProps) {
 
   const initVideo = async (
     videoElement: HTMLVideoElement,
-    deviceId?: string
+    deviceId?: string,
   ): Promise<MediaStream> => {
     const constraints: MediaStreamConstraints = !deviceId
       ? { video: true }
@@ -97,7 +117,10 @@ export default function CameraUI(props: ServiceUIProps) {
     return s;
   };
 
-  const startVideo = async (videoElement: HTMLVideoElement, deviceId?: string) => {
+  const startVideo = async (
+    videoElement: HTMLVideoElement,
+    deviceId?: string,
+  ) => {
     if (navigator.mediaDevices) {
       const s = await initVideo(videoElement, deviceId);
       setStream(s);
@@ -162,7 +185,7 @@ export default function CameraUI(props: ServiceUIProps) {
     if (newRecording) {
       if (s) {
         startRecording(s).then((data: any) =>
-          props.service.inject(new Blob(data, { type: "video/webm" }))
+          props.service.inject(new Blob(data, { type: "video/webm" })),
         );
       }
     } else {
@@ -193,12 +216,10 @@ export default function CameraUI(props: ServiceUIProps) {
             label="Device"
             options={devices.reduce(
               (all, device) => ({ ...all, [device.label]: device.label }),
-              {}
+              {},
             )}
             value={currentDevice?.label || ""}
-            onChange={(value) =>
-              onChangeDevice(devices[value.index] || null)
-            }
+            onChange={(value) => onChangeDevice(devices[value.index] || null)}
           />
         </div>
         <video
@@ -206,7 +227,10 @@ export default function CameraUI(props: ServiceUIProps) {
             if (!videoElementRef.current && videoElement) {
               videoElementRef.current = videoElement;
               startVideo(videoElement);
-            } else if (videoElement && videoElementRef.current !== videoElement) {
+            } else if (
+              videoElement &&
+              videoElementRef.current !== videoElement
+            ) {
               videoElementRef.current = videoElement; // happens e.g. on resize
             }
           }}
@@ -252,11 +276,7 @@ export default function CameraUI(props: ServiceUIProps) {
           </div>
         </div>
         <div className="flex gap-2 w-full">
-          <Button
-            className="w-full"
-            disabled={recording}
-            onClick={onSnapshot}
-          >
+          <Button className="w-full" disabled={recording} onClick={onSnapshot}>
             Capture Snapshot
           </Button>
           <Button className="w-full" disabled={!stream} onClick={onRecord}>
@@ -278,9 +298,7 @@ export default function CameraUI(props: ServiceUIProps) {
       ),
       disabled: !cameraRunning && !videoElementRef.current,
       onClick: () =>
-        cameraRunning
-          ? stopVideo()
-          : startVideo(videoElementRef.current!),
+        cameraRunning ? stopVideo() : startVideo(videoElementRef.current!),
     },
     {
       name: mirror ? "Unmirror Image" : "Mirror Image",

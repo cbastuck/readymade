@@ -21,10 +21,17 @@ function SamplingUI(props: any): JSX.Element {
   const [wrapSample, setWrapSample] = useState<boolean>(false);
   const [mean, setMean] = useState<string | undefined>(undefined);
   const [std, setStd] = useState<string | undefined>(undefined);
-  const [annotations, setAnnotations] = useState<Record<string, string> | undefined>(undefined);
+  const [annotations, setAnnotations] = useState<
+    Record<string, string> | undefined
+  >(undefined);
   const [root, setRoot] = useState<string | undefined>(undefined);
 
-  const onInit = (initialState: { mean?: number[]; std?: number[]; annotations?: Record<string, string>; root?: string }): void => {
+  const onInit = (initialState: {
+    mean?: number[];
+    std?: number[];
+    annotations?: Record<string, string>;
+    root?: string;
+  }): void => {
     const newState: any = {};
     const { mean: m, std: s, annotations: a, root: r } = initialState;
     if (m !== undefined) {
@@ -42,7 +49,8 @@ function SamplingUI(props: any): JSX.Element {
 
     if (newState.mean !== undefined) setMean(newState.mean);
     if (newState.std !== undefined) setStd(newState.std);
-    if (newState.annotations !== undefined) setAnnotations(newState.annotations);
+    if (newState.annotations !== undefined)
+      setAnnotations(newState.annotations);
     if (newState.root !== undefined) setRoot(newState.root);
     setWrapSample(!!newState.root);
   };
@@ -55,7 +63,9 @@ function SamplingUI(props: any): JSX.Element {
           style={{ ...vspace, width: "100%" }}
           type="text"
           value={mean || ""}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMean(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setMean(e.target.value)
+          }
           onKeyPress={(e: React.KeyboardEvent) =>
             e.key === "Enter" && (service.mean = isJSON(mean ?? ""))
           }
@@ -64,7 +74,9 @@ function SamplingUI(props: any): JSX.Element {
           style={{ ...vspace, width: "100%" }}
           type="text"
           value={std || ""}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStd(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setStd(e.target.value)
+          }
           onKeyPress={(e: React.KeyboardEvent) =>
             e.key === "Enter" && (service.std = isJSON(std ?? ""))
           }
@@ -90,7 +102,9 @@ function SamplingUI(props: any): JSX.Element {
           style={{ ...vspace, width: "100%" }}
           type="text"
           value={root || ""}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoot(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setRoot(e.target.value)
+          }
           onKeyPress={(e: React.KeyboardEvent) =>
             e.key === "Enter" && (service.root = root)
           }
@@ -145,7 +159,12 @@ class Sampling {
     this.root = undefined;
   }
 
-  configure(config: { mean?: number[]; std?: number[]; annotations?: Record<string, string>; root?: string }): void {
+  configure(config: {
+    mean?: number[];
+    std?: number[];
+    annotations?: Record<string, string>;
+    root?: string;
+  }): void {
     const { mean, std, annotations, root } = config;
     if (mean !== undefined) {
       this.mean = mean;
@@ -186,8 +205,8 @@ class Sampling {
     const result = this.annotations
       ? { ...this.annotations, [this.root || "sample"]: sample }
       : this.root
-      ? { [this.root]: sample }
-      : sample;
+        ? { [this.root]: sample }
+        : sample;
 
     if (!params) {
       return result;

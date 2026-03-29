@@ -26,14 +26,6 @@ export default function StackUI(props: ServiceUIProps) {
   const [subservices, setSubservices] = useState<Array<ServiceInstance>>([]);
   const [input, setInput] = useState<string>(defaultInput);
   const [output, setOutput] = useState<string>(defaultOutput);
-  const [bypass, setBypass] = useState<{ [serviceUuid: string]: boolean }>({});
-
-  const updateBypass = (ssvcs: Array<ServiceInstance>) => {
-    return ssvcs.reduce(
-      (all, ssvc) => ({ ...all, [ssvc.uuid]: ssvc.bypass }),
-      {}
-    );
-  };
 
   const onInit = (initialState: any) => {
     const {
@@ -41,20 +33,16 @@ export default function StackUI(props: ServiceUIProps) {
       input: inp = defaultInput,
       output: out = defaultOutput,
     } = initialState;
-    const b = updateBypass(ss);
     setSubservices(ss);
     setInput(inp);
     setOutput(out);
-    setBypass(b);
   };
 
   const onNotification = (notification: any) => {
     const { subservices: ss, input: inp, output: out } = notification;
 
     if (ss !== undefined) {
-      const b = updateBypass(ss);
       setSubservices(ss);
-      setBypass(b);
     }
 
     if (inp !== undefined) {

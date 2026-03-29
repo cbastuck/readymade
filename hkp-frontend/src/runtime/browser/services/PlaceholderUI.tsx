@@ -17,7 +17,7 @@ export default function PlaceholderUI(props: ServiceUIProps) {
       return {};
     }
     const additionalFiters = ["uuid", "board", "bypass"];
-    return Object.keys(filterPrivateMembers(config))
+    return Object.keys(filterPrivateMembers(config) ?? {})
       .filter((x) => additionalFiters.indexOf(x) === -1)
       .filter((x) => !isFunction(config[x]))
       .reduce((all, key) => {

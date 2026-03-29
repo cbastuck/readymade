@@ -63,11 +63,7 @@ export function MediaPlayerUI(props: ServiceUIProps) {
   };
 
   return (
-    <ServiceUI
-      {...props}
-      onInit={onInit}
-      onNotification={onNotification}
-    >
+    <ServiceUI {...props} onInit={onInit} onNotification={onNotification}>
       {renderMain()}
     </ServiceUI>
   );
@@ -81,7 +77,7 @@ class MediaPlayer {
     app: AppImpl,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;

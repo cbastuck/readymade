@@ -18,7 +18,6 @@ export default function GithubSourceUI(props: ServiceUIProps) {
   const [repo, setRepo] = useState<any>(undefined);
   const [branch, setBranch] = useState<string | undefined>(undefined);
   const [file, setFile] = useState<any>(undefined);
-  const [user, setUser] = useState<any>(null);
 
   const onInit = (initialState: any) => {
     const { token: t, owner: o, repo: r, branch: b, file: f } = initialState;
@@ -30,14 +29,19 @@ export default function GithubSourceUI(props: ServiceUIProps) {
   };
 
   const onNotification = (notification: any) => {
-    const { token: t, user: u, owner: o, repo: r, branch: b, file: f } = notification;
+    const {
+      token: t,
+      user: _u,
+      owner: o,
+      repo: r,
+      branch: b,
+      file: f,
+    } = notification;
     if (t) {
       setToken(t);
     }
 
-    if (u !== undefined) {
-      setUser(u);
-    }
+    // user state removed - not used in rendering
 
     if (o !== undefined) {
       setOwner(o);
@@ -127,9 +131,12 @@ export default function GithubSourceUI(props: ServiceUIProps) {
   };
 
   const inject = async () => {
+    if (!token || !file) {
+      return;
+    }
     const content = file.treeSHA
       ? await getFile(token, owner, repo, file.treeSHA, file.name)
-      : await getFileFromBranch(token, owner, repo, branch, file.name);
+      : await getFileFromBranch(token, owner, repo, branch || "", file.name);
     if (content) {
       props.service.inject(content);
     }

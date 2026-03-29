@@ -26,10 +26,7 @@ function FileSourceUI(props: any): JSX.Element {
   };
 
   return (
-    <ServiceUI
-      {...props}
-      segments={[{ name: "Main", render: renderMain }]}
-    />
+    <ServiceUI {...props} segments={[{ name: "Main", render: renderMain }]} />
   );
 }
 

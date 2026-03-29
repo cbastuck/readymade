@@ -18,7 +18,7 @@ class Spotify {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;
@@ -55,23 +55,22 @@ class Spotify {
   };
 
   async dispatchAction(action: any) {
+    const token = this.token;
+    if (!token) {
+      return false;
+    }
+
     switch (action) {
       case "injectSavedSongs": {
-        const liked = await getMySavedSongs(this.token).catch(
-          this.onRequestFail
-        );
+        const liked = await getMySavedSongs(token).catch(this.onRequestFail);
         return liked && this.app.next(this, liked);
       }
       case "injectRecentSongs": {
-        const recents = await getRecentSongs(this.token).catch(
-          this.onRequestFail
-        );
+        const recents = await getRecentSongs(token).catch(this.onRequestFail);
         return recents && this.app.next(this, recents);
       }
       case "getProfile": {
-        const profile = await getUserProfile(this.token).catch(
-          this.onRequestFail
-        );
+        const profile = await getUserProfile(token).catch(this.onRequestFail);
         this.app.notify(this, { profile });
         break;
       }
@@ -95,7 +94,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new Spotify(app, board, descriptor, id),
   createUI: SpotifyUI,
 };

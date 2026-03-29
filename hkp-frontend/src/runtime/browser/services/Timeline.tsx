@@ -23,7 +23,10 @@ class TimelineUI extends Component<ServiceUIProps, TimelineUIState> {
     capture: false,
   };
 
-  onInit = (initialState: { capture: boolean; events: TimelineEvent[] }): void => {
+  onInit = (initialState: {
+    capture: boolean;
+    events: TimelineEvent[];
+  }): void => {
     const { capture, events } = initialState;
     this.setState({ events, capture });
   };
@@ -35,7 +38,12 @@ class TimelineUI extends Component<ServiceUIProps, TimelineUIState> {
     }
   };
 
-  renderEvent = (event: TimelineEvent, timelineStart: number, timelineEnd: number, index: number): JSX.Element => {
+  renderEvent = (
+    event: TimelineEvent,
+    timelineStart: number,
+    timelineEnd: number,
+    index: number,
+  ): JSX.Element => {
     const duration = timelineEnd - timelineStart;
     const relPos =
       duration > 0 ? (event.timestamp - timelineStart) / duration : 0;
@@ -61,7 +69,7 @@ class TimelineUI extends Component<ServiceUIProps, TimelineUIState> {
     const firstEvent = events[0];
     const lastEvent = events[events.length - 1];
     return events.map((ev, index) =>
-      this.renderEvent(ev, firstEvent.timestamp, lastEvent.timestamp, index)
+      this.renderEvent(ev, firstEvent.timestamp, lastEvent.timestamp, index),
     );
   };
 

@@ -34,11 +34,7 @@ function ThrowerUI(props: any): JSX.Element {
             setPushUrl(url);
           }}
         />
-        <InputField
-          label="Id"
-          value={id}
-          onChange={(i: string) => setId(i)}
-        />
+        <InputField label="Id" value={id} onChange={(i: string) => setId(i)} />
       </div>
     );
   };

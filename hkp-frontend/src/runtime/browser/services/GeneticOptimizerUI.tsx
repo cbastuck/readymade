@@ -6,10 +6,20 @@ import Annotations from "../../../components/shared/Annotations";
 export default function GeneticOptimizerUI(props: any): JSX.Element {
   const [ttl, setTtl] = useState<number | undefined>(undefined);
   const [dataRoot, setDataRoot] = useState<string | undefined>(undefined);
-  const [annotations, setAnnotations] = useState<Record<string, string> | undefined>(undefined);
+  const [annotations, setAnnotations] = useState<
+    Record<string, string> | undefined
+  >(undefined);
 
-  const onInit = (initialState: { ttl?: number; dataRoot?: string; annotations?: Record<string, string> }): void => {
-    const { ttl: newTtl, dataRoot: newDataRoot, annotations: newAnnotations = {} } = initialState;
+  const onInit = (initialState: {
+    ttl?: number;
+    dataRoot?: string;
+    annotations?: Record<string, string>;
+  }): void => {
+    const {
+      ttl: newTtl,
+      dataRoot: newDataRoot,
+      annotations: newAnnotations = {},
+    } = initialState;
     setTtl(newTtl);
     setDataRoot(newDataRoot);
     setAnnotations(newAnnotations);
@@ -33,10 +43,11 @@ export default function GeneticOptimizerUI(props: any): JSX.Element {
           style={{ ...vspace, width: "100%" }}
           type="number"
           value={ttl || ""}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTtl(Number(e.target.value))}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setTtl(Number(e.target.value))
+          }
           onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
-            e.key === "Enter" &&
-            service.configure({ ttl: Number(ttl) })
+            e.key === "Enter" && service.configure({ ttl: Number(ttl) })
           }
         />
         <button

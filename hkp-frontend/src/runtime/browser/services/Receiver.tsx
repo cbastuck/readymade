@@ -23,11 +23,7 @@ function ReceiverUI(props: any): JSX.Element {
           value={wall}
           onChange={(w: string) => setWall(w)}
         />
-        <InputField
-          label="Id"
-          value={id}
-          onChange={(i: string) => setId(i)}
-        />
+        <InputField label="Id" value={id} onChange={(i: string) => setId(i)} />
       </div>
     );
   };

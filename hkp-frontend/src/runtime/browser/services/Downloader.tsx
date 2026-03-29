@@ -45,7 +45,9 @@ function DownloaderUI(props: any): JSX.Element {
         <input
           style={s(t.w100, { margin: 0 })}
           value={filename || service.filename}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilename(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setFilename(e.target.value)
+          }
           onKeyUp={(ev: React.KeyboardEvent<HTMLInputElement>) =>
             ev.key === "Enter" &&
             service.configure({
@@ -134,7 +136,10 @@ class Downloader {
     this.app.notify(this, { running: this.running });
   }
 
-  async pump(reader: ReadableStreamDefaultReader<Uint8Array>, writer: any): Promise<void> {
+  async pump(
+    reader: ReadableStreamDefaultReader<Uint8Array>,
+    writer: any,
+  ): Promise<void> {
     const res = await reader.read();
     if (!res.done) {
       await writer.write(res.value);

@@ -21,7 +21,8 @@ function RemoteWindowUI(props: any): JSX.Element {
   const fullscreenRef = useRef<boolean | undefined>(undefined);
 
   useEffect(() => {
-    windowRef.current = window.open(undefined, "remote", undefined) ?? undefined;
+    windowRef.current =
+      window.open(undefined, "remote", undefined) ?? undefined;
   }, []);
 
   const update = (value: any): void => {
@@ -35,11 +36,12 @@ function RemoteWindowUI(props: any): JSX.Element {
     if (!value.bot) {
       doc.body.appendChild(
         doc.createElement("h1").appendChild(doc.createTextNode(value.user))
-          .parentNode as Node
+          .parentNode as Node,
       );
       const link = doc
         .createElement("a")
-        .appendChild(doc.createTextNode(value.meta.uri)).parentNode as HTMLAnchorElement;
+        .appendChild(doc.createTextNode(value.meta.uri))
+        .parentNode as HTMLAnchorElement;
       link.setAttribute("href", value.meta.uri);
       link.setAttribute("target", "_blank");
       doc.body.appendChild(link);
@@ -49,9 +51,13 @@ function RemoteWindowUI(props: any): JSX.Element {
   return (
     <ServiceUI
       {...props}
-      onInit={(service: any) => { fullscreenRef.current = service.fullscreen; }}
+      onInit={(service: any) => {
+        fullscreenRef.current = service.fullscreen;
+      }}
     >
-      {({ service }: { service: any }) => service && service.register(update) && <div />}
+      {({ service }: { service: any }) =>
+        service && service.register(update) && <div />
+      }
     </ServiceUI>
   );
 }

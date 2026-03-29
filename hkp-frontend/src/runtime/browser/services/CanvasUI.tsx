@@ -19,7 +19,9 @@ type DrawElement = any;
 
 export default function CanvasUI(props: ServiceUIProps) {
   const [fullWidth, setFullWidth] = useState<number>(document.body.clientWidth);
-  const [fullHeight, setFullHeight] = useState<number>(document.body.clientHeight);
+  const [fullHeight, setFullHeight] = useState<number>(
+    document.body.clientHeight,
+  );
   const [fullscreen, setFullscreen] = useState<boolean>(false);
   const [clearOnRedraw, setClearOnRedraw] = useState<boolean>(true);
   const [canvasWidth, setCanvasWidth] = useState<number>(400);
@@ -28,7 +30,9 @@ export default function CanvasUI(props: ServiceUIProps) {
   const [capture, setCapture] = useState<boolean>(false);
 
   const imageCacheRef = useRef<{ [key: string]: any }>({});
-  const clickHandlersRef = useRef<{ [key: string]: { rect: Rect; action: ServiceAction } }>({});
+  const clickHandlersRef = useRef<{
+    [key: string]: { rect: Rect; action: ServiceAction };
+  }>({});
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const recentDataRef = useRef<any>(undefined);
 
@@ -41,13 +45,27 @@ export default function CanvasUI(props: ServiceUIProps) {
   const canvasHeightRef = useRef<number>(250);
   const captureRef = useRef<boolean>(false);
 
-  useEffect(() => { clearOnRedrawRef.current = clearOnRedraw; }, [clearOnRedraw]);
-  useEffect(() => { fullWidthRef.current = fullWidth; }, [fullWidth]);
-  useEffect(() => { fullHeightRef.current = fullHeight; }, [fullHeight]);
-  useEffect(() => { fullscreenRef.current = fullscreen; }, [fullscreen]);
-  useEffect(() => { canvasWidthRef.current = canvasWidth; }, [canvasWidth]);
-  useEffect(() => { canvasHeightRef.current = canvasHeight; }, [canvasHeight]);
-  useEffect(() => { captureRef.current = capture; }, [capture]);
+  useEffect(() => {
+    clearOnRedrawRef.current = clearOnRedraw;
+  }, [clearOnRedraw]);
+  useEffect(() => {
+    fullWidthRef.current = fullWidth;
+  }, [fullWidth]);
+  useEffect(() => {
+    fullHeightRef.current = fullHeight;
+  }, [fullHeight]);
+  useEffect(() => {
+    fullscreenRef.current = fullscreen;
+  }, [fullscreen]);
+  useEffect(() => {
+    canvasWidthRef.current = canvasWidth;
+  }, [canvasWidth]);
+  useEffect(() => {
+    canvasHeightRef.current = canvasHeight;
+  }, [canvasHeight]);
+  useEffect(() => {
+    captureRef.current = capture;
+  }, [capture]);
 
   useEffect(() => {
     const resizeBodyObserver = new ResizeObserver(onResizeBodyEvent);
@@ -105,11 +123,13 @@ export default function CanvasUI(props: ServiceUIProps) {
     });
   };
 
-  const createImage = (blob: Blob | typeof Image) => {
-    if (blob instanceof Image) {
+  const createImage = (
+    blob: Blob | HTMLImageElement,
+  ): Promise<HTMLImageElement> => {
+    if (blob instanceof window.Image) {
       return Promise.resolve(blob); // already an image
     }
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const imageUrl = createObjectURL(blob);
       if (imageUrl) {
         const img = new Image();
@@ -117,7 +137,13 @@ export default function CanvasUI(props: ServiceUIProps) {
           revokeObjectURL(imageUrl);
           resolve(img);
         });
+        img.addEventListener("error", () => {
+          revokeObjectURL(imageUrl);
+          reject(new Error("Could not load image from blob"));
+        });
         img.src = imageUrl;
+      } else {
+        reject(new Error("Could not create image URL"));
       }
     });
   };
@@ -205,7 +231,10 @@ export default function CanvasUI(props: ServiceUIProps) {
     drawText(ctx, textData);
   };
 
-  const drawImage = async (ctx: CanvasRenderingContext2D, data: DrawElement) => {
+  const drawImage = async (
+    ctx: CanvasRenderingContext2D,
+    data: DrawElement,
+  ) => {
     const {
       centerX: canvasCenterX,
       centerY: canvasCenterY,
@@ -275,8 +304,7 @@ export default function CanvasUI(props: ServiceUIProps) {
   };
 
   const drawText = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
-    const { centerX, centerY, canvasWidth, canvasHeight } =
-      getCanvasCenter();
+    const { centerX, centerY, canvasWidth, canvasHeight } = getCanvasCenter();
     const {
       font = "30px Arial",
       text,
@@ -310,9 +338,7 @@ export default function CanvasUI(props: ServiceUIProps) {
       ctx.font = `${style} ${weight} ${isRelative ? "10px" : size} ${family}`;
     }
 
-    const t = textTransform
-      ? applyTextTransform(text, textTransform)
-      : text;
+    const t = textTransform ? applyTextTransform(text, textTransform) : text;
     let textWidth = ctx.measureText(t).width;
     if (isRelative) {
       const targetRelativeWidth = Number(size.substr(0, size.length - 1)) / 100;
@@ -352,7 +378,7 @@ export default function CanvasUI(props: ServiceUIProps) {
         toAbsolute(data.y, height),
         toAbsolute(radius, height),
         0,
-        TWO_PI
+        TWO_PI,
       );
     };
 
@@ -376,7 +402,7 @@ export default function CanvasUI(props: ServiceUIProps) {
       const grd = ctx.createRadialGradient(gx, gy, r * 0.2, gx, gy, r * 1.5);
       const nColors = gradient.colors.length;
       gradient.colors.forEach((c: string, i: number) =>
-        grd.addColorStop(i / nColors, c)
+        grd.addColorStop(i / nColors, c),
       );
       ctx.fillStyle = grd;
 
@@ -405,7 +431,7 @@ export default function CanvasUI(props: ServiceUIProps) {
         toAbsolute(x, cW),
         toAbsolute(y, cH),
         toAbsolute(width, cW),
-        toAbsolute(height, length !== undefined ? cW : cH)
+        toAbsolute(height, length !== undefined ? cW : cH),
       );
     };
 
@@ -653,14 +679,19 @@ export default function CanvasUI(props: ServiceUIProps) {
                 blob,
               },
             }),
-          captureMime
+          captureMime,
         );
       }
     }
   };
 
   const onInit = (initialState: any) => {
-    const { size, resizable: newResizable, fullscreen: newFullscreen, clearOnRedraw: newClearOnRedraw = true } = initialState;
+    const {
+      size,
+      resizable: newResizable,
+      fullscreen: newFullscreen,
+      clearOnRedraw: newClearOnRedraw = true,
+    } = initialState;
 
     setClearOnRedraw(newClearOnRedraw);
     clearOnRedrawRef.current = newClearOnRedraw;

@@ -95,15 +95,15 @@ export default class Runtime extends Component<Props, State> {
         break;
       }
       case "getConfig": {
-          if (!boardContext || !boardContext.boardName || !runtime || !service) {
-            return;
-          }
+        if (!boardContext || !boardContext.boardName || !runtime || !service) {
+          return;
+        }
         return getServiceConfiguration(
           // TODO: this should go through the BoardContext
           // This does not work for services in BrowserRuntimes
           boardContext.boardName,
           service,
-          runtime
+          runtime,
         );
       }
       case "rename": {
@@ -132,7 +132,7 @@ export default class Runtime extends Component<Props, State> {
   // TODO: NOBODY SHOULD CALL THIS ANYMORE
   processRuntime = (
     params: any,
-    svc: InstanceId | null = null
+    svc: InstanceId | null = null,
   ): Promise<any> => {
     if (!this.impl || !this.impl.processRuntime) {
       throw new Error("Runtime.processRuntime() impl is missing");
@@ -158,7 +158,7 @@ export default class Runtime extends Component<Props, State> {
         "configureService() Can not find service by id: ",
         serviceUuid,
         this.props.boardContext.services,
-        this.props.runtime
+        this.props.runtime,
       );
     }
   };

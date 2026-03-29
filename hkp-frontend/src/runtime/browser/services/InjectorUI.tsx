@@ -10,7 +10,6 @@ import {
   CustomMenuEntry,
   ServiceInstance,
   ServiceUIProps,
-  User,
 } from "hkp-frontend/src/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
@@ -23,13 +22,11 @@ import { Progress } from "hkp-frontend/src/ui-components/primitives/progress";
 type InjectorMode = "data" | "file" | "drop";
 
 export default function InjectorUI(props: ServiceUIProps) {
-  const [files, setFiles] = useState<Array<File>>([]);
   const [blob, setBlob] = useState<Blob | null>(null);
   const [dropName, setDropName] = useState<string | undefined>(undefined);
   const [items, setItems] = useState<Array<any> | null>(null);
   const [itemsSelection, setItemsSelection] = useState<Array<any>>([]);
   const [recentInjection, setRecentInjection] = useState<string>("");
-  const [multirow, setMultirow] = useState<boolean>(false);
   const [fileProgress, setFileProgress] = useState<number>(0);
   const [file, setFile] = useState<File | null>(null);
   const [loadAsText, setLoadAsText] = useState<boolean>(true);
@@ -53,10 +50,7 @@ export default function InjectorUI(props: ServiceUIProps) {
   const onUpdate = (config: any) => {
     const { recentInjection: ri, plainText: pt } = config;
     if (ri !== undefined) {
-      const data =
-        typeof ri === "string"
-          ? ri
-          : JSON.stringify(ri);
+      const data = typeof ri === "string" ? ri : JSON.stringify(ri);
       setRecentInjection(data);
     }
 
@@ -109,7 +103,7 @@ export default function InjectorUI(props: ServiceUIProps) {
                   setItemsSelection(
                     checked
                       ? [...itemsSelection, idx]
-                      : itemsSelection.filter((x) => x !== idx)
+                      : itemsSelection.filter((x) => x !== idx),
                   )
                 }
               />
@@ -140,7 +134,7 @@ export default function InjectorUI(props: ServiceUIProps) {
             const isArray = fileList.length > 1;
             if (isArray) {
               console.warn(
-                "InjectorUI.renderDragNDropInput only single files supported"
+                "InjectorUI.renderDragNDropInput only single files supported",
               );
               return;
             }
@@ -205,7 +199,7 @@ export default function InjectorUI(props: ServiceUIProps) {
   const readFile = (
     service: ServiceInstance,
     f: File | Blob,
-    asText: boolean
+    asText: boolean,
   ) => {
     const reader = new FileReader();
     reader.addEventListener("error", (_ev: any) => {
@@ -241,8 +235,7 @@ export default function InjectorUI(props: ServiceUIProps) {
             type="file"
             className="tracking-wider"
             onChange={(ev) =>
-              ev.target.files?.length &&
-              setFile(ev.target.files[0])
+              ev.target.files?.length && setFile(ev.target.files[0])
             }
           />
         </div>
@@ -304,18 +297,18 @@ export default function InjectorUI(props: ServiceUIProps) {
     mode === "data"
       ? ["json", "plain"]
       : mode === "file"
-      ? ["binary", "text"]
-      : [];
+        ? ["binary", "text"]
+        : [];
   const formatValue =
     mode === "data"
       ? plainText
         ? "plain"
         : "json"
       : mode === "file"
-      ? loadAsText
-        ? "text"
-        : "binary"
-      : undefined;
+        ? loadAsText
+          ? "text"
+          : "binary"
+        : undefined;
 
   const onFormat = (newFormat: string) => {
     if (mode === "data") {

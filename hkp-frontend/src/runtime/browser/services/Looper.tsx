@@ -32,7 +32,7 @@ class Stack extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, _descriptor, id, {
       services: [],
@@ -90,7 +90,13 @@ class Stack extends ServiceBase<State> {
     return {
       ...this.state,
       bypass: this.bypass,
-      services: this._instances.map((ssvc) => filterPrivateMembers(ssvc)),
+      services: this._instances
+        .map(
+          (ssvc) => filterPrivateMembers(ssvc) as ServiceDescriptor | undefined,
+        )
+        .filter(
+          (service): service is ServiceDescriptor => service !== undefined,
+        ),
     };
   };
 
@@ -119,7 +125,7 @@ class Stack extends ServiceBase<State> {
     const ssvc = await this.app.createSubService(
       this,
       svc,
-      (svc as any).uuid || uuidv4()
+      (svc as any).uuid || uuidv4(),
     );
 
     if (ssvc) {
@@ -132,7 +138,7 @@ class Stack extends ServiceBase<State> {
   removeSubservice = async (svc: ServiceInstance) => {
     this._instances = this._instances.filter((x) => x !== svc);
     this.state.services = this.state.services.filter(
-      (x) => x.uuid !== svc.uuid
+      (x) => x.uuid !== svc.uuid,
     );
     if (svc.destroy) {
       svc.destroy();
@@ -209,7 +215,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new Stack(app, board, descriptor, id),
   createUI: StackUI,
 };

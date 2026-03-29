@@ -55,7 +55,9 @@ class Dispatcher {
     }
   }
 
-  async process(params: DispatchItem | DispatchItem[]): Promise<DispatchItem | DispatchItem[]> {
+  async process(
+    params: DispatchItem | DispatchItem[],
+  ): Promise<DispatchItem | DispatchItem[]> {
     if (Array.isArray(params)) {
       await Promise.all(params.map((x) => this.dispatch(x)));
     } else {

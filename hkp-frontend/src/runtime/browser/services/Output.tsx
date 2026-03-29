@@ -24,7 +24,7 @@ class Output extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       mode: "websocket",
@@ -75,7 +75,8 @@ class Output extends ServiceBase<State> {
     const ws = new WebsocketChannel(
       `output-service-${this.uuid}`,
       this.onReceive,
-      isSecureConnection()
+      isSecureConnection(),
+      null,
     );
 
     ws.onError = (err) => {
@@ -106,7 +107,7 @@ class Output extends ServiceBase<State> {
         if (!this._websocket) {
           const urlWithAuth = createAuthorizedURL(
             url,
-            this.app.getAuthenticatedUser()
+            this.app.getAuthenticatedUser(),
           );
           this._websocket = await this.connectWebsocket(urlWithAuth);
         }
@@ -136,7 +137,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new Output(app, board, descriptor, id),
   createUI: OutputUI,
 };

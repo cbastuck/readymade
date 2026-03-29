@@ -39,6 +39,10 @@ export function GithubUser(props: UserProps) {
   }, [token]);
 
   const init = async (t: string | undefined) => {
+    if (!t) {
+      setUser(null);
+      return;
+    }
     const u = await getUser(t);
     if (u) {
       setUser(u);
@@ -90,7 +94,8 @@ type ObjectProps = ServiceUIProps & {
 };
 
 export function GithubObject(props: ObjectProps) {
-  const { token, owner, repo, branch, file, onChange, disableFileInput } = props;
+  const { token, owner, repo, branch, file, onChange, disableFileInput } =
+    props;
 
   const [user, setUser] = useState<User | null>(null);
   const [ownerState, setOwnerState] = useState<string | undefined>(undefined);
@@ -98,7 +103,9 @@ export function GithubObject(props: ObjectProps) {
   const [branches, setBranches] = useState<any>(undefined);
   const [tree, setTree] = useState<any>(undefined);
   const [path, setPath] = useState<Array<any>>([]);
-  const [fileMode, setFileMode] = useState<"New File" | "Select File">("New File");
+  const [fileMode, setFileMode] = useState<"New File" | "Select File">(
+    "New File",
+  );
 
   useEffect(() => {
     init();
@@ -125,9 +132,7 @@ export function GithubObject(props: ObjectProps) {
   const init = async () => {
     const u = await getUser(token);
     const r = await getRepos(token, owner || u.login);
-    const b = repo
-      ? await getBranches(token, owner || u.login, repo)
-      : [];
+    const b = repo ? await getBranches(token, owner || u.login, repo) : [];
     const t =
       branch && repo
         ? await getBranch(token, owner || u.login, repo, branch)
@@ -184,12 +189,12 @@ export function GithubObject(props: ObjectProps) {
 
     const repositoryOptions = repos.reduce(
       (all: any, cur: any) => ({ ...all, [cur.name]: cur.name }),
-      {}
+      {},
     );
     const branchOptions = branches
       ? branches.reduce(
           (all: any, cur: any) => ({ ...all, [cur.name]: cur.name }),
-          {}
+          {},
         )
       : {};
 
@@ -264,7 +269,12 @@ export function GithubObject(props: ObjectProps) {
           onPath={async (part: any) => {
             const pos = path?.findIndex((x) => x.name === part) || -1;
             if (pos !== -1) {
-              const newTree = await getTree(token, owner, repo, path?.[pos].sha);
+              const newTree = await getTree(
+                token,
+                owner,
+                repo,
+                path?.[pos].sha,
+              );
               const diff = path ? path.length - 1 - pos : 0;
               if (diff > 0) {
                 setTree(newTree);

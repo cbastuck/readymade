@@ -5,7 +5,9 @@ import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 const serviceId = "hookup.to/service/sequencer";
 const serviceName = "Sequencer";
 
-function resolveTransferItem(dataTransferItem: DataTransferItem): Promise<{ type: string; kind: string; data: string }> {
+function resolveTransferItem(
+  dataTransferItem: DataTransferItem,
+): Promise<{ type: string; kind: string; data: string }> {
   return new Promise((resolve) => {
     const { kind, type } = dataTransferItem;
     dataTransferItem.getAsString((str: string) =>
@@ -13,7 +15,7 @@ function resolveTransferItem(dataTransferItem: DataTransferItem): Promise<{ type
         type,
         kind,
         data: str,
-      })
+      }),
     );
   });
 }
@@ -65,7 +67,11 @@ export function SequencerUI(props: any): JSX.Element {
   const [editBuffer, setEditBuffer] = useState<string>("");
   const [editBufferStep, setEditBufferStep] = useState<number>(0);
 
-  const onInit = (initialState: { currentStep: number; steps: any[]; repeat: boolean }): void => {
+  const onInit = (initialState: {
+    currentStep: number;
+    steps: any[];
+    repeat: boolean;
+  }): void => {
     setCurrentStep(initialState.currentStep);
     setNumSteps(initialState.steps.length);
     setRepeat(initialState.repeat);
@@ -73,7 +79,10 @@ export function SequencerUI(props: any): JSX.Element {
     setEditBufferStep(initialState.currentStep);
   };
 
-  const update = (service: any, { currentStep: cs, finished }: { currentStep?: number; finished?: boolean }): void => {
+  const update = (
+    service: any,
+    { currentStep: cs, finished }: { currentStep?: number; finished?: boolean },
+  ): void => {
     if (cs !== undefined) {
       setCurrentStep(cs);
     }
@@ -221,7 +230,9 @@ class Sequencer {
     this.repeat = true;
   }
 
-  register(callback: (data: { currentStep?: number; finished?: boolean }) => void): boolean {
+  register(
+    callback: (data: { currentStep?: number; finished?: boolean }) => void,
+  ): boolean {
     this.callback = callback;
     return true;
   }
@@ -237,7 +248,18 @@ class Sequencer {
     this.steps[step] = data;
   }
 
-  configure(config: { numSteps?: number; steps?: any[]; repeat?: boolean; conditions?: (Condition | null | undefined)[]; currentStep?: number } | null | undefined): void {
+  configure(
+    config:
+      | {
+          numSteps?: number;
+          steps?: any[];
+          repeat?: boolean;
+          conditions?: (Condition | null | undefined)[];
+          currentStep?: number;
+        }
+      | null
+      | undefined,
+  ): void {
     const { numSteps, steps, repeat, conditions, currentStep } = config || {};
 
     if (steps !== undefined) {
@@ -309,7 +331,7 @@ class Sequencer {
         condition &&
         this.checkCondition(
           condition.index !== undefined ? params[condition.index] : params,
-          condition
+          condition,
         );
       const nonWeakConditionFulfilled =
         nextNonWeakCondition &&
@@ -317,7 +339,7 @@ class Sequencer {
           nextNonWeakCondition.index !== undefined
             ? params[nextNonWeakCondition.index]
             : params,
-          nextNonWeakCondition
+          nextNonWeakCondition,
         );
       if (nonWeakConditionFulfilled) {
         this.currentStep = this.conditions.indexOf(nextNonWeakCondition) + 1;
