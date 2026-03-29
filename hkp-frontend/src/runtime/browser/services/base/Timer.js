@@ -28,6 +28,7 @@ class Timer {
       clearInterval(this.__timer);
       this.__timer = undefined;
       this.counter = 0;
+      this.running = false;
       this.app.notify(this, { running: false, count: this.counter });
     }
   }
@@ -111,7 +112,7 @@ class Timer {
     const process = () => {
       if (
         this.conditionUntilTriggercount &&
-        this.counter > this.conditionUntilTriggercount
+        this.counter >= this.conditionUntilTriggercount
       ) {
         this.clearTimer();
       } else {
@@ -131,7 +132,7 @@ class Timer {
         this.clearTimer();
         const timeBetween = moment.duration(
           this.periodicValue,
-          this.periodicUnit
+          this.periodicUnit,
         );
 
         this.__timer = setInterval(process, timeBetween.asMilliseconds());
@@ -147,7 +148,7 @@ class Timer {
         } else {
           const delayBetween = moment.duration(
             this.oneShotDelay,
-            this.oneShotDelayUnit
+            this.oneShotDelayUnit,
           );
           setTimeout(process, delayBetween.asMilliseconds());
         }
@@ -175,7 +176,7 @@ class Timer {
     }
     if (this.isSleeping) {
       console.warn(
-        "Processing timer service while sleeping ... process dropped"
+        "Processing timer service while sleeping ... process dropped",
       );
       clearTimeout(this.sleeping);
       this.sleeping = undefined;

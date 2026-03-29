@@ -21,7 +21,7 @@ class Map extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       mode: "replace",
@@ -92,17 +92,17 @@ class Map extends ServiceBase<State> {
       // map to scalar value (not an object) if only an '=', i.e. empty string
       if (keys.length === 1 && keys[0] === "") {
         const expression = this._terms[keys[0]];
-        return evalExpression(expression, { params: x }, this.app);
+        return await evalExpression(expression, { params: x }, this.app);
       }
 
       const initial =
         this.state.mode === "replace"
           ? deepCopy(this._properties)
           : this.state.mode === "overwrite"
-          ? { ...x, ...deepCopy(this._properties) }
-          : { ...deepCopy(this._properties), ...x };
+            ? { ...x, ...deepCopy(this._properties) }
+            : { ...deepCopy(this._properties), ...x };
 
-      return keys.reduce(async (acc, key) => {
+      return await keys.reduce(async (acc, key) => {
         const expression = this._terms[key];
         if (!expression) {
           return acc;
@@ -126,7 +126,7 @@ class Map extends ServiceBase<State> {
         "Error in Map.process",
         error,
         "in template",
-        JSON.stringify(this.state.template || "<empty>")
+        JSON.stringify(this.state.template || "<empty>"),
       );
       return x; // do not map the input - there was an error - return identity
     }
