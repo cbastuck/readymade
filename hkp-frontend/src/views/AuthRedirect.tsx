@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Navigate } from "react-router-dom";
 
 import { withRouter } from "../common";
@@ -14,44 +14,36 @@ type AuthRedirectProps = {
   [key: string]: any;
 };
 
-type AuthRedirectState = {
-  tokenUpdated: boolean;
-  token: string | null;
-  step: string;
-};
+function AuthRedirect(props: AuthRedirectProps) {
+  const queryParamsRef = useRef<Record<string, string> | undefined>(undefined);
 
-class AuthRedirect extends Component<AuthRedirectProps, AuthRedirectState> {
-  queryParams: Record<string, string> | undefined;
-
-  constructor(props: AuthRedirectProps) {
-    super(props);
-    // TODO: this checks if we're in an iframe and
-    // if so delegates the request to the parent.
-    // This logic should not be here
-    let initialStep = "init";
+  // Initialize queryParams once on mount (mirrors constructor logic)
+  if (queryParamsRef.current === undefined) {
     if (window.parent !== window) {
       // TODO: we should not do this here
       window.parent.location.href = window.location.href;
     } else {
       const { location } = props;
-      this.queryParams = Object.fromEntries(
+      queryParamsRef.current = Object.fromEntries(
         new URLSearchParams(location.search.substr(1))
       );
-      if (this.queryParams.code) {
-        this.exchangeCodeForToken(this.queryParams.code);
-      } else if (this.queryParams.step !== undefined) {
-        initialStep = this.queryParams.step;
-      }
     }
-
-    this.state = {
-      tokenUpdated: false,
-      token: null,
-      step: initialStep,
-    };
   }
 
-  exchangeCodeForToken = async (code: string): Promise<void> => {
+  const queryParams = queryParamsRef.current;
+
+  // Determine initial step from query params
+  const getInitialStep = () => {
+    if (!queryParams) return "init";
+    if (queryParams.step !== undefined) return queryParams.step;
+    return "init";
+  };
+
+  const [tokenUpdated, setTokenUpdated] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
+  const [step] = useState<string>(getInitialStep);
+
+  const exchangeCodeForToken = async (code: string): Promise<void> => {
     const clientId = "hookup";
     const pkceVerifier = popItem("pkce_verifier");
     const response = await fetch("/openid/token", {
@@ -72,53 +64,56 @@ class AuthRedirect extends Component<AuthRedirectProps, AuthRedirectState> {
 
     const result = await response.json();
     if (result && result.id_token) {
-      this.setState({ token: result.id_token });
+      setToken(result.id_token);
     }
   };
 
-  render(): React.ReactNode {
-    if (!this.queryParams) {
-      return false;
+  useEffect(() => {
+    if (queryParams?.code) {
+      exchangeCodeForToken(queryParams.code);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    if (this.queryParams.error) {
-      return (
-        <Navigate
-          to="/loginFail"
-          state={{ errorMessage: this.queryParams.error }}
-        />
-      );
-    }
+  if (!queryParams) {
+    return false;
+  }
 
-    const { token, tokenUpdated, step } = this.state;
-
-    if (step === "mailsent") {
-      return <LoginCheckMail />;
-    }
-
-    if (!token) {
-      return false;
-    }
-
+  if (queryParams.error) {
     return (
-      <AppConsumer>
-        {(appContext: any) => {
-          if (!tokenUpdated) {
-            appContext
-              .updateToken(token)
-              .then(() => this.setState({ tokenUpdated: true }));
-            return false;
-          } else {
-            return this.queryParams!.state ? (
-              <Navigate to={`/${this.queryParams!.state}`} />
-            ) : (
-              <Navigate to="/" />
-            );
-          }
-        }}
-      </AppConsumer>
+      <Navigate
+        to="/loginFail"
+        state={{ errorMessage: queryParams.error }}
+      />
     );
   }
+
+  if (step === "mailsent") {
+    return <LoginCheckMail />;
+  }
+
+  if (!token) {
+    return false;
+  }
+
+  return (
+    <AppConsumer>
+      {(appContext: any) => {
+        if (!tokenUpdated) {
+          appContext
+            .updateToken(token)
+            .then(() => setTokenUpdated(true));
+          return false;
+        } else {
+          return queryParams!.state ? (
+            <Navigate to={`/${queryParams!.state}`} />
+          ) : (
+            <Navigate to="/" />
+          );
+        }
+      }}
+    </AppConsumer>
+  );
 }
 
 export default withRouter(AuthRedirect);

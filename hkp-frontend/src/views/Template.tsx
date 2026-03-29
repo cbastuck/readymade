@@ -1,4 +1,4 @@
-import { Component, ReactNode } from "react";
+import { ReactNode } from "react";
 
 import BoardProvider from "../BoardContext";
 import Toolbar from "../components/Toolbar";
@@ -17,66 +17,65 @@ type Props = {
   parent?: string;
   compactToolbar?: boolean;
 };
-export default class Template extends Component<Props> {
-  render() {
-    const {
-      children,
-      title,
-      isRoot,
-      parent,
-      slug,
-      compactToolbar,
-      width = "70%",
-    } = this.props;
-    const renderBreadcrumbs = (!!title || slug) && (!isRoot || !!parent);
-    return (
-      <BoardProvider user={null} availableRuntimeEngines={[]} runtimeApis={{}}>
+
+export default function Template(props: Props) {
+  const {
+    children,
+    title,
+    isRoot,
+    parent,
+    slug,
+    compactToolbar,
+    width = "70%",
+  } = props;
+  const renderBreadcrumbs = (!!title || slug) && (!isRoot || !!parent);
+  return (
+    <BoardProvider user={null} availableRuntimeEngines={[]} runtimeApis={{}}>
+      <div
+        className="flex flex-col h-full w-full"
+        style={{
+          minHeight: "100%",
+        }}
+      >
+        <Toolbar isCompact={compactToolbar} />
         <div
-          className="flex flex-col h-full w-full"
           style={{
-            minHeight: "100%",
+            width,
+            height: "100%",
+            margin: "25px auto",
           }}
         >
-          <Toolbar isCompact={compactToolbar} />
-          <div
+          {renderBreadcrumbs && (
+            <div className="pb-6">
+              <Breadcrumbs
+                path={makeBreadcrumbsPath(title || slug!, parent)}
+              />
+            </div>
+          )}
+          <h1
+            className="p-4"
             style={{
-              width,
-              height: "100%",
-              margin: "25px auto",
+              width: "100%",
+              textAlign: "center",
             }}
           >
-            {renderBreadcrumbs && (
-              <div className="pb-6">
-                <Breadcrumbs
-                  path={makeBreadcrumbsPath(title || slug!, parent)}
-                />
-              </div>
-            )}
-            <h1
-              className="p-4"
-              style={{
-                width: "100%",
-                textAlign: "center",
-              }}
-            >
-              {title}
-            </h1>
+            {title}
+          </h1>
 
-            <div
-              className="font-serif"
-              style={{
-                paddingBottom: "30px",
-                width: "100%",
-              }}
-            >
-              {children}
-            </div>
+          <div
+            className="font-serif"
+            style={{
+              paddingBottom: "30px",
+              width: "100%",
+            }}
+          >
+            {children}
           </div>
         </div>
-        <Footer />
-      </BoardProvider>
-    );
-  }
+      </div>
+      <Footer />
+    </BoardProvider>
+  );
 }
 
 function makeBreadcrumbsPath(title: string, parent?: string) {
