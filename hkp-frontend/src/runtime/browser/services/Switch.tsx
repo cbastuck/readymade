@@ -1,14 +1,10 @@
-import { Component } from "react";
-
 // import ServiceUI from './ServiceUI';
 
 const serviceId = "hookup.to/service/switch";
 const serviceName = "Switch";
 
-class SwitchUI extends Component {
-  render(): JSX.Element {
-    return <div />;
-  }
+function SwitchUI(): JSX.Element {
+  return <div />;
 }
 
 class Switch {

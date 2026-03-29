@@ -1,4 +1,4 @@
-import { Component, MouseEvent } from "react";
+import { useState, useRef, useEffect, MouseEvent } from "react";
 import ResizeObserver from "resize-observer-polyfill";
 
 import { createObjectURL, revokeObjectURL } from "./helpers";
@@ -17,68 +17,68 @@ const TWO_PI = 2 * Math.PI;
 
 type DrawElement = any;
 
-type State = {
-  fullWidth: number;
-  fullHeight: number;
-  fullscreen: boolean;
-  clearOnRedraw: boolean;
-  canvasWidth: number;
-  canvasHeight: number;
-  resizable: boolean;
-  capture: boolean;
-};
+export default function CanvasUI(props: ServiceUIProps) {
+  const [fullWidth, setFullWidth] = useState<number>(document.body.clientWidth);
+  const [fullHeight, setFullHeight] = useState<number>(document.body.clientHeight);
+  const [fullscreen, setFullscreen] = useState<boolean>(false);
+  const [clearOnRedraw, setClearOnRedraw] = useState<boolean>(true);
+  const [canvasWidth, setCanvasWidth] = useState<number>(400);
+  const [canvasHeight, setCanvasHeight] = useState<number>(250);
+  const [resizable, setResizable] = useState<boolean>(true);
+  const [capture, setCapture] = useState<boolean>(false);
 
-export default class CanvasUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    fullWidth: document.body.clientWidth,
-    fullHeight: document.body.clientHeight,
-    fullscreen: false,
-    clearOnRedraw: true,
-    canvasWidth: 400,
-    canvasHeight: 250,
-    resizable: true,
-    capture: false,
-  };
+  const imageCacheRef = useRef<{ [key: string]: any }>({});
+  const clickHandlersRef = useRef<{ [key: string]: { rect: Rect; action: ServiceAction } }>({});
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const recentDataRef = useRef<any>(undefined);
 
-  imageCache: { [key: string]: any } = {};
-  clickHandlers: { [key: string]: { rect: Rect; action: ServiceAction } } = {};
+  // Use refs for state values needed in async callbacks
+  const clearOnRedrawRef = useRef<boolean>(true);
+  const fullWidthRef = useRef<number>(document.body.clientWidth);
+  const fullHeightRef = useRef<number>(document.body.clientHeight);
+  const fullscreenRef = useRef<boolean>(false);
+  const canvasWidthRef = useRef<number>(400);
+  const canvasHeightRef = useRef<number>(250);
+  const captureRef = useRef<boolean>(false);
 
-  resizeBodyObserver?: ResizeObserver;
-  recentData?: any;
+  useEffect(() => { clearOnRedrawRef.current = clearOnRedraw; }, [clearOnRedraw]);
+  useEffect(() => { fullWidthRef.current = fullWidth; }, [fullWidth]);
+  useEffect(() => { fullHeightRef.current = fullHeight; }, [fullHeight]);
+  useEffect(() => { fullscreenRef.current = fullscreen; }, [fullscreen]);
+  useEffect(() => { canvasWidthRef.current = canvasWidth; }, [canvasWidth]);
+  useEffect(() => { canvasHeightRef.current = canvasHeight; }, [canvasHeight]);
+  useEffect(() => { captureRef.current = capture; }, [capture]);
 
-  canvas: HTMLCanvasElement | null = null;
+  useEffect(() => {
+    const resizeBodyObserver = new ResizeObserver(onResizeBodyEvent);
+    resizeBodyObserver.observe(document.body);
+    return () => {
+      resizeBodyObserver.disconnect();
+    };
+  }, []);
 
-  componentDidMount() {
-    this.resizeBodyObserver = new ResizeObserver(this.onResizeBodyEvent);
-    this.resizeBodyObserver.observe(document.body);
-  }
-
-  componentWillUnmount() {
-    this.resizeBodyObserver?.disconnect();
-  }
-
-  onResizeBodyEvent = (entries: ResizeObserverEntry[]) => {
+  const onResizeBodyEvent = (entries: ResizeObserverEntry[]) => {
     const entry = entries && entries[0];
     if (entry) {
-      this.setState(
-        {
-          fullWidth: document.body.clientWidth,
-          fullHeight: document.body.clientHeight,
-        },
-        () => this.update(this.recentData || {})
-      );
+      const newFullWidth = document.body.clientWidth;
+      const newFullHeight = document.body.clientHeight;
+      setFullWidth(newFullWidth);
+      setFullHeight(newFullHeight);
+      fullWidthRef.current = newFullWidth;
+      fullHeightRef.current = newFullHeight;
+      update(recentDataRef.current || {});
     }
   };
 
-  getCanvasDim = () => {
+  const getCanvasDim = () => {
     return {
-      width: this.canvas?.width || 0,
-      height: this.canvas?.height || 0,
+      width: canvasRef.current?.width || 0,
+      height: canvasRef.current?.height || 0,
     };
   };
 
-  getCanvasCenter = () => {
-    const { width, height } = this.getCanvasDim();
+  const getCanvasCenter = () => {
+    const { width, height } = getCanvasDim();
     const centerX = width / 2;
     const centerY = height / 2;
     return {
@@ -89,13 +89,13 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     };
   };
 
-  fetchImage = (url: string) => {
+  const fetchImage = (url: string) => {
     return new Promise((resolve) => {
-      const image = this.imageCache[url];
+      const image = imageCacheRef.current[url];
       if (!image) {
         const img = new Image();
         img.onload = () => {
-          this.imageCache[url] = img;
+          imageCacheRef.current[url] = img;
           resolve(img);
         };
         img.src = url;
@@ -105,7 +105,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     });
   };
 
-  createImage = (blob: Blob | typeof Image) => {
+  const createImage = (blob: Blob | typeof Image) => {
     if (blob instanceof Image) {
       return Promise.resolve(blob); // already an image
     }
@@ -122,27 +122,27 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     });
   };
 
-  registerClickHandler = (rect: Rect, action: ServiceAction) => {
+  const registerClickHandler = (rect: Rect, action: ServiceAction) => {
     const id = `${rect.x}${rect.y}`;
-    this.clickHandlers[id] = { rect, action };
+    clickHandlersRef.current[id] = { rect, action };
   };
 
-  onClick = (service: ServiceInstance, ev: MouseEvent) => {
+  const onClick = (service: ServiceInstance, ev: MouseEvent) => {
     const { clientX: x, clientY: y } = ev;
-    for (const id in this.clickHandlers) {
-      const { rect, action } = this.clickHandlers[id];
+    for (const id in clickHandlersRef.current) {
+      const { rect, action } = clickHandlersRef.current[id];
       if (
         x >= rect.x &&
         x <= rect.x + (Number(rect.width) || 0) &&
         y >= rect.y &&
         y <= rect.y + (Number(rect.height) || 0)
       ) {
-        return this.invokeClickAction(service, action);
+        return invokeClickAction(service, action);
       }
     }
   };
 
-  invokeClickAction = (service: ServiceInstance, action: any) => {
+  const invokeClickAction = (service: ServiceInstance, action: any) => {
     if (action.internal) {
       // internal dispatch event
       service.app.next(service, action.internal);
@@ -152,7 +152,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  drawExplainer = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
+  const drawExplainer = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const {
       pointer = { x: "50%", y: "50%", length: "1%" },
       text,
@@ -162,7 +162,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
       direction = "left-to-right",
     } = data;
     const ltr = direction === "left-to-right";
-    const { canvasWidth, canvasHeight } = this.getCanvasCenter();
+    const { canvasWidth, canvasHeight } = getCanvasCenter();
 
     const pointerX = toAbsolute(pointer.x, canvasWidth);
     const pointerY = toAbsolute(pointer.y, canvasHeight);
@@ -202,16 +202,16 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     } else {
       textData.x -= pointerLength * 1.5; // TODO: HACK the text width is not taken into consideration
     }
-    this.drawText(ctx, textData);
+    drawText(ctx, textData);
   };
 
-  drawImage = async (ctx: CanvasRenderingContext2D, data: DrawElement) => {
+  const drawImage = async (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const {
       centerX: canvasCenterX,
       centerY: canvasCenterY,
       canvasWidth,
       canvasHeight,
-    } = this.getCanvasCenter();
+    } = getCanvasCenter();
 
     const {
       url,
@@ -219,14 +219,14 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
       opacity,
       height = "100%",
       unscaled,
-      onClick,
+      onClick: onClickHandler,
       centerX,
       centerY,
       x,
       y,
     } = data;
     const img = (
-      url ? await this.fetchImage(url) : await this.createImage(blob)
+      url ? await fetchImage(url) : await createImage(blob)
     ) as HTMLImageElement;
     const scaledHeight =
       height === undefined ? canvasHeight : toAbsolute(height, canvasHeight);
@@ -247,8 +247,8 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
       width: unscaled ? img.width : scaledWidth,
       height: unscaled ? img.height : scaledHeight,
     };
-    if (onClick) {
-      this.registerClickHandler(rect, onClick);
+    if (onClickHandler) {
+      registerClickHandler(rect, onClickHandler);
     }
     ctx.save();
     if (opacity !== undefined) {
@@ -258,7 +258,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     ctx.restore();
   };
 
-  applyTextTransform = (input: string, operation: string) => {
+  const applyTextTransform = (input: string, operation: string) => {
     switch (operation) {
       case "lowercase":
         return input.toLowerCase();
@@ -274,15 +274,15 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  drawText = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
+  const drawText = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const { centerX, centerY, canvasWidth, canvasHeight } =
-      this.getCanvasCenter();
+      getCanvasCenter();
     const {
       font = "30px Arial",
       text,
       x: dx,
       y: dy,
-      onClick,
+      onClick: onClickHandler,
       contour,
       color,
       textTransform,
@@ -311,7 +311,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
 
     const t = textTransform
-      ? this.applyTextTransform(text, textTransform)
+      ? applyTextTransform(text, textTransform)
       : text;
     let textWidth = ctx.measureText(t).width;
     if (isRelative) {
@@ -328,21 +328,21 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     ctx.fillText(t, x, y);
     // ctx.strokeText(t, x, y);
 
-    if (onClick) {
+    if (onClickHandler) {
       const rect = {
         x,
         y: y - textWidth,
         width: textWidth,
         height: textWidth + 4,
       };
-      this.registerClickHandler(rect, onClick);
+      registerClickHandler(rect, onClickHandler);
     }
 
     ctx.restore();
   };
 
-  drawCircle = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
-    const { width, height } = this.getCanvasDim();
+  const drawCircle = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
+    const { width, height } = getCanvasDim();
     const { radius = 100, color, contour, gradient } = data || {};
     ctx.save();
     const drawPath = (ctx: CanvasRenderingContext2D) => {
@@ -386,8 +386,8 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     ctx.restore();
   };
 
-  drawRect = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
-    const { width: canvasWidth, height: canvasHeight } = this.getCanvasDim();
+  const drawRect = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
+    const { width: cW, height: cH } = getCanvasDim();
     const {
       x,
       y,
@@ -402,10 +402,10 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     const drawPath = (ctx: CanvasRenderingContext2D) => {
       ctx.beginPath();
       ctx.rect(
-        toAbsolute(x, canvasWidth),
-        toAbsolute(y, canvasHeight),
-        toAbsolute(width, canvasWidth),
-        toAbsolute(height, length !== undefined ? canvasWidth : canvasHeight)
+        toAbsolute(x, cW),
+        toAbsolute(y, cH),
+        toAbsolute(width, cW),
+        toAbsolute(height, length !== undefined ? cW : cH)
       );
     };
 
@@ -425,7 +425,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     ctx.restore();
   };
 
-  drawVideo = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
+  const drawVideo = (ctx: CanvasRenderingContext2D, data: DrawElement) => {
     const {
       x = 0,
       y = 0,
@@ -459,8 +459,8 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     });
   };
 
-  drawArray = (ctx: CanvasRenderingContext2D, params: any) => {
-    if (!this.canvas) {
+  const drawArray = (ctx: CanvasRenderingContext2D, params: any) => {
+    if (!canvasRef.current) {
       return;
     }
 
@@ -470,7 +470,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     const min = minArrayElem(data);
     const max = maxArrayElem(data);
 
-    const rect = this.canvas.getBoundingClientRect();
+    const rect = canvasRef.current.getBoundingClientRect();
     const halfHeight = rect.height / 2;
 
     const binWidth = rect.width / n;
@@ -488,8 +488,8 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  drawArray2d = (ctx: CanvasRenderingContext2D, params: any) => {
-    if (!this.canvas) {
+  const drawArray2d = (ctx: CanvasRenderingContext2D, params: any) => {
+    if (!canvasRef.current) {
       return;
     }
 
@@ -505,7 +505,7 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
         ? max - min
         : undefined;
 
-    const rect = this.canvas.getBoundingClientRect();
+    const rect = canvasRef.current.getBoundingClientRect();
     const cellWidth = rect.width / nCols;
     const cellHeight = rect.height / nRows;
     for (let i = 0; i < n; ++i) {
@@ -535,63 +535,58 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  update = (objectOrArray: any | Array<any>) => {
-    this.recentData = objectOrArray;
-    if (!this.canvas || !objectOrArray) {
+  const update = (objectOrArray: any | Array<any>) => {
+    recentDataRef.current = objectOrArray;
+    if (!canvasRef.current || !objectOrArray) {
       // nothing to render, or nowhere to render to
       return;
     }
 
-    this.clickHandlers = {};
+    clickHandlersRef.current = {};
 
     const dataArray =
       Array.isArray(objectOrArray) || ArrayBuffer.isView(objectOrArray)
         ? objectOrArray
         : [objectOrArray];
-    const ctx = this.canvas.getContext("2d");
+    const ctx = canvasRef.current.getContext("2d");
     if (!ctx) {
       return;
     }
 
-    if (this.state.clearOnRedraw) {
+    if (clearOnRedrawRef.current) {
       ctx.fillStyle = "#FFF";
       ctx.strokeStyle = "#FFF";
-      ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+      ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
     }
-
-    //const isPureNumberArray = !dataArray.some((x) => isNaN(Number(x)));
-    //if (isPureNumberArray) {
-    //  this.drawArray2d(ctx, dataArray);
-    //}
 
     for (const data of dataArray as any) {
       // TODO: any
       if (data) {
         switch (data.type) {
           case "image":
-            this.drawImage(ctx, data);
+            drawImage(ctx, data);
             break;
           case "text":
-            this.drawText(ctx, data);
+            drawText(ctx, data);
             break;
           case "circle":
-            this.drawCircle(ctx, data);
+            drawCircle(ctx, data);
             break;
           case "rect":
           case "square":
-            this.drawRect(ctx, data);
+            drawRect(ctx, data);
             break;
           case "video":
-            this.drawVideo(ctx, data);
+            drawVideo(ctx, data);
             break;
           case "explainer":
-            this.drawExplainer(ctx, data);
+            drawExplainer(ctx, data);
             break;
           case "array2d":
-            this.drawArray2d(ctx, data);
+            drawArray2d(ctx, data);
             break;
           case "array":
-            this.drawArray(ctx, data);
+            drawArray(ctx, data);
             break;
           default:
             break;
@@ -600,65 +595,59 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  renderMain = (service: ServiceInstance) => {
-    const {
-      canvasWidth,
-      canvasHeight,
-      fullWidth,
-      fullHeight,
-      fullscreen: showFullscreen,
-      resizable,
-    } = this.state;
-
-    const fullscreen = showFullscreen || service.fullscreen;
-    const width = fullscreen ? fullWidth : canvasWidth;
-    const height = fullscreen ? fullHeight : canvasHeight - 4; // TODO: could not figure out why we grows otherwise
+  const renderMain = (service: ServiceInstance) => {
+    const fullscreenVal = fullscreen || service.fullscreen;
+    const w = fullscreenVal ? fullWidth : canvasWidth;
+    const h = fullscreenVal ? fullHeight : canvasHeight - 4; // TODO: could not figure out why we grows otherwise
     return (
       <canvas
-        ref={(ref) => (this.canvas = ref)}
+        ref={(ref) => (canvasRef.current = ref)}
         style={{
-          position: fullscreen ? "fixed" : undefined,
-          top: fullscreen ? 0 : undefined,
-          left: fullscreen ? 0 : undefined,
-          zIndex: fullscreen ? zLayers.foreground : undefined,
-          width,
-          height,
+          position: fullscreenVal ? "fixed" : undefined,
+          top: fullscreenVal ? 0 : undefined,
+          left: fullscreenVal ? 0 : undefined,
+          zIndex: fullscreenVal ? zLayers.foreground : undefined,
+          width: w,
+          height: h,
         }}
         onDoubleClick={() => {
           if (resizable && !service.noToggleFullscreenOnDblClick) {
-            const toggled = !fullscreen;
+            const toggled = !fullscreenVal;
             service.fullscreen = toggled;
-            this.setState({ fullscreen: toggled }, () =>
-              this.update(this.recentData)
-            );
+            setFullscreen(toggled);
+            fullscreenRef.current = toggled;
+            update(recentDataRef.current);
           }
         }}
-        onClick={this.onClick.bind(this, service)}
-        width={width}
-        height={height}
+        onClick={(ev) => onClick(service, ev)}
+        width={w}
+        height={h}
       />
     );
   };
 
-  onNotification = (notification: any) => {
-    const { render, size, capture } = notification;
+  const onNotification = (notification: any) => {
+    const { render, size, capture: newCapture } = notification;
     if (size !== undefined) {
-      const [canvasWidth, canvasHeight] = size;
-      this.setState({ canvasWidth, canvasHeight }, () =>
-        this.update(this.recentData)
-      );
+      const [newCanvasWidth, newCanvasHeight] = size;
+      setCanvasWidth(newCanvasWidth);
+      setCanvasHeight(newCanvasHeight);
+      canvasWidthRef.current = newCanvasWidth;
+      canvasHeightRef.current = newCanvasHeight;
+      update(recentDataRef.current);
     }
 
-    if (capture !== undefined) {
-      this.setState({ capture });
+    if (newCapture !== undefined) {
+      setCapture(newCapture);
+      captureRef.current = newCapture;
     }
     if (render) {
       const { captureMime, frameID } = notification;
-      this.update(render);
-      if (captureMime && this.canvas) {
-        this.canvas.toBlob(
+      update(render);
+      if (captureMime && canvasRef.current) {
+        canvasRef.current.toBlob(
           (blob) =>
-            this.props.service.configure({
+            props.service.configure({
               capturedFrame: {
                 frameID,
                 blob,
@@ -670,76 +659,76 @@ export default class CanvasUI extends Component<ServiceUIProps, State> {
     }
   };
 
-  onInit = (initialState: any) => {
-    const { size, resizable, fullscreen, clearOnRedraw = true } = initialState;
+  const onInit = (initialState: any) => {
+    const { size, resizable: newResizable, fullscreen: newFullscreen, clearOnRedraw: newClearOnRedraw = true } = initialState;
 
-    const config: any = {
-      resizable: !!resizable,
-      fullscreen,
-      clearOnRedraw,
-    };
-    if (size) {
-      config.canvasWidth = size[0];
-      config.canvasHeight = size[1];
+    setClearOnRedraw(newClearOnRedraw);
+    clearOnRedrawRef.current = newClearOnRedraw;
+    setResizable(!!newResizable);
+    if (newFullscreen !== undefined) {
+      setFullscreen(newFullscreen);
+      fullscreenRef.current = newFullscreen;
     }
-    this.setState(config);
+    if (size) {
+      setCanvasWidth(size[0]);
+      setCanvasHeight(size[1]);
+      canvasWidthRef.current = size[0];
+      canvasHeightRef.current = size[1];
+    }
   };
 
-  onResize = (service: ServiceInstance, { width, height }: Size) => {
+  const onResize = (service: ServiceInstance, { width, height }: Size) => {
     service.configure({ size: [width, height] });
   };
 
-  render() {
-    const { resizable } = this.state;
-    const { service } = this.props;
+  const { service } = props;
 
-    const onCopyDataURL = () => {
-      if (this.canvas) {
-        const dataUrl = this.canvas.toDataURL();
-        navigator.clipboard.writeText(dataUrl);
-      }
-    };
+  const onCopyDataURL = () => {
+    if (canvasRef.current) {
+      const dataUrl = canvasRef.current.toDataURL();
+      navigator.clipboard.writeText(dataUrl);
+    }
+  };
 
-    const onToggleOutputImage = () =>
-      service.configure({ capture: !this.state.capture });
-    const customMenuEntries = [
-      {
-        name: "Copy Data URL",
-        icon: <MenuIcon icon={BinaryIcon} />,
-        onClick: onCopyDataURL,
-      },
-      {
-        name: `Output Blob ${this.state.capture ? "[is on]" : "[is off]"}`,
-        icon: (
-          <MenuIcon
-            icon={this.state.capture ? ToggleRight : ToggleLeft}
-            className={this.state.capture ? "stroke-sky-600" : ""}
-          />
-        ),
-        onClick: onToggleOutputImage,
-      },
-    ];
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        onResize={this.onResize}
-        resizable={resizable}
-        customMenuEntries={customMenuEntries}
+  const onToggleOutputImage = () =>
+    service.configure({ capture: !captureRef.current });
+  const customMenuEntries = [
+    {
+      name: "Copy Data URL",
+      icon: <MenuIcon icon={BinaryIcon} />,
+      onClick: onCopyDataURL,
+    },
+    {
+      name: `Output Blob ${capture ? "[is on]" : "[is off]"}`,
+      icon: (
+        <MenuIcon
+          icon={capture ? ToggleRight : ToggleLeft}
+          className={capture ? "stroke-sky-600" : ""}
+        />
+      ),
+      onClick: onToggleOutputImage,
+    },
+  ];
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      onResize={onResize}
+      resizable={resizable}
+      customMenuEntries={customMenuEntries}
+    >
+      <div
+        style={{
+          overflow: "hidden",
+          padding: resizable ? 5 : 0,
+          margin: 0,
+        }}
       >
-        <div
-          style={{
-            overflow: "hidden",
-            padding: resizable ? 5 : 0,
-            margin: 0,
-          }}
-        >
-          {this.renderMain(service)}
-        </div>
-      </ServiceUI>
-    );
-  }
+        {renderMain(service)}
+      </div>
+    </ServiceUI>
+  );
 }
 
 function maxArrayElem<T>(arr: Array<T>): T {

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 import jstat from "jstat";
 
 import { Input } from "hkp-frontend/src/ui-components/primitives/input";
@@ -17,118 +17,112 @@ function isJSON(x: string): any {
   }
 }
 
-type SamplingUIState = {
-  wrapSample: boolean;
-  mean?: string;
-  std?: string;
-  annotations?: Record<string, string>;
-  root?: string;
-};
+function SamplingUI(props: any): JSX.Element {
+  const [wrapSample, setWrapSample] = useState<boolean>(false);
+  const [mean, setMean] = useState<string | undefined>(undefined);
+  const [std, setStd] = useState<string | undefined>(undefined);
+  const [annotations, setAnnotations] = useState<Record<string, string> | undefined>(undefined);
+  const [root, setRoot] = useState<string | undefined>(undefined);
 
-class SamplingUI extends Component<any, SamplingUIState> {
-  state: SamplingUIState = {
-    wrapSample: false,
+  const onInit = (initialState: { mean?: number[]; std?: number[]; annotations?: Record<string, string>; root?: string }): void => {
+    const newState: any = {};
+    const { mean: m, std: s, annotations: a, root: r } = initialState;
+    if (m !== undefined) {
+      newState.mean = JSON.stringify(m);
+    }
+    if (s !== undefined) {
+      newState.std = JSON.stringify(s);
+    }
+    if (a !== undefined) {
+      newState.annotations = a;
+    }
+    if (r !== undefined) {
+      newState.root = r;
+    }
+
+    if (newState.mean !== undefined) setMean(newState.mean);
+    if (newState.std !== undefined) setStd(newState.std);
+    if (newState.annotations !== undefined) setAnnotations(newState.annotations);
+    if (newState.root !== undefined) setRoot(newState.root);
+    setWrapSample(!!newState.root);
   };
 
-  onInit(initialState: { mean?: number[]; std?: number[]; annotations?: Record<string, string>; root?: string }): void {
-    const newState: Partial<SamplingUIState> = {};
-    const { mean, std, annotations, root } = initialState;
-    if (mean !== undefined) {
-      newState.mean = JSON.stringify(mean);
-    }
-    if (std !== undefined) {
-      newState.std = JSON.stringify(std);
-    }
-    if (annotations !== undefined) {
-      newState.annotations = annotations;
-    }
-    if (root !== undefined) {
-      newState.root = root;
-    }
-
-    this.setState({
-      ...newState,
-      wrapSample: !!newState.root,
-    } as SamplingUIState);
-  }
-
-  renderModel = (service: any): JSX.Element => {
+  const renderModel = (service: any): JSX.Element => {
     const vspace = { marginBottom: 5 };
     return (
       <div>
         <Input
           style={{ ...vspace, width: "100%" }}
           type="text"
-          value={this.state.mean || ""}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({ mean: e.target.value })}
+          value={mean || ""}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setMean(e.target.value)}
           onKeyPress={(e: React.KeyboardEvent) =>
-            e.key === "Enter" && (service.mean = isJSON(this.state.mean ?? ""))
+            e.key === "Enter" && (service.mean = isJSON(mean ?? ""))
           }
         />
         <Input
           style={{ ...vspace, width: "100%" }}
           type="text"
-          value={this.state.std || ""}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({ std: e.target.value })}
+          value={std || ""}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStd(e.target.value)}
           onKeyPress={(e: React.KeyboardEvent) =>
-            e.key === "Enter" && (service.std = isJSON(this.state.std ?? ""))
+            e.key === "Enter" && (service.std = isJSON(std ?? ""))
           }
         />
       </div>
     );
   };
 
-  renderWrapping = (service: any): JSX.Element => {
+  const renderWrapping = (service: any): JSX.Element => {
     const vspace = { marginBottom: 5 };
     return (
       <div style={{ margin: "10px 0px", textAlign: "left" }}>
         <Checkbox
-          checked={this.state.wrapSample}
+          checked={wrapSample}
           onCheckedChange={(checked: boolean) => {
-            const root = !checked ? undefined : this.state.root;
-            service.root = root;
-            this.setState({ wrapSample: checked, root });
+            const newRoot = !checked ? undefined : root;
+            service.root = newRoot;
+            setWrapSample(checked);
+            setRoot(newRoot);
           }}
         />
         <Input
           style={{ ...vspace, width: "100%" }}
           type="text"
-          value={this.state.root || ""}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({ root: e.target.value })}
+          value={root || ""}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRoot(e.target.value)}
           onKeyPress={(e: React.KeyboardEvent) =>
-            e.key === "Enter" && (service.root = this.state.root)
+            e.key === "Enter" && (service.root = root)
           }
         />
       </div>
     );
   };
 
-  renderAnnotations = (service: any): JSX.Element => {
+  const renderAnnotations = (service: any): JSX.Element => {
     return (
       <Annotations
         service={service}
-        initial={this.state.annotations}
-        onCommit={(annotations) => {
-          this.setState({ annotations });
-          service.annotations = annotations;
+        initial={annotations}
+        onCommit={(newAnnotations) => {
+          setAnnotations(newAnnotations);
+          service.annotations = newAnnotations;
         }}
       />
     );
   };
 
-  render(): JSX.Element {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit.bind(this)}
-        segments={[
-          { name: "model", render: this.renderModel },
-          { name: "wrapping", render: this.renderWrapping },
-          { name: "annotate", render: this.renderAnnotations },
-        ]}
-      />
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      segments={[
+        { name: "model", render: renderModel },
+        { name: "wrapping", render: renderWrapping },
+        { name: "annotate", render: renderAnnotations },
+      ]}
+    />
+  );
 }
 
 class Sampling {

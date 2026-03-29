@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import InputField from "../../../components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
@@ -12,70 +12,63 @@ const clientSecret = "";
 const redirectURI = `${window.location.origin}/serviceRedirect`;
 const scopes: Array<string> = [];
 
-type State = {
-  token: string | null;
-  owner: any;
-  repo: any;
-  branch: string | undefined;
-  file: any;
-  user: any;
-};
-export default class GithubSourceUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    token: null,
-    owner: undefined,
-    repo: undefined,
-    branch: undefined,
-    file: undefined,
-    user: null,
+export default function GithubSourceUI(props: ServiceUIProps) {
+  const [token, setToken] = useState<string | null>(null);
+  const [owner, setOwner] = useState<any>(undefined);
+  const [repo, setRepo] = useState<any>(undefined);
+  const [branch, setBranch] = useState<string | undefined>(undefined);
+  const [file, setFile] = useState<any>(undefined);
+  const [user, setUser] = useState<any>(null);
+
+  const onInit = (initialState: any) => {
+    const { token: t, owner: o, repo: r, branch: b, file: f } = initialState;
+    setToken(t);
+    setOwner(o);
+    setRepo(r);
+    setBranch(b);
+    setFile(f);
   };
 
-  onInit = (initialState: any) => {
-    const { token, owner, repo, branch, file } = initialState;
-    this.setState({ token, owner, repo, branch, file });
-  };
-
-  onNotification = (notification: any) => {
-    const { token, user, owner, repo, branch, file } = notification;
-    if (token) {
-      this.setState({ token });
+  const onNotification = (notification: any) => {
+    const { token: t, user: u, owner: o, repo: r, branch: b, file: f } = notification;
+    if (t) {
+      setToken(t);
     }
 
-    if (user !== undefined) {
-      this.setState({ user });
+    if (u !== undefined) {
+      setUser(u);
     }
 
-    if (owner !== undefined) {
-      this.setState({ owner });
+    if (o !== undefined) {
+      setOwner(o);
     }
 
-    if (repo !== undefined) {
-      this.setState({ repo });
+    if (r !== undefined) {
+      setRepo(r);
     }
 
-    if (branch !== undefined) {
-      this.setState({ branch });
+    if (b !== undefined) {
+      setBranch(b);
     }
 
-    if (file !== undefined) {
-      this.setState({ file });
+    if (f !== undefined) {
+      setFile(f);
     }
   };
 
-  renderLoginPanel = () => {
-    const { token } = this.state;
+  const renderLoginPanel = () => {
     if (token) {
       return (
         <GithubUser
           token={token}
-          onUser={(user) => {
-            if (!this.state.owner) {
-              const owner = user.login;
-              this.setState({ owner });
-              this.props.service.configure({ owner });
+          onUser={(u) => {
+            if (!owner) {
+              const o = u.login;
+              setOwner(o);
+              props.service.configure({ owner: o });
             }
           }}
-          onLogout={() => this.setState({ owner: null })}
+          onLogout={() => setOwner(null)}
         />
       );
     }
@@ -85,48 +78,46 @@ export default class GithubSourceUI extends Component<ServiceUIProps, State> {
         clientSecret={clientSecret}
         redirectURI={redirectURI}
         scopes={scopes}
-        onToken={(token: string) => this.setState({ token })}
+        onToken={(t: string) => setToken(t)}
       />
     ) : (
-      this.renderBasicAuth()
+      renderBasicAuth()
     );
   };
 
-  renderBasicAuth = () => {
-    const { token } = this.state;
+  const renderBasicAuth = () => {
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
         <InputField
           label="Token"
           type="password"
           value={token || undefined}
-          onChange={(token) => this.props.service.configure({ token })}
+          onChange={(t) => props.service.configure({ token: t })}
         />
       </div>
     );
   };
 
-  renderObjectSelector = () => {
-    const { token, owner, repo, branch, file } = this.state;
+  const renderObjectSelector = () => {
     if (!token) {
       return false;
     }
     return (
       <div>
         <GithubObject
-          service={this.props.service}
-          onServiceAction={this.props.onServiceAction}
+          service={props.service}
+          onServiceAction={props.onServiceAction}
           token={token}
           owner={owner}
           repo={repo}
           branch={branch}
           file={file || ""}
           disableFileInput={true}
-          onChange={(kv) => this.props.service.configure(kv)}
+          onChange={(kv) => props.service.configure(kv)}
         />
         <Button
           className="w-full mt-2"
-          onClick={() => this.inject()}
+          onClick={() => inject()}
           disabled={!file}
         >
           Inject
@@ -135,30 +126,26 @@ export default class GithubSourceUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  inject = async () => {
-    const { token, owner, repo, file, branch } = this.state;
+  const inject = async () => {
     const content = file.treeSHA
       ? await getFile(token, owner, repo, file.treeSHA, file.name)
       : await getFileFromBranch(token, owner, repo, branch, file.name);
     if (content) {
-      this.props.service.inject(content);
+      props.service.inject(content);
     }
   };
 
-  render() {
-    const { token } = this.state;
-    return (
-      <ServiceUI
-        {...this.props}
-        className="pb-2"
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-      >
-        <>
-          {this.renderLoginPanel()}
-          {token && this.renderObjectSelector()}
-        </>
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      className="pb-2"
+      onInit={onInit}
+      onNotification={onNotification}
+    >
+      <>
+        {renderLoginPanel()}
+        {token && renderObjectSelector()}
+      </>
+    </ServiceUI>
+  );
 }

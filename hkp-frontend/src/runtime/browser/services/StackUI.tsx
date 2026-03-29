@@ -1,4 +1,4 @@
-import { Component, MouseEvent } from "react";
+import { useState, MouseEvent } from "react";
 import { Trash } from "lucide-react";
 
 import {
@@ -22,74 +22,60 @@ import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 const defaultInput = "multiplex";
 const defaultOutput = "array";
 
-type State = {
-  subservices: Array<ServiceInstance>;
-  input: string;
-  output: string;
-  bypass: { [serviceUuid: string]: boolean };
-};
-export default class StackUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    subservices: [],
-    input: defaultInput,
-    output: defaultOutput,
-    bypass: {},
-  };
+export default function StackUI(props: ServiceUIProps) {
+  const [subservices, setSubservices] = useState<Array<ServiceInstance>>([]);
+  const [input, setInput] = useState<string>(defaultInput);
+  const [output, setOutput] = useState<string>(defaultOutput);
+  const [bypass, setBypass] = useState<{ [serviceUuid: string]: boolean }>({});
 
-  updateBypass = (subservices: Array<ServiceInstance>) => {
-    return subservices.reduce(
+  const updateBypass = (ssvcs: Array<ServiceInstance>) => {
+    return ssvcs.reduce(
       (all, ssvc) => ({ ...all, [ssvc.uuid]: ssvc.bypass }),
       {}
     );
   };
 
-  onInit = (initialState: any) => {
+  const onInit = (initialState: any) => {
     const {
-      subservices = [],
-      input = defaultInput,
-      output = defaultOutput,
+      subservices: ss = [],
+      input: inp = defaultInput,
+      output: out = defaultOutput,
     } = initialState;
-    const bypass = this.updateBypass(subservices);
-    this.setState({
-      subservices,
-      input,
-      output,
-      bypass,
-    });
+    const b = updateBypass(ss);
+    setSubservices(ss);
+    setInput(inp);
+    setOutput(out);
+    setBypass(b);
   };
 
-  onNotification = (notification: any) => {
-    const { subservices, input, output } = notification;
+  const onNotification = (notification: any) => {
+    const { subservices: ss, input: inp, output: out } = notification;
 
-    if (subservices !== undefined) {
-      const bypass = this.updateBypass(subservices);
-      this.setState({
-        subservices,
-        bypass,
-      });
+    if (ss !== undefined) {
+      const b = updateBypass(ss);
+      setSubservices(ss);
+      setBypass(b);
     }
 
-    if (input !== undefined) {
-      this.setState({ input });
+    if (inp !== undefined) {
+      setInput(inp);
     }
 
-    if (output !== undefined) {
-      this.setState({ output });
+    if (out !== undefined) {
+      setOutput(out);
     }
   };
 
-  onAppendService = (svc: ServiceClass) =>
-    this.props.service.appendSubService(svc);
+  const onAppendService = (svc: ServiceClass) =>
+    props.service.appendSubService(svc);
 
-  onRemoveService = (ev: MouseEvent, ssvc: ServiceInstance) => {
-    this.props.service.removeSubservice(ssvc);
+  const onRemoveService = (ev: MouseEvent, ssvc: ServiceInstance) => {
+    props.service.removeSubservice(ssvc);
     ev.preventDefault();
     ev.stopPropagation();
   };
 
-  renderMain = (service: ServiceInstance) => {
-    const { subservices = [], output, input } = this.state;
-
+  const renderMain = (service: ServiceInstance) => {
     const inputOptions = ["multiplex", "lanes"];
     const outputOptions = ["array"];
     const services = service.app.listAvailableServices();
@@ -99,13 +85,13 @@ export default class StackUI extends Component<ServiceUIProps, State> {
           title="Input"
           options={inputOptions}
           value={input}
-          onChange={(input) => service.configure({ input })}
+          onChange={(inp) => service.configure({ input: inp })}
         />
         <RadioGroup
           title="Output"
           options={outputOptions}
           value={output}
-          onChange={(output) => service.configure({ output })}
+          onChange={(out) => service.configure({ output: out })}
         />
 
         <div className="flex items-end w-full">
@@ -114,7 +100,7 @@ export default class StackUI extends Component<ServiceUIProps, State> {
             <ServiceSelector
               id={service.uuid}
               registry={services}
-              onAddService={this.onAppendService}
+              onAddService={onAppendService}
             />
           </div>
         </div>
@@ -135,7 +121,7 @@ export default class StackUI extends Component<ServiceUIProps, State> {
                 <Button
                   className="m-2"
                   variant="destructive"
-                  onClick={(ev) => this.onRemoveService(ev, ssvc)}
+                  onClick={(ev) => onRemoveService(ev, ssvc)}
                 >
                   <Trash size="20px" />
                 </Button>
@@ -147,17 +133,15 @@ export default class StackUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  render() {
-    const { service } = this.props;
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        initialSize={{ width: 450, height: undefined }}
-      >
-        {this.renderMain(service)}
-      </ServiceUI>
-    );
-  }
+  const { service } = props;
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      initialSize={{ width: 450, height: undefined }}
+    >
+      {renderMain(service)}
+    </ServiceUI>
+  );
 }

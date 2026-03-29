@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Video, VideoOff, FlipHorizontal } from "lucide-react";
 
 import { ServiceUIProps } from "hkp-frontend/src/types";
@@ -12,198 +12,210 @@ import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 
-type State = {
-  mirror: boolean;
-  recording: boolean;
-  width: number;
-  height: number;
-  captureFormat: string;
-  stream: MediaStream | null;
-  devices: Array<MediaDeviceInfo>;
-  currentDevice: MediaDeviceInfo | null;
-};
+export default function CameraUI(props: ServiceUIProps) {
+  const [mirror, setMirror] = useState<boolean>(true);
+  const [recording, setRecording] = useState<boolean>(false);
+  const [width, setWidth] = useState<number>(320);
+  const [height, setHeight] = useState<number>(200);
+  const [captureFormat, setCaptureFormat] = useState<string>("image/png");
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [devices, setDevices] = useState<Array<MediaDeviceInfo>>([]);
+  const [currentDevice, setCurrentDevice] = useState<MediaDeviceInfo | null>(null);
 
-export default class CameraUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    mirror: true,
-    recording: false,
-    width: 320,
-    height: 200,
-    captureFormat: "image/png",
-    stream: null,
-    devices: [],
-    currentDevice: null,
-  };
-  videoElement: HTMLVideoElement | null = null;
-  recorder: MediaRecorder | null = null;
-  canvas: HTMLCanvasElement | null = null;
+  const videoElementRef = useRef<HTMLVideoElement | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const widthRef = useRef<number>(320);
+  const heightRef = useRef<number>(200);
+  const captureFormatRef = useRef<string>("image/png");
 
-  componentWillUnmount() {
-    this.stopVideo();
-  }
+  // Keep refs in sync with state for use in callbacks
+  useEffect(() => { streamRef.current = stream; }, [stream]);
+  useEffect(() => { widthRef.current = width; }, [width]);
+  useEffect(() => { heightRef.current = height; }, [height]);
+  useEffect(() => { captureFormatRef.current = captureFormat; }, [captureFormat]);
 
-  onInit = (initialState: any) => {
-    this.props.service.registerScreenshooter(this.triggerScreenshot);
-    this.setState({
-      ...initialState,
-    });
-  };
+  useEffect(() => {
+    return () => {
+      stopVideoWithStream(streamRef.current);
+    };
+  }, []);
 
-  onNotification = (notification: any) => {
-    if (needsUpdate(notification.captureFormat, this.state.captureFormat)) {
-      this.setState({ captureFormat: notification.captureFormat });
+  const stopVideoWithStream = (s: MediaStream | null) => {
+    if (s) {
+      if (s.getTracks) {
+        s.getTracks().forEach((track) => track.stop());
+      }
+      if (s.getVideoTracks) {
+        s.getVideoTracks().forEach((track) => track.stop());
+      }
+      if (videoElementRef.current) {
+        videoElementRef.current.srcObject = null;
+      }
     }
   };
 
-  enumerateDevices = async () => {
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    const videoDevices = devices.filter(
-      (device) => device.kind === "videoinput"
-    );
-    this.setState({ devices: videoDevices, currentDevice: videoDevices[0] });
+  const onInit = (initialState: any) => {
+    props.service.registerScreenshooter(triggerScreenshot);
+    setMirror(initialState.mirror !== undefined ? initialState.mirror : true);
+    setRecording(initialState.recording !== undefined ? initialState.recording : false);
+    setWidth(initialState.width !== undefined ? initialState.width : 320);
+    setHeight(initialState.height !== undefined ? initialState.height : 200);
+    setCaptureFormat(initialState.captureFormat !== undefined ? initialState.captureFormat : "image/png");
+    setStream(initialState.stream !== undefined ? initialState.stream : null);
+    setDevices(initialState.devices !== undefined ? initialState.devices : []);
+    setCurrentDevice(initialState.currentDevice !== undefined ? initialState.currentDevice : null);
   };
 
-  initVideo = async (
+  const onNotification = (notification: any) => {
+    if (needsUpdate(notification.captureFormat, captureFormatRef.current)) {
+      setCaptureFormat(notification.captureFormat);
+    }
+  };
+
+  const enumerateDevices = async () => {
+    const allDevices = await navigator.mediaDevices.enumerateDevices();
+    const videoDevices = allDevices.filter(
+      (device) => device.kind === "videoinput"
+    );
+    setDevices(videoDevices);
+    setCurrentDevice(videoDevices[0]);
+  };
+
+  const initVideo = async (
     videoElement: HTMLVideoElement,
     deviceId?: string
   ): Promise<MediaStream> => {
     const constraints: MediaStreamConstraints = !deviceId
       ? { video: true }
       : { video: { deviceId } };
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const s = await navigator.mediaDevices.getUserMedia(constraints);
 
-    videoElement.srcObject = stream;
+    videoElement.srcObject = s;
     videoElement.play();
-    return stream;
+    return s;
   };
 
-  startVideo = async (videoElement: HTMLVideoElement, deviceId?: string) => {
+  const startVideo = async (videoElement: HTMLVideoElement, deviceId?: string) => {
     if (navigator.mediaDevices) {
-      const stream = await this.initVideo(videoElement, deviceId);
-      this.setState({ stream });
-      if (!this.state.devices.length) {
-        await this.enumerateDevices();
+      const s = await initVideo(videoElement, deviceId);
+      setStream(s);
+      streamRef.current = s;
+      if (!devices.length) {
+        await enumerateDevices();
       }
     } else {
       throw new Error("Can not initialize video");
     }
   };
 
-  stopVideo = () => {
-    const { stream } = this.state;
-    if (stream) {
-      if (stream.getTracks) {
-        stream.getTracks().forEach((track) => track.stop());
-      }
-      if (stream.getVideoTracks) {
-        stream.getVideoTracks().forEach((track) => track.stop());
-      }
-      if (this.videoElement) {
-        this.videoElement.srcObject = null;
-      }
-      this.setState({ stream: null });
+  const stopVideo = () => {
+    const s = streamRef.current;
+    if (s) {
+      stopVideoWithStream(s);
+      setStream(null);
+      streamRef.current = null;
     }
   };
 
-  startRecording = (stream: MediaStream) => {
+  const startRecording = (s: MediaStream) => {
     return new Promise((resolve, reject) => {
-      this.recorder = new MediaRecorder(stream);
+      recorderRef.current = new MediaRecorder(s);
       const data: Array<any> = [];
 
-      this.recorder.ondataavailable = (event) => data.push(event.data);
-      this.recorder.start();
+      recorderRef.current.ondataavailable = (event) => data.push(event.data);
+      recorderRef.current.start();
 
-      this.recorder.onstop = () => resolve(data);
-      this.recorder.onerror = (event) => reject(event);
+      recorderRef.current.onstop = () => resolve(data);
+      recorderRef.current.onerror = (event) => reject(event);
     });
   };
 
-  stopRecording = () => {
-    if (this.recorder && this.recorder.state === "recording") {
-      this.recorder.stop();
+  const stopRecording = () => {
+    if (recorderRef.current && recorderRef.current.state === "recording") {
+      recorderRef.current.stop();
     }
   };
 
-  triggerScreenshot = () => {
+  const triggerScreenshot = () => {
     return new Promise<Blob | null>((resolve) => {
-      const { width, height } = this.state;
-      if (!this.canvas) {
-        this.canvas = document.createElement("canvas");
+      const w = widthRef.current;
+      const h = heightRef.current;
+      if (!canvasRef.current) {
+        canvasRef.current = document.createElement("canvas");
       }
-      this.canvas.width = width;
-      this.canvas.height = height;
-      const ctx = this.canvas.getContext("2d");
-      if (ctx && this.videoElement) {
-        ctx.drawImage(this.videoElement, 0, 0, width, height);
-        this.canvas.toBlob(resolve, this.state.captureFormat);
-      }
-    });
-  };
-
-  onRecord = () => {
-    const { stream } = this.state;
-    this.setState({ recording: !this.state.recording }, () => {
-      if (this.state.recording) {
-        if (stream) {
-          this.startRecording(stream).then((data: any) =>
-            this.props.service.inject(new Blob(data, { type: "video/webm" }))
-          );
-        }
-      } else {
-        this.stopRecording();
+      canvasRef.current.width = w;
+      canvasRef.current.height = h;
+      const ctx = canvasRef.current.getContext("2d");
+      if (ctx && videoElementRef.current) {
+        ctx.drawImage(videoElementRef.current, 0, 0, w, h);
+        canvasRef.current.toBlob(resolve, captureFormatRef.current);
       }
     });
   };
 
-  onSnapshot = () =>
-    this.props.service.configure({ action: "triggerSnapshot" });
-
-  onChangeDevice = (device: MediaDeviceInfo | null) => {
-    this.stopVideo();
-    this.startVideo(this.videoElement!, device?.deviceId);
-    this.setState({
-      currentDevice: device,
-    });
+  const onRecord = () => {
+    const s = streamRef.current;
+    const newRecording = !recording;
+    setRecording(newRecording);
+    if (newRecording) {
+      if (s) {
+        startRecording(s).then((data: any) =>
+          props.service.inject(new Blob(data, { type: "video/webm" }))
+        );
+      }
+    } else {
+      stopRecording();
+    }
   };
 
-  renderMain = () => {
-    const mirrorStyle = this.state.mirror && {
+  const onSnapshot = () =>
+    props.service.configure({ action: "triggerSnapshot" });
+
+  const onChangeDevice = (device: MediaDeviceInfo | null) => {
+    stopVideo();
+    startVideo(videoElementRef.current!, device?.deviceId);
+    setCurrentDevice(device);
+  };
+
+  const renderMain = () => {
+    const mirrorStyle = mirror && {
       transform: "rotateY(180deg)",
       WebkitTransform: "rotateY(180deg)",
       MozTransform: "rotateY(180deg)",
     };
-    const { stream } = this.state;
     const cameraRunning = !!stream;
     return (
       <div className="flex flex-col gap-2 mb-4">
         <div className="py-2">
           <SelectorField
             label="Device"
-            options={this.state.devices.reduce(
+            options={devices.reduce(
               (all, device) => ({ ...all, [device.label]: device.label }),
               {}
             )}
-            value={this.state.currentDevice?.label || ""}
+            value={currentDevice?.label || ""}
             onChange={(value) =>
-              this.onChangeDevice(this.state.devices[value.index] || null)
+              onChangeDevice(devices[value.index] || null)
             }
           />
         </div>
         <video
           ref={(videoElement) => {
-            if (!this.videoElement && videoElement) {
-              this.videoElement = videoElement;
-              this.startVideo(videoElement);
-            } else if (videoElement && this.videoElement !== videoElement) {
-              this.videoElement = videoElement; // happens e.g. on resize
+            if (!videoElementRef.current && videoElement) {
+              videoElementRef.current = videoElement;
+              startVideo(videoElement);
+            } else if (videoElement && videoElementRef.current !== videoElement) {
+              videoElementRef.current = videoElement; // happens e.g. on resize
             }
           }}
           className="w-full rounded-lg"
           style={{
             ...mirrorStyle,
           }}
-          width={cameraRunning ? this.state.width : 0}
-          height={cameraRunning ? this.state.height : 0}
+          width={cameraRunning ? width : 0}
+          height={cameraRunning ? height : 0}
           autoPlay
         />
 
@@ -213,11 +225,11 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
             <NumberInput
               className="w-full"
               title="Width"
-              value={this.state.width}
+              value={width}
               onChange={(newValue) => {
-                const width = Number(newValue);
-                if (!isNaN(width)) {
-                  this.setState({ width });
+                const w = Number(newValue);
+                if (!isNaN(w)) {
+                  setWidth(w);
                 }
               }}
             >
@@ -227,11 +239,11 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
             <NumberInput
               className="w-full"
               title="Height"
-              value={this.state.height}
+              value={height}
               onChange={(newValue) => {
-                const height = Number(newValue);
-                if (!isNaN(height)) {
-                  this.setState({ height });
+                const h = Number(newValue);
+                if (!isNaN(h)) {
+                  setHeight(h);
                 }
               }}
             >
@@ -242,51 +254,48 @@ export default class CameraUI extends Component<ServiceUIProps, State> {
         <div className="flex gap-2 w-full">
           <Button
             className="w-full"
-            disabled={this.state.recording}
-            onClick={this.onSnapshot}
+            disabled={recording}
+            onClick={onSnapshot}
           >
             Capture Snapshot
           </Button>
-          <Button className="w-full" disabled={!stream} onClick={this.onRecord}>
-            {this.state.recording ? "Stop Video" : "Capture Video"}
+          <Button className="w-full" disabled={!stream} onClick={onRecord}>
+            {recording ? "Stop Video" : "Capture Video"}
           </Button>
         </div>
       </div>
     );
   };
 
-  render() {
-    const { stream, mirror } = this.state;
-    const cameraRunning = !!stream;
-    const customMenuEntries = [
-      {
-        name: cameraRunning ? "Disable Camera" : "Enable Camera",
-        icon: cameraRunning ? (
-          <MenuIcon icon={VideoOff} />
-        ) : (
-          <MenuIcon icon={Video} />
-        ),
-        disabled: !cameraRunning && !this.videoElement,
-        onClick: () =>
-          cameraRunning
-            ? this.stopVideo()
-            : this.startVideo(this.videoElement!),
-      },
-      {
-        name: mirror ? "Unmirror Image" : "Mirror Image",
-        icon: <MenuIcon icon={FlipHorizontal} />,
-        onClick: () => this.setState({ mirror: !mirror }),
-      },
-    ];
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit.bind(this)}
-        initialSize={{ width: 480, height: undefined }}
-        customMenuEntries={customMenuEntries}
-      >
-        {this.renderMain()}
-      </ServiceUI>
-    );
-  }
+  const cameraRunning = !!stream;
+  const customMenuEntries = [
+    {
+      name: cameraRunning ? "Disable Camera" : "Enable Camera",
+      icon: cameraRunning ? (
+        <MenuIcon icon={VideoOff} />
+      ) : (
+        <MenuIcon icon={Video} />
+      ),
+      disabled: !cameraRunning && !videoElementRef.current,
+      onClick: () =>
+        cameraRunning
+          ? stopVideo()
+          : startVideo(videoElementRef.current!),
+    },
+    {
+      name: mirror ? "Unmirror Image" : "Mirror Image",
+      icon: <MenuIcon icon={FlipHorizontal} />,
+      onClick: () => setMirror(!mirror),
+    },
+  ];
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      initialSize={{ width: 480, height: undefined }}
+      customMenuEntries={customMenuEntries}
+    >
+      {renderMain()}
+    </ServiceUI>
+  );
 }

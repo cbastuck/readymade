@@ -1,18 +1,14 @@
-import { Component } from "react";
-
 import ServiceUI from "../../services/ServiceUI";
 
 const serviceId = "hookup.to/service/dispatcher";
 const serviceName = "Dispatcher";
 
-class DispatcherUI extends Component {
-  render(): JSX.Element {
-    return (
-      <ServiceUI {...this.props}>
-        {({ service }: { service: any }) => service && <div />}
-      </ServiceUI>
-    );
-  }
+function DispatcherUI(props: any): JSX.Element {
+  return (
+    <ServiceUI {...props}>
+      {({ service }: { service: any }) => service && <div />}
+    </ServiceUI>
+  );
 }
 
 type DispatchDestination = {

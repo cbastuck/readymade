@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 
 import { WritableStream } from "web-streams-polyfill/ponyfill";
 import StreamSaver from "streamsaver";
@@ -14,40 +14,29 @@ if (!StreamSaver.WritableStream) {
   StreamSaver.WritableStream = WritableStream;
 }
 
-type DownloaderUIState = {
-  filename: string | undefined;
-  running?: boolean;
-};
+function DownloaderUI(props: any): JSX.Element {
+  const [filename, setFilename] = useState<string | undefined>(undefined);
+  const [running, setRunning] = useState<boolean | undefined>(undefined);
 
-class DownloaderUI extends Component<any, DownloaderUIState> {
-  constructor(props: any) {
-    super(props);
-    this.state = {
-      filename: undefined,
-    };
-  }
-
-  onInit = (initialState: { filename: string }): void => {
-    this.setState({
-      filename: initialState.filename,
-    });
+  const onInit = (initialState: { filename: string }): void => {
+    setFilename(initialState.filename);
   };
 
-  onNotification = (notification: { running?: boolean }): void => {
-    const { running } = notification;
-    if (running !== undefined) {
-      this.setState({ running });
+  const onNotification = (notification: { running?: boolean }): void => {
+    const { running: newRunning } = notification;
+    if (newRunning !== undefined) {
+      setRunning(newRunning);
     }
   };
 
-  onClose = (service: any): void => {
+  const onClose = (service: any): void => {
     if (service) {
       service.onClose();
       // service.configure({ autosense: false });
     }
   };
 
-  renderMain = (service: any): JSX.Element => (
+  const renderMain = (service: any): JSX.Element => (
     <div
       style={{ display: "flex", flexDirection: "column", textAlign: "left" }}
     >
@@ -55,12 +44,12 @@ class DownloaderUI extends Component<any, DownloaderUIState> {
       <div style={t.mt3}>
         <input
           style={s(t.w100, { margin: 0 })}
-          value={this.state.filename || service.filename}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({ filename: e.target.value })}
+          value={filename || service.filename}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setFilename(e.target.value)}
           onKeyUp={(ev: React.KeyboardEvent<HTMLInputElement>) =>
             ev.key === "Enter" &&
             service.configure({
-              filename: this.state.filename,
+              filename: filename,
               autosense: true,
             })
           }
@@ -69,8 +58,8 @@ class DownloaderUI extends Component<any, DownloaderUIState> {
       <div style={t.mt3}>
         <button
           style={s(t.ls1, t.fs12, t.w100)}
-          disabled={!this.state.running}
-          onClick={() => this.onClose(service)}
+          disabled={!running}
+          onClick={() => onClose(service)}
         >
           Close
         </button>
@@ -78,16 +67,14 @@ class DownloaderUI extends Component<any, DownloaderUIState> {
     </div>
   );
 
-  render(): JSX.Element {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit.bind(this)}
-        onNotification={this.onNotification.bind(this)}
-        segments={[{ name: "main", render: this.renderMain }]}
-      />
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      segments={[{ name: "main", render: renderMain }]}
+    />
+  );
 }
 
 class Downloader {

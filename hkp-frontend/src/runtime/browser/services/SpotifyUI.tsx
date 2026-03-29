@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import { SpotifyOAuth } from "./SpotifyComponents";
 
@@ -11,48 +11,39 @@ import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
 const loginStateId = "spotify-login";
 
-type State = {
-  token: string | null;
-  profile: {
+export default function SpotifyUI(props: ServiceUIProps) {
+  const [token, setToken] = useState<string | null>(null);
+  const [profile, setProfile] = useState<{
     display_name: string;
     followers: { total: number };
     images: Array<{ url: string }>;
-  } | null;
-  selectedAction: string;
-};
+  } | null>(null);
+  const [selectedAction, setSelectedAction] = useState<string>("injectSavedSongs");
 
-export default class SpotifyUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    token: null,
-    profile: null,
-    selectedAction: "injectSavedSongs",
-  };
-
-  onInit = (initialState: any) => {
-    const { token } = initialState;
-    if (token !== undefined) {
-      this.setState({ token });
+  const onInit = (initialState: any) => {
+    const { token: t } = initialState;
+    if (t !== undefined) {
+      setToken(t);
     }
   };
 
-  onNotification = (notification: any) => {
-    const { token, profile } = notification;
-    if (token !== undefined) {
-      this.setState({ token });
+  const onNotification = (notification: any) => {
+    const { token: t, profile: p } = notification;
+    if (t !== undefined) {
+      setToken(t);
     }
 
-    if (profile !== undefined) {
-      this.setState({ profile });
+    if (p !== undefined) {
+      setProfile(p);
     }
   };
 
-  renderUser = (service: ServiceInstance) => {
-    const { token, profile } = this.state;
+  const renderUser = (service: ServiceInstance) => {
     if (!token) {
       return (
         <SpotifyOAuth
-          onToken={(token: string) => {
-            service.configure({ token });
+          onToken={(t: string) => {
+            service.configure({ token: t });
           }}
           state={loginStateId}
         />
@@ -81,7 +72,7 @@ export default class SpotifyUI extends Component<ServiceUIProps, State> {
             className="px-2"
             onClick={() => {
               service.configure({ action: "logout" });
-              this.setState({ token: null });
+              setToken(null);
             }}
           >
             Logout
@@ -91,8 +82,7 @@ export default class SpotifyUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  renderActions = (service: ServiceInstance) => {
-    const { selectedAction } = this.state;
+  const renderActions = (service: ServiceInstance) => {
     const actions = {
       injectSavedSongs: "Get liked songs",
       injectRecentSongs: "Get recent songs",
@@ -102,8 +92,8 @@ export default class SpotifyUI extends Component<ServiceUIProps, State> {
         <RadioGroup
           title="Actions"
           options={actions}
-          value={this.state.selectedAction}
-          onChange={(newAction) => this.setState({ selectedAction: newAction })}
+          value={selectedAction}
+          onChange={(newAction) => setSelectedAction(newAction)}
         />
 
         <Button
@@ -116,20 +106,18 @@ export default class SpotifyUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        initialSize={{ width: 300, height: undefined }}
-        className="pb-2"
-        onInit={this.onInit.bind(this)}
-        onNotification={this.onNotification.bind(this)}
-      >
-        <>
-          {this.renderUser(this.props.service)}
-          {this.state.token && this.renderActions(this.props.service)}
-        </>
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      initialSize={{ width: 300, height: undefined }}
+      className="pb-2"
+      onInit={onInit}
+      onNotification={onNotification}
+    >
+      <>
+        {renderUser(props.service)}
+        {token && renderActions(props.service)}
+      </>
+    </ServiceUI>
+  );
 }

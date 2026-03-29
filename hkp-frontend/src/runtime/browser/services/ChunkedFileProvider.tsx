@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 
 import { BoardConsumer } from "../../../BoardContext";
 
@@ -10,64 +10,51 @@ type ChunkedFileProviderUIProps = {
   service: { uuid: string };
 };
 
-type ChunkedFileProviderUIState = {
-  file: File | undefined;
-};
+function ChunkedFileProviderUI(props: ChunkedFileProviderUIProps): JSX.Element {
+  const [file, setFile] = useState<File | undefined>(undefined);
 
-class ChunkedFileProviderUI extends Component<
-  ChunkedFileProviderUIProps,
-  ChunkedFileProviderUIState
-> {
-  state: ChunkedFileProviderUIState = {
-    file: undefined,
-  };
-
-  processFile = (boardContext: any, file: File | undefined): void => {
-    const runtime = boardContext.getCurrentBrowserRuntime(this.props.runtimeId);
+  const processFile = (boardContext: any, f: File | undefined): void => {
+    const runtime = boardContext.getCurrentBrowserRuntime(props.runtimeId);
     if (runtime) {
-      const service = runtime.getServiceById(this.props.service.uuid);
-      service && service.process({ file });
+      const service = runtime.getServiceById(props.service.uuid);
+      service && service.process({ file: f });
     } else {
       console.error("FileProvider service/runtime not found");
     }
   };
 
-  render(): JSX.Element {
-    return (
-      <BoardConsumer>
-        {(boardContext: any) => (
-          <div
-            style={{
-              margin: 10,
-            }}
-          >
-            <div>
-              <input
-                type="file"
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                  this.setState({
-                    file: e.target && e.target.files && e.target.files[0] || undefined,
-                  })
-                }
-              />
-            </div>
-            <div>
-              <button
-                onClick={() => this.processFile(boardContext, this.state.file)}
-                disabled={!this.state.file}
-                style={{
-                  width: "100%",
-                  marginTop: 10,
-                }}
-              >
-                Process
-              </button>
-            </div>
+  return (
+    <BoardConsumer>
+      {(boardContext: any) => (
+        <div
+          style={{
+            margin: 10,
+          }}
+        >
+          <div>
+            <input
+              type="file"
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setFile(e.target && e.target.files && e.target.files[0] || undefined)
+              }
+            />
           </div>
-        )}
-      </BoardConsumer>
-    );
-  }
+          <div>
+            <button
+              onClick={() => processFile(boardContext, file)}
+              disabled={!file}
+              style={{
+                width: "100%",
+                marginTop: 10,
+              }}
+            >
+              Process
+            </button>
+          </div>
+        </div>
+      )}
+    </BoardConsumer>
+  );
 }
 
 class ChunkedFileProvider {

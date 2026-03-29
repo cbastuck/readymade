@@ -1,48 +1,42 @@
-import React, { Component } from "react";
+import React, { useState } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 import Annotations from "../../../components/shared/Annotations";
 
-type GeneticOptimizerUIState = {
-  ttl?: number;
-  dataRoot?: string;
-  annotations?: Record<string, string>;
-};
+export default function GeneticOptimizerUI(props: any): JSX.Element {
+  const [ttl, setTtl] = useState<number | undefined>(undefined);
+  const [dataRoot, setDataRoot] = useState<string | undefined>(undefined);
+  const [annotations, setAnnotations] = useState<Record<string, string> | undefined>(undefined);
 
-export default class GeneticOptimizerUI extends Component<any, GeneticOptimizerUIState> {
-  state: GeneticOptimizerUIState = {};
+  const onInit = (initialState: { ttl?: number; dataRoot?: string; annotations?: Record<string, string> }): void => {
+    const { ttl: newTtl, dataRoot: newDataRoot, annotations: newAnnotations = {} } = initialState;
+    setTtl(newTtl);
+    setDataRoot(newDataRoot);
+    setAnnotations(newAnnotations);
+  };
 
-  onInit(initialState: { ttl?: number; dataRoot?: string; annotations?: Record<string, string> }): void {
-    const { ttl, dataRoot, annotations = {} } = initialState;
-    this.setState({
-      ttl,
-      dataRoot,
-      annotations,
-    });
-  }
-
-  renderMain = (service: any): JSX.Element => {
+  const renderMain = (service: any): JSX.Element => {
     const vspace = { marginBottom: 5 };
     return (
       <div style={{ textAlign: "left" }}>
         <input
           style={{ ...vspace, width: "100%" }}
           type="text"
-          value={this.state.dataRoot || ""}
+          value={dataRoot || ""}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-            const dataRoot = e.target.value;
-            this.setState({ dataRoot });
-            service.dataRoot = dataRoot;
+            const newDataRoot = e.target.value;
+            setDataRoot(newDataRoot);
+            service.dataRoot = newDataRoot;
           }}
         />
         <input
           style={{ ...vspace, width: "100%" }}
           type="number"
-          value={this.state.ttl || ""}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) => this.setState({ ttl: Number(e.target.value) })}
+          value={ttl || ""}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTtl(Number(e.target.value))}
           onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) =>
             e.key === "Enter" &&
-            service.configure({ ttl: Number(this.state.ttl) })
+            service.configure({ ttl: Number(ttl) })
           }
         />
         <button
@@ -59,29 +53,27 @@ export default class GeneticOptimizerUI extends Component<any, GeneticOptimizerU
     );
   };
 
-  renderAnnotations = (service: any): JSX.Element => {
+  const renderAnnotations = (service: any): JSX.Element => {
     return (
       <Annotations
         service={service}
-        initial={this.state.annotations}
-        onCommit={(annotations) => {
-          this.setState({ annotations });
-          service.annotations = annotations;
+        initial={annotations}
+        onCommit={(newAnnotations) => {
+          setAnnotations(newAnnotations);
+          service.annotations = newAnnotations;
         }}
       />
     );
   };
 
-  render(): JSX.Element {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit.bind(this)}
-        segments={[
-          { name: "main", render: this.renderMain },
-          { name: "annotations", render: this.renderAnnotations },
-        ]}
-      />
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      segments={[
+        { name: "main", render: renderMain },
+        { name: "annotations", render: renderAnnotations },
+      ]}
+    />
+  );
 }

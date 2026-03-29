@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useRef, useEffect } from "react";
 import { SquareCode } from "lucide-react";
 
 import { s, t } from "../../../styles";
@@ -20,75 +20,56 @@ import { Label } from "hkp-frontend/src/ui-components/primitives/label";
 import { Checkbox } from "hkp-frontend/src/ui-components/primitives/checkbox";
 import { Progress } from "hkp-frontend/src/ui-components/primitives/progress";
 
-type State = {
-  files: Array<File>;
-  user: User | undefined;
-  blob: Blob | null;
-  dropName: string | undefined;
-  items: Array<any> | null;
-  itemsSelection: Array<any>;
-  recentInjection: string;
-  multirow: boolean;
-  fileProgress: number;
-  file: File | null;
-  loadAsText: boolean;
-  mode: InjectorMode;
-  plainText: boolean;
-};
-
 type InjectorMode = "data" | "file" | "drop";
 
-export default class InjectorUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    files: [],
-    user: undefined,
-    blob: null,
-    dropName: undefined,
-    items: null,
-    itemsSelection: [],
-    recentInjection: "",
-    multirow: false,
-    fileProgress: 0,
-    file: null,
-    loadAsText: true,
-    mode: "data",
-    plainText: false,
-  };
+export default function InjectorUI(props: ServiceUIProps) {
+  const [files, setFiles] = useState<Array<File>>([]);
+  const [blob, setBlob] = useState<Blob | null>(null);
+  const [dropName, setDropName] = useState<string | undefined>(undefined);
+  const [items, setItems] = useState<Array<any> | null>(null);
+  const [itemsSelection, setItemsSelection] = useState<Array<any>>([]);
+  const [recentInjection, setRecentInjection] = useState<string>("");
+  const [multirow, setMultirow] = useState<boolean>(false);
+  const [fileProgress, setFileProgress] = useState<number>(0);
+  const [file, setFile] = useState<File | null>(null);
+  const [loadAsText, setLoadAsText] = useState<boolean>(true);
+  const [mode, setMode] = useState<InjectorMode>("data");
+  const [plainText, setPlainText] = useState<boolean>(false);
 
-  buttonStyle = {
+  const buttonStyle = {
     width: "100%",
     marginTop: 5,
   };
 
-  debouncer: Debouncer = new Debouncer(100);
+  const debouncerRef = useRef<Debouncer>(new Debouncer(100));
+  const editorRef = useRef<EditorHandle | null>(null);
 
-  editor: EditorHandle | null = null;
+  useEffect(() => {
+    return () => {
+      debouncerRef.current.clear();
+    };
+  }, []);
 
-  componentWillUnmount() {
-    this.debouncer.clear();
-  }
-
-  onUpdate = (config: any) => {
-    const { recentInjection, plainText } = config;
-    if (recentInjection !== undefined) {
+  const onUpdate = (config: any) => {
+    const { recentInjection: ri, plainText: pt } = config;
+    if (ri !== undefined) {
       const data =
-        typeof recentInjection === "string"
-          ? recentInjection
-          : JSON.stringify(recentInjection);
-      this.setState({ recentInjection: data });
+        typeof ri === "string"
+          ? ri
+          : JSON.stringify(ri);
+      setRecentInjection(data);
     }
 
-    if (plainText !== undefined) {
-      this.setState({ plainText });
+    if (pt !== undefined) {
+      setPlainText(pt);
     }
   };
 
-  onInit = (initialState: any) => this.onUpdate(initialState);
+  const onInit = (initialState: any) => onUpdate(initialState);
 
-  onNotification = (notification: any) => this.onUpdate(notification);
+  const onNotification = (notification: any) => onUpdate(notification);
 
-  getDroppedItemLabels = () => {
-    const { items, dropName } = this.state;
+  const getDroppedItemLabels = () => {
     if (!items) {
       return (
         <div
@@ -125,11 +106,11 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
               <Checkbox
                 key={`drop-zone-item-checkbox-${idx}`}
                 onChange={(checked) =>
-                  this.setState({
-                    itemsSelection: checked
-                      ? [...this.state.itemsSelection, idx]
-                      : this.state.itemsSelection.filter((x) => x !== idx),
-                  })
+                  setItemsSelection(
+                    checked
+                      ? [...itemsSelection, idx]
+                      : itemsSelection.filter((x) => x !== idx)
+                  )
                 }
               />
               <div
@@ -149,31 +130,32 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  renderDragNDropInput = (service: ServiceInstance) => {
-    const { items, itemsSelection, blob, dropName } = this.state;
+  const renderDragNDropInput = (service: ServiceInstance) => {
     return (
       <div className="flex flex-col gap-2 h-full w-full">
         <DropZone
           style={{ height: "100%", width: "100%" }}
-          label={this.getDroppedItemLabels()}
-          onFiles={(files: FileList) => {
-            const isArray = files.length > 1;
+          label={getDroppedItemLabels()}
+          onFiles={(fileList: FileList) => {
+            const isArray = fileList.length > 1;
             if (isArray) {
               console.warn(
                 "InjectorUI.renderDragNDropInput only single files supported"
               );
               return;
             }
-            const blob: any = isArray ? Array.from(files) : files[0];
-            const dropName = isArray ? "multiple files" : blob.name;
-            this.setState({ blob, dropName, items: null });
+            const b: any = isArray ? Array.from(fileList) : fileList[0];
+            const dn = isArray ? "multiple files" : b.name;
+            setBlob(b);
+            setDropName(dn);
+            setItems(null);
           }}
-          // onItems={(items: DataTransferItemList) => this.setState({ items })}
+          // onItems={(items: DataTransferItemList) => setItems(items)}
         />
         <Button
           onClick={() => {
             if (blob) {
-              this.readFile(service, blob, false);
+              readFile(service, blob, false);
             } else {
               service.configure({
                 inject: itemsSelection.map((idx) => items?.[idx]),
@@ -188,13 +170,12 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  renderDataEditor = (service: ServiceInstance) => {
-    const { recentInjection, plainText } = this.state;
+  const renderDataEditor = (service: ServiceInstance) => {
     return (
       <div className="flex flex-col h-full w-full">
         <div style={{ height: "calc(100% - 54px)" }}>
           <Editor
-            ref={(editor) => (this.editor = editor)}
+            ref={(editor) => (editorRef.current = editor)}
             value={recentInjection}
             language={plainText ? "text" : "json"}
           />
@@ -202,9 +183,9 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
 
         <Button
           className="h-[50px] mb-[4px]"
-          style={this.buttonStyle}
+          style={buttonStyle}
           onClick={() => {
-            const code = this.editor?.getValue();
+            const code = editorRef.current?.getValue();
             try {
               const obj = JSON.parse(code);
               service.configure({ inject: obj });
@@ -212,7 +193,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
               console.error("InjectorUI.renderDataEditor", err);
               service.configure({ inject: code }); // can we check of the text is valid JSON from the editor?
             }
-            this.setState({ recentInjection: code });
+            setRecentInjection(code);
           }}
         >
           Inject Data
@@ -221,38 +202,34 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  readFile = (
+  const readFile = (
     service: ServiceInstance,
-    file: File | Blob,
-    loadAsText: boolean
+    f: File | Blob,
+    asText: boolean
   ) => {
     const reader = new FileReader();
-    //reader.addEventListener('loadstart', ev => console.log('loadstart', reader.result));
-    //reader.addEventListener('load', ev => console.log('load', reader.result));
     reader.addEventListener("error", (_ev: any) => {
       console.log("Error Injector.readFile", reader.error);
     });
-    //reader.addEventListener('abort', ev => console.log('abort', reader.result));
     reader.addEventListener("loadend", (_ev: any) => {
-      const result = loadAsText
+      const result = asText
         ? reader.result
         : new Blob([reader.result!], { type: "application/octet-stream" });
       service.app.next(service, result);
-      this.setState({ fileProgress: 0 });
+      setFileProgress(0);
     });
     reader.addEventListener("progress", (ev) => {
-      const fileProgress = Math.round((ev.loaded / ev.total) * 100);
-      this.setState({ fileProgress });
+      const fp = Math.round((ev.loaded / ev.total) * 100);
+      setFileProgress(fp);
     });
-    if (loadAsText) {
-      reader.readAsText(file);
+    if (asText) {
+      reader.readAsText(f);
     } else {
-      reader.readAsArrayBuffer(file);
+      reader.readAsArrayBuffer(f);
     }
   };
 
-  renderFileInput = (service: ServiceInstance) => {
-    const { file, loadAsText, fileProgress } = this.state;
+  const renderFileInput = (service: ServiceInstance) => {
     return (
       <div className="flex flex-col h-full gap-2">
         <div className="grid w-full items-center gap-1.5 text-left mt-2">
@@ -265,7 +242,7 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
             className="tracking-wider"
             onChange={(ev) =>
               ev.target.files?.length &&
-              this.setState({ file: ev.target.files[0] })
+              setFile(ev.target.files[0])
             }
           />
         </div>
@@ -273,9 +250,9 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
         <div className="mb-2 h-full">
           <Button
             className="h-full text-xl"
-            style={this.buttonStyle}
+            style={buttonStyle}
             disabled={!file}
-            onClick={() => file && this.readFile(service, file, loadAsText)}
+            onClick={() => file && readFile(service, file, loadAsText)}
           >
             Inject
           </Button>
@@ -288,104 +265,96 @@ export default class InjectorUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  onMode = (newMode: string) => {
-    this.setState((state) => ({ ...state, mode: newMode as InjectorMode }));
+  const onMode = (newMode: string) => {
+    setMode(newMode as InjectorMode);
   };
 
-  onFormatCode = () => {
-    const code = this.editor?.getValue();
+  const onFormatCode = () => {
+    const code = editorRef.current?.getValue();
     try {
       const obj = JSON.parse(code);
-      this.setState({
-        recentInjection: JSON.stringify(obj, null, 2),
-      });
+      setRecentInjection(JSON.stringify(obj, null, 2));
     } catch (err) {
       console.error("InjectorUI.onFormatCode", err);
     }
   };
 
-  setTextMode = (textMode: boolean) => {
-    this.props.service.configure({ plainText: textMode });
+  const setTextMode = (textMode: boolean) => {
+    props.service.configure({ plainText: textMode });
   };
 
-  render() {
-    const { service } = this.props;
-    const { mode, plainText, loadAsText } = this.state;
-    const customMenuEntries: Array<CustomMenuEntry> = (() => {
-      if (mode === "data") {
-        return [
-          {
-            name: "Prettify",
-            icon: <MenuIcon icon={SquareCode} />,
-            disabled: plainText,
-            onClick: this.onFormatCode,
-          },
-        ];
-      }
-      return [];
-    })();
+  const { service } = props;
+  const customMenuEntries: Array<CustomMenuEntry> = (() => {
+    if (mode === "data") {
+      return [
+        {
+          name: "Prettify",
+          icon: <MenuIcon icon={SquareCode} />,
+          disabled: plainText,
+          onClick: onFormatCode,
+        },
+      ];
+    }
+    return [];
+  })();
 
-    const modes: Array<InjectorMode> = ["data", "file", "drop"];
+  const modes: Array<InjectorMode> = ["data", "file", "drop"];
 
-    const formatOptions =
-      mode === "data"
-        ? ["json", "plain"]
-        : mode === "file"
-        ? ["binary", "text"]
-        : [];
-    const formatValue =
-      mode === "data"
-        ? plainText
-          ? "plain"
-          : "json"
-        : mode === "file"
-        ? loadAsText
-          ? "text"
-          : "binary"
-        : undefined;
+  const formatOptions =
+    mode === "data"
+      ? ["json", "plain"]
+      : mode === "file"
+      ? ["binary", "text"]
+      : [];
+  const formatValue =
+    mode === "data"
+      ? plainText
+        ? "plain"
+        : "json"
+      : mode === "file"
+      ? loadAsText
+        ? "text"
+        : "binary"
+      : undefined;
 
-    const onFormat = (newFormat: string) => {
-      if (mode === "data") {
-        this.setTextMode(newFormat === "plain");
-      } else if (mode === "file") {
-        this.setState((state) => ({
-          ...state,
-          loadAsText: newFormat === "text",
-        }));
-      }
-    };
-    return (
-      <ServiceUI
-        {...this.props}
-        className="pb-2"
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        customMenuEntries={customMenuEntries}
-        initialSize={{ width: 380, height: 280 }}
-      >
-        <>
-          <div className="flex w-full">
-            <RadioGroup
-              className="w-full"
-              title="Mode"
-              value={this.state.mode}
-              options={modes}
-              onChange={this.onMode}
-            />
-            <RadioGroup
-              alignRight={true}
-              title="Format"
-              value={formatValue}
-              options={formatOptions}
-              onChange={onFormat}
-              disabled={formatOptions.length === 0}
-            />
-          </div>
-          {mode === "data" && this.renderDataEditor(service)}
-          {mode === "file" && this.renderFileInput(service)}
-          {mode === "drop" && this.renderDragNDropInput(service)}
-        </>
-      </ServiceUI>
-    );
-  }
+  const onFormat = (newFormat: string) => {
+    if (mode === "data") {
+      setTextMode(newFormat === "plain");
+    } else if (mode === "file") {
+      setLoadAsText(newFormat === "text");
+    }
+  };
+  return (
+    <ServiceUI
+      {...props}
+      className="pb-2"
+      onInit={onInit}
+      onNotification={onNotification}
+      customMenuEntries={customMenuEntries}
+      initialSize={{ width: 380, height: 280 }}
+    >
+      <>
+        <div className="flex w-full">
+          <RadioGroup
+            className="w-full"
+            title="Mode"
+            value={mode}
+            options={modes}
+            onChange={onMode}
+          />
+          <RadioGroup
+            alignRight={true}
+            title="Format"
+            value={formatValue}
+            options={formatOptions}
+            onChange={onFormat}
+            disabled={formatOptions.length === 0}
+          />
+        </div>
+        {mode === "data" && renderDataEditor(service)}
+        {mode === "file" && renderFileInput(service)}
+        {mode === "drop" && renderDragNDropInput(service)}
+      </>
+    </ServiceUI>
+  );
 }

@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import InputField from "../../../components/shared/InputField";
 import ServiceUI from "../../services/ServiceUI";
@@ -7,49 +7,39 @@ import { s, t } from "../../../styles";
 const serviceId = "hookup.to/service/receiver";
 const serviceName = "Receiver";
 
-type ReceiverUIState = {
-  wall: string;
-  id: string;
-};
+function ReceiverUI(props: any): JSX.Element {
+  const [wall, setWall] = useState<string>("");
+  const [id, setId] = useState<string>("");
 
-class ReceiverUI extends Component<any, ReceiverUIState> {
-  state: ReceiverUIState = {
-    wall: "",
-    id: "",
-  };
+  const onInit = (_initial: any): void => {};
 
-  onInit = (_initial: any): void => {};
+  const onNotification = (_notification: any): void => {};
 
-  onNotification = (_notification: any): void => {};
-
-  renderMain = (): JSX.Element => {
-    const { wall, id } = this.state;
+  const renderMain = (): JSX.Element => {
     return (
       <div style={s(t.fill, { display: "flex", flexDirection: "column" })}>
         <InputField
           label="Wall"
           value={wall}
-          onChange={(wall: string) => this.setState({ wall })}
+          onChange={(w: string) => setWall(w)}
         />
         <InputField
           label="Id"
           value={id}
-          onChange={(id: string) => this.setState({ id })}
+          onChange={(i: string) => setId(i)}
         />
       </div>
     );
   };
 
-  render(): JSX.Element {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        segments={[{ name: "main", render: this.renderMain }]}
-      />
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      segments={[{ name: "main", render: renderMain }]}
+    />
+  );
 }
 
 class Receiver {

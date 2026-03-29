@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import { s, t } from "../../../styles";
 import InputField from "../../../components/shared/InputField";
@@ -7,67 +7,54 @@ import { ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
-type State = {
-  bypass: boolean;
-  mode: "websocket" | "post";
-  url: string;
-  flow: string;
-  headers: { [key: string]: any };
-};
+export default function OutputUI(props: ServiceUIProps) {
+  const [bypass, setBypass] = useState<boolean>(true);
+  const [mode, setMode] = useState<"websocket" | "post">("websocket");
+  const [url, setUrl] = useState<string>("");
+  const [flow, setFlow] = useState<string>("stop");
+  const [headers, setHeaders] = useState<{ [key: string]: any }>({});
 
-export default class OutputUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    bypass: true,
-    mode: "websocket",
-    url: "",
-    headers: {},
-    flow: "stop",
-  };
-
-  onInit = (initialState: any) => {
+  const onInit = (initialState: any) => {
     const {
-      url = "",
-      bypass = true,
-      flow = "stop",
-      headers = {},
-      mode = "websocket",
+      url: u = "",
+      bypass: b = true,
+      flow: f = "stop",
+      headers: h = {},
+      mode: m = "websocket",
     } = initialState;
 
-    this.setState({
-      url,
-      bypass,
-      flow,
-      headers,
-      mode,
-    });
+    setUrl(u);
+    setBypass(b);
+    setFlow(f);
+    setHeaders(h);
+    setMode(m);
   };
 
-  onNotification = (notification: any) => {
-    const { url, bypass, flow, headers, mode } = notification;
+  const onNotification = (notification: any) => {
+    const { url: u, bypass: b, flow: f, headers: h, mode: m } = notification;
 
-    if (mode !== undefined && this.state.mode !== mode) {
-      this.setState({ mode });
+    if (m !== undefined && mode !== m) {
+      setMode(m);
     }
-    if (url !== undefined && this.state.url !== url) {
-      this.setState({ url });
-    }
-
-    if (bypass !== undefined && this.state.bypass !== bypass) {
-      this.setState({ bypass });
+    if (u !== undefined && url !== u) {
+      setUrl(u);
     }
 
-    if (flow !== undefined) {
-      this.setState({ flow });
+    if (b !== undefined && bypass !== b) {
+      setBypass(b);
     }
 
-    if (headers !== undefined) {
-      this.setState({ headers });
+    if (f !== undefined) {
+      setFlow(f);
+    }
+
+    if (h !== undefined) {
+      setHeaders(h);
     }
   };
 
-  renderMain = () => {
-    const { url, flow, headers, mode } = this.state;
-    const { service } = this.props;
+  const renderMain = () => {
+    const { service } = props;
     const headerKeys = Object.keys(headers);
     return (
       <div className="flex flex-col">
@@ -93,7 +80,7 @@ export default class OutputUI extends Component<ServiceUIProps, State> {
                 value={headers[key]}
                 onChange={async (newValue) => {
                   const newHeaders = {
-                    ...this.state.headers,
+                    ...headers,
                     [key]: newValue,
                   };
                   await service.configure({ headers: newHeaders });
@@ -112,22 +99,20 @@ export default class OutputUI extends Component<ServiceUIProps, State> {
             pass: "pass",
           }}
           value={flow}
-          onChange={({ value: flow }) => service.configure({ flow })}
+          onChange={({ value: f }) => service.configure({ flow: f })}
         />
       </div>
     );
   };
 
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        initialSize={{ width: 300, height: undefined }}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-      >
-        {this.renderMain()}
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      initialSize={{ width: 300, height: undefined }}
+      onInit={onInit}
+      onNotification={onNotification}
+    >
+      {renderMain()}
+    </ServiceUI>
+  );
 }

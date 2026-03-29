@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import InputField from "hkp-frontend/src/components/shared/InputField";
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
@@ -8,41 +8,30 @@ import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import Button from "hkp-frontend/src/ui-components/Button";
 import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 
-type State = {
-  conditions: any;
-  aggregator: any;
-};
+export default function FilterUI(props: ServiceUIProps) {
+  const [conditions, setConditions] = useState<any>(undefined);
+  const [aggregator, setAggregator] = useState<any>(undefined);
 
-export default class FilterUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    conditions: undefined,
-    aggregator: undefined,
+  const onInit = (initialState: any) => {
+    const { conditions: c, aggregator: a } = initialState;
+    setConditions(c);
+    setAggregator(a);
   };
 
-  onInit(initialState: any) {
-    const { conditions, aggregator } = initialState;
+  const onNotification = (notification: any) => {
+    const { conditions: c, aggregator: a } = notification;
 
-    this.setState({
-      conditions,
-      aggregator,
-    });
-  }
-
-  onNotification(notification: any) {
-    const { conditions, aggregator } = notification;
-
-    if (conditions !== undefined) {
-      this.setState({ conditions });
+    if (c !== undefined) {
+      setConditions(c);
     }
 
-    if (aggregator !== undefined) {
-      this.setState({ aggregator });
+    if (a !== undefined) {
+      setAggregator(a);
     }
-  }
+  };
 
-  renderMain = () => {
-    const { conditions, aggregator } = this.state;
-    const { service } = this.props;
+  const renderMain = () => {
+    const { service } = props;
     return (
       <div className="filter-service" style={{ textAlign: "left" }}>
         <GroupLabel>Conditions</GroupLabel>
@@ -78,8 +67,8 @@ export default class FilterUI extends Component<ServiceUIProps, State> {
             label="Operation"
             options={{ and: "AND", or: "OR" }}
             value={aggregator}
-            onChange={({ value: aggregator }) => {
-              service.configure({ aggregator });
+            onChange={({ value: agg }) => {
+              service.configure({ aggregator: agg });
             }}
           />
         )}
@@ -87,16 +76,14 @@ export default class FilterUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit.bind(this)}
-        onNotification={this.onNotification.bind(this)}
-        initialSize={{ width: 300, height: undefined }}
-      >
-        {this.renderMain()}
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      initialSize={{ width: 300, height: undefined }}
+    >
+      {renderMain()}
+    </ServiceUI>
+  );
 }

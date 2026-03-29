@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import InputField from "../../../components/shared/InputField";
 import ServiceUI from "../../services/ServiceUI";
@@ -7,62 +7,50 @@ import { s, t } from "../../../styles";
 const serviceId = "hookup.to/service/thrower";
 const serviceName = "Thrower";
 
-type ThrowerUIState = {
-  pushUrl: string;
-  id: string;
-};
+function ThrowerUI(props: any): JSX.Element {
+  const [pushUrl, setPushUrl] = useState<string>("");
+  const [id, setId] = useState<string>("");
 
-class ThrowerUI extends Component<any, ThrowerUIState> {
-  state: ThrowerUIState = {
-    pushUrl: "",
-    id: "",
+  const onInit = (initial: { pushUrl?: string }): void => {
+    const { pushUrl: url = "" } = initial;
+    setPushUrl(url);
   };
 
-  onInit = (initial: { pushUrl?: string }): void => {
-    const { pushUrl = "" } = initial;
-    this.setState({
-      pushUrl,
-    });
-  };
-
-  onNotification = (notification: { pushUrl?: string }): void => {
-    const { pushUrl } = notification;
-    if (pushUrl !== undefined) {
-      this.setState({ pushUrl });
+  const onNotification = (notification: { pushUrl?: string }): void => {
+    const { pushUrl: url } = notification;
+    if (url !== undefined) {
+      setPushUrl(url);
     }
   };
 
-  renderMain = (service: any): JSX.Element => {
-    const { pushUrl, id } = this.state;
+  const renderMain = (service: any): JSX.Element => {
     return (
       <div style={s(t.fill, { display: "flex", flexDirection: "column" })}>
         <InputField
           label="URL"
           value={pushUrl}
-          onChange={async (pushUrl: string) => {
-            await service.configure({ pushUrl });
-            this.setState({ pushUrl });
+          onChange={async (url: string) => {
+            await service.configure({ pushUrl: url });
+            setPushUrl(url);
           }}
         />
         <InputField
           label="Id"
           value={id}
-          onChange={(id: string) => this.setState({ id })}
+          onChange={(i: string) => setId(i)}
         />
       </div>
     );
   };
 
-  render(): JSX.Element {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-        segments={[{ name: "main", render: this.renderMain }]}
-      />
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      segments={[{ name: "main", render: renderMain }]}
+    />
+  );
 }
 
 class Thrower {

@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useRef, useEffect } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 import { AppImpl, ServiceClass, ServiceUIProps } from "../../../types";
@@ -6,55 +6,55 @@ import { AppImpl, ServiceClass, ServiceUIProps } from "../../../types";
 const serviceId = "hookup.to/service/media-player";
 const serviceName = "Media Player";
 
-export class MediaPlayerUI extends Component<ServiceUIProps> {
-  createdObjectUrl: string | null = null;
-  audio: HTMLAudioElement | null = null;
+export function MediaPlayerUI(props: ServiceUIProps) {
+  const createdObjectUrlRef = useRef<string | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  componentWillUnmount(): void {
-    this.resetIfNeeded();
-  }
+  useEffect(() => {
+    return () => {
+      resetIfNeeded();
+    };
+  }, []);
 
-  onInit(initialState: object) {
-    this.setState({
-      ...initialState,
-    });
-  }
+  const onInit = (initialState: object) => {
+    // no-op: original just called setState with spread
+  };
 
-  onNotification = (params: any) => {
+  const onNotification = (params: any) => {
     const { process: data } = params;
-    if (this.audio && data) {
-      this.resetIfNeeded();
+    if (audioRef.current && data) {
+      resetIfNeeded();
       if (data instanceof Blob) {
-        this.playBlob(data);
+        playBlob(data);
       } else {
         throw new Error("Unsupported media format");
       }
     }
   };
 
-  playBlob = (blob: Blob) => {
+  const playBlob = (blob: Blob) => {
     try {
-      if (this.audio) {
-        this.createdObjectUrl = URL.createObjectURL(blob);
-        this.audio.src = this.createdObjectUrl;
-        this.audio.play();
+      if (audioRef.current) {
+        createdObjectUrlRef.current = URL.createObjectURL(blob);
+        audioRef.current.src = createdObjectUrlRef.current;
+        audioRef.current.play();
       }
     } catch (err) {
       console.error("MediaPlayer error creating object URL", err);
     }
   };
 
-  resetIfNeeded = () => {
-    if (this.createdObjectUrl) {
-      URL.revokeObjectURL(this.createdObjectUrl);
-      this.createdObjectUrl = null;
+  const resetIfNeeded = () => {
+    if (createdObjectUrlRef.current) {
+      URL.revokeObjectURL(createdObjectUrlRef.current);
+      createdObjectUrlRef.current = null;
     }
   };
 
-  renderMain = () => {
+  const renderMain = () => {
     return (
       <audio
-        ref={(audio) => (this.audio = audio)}
+        ref={(audio) => (audioRef.current = audio)}
         style={{ width: "100%" }}
         controls
         autoPlay
@@ -62,16 +62,14 @@ export class MediaPlayerUI extends Component<ServiceUIProps> {
     );
   };
 
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={this.onInit.bind(this)}
-        onNotification={this.onNotification}
-        segments={[{ name: "Main", render: this.renderMain }]}
-      />
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={onInit}
+      onNotification={onNotification}
+      segments={[{ name: "Main", render: renderMain }]}
+    />
+  );
 }
 
 class MediaPlayer {

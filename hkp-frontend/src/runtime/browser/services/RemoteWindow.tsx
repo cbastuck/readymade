@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useRef, useEffect } from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 
@@ -16,33 +16,21 @@ function getRandomColor() {
 }
 */
 
-type RemoteWindowUIState = {
-  window?: Window;
-  fullscreen?: boolean;
-};
+function RemoteWindowUI(props: any): JSX.Element {
+  const windowRef = useRef<Window | undefined>(undefined);
+  const fullscreenRef = useRef<boolean | undefined>(undefined);
 
-class RemoteWindowUI extends Component<any, RemoteWindowUIState> {
-  componentDidMount(): void {
-    this.setState({
-      window: window.open(undefined, "remote", undefined) ?? undefined,
-    });
-  }
+  useEffect(() => {
+    windowRef.current = window.open(undefined, "remote", undefined) ?? undefined;
+  }, []);
 
-  update = (value: any): void => {
-    const wdw = this.state.window;
+  const update = (value: any): void => {
+    const wdw = windowRef.current;
     if (!wdw) return;
     const doc = wdw.document;
     if (!doc.title) {
       doc.title = "Hookup Remote";
     }
-
-    /*
-    doc.body.appendChild(
-      doc.createTextNode('Hello Remote Window')
-    );
-    */
-
-    //doc.body.style.backgroundColor = getRandomColor();
 
     if (!value.bot) {
       doc.body.appendChild(
@@ -58,16 +46,14 @@ class RemoteWindowUI extends Component<any, RemoteWindowUIState> {
     }
   };
 
-  render(): JSX.Element {
-    return (
-      <ServiceUI
-        {...this.props}
-        onInit={(service: any) => this.setState({ fullscreen: service.fullscreen })}
-      >
-        {({ service }: { service: any }) => service && service.register(this.update) && <div />}
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      onInit={(service: any) => { fullscreenRef.current = service.fullscreen; }}
+    >
+      {({ service }: { service: any }) => service && service.register(update) && <div />}
+    </ServiceUI>
+  );
 }
 
 class RemoteWindow {

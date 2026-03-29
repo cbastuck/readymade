@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState, useEffect } from "react";
 import moment from "moment";
 import Image from "hkp-frontend/src/ui-components/Image";
 
@@ -30,60 +30,53 @@ type UserProps = {
   onLogout: () => void;
   onUser: (user: User | null) => void;
 };
-export class GithubUser extends Component<UserProps, { user: User | null }> {
-  state = {
-    user: null,
-  };
+export function GithubUser(props: UserProps) {
+  const { token, size = 80, onLogout, onUser } = props;
+  const [user, setUser] = useState<User | null>(null);
 
-  componentDidMount() {
-    const { token } = this.props;
-    this.init(token);
-  }
+  useEffect(() => {
+    init(token);
+  }, [token]);
 
-  init = async (token: string | undefined) => {
-    const user = await getUser(token);
-    const { onUser } = this.props;
-    if (user) {
-      this.setState({ user });
+  const init = async (t: string | undefined) => {
+    const u = await getUser(t);
+    if (u) {
+      setUser(u);
       if (onUser) {
-        onUser(user);
+        onUser(u);
       }
     }
   };
 
-  render() {
-    const { user } = this.state;
-    if (!user) {
-      return false;
-    }
-    const { size = 80, onLogout } = this.props;
-    const { login, avatar_url, created_at, public_repos, followers } = user;
-    return (
-      <div>
-        <div className="flex flex-col gap-2 text-left">
-          <div className="flex items-start">
-            <div className="flex flex-col pr-4">
-              <h2>{login}</h2>
-              <div className="flex text-left text-md">
-                <div>Joined {moment(created_at).format("MM/YYYY")} - </div>
-                <div>{public_repos} public repositories - </div>
-                <div>{followers} followers</div>
-              </div>
+  if (!user) {
+    return false;
+  }
+  const { login, avatar_url, created_at, public_repos, followers } = user;
+  return (
+    <div>
+      <div className="flex flex-col gap-2 text-left">
+        <div className="flex items-start">
+          <div className="flex flex-col pr-4">
+            <h2>{login}</h2>
+            <div className="flex text-left text-md">
+              <div>Joined {moment(created_at).format("MM/YYYY")} - </div>
+              <div>{public_repos} public repositories - </div>
+              <div>{followers} followers</div>
             </div>
-            <div className="flex flex-col ml-auto">
-              <Image className="ml-auto" src={avatar_url} size={size} />
-              <Button
-                className="ml-auto w-min h-min"
-                onClick={() => onLogout && onLogout()}
-              >
-                Logout
-              </Button>
-            </div>
+          </div>
+          <div className="flex flex-col ml-auto">
+            <Image className="ml-auto" src={avatar_url} size={size} />
+            <Button
+              className="ml-auto w-min h-min"
+              onClick={() => onLogout && onLogout()}
+            >
+              Logout
+            </Button>
           </div>
         </div>
       </div>
-    );
-  }
+    </div>
+  );
 }
 
 type ObjectProps = ServiceUIProps & {
@@ -96,104 +89,77 @@ type ObjectProps = ServiceUIProps & {
   onChange: (diff: Partial<ObjectProps>) => void;
 };
 
-type ObjectState = {
-  user: User | null;
-  owner: string | undefined;
-  repos?: any;
-  repo: any;
-  branches?: any;
-  branch: any;
-  tree?: any;
-  path?: Array<any>;
-  fileMode: "New File" | "Select File";
-};
+export function GithubObject(props: ObjectProps) {
+  const { token, owner, repo, branch, file, onChange, disableFileInput } = props;
 
-export class GithubObject extends Component<ObjectProps, ObjectState> {
-  state: ObjectState = {
-    path: [],
-    user: null,
-    owner: undefined,
-    repos: undefined,
-    repo: undefined,
-    branches: undefined,
-    branch: undefined,
-    tree: undefined,
-    fileMode: "New File",
-  };
+  const [user, setUser] = useState<User | null>(null);
+  const [ownerState, setOwnerState] = useState<string | undefined>(undefined);
+  const [repos, setRepos] = useState<any>(undefined);
+  const [branches, setBranches] = useState<any>(undefined);
+  const [tree, setTree] = useState<any>(undefined);
+  const [path, setPath] = useState<Array<any>>([]);
+  const [fileMode, setFileMode] = useState<"New File" | "Select File">("New File");
 
-  componentDidMount() {
-    this.init();
-  }
+  useEffect(() => {
+    init();
+  }, []);
 
-  componentDidUpdate(prevProps: ObjectProps) {
-    const { owner, repo, branch, file } = this.props;
-    if (owner !== prevProps.owner) {
-      this.onOwnerChanged(owner);
+  useEffect(() => {
+    if (ownerState !== undefined && owner !== ownerState) {
+      onOwnerChanged(owner);
     }
+  }, [owner]);
 
-    if (repo !== prevProps.repo) {
-      this.onRepoChanged(repo);
-    }
+  useEffect(() => {
+    onRepoChanged(repo);
+  }, [repo]);
 
-    if (branch !== prevProps.branch) {
-      this.onBranchChanged(branch);
-    }
+  useEffect(() => {
+    onBranchChanged(branch);
+  }, [branch]);
 
-    if (file !== prevProps.file) {
-      this.onFileChanged(file);
-    }
-  }
+  useEffect(() => {
+    onFileChanged(file);
+  }, [file]);
 
-  async init() {
-    const { token, owner, repo, branch } = this.props;
-    const user = await getUser(token);
-    const repos = await getRepos(token, owner || user.login);
-    const branches = repo
-      ? await getBranches(token, owner || user.login, repo)
+  const init = async () => {
+    const u = await getUser(token);
+    const r = await getRepos(token, owner || u.login);
+    const b = repo
+      ? await getBranches(token, owner || u.login, repo)
       : [];
-    const tree =
+    const t =
       branch && repo
-        ? await getBranch(token, owner || user.login, repo, branch)
+        ? await getBranch(token, owner || u.login, repo, branch)
         : [];
-    this.setState({
-      user,
-      owner: owner || user.login,
-      repos,
-      repo,
-      branch,
-      branches,
-      tree,
-    });
-  }
-
-  onOwnerChanged = async (owner: string) => {
-    const { token, onChange } = this.props;
-    const repos = await getRepos(token, owner);
-    this.setState({
-      repos,
-      branches: [],
-      tree: null,
-    });
-    onChange({ owner });
+    setUser(u);
+    setOwnerState(owner || u.login);
+    setRepos(r);
+    setBranches(b);
+    setTree(t);
   };
 
-  onRepoChanged = async (repo: any) => {
-    const { token, owner, branch, onChange } = this.props;
-    const branches = await getBranches(token, owner, repo);
-    if (branches.find((b: any) => b.name === branch)) {
+  const onOwnerChanged = async (o: string) => {
+    const r = await getRepos(token, o);
+    setRepos(r);
+    setBranches([]);
+    setTree(null);
+    onChange({ owner: o });
+  };
+
+  const onRepoChanged = async (r: any) => {
+    if (!token || !owner) return;
+    const b = await getBranches(token, owner, r);
+    if (b && b.find((bItem: any) => bItem.name === branch)) {
       // same branch-name exists in new repo
-      const tree = await getBranch(token, owner, repo, branch);
-      this.setState({
-        branches,
-        tree,
-      });
+      const t = await getBranch(token, owner, r, branch);
+      setBranches(b);
+      setTree(t);
       onChange({ file: null });
     } else {
-      this.setState({
-        branches,
-        tree: null,
-      });
-      const first = branches && branches[0];
+      setBranches(b);
+      setTree(null);
+      const first = b && b[0];
       onChange({
         branch: first ? first.name : "",
         file: null,
@@ -201,27 +167,16 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
     }
   };
 
-  onBranchChanged = async (branch: string) => {
-    const { token, owner, repo, onChange } = this.props;
-
-    this.setState({
-      tree: branch ? await getBranch(token, owner, repo, branch) : null,
-    });
+  const onBranchChanged = async (b: string) => {
+    if (!token || !owner || !repo) return;
+    setTree(b ? await getBranch(token, owner, repo, b) : null);
     onChange({ file: null });
   };
 
-  onFileChanged = async (_file: any) => {};
+  const onFileChanged = async (_f: any) => {};
 
-  renderPanel = () => {
-    const { onChange, disableFileInput, branch, repo, file } = this.props; // selections come from props
-    const {
-      user,
-      owner = user ? user.login : "",
-      repos,
-      branches,
-      tree,
-      fileMode,
-    } = this.state; // options come from state
+  const renderPanel = () => {
+    const effectiveOwner = ownerState || (user ? user.login : "");
 
     if (!repos) {
       return false;
@@ -244,21 +199,21 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
       <div className="flex flex-col text-left">
         <InputField
           label="User"
-          value={owner}
-          onChange={(owner) => onChange({ owner })}
+          value={effectiveOwner}
+          onChange={(o) => onChange({ owner: o })}
         />
         <div className="flex">
           <SelectorField
             label="Repo"
             options={repositoryOptions}
             value={repo || ""}
-            onChange={({ value: repo }) => onChange({ repo })}
+            onChange={({ value: r }) => onChange({ repo: r })}
           />
           <SelectorField
             label="Branch"
             options={branchOptions}
             value={branch}
-            onChange={({ value: branch }) => onChange({ branch })}
+            onChange={({ value: b }) => onChange({ branch: b })}
           />
         </div>
 
@@ -268,7 +223,7 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
             options={fileOptions}
             value={fileMode}
             onChange={async (opt) => {
-              this.setState({ fileMode: opt as any });
+              setFileMode(opt as any);
               if (!isFilenameInTree) {
                 onChange({ file: null });
               }
@@ -277,21 +232,19 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
         )}
 
         {fileMode === "Select File" || disableFileInput
-          ? this.renderFileSelector(file, tree, onChange)
-          : this.renderFileInput(file, onChange)}
+          ? renderFileSelector(file, tree, onChange)
+          : renderFileInput(file, onChange)}
       </div>
     );
   };
 
-  renderFileTree = (file: any, tree: any, onChange: any) => {
-    const { path } = this.state;
-    const { token, owner, repo, branch } = this.props;
+  const renderFileTree = (f: any, t: any, onChangeFn: any) => {
     const dict: any = {
       blob: "file",
       tree: "folder",
     };
-    const items = tree
-      ? tree.map((x: any) => ({
+    const items = t
+      ? t.map((x: any) => ({
           name: x.path,
           type: dict[x.type],
           sha: x.sha,
@@ -300,33 +253,27 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
     return (
       <div className="text-left">
         <Tree
-          selected={file && file.name}
+          selected={f && f.name}
           values={items}
-          onChange={onChange}
+          onChange={onChangeFn}
           onExpand={async (folder: any) => {
-            const tree = await getTree(token, owner, repo, folder.sha);
-            this.setState({
-              tree,
-              path: path?.concat({ sha: folder.sha, name: folder.name }),
-            });
+            const newTree = await getTree(token, owner, repo, folder.sha);
+            setTree(newTree);
+            setPath(path?.concat({ sha: folder.sha, name: folder.name }));
           }}
           onPath={async (part: any) => {
             const pos = path?.findIndex((x) => x.name === part) || -1;
             if (pos !== -1) {
-              const tree = await getTree(token, owner, repo, path?.[pos].sha);
+              const newTree = await getTree(token, owner, repo, path?.[pos].sha);
               const diff = path ? path.length - 1 - pos : 0;
               if (diff > 0) {
-                this.setState({
-                  tree,
-                  path: path?.slice(0, -diff),
-                });
+                setTree(newTree);
+                setPath(path?.slice(0, -diff));
               }
             } else {
-              const tree = await getBranch(token, owner, repo, branch);
-              this.setState({
-                path: [],
-                tree,
-              });
+              const newTree = await getBranch(token, owner, repo, branch);
+              setPath([]);
+              setTree(newTree);
             }
           }}
           path={path?.map((x) => x.name)}
@@ -335,23 +282,22 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
     );
   };
 
-  renderFileSelector = (file: any, tree: any, onChange: any) => {
+  const renderFileSelector = (f: any, t: any, onChangeFn: any) => {
     const cb = (_ev: any, { selected: filename }: any) => {
-      const { path } = this.state;
       const parent = path?.slice(-1)[0];
       const treeSHA = parent ? parent.sha : undefined;
-      onChange({
+      onChangeFn({
         file: {
           name: filename,
           treeSHA,
         },
       });
     };
-    return this.renderFileTree(file, tree, cb);
+    return renderFileTree(f, t, cb);
   };
 
-  renderFileInput = (file: any, onChange: any) => {
-    const value = typeof file === "string" ? file : file && file.name;
+  const renderFileInput = (f: any, onChangeFn: any) => {
+    const value = typeof f === "string" ? f : f && f.name;
     return (
       <div className="py-2">
         <SubmittableInput
@@ -359,7 +305,7 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
           value={value}
           placeholder="New Filename"
           onSubmit={(filename) =>
-            onChange({
+            onChangeFn({
               file: {
                 name: filename,
                 treeSHA: null,
@@ -371,9 +317,7 @@ export class GithubObject extends Component<ObjectProps, ObjectState> {
     );
   };
 
-  render() {
-    return this.renderPanel();
-  }
+  return renderPanel();
 }
 
 type AuthProps = {
@@ -383,50 +327,48 @@ type AuthProps = {
   redirectURI: any;
   scopes: any;
 };
-export class GithubOAuth extends Component<AuthProps> {
-  render() {
-    const { onToken, clientID, clientSecret, redirectURI, scopes } = this.props;
-    return (
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
+export function GithubOAuth(props: AuthProps) {
+  const { onToken, clientID, clientSecret, redirectURI, scopes } = props;
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <Button
+        onClick={() => {
+          const url = getAuthURL({
+            clientID,
+            clientSecret,
+            scopes,
+            redirectURI,
+            state: loginStateId,
+          });
+          if (url) {
+            window.open(url, "blank");
+          }
         }}
       >
-        <Button
-          onClick={() => {
-            const url = getAuthURL({
+        Login
+      </Button>
+      <MessageReceiver
+        state={loginStateId}
+        onData={async (data: any) => {
+          const { code } = data;
+          if (code) {
+            const token = await exchangeCode({
               clientID,
               clientSecret,
-              scopes,
+              code,
               redirectURI,
-              state: loginStateId,
             });
-            if (url) {
-              window.open(url, "blank");
+            if (token) {
+              onToken(token);
             }
-          }}
-        >
-          Login
-        </Button>
-        <MessageReceiver
-          state={loginStateId}
-          onData={async (data: any) => {
-            const { code } = data;
-            if (code) {
-              const token = await exchangeCode({
-                clientID,
-                clientSecret,
-                code,
-                redirectURI,
-              });
-              if (token) {
-                onToken(token);
-              }
-            }
-          }}
-        />
-      </div>
-    );
-  }
+          }
+        }}
+      />
+    </div>
+  );
 }

@@ -1,4 +1,4 @@
-import { Component } from "react";
+import { useState } from "react";
 
 import { ServiceInstance, ServiceUIProps } from "../../../types";
 import Input from "hkp-frontend/src/ui-components/Input";
@@ -8,41 +8,30 @@ import ServiceUI, {
 import NumberInput from "hkp-frontend/src/ui-components/NumberInput";
 import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
-type State = {
-  interval: number;
-  property: string;
-  aggregator: string;
-};
 const aggOptions = ["max value count"];
 
-export default class AggregatorUI extends Component<ServiceUIProps, State> {
-  state: State = {
-    interval: 0,
-    property: "",
-    aggregator: "",
+export default function AggregatorUI(props: ServiceUIProps) {
+  const [interval, setInterval] = useState<number>(0);
+  const [property, setProperty] = useState<string>("");
+  const [aggregator, setAggregator] = useState<string>("");
+
+  const onInit = (initialState: any) => {
+    setInterval(initialState.interval || 100);
+    setProperty(initialState.property || "");
+    setAggregator(initialState.aggregator || aggOptions[0]);
   };
 
-  onInit = (initialState: any) => {
-    this.setState({
-      interval: initialState.interval || 100,
-      property: initialState.property || "",
-      aggregator: initialState.aggregator || aggOptions[0],
-    });
-  };
-
-  onNotification = async (notification: any) => {
-    if (needsUpdate(notification.property, this.state.property)) {
-      this.setState({ property: notification.property });
+  const onNotification = async (notification: any) => {
+    if (needsUpdate(notification.property, property)) {
+      setProperty(notification.property);
     }
 
-    if (needsUpdate(notification.interval, this.state.interval)) {
-      this.setState({ interval: notification.interval });
+    if (needsUpdate(notification.interval, interval)) {
+      setInterval(notification.interval);
     }
   };
 
-  renderMain = (service: ServiceInstance) => {
-    const { interval, property, aggregator } = this.state;
-
+  const renderMain = (service: ServiceInstance) => {
     return (
       <div className="flex flex-col gap-2">
         <Input
@@ -81,16 +70,14 @@ export default class AggregatorUI extends Component<ServiceUIProps, State> {
     );
   };
 
-  render() {
-    return (
-      <ServiceUI
-        {...this.props}
-        className="pb-2"
-        onInit={this.onInit}
-        onNotification={this.onNotification}
-      >
-        {this.renderMain(this.props.service)}
-      </ServiceUI>
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      className="pb-2"
+      onInit={onInit}
+      onNotification={onNotification}
+    >
+      {renderMain(props.service)}
+    </ServiceUI>
+  );
 }

@@ -1,14 +1,12 @@
-import React, { Component } from "react";
+import React from "react";
 
 import ServiceUI from "../../services/ServiceUI";
 
 const serviceId = "hookup.to/service/file-source";
 const serviceName = "File Source";
 
-class FileSourceUI extends Component<any, {}> {
-  state = {};
-
-  renderMain = (service: any): JSX.Element => {
+function FileSourceUI(props: any): JSX.Element {
+  const renderMain = (service: any): JSX.Element => {
     return (
       <div
         style={{
@@ -27,14 +25,12 @@ class FileSourceUI extends Component<any, {}> {
     );
   };
 
-  render(): JSX.Element {
-    return (
-      <ServiceUI
-        {...this.props}
-        segments={[{ name: "Main", render: this.renderMain }]}
-      />
-    );
-  }
+  return (
+    <ServiceUI
+      {...props}
+      segments={[{ name: "Main", render: renderMain }]}
+    />
+  );
 }
 
 class FileSource {
