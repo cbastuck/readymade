@@ -42,7 +42,7 @@ export default function InputField({
   onFocus: _onFocus,
   onLabelClicked: _onLabelClicked,
 }: Props) {
-  const [value, setValue] = useState<InputValueType>("");
+  const [value, setValue] = useState<InputValueType>(propValue);
 
   useEffect(() => {
     if (synced) {
@@ -50,7 +50,7 @@ export default function InputField({
     }
   }, [propValue, synced]);
 
-  const resolvedValue = synced ? value : propValue;
+  const resolvedValue = synced ? propValue : value;
 
   const renderInputType = (
     val: InputValueType,

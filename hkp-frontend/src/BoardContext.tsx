@@ -19,20 +19,39 @@ import {
   InstanceId,
   RuntimeApiMap,
   RuntimeScope,
-  RestoreRuntimeResult,
-  RuntimeApi,
   User,
   ServiceInstance,
   RuntimeConfiguration,
 } from "./types";
-import {
-  reorderRuntime,
-  reorderService,
-} from "./views/playground/BoardActions";
-import { isUserAuthenticated } from "./runtime/remote/RemoteRuntimeApi";
 import { AppContextState, AppCtx } from "./AppContext";
 import { connectDevTools } from "./core/DevTools";
 import { restoreAvailableRuntimeEngines } from "./common";
+import { BoardStateRefs, Props, getRuntimeScopeApi } from "./core/boardContextTypes";
+import {
+  fetchBoard as fetchBoardOp,
+  serializeBoard as serializeBoardOp,
+  setBoardState as setBoardStateOp,
+  clearBoard as clearBoardOp,
+} from "./core/boardPersistence";
+import {
+  addRuntime as addRuntimeOp,
+  removeRuntime as removeRuntimeOp,
+  updateRuntime as updateRuntimeOp,
+  arrangeRuntimes as arrangeRuntimesOp,
+  addAvailableRuntime as addAvailableRuntimeOp,
+  removeAvailableRuntime as removeAvailableRuntimeOp,
+  setRuntimeName as setRuntimeNameOp,
+  registerBrowserRuntime,
+  unregisterBrowserRuntime,
+  isRuntimeInScopeDefault,
+} from "./core/runtimeOperations";
+import {
+  addService as addServiceOp,
+  removeService as removeServiceOp,
+  removeAllServices as removeAllServicesOp,
+  arrangeServices as arrangeServicesOp,
+  setServiceName as setServiceNameOp,
+} from "./core/serviceOperations";
 
 type BoardContextAPI = {
   addAvailableRuntime: (
@@ -104,33 +123,6 @@ export type BoardContextState = BoardContextAPI &
     isFetching: boolean;
   };
 
-type Props = {
-  user: User | null;
-  boardName?: string;
-  children: JSX.Element | JSX.Element[];
-  availableRuntimeEngines?: Array<RuntimeClass>;
-  runtimeApis?: RuntimeApiMap;
-  fetchAfterMount?: boolean;
-  initialState?: EngineState;
-
-  fetchBoard?: () => Promise<BoardDescriptor>;
-  isRuntimeInScope?: () => boolean;
-  onRemoveRuntime?: (runtime: RuntimeDescriptor) => Promise<void>;
-  newBoard?: (searchParams?: string) => void; // TODO: why search params ??
-  onClearBoard?: (
-    board: BoardDescriptor,
-    newBoardName: string,
-  ) => Promise<void>;
-  saveBoard?: () => void;
-  shareBoard?: () => void;
-  onRemoveService?: (service: InstanceId, runtime: RuntimeDescriptor) => void;
-  isActionAvailable?: (action: Action) => boolean;
-  onAction?: (action: any) => boolean;
-  serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
-  onUpdateBoardState?: (updated: BoardDescriptor) => void;
-  onLoad?: (context: BoardContextState) => void;
-};
-
 const BoardCtx = createContext<BoardContextState | null>(null);
 const { Provider } = BoardCtx;
 
@@ -143,25 +135,6 @@ const { Provider } = BoardCtx;
 export type BoardProviderHandle = BoardContextState & {
   state: BoardContextState;
 };
-
-// Static helpers (previously static class methods)
-function registerBrowserRuntime(boardName: string, runtimeId: string) {
-  const existing = JSON.parse(
-    localStorage.getItem(`runtimes-${boardName}`) || "[]",
-  );
-  localStorage.setItem(
-    `runtimes-${boardName}`,
-    JSON.stringify(existing.concat(runtimeId)),
-  );
-}
-
-function unregisterBrowserRuntime(boardName: string, runtimeId: string) {
-  const existing = JSON.parse(
-    localStorage.getItem(`runtimes-${boardName}`) || "[]",
-  );
-  const pruned = existing.filter((id: string) => id !== runtimeId);
-  localStorage.setItem(`runtimes-${boardName}`, JSON.stringify(pruned));
-}
 
 const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvider(props, ref) {
   const {
@@ -222,51 +195,34 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
   const appContextRef = useRef(appContext);
   appContextRef.current = appContext;
 
-  // Sync props -> state (equivalent to componentDidUpdate prop-syncing)
-  useEffect(() => {
-    setUser(userProp);
-  }, [userProp]);
-
-  useEffect(() => {
-    setBoardNameState(boardNameProp);
-  }, [boardNameProp]);
-
+  // Sync props -> state
+  useEffect(() => { setUser(userProp); }, [userProp]);
+  useEffect(() => { setBoardNameState(boardNameProp); }, [boardNameProp]);
   useEffect(() => {
     if (availableRuntimeEnginesProp) {
       setAvailableRuntimeEngines(availableRuntimeEnginesProp);
     }
   }, [availableRuntimeEnginesProp]);
 
-  // --- Helpers ---
-
-  const getRuntimeScopeApi = (
-    runtimeId: string,
-  ): [RuntimeScope | null, RuntimeApi | null] => {
-    const runtime =
-      runtimesRef.current.find((rt) => rt.id === runtimeId) || null;
-    const scope = scopesRef.current[runtimeId] || null;
-    return [
-      scope,
-      (runtime && propsRef.current.runtimeApis?.[runtime.type]) || null,
-    ];
-  };
-
-  const getBoardName = () => boardNameRef.current;
-
-  const isRuntimeInScopeDefault = (runtime: RuntimeDescriptor) => {
-    if (runtime.type !== "browser") {
-      return true;
-    }
-    const board = getBoardName();
-    const ownedRuntimes = JSON.parse(
-      localStorage.getItem(`runtimes-${board}`) || "[]",
-    );
-    return !!ownedRuntimes.find(
-      (runtimeId: string) => runtimeId === runtime.id,
-    );
-  };
-
-  // --- Public API ---
+  // Build the refs bundle passed to operation functions
+  const getRefs = (): BoardStateRefs => ({
+    userRef,
+    boardNameRef,
+    runtimesRef,
+    servicesRef,
+    registryRef,
+    scopesRef,
+    availableRuntimeEnginesRef,
+    propsRef,
+    setRuntimes,
+    setServices,
+    setRegistry,
+    setScopes,
+    setAvailableRuntimeEngines,
+    setBoardNameState,
+    setIsFetching,
+    setErrorOnFetch,
+  });
 
   const waitForUserLogin = async () => {
     await new Promise<void>((resolve) => {
@@ -275,148 +231,55 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
     setAwaitUserLogin(null);
   };
 
-  const restoreBoard = async (board: BoardDescriptor | undefined) => {
-    const {
-      boardName: restoredBoardName = getBoardName(),
-      runtimes: boardRuntimes = [],
-      services: boardServices = {},
-    } = board || {};
+  // --- Wired operations ---
 
-    const boardRequiresReauth = (
-      await Promise.all(
-        boardRuntimes.map((rtClass) =>
-          rtClass.type === "remote"
-            ? isUserAuthenticated(rtClass, propsRef.current.user).catch(
-                (err) => {
-                  throw new Error(
-                    `${err.message} for runtime ${rtClass.url}`,
-                  );
-                },
-              )
-            : Promise.resolve(true),
-        ),
-      )
-    ).some((isAuthenticated) => !isAuthenticated);
+  const fetchBoard = () => fetchBoardOp(getRefs(), waitForUserLogin, buildContextValue);
+  const removeRuntime = (runtime: RuntimeDescriptor) => removeRuntimeOp(runtime, getRefs());
+  const clearBoard = (newBoardNameArg?: string) => clearBoardOp(newBoardNameArg, getRefs(), removeRuntime);
 
-    if (boardRequiresReauth && !userRef.current) {
-      await waitForUserLogin();
+  const addRuntime = (rtClass: RuntimeClass) => addRuntimeOp(rtClass, getRefs(), waitForUserLogin);
+  const updateRuntime = (runtimeId: string, updated: RuntimeConfiguration) => updateRuntimeOp(runtimeId, updated, getRefs());
+  const arrangeRuntimes = (runtimeId: string, targetPosition: number) => arrangeRuntimesOp(runtimeId, targetPosition, getRefs());
+  const addAvailableRuntime = (rtClass: RuntimeClass, overwriteIfExists: boolean) => addAvailableRuntimeOp(rtClass, overwriteIfExists, getRefs());
+  const removeAvailableRuntime = (rtClass: RuntimeClass) => removeAvailableRuntimeOp(rtClass, getRefs());
+  const setRuntimeName = (runtimeId: string, newName: string) => setRuntimeNameOp(runtimeId, newName, getRefs());
+
+  const addService = (service: ServiceClass, runtime: RuntimeDescriptor, prototype?: ServiceInstance) =>
+    addServiceOp(service, runtime, getRefs(), prototype);
+  const removeService = (service: InstanceId, runtime: RuntimeDescriptor) => removeServiceOp(service, runtime, getRefs());
+  const removeAllServices = (runtime: RuntimeDescriptor) => removeAllServicesOp(runtime, getRefs());
+  const arrangeServices = (runtime: RuntimeDescriptor, serviceUuid: string, targetPosition: number) =>
+    arrangeServicesOp(runtime, serviceUuid, targetPosition, getRefs());
+  const setServiceName = (runtimeId: string, instanceId: string, newName: string) =>
+    setServiceNameOp(runtimeId, instanceId, newName, getRefs());
+
+  const serializeBoard = () => serializeBoardOp(getRefs());
+  const setBoardState = (newState: BoardDescriptor) => setBoardStateOp(newState, getRefs(), waitForUserLogin);
+
+  const setBoardName = (name: string) => { setBoardNameState(name); };
+
+  const isRuntimeInScope = (runtime: RuntimeDescriptor) => {
+    const { isRuntimeInScope: isRuntimeInScopeProp } = propsRef.current;
+    if (isRuntimeInScopeProp) {
+      return isRuntimeInScopeProp();
     }
-
-    const currentUser = userRef.current;
-    const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
-      boardRuntimes.map((rt) => {
-        const api = propsRef.current.runtimeApis?.[rt.type];
-        if (!api) {
-          console.error(
-            `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
-              rt,
-            )} with type: ${rt.type} with registered apis: ${JSON.stringify(
-              Object.keys(propsRef.current.runtimeApis || {}),
-            )}`,
-          );
-          return Promise.resolve(null);
-        }
-        return api.restoreRuntime(
-          { ...rt },
-          boardServices[rt.id],
-          currentUser,
-          restoredBoardName,
-        );
-      }),
-    );
-
-    const newScopes = reduceByRuntimeId(restored, "scope");
-    const newRegistry = reduceByRuntimeId(restored, "registry");
-    const restoredServicesWithState = reduceByRuntimeId(restored, "services");
-    const validRuntimes = restored.flatMap((restoreResult) =>
-      restoreResult && !!newScopes[restoreResult?.runtime.id]
-        ? [restoreResult.runtime]
-        : [],
-    );
-
-    return {
-      boardName: restoredBoardName,
-      runtimes: validRuntimes,
-      services: restoredServicesWithState,
-      registry: newRegistry,
-      scopes: newScopes,
-    };
+    return isRuntimeInScopeDefault(runtime, boardNameRef);
   };
 
-  const fetchBoard = async () => {
-    if (!propsRef.current.fetchBoard) {
-      return;
-    }
-
-    setIsFetching(true);
-    try {
-      const board = await propsRef.current.fetchBoard();
-      const data = await restoreBoard(board);
-      if (data) {
-        setBoardNameState(data.boardName);
-        setRuntimes(data.runtimes);
-        setServices(data.services);
-        setRegistry(data.registry);
-        setScopes(data.scopes);
-        setIsFetching(false);
-        setTimeout(() => {
-          // onLoad receives a snapshot; build it from refs (which will be updated by next render)
-          propsRef.current.onLoad?.({
-            ...buildContextValue(),
-            ...data,
-            isFetching: false,
-          });
-        }, 1);
+  const acquireRuntimeScope = (boardname: string, runtime: RuntimeDescriptor) => {
+    if (runtime.type === "browser") {
+      if (!isRuntimeInScope(runtime)) {
+        registerBrowserRuntime(boardname, runtime.id);
+        fetchBoard();
       }
-    } catch (err: any) {
-      setErrorOnFetch(err);
-      setIsFetching(false);
-      return;
     }
   };
 
-  const setRuntimeName = async (runtimeId: string, newName: string) => {
-    setRuntimes((prev) =>
-      prev.map((rt) => {
-        if (rt.id === runtimeId && rt.type !== "browser") {
-          throw new Error(
-            "BoardContext.setRuntimeName() only supported for browser runtimes",
-          );
-        }
-        return rt.id === runtimeId ? { ...rt, name: newName } : rt;
-      }),
-    );
-  };
-
-  const setServiceName = async (
-    runtimeId: string,
-    instanceId: string,
-    newName: string,
-  ) => {
-    const rt = runtimesRef.current.find((r) => r.id === runtimeId);
-    if (!rt || rt.type !== "browser") {
-      throw new Error(
-        "BoardContext.setServiceName() only supported for browser runtimes",
-      );
+  const releaseRuntimeScope = (boardname: string, runtime: RuntimeDescriptor) => {
+    if (runtime.type === "browser") {
+      unregisterBrowserRuntime(boardname, runtime.id);
+      fetchBoard();
     }
-    const svc = servicesRef.current[rt.id]?.find((s) => s.uuid === instanceId);
-    if (!svc) {
-      throw new Error(
-        `BoardContext.setServiceName() service not found: ${instanceId}"`,
-      );
-    }
-
-    setServices((prev) => ({
-      ...prev,
-      [rt.id]: prev[rt.id].map((s) =>
-        s.uuid === instanceId
-          ? {
-              ...s,
-              serviceName: newName,
-            }
-          : s,
-      ),
-    }));
   };
 
   const isActionAvailableDefault = (action: Action) => {
@@ -432,34 +295,6 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
     const { isActionAvailable: isActionAvailableProp = isActionAvailableDefault } =
       propsRef.current;
     return isActionAvailableProp(action);
-  };
-
-  const clearBoard = async (newBoardNameArg: string = "New Idea") => {
-    const currentRuntimes = runtimesRef.current;
-    const currentServices = servicesRef.current;
-    const currentRegistry = registryRef.current;
-    const currentBoardName = boardNameRef.current;
-    const { onClearBoard } = propsRef.current;
-    for (const runtime of currentRuntimes) {
-      await removeRuntime(runtime);
-    }
-
-    if (onClearBoard) {
-      await onClearBoard(
-        {
-          runtimes: currentRuntimes,
-          services: currentServices,
-          registry: currentRegistry,
-          boardName: currentBoardName,
-        },
-        newBoardNameArg,
-      );
-    }
-
-    setRuntimes([]);
-    setServices({});
-    setRegistry({});
-    setBoardNameState(newBoardNameArg || "");
   };
 
   const saveBoard = async () => {
@@ -497,7 +332,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
       case "playBoard": {
         const firstRuntime = runtimesRef.current[0];
         if (firstRuntime) {
-          const [scope, api] = getRuntimeScopeApi(firstRuntime.id);
+          const [scope, api] = getRuntimeScopeApi(firstRuntime.id, getRefs());
           if (scope && api) {
             api.processRuntime(scope, action.params || {}, null);
           }
@@ -510,361 +345,11 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
     }
   };
 
-  const addRuntime = async (rtClass: RuntimeClass) => {
-    const api = propsRef.current.runtimeApis?.[rtClass.type];
-    if (!api) {
-      throw new Error(
-        `BoardContext.addRuntime() runtime api is missing: ${rtClass.type}`,
-      );
-    }
-    const currentUser = userRef.current;
-    const currentBoardName = getBoardName();
-    try {
-      const result = await api.addRuntime(rtClass, currentUser, currentBoardName);
-      if (result) {
-        const { runtime, services: newServices, registry: newRegistry = [], scope } =
-          result;
-        const runtimeWithUser = {
-          ...runtime,
-          user: currentUser,
-          state: { ...runtime.state, color: rtClass.color },
-          boardName: currentBoardName,
-        };
-        setRuntimes((prev) => [...prev, runtimeWithUser]);
-        setServices((prev) => ({
-          ...prev,
-          [runtime.id]: newServices,
-        }));
-        setRegistry((prev) => ({
-          ...prev,
-          [runtime.id]: newRegistry,
-        }));
-        setScopes((prev) => ({
-          ...prev,
-          [runtime.id]: scope,
-        }));
-      }
-    } catch (err: any) {
-      console.error("BoardContext.addRuntime", err, err.stack);
-      await waitForUserLogin();
-    }
-  };
-
-  const addService = async (
-    service: ServiceClass,
-    runtime: RuntimeDescriptor,
-    prototype?: ServiceInstance,
-  ): Promise<ServiceDescriptor | null> => {
-    const [scope, api] = getRuntimeScopeApi(runtime.id);
-    if (!api || !scope) {
-      throw new Error(
-        `BoardContext.addService() runtime api is missing: ${runtime.type}`,
-      );
-    }
-    const svc = await api.addService(scope, service, prototype?.uuid);
-    if (svc) {
-      setServices((prev) => ({
-        ...prev,
-        [runtime.id]: prev[runtime.id].concat(svc),
-      }));
-    }
-    if (prototype) {
-      await api.configureService(
-        scope,
-        prototype,
-        prototype.state || prototype,
-      );
-    }
-
-    return svc;
-  };
-
-  const removeService = async (
-    service: InstanceId,
-    runtime: RuntimeDescriptor,
-  ) => {
-    const [scope, api] = getRuntimeScopeApi(runtime.id);
-    if (!api || !scope) {
-      throw new Error(
-        `BoardContext.removeService() runtime api is missing: ${runtime.type}`,
-      );
-    }
-
-    if (propsRef.current.onRemoveService) {
-      propsRef.current.onRemoveService(service, runtime);
-    }
-    await api.removeService(scope, service);
-
-    setServices((prev) => ({
-      ...prev,
-      [runtime.id]: prev[runtime.id].filter(
-        (svc) => svc.uuid !== service.uuid,
-      ),
-    }));
-  };
-
-  const removeAllServices = async (runtime: RuntimeDescriptor) => {
-    for (const service of servicesRef.current[runtime.id]) {
-      await removeService(service, runtime);
-    }
-
-    setServices((prev) => ({
-      ...prev,
-      [runtime.id]: [],
-    }));
-  };
-
-  const setBoardName = (name: string) => {
-    setBoardNameState(name);
-  };
-
-  const removeRuntime = async (runtime: RuntimeDescriptor) => {
-    const { onRemoveRuntime } = propsRef.current;
-    if (!onRemoveRuntime) {
-      throw new Error("BoardContext misses prop: onRemoveRuntime");
-    }
-    await onRemoveRuntime(runtime);
-
-    const [scope, api] = getRuntimeScopeApi(runtime.id);
-    if (!api || !scope) {
-      throw new Error(
-        `BoardContext.removeRuntime() runtime api is missing: ${runtime.type}`,
-      );
-    }
-
-    await api.removeRuntime(scope, runtime, userRef.current);
-
-    setRuntimes((prev) => prev.filter((r) => r.id !== runtime.id));
-    setServices((prev) =>
-      Object.keys(prev)
-        .filter((rid) => rid !== runtime.id)
-        .reduce((all, key) => ({ ...all, [key]: prev[key] }), {}),
-    );
-    setScopes((prev) =>
-      Object.keys(prev)
-        .filter((rid) => rid !== runtime.id)
-        .reduce((all, key) => ({ ...all, [key]: prev[key] }), {}),
-    );
-    setRegistry((prev) =>
-      Object.keys(prev)
-        .filter((rid) => rid !== runtime.id)
-        .reduce((all, key) => ({ ...all, [key]: prev[key] }), {}),
-    );
-  };
-
-  const updateRuntime = async (
-    runtimeId: string,
-    updated: RuntimeConfiguration,
-  ) => {
-    const [scope, api] = getRuntimeScopeApi(runtimeId);
-    if (!api || !scope) {
-      throw new Error(
-        `BoardContext.updateRuntime() runtime api is missing: ${runtimeId}`,
-      );
-    }
-    const runtime = runtimesRef.current.find((rt) => rt.id === runtimeId);
-    if (!runtime) {
-      throw new Error(
-        `BoardContext.updateRuntime() runtime not found: ${runtimeId}`,
-      );
-    }
-    if (runtimeId !== updated.runtime.id) {
-      await api.removeRuntime(scope, runtime, userRef.current);
-      const result = await api.restoreRuntime(
-        updated.runtime,
-        updated.services,
-        userRef.current,
-      );
-      if (result) {
-        setRuntimes((prev) =>
-          prev.map((rt) => (rt.id === runtimeId ? updated.runtime : rt)),
-        );
-        setServices((prev) => ({
-          ...prev,
-          [updated.runtime.id]: updated.services,
-        }));
-        setScopes((prev) => ({
-          ...prev,
-          [updated.runtime.id]: result.scope,
-        }));
-      }
-    } else {
-      await Promise.all(
-        updated.services.map((svc) => api.configureService(scope, svc, svc)),
-      );
-      scope.setState?.(updated.runtime.state);
-      setRuntimes((prev) =>
-        prev.map((rt) => (rt.id === runtimeId ? updated.runtime : rt)),
-      );
-    }
-  };
-
-  const isRuntimeInScope = (runtime: RuntimeDescriptor) => {
-    const { isRuntimeInScope: isRuntimeInScopeProp } = propsRef.current;
-    if (isRuntimeInScopeProp) {
-      return isRuntimeInScopeProp();
-    }
-    return isRuntimeInScopeDefault(runtime);
-  };
-
-  const acquireRuntimeScope = (
-    boardname: string,
-    runtime: RuntimeDescriptor,
-  ) => {
-    if (runtime.type === "browser") {
-      if (!isRuntimeInScope(runtime)) {
-        registerBrowserRuntime(boardname, runtime.id);
-        fetchBoard();
-      }
-    }
-  };
-
-  const releaseRuntimeScope = (
-    boardname: string,
-    runtime: RuntimeDescriptor,
-  ) => {
-    if (runtime.type === "browser") {
-      unregisterBrowserRuntime(boardname, runtime.id);
-      fetchBoard();
-    }
-  };
-
-  const addAvailableRuntime = (
-    { name, url, type, color }: RuntimeClass,
-    overwriteIfExists: boolean,
-  ) => {
-    const current = availableRuntimeEnginesRef.current;
-    const engines = overwriteIfExists
-      ? current.filter((rt) => rt.name !== name)
-      : current;
-    const updated = engines.concat({ name, type, url, color });
-    setAvailableRuntimeEngines(updated);
-    return updated;
-  };
-
-  const removeAvailableRuntime = ({ name }: RuntimeClass) => {
-    const updated = availableRuntimeEnginesRef.current.filter(
-      (rt) => rt.name !== name,
-    );
-    setAvailableRuntimeEngines(updated);
-    return updated;
-  };
-
-  const serializeBoard = async (): Promise<BoardDescriptor | null> => {
-    const runtimeStates: { [rtId: string]: any } = {};
-    const currentRuntimes = runtimesRef.current;
-    const currentServices = servicesRef.current;
-    const serializedServices = await Object.keys(currentServices).reduce(
-      async (all, runtimeId) => {
-        const runtime = currentRuntimes.find((r) => r.id === runtimeId);
-        if (!runtime) {
-          throw new Error(
-            `BoardContext.serializeBoard runtime with id: ${runtimeId} in: ${JSON.stringify(
-              currentRuntimes,
-            )}`,
-          );
-        }
-        const [scope, api] = getRuntimeScopeApi(runtimeId);
-        const runtimeServices = currentServices[runtimeId];
-        const serviceConfigs = await Promise.all(
-          runtimeServices.map(async (svc) => {
-            const config =
-              api && scope ? await api.getServiceConfig(scope, svc) : {};
-            const runtimeState = {
-              ...runtime.state,
-              ...scope?.serializeState?.(),
-            };
-            runtimeStates[runtimeId] = runtimeState;
-            return {
-              uuid: svc.uuid,
-              serviceId: svc.serviceId,
-              serviceName: svc.serviceName,
-              state: config,
-            };
-          }),
-        );
-        return {
-          ...(await all),
-          [runtimeId]: serviceConfigs,
-        };
-      },
-      Promise.resolve({}),
-    );
-
-    const serializedRuntimes = currentRuntimes.map((rt) => ({
-      id: rt.id,
-      name: rt.name,
-      type: rt.type,
-      url: rt.url,
-      bundles: rt.bundles,
-      state: runtimeStates[rt.id] || {
-        wrapServices: false,
-        minimized: false,
-      },
-    }));
-
-    const data = {
-      runtimes: serializedRuntimes,
-      services: serializedServices,
-    };
-
-    return propsRef.current.serializeBoard
-      ? propsRef.current.serializeBoard(data)
-      : data;
-  };
-
-  const setBoardState = async (newState: BoardDescriptor) => {
-    const data = await restoreBoard(newState);
-    if (data) {
-      setBoardNameState(data.boardName);
-      setRuntimes(data.runtimes);
-      setServices(data.services);
-      setRegistry(data.registry);
-      setScopes(data.scopes);
-      propsRef.current.onUpdateBoardState?.(data);
-    }
-  };
-
-  const arrangeServices = async (
-    runtime: RuntimeDescriptor,
-    serviceUuid: string,
-    targetPosition: number,
-  ) => {
-    const [scope, api] = getRuntimeScopeApi(runtime.id);
-    if (!scope || !api) {
-      throw new Error("BoardContext.arrangeServices, scope or api missing");
-    }
-
-    const currentServices = servicesRef.current;
-    const rearranged = await api.rearrangeServices(
-      scope,
-      reorderService(currentServices, runtime, serviceUuid, targetPosition),
-    );
-
-    setServices((prev) => ({
-      ...prev,
-      [runtime.id]: rearranged,
-    }));
-  };
-
-  const arrangeRuntimes = async (runtimeId: string, targetPosition: number) => {
-    const [scope, api] = getRuntimeScopeApi(runtimeId);
-    if (!scope || !api) {
-      throw new Error("BoardContext.arrangeServices, scope or api missing");
-    }
-
-    const currentRuntimes = runtimesRef.current;
-    const rearranged = reorderRuntime(currentRuntimes, runtimeId, targetPosition);
-
-    setRuntimes(rearranged);
-  };
-
   // componentDidMount equivalent
   useEffect(() => {
     if (fetchAfterMount) {
       fetchBoard();
     }
-
     const currentBoardName = boardNameRef.current;
     if (currentBoardName) {
       document.title = currentBoardName;
@@ -876,7 +361,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
   useEffect(() => {
     return () => {
       for (const runtime of runtimesRef.current) {
-        const [scope, api] = getRuntimeScopeApi(runtime.id);
+        const [scope, api] = getRuntimeScopeApi(runtime.id, getRefs());
         if (api && scope) {
           api.removeRuntime(scope, runtime, userRef.current);
         } else {
@@ -889,15 +374,13 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Equivalent of the render()-time awaitUserLogin check:
-  // when user becomes available and there's a pending login awaiter, resolve it
+  // Resolve pending login awaiter when user becomes available
   useEffect(() => {
     if (awaitUserLogin && userProp) {
       awaitUserLogin();
     }
   }, [awaitUserLogin, userProp]);
 
-  // Helper to build a context snapshot (used in onLoad callback)
   const buildContextValue = (): BoardContextState => ({
     user,
     boardName,
@@ -937,7 +420,6 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
 
   const value = buildContextValue();
 
-  // Expose imperative handle for legacy ref usage on this component
   useImperativeHandle(ref, () => ({
     ...value,
     state: value,
@@ -954,15 +436,3 @@ export function useBoardContext() {
 
 export { BoardCtx };
 export default BoardProvider;
-
-function reduceByRuntimeId<T extends keyof RestoreRuntimeResult>(
-  arr: Array<RestoreRuntimeResult | null>,
-  prop: T,
-): { [runtimeId: string]: RestoreRuntimeResult[T] } {
-  return arr.reduce((all, cur) => {
-    if (cur === null) {
-      return all;
-    }
-    return cur ? { ...all, [cur.runtime.id]: cur[prop] } : all;
-  }, {});
-}
