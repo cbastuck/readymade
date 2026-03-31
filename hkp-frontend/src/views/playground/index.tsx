@@ -85,7 +85,11 @@ type PlaygroundInnerProps = {
   setShowShareBoardQRCodeURL: (url: string | null) => void;
   isSaveDialogVisible: boolean;
   suggestedName: string;
-  onSaveDialog: (name: string, desc: string, isSuggestedName: boolean) => Promise<any>;
+  onSaveDialog: (
+    name: string,
+    desc: string,
+    isSuggestedName: boolean,
+  ) => Promise<any>;
   setIsSaveDialogVisible: (v: boolean) => void;
   sidechainRouting: SidechainRouting;
   outputRouting: RuntimeOutputRoutings;
@@ -102,7 +106,10 @@ function PlaygroundInner(props: PlaygroundInnerProps) {
   const boardContext = useBoardContext();
   if (!boardContext) return null;
   return (
-    <div className="w-full h-full bg-neutral-50 flex flex-col">
+    <div
+      className="w-full h-full bg-neutral-50 flex flex-col"
+      style={{ width: "100%" }}
+    >
       <Toolbar
         showRuntimeMenu={true}
         onUpdateAvailableRuntimeEngines={(engines) => {
@@ -140,9 +147,7 @@ function PlaygroundInner(props: PlaygroundInnerProps) {
       ) : (
         <BoardEntryPoint
           className="pt-2"
-          isLoading={
-            boardContext.isFetching || !!boardContext.awaitUserLogin
-          }
+          isLoading={boardContext.isFetching || !!boardContext.awaitUserLogin}
           showLoginRequired={!!boardContext.awaitUserLogin}
           boardContext={boardContext}
           boardName={props.propBoardName || props.boardName}
@@ -188,18 +193,22 @@ function Playground(props: Props) {
   const user = useRef(null);
 
   const [isSaveDialogVisible, setIsSaveDialogVisible] = useState(false);
-  const [showShareBoardQRCodeURL, setShowShareBoardQRCodeURL] = useState<string | null>(null);
+  const [showShareBoardQRCodeURL, setShowShareBoardQRCodeURL] = useState<
+    string | null
+  >(null);
   const [boardName, setBoardName] = useState<string>(
-    (props.match &&
-      props.match.params &&
-      props.match.params.board) ||
-    defaultName,
+    (props.match && props.match.params && props.match.params.board) ||
+      defaultName,
   );
   const [description, setDescription] = useState("");
   const [initialFetched, setInitialFetched] = useState(false);
-  const [acceptedSyncSenders, setAcceptedSyncSenders] = useState<AcceptedSyncSenders>([]);
-  const [rejectedSyncSenders, setRejectedSyncSenders] = useState<RejectedSyncSenders>([]);
-  const [sidechainRouting, setSidechainRouting] = useState<SidechainRouting>({});
+  const [acceptedSyncSenders, setAcceptedSyncSenders] =
+    useState<AcceptedSyncSenders>([]);
+  const [rejectedSyncSenders, setRejectedSyncSenders] =
+    useState<RejectedSyncSenders>([]);
+  const [sidechainRouting, setSidechainRouting] = useState<SidechainRouting>(
+    {},
+  );
   const [inputRouting, setInputRouting] = useState<RuntimeInputRoutings>({});
   const [outputRouting, setOutputRouting] = useState<RuntimeOutputRoutings>({});
 
@@ -213,14 +222,30 @@ function Playground(props: Props) {
   const inputRoutingRef = useRef(inputRouting);
   const outputRoutingRef = useRef(outputRouting);
 
-  useEffect(() => { boardNameRef.current = boardName; }, [boardName]);
-  useEffect(() => { descriptionRef.current = description; }, [description]);
-  useEffect(() => { initialFetchedRef.current = initialFetched; }, [initialFetched]);
-  useEffect(() => { acceptedSyncSendersRef.current = acceptedSyncSenders; }, [acceptedSyncSenders]);
-  useEffect(() => { rejectedSyncSendersRef.current = rejectedSyncSenders; }, [rejectedSyncSenders]);
-  useEffect(() => { sidechainRoutingRef.current = sidechainRouting; }, [sidechainRouting]);
-  useEffect(() => { inputRoutingRef.current = inputRouting; }, [inputRouting]);
-  useEffect(() => { outputRoutingRef.current = outputRouting; }, [outputRouting]);
+  useEffect(() => {
+    boardNameRef.current = boardName;
+  }, [boardName]);
+  useEffect(() => {
+    descriptionRef.current = description;
+  }, [description]);
+  useEffect(() => {
+    initialFetchedRef.current = initialFetched;
+  }, [initialFetched]);
+  useEffect(() => {
+    acceptedSyncSendersRef.current = acceptedSyncSenders;
+  }, [acceptedSyncSenders]);
+  useEffect(() => {
+    rejectedSyncSendersRef.current = rejectedSyncSenders;
+  }, [rejectedSyncSenders]);
+  useEffect(() => {
+    sidechainRoutingRef.current = sidechainRouting;
+  }, [sidechainRouting]);
+  useEffect(() => {
+    inputRoutingRef.current = inputRouting;
+  }, [inputRouting]);
+  useEffect(() => {
+    outputRoutingRef.current = outputRouting;
+  }, [outputRouting]);
 
   const tryFetch = useCallback(async () => {
     try {
@@ -235,48 +260,54 @@ function Playground(props: Props) {
     }
   }, [appContext]);
 
-  const saveBoard = useCallback(async (showDialog = true) => {
-    if (showDialog) {
-      setIsSaveDialogVisible(true);
-    } else if (boardNameRef.current) {
-      const name = boardNameRef.current;
-      const desc = descriptionRef.current;
-      const saveName = props.boardName || name;
-      const data = await boardProviderRef.current?.state.serializeBoard();
+  const saveBoard = useCallback(
+    async (showDialog = true) => {
+      if (showDialog) {
+        setIsSaveDialogVisible(true);
+      } else if (boardNameRef.current) {
+        const name = boardNameRef.current;
+        const desc = descriptionRef.current;
+        const saveName = props.boardName || name;
+        const data = await boardProviderRef.current?.state.serializeBoard();
 
-      if (props.onSaveBoard && data) {
-        props.onSaveBoard(saveName, {
-          ...data,
-          description: desc,
-        });
+        if (props.onSaveBoard && data) {
+          props.onSaveBoard(saveName, {
+            ...data,
+            description: desc,
+          });
+        } else {
+          storeBoardToLocalStorage(
+            name,
+            JSON.stringify({ ...data, name, description: desc }),
+            desc,
+          );
+          appContext?.pushNotification({
+            type: "success",
+            message: `The Board '${saveName}' was saved.`,
+          });
+        }
       } else {
-        storeBoardToLocalStorage(
-          name,
-          JSON.stringify({ ...data, name, description: desc }),
-          desc,
-        );
         appContext?.pushNotification({
-          type: "success",
-          message: `The Board '${saveName}' was saved.`,
+          type: "error",
+          message: "Saving board failed",
         });
       }
-    } else {
-      appContext?.pushNotification({
-        type: "error",
-        message: "Saving board failed",
-      });
-    }
-  }, [appContext, props.boardName, props.onSaveBoard]);
+    },
+    [appContext, props.boardName, props.onSaveBoard],
+  );
 
-  const onKey = useCallback((e: KeyboardEvent) => {
-    if (
-      (window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) &&
-      e.keyCode === 83
-    ) {
-      e.preventDefault();
-      saveBoard(false);
-    }
-  }, [saveBoard]);
+  const onKey = useCallback(
+    (e: KeyboardEvent) => {
+      if (
+        (window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) &&
+        e.keyCode === 83
+      ) {
+        e.preventDefault();
+        saveBoard(false);
+      }
+    },
+    [saveBoard],
+  );
 
   useEffect(() => {
     document.addEventListener("keydown", onKey, false);
@@ -328,34 +359,35 @@ function Playground(props: Props) {
     await tryFetch();
   };
 
-  const getInitialPlayground = async (): Promise<Partial<PlaygroundState> | null> => {
-    const brd = props.match?.params?.board || props.boardName;
-    if (brd) {
-      const params = Object.fromEntries(
-        new URLSearchParams(document.location.search),
-      );
+  const getInitialPlayground =
+    async (): Promise<Partial<PlaygroundState> | null> => {
+      const brd = props.match?.params?.board || props.boardName;
+      if (brd) {
+        const params = Object.fromEntries(
+          new URLSearchParams(document.location.search),
+        );
 
-      if (params.template) {
-        return createBoardFromTemplate(params.template, params);
-      } else if (params.src) {
-        return importBoard(params.src);
-      } else if (params.fromLink) {
-        return importFromLink(params.fromLink);
-      } else {
-        const localBoard = restoreBoardFromLocalStorage(brd);
-        if (localBoard) {
-          return localBoard;
+        if (params.template) {
+          return createBoardFromTemplate(params.template, params);
+        } else if (params.src) {
+          return importBoard(params.src);
+        } else if (params.fromLink) {
+          return importFromLink(params.fromLink);
+        } else {
+          const localBoard = restoreBoardFromLocalStorage(brd);
+          if (localBoard) {
+            return localBoard;
+          }
         }
+        return {
+          runtimes: [],
+          services: {},
+          boardName: brd,
+        };
       }
-      return {
-        runtimes: [],
-        services: {},
-        boardName: brd,
-      };
-    }
-    console.error("Playground.getInitialPlayground() - no noard name");
-    return null;
-  };
+      console.error("Playground.getInitialPlayground() - no noard name");
+      return null;
+    };
 
   const fetchBoard = async (): Promise<BoardDescriptor> => {
     if (initialFetchedRef.current) {
@@ -486,7 +518,10 @@ function Playground(props: Props) {
     return true;
   };
 
-  const onRemoveService = (instance: InstanceId, _runtime: RuntimeDescriptor) => {
+  const onRemoveService = (
+    instance: InstanceId,
+    _runtime: RuntimeDescriptor,
+  ) => {
     const updatedRoutings = Object.keys(sidechainRoutingRef.current).reduce(
       (all, rtId) => {
         const routings = sidechainRoutingRef.current[rtId];
@@ -631,9 +666,7 @@ function Playground(props: Props) {
         setShowShareBoardQRCodeURL={setShowShareBoardQRCodeURL}
         isSaveDialogVisible={isSaveDialogVisible}
         suggestedName={
-          (props.match &&
-            props.match.params &&
-            props.match.params.board) ||
+          (props.match && props.match.params && props.match.params.board) ||
           props.boardName ||
           generateRandomName()
         }

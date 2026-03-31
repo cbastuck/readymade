@@ -1,13 +1,5 @@
 import { useContext } from "react";
-import {
-  LogIn,
-  LogOut,
-  Forward,
-  Menu,
-  Settings,
-  User,
-  Server,
-} from "lucide-react";
+import { LogIn, LogOut, Menu, Settings, User, Server } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
@@ -24,11 +16,7 @@ import {
 import MenuIcon from "../MenuIcon";
 import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 
-type Props = {
-  includeNavigationLinks?: boolean;
-};
-
-export default function AppMenu({ includeNavigationLinks }: Props) {
+export default function AppMenu() {
   const { loginWithRedirect, logout } = useAuth0();
   const context = useContext(AppCtx);
   const currentUser = context?.user;
@@ -75,31 +63,6 @@ export default function AppMenu({ includeNavigationLinks }: Props) {
             <MenuIcon icon={Server} />
             <span>Remotes</span>
           </DropdownMenuItem>
-          {includeNavigationLinks && (
-            <>
-              <DropdownMenuItem
-                className="text-base"
-                onClick={() => navigate("/docs")}
-              >
-                <MenuIcon icon={Forward} />
-                <span>Docs</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-base"
-                onClick={() => navigate("/home")}
-              >
-                <MenuIcon icon={Forward} />
-                <span>Home</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                className="text-base"
-                onClick={() => navigate("/playground")}
-              >
-                <MenuIcon icon={Forward} />
-                <span>Playground</span>
-              </DropdownMenuItem>
-            </>
-          )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
 

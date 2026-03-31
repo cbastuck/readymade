@@ -11,7 +11,7 @@ import {
 import { Rect, Size } from "hkp-frontend/src/common";
 import { BinaryIcon, ToggleLeft, ToggleRight } from "lucide-react";
 import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
-import { update, DrawContext } from "./canvasDraw";
+import { update } from "./canvasDraw";
 
 export default function CanvasUI(props: ServiceUIProps) {
   const [fullWidth, setFullWidth] = useState<number>(document.body.clientWidth);

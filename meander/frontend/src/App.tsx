@@ -20,7 +20,7 @@ function App() {
   const [boardName, setBoardName] = useState("Idea");
   const [remotes, setRemotes] = useState<any>(null);
   const [loadBoardItems, setLoadBoardItems] = useState<Array<string> | null>(
-    null
+    null,
   );
 
   const [boardSource, setBoardSource] = useState("");
@@ -35,11 +35,6 @@ function App() {
         type: "browser",
         name: "Browser Runtime",
       },
-      /*{
-        type: "realtime",
-        name: "Node.js Runtime",
-        url: "http://localhost:3200", // TODO: static URL for demo purposes
-      },*/
       ...(remotes || [])?.map((remote: Remote, idx) => {
         return {
           type: "realtime",
@@ -55,7 +50,7 @@ function App() {
 
   const menuItemFactory = useMemo(
     () => createMenuItems(setLoadBoardItems, setBoardSource),
-    []
+    [],
   );
 
   const onChangeLoadDialogVisibility = (visible: boolean) => {
@@ -93,7 +88,7 @@ function App() {
     if (lastBoardName) {
       const savedBoardNames = await fetchSavedBoards();
       const savedBoard = savedBoardNames.find(
-        (boardName) => boardName === lastBoardName
+        (boardName) => boardName === lastBoardName,
       );
       if (savedBoard) {
         const board = await loadBoard(savedBoard);

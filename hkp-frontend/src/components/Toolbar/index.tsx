@@ -22,7 +22,7 @@ type Props = {
   includeNavigationLinks?: boolean;
   menuItemFactory?: BoardMenuItemFactory;
   onUpdateAvailableRuntimeEngines?: (
-    runtimeClasses: Array<RuntimeClass>
+    runtimeClasses: Array<RuntimeClass>,
   ) => void;
 };
 
@@ -50,7 +50,7 @@ export default function Toolbar({
 
   const onAddRuntimeEngine = (
     desc: RuntimeClass,
-    overwriteIfExists: boolean = false
+    overwriteIfExists: boolean = false,
   ) => {
     const runtimes =
       boardContext?.addAvailableRuntime(desc, overwriteIfExists) || [];
@@ -74,6 +74,7 @@ export default function Toolbar({
         top: 0,
         zIndex: 100,
         borderTop: "1px solid #ddd",
+        width: "100%",
       }}
     >
       <div
@@ -81,9 +82,10 @@ export default function Toolbar({
         style={{
           textAlign: "left",
           borderBottom: "1px solid #ccc",
+          width: "100%",
         }}
       >
-        <div className="w-full flex items-center">
+        <div className="w-full flex items-center" style={{ width: "100%" }}>
           <div className="pr-1.5">
             <HomeIcon />
           </div>
@@ -104,17 +106,7 @@ export default function Toolbar({
 
           {children ? children : null}
 
-          {!hideNavigation && (
-            <NavigationBar
-              isCompact={isCompact === undefined ? isNarrow : isCompact}
-            />
-          )}
-
-          {!hideNavigation && (
-            <AppMenu
-              includeNavigationLinks={!hideNavigation && !isCompact && isNarrow}
-            />
-          )}
+          {!hideNavigation && <AppMenu />}
         </div>
       </div>
     </div>

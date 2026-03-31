@@ -27,12 +27,15 @@ font-face {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
+html,
+body,
+#root {
+  height: 100vh;
+  width: 100vw;
   min-height: 100vh;
+  min-width: 100vw;
+  margin: 0;
+  padding: 0;
 }
 
 @media (prefers-color-scheme: light) {
@@ -157,7 +160,9 @@ body {
   display: block;
 }
 .expand {
-  transition: 0.5s max-height ease-out, 0.5s opacity ease-out;
+  transition:
+    0.5s max-height ease-out,
+    0.5s opacity ease-out;
   max-height: 0;
   opacity: 0;
   overflow: hidden;
