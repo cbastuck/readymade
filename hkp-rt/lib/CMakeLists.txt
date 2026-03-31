@@ -7,18 +7,24 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set (PLATFORM_SRC src/services/core_audio.cpp)
-  
+  set(PLATFORM_SRC src/services/core_audio.cpp)
+
   # Check if CMAKE_OSX_ARCHITECTURES is already set by parent (e.g., via arch -x86_64)
   if(CMAKE_OSX_ARCHITECTURES)
     message("Using parent-specified architecture: ${CMAKE_OSX_ARCHITECTURES}")
-  elseif (BUILD_MAC_INTEL)
+  elseif(BUILD_MAC_INTEL)
     message("Building for Intel architecture on Apple Silicon")
     set(CMAKE_OSX_ARCHITECTURES "x86_64")
   else()
     message("Building for Apple Silicon")
     set(CMAKE_OSX_ARCHITECTURES "arm64")
   endif()
+endif()
+
+if(IOS)
+  # iOS: arm64 only; no desktop audio capture service (add mobile CoreAudio impl here if needed)
+  message(STATUS "hkp-rt-lib: building for iOS (arm64)")
+  set(CMAKE_OSX_ARCHITECTURES "arm64")
 endif()
 
 option(ENABLE_FFMPEG "Enable FFMPEG support" ON)
@@ -87,6 +93,12 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_WINDOWS" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
   add_definitions(-D_WIN32_WINNT=0x0600)
   target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+endif()
+
+if(IOS)
+  target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_IOS" "IS_APPLE" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
+  find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
+  target_link_libraries(${PROJECT_NAME} ${COREFOUNDATION_FRAMEWORK})
 endif()
 
 target_include_directories(${PROJECT_NAME}

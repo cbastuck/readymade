@@ -11,8 +11,11 @@ if(NOT TARGET hkp-rt-deps)
 endif()
 
 add_subdirectory(lib)
-add_subdirectory(exe)
 
-if(BUILD_TESTING)
-    add_subdirectory(tests)
+# The server executable and tests are host-only; skip them for iOS device builds.
+if(NOT IOS)
+    add_subdirectory(exe)
+    if(BUILD_TESTING)
+        add_subdirectory(tests)
+    endif()
 endif()

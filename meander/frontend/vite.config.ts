@@ -6,6 +6,9 @@ import svgr from "vite-plugin-svgr";
 const hkpFrontendRoot = path.resolve(import.meta.dirname, "../../hkp-frontend");
 
 export default defineConfig({
+  server: {
+    host: "0.0.0.0", // added only for using the frontend in Meander iOS app - remove if not needed
+  },
   plugins: [svgr(), react()],
   resolve: {
     alias: {
