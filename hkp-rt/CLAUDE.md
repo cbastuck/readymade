@@ -7,10 +7,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The canonical build entry point is the **root `/hkp/` directory**, not `hkp-rt/` directly. CMake 3.21+, C++20 (hkp-rt) / C++23 (hkp-saucer), vcpkg for most dependencies.
 
 ```bash
-# From the repo root (/hkp/)
-mkdir build && cd build
-cmake -DCMAKE_TOOLCHAIN_FILE=../3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake ..
-cmake --build . --config Release
+# From the repo root (/hkp/) — use build.sh (handles arch + frontend)
+./build.sh [Release|Debug|RelWithDebInfo] [ON|OFF]
+
+# Or invoke cmake directly (must pass CMAKE_OSX_ARCHITECTURES on macOS —
+# vcpkg.cmake returns early if it is empty/unset)
+cmake -B build -DCMAKE_OSX_ARCHITECTURES="$(uname -m)" ..
+cmake --build build --config Release
 
 # Skip the GUI app (hkp-saucer)
 cmake -DBUILD_HKP_SAUCER=OFF ...
@@ -37,14 +40,38 @@ All dependency management lives in the **root `CMakeLists.txt`** and **root `vcp
 
 | Dep | How | Location |
 |-----|-----|----------|
-| Boost, OpenSSL, FFmpeg | vcpkg | root `vcpkg.json` |
+| Boost, OpenSSL, FFmpeg, fdk-aac | vcpkg | root `vcpkg.json` |
 | Inja (template engine) | CPM | fetched at configure time |
 | Saucer (GUI framework) | CPM | fetched at configure time (custom fork) |
+| minimp4 (MP4 demuxer) | CPM | fetched at configure time |
 | Crow HTTP | vendored header | `3rdparty/crow.h` |
 | avcpp (FFmpeg C++ wrapper) | local subdir | `3rdparty/avcpp/` |
 | vcpkg itself | local subdir | `3rdparty/vcpkg/` |
 
 The root CMakeLists.txt creates a single `hkp-rt-deps` INTERFACE target that aggregates all of the above. Both `hkp-rt-lib` and `hkp-rt-bundle` link against it.
+
+### Adding a new vcpkg package
+
+vcpkg runs in **classic mode** — packages live in `3rdparty/vcpkg/installed/` and are installed explicitly. `3rdparty/vcpkg.json` is the authoritative list of required packages (documentation and reproducibility) but vcpkg does **not** read it automatically during the build.
+
+Classic mode is intentional: vcpkg is activated via `include()` inside `3rdparty/CMakeLists.txt` *after* CPM runs. CPM packages must be fetched before vcpkg initialises to avoid `packageProject()` ALIAS target conflicts with vcpkg's `add_library` wrapper. Passing `-DCMAKE_TOOLCHAIN_FILE` on the cmake command line would activate vcpkg before CPM, breaking that ordering.
+
+**When a new package is added**, the full workflow is:
+
+```bash
+# 1. Add the package name to 3rdparty/vcpkg.json (for documentation)
+
+# 2. Install it into the classic store
+./3rdparty/vcpkg/vcpkg install <package-name> --triplet arm64-osx
+
+# 3. Delete the CMake cache so any stale NOTFOUND results are cleared
+rm build/CMakeCache.txt
+
+# 4. Rebuild
+./build.sh Debug OFF
+```
+
+Step 3 is necessary because cmake caches negative `find_package`/`find_library` results. Even after vcpkg installs the package, cmake reuses the cached `NOTFOUND` value until the cache is cleared.
 
 ## Architecture
 

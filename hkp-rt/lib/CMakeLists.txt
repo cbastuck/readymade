@@ -42,6 +42,27 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
 endif()
 
+# ── mp4-to-wav service (fdk-aac + minimp4) ────────────────────────────────────
+# fdk-aac is found via find_package() in 3rdparty/CMakeLists.txt, where vcpkg's
+# CMAKE_PREFIX_PATH is active.  IMPORTED targets created there are globally
+# visible, so we check for the target here rather than re-running find_*.
+# Disabled on iOS: the iOS vcpkg manifest intentionally omits fdk-aac.
+if(NOT IOS)
+    if(VCPKG_INSTALLED_DIR AND VCPKG_TARGET_TRIPLET)
+        find_package(fdk-aac CONFIG QUIET
+            HINTS "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}"
+        )
+    endif()
+    if(TARGET FDK-AAC::fdk-aac)
+        message(STATUS "hkp-rt-lib: mp4-to-wav service enabled")
+        list(APPEND PLATFORM_SRC src/services/mp4_to_wav.cpp)
+        list(APPEND PLATFORM_DEFINES "HKP_MP4_TO_WAV_ENABLED")
+        set(_HKP_MP4_TO_WAV ON)
+    else()
+        message(STATUS "hkp-rt-lib: mp4-to-wav service disabled (fdk-aac not found; run ./3rdparty/vcpkg/vcpkg install then rm build/CMakeCache.txt)")
+    endif()
+endif()
+
 add_library(${PROJECT_NAME} STATIC)
 target_sources(${PROJECT_NAME}
     PRIVATE
@@ -76,7 +97,7 @@ target_sources(${PROJECT_NAME}
       ${PLATFORM_SRC}
 )
 
-target_link_libraries(${PROJECT_NAME} hkp-rt-deps)
+target_link_libraries(${PROJECT_NAME} PUBLIC hkp-rt-deps)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF CXX_STANDARD_REQUIRED ON)
 
@@ -86,7 +107,7 @@ endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_MACOS" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
   find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
-  target_link_libraries(${PROJECT_NAME} ${COREFOUNDATION_FRAMEWORK})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${COREFOUNDATION_FRAMEWORK})
 endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -98,7 +119,12 @@ endif()
 if(IOS)
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_IOS" "IS_APPLE" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
   find_library(COREFOUNDATION_FRAMEWORK CoreFoundation REQUIRED)
-  target_link_libraries(${PROJECT_NAME} ${COREFOUNDATION_FRAMEWORK})
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${COREFOUNDATION_FRAMEWORK})
+endif()
+
+if(_HKP_MP4_TO_WAV)
+  # fdk-aac IMPORTED target carries its own include dirs and library path.
+  target_link_libraries(${PROJECT_NAME} PRIVATE FDK-AAC::fdk-aac)
 endif()
 
 target_include_directories(${PROJECT_NAME}

@@ -27,6 +27,15 @@ CPMAddPackage(
     DOWNLOAD_ONLY TRUE
 )
 
+# minimp4 — single-header MP4/ISOBMFF demuxer used by the mp4-to-wav service.
+# DOWNLOAD_ONLY: its CMakeLists only installs the header; we expose it ourselves.
+CPMAddPackage(
+    NAME minimp4
+    GIT_REPOSITORY "https://github.com/lieff/minimp4.git"
+    GIT_TAG        master
+    DOWNLOAD_ONLY  TRUE
+)
+
 # Saucer GUI framework + event loop module
 option(BUILD_HKP_SAUCER "Build the hkp-saucer GUI application" ON)
 if(BUILD_HKP_SAUCER)
@@ -46,6 +55,7 @@ endif()
 # vcpkg — included AFTER CPM so its add_library wrapper doesn't interfere
 # with packageProject ALIAS targets created by CPM-fetched packages.
 # =============================================================================
+
 include(${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake)
 
 find_package(OpenSSL REQUIRED)
@@ -72,6 +82,10 @@ target_link_libraries(${PROJECT_NAME} INTERFACE nlohmann_json::nlohmann_json)
 
 if(inja_ADDED)
     target_include_directories(${PROJECT_NAME} INTERFACE ${inja_SOURCE_DIR}/include)
+endif()
+
+if(minimp4_ADDED)
+    target_include_directories(${PROJECT_NAME} INTERFACE ${minimp4_SOURCE_DIR})
 endif()
 
 target_link_libraries(${PROJECT_NAME} INTERFACE

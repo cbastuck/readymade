@@ -228,10 +228,16 @@ Data HttpClient::process(Data data)
     {
       std::string responseBody = boost::beast::buffers_to_string(res.body().data());
       return (isJson) ? Data(json::parse(responseBody)) : Data(responseBody);
-    } 
+    }
     else{
-      std::cout << "HTTPClient service read binary response" << std::endl;
-      return Null();
+      const auto& body = res.body().data();
+      BinaryData binary;
+      binary.reserve(boost::asio::buffer_size(body));
+      for (auto const& buf : body)
+        binary.insert(binary.end(),
+                      static_cast<const uint8_t*>(buf.data()),
+                      static_cast<const uint8_t*>(buf.data()) + buf.size());
+      return Data(binary);
     }
   }
   catch(std::exception const& e)

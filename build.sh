@@ -43,8 +43,10 @@ cmake \
     -B "${BUILD_DIR}" \
     -S "${REPO_ROOT}" \
     -DCMAKE_BUILD_TYPE="${CONFIG}" \
+    -DCMAKE_OSX_ARCHITECTURES="$(uname -m)" \
     -DBUILD_HKP_SAUCER=ON \
-    -DMEANDER_USE_EMBEDDED_FRONTEND="${EMBEDDED_FRONTEND}"
+    -DMEANDER_USE_EMBEDDED_FRONTEND="${EMBEDDED_FRONTEND}" \
+    -GXcode
 
 cmake --build "${BUILD_DIR}" --config "${CONFIG}" --parallel "$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)"
 

@@ -29,6 +29,10 @@
 #include "./services/filesystem.h"
 #include "./services/map.h"
 
+#if HKP_MP4_TO_WAV_ENABLED
+  #include "./services/mp4_to_wav.h"
+#endif
+
 #if IS_MACOS
   #include "./services/core_input.h"
   #include "./services/core_output.h"
@@ -53,7 +57,10 @@ using ServiceTypes = Registry::TypeList<
   ,TransientDetector
   ,WavReader
   ,Filesystem
-  , Map
+  ,Map
+#if HKP_MP4_TO_WAV_ENABLED
+  ,Mp4ToWav
+#endif
 #if IS_MACOS
   ,CoreInput
   ,CoreOutput
