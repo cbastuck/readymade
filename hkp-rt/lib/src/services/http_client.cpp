@@ -209,10 +209,11 @@ Data HttpClient::process(Data data)
       stream.socket().shutdown(tcp::socket::shutdown_both, ec);
     }  
   
-    if(ec == net::error::eof)
+    if(ec == net::error::eof || ec == net::ssl::error::stream_truncated)
     {
         // Rationale:
         // http://stackoverflow.com/questions/25587403/boost-asio-ssl-async-shutdown-always-finishes-with-an-error
+        // stream_truncated: most servers close TCP without sending TLS close_notify (saves a round-trip).
         ec = {};
     }
     if(ec && ec != beast::errc::not_connected)
@@ -231,13 +232,14 @@ Data HttpClient::process(Data data)
     }
     else{
       const auto& body = res.body().data();
-      BinaryData binary;
-      binary.reserve(boost::asio::buffer_size(body));
+      MixedData result;
+      result.meta = {{"path", url}};
+      result.binary.reserve(boost::asio::buffer_size(body));
       for (auto const& buf : body)
-        binary.insert(binary.end(),
-                      static_cast<const uint8_t*>(buf.data()),
-                      static_cast<const uint8_t*>(buf.data()) + buf.size());
-      return Data(binary);
+        result.binary.insert(result.binary.end(),
+                             static_cast<const uint8_t*>(buf.data()),
+                             static_cast<const uint8_t*>(buf.data()) + buf.size());
+      return Data(result);
     }
   }
   catch(std::exception const& e)

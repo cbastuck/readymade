@@ -50,7 +50,13 @@ std::string stringify(const Data& data)
     return "<binary data with size " + std::to_string(bin->size());
   }
 
-  return "unknown type";  
+  auto mixed = getMixedDataFromData(data);
+  if (mixed)
+  {
+    return mixed->meta.dump();
+  }
+
+  return "unknown type";
 }
 
 namespace hkp
@@ -93,8 +99,16 @@ std::optional<const std::string> getStringFromData(const Data& data)
 std::optional<CustomData> getCustomDataFromData(const Data& data)
 {
   auto isCustom = data.type() == typeid(CustomData);
-  return isCustom ? 
+  return isCustom ?
     std::optional<CustomData>(boost::get<CustomData>(data)) :
+    std::nullopt;
+}
+
+std::optional<MixedData> getMixedDataFromData(const Data& data)
+{
+  auto isMixed = data.type() == typeid(MixedData);
+  return isMixed ?
+    std::optional<MixedData>(boost::get<MixedData>(data)) :
     std::nullopt;
 }
 

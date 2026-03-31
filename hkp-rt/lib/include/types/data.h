@@ -31,6 +31,12 @@ public:
   std::shared_ptr<Impl> impl;
 };
 
+struct MixedData
+{
+  json meta;
+  BinaryData binary;
+};
+
 struct CustomData
 {
   CustomData(const char* t, void* d)
@@ -41,14 +47,15 @@ struct CustomData
 };
 
 typedef boost::variant<
-  Undefined, 
-  std::shared_ptr<FloatRingBuffer>, 
-  json, 
-  BinaryData, 
-  std::string, 
+  Undefined,
+  std::shared_ptr<FloatRingBuffer>,
+  json,
+  BinaryData,
+  std::string,
   Null,
   ControlFlowData,
-  CustomData
+  CustomData,
+  MixedData
 > Data;
 
 std::string stringify(const Data& data);
@@ -66,6 +73,7 @@ std::shared_ptr<FloatRingBuffer> getRingBufferFromData(const Data &data);
 std::optional<const BinaryData> getBinaryFromData(const Data& data);
 std::optional<const std::string> getStringFromData(const Data& data);
 std::optional<CustomData> getCustomDataFromData(const Data& data);
+std::optional<MixedData>  getMixedDataFromData(const Data& data);
 
 Data getControlFlowData(const Data &data);
 bool isUndefined(const Data& data);
@@ -106,6 +114,7 @@ template <> struct TypeId<std::string> { static constexpr uint16_t value = 4; };
 template <> struct TypeId<Null> { static constexpr uint16_t value = 5; };
 template <> struct TypeId<ControlFlowData> { static constexpr uint16_t value = 6; };
 template <> struct TypeId<CustomData> { static constexpr uint16_t value = 7; };
+template <> struct TypeId<MixedData>  { static constexpr uint16_t value = 8; };
 
 template <typename T>
 constexpr uint16_t getTypeId() {
@@ -129,6 +138,7 @@ inline uint16_t getTypeId(const Data& data)
   if (data.type() == typeid(Null)) return TypeId<Null>::value;
   if (data.type() == typeid(ControlFlowData)) return TypeId<ControlFlowData>::value;
   if (data.type() == typeid(CustomData)) return TypeId<CustomData>::value;
+  if (data.type() == typeid(MixedData))  return TypeId<MixedData>::value;
 
   return static_cast<uint16_t>(-1); // undefined type
 }

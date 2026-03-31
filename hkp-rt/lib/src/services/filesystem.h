@@ -19,6 +19,14 @@ private:
       return std::filesystem::is_directory(fsPath);
   }
 
+  // Combines the configured directory (m_path) with the filename extracted
+  // from a meta path (which may be a URL or file path).
+  std::string buildMixedPath(const std::string& metaPath) const
+  {
+    auto filename = std::filesystem::path(metaPath).filename();
+    return (std::filesystem::path(m_path) / filename).string();
+  }
+
 public:
   static std::string serviceId() { return "filesystem"; }
 
@@ -56,15 +64,17 @@ public:
   Data process(Data data) override
   {
     auto j = getJSONFromData(data);
+    auto mixed = getMixedDataFromData(data);
     if (m_path.empty())
     {
       return Null();
     }
-    
+
     auto op = m_operation;
-    if (j && j->contains("operation"))
+    const json* metaSource = j ? &(*j) : (mixed ? &mixed->meta : nullptr);
+    if (metaSource && metaSource->contains("operation"))
     {
-      auto val = (*j)["operation"];
+      auto val = (*metaSource)["operation"];
       if (val.is_string())
       {
           op = val.get<std::string>();
@@ -92,7 +102,24 @@ public:
 
   Data writeOperation(Data data)
   {
-    if (auto buf = getBinaryFromData(data))
+    if (auto mixed = getMixedDataFromData(data))
+    {
+      if (!mixed->meta.contains("path") || mixed->binary.empty())
+      {
+        std::cerr << "Filesystem service: MixedData write requires meta.path and non-empty binary" << std::endl;
+        return json{{"status", "failure"}};
+      }
+      auto target = buildMixedPath(mixed->meta["path"].get<std::string>());
+      std::ofstream file(target, std::ios::binary);
+      if (file)
+      {
+        file.write(reinterpret_cast<const char*>(mixed->binary.data()), mixed->binary.size());
+        return json{{"status", "success"}, {"path", target}};
+      }
+      std::cerr << "Filesystem service: failed to open file for writing: " << target << std::endl;
+      return json{{"status", "failure"}};
+    }
+    else if (auto buf = getBinaryFromData(data))
     {
       std::ofstream file(m_path, std::ios::binary);
       if (file)
@@ -140,6 +167,26 @@ public:
 
   Data readOperation(Data data)
   {
+    if (auto mixed = getMixedDataFromData(data))
+    {
+      if (!mixed->meta.contains("path"))
+      {
+        std::cerr << "Filesystem service: MixedData read requires meta.path" << std::endl;
+        return Null();
+      }
+      auto target = buildMixedPath(mixed->meta["path"].get<std::string>());
+      std::ifstream file(target, std::ios::binary);
+      if (!file)
+      {
+        std::cerr << "Filesystem service: failed to open file for reading: " << target << std::endl;
+        return Null();
+      }
+      MixedData result;
+      result.meta = mixed->meta;
+      result.binary.assign(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+      return Data(result);
+    }
+
     auto j = getJSONFromData(data);
     std::string path = j && j->contains("path") ? (*j)["path"].get<std::string>() : " "; // space due to substring below
     std::filesystem::path fullPath = std::filesystem::path(m_path) / path.substr(1); // remove leading '/' from path

@@ -96,9 +96,16 @@ public:
       rb->consumeAvailable(target, false);
       out.write(reinterpret_cast<const char*>(target.data()), target.size() * sizeof(float));
     }
-    else 
+    else if (auto mixed = getMixedDataFromData(data); mixed)
     {
-      std::cerr << "[MONITOR]: writing to log file failed\n"; 
+      std::ofstream out(m_fileLogPath, std::ios::app);
+      out << mixed->meta.dump() << std::endl;
+      std::ofstream binOut(m_fileLogPath + ".bin", std::ios::binary | std::ios::app);
+      binOut.write(reinterpret_cast<const char*>(mixed->binary.data()), mixed->binary.size());
+    }
+    else
+    {
+      std::cerr << "[MONITOR]: writing to log file failed\n";
     }
   }
 
