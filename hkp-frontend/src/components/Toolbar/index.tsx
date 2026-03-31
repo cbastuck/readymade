@@ -4,7 +4,6 @@ import { BoardCtx } from "../../BoardContext";
 
 import RuntimeMenu from "hkp-frontend/src/ui-components/toolbar/RuntimeMenu";
 import HomeIcon from "./HomeIcon";
-import NavigationBar from "./NavigationBar";
 
 import AppMenu from "hkp-frontend/src/ui-components/toolbar/AppMenu";
 
@@ -29,15 +28,11 @@ type Props = {
 export default function Toolbar({
   showRuntimeMenu = false,
   children = false,
-  isCompact = undefined,
   hideNavigation = false,
   menuItemFactory,
   onUpdateAvailableRuntimeEngines,
 }: Props) {
   const boardContext = useContext(BoardCtx);
-  const isNarrow =
-    boardContext?.appContext?.appViewMode &&
-    boardContext?.appContext?.appViewMode !== "wide";
 
   const onAddRuntime = (rtClass: RuntimeClass) => {
     if (boardContext) {
