@@ -1,6 +1,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
 import { ReactNode } from "react";
 
@@ -23,7 +24,7 @@ export default function CustomDialog({
       <DialogContent
         className={`sm:max-w-[80%] h-[80%] flex flex-col ${className}`}
       >
-        <h1>{title}</h1>
+        <DialogTitle>{title}</DialogTitle>
         {children}
       </DialogContent>
     </Dialog>
