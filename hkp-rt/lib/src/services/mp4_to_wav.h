@@ -1,3 +1,4 @@
+
 // mp4_to_wav.h  —  hkp service: MP4 → WAV converter
 //
 // SERVICE ID:  "mp4-to-wav"

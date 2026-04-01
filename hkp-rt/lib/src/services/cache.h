@@ -11,6 +11,7 @@
 #include <types/data.h>
 
 #include "./sha256_openssl.h"
+#include "../common/inja.h"
 
 namespace hkp {
 
@@ -31,6 +32,8 @@ public:
     {
       updateIfNeeded(m_key, (*buf)["key"]);
       updateIfNeeded(m_persistRoot, (*buf)["persistRoot"]);
+      updateIfNeeded(m_persistMode, (*buf)["persistMode"]);
+      updateIfNeeded(m_filenameTemplate, (*buf)["filenameTemplate"]);
       if (updateIfNeeded(m_cacheDuration, (*buf)["cacheDuration"]))
       {
         m_maxAge = parseCacheDuration(m_cacheDuration);
@@ -53,6 +56,8 @@ public:
     return Service::mergeStateWith(json{
       { "key", m_key },
       { "persistRoot", m_persistRoot },
+      { "persistMode", m_persistMode },
+      { "filenameTemplate", m_filenameTemplate },
       { "cacheDuration", m_cacheDuration },
       { "excluded", m_excluded }
     });
@@ -103,6 +108,76 @@ public:
           }
         }
       }
+    }
+
+    // ── "filename" persist mode ────────────────────────────────────────────
+    // persistMode "filename": treat m_key as a path, derive a lookup filename
+    // (optionally via an inja filenameTemplate), check persistRoot for it, and
+    // early-return {"path":"<absolute>"} on hit.  On miss, call next(), persist
+    // the result, then return the same shape.
+    // The default "sha" mode (or no persistMode set) falls through to the
+    // existing SHA-based logic below — existing configs are unaffected.
+    if (m_persistMode == "filename" && !m_persistRoot.empty() && !forcedUpdate)
+    {
+      const std::filesystem::path inPath(*key);
+      std::string lookupName;
+      if (!m_filenameTemplate.empty())
+      {
+        // Build a template context from the incoming JSON plus path-derived
+        // helpers: {{ filename }}, {{ stem }}, {{ extension }}
+        json ctx = *j;
+        ctx["filename"]  = inPath.filename().string();
+        ctx["stem"]      = inPath.stem().string();
+        ctx["extension"] = inPath.extension().string();
+        lookupName = processInjaTemplate(m_filenameTemplate, ctx);
+      }
+      else
+      {
+        lookupName = inPath.filename().string();
+      }
+
+      auto candidate = std::filesystem::path(m_persistRoot) / lookupName;
+      if (std::filesystem::exists(candidate))
+      {
+        return makeEarlyReturn(Data(json{{"path", std::filesystem::absolute(candidate).string()}}));
+      }
+
+      auto result = next(data);
+      if (!isNull(result))
+      {
+        if (auto mixed = getMixedDataFromData(result))
+        {
+          if (!mixed->binary.empty())
+          {
+            std::ofstream file(candidate, std::ios::binary);
+            if (file)
+              file.write(reinterpret_cast<const char*>(mixed->binary.data()), mixed->binary.size());
+          }
+        }
+        else if (auto bin = getBinaryFromData(result))
+        {
+          std::ofstream file(candidate, std::ios::binary);
+          if (file)
+            file.write(reinterpret_cast<const char*>(bin->data()), bin->size());
+        }
+        else if (auto str = getStringFromData(result))
+        {
+          std::ofstream file(candidate);
+          if (file)
+            file << *str;
+        }
+        else if (auto jResult = getJSONFromData(result))
+        {
+          std::ofstream file(candidate);
+          if (file)
+            file << jResult->dump();
+        }
+      }
+      if (!isNull(result) && std::filesystem::exists(candidate))
+      {
+        return makeEarlyReturn(Data(json{{"path", std::filesystem::absolute(candidate).string()}}));
+      }
+      return makeEarlyReturn(result);
     }
 
     if (!forcedUpdate && !noCache)
@@ -216,8 +291,10 @@ private:
   }
 
   std::string m_key;
-  std::map<std::string, Data> m_cache;
   std::string m_persistRoot;
+  std::string m_persistMode; // "sha" (default) | "filename"
+  std::string m_filenameTemplate;
+  std::map<std::string, Data> m_cache;
   std::string m_cacheDuration;
   std::chrono::hours m_maxAge;
   std::vector<std::string> m_excluded;
