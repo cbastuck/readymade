@@ -41,11 +41,16 @@
 
 namespace hkp {
 
-// Forward declaration — bodies live in mp4_to_wav.cpp which owns
+// Forward declarations — bodies live in mp4_to_wav.cpp which owns
 // #define MINIMP4_IMPLEMENTATION (single-header requirement).
 std::vector<int16_t> decodeMp4ToPcm(const char*   path,
                                      unsigned int& outSampleRate,
                                      unsigned int& outChannels);
+
+std::vector<int16_t> decodeMp4ToPcmFromMemory(const uint8_t* data,
+                                               size_t         size,
+                                               unsigned int&  outSampleRate,
+                                               unsigned int&  outChannels);
 
 // ---------------------------------------------------------------------------
 
@@ -80,11 +85,31 @@ public:
   }
 
   // ── Processing ────────────────────────────────────────────────────────────
-  // Input:  JSON { "path": "/path/to/file.mp4" }
-  // Output: JSON { "path": "/path/to/file.wav" }  on success
-  //         JSON { "error": "<what()>" }           on failure (never throws)
+  // JSON input:      { "path": "/path/to/file.mp4" }
+  //   → JSON output: { "path": "/path/to/file.wav" }
+  //
+  // BinaryData input (raw MP4 bytes):
+  //   → BinaryData output (WAV bytes)
+  //
+  // MixedData input  (meta.path = source URL/path, binary = MP4 bytes):
+  //   → MixedData output with same meta + WAV format fields appended,
+  //     binary = WAV bytes
   Data process(Data data) override
   {
+    // ── in-memory paths (BinaryData / MixedData) ──────────────────────────
+    if (auto mixed = getMixedDataFromData(data))
+    {
+      return processFromMemory(mixed->binary, mixed->meta);
+    }
+    if (auto bin = getBinaryFromData(data))
+    {
+      auto result = processFromMemory(*bin, json{});
+      if (auto* out = boost::get<MixedData>(&result))
+        return out->binary; // caller gave plain binary → return plain binary
+      return result;
+    }
+
+    // ── file-path path (JSON) ──────────────────────────────────────────────
     auto j = getJSONFromData(data);
     if (!j || !j->contains("path"))
     {
@@ -97,7 +122,7 @@ public:
 
     try
     {
-      unsigned int sampleRate = 44100; // overwritten by first decoded frame
+      unsigned int sampleRate = 44100;
       unsigned int channels   = 2;
 
       auto pcm = decodeMp4ToPcm(inputPath.c_str(), sampleRate, channels);
@@ -116,6 +141,73 @@ public:
 
 private:
   // ── Helpers ───────────────────────────────────────────────────────────────
+
+  // Decode MP4 bytes → WAV bytes, return MixedData{meta + wav format info, wav bytes}.
+  Data processFromMemory(const BinaryData& mp4, const json& inMeta)
+  {
+    try
+    {
+      unsigned int sampleRate = 44100;
+      unsigned int channels   = 2;
+
+      auto pcm = decodeMp4ToPcmFromMemory(mp4.data(), mp4.size(), sampleRate, channels);
+      if (pcm.empty())
+        throw std::runtime_error("no PCM samples decoded from MP4 buffer");
+
+      MixedData result;
+      result.meta = inMeta;
+      if (inMeta.contains("path"))
+        result.meta["path"] = inMeta["path"].get<std::string>() + ".wav";
+      result.meta["sampleRate"]    = sampleRate;
+      result.meta["channels"]      = channels;
+      result.meta["bitsPerSample"] = 16;
+      result.meta["format"]        = "wav";
+      result.binary = writeWavToMemory(pcm, sampleRate, channels);
+      return Data(result);
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "[mp4-to-wav] " << e.what() << "\n";
+      return json{{"error", e.what()}};
+    }
+  }
+
+  // Build a RIFF/WAV buffer from int16_t interleaved PCM (no disk I/O).
+  static BinaryData writeWavToMemory(const std::vector<int16_t>& pcm,
+                                     unsigned int sampleRate,
+                                     unsigned int channels)
+  {
+    const auto     dataBytes  = static_cast<uint32_t>(pcm.size() * sizeof(int16_t));
+    const uint16_t blockAlign = static_cast<uint16_t>(channels * sizeof(int16_t));
+    const uint32_t byteRate   = sampleRate * blockAlign;
+
+    BinaryData buf;
+    buf.reserve(44 + dataBytes);
+
+    const auto w32 = [&](uint32_t v) {
+      buf.push_back(static_cast<uint8_t>(v));
+      buf.push_back(static_cast<uint8_t>(v >> 8));
+      buf.push_back(static_cast<uint8_t>(v >> 16));
+      buf.push_back(static_cast<uint8_t>(v >> 24));
+    };
+    const auto w16 = [&](uint16_t v) {
+      buf.push_back(static_cast<uint8_t>(v));
+      buf.push_back(static_cast<uint8_t>(v >> 8));
+    };
+    const auto wcc = [&](const char* s) { buf.insert(buf.end(), s, s + 4); };
+
+    wcc("RIFF"); w32(36 + dataBytes);
+    wcc("WAVE");
+    wcc("fmt "); w32(16);
+    w16(1); w16(static_cast<uint16_t>(channels));
+    w32(sampleRate); w32(byteRate);
+    w16(blockAlign); w16(16);
+    wcc("data"); w32(dataBytes);
+
+    const auto* raw = reinterpret_cast<const uint8_t*>(pcm.data());
+    buf.insert(buf.end(), raw, raw + dataBytes);
+    return buf;
+  }
 
   std::string deriveOutputPath(const std::string& inputPath) const
   {
