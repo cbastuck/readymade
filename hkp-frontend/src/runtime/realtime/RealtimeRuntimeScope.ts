@@ -5,6 +5,7 @@ import {
   RuntimeDescriptor,
   RuntimeScope,
   ServiceAction,
+  ServiceRegistry,
   User,
 } from "hkp-frontend/src/types";
 
@@ -22,6 +23,7 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
   app: AppImpl;
   authenticatedUser: User | null = null;
   runtimeOutput: WebSocket | undefined;
+  registry: ServiceRegistry = [];
 
   constructor(runtime: RuntimeDescriptor, runtimeOutputUrl: string) {
     this.descriptor = runtime;

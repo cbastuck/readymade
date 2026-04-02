@@ -18,8 +18,10 @@
 #include "./services/timer.h"
 #include "./services/http_client.h"
 #include "./services/http_server/http_server.h"
+#include "./services/http_server/http_server_subservices.h"
 #include "./services/static.h"
 #include "./services/cache.h"
+#include "./services/cache_subservices.h"
 #include "./services/buffer_service.h"
 #include "./services/filter.h"
 #include "./services/fft_service.h"
@@ -28,6 +30,7 @@
 #include "./services/wav_reader.h"
 #include "./services/filesystem.h"
 #include "./services/map.h"
+#include "./services/sub_service.h"
 
 #if HKP_MP4_TO_WAV_ENABLED
   #include "./services/mp4_to_wav.h"
@@ -48,8 +51,10 @@ using ServiceTypes = Registry::TypeList<
   ,Timer
   ,HttpClient
   ,HttpServer
+  ,HttpServerSubservices
   ,Static
   ,Cache
+  ,CacheSubservices
   ,FFTService
   ,IFFTService
   ,Buffer
@@ -58,6 +63,7 @@ using ServiceTypes = Registry::TypeList<
   ,WavReader
   ,Filesystem
   ,Map
+  ,SubService
 #if HKP_MP4_TO_WAV_ENABLED
   ,Mp4ToWav
 #endif

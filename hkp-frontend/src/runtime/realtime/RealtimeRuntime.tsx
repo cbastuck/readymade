@@ -48,7 +48,7 @@ export default function RealtimeRuntime({
   const makeServiceInstances = useCallback(
     (services: Array<ServiceDescriptor>) =>
       services.map((svc) => makeServiceInstance(scope, svc, boardName)),
-    [scope, boardName]
+    [scope, boardName],
   );
 
   const [servicesWithConfig, setServicesWithConfig] = useState<
@@ -56,7 +56,16 @@ export default function RealtimeRuntime({
   >(makeServiceInstances(services));
 
   useEffect(() => {
-    setServicesWithConfig(makeServiceInstances(services));
+    // Merge: preserve in-memory state (from scope.onConfig updates) for
+    // services that are already tracked, and only create fresh instances for
+    // newly-added services. This prevents a full rebuild from the stale
+    // BoardContext descriptors from overwriting live config updates.
+    setServicesWithConfig((prev) => {
+      const prevMap = new Map(prev.map((s) => [s.uuid, s]));
+      return makeServiceInstances(services).map(
+        (newInst) => prevMap.get(newInst.uuid) ?? newInst,
+      );
+    });
   }, [services, makeServiceInstances]);
 
   if (scope.onResult !== onResult) {
@@ -68,8 +77,8 @@ export default function RealtimeRuntime({
     setServicesWithConfig((prevState) =>
       prevState.map((prevSvc) =>
         // TODO: this assumes config is of type {state: object }
-        prevSvc.uuid === instanceId ? { ...prevSvc, ...config } : prevSvc
-      )
+        prevSvc.uuid === instanceId ? { ...prevSvc, ...config } : prevSvc,
+      ),
     );
   };
 
@@ -77,7 +86,7 @@ export default function RealtimeRuntime({
     _boardName: string,
     service: ServiceInstance,
     _runtimeId: string,
-    _userId: string | undefined
+    _userId: string | undefined,
   ): ReactElement => {
     const { serviceId } = service;
     const ui = (serviceId && findServiceUI(serviceId)) || RemoteServiceUI;
@@ -116,7 +125,7 @@ export default function RealtimeRuntime({
 export function makeServiceInstance(
   scope: RuntimeScope,
   svc: ServiceDescriptor,
-  boardName: string
+  boardName: string,
 ): ServiceInstance {
   const api: RuntimeApi = scope.getApi();
   return {

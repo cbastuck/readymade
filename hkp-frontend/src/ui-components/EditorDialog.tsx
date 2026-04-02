@@ -1,8 +1,10 @@
-import { ReactNode, useRef } from "react";
+import { ReactNode, useId, useRef } from "react";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
+  DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
 
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
@@ -11,6 +13,7 @@ import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 type Action = { label: string; onAction: (buf: string | object) => void };
 type Props = {
   title: string;
+  description?: string;
   value: string | object;
   isOpen: boolean;
   additionalHeaderButtons?: Array<any>;
@@ -22,6 +25,7 @@ type Props = {
 
 export default function EditorDialog({
   title,
+  description,
   value,
   isOpen,
   additionalHeaderButtons,
@@ -31,6 +35,7 @@ export default function EditorDialog({
   onClose,
 }: Props) {
   const editor = useRef<any>(null);
+  const descriptionId = useId();
   if (!isOpen) {
     return null;
   }
@@ -65,8 +70,14 @@ export default function EditorDialog({
         onPointerDownOutside={avoidDefaultDomBehavior}
         onInteractOutside={avoidDefaultDomBehavior}
         additionalHeaderButtons={additionalHeaderButtons}
+        aria-describedby={description ? descriptionId : undefined}
       >
-        <h2>{title}</h2>
+        <DialogTitle>{title}</DialogTitle>
+        {description && (
+          <DialogDescription id={descriptionId} className="sr-only">
+            {description}
+          </DialogDescription>
+        )}
         {children && <div>{children}</div>}
         <Editor ref={editor} value={v} language="json" autofocus={autofocus} />
         <DialogFooter className="flex">

@@ -82,7 +82,8 @@ private:
       {
         // Process both key and value with inja templates
         std::string processedKey = processInjaTemplate(key, inputData);
-        result[processedKey] = processValue(value, inputData);
+        std::string processedValue = processValue(value, inputData);
+        result[processedKey] = processedValue;
       }
       
       return result;

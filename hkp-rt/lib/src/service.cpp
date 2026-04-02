@@ -1,6 +1,8 @@
 #include "./service.h"
 
 #include "runtime.h"
+#include "sub_runtime.h"
+#include "runtime_host.h"
 
 namespace hkp
 {
@@ -15,7 +17,7 @@ Service::Service(const std::string& instanceName)
 Service::Service(const std::string& instanceId, const std::string& instanceName)
     : m_instanceId(instanceId)
     , m_instanceName(instanceName)
-    , m_runtime(nullptr)
+    , m_host(nullptr)
 {
 }
 
@@ -24,32 +26,37 @@ json Service::configure(Data data)
   auto buf = getJSONFromData(data);
   if (buf)
   {
-    if (m_bypass.has_value()) 
+    if (m_bypass.has_value())
     {
       auto bypassUpdate = getPropertyUpdate(*buf, "bypass", *m_bypass);
       if (bypassUpdate)
       {
         setBypass(*bypassUpdate);
-      } 
+      }
     }
     else // bypass has not yet been set
-    { 
+    {
       auto bypass = getProperty<bool>(*buf, "bypass");
       setBypass(bypass ? *bypass : false);
     }
   }
-  
+
   return getState();
 }
 
 json Service::getState() const
 {
-  return json{{"bypass", *m_bypass}};
+  auto state = json{{"bypass", m_bypass.has_value() && *m_bypass}};
+  if (supportsSubservices())
+  {
+    state["__capabilities__"] = json{{"subservices", true}};
+  }
+  return state;
 }
 
 Data Service::startProcess(const Data& data)
 {
-  if (*m_bypass)
+  if (m_bypass.has_value() && *m_bypass)
   {
     return data;
   }
@@ -66,51 +73,56 @@ Data Service::process(Data data)
   return Undefined();
 }
 
-void Service::setParentRuntime(Runtime &runtime)
+void Service::setParentHost(RuntimeHost& host)
 {
-  if (m_runtime)
+  if (m_host)
   {
-    throw std::runtime_error("Service::setRuntime: runtime already set");
+    throw std::runtime_error("Service::setParentHost: host already set");
   }
-  m_runtime = OwnsMe<Runtime>(&runtime);
+  m_host = &host;
+}
+
+void Service::setParentRuntime(Runtime& runtime)
+{
+  setParentHost(runtime);
 }
 
 void Service::nextAsync(Data data, std::function<void(Data)> callback)
 {
-  if (!m_runtime)
+  if (!m_host)
   {
-    throw std::runtime_error("Service::nextAsync: runtime not set");
+    throw std::runtime_error("Service::nextAsync: host not set");
   }
 
-  m_runtime->processFrom(*this, data, true, callback);
+  m_host->processFrom(*this, data, true, callback);
 }
 
 Data Service::next(Data data, bool immediately)
 {
-  if (!m_runtime)
+  if (!m_host)
   {
-    throw std::runtime_error("Service::next: runtime not set");
+    throw std::runtime_error("Service::next: host not set");
   }
   if (!immediately)
   {
-    m_runtime->scheduleProcessFrom(*this, data);
+    m_host->scheduleProcessFrom(*this, data);
     return Null(); // no immediate result - stop processing
   }
-  return m_runtime->processFrom(*this, data);
+  return m_host->processFrom(*this, data);
 }
 
 bool Service::isConnected() const
 {
-  if (!m_runtime)
+  if (!m_host)
   {
-    throw std::runtime_error("Service::isConnected: runtime not set");
+    throw std::runtime_error("Service::isConnected: host not set");
   }
-  return m_runtime->isConnected(*this);
+  return m_host->isConnected(*this);
 }
 
 json& Service::mergeBypassState(json &state) const
 {
-  state.update(json{{"bypass", m_bypass.has_value() ? json(*m_bypass) : json(nullptr)}});
+  state.update(json{{"bypass", m_bypass.has_value() && *m_bypass}});
   return state;
 }
 
@@ -126,20 +138,46 @@ void Service::setBypass(bool bypass)
 
 bool Service::isBypass() const
 {
-  return *m_bypass;
+  return m_bypass.has_value() && *m_bypass;
 }
 
 void Service::sendNotification(const Data& value) const
 {
-  if (m_runtime)
+  if (m_host)
   {
-    m_runtime->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
+    m_host->sendData(value, MessagePurpose::NOTIFICATION, m_instanceId);
   }
 }
 
 bool Service::onBypassChanged(bool bypass)
 {
   return bypass; // accept the bypass request by default
+}
+
+bool Service::supportsSubservices() const
+{
+  return false;
+}
+
+// ── Sub-runtime support ───────────────────────────────────────────────────────
+
+std::shared_ptr<SubRuntime> Service::createSubRuntime(const json& servicesConfig)
+{
+  if (!m_host)
+  {
+    throw std::runtime_error("Service::createSubRuntime: host not set");
+  }
+  return m_host->createSubRuntime(*this, servicesConfig);
+}
+
+// ── Multi-emit support ────────────────────────────────────────────────────────
+
+void Service::emit(Data partialResult)
+{
+  // nextAsync posts via App::postCallback, making this safe to call from
+  // a background thread.  Each emission drives an independent traversal of
+  // the services that follow this one in the outer pipeline.
+  nextAsync(std::move(partialResult));
 }
 
 }

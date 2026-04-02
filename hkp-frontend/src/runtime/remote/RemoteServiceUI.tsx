@@ -169,7 +169,16 @@ function extractProperties(service: any) {
   return Object.keys(src)
     .filter(
       (key) =>
-        ["uuid", "serviceId", "serviceName", "board"].indexOf(key) === -1,
+        [
+          "uuid",
+          "serviceId",
+          "serviceName",
+          "board",
+          "bypass",
+          "pipeline",
+          "__meta__",
+          "__capabilities__",
+        ].indexOf(key) === -1,
     )
     .reduce((all, key) => {
       const val = src[key];

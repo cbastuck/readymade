@@ -7,6 +7,7 @@
 #include "./registry.h"
 #include "./service.h"
 #include "./server.h"
+#include "./sub_runtime.h"
 #include "./common/websocket_server.h"
 
 #include <types/validation.h>
@@ -345,6 +346,24 @@ bool Runtime::insertService(std::shared_ptr<Service> newService, std::shared_ptr
 
   m_services.push_back(newService);
   return true;
+}
+
+std::shared_ptr<SubRuntime> Runtime::createSubRuntime(const Service& ownerInParent,
+                                                      const json& servicesConfig)
+{
+  auto factory = [this](const std::string& serviceId, const std::string& instanceId)
+  {
+    return m_app->createService(serviceId, instanceId);
+  };
+  auto post = [this](std::function<void()> fn)
+  {
+    m_app->postCallback(std::move(fn));
+  };
+
+  auto sr = std::make_shared<SubRuntime>(*this, &ownerInParent,
+                                         std::move(factory), std::move(post));
+  sr->populate(servicesConfig);
+  return sr;
 }
 
 bool Runtime::rearrangeServices(const std::vector<std::string>& newOrder)

@@ -68,8 +68,9 @@ target_sources(${PROJECT_NAME}
     PRIVATE
       src/common/websocket_server_session.cpp
       src/runtime.cpp
-      src/registry.cpp 
+      src/registry.cpp
       src/service.cpp
+      src/sub_runtime.cpp
       src/app.cpp
       src/http/server.cpp
       src/types/models.cpp 
@@ -84,6 +85,7 @@ target_sources(${PROJECT_NAME}
       src/services/static.cpp
       src/services/http_client.cpp
       src/services/http_server/http_server.cpp
+      src/services/http_server/http_server_subservices.cpp
       src/services/http_server/http_server_impl.cpp
       src/services/http_server/http_listener.cpp
       src/services/http_server/http_session.cpp

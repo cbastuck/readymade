@@ -10,6 +10,7 @@ import {
   Menu,
   Settings,
   Save,
+  Layers,
 } from "lucide-react";
 
 import {
@@ -37,6 +38,7 @@ type Props = {
   onDelete: () => void;
   onConfiguration: () => void;
   onSave: () => void;
+  onWrapInSubService?: () => void;
 };
 export default function RuntimeSettings({
   runtime,
@@ -49,6 +51,7 @@ export default function RuntimeSettings({
   onProcess,
   onConfiguration,
   onSave,
+  onWrapInSubService,
 }: Props) {
   return (
     <DropdownMenu>
@@ -118,6 +121,16 @@ export default function RuntimeSettings({
             <MenuIcon icon={Settings} />
             <span>Configuration</span>
           </DropdownMenuItem>
+
+          {onWrapInSubService && (
+            <DropdownMenuItem
+              className="text-base"
+              onClick={onWrapInSubService}
+            >
+              <MenuIcon icon={Layers} />
+              <span>Wrap in SubService</span>
+            </DropdownMenuItem>
+          )}
 
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-base" onClick={onClear}>

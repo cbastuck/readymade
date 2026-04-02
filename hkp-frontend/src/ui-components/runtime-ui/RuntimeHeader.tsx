@@ -5,6 +5,7 @@ import {
   RuntimeConfiguration,
   RuntimeDescriptor,
   ServiceClass,
+  ServiceDescriptor,
   ServiceRegistry,
 } from "hkp-frontend/src/types";
 import Editable from "hkp-frontend/src/ui-components/Editable";
@@ -72,6 +73,48 @@ export default function RuntimeHeader({
     boardContext?.removeAllServices(runtime);
   };
 
+  const onWrapInSubService =
+    runtime.type === "realtime"
+      ? async () => {
+          if (!boardContext) return;
+          const scope = boardContext.scopes[runtimeId];
+          const api = boardContext.runtimeApis[runtime.type];
+          if (!scope || !api) return;
+
+          const currentServices = boardContext.services[runtimeId] || [];
+          if (currentServices.length === 0) return;
+
+          const pipelineEntries = await Promise.all(
+            currentServices.map(async (svc) => {
+              const state = await api.getServiceConfig(scope, svc);
+              return {
+                serviceId: svc.serviceId,
+                instanceId: svc.uuid,
+                ...(state ? { state } : {}),
+              };
+            }),
+          );
+
+          const subSvcClass: ServiceClass = {
+            serviceId: "sub-service",
+            serviceName: "SubService",
+          };
+          const newSvc = await (boardContext.addService(
+            subSvcClass,
+            runtime,
+          ) as unknown as Promise<ServiceDescriptor | null>);
+          if (!newSvc) return;
+
+          await api.configureService(scope, newSvc, {
+            pipeline: pipelineEntries,
+          });
+
+          for (const svc of currentServices) {
+            await boardContext.removeService(svc, runtime);
+          }
+        }
+      : undefined;
+
   const onDelete = () => {
     boardContext?.removeRuntime(runtime);
   };
@@ -134,6 +177,7 @@ export default function RuntimeHeader({
           onDelete={onDelete}
           onConfiguration={onConfiguration}
           onSave={onSave}
+          onWrapInSubService={onWrapInSubService}
         />
 
         <Editable

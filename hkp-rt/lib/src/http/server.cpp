@@ -166,7 +166,7 @@ crow::response Server::impl::getRuntimes()
   {
     arr.push_back(jsonSerialise(rt));
   }
-  return makeJsonResponse(arr);
+  return makeJsonResponse(json{{"runtimes", arr}, {"registry", app->getRegistry()}});
 }
 
 

@@ -10,6 +10,7 @@ import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import Button from "hkp-frontend/src/ui-components/Button";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import Switch from "hkp-frontend/src/ui-components/Switch";
+import SubServicePipelineUI from "./ui/SubServicePipelineUI";
 
 type Props = ServiceUIProps & {
   onNotification?: (notification: any) => void;
@@ -20,6 +21,8 @@ type Props = ServiceUIProps & {
 export default function RealtimeRuntimeServiceUI(props: Props) {
   const { service, onNotification } = props;
   const meta = service.state?.["__meta__"];
+  const supportsSubservices =
+    service.state?.["__capabilities__"]?.subservices === true;
   const [properties, setProperties] = useState<any>(extractProperties(service));
 
   useEffect(() => setProperties(extractProperties(service)), [service]);
@@ -27,7 +30,7 @@ export default function RealtimeRuntimeServiceUI(props: Props) {
   useEffect(() => {
     console.debug(
       `RealtimeRuntimeServiceUI: '${service.serviceName}' state changed`,
-      service.state
+      service.state,
     );
     onNotification?.(service.state);
   }, [properties, service.state, service.serviceName, onNotification]);
@@ -65,7 +68,7 @@ export default function RealtimeRuntimeServiceUI(props: Props) {
           if (metaInfo && metaInfo.type === "enum") {
             const options = metaInfo.data.options.reduce(
               (acc: object, cur: string) => ({ ...acc, [cur]: cur }),
-              {}
+              {},
             );
             return (
               <div key={prop} style={{ marginBottom: 3 }}>
@@ -156,6 +159,7 @@ export default function RealtimeRuntimeServiceUI(props: Props) {
           );
         })}
         {props.children || null}
+        {supportsSubservices && <SubServicePipelineUI service={service} />}
       </div>
     );
   };
@@ -182,8 +186,16 @@ function extractProperties(service: any) {
   return Object.keys(src)
     .filter(
       (key) =>
-        ["uuid", "serviceId", "serviceName", "board", "bypass"].indexOf(key) ===
-        -1
+        [
+          "uuid",
+          "serviceId",
+          "serviceName",
+          "board",
+          "bypass",
+          "pipeline",
+          "__meta__",
+          "__capabilities__",
+        ].indexOf(key) === -1,
     )
     .reduce((all, key) => {
       const val = src[key];

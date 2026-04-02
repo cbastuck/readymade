@@ -54,7 +54,7 @@ export function createRealtimeRuntimeApp(scope: RealtimeRuntimeScope): AppImpl {
     createSubServiceUI: (_svc: ServiceImpl): ReactElement | null => {
       return null;
     },
-    listAvailableServices: () => [],
+    listAvailableServices: () => scope.registry,
     registerNotificationTarget: (
       svc: ServiceInstance,
       onNotification: (notification: any) => void

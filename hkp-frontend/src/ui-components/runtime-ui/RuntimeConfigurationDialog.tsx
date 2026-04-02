@@ -34,7 +34,7 @@ export default function RuntimeConfigurationDialog({
           },
         },
       },
-      false
+      false,
     );
   };
 
@@ -52,6 +52,7 @@ export default function RuntimeConfigurationDialog({
   return (
     <EditorDialog
       title="Runtime Configuration"
+      description="Edit runtime metadata, color, and JSON configuration."
       value={runtimeConfig}
       isOpen={isOpen}
       onClose={onClose}

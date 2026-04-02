@@ -7,16 +7,18 @@
 
 #include "./uuid.h"
 #include "./process_context.h"
+#include "./runtime_host.h"
 
 namespace hkp
 {
 
 class App;
 class Service;
+class SubRuntime;
 class WebsocketServer;
 class RuntimeConfiguration;
 
-class Runtime
+class Runtime : public RuntimeHost
 {
 public:
   Runtime(
@@ -34,13 +36,22 @@ public:
   json configureService(const std::string &instanceId, json config);
   json getServiceState(const std::string &instanceId) const;
   json getServices() const;
-  void sendData(Data data, MessagePurpose purpose, const std::string& sender, std::function<void(Data)> callback = nullptr);
 
   Data process(Data data, json context = nullptr);
-  Data processFrom(const Service &service, Data data, bool advanceBefore=true, std::function<void(Data)> callback = nullptr);
-  void scheduleProcessFrom(const Service &service, Data data, bool advanceBefore=true);
+
+  // ── RuntimeHost overrides ────────────────────────────────────────────────
+  Data processFrom(const Service &service, Data data, bool advanceBefore=true, std::function<void(Data)> callback = nullptr) override;
+  void scheduleProcessFrom(const Service &service, Data data, bool advanceBefore=true) override;
+  bool isConnected(const Service &svc) const override;
+  void sendData(Data data, MessagePurpose purpose, const std::string& sender, std::function<void(Data)> callback = nullptr) override;
+
+  // Create a SubRuntime from a JSON array of service-config objects.
+  // Services are parented to the SubRuntime (not this Runtime) so that
+  // next() / nextAsync() work correctly inside the nested pipeline.
+  std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
+                                               const json& servicesConfig) override;
+
   void processScheduled();
-  bool isConnected(const Service &svc) const;
 
   json appendService(const ServiceConfiguration& newService);
   bool insertService(std::shared_ptr<Service> newService, std::shared_ptr<Service> predecessor = nullptr);

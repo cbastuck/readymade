@@ -31,6 +31,7 @@ public:
     if (buf)
     {
       updateIfNeeded(m_key, (*buf)["key"]);
+      updateIfNeeded(m_outputKey, (*buf)["outputKey"]);
       updateIfNeeded(m_persistRoot, (*buf)["persistRoot"]);
       updateIfNeeded(m_persistMode, (*buf)["persistMode"]);
       updateIfNeeded(m_filenameTemplate, (*buf)["filenameTemplate"]);
@@ -55,6 +56,7 @@ public:
   {
     return Service::mergeStateWith(json{
       { "key", m_key },
+      { "outputKey", m_outputKey },
       { "persistRoot", m_persistRoot },
       { "persistMode", m_persistMode },
       { "filenameTemplate", m_filenameTemplate },
@@ -139,7 +141,7 @@ public:
       auto candidate = std::filesystem::path(m_persistRoot) / lookupName;
       if (std::filesystem::exists(candidate))
       {
-        return makeEarlyReturn(Data(json{{"path", std::filesystem::absolute(candidate).string()}}));
+        return makeEarlyReturn(Data(json{{m_outputKey, std::filesystem::absolute(candidate).string()}}));
       }
 
       auto result = next(data);
@@ -151,31 +153,40 @@ public:
           {
             std::ofstream file(candidate, std::ios::binary);
             if (file)
+            {
               file.write(reinterpret_cast<const char*>(mixed->binary.data()), mixed->binary.size());
+            }
           }
         }
         else if (auto bin = getBinaryFromData(result))
         {
           std::ofstream file(candidate, std::ios::binary);
           if (file)
+          {
             file.write(reinterpret_cast<const char*>(bin->data()), bin->size());
+          }
         }
         else if (auto str = getStringFromData(result))
         {
           std::ofstream file(candidate);
           if (file)
-            file << *str;
+          {
+             file << *str;
+          }
+           
         }
         else if (auto jResult = getJSONFromData(result))
         {
           std::ofstream file(candidate);
-          if (file)
+          if (file) 
+          {
             file << jResult->dump();
+          }
         }
       }
       if (!isNull(result) && std::filesystem::exists(candidate))
       {
-        return makeEarlyReturn(Data(json{{"path", std::filesystem::absolute(candidate).string()}}));
+        return makeEarlyReturn(Data(json{{m_outputKey, std::filesystem::absolute(candidate).string()}}));
       }
       return makeEarlyReturn(result);
     }
@@ -291,6 +302,7 @@ private:
   }
 
   std::string m_key;
+  std::string m_outputKey  = "path"; // defaults to "path" for backward compatibility
   std::string m_persistRoot;
   std::string m_persistMode; // "sha" (default) | "filename"
   std::string m_filenameTemplate;

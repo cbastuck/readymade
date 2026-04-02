@@ -122,19 +122,20 @@ export async function attachRuntimes(
   if (!res.ok) {
     throw new Error("Failed to fetch runtimes" + res.statusText);
   }
-  const data = await res.json();
+  const body = await res.json();
+  const runtimes: RestRuntimeData[] = Array.isArray(body) ? body : (body.runtimes ?? []);
+  const registry = Array.isArray(body) ? [] : (body.registry ?? []);
 
   // TODO: get rid of the any type
-  return data?.reduce((acc: any, cur: RestRuntimeData) => {
+  return runtimes.reduce((acc: any, cur: RestRuntimeData) => {
     const rt: RuntimeDescriptor = { ...rtClass, ...cur };
+    const scope = new RealtimeRuntimeScope(rt, cur.outputUrl);
+    scope.registry = registry;
     return {
       ...acc,
       runtimes: [...acc.runtimes, rt],
       services: { ...acc.services, [cur.id]: cur.services },
-      scopes: {
-        ...acc.scopes,
-        [cur.id]: new RealtimeRuntimeScope(rt, cur.outputUrl),
-      },
+      scopes: { ...acc.scopes, [cur.id]: scope },
     };
   }, initState);
 }
@@ -318,6 +319,7 @@ async function createRuntimeRequest(
     throw new Error("Failed to create runtime - no runtime was addeed");
   }
   const scope = await createScope(runtime, rt.outputUrl);
+  scope.registry = registry ?? [];
 
   return {
     runtime: rt,
