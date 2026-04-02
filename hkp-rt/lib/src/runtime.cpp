@@ -260,7 +260,9 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
        next != m_services.cend(); 
        ++next)
   {
+    sendServiceLifecycleNotification(**next, "call-process", data);
     data = (*next)->startProcess(data);
+    sendServiceLifecycleNotification(**next, "call-process-finished", data);
     if (isNull(data)) // stop processing on null
     {
       return onProcessEnd(data);
@@ -271,6 +273,37 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
     }
   }
   return onProcessEnd(data, nullptr, callback);;
+}
+
+void Runtime::sendServiceLifecycleNotification(const Service& service, const std::string& state, const Data& data)
+{
+  json payloadData = nullptr;
+  if (auto j = getJSONFromData(data))
+  {
+    payloadData = *j;
+  }
+  else if (auto s = getStringFromData(data))
+  {
+    payloadData = *s;
+  }
+  else if (isNull(data))
+  {
+    payloadData = nullptr;
+  }
+  else if (isUndefined(data))
+  {
+    payloadData = "<undefined>";
+  }
+  else
+  {
+    // Keep lifecycle messages JSON-serializable for the frontend.
+    payloadData = stringify(data);
+  }
+
+  sendData(
+    json{{"__internal", json{{"state", state}, {"data", payloadData}}}},
+    MessagePurpose::NOTIFICATION,
+    service.getId());
 }
 
 void Runtime::scheduleProcessFrom(const Service &service, Data data, bool advanceBefore)

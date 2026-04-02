@@ -71,6 +71,7 @@ public:
 private:
   std::string replaceHostWithExternalAddress(std::string url) const;
   std::string getRuntimeUrl() const;
+  void sendServiceLifecycleNotification(const Service& service, const std::string& state, const Data& data);
 
   void onProcessBegin();
   const Data& onProcessEnd(const Data& result, json context = nullptr, std::function<void(Data)> callback = nullptr);
