@@ -6,7 +6,11 @@ import {
   Location,
 } from "react-router-dom";
 import * as lzstring from "lz-string";
-import { RuntimeClass } from "./types";
+import {
+  isRuntimeRestClassType,
+  isRuntimeGraphQLClassType,
+  RuntimeClass,
+} from "./types";
 
 export function isTouchDevice() {
   return "ontouchstart" in window;
@@ -70,7 +74,7 @@ export function compressAndEncodeState(state: string): string {
 
 export function decompressAndDecodeState(encoded: string): string {
   return lzstring.decompressFromEncodedURIComponent(
-    decodeURIComponent(encoded)
+    decodeURIComponent(encoded),
   );
 }
 
@@ -93,11 +97,12 @@ export function restoreAvailableRuntimeEngines(): Array<RuntimeClass> {
 
 export function storeAvailableRuntimeEngines(engines: RuntimeClass[]) {
   const filteredEngines = engines.filter(
-    (rt) => rt.type === "remote" || rt.type === "realtime"
+    (rt) =>
+      isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type),
   );
 
   localStorage.setItem(
     "available-remote-runtimes",
-    JSON.stringify(filteredEngines)
+    JSON.stringify(filteredEngines),
   );
 }

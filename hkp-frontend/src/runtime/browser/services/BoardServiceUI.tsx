@@ -52,7 +52,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   const [inputRouting, setInputRouting] = useState<RuntimeInputRoutings>({});
   const [outputRouting, setOutputRouting] = useState<RuntimeOutputRoutings>({});
   const [sidechainRouting, setSidechainRouting] = useState<SidechainRouting>(
-    {}
+    {},
   );
 
   const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
@@ -78,7 +78,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
 
   const onInit = useCallback(
     (initialState: Partial<Config>) => onUpdate(initialState),
-    [onUpdate]
+    [onUpdate],
   );
 
   const pendingPromise = useRef<any>(null);
@@ -151,7 +151,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
       setSelectedSavedBoard(board);
       setTimeout(() => boardContext.fetchBoard(), 100);
     },
-    []
+    [],
   );
 
   const onEdit = useCallback(() => {
@@ -164,6 +164,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   const runtimeApis: RuntimeApiMap = {
     browser: browserRuntimeApi,
     remote: remoteRuntimeApi,
+    graphql: remoteRuntimeApi,
   };
 
   const renderMain = (service: ServiceInstance) => {
@@ -206,7 +207,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
                       ...all,
                       [board.name]: board.name,
                     }),
-                    {}
+                    {},
                   )}
                   onChange={({ value: board }) => {
                     service.configure({ selectedBoard: board });

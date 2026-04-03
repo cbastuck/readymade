@@ -1,6 +1,9 @@
 import {
   BoardDescriptor,
+  isRuntimeGraphQLClassType,
   RestoreRuntimeResult,
+  RuntimeDescriptor,
+  toCanonicalRuntimeClassType,
 } from "../types";
 import { isUserAuthenticated } from "../runtime/remote/RemoteRuntimeApi";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
@@ -34,14 +37,10 @@ export async function restoreBoard(
   const boardRequiresReauth = (
     await Promise.all(
       boardRuntimes.map((rtClass) =>
-        rtClass.type === "remote"
-          ? isUserAuthenticated(rtClass, propsRef.user).catch(
-              (err) => {
-                throw new Error(
-                  `${err.message} for runtime ${rtClass.url}`,
-                );
-              },
-            )
+        isRuntimeGraphQLClassType(rtClass.type)
+          ? isUserAuthenticated(rtClass, propsRef.user).catch((err) => {
+              throw new Error(`${err.message} for runtime ${rtClass.url}`);
+            })
           : Promise.resolve(true),
       ),
     )
@@ -54,7 +53,9 @@ export async function restoreBoard(
   const currentUser = refs.userRef.current;
   const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
     boardRuntimes.map((rt) => {
-      const api = propsRef.runtimeApis?.[rt.type];
+      const api =
+        propsRef.runtimeApis?.[rt.type] ||
+        propsRef.runtimeApis?.[toCanonicalRuntimeClassType(rt.type)];
       if (!api) {
         console.error(
           `BrowserContext.fetchBoard runtime api missing on restore runtime: ${JSON.stringify(
@@ -189,9 +190,7 @@ export async function serializeBoard(
   };
 
   const propsRef = refs.propsRef.current!;
-  return propsRef.serializeBoard
-    ? propsRef.serializeBoard(data)
-    : data;
+  return propsRef.serializeBoard ? propsRef.serializeBoard(data) : data;
 }
 
 export async function setBoardState(
@@ -213,7 +212,7 @@ export async function setBoardState(
 export async function clearBoard(
   newBoardNameArg: string = "New Idea",
   refs: BoardStateRefs,
-  removeRuntime: (runtime: import("../types").RuntimeDescriptor) => Promise<void>,
+  removeRuntime: (runtime: RuntimeDescriptor) => Promise<void>,
 ) {
   const currentRuntimes = refs.runtimesRef.current!;
   const currentServices = refs.servicesRef.current!;

@@ -46,7 +46,7 @@ export default function NewRuntimePanel({ onAddRuntime }: Props) {
       </Label>
       <SelectorField
         className="mb-2"
-        options={{ remote: "remote", realtime: "realtime" }}
+        options={{ remote: "graphql", realtime: "rest" }}
         value={type}
         onChange={({ value }) => setType(value as any)}
       />

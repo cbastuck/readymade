@@ -1,44 +1,45 @@
 import { Dispatch, RefObject, SetStateAction } from "react";
 import {
+  Action,
+  BoardDescriptor,
+  InstanceId,
+  RuntimeClass,
   RuntimeDescriptor,
   ServiceDescriptor,
   ServiceRegistry,
   RuntimeScope,
   RuntimeApi,
+  toCanonicalRuntimeClassType,
   User,
   RuntimeApiMap,
 } from "../types";
+import { BoardContextState, EngineState } from "../BoardContext";
 
 export type Props = {
   user: User | null;
   boardName?: string;
   children: JSX.Element | JSX.Element[];
-  availableRuntimeEngines?: Array<import("../types").RuntimeClass>;
+  availableRuntimeEngines?: Array<RuntimeClass>;
   runtimeApis?: RuntimeApiMap;
   fetchAfterMount?: boolean;
-  initialState?: import("../BoardContext").EngineState;
+  initialState?: EngineState;
 
-  fetchBoard?: () => Promise<import("../types").BoardDescriptor>;
+  fetchBoard?: () => Promise<BoardDescriptor>;
   isRuntimeInScope?: () => boolean;
   onRemoveRuntime?: (runtime: RuntimeDescriptor) => Promise<void>;
   newBoard?: (searchParams?: string) => void;
   onClearBoard?: (
-    board: import("../types").BoardDescriptor,
+    board: BoardDescriptor,
     newBoardName: string,
   ) => Promise<void>;
   saveBoard?: () => void;
   shareBoard?: () => void;
-  onRemoveService?: (
-    service: import("../types").InstanceId,
-    runtime: RuntimeDescriptor,
-  ) => void;
-  isActionAvailable?: (action: import("../types").Action) => boolean;
+  onRemoveService?: (service: InstanceId, runtime: RuntimeDescriptor) => void;
+  isActionAvailable?: (action: Action) => boolean;
   onAction?: (action: any) => boolean;
-  serializeBoard?: (
-    desc: import("../types").BoardDescriptor,
-  ) => Promise<import("../types").BoardDescriptor | null>;
-  onUpdateBoardState?: (updated: import("../types").BoardDescriptor) => void;
-  onLoad?: (context: import("../BoardContext").BoardContextState) => void;
+  serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
+  onUpdateBoardState?: (updated: BoardDescriptor) => void;
+  onLoad?: (context: BoardContextState) => void;
 };
 
 export type BoardStateRefs = {
@@ -48,9 +49,7 @@ export type BoardStateRefs = {
   servicesRef: RefObject<{ [runtimeId: string]: Array<ServiceDescriptor> }>;
   registryRef: RefObject<{ [runtimeId: string]: ServiceRegistry }>;
   scopesRef: RefObject<{ [runtimeId: string]: RuntimeScope }>;
-  availableRuntimeEnginesRef: RefObject<
-    Array<import("../types").RuntimeClass>
-  >;
+  availableRuntimeEnginesRef: RefObject<Array<RuntimeClass>>;
   propsRef: RefObject<Props>;
   setRuntimes: Dispatch<SetStateAction<Array<RuntimeDescriptor>>>;
   setServices: Dispatch<
@@ -59,12 +58,8 @@ export type BoardStateRefs = {
   setRegistry: Dispatch<
     SetStateAction<{ [runtimeId: string]: ServiceRegistry }>
   >;
-  setScopes: Dispatch<
-    SetStateAction<{ [runtimeId: string]: RuntimeScope }>
-  >;
-  setAvailableRuntimeEngines: Dispatch<
-    SetStateAction<Array<import("../types").RuntimeClass>>
-  >;
+  setScopes: Dispatch<SetStateAction<{ [runtimeId: string]: RuntimeScope }>>;
+  setAvailableRuntimeEngines: Dispatch<SetStateAction<Array<RuntimeClass>>>;
   setBoardNameState: Dispatch<SetStateAction<string | undefined>>;
   setIsFetching: Dispatch<SetStateAction<boolean>>;
   setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>>;
@@ -77,8 +72,12 @@ export function getRuntimeScopeApi(
   const runtime =
     refs.runtimesRef.current!.find((rt) => rt.id === runtimeId) || null;
   const scope = refs.scopesRef.current![runtimeId] || null;
+  const runtimeApiMap = refs.propsRef.current!.runtimeApis;
   return [
     scope,
-    (runtime && refs.propsRef.current!.runtimeApis?.[runtime.type]) || null,
+    (runtime &&
+      (runtimeApiMap?.[runtime.type] ||
+        runtimeApiMap?.[toCanonicalRuntimeClassType(runtime.type)])) ||
+      null,
   ];
 }

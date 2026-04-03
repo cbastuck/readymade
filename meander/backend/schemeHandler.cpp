@@ -23,6 +23,16 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
       "/remotes/",
       std::bind(&SchemeHandler::handleGetRemotes, this, std::placeholders::_1, std::placeholders::_2));
 
+    m_router.register_route(
+      "POST",
+      "/remotes/",
+      std::bind(&SchemeHandler::handleSaveRemote, this, std::placeholders::_1, std::placeholders::_2));
+
+    m_router.register_route(
+      "DELETE",
+      "/remotes/",
+      std::bind(&SchemeHandler::handleDeleteRemote, this, std::placeholders::_1, std::placeholders::_2));
+
   m_router.register_route(
       "*",
       "/remotes/:remote/*",
@@ -75,18 +85,217 @@ saucer::scheme::response SchemeHandler::handleRequest(const saucer::scheme::requ
 
 saucer::scheme::response SchemeHandler::handleGetRemotes(const Router::Params &p, const saucer::scheme::request &req) const
 {
-  auto remotesArr = json{
-      {
-          {"url", "hkp://remotes/" + m_server->name()},
-          {"port", m_server->port()},
-          {"name", m_server->name()},
-      },
-  };
+  auto remotesArr = json::array();
+  remotesArr.push_back({
+      {"url", "hkp://remotes/" + m_server->name()},
+      {"port", m_server->port()},
+      {"name", m_server->name()},
+  });
+
+  for (const auto& runtime : m_settings.getRemoteRuntimeEngines())
+  {
+    if (runtime.name == m_server->name() ||
+        Settings::isInternalRuntimeUrl(runtime.url))
+    {
+      continue;
+    }
+
+    remotesArr.push_back({
+        {"url", runtime.url},
+        {"port", runtime.port},
+        {"name", runtime.name},
+      {"color", runtime.color},
+    });
+  }
+
   return saucer::scheme::response{
       .data = saucer::stash::from_str(remotesArr.dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
   };
+}
+
+saucer::scheme::response SchemeHandler::handleSaveRemote(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  try
+  {
+    const auto content = req.content();
+    if (content.size() == 0)
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("No content provided"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 400,
+      };
+    }
+
+    const auto payload = json::parse(
+        std::string(reinterpret_cast<const char *>(content.data()), content.size()));
+    if (!payload.is_object())
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("Invalid remote payload"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 400,
+      };
+    }
+
+    const auto nameIt = payload.find("name");
+    const auto urlIt = payload.find("url");
+    if (nameIt == payload.end() || urlIt == payload.end() ||
+        !nameIt->is_string() || !urlIt->is_string())
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("Remote payload requires string name and url"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 400,
+      };
+    }
+
+    Settings::RemoteRuntimeEngine runtime{
+        .name = nameIt->get<std::string>(),
+        .url = urlIt->get<std::string>(),
+        .port = 0,
+        .color = "",
+    };
+
+    if (runtime.name == m_server->name())
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("The local runtime name is reserved"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 409,
+      };
+    }
+
+    if (Settings::isInternalRuntimeUrl(runtime.url))
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("The internal runtime proxy cannot be persisted"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 409,
+      };
+    }
+
+    const auto portIt = payload.find("port");
+    if (portIt != payload.end() && portIt->is_number_integer())
+    {
+      runtime.port = portIt->get<int>();
+    }
+
+    const auto colorIt = payload.find("color");
+    if (colorIt != payload.end() && colorIt->is_string())
+    {
+      runtime.color = colorIt->get<std::string>();
+    }
+
+    if (!m_settings.saveRemoteRuntimeEngine(runtime))
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("Failed to save remote runtime"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 500,
+      };
+    }
+
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str(json{
+            {"message", "Remote runtime saved successfully"},
+            {"name", runtime.name},
+            {"url", runtime.url},
+            {"port", runtime.port},
+            {"color", runtime.color},
+        }.dump()),
+        .mime = "application/json",
+        .headers = m_defaultHeaders,
+        .status = 201,
+    };
+  }
+  catch (const json::exception&)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid JSON payload"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+}
+
+saucer::scheme::response SchemeHandler::handleDeleteRemote(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  try
+  {
+    const auto content = req.content();
+    if (content.size() == 0)
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("No content provided"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 400,
+      };
+    }
+
+    const auto payload = json::parse(
+        std::string(reinterpret_cast<const char *>(content.data()), content.size()));
+    const auto nameIt = payload.find("name");
+    if (!payload.is_object() || nameIt == payload.end() || !nameIt->is_string())
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("Remote delete payload requires a string name"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 400,
+      };
+    }
+
+    const auto runtimeName = nameIt->get<std::string>();
+    if (runtimeName == m_server->name())
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("The local runtime cannot be deleted"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 409,
+      };
+    }
+
+    if (!m_settings.deleteRemoteRuntimeEngine(runtimeName))
+    {
+      return saucer::scheme::response{
+          .data = saucer::stash::from_str("Remote runtime not found"),
+          .mime = "text/plain",
+          .headers = m_defaultHeaders,
+          .status = 404,
+      };
+    }
+
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str(json{
+            {"message", "Remote runtime deleted successfully"},
+            {"name", runtimeName},
+        }.dump()),
+        .mime = "application/json",
+        .headers = m_defaultHeaders,
+        .status = 200,
+    };
+  }
+  catch (const json::exception&)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid JSON payload"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
 }
 
 saucer::scheme::response SchemeHandler::handleRemoteForward(const Router::Params &p, const saucer::scheme::request &req) const

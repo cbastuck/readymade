@@ -15,7 +15,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "hkp-frontend/src/ui-components/primitives/popover";
-import { RuntimeClass } from "hkp-frontend/src/types";
+import {
+  isRuntimeGraphQLClassType,
+  isRuntimeRestClassType,
+  RuntimeClass,
+} from "hkp-frontend/src/types";
 import ManageRuntimesDialog from "./ManageRuntimesDialog";
 
 type Props = {
@@ -50,10 +54,11 @@ export default function RuntimeMenu({
     setOpen(newOpen);
   };
   const remoteRuntimes = availableRuntimeEngines.filter(
-    (rt) => rt.type === "remote" || rt.type === "realtime"
+    (rt) =>
+      isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type),
   );
   const localRuntimes = availableRuntimeEngines.filter(
-    (rt) => rt.type === "browser"
+    (rt) => rt.type === "browser",
   );
   const heightConstraint = undefined; // remoteRuntimes.length ? "h-[170px]" : "";
   return (
@@ -93,7 +98,7 @@ export default function RuntimeMenu({
                   value={`${rt.name}|${idx}`}
                   onSelect={(currentValue) => {
                     const idx = currentValue.slice(
-                      currentValue.lastIndexOf("|") + 1
+                      currentValue.lastIndexOf("|") + 1,
                     );
                     onAddRuntime(localRuntimes[Number(idx)]);
                     setSearchTerm("");
@@ -110,7 +115,7 @@ export default function RuntimeMenu({
                   value={`${rt.name}|${idx}`}
                   onSelect={(currentValue) => {
                     const idx = currentValue.slice(
-                      currentValue.lastIndexOf("|") + 1
+                      currentValue.lastIndexOf("|") + 1,
                     );
                     onAddRuntime(remoteRuntimes[Number(idx)]);
                     setSearchTerm("");
@@ -126,7 +131,7 @@ export default function RuntimeMenu({
                 className="flex gap-2 text-base"
                 onSelect={() => setShowManageRuntimesDialog(true)}
               >
-                <Settings size="18px" /> Manage Remote Runtimes
+                <Settings size="18px" /> Manage Runtime Engines
               </CommandItem>
             </CommandGroup>
           </Command>

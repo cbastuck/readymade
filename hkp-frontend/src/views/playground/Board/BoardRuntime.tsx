@@ -9,6 +9,7 @@ import InputOptions, {
 } from "../../../components/shared/InputOptions";
 import { BoardContextState } from "../../../BoardContext";
 import {
+  toCanonicalRuntimeClassType,
   RuntimeDescriptor,
   RuntimeInputOptions,
   RuntimeInputRoutings,
@@ -38,20 +39,20 @@ type Props = {
     uuid: string | null,
     result: any,
     context: ProcessContext | null | undefined,
-    peersContext: PeersContextState | null
+    peersContext: PeersContextState | null,
   ) => void;
   onChangeInputRouting: (
     runtime: RuntimeDescriptor,
-    value: RuntimeInputOptions
+    value: RuntimeInputOptions,
   ) => void;
   onChangeOutputRouting: (
     runtime: RuntimeDescriptor,
-    value: RuntimeOutputOptions
+    value: RuntimeOutputOptions,
   ) => void;
   sidechainRouting: SidechainRouting | null;
   onChangeSidechainRouting: (
     runtime: RuntimeDescriptor,
-    routes: Array<SidechainRoute>
+    routes: Array<SidechainRoute>,
   ) => void;
   onDrop: (runtimeId: string, newIndex: number) => void;
   processRuntimeByName: (name: string, params: any) => Promise<any>;
@@ -85,7 +86,9 @@ export default function BoardRuntime({
   const hostDescriptor =
     inputActivation?.hostDescriptor || outputActivation?.hostDescriptor;
 
-  const ownPeers = boardContext.runtimes.map((rt: RuntimeDescriptor) => `${boardName}-${rt.name}`);
+  const ownPeers = boardContext.runtimes.map(
+    (rt: RuntimeDescriptor) => `${boardName}-${rt.name}`,
+  );
   const filteredPeers =
     peersContext?.peerNames.filter((x) => !ownPeers.includes(x)) || [];
 
@@ -108,7 +111,7 @@ export default function BoardRuntime({
             if (outputActivation.route?.peer) {
               peersContext?.closeConnection(
                 `${boardName}-${runtime.name}`,
-                outputActivation.route.peer
+                outputActivation.route.peer,
               );
             }
             onChangeOutputRouting(runtime, {
@@ -132,7 +135,7 @@ export default function BoardRuntime({
                         hostDescriptor: null,
                         route: { peer: null },
                         flow: action.flow,
-                      }
+                      },
                 );
               }
               break;
@@ -168,7 +171,7 @@ export default function BoardRuntime({
             runtime,
             value === null
               ? { ...inputActivation, route: { peer: null } }
-              : { ...inputActivation, route: { peer: value } }
+              : { ...inputActivation, route: { peer: value } },
           );
         }}
         disabled={!inputActivation?.hostDescriptor}
@@ -189,7 +192,11 @@ export default function BoardRuntime({
               inputActivation?.route?.peer === InputOptions.allInputsWildcard;
             if (isWildcard || inputActivation?.route?.peer === sender) {
               const scope = boardContext.scopes[runtime.id];
-              const api = boardContext.runtimeApis[runtime.type];
+              const api =
+                boardContext.runtimeApis[runtime.type] ||
+                boardContext.runtimeApis[
+                  toCanonicalRuntimeClassType(runtime.type)
+                ];
               if (scope && api) {
                 api.processRuntime(scope, data, null);
               }
@@ -198,7 +205,8 @@ export default function BoardRuntime({
             }
           }}
           onConnectionClosed={(closedPeer) => {
-            const isInputConnection = closedPeer === `${boardName}-${runtime.name}`;
+            const isInputConnection =
+              closedPeer === `${boardName}-${runtime.name}`;
             let reconnectCallback: (() => void) | null = null;
 
             if (isInputConnection) {
@@ -226,7 +234,10 @@ export default function BoardRuntime({
               const closedOutputPeer = outputRouting[runtime.id]?.route?.peer;
               onChangeOutputRouting(runtime, {
                 hostDescriptor: outputActivation?.hostDescriptor || null,
-                route: { ...(outputActivation?.route || { peer: null }), peer: null },
+                route: {
+                  ...(outputActivation?.route || { peer: null }),
+                  peer: null,
+                },
                 flow: outputActivation?.flow || "pass",
               });
               reconnectCallback = closedOutputPeer
@@ -261,7 +272,13 @@ export default function BoardRuntime({
             boardContext={boardContext}
             runtime={runtime}
             onResult={(uuid, result, context) =>
-              onRuntimeResult(runtime, uuid, result, context, peersContext) as unknown as Promise<void>
+              onRuntimeResult(
+                runtime,
+                uuid,
+                result,
+                context,
+                peersContext,
+              ) as unknown as Promise<void>
             }
             processRuntimeByName={processRuntimeByName}
             outputs={outputs}

@@ -11,7 +11,34 @@ export type ServiceDescriptor = ServiceClass &
     state?: any;
   };
 
-export type RuntimeClassType = "browser" | "remote" | "realtime";
+export type RuntimeClassType =
+  | "browser"
+  | "remote"
+  | "graphql"
+  | "realtime"
+  | "rest";
+
+export type CanonicalRuntimeClassType = "browser" | "graphql" | "rest";
+
+export function toCanonicalRuntimeClassType(
+  type: RuntimeClassType,
+): CanonicalRuntimeClassType {
+  if (type === "remote") {
+    return "graphql";
+  }
+  if (type === "realtime") {
+    return "rest";
+  }
+  return type;
+}
+
+export function isRuntimeGraphQLClassType(type: RuntimeClassType): boolean {
+  return toCanonicalRuntimeClassType(type) === "graphql";
+}
+
+export function isRuntimeRestClassType(type: RuntimeClassType): boolean {
+  return toCanonicalRuntimeClassType(type) === "rest";
+}
 
 export type RuntimeClass = {
   type: RuntimeClassType;
@@ -220,7 +247,7 @@ export type AppImpl = {
   ) => Promise<ServiceInstance | null>;
   createSubServiceUI: (svc: ServiceInstance) => ReactElement | null;
 
-  // TODO: should be available for both Brower and Remote runtime
+  // TODO: should be available for both Browser and GraphQL/REST runtimes
   registerNotificationTarget?: (
     svc: ServiceInstance,
     onNotification: (notification: any) => void,

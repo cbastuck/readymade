@@ -1,12 +1,14 @@
 import { useContext, useState } from "react";
 
 import {
+  isRuntimeRestClassType,
   isRuntimeConfiguration,
   RuntimeConfiguration,
   RuntimeDescriptor,
   ServiceClass,
   ServiceDescriptor,
   ServiceRegistry,
+  toCanonicalRuntimeClassType,
 } from "hkp-frontend/src/types";
 import Editable from "hkp-frontend/src/ui-components/Editable";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
@@ -52,7 +54,9 @@ export default function RuntimeHeader({
 
   const runWithParams = (params: any = {}) => {
     const scope = boardContext?.scopes[runtimeId];
-    const api = boardContext?.runtimeApis[runtime.type];
+    const api =
+      boardContext?.runtimeApis[runtime.type] ||
+      boardContext?.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
     if (scope && api) {
       api.processRuntime(scope, params, null);
     }
@@ -73,47 +77,54 @@ export default function RuntimeHeader({
     boardContext?.removeAllServices(runtime);
   };
 
-  const onWrapInSubService =
-    runtime.type === "realtime"
-      ? async () => {
-          if (!boardContext) return;
-          const scope = boardContext.scopes[runtimeId];
-          const api = boardContext.runtimeApis[runtime.type];
-          if (!scope || !api) return;
-
-          const currentServices = boardContext.services[runtimeId] || [];
-          if (currentServices.length === 0) return;
-
-          const pipelineEntries = await Promise.all(
-            currentServices.map(async (svc) => {
-              const state = await api.getServiceConfig(scope, svc);
-              return {
-                serviceId: svc.serviceId,
-                instanceId: svc.uuid,
-                ...(state ? { state } : {}),
-              };
-            }),
-          );
-
-          const subSvcClass: ServiceClass = {
-            serviceId: "sub-service",
-            serviceName: "SubService",
-          };
-          const newSvc = await (boardContext.addService(
-            subSvcClass,
-            runtime,
-          ) as unknown as Promise<ServiceDescriptor | null>);
-          if (!newSvc) return;
-
-          await api.configureService(scope, newSvc, {
-            pipeline: pipelineEntries,
-          });
-
-          for (const svc of currentServices) {
-            await boardContext.removeService(svc, runtime);
-          }
+  const onWrapInSubService = isRuntimeRestClassType(runtime.type)
+    ? async () => {
+        if (!boardContext) {
+          return;
         }
-      : undefined;
+        const scope = boardContext.scopes[runtimeId];
+        const api =
+          boardContext.runtimeApis[runtime.type] ||
+          boardContext.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
+        if (!scope || !api) {
+          return;
+        }
+
+        const currentServices = boardContext.services[runtimeId] || [];
+        if (currentServices.length === 0) {
+          return;
+        }
+
+        const pipelineEntries = await Promise.all(
+          currentServices.map(async (svc) => {
+            const state = await api.getServiceConfig(scope, svc);
+            return {
+              serviceId: svc.serviceId,
+              instanceId: svc.uuid,
+              ...(state ? { state } : {}),
+            };
+          }),
+        );
+
+        const subSvcClass: ServiceClass = {
+          serviceId: "sub-service",
+          serviceName: "SubService",
+        };
+        const newSvc = await (boardContext.addService(
+          subSvcClass,
+          runtime,
+        ) as unknown as Promise<ServiceDescriptor | null>);
+        if (!newSvc) return;
+
+        await api.configureService(scope, newSvc, {
+          pipeline: pipelineEntries,
+        });
+
+        for (const svc of currentServices) {
+          await boardContext.removeService(svc, runtime);
+        }
+      }
+    : undefined;
 
   const onDelete = () => {
     boardContext?.removeRuntime(runtime);
@@ -121,7 +132,9 @@ export default function RuntimeHeader({
 
   const onConfiguration = async () => {
     const scope = boardContext?.scopes[runtimeId];
-    const api = boardContext?.runtimeApis[runtime.type];
+    const api =
+      boardContext?.runtimeApis[runtime.type] ||
+      boardContext?.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
     const rawServices = boardContext?.services[runtime.id] || [];
     const enrichedServices = await Promise.all(
       rawServices.map(async (svc) => {

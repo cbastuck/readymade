@@ -14,7 +14,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "hkp-frontend/src/ui-components/primitives/popover";
-import { RuntimeClass } from "hkp-frontend/src/types";
+import {
+  isRuntimeGraphQLClassType,
+  isRuntimeRestClassType,
+  RuntimeClass,
+} from "hkp-frontend/src/types";
 import ManageRuntimesDialog from "../../ui-components/toolbar/ManageRuntimesDialog.tsx";
 
 type Props = {
@@ -46,7 +50,8 @@ export default function RemotesMenu({
   const onOpenChange = (newOpen: boolean) => setOpen(newOpen);
 
   const remoteRuntimes = availableRuntimeEngines.filter(
-    (rt) => rt.type === "remote" || rt.type === "realtime"
+    (rt) =>
+      isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type),
   );
 
   const heightConstraint = undefined;
@@ -61,7 +66,7 @@ export default function RemotesMenu({
             aria-expanded={open}
             className="w-[300px] justify-between text-base tracking-widest border-none bg-transparent"
           >
-            {value?.name || "Select Remote"}
+            {value?.name || "Select Runtime"}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
@@ -80,7 +85,7 @@ export default function RemotesMenu({
                   value={`${rt.name}|${idx}`}
                   onSelect={(currentValue) => {
                     const idx = currentValue.slice(
-                      currentValue.lastIndexOf("|") + 1
+                      currentValue.lastIndexOf("|") + 1,
                     );
                     onSelectEngine(remoteRuntimes[Number(idx)]);
                   }}
@@ -95,7 +100,7 @@ export default function RemotesMenu({
                 className="flex gap-2 text-base"
                 onSelect={() => setShowManageRuntimesDialog(true)}
               >
-                <Settings size="18px" /> Manage Remote Runtimes
+                <Settings size="18px" /> Manage Runtime Engines
               </CommandItem>
             </CommandGroup>
           </Command>

@@ -30,7 +30,7 @@ type Props = {
   onResult: OnResult;
 };
 
-export default function RemoteRuntime({
+export default function RuntimeGraphQL({
   user,
   boardName,
   services,
@@ -44,7 +44,7 @@ export default function RemoteRuntime({
   const makeServiceInstances = useCallback(
     (services: Array<ServiceDescriptor>) =>
       services.map((svc) => makeServiceInstance(scope, svc, boardName)),
-    [scope, boardName]
+    [scope, boardName],
   );
 
   const [servicesWithConfig, setServicesWithConfig] = useState<
@@ -63,8 +63,8 @@ export default function RemoteRuntime({
   scope.onConfig = (instanceId: string, config: object) => {
     setServicesWithConfig((prevState) =>
       prevState.map((prevSvc) =>
-        prevSvc.uuid === instanceId ? { ...prevSvc, ...config } : prevSvc
-      )
+        prevSvc.uuid === instanceId ? { ...prevSvc, ...config } : prevSvc,
+      ),
     );
   };
 
@@ -72,7 +72,7 @@ export default function RemoteRuntime({
     _boardName: string,
     service: ServiceInstance,
     _runtimeId: string,
-    _userId: string | undefined
+    _userId: string | undefined,
   ): ReactElement => {
     const { serviceId } = service;
     const ui = (serviceId && findServiceUI(serviceId)) || RemoteServiceUI;
@@ -109,7 +109,7 @@ export default function RemoteRuntime({
 export function makeServiceInstance(
   scope: RuntimeScope,
   svc: ServiceDescriptor,
-  boardName: string
+  boardName: string,
 ): ServiceInstance {
   const api: RuntimeApi = scope.getApi();
   return {

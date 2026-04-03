@@ -16,6 +16,7 @@ import {
   SidechainRoute,
   SidechainRouting,
   ProcessContext,
+  toCanonicalRuntimeClassType,
 } from "../../../types";
 import { BoardContextState } from "../../../BoardContext";
 import { usePeerActivation } from "./hooks/usePeerActivation";
@@ -41,27 +42,31 @@ type Props = {
   onResult?: (result: any) => void;
   onChangeOutputRouting: (
     runtime: RuntimeDescriptor,
-    value: RuntimeOutputOptions
+    value: RuntimeOutputOptions,
   ) => void;
   onChangeInputRouting: (
     runtime: RuntimeDescriptor,
-    value: RuntimeInputOptions
+    value: RuntimeInputOptions,
   ) => void;
   onChangeSidechainRouting: (
     runtime: RuntimeDescriptor,
-    routing: Array<SidechainRoute>
+    routing: Array<SidechainRoute>,
   ) => void;
 };
 
 export default function Board(props: Props) {
   const { peerInputActivation, peerOutputActivation } = usePeerActivation(
     props.inputRouting,
-    props.outputRouting
+    props.outputRouting,
   );
 
-  const pendingBoardCallbacks = useRef<{ [reqId: string]: (result: any) => void }>({});
+  const pendingBoardCallbacks = useRef<{
+    [reqId: string]: (result: any) => void;
+  }>({});
 
-  const getNextRuntime = (runtime: RuntimeDescriptor): RuntimeDescriptor | null => {
+  const getNextRuntime = (
+    runtime: RuntimeDescriptor,
+  ): RuntimeDescriptor | null => {
     const { runtimes = [] } = props.boardContext;
     const pos = runtimes.findIndex((rt) => rt.id === runtime.id);
     return pos !== -1 ? runtimes[pos + 1] : null;
@@ -75,9 +80,10 @@ export default function Board(props: Props) {
 
   const processPendingBoardCallbacks = (
     context: ProcessContext | null | undefined,
-    result: any
+    result: any,
   ) => {
-    const callback = context && pendingBoardCallbacks.current[context.requestId];
+    const callback =
+      context && pendingBoardCallbacks.current[context.requestId];
     if (callback) {
       callback(result);
       delete pendingBoardCallbacks.current[context.requestId];
@@ -89,7 +95,7 @@ export default function Board(props: Props) {
     _uuid: string | null,
     result: any,
     context: ProcessContext | null | undefined,
-    peersContext: PeersContextState | null
+    peersContext: PeersContextState | null,
   ) => {
     const { sidechainRouting, outputRouting, boardName } = props;
 
@@ -97,20 +103,30 @@ export default function Board(props: Props) {
     if (sroute) {
       for (const route of sroute) {
         const dstRuntime = props.boardContext.runtimes.find(
-          (rt) => rt.id === route.runtimeId
+          (rt) => rt.id === route.runtimeId,
         );
         const dstScope = dstRuntime && props.boardContext.scopes[dstRuntime.id];
-        const api = dstScope && props.boardContext.runtimeApis[dstRuntime.type];
+        const api =
+          dstScope &&
+          (props.boardContext.runtimeApis[dstRuntime.type] ||
+            props.boardContext.runtimeApis[
+              toCanonicalRuntimeClassType(dstRuntime.type)
+            ]);
         if (dstScope && api) {
-          const config = typeof result === "string" ? JSON.parse(result) : result;
-          await api.configureService(dstScope, { uuid: route.serviceUuid }, config);
+          const config =
+            typeof result === "string" ? JSON.parse(result) : result;
+          await api.configureService(
+            dstScope,
+            { uuid: route.serviceUuid },
+            config,
+          );
         } else {
           console.error(
             "Board.onRuntimeResult() sidechain destination not found",
             route.runtimeId,
             props.boardContext.scopes,
             dstScope,
-            api
+            api,
           );
         }
       }
@@ -122,8 +138,14 @@ export default function Board(props: Props) {
     const flow = runtimeOutput?.flow || "pass";
     if (flow === "pass") {
       const nextRuntime = getNextRuntime(runtime);
-      const nextScope = nextRuntime && props.boardContext.scopes[nextRuntime.id];
-      const nextApi = nextScope && props.boardContext.runtimeApis[nextRuntime.type];
+      const nextScope =
+        nextRuntime && props.boardContext.scopes[nextRuntime.id];
+      const nextApi =
+        nextScope &&
+        (props.boardContext.runtimeApis[nextRuntime.type] ||
+          props.boardContext.runtimeApis[
+            toCanonicalRuntimeClassType(nextRuntime.type)
+          ]);
       if (nextApi && result !== null) {
         nextApi.processRuntime(nextScope, result, null, context);
       } else {
@@ -138,16 +160,21 @@ export default function Board(props: Props) {
       peersContext.sendData(
         `${boardName}-${runtime.name}`,
         runtimeOutput.route.peer,
-        result
+        result,
       );
     }
   };
 
-  const processRuntimeByName = async (name: string, params: any): Promise<any> => {
+  const processRuntimeByName = async (
+    name: string,
+    params: any,
+  ): Promise<any> => {
     const rt = props.boardContext.runtimes.find((rt) => rt.name === name);
     if (rt) {
       const scope = props.boardContext.scopes[rt.id];
-      const api = props.boardContext.runtimeApis[rt.type];
+      const api =
+        props.boardContext.runtimeApis[rt.type] ||
+        props.boardContext.runtimeApis[toCanonicalRuntimeClassType(rt.type)];
       if (scope && api) {
         return api.processRuntime(scope, params, null);
       }

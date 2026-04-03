@@ -23,6 +23,8 @@ public:
 
 private:
   saucer::scheme::response handleGetRemotes(const Router::Params &p, const saucer::scheme::request &req) const;
+  saucer::scheme::response handleSaveRemote(const Router::Params &p, const saucer::scheme::request &req) const;
+  saucer::scheme::response handleDeleteRemote(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleRemoteForward(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleSaveBoard(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleLoadBoard(const Router::Params &p, const saucer::scheme::request &req) const;

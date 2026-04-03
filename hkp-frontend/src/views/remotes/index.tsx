@@ -42,11 +42,11 @@ export default function Remotes() {
 
   const onAddRuntimeEngine = (
     desc: RuntimeClass,
-    overwriteIfExists: boolean = false
+    overwriteIfExists: boolean = false,
   ) => {
     if (context.current) {
       storeAvailableRuntimeEngines(
-        context.current.addAvailableRuntime(desc, overwriteIfExists)
+        context.current.addAvailableRuntime(desc, overwriteIfExists),
       );
     }
   };
@@ -54,7 +54,7 @@ export default function Remotes() {
   const onRemoveRuntimeEngine = (desc: RuntimeClass) => {
     if (context.current) {
       storeAvailableRuntimeEngines(
-        context.current.removeAvailableRuntime(desc)
+        context.current.removeAvailableRuntime(desc),
       );
     }
   };
@@ -93,7 +93,7 @@ export default function Remotes() {
           <RemoteControl runtimeClass={selectedEngine} />
         ) : (
           <div className="flex items-center justify-center w-full h-full">
-            Select a remote instance
+            Select a runtime instance
           </div>
         )}
       </div>

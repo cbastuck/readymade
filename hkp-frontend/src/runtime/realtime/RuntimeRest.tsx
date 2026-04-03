@@ -32,7 +32,7 @@ type Props = {
   onResult: OnResult;
 };
 
-export default function RealtimeRuntime({
+export default function RuntimeRest({
   user,
   boardName,
   services,

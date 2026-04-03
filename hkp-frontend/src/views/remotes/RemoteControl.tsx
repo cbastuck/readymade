@@ -15,7 +15,7 @@ export default function RemoteControl({ runtimeClass }: Props) {
   const onResult = async (
     uuid: string | null,
     result: any,
-    context?: ProcessContext | null
+    context?: ProcessContext | null,
   ) => {
     console.log("RemoteControl.onResult", uuid, result, context);
   };
@@ -30,7 +30,7 @@ export default function RemoteControl({ runtimeClass }: Props) {
 
   return (
     <div className="flex flex-col overflow-hidden bg-white shadow-md rounded-lg p-4 m-4">
-      <h3>Remote "{runtimeClass.name}"</h3>
+      <h3>Runtime "{runtimeClass.name}"</h3>
       <span className="font-menu text-md">
         running on <a href={runtimeClass.url}>{runtimeClass.url}</a>
       </span>

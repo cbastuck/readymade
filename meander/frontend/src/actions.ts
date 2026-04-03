@@ -1,6 +1,7 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { BoardMenuItem } from "hkp-frontend/src/types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
+import { Remote } from "./types";
 
 export async function loadBoard(boardName: string): Promise<BoardDescriptor> {
   const response = await fetch(`hkp://boards/${boardName}`);
@@ -40,9 +41,41 @@ export async function getRemotes() {
   return await res.json();
 }
 
+export async function saveRemote(remote: Remote) {
+  const response = await fetch("hkp://remotes/", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(remote),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to save remote: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+export async function deleteRemote(name: string) {
+  const response = await fetch("hkp://remotes/", {
+    method: "DELETE",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ name }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete remote: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
 export function createMenuItems(
   setLoadBoardItems: (items: Array<string>) => void,
-  setBoardSource: (source: string) => void
+  setBoardSource: (source: string) => void,
 ) {
   return (boardContext: BoardContextState): Array<BoardMenuItem> => [
     {

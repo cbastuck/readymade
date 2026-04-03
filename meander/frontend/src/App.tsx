@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import HkpApp from "hkp-frontend/src/App";
 import Playground from "hkp-frontend/src/views/playground";
@@ -9,25 +9,39 @@ import {
   saveBoard,
   createMenuItems,
   deleteBoard,
+  deleteRemote,
   fetchSavedBoards,
   loadBoard,
+  saveRemote,
 } from "./actions";
 import Board from "./Board";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import { BoardDescriptor } from "hkp-frontend/src/types";
+import {
+  BoardDescriptor,
+  isRuntimeGraphQLClassType,
+  isRuntimeRestClassType,
+  RuntimeClass,
+} from "hkp-frontend/src/types";
+
+const isBuiltInRemote = (url?: string) =>
+  (url || "").startsWith("hkp://remotes/");
 
 function App() {
   const [boardName, setBoardName] = useState("Idea");
-  const [remotes, setRemotes] = useState<any>(null);
+  const [remotes, setRemotes] = useState<Array<Remote> | null>(null);
   const [loadBoardItems, setLoadBoardItems] = useState<Array<string> | null>(
     null,
   );
 
   const [boardSource, setBoardSource] = useState("");
 
-  useEffect(() => {
-    getRemotes().then(setRemotes);
+  const loadRemotes = useCallback(async () => {
+    setRemotes(await getRemotes());
   }, []);
+
+  useEffect(() => {
+    loadRemotes();
+  }, [loadRemotes]);
 
   const availableRuntimeEngines = useMemo(() => {
     return [
@@ -35,16 +49,59 @@ function App() {
         type: "browser",
         name: "Browser Runtime",
       },
-      ...(remotes || [])?.map((remote: Remote, idx) => {
+      ...(remotes || []).map((remote: Remote) => {
         return {
-          type: "realtime",
-          name: `Remote Runtime ${idx + 1}`,
+          type: "rest",
+          name: remote.name,
           url: remote.url,
-          description: `Runtime engine at ${remote.url} with port ${remote.port}`,
+          color: remote.color,
+          description: isBuiltInRemote(remote.url)
+            ? `Local runtime proxy at ${remote.url}`
+            : `Runtime engine at ${remote.url}${remote.port ? ` with port ${remote.port}` : ""}`,
         };
       }),
     ];
   }, [remotes]);
+
+  const syncAvailableRuntimeEngines = useCallback(
+    async (runtimeClasses: Array<RuntimeClass>) => {
+      const currentRemotes = (remotes || []).filter(
+        (remote) => !isBuiltInRemote(remote.url),
+      );
+
+      const desiredRemotes: Array<Remote> = runtimeClasses
+        .filter(
+          (runtime) =>
+            (isRuntimeGraphQLClassType(runtime.type) ||
+              isRuntimeRestClassType(runtime.type)) &&
+            !isBuiltInRemote(runtime.url),
+        )
+        .map((runtime) => {
+          const existingRemote = currentRemotes.find(
+            (remote) => remote.name === runtime.name,
+          );
+
+          return {
+            name: runtime.name,
+            url: runtime.url || "",
+            port: existingRemote?.port || 0,
+            color: runtime.color,
+          };
+        });
+
+      const desiredNames = new Set(desiredRemotes.map((remote) => remote.name));
+      const removedRemotes = currentRemotes.filter(
+        (remote) => !desiredNames.has(remote.name),
+      );
+
+      await Promise.all(desiredRemotes.map((remote) => saveRemote(remote)));
+      await Promise.all(
+        removedRemotes.map((remote) => deleteRemote(remote.name)),
+      );
+      await loadRemotes();
+    },
+    [loadRemotes, remotes],
+  );
 
   const onCloseBoardSource = () => setBoardSource("");
 
@@ -113,6 +170,7 @@ function App() {
         boardDescriptor={restoredRecentBoard}
         boardName={boardName}
         availableRuntimeEngines={availableRuntimeEngines}
+        onUpdateAvailableRuntimeEngines={syncAvailableRuntimeEngines}
         onSaveBoard={onSaveBoard}
         onNewBoard={onNewBoard}
         onClearBoard={onClearBoard}

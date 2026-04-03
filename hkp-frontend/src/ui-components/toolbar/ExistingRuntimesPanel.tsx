@@ -49,6 +49,7 @@ export default function ExistingRuntimesPanel({
             <TableCell className="font-menu text-md">
               <ColorPicker
                 showPaletteOnly={true}
+                disabled={rt.url?.startsWith("hkp://remotes/")}
                 onChange={(color) => onChangeRuntimeColor(rt, color)}
                 value={rt.color || "white"}
               />
@@ -63,6 +64,7 @@ export default function ExistingRuntimesPanel({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
+                    disabled={rt.url?.startsWith("hkp://remotes/")}
                     className="tracking-widest"
                     onClick={() => onRemoveRuntime(rt)}
                   >

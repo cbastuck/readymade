@@ -2,6 +2,8 @@ import { CSSProperties, ReactElement, ReactNode } from "react";
 
 import {
   InitialServiceFrameState,
+  isRuntimeRestClassType,
+  isRuntimeGraphQLClassType,
   OnResult,
   ProcessRuntimeByName,
   RuntimeDescriptor,
@@ -14,9 +16,9 @@ import {
 } from "hkp-frontend/src/types";
 import RuntimeHeader from "./RuntimeHeader";
 import BrowserRuntime from "hkp-frontend/src/runtime/browser/BrowserRuntime";
-import RemoteRuntime from "hkp-frontend/src/runtime/remote/RemoteRuntime";
+import RuntimeGraphQL from "hkp-frontend/src/runtime/remote/RuntimeGraphQL";
 import BrowserRuntimeScope from "hkp-frontend/src/runtime/browser/BrowserRuntimeScope";
-import RealtimeRuntime from "hkp-frontend/src/runtime/realtime/RealtimeRuntime";
+import RuntimeRest from "hkp-frontend/src/runtime/realtime/RuntimeRest";
 import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 import { HKP_DND_RUNTIME_TYPE } from "hkp-frontend/src/components/DropTypes";
 import DragSource from "hkp-frontend/src/components/DragSource";
@@ -135,9 +137,9 @@ export default function RuntimeUI({
               <div className="ml-auto pl-4">{outputs}</div>
             ) : null}
           </>
-        ) : runtime.type === "remote" ? (
+        ) : isRuntimeGraphQLClassType(runtime.type) ? (
           <>
-            <RemoteRuntime
+            <RuntimeGraphQL
               key={`remote-runtime-${runtime.id}`}
               collapsed={!expanded}
               scope={scope}
@@ -150,8 +152,8 @@ export default function RuntimeUI({
               onResult={onResult}
             />
           </>
-        ) : runtime.type === "realtime" ? (
-          <RealtimeRuntime
+        ) : isRuntimeRestClassType(runtime.type) ? (
+          <RuntimeRest
             key={`realtime-runtime-${runtime.id}`}
             collapsed={!expanded}
             scope={scope}

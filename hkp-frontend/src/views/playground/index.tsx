@@ -27,6 +27,8 @@ import {
 
 import {
   Action,
+  isRuntimeRestClassType,
+  isRuntimeGraphQLClassType,
   BoardDescriptor,
   ExternalInput,
   RuntimeDescriptor,
@@ -58,13 +60,18 @@ const restoredAvailableRuntimeEngines = JSON.parse(
 export const runtimeApis: RuntimeApiMap = {
   browser: browserRuntimeApi,
   remote: remoteRuntimeApi,
+  graphql: remoteRuntimeApi,
   realtime: realtimeRuntimeApi,
+  rest: realtimeRuntimeApi,
 };
 
 type Props = WithRouterProps & {
   boardName?: string;
   compact?: boolean;
   availableRuntimeEngines?: Array<RuntimeClass>;
+  onUpdateAvailableRuntimeEngines?: (
+    runtimeClasses: Array<RuntimeClass>,
+  ) => void | Promise<void>;
   boardDescriptor?: BoardDescriptor;
   children?: React.ReactNode;
   hideNavigation?: boolean;
@@ -98,6 +105,9 @@ type PlaygroundInnerProps = {
   setInputRouting: React.Dispatch<React.SetStateAction<RuntimeInputRoutings>>;
   setOutputRouting: React.Dispatch<React.SetStateAction<RuntimeOutputRoutings>>;
   onChangeBoardname: (newName: string) => void;
+  onUpdateAvailableRuntimeEngines?: (
+    runtimeClasses: Array<RuntimeClass>,
+  ) => void | Promise<void>;
   propBoardName?: string;
   children?: React.ReactNode;
 };
@@ -114,8 +124,15 @@ function PlaygroundInner(props: PlaygroundInnerProps) {
         showRuntimeMenu={true}
         onUpdateAvailableRuntimeEngines={(engines) => {
           const filteredEngines = engines.filter(
-            (rt) => rt.type === "remote" || rt.type === "realtime",
+            (rt) =>
+              isRuntimeGraphQLClassType(rt.type) ||
+              isRuntimeRestClassType(rt.type),
           );
+          if (props.onUpdateAvailableRuntimeEngines) {
+            props.onUpdateAvailableRuntimeEngines(filteredEngines);
+            return;
+          }
+
           localStorage.setItem(
             "available-remote-runtimes",
             JSON.stringify(filteredEngines),
@@ -679,6 +696,7 @@ function Playground(props: Props) {
         setInputRouting={setInputRouting}
         setOutputRouting={setOutputRouting}
         onChangeBoardname={onChangeBoardname}
+        onUpdateAvailableRuntimeEngines={props.onUpdateAvailableRuntimeEngines}
         propBoardName={props.boardName}
       >
         {props.children}

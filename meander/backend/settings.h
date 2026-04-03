@@ -1,10 +1,30 @@
 #pragma once
 
+#include <algorithm>
+#include <cctype>
 #include <filesystem>
+#include <fstream>
+#include <string>
+#include <vector>
+
+#include <nlohmann/json.hpp>
 
 class Settings
 { 
 public:
+  struct RemoteRuntimeEngine
+  {
+    std::string name;
+    std::string url;
+    int port = 0;
+    std::string color;
+  };
+
+  static bool isInternalRuntimeUrl(const std::string& url)
+  {
+    return url.rfind("hkp://remotes/", 0) == 0;
+  }
+
   Settings()
   {
     namespace fs = std::filesystem;
@@ -93,6 +113,181 @@ public:
     return bundlesPath.string();
   }
 
+  std::vector<RemoteRuntimeEngine> getRemoteRuntimeEngines() const
+  {
+    std::vector<RemoteRuntimeEngine> runtimes;
+    const auto payload = readRemoteRuntimeEnginesPayload();
+
+    if (!payload.is_array())
+    {
+      return runtimes;
+    }
+
+    for (const auto& entry : payload)
+    {
+      if (!entry.is_object())
+      {
+        continue;
+      }
+
+      const auto nameIt = entry.find("name");
+      const auto urlIt = entry.find("url");
+      if (nameIt == entry.end() || urlIt == entry.end() ||
+          !nameIt->is_string() || !urlIt->is_string())
+      {
+        continue;
+      }
+
+      RemoteRuntimeEngine runtime{
+        .name = nameIt->get<std::string>(),
+        .url = urlIt->get<std::string>(),
+        .port = 0,
+        .color = "",
+      };
+
+      const auto portIt = entry.find("port");
+      if (portIt != entry.end() && portIt->is_number_integer())
+      {
+        runtime.port = portIt->get<int>();
+      }
+
+      const auto colorIt = entry.find("color");
+      if (colorIt != entry.end() && colorIt->is_string())
+      {
+        runtime.color = colorIt->get<std::string>();
+      }
+
+      if (!runtime.name.empty() && !runtime.url.empty() &&
+          !isInternalRuntimeUrl(runtime.url))
+      {
+        runtimes.push_back(std::move(runtime));
+      }
+    }
+
+    return runtimes;
+  }
+
+  bool saveRemoteRuntimeEngine(const RemoteRuntimeEngine& runtime) const
+  {
+    if (runtime.name.empty() || runtime.url.empty() ||
+        isInternalRuntimeUrl(runtime.url))
+    {
+      return false;
+    }
+
+    auto runtimes = getRemoteRuntimeEngines();
+    auto existing = std::find_if(
+        runtimes.begin(),
+        runtimes.end(),
+        [&runtime](const RemoteRuntimeEngine& candidate)
+        {
+          return candidate.name == runtime.name;
+        });
+
+    if (existing != runtimes.end())
+    {
+      *existing = runtime;
+    }
+    else
+    {
+      runtimes.push_back(runtime);
+    }
+
+    return writeRemoteRuntimeEngines(runtimes);
+  }
+
+  bool deleteRemoteRuntimeEngine(const std::string& runtimeName) const
+  {
+    auto runtimes = getRemoteRuntimeEngines();
+    const auto originalSize = runtimes.size();
+    runtimes.erase(
+        std::remove_if(
+            runtimes.begin(),
+            runtimes.end(),
+            [&runtimeName](const RemoteRuntimeEngine& runtime)
+            {
+              return runtime.name == runtimeName;
+            }),
+        runtimes.end());
+
+    if (runtimes.size() == originalSize)
+    {
+      return false;
+    }
+
+    return writeRemoteRuntimeEngines(runtimes);
+  }
+
 private:
+  nlohmann::json readRemoteRuntimeEnginesPayload() const
+  {
+    using json = nlohmann::json;
+
+    const auto remotesPath = getRemotesSavePath();
+    if (!std::filesystem::exists(remotesPath))
+    {
+      std::ofstream(remotesPath) << "[]";
+      return json::array();
+    }
+
+    std::ifstream file(remotesPath);
+    if (!file.is_open())
+    {
+      return json::array();
+    }
+
+    json payload;
+    try
+    {
+      file >> payload;
+    }
+    catch (...)
+    {
+      return json::array();
+    }
+
+    return payload;
+  }
+
+  bool writeRemoteRuntimeEngines(const std::vector<RemoteRuntimeEngine>& runtimes) const
+  {
+    using json = nlohmann::json;
+
+    json payload = json::array();
+    for (const auto& runtime : runtimes)
+    {
+      if (runtime.name.empty() || runtime.url.empty() ||
+          isInternalRuntimeUrl(runtime.url))
+      {
+        continue;
+      }
+
+      json entry{
+        {"name", runtime.name},
+        {"url", runtime.url},
+        {"port", runtime.port},
+      };
+      if (!runtime.color.empty())
+      {
+        entry["color"] = runtime.color;
+      }
+      payload.push_back(std::move(entry));
+    }
+
+    std::ofstream file(getRemotesSavePath());
+    if (!file.is_open())
+    {
+      return false;
+    }
+
+    file << payload.dump(2);
+    return true;
+  }
+
+  std::string getRemotesSavePath() const
+  {
+    return (m_hkpDirPath / "remotes.json").string();
+  }
+
   std::filesystem::path m_hkpDirPath;
 };
