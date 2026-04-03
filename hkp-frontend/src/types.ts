@@ -13,9 +13,9 @@ export type ServiceDescriptor = ServiceClass &
 
 export type RuntimeClassType =
   | "browser"
-  | "remote"
+  | "remote" // @deprecated use graphql
   | "graphql"
-  | "realtime"
+  | "realtime" // @deprecated use rest
   | "rest";
 
 export type CanonicalRuntimeClassType = "browser" | "graphql" | "rest";
