@@ -6,7 +6,6 @@ import {
   AppInstance,
   ServiceClass,
   ServiceDescriptor,
-  ServiceImpl,
   ServiceInstance,
 } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
@@ -110,7 +109,7 @@ class Stack extends ServiceBase<State> {
   };
 
   restoreInstances = async (services: Array<ServiceDescriptor>) => {
-    const instances: Array<ServiceImpl> = [];
+    const instances: Array<ServiceInstance> = [];
     for (const svc of services) {
       const ssvc = await this.createSubService(svc);
       if (ssvc) {

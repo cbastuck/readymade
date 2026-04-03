@@ -4,7 +4,6 @@ import {
   InstanceId,
   ServiceAction,
   ServiceClass,
-  ServiceImpl,
   ServiceInstance,
 } from "../../types";
 import RuntimeGraphQLScope from "./RuntimeGraphQLScope";
@@ -38,8 +37,8 @@ export function createRuntimeGraphQLApp(scope: RuntimeGraphQLScope): AppImpl {
       notificationTargets.notify(service, notification);
     },
     next: (_svc: InstanceId | null, _result: any): void => {},
-    getServiceById: (uuid: string): ServiceImpl | null => {
-      return { uuid } as any; // TODO:  see above, mabye we don't need this at all for the remote case
+    getServiceById: (_uuid: string): ServiceInstance | null => {
+      return null;
     },
     sendAction: (action: ServiceAction) => {
       scope.onAction(action); // just forward
@@ -57,13 +56,13 @@ export function createRuntimeGraphQLApp(scope: RuntimeGraphQLScope): AppImpl {
     },
     removeServiceData: (_serviceUuid: string, _key: string): void => {},
     createSubService: (
-      _parent: ServiceImpl,
+      _parent: ServiceInstance,
       _service: ServiceClass,
       _instanceId?: string,
     ): Promise<ServiceInstance | null> => {
       return Promise.resolve(null);
     },
-    createSubServiceUI: (_svc: ServiceImpl): ReactElement | null => {
+    createSubServiceUI: (_svc: ServiceInstance): ReactElement | null => {
       return null;
     },
     listAvailableServices: () => [],

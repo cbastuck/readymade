@@ -1,6 +1,6 @@
 import { useCallback, useContext, useState } from "react";
 
-import { ServiceImpl, ServiceUIProps } from "../../../types";
+import { ServiceInstance, ServiceUIProps } from "../../../types";
 import InputField from "../../../components/shared/InputField";
 
 import { AppCtx } from "../../../AppContext";
@@ -35,12 +35,12 @@ export default function CloudSinkUI(props: ServiceUIProps) {
 
   const onInit = useCallback(
     (initialState: Partial<Config>) => onUpdate(initialState),
-    [onUpdate]
+    [onUpdate],
   );
 
   const onNotification = useCallback(
     (notification: Partial<Config>) => onUpdate(notification),
-    [onUpdate]
+    [onUpdate],
   );
 
   const renderUserMissing = () => {
@@ -51,7 +51,7 @@ export default function CloudSinkUI(props: ServiceUIProps) {
     );
   };
 
-  const renderMain = (service: ServiceImpl) => {
+  const renderMain = (service: ServiceInstance) => {
     return (
       <div style={{ display: "flex", flexDirection: "column" }}>
         <InputField

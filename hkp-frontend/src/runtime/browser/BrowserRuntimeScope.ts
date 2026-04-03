@@ -7,7 +7,6 @@ import {
   RuntimeScope,
   ServiceAction,
   ServiceDescriptor,
-  ServiceImpl,
   ServiceInstance,
   User,
 } from "../../types";
@@ -20,9 +19,9 @@ export type InstanceIndexTuple = [ServiceInstance | null, number];
 
 export default class BrowserRuntimeScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;
-  serviceInstances: Array<ServiceImpl>;
+  serviceInstances: Array<ServiceInstance>;
   subservices: {
-    [uuid: string]: { service: ServiceImpl; parent: ServiceImpl };
+    [uuid: string]: { service: ServiceInstance; parent: ServiceInstance };
   };
   app: AppImpl;
   registry: BrowserRegistry;
@@ -69,22 +68,25 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     return idx === -1 ? [null, -1] : [this.serviceInstances[idx], idx];
   };
 
-  appendService = (svc: ServiceImpl) => {
+  appendService = (svc: ServiceInstance) => {
     this.serviceInstances.push(svc);
   };
 
   removeService = async (
-    service: ServiceImpl,
+    service: ServiceInstance,
   ): Promise<Array<ServiceDescriptor>> => {
     const subserviceIds = Object.keys(this.subservices).filter((ssvcUuid) => {
       const ssvc = this.subservices[ssvcUuid];
       return !!ssvc && ssvc.parent === service;
     });
 
-    const subservices = subserviceIds.reduce<ServiceImpl[]>((all, ssvcUuid) => {
-      const ssvc = this.subservices[ssvcUuid];
-      return ssvc && ssvc.parent === service ? [...all, ssvc.service] : all;
-    }, []);
+    const subservices = subserviceIds.reduce<ServiceInstance[]>(
+      (all, ssvcUuid) => {
+        const ssvc = this.subservices[ssvcUuid];
+        return ssvc && ssvc.parent === service ? [...all, ssvc.service] : all;
+      },
+      [],
+    );
 
     if (subservices.length > 0) {
       await Promise.all(

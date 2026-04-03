@@ -23,7 +23,7 @@ class OllamaHackerComposite extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       mode: "generate",
@@ -40,8 +40,8 @@ class OllamaHackerComposite extends ServiceBase<State> {
         serviceId: "hookup.to/service/ollama-prompt",
         serviceName: "Ollama Prompt",
       },
-      id
-    )) as OllamaPrompt;
+      id,
+    )) as unknown as OllamaPrompt;
 
     this.hacker = (await this.app.createSubService(
       this,
@@ -49,8 +49,8 @@ class OllamaHackerComposite extends ServiceBase<State> {
         serviceId: "hookup.to/service/hacker/dangerous",
         serviceName: "Dangerous Hacker",
       },
-      id
-    )) as DangerousHacker;
+      id,
+    )) as unknown as DangerousHacker;
   }
 
   async configure(config: any) {
@@ -61,13 +61,13 @@ class OllamaHackerComposite extends ServiceBase<State> {
       this.app.notify(this, { mode });
     }
     await this.ollama?.configure(
-      prompt ? { ...rest, prompt, injectPrompt: false } : config
+      prompt ? { ...rest, prompt, injectPrompt: false } : config,
     );
     if (buffer !== undefined) {
       await this.hacker?.configure(
         buffer
           ? { ...config, buffer: addGeneratedFunctionCall(buffer) }
-          : config
+          : config,
       );
       await this.configure({ mode: "process" });
     }
@@ -115,7 +115,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new OllamaHackerComposite(app, board, descriptor, id),
   createUI: OllamaHackerCompositeUI,
 };

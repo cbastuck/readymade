@@ -6,7 +6,6 @@ import {
   ServiceAction,
   ServiceClass,
   ServiceDescriptor,
-  ServiceImpl,
   ServiceInstance,
 } from "../../types";
 import { appendSubservice } from "./BrowserRuntimeApi";
@@ -72,7 +71,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     },
 
     configureService: (svc: ServiceDescriptor, config: any) =>
-      (svc as ServiceImpl).configure(config),
+      (svc as ServiceInstance).configure(config),
 
     notify: (service: InstanceId, notification: any) => {
       if (!notificationTargets.hasCallbacks(service)) {
@@ -84,7 +83,7 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
     },
 
     createSubService: (
-      parent: ServiceImpl,
+      parent: ServiceInstance,
       service: ServiceClass,
       instanceId?: string,
     ): Promise<ServiceInstance | null> =>

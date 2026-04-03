@@ -234,14 +234,14 @@ export type AppImpl = {
   getAuthenticatedUser: () => User | null;
   notify: (svc: InstanceId, notification: any) => void; // TODO: should be InstanceId instead of ServiceImpl
   next: (svc: InstanceId | null, result: any) => void;
-  getServiceById: (uuid: string) => ServiceImpl | null;
+  getServiceById: (uuid: string) => ServiceInstance | null;
   sendAction: (action: ServiceAction) => void;
   storeServiceData: (serviceUuid: string, key: string, value: string) => void;
   restoreServiceData: (serviceUuid: string, key: string) => string | undefined;
   removeServiceData: (serviceUuid: string, key: string) => void;
   listAvailableServices: () => Array<ServiceModule>;
   createSubService: (
-    parent: ServiceImpl,
+    parent: ServiceInstance,
     service: ServiceClass,
     instanceId?: string,
   ) => Promise<ServiceInstance | null>;
@@ -268,40 +268,45 @@ export type CustomMenuEntry = {
   onClick?: () => void;
 };
 
-export type ServiceInstance = ServiceImpl;
+export type ServiceState = Record<string, any>;
 
-// TODO: an open ended object - should be further defined
-export type ServiceImpl = { [key: string]: any } & {
-  serviceId?: string; // TODO not sure about this
-  serviceName?: string; // TODO not sure about this
-  __descriptor?: ServiceDescriptor; // TODO: remove - this only existed in old nodejs backend services
-  __notificationTargets?: {
-    notify: (svc: ServiceInstance, notification: any) => void;
-    register: (
-      svc: ServiceInstance,
-      cb: (svc: ServiceInstance, notification: any) => void,
-    ) => void;
-    unregister: (
-      svc: ServiceInstance,
-      cb: (svc: ServiceInstance, notification: any) => void,
-    ) => void;
-  };
-
-  bypass?: boolean;
-  uuid: string;
-  board: string;
-  app: AppImpl;
-
+export type ServiceRuntimeContract = {
   process: (params: any) => Promise<any> | any;
   configure: (config: any) => Promise<any> | any;
   destroy?: () => Promise<void> | void;
-
   getConfiguration?: () => Promise<any>;
 };
 
+export type ServiceInstance = ServiceState &
+  ServiceRuntimeContract & {
+    uuid: string;
+    serviceId?: string;
+    serviceName?: string;
+
+    board: string;
+    app: AppImpl;
+    bypass?: boolean;
+    state?: any;
+    version?: string;
+    capabilities?: Array<string>;
+
+    //__descriptor?: ServiceDescriptor; // TODO: remove - this only existed in old nodejs backend services
+    __notificationTargets?: {
+      notify: (svc: ServiceInstance, notification: any) => void;
+      register: (
+        svc: ServiceInstance,
+        cb: (svc: ServiceInstance, notification: any) => void,
+      ) => void;
+      unregister: (
+        svc: ServiceInstance,
+        cb: (svc: ServiceInstance, notification: any) => void,
+      ) => void;
+    };
+  };
+
 export type RuntimeImpl = {
   configureService: (uuid: string, config: any) => Promise<void>;
-  getServiceById: (uuid: string) => ServiceImpl | null;
+  getServiceById: (uuid: string) => ServiceInstance | null;
   processRuntime: (
     params: any,
     svc: InstanceId | null,
