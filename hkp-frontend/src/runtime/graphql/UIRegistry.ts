@@ -1,6 +1,6 @@
 import { ServiceUIComponent } from "hkp-frontend/src/types";
-import TimerUI from "../../runtime/browser/services/TimerUI";
-import MonitorUI from "../../runtime/browser/services/MonitorUI";
+import TimerUI from "../browser/services/TimerUI";
+import MonitorUI from "../browser/services/MonitorUI";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {

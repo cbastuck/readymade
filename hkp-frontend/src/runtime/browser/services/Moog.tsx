@@ -4,7 +4,7 @@ import {
   convertToFloat32Array,
   convertToUint8Array,
   isFloatRingBuffer,
-} from "../../realtime/Data";
+} from "../../rest/Data";
 
 const serviceId = "hookup.to/service/moog";
 const serviceName = "MoogFilter";
@@ -21,7 +21,7 @@ class MoogService extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       cutoff: 1000,
@@ -64,7 +64,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new MoogService(app, board, descriptor, id),
 };
 

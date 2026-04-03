@@ -1,11 +1,11 @@
 import { ServiceClass, ServiceUIComponent } from "hkp-frontend/src/types";
 
-import MonitorUI from "../../runtime/browser/services/MonitorUI";
+import MonitorUI from "../browser/services/MonitorUI";
 import CoreOutputUI from "./ui/CoreOutputUI";
 import CoreInputUI from "./ui/CoreInputUI";
 import FilterUI from "./ui/FilterUI";
 import MapUIV0 from "./ui/MapUI";
-import MapUIV1 from "../../runtime/browser/services/MapUI";
+import MapUIV1 from "../browser/services/MapUI";
 import HttpClientUI from "./ui/HttpClientUI";
 
 type ServiceLookup = {

@@ -1,5 +1,5 @@
 import { ServiceUIProps } from "hkp-frontend/src/types";
-import RealtimeRuntimeServiceUI from "../../realtime/RealtimeRuntimeServiceUI";
+import RuntimeRestServiceUI from "../../rest/RuntimeRestServiceUI";
 import SelectorField, {
   OnChangeValue,
 } from "hkp-frontend/src/components/shared/SelectorField";
@@ -67,7 +67,7 @@ export default function FFTUI(props: ServiceUIProps) {
   };
 
   return (
-    <RealtimeRuntimeServiceUI
+    <RuntimeRestServiceUI
       {...props}
       onNotification={onUpdate}
       onInit={onUpdate}
@@ -107,6 +107,6 @@ export default function FFTUI(props: ServiceUIProps) {
           />
         </div>
       </div>
-    </RealtimeRuntimeServiceUI>
+    </RuntimeRestServiceUI>
   );
 }

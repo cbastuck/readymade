@@ -1,7 +1,7 @@
 import { useCallback, useState } from "react";
 
 import { ServiceUIProps } from "hkp-frontend/src/types";
-import RealtimeRuntimeServiceUI from "../RealtimeRuntimeServiceUI";
+import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import TemplateEditor, {
   TemplateObject,
 } from "hkp-frontend/src/ui-components/TemplateEditor";
@@ -45,7 +45,7 @@ export default function FilterUI(props: ServiceUIProps) {
   };
 
   return (
-    <RealtimeRuntimeServiceUI
+    <RuntimeRestServiceUI
       {...props}
       onNotification={onUpdate}
       onInit={onUpdate}
@@ -79,6 +79,6 @@ export default function FilterUI(props: ServiceUIProps) {
         <h3 className="tracking-[6px]">Template</h3>
         <TemplateEditor template={template} onChange={handleTemplateChange} />
       </div>
-    </RealtimeRuntimeServiceUI>
+    </RuntimeRestServiceUI>
   );
 }

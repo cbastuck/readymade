@@ -1,6 +1,6 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
-import { isFloatRingBuffer } from "../../realtime/Data";
+import { isFloatRingBuffer } from "../../rest/Data";
 import FFTUI from "./FFTUI";
 
 const serviceId = "hookup.to/service/fft";
@@ -20,7 +20,7 @@ class FFT extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       windowFunction: "none",
@@ -57,7 +57,7 @@ class FFT extends ServiceBase<State> {
       let floatArray = new Float32Array(
         array.buffer,
         array.byteOffset,
-        array.length / 4
+        array.length / 4,
       );
 
       // Resize to FFT size (zero-pad or truncate) - only if fftSize is set
@@ -87,7 +87,7 @@ class FFT extends ServiceBase<State> {
           return fftResult.magnitude.map((m: number) => m * m);
         case "db":
           return fftResult.magnitude.map(
-            (m: number) => 20 * Math.log10(Math.max(m, 1e-10))
+            (m: number) => 20 * Math.log10(Math.max(m, 1e-10)),
           );
         default:
           return fftResult.magnitude;
@@ -99,7 +99,7 @@ class FFT extends ServiceBase<State> {
 
 function applyWindow(
   signal: Float32Array,
-  windowType: WindowFunction
+  windowType: WindowFunction,
 ): Float32Array {
   const N = signal.length;
   const windowed = new Float32Array(N);
@@ -228,7 +228,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new FFT(app, board, descriptor, id),
   createUI: FFTUI,
 };

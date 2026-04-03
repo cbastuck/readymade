@@ -46,8 +46,8 @@ import {
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
-import remoteRuntimeApi from "../../runtime/remote/RemoteRuntimeApi";
-import realtimeRuntimeApi from "../../runtime/realtime/RealtimeRuntimeApi";
+import remoteRuntimeApi from "../../runtime/graphql/RuntimeGraphQLApi";
+import runtimeRestApi from "../../runtime/rest/RuntimeRestApi";
 import BoardEntryPoint from "./BoardEntryPoint";
 import { AppCtx } from "../../AppContext";
 import BoardFetchError from "./BoardFetchError";
@@ -61,8 +61,8 @@ export const runtimeApis: RuntimeApiMap = {
   browser: browserRuntimeApi,
   remote: remoteRuntimeApi,
   graphql: remoteRuntimeApi,
-  realtime: realtimeRuntimeApi,
-  rest: realtimeRuntimeApi,
+  realtime: runtimeRestApi,
+  rest: runtimeRestApi,
 };
 
 type Props = WithRouterProps & {

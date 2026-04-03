@@ -9,8 +9,8 @@ import {
   User,
 } from "hkp-frontend/src/types";
 
-import api from "./RealtimeRuntimeApi";
-import { createRealtimeRuntimeApp } from "./RealtimeRuntimeApp";
+import api from "./RuntimeRestApi";
+import { createRuntimeRestApp } from "./RuntimeRestApp";
 import {
   MessagePurpose,
   deserializeYasMessage,
@@ -18,7 +18,7 @@ import {
 } from "./Message";
 import { isData } from "./Data";
 
-export default class RealtimeRuntimeScope implements RuntimeScope {
+export default class RuntimeRestScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;
   app: AppImpl;
   authenticatedUser: User | null = null;
@@ -27,7 +27,7 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
 
   constructor(runtime: RuntimeDescriptor, runtimeOutputUrl: string) {
     this.descriptor = runtime;
-    this.app = createRealtimeRuntimeApp(this);
+    this.app = createRuntimeRestApp(this);
     if (runtimeOutputUrl) {
       this.runtimeOutput = new WebSocket(runtimeOutputUrl);
 
@@ -46,19 +46,19 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
               message.purpose === MessagePurpose.RESULT_WITH_REQUEST_ID
             ) {
               console.log(
-                "RealtimeRuntimeScope.onmessage with context or awaiting!!",
-                message
+                "RuntimeRestScope.onmessage with context or awaiting!!",
+                message,
               );
               context = {
                 onResolve:
                   message.purpose === MessagePurpose.RESULT_AWAITING_RESPONSE
                     ? (data: any) => {
-                        console.log("RealtimeRuntimeScope.onResolve", data);
+                        console.log("RuntimeRestScope.onResolve", data);
                         const context = { requestId: message.sender };
                         this.sendMessageViaWebsocket(
                           data,
                           context,
-                          "resolveResult"
+                          "resolveResult",
                         );
                       }
                     : undefined, // only resolve the runtime that is actually awaiting the result
@@ -70,8 +70,8 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
             this.app.notify({ uuid: message.sender }, message.data);
           } else {
             console.log(
-              "RealtimeRuntimeScope.runtimeOutput.onmessage unknown message purpose",
-              message
+              "RuntimeRestScope.runtimeOutput.onmessage unknown message purpose",
+              message,
             );
           }
         } else {
@@ -93,17 +93,17 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
             this.onResult(null, msg.data, null);
           } else {
             console.warn(
-              "RealtimeRuntimeScope.runtimeOutput.onmessage unknown message type",
-              msg
+              "RuntimeRestScope.runtimeOutput.onmessage unknown message type",
+              msg,
             );
           }
         }
       };
       this.runtimeOutput.onerror = (event) => {
-        console.error("RealtimeRuntimeScope.runtimeOutput.onerror", event);
+        console.error("RuntimeRestScope.runtimeOutput.onerror", event);
       };
       this.runtimeOutput.onopen = (event) => {
-        console.log("RealtimeRuntimeScope.runtimeOutput.onopen", event);
+        console.log("RuntimeRestScope.runtimeOutput.onopen", event);
         // the first message is the protocol
         const protocol = JSON.stringify({ type: "readwrite", id: runtime.id });
         this.runtimeOutput?.send(protocol);
@@ -114,7 +114,7 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
   sendMessageViaWebsocket(
     params: any,
     context: ProcessContext | null,
-    type: "processRuntime" | "resolveResult"
+    type: "processRuntime" | "resolveResult",
   ): boolean {
     if (!this.runtimeOutput) {
       return false;
@@ -129,7 +129,7 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
           type,
           params,
           context,
-        })
+        }),
       );
     }
     return true;
@@ -146,18 +146,18 @@ export default class RealtimeRuntimeScope implements RuntimeScope {
   onResult = async (
     _instanceId: string | null,
     _result: any,
-    _context?: ProcessContext | null
+    _context?: ProcessContext | null,
   ): Promise<void> => {
-    console.warn("RealtimeRuntimeScope.onResult not set");
+    console.warn("RuntimeRestScope.onResult not set");
   };
 
   onAction = (_action: ServiceAction): boolean => {
-    console.warn("RealtimeRuntimeScope.onAction not implemented");
+    console.warn("RuntimeRestScope.onAction not implemented");
     return false;
   };
 
   onConfig = (_instanceId: string, _config: object) => {
-    console.warn("RealtimeRuntimeScope.onConfig not set");
+    console.warn("RuntimeRestScope.onConfig not set");
   };
 
   close = async (): Promise<void> => {

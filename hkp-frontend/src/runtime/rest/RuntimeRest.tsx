@@ -13,7 +13,7 @@ import {
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
-import RemoteServiceUI from "./RealtimeRuntimeServiceUI";
+import RuntimeRestServiceUI from "./RuntimeRestServiceUI";
 import { findServiceUI } from "./UIRegistry";
 import EmptyRuntimePlaceholder from "hkp-frontend/src/ui-components/runtime-ui/EmptyRuntimePlaceholder";
 
@@ -93,7 +93,7 @@ export default function RuntimeRest({
         serviceId: service.serviceId,
         version: service.version,
         capabilities: service.capabilities,
-      }) || RemoteServiceUI;
+      }) || RuntimeRestServiceUI;
 
     return React.createElement(ui, {
       service,

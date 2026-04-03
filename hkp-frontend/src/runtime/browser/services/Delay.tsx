@@ -4,7 +4,7 @@ import {
   convertToFloat32Array,
   convertToUint8Array,
   isFloatRingBuffer,
-} from "../../realtime/Data";
+} from "../../rest/Data";
 
 const serviceId = "hookup.to/service/delay";
 const serviceName = "Delay";
@@ -20,7 +20,7 @@ class Delay extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       delayTimeMs: 0.5, // Default delay time in seconds
@@ -41,7 +41,7 @@ class Delay extends ServiceBase<State> {
       const array: Uint8Array = params.array;
       const floatArray = convertToFloat32Array(array);
       const processedArray = floatArray.map((x) =>
-        this._delayProcessor.process(x)
+        this._delayProcessor.process(x),
       );
 
       return {
@@ -103,7 +103,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new Delay(app, board, descriptor, id),
 };
 

@@ -1,5 +1,5 @@
 import { ServiceUIProps } from "hkp-frontend/src/types";
-import RealtimeRuntimeServiceUI from "../RealtimeRuntimeServiceUI";
+import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import { useState } from "react";
 
 export default function CoreOutputUI(props: ServiceUIProps) {
@@ -12,12 +12,12 @@ export default function CoreOutputUI(props: ServiceUIProps) {
     }
   };
   return (
-    <RealtimeRuntimeServiceUI {...props} onNotification={onNotification}>
+    <RuntimeRestServiceUI {...props} onNotification={onNotification}>
       <div className="flex flex-col gap-2">
         <div className="text-sm text-gray-500">
           {availableSamples} samples available
         </div>
       </div>
-    </RealtimeRuntimeServiceUI>
+    </RuntimeRestServiceUI>
   );
 }

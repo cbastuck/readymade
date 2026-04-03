@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { ServiceUIProps } from "hkp-frontend/src/types";
-import RealtimeRuntimeServiceUI from "../RealtimeRuntimeServiceUI";
+import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import TemplateEditor from "hkp-frontend/src/ui-components/TemplateEditor";
 
 export default function MapUI(props: ServiceUIProps) {
@@ -21,7 +21,7 @@ export default function MapUI(props: ServiceUIProps) {
   };
 
   return (
-    <RealtimeRuntimeServiceUI
+    <RuntimeRestServiceUI
       {...props}
       onNotification={onUpdate}
       onInit={onUpdate}
@@ -33,6 +33,6 @@ export default function MapUI(props: ServiceUIProps) {
           onChange={handleTemplateChange}
         />
       </div>
-    </RealtimeRuntimeServiceUI>
+    </RuntimeRestServiceUI>
   );
 }

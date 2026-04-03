@@ -10,7 +10,7 @@ import HorizontalSpectrogram from "./HorizontalSpectrogram";
 import VerticalSpectrogram from "./VerticalSpectogram";
 import Bars from "./Bars";
 import Waveform from "./Waveform";
-import { isData } from "hkp-frontend/src/runtime/realtime/Data";
+import { isData } from "hkp-frontend/src/runtime/rest/Data";
 
 export default function AnalyzerUI(props: ServiceUIProps) {
   type Modes = "spectogram-v" | "bars" | "spectogram-h" | "waveform";

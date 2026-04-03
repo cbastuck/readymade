@@ -1,5 +1,5 @@
 import { ServiceUIProps } from "hkp-frontend/src/types";
-import RealtimeRuntimeServiceUI from "../RealtimeRuntimeServiceUI";
+import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import SelectorField, {
   OnChangeValue,
 } from "hkp-frontend/src/components/shared/SelectorField";
@@ -26,7 +26,7 @@ export default function CoreInputUI(props: ServiceUIProps) {
 
     if (message.currentDeviceName !== undefined) {
       const device = availableDevices.find(
-        (d) => d.deviceName === message.currentDeviceName
+        (d) => d.deviceName === message.currentDeviceName,
       );
       if (device) {
         setSelectedInputDevice(device);
@@ -44,7 +44,7 @@ export default function CoreInputUI(props: ServiceUIProps) {
             ...acc,
             [cur.deviceName]: cur.deviceName,
           }),
-          {}
+          {},
         );
     } else {
       return {};
@@ -65,7 +65,7 @@ export default function CoreInputUI(props: ServiceUIProps) {
   };
 
   return (
-    <RealtimeRuntimeServiceUI
+    <RuntimeRestServiceUI
       {...props}
       onNotification={onUpdate}
       onInit={onUpdate}
@@ -97,6 +97,6 @@ export default function CoreInputUI(props: ServiceUIProps) {
           />
         </div>
       </div>
-    </RealtimeRuntimeServiceUI>
+    </RuntimeRestServiceUI>
   );
 }

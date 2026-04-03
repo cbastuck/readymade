@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { addService, attachRuntimes } from "../RealtimeRuntimeApi";
+import { addService, attachRuntimes } from "../RuntimeRestApi";
 import { makeServiceInstance } from "../RuntimeRest";
 import { RuntimeScope, ServiceDescriptor } from "hkp-frontend/src/types";
 

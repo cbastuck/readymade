@@ -9,7 +9,7 @@ import BoardProvider, {
 
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import browserRuntimeApi from "../BrowserRuntimeApi";
-import remoteRuntimeApi from "../../remote/RemoteRuntimeApi";
+import remoteRuntimeApi from "../../graphql/RuntimeGraphQLApi";
 import {
   RuntimeInputRoutings,
   RuntimeOutputRoutings,

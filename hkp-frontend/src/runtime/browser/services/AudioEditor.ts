@@ -6,7 +6,7 @@ import {
   convertToUint8Array,
   FloatRingBufferSymbol,
   isFloatRingBuffer,
-} from "hkp-frontend/src/runtime/realtime/Data";
+} from "hkp-frontend/src/runtime/rest/Data";
 
 import AudioEditorUI from "./AudioEditorUI";
 
@@ -23,7 +23,7 @@ class AudioEditor extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       accumulatedAudio: new Float32Array(0),
@@ -57,7 +57,7 @@ class AudioEditor extends ServiceBase<State> {
     const currentLength = this.state.accumulatedAudio.length;
     const newLength = Math.min(
       currentLength + incomingAudio.length,
-      this.state.maxLength
+      this.state.maxLength,
     );
 
     const newAccumulated = new Float32Array(newLength);
@@ -95,7 +95,7 @@ class AudioEditor extends ServiceBase<State> {
     // Extract the selected portion of audio
     const selectedAudio = this.state.accumulatedAudio.slice(
       startSample,
-      endSample
+      endSample,
     );
 
     // Convert to Uint8Array for Data format
@@ -121,7 +121,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new AudioEditor(app, board, descriptor, id),
   createUI: AudioEditorUI,
 };

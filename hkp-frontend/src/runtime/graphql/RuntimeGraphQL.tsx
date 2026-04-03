@@ -12,7 +12,7 @@ import {
 } from "../../types";
 import ServiceUiContainer from "../ServiceUiContainer";
 
-import RemoteServiceUI from "./RemoteServiceUI";
+import RuntimeGraphQLServiceUI from "./RuntimeGraphQLServiceUI";
 import { findServiceUI } from "./UIRegistry";
 import React from "react";
 import EmptyRuntimePlaceholder from "hkp-frontend/src/ui-components/runtime-ui/EmptyRuntimePlaceholder";
@@ -75,7 +75,8 @@ export default function RuntimeGraphQL({
     _userId: string | undefined,
   ): ReactElement => {
     const { serviceId } = service;
-    const ui = (serviceId && findServiceUI(serviceId)) || RemoteServiceUI;
+    const ui =
+      (serviceId && findServiceUI(serviceId)) || RuntimeGraphQLServiceUI;
 
     return React.createElement(ui, {
       service,

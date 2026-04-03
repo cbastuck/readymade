@@ -5,7 +5,7 @@ import {
   RuntimeDescriptor,
   toCanonicalRuntimeClassType,
 } from "../types";
-import { isUserAuthenticated } from "../runtime/remote/RemoteRuntimeApi";
+import { isUserAuthenticated } from "../runtime/graphql/RuntimeGraphQLApi";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 import { BoardContextState } from "../BoardContext";
 

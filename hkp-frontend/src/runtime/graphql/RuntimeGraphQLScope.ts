@@ -8,11 +8,11 @@ import {
   ServiceAction,
   User,
 } from "../../types";
-import { createRemoteRuntimeApp } from "./RemoteRuntimeApp";
-import api from "./RemoteRuntimeApi";
+import { createRuntimeGraphQLApp } from "./RuntimeGraphQLApp";
+import api from "./RuntimeGraphQLApi";
 import { createAuthorizedURL } from "hkp-frontend/src/views/playground/common";
 
-export default class RemoteRuntimeScope implements RuntimeScope {
+export default class RuntimeGraphQLScope implements RuntimeScope {
   app: AppImpl;
   descriptor: RuntimeDescriptor;
   outputUrl: string;
@@ -23,7 +23,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   processContexts: { [requestId: string]: ProcessContext } = {};
 
   constructor(runtime: RuntimeDescriptor, outputUrl: string) {
-    this.app = createRemoteRuntimeApp(this);
+    this.app = createRuntimeGraphQLApp(this);
     this.descriptor = runtime;
     this.outputUrl = outputUrl;
     this.socket = null;
@@ -45,13 +45,13 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   onResult = async (
     _instanceId: string | null,
     _result: any,
-    _context?: ProcessContext | null
+    _context?: ProcessContext | null,
   ): Promise<void> => {
-    console.warn("RemoteRuntimeScope.onResult not set");
+    console.warn("RuntimeGraphQLScope.onResult not set");
   };
 
   onAction = (_action: ServiceAction): boolean => {
-    console.warn("RemoteRuntimeScope.onAction not implemented");
+    console.warn("RuntimeGraphQLScope.onAction not implemented");
     return false;
   };
 
@@ -62,7 +62,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
       requestId,
     };
     const boardResult = await new Promise<any>((onResolve) =>
-      this.onResult(null, data, { ...context, onResolve })
+      this.onResult(null, data, { ...context, onResolve }),
     );
     if (this.socket) {
       this.socket.send(
@@ -70,13 +70,13 @@ export default class RemoteRuntimeScope implements RuntimeScope {
           type: "boardResult",
           result: JSON.stringify(boardResult),
           requestId: context.requestId,
-        })
+        }),
       );
     }
   };
 
   onConfig = (_instanceId: string, _config: object) => {
-    console.warn("RemoteRuntimeScope.onConfig not set");
+    console.warn("RuntimeGraphQLScope.onConfig not set");
   };
 
   connect = (outputUrl: string, user: User | null) => {
@@ -88,7 +88,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     url.protocol = new URL(url).protocol === "http:" ? "ws" : "wss";
     const websocketUrl = createAuthorizedURL(
       url.toString() + outputUrl.slice(1),
-      this.authenticatedUser
+      this.authenticatedUser,
     );
     const socket = new WebSocket(websocketUrl);
     this.socket = socket;
@@ -108,7 +108,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
       console.log("Calling Reconnect");
       if (this.socket || !this.outputUrl) {
         console.warn(
-          "RuntimeRemoteScope can not reconnect if socket available or output url missing"
+          "RuntimeRemoteScope can not reconnect if socket available or output url missing",
         );
         return reject();
       }
@@ -133,9 +133,9 @@ export default class RemoteRuntimeScope implements RuntimeScope {
           this.socket.send(
             JSON.stringify({
               type: "ping",
-            })
+            }),
           ),
-        10000
+        10000,
       );
     }
     if (this.pendingReconnectPromise) {
@@ -171,7 +171,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
       this.onResult(
         null,
         message.data,
-        this.consumeProcessContext(message.requestId) // consumer the context if one exists
+        this.consumeProcessContext(message.requestId), // consumer the context if one exists
       );
     } else if (
       message.type === RemoteRuntimeMessageType.PROCESS_BOARD_FROM_RT
@@ -185,7 +185,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
       const { instanceId, data, mimeType } = message;
       if (mimeType !== "application/json") {
         throw new Error(
-          "Remote runtime notifications can only be JSON at the moment"
+          "Remote runtime notifications can only be JSON at the moment",
         );
       }
       const svc = this.app.getServiceById(instanceId);
@@ -195,8 +195,8 @@ export default class RemoteRuntimeScope implements RuntimeScope {
     } else {
       console.warn(
         `Unknown message reived in remote runtime scope: ${JSON.stringify(
-          event.data
-        )}`
+          event.data,
+        )}`,
       );
     }
   };
@@ -204,7 +204,7 @@ export default class RemoteRuntimeScope implements RuntimeScope {
   registerProcessContext = (context: ProcessContext) => {
     if (this.processContexts[context.requestId]) {
       console.warn(
-        `RemoteRuntimeScope.registerProcessContext: context with requestId ${context.requestId} already registered and not yet consumed`
+        `RuntimeGraphQLScope.registerProcessContext: context with requestId ${context.requestId} already registered and not yet consumed`,
       );
     }
     this.processContexts[context.requestId] = context;

@@ -8,7 +8,7 @@ import {
 } from "hkp-frontend/src/types";
 import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
 import { findServiceUI } from "../UIRegistry";
-import RealtimeRuntimeServiceUI from "../RealtimeRuntimeServiceUI";
+import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import ServiceWithDropBars from "../../ServiceWithDropBars";
 
 type PipelineEntry = {
@@ -124,7 +124,7 @@ export default function SubServicePipelineUI({ service }: Props) {
                   version: descriptor?.version,
                   capabilities: descriptor?.capabilities,
                 })) ||
-              RealtimeRuntimeServiceUI;
+              RuntimeRestServiceUI;
 
             const uiElement = React.createElement(SubServiceUI as any, {
               service: subServiceInstance,

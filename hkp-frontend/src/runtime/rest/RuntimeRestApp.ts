@@ -1,4 +1,3 @@
-import { ReactElement } from "react";
 import {
   AppImpl,
   InstanceId,
@@ -6,40 +5,29 @@ import {
   ServiceClass,
   ServiceImpl,
   ServiceInstance,
-} from "../../types";
-import RemoteRuntimeScope from "./RemoteRuntimeScope";
-
+} from "hkp-frontend/src/types";
+import RuntimeRestScope from "./RuntimeRestScope";
+import { ReactElement } from "react";
 import NotificationTargets from "../NotificationsTargets";
 
-export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
+export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
   const notificationTargets = new NotificationTargets();
   return {
     getAuthenticatedUser: () => scope.authenticatedUser,
-    registerNotificationTarget: (
-      svc: ServiceInstance,
-      onNotification: (notification: any) => void
-    ) => {
-      notificationTargets.register(svc, onNotification);
-    },
-
-    unregisterNotificationTarget: (
-      svc: ServiceInstance,
-      onNotification: (notification: any) => void
-    ) => {
-      notificationTargets.unregister(svc, onNotification);
-    },
     notify: (service: InstanceId, notification: any): void => {
-      // TODO: the type of first parameter is bad
-      if (!notificationTargets.hasCallbacks(service)) {
-        console.warn("BrowserRuntimeApp.notify no targets for", service.uuid);
-        return;
-      }
-
       notificationTargets.notify(service, notification);
     },
-    next: (_svc: InstanceId | null, _result: any): void => {},
+    next: (svc: InstanceId | null, result: any): void => {
+      // scope.onResult(svc?.uuid || null, result);
+      scope.getApi().processRuntime(
+        scope,
+        result,
+        svc,
+        null, // we don't have a service here, so we pass null
+      );
+    },
     getServiceById: (uuid: string): ServiceImpl | null => {
-      return { uuid } as any; // TODO:  see above, mabye we don't need this at all for the remote case
+      return { uuid } as any; // TODO:  see above, mabye we don't need this at all
     },
     sendAction: (action: ServiceAction) => {
       scope.onAction(action); // just forward
@@ -47,11 +35,11 @@ export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
     storeServiceData: (
       _serviceUuid: string,
       _key: string,
-      _value: string
+      _value: string,
     ): void => {},
     restoreServiceData: (
       _serviceUuid: string,
-      _key: string
+      _key: string,
     ): string | undefined => {
       return undefined;
     },
@@ -59,13 +47,25 @@ export function createRemoteRuntimeApp(scope: RemoteRuntimeScope): AppImpl {
     createSubService: (
       _parent: ServiceImpl,
       _service: ServiceClass,
-      _instanceId?: string
+      _instanceId?: string,
     ): Promise<ServiceInstance | null> => {
       return Promise.resolve(null);
     },
     createSubServiceUI: (_svc: ServiceImpl): ReactElement | null => {
       return null;
     },
-    listAvailableServices: () => [],
+    listAvailableServices: () => scope.registry,
+    registerNotificationTarget: (
+      svc: ServiceInstance,
+      onNotification: (notification: any) => void,
+    ) => {
+      notificationTargets.register(svc, onNotification);
+    },
+    unregisterNotificationTarget: (
+      svc: ServiceInstance,
+      onNotification: (notification: any) => void,
+    ) => {
+      notificationTargets.unregister(svc, onNotification);
+    },
   };
 }

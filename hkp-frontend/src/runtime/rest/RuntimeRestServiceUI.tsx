@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Copy } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "../../types";
@@ -6,32 +6,43 @@ import { ServiceInstance, ServiceUIProps } from "../../types";
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import InputText from "../../components/shared/InputText";
 import Slider from "../../components/shared/Slider";
-import ServiceUI, {
-  useServiceLifecycle,
-} from "hkp-frontend/src/ui-components/service/ServiceUI";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import Button from "hkp-frontend/src/ui-components/Button";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import Switch from "hkp-frontend/src/ui-components/Switch";
+import SubServicePipelineUI from "./ui/SubServicePipelineUI";
 
-export default function RemoteServiceUI(props: ServiceUIProps) {
-  const { service } = props;
+type Props = ServiceUIProps & {
+  onNotification?: (notification: any) => void;
+  onInit?: (state: any) => void;
+  children?: any;
+  genericUI?: boolean;
+};
+export default function RuntimeRestServiceUI(props: Props) {
+  const { service, onNotification } = props;
   const meta = service.state?.["__meta__"];
+  const supportsSubservices =
+    service.capabilities?.some(
+      (cap: string) => cap.trim().toLocaleLowerCase() === "subservices",
+    ) === true;
   const [properties, setProperties] = useState<any>(extractProperties(service));
 
-  const onInit = (state: any) => {
-    setProperties(extractProperties(state));
-  };
+  useEffect(() => setProperties(extractProperties(service)), [service]);
 
-  const onNotification = (notification: any) => {
-    console.log("RemoteServiceUI - received notification", notification);
-    setProperties(extractProperties(notification));
-  };
-
-  useServiceLifecycle(service, { onInit, onNotification });
-
+  useEffect(() => {
+    console.debug(
+      `RuntimeRestServiceUI: '${service.serviceName}' state changed`,
+      service.state,
+    );
+    onNotification?.(service.state);
+  }, [properties, service.state, service.serviceName, onNotification]);
   const renderMain = (service: ServiceInstance) => {
     return (
-      <div key={service.uuid} id={service.uuid} style={{ minWidth: 200 }}>
+      <div
+        key={service.uuid}
+        id={service.uuid}
+        style={{ minWidth: 200, paddingBottom: 12 }}
+      >
         {Object.keys(properties).map((prop) => {
           const val = properties[prop];
           const t = typeof val;
@@ -87,7 +98,7 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
           ) {
             return (
               <InputText
-                key={`RemoteServiceUI-${service.uuid}.${prop}`}
+                key={`RuntimeRestServiceUI-${service.uuid}.${prop}`}
                 label={prop}
                 labelStyle={{ textTransform: "capitalize" }}
                 value={val}
@@ -103,6 +114,7 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
             return (
               <Switch
                 className="py-2"
+                labelClassName="tracking-[1px] text-base2"
                 key={prop}
                 title={prop}
                 checked={val}
@@ -117,23 +129,22 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
           const readonly = visibility === "readonly";
 
           const type =
-            t === "string"
-              ? visibility === "hide"
-                ? "password"
-                : "text"
-              : (t as any);
+            t === "string" ? (visibility === "hide" ? "password" : "text") : t;
 
           return (
             <div
               className="flex items-end"
-              key={`RemoteServiceUI-${service.uuid}.${prop}`}
+              key={`RuntimeRestServiceUI-${service.uuid}.${prop}`}
             >
               <SubmittableInput
+                labelClassName="tracking-[1px]"
                 fullWidth
                 title={prop}
-                value={val}
+                value={renderValueWithType(val, type)}
                 onSubmit={(value) => {
-                  service.configure({ [prop]: value });
+                  service.configure({
+                    [prop]: type === "number" ? Number(value) : value,
+                  });
                 }}
                 type={type}
                 disabled={readonly}
@@ -149,13 +160,21 @@ export default function RemoteServiceUI(props: ServiceUIProps) {
             </div>
           );
         })}
+        {props.children || null}
+        {supportsSubservices && <SubServicePipelineUI service={service} />}
       </div>
     );
   };
 
   return (
-    <ServiceUI {...props} service={service}>
-      {renderMain(service)}
+    <ServiceUI
+      {...props}
+      service={service}
+      onInit={props.onInit}
+      onNotification={props.onNotification}
+      showBypassOnlyIfExplicit={true}
+    >
+      {props.genericUI === false ? props.children : renderMain(service)}
     </ServiceUI>
   );
 }
@@ -185,6 +204,40 @@ function extractProperties(service: any) {
       if (t === "string" || t === "number" || t === "boolean") {
         return { ...all, [key]: val };
       }
+      if (Array.isArray(val)) {
+        const arr: { [k: string]: string } = {};
+        val.forEach((v, i) => {
+          if (v !== undefined) {
+            arr[`${key}[${i}]`] = v;
+          }
+        });
+        return { ...all, ...arr };
+      }
+      if (t === "object") {
+        const obj: { [k: string]: string } = {};
+        for (const k in val) {
+          if (val[k] !== undefined) {
+            obj[`${key}.${k}`] = val[k];
+          }
+        }
+        return { ...all, ...obj };
+      }
       return all;
     }, {});
+}
+
+function renderValueWithType(value: any, type: string) {
+  if (type === "number") {
+    return value.toString();
+  }
+  if (type === "boolean") {
+    return value ? "true" : "false";
+  }
+  if (type === "string") {
+    return value;
+  }
+  if (type === "object") {
+    return JSON.stringify(value);
+  }
+  return value;
 }

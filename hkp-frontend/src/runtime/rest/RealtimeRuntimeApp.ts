@@ -6,11 +6,11 @@ import {
   ServiceImpl,
   ServiceInstance,
 } from "hkp-frontend/src/types";
-import RealtimeRuntimeScope from "./RealtimeRuntimeScope";
+import RuntimeRestScope from "./RuntimeRestScope";
 import { ReactElement } from "react";
 import NotificationTargets from "../NotificationsTargets";
 
-export function createRealtimeRuntimeApp(scope: RealtimeRuntimeScope): AppImpl {
+export function createRealtimeRuntimeApp(scope: RuntimeRestScope): AppImpl {
   const notificationTargets = new NotificationTargets();
   return {
     getAuthenticatedUser: () => scope.authenticatedUser,

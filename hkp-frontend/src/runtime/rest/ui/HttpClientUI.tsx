@@ -1,5 +1,5 @@
 import { ServiceUIProps } from "hkp-frontend/src/types";
-import RealtimeRuntimeServiceUI from "../RealtimeRuntimeServiceUI";
+import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import SelectorField, {
   OnChangeValue,
 } from "hkp-frontend/src/components/shared/SelectorField";
@@ -34,7 +34,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
       custom:
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15",
     }),
-    []
+    [],
   );
   const [userAgent, setUserAgent] = useState<string>("custom");
   const [headers, setHeaders] = useState<
@@ -52,7 +52,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
       }
       if (message.userAgent !== undefined) {
         const userAgantKey = Object.entries(userAgentOptions).find(
-          ([, uaString]) => uaString === message.userAgent
+          ([, uaString]) => uaString === message.userAgent,
         )?.[0];
         if (userAgantKey) {
           setUserAgent(userAgantKey);
@@ -66,7 +66,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
             id: `${Date.now()}-${index}`,
             key,
             value: value as string,
-          })
+          }),
         );
         setHeaders(headersArray);
       }
@@ -74,7 +74,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
         setBody(message.body);
       }
     },
-    [userAgentOptions]
+    [userAgentOptions],
   );
 
   const methodOptions = useMemo(
@@ -84,7 +84,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
       put: "PUT",
       delete: "DELETE",
     }),
-    []
+    [],
   );
 
   const onChangeUrl = (value: string) => {
@@ -105,7 +105,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
       setUserAgent(value.value);
       props.service.configure({ userAgent: userAgentString });
     },
-    [props.service, userAgentOptions]
+    [props.service, userAgentOptions],
   );
 
   const addHeader = useCallback(() => {
@@ -121,60 +121,69 @@ export default function HttpClientUI(props: ServiceUIProps) {
     (id: string) => {
       setHeaders((prevHeaders) => {
         const updatedHeaders = prevHeaders.filter((h) => h.id !== id);
-        const headersObj = updatedHeaders.reduce((acc, h) => {
-          if (h.key && h.value) {
-            acc[h.key] = h.value;
-          }
-          return acc;
-        }, {} as Record<string, string>);
+        const headersObj = updatedHeaders.reduce(
+          (acc, h) => {
+            if (h.key && h.value) {
+              acc[h.key] = h.value;
+            }
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
         props.service.configure({ headers: headersObj });
         return updatedHeaders;
       });
     },
-    [props.service]
+    [props.service],
   );
 
   const updateHeaderKey = useCallback(
     (id: string, value: OnChangeValue) => {
       setHeaders((prevHeaders) => {
         const updatedHeaders = prevHeaders.map((h) =>
-          h.id === id ? { ...h, key: value.value } : h
+          h.id === id ? { ...h, key: value.value } : h,
         );
         // Only configure if this header has a value
         const header = updatedHeaders.find((h) => h.id === id);
         if (header && header.value) {
-          const headersObj = updatedHeaders.reduce((acc, h) => {
-            if (h.key && h.value) {
-              acc[h.key] = h.value;
-            }
-            return acc;
-          }, {} as Record<string, string>);
+          const headersObj = updatedHeaders.reduce(
+            (acc, h) => {
+              if (h.key && h.value) {
+                acc[h.key] = h.value;
+              }
+              return acc;
+            },
+            {} as Record<string, string>,
+          );
           props.service.configure({ headers: headersObj });
         }
         return updatedHeaders;
       });
     },
-    [props.service]
+    [props.service],
   );
 
   const updateHeaderValue = useCallback(
     (id: string, value: string) => {
       setHeaders((prevHeaders) => {
         const updatedHeaders = prevHeaders.map((h) =>
-          h.id === id ? { ...h, value } : h
+          h.id === id ? { ...h, value } : h,
         );
         // Only configure if value is not empty or if we're clearing a previously set value
-        const headersObj = updatedHeaders.reduce((acc, h) => {
-          if (h.key && h.value) {
-            acc[h.key] = h.value;
-          }
-          return acc;
-        }, {} as Record<string, string>);
+        const headersObj = updatedHeaders.reduce(
+          (acc, h) => {
+            if (h.key && h.value) {
+              acc[h.key] = h.value;
+            }
+            return acc;
+          },
+          {} as Record<string, string>,
+        );
         props.service.configure({ headers: headersObj });
         return updatedHeaders;
       });
     },
-    [props.service]
+    [props.service],
   );
 
   const onChangeBody = (value: string) => {
@@ -184,7 +193,7 @@ export default function HttpClientUI(props: ServiceUIProps) {
   };
 
   return (
-    <RealtimeRuntimeServiceUI
+    <RuntimeRestServiceUI
       {...props}
       onNotification={onUpdate}
       onInit={onUpdate}
@@ -242,6 +251,6 @@ export default function HttpClientUI(props: ServiceUIProps) {
           </div>
         </div>
       </div>
-    </RealtimeRuntimeServiceUI>
+    </RuntimeRestServiceUI>
   );
 }

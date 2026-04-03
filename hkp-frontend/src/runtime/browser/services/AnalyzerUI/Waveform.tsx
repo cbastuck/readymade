@@ -1,7 +1,4 @@
-import {
-  Data,
-  isFloatRingBuffer,
-} from "hkp-frontend/src/runtime/realtime/Data";
+import { Data, isFloatRingBuffer } from "hkp-frontend/src/runtime/rest/Data";
 import { useMemo, useState } from "react";
 
 type Props = { data?: Data };
@@ -14,7 +11,7 @@ export default function Waveform({ data }: Props) {
   const generatePath = (
     data: Uint8Array,
     asFloat: boolean,
-    isLittleEndian: boolean
+    isLittleEndian: boolean,
   ): string => {
     if (!data || data.length === 0) {
       return "";

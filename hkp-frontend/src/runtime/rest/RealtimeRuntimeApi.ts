@@ -12,7 +12,7 @@ import {
   ServiceDescriptor,
   User,
 } from "hkp-frontend/src/types";
-import RealtimeRuntimeScope from "./RealtimeRuntimeScope";
+import RuntimeRestScope from "./RuntimeRestScope";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 
 function normalizeRegistry(registry: ServiceClass[]): ServiceClass[] {
@@ -35,8 +35,8 @@ function normalizeRegistry(registry: ServiceClass[]): ServiceClass[] {
 async function createScope(
   runtime: RuntimeDescriptor,
   runtimeOutputUrl: string,
-): Promise<RealtimeRuntimeScope> {
-  return new RealtimeRuntimeScope(runtime, runtimeOutputUrl);
+): Promise<RuntimeRestScope> {
+  return new RuntimeRestScope(runtime, runtimeOutputUrl);
 }
 
 export async function addRuntime(
@@ -71,7 +71,7 @@ export async function removeRuntime(
   runtime: RuntimeDescriptor,
   _user: User | null,
 ): Promise<void> {
-  const scope = scope_ as RealtimeRuntimeScope;
+  const scope = scope_ as RuntimeRestScope;
   scope.close();
 
   const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
@@ -152,7 +152,7 @@ export async function attachRuntimes(
   // TODO: get rid of the any type
   return runtimes.reduce((acc: any, cur: RestRuntimeData) => {
     const rt: RuntimeDescriptor = { ...rtClass, ...cur };
-    const scope = new RealtimeRuntimeScope(rt, cur.outputUrl);
+    const scope = new RuntimeRestScope(rt, cur.outputUrl);
     scope.registry = registry;
     return {
       ...acc,
@@ -170,7 +170,7 @@ export async function processRuntime(
   _svc: InstanceId | null,
   context?: ProcessContext | null,
 ): Promise<void> {
-  const scope = scope_ as RealtimeRuntimeScope;
+  const scope = scope_ as RuntimeRestScope;
   const runtime = scope.descriptor;
 
   if (
@@ -195,7 +195,7 @@ export async function processRuntime(
 
 export async function addService(scope: RuntimeScope, service: ServiceClass) {
   const runtime = scope.descriptor;
-  const scopeRegistry = (scope as RealtimeRuntimeScope).registry || [];
+  const scopeRegistry = (scope as RuntimeRestScope).registry || [];
   const descriptor =
     scopeRegistry.find((entry) => entry.serviceId === service.serviceId) ||
     service;
@@ -266,7 +266,7 @@ export async function configureService(
   }
 
   const data = await res.json();
-  scope.onConfig?.(service.uuid, { state: data }); // TODO: this only works for full state due to see RealtimeRuntimeScope scope.onConfig = ...
+  scope.onConfig?.(service.uuid, { state: data }); // TODO: this only works for full state due to see RuntimeRestScope scope.onConfig = ...
 
   return data;
 }

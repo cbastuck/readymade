@@ -16,9 +16,9 @@ import {
 } from "hkp-frontend/src/types";
 import RuntimeHeader from "./RuntimeHeader";
 import BrowserRuntime from "hkp-frontend/src/runtime/browser/BrowserRuntime";
-import RuntimeGraphQL from "hkp-frontend/src/runtime/remote/RuntimeGraphQL";
+import RuntimeGraphQL from "hkp-frontend/src/runtime/graphql/RuntimeGraphQL";
 import BrowserRuntimeScope from "hkp-frontend/src/runtime/browser/BrowserRuntimeScope";
-import RuntimeRest from "hkp-frontend/src/runtime/realtime/RuntimeRest";
+import RuntimeRest from "hkp-frontend/src/runtime/rest/RuntimeRest";
 import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
 import { HKP_DND_RUNTIME_TYPE } from "hkp-frontend/src/components/DropTypes";
 import DragSource from "hkp-frontend/src/components/DragSource";
