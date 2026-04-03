@@ -31,7 +31,7 @@ export type RuntimeDescriptor = RuntimeClass & {
 export type OnResult = (
   uuid: string | null,
   result: any,
-  context?: ProcessContext | null
+  context?: ProcessContext | null,
 ) => Promise<void>;
 
 export type ProcessRuntimeByName = (name: string, params: any) => Promise<any>;
@@ -81,7 +81,7 @@ export type PeerJsHostDescriptor = {
 const flowOptions = ["pass", "stop"] as const;
 export type RuntimeFlowOutputOptions = (typeof flowOptions)[number];
 export function isValidFlowOption(
-  maybeOption: unknown
+  maybeOption: unknown,
 ): maybeOption is RuntimeFlowOutputOptions {
   return (
     typeof maybeOption === "string" && flowOptions.includes(maybeOption as any)
@@ -141,13 +141,16 @@ export type ServiceModule = ServiceClass & {
     app: AppImpl,
     board: string,
     service: ServiceClass,
-    instanceId: string
+    instanceId: string,
   ) => ServiceInstance;
   createUI?: ServiceUIComponent;
 };
 export type ServiceClass = {
   serviceName: string;
   serviceId: ServiceURI;
+  // Optional semantic metadata that can be used by runtime engines and UI selection.
+  version?: string;
+  capabilities?: Array<string>;
 };
 
 export type ServiceRegistry = Array<ServiceClass>;
@@ -213,18 +216,18 @@ export type AppImpl = {
   createSubService: (
     parent: ServiceImpl,
     service: ServiceClass,
-    instanceId?: string
+    instanceId?: string,
   ) => Promise<ServiceInstance | null>;
   createSubServiceUI: (svc: ServiceInstance) => ReactElement | null;
 
   // TODO: should be available for both Brower and Remote runtime
   registerNotificationTarget?: (
     svc: ServiceInstance,
-    onNotification: (notification: any) => void
+    onNotification: (notification: any) => void,
   ) => void;
   unregisterNotificationTarget?: (
     svc: ServiceInstance,
-    onNotification: (notification: any) => void
+    onNotification: (notification: any) => void,
   ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
   processRuntimeByName?: (name: string, params: any) => Promise<any>;
@@ -249,11 +252,11 @@ export type ServiceImpl = { [key: string]: any } & {
     notify: (svc: ServiceInstance, notification: any) => void;
     register: (
       svc: ServiceInstance,
-      cb: (svc: ServiceInstance, notification: any) => void
+      cb: (svc: ServiceInstance, notification: any) => void,
     ) => void;
     unregister: (
       svc: ServiceInstance,
-      cb: (svc: ServiceInstance, notification: any) => void
+      cb: (svc: ServiceInstance, notification: any) => void,
     ) => void;
   };
 
@@ -275,7 +278,7 @@ export type RuntimeImpl = {
   processRuntime: (
     params: any,
     svc: InstanceId | null,
-    context?: ProcessContext | null
+    context?: ProcessContext | null,
   ) => Promise<any>;
   destroyService: (svcUuid: string) => Promise<void>;
   destroyRuntime: () => Promise<void>;
@@ -291,49 +294,49 @@ export type RuntimeApi = {
   addRuntime: (
     runtime: RuntimeClass,
     user: User | null,
-    boardName?: string
+    boardName?: string,
   ) => Promise<AddRuntimeResult | null>;
 
   restoreRuntime: (
     runtime: RuntimeDescriptor,
     services: Array<ServiceDescriptor>,
     user: User | null,
-    boardName?: string
+    boardName?: string,
   ) => Promise<RestoreRuntimeResult | null>;
 
   attachRuntimes?: (
     runtime: RuntimeClass,
-    user: User | null
+    user: User | null,
   ) => Promise<EngineState>;
 
   removeRuntime: (
     scope: RuntimeScope,
     runtime: RuntimeDescriptor,
-    user: User | null
+    user: User | null,
   ) => Promise<void>;
 
   processRuntime: (
     scope: RuntimeScope,
     params: any,
     svc: InstanceId | null,
-    context?: ProcessContext | null
+    context?: ProcessContext | null,
   ) => Promise<void>;
 
   addService: (
     scope: RuntimeScope,
     service: ServiceClass,
-    instanceId?: string
+    instanceId?: string,
   ) => Promise<ServiceDescriptor | null>;
 
   removeService: (
     scope: RuntimeScope,
-    service: InstanceId
+    service: InstanceId,
   ) => Promise<Array<ServiceDescriptor> | null>;
 
   configureService: (
     scope: RuntimeScope,
     service: InstanceId,
-    config: any
+    config: any,
   ) => Promise<any>;
 
   getServiceConfig: (scope: RuntimeScope, service: InstanceId) => Promise<any>;
@@ -342,12 +345,12 @@ export type RuntimeApi = {
     scope: RuntimeScope,
     service: InstanceId,
     params: any,
-    context?: ProcessContext | null
+    context?: ProcessContext | null,
   ) => Promise<any>;
 
   rearrangeServices: (
     scope: RuntimeScope,
-    newOrder: Array<ServiceDescriptor>
+    newOrder: Array<ServiceDescriptor>,
   ) => Promise<Array<ServiceDescriptor>>;
 };
 
@@ -479,5 +482,5 @@ export type BoardMenuItem = {
 };
 
 export type BoardMenuItemFactory = (
-  boardContext: BoardContextState
+  boardContext: BoardContextState,
 ) => Array<BoardMenuItem>;

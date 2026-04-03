@@ -88,8 +88,12 @@ export default function RealtimeRuntime({
     _runtimeId: string,
     _userId: string | undefined,
   ): ReactElement => {
-    const { serviceId } = service;
-    const ui = (serviceId && findServiceUI(serviceId)) || RemoteServiceUI;
+    const ui =
+      findServiceUI({
+        serviceId: service.serviceId,
+        version: service.version,
+        capabilities: service.capabilities,
+      }) || RemoteServiceUI;
 
     return React.createElement(ui, {
       service,

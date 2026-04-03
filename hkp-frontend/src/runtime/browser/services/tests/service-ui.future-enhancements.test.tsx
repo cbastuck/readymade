@@ -58,7 +58,8 @@ function createProps(service: ServiceInstance): ServiceUIProps {
 function getStableSnapshotMarkup(container: HTMLElement): string {
   return (container.firstChild as HTMLElement).outerHTML
     .replace(/id="[^"]+"/g, 'id="__dynamic_id__"')
-    .replace(/for="[^"]+"/g, 'for="__dynamic_id__"');
+    .replace(/for="[^"]+"/g, 'for="__dynamic_id__"')
+    .replace(/aria-controls="[^"]+"/g, 'aria-controls="__dynamic_id__"');
 }
 
 describe("Service UI Future Enhancements", () => {
