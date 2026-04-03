@@ -90,6 +90,13 @@ export default function ServiceFrame({
     };
   }, [service]);
 
+  useEffect(() => {
+    const nextBypass = service?.bypass ?? service?.state?.bypass;
+    if (nextBypass !== undefined) {
+      setBypass(nextBypass);
+    }
+  }, [service, service?.bypass, service?.state?.bypass]);
+
   const uuid = service && service.uuid;
   const serviceName =
     service.serviceName ||
@@ -119,8 +126,16 @@ export default function ServiceFrame({
     }
   };
 
-  const onBypass = (isBypass: boolean) =>
-    service.configure?.({ bypass: isBypass });
+  const onBypass = async (isBypass: boolean) => {
+    const previousBypass = bypass;
+    setBypass(isBypass);
+    try {
+      await service.configure?.({ bypass: isBypass });
+    } catch (err) {
+      setBypass(previousBypass);
+      console.error("ServiceFrame.onBypass", err);
+    }
+  };
 
   const onHelp = () => {
     const serviceId = service.serviceId || service.__descriptor?.serviceId;
