@@ -47,10 +47,6 @@ json Service::configure(Data data)
 json Service::getState() const
 {
   auto state = json{{"bypass", m_bypass.has_value() && *m_bypass}};
-  if (supportsSubservices())
-  {
-    state["__capabilities__"] = json{{"subservices", true}};
-  }
   return state;
 }
 

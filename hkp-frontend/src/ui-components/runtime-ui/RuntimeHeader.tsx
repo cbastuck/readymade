@@ -106,9 +106,12 @@ export default function RuntimeHeader({
           }),
         );
 
-        const subSvcClass: ServiceClass = {
+        const subSvcClass: ServiceClass = boardContext.registry[
+          runtimeId
+        ]?.find((svc) => svc.serviceId === "sub-service") || {
           serviceId: "sub-service",
           serviceName: "SubService",
+          capabilities: ["subservices"],
         };
         const newSvc = await (boardContext.addService(
           subSvcClass,

@@ -44,6 +44,7 @@ public:
 
   std::shared_ptr<Service> createService(const std::string& serviceId);
   std::shared_ptr<Service> createService(const std::string& serviceId, const std::string& instanceId);
+  const ServiceClass* findServiceClass(const std::string& serviceId) const;
   
   Data processRuntimeWithName(const std::string& name, const Data& params) const;
 

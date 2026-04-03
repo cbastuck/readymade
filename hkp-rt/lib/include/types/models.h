@@ -11,6 +11,7 @@ struct ServiceClass
   ServiceClass(std::string serviceId) : serviceId{serviceId} {}
 
   std::string serviceId;
+  std::vector<std::string> capabilities;
 };
 
 struct ServiceDescriptor : ServiceClass

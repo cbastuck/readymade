@@ -15,9 +15,26 @@ import {
 import RealtimeRuntimeScope from "./RealtimeRuntimeScope";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 
+function normalizeRegistry(registry: ServiceClass[]): ServiceClass[] {
+  return registry.map((entry) => {
+    if (entry.serviceId !== "sub-service") {
+      return entry;
+    }
+
+    const capabilities = entry.capabilities ?? [];
+    const hasSubservices = capabilities.some(
+      (cap) => cap.trim().toLocaleLowerCase() === "subservices",
+    );
+
+    return hasSubservices
+      ? entry
+      : { ...entry, capabilities: [...capabilities, "subservices"] };
+  });
+}
+
 async function createScope(
   runtime: RuntimeDescriptor,
-  runtimeOutputUrl: string
+  runtimeOutputUrl: string,
 ): Promise<RealtimeRuntimeScope> {
   return new RealtimeRuntimeScope(runtime, runtimeOutputUrl);
 }
@@ -25,7 +42,7 @@ async function createScope(
 export async function addRuntime(
   rtClass: RuntimeClass,
   _user: User | null,
-  boardName = ""
+  boardName = "",
 ) {
   const { name: passedName, type, url } = rtClass;
   const runtimeId = uuidv4();
@@ -39,7 +56,7 @@ export async function addRuntime(
   const { scope, registry } = await createRuntimeRequest(
     runtime,
     [],
-    boardName
+    boardName,
   );
   return {
     runtime,
@@ -52,7 +69,7 @@ export async function addRuntime(
 export async function removeRuntime(
   scope_: RuntimeScope,
   runtime: RuntimeDescriptor,
-  _user: User | null
+  _user: User | null,
 ): Promise<void> {
   const scope = scope_ as RealtimeRuntimeScope;
   scope.close();
@@ -70,7 +87,7 @@ async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
   _user: User | null,
-  boardName?: string
+  boardName?: string,
 ): Promise<RestoreRuntimeResult | null> {
   const svcs = services.map((s) => ({
     uuid: s.uuid || uuidv4(),
@@ -98,6 +115,8 @@ type RestRuntimeData = {
   services: Array<{
     serviceId: string;
     serviceName: string;
+    version?: string;
+    capabilities?: string[];
     state: any;
     uuid: string;
   }>;
@@ -106,7 +125,7 @@ type RestRuntimeData = {
 
 export async function attachRuntimes(
   rtClass: RuntimeClass,
-  _user: User | null
+  _user: User | null,
 ): Promise<EngineState> {
   const initState: EngineState = {
     runtimes: [],
@@ -123,8 +142,12 @@ export async function attachRuntimes(
     throw new Error("Failed to fetch runtimes" + res.statusText);
   }
   const body = await res.json();
-  const runtimes: RestRuntimeData[] = Array.isArray(body) ? body : (body.runtimes ?? []);
-  const registry = Array.isArray(body) ? [] : (body.registry ?? []);
+  const runtimes: RestRuntimeData[] = Array.isArray(body)
+    ? body
+    : (body.runtimes ?? []);
+  const registry = normalizeRegistry(
+    Array.isArray(body) ? [] : (body.registry ?? []),
+  );
 
   // TODO: get rid of the any type
   return runtimes.reduce((acc: any, cur: RestRuntimeData) => {
@@ -135,6 +158,7 @@ export async function attachRuntimes(
       ...acc,
       runtimes: [...acc.runtimes, rt],
       services: { ...acc.services, [cur.id]: cur.services },
+      registry: { ...acc.registry, [cur.id]: registry },
       scopes: { ...acc.scopes, [cur.id]: scope },
     };
   }, initState);
@@ -144,7 +168,7 @@ export async function processRuntime(
   scope_: RuntimeScope,
   params: any,
   _svc: InstanceId | null,
-  context?: ProcessContext | null
+  context?: ProcessContext | null,
 ): Promise<void> {
   const scope = scope_ as RealtimeRuntimeScope;
   const runtime = scope.descriptor;
@@ -163,7 +187,7 @@ export async function processRuntime(
     });
     if (!res.ok) {
       throw new Error(
-        `Failed to process ${runtime.id} runtime: ${res.statusText}`
+        `Failed to process ${runtime.id} runtime: ${res.statusText}`,
       );
     }
   }
@@ -171,8 +195,12 @@ export async function processRuntime(
 
 export async function addService(scope: RuntimeScope, service: ServiceClass) {
   const runtime = scope.descriptor;
+  const scopeRegistry = (scope as RealtimeRuntimeScope).registry || [];
+  const descriptor =
+    scopeRegistry.find((entry) => entry.serviceId === service.serviceId) ||
+    service;
   const payload = {
-    ...service,
+    ...descriptor,
     uuid: uuidv4(),
   };
   const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/services`, {
@@ -188,7 +216,7 @@ export async function addService(scope: RuntimeScope, service: ServiceClass) {
 
   const config = await res.json();
   const createdService = {
-    ...service,
+    ...descriptor,
     state: config,
     uuid: payload.uuid,
   };
@@ -197,7 +225,7 @@ export async function addService(scope: RuntimeScope, service: ServiceClass) {
 
 export async function removeService(
   scope: RuntimeScope,
-  service: InstanceId
+  service: InstanceId,
 ): Promise<Array<ServiceDescriptor> | null> {
   const runtime = scope.descriptor;
   const res = await fetch(
@@ -207,7 +235,7 @@ export async function removeService(
       headers: {
         "content-type": "application/json",
       },
-    }
+    },
   );
 
   if (!res.ok) {
@@ -220,7 +248,7 @@ export async function removeService(
 export async function configureService(
   scope: RuntimeScope,
   service: InstanceId,
-  config: object
+  config: object,
 ): Promise<object> {
   const runtime = scope.descriptor;
   const res = await fetch(
@@ -231,7 +259,7 @@ export async function configureService(
       headers: {
         "content-type": "application/json",
       },
-    }
+    },
   );
   if (!res.ok) {
     throw new Error("Failed to configure service" + res.statusText);
@@ -245,11 +273,11 @@ export async function configureService(
 
 export async function getServiceConfig(
   scope: RuntimeScope,
-  service: InstanceId
+  service: InstanceId,
 ): Promise<any> {
   const runtime = scope.descriptor;
   const res = await fetch(
-    `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`
+    `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
   );
   if (!res.ok) {
     throw new Error("Failed to get service configure: " + res.statusText);
@@ -263,14 +291,14 @@ export async function processService(
   _scope: RuntimeScope,
   _service: InstanceId,
   _params: any,
-  _context?: ProcessContext | null
+  _context?: ProcessContext | null,
 ): Promise<any> {
   throw new Error("RemoteRuntime processService no implemented");
 }
 
 export async function rearrangeServices(
   scope: RuntimeScope,
-  newOrder: Array<ServiceDescriptor>
+  newOrder: Array<ServiceDescriptor>,
 ): Promise<Array<ServiceDescriptor>> {
   const runtime = scope.descriptor;
   const res = await fetch(`${runtime.url}/runtimes/${runtime.id}/rearrange`, {
@@ -291,7 +319,7 @@ export async function rearrangeServices(
 async function createRuntimeRequest(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
-  boardName?: string
+  boardName?: string,
 ) {
   const payload = {
     name: runtime.name,
@@ -314,18 +342,19 @@ async function createRuntimeRequest(
     throw new Error("Failed to create runtime" + res.statusText);
   }
   const { registry, runtimes } = await res.json();
+  const normalizedRegistry = normalizeRegistry(registry ?? []);
   const rt = runtimes[0]; // TODO only considering the first runtime here
   if (!rt) {
     throw new Error("Failed to create runtime - no runtime was addeed");
   }
   const scope = await createScope(runtime, rt.outputUrl);
-  scope.registry = registry ?? [];
+  scope.registry = normalizedRegistry;
 
   return {
     runtime: rt,
     services: rt.services,
     scope,
-    registry,
+    registry: normalizedRegistry,
   };
 }
 

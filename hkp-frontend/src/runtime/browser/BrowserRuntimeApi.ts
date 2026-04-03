@@ -230,6 +230,11 @@ function createService(
     return null;
   }
   const useInstanceId = instanceId || uuidv4();
+  if (!module.create) {
+    throw new Error(
+      `Service module ${module.serviceId} does not have a create function. Browser runtime requires services to implement create.`,
+    );
+  }
   const svc: ServiceInstance = module.create(
     scope.app,
     "deprecated boardname - get it from app",

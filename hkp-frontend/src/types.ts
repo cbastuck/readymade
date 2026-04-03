@@ -164,7 +164,7 @@ export type ServiceUIComponent =
   | FunctionComponent<ServiceUIProps>;
 
 export type ServiceModule = ServiceClass & {
-  create: (
+  create?: (
     app: AppImpl,
     board: string,
     service: ServiceClass,

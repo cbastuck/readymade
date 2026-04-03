@@ -22,7 +22,9 @@ export default function RealtimeRuntimeServiceUI(props: Props) {
   const { service, onNotification } = props;
   const meta = service.state?.["__meta__"];
   const supportsSubservices =
-    service.state?.["__capabilities__"]?.subservices === true;
+    service.capabilities?.some(
+      (cap: string) => cap.trim().toLocaleLowerCase() === "subservices",
+    ) === true;
   const [properties, setProperties] = useState<any>(extractProperties(service));
 
   useEffect(() => setProperties(extractProperties(service)), [service]);
@@ -194,7 +196,6 @@ function extractProperties(service: any) {
           "bypass",
           "pipeline",
           "__meta__",
-          "__capabilities__",
         ].indexOf(key) === -1,
     )
     .reduce((all, key) => {

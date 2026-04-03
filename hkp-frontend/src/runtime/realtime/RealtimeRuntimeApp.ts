@@ -23,7 +23,7 @@ export function createRealtimeRuntimeApp(scope: RealtimeRuntimeScope): AppImpl {
         scope,
         result,
         svc,
-        null // we don't have a service here, so we pass null
+        null, // we don't have a service here, so we pass null
       );
     },
     getServiceById: (uuid: string): ServiceImpl | null => {
@@ -35,11 +35,11 @@ export function createRealtimeRuntimeApp(scope: RealtimeRuntimeScope): AppImpl {
     storeServiceData: (
       _serviceUuid: string,
       _key: string,
-      _value: string
+      _value: string,
     ): void => {},
     restoreServiceData: (
       _serviceUuid: string,
-      _key: string
+      _key: string,
     ): string | undefined => {
       return undefined;
     },
@@ -47,7 +47,7 @@ export function createRealtimeRuntimeApp(scope: RealtimeRuntimeScope): AppImpl {
     createSubService: (
       _parent: ServiceImpl,
       _service: ServiceClass,
-      _instanceId?: string
+      _instanceId?: string,
     ): Promise<ServiceInstance | null> => {
       return Promise.resolve(null);
     },
@@ -57,13 +57,13 @@ export function createRealtimeRuntimeApp(scope: RealtimeRuntimeScope): AppImpl {
     listAvailableServices: () => scope.registry,
     registerNotificationTarget: (
       svc: ServiceInstance,
-      onNotification: (notification: any) => void
+      onNotification: (notification: any) => void,
     ) => {
       notificationTargets.register(svc, onNotification);
     },
     unregisterNotificationTarget: (
       svc: ServiceInstance,
-      onNotification: (notification: any) => void
+      onNotification: (notification: any) => void,
     ) => {
       notificationTargets.unregister(svc, onNotification);
     },

@@ -22,6 +22,7 @@ class CacheSubservices : public Service
 {
 public:
   static std::string serviceId() { return "cache-subservices"; }
+  static std::vector<std::string> capabilities() { return {"subservices"}; }
 
   explicit CacheSubservices(const std::string& instanceId)
     : Service(instanceId, serviceId())

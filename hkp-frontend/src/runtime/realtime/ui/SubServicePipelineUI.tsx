@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
-import { ServiceAction, ServiceInstance } from "hkp-frontend/src/types";
+import {
+  ServiceAction,
+  ServiceClass,
+  ServiceInstance,
+} from "hkp-frontend/src/types";
 import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
 import { findServiceUI } from "../UIRegistry";
 import RealtimeRuntimeServiceUI from "../RealtimeRuntimeServiceUI";
@@ -21,6 +25,9 @@ export default function SubServicePipelineUI({ service }: Props) {
   const pipeline: PipelineEntry[] = service.state?.pipeline ?? [];
   const registry = service.app.listAvailableServices();
   const [collapsed, setCollapsed] = useState(false);
+
+  const findDescriptor = (serviceId: string): ServiceClass | undefined =>
+    registry.find((entry) => entry.serviceId === serviceId);
 
   const append = (svc: { serviceId: string }) => {
     service.configure({ appendService: { serviceId: svc.serviceId } });
@@ -80,6 +87,8 @@ export default function SubServicePipelineUI({ service }: Props) {
       {!collapsed && (
         <div className="flex flex-row">
           {pipeline.map((entry, pos) => {
+            const descriptor = findDescriptor(entry.serviceId);
+
             const onSubServiceAction = (command: ServiceAction) => {
               if (command.action === "remove") {
                 remove(entry.instanceId);
@@ -89,7 +98,9 @@ export default function SubServicePipelineUI({ service }: Props) {
             const subServiceInstance: ServiceInstance = {
               uuid: entry.instanceId,
               serviceId: entry.serviceId,
-              serviceName: entry.serviceId,
+              serviceName: descriptor?.serviceName ?? entry.serviceId,
+              version: descriptor?.version,
+              capabilities: descriptor?.capabilities,
               state: entry.state,
               app: service.app,
               board: service.board,
@@ -107,7 +118,12 @@ export default function SubServicePipelineUI({ service }: Props) {
             };
 
             const SubServiceUI =
-              (entry.serviceId && findServiceUI(entry.serviceId)) ||
+              (entry.serviceId &&
+                findServiceUI({
+                  serviceId: entry.serviceId,
+                  version: descriptor?.version,
+                  capabilities: descriptor?.capabilities,
+                })) ||
               RealtimeRuntimeServiceUI;
 
             const uiElement = React.createElement(SubServiceUI as any, {

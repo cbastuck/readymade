@@ -166,7 +166,8 @@ json App::getRegistry() const
    {
      r.push_back(json{
        { "serviceName", svc.serviceId }, 
-       { "serviceId", svc.serviceId }});
+       { "serviceId", svc.serviceId },
+       { "capabilities", svc.capabilities }});
    }
   return r;
 }
@@ -217,6 +218,11 @@ std::shared_ptr<Service> App::createService(const std::string& serviceId)
 std::shared_ptr<Service> App::createService(const std::string& serviceId, const std::string& instanceId)
 {
   return m_registry->create(serviceId, instanceId);
+}
+
+const ServiceClass* App::findServiceClass(const std::string& serviceId) const
+{
+  return m_registry->findServiceClass(serviceId);
 }
 
 Data App::processRuntimeWithName(const std::string& name, const Data& params) const

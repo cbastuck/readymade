@@ -15,6 +15,7 @@ json jsonSerialise(const RuntimeConfiguration& conf)
     service["serviceId"] = svc.serviceId;
     service["serviceName"] = svc.instanceName.empty() ? svc.serviceId : svc.instanceName;
     service["uuid"] = svc.instanceId;
+    service["capabilities"] = svc.capabilities;
     service["state"] = svc.state;
     services.push_back(service);
   }

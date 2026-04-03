@@ -96,16 +96,28 @@ std::shared_ptr<Service> Registry::create(std::string serviceId, std::string ins
   return nullptr;
 }
 
-const std::vector<ServiceClass>& Registry::availableServices()
+const std::vector<ServiceClass>& Registry::availableServices() const
 {
-  if (m_availableServices.empty())
-  {
-    for (auto& [id, _] : m_serviceList)
-    {
-      m_availableServices.push_back(ServiceClass{id});
-    }
-  }
   return m_availableServices;
+}
+
+const ServiceClass* Registry::findServiceClass(const std::string& serviceId) const
+{
+  auto it = std::find_if(
+    m_availableServices.begin(),
+    m_availableServices.end(),
+    [&serviceId](const ServiceClass& serviceClass)
+    {
+      return serviceClass.serviceId == serviceId;
+    }
+  );
+
+  if (it == m_availableServices.end())
+  {
+    return nullptr;
+  }
+
+  return &(*it);
 }
 
 bool Registry::loadPlugin(const std::string& path)

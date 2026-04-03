@@ -44,6 +44,7 @@ class SubService : public Service
 {
 public:
   static std::string serviceId() { return "sub-service"; }
+  static std::vector<std::string> capabilities() { return {"subservices"}; }
 
   explicit SubService(const std::string& instanceId)
     : Service(instanceId, "sub-service")

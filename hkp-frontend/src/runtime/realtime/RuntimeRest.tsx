@@ -132,17 +132,29 @@ export function makeServiceInstance(
   boardName: string,
 ): ServiceInstance {
   const api: RuntimeApi = scope.getApi();
-  return {
+  const descriptor = scope
+    .getApp()
+    .listAvailableServices()
+    .find((entry) => entry.serviceId === svc.serviceId);
+
+  const normalizedService: ServiceDescriptor = {
     ...svc,
+    serviceName: svc.serviceName || descriptor?.serviceName || svc.serviceId,
+    version: svc.version ?? descriptor?.version,
+    capabilities: svc.capabilities ?? descriptor?.capabilities,
+  };
+
+  return {
+    ...normalizedService,
     board: boardName,
     app: scope.getApp(),
     process: async (params: any): Promise<any> =>
-      api.processService(scope, svc, params, null), // TODO: passing null as requestId
+      api.processService(scope, normalizedService, params, null), // TODO: passing null as requestId
     configure: async (config: object): Promise<void> => {
-      await api.configureService(scope, svc, config);
+      await api.configureService(scope, normalizedService, config);
     },
     getConfiguration: (): Promise<any> => {
-      return api.getServiceConfig(scope, svc);
+      return api.getServiceConfig(scope, normalizedService);
     },
     destroy: async (): Promise<void> => {},
   };

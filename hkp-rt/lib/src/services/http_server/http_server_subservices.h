@@ -18,6 +18,7 @@ class HttpServerSubservices : public Service
 {
 public:
   static std::string serviceId() { return "http-server-subservices"; }
+  static std::vector<std::string> capabilities() { return {"subservices"}; }
 
   explicit HttpServerSubservices(const std::string& instanceId);
   ~HttpServerSubservices();

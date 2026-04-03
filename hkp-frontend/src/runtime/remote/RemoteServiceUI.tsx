@@ -177,7 +177,6 @@ function extractProperties(service: any) {
           "bypass",
           "pipeline",
           "__meta__",
-          "__capabilities__",
         ].indexOf(key) === -1,
     )
     .reduce((all, key) => {

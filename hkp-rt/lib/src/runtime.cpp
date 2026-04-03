@@ -152,6 +152,10 @@ RuntimeConfiguration Runtime::getConfiguration() const
     ServiceConfiguration sc;
     sc.serviceId = svc->getServiceId();
     sc.instanceId = svc->getId();
+    if (const auto* serviceClass = m_app->findServiceClass(sc.serviceId))
+    {
+      sc.capabilities = serviceClass->capabilities;
+    }
     sc.state = svc->getState();
     config.services.push_back(sc);
     
