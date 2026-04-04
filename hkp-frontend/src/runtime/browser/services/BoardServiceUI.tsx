@@ -11,6 +11,7 @@ import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import browserRuntimeApi from "../BrowserRuntimeApi";
 import remoteRuntimeApi from "../../graphql/RuntimeGraphQLApi";
 import {
+  BoardDescriptor,
   RuntimeInputRoutings,
   RuntimeOutputRoutings,
   RuntimeApiMap,
@@ -59,6 +60,9 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   useEffect(() => setSavedBoards(getLocalBoards()), []);
 
   const [selectedSavedBoard, setSelectedSavedBoard] = useState("");
+  const [incomingBoard, setIncomingBoard] = useState<BoardDescriptor | null>(
+    null,
+  );
 
   const boardProviderRef = useRef<BoardProviderHandle | null>(null);
 
@@ -69,6 +73,12 @@ export default function BoardServiceUI(props: ServiceUIProps) {
       boardProviderRef.current?.fetchBoard();
     }
   }, [selectedSavedBoard]);
+
+  useEffect(() => {
+    if (incomingBoard) {
+      boardProviderRef.current?.fetchBoard();
+    }
+  }, [incomingBoard]);
 
   const onUpdate = useCallback((update: Partial<Config>) => {
     if (update.selectedBoard !== undefined) {
@@ -84,6 +94,24 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   const pendingPromise = useRef<any>(null);
 
   const processSingle = async (params: any) => {
+    if (isBoardDescriptorPayload(params)) {
+      const nextBoard = normalizeBoardDescriptor(params);
+      setIncomingBoard(nextBoard);
+
+      const { inputRouting, outputRouting, sidechainRouting } =
+        nextBoard as any;
+      setInputRouting(inputRouting || {});
+      setOutputRouting(outputRouting || {});
+      setSidechainRouting(sidechainRouting || {});
+
+      setIsExpanded(true);
+      setTimeout(() => boardProviderRef.current?.fetchBoard(), 0);
+      return {
+        previewed: true,
+        boardName: nextBoard.boardName || "incoming-board",
+      };
+    }
+
     return new Promise((resolve, reject) => {
       pendingPromise.current = { resolve, reject };
       boardProviderRef.current?.onAction({
@@ -124,8 +152,13 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   };
 
   const selectedBoard = selectedSavedBoard || savedBoards[0]?.name || "";
+  const activeBoardName = incomingBoard?.boardName || selectedBoard;
 
   const fetchBoard = useCallback(() => {
+    if (incomingBoard) {
+      return incomingBoard;
+    }
+
     if (!selectedBoard) {
       return null;
     }
@@ -144,10 +177,11 @@ export default function BoardServiceUI(props: ServiceUIProps) {
       setSidechainRouting(sidechainRouting);
     }
     return board;
-  }, [selectedBoard]);
+  }, [incomingBoard, selectedBoard]);
 
   const onChangeSavedBoard = useCallback(
     (boardContext: BoardContextState, board: string) => {
+      setIncomingBoard(null);
       setSelectedSavedBoard(board);
       setTimeout(() => boardContext.fetchBoard(), 100);
     },
@@ -155,6 +189,9 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   );
 
   const onEdit = useCallback(() => {
+    if (!selectedBoard) {
+      return;
+    }
     window.open(`/playground/${selectedBoard}`, "_blank");
   }, [selectedBoard]);
 
@@ -217,9 +254,16 @@ export default function BoardServiceUI(props: ServiceUIProps) {
                 <Button
                   className="h-min w-min p-2 m-0"
                   icon={<ExternalLink className="h-4 w-4" />}
+                  disabled={!selectedBoard}
                   onClick={onEdit}
                 />
               </div>
+
+              {incomingBoard && (
+                <div className="text-xs text-neutral-600 mb-1">
+                  Preview Source: incoming board JSON ({activeBoardName})
+                </div>
+              )}
 
               <SelectorField
                 label="Input"
@@ -258,7 +302,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
                   outputRouting={outputRouting}
                   boardContext={boardContext}
                   sidechainRouting={sidechainRouting}
-                  boardName={selectedBoard}
+                  boardName={activeBoardName}
                   onChangeOutputRouting={() => {}}
                   onChangeInputRouting={() => {}}
                   onChangeSidechainRouting={() => {}}
@@ -278,4 +322,26 @@ export default function BoardServiceUI(props: ServiceUIProps) {
       {renderMain(props.service)}
     </ServiceUI>
   );
+}
+
+function isBoardDescriptorPayload(payload: any): payload is BoardDescriptor {
+  return (
+    !!payload &&
+    typeof payload === "object" &&
+    !Array.isArray(payload) &&
+    Array.isArray(payload.runtimes) &&
+    !!payload.services
+  );
+}
+
+function normalizeBoardDescriptor(payload: BoardDescriptor): BoardDescriptor {
+  return {
+    boardName: payload.boardName || "incoming-board",
+    runtimes: payload.runtimes || [],
+    services: payload.services || {},
+    registry: payload.registry || {},
+    inputRouting: (payload as any).inputRouting || {},
+    outputRouting: (payload as any).outputRouting || {},
+    sidechainRouting: (payload as any).sidechainRouting || {},
+  } as BoardDescriptor;
 }

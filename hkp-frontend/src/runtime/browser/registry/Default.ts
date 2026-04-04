@@ -77,6 +77,7 @@ import Analyzer from "../services/Analyzer";
 import FFT from "../services/FFT";
 import Moog from "../services/Moog";
 import Delay from "../services/Delay";
+import WorkflowBoardBuilder from "../services/WorkflowBoardBuilder";
 
 import { ServiceModule } from "../../../types";
 import AudioEditor from "../services/AudioEditor";
@@ -164,6 +165,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   FFT,
   Moog,
   Delay,
+  WorkflowBoardBuilder,
 
   AudioEditor,
 ];

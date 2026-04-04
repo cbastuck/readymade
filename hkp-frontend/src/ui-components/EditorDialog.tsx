@@ -15,6 +15,7 @@ type Props = {
   title: string;
   description?: string;
   value: string | object;
+  language?: string;
   isOpen: boolean;
   additionalHeaderButtons?: Array<any>;
   actions?: Array<Action>;
@@ -27,6 +28,7 @@ export default function EditorDialog({
   title,
   description,
   value,
+  language,
   isOpen,
   additionalHeaderButtons,
   actions,
@@ -79,7 +81,12 @@ export default function EditorDialog({
           </DialogDescription>
         )}
         {children && <div>{children}</div>}
-        <Editor ref={editor} value={v} language="json" autofocus={autofocus} />
+        <Editor
+          ref={editor}
+          value={v}
+          language={language || "json"}
+          autofocus={autofocus}
+        />
         <DialogFooter className="flex">
           {actions?.map((action) => (
             <Button

@@ -61,6 +61,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "Timeline.tsx",
   "TriggerPad.ts",
   "UuidGenerator.ts",
+  "WorkflowBoardBuilder.ts",
   "XYPad.ts",
 ]);
 
