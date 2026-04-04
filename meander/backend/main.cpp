@@ -46,7 +46,7 @@ int real_main(int argc, char *argv[])
   auto allowedOrigins = "*"; // allow all origins for CORS
   auto usePort = 0; // start with random port
   auto hkpApp = std::make_shared<hkp::App>();
-  auto server = std::make_shared<hkp::Server>(hkpApp, "realtime", allowedOrigins);
+  auto server = std::make_shared<hkp::Server>(hkpApp, "C++ Engine", allowedOrigins);
   auto t = std::make_shared<std::thread>([server, usePort]()
   {
     server->start("127.0.0.1", usePort);
