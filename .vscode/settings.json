@@ -1,0 +1,70 @@
+{
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+  "C_Cpp.default.browse.path": [
+    "${workspaceFolder}/hkp-rt",
+    "${workspaceFolder}/meander",
+    "${workspaceFolder}/3rdparty/crow",
+    "${workspaceFolder}/3rdparty/yas",
+    "${workspaceFolder}/3rdparty"
+  ],
+  "C_Cpp.default.includePath": [
+    "${workspaceFolder}/hkp-rt/**",
+    "${workspaceFolder}/meander/**",
+    "${workspaceFolder}/3rdparty/crow/**",
+    "${workspaceFolder}/3rdparty/yas/**",
+    "${workspaceFolder}/3rdparty"
+  ],
+  "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
+  "C_Cpp.files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/build/**": true,
+    "**/build-tests/**": true,
+    "**/hkp-rt/build/**": true,
+    "**/hkp-rt/build-tests/**": true,
+    "**/hkp-rt/build-ios-sim/**": true,
+    "**/hkp-rt/build-ios-sim-lib/**": true,
+    "**/meander-ios/build/**": true,
+    "**/3rdparty/vcpkg/**": true,
+    "**/3rdparty/vcpkg/**/buildtrees/**": true,
+    "**/3rdparty/vcpkg/**/downloads/**": true,
+    "**/3rdparty/vcpkg/**/packages/**": true,
+    "**/3rdparty/vcpkg/**/installed/**": true,
+    "**/tmp/**": true,
+    "**/docs/**": true,
+    "**/hkp-frontend/**": true,
+    "**/hkp-node/**": true,
+    "**/node_modules/**": true
+  },
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/build/**": true,
+    "**/build-tests/**": true,
+    "**/hkp-rt/build/**": true,
+    "**/hkp-rt/build-tests/**": true,
+    "**/hkp-rt/build-ios-sim/**": true,
+    "**/hkp-rt/build-ios-sim-lib/**": true,
+    "**/3rdparty/vcpkg/**": true,
+    "**/tmp/**": true,
+    "**/hkp-frontend/**": true,
+    "**/hkp-node/**": true,
+    "**/docs/**": true,
+    "**/node_modules/**": true
+  },
+  "search.exclude": {
+    "**/build/**": true,
+    "**/build-tests/**": true,
+    "**/hkp-rt/build/**": true,
+    "**/hkp-rt/build-tests/**": true,
+    "**/hkp-rt/build-ios-sim/**": true,
+    "**/hkp-rt/build-ios-sim-lib/**": true,
+    "**/3rdparty/vcpkg/**": true,
+    "**/tmp/**": true,
+    "**/node_modules/**": true
+  }
+}
