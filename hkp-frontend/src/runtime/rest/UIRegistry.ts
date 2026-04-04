@@ -1,6 +1,7 @@
 import { ServiceClass, ServiceUIComponent } from "hkp-frontend/src/types";
 
 import MonitorUI from "../browser/services/MonitorUI";
+import TimerUI from "../browser/services/TimerUI";
 import CoreOutputUI from "./ui/CoreOutputUI";
 import CoreInputUI from "./ui/CoreInputUI";
 import FilterUI from "./ui/FilterUI";
@@ -44,6 +45,8 @@ function findServiceUIByKey(
       return MapUIV1;
     case "http-client":
       return HttpClientUI;
+    case "timer":
+      return TimerUI;
   }
   return null;
 }

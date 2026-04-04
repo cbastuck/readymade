@@ -16,6 +16,22 @@
       "skipFiles": ["<node_internals>/**"],
       "program": "${file}",
       "outFiles": ["${workspaceFolder}/**/*.js"]
+    },
+    {
+      "name": "Python: hkp runtime server",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "${workspaceFolder}/hkp-python/.venv/bin/python3",
+      "module": "hkp",
+      "cwd": "${workspaceFolder}/hkp-python",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/hkp-python/src",
+        "PORT": "9000",
+        "HOST": "0.0.0.0",
+        "EXTERNAL_HOST": "127.0.0.1",
+        "ALLOWED_ORIGINS": "*"
+      },
+      "justMyCode": true
     }
   ]
 }
