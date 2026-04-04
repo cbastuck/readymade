@@ -124,7 +124,10 @@ public:
 
   bool onBypassChanged(bool bypass) override
   {
-    if (bypass) fullStop();
+    if (bypass) 
+    {
+      fullStop();
+    }
     else        startTimer(false);
     return bypass;
   }

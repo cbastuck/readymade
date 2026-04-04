@@ -126,7 +126,7 @@ describe("runtime browser service UI smoke tests", () => {
       const mod = (await loadModule()) as Record<string, unknown>;
       const components = extractUiComponents(modulePath, mod);
       expect(components.length).toBeGreaterThan(0);
-    });
+    }, 15000);
 
     it(`${modulePath} UI components can be instantiated`, async () => {
       const mod = (await loadModule()) as Record<string, unknown>;

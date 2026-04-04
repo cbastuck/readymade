@@ -2,7 +2,7 @@ import { ReactElement } from "react";
 import { Link } from "react-router-dom";
 
 import Image from "hkp-frontend/src/ui-components/Image";
-import { Github } from "lucide-react";
+import { GitBranch } from "lucide-react";
 
 import Description from "./Description";
 import { SavedBoard, UsecaseDescriptor } from "../../types";
@@ -45,7 +45,7 @@ export default function Card({ value: item, actions, onAction }: Props) {
               target="_blank"
               rel="noreferrer"
             >
-              <Github size={16} />
+              <GitBranch size={16} />
             </a>
           </div>
         )}

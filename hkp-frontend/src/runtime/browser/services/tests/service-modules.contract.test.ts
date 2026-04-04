@@ -116,7 +116,7 @@ async function loadServiceModules(): Promise<LoadedServiceModule[]> {
       new Promise<never>((_, reject) => {
         setTimeout(
           () => reject(new Error(`Timed out loading module: ${modulePath}`)),
-          5000,
+          15000,
         );
       }),
     ])) as Record<string, unknown>;

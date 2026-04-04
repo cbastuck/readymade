@@ -1,5 +1,7 @@
+import { ElementType } from "react";
+
 type Props = {
-  icon: JSX.ElementType;
+  icon: ElementType;
   className?: string;
 };
 

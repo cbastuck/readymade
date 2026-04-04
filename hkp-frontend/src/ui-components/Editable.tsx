@@ -71,7 +71,7 @@ export default function Editable({
               borderBottom: "solid 1px",
               paddingBottom: "1px",
             }}
-            ref={(elem) => elem && elem.focus()}
+            ref={(elem) => { if (elem) elem.focus(); }}
             value={editableBuffer}
             onChange={onChange}
             onKeyUp={onKeyUp}

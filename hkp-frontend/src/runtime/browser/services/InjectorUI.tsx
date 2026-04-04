@@ -169,7 +169,7 @@ export default function InjectorUI(props: ServiceUIProps) {
       <div className="flex flex-col h-full w-full">
         <div style={{ height: "calc(100% - 54px)" }}>
           <Editor
-            ref={(editor) => (editorRef.current = editor)}
+            ref={(editor) => { editorRef.current = editor; }}
             value={recentInjection}
             language={plainText ? "text" : "json"}
           />

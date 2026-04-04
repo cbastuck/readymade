@@ -139,7 +139,7 @@ export default function CanvasUI(props: ServiceUIProps) {
     const h = fullscreenVal ? fullHeight : canvasHeight - 4; // TODO: could not figure out why we grows otherwise
     return (
       <canvas
-        ref={(ref) => (canvasRef.current = ref)}
+        ref={(ref) => { canvasRef.current = ref; }}
         style={{
           position: fullscreenVal ? "fixed" : undefined,
           top: fullscreenVal ? 0 : undefined,

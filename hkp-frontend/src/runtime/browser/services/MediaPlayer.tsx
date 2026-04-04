@@ -54,7 +54,7 @@ export function MediaPlayerUI(props: ServiceUIProps) {
   const renderMain = () => {
     return (
       <audio
-        ref={(audio) => (audioRef.current = audio)}
+        ref={(audio) => { audioRef.current = audio; }}
         style={{ width: "100%" }}
         controls
         autoPlay
