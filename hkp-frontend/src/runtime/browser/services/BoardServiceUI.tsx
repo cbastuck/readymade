@@ -51,6 +51,8 @@ type Config = {
 };
 
 export default function BoardServiceUI(props: ServiceUIProps) {
+  const playgroundBoardContext = useBoardContext();
+
   const [inputRouting, setInputRouting] = useState<RuntimeInputRoutings>({});
   const [outputRouting, setOutputRouting] = useState<RuntimeOutputRoutings>({});
   const [sidechainRouting, setSidechainRouting] = useState<SidechainRouting>(
@@ -199,6 +201,14 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   const onToggleExpandCollapse = () =>
     setIsExpanded((isExpanded) => !isExpanded);
 
+  const onApplyHostedBoard = useCallback(async () => {
+    const board = fetchBoard();
+    if (!board) {
+      return;
+    }
+    await playgroundBoardContext?.setBoardState(board as any);
+  }, [fetchBoard, playgroundBoardContext]);
+
   const runtimeApis: RuntimeApiMap = {
     browser: browserRuntimeApi,
     remote: remoteRuntimeApi,
@@ -238,45 +248,55 @@ export default function BoardServiceUI(props: ServiceUIProps) {
                 minWidth: "250px",
               }}
             >
-              <div className="flex items-center">
-                <SelectorField
-                  label="Board"
-                  value={selectedBoard}
-                  options={savedBoards.reduce(
-                    (all, board) => ({
-                      ...all,
-                      [board.name]: board.name,
-                    }),
-                    {},
-                  )}
-                  onChange={({ value: board }) => {
-                    service.configure({ selectedBoard: board });
-                    onChangeSavedBoard(boardContext, board);
-                  }}
-                />
-                <Button
-                  className="h-min w-min p-2 m-0"
-                  icon={<ExternalLink className="h-4 w-4" />}
-                  disabled={!selectedBoard}
-                  onClick={onEdit}
-                />
-              </div>
-
-              {incomingBoard && (
-                <div className="text-xs text-neutral-600 mb-1">
-                  Preview Source: incoming board JSON ({activeBoardName})
+              {incomingBoard ? (
+                <>
+                  <div className="text-xs text-neutral-600 mb-1">
+                    Preview Source: incoming board JSON ({activeBoardName})
+                  </div>
+                  <Button
+                    className="h-min ml-2"
+                    disabled={!activeBoardName}
+                    onClick={onApplyHostedBoard}
+                  >
+                    Apply Board
+                  </Button>
+                </>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center">
+                    <SelectorField
+                      label="Board"
+                      value={selectedBoard}
+                      options={savedBoards.reduce(
+                        (all, board) => ({
+                          ...all,
+                          [board.name]: board.name,
+                        }),
+                        {},
+                      )}
+                      onChange={({ value: board }) => {
+                        service.configure({ selectedBoard: board });
+                        onChangeSavedBoard(boardContext, board);
+                      }}
+                    />
+                    <Button
+                      className="h-min w-min p-2 m-0"
+                      icon={<ExternalLink className="h-4 w-4" />}
+                      disabled={!selectedBoard}
+                      onClick={onEdit}
+                    />
+                  </div>
+                  <SelectorField
+                    label="Input"
+                    value="array"
+                    options={{
+                      array: "process array items",
+                      whole: "process whole array ",
+                    }}
+                    onChange={() => {}}
+                  />
                 </div>
               )}
-
-              <SelectorField
-                label="Input"
-                value="array"
-                options={{
-                  array: "process array items",
-                  whole: "process whole array ",
-                }}
-                onChange={() => {}}
-              />
 
               <Button
                 style={{
