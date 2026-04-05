@@ -10,6 +10,7 @@ import BoardProvider, {
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import browserRuntimeApi from "../BrowserRuntimeApi";
 import remoteRuntimeApi from "../../graphql/RuntimeGraphQLApi";
+import runtimeRestApi from "../../rest/RuntimeRestApi";
 import {
   BoardDescriptor,
   RuntimeInputRoutings,
@@ -202,6 +203,8 @@ export default function BoardServiceUI(props: ServiceUIProps) {
     browser: browserRuntimeApi,
     remote: remoteRuntimeApi,
     graphql: remoteRuntimeApi,
+    realtime: runtimeRestApi,
+    rest: runtimeRestApi,
   };
 
   const renderMain = (service: ServiceInstance) => {
