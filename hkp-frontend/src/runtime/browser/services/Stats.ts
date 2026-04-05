@@ -1,5 +1,18 @@
 import { AppInstance, ServiceClass } from "../../../types";
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/stats
+ * Service Name: Stats
+ * Modes: feature extraction
+ * Key Config: property, features.mean, features.std, features.max, copyProps
+ * Input: array<object> or single object (normalized to array)
+ * Output: [metaStats, ...originalItems]
+ * Arrays: native behavior
+ * Binary: not intended
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/stats";
 const serviceName = "Stats";
 
@@ -29,7 +42,7 @@ class Stats {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;
@@ -61,7 +74,10 @@ class Stats {
     }
 
     const stats = params.reduce(
-      (acc: { type: string; n: number; sum: number; values: number[] }, cur: any) => {
+      (
+        acc: { type: string; n: number; sum: number; values: number[] },
+        cur: any,
+      ) => {
         const val = cur[this.property as string];
         if (val === undefined) {
           return acc;
@@ -78,7 +94,7 @@ class Stats {
         n: 0,
         sum: 0,
         values: [],
-      }
+      },
     );
 
     const result: Record<string, any> = {};
@@ -90,10 +106,11 @@ class Stats {
 
       const stdProperty = this.features.std;
       if (stdProperty) {
-        const mx = (stats as any)[meanProperty as string] || stats.sum / stats.n;
+        const mx =
+          (stats as any)[meanProperty as string] || stats.sum / stats.n;
         const sx = stats.values.reduce(
           (p: number, c: number) => p + square(c - mx),
-          0
+          0,
         );
         result[stdProperty] = Math.sqrt(sx / stats.sum);
       }

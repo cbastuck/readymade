@@ -16,6 +16,18 @@
 #include "../sub_runtime.h"
 #include "../uuid.h"
 
+/**
+ * Service Documentation
+ * Service ID: cache-subservices
+ * Service Name: CacheSubservices
+ * Runtime: hkp-rt
+ * Modes: unspecified
+ * Key Config: runtime-specific state/config
+ * IO: in=runtime-dependent -> out=runtime-dependent
+ * Arrays: service-dependent
+ * Binary: supported (service-dependent)
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 class CacheSubservices : public Service

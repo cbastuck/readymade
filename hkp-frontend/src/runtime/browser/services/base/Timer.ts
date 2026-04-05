@@ -3,6 +3,19 @@ import moment, { unitOfTime } from "moment";
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import { sleep } from "./helpers";
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/timer
+ * Service Name: Timer
+ * Modes: periodic | oneShot
+ * Key Config: periodic, periodicValue, periodicUnit, oneShotDelay, oneShotDelayUnit, running, start, stop, restart, immediate, until.triggerCount
+ * Input: any payload (used in delayed one-shot process path)
+ * Output: tick payload with triggerCount and optional pass-through fields
+ * Arrays: treated as generic input payloads
+ * Binary: pass-through in delayed processing mode
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/timer";
 const serviceName = "Timer";
 
@@ -29,7 +42,7 @@ class Timer {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;

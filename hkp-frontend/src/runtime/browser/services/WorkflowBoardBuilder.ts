@@ -2,6 +2,7 @@ import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import WorkflowBoardBuilderUI from "./WorkflowBoardBuilderUI";
 import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
+import { buildWorkflowSystemPrompt } from "./workflow-prompt/SystemPromptCatalog";
 
 const serviceName = "Workflow Board Builder";
 const serviceId = "hookup.to/service/workflow-board-builder";
@@ -23,44 +24,6 @@ const DEFAULT_MODELS: Record<Provider, string> = {
   openai: "gpt-4.1-mini",
   gemini: "gemini-2.0-flash",
 };
-
-const HKP_PYTHON_SERVICES = [
-  "monitor",
-  "map",
-  "sub-service",
-  "http-server-subservices",
-  "timer",
-];
-
-const HKP_NODE_SERVICES = ["hookup.to/service/monitor"];
-
-const HKP_RT_SERVICES = [
-  "buffer",
-  "cache",
-  "cache-subservices",
-  "core-input",
-  "core-output",
-  "fft",
-  "filesystem",
-  "ffmpeg",
-  "filter",
-  "http-client",
-  "http-server",
-  "http-server-subservices",
-  "ifft",
-  "map",
-  "monitor",
-  "mp4-to-wav",
-  "static",
-  "sub-service",
-  "timer",
-  "transients",
-  "wav-reader",
-  "websocket-client",
-  "websocket-reader",
-  "websocket-socket",
-  "websocket-writer",
-];
 
 const DEFAULT_WORKFLOW_DESCRIPTION = [
   "Hello world workflow:",
@@ -226,7 +189,7 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
     this.app.notify(this, { busy: true, lastError: "" });
 
     try {
-      const systemPrompt = buildSystemPrompt(this.app);
+      const systemPrompt = buildWorkflowSystemPrompt(this.app);
       const userPrompt = buildUserPrompt(description);
 
       const raw = await this.callProvider(
@@ -378,39 +341,6 @@ async function readJsonOrThrow(response: Response, provider: string) {
     throw new Error(`${provider} request failed: ${response.status} ${text}`);
   }
   return json;
-}
-
-function buildSystemPrompt(app: AppInstance) {
-  const browserServices = app
-    .listAvailableServices()
-    .map((svc) => ({ serviceId: svc.serviceId, serviceName: svc.serviceName }));
-
-  const runtimeCatalog = {
-    browser: browserServices,
-    "hkp-rt": HKP_RT_SERVICES,
-    "hkp-node": HKP_NODE_SERVICES,
-    "hkp-python": HKP_PYTHON_SERVICES,
-  };
-
-  return [
-    "You are an assistant that converts natural-language workflow descriptions into HKP board JSON.",
-    "Return ONLY valid JSON. Do not wrap in markdown.",
-    "Board schema:",
-    "{",
-    '  "boardName": string,',
-    '  "runtimes": [{ "id": string, "name": string, "type": "browser" | "rest" | "graphql", "state"?: object, "url"?: string }],',
-    '  "services": { [runtimeId: string]: [{ "uuid": string, "serviceId": string, "serviceName": string, "state": object }] }',
-    "}",
-    "Use one or more runtimes as needed. Do NOT optimize for a single runtime unless the workflow clearly demands it.",
-    "Prefer multi-runtime topologies when they improve clarity, execution location, or capability fit.",
-    "Use stable UUID-like IDs for services and runtime IDs that are unique inside the board.",
-    "Prefer short but meaningful board and runtime names.",
-    "When runtime is browser, use serviceId values from the browser catalog.",
-    "When runtime is hkp-rt / hkp-node / hkp-python, use serviceId values from that runtime catalog.",
-    "Always include service state with practical defaults.",
-    "Runtime service catalogs:",
-    JSON.stringify(runtimeCatalog, null, 2),
-  ].join("\n");
 }
 
 function buildUserPrompt(description: string) {

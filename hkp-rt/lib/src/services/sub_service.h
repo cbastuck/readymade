@@ -10,6 +10,18 @@
 #include "../sub_runtime.h"
 #include "../uuid.h"
 
+/**
+ * Service Documentation
+ * Service ID: sub-service
+ * Service Name: SubService
+ * Runtime: hkp-rt
+ * Modes: sub-pipeline execution
+ * Key Config: pipeline/subservices configuration
+ * IO: in=any -> out=pipeline result
+ * Arrays: service-defined, typically forwarded
+ * Binary: depends on nested services
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 // SubService — a concrete Service that hosts a configurable nested pipeline

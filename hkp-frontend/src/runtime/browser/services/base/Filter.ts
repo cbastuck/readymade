@@ -1,5 +1,23 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
-import { parseExpression, evalExpression, Expression, SyntaxError } from "./eval";
+import {
+  parseExpression,
+  evalExpression,
+  Expression,
+  SyntaxError,
+} from "./eval";
+
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/filter
+ * Service Name: Filter
+ * Modes: aggregator and | or
+ * Key Config: conditions, aggregator
+ * Input: object | array
+ * Output: input when predicate passes, null when filtered out
+ * Arrays: filters entries and returns filtered array (or null if empty)
+ * Binary: not intended
+ * MixedData: not native in browser runtime
+ */
 
 const serviceId = "hookup.to/service/filter";
 const serviceName = "Filter";
@@ -17,7 +35,7 @@ class Filter {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;
@@ -58,8 +76,8 @@ class Filter {
 
       const results = await Promise.all(
         this._parsedConditions.map(async (pc) =>
-          evalExpression(pc, { params: x })
-        )
+          evalExpression(pc, { params: x }),
+        ),
       );
 
       // if only one condition, return its result directly

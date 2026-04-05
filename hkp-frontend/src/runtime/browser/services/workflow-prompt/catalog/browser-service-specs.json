@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "services": {
+    "hookup.to/service/timer": {
+      "modes": ["periodic", "oneShot"],
+      "config": [
+        "periodic",
+        "periodicValue",
+        "periodicUnit",
+        "oneShotDelay",
+        "oneShotDelayUnit",
+        "running",
+        "start",
+        "stop",
+        "restart",
+        "immediate",
+        "until.triggerCount"
+      ],
+      "input": "any",
+      "output": "tick object with triggerCount plus optional passthrough payload",
+      "arrays": "generic",
+      "binary": "passthrough-in-delay"
+    },
+    "hookup.to/service/map": {
+      "modes": ["replace", "add", "overwrite", "sensingMode"],
+      "config": ["template", "mode", "sensingMode"],
+      "input": "object|array|scalar",
+      "output": "mapped object/scalar (null in sensingMode)",
+      "arrays": "maps each item",
+      "binary": "not-intended"
+    },
+    "hookup.to/service/filter": {
+      "modes": ["and", "or"],
+      "config": ["conditions", "aggregator"],
+      "input": "object|array",
+      "output": "input or null",
+      "arrays": "filters items",
+      "binary": "not-intended"
+    },
+    "hookup.to/service/buffer": {
+      "modes": ["capacity-flush", "interval-flush", "accumulatedOutput"],
+      "config": ["capacity", "interval", "accumulatedOutput", "action=clear"],
+      "input": "any",
+      "output": "array slice, full buffered array, or null",
+      "arrays": "concats arrays",
+      "binary": "opaque-ok"
+    },
+    "hookup.to/service/canvas": {
+      "modes": ["render", "capture"],
+      "config": [
+        "size",
+        "resizable",
+        "clearOnRedraw",
+        "fullscreen",
+        "capture",
+        "reportSizeUpdate"
+      ],
+      "input": "draw payload",
+      "output": "input passthrough or captured Blob",
+      "arrays": "passthrough",
+      "binary": "blob-output"
+    },
+    "hookup.to/service/monitor": {
+      "modes": ["observe"],
+      "config": ["logToConsole"],
+      "input": "any",
+      "output": "identity",
+      "arrays": "passthrough",
+      "binary": "inspectable"
+    },
+    "hookup.to/service/select": {
+      "modes": ["array-index"],
+      "config": ["arrayIndex"],
+      "input": "array",
+      "output": "selected value",
+      "arrays": "primary",
+      "binary": "not-intended"
+    },
+    "hookup.to/service/switch": {
+      "modes": ["identity"],
+      "config": [],
+      "input": "any",
+      "output": "identity",
+      "arrays": "passthrough",
+      "binary": "passthrough"
+    },
+    "hookup.to/service/stats": {
+      "modes": ["feature-extract"],
+      "config": [
+        "property",
+        "features.mean",
+        "features.std",
+        "features.max",
+        "copyProps"
+      ],
+      "input": "array<object>|object",
+      "output": "[metaStats,...input]",
+      "arrays": "native",
+      "binary": "not-intended"
+    },
+    "hookup.to/service/board-service": {
+      "modes": ["saved-board-run", "incoming-board-preview"],
+      "config": ["selectedBoard"],
+      "input": "boardDescriptor|runtimeParams",
+      "output": "play result or preview ack",
+      "arrays": "item-wise-run-supported",
+      "binary": "depends-on-board"
+    }
+  }
+}

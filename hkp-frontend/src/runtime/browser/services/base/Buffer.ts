@@ -1,6 +1,19 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/buffer
+ * Service Name: Buffer
+ * Modes: capacity flush | interval flush | accumulatedOutput
+ * Key Config: capacity, interval, accumulatedOutput, action=clear
+ * Input: any
+ * Output: buffered array slice/full buffer/null depending on configuration and timing
+ * Arrays: concatenates input arrays into internal buffer
+ * Binary: can carry binary payloads as opaque values
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/buffer";
 const serviceName = "Buffer";
 
@@ -19,7 +32,7 @@ class Buffer {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;

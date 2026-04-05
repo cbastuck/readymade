@@ -13,6 +13,18 @@
 #include <boost/asio.hpp>
 #include <boost/asio/deadline_timer.hpp>
 
+/**
+ * Service Documentation
+ * Service ID: timer
+ * Service Name: Timer
+ * Runtime: hkp-rt
+ * Modes: periodic | oneShot
+ * Key Config: service-specific timer fields (period, units, triggers)
+ * IO: in=any -> out=tick payload or delayed payload
+ * Arrays: treated as generic input
+ * Binary: pass-through when payload-based
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 class Timer : public Service

@@ -1,5 +1,18 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/monitor
+ * Service Name: Monitor
+ * Modes: observe
+ * Key Config: logToConsole
+ * Input: any
+ * Output: identity pass-through
+ * Arrays: pass-through
+ * Binary: inspectable in UI (Blob/ArrayBuffer/Uint8Array)
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/monitor";
 const serviceName = "Monitor";
 

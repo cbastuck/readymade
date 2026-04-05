@@ -4,6 +4,19 @@ import { parseExpression, evalExpression } from "./eval";
 
 import ServiceBase from "hkp-frontend/src/runtime/browser/services/ServiceBase";
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/map
+ * Service Name: Map
+ * Modes: replace | add | overwrite | sensingMode
+ * Key Config: template, mode, sensingMode
+ * Input: object | array | scalar
+ * Output: mapped object/scalar; null when sensingMode captures template
+ * Arrays: maps each array element
+ * Binary: not intended for raw binary payloads
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/map";
 const serviceName = "Map";
 

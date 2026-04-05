@@ -9,6 +9,18 @@
 
 #include "../../sub_runtime.h"
 
+/**
+ * Service Documentation
+ * Service ID: http-server-subservices
+ * Service Name: HttpServerSubservices
+ * Runtime: hkp-rt
+ * Modes: session pipeline hosting
+ * Key Config: host/port/routes/subservices
+ * IO: in=request envelope -> out=response envelope
+ * Arrays: not primary
+ * Binary: depends on endpoint + nested services
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 class Session;

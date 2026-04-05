@@ -2,6 +2,19 @@ import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import CanvasUI from "./CanvasUI";
 import ServiceBase from "./ServiceBase";
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/canvas
+ * Service Name: Canvas
+ * Modes: render pass-through | capture
+ * Key Config: size, resizable, clearOnRedraw, fullscreen, capture, reportSizeUpdate
+ * Input: draw payload object/array
+ * Output: input payload pass-through by default; Blob when capture is enabled
+ * Arrays: pass-through
+ * Binary: emits Blob in capture mode
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/canvas";
 const serviceName = "Canvas";
 
@@ -15,7 +28,7 @@ class Canvas extends ServiceBase<any> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       fullscreen: false,
@@ -103,7 +116,7 @@ class Canvas extends ServiceBase<any> {
     });
     if (this.state.capture) {
       return await this.waitForCapturedFrame(frameID).catch(
-        (/*rejectFrameID*/) => null
+        (/*rejectFrameID*/) => null,
       ); // null stops further propagation of droppped frames
     }
 
@@ -118,7 +131,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new Canvas(app, board, descriptor, id),
   createUI: CanvasUI,
 };

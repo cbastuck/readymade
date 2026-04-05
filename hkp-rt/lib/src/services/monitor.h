@@ -8,6 +8,18 @@
 #include <types/data.h>
 
 
+/**
+ * Service Documentation
+ * Service ID: monitor
+ * Service Name: Monitor
+ * Runtime: hkp-rt
+ * Modes: observe
+ * Key Config: runtime-specific observe/log settings
+ * IO: in=any -> out=identity
+ * Arrays: pass-through
+ * Binary: inspect/log support depends on runtime UI/logging
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 class Monitor : public Service 

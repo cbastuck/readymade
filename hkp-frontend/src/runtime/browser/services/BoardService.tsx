@@ -1,6 +1,19 @@
 import { AppImpl, ServiceClass } from "../../../types";
 import BoardServiceUI from "./BoardServiceUI";
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/board-service
+ * Service Name: Board-Service
+ * Modes: saved-board runner | incoming-board preview
+ * Key Config: selectedBoard
+ * Input: board descriptor payload for preview OR runtime params for process action
+ * Output: play result or preview acknowledgement/event payload
+ * Arrays: process path supports item-wise handling via UI layer
+ * Binary: depends on services inside selected/previewed board
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/board-service";
 const serviceName = "Board-Service";
 
@@ -24,7 +37,7 @@ class BoardService {
     app: AppImpl,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;

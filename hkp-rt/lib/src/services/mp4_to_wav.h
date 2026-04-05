@@ -40,6 +40,18 @@
 #include <service.h>
 #include <types/data.h>
 
+/**
+ * Service Documentation
+ * Service ID: mp4-to-wav
+ * Service Name: Mp4ToWav
+ * Runtime: hkp-rt
+ * Modes: unspecified
+ * Key Config: runtime-specific state/config
+ * IO: in=runtime-dependent -> out=runtime-dependent
+ * Arrays: service-dependent
+ * Binary: supported (service-dependent)
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 // Forward declarations — bodies live in mp4_to_wav.cpp which owns

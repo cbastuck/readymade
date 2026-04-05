@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "runtimes": {
+    "browser": {
+      "defaultDataModel": "json-first",
+      "binarySupport": "service-dependent",
+      "mixedData": false,
+      "notes": [
+        "Most services operate on JS objects/arrays/scalars.",
+        "Some services can pass Blob/ArrayBuffer/Uint8Array as opaque payloads."
+      ]
+    },
+    "hkp-rt": {
+      "defaultDataModel": "variant",
+      "binarySupport": true,
+      "mixedData": true,
+      "mixedDataShape": {
+        "meta": "json",
+        "binary": "bytes"
+      },
+      "notes": [
+        "MixedData is native in hkp-rt.",
+        "Common payloads include json, string, binary, ringbuffer, mixedData."
+      ]
+    },
+    "hkp-node": {
+      "defaultDataModel": "json-first",
+      "binarySupport": "unknown-by-service",
+      "mixedData": false
+    },
+    "hkp-python": {
+      "defaultDataModel": "json-first",
+      "binarySupport": "unknown-by-service",
+      "mixedData": false
+    }
+  }
+}

@@ -1,5 +1,18 @@
 import { AppInstance, ServiceClass } from "../../../types";
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/select
+ * Service Name: Select
+ * Modes: array-index selection
+ * Key Config: arrayIndex
+ * Input: array preferred
+ * Output: selected array element or identity fallback
+ * Arrays: primary behavior
+ * Binary: not intended
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/select";
 const serviceName = "Select";
 
@@ -13,7 +26,7 @@ class Select {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;

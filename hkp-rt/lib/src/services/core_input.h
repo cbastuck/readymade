@@ -8,6 +8,18 @@
 
 #include "./core_audio.h"
 
+/**
+ * Service Documentation
+ * Service ID: core-input
+ * Service Name: CoreInput
+ * Runtime: hkp-rt
+ * Modes: unspecified
+ * Key Config: runtime-specific state/config
+ * IO: in=runtime-dependent -> out=runtime-dependent
+ * Arrays: service-dependent
+ * Binary: supported (service-dependent)
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 class CoreInput : public Service

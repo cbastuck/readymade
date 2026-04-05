@@ -7,6 +7,18 @@
 #include <service.h>
 #include <types/data.h>
 
+/**
+ * Service Documentation
+ * Service ID: buffer
+ * Service Name: Buffer
+ * Runtime: hkp-rt
+ * Modes: unspecified
+ * Key Config: runtime-specific state/config
+ * IO: in=runtime-dependent -> out=runtime-dependent
+ * Arrays: service-dependent
+ * Binary: supported (service-dependent)
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 class Buffer : public Service 

@@ -5,6 +5,18 @@
 
 #include "./transient_detector_rosa.h"
 
+/**
+ * Service Documentation
+ * Service ID: transients
+ * Service Name: TransientDetector
+ * Runtime: hkp-rt
+ * Modes: unspecified
+ * Key Config: runtime-specific state/config
+ * IO: in=runtime-dependent -> out=runtime-dependent
+ * Arrays: service-dependent
+ * Binary: supported (service-dependent)
+ * MixedData: native in runtime (service-dependent usage)
+ */
 namespace hkp {
 
 class TransientDetector : public Service

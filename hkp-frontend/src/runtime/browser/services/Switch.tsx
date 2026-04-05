@@ -1,5 +1,18 @@
 // import ServiceUI from './ServiceUI';
 
+/**
+ * Service Documentation
+ * Service ID: hookup.to/service/switch
+ * Service Name: Switch
+ * Modes: identity
+ * Key Config: none
+ * Input: any
+ * Output: identity pass-through
+ * Arrays: pass-through
+ * Binary: pass-through
+ * MixedData: not native in browser runtime
+ */
+
 const serviceId = "hookup.to/service/switch";
 const serviceName = "Switch";
 
