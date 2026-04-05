@@ -1,6 +1,10 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { BoardMenuItem } from "hkp-frontend/src/types";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
+import {
+  createWorkflowRefinerTemplateBoard,
+  saveWorkflowRefinementSeed,
+} from "hkp-frontend/src/runtime/browser/services/workflow-prompt/RefinementSession";
 import { Remote } from "./types";
 
 export async function loadBoard(boardName: string): Promise<BoardDescriptor> {
@@ -116,6 +120,37 @@ export function createMenuItems(
         if (src) {
           setBoardSource(JSON.stringify(src, null, 2));
         }
+      },
+    },
+    {
+      title: "Refine Board With AI",
+      description:
+        "Inject current board JSON into Workflow Builder and load AI refiner template",
+      onClick: async () => {
+        const src = await boardContext?.serializeBoard();
+        if (!src) {
+          boardContext?.appContext?.pushNotification({
+            type: "error",
+            message: "Could not serialize board for AI refinement",
+          });
+          return;
+        }
+
+        saveWorkflowRefinementSeed({
+          sourceBoardName: boardContext.boardName || "Board",
+          baseBoardSource: JSON.stringify(src, null, 2),
+          createdAt: new Date().toISOString(),
+          initialPrompt:
+            "Refine the current board. Keep existing behavior unless requested, and only change what is necessary.",
+        });
+
+        const templateBoard = createWorkflowRefinerTemplateBoard();
+        await boardContext?.setBoardState(templateBoard);
+
+        boardContext?.appContext?.pushNotification({
+          type: "info",
+          message: "AI refiner loaded with current board as base input",
+        });
       },
     },
     {

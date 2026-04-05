@@ -13,6 +13,7 @@ type State = {
   provider: Provider;
   model: string;
   description: string;
+  inputBoardSource: string;
   generatedBoardSource: string;
   isEditorOpen: boolean;
   busy: boolean;
@@ -100,15 +101,22 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
       provider: "claude",
       model: DEFAULT_MODELS.claude,
       description: DEFAULT_WORKFLOW_DESCRIPTION,
+      inputBoardSource: "",
       generatedBoardSource: JSON.stringify(DEFAULT_GENERATED_BOARD, null, 2),
-      isEditorOpen: true,
+      isEditorOpen: false,
       busy: false,
       lastError: "",
     });
   }
 
   async configure(config: any) {
-    const { provider, model, description, generatedBoardSource } = config || {};
+    const {
+      provider,
+      model,
+      description,
+      inputBoardSource,
+      generatedBoardSource,
+    } = config || {};
 
     if (needsUpdate(provider, this.state.provider)) {
       this.state.provider = provider;
@@ -130,6 +138,11 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
     if (description !== undefined) {
       this.state.description = description;
       this.app.notify(this, { description: this.state.description });
+    }
+
+    if (inputBoardSource !== undefined) {
+      this.state.inputBoardSource = inputBoardSource;
+      this.app.notify(this, { inputBoardSource: this.state.inputBoardSource });
     }
 
     if (generatedBoardSource !== undefined) {
@@ -154,9 +167,45 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
   }
 
   async process(params: any) {
-    const description =
-      typeof params === "string" ? params : JSON.stringify(params, null, 2);
-    return this.generateBoardFromDescription(description);
+    if (typeof params === "string") {
+      return this.generateBoardFromDescription(params);
+    }
+
+    if (typeof params?.prompt === "string") {
+      return this.generateBoardFromDescription(params.prompt);
+    }
+
+    if (params && Object.prototype.hasOwnProperty.call(params, "boardSource")) {
+      const source =
+        typeof params.boardSource === "string"
+          ? params.boardSource
+          : JSON.stringify(params.boardSource, null, 2);
+      this.updateCurrentBoardSource(source);
+      return params.boardSource;
+    }
+
+    if (params !== undefined) {
+      const source = JSON.stringify(params, null, 2);
+      this.updateCurrentBoardSource(source);
+    }
+
+    return params;
+  }
+
+  private updateCurrentBoardSource(source: string) {
+    if (source !== this.state.inputBoardSource) {
+      this.state.inputBoardSource = source;
+      this.app.notify(this, {
+        inputBoardSource: this.state.inputBoardSource,
+      });
+    }
+
+    if (source !== this.state.generatedBoardSource) {
+      this.state.generatedBoardSource = source;
+      this.app.notify(this, {
+        generatedBoardSource: this.state.generatedBoardSource,
+      });
+    }
   }
 
   pushGeneratedBoardToOutput = (overrideSource?: string) => {
@@ -167,14 +216,23 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
 
     const parsed = extractBoardJson(source);
     this.app.next(this, parsed);
+
+    this.state.isEditorOpen = false;
+    this.app.notify(this, {
+      isEditorOpen: this.state.isEditorOpen,
+    });
     return parsed;
   };
 
   generateBoardFromDescription = async (overrideDescription?: string) => {
     const description = overrideDescription ?? this.state.description;
+    const inputBoardSource = this.state.inputBoardSource;
     const provider = this.state.provider;
     const model = this.state.model;
     const apiKey = this.apiKeys[provider];
+
+    this.state.isEditorOpen = false;
+    this.app.notify(this, { isEditorOpen: this.state.isEditorOpen });
 
     if (!description?.trim()) {
       throw new Error("No workflow description available");
@@ -190,7 +248,7 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
 
     try {
       const systemPrompt = buildWorkflowSystemPrompt(this.app);
-      const userPrompt = buildUserPrompt(description);
+      const userPrompt = buildUserPrompt(description, inputBoardSource);
 
       const raw = await this.callProvider(
         provider,
@@ -204,7 +262,9 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
       const normalized = JSON.stringify(parsed, null, 2);
 
       this.state.generatedBoardSource = normalized;
+      this.state.inputBoardSource = normalized;
       this.app.notify(this, { generatedBoardSource: normalized });
+      this.app.notify(this, { inputBoardSource: normalized });
       return parsed;
     } catch (err: any) {
       const message = err?.message || `${err}`;
@@ -343,7 +403,19 @@ async function readJsonOrThrow(response: Response, provider: string) {
   return json;
 }
 
-function buildUserPrompt(description: string) {
+function buildUserPrompt(description: string, inputBoardSource?: string) {
+  if (inputBoardSource?.trim()) {
+    return [
+      "Refine the provided board JSON according to the workflow request.",
+      "Return a complete board JSON document.",
+      "Keep unchanged behavior intact unless the request asks for change.",
+      "Workflow refinement request:",
+      description,
+      "Current board JSON to refine:",
+      inputBoardSource,
+    ].join("\n\n");
+  }
+
   return [
     "Build a complete board and choose runtimes automatically.",
     "Workflow description:",

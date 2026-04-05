@@ -1,4 +1,5 @@
 import React, { useCallback, useContext, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import {
   NavigationMenu,
@@ -22,12 +23,18 @@ import {
   BoardMenuItem,
   BoardMenuItemFactory,
 } from "hkp-frontend/src/types";
+import {
+  createWorkflowRefinerTemplateBoard,
+  saveWorkflowRefinementSeed,
+  WORKFLOW_REFINER_TEMPLATE_BOARD_NAME,
+} from "hkp-frontend/src/runtime/browser/services/workflow-prompt/RefinementSession";
 
 type Props = {
   menuItemFactory?: BoardMenuItemFactory;
 };
 
 export default function BoardMenu({ menuItemFactory }: Props) {
+  const navigate = useNavigate();
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
   const [showBoardSource, setShowBoardSource] = useState(false);
@@ -83,6 +90,46 @@ export default function BoardMenu({ menuItemFactory }: Props) {
     });
   }, [boardContext]);
 
+  const onRefineBoardWithAI = useCallback(async () => {
+    if (!boardContext || !board) {
+      return;
+    }
+
+    const src = boardContext.errorOnFetch
+      ? restoreBoardFromLocalStorage(board)
+      : await boardContext.serializeBoard();
+
+    if (!src) {
+      boardContext.appContext?.pushNotification({
+        type: "error",
+        message: "Could not serialize current board for AI refinement",
+      });
+      return;
+    }
+
+    saveWorkflowRefinementSeed({
+      sourceBoardName: board,
+      baseBoardSource: JSON.stringify(src, null, 2),
+      createdAt: new Date().toISOString(),
+      initialPrompt:
+        "Refine the current board. Keep existing behavior unless requested, and only change what is necessary.",
+    });
+
+    const templateBoard = createWorkflowRefinerTemplateBoard();
+    storeBoardToLocalStorage(
+      WORKFLOW_REFINER_TEMPLATE_BOARD_NAME,
+      JSON.stringify(templateBoard, null, 2),
+      templateBoard.description,
+    );
+
+    boardContext.appContext?.pushNotification({
+      type: "info",
+      message: "Opened AI Refiner template with current board as base input",
+    });
+
+    navigate(`/playground/${WORKFLOW_REFINER_TEMPLATE_BOARD_NAME}`);
+  }, [boardContext, board, navigate]);
+
   const menuItems: Array<BoardMenuItem> = useMemo(
     () =>
       menuItemFactory && boardContext
@@ -128,8 +175,20 @@ export default function BoardMenu({ menuItemFactory }: Props) {
                 "Create a link or QR code allowing to share and clone the board on another device",
               onClick: onCreateBoardLink,
             },
+            {
+              title: "Refine Board With AI",
+              description:
+                "Open the AI refiner template and inject this board JSON as the refinement base.",
+              onClick: onRefineBoardWithAI,
+            },
           ],
-    [menuItemFactory, boardContext, onCreateBoardLink, onEditBoardSource]
+    [
+      menuItemFactory,
+      boardContext,
+      onCreateBoardLink,
+      onEditBoardSource,
+      onRefineBoardWithAI,
+    ],
   );
 
   if (!board) {
@@ -205,7 +264,7 @@ const ListItem = React.forwardRef<
           ref={ref}
           className={cn(
             "cursor-pointer block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className
+            className,
           )}
           {...props}
         >

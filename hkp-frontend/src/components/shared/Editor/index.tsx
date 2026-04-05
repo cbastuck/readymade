@@ -66,7 +66,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
   useImperativeHandle(ref, () => ({
     getValue: () => editorRef.current && editorRef.current.getValue(),
     setValue: (val: string) =>
-      editorRef.current && val && editorRef.current.setValue(val),
+      editorRef.current && val !== undefined && editorRef.current.setValue(val),
   }));
 
   const appliedStyle: CSSProperties = {
