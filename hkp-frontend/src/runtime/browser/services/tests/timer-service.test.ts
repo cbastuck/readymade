@@ -210,6 +210,27 @@ describe("Timer service – stop command", () => {
     timer.configure({ running: false });
     expect(timer.running).toBe(false);
   });
+
+  it("bypass=true stops an active periodic timer and prevents further ticks", () => {
+    const { timer, app } = createTimer();
+
+    timer.configure({
+      periodic: true,
+      periodicValue: 100,
+      periodicUnit: "ms",
+      start: true,
+    });
+
+    vi.advanceTimersByTime(250);
+    expect(app.next).toHaveBeenCalledTimes(2);
+    expect(timer.running).toBe(true);
+
+    timer.configure({ bypass: true });
+    expect(timer.running).toBe(false);
+
+    vi.advanceTimersByTime(500);
+    expect(app.next).toHaveBeenCalledTimes(2);
+  });
 });
 
 // ---------------------------------------------------------------------------

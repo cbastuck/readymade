@@ -24,6 +24,7 @@ export default function TimerUI(props: ServiceUIProps) {
   const [interval, setInterval] = useState(1);
   const [intervalUnit, setIntervalUnit] = useState(units[1]);
   const [isIntervalRunning, setIsIntervalRunning] = useState(false);
+  const [isBypassed, setIsBypassed] = useState(false);
 
   const [delay, setDelay] = useState(0);
   const [delayUnit, setDelayUnit] = useState(units[0]);
@@ -55,6 +56,7 @@ export default function TimerUI(props: ServiceUIProps) {
       oneShotDelay,
       oneShotDelayUnit,
       running,
+      bypass,
     } = state || {};
     if (periodic !== undefined) {
       setPeriodic(!!periodic);
@@ -73,6 +75,9 @@ export default function TimerUI(props: ServiceUIProps) {
     }
     if (needsUpdate(running, isIntervalRunning)) {
       setIsIntervalRunning(running);
+    }
+    if (needsUpdate(bypass, isBypassed)) {
+      setIsBypassed(!!bypass);
     }
   };
 
@@ -172,7 +177,7 @@ export default function TimerUI(props: ServiceUIProps) {
                 className="w-full"
                 variant="outline"
                 onClick={onStart}
-                disabled={isIntervalRunning}
+                disabled={isIntervalRunning || isBypassed}
               >
                 Start Interval
               </Button>

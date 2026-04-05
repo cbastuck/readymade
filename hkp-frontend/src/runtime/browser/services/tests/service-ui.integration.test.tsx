@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, waitFor } from "@testing-library/react";
+import { render, waitFor, screen } from "@testing-library/react";
 
 import { ServiceUIProps, ServiceInstance } from "hkp-frontend/src/types";
 
@@ -162,6 +162,26 @@ describe("Service UI Behavioral Tests", () => {
       const { container } = await renderServiceUIAndWait(TimerUI, props);
 
       expect(container).toBeTruthy();
+    });
+
+    it("disables Start Interval when bypass is enabled", async () => {
+      const service = createMockServiceWithSpies({
+        periodic: true,
+        periodicValue: 1,
+        periodicUnit: "s",
+        oneShotDelay: 0,
+        oneShotDelayUnit: "ms",
+        running: false,
+        bypass: true,
+      });
+
+      const props = createStandardProps(service);
+      await renderServiceUIAndWait(TimerUI, props);
+
+      const startButton = screen.getByRole("button", {
+        name: "Start Interval",
+      }) as HTMLButtonElement;
+      expect(startButton.disabled).toBe(true);
     });
 
     it("verifies configure API accepts: periodic, periodicValue, periodicUnit, oneShotDelay, start, stop", () => {

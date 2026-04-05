@@ -70,6 +70,7 @@ class Timer {
 
   configure(config: any): void {
     const {
+      bypass,
       periodicValue,
       periodicUnit,
       periodic,
@@ -84,6 +85,13 @@ class Timer {
       start,
       restart,
     } = config;
+
+    const isBypassed = bypass === true || (this as any).bypass === true;
+    if (isBypassed) {
+      this.clearTimer();
+      return;
+    }
+
     let doStop =
       stop || restart || (this.running && running !== undefined && !running);
     let doStart = start || restart;
