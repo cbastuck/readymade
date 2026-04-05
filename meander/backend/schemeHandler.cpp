@@ -104,7 +104,7 @@ saucer::scheme::response SchemeHandler::handleGetRemotes(const Router::Params &p
         {"url", runtime.url},
         {"port", runtime.port},
         {"name", runtime.name},
-      {"color", runtime.color},
+        {"color", runtime.color},
     });
   }
 
