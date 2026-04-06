@@ -68,6 +68,19 @@ class Timer {
     }
   }
 
+  getConfiguration = async () => {
+    return {
+      periodic: this.periodic,
+      periodicValue: this.periodicValue,
+      periodicUnit: this.periodicUnit,
+      oneShotDelay: this.oneShotDelay,
+      oneShotDelayUnit: this.oneShotDelayUnit,
+      running: this.running,
+      counter: this.counter,
+      bypass: (this as any).bypass === true,
+    };
+  };
+
   configure(config: any): void {
     const {
       bypass,

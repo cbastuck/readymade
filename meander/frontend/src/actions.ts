@@ -5,6 +5,7 @@ import {
   createWorkflowRefinerTemplateBoard,
   saveWorkflowRefinementSeed,
 } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/RefinementSession";
+import { DEFAULT_GENERATED_BOARD } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/DefaultWorkflowBoard";
 import { Remote } from "./types";
 
 export async function loadBoard(boardName: string): Promise<BoardDescriptor> {
@@ -77,6 +78,31 @@ export async function deleteRemote(name: string) {
   return response.json();
 }
 
+function isBoardDescriptorEmpty(board: any): boolean {
+  if (!board || typeof board !== "object") {
+    return true;
+  }
+
+  const runtimes = Array.isArray(board.runtimes) ? board.runtimes : [];
+  if (runtimes.length > 0) {
+    return false;
+  }
+
+  const services = board.services;
+  if (!services || typeof services !== "object") {
+    return true;
+  }
+
+  for (const runtimeId of Object.keys(services)) {
+    const runtimeServices = services[runtimeId];
+    if (Array.isArray(runtimeServices) && runtimeServices.length > 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 export function createMenuItems(
   setLoadBoardItems: (items: Array<string>) => void,
   setBoardSource: (source: string) => void,
@@ -123,9 +149,9 @@ export function createMenuItems(
       },
     },
     {
-      title: "Refine Board With AI",
+      title: "Board Refiner",
       description:
-        "Inject current board JSON into Workflow Builder and load AI refiner template",
+        "Refine or Build a board using the Workflow Builder using AI",
       onClick: async () => {
         const src = await boardContext?.serializeBoard();
         if (!src) {
@@ -136,12 +162,19 @@ export function createMenuItems(
           return;
         }
 
+        const boardIsEmpty = isBoardDescriptorEmpty(src);
+        const seedSource = boardIsEmpty ? DEFAULT_GENERATED_BOARD : src;
+        const seedSourceName = boardIsEmpty
+          ? "Hello World Example"
+          : boardContext.boardName || "Board";
+
         saveWorkflowRefinementSeed({
-          sourceBoardName: boardContext.boardName || "Board",
-          baseBoardSource: JSON.stringify(src, null, 2),
+          sourceBoardName: seedSourceName,
+          baseBoardSource: JSON.stringify(seedSource, null, 2),
           createdAt: new Date().toISOString(),
-          initialPrompt:
-            "Refine the current board. Keep existing behavior unless requested, and only change what is necessary.",
+          initialPrompt: boardIsEmpty
+            ? "Start from the provided Hello World board and refine it. Keep existing behavior unless requested, and only change what is necessary."
+            : "Refine the current board. Keep existing behavior unless requested, and only change what is necessary.",
         });
 
         const templateBoard = createWorkflowRefinerTemplateBoard();
@@ -149,7 +182,9 @@ export function createMenuItems(
 
         boardContext?.appContext?.pushNotification({
           type: "info",
-          message: "AI refiner loaded with current board as base input",
+          message: boardIsEmpty
+            ? "AI refiner loaded with Hello World example as base input (current board is empty)"
+            : "AI refiner loaded with current board as base input",
         });
       },
     },

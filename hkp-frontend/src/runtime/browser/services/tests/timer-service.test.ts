@@ -92,6 +92,22 @@ describe("Timer service – default state", () => {
     const { timer } = createTimer();
     expect(timer.counter).toBe(0);
   });
+
+  it("getConfiguration returns full timer UI state", async () => {
+    const { timer } = createTimer();
+    const cfg = await timer.getConfiguration();
+
+    expect(cfg).toMatchObject({
+      periodic: false,
+      periodicValue: 1,
+      periodicUnit: "s",
+      oneShotDelay: 0,
+      oneShotDelayUnit: "ms",
+      running: false,
+      counter: 0,
+      bypass: false,
+    });
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -262,6 +278,24 @@ describe("Timer service – periodic mode", () => {
     vi.advanceTimersByTime(500);
     expect(app.next).toHaveBeenCalledTimes(2);
     expect(app.next.mock.calls[1][1]).toEqual({ triggerCount: 2 });
+  });
+
+  it("getConfiguration reflects running periodic state", async () => {
+    const { timer } = createTimer();
+    timer.configure({
+      periodic: true,
+      periodicValue: 50,
+      periodicUnit: "ms",
+      start: true,
+    });
+
+    const cfg = await timer.getConfiguration();
+    expect(cfg).toMatchObject({
+      periodic: true,
+      periodicValue: 50,
+      periodicUnit: "ms",
+      running: true,
+    });
   });
 
   it("periodic 1 second fires every 1000 ms", () => {

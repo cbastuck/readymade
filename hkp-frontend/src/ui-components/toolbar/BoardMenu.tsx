@@ -28,6 +28,10 @@ import {
   saveWorkflowRefinementSeed,
   WORKFLOW_REFINER_TEMPLATE_BOARD_NAME,
 } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/RefinementSession";
+import {
+  DEFAULT_GENERATED_BOARD,
+  isBoardDescriptorEmpty,
+} from "hkp-frontend/src/runtime/browser/services/workflow-prompt/DefaultWorkflowBoard";
 
 type Props = {
   menuItemFactory?: BoardMenuItemFactory;
@@ -107,12 +111,17 @@ export default function BoardMenu({ menuItemFactory }: Props) {
       return;
     }
 
+    const boardIsEmpty = isBoardDescriptorEmpty(src);
+    const seedSource = boardIsEmpty ? DEFAULT_GENERATED_BOARD : src;
+    const seedSourceName = boardIsEmpty ? "Hello World Example" : board;
+
     saveWorkflowRefinementSeed({
-      sourceBoardName: board,
-      baseBoardSource: JSON.stringify(src, null, 2),
+      sourceBoardName: seedSourceName,
+      baseBoardSource: JSON.stringify(seedSource, null, 2),
       createdAt: new Date().toISOString(),
-      initialPrompt:
-        "Refine the current board. Keep existing behavior unless requested, and only change what is necessary.",
+      initialPrompt: boardIsEmpty
+        ? "Start from the provided Hello World board and refine it. Keep existing behavior unless requested, and only change what is necessary."
+        : "Refine the current board. Keep existing behavior unless requested, and only change what is necessary.",
     });
 
     const templateBoard = createWorkflowRefinerTemplateBoard();
@@ -124,7 +133,9 @@ export default function BoardMenu({ menuItemFactory }: Props) {
 
     boardContext.appContext?.pushNotification({
       type: "info",
-      message: "Opened AI Refiner template with current board as base input",
+      message: boardIsEmpty
+        ? "Opened AI Refiner with Hello World example as base input (current board is empty)"
+        : "Opened AI Refiner template with current board as base input",
     });
 
     navigate(`/playground/${WORKFLOW_REFINER_TEMPLATE_BOARD_NAME}`);

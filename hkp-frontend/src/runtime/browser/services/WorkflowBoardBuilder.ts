@@ -3,6 +3,10 @@ import ServiceBase from "./ServiceBase";
 import WorkflowBoardBuilderUI from "./WorkflowBoardBuilderUI";
 import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { buildWorkflowSystemPrompt } from "./workflow-prompt/SystemPromptCatalog";
+import {
+  DEFAULT_GENERATED_BOARD,
+  DEFAULT_WORKFLOW_DESCRIPTION,
+} from "./workflow-prompt/DefaultWorkflowBoard";
 
 const serviceName = "Workflow Board Builder";
 const serviceId = "hookup.to/service/workflow-board-builder";
@@ -24,68 +28,6 @@ const DEFAULT_MODELS: Record<Provider, string> = {
   claude: "claude-3-7-sonnet-latest",
   openai: "gpt-4.1-mini",
   gemini: "gemini-2.0-flash",
-};
-
-const DEFAULT_WORKFLOW_DESCRIPTION = [
-  "Hello world workflow:",
-  "Create a browser-only board that animates the text HKP in a circle on a canvas.",
-  "Use a timer to drive animation updates, a map service to emit a text drawing template, and a canvas service to render it.",
-].join("\n");
-
-const DEFAULT_GENERATED_BOARD = {
-  boardName: "Circle Text",
-  runtimes: [
-    {
-      id: "rt-browser-1",
-      name: "Browser Runtime",
-      type: "browser",
-      state: {
-        wrapServices: false,
-        minimized: false,
-      },
-    },
-  ],
-  services: {
-    "rt-browser-1": [
-      {
-        uuid: "svc-timer-1",
-        serviceId: "hookup.to/service/timer",
-        serviceName: "Timer",
-        state: {
-          periodicValue: 50,
-          periodicUnit: "ms",
-          periodic: true,
-          running: true,
-        },
-      },
-      {
-        uuid: "svc-map-1",
-        serviceId: "hookup.to/service/map",
-        serviceName: "Map",
-        state: {
-          template: {
-            type: "text",
-            text: "HKP",
-            color: "#3b82f6",
-            font: "bold 22px Arial",
-            "x=": "round(200 + 120 * sin(params.triggerCount * 0.05 + 1.5708))",
-            "y=": "round(150 + 120 * sin(params.triggerCount * 0.05))",
-          },
-          mode: "replace",
-        },
-      },
-      {
-        uuid: "svc-canvas-1",
-        serviceId: "hookup.to/service/canvas",
-        serviceName: "Canvas",
-        state: {
-          size: [400, 300],
-          clearOnRedraw: true,
-          resizable: true,
-        },
-      },
-    ],
-  },
 };
 
 export class WorkflowBoardBuilder extends ServiceBase<State> {
@@ -266,6 +208,62 @@ export class WorkflowBoardBuilder extends ServiceBase<State> {
       this.app.notify(this, { generatedBoardSource: normalized });
       this.app.notify(this, { inputBoardSource: normalized });
       return parsed;
+    } catch (err: any) {
+      const message = err?.message || `${err}`;
+      this.state.lastError = message;
+      this.app.notify(this, { lastError: message });
+      throw err;
+    } finally {
+      this.state.busy = false;
+      this.app.notify(this, { busy: false });
+    }
+  };
+
+  generatePromptFromBoardSource = async (overrideBoardSource?: string) => {
+    const boardSource = overrideBoardSource ?? this.state.generatedBoardSource;
+    const provider = this.state.provider;
+    const model = this.state.model;
+    const apiKey = this.apiKeys[provider];
+
+    if (!boardSource?.trim()) {
+      throw new Error("No board JSON available to describe");
+    }
+
+    if (!apiKey) {
+      throw new Error(`No API key configured for provider: ${provider}`);
+    }
+
+    this.state.busy = true;
+    this.state.lastError = "";
+    this.app.notify(this, { busy: true, lastError: "" });
+
+    try {
+      const systemPrompt = [
+        "You translate board JSON into a concise workflow prompt.",
+        "Return plain text only (no markdown code fences, no JSON).",
+        "Describe behavior, key services, runtime assumptions, and important constraints.",
+        "Focus on what to change/tune next.",
+      ].join("\n");
+
+      const userPrompt = [
+        "Generate a high-quality workflow prompt from this board JSON.",
+        "The prompt should help an AI refine this board in the next iteration.",
+        "Board JSON:",
+        boardSource,
+      ].join("\n\n");
+
+      const raw = await this.callProvider(
+        provider,
+        apiKey,
+        model,
+        systemPrompt,
+        userPrompt,
+      );
+
+      const prompt = raw.trim();
+      this.state.description = prompt;
+      this.app.notify(this, { description: prompt });
+      return prompt;
     } catch (err: any) {
       const message = err?.message || `${err}`;
       this.state.lastError = message;

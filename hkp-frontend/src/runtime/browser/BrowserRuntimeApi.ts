@@ -66,14 +66,10 @@ async function restoreRuntime(
     return svc && scope.findServiceInstance(svc.uuid);
   }) as any;
 
-  setTimeout(
-    () =>
-      Promise.all(
-        createdServices.map((svc, idx) =>
-          configureService(scope, svc, services[idx]),
-        ),
-      ),
-    5,
+  await Promise.all(
+    createdServices.map((svc, idx) =>
+      configureService(scope, svc, services[idx]),
+    ),
   );
 
   return {

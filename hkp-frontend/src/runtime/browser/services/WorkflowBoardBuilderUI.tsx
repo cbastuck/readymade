@@ -179,6 +179,17 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
     await onGenerate(workflow);
   };
 
+  const onDialogExplainBoard = async () => {
+    const output = getOutputText();
+    props.service.configure({ generatedBoardSource: output });
+    setLastError("");
+    try {
+      await props.service.generatePromptFromBoardSource(output);
+    } catch (err: any) {
+      setLastError(err?.message || `${err}`);
+    }
+  };
+
   useEffect(() => {
     if (!isEditorOpen) {
       return;
@@ -256,8 +267,8 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
             id="workflow-refiner-editor-description"
             className="text-xs"
           >
-            Describe your intended workflow in the editor, or refine a board in
-            your words, maybe iterate and when you're finished apply.
+            Use left-to-right generation (prompt to board JSON) or right-to-left
+            generation (board JSON to prompt) to refine quickly.
           </DialogDescription>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-1 min-h-0">
@@ -292,7 +303,14 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
 
           <DialogFooter className="flex flex-wrap gap-2 justify-end">
             <Button variant="outline" disabled={busy} onClick={onDialogIterate}>
-              {busy ? "Iterating..." : "Iterate"}
+              {busy ? "Generating..." : "Generate Board JSON"}
+            </Button>
+            <Button
+              variant="outline"
+              disabled={busy || !getOutputText()?.trim()}
+              onClick={onDialogExplainBoard}
+            >
+              {busy ? "Generating..." : "Generate Prompt"}
             </Button>
             <Button
               variant="outline"
