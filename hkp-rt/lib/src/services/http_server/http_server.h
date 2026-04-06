@@ -1,6 +1,9 @@
 #pragma once
 
 #include <iostream>
+#include <mutex>
+#include <map>
+#include <vector>
 
 #include <types/types.h>
 #include <service.h>
@@ -46,8 +49,23 @@ private:
   bool stop();
 
 private:
+  // Accumulates chunks for a single in-flight chunked upload.
+  struct ChunkAssembly
+  {
+    std::vector<std::string> chunks; // indexed by chunkIndex
+    int receivedCount = 0;
+    int totalChunks   = 0;
+    std::string filename;
+    std::string contentType;
+    std::string requestPath;
+  };
+
+private:
   std::shared_ptr<HttpServerImpl> m_impl;
   std::string m_mode;
+
+  std::mutex m_assemblyMutex;
+  std::map<std::string, ChunkAssembly> m_assemblies; // keyed by X-Upload-Id
 };
 
 }

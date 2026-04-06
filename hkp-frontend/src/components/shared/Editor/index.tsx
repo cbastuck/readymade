@@ -45,6 +45,10 @@ type Props = {
 export type EditorHandle = {
   getValue: () => any;
   setValue: (val: string) => void;
+  /** Returns the currently selected text, or null if nothing is selected. */
+  getSelectionText: () => string | null;
+  /** Replaces the current selection with the given text. */
+  replaceSelection: (text: string) => void;
 };
 
 const Editor = forwardRef<EditorHandle, Props>(function Editor(
@@ -67,6 +71,23 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
     getValue: () => editorRef.current && editorRef.current.getValue(),
     setValue: (val: string) =>
       editorRef.current && val !== undefined && editorRef.current.setValue(val),
+    getSelectionText: () => {
+      const editor = editorRef.current;
+      if (!editor) return null;
+      const selection = editor.getSelection();
+      if (!selection || selection.isEmpty()) return null;
+      return editor.getModel()?.getValueInRange(selection) ?? null;
+    },
+    replaceSelection: (text: string) => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      const selection = editor.getSelection();
+      if (!selection) return;
+      editor.executeEdits("replaceSelection", [
+        { range: selection, text },
+      ]);
+      editor.focus();
+    },
   }));
 
   const appliedStyle: CSSProperties = {

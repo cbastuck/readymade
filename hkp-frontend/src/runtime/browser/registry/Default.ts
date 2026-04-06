@@ -81,6 +81,11 @@ import WorkflowBoardBuilder from "../services/WorkflowBoardBuilder";
 
 import { ServiceModule } from "../../../types";
 import AudioEditor from "../services/AudioEditor";
+import QrCodeDescriptor from "../services/QrCode";
+import ImagePickerDescriptor from "../services/ImagePicker";
+import HTTPUploaderDescriptor from "../services/HTTPUploader";
+import BrowserSubServiceDescriptor from "../services/BrowserSubService";
+import LZCompressDescriptor from "../services/LZCompress";
 
 // Modules with additional dependencies
 // import GeneticOptimizerDescriptor from "../services/GeneticOptimizer";
@@ -168,6 +173,11 @@ export const defaultRegistry: Array<ServiceModule> = [
   WorkflowBoardBuilder,
 
   AudioEditor,
+  QrCodeDescriptor,
+  ImagePickerDescriptor,
+  HTTPUploaderDescriptor,
+  BrowserSubServiceDescriptor,
+  LZCompressDescriptor,
 ];
 
 export const defaultBundles = [];

@@ -2,6 +2,7 @@ import { useContext, useState } from "react";
 
 import {
   isRuntimeRestClassType,
+  isRuntimeBrowserClassType,
   isRuntimeConfiguration,
   RuntimeConfiguration,
   RuntimeDescriptor,
@@ -77,57 +78,68 @@ export default function RuntimeHeader({
     boardContext?.removeAllServices(runtime);
   };
 
-  const onWrapInSubService = isRuntimeRestClassType(runtime.type)
-    ? async () => {
-        if (!boardContext) {
-          return;
+  const onWrapInSubService =
+    isRuntimeRestClassType(runtime.type) ||
+    isRuntimeBrowserClassType(runtime.type)
+      ? async () => {
+          if (!boardContext) {
+            return;
+          }
+          const scope = boardContext.scopes[runtimeId];
+          const api =
+            boardContext.runtimeApis[runtime.type] ||
+            boardContext.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
+          if (!scope || !api) {
+            return;
+          }
+
+          const currentServices = boardContext.services[runtimeId] || [];
+          if (currentServices.length === 0) {
+            return;
+          }
+
+          const pipelineEntries = await Promise.all(
+            currentServices.map(async (svc) => {
+              const state = await api.getServiceConfig(scope, svc);
+              return {
+                serviceId: svc.serviceId,
+                instanceId: svc.uuid,
+                ...(state ? { state } : {}),
+              };
+            }),
+          );
+
+          const subSvcClass: ServiceClass = boardContext.registry[
+            runtimeId
+          ]?.find((svc) => svc.serviceId === "sub-service") || {
+            serviceId: "sub-service",
+            serviceName: "SubService",
+            capabilities: ["subservices"],
+          };
+
+          const newSvc = await (boardContext.addService(
+            subSvcClass,
+            runtime,
+          ) as unknown as Promise<ServiceDescriptor | null>);
+          if (!newSvc) return;
+
+          const subServiceConfig = isRuntimeBrowserClassType(runtime.type)
+            ? {
+                boardName: runtime.boardName || runtime.name,
+                runtimeId: runtime.id,
+                runtimeName: runtime.name,
+                runtimeType: "browser",
+                pipeline: pipelineEntries,
+              }
+            : { pipeline: pipelineEntries };
+
+          await api.configureService(scope, newSvc, subServiceConfig);
+
+          for (const svc of currentServices) {
+            await boardContext.removeService(svc, runtime);
+          }
         }
-        const scope = boardContext.scopes[runtimeId];
-        const api =
-          boardContext.runtimeApis[runtime.type] ||
-          boardContext.runtimeApis[toCanonicalRuntimeClassType(runtime.type)];
-        if (!scope || !api) {
-          return;
-        }
-
-        const currentServices = boardContext.services[runtimeId] || [];
-        if (currentServices.length === 0) {
-          return;
-        }
-
-        const pipelineEntries = await Promise.all(
-          currentServices.map(async (svc) => {
-            const state = await api.getServiceConfig(scope, svc);
-            return {
-              serviceId: svc.serviceId,
-              instanceId: svc.uuid,
-              ...(state ? { state } : {}),
-            };
-          }),
-        );
-
-        const subSvcClass: ServiceClass = boardContext.registry[
-          runtimeId
-        ]?.find((svc) => svc.serviceId === "sub-service") || {
-          serviceId: "sub-service",
-          serviceName: "SubService",
-          capabilities: ["subservices"],
-        };
-        const newSvc = await (boardContext.addService(
-          subSvcClass,
-          runtime,
-        ) as unknown as Promise<ServiceDescriptor | null>);
-        if (!newSvc) return;
-
-        await api.configureService(scope, newSvc, {
-          pipeline: pipelineEntries,
-        });
-
-        for (const svc of currentServices) {
-          await boardContext.removeService(svc, runtime);
-        }
-      }
-    : undefined;
+      : undefined;
 
   const onDelete = () => {
     boardContext?.removeRuntime(runtime);

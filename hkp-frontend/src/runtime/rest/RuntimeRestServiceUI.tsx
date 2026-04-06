@@ -10,7 +10,7 @@ import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import Button from "hkp-frontend/src/ui-components/Button";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import Switch from "hkp-frontend/src/ui-components/Switch";
-import SubServicePipelineUI from "./ui/SubServicePipelineUI";
+import SubServicePipelineUI from "../ui/SubServicePipelineUI";
 
 type Props = ServiceUIProps & {
   onNotification?: (notification: any) => void;

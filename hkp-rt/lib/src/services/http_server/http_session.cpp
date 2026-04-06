@@ -66,15 +66,16 @@ void Session::run()
 
 void Session::do_read()
 {
-  // Make the request empty before reading,
-  // otherwise the operation behavior is undefined.
-  req_ = {};
+  // Reset the parser before each request (parser is not reassignable, use emplace).
+  parser_.emplace();
+  // Allow up to 50 MB bodies (phone photos can easily exceed the 1 MB default).
+  parser_->body_limit(50 * 1024 * 1024);
 
   // Set the timeout.
   stream_.expires_after(std::chrono::seconds(30));
 
   // Read a request
-  http::async_read(stream_, buffer_, req_,
+  http::async_read(stream_, buffer_, *parser_,
       beast::bind_front_handler(
           &Session::on_read,
           shared_from_this()));
@@ -166,6 +167,55 @@ void Session::sendDataAsync(json data)
   );
 }
 
+void Session::sendHtmlResponse(const std::string& html)
+{
+  auto res = std::make_shared<http::response<http::string_body>>();
+  res->version(11);
+  res->result(http::status::ok);
+  res->set(http::field::server, kUserAgent);
+  res->set(http::field::content_type, "text/html; charset=utf-8");
+  res->set(http::field::access_control_allow_origin, "*");
+  res->body() = html;
+  res->prepare_payload();
+  res_ = res;
+  boost::beast::http::async_write(
+    stream_, *res,
+    boost::beast::bind_front_handler(&Session::on_write, shared_from_this(), true));
+}
+
+void Session::sendJsonResponseWithCors(const json& data)
+{
+  auto res = std::make_shared<http::response<http::string_body>>();
+  res->version(11);
+  res->result(http::status::ok);
+  res->set(http::field::server, kUserAgent);
+  res->set(http::field::content_type, "application/json");
+  res->set(http::field::access_control_allow_origin, "*");
+  res->body() = data.dump();
+  res->prepare_payload();
+  res_ = res;
+  boost::beast::http::async_write(
+    stream_, *res,
+    boost::beast::bind_front_handler(&Session::on_write, shared_from_this(), true));
+}
+
+void Session::sendCorsPreflightResponse()
+{
+  auto res = std::make_shared<http::response<http::string_body>>();
+  res->version(11);
+  res->result(http::status::no_content);
+  res->set(http::field::server, kUserAgent);
+  res->set(http::field::access_control_allow_origin, "*");
+  res->set(http::field::access_control_allow_methods, "GET, POST, OPTIONS");
+  res->set(http::field::access_control_allow_headers, "Content-Type, Content-Disposition, X-Upload-Id, X-Chunk-Index, X-Total-Chunks");
+  res->set(http::field::access_control_max_age, "86400");
+  res->prepare_payload();
+  res_ = res;
+  boost::beast::http::async_write(
+    stream_, *res,
+    boost::beast::bind_front_handler(&Session::on_write, shared_from_this(), true));
+}
+
 void Session::sendDataSync(Data& data, bool useEventStream)
 {
   if (auto json = getJSONFromData(data); json)
@@ -212,6 +262,27 @@ void Session::sendJsonData(const json& j, bool useEventStream)
   else
   {
     do_close();
+  }
+}
+
+void Session::sendResult(Data& data)
+{
+  if (auto str = getStringFromData(data))
+  {
+    sendHtmlResponse(*str);
+  }
+  else if (auto j = getJSONFromData(data))
+  {
+    sendJsonResponseWithCors(*j);
+  }
+  else if (auto binary = getBinaryFromData(data))
+  {
+    sendBinaryData(*binary);
+  }
+  else
+  {
+    // Null, Undefined, or anything unhandled — acknowledge with ok.
+    sendJsonResponseWithCors(json{{"status", "ok"}});
   }
 }
 

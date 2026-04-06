@@ -1,0 +1,92 @@
+{
+  "boardName": "DropApp",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "UI",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "upload-server",
+      "name": "Upload Server",
+      "type": "rest",
+      "url": "hkp://remotes/meander-cpp"
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "phone-board-svc",
+        "serviceId": "sub-service",
+        "serviceName": "Phone Board",
+        "state": {
+          "mode": "source",
+          "boardName": "AirDrop Phone",
+          "runtimeId": "phone-ui",
+          "runtimeName": "Phone UI",
+          "runtimeType": "browser",
+          "pipeline": [
+            {
+              "instanceId": "image-picker-svc",
+              "serviceId": "hookup.to/service/image-picker",
+              "serviceName": "Image Picker"
+            },
+            {
+              "instanceId": "chunked-file-provider-svc",
+              "serviceId": "hookup.to/service/chunked-file-provider",
+              "serviceName": "Chunked File Provider"
+            },
+            {
+              "instanceId": "http-uploader-svc",
+              "serviceId": "hookup.to/service/http-uploader",
+              "serviceName": "HTTP Uploader",
+              "state": { "url": "http://MEANDER_HOST:8888/" }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "lz-compress-svc",
+        "serviceId": "hookup.to/service/lz-compress",
+        "serviceName": "LZ Compress"
+      },
+      {
+        "uuid": "url-builder-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "URL Builder",
+        "state": {
+          "template": {
+            "=": "concat('http://MEANDER_HOST:9090/playground/dropitapp?fromLink=', params)"
+          },
+          "mode": "replace"
+        }
+      },
+      {
+        "uuid": "qr-code-svc",
+        "serviceId": "hookup.to/service/qr-code",
+        "serviceName": "QR Code"
+      }
+    ],
+    "upload-server": [
+      {
+        "uuid": "http-server-svc",
+        "serviceId": "http-server",
+        "serviceName": "HTTP Server",
+        "state": {
+          "port": 8888,
+          "bypass": false
+        }
+      },
+      {
+        "uuid": "filesystem-svc",
+        "serviceId": "filesystem",
+        "serviceName": "Filesystem",
+        "state": {
+          "path": "/tmp/dropitapp",
+          "operation": "write"
+        }
+      }
+    ]
+  }
+}

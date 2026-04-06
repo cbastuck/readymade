@@ -31,6 +31,8 @@
 #include "./services/filesystem.h"
 #include "./services/map.h"
 #include "./services/sub_service.h"
+#include "./services/method_router.h"
+#include "./services/if_service.h"
 
 #if HKP_MP4_TO_WAV_ENABLED
   #include "./services/mp4_to_wav.h"
@@ -64,6 +66,8 @@ using ServiceTypes = Registry::TypeList<
   ,Filesystem
   ,Map
   ,SubService
+  ,MethodRouter
+  ,IfService
 #if HKP_MP4_TO_WAV_ENABLED
   ,Mp4ToWav
 #endif

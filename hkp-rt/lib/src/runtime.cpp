@@ -273,7 +273,7 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
     }
     if (isEarlyReturn(data))
     {
-      return onProcessEnd(getControlFlowData(data));
+      return onProcessEnd(getControlFlowData(data), json{}, callback);
     }
   }
   return onProcessEnd(data, nullptr, callback);;
@@ -574,7 +574,15 @@ void Runtime::onSessionJSONData(json msg)
     auto callback = findAndRemovePendingCallback(requestId);
     if (callback)
     {
-      callback(data);
+      // A JSON string arriving here was originally a C++ std::string (e.g. an
+      // HTML page) that was round-tripped through the browser WebSocket as a
+      // JSON-encoded string.  Re-wrap it as Data(std::string) so that
+      // sendResult() dispatches to sendHtmlResponse() rather than
+      // sendJsonResponseWithCors().
+      if (data.is_string())
+        callback(Data(data.get<std::string>()));
+      else
+        callback(Data(data));
     }
     else
     {

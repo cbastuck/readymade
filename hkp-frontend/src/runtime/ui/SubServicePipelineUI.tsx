@@ -5,11 +5,12 @@ import {
   ServiceAction,
   ServiceClass,
   ServiceInstance,
+  ServiceUIComponent,
 } from "hkp-frontend/src/types";
 import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
-import { findServiceUI } from "../UIRegistry";
-import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
-import ServiceWithDropBars from "../../ServiceWithDropBars";
+import { findServiceUI as restFindServiceUI } from "../rest/UIRegistry";
+import RuntimeRestServiceUI from "../rest/RuntimeRestServiceUI";
+import ServiceWithDropBars from "../ServiceWithDropBars";
 
 type PipelineEntry = {
   serviceId: string;
@@ -19,9 +20,20 @@ type PipelineEntry = {
 
 type Props = {
   service: ServiceInstance;
+  findServiceUI?: (serviceId: string) => ServiceUIComponent | null;
+  FallbackUI?: React.ComponentType<any>;
+  /** Optional: returns the real in-process service instance for a given instanceId.
+   *  When provided and non-null, the real instance is used for the service UI so
+   *  that notification channels (app.registerNotificationTarget) wire up correctly. */
+  getActualInstance?: (instanceId: string) => ServiceInstance | null;
 };
 
-export default function SubServicePipelineUI({ service }: Props) {
+export default function SubServicePipelineUI({
+  service,
+  findServiceUI = restFindServiceUI,
+  FallbackUI = RuntimeRestServiceUI,
+  getActualInstance,
+}: Props) {
   const pipeline: PipelineEntry[] = service.state?.pipeline ?? [];
   const registry = service.app.listAvailableServices();
   const [collapsed, setCollapsed] = useState(false);
@@ -95,7 +107,18 @@ export default function SubServicePipelineUI({ service }: Props) {
               }
             };
 
-            const subServiceInstance: ServiceInstance = {
+            // Proxy instance: routes configure() through the parent sub-service
+            // so that config changes are persisted in the outer state.
+            const configureProxy = async (config: object) => {
+              await service.configure({
+                configureService: {
+                  instanceId: entry.instanceId,
+                  state: config,
+                },
+              });
+            };
+
+            const proxyInstance: ServiceInstance = {
               uuid: entry.instanceId,
               serviceId: entry.serviceId,
               serviceName: descriptor?.serviceName ?? entry.serviceId,
@@ -104,27 +127,23 @@ export default function SubServicePipelineUI({ service }: Props) {
               state: entry.state,
               app: service.app,
               board: service.board,
-              configure: async (config: object) => {
-                await service.configure({
-                  configureService: {
-                    instanceId: entry.instanceId,
-                    state: config,
-                  },
-                });
-              },
+              configure: configureProxy,
               process: async () => {},
               getConfiguration: async () => entry.state,
               destroy: async () => {},
             };
 
+            // If a real in-process instance is available (browser pipeline mode),
+            // use it so that notification targets wire up to the inner scope's app.
+            // Keep configure() pointing at the proxy so config changes are persisted.
+            const realInstance = getActualInstance?.(entry.instanceId);
+            const subServiceInstance: ServiceInstance = realInstance
+              ? { ...realInstance, configure: configureProxy }
+              : proxyInstance;
+
             const SubServiceUI =
-              (entry.serviceId &&
-                findServiceUI({
-                  serviceId: entry.serviceId,
-                  version: descriptor?.version,
-                  capabilities: descriptor?.capabilities,
-                })) ||
-              RuntimeRestServiceUI;
+              (entry.serviceId && findServiceUI(entry.serviceId)) ||
+              FallbackUI;
 
             const uiElement = React.createElement(SubServiceUI as any, {
               service: subServiceInstance,

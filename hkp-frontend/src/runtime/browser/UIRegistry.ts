@@ -20,6 +20,9 @@ import FetcherUI from "./services/FetcherUI";
 import BufferUI from "./services/BufferUI";
 import OllamaPromptUI from "./services/OllamaPromptUI";
 import LooperUI from "./services/LooperUI";
+import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
+import ImagePickerDescriptor from "./services/ImagePicker";
+import ChunkedFileProviderDescriptor from "./services/ChunkedFileProvider";
 
 import { SequencerUI } from "./services/Sequencer";
 
@@ -72,6 +75,12 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return OllamaPromptUI;
     case "hookup.to/service/looper":
       return LooperUI;
+    case "sub-service":
+      return BrowserSubServiceUI;
+    case "hookup.to/service/image-picker":
+      return ImagePickerDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/chunked-file-provider":
+      return ChunkedFileProviderDescriptor.createUI as unknown as ServiceUIComponent;
     default:
       return null;
   }

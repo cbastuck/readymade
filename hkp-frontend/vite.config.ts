@@ -9,7 +9,7 @@ export default defineConfig({
   },
   plugins: [svgr(), react()],
   server: {
-    port: 3000,
+    port: 5555,
   },
   define: {
     // "process.env": JSON.stringify(process.env),

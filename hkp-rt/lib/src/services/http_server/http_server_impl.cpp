@@ -80,7 +80,14 @@ void HttpServerImpl::onSessionOpened(std::shared_ptr<Session> session)
   {
     auto path = session->getRequestPath();
     auto method = session->getRequestMethod();
-    m_onSessionOpenedCallback(session, path, method);
+    try
+    {
+      m_onSessionOpenedCallback(session, path, method);
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "HttpServerImpl::onSessionOpened() Exception in callback: " << e.what() << std::endl;
+    }
     return; // no need to store the session here - handler will take care of it
   }
   

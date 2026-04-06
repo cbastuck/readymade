@@ -16,7 +16,7 @@ import {
   deserializeYasMessage,
   serializeYasMessage,
 } from "./Message";
-import { isData } from "./Data";
+import { TextSymbol, isData } from "./Data";
 
 export default class RuntimeRestScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;
@@ -124,10 +124,17 @@ export default class RuntimeRestScope implements RuntimeScope {
       const blob = serializeYasMessage(params, context?.requestId || "");
       this.runtimeOutput.send(blob);
     } else {
+      // TextData { type: TextSymbol, text: "..." } carries a string result
+      // (e.g. an HTML page). Symbol values are dropped by JSON.stringify, so
+      // unwrap to the raw string so the C++ side receives a plain JSON string.
+      const serializable =
+        params != null && (params as any).type === TextSymbol
+          ? (params as any).text
+          : params;
       this.runtimeOutput.send(
         JSON.stringify({
           type,
-          params,
+          params: serializable,
           context,
         }),
       );

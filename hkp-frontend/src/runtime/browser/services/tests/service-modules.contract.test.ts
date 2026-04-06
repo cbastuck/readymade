@@ -48,6 +48,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "OpenAIPrompt.ts",
   "Output.tsx",
   "PeerSocket.tsx",
+  "QrCode.ts",
   "Reactor.tsx",
   "Receiver.tsx",
   "RemoteWindow.tsx",

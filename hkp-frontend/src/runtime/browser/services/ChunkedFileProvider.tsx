@@ -1,56 +1,57 @@
 import React, { useState } from "react";
-
-import { useBoardContext } from "../../../BoardContext";
+import { ServiceUIProps } from "hkp-frontend/src/types";
+import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
+import { generateUploadId } from "./helpers";
 
 const serviceId = "hookup.to/service/chunked-file-provider";
 const serviceName = "Chunked File Provider";
 
-type ChunkedFileProviderUIProps = {
-  runtimeId: string;
-  service: { uuid: string };
+const DEFAULT_CHUNK_SIZE = 3 * 1024 * 1024; // 3 MB — stays under typical 4 MB API gateway limits
+
+export type ChunkPayload = {
+  data: ArrayBuffer;
+  filename: string;
+  mimeType: string;
+  chunkIndex: number; // 0-based
+  totalChunks: number;
+  uploadId: string; // unique per file send — used by the server to reassemble
 };
 
-function ChunkedFileProviderUI(props: ChunkedFileProviderUIProps): JSX.Element {
+function ChunkedFileProviderUI(props: ServiceUIProps): JSX.Element {
   const [file, setFile] = useState<File | undefined>(undefined);
-  const boardContext = useBoardContext() as any;
+  const [progress, setProgress] = useState<string>("");
 
-  const processFile = (f: File | undefined): void => {
-    const runtime = boardContext.getCurrentBrowserRuntime(props.runtimeId);
-    if (runtime) {
-      const service = runtime.getServiceById(props.service.uuid);
-      service && service.process({ file: f });
-    } else {
-      console.error("FileProvider service/runtime not found");
-    }
+  const onNotification = (params: any) => {
+    if (params?.progress !== undefined) setProgress(params.progress);
   };
 
   return (
-    <div
-      style={{
-        margin: 10,
-      }}
-    >
-      <div>
-        <input
-          type="file"
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setFile(e.target && e.target.files && e.target.files[0] || undefined)
-          }
-        />
+    <ServiceUI {...props} onNotification={onNotification}>
+      <div style={{ margin: 10 }}>
+        <div>
+          <input
+            type="file"
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setFile(e.target?.files?.[0] || undefined)
+            }
+          />
+        </div>
+        {progress && (
+          <div style={{ marginTop: 6, fontSize: 12, color: "#666" }}>
+            {progress}
+          </div>
+        )}
+        <div>
+          <button
+            onClick={() => file && (props.service as any).process({ file })}
+            disabled={!file}
+            style={{ width: "100%", marginTop: 10 }}
+          >
+            Process
+          </button>
+        </div>
       </div>
-      <div>
-        <button
-          onClick={() => processFile(file)}
-          disabled={!file}
-          style={{
-            width: "100%",
-            marginTop: 10,
-          }}
-        >
-          Process
-        </button>
-      </div>
-    </div>
+    </ServiceUI>
   );
 }
 
@@ -65,8 +66,7 @@ class ChunkedFileProvider {
     this.uuid = id;
     this.board = board;
     this.app = app;
-
-    this.chunkSize = 1024 * 1024;
+    this.chunkSize = DEFAULT_CHUNK_SIZE;
     this.running = false;
   }
 
@@ -76,50 +76,73 @@ class ChunkedFileProvider {
     }
   }
 
-  async process(params: { file?: File }): Promise<void> {
+  async process(params: { file?: File }): Promise<null> {
     const { file } = params;
 
     if (!file) {
-      return console.error(
-        "Calling FileProvider process with invalid parameter",
-        params
+      console.error(
+        "ChunkedFileProvider: process called without a file",
+        params,
       );
+      return null;
     }
 
     if (this.running) {
-      return console.error("Another file upload is in process - wait");
+      console.error("ChunkedFileProvider: another upload is in progress");
+      return null;
     }
 
     this.running = true;
-
-    const onFinished = (): void => {
-      this.running = false;
-    };
-
-    const processingFileSize = file.size;
-    const handleChunk = (callback: () => void, e: ProgressEvent<FileReader>): void => {
-      const contents = (e.target as FileReader).result;
-      const blob = new Blob([contents as ArrayBuffer], { type: "application/octet-stream" });
-      this.app.next(this, blob);
-      callback();
-    };
+    const uploadId = generateUploadId();
+    const totalChunks = Math.ceil(file.size / this.chunkSize);
 
     const readChunk = (offset: number): void => {
-      if (offset >= processingFileSize) {
-        return onFinished();
+      if (offset >= file.size) {
+        this.running = false;
+        this.app.notify(this, { progress: "" });
+        return;
       }
+
+      const chunkIndex = offset / this.chunkSize;
+      this.app.notify(this, {
+        progress: `Chunk ${chunkIndex + 1} / ${totalChunks}`,
+      });
+
       const blob = file.slice(
         offset,
-        Math.min(offset + this.chunkSize, processingFileSize)
+        Math.min(offset + this.chunkSize, file.size),
       );
       const reader = new FileReader();
-      reader.onload = handleChunk.bind(this, () =>
-        readChunk(offset + this.chunkSize)
-      );
+
+      reader.onload = (e: ProgressEvent<FileReader>) => {
+        const data = e.target!.result as ArrayBuffer;
+        const payload: ChunkPayload = {
+          data,
+          filename: file.name,
+          mimeType: file.type || "application/octet-stream",
+          chunkIndex,
+          totalChunks,
+          uploadId,
+        };
+        this.app.next(this, payload);
+        readChunk(offset + this.chunkSize);
+      };
+
+      reader.onerror = () => {
+        console.error(
+          "ChunkedFileProvider: FileReader error at offset",
+          offset,
+        );
+        this.running = false;
+      };
+
       reader.readAsArrayBuffer(blob);
     };
 
     readChunk(0);
+    // Return null so the pipeline loop stops here. Each chunk is forwarded
+    // to downstream services via app.next() inside the FileReader callbacks.
+    return null;
   }
 }
 

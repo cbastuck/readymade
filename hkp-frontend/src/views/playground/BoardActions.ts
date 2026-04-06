@@ -15,7 +15,7 @@ import { decodeBoardState } from "./BoardLink";
 import { defaultDiscoveryPeer } from "./common";
 
 export async function importBoard(
-  url: string
+  url: string,
 ): Promise<BoardDescriptor | null> {
   const res = await fetch(url);
   const data: any = await res.json();
@@ -41,7 +41,7 @@ export async function importBoard(
           return svc;
         }),
       }),
-      {}
+      {},
     ),
     registry: data.registry || {},
   };
@@ -51,7 +51,7 @@ export async function importBoard(
 
 export async function createBoardFromTemplate(
   templateUrl: string,
-  params: any
+  params: any,
 ): Promise<PlaygroundBoard | null> {
   const resp = await fetch(templateUrl);
   if (!resp || !resp.ok) {
@@ -81,7 +81,7 @@ export async function createBoardFromTemplate(
           uuid: uuidv4(),
         })),
       }),
-      {}
+      {},
     );
 
     const partchedSidechainRouting = sidechainRouting
@@ -92,23 +92,23 @@ export async function createBoardFromTemplate(
           const patchedRuntimeSidechain = originalRuntimeSidechain.map(
             (entry) => {
               const origRTIndex = runtimes.findIndex(
-                (r) => r.id === entry.runtimeId
+                (r) => r.id === entry.runtimeId,
               );
               if (origRTIndex === -1) {
                 console.error(
                   "createBoardFromTemplate(): could not find runtime",
                   entry,
-                  runtimes
+                  runtimes,
                 );
               }
               const origSvcIndex = services[entry.runtimeId].findIndex(
-                (svc) => svc.uuid === entry.serviceUuid
+                (svc) => svc.uuid === entry.serviceUuid,
               );
               if (origSvcIndex === -1) {
                 console.error(
                   "createBoardFromTemplate(): could not find service",
                   entry,
-                  services[originalRt.id]
+                  services[originalRt.id],
                 );
               }
               const patchedRuntimeId = patchedRuntimes[origRTIndex].id;
@@ -117,7 +117,7 @@ export async function createBoardFromTemplate(
                 serviceUuid:
                   patchedServices[patchedRuntimeId][origSvcIndex].uuid,
               };
-            }
+            },
           );
           return {
             ...all,
@@ -187,7 +187,7 @@ export function reorderService(
   allServices: RuntimeServiceMap,
   runtime: RuntimeDescriptor,
   serviceUuid: string,
-  targetPosition: number
+  targetPosition: number,
 ) {
   const services = allServices[runtime.id];
   const fromIndex = services.findIndex((svc) => serviceUuid === svc.uuid);
@@ -205,7 +205,7 @@ export function reorderService(
 export function reorderRuntime(
   runtimes: Array<RuntimeDescriptor>,
   runtimeId: string,
-  targetPosition: number
+  targetPosition: number,
 ) {
   const fromIndex = runtimes.findIndex((rt) => runtimeId === rt.id);
   const toIndex =
@@ -221,5 +221,12 @@ export function reorderRuntime(
 
 export function importFromLink(fromLink: string) {
   const src: string = decodeBoardState(fromLink);
-  return JSON.parse(src);
+  // Replace MEANDER_HOST with the actual hostname the browser connected to.
+  // This lets board JSON use MEANDER_HOST as a stable placeholder instead of
+  // hardcoding an IP that changes with each DHCP lease.
+  const host = typeof window !== "undefined" ? window.location.hostname : "";
+
+  console.log("HOSTNAME", host);
+  const resolved = host ? src.replace(/MEANDER_HOST/g, host) : src;
+  return JSON.parse(resolved);
 }

@@ -40,6 +40,10 @@ export function isRuntimeRestClassType(type: RuntimeClassType): boolean {
   return toCanonicalRuntimeClassType(type) === "rest";
 }
 
+export function isRuntimeBrowserClassType(type: RuntimeClassType): boolean {
+  return toCanonicalRuntimeClassType(type) === "browser";
+}
+
 export type RuntimeClass = {
   type: RuntimeClassType;
   name: string;

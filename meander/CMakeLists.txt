@@ -28,7 +28,9 @@ add_executable(
   backend/main.mm
   backend/schemeHandler.cpp
   backend/router.cpp
+  backend/frontendServer.cpp
 )
+
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -g0" CACHE STRING "Release flags" FORCE)
 set(CMAKE_C_FLAGS_RELEASE   "-O3 -DNDEBUG -g0" CACHE STRING "Release flags" FORCE)

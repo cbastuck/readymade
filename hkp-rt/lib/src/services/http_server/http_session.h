@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <boost/beast.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/json.hpp>
@@ -67,13 +69,32 @@ public:
 
   std::string getRequestPath() const
   {
-    return req_.target();
+    return std::string(parser_->get().target());
   }
 
   std::string getRequestMethod() const
   {
-    return req_.method_string();
+    return std::string(parser_->get().method_string());
   }
+
+  // Returns the raw request body as a string (works for binary payloads too).
+  const std::string& getRequestBody() const
+  {
+    return parser_->get().body();
+  }
+
+  // Returns the value of a header by name, or empty string if absent.
+  std::string getRequestHeader(const std::string& name) const
+  {
+    auto it = parser_->get().find(name);
+    return (it != parser_->get().end()) ? std::string(it->value()) : "";
+  }
+
+  void sendHtmlResponse(const std::string& html);
+  void sendJsonResponseWithCors(const json& data);
+  void sendCorsPreflightResponse();
+  // Dispatch to the right send method based on the Data variant type.
+  void sendResult(Data& data);
 
 private:
   void sendJsonData(const json& j, bool useEventStream = false);
@@ -82,7 +103,7 @@ private:
 private:
   boost::beast::tcp_stream stream_;
   boost::beast::flat_buffer buffer_;
-  boost::beast::http::request<boost::beast::http::string_body> req_;
+  std::optional<boost::beast::http::request_parser<boost::beast::http::string_body>> parser_;
   std::shared_ptr<void> res_;
   send_lambda lambda_;
   Listener& listener_;
