@@ -128,10 +128,10 @@ void Server::handleRequest(crow::request& req, crow::response& res)
   m_impl->crow.handle_full(req, res);
 }
 
-void Server::start(const std::string& externalIP, unsigned int port)
+void Server::start(const std::string& externalIP, unsigned int port, const std::string& bindAddress)
 {
   m_impl->externalIP = externalIP;
-  m_impl->crow.port(port).run();
+  m_impl->crow.bindaddr(bindAddress).port(port).run();
 }
 
 void Server::stop() 
@@ -381,31 +381,90 @@ crow::response Server::impl::processRuntime(const crow::request &req, const std:
   }
 
   auto contentType = req.get_header_value("Content-Type");
-  if (contentType != "application/json")
+
+  // Build the appropriate Data variant from the request body and content type.
+  auto buildInputData = [&]() -> std::optional<Data>
   {
-    std::cout << "Content type not supported yet: " << contentType << std::endl;
+    if (contentType == "application/json")
+    {
+      try
+      {
+        auto body = json::parse(req.body);
+        if (!body.is_object())
+          return std::nullopt;
+        return Data(std::move(body));
+      }
+      catch (...) { return std::nullopt; }
+    }
+
+    if (contentType.rfind("text/plain", 0) == 0)
+      return Data(req.body);
+
+    if (contentType.rfind("multipart/form-data", 0) == 0)
+    {
+      auto msg = crow::multipart::message(req);
+      if (msg.parts.empty())
+        return std::nullopt;
+
+      // Use the first part as the binary payload; collect its headers as meta.
+      auto& firstPart = msg.parts[0];
+      BinaryData binary(firstPart.body.begin(), firstPart.body.end());
+
+      json meta = json::object();
+      for (auto& [headerName, header] : firstPart.headers)
+      {
+        json headerMeta;
+        headerMeta["value"] = header.value;
+        for (auto& [paramName, paramValue] : header.params)
+          headerMeta["params"][paramName] = paramValue;
+        meta[headerName] = std::move(headerMeta);
+      }
+
+      return Data(MixedData{std::move(meta), std::move(binary)});
+    }
+
+    // Raw binary fallback: image/*, application/octet-stream, etc.
+    return Data(BinaryData(req.body.begin(), req.body.end()));
+  };
+
+  auto inputData = buildInputData();
+  if (!inputData)
+  {
+    std::cerr << "processRuntime: cannot parse body with Content-Type: " << contentType << '\n';
     return crow::response(crow::status::BAD_REQUEST);
   }
 
   try
   {
-    auto body = json::parse(req.body);
-    if (!body.is_object())
-    {
-      return crow::response(crow::status::BAD_REQUEST);
-    }
-    auto data = app->processRuntime(runtimeId, Data(body));
-    auto j = getJSONFromData(data);
-    if (j)
-    {
+    auto result = app->processRuntime(runtimeId, std::move(*inputData));
+
+    if (auto j = getJSONFromData(result))
       return makeJsonResponse(*j);
+
+    if (auto b = getBinaryFromData(result))
+    {
+      crow::response res(200);
+      res.body = std::string(b->begin(), b->end());
+      res.set_header("Content-Type", "application/octet-stream");
+      res.set_header("Access-Control-Allow-Origin", allowedOrigins);
+      return res;
     }
+
+    if (auto s = getStringFromData(result))
+    {
+      crow::response res(200);
+      res.body = *s;
+      res.set_header("Content-Type", "text/plain");
+      res.set_header("Access-Control-Allow-Origin", allowedOrigins);
+      return res;
+    }
+
     return crow::response(crow::status::OK);
   }
   catch(const std::exception& e)
   {
-    std::cerr << "Invalid json in body: " << req.body << '\n';
-    return crow::response(crow::status::BAD_REQUEST);
+    std::cerr << "processRuntime error: " << e.what() << '\n';
+    return crow::response(crow::status::INTERNAL_SERVER_ERROR);
   }
 }
 

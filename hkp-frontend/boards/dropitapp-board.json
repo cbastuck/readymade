@@ -41,7 +41,7 @@
               "instanceId": "http-uploader-svc",
               "serviceId": "hookup.to/service/http-uploader",
               "serviceName": "HTTP Uploader",
-              "state": { "url": "http://MEANDER_HOST:8888/" }
+              "state": { "url": "http://MEANDER_HOST:8887/runtimes/upload-server" }
             }
           ]
         }
@@ -69,15 +69,6 @@
       }
     ],
     "upload-server": [
-      {
-        "uuid": "http-server-svc",
-        "serviceId": "http-server",
-        "serviceName": "HTTP Server",
-        "state": {
-          "port": 8888,
-          "bypass": false
-        }
-      },
       {
         "uuid": "filesystem-svc",
         "serviceId": "filesystem",

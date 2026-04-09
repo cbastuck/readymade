@@ -59,6 +59,7 @@ static std::string getLanIP()
 }
 
 static constexpr uint16_t FRONTEND_HTTP_PORT = 9090;
+static constexpr uint16_t RUNTIME_API_PORT = 8887;
 
 int real_main(int argc, char *argv[])
 {
@@ -86,16 +87,17 @@ int real_main(int argc, char *argv[])
   window->set_background({255, 255, 255, 255}); // white background
   window->show();
 
-  auto allowedOrigins = "*"; // allow all origins for CORS
-  auto usePort = 0; // start with random port
-  auto hkpApp = std::make_shared<hkp::App>();
-  auto server = std::make_shared<hkp::Server>(hkpApp, "meander-cpp", allowedOrigins);
-  auto t = std::make_shared<std::thread>([server, usePort]()
-  {
-    server->start("127.0.0.1", usePort);
-  });
+  Settings settings;
+  auto bindAddress = settings.getAllowExternalAccess() ? std::string("0.0.0.0") : std::string("127.0.0.1");
 
   auto lanIP = getLanIP();
+  auto allowedOrigins = "*"; // allow all origins for CORS
+  auto hkpApp = std::make_shared<hkp::App>();
+  auto server = std::make_shared<hkp::Server>(hkpApp, "meander-cpp", allowedOrigins);
+  auto t = std::make_shared<std::thread>([server, lanIP, bindAddress]()
+  {
+    server->start(lanIP, RUNTIME_API_PORT, bindAddress);
+  });
   std::cout << "Frontend available at: http://" << lanIP << ":" << FRONTEND_HTTP_PORT << "/" << std::endl;
 
   // Frontend HTTP server — serves the hkp-frontend SPA to devices on the LAN
@@ -106,7 +108,6 @@ int real_main(int argc, char *argv[])
     frontendServer->start("0.0.0.0", FRONTEND_HTTP_PORT);
   });
 
-  Settings settings;
   auto numLoadedPlugins = hkpApp->scanForPlugins(settings.getBundlesPath());
   std::cout << "Loaded " << numLoadedPlugins << " plugins from bundles path: " << settings.getBundlesPath() << std::endl;
 
@@ -119,7 +120,7 @@ int real_main(int argc, char *argv[])
     {
       return saucer::scheme::response{
         .data    = saucer::stash::from_str(
-                     nlohmann::json{{"lanIp", lanIP}, {"frontendPort", FRONTEND_HTTP_PORT}}.dump()),
+                     nlohmann::json{{"lanIp", lanIP}, {"frontendPort", FRONTEND_HTTP_PORT}, {"apiPort", RUNTIME_API_PORT}}.dump()),
         .mime    = "application/json",
         .headers = {{"Access-Control-Allow-Origin", "*"}},
         .status  = 200,

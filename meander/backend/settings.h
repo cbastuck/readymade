@@ -102,6 +102,27 @@ public:
     return savePath.string();
   }
 
+  bool getAllowExternalAccess() const
+  {
+    using json = nlohmann::json;
+    const auto settingsPath = (m_hkpDirPath / "settings.json").string();
+    if (!std::filesystem::exists(settingsPath))
+      return false;
+    std::ifstream file(settingsPath);
+    if (!file.is_open())
+      return false;
+    try
+    {
+      json payload;
+      file >> payload;
+      const auto it = payload.find("allowExternalRuntimeAccess");
+      if (it != payload.end() && it->is_boolean())
+        return it->get<bool>();
+    }
+    catch (...) {}
+    return false;
+  }
+
   std::string getBundlesPath() const
   {
     namespace fs = std::filesystem;

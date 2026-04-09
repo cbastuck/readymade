@@ -7,76 +7,28 @@ import {
 } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/RefinementSession";
 import { DEFAULT_GENERATED_BOARD } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/DefaultWorkflowBoard";
 import { Remote } from "./types";
+import { getBackend } from "./backend";
 
-export async function loadBoard(boardName: string): Promise<BoardDescriptor> {
-  const response = await fetch(`hkp://boards/${boardName}`);
-  if (!response.ok) {
-    throw new Error(`Failed to load board: ${response.statusText}`);
-  }
-  const board = await response.json();
-  // TODO: make sure it is a valid board descriptor
-  return board.boardName ? board : { ...board, boardName };
-}
+export const loadBoard = (boardName: string): Promise<BoardDescriptor> =>
+  getBackend().loadBoard(boardName);
 
-export async function deleteBoard(name: string) {
-  const response = await fetch(`hkp://boards/${name}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to delete board: ${response.statusText}`);
-  }
-  return response.json();
-}
+export const deleteBoard = (name: string): Promise<void> =>
+  getBackend().deleteBoard(name);
 
-export async function saveBoard(name: string, payload: BoardDescriptor) {
-  const response = await fetch(`hkp://boards/${name}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to save board: ${response.statusText}`);
-  }
-}
+export const saveBoard = (name: string, payload: BoardDescriptor): Promise<void> =>
+  getBackend().saveBoard(name, payload);
 
-export async function getRemotes() {
-  const res = await fetch("hkp://remotes/");
-  return await res.json();
-}
+export const getRemotes = (): Promise<Array<Remote>> =>
+  getBackend().getRemotes();
 
-export async function saveRemote(remote: Remote) {
-  const response = await fetch("hkp://remotes/", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(remote),
-  });
+export const saveRemote = (remote: Remote): Promise<void> =>
+  getBackend().saveRemote(remote);
 
-  if (!response.ok) {
-    throw new Error(`Failed to save remote: ${response.statusText}`);
-  }
+export const deleteRemote = (name: string): Promise<void> =>
+  getBackend().deleteRemote(name);
 
-  return response.json();
-}
-
-export async function deleteRemote(name: string) {
-  const response = await fetch("hkp://remotes/", {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ name }),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to delete remote: ${response.statusText}`);
-  }
-
-  return response.json();
-}
+export const fetchSavedBoards = (): Promise<Array<string>> =>
+  getBackend().fetchSavedBoards();
 
 function isBoardDescriptorEmpty(board: any): boolean {
   if (!board || typeof board !== "object") {
@@ -200,9 +152,3 @@ export function createMenuItems(
   ];
 }
 
-export async function fetchSavedBoards(): Promise<Array<string>> {
-  const boards = await fetch("hkp://boards/");
-  const boardNames: Array<string> = await boards.json();
-  // TODO: Validate the response
-  return boardNames.map((boardName) => decodeURIComponent(boardName));
-}

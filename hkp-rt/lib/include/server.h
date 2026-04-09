@@ -21,7 +21,7 @@ namespace hkp
            const std::string& allowedOrigins);
     ~Server();
   
-    void start(const std::string& externalIP, unsigned int port);
+    void start(const std::string& externalIP, unsigned int port, const std::string& bindAddress = "0.0.0.0");
     void stop();
   
     unsigned int port() const;

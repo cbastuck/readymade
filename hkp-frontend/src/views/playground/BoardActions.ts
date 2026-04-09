@@ -225,8 +225,6 @@ export function importFromLink(fromLink: string) {
   // This lets board JSON use MEANDER_HOST as a stable placeholder instead of
   // hardcoding an IP that changes with each DHCP lease.
   const host = typeof window !== "undefined" ? window.location.hostname : "";
-
-  console.log("HOSTNAME", host);
   const resolved = host ? src.replace(/MEANDER_HOST/g, host) : src;
   return JSON.parse(resolved);
 }
