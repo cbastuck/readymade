@@ -211,7 +211,7 @@ export default function ServiceFrame({
 
   return (
     <div key={`service-frame-${uuid}`} id={`service-frame-${uuid}`}>
-      <div className="flex">
+      <div className="flex items-center">
         <div
           style={s(t.unselectable, {
             transition: "border 800ms",
@@ -222,8 +222,9 @@ export default function ServiceFrame({
             textAlign: "center",
             backgroundColor: theme.serviceBackgroundColor,
             margin: "10px 0px",
+            boxShadow: theme.serviceBoxShadow,
+            overflow: "hidden",
           })}
-          className="shadow-md"
         >
           <DragSource
             className="bg-white"
@@ -258,12 +259,13 @@ export default function ServiceFrame({
             style={{
               position: "relative",
               display: frameCollapsed ? "none" : undefined,
+              paddingBottom: theme.serviceContentPaddingBottom || undefined,
             }}
           >
             {children}
           </div>
         </div>
-        <div className="mt-[30px] px-4 w-7">
+        <div className="pl-2">
           <ServiceOutputPlug
             isActive={signalOutput}
             data={recentProgressData}

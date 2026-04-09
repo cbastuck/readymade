@@ -4,6 +4,7 @@ import AppProvider from "./AppContext";
 import MessageDispatcher from "./MessageDispatcher";
 import AuthProvider from "./auth/Auth0Provider";
 import Notifications from "./Notifications";
+import { ThemeProvider } from "./ui-components/ThemeContext";
 
 import "./index.css";
 import "../app/globals.css";
@@ -17,11 +18,13 @@ export default function App({ children }: Props) {
     <Router>
       <AuthProvider>
         <AppProvider>
-          <div className="h-full w-full">
-            {children}
-            <Notifications />
-          </div>
-          <MessageDispatcher />
+          <ThemeProvider>
+            <div className="h-full w-full">
+              {children}
+              <Notifications />
+            </div>
+            <MessageDispatcher />
+          </ThemeProvider>
         </AppProvider>
       </AuthProvider>
     </Router>

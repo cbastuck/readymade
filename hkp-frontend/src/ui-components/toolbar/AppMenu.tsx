@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { LogIn, LogOut, Menu, Settings, User, Server } from "lucide-react";
+import { LogIn, LogOut, Menu, Palette, User, Server } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
@@ -10,11 +10,16 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
-import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
+import { useTheme, useThemeControl, ThemeName } from "hkp-frontend/src/ui-components/ThemeContext";
 
 export default function AppMenu() {
   const { loginWithRedirect, logout } = useAuth0();
@@ -44,6 +49,7 @@ export default function AppMenu() {
   };
 
   const theme = useTheme();
+  const { themeName, setThemeName } = useThemeControl();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild className="ml-auto">
@@ -95,10 +101,21 @@ export default function AppMenu() {
             </DropdownMenuItem>
             */}
 
-          <DropdownMenuItem className="text-base" disabled={true}>
-            <MenuIcon icon={Settings} />
-            <span>Settings</span>
-          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="text-base">
+              <MenuIcon icon={Palette} />
+              <span>Theme</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuRadioGroup
+                value={themeName}
+                onValueChange={(v) => setThemeName(v as ThemeName)}
+              >
+                <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="sketch">Sketch</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
         </DropdownMenuGroup>
 
         <DropdownMenuSeparator />

@@ -75,6 +75,7 @@ type Props = WithRouterProps & {
   boardDescriptor?: BoardDescriptor;
   children?: React.ReactNode;
   hideNavigation?: boolean;
+  menuSlot?: React.ReactNode;
   menuItemFactory?: BoardMenuItemFactory;
   onChangeBoardname?: (newName: string) => void;
   onSaveBoard?: (name: string, payload: BoardDescriptor) => void;
@@ -87,6 +88,7 @@ type PlaygroundInnerProps = {
   description: string;
   compact?: boolean;
   hideNavigation?: boolean;
+  menuSlot?: React.ReactNode;
   menuItemFactory?: BoardMenuItemFactory;
   showShareBoardQRCodeURL: string | null;
   setShowShareBoardQRCodeURL: (url: string | null) => void;
@@ -141,6 +143,7 @@ function PlaygroundInner(props: PlaygroundInnerProps) {
         isCompact={props.compact}
         menuItemFactory={props.menuItemFactory}
         hideNavigation={props.hideNavigation}
+        menuSlot={props.menuSlot}
         includeNavigationLinks={!props.hideNavigation}
       />
 
@@ -678,6 +681,7 @@ function Playground(props: Props) {
         description={description}
         compact={props.compact}
         hideNavigation={props.hideNavigation}
+        menuSlot={props.menuSlot}
         menuItemFactory={props.menuItemFactory}
         showShareBoardQRCodeURL={showShareBoardQRCodeURL}
         setShowShareBoardQRCodeURL={setShowShareBoardQRCodeURL}

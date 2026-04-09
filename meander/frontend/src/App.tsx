@@ -4,6 +4,7 @@ import HkpApp from "hkp-frontend/src/App";
 import Playground from "hkp-frontend/src/views/playground";
 
 import { Remote } from "./types";
+import MeanderAppMenu from "./MeanderAppMenu";
 import {
   getRemotes,
   saveBoard,
@@ -178,6 +179,7 @@ function App() {
         onUpdateBoardState={onUpdatedBoard}
         menuItemFactory={menuItemFactory}
         hideNavigation
+        menuSlot={<MeanderAppMenu />}
       >
         <Board
           boardSource={boardSource}

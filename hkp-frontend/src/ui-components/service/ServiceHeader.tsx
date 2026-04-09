@@ -35,7 +35,7 @@ export default function ServiceHeader({
 }: Props) {
   const bypassDisabled = showBypassOnlyIfExplicit && bypass === undefined;
   return (
-    <div className="flex items-end">
+    <div data-service-header className="flex items-end">
       <ServiceSettings
         service={service}
         isCollapsed={isCollapsed}

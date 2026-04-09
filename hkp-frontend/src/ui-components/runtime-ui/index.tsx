@@ -97,9 +97,9 @@ export default function RuntimeUI({
     "flex sm:flex-wrap flex-col sm:flex-row items-start"; // use flex-col and items-center on mobile
   const layout = wrapServices ? horizontalLayoutWrapped : horizontalLayout;
   return (
-    <div style={style} className="select-none mt-1 mb-2 mx-2">
+    <div style={{ ...style, boxShadow: theme.runtimeBoxShadow }} className="select-none mt-1 mb-2 mx-2">
       <DragSource
-        className="bg-[#FFFFFF8F] border-b border-gray-300 shadow-[0_1px_3px_rgba(0,0,0,0.10)]"
+        className="bg-[#FFFFFF8F] border-b border-gray-300"
         value={runtime}
         type={HKP_DND_RUNTIME_TYPE}
       >

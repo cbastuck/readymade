@@ -1,4 +1,20 @@
 @font-face {
+  font-family: "Kalam";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("./assets/fonts/Kalam-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Kalam";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("./assets/fonts/Kalam-Bold.woff2") format("woff2");
+}
+
+@font-face {
   font-family: "hkp-fnt-sans";
   src: url("./assets/fonts/Walkway Black.ttf") format("truetype");
 }
@@ -219,3 +235,62 @@ blockquote:after {
 .hkp-inp-error {
   border-color: rgb(213, 108, 108) !important;
 }
+
+/* ── Sketch theme overrides ───────────────────────────────────────────────── */
+[data-theme="sketch"] {
+  font-size: 17px;
+}
+[data-theme="sketch"] * {
+  font-family: 'Kalam', cursive !important;
+  font-weight: 700;
+}
+
+/* Organic border-radius on all rounded Tailwind utilities */
+[data-theme="sketch"] .rounded-none { border-radius: 3px 7px 3px 7px / 7px 3px 7px 3px !important; }
+[data-theme="sketch"] .rounded-sm   { border-radius: 3px 7px 3px 7px / 7px 3px 7px 3px !important; }
+[data-theme="sketch"] .rounded-md   { border-radius: 4px 10px 4px 10px / 10px 4px 10px 4px !important; }
+[data-theme="sketch"] .rounded-lg   { border-radius: 5px 12px 5px 12px / 12px 5px 12px 5px !important; }
+[data-theme="sketch"] .rounded-full { border-radius: 4px 10px 4px 10px / 10px 4px 10px 4px !important; }
+
+/* Buttons: sketch shadow only on substantive (non-ghost, non-transparent) buttons */
+[data-theme="sketch"] button {
+  transition: box-shadow 150ms, transform 100ms;
+}
+/* Buttons with a real background: default (bg-primary), secondary, white */
+[data-theme="sketch"] button.bg-primary,
+[data-theme="sketch"] button.bg-secondary,
+[data-theme="sketch"] button.bg-white {
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
+}
+/* Outline buttons keep shadow only if border isn't suppressed */
+[data-theme="sketch"] button.bg-background:not(.border-none) {
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.12);
+}
+/* Press effect */
+[data-theme="sketch"] button.bg-primary:active,
+[data-theme="sketch"] button.bg-secondary:active,
+[data-theme="sketch"] button.bg-white:active,
+[data-theme="sketch"] button.bg-background:not(.border-none):active {
+  box-shadow: 1px 1px 0 rgba(0, 0, 0, 0.12);
+  transform: translate(1px, 1px);
+}
+[data-theme="sketch"] button:disabled {
+  box-shadow: none !important;
+  transform: none !important;
+}
+/* Toolbar and service-header icon/ghost buttons: no shadow at all */
+[data-theme="sketch"] [data-toolbar] button,
+[data-theme="sketch"] [data-service-header] button {
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+/* Slider: flat rectangular track, square-ish thumb */
+[data-theme="sketch"] [role="slider"] {
+  border-radius: 3px 6px 3px 6px / 6px 3px 6px 3px !important;
+  box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+}
+[data-theme="sketch"] .rounded-full.bg-secondary {
+  border-radius: 2px !important;
+}
+

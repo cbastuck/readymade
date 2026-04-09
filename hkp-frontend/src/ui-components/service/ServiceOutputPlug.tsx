@@ -1,8 +1,5 @@
 import { useState } from "react";
-import { X, Pin, PinOff, Maximize } from "lucide-react";
-
-import Plug from "hkp-frontend/src/assets/plug.svg?react";
-import ArrayPlug from "hkp-frontend/src/assets/plugArray.svg?react";
+import { X, Pin, PinOff, Maximize, Play } from "lucide-react";
 
 import {
   Popover,
@@ -72,31 +69,15 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
           <ContextMenuTrigger>
             <PopoverTrigger asChild>
               <button onClick={onOpen}>
-                <div
-                  className={`flex flex-col ${
-                    Array.isArray(data) ? "mr-[-13px]" : "mr-[-1px]"
-                  }`}
-                >
-                  {Array.isArray(data) ? (
-                    <ArrayPlug
-                      width="30px"
-                      strokeWidth="10px"
-                      stroke={isActive ? theme.accentColor : theme.borderColor}
-                      fill={isActive ? theme.accentColor : "white"}
-                      className="hover:stroke-[#666]"
-                      opacity={isActive ? 0.5 : 1}
-                    />
-                  ) : (
-                    <Plug
-                      width="18px"
-                      strokeWidth="10px"
-                      stroke={isActive ? theme.accentColor : theme.borderColor}
-                      fill={isActive ? theme.accentColor : "white"}
-                      className="hover:stroke-[#666]"
-                      opacity={isActive ? 0.5 : 1}
-                    />
-                  )}
-                </div>
+                <Play
+                  size={Array.isArray(data) ? 24 : 20}
+                  fill={isActive ? theme.accentColor : "black"}
+                  stroke="none"
+                  style={{
+                    opacity: isActive ? 0.85 : 0.5,
+                    transition: "fill 400ms, opacity 400ms",
+                  }}
+                />
               </button>
             </PopoverTrigger>
           </ContextMenuTrigger>

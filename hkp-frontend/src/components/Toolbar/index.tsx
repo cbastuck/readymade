@@ -1,6 +1,7 @@
 import { ReactNode, useContext } from "react";
 
 import { BoardCtx } from "../../BoardContext";
+import { useTheme, useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 
 import RuntimeMenu from "hkp-frontend/src/ui-components/toolbar/RuntimeMenu";
 import HomeIcon from "./HomeIcon";
@@ -20,6 +21,7 @@ type Props = {
   hideNavigation?: boolean;
   includeNavigationLinks?: boolean;
   menuItemFactory?: BoardMenuItemFactory;
+  menuSlot?: ReactNode;
   onUpdateAvailableRuntimeEngines?: (
     runtimeClasses: Array<RuntimeClass>,
   ) => void;
@@ -30,6 +32,7 @@ export default function Toolbar({
   children = false,
   hideNavigation = false,
   menuItemFactory,
+  menuSlot,
   onUpdateAvailableRuntimeEngines,
 }: Props) {
   const boardContext = useContext(BoardCtx);
@@ -60,23 +63,44 @@ export default function Toolbar({
   const onUpdateRuntimeEngine = (updated: RuntimeClass) => {
     onAddRuntimeEngine(updated, true);
   };
-  return (
-    <div
-      className="select-none w-full bg-gradient-to-r from-white from-20% to-zinc-100 to-100% shadow-[0_2px_3px_rgba(0,0,0,0.10)]"
-      style={{
-        position: "sticky",
+
+  const theme = useTheme();
+  const { themeName } = useThemeControl();
+  const isSketch = themeName === "sketch";
+
+  const outerStyle = isSketch
+    ? {
+        position: "sticky" as const,
+        left: 0,
+        top: 0,
+        zIndex: 100,
+        width: "100%",
+        background: "#fafafa",
+        borderBottom: `2px solid ${theme.borderColor}`,
+        boxShadow: "3px 3px 0px rgba(0,0,0,0.06)",
+      }
+    : {
+        position: "sticky" as const,
         left: 0,
         top: 0,
         zIndex: 100,
         borderTop: "1px solid #ddd",
         width: "100%",
-      }}
+      };
+
+  const innerBorderBottom = isSketch ? "none" : "1px solid #ccc";
+
+  return (
+    <div
+      data-toolbar
+      className={isSketch ? "select-none w-full" : "select-none w-full bg-gradient-to-r from-white from-20% to-zinc-100 to-100% shadow-[0_2px_3px_rgba(0,0,0,0.10)]"}
+      style={outerStyle}
     >
       <div
         className="w-full mb-0 mt-0"
         style={{
           textAlign: "left",
-          borderBottom: "1px solid #ccc",
+          borderBottom: innerBorderBottom,
           width: "100%",
         }}
       >
@@ -101,7 +125,7 @@ export default function Toolbar({
 
           {children ? children : null}
 
-          {!hideNavigation && <AppMenu />}
+          {menuSlot ?? (!hideNavigation && <AppMenu />)}
         </div>
       </div>
     </div>
