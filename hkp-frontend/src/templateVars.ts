@@ -28,7 +28,7 @@ export function getTemplateVarMap(): Record<string, string> {
 export function resolveTemplateVars(value: string): string {
   const vars = getTemplateVarMap();
   for (const [key, resolved] of Object.entries(vars)) {
-    value = value.replaceAll(key, resolved);
+    value = value.split(key).join(resolved);
   }
   return value;
 }

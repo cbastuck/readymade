@@ -29,7 +29,7 @@
  *   }
  */
 
-import { AppImpl, ServiceClass, ServiceInstance } from "hkp-frontend/src/types";
+import { AppImpl, RuntimeClassType, ServiceClass, ServiceInstance } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import BrowserSubServiceUI from "./BrowserSubServiceUI";
 import BrowserRegistry from "../BrowserRegistry";
@@ -230,7 +230,7 @@ export class BrowserSubService extends ServiceBase<State> {
       {
         id: this.state.runtimeId,
         name: this.state.runtimeName,
-        type: this.state.runtimeType,
+        type: this.state.runtimeType as RuntimeClassType,
       },
       registry,
     );

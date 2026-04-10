@@ -1,4 +1,4 @@
-import React, { useCallback, useState } from "react";
+import { useCallback, useState } from "react";
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import SubServicePipelineUI from "../../ui/SubServicePipelineUI";

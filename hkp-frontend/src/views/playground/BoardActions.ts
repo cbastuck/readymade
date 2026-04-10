@@ -225,7 +225,7 @@ export function importFromLink(fromLink: string, vars?: string) {
     try {
       const varMap: Record<string, string> = JSON.parse(atob(vars));
       for (const [key, value] of Object.entries(varMap)) {
-        src = src.replaceAll(key, value);
+        src = src.split(key).join(value);
       }
     } catch (e) {
       console.warn("importFromLink: could not parse vars", e);
