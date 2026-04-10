@@ -219,12 +219,17 @@ export function reorderRuntime(
   return newArr;
 }
 
-export function importFromLink(fromLink: string) {
-  const src: string = decodeBoardState(fromLink);
-  // Replace MEANDER_HOST with the actual hostname the browser connected to.
-  // This lets board JSON use MEANDER_HOST as a stable placeholder instead of
-  // hardcoding an IP that changes with each DHCP lease.
-  const host = typeof window !== "undefined" ? window.location.hostname : "";
-  const resolved = host ? src.replace(/MEANDER_HOST/g, host) : src;
-  return JSON.parse(resolved);
+export function importFromLink(fromLink: string, vars?: string) {
+  let src = decodeBoardState(fromLink);
+  if (vars) {
+    try {
+      const varMap: Record<string, string> = JSON.parse(atob(vars));
+      for (const [key, value] of Object.entries(varMap)) {
+        src = src.replaceAll(key, value);
+      }
+    } catch (e) {
+      console.warn("importFromLink: could not parse vars", e);
+    }
+  }
+  return JSON.parse(src);
 }

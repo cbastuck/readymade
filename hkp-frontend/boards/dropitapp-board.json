@@ -41,7 +41,7 @@
               "instanceId": "http-uploader-svc",
               "serviceId": "hookup.to/service/http-uploader",
               "serviceName": "HTTP Uploader",
-              "state": { "url": "http://MEANDER_HOST:8887/runtimes/upload-server" }
+              "state": { "url": "HKP_RUNTIME_URL/runtimes/upload-server" }
             }
           ]
         }
@@ -57,7 +57,7 @@
         "serviceName": "URL Builder",
         "state": {
           "template": {
-            "=": "concat('http://MEANDER_HOST:9090/playground/dropitapp?fromLink=', params)"
+            "=": "concat('HKP_WEBAPP_URL/playground/dropitapp?fromLink=', params)"
           },
           "mode": "replace"
         }

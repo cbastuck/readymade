@@ -392,7 +392,7 @@ function Playground(props: Props) {
         } else if (params.src) {
           return importBoard(params.src);
         } else if (params.fromLink) {
-          return importFromLink(params.fromLink);
+          return importFromLink(params.fromLink, params.vars);
         } else {
           const localBoard = restoreBoardFromLocalStorage(brd);
           if (localBoard) {

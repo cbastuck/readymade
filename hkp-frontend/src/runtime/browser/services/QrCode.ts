@@ -1,6 +1,7 @@
 import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import QrCodeUI from "./QrCodeUI";
+import { resolveTemplateVars, getTemplateVarMap } from "hkp-frontend/src/templateVars";
 
 const serviceId = "hookup.to/service/qr-code";
 const serviceName = "QR Code";
@@ -21,17 +22,7 @@ class QrCode extends ServiceBase<State> {
 
   async configure(config: any) {
     if (config.url !== undefined && config.url !== this.state.url) {
-      let url: string = config.url;
-      if (url.includes("MEANDER_HOST")) {
-        try {
-          const info = await fetch("hkp://meander/info").then((r) => r.json());
-          if (info?.lanIp) {
-            url = url.replace(/MEANDER_HOST/g, info.lanIp);
-          }
-        } catch (e) {
-          console.warn("QrCode: could not resolve MEANDER_HOST via hkp://meander/info", e);
-        }
-      }
+      const url = resolveTemplateVars(config.url);
       this.state.url = url;
       this.app.notify(this, { url: this.state.url });
     }
@@ -43,17 +34,11 @@ class QrCode extends ServiceBase<State> {
         ? params
         : params?.url ?? params?.requestPath ?? "";
     if (url && url !== this.state.url) {
-      if (url.includes("MEANDER_HOST")) {
-        try {
-          const info = await fetch("hkp://meander/info").then((r) => r.json());
-          if (info?.lanIp) {
-            url = url.replace(/MEANDER_HOST/g, info.lanIp);
-          }
-        } catch (e) {
-          console.warn(
-            "QrCode: could not resolve MEANDER_HOST via hkp://meander/info",
-            e,
-          );
+      url = resolveTemplateVars(url);
+      if (url.includes("fromLink=")) {
+        const vars = getTemplateVarMap();
+        if (Object.keys(vars).length > 0) {
+          url += `&vars=${btoa(JSON.stringify(vars))}`;
         }
       }
       this.state.url = url;

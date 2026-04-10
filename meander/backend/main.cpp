@@ -91,6 +91,19 @@ int real_main(int argc, char *argv[])
   auto bindAddress = settings.getAllowExternalAccess() ? std::string("0.0.0.0") : std::string("127.0.0.1");
 
   auto lanIP = getLanIP();
+
+  // Inject runtime config into the webview as a global variable so the
+  // hkp-frontend can resolve HKP_WEBAPP_URL / HKP_RUNTIME_URL without any
+  // fetch calls. Runs before the page's own scripts (time::creation).
+  auto configJson = nlohmann::json{
+    {"lanIp",        lanIP},
+    {"frontendPort", FRONTEND_HTTP_PORT},
+    {"apiPort",      settings.getAllowExternalAccess() ? RUNTIME_API_PORT : 0},
+  };
+  webview->inject(saucer::script{
+    .code   = "window.__MEANDER_CONFIG__ = " + configJson.dump() + ";",
+    .run_at = saucer::script::time::creation,
+  });
   auto allowedOrigins = "*"; // allow all origins for CORS
   auto hkpApp = std::make_shared<hkp::App>();
   auto server = std::make_shared<hkp::Server>(hkpApp, "meander-cpp", allowedOrigins);
@@ -112,21 +125,6 @@ int real_main(int argc, char *argv[])
   std::cout << "Loaded " << numLoadedPlugins << " plugins from bundles path: " << settings.getBundlesPath() << std::endl;
 
   SchemeHandler handler(server, settings);
-
-  // Expose LAN IP and frontend port via hkp://meander/info so the desktop QR
-  // code service can resolve MEANDER_HOST without hardcoding any address.
-  handler.addRoute("GET", "/meander/info",
-    [lanIP](const Router::Params&, const saucer::scheme::request&) -> saucer::scheme::response
-    {
-      return saucer::scheme::response{
-        .data    = saucer::stash::from_str(
-                     nlohmann::json{{"lanIp", lanIP}, {"frontendPort", FRONTEND_HTTP_PORT}, {"apiPort", RUNTIME_API_PORT}}.dump()),
-        .mime    = "application/json",
-        .headers = {{"Access-Control-Allow-Origin", "*"}},
-        .status  = 200,
-      };
-    });
-
   webview->handle_scheme(
     "hkp",
     [&handler](const saucer::scheme::request &req, saucer::scheme::executor executor)
