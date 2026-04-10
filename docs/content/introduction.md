@@ -33,7 +33,12 @@ A minimal Board Blueprint looks like this:
         "uuid": "svc-1",
         "serviceId": "hookup.to/service/timer",
         "serviceName": "Timer",
-        "state": { "periodicValue": 1, "periodicUnit": "s", "periodic": true, "running": true }
+        "state": {
+          "periodicValue": 1,
+          "periodicUnit": "s",
+          "periodic": true,
+          "running": true
+        }
       }
     ]
   }
@@ -186,60 +191,60 @@ will simply not restore — the rest of the board remains intact.
 
 ### Browser Runtime services
 
-| Service ID | Name | What it does |
-|---|---|---|
-| `hookup.to/service/timer` | Timer | Emits a tick with an incrementing `triggerCount` on a periodic or one-shot schedule |
-| `hookup.to/service/map` | Map | Transforms input JSON using a template with static and dynamic (expression) fields |
-| `hookup.to/service/filter` | Filter | Passes or blocks input based on a JavaScript boolean expression |
-| `hookup.to/service/aggregator` | Aggregator | Counts occurrences of a property value and emits the most frequent at a set interval |
-| `hookup.to/service/buffer` | Buffer | Accumulates items until a capacity or time threshold, then emits the batch |
-| `hookup.to/service/injector` | Injector | Injects a static value into the pipeline, overriding or extending the current data |
-| `hookup.to/service/monitor` | Monitor | Displays the current pipeline value; passes data through unchanged |
-| `hookup.to/service/canvas` | Canvas | Renders 2D draw commands (text, shapes, images, video) onto an HTML `<canvas>` |
-| `hookup.to/service/input` | Input | Reads a continuous data stream from an SSE or WebSocket URL and emits each message |
-| `hookup.to/service/output` | Output | Sends the current pipeline value to a remote URL via HTTP POST or WebSocket |
-| `hookup.to/service/fetcher` | Fetcher | Makes an HTTP request and emits the response body as JSON, text, or binary |
-| `hookup.to/service/stack` | Stack | Embeds a nested sub-pipeline of services that runs as a single composable unit |
-| `hookup.to/service/sequencer` | Sequencer | Steps through a user-defined sequence, emitting the data at each step on demand |
-| `hookup.to/service/looper` | Looper | Replays a recorded sequence of values at the original timing |
-| `hookup.to/service/trigger-pad` | TriggerPad | A button that sends a configurable payload when pressed |
-| `hookup.to/service/xy-pad` | XYPad | A 2D touch/drag pad that emits `{x, y}` normalised coordinates |
-| `hookup.to/service/camera` | Camera | Captures frames from the device camera and emits them as image data |
-| `hookup.to/service/hacker/considered` | Hacker | Runs arbitrary JavaScript in a sandboxed context; considered variant enforces stricter limits |
-| `hookup.to/service/hacker/dangerous` | Hacker (dangerous) | Runs arbitrary JavaScript with access to the full browser environment |
-| `hookup.to/service/spotify` | Spotify | Reads playback state and track metadata from the Spotify Web API |
-| `hookup.to/service/github-source` | GitHub Source | Fetches content (files, issues, etc.) from a GitHub repository |
-| `hookup.to/service/github-sink` | GitHub Sink | Writes content back to a GitHub repository |
-| `hookup.to/service/ollama-prompt` | Ollama Prompt | Sends a prompt to a local Ollama instance and streams the response |
+| Service ID                            | Name               | What it does                                                                                  |
+| ------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------- |
+| `hookup.to/service/timer`             | Timer              | Emits a tick with an incrementing `triggerCount` on a periodic or one-shot schedule           |
+| `hookup.to/service/map`               | Map                | Transforms input JSON using a template with static and dynamic (expression) fields            |
+| `hookup.to/service/filter`            | Filter             | Passes or blocks input based on a JavaScript boolean expression                               |
+| `hookup.to/service/aggregator`        | Aggregator         | Counts occurrences of a property value and emits the most frequent at a set interval          |
+| `hookup.to/service/buffer`            | Buffer             | Accumulates items until a capacity or time threshold, then emits the batch                    |
+| `hookup.to/service/injector`          | Injector           | Injects a static value into the pipeline, overriding or extending the current data            |
+| `hookup.to/service/monitor`           | Monitor            | Displays the current pipeline value; passes data through unchanged                            |
+| `hookup.to/service/canvas`            | Canvas             | Renders 2D draw commands (text, shapes, images, video) onto an HTML `<canvas>`                |
+| `hookup.to/service/input`             | Input              | Reads a continuous data stream from an SSE or WebSocket URL and emits each message            |
+| `hookup.to/service/output`            | Output             | Sends the current pipeline value to a remote URL via HTTP POST or WebSocket                   |
+| `hookup.to/service/fetcher`           | Fetcher            | Makes an HTTP request and emits the response body as JSON, text, or binary                    |
+| `hookup.to/service/stack`             | Stack              | Embeds a nested sub-pipeline of services that runs as a single composable unit                |
+| `hookup.to/service/sequencer`         | Sequencer          | Steps through a user-defined sequence, emitting the data at each step on demand               |
+| `hookup.to/service/looper`            | Looper             | Replays a recorded sequence of values at the original timing                                  |
+| `hookup.to/service/trigger-pad`       | TriggerPad         | A button that sends a configurable payload when pressed                                       |
+| `hookup.to/service/xy-pad`            | XYPad              | A 2D touch/drag pad that emits `{x, y}` normalised coordinates                                |
+| `hookup.to/service/camera`            | Camera             | Captures frames from the device camera and emits them as image data                           |
+| `hookup.to/service/hacker/considered` | Hacker             | Runs arbitrary JavaScript in a sandboxed context; considered variant enforces stricter limits |
+| `hookup.to/service/hacker/dangerous`  | Hacker (dangerous) | Runs arbitrary JavaScript with access to the full browser environment                         |
+| `hookup.to/service/spotify`           | Spotify            | Reads playback state and track metadata from the Spotify Web API                              |
+| `hookup.to/service/github-source`     | GitHub Source      | Fetches content (files, issues, etc.) from a GitHub repository                                |
+| `hookup.to/service/github-sink`       | GitHub Sink        | Writes content back to a GitHub repository                                                    |
+| `hookup.to/service/ollama-prompt`     | Ollama Prompt      | Sends a prompt to a local Ollama instance and streams the response                            |
 
 ### hkp-rt Runtime services
 
 The hkp-rt services use short IDs (no URI prefix) and are available on
 both **Remote** and **Realtime** runtimes backed by an hkp-rt server.
 
-| Service ID | Name | What it does |
-|---|---|---|
-| `timer` | Timer | Periodic or one-shot tick source; configurable delay in microseconds |
-| `map` | Map | Transforms JSON using Inja template expressions (C++ template engine) |
-| `filter` | Filter | Passes or blocks JSON based on template-matching with AND/OR aggregation |
-| `buffer` | Buffer | Accumulates binary or JSON data; emits when a size threshold is reached |
-| `cache` | Cache | Stores the most recent value and re-emits it on demand |
-| `monitor` | Monitor | Logs pipeline data to console or file; passes data through unchanged |
-| `fft` | FFT | Converts a raw audio ring-buffer into a frequency-magnitude array (forward FFT) |
-| `ifft` | IFFT | Reconstructs a signal from a frequency-magnitude array (inverse FFT) |
-| `transient-detector` | Transient Detector | Detects onsets and transients in an audio stream |
-| `wav-reader` | WAV Reader | Reads a WAV audio file from disk and emits its samples |
-| `core-input` *(macOS)* | Core Input | Captures live audio from the system microphone via CoreAudio |
-| `core-output` *(macOS)* | Core Output | Plays audio to the system speakers via CoreAudio |
-| `websocket-reader` | WebSocket Reader | Receives messages from an incoming WebSocket connection |
-| `websocket-writer` | WebSocket Writer | Sends messages to an outgoing WebSocket connection |
-| `websocket-server` | WebSocket Server | Hosts a WebSocket server and emits each arriving client message |
-| `websocket-client` | WebSocket Client | Connects to a remote WebSocket server and emits each received message |
-| `http-client` | HTTP Client | Makes HTTP requests and emits the response |
-| `http-server` | HTTP Server | Hosts an HTTP server; each incoming request triggers the pipeline |
-| `static` | Static | Serves files from a directory over HTTP |
-| `filesystem` | Filesystem | Reads from and writes to the local file system |
-| `ffmpeg` *(optional bundle)* | FFmpeg | Transcodes and processes media files using FFmpeg |
+| Service ID                   | Name               | What it does                                                                    |
+| ---------------------------- | ------------------ | ------------------------------------------------------------------------------- |
+| `timer`                      | Timer              | Periodic or one-shot tick source; configurable delay in microseconds            |
+| `map`                        | Map                | Transforms JSON using Inja template expressions (C++ template engine)           |
+| `filter`                     | Filter             | Passes or blocks JSON based on template-matching with AND/OR aggregation        |
+| `buffer`                     | Buffer             | Accumulates binary or JSON data; emits when a size threshold is reached         |
+| `cache`                      | Cache              | Stores the most recent value and re-emits it on demand                          |
+| `monitor`                    | Monitor            | Logs pipeline data to console or file; passes data through unchanged            |
+| `fft`                        | FFT                | Converts a raw audio ring-buffer into a frequency-magnitude array (forward FFT) |
+| `ifft`                       | IFFT               | Reconstructs a signal from a frequency-magnitude array (inverse FFT)            |
+| `transient-detector`         | Transient Detector | Detects onsets and transients in an audio stream                                |
+| `wav-reader`                 | WAV Reader         | Reads a WAV audio file from disk and emits its samples                          |
+| `core-input` _(macOS)_       | Core Input         | Captures live audio from the system microphone via CoreAudio                    |
+| `core-output` _(macOS)_      | Core Output        | Plays audio to the system speakers via CoreAudio                                |
+| `websocket-reader`           | WebSocket Reader   | Receives messages from an incoming WebSocket connection                         |
+| `websocket-writer`           | WebSocket Writer   | Sends messages to an outgoing WebSocket connection                              |
+| `websocket-server`           | WebSocket Server   | Hosts a WebSocket server and emits each arriving client message                 |
+| `websocket-client`           | WebSocket Client   | Connects to a remote WebSocket server and emits each received message           |
+| `http-client`                | HTTP Client        | Makes HTTP requests and emits the response                                      |
+| `http-server`                | HTTP Server        | Hosts an HTTP server; each incoming request triggers the pipeline               |
+| `static`                     | Static             | Serves files from a directory over HTTP                                         |
+| `filesystem`                 | Filesystem         | Reads from and writes to the local file system                                  |
+| `ffmpeg` _(optional bundle)_ | FFmpeg             | Transcodes and processes media files using FFmpeg                               |
 
 ---
 
@@ -257,11 +262,9 @@ data, and worked examples.
 - [Output](./services/output.md)
 - [Fetcher](./services/fetcher.md)
 - [Aggregator](./services/aggregator.md)
-- [Buffer](./services/buffer.md)
 - [Monitor](./services/monitor.md)
 - [Injector](./services/injector.md)
 - [Stack](./services/stack.md)
-- [Sequencer](./services/sequencer.md)
 - [Looper](./services/looper.md)
 - [TriggerPad](./services/trigger-pad.md)
 - [XYPad](./services/xy-pad.md)
@@ -276,4 +279,3 @@ data, and worked examples.
 - [HTTP services](./services/http.md)
 - [Filesystem](./services/filesystem.md)
 - [WAV Reader](./services/wav-reader.md)
-- [Transient Detector](./services/transient-detector.md)

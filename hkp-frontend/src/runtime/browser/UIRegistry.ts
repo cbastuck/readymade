@@ -17,14 +17,10 @@ import GithubSourceUI from "./services/GithubSourceUI";
 import OutputUI from "./services/OutputUI";
 import FilterUI from "./services/FilterUI";
 import FetcherUI from "./services/FetcherUI";
-import BufferUI from "./services/BufferUI";
 import OllamaPromptUI from "./services/OllamaPromptUI";
-import LooperUI from "./services/LooperUI";
 import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
 import ImagePickerDescriptor from "./services/ImagePicker";
 import ChunkedFileProviderDescriptor from "./services/ChunkedFileProvider";
-
-import { SequencerUI } from "./services/Sequencer";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {
@@ -57,14 +53,10 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
     case "hookup.to/service/aggregator":
       return AggregatorUI;
     case "hookup.to/service/buffer":
-      return BufferUI;
-    case "hookup.to/service/xy-pad":
       return XYPadUI;
     case "hookup.to/service/camera":
       return CameraUI;
 
-    case "hookup.to/service/sequencer":
-      return SequencerUI;
     case "hookup.to/service/spotify":
       return SpotifyUI;
     case "hookup.to/service/github-source":
@@ -73,8 +65,6 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return GithubSinkUI;
     case "hookup.to/service/ollama-prompt":
       return OllamaPromptUI;
-    case "hookup.to/service/looper":
-      return LooperUI;
     case "sub-service":
       return BrowserSubServiceUI;
     case "hookup.to/service/image-picker":

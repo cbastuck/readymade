@@ -31,9 +31,10 @@ class LZCompress extends ServiceBase<{}> {
     super(app, board, descriptor, id, {});
   }
 
+  configure() {}
+
   process(input: any): string {
-    const str =
-      typeof input === "string" ? input : JSON.stringify(input);
+    const str = typeof input === "string" ? input : JSON.stringify(input);
     return lzstring.compressToEncodedURIComponent(str);
   }
 }
@@ -41,12 +42,8 @@ class LZCompress extends ServiceBase<{}> {
 const descriptor = {
   serviceName,
   serviceId,
-  create: (
-    app: AppImpl,
-    board: string,
-    descriptor: ServiceClass,
-    id: string,
-  ) => new LZCompress(app, board, descriptor, id),
+  create: (app: AppImpl, board: string, descriptor: ServiceClass, id: string) =>
+    new LZCompress(app, board, descriptor, id),
 };
 
 export default descriptor;

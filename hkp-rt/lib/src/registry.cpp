@@ -22,16 +22,13 @@
 #include "./services/static.h"
 #include "./services/cache.h"
 #include "./services/cache_subservices.h"
-#include "./services/buffer_service.h"
 #include "./services/filter.h"
 #include "./services/fft_service.h"
 #include "./services/ifft_service.h"
-#include "./services/transient_detector.h"
 #include "./services/wav_reader.h"
 #include "./services/filesystem.h"
 #include "./services/map.h"
 #include "./services/sub_service.h"
-#include "./services/method_router.h"
 #include "./services/if_service.h"
 
 #if HKP_MP4_TO_WAV_ENABLED
@@ -59,14 +56,11 @@ using ServiceTypes = Registry::TypeList<
   ,CacheSubservices
   ,FFTService
   ,IFFTService
-  ,Buffer
   ,Filter
-  ,TransientDetector
   ,WavReader
   ,Filesystem
   ,Map
   ,SubService
-  ,MethodRouter
   ,IfService
 #if HKP_MP4_TO_WAV_ENABLED
   ,Mp4ToWav

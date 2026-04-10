@@ -106,7 +106,10 @@ export function createObjectURL(
 ): string | undefined {
   const b =
     isArrayBuffer(object) || object instanceof Uint8Array
-      ? new Blob([object], type)
+      ? new Blob(
+          [object instanceof Uint8Array ? new Uint8Array(object) : object],
+          type,
+        )
       : object;
   try {
     return window.URL
