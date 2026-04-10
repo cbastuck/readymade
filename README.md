@@ -12,6 +12,11 @@ To build for dev-server mode (no embedded frontend) with the script, use `./buil
 
 Note: vcpkg is vendored in `3rdparty/vcpkg` and is used by CMake during configure/build.
 
+## License and copyright
+
+- License: GNU AGPL v3.0 (see `LICENSE`)
+- Copyright ownership: see `COPYRIGHT`
+
 ## Build (recommended)
 
 From the repository root:
