@@ -22,9 +22,9 @@ From the repository root:
 
 This does the following:
 
-1. Builds the web app in `hkp-saucer/frontend` (`npm run build`)
+1. Builds the web app in `meander/frontend` (`npm run build`)
 2. Configures CMake in `build/` (first run only)
-3. Builds the CMake project with `BUILD_HKP_SAUCER=ON`
+3. Builds the CMake project and the `meander` app target
 
 ### Build configuration
 
@@ -59,14 +59,70 @@ cmake -S . -B build -DMEANDER_USE_EMBEDDED_FRONTEND=ON
 cmake --build build --target meander --config Release
 ```
 
+## Run tests
+
+Run each project's test suite from the repository root:
+
+```bash
+./run-all-tests.sh
+```
+
+Or run suites individually:
+
+### hkp-python
+
+```bash
+cd hkp-python
+./run_tests.sh
+```
+
+Optional examples:
+
+```bash
+./run_tests.sh -v
+./run_tests.sh -k map
+```
+
+### hkp-node
+
+```bash
+cd hkp-node
+npm install
+npm test
+```
+
+### hkp-rt
+
+```bash
+cd hkp-rt
+./run-tests.sh
+```
+
+Optional examples:
+
+```bash
+./run-tests.sh Debug runtime
+./run-tests.sh Debug services
+```
+
+### hkp-frontend
+
+```bash
+cd hkp-frontend
+npm install
+npm test
+```
+
 ## Output
 
 Build artifacts are generated under `build/`.
 
-On macOS, the Saucer app bundle is produced at:
+On macOS, the app bundle is produced under `build/meander/<CONFIG>/`.
+
+For example, a `Debug` build produces:
 
 ```text
-build/hkp-saucer/hkp-saucer.app
+build/meander/Debug/meander.app
 ```
 
 ## Rebuild from scratch
