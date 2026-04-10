@@ -1,3 +1,12 @@
 [submodule "hkp-node"]
 	path = hkp-node
 	url = ssh://git@codeberg.org/cbastuck/hkp-node.git
+[submodule "hkp-python"]
+	path = hkp-python
+	url = ssh://git@codeberg.org/cbastuck/hkp-python.git
+[submodule "hkp-go"]
+	path = hkp-go
+	url = ssh://git@codeberg.org/cbastuck/hkp-go.git
+[submodule "hkp-website"]
+	path = hkp-website
+	url = ssh://git@codeberg.org/cbastuck/hkp-website.git
