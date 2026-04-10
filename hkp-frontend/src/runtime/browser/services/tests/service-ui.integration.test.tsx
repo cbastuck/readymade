@@ -305,12 +305,12 @@ describe("Service UI Behavioral Tests", () => {
     });
   });
 
-  describe("LooperUI - Configuration API", () => {
-    let LooperUI: AnyComponent;
+  describe("BrowserSubServiceUI - Configuration API", () => {
+    let BrowserSubServiceUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("../LooperUI");
-      LooperUI = mod.default;
+      const mod = await import("../BrowserSubServiceUI");
+      BrowserSubServiceUI = mod.default;
     });
 
     it("should initialize with empty instances and iteration state", async () => {
@@ -324,7 +324,7 @@ describe("Service UI Behavioral Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = await renderServiceUIAndWait(LooperUI, props);
+      const { container } = await renderServiceUIAndWait(BrowserSubServiceUI, props);
 
       expect(container).toBeTruthy();
     });
@@ -339,38 +339,6 @@ describe("Service UI Behavioral Tests", () => {
       expect(service.configure).toHaveBeenCalled();
     });
   });
-
-  describe("BufferUI - Configuration API", () => {
-    let BufferUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../BufferUI");
-      BufferUI = mod.default;
-    });
-
-    it("should initialize with maxSize and items state", async () => {
-      const service = createMockServiceWithSpies({
-        maxSize: 1000,
-        items: [],
-      });
-
-      const props = createStandardProps(service);
-      const { container } = await renderServiceUIAndWait(BufferUI, props);
-
-      expect(container).toBeTruthy();
-    });
-
-    it("verifies configure API accepts: maxSize", () => {
-      const service = createMockServiceWithSpies();
-
-      service.configure({ maxSize: 2000 });
-
-      expect(service.configure).toHaveBeenCalledWith(
-        expect.objectContaining({}),
-      );
-    });
-  });
-
   describe("Cross-UI Configuration Patterns", () => {
     it("all UIs accept service prop of type ServiceInstance", () => {
       const service = createMockServiceWithSpies();

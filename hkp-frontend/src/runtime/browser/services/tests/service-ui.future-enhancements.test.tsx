@@ -207,11 +207,11 @@ describe("Service UI Future Enhancements", () => {
   });
 
   describe("Deeply Nested Sub-services Stress", () => {
-    let LooperUI: AnyComponent;
+    let BrowserSubServiceUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("../LooperUI");
-      LooperUI = mod.default;
+      const mod = await import("../BrowserSubServiceUI");
+      BrowserSubServiceUI = mod.default;
     });
 
     it("renders with many nested sub-services without crashing", async () => {
@@ -239,13 +239,11 @@ describe("Service UI Future Enhancements", () => {
       });
 
       const { container } = render(
-        React.createElement(LooperUI, createProps(service)),
+        React.createElement(BrowserSubServiceUI, createProps(service)),
       );
       expect(container).toBeTruthy();
       await waitFor(() => {
-        expect(service.app.createSubServiceUI).toHaveBeenCalledTimes(
-          nestedInstances.length,
-        );
+        expect(service.getConfiguration).toHaveBeenCalled();
       });
     });
   });

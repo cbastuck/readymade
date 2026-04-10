@@ -232,12 +232,12 @@ describe("Service UI Advanced Behavior Tests", () => {
     });
   });
 
-  describe("Sub-Service Management Tests (LooperUI)", () => {
-    let LooperUI: AnyComponent;
+  describe("Sub-Service Management Tests (BrowserSubServiceUI)", () => {
+    let BrowserSubServiceUI: AnyComponent;
 
     beforeEach(async () => {
-      const mod = await import("../LooperUI");
-      LooperUI = mod.default;
+      const mod = await import("../BrowserSubServiceUI");
+      BrowserSubServiceUI = mod.default;
     });
 
     it("should track service instances in state", async () => {
@@ -267,7 +267,10 @@ describe("Service UI Advanced Behavior Tests", () => {
       });
 
       const props = createStandardProps(service);
-      const { container } = await renderServiceUIAndWait(LooperUI, props);
+      const { container } = await renderServiceUIAndWait(
+        BrowserSubServiceUI,
+        props,
+      );
 
       // Component should render with instances
       expect(container).toBeTruthy();
@@ -289,7 +292,10 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup();
 
-      const { container } = await renderServiceUIAndWait(LooperUI, props);
+      const { container } = await renderServiceUIAndWait(
+        BrowserSubServiceUI,
+        props,
+      );
 
       // In a real integration, there would be an "Add Service" button
       // This test verifies the infrastructure is in place
@@ -305,7 +311,10 @@ describe("Service UI Advanced Behavior Tests", () => {
 
       const props = createStandardProps(service);
 
-      const { rerender } = await renderServiceUIAndWait(LooperUI, props);
+      const { rerender } = await renderServiceUIAndWait(
+        BrowserSubServiceUI,
+        props,
+      );
 
       // Simulate notification of new instance added by updating service state
       service.state.instances = [
@@ -323,7 +332,7 @@ describe("Service UI Advanced Behavior Tests", () => {
         } as any,
       ];
 
-      rerender(React.createElement(LooperUI, props));
+      rerender(React.createElement(BrowserSubServiceUI, props));
 
       // Component should handle the updated instances
       expect(service.state.instances.length).toBe(1);
@@ -339,7 +348,10 @@ describe("Service UI Advanced Behavior Tests", () => {
       const props = createStandardProps(service);
       const user = userEvent.setup();
 
-      const { container } = await renderServiceUIAndWait(LooperUI, props);
+      const { container } = await renderServiceUIAndWait(
+        BrowserSubServiceUI,
+        props,
+      );
 
       // Verify the component rendered for testing other interactions
       expect(container).toBeTruthy();
