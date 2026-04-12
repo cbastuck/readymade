@@ -54,7 +54,7 @@ The root CMakeLists.txt creates a single `hkp-rt-deps` INTERFACE target that agg
 
 vcpkg runs in **classic mode** — packages live in `3rdparty/vcpkg/installed/` and are installed explicitly. `3rdparty/vcpkg.json` is the authoritative list of required packages (documentation and reproducibility) but vcpkg does **not** read it automatically during the build.
 
-Classic mode is intentional: vcpkg is activated via `include()` inside `3rdparty/CMakeLists.txt` *after* CPM runs. CPM packages must be fetched before vcpkg initialises to avoid `packageProject()` ALIAS target conflicts with vcpkg's `add_library` wrapper. Passing `-DCMAKE_TOOLCHAIN_FILE` on the cmake command line would activate vcpkg before CPM, breaking that ordering.
+Classic mode is intentional: vcpkg is activated via `include()` inside `3rdparty/CMakeLists.txt` _after_ CPM runs. CPM packages must be fetched before vcpkg initialises to avoid `packageProject()` ALIAS target conflicts with vcpkg's `add_library` wrapper. Passing `-DCMAKE_TOOLCHAIN_FILE` on the cmake command line would activate vcpkg before CPM, breaking that ordering.
 
 **When a new package is added**, the full workflow is:
 
@@ -97,6 +97,7 @@ Services pass `Data` objects (defined in `hkp-rt/lib/include/types/data.h`) thro
 ### Services (`hkp-rt/lib/src/services/`)
 
 ~23 built-in services, including:
+
 - Audio I/O: `core-input`, `core-output` (macOS CoreAudio)
 - Network: `websocket-reader`, `websocket-writer`, `websocket-client`, `websocket-server`, `http-client`, `http-server`
 - Processing: `fft`, `ifft`, `filter`, `buffer`, `cache`, `map`
@@ -104,9 +105,9 @@ Services pass `Data` objects (defined in `hkp-rt/lib/include/types/data.h`) thro
 - Utilities: `static`, `filesystem`, `wav-reader`
 - FFmpeg (optional bundle): `ffmpeg` — compiled as `hkp-rt-bundle` shared library, auto-copied to `~/.hkp/bundles/` on build
 
-### hkp-saucer
+### Meander
 
-Native GUI app (`hkp-saucer/`) that embeds `hkp-rt-lib`. Uses the Saucer framework (webview-based UI). The backend (`hkp-saucer/backend/`) is C++ and links `hkp-rt-lib` + `saucer::saucer`. Frontend assets can be embedded at compile time with `COMILE_USING_SAUCER_EMBEDDINGS=ON`.
+Native GUI app (`meander/`) that embeds `hkp-rt-lib`. Uses the Saucer framework (webview-based UI). The backend (`meander/backend/`) is C++ and links `hkp-rt-lib` + `saucer::saucer`. Frontend assets can be embedded at compile time with `COMILE_USING_SAUCER_EMBEDDINGS=ON`.
 
 ### Configuration
 
