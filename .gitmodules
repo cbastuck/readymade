@@ -10,3 +10,6 @@
 [submodule "hkp-website"]
 	path = hkp-website
 	url = ssh://git@codeberg.org/cbastuck/hkp-website.git
+[submodule "meander-ios"]
+	path = meander-ios
+	url = ssh://git@codeberg.org/cbastuck/meander-ios.git
