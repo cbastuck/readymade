@@ -15,7 +15,7 @@ export default function TimerUI(props: ServiceUIProps) {
   const { service } = props;
 
   const modes = ["oneshot", "periodic"];
-  const units = ["ms", "s", "m", "h", "d"];
+  const units = ["ms", "s", "m", "h", "d", "bpm", "hz"];
 
   const [periodic, setPeriodic] = useState(false);
   const mode = periodic ? "periodic" : "oneshot";
@@ -170,7 +170,7 @@ export default function TimerUI(props: ServiceUIProps) {
               unit={intervalUnit}
               onUnit={onIntervalUnit}
               min={1}
-              max={100}
+              max={intervalUnit === "ms" ? 1000 : intervalUnit === "bpm" ? 300 : intervalUnit === "hz" ? 30 : 100}
             />
             <div className="flex gap-2">
               <Button

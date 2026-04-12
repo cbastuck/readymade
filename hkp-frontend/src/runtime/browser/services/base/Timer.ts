@@ -186,12 +186,19 @@ class Timer {
     if (doStart) {
       if (this.periodic) {
         this.clearTimer();
-        const timeBetween = moment.duration(
-          this.periodicValue,
-          this.periodicUnit as unitOfTime.DurationConstructor,
-        );
+        let intervalMs: number;
+        if (this.periodicUnit === "bpm") {
+          intervalMs = 60000 / this.periodicValue;
+        } else if (this.periodicUnit === "hz") {
+          intervalMs = 1000 / this.periodicValue;
+        } else {
+          intervalMs = moment.duration(
+            this.periodicValue,
+            this.periodicUnit as unitOfTime.DurationConstructor,
+          ).asMilliseconds();
+        }
 
-        this.__timer = setInterval(process, timeBetween.asMilliseconds());
+        this.__timer = setInterval(process, intervalMs);
         if (immediate) {
           setTimeout(process, IMMEDIATE_DELAY);
         }

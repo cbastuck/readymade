@@ -22,6 +22,10 @@ import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
 import ImagePickerDescriptor from "./services/ImagePicker";
 import ChunkedFileProviderDescriptor from "./services/ChunkedFileProvider";
 import AsciiArtDescriptor from "./services/AsciiArt";
+import GameOfLifeDescriptor from "./services/GameOfLife";
+import GameOfLifeRendererDescriptor from "./services/GameOfLifeRenderer";
+import GameOfLifeToNotesDescriptor from "./services/GameOfLifeToNotes";
+import GameOfLifeSynthDescriptor from "./services/GameOfLifeSynth";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {
@@ -74,6 +78,14 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return ChunkedFileProviderDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/ascii-art":
       return AsciiArtDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/game-of-life":
+      return GameOfLifeDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/game-of-life-renderer":
+      return GameOfLifeRendererDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/game-of-life-notes":
+      return GameOfLifeToNotesDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/game-of-life-synth":
+      return GameOfLifeSynthDescriptor.createUI as unknown as ServiceUIComponent;
     default:
       return null;
   }

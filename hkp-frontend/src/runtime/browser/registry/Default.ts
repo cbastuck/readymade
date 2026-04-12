@@ -28,6 +28,10 @@ import TriggerPadDescriptor from "../services/TriggerPad";
 
 // Actor
 import CanvasDescriptor from "../services/Canvas";
+import GameOfLifeDescriptor from "../services/GameOfLife";
+import GameOfLifeRendererDescriptor from "../services/GameOfLifeRenderer";
+import GameOfLifeToNotesDescriptor from "../services/GameOfLifeToNotes";
+import GameOfLifeSynthDescriptor from "../services/GameOfLifeSynth";
 
 // Structure / Containers
 import StackDescriptor from "../services/Stack";
@@ -84,6 +88,10 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Actor
   CanvasDescriptor,
+  GameOfLifeDescriptor,
+  GameOfLifeRendererDescriptor,
+  GameOfLifeToNotesDescriptor,
+  GameOfLifeSynthDescriptor,
 
   // Analysis
   MapDescriptor,

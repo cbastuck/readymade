@@ -1,0 +1,89 @@
+{
+  "boardName": "Game of Life",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "UI",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 220,
+          "periodicUnit": "bpm",
+          "running": true,
+          "start": true,
+          "immediate": true
+        }
+      },
+      {
+        "uuid": "gol-svc",
+        "serviceId": "hookup.to/service/game-of-life",
+        "serviceName": "Game of Life"
+      },
+      {
+        "uuid": "stack-svc",
+        "serviceId": "hookup.to/service/stack",
+        "serviceName": "Observers",
+        "state": {
+          "input": "multiplex",
+          "services": [
+            {
+              "serviceId": "sub-service",
+              "serviceName": "Visual",
+              "uuid": "visual-branch",
+              "pipeline": [
+                {
+                  "instanceId": "gol-renderer",
+                  "serviceId": "hookup.to/service/game-of-life-renderer",
+                  "serviceName": "Game of Life Renderer",
+                  "state": {
+                    "cellSize": 8,
+                    "canvasWidth": 600,
+                    "canvasHeight": 400
+                  }
+                },
+                {
+                  "instanceId": "gol-canvas",
+                  "serviceId": "hookup.to/service/canvas",
+                  "serviceName": "Canvas",
+                  "state": {
+                    "clearOnRedraw": true,
+                    "resizable": true,
+                    "size": [600, 400]
+                  }
+                }
+              ]
+            },
+            {
+              "serviceId": "sub-service",
+              "serviceName": "Audio",
+              "uuid": "audio-branch",
+              "pipeline": [
+                {
+                  "instanceId": "gol-notes",
+                  "serviceId": "hookup.to/service/game-of-life-notes",
+                  "serviceName": "Game of Life Notes",
+                  "state": { "maxNotes": 6 }
+                },
+                {
+                  "instanceId": "gol-synth",
+                  "serviceId": "hookup.to/service/game-of-life-synth",
+                  "serviceName": "Game of Life Synth",
+                  "state": { "volume": 0.25, "waveType": "sawtooth" }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
