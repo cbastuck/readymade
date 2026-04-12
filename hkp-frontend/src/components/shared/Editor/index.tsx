@@ -16,6 +16,41 @@ import MonacoEditor, { loader } from "@monaco-editor/react";
 
 import { t } from "../../../styles";
 
+
+// navigator.clipboard is undefined on HTTP over LAN (non-secure context).
+// The browser resets Navigator.prototype during its own init, so patching in
+// index.html is too early. Module-level code here runs after that setup.
+// Confirmed working approach: override Navigator.prototype.clipboard getter.
+if (!navigator.clipboard) {
+  const _noop = (): Promise<void> => Promise.resolve();
+  const _write = async (items: any[]): Promise<void> => {
+    for (const item of items ?? []) {
+      for (const val of Object.values(item?._data ?? {})) {
+        try { await (val as Promise<any>); } catch (_) {}
+      }
+    }
+  };
+  const _polyfill = { writeText: _noop, write: _write, readText: async () => "", read: async () => [] };
+  try {
+    Object.defineProperty(Navigator.prototype, "clipboard", {
+      get: () => _polyfill,
+      configurable: true,
+    });
+  } catch (_) {}
+}
+
+if (typeof ClipboardItem === "undefined") {
+  // Store the data so our write() polyfill can consume the promises inside,
+  // which lets Monaco's internal deferred promise settle and prevents the
+  // CancelablePromise from staying pending (which would cause a Canceled rejection).
+  (window as any).ClipboardItem = class ClipboardItem {
+    _data: Record<string, unknown>;
+    constructor(data: Record<string, unknown>) {
+      this._data = data;
+    }
+  };
+}
+
 // Avoid loading monaco from CDN
 // see https://github.com/suren-atoyan/monaco-react#use-monaco-editor-as-an-npm-package
 self.MonacoEnvironment = {
@@ -30,6 +65,25 @@ self.MonacoEnvironment = {
   },
 };
 loader.config({ monaco });
+
+// On HTTP over LAN, navigator.clipboard is unavailable (requires secure context).
+// Override Monaco's clipboard service so it never calls navigator.clipboard at all.
+const isInsecureContext =
+  window.location.protocol === "http:" &&
+  !["localhost", "127.0.0.1"].includes(window.location.hostname);
+
+const safeClipboardOverride = isInsecureContext
+  ? {
+      clipboardService: {
+        writeText: async (_text: string): Promise<void> => {},
+        readText: async (): Promise<string> => "",
+        write: async (_data: unknown): Promise<void> => {
+          console.log("WRITE");
+        },
+        read: async (): Promise<unknown[]> => [],
+      },
+    }
+  : undefined;
 
 type Props = {
   value: string;
@@ -83,9 +137,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
       if (!editor) return;
       const selection = editor.getSelection();
       if (!selection) return;
-      editor.executeEdits("replaceSelection", [
-        { range: selection, text },
-      ]);
+      editor.executeEdits("replaceSelection", [{ range: selection, text }]);
       editor.focus();
     },
   }));
@@ -103,6 +155,7 @@ const Editor = forwardRef<EditorHandle, Props>(function Editor(
   return (
     <div style={appliedStyle}>
       <MonacoEditor
+        overrideServices={safeClipboardOverride}
         onMount={(editor) => {
           if (editor) {
             editor.updateOptions({

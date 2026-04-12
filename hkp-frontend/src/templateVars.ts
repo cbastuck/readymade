@@ -17,6 +17,7 @@ export function getTemplateVarMap(): Record<string, string> {
   return {
     HKP_WEBAPP_URL: `http://${config.lanIp}:${config.frontendPort}`,
     HKP_RUNTIME_URL: `http://${config.lanIp}:${config.apiPort}`,
+    HKP_RUNTIME_HOST: config.lanIp,
   };
 }
 
@@ -31,4 +32,13 @@ export function resolveTemplateVars(value: string): string {
     value = value.split(key).join(resolved);
   }
   return value;
+}
+
+/**
+ * Resolves all template variables inside an arbitrary JSON-serialisable object.
+ * Serialises to JSON, substitutes all known variable names, then parses back.
+ * The return type matches the input type so callers stay fully typed.
+ */
+export function resolveTemplateVarsInObject<T>(obj: T): T {
+  return JSON.parse(resolveTemplateVars(JSON.stringify(obj))) as T;
 }

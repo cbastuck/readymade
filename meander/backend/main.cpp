@@ -81,6 +81,15 @@ int real_main(int argc, char *argv[])
   auto window  = windowResult.value();
   auto webview = saucer::smartview::create({.window = window});
 
+  // Grant media permissions so getUserMedia() works inside the webview.
+  // The webview only loads trusted local content (localhost / hkp://) so
+  // blanket acceptance is safe here.
+  webview->on<saucer::webview::event::permission>([](const std::shared_ptr<saucer::permission::request> &req) -> saucer::status
+  {
+    req->accept(true);
+    return saucer::status::handled;
+  });
+
   window->set_title("Meander");
   webview->set_dev_tools(isDebugBuild);
   window->set_size({1024, 800});

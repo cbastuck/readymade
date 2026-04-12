@@ -38,6 +38,7 @@ import OllamaHackerComposite from "../services/OllamaHackerComposite";
 
 // Emerging concepts
 import ChunkedFileProviderDescriptor from "../services/ChunkedFileProvider";
+import AsciiArtDescriptor from "../services/AsciiArt";
 
 // 3rd party APIs
 import SpotifyDescriptor from "../services/Spotify";
@@ -65,6 +66,9 @@ import ImagePickerDescriptor from "../services/ImagePicker";
 import HTTPUploaderDescriptor from "../services/HTTPUploader";
 import BrowserSubServiceDescriptor from "../services/BrowserSubService";
 import LZCompressDescriptor from "../services/LZCompress";
+import MicrophoneMonitorDescriptor from "../services/MicrophoneMonitor";
+import DebounceDescriptor from "../services/Debounce";
+import StopperDescriptor from "../services/Stopper";
 
 export const defaultRegistry: Array<ServiceModule> = [
   TimerDescriptor,
@@ -109,6 +113,7 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // emerging
   ChunkedFileProviderDescriptor,
+  AsciiArtDescriptor,
 
   PeerSocket,
   OllamaPrompt,
@@ -130,6 +135,13 @@ export const defaultRegistry: Array<ServiceModule> = [
   HTTPUploaderDescriptor,
   BrowserSubServiceDescriptor,
   LZCompressDescriptor,
+
+  // Sensors
+  MicrophoneMonitorDescriptor,
+
+  // Flow control
+  DebounceDescriptor,
+  StopperDescriptor,
 ];
 
 export const defaultBundles = [];

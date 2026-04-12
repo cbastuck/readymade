@@ -8,10 +8,6 @@ import {
   User,
 } from "../../types";
 
-export function getActivationId(runtimeId: string) {
-  return `peer-${runtimeId}-active`;
-}
-
 export const localStoragePrefix = "hkp-playground-";
 
 export const defaultName = "Playground";

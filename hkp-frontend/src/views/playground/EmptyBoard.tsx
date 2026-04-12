@@ -1,6 +1,4 @@
-import { s, t } from "../../styles";
-
-import Logo from "./hkp-dots-braid.svg?react";
+import Logo from "./AnimatedLogoStill.png";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import { DragEvent, useContext, useState } from "react";
 import { getDraggedFiles, readFile } from "./common";
@@ -46,7 +44,7 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
     "this is an empty board"
   ) : (
     <div className="w-full text-center flex items-center gap-4 font-sans tracking-wider">
-      <div className="w-full text-right">This board</div>
+      <div className="w-full text-right">This Board</div>
       <div className="w-[50%]">
         <SubmittableInput
           selectAllOnFocus
@@ -62,52 +60,45 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
 
   return (
     <div
-      style={{
-        margin: headline && "15px 0px",
-      }}
+      className="text-center"
+      style={{ paddingTop: "10%" }}
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
       onDragLeave={onDragEnd}
     >
-      {headline && <div style={{ marginTop: 20 }} />}
       <div
+        className="border"
         style={{
-          padding: headline && "20px 0px",
+          padding: "50px 20px",
+          width: "90%",
+          maxWidth: 800,
+          margin: "auto",
+          backgroundColor: isDraggingOver ? "#0284c710" : undefined,
         }}
       >
-        <div style={s(t.tc, t.mt0, t.mb30)}>
-          <div
-            className="border"
-            style={{
-              padding: "50px 20px",
-              width: "90%",
-              margin: "auto",
-              backgroundColor: isDraggingOver ? "#0284c710" : undefined,
+        {headline}
+        <div style={{ width: "50%", margin: "10px auto" }}>
+          <img
+            src={Logo}
+            alt="HKP Logo"
+            style={{ width: "100%", filter: "grayscale(1) opacity(0.45)" }}
+          />
+        </div>
+        <div>
+          <span
+            style={{ cursor: "help", color: "#4284C4" }}
+            onClick={() => {
+              const selector = document.getElementById("runtime-menu-trigger");
+              if (selector) {
+                selector.focus();
+                selector.click();
+              }
             }}
           >
-            {headline}
-            <div style={{ width: 200, margin: "10px auto" }}>
-              <Logo />
-            </div>
-            <div>
-              <span
-                style={{ cursor: "help", color: "#4284C4" }}
-                onClick={() => {
-                  const selector = document.getElementById(
-                    "runtime-menu-trigger"
-                  );
-                  if (selector) {
-                    selector.focus();
-                    selector.click();
-                  }
-                }}
-              >
-                {" Add a Runtime "}
-              </span>
-              to sketch an Idea, or drop a board file here
-            </div>
-          </div>
+            {" Add a Runtime "}
+          </span>
+          to sketch an Idea, or drop a board file here
         </div>
       </div>
     </div>

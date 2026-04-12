@@ -21,6 +21,11 @@ class Monitor {
   board: string;
   app: AppInstance;
   logToConsole: boolean;
+  /** Display mode. "ascii" renders ASCII-art output in a terminal-style view.
+   *  Defaults to "" which auto-detects based on incoming data shape. */
+  mode: string;
+  width: number | undefined;
+  height: number | undefined;
 
   constructor(
     app: AppInstance,
@@ -32,12 +37,25 @@ class Monitor {
     this.board = board;
     this.app = app;
     this.logToConsole = false;
+    this.mode = "";
+    this.width = undefined;
+    this.height = undefined;
   }
 
   configure(config: any): void {
-    const { logToConsole } = config;
+    const { logToConsole, mode, width, height } = config;
     if (logToConsole !== undefined) {
       this.logToConsole = logToConsole;
+    }
+    if (mode !== undefined) {
+      this.mode = mode;
+      this.app.notify(this, { mode: this.mode });
+    }
+    if (width !== undefined) {
+      this.width = Number(width);
+    }
+    if (height !== undefined) {
+      this.height = Number(height);
     }
   }
 

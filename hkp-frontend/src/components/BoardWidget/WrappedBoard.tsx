@@ -16,14 +16,8 @@ export default function WrappedBoard({ board, hidden, onResult }: Props) {
       <Board
         boardName="localStorageBoard"
         boardContext={boardContext}
-        inputRouting={{}}
-        outputRouting={{}}
-        sidechainRouting={{}}
         description={board.description}
         onResult={onResult}
-        onChangeOutputRouting={() => {}}
-        onChangeInputRouting={() => {}}
-        onChangeSidechainRouting={() => {}}
       />
     </div>
   ) : null;

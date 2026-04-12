@@ -21,6 +21,9 @@
     <key>NSMicrophoneUsageDescription</key>
     <string>This app needs microphone access to capture audio input.</string>
 
+    <key>NSCameraUsageDescription</key>
+    <string>This app needs camera access to capture video input.</string>
+
     <!-- File type definition -->
     <key>UTExportedTypeDeclarations</key>
     <array>

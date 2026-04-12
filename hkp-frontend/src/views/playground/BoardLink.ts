@@ -3,6 +3,7 @@ import {
   compressAndEncodeState,
 } from "hkp-frontend/src/common";
 import { generateRandomName } from "../../core/board";
+import { getTemplateVarMap } from "hkp-frontend/src/templateVars";
 
 export function encodeBoardState(src: string) {
   return compressAndEncodeState(src);
@@ -10,9 +11,9 @@ export function encodeBoardState(src: string) {
 
 export function createBoardLink(src: string) {
   const encoded = encodeBoardState(src);
-  const url = `${
-    window.location.origin
-  }/playground/${generateRandomName()}?fromLink=${encoded}`;
+  const vars = getTemplateVarMap();
+  const origin = vars.HKP_WEBAPP_URL ?? window.location.origin;
+  const url = `${origin}/playground/${generateRandomName()}?fromLink=${encoded}`;
   return url;
 }
 

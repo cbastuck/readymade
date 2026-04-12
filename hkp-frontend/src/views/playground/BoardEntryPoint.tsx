@@ -5,15 +5,6 @@ import EmptyBoard from "./EmptyBoard";
 import { s, t } from "../../styles";
 
 import VSpacer from "../../components/shared/VSpacer";
-import {
-  RuntimeInputRoutings,
-  RuntimeOutputRoutings,
-  RuntimeDescriptor,
-  RuntimeInputOptions,
-  RuntimeOutputOptions,
-  SidechainRoute,
-  SidechainRouting,
-} from "../../types";
 import Board from "./Board";
 
 import LoadIndicator from "./LoadIndicator";
@@ -25,21 +16,6 @@ type Props = {
   boardContext: BoardContextState;
   boardName: string;
   description: string;
-  sidechainRouting: SidechainRouting;
-  outputRouting: RuntimeOutputRoutings;
-  inputRouting: RuntimeInputRoutings;
-  onChangeOutputRouting: (
-    runtime: RuntimeDescriptor,
-    value: RuntimeOutputOptions,
-  ) => void;
-  onChangeInputRouting: (
-    runtime: RuntimeDescriptor,
-    value: RuntimeInputOptions,
-  ) => void;
-  onChangeSidechainRouting: (
-    runtime: RuntimeDescriptor,
-    routing: Array<SidechainRoute>,
-  ) => void;
   onChangeBoardname: (newName: string) => void;
 };
 
@@ -50,12 +26,6 @@ export default function BoardEntryPoint({
   boardContext,
   boardName,
   description,
-  sidechainRouting,
-  outputRouting,
-  inputRouting,
-  onChangeOutputRouting,
-  onChangeInputRouting,
-  onChangeSidechainRouting,
   onChangeBoardname,
 }: Props) {
   const isPlaygroundEmpty =
@@ -89,18 +59,6 @@ export default function BoardEntryPoint({
   return (
     <div style={t.w100} className={className}>
       <div style={s(t.fs16, t.ls1, t.tc)}>
-        {isPlaygroundEmpty && (
-          <h1
-            style={{
-              fontSize: "22px",
-              margin: 0,
-              marginTop: "5%",
-              textAlign: "center",
-            }}
-          >
-            Welcome to the Playground
-          </h1>
-        )}
         <div>
           {isPlaygroundEmpty ? (
             <EmptyBoard
@@ -112,12 +70,6 @@ export default function BoardEntryPoint({
               boardContext={boardContext}
               description={description}
               boardName={boardName}
-              sidechainRouting={sidechainRouting}
-              outputRouting={outputRouting}
-              onChangeOutputRouting={onChangeOutputRouting}
-              inputRouting={inputRouting}
-              onChangeInputRouting={onChangeInputRouting}
-              onChangeSidechainRouting={onChangeSidechainRouting}
             />
           )}
           {!isPlaygroundEmpty ? saveReminder : false}

@@ -11,6 +11,8 @@ import {
   Settings,
   Save,
   Layers,
+  Zap,
+  QrCode,
 } from "lucide-react";
 
 import {
@@ -26,6 +28,11 @@ import { RuntimeDescriptor } from "hkp-frontend/src/types";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import MenuIcon from "../MenuIcon";
 
+type CustomAction = {
+  name: string;
+  onClick: () => void;
+};
+
 type Props = {
   isExpanded?: boolean;
   wrapServices?: boolean;
@@ -39,6 +46,8 @@ type Props = {
   onConfiguration: () => void;
   onSave: () => void;
   onWrapInSubService?: () => void;
+  onShareAsQR: () => void;
+  customActions?: Array<CustomAction>;
 };
 export default function RuntimeSettings({
   runtime,
@@ -52,6 +61,8 @@ export default function RuntimeSettings({
   onConfiguration,
   onSave,
   onWrapInSubService,
+  onShareAsQR,
+  customActions,
 }: Props) {
   return (
     <DropdownMenu>
@@ -130,6 +141,27 @@ export default function RuntimeSettings({
               <MenuIcon icon={Layers} />
               <span>Wrap in SubService</span>
             </DropdownMenuItem>
+          )}
+
+          <DropdownMenuItem className="text-base" onClick={onShareAsQR}>
+            <MenuIcon icon={QrCode} />
+            <span>Share as QR</span>
+          </DropdownMenuItem>
+
+          {customActions && customActions.length > 0 && (
+            <>
+              <DropdownMenuSeparator />
+              {customActions.map((action) => (
+                <DropdownMenuItem
+                  key={action.name}
+                  className="text-base"
+                  onClick={action.onClick}
+                >
+                  <MenuIcon icon={Zap} />
+                  <span>{action.name}</span>
+                </DropdownMenuItem>
+              ))}
+            </>
           )}
 
           <DropdownMenuSeparator />

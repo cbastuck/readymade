@@ -6,6 +6,7 @@ import {
   ScanText,
   Speech,
   SquareCode,
+  TerminalSquare,
 } from "lucide-react";
 import { Textarea } from "hkp-frontend/src/ui-components/primitives/textarea";
 
@@ -21,7 +22,12 @@ import { isBlob } from "./helpers";
 export default function MonitorUI(props: ServiceUIProps) {
   const [message, setMessage] = useState("");
   const [renderTextEditor, setRenderTextEditor] = useState(true);
-
+  const [asciiMode, setAsciiMode] = useState(false);
+  // Read width/height synchronously from the service so Resizable gets them on first render.
+  const [initialSize] = useState(() => {
+    const svc = props.service as any;
+    return { width: svc.width ?? 278, height: svc.height ?? undefined };
+  });
   const onInit = (state: any) => {
     if (needsUpdate(state.message, message)) {
       setMessage(state.message);
@@ -29,9 +35,23 @@ export default function MonitorUI(props: ServiceUIProps) {
     if (needsUpdate(state.renderTextEditor, renderTextEditor)) {
       setRenderTextEditor(state.renderTextEditor);
     }
+    if (state.mode === "ascii") {
+      setAsciiMode(true);
+    }
   };
 
   const onNotification = (params: any) => {
+    // Mode change from service configure()
+    if (params?.mode !== undefined) {
+      setAsciiMode(params.mode === "ascii");
+      return;
+    }
+
+    if (typeof params?.ascii === "string") {
+      setMessage(params.ascii);
+      return;
+    }
+
     const type = typeof params;
     if (type === "string") {
       setMessage(params);
@@ -69,12 +89,19 @@ export default function MonitorUI(props: ServiceUIProps) {
     }
   };
 
+  const toggleAsciiMode = () => setAsciiMode((prev) => !prev);
+
   const { service } = props;
   const customMenuEntries = [
     {
       name: "Clear Buffer",
       icon: <MenuIcon icon={CircleX} />,
       onClick: clearEditor,
+    },
+    {
+      name: asciiMode ? "Standard Mode" : "Ascii Mode",
+      icon: <MenuIcon icon={TerminalSquare} />,
+      onClick: toggleAsciiMode,
     },
     {
       name: renderTextEditor ? "Edit Mode" : "Close Edit Mode",
@@ -114,8 +141,31 @@ export default function MonitorUI(props: ServiceUIProps) {
     },
   ];
 
-  const renderEditor = () =>
-    renderTextEditor ? (
+  const renderEditor = () => {
+    if (asciiMode) {
+      return (
+        <pre
+          style={{
+            margin: "5px 0",
+            padding: "8px",
+            background: "#111",
+            color: "#c8ffc8",
+            fontFamily: "monospace",
+            fontSize: "7px",
+            lineHeight: 1.15,
+            whiteSpace: "pre",
+            overflowX: "hidden",
+            overflowY: "hidden",
+            borderRadius: 4,
+            flexGrow: 1,
+          }}
+        >
+          {message}
+        </pre>
+      );
+    }
+
+    return renderTextEditor ? (
       <Textarea
         className="text-base border-none"
         style={{
@@ -137,6 +187,7 @@ export default function MonitorUI(props: ServiceUIProps) {
         onChange={(val) => val && setMessage(val)}
       />
     );
+  };
 
   return (
     <ServiceUI
@@ -145,7 +196,7 @@ export default function MonitorUI(props: ServiceUIProps) {
       onInit={onInit}
       onNotification={onNotification}
       customMenuEntries={customMenuEntries}
-      initialSize={{ width: 278, height: undefined }}
+      initialSize={initialSize}
     >
       {renderEditor()}
     </ServiceUI>
@@ -185,14 +236,14 @@ function unroll(params: any): any {
       ...all,
       [key]: unroll(params[key]),
     }),
-    {}
+    {},
   );
 }
 
 function createHexView(buffer: ArrayBuffer): string {
   const view = new Uint8Array(buffer);
   const hexArray = Array.from(view, (byte) =>
-    byte.toString(16).padStart(2, "0")
+    byte.toString(16).padStart(2, "0"),
   );
   // Prepare offset labels for each line
   const offsetLabels: Array<string> = [];
@@ -200,7 +251,7 @@ function createHexView(buffer: ArrayBuffer): string {
     const from = i;
     const to = Math.min(i + 15, view.length - 1);
     offsetLabels.push(
-      `${from.toString().padStart(4, "0")}-${to.toString().padStart(4, "0")}`
+      `${from.toString().padStart(4, "0")}-${to.toString().padStart(4, "0")}`,
     );
   }
   // First columns are hex values, 16 bytes per line

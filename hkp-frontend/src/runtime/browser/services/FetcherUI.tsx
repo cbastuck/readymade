@@ -36,6 +36,10 @@ export default function FetcherUI(props: ServiceUIProps) {
       setBody(config.body);
     }
 
+    if (needsUpdate(config?.bodyExpression, bodyExpression)) {
+      setBodyExpression(config.bodyExpression);
+    }
+
     if (needsUpdate(config?.bodyFormat, bodyFormat)) {
       setBodyFormat(config.bodyFormat);
     }
@@ -67,9 +71,19 @@ export default function FetcherUI(props: ServiceUIProps) {
     props.service.configure({ body: body || null });
   };
 
+  const [bodyExpression, setBodyExpression] = useState("");
+  const onChangeBodyExpression = (expr: string | undefined) => {
+    props.service.configure({ bodyExpression: expr || null });
+  };
+
   const [bodyFormat, setBodyFormat] = useState<BodyFormat>("text");
-  const onChangeBodyFormat = ({ value: bodyFormat }: OnChangeValue) =>
-    props.service.configure({ bodyFormat });
+  const onChangeBodyFormat = ({ value: bodyFormat }: OnChangeValue) => {
+    if (bodyFormat === "expression") {
+      props.service.configure({ bodyFormat, body: null });
+    } else {
+      props.service.configure({ bodyFormat, bodyExpression: null });
+    }
+  };
 
   return (
     <ServiceUI
@@ -109,17 +123,25 @@ export default function FetcherUI(props: ServiceUIProps) {
             <SelectorField
               className="max-w-[100px] ml-auto"
               value={bodyFormat}
-              options={arrayToOptions(["json", "text"])}
+              options={arrayToOptions(["json", "text", "expression"])}
               onChange={onChangeBodyFormat}
             />
           </div>
 
           <div className="h-[100px] w-full">
-            <Editor
-              value={body}
-              onChange={onChangeBody}
-              language={bodyFormat}
-            />
+            {bodyFormat === "expression" ? (
+              <Editor
+                value={bodyExpression}
+                onChange={onChangeBodyExpression}
+                language="text"
+              />
+            ) : (
+              <Editor
+                value={body}
+                onChange={onChangeBody}
+                language={bodyFormat}
+              />
+            )}
           </div>
         </div>
 

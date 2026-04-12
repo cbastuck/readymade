@@ -53,6 +53,7 @@ export const allowedServices = [
   "hookup.to/service/fft",
   "sub-service",
   "hookup.to/service/lz-compress",
+  "hookup.to/service/stopper",
 ];
 
 export default class BrowserRegistry {

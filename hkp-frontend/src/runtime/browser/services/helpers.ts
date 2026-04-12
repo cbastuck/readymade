@@ -219,7 +219,7 @@ export function sleep(t: number): Promise<void> {
   });
 }
 
-export function generateUploadId(): string {
+export function generateUUID(): string {
   if (
     typeof crypto !== "undefined" &&
     typeof crypto.randomUUID === "function"

@@ -13,11 +13,8 @@ import remoteRuntimeApi from "../../graphql/RuntimeGraphQLApi";
 import runtimeRestApi from "../../rest/RuntimeRestApi";
 import {
   BoardDescriptor,
-  RuntimeInputRoutings,
-  RuntimeOutputRoutings,
   RuntimeApiMap,
   SavedBoard,
-  SidechainRouting,
   ServiceInstance,
   ServiceUIProps,
 } from "../../../types";
@@ -52,12 +49,6 @@ type Config = {
 
 export default function BoardServiceUI(props: ServiceUIProps) {
   const playgroundBoardContext = useBoardContext();
-
-  const [inputRouting, setInputRouting] = useState<RuntimeInputRoutings>({});
-  const [outputRouting, setOutputRouting] = useState<RuntimeOutputRoutings>({});
-  const [sidechainRouting, setSidechainRouting] = useState<SidechainRouting>(
-    {},
-  );
 
   const [savedBoards, setSavedBoards] = useState<Array<SavedBoard>>([]);
   useEffect(() => setSavedBoards(getLocalBoards()), []);
@@ -100,13 +91,6 @@ export default function BoardServiceUI(props: ServiceUIProps) {
     if (isBoardDescriptorPayload(params)) {
       const nextBoard = normalizeBoardDescriptor(params);
       setIncomingBoard(nextBoard);
-
-      const { inputRouting, outputRouting, sidechainRouting } =
-        nextBoard as any;
-      setInputRouting(inputRouting || {});
-      setOutputRouting(outputRouting || {});
-      setSidechainRouting(sidechainRouting || {});
-
       setIsExpanded(true);
       setTimeout(() => boardProviderRef.current?.fetchBoard(), 0);
       return {
@@ -168,16 +152,6 @@ export default function BoardServiceUI(props: ServiceUIProps) {
     const board = getLocalBoard(selectedBoard);
     if (!board) {
       throw new Error(`Board with name: '${selectedBoard}' was not found`);
-    }
-    const { inputRouting, outputRouting, sidechainRouting } = board || {};
-    if (inputRouting !== undefined) {
-      setInputRouting(inputRouting);
-    }
-    if (outputRouting !== undefined) {
-      setOutputRouting(outputRouting);
-    }
-    if (sidechainRouting !== undefined) {
-      setSidechainRouting(sidechainRouting);
     }
     return board;
   }, [incomingBoard, selectedBoard]);
@@ -321,14 +295,8 @@ export default function BoardServiceUI(props: ServiceUIProps) {
                 }}
               >
                 <Board
-                  inputRouting={inputRouting}
-                  outputRouting={outputRouting}
                   boardContext={boardContext}
-                  sidechainRouting={sidechainRouting}
                   boardName={activeBoardName}
-                  onChangeOutputRouting={() => {}}
-                  onChangeInputRouting={() => {}}
-                  onChangeSidechainRouting={() => {}}
                   onResult={onResult}
                   headless={!isExpanded}
                 />
@@ -363,8 +331,5 @@ function normalizeBoardDescriptor(payload: BoardDescriptor): BoardDescriptor {
     runtimes: payload.runtimes || [],
     services: payload.services || {},
     registry: payload.registry || {},
-    inputRouting: (payload as any).inputRouting || {},
-    outputRouting: (payload as any).outputRouting || {},
-    sidechainRouting: (payload as any).sidechainRouting || {},
-  } as BoardDescriptor;
+  };
 }

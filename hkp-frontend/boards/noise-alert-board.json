@@ -1,0 +1,54 @@
+{
+  "boardName": "Noise Alert",
+  "runtimes": [
+    {
+      "id": "browser",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "browser": [
+      {
+        "uuid": "mic-monitor-svc",
+        "serviceId": "hookup.to/service/microphone-monitor",
+        "serviceName": "Microphone Monitor",
+        "state": {
+          "interval": 50,
+          "running": false
+        }
+      },
+      {
+        "uuid": "threshold-filter-svc",
+        "serviceId": "hookup.to/service/filter",
+        "serviceName": "Noise Threshold",
+        "state": {
+          "conditions": ["params.levelDb > -12"]
+        }
+      },
+      {
+        "uuid": "debounce-svc",
+        "serviceId": "hookup.to/service/debounce",
+        "serviceName": "Debounce",
+        "state": {
+          "cooldown": 3
+        }
+      },
+      {
+        "uuid": "notifier-svc",
+        "serviceId": "hookup.to/service/fetcher",
+        "serviceName": "Notifier",
+        "state": {
+          "url": "https://ntfy.sh/YOUR_TOPIC_NAME",
+          "method": "POST",
+          "bodyExpression": "concat('Noise threshold exceeded! Level: ', string(round(params.levelDb, 1)), ' dB')",
+          "bodyFormat": "expression",
+          "headers": {
+            "Content-Type": "text/plain"
+          }
+        }
+      }
+    ]
+  }
+}

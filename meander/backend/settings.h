@@ -240,41 +240,53 @@ public:
   }
 
 private:
+  std::string getSettingsPath() const
+  {
+    return (m_hkpDirPath / "settings.json").string();
+  }
+
+  nlohmann::json readSettings() const
+  {
+    using json = nlohmann::json;
+    const auto path = getSettingsPath();
+    if (!std::filesystem::exists(path))
+      return json::object();
+    std::ifstream file(path);
+    if (!file.is_open())
+      return json::object();
+    try
+    {
+      json obj;
+      file >> obj;
+      return obj.is_object() ? obj : json::object();
+    }
+    catch (...) { return json::object(); }
+  }
+
+  bool writeSettings(const nlohmann::json& settings) const
+  {
+    std::ofstream file(getSettingsPath());
+    if (!file.is_open())
+      return false;
+    file << settings.dump(2);
+    return true;
+  }
+
   nlohmann::json readRemoteRuntimeEnginesPayload() const
   {
     using json = nlohmann::json;
-
-    const auto remotesPath = getRemotesSavePath();
-    if (!std::filesystem::exists(remotesPath))
-    {
-      std::ofstream(remotesPath) << "[]";
-      return json::array();
-    }
-
-    std::ifstream file(remotesPath);
-    if (!file.is_open())
-    {
-      return json::array();
-    }
-
-    json payload;
-    try
-    {
-      file >> payload;
-    }
-    catch (...)
-    {
-      return json::array();
-    }
-
-    return payload;
+    const auto settings = readSettings();
+    const auto it = settings.find("remotes");
+    if (it != settings.end() && it->is_array())
+      return *it;
+    return json::array();
   }
 
   bool writeRemoteRuntimeEngines(const std::vector<RemoteRuntimeEngine>& runtimes) const
   {
     using json = nlohmann::json;
 
-    json payload = json::array();
+    json remotesArray = json::array();
     for (const auto& runtime : runtimes)
     {
       if (runtime.name.empty() || runtime.url.empty() ||
@@ -292,22 +304,12 @@ private:
       {
         entry["color"] = runtime.color;
       }
-      payload.push_back(std::move(entry));
+      remotesArray.push_back(std::move(entry));
     }
 
-    std::ofstream file(getRemotesSavePath());
-    if (!file.is_open())
-    {
-      return false;
-    }
-
-    file << payload.dump(2);
-    return true;
-  }
-
-  std::string getRemotesSavePath() const
-  {
-    return (m_hkpDirPath / "remotes.json").string();
+    auto settings = readSettings();
+    settings["remotes"] = std::move(remotesArray);
+    return writeSettings(settings);
   }
 
   std::filesystem::path m_hkpDirPath;

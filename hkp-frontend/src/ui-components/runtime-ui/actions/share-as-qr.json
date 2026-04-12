@@ -1,0 +1,27 @@
+{
+  "runtimeId": "qr-pipeline",
+  "services": [
+    {
+      "uuid": "stringify-svc",
+      "serviceId": "hookup.to/service/map",
+      "serviceName": "Stringify",
+      "state": { "template": { "=": "stringify(params)" }, "mode": "replace" }
+    },
+    {
+      "uuid": "lz-compress-svc",
+      "serviceId": "hookup.to/service/lz-compress",
+      "serviceName": "LZ Compress"
+    },
+    {
+      "uuid": "url-builder-svc",
+      "serviceId": "hookup.to/service/map",
+      "serviceName": "URL Builder",
+      "state": {
+        "template": {
+          "=": "concat('HKP_WEBAPP_URL/playground/share?fromLink=', params)"
+        },
+        "mode": "replace"
+      }
+    }
+  ]
+}

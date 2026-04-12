@@ -3,6 +3,7 @@ import { RadioGroup as RadioGroupCN } from "hkp-frontend/src/ui-components/primi
 import RadioGroupItem from "./RadioGroupItem";
 import GroupLabel from "./GroupLabel";
 import { TooltipContentType } from "./Tooltip";
+import { generateUUID } from "hkp-frontend/src/runtime/browser/services/helpers";
 
 type Props = {
   id?: string;
@@ -31,7 +32,7 @@ export default function RadioGroup({
   valueTooltips,
   onChange,
 }: Props) {
-  const uniqueId = id || crypto.randomUUID();
+  const uniqueId = id || generateUUID();
   const values = Array.isArray(options) ? options : Object.keys(options);
   const labels = Array.isArray(options)
     ? options

@@ -1,0 +1,43 @@
+{
+  "boardName": "Peer Chat",
+  "runtimes": [
+    {
+      "id": "chat-runtime",
+      "name": "Chat",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    }
+  ],
+  "services": {
+    "chat-runtime": [
+      {
+        "uuid": "%uuid%",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Message",
+        "state": { "plainText": true }
+      },
+      {
+        "uuid": "%uuid%",
+        "serviceId": "hookup.to/service/peer-socket",
+        "serviceName": "Peer Socket",
+        "state": {
+          "mode": "Receive and Send",
+          "peerName": "%receiver-name%",
+          "targetPeer": "%sender-name%",
+          "extractIncomingData": true,
+          "peerHost": "%peer-host%",
+          "peerPort": "%peer-port%",
+          "peerPath": "%peer-path%"
+        }
+      },
+      {
+        "uuid": "%uuid%",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Incoming Messages"
+      }
+    ]
+  }
+}

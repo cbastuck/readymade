@@ -174,6 +174,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
   const [awaitUserLogin, setAwaitUserLogin] = useState<(() => void) | null>(
     null,
   );
+  const awaitUserLoginResolverRef = useRef<(() => void) | null>(null);
 
   // Refs to latest state/props for use inside async closures
   const userRef = useRef(user);
@@ -226,8 +227,18 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
 
   const waitForUserLogin = async () => {
     await new Promise<void>((resolve) => {
+      awaitUserLoginResolverRef.current = resolve;
       setAwaitUserLogin(() => resolve);
     });
+    awaitUserLoginResolverRef.current = null;
+    setAwaitUserLogin(null);
+  };
+
+  const cancelUserLoginWait = () => {
+    if (awaitUserLoginResolverRef.current) {
+      awaitUserLoginResolverRef.current();
+      awaitUserLoginResolverRef.current = null;
+    }
     setAwaitUserLogin(null);
   };
 
@@ -235,7 +246,10 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
 
   const fetchBoard = () => fetchBoardOp(getRefs(), waitForUserLogin, buildContextValue);
   const removeRuntime = (runtime: RuntimeDescriptor) => removeRuntimeOp(runtime, getRefs());
-  const clearBoard = (newBoardNameArg?: string) => clearBoardOp(newBoardNameArg, getRefs(), removeRuntime);
+  const clearBoard = (newBoardNameArg?: string) => {
+    cancelUserLoginWait();
+    return clearBoardOp(newBoardNameArg, getRefs(), removeRuntime);
+  };
 
   const addRuntime = (rtClass: RuntimeClass) => addRuntimeOp(rtClass, getRefs(), waitForUserLogin);
   const updateRuntime = (runtimeId: string, updated: RuntimeConfiguration) => updateRuntimeOp(runtimeId, updated, getRefs());

@@ -27,20 +27,15 @@ import {
 
 import {
   Action,
-  isRuntimeRestClassType,
-  isRuntimeGraphQLClassType,
   BoardDescriptor,
   ExternalInput,
   RuntimeDescriptor,
-  SidechainRoute,
-  SidechainRouting,
   PlaygroundState,
   RuntimeApiMap,
   AcceptedSyncSenders,
   RejectedSyncSenders,
-  InstanceId,
-  RuntimeInputRoutings,
-  RuntimeOutputRoutings,
+  isRuntimeRestClassType,
+  isRuntimeGraphQLClassType,
   RuntimeClass,
   BoardMenuItemFactory,
 } from "../../types";
@@ -100,12 +95,6 @@ type PlaygroundInnerProps = {
     isSuggestedName: boolean,
   ) => Promise<any>;
   setIsSaveDialogVisible: (v: boolean) => void;
-  sidechainRouting: SidechainRouting;
-  outputRouting: RuntimeOutputRoutings;
-  inputRouting: RuntimeInputRoutings;
-  setSidechainRouting: React.Dispatch<React.SetStateAction<SidechainRouting>>;
-  setInputRouting: React.Dispatch<React.SetStateAction<RuntimeInputRoutings>>;
-  setOutputRouting: React.Dispatch<React.SetStateAction<RuntimeOutputRoutings>>;
   onChangeBoardname: (newName: string) => void;
   onUpdateAvailableRuntimeEngines?: (
     runtimeClasses: Array<RuntimeClass>,
@@ -172,30 +161,6 @@ function PlaygroundInner(props: PlaygroundInnerProps) {
           boardContext={boardContext}
           boardName={props.propBoardName || props.boardName}
           description={props.description}
-          sidechainRouting={props.sidechainRouting}
-          outputRouting={props.outputRouting}
-          inputRouting={props.inputRouting}
-          onChangeSidechainRouting={(
-            runtime: RuntimeDescriptor,
-            routing: Array<SidechainRoute>,
-          ) =>
-            props.setSidechainRouting((prev) => ({
-              ...prev,
-              [runtime.id]: routing,
-            }))
-          }
-          onChangeInputRouting={(runtime, value) => {
-            props.setInputRouting((prev) => ({
-              ...prev,
-              [runtime.id]: value,
-            }));
-          }}
-          onChangeOutputRouting={(runtime, routing) => {
-            props.setOutputRouting((prev) => ({
-              ...prev,
-              [runtime.id]: routing,
-            }));
-          }}
           onChangeBoardname={props.onChangeBoardname}
         />
       )}
@@ -226,11 +191,6 @@ function Playground(props: Props) {
     useState<AcceptedSyncSenders>([]);
   const [rejectedSyncSenders, setRejectedSyncSenders] =
     useState<RejectedSyncSenders>([]);
-  const [sidechainRouting, setSidechainRouting] = useState<SidechainRouting>(
-    {},
-  );
-  const [inputRouting, setInputRouting] = useState<RuntimeInputRoutings>({});
-  const [outputRouting, setOutputRouting] = useState<RuntimeOutputRoutings>({});
 
   // Keep refs for values used inside stable callbacks
   const boardNameRef = useRef(boardName);
@@ -238,9 +198,6 @@ function Playground(props: Props) {
   const initialFetchedRef = useRef(initialFetched);
   const acceptedSyncSendersRef = useRef(acceptedSyncSenders);
   const rejectedSyncSendersRef = useRef(rejectedSyncSenders);
-  const sidechainRoutingRef = useRef(sidechainRouting);
-  const inputRoutingRef = useRef(inputRouting);
-  const outputRoutingRef = useRef(outputRouting);
 
   useEffect(() => {
     boardNameRef.current = boardName;
@@ -257,15 +214,6 @@ function Playground(props: Props) {
   useEffect(() => {
     rejectedSyncSendersRef.current = rejectedSyncSenders;
   }, [rejectedSyncSenders]);
-  useEffect(() => {
-    sidechainRoutingRef.current = sidechainRouting;
-  }, [sidechainRouting]);
-  useEffect(() => {
-    inputRoutingRef.current = inputRouting;
-  }, [inputRouting]);
-  useEffect(() => {
-    outputRoutingRef.current = outputRouting;
-  }, [outputRouting]);
 
   const tryFetch = useCallback(async () => {
     try {
@@ -373,7 +321,6 @@ function Playground(props: Props) {
     await boardProviderRef.current?.clearBoard();
     setBoardName(newBoard);
     setInitialFetched(false);
-    // tryFetch will be called via the initialFetched state change effect
     boardNameRef.current = newBoard;
     initialFetchedRef.current = false;
     await tryFetch();
@@ -405,7 +352,7 @@ function Playground(props: Props) {
           boardName: brd,
         };
       }
-      console.error("Playground.getInitialPlayground() - no noard name");
+      console.error("Playground.getInitialPlayground() - no board name");
       return null;
     };
 
@@ -422,11 +369,6 @@ function Playground(props: Props) {
     const {
       boardName: bName = boardNameRef.current || defaultName,
       description: desc = "",
-      sidechainRouting: scRouting = {},
-      outputRouting: outRouting = {},
-      inputRouting: inRouting = {},
-
-      // playground specific board data
       acceptedSyncSenders: accepted = [],
       rejectedSyncSenders: rejected = [],
       runtimes = [],
@@ -434,18 +376,12 @@ function Playground(props: Props) {
       registry = {},
     } = initialBord;
 
-    setSidechainRouting(scRouting);
-    setOutputRouting(outRouting);
-    setInputRouting(inRouting);
     setAcceptedSyncSenders(accepted);
     setRejectedSyncSenders(rejected);
     setInitialFetched(true);
     setDescription(desc);
 
     // Keep refs in sync immediately for same-tick usage
-    sidechainRoutingRef.current = scRouting;
-    outputRoutingRef.current = outRouting;
-    inputRoutingRef.current = inRouting;
     acceptedSyncSendersRef.current = accepted;
     rejectedSyncSendersRef.current = rejected;
     initialFetchedRef.current = true;
@@ -463,26 +399,11 @@ function Playground(props: Props) {
     descriptor: BoardDescriptor,
   ): Promise<PlaygroundState | null> => {
     const desc = descriptionRef.current;
-    const scRouting = sidechainRoutingRef.current;
-    const outRouting = outputRoutingRef.current;
-    const inRouting = inputRoutingRef.current;
     const accepted = acceptedSyncSendersRef.current;
     const rejected = rejectedSyncSendersRef.current;
 
     return {
       ...descriptor,
-      sidechainRouting: scRouting,
-      outputRouting: Object.keys(outRouting).reduce(
-        (acc, cur) => ({
-          ...acc,
-          [cur]: { ...outRouting[cur] },
-        }),
-        {},
-      ),
-      inputRouting: Object.keys(inRouting).reduce(
-        (acc, cur) => ({ ...acc, [cur]: inRouting[cur]?.route || null }),
-        {},
-      ),
       description: desc,
       acceptedSyncSenders: accepted,
       rejectedSyncSenders: rejected,
@@ -536,26 +457,6 @@ function Playground(props: Props) {
         break;
     }
     return true;
-  };
-
-  const onRemoveService = (
-    instance: InstanceId,
-    _runtime: RuntimeDescriptor,
-  ) => {
-    const updatedRoutings = Object.keys(sidechainRoutingRef.current).reduce(
-      (all, rtId) => {
-        const routings = sidechainRoutingRef.current[rtId];
-        return {
-          ...all,
-          [rtId]: routings.filter(
-            (routing) => routing.serviceUuid !== instance.uuid,
-          ),
-        };
-      },
-      {},
-    );
-    setSidechainRouting(updatedRoutings);
-    sidechainRoutingRef.current = updatedRoutings;
   };
 
   const onCreateBoardLink = async () => {
@@ -673,7 +574,7 @@ function Playground(props: Props) {
         }
         return false;
       }}
-      onRemoveService={onRemoveService}
+      onRemoveService={() => {}}
       availableRuntimeEngines={playgroundRuntimeEngines}
     >
       <PlaygroundInner
@@ -693,12 +594,6 @@ function Playground(props: Props) {
         }
         onSaveDialog={onSaveDialog}
         setIsSaveDialogVisible={setIsSaveDialogVisible}
-        sidechainRouting={sidechainRouting}
-        outputRouting={outputRouting}
-        inputRouting={inputRouting}
-        setSidechainRouting={setSidechainRouting}
-        setInputRouting={setInputRouting}
-        setOutputRouting={setOutputRouting}
         onChangeBoardname={onChangeBoardname}
         onUpdateAvailableRuntimeEngines={props.onUpdateAvailableRuntimeEngines}
         propBoardName={props.boardName}

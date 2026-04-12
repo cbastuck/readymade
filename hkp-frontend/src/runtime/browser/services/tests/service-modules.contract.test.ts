@@ -64,6 +64,8 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "UuidGenerator.ts",
   "WorkflowBoardBuilder.ts",
   "XYPad.ts",
+  "MicrophoneMonitor.ts",
+  "Debounce.ts",
 ]);
 
 type LoadedServiceModule = {

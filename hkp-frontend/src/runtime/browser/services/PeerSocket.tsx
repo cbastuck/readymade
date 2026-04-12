@@ -10,8 +10,11 @@ const serviceId = "hookup.to/service/peer-socket";
 type State = {
   mode: "Receive only" | "Send only" | "Receive and Send";
   peerName: string;
-  targetPeer: string | undefined;
+  targetPeer: string;
   extractIncomingData: boolean;
+  peerPort: number | null;
+  peerPath: string | null;
+  peerHost: string | null;
 };
 
 class PeerSocket extends ServiceBase<State> {
@@ -24,8 +27,11 @@ class PeerSocket extends ServiceBase<State> {
     super(app, board, descriptor, id, {
       mode: "Receive only",
       peerName: `NoName${Math.floor(Math.random() * 100)}`,
-      targetPeer: undefined,
+      targetPeer: `NoName${Math.floor(Math.random() * 100)}`,
       extractIncomingData: false,
+      peerPort: null,
+      peerPath: null,
+      peerHost: null,
     });
   }
 
@@ -58,6 +64,37 @@ class PeerSocket extends ServiceBase<State> {
       this.app.notify(this, {
         extractIncomingData: this.state.extractIncomingData,
       });
+    }
+
+    if (config.peerPort !== undefined) {
+      // coerce string → number (board JSON substitution produces strings)
+      const rawPort = config.peerPort;
+      const port =
+        typeof rawPort === "string"
+          ? rawPort === "" ? null : parseInt(rawPort, 10)
+          : typeof rawPort === "number"
+          ? rawPort
+          : null;
+      if (needsUpdate(port, this.state.peerPort)) {
+        this.state.peerPort = port;
+        this.app.notify(this, { peerPort: this.state.peerPort });
+      }
+    }
+
+    if (config.peerPath !== undefined) {
+      const path = config.peerPath === "" ? null : config.peerPath;
+      if (needsUpdate(path, this.state.peerPath)) {
+        this.state.peerPath = path as string | null;
+        this.app.notify(this, { peerPath: this.state.peerPath });
+      }
+    }
+
+    if (config.peerHost !== undefined) {
+      const host = config.peerHost === "" ? null : config.peerHost;
+      if (needsUpdate(host, this.state.peerHost)) {
+        this.state.peerHost = host as string | null;
+        this.app.notify(this, { peerHost: this.state.peerHost });
+      }
     }
   }
 

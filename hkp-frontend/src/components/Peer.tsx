@@ -51,20 +51,16 @@ export default function PeerComponent(props: Props) {
   const initPeerRef = useRef((peerHost: string) => {
     if (peerRef.current) {
       console.warn(
-        "Peer.initPeer previous peer did not shutdown - closing now"
+        "Peer.initPeer previous peer did not shutdown - closing now",
       );
       closePeerRef.current();
     }
-    const {
-      name,
-      onData,
-      usePeerPort,
-      usePeerRoutePath,
-      isSecure,
-    } = propsRef.current;
+    const { name, onData, usePeerPort, usePeerRoutePath, isSecure } =
+      propsRef.current;
     if (!name) {
       return;
     }
+
     const peer: Peer = new Peerjs(name, {
       host: peerHost,
       port: usePeerPort ? usePeerPort : isSecure ? 443 : 80,
@@ -72,11 +68,14 @@ export default function PeerComponent(props: Props) {
       secure: !!isSecure,
     });
 
+    // Store immediately so cleanup can destroy the peer even if "open" hasn't
+    // fired yet (e.g. React Strict Mode mount→cleanup→remount cycle).
+    peerRef.current = peer;
+
     peer.on("open", () => {
       // Allow PeerContext signaling connections to this instance
       peer.onConnectionOpened = propsRef.current.onConnectionOpened;
       peer.onConnectionClosed = propsRef.current.onConnectionClosed;
-      peerRef.current = peer;
       contextRef.current?.onPeer(name, peer);
       if (propsRef.current.onOpen) {
         propsRef.current.onOpen();
@@ -92,7 +91,7 @@ export default function PeerComponent(props: Props) {
     peer.on("connection", (connection: DataConnection) => {
       const { onConnectionOpened, onConnectionClosed } = propsRef.current;
       connection.on("data", (data: unknown) =>
-        onData(data as DataEnvelope, connection.peer)
+        onData(data as DataEnvelope, connection.peer),
       );
       connection.on("close", () => {
         onConnectionClosed?.(name);
@@ -108,21 +107,28 @@ export default function PeerComponent(props: Props) {
     peer.on("error", (err) => {
       const { onError = logError } = propsRef.current;
       onError(err);
-
-      /*
-      if (peerRef.current) {
-        peerRef.current.reconnect();
-      }*/
     });
   });
 
   // componentDidMount + componentWillUnmount
+  // Peer creation is deferred by one task to survive React Strict Mode's
+  // synchronous mount→cleanup→remount cycle: the timer is cancelled during
+  // cleanup, so the server never receives the first OPEN message and the
+  // name-already-taken race condition cannot occur.
   useEffect(() => {
     const { active, peerHost } = propsRef.current;
-    if (active && !!peerHost) {
-      initPeerRef.current(peerHost);
+    if (!active || !peerHost) {
+      return () => { closePeerRef.current(); };
     }
+    let timer: ReturnType<typeof setTimeout> | null = setTimeout(() => {
+      timer = null;
+      initPeerRef.current(propsRef.current.peerHost!);
+    }, 0);
     return () => {
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
       closePeerRef.current();
     };
   }, []);

@@ -165,8 +165,32 @@ export default function InjectorUI(props: ServiceUIProps) {
   };
 
   const renderDataEditor = (service: ServiceInstance) => {
+    const doInject = () => {
+      const code = editorRef.current?.getValue();
+      if (plainText) {
+        service.configure({ inject: code });
+      } else {
+        try {
+          const obj = JSON.parse(code);
+          service.configure({ inject: obj });
+        } catch (err) {
+          console.error("InjectorUI.renderDataEditor", err);
+          service.configure({ inject: code });
+        }
+      }
+      setRecentInjection(code);
+    };
+
     return (
-      <div className="flex flex-col h-full w-full">
+      <div
+        className="flex flex-col h-full w-full"
+        onKeyDown={(e) => {
+          if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+            e.preventDefault();
+            doInject();
+          }
+        }}
+      >
         <div style={{ height: "calc(100% - 54px)" }}>
           <Editor
             ref={(editor) => { editorRef.current = editor; }}
@@ -178,17 +202,7 @@ export default function InjectorUI(props: ServiceUIProps) {
         <Button
           className="h-[50px] mb-[4px]"
           style={buttonStyle}
-          onClick={() => {
-            const code = editorRef.current?.getValue();
-            try {
-              const obj = JSON.parse(code);
-              service.configure({ inject: obj });
-            } catch (err) {
-              console.error("InjectorUI.renderDataEditor", err);
-              service.configure({ inject: code }); // can we check of the text is valid JSON from the editor?
-            }
-            setRecentInjection(code);
-          }}
+          onClick={doInject}
         >
           Inject Data
         </Button>

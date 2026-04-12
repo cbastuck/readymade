@@ -68,9 +68,6 @@ function prepareData(obj: Record<string, any>): Record<string, any> {
 
 export function extractSyncState(data: any): any {
   return {
-    inputRouting: data.inputRouting,
-    outputRouting: data.outputRouting,
-    sidechainRouting: data.sidechainRouting,
     runtimes: data.runtimes.map((rt: any) => ({
       id: rt.id,
       name: rt.name,

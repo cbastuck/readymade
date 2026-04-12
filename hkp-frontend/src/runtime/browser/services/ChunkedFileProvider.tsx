@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
-import { generateUploadId } from "./helpers";
+import { generateUUID } from "./helpers";
 
 const serviceId = "hookup.to/service/chunked-file-provider";
 const serviceName = "Chunked File Provider";
@@ -45,7 +45,17 @@ function ChunkedFileProviderUI(props: ServiceUIProps): JSX.Element {
           <button
             onClick={() => file && (props.service as any).process({ file })}
             disabled={!file}
-            style={{ width: "100%", marginTop: 10 }}
+            style={{
+              width: "100%",
+              marginTop: 10,
+              padding: "10px 16px",
+              borderRadius: 8,
+              cursor: file ? "pointer" : "not-allowed",
+              background: file ? "#007aff" : "#ccc",
+              color: "white",
+              border: "none",
+              fontWeight: 600,
+            }}
           >
             Process
           </button>
@@ -93,7 +103,7 @@ class ChunkedFileProvider {
     }
 
     this.running = true;
-    const uploadId = generateUploadId();
+    const uploadId = generateUUID();
     const totalChunks = Math.ceil(file.size / this.chunkSize);
 
     const readChunk = (offset: number): void => {

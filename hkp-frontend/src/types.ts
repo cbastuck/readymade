@@ -52,11 +52,20 @@ export type RuntimeClass = {
   color?: string;
 };
 
+export type RuntimeCustomAction = {
+  name: string;
+  targetRuntimeId: string;
+  // If set, send only this service's state as the payload instead of the
+  // full { runtime, services } runtime source.
+  sourceServiceId?: string;
+};
+
 export type RuntimeDescriptor = RuntimeClass & {
   id: string;
   state?: any; // TODO: should this be here? Only for persisted Runtime states?
   user?: User | null;
   boardName?: string;
+  customActions?: Array<RuntimeCustomAction>;
 };
 
 export type OnResult = (
@@ -109,42 +118,6 @@ export type PeerJsHostDescriptor = {
   secure: boolean;
 };
 
-const flowOptions = ["pass", "stop"] as const;
-export type RuntimeFlowOutputOptions = (typeof flowOptions)[number];
-export function isValidFlowOption(
-  maybeOption: unknown,
-): maybeOption is RuntimeFlowOutputOptions {
-  return (
-    typeof maybeOption === "string" && flowOptions.includes(maybeOption as any)
-  );
-}
-
-export type PeerRoute = { peer: string | null };
-
-export type PeerInputRouting = { [runtimeId: string]: PeerRoute };
-export type PeerOutputRouting = { [runtimeId: string]: PeerRoute };
-
-export type SidechainRoute = { runtimeId: string; serviceUuid: string };
-export type SidechainRouting = { [runtimeId: string]: Array<SidechainRoute> };
-
-export type PeerOutputActivation = {
-  route: PeerRoute;
-  hostDescriptor: PeerJsHostDescriptor | null;
-};
-
-export type PeerInputActivation = {
-  route: PeerRoute;
-  hostDescriptor: PeerJsHostDescriptor | null;
-};
-
-export type RuntimeInputOptions = PeerInputActivation;
-
-export type RuntimeOutputOptions = PeerOutputActivation & {
-  flow: RuntimeFlowOutputOptions;
-};
-
-export type RuntimeInputRoutings = { [id: string]: RuntimeInputOptions };
-export type RuntimeOutputRoutings = { [id: string]: RuntimeOutputOptions };
 
 export type ServiceURI = string;
 
@@ -205,17 +178,12 @@ const _actionTypes = [
   "toggleBoardSync",
   "showBoardSource",
   "createBoardLink",
-  "update-peers",
-  "flow-changed",
-  "update-peers",
-  "flow-changed",
   "playBoard",
 ] as const;
 export type ActionType = (typeof _actionTypes)[number];
 export type Action = {
   type: ActionType;
   board?: string;
-  flow?: RuntimeFlowOutputOptions;
   params?: any;
 };
 
@@ -452,21 +420,7 @@ export function isBoardDescriptor(data: any): data is BoardDescriptor {
   );
 }
 
-export type DeprecatedInputRouting = { [runtimeId: string]: string }; // old format with just a peer string
-
-export type PlaygroundTemplate = BoardDescriptor & {
-  sidechainRouting: SidechainRouting;
-  inputRouting: DeprecatedInputRouting;
-  outputRouting: { [id: string]: PeerRoute };
-};
-
-export type PlaygroundBoard = BoardDescriptor & {
-  sidechainRouting: SidechainRouting;
-  outputRouting: RuntimeOutputRoutings;
-  inputRouting: RuntimeInputRoutings;
-};
-
-export type PlaygroundState = PlaygroundBoard & {
+export type PlaygroundState = BoardDescriptor & {
   acceptedSyncSenders: Array<any>;
   rejectedSyncSenders: Array<any>;
 };

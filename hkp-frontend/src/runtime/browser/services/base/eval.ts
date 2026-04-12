@@ -46,7 +46,7 @@ const globalScope = {
   stringify: JSON.stringify,
   parse: (x: string | undefined) =>
     x !== undefined ? JSON.parse(x) : "<parse undefined>",
-  concat: (x: string, y: string) => `${x}${y}`,
+  concat: (...args: string[]) => args.join(""),
   reformatDate,
   encodeURI,
   blobToUint8Array: async (x: Blob) => new Uint8Array(await x.arrayBuffer()),

@@ -7,7 +7,7 @@ import { parseAndEvalExpression } from "./base/eval";
 const serviceId = "hookup.to/service/fetcher";
 const serviceName = "Fetcher";
 
-export type BodyFormat = "json" | "text";
+export type BodyFormat = "json" | "text" | "expression";
 
 type State = {
   status: string | null;
@@ -15,6 +15,7 @@ type State = {
   method: string;
   headers: { [name: string]: string };
   body: string | null;
+  bodyExpression: string | null;
   bodyFormat: BodyFormat;
 };
 
@@ -31,6 +32,7 @@ class Fetcher extends ServiceBase<State> {
       method: "GET",
       headers: {},
       body: null,
+      bodyExpression: null,
       bodyFormat: "text",
     });
   }
@@ -61,6 +63,11 @@ class Fetcher extends ServiceBase<State> {
       this.app.notify(this, { body: this.state.body });
     }
 
+    if (needsUpdate(config.bodyExpression, this.state.bodyExpression)) {
+      this.state.bodyExpression = config.bodyExpression;
+      this.app.notify(this, { bodyExpression: this.state.bodyExpression });
+    }
+
     if (config.command) {
       if (config.command.action === "fetch") {
         const result = await this.process(config.command?.params);
@@ -81,7 +88,7 @@ class Fetcher extends ServiceBase<State> {
   getBody = (params: any) => {
     const stateBody = this.getStateBody();
     if (stateBody) {
-      if (typeof params === "object") {
+      if (typeof stateBody === "object" && params !== null && typeof params === "object") {
         return { ...stateBody, ...params };
       }
       return stateBody;
@@ -104,7 +111,9 @@ class Fetcher extends ServiceBase<State> {
       return params;
     }
 
-    const payload = this.getBody(paramsBody);
+    const payload = this.state.bodyExpression
+      ? await parseAndEvalExpression(this.state.bodyExpression, { params }, this.app)
+      : this.getBody(paramsBody);
 
     const substitutedUrl = data?.variables
       ? substituteUrl(url, data.variables)

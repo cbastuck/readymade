@@ -21,6 +21,7 @@ import OllamaPromptUI from "./services/OllamaPromptUI";
 import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
 import ImagePickerDescriptor from "./services/ImagePicker";
 import ChunkedFileProviderDescriptor from "./services/ChunkedFileProvider";
+import AsciiArtDescriptor from "./services/AsciiArt";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {
@@ -71,6 +72,8 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return ImagePickerDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/chunked-file-provider":
       return ChunkedFileProviderDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/ascii-art":
+      return AsciiArtDescriptor.createUI as unknown as ServiceUIComponent;
     default:
       return null;
   }

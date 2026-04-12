@@ -32,7 +32,15 @@ function ImagePickerUI(props: ServiceUIProps): JSX.Element {
         />
         <button
           onClick={() => inputRef.current?.click()}
-          style={{ padding: "10px 16px", borderRadius: 8, cursor: "pointer" }}
+          style={{
+            padding: "10px 16px",
+            borderRadius: 8,
+            cursor: "pointer",
+            background: "#007aff",
+            color: "white",
+            border: "none",
+            fontWeight: 600,
+          }}
         >
           Choose Image
         </button>
