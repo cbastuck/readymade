@@ -31,6 +31,7 @@ export default function FacadeRenderer({
   const [draftFacade, setDraftFacade] = useState<FacadeDescriptor>(facade);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
+  // ── vertical (runtime) splitter ──────────────────────────────────────────
   const DEFAULT_RUNTIME_HEIGHT = Math.round(window.innerHeight * 0.4);
   const runtimeHeightKey = `hkp-facade-runtime-height-${boardName}`;
   const [runtimeHeight, setRuntimeHeight] = useState(
@@ -38,33 +39,59 @@ export default function FacadeRenderer({
       parseInt(localStorage.getItem(runtimeHeightKey) ?? "", 10) ||
       DEFAULT_RUNTIME_HEIGHT,
   );
-  const dragState = useRef<{ startY: number; startHeight: number } | null>(
-    null,
-  );
+  const runtimeDragState = useRef<{ startY: number; startHeight: number } | null>(null);
   const runtimeHeightRef = useRef(runtimeHeight);
   runtimeHeightRef.current = runtimeHeight;
 
   const onDividerMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
-    dragState.current = { startY: e.clientY, startHeight: runtimeHeight };
+    runtimeDragState.current = { startY: e.clientY, startHeight: runtimeHeight };
 
     const onMouseMove = (ev: MouseEvent) => {
-      if (!dragState.current) {
-        return;
-      }
-      const delta = dragState.current.startY - ev.clientY;
+      if (!runtimeDragState.current) { return; }
+      const delta = runtimeDragState.current.startY - ev.clientY;
       const next = Math.max(
         80,
-        Math.min(
-          window.innerHeight - 120,
-          dragState.current.startHeight + delta,
-        ),
+        Math.min(window.innerHeight - 120, runtimeDragState.current.startHeight + delta),
       );
       setRuntimeHeight(next);
     };
     const onMouseUp = () => {
       localStorage.setItem(runtimeHeightKey, String(runtimeHeightRef.current));
-      dragState.current = null;
+      runtimeDragState.current = null;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  };
+
+  // ── horizontal (editor) splitter ─────────────────────────────────────────
+  const DEFAULT_EDITOR_WIDTH = 380;
+  const editorWidthKey = `hkp-facade-editor-width-${boardName}`;
+  const [editorWidth, setEditorWidth] = useState(
+    () =>
+      parseInt(localStorage.getItem(editorWidthKey) ?? "", 10) ||
+      DEFAULT_EDITOR_WIDTH,
+  );
+  const editorDragState = useRef<{ startX: number; startWidth: number } | null>(null);
+  const editorWidthRef = useRef(editorWidth);
+  editorWidthRef.current = editorWidth;
+
+  const onEditorDividerMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    editorDragState.current = { startX: e.clientX, startWidth: editorWidth };
+
+    const onMouseMove = (ev: MouseEvent) => {
+      if (!editorDragState.current) { return; }
+      // Divider is on the left edge of the editor panel, so dragging left widens it.
+      const delta = editorDragState.current.startX - ev.clientX;
+      const next = Math.max(200, Math.min(window.innerWidth - 200, editorDragState.current.startWidth + delta));
+      setEditorWidth(next);
+    };
+    const onMouseUp = () => {
+      localStorage.setItem(editorWidthKey, String(editorWidthRef.current));
+      editorDragState.current = null;
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
@@ -183,7 +210,7 @@ export default function FacadeRenderer({
               fontFamily: "monospace",
             }}
           >
-            { showEditor ? "{ live }" : "{ edit }" }
+            {showEditor ? "{ hide editor }" : "{ editor }"}
           </button>
           <button
             onClick={toggleRuntime}
@@ -203,10 +230,9 @@ export default function FacadeRenderer({
         </div>
       </div>
 
-      {/* Panels or editor */}
-      {showEditor ? (
-        <FacadeEditor facade={draftFacade} onChange={setDraftFacade} />
-      ) : (
+      {/* Live panels + optional editor side-by-side */}
+      <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "row" }}>
+        {/* Live facade */}
         <div
           style={{
             flex: 1,
@@ -237,7 +263,34 @@ export default function FacadeRenderer({
             </div>
           ))}
         </div>
-      )}
+
+        {/* Horizontal splitter + editor panel */}
+        {showEditor && (
+          <>
+            <div
+              onMouseDown={onEditorDividerMouseDown}
+              style={{
+                width: 6,
+                flexShrink: 0,
+                cursor: "ew-resize",
+                background: "hsl(var(--border))",
+                userSelect: "none",
+              }}
+            />
+            <div
+              style={{
+                width: editorWidth,
+                flexShrink: 0,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <FacadeEditor facade={draftFacade} onChange={setDraftFacade} />
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Draggable divider + runtime drawer — always mounted so service UIs stay alive */}
       <div

@@ -126,17 +126,21 @@ export function EditableRow({ propKey, value, onCommit }: Props) {
     <td
       onClick={startEdit}
       style={{
-        padding: 0,
-        height: ROW_HEIGHT,
+        padding: kind === "json" ? "6px 0" : 0,
+        height: kind === "json" ? undefined : ROW_HEIGHT,
         fontSize: 11,
         fontFamily: "monospace",
-        verticalAlign: "middle",
+        verticalAlign: kind === "json" ? "top" : "middle",
         cursor: "text",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", height: ROW_HEIGHT }}>
+      {kind === "json" ? (
         <PropValue value={value} />
-      </div>
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", height: ROW_HEIGHT }}>
+          <PropValue value={value} />
+        </div>
+      )}
     </td>
   );
 
@@ -173,7 +177,7 @@ export function EditableRow({ propKey, value, onCommit }: Props) {
         style={{
           padding: 0,
           paddingRight: 12,
-          height: kind === "json" && editing ? undefined : ROW_HEIGHT,
+          height: kind === "json" ? undefined : ROW_HEIGHT,
           fontSize: 11,
           fontFamily: "monospace",
           color: "hsl(var(--muted-foreground))",
