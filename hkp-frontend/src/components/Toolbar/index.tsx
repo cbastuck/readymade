@@ -22,6 +22,7 @@ type Props = {
   includeNavigationLinks?: boolean;
   menuItemFactory?: BoardMenuItemFactory;
   menuSlot?: ReactNode;
+  logoSlot?: ReactNode;
   onUpdateAvailableRuntimeEngines?: (
     runtimeClasses: Array<RuntimeClass>,
   ) => void;
@@ -33,6 +34,7 @@ export default function Toolbar({
   hideNavigation = false,
   menuItemFactory,
   menuSlot,
+  logoSlot,
   onUpdateAvailableRuntimeEngines,
 }: Props) {
   const boardContext = useContext(BoardCtx);
@@ -106,7 +108,7 @@ export default function Toolbar({
       >
         <div className="w-full flex items-center" style={{ width: "100%" }}>
           <div className="pr-1.5">
-            <HomeIcon />
+            {logoSlot ?? <HomeIcon />}
           </div>
 
           <BoardMenu menuItemFactory={menuItemFactory} />

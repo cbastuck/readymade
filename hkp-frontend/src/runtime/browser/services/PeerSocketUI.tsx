@@ -1,7 +1,10 @@
 import { useContext, useRef, useState } from "react";
+import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import { FacadeDescriptor } from "hkp-frontend/src/facade/types";
+import { remapFacadeUuids } from "hkp-frontend/src/views/playground/BoardActions";
 import { v4 as uuidv4 } from "uuid";
 
-import { ServiceUIProps } from "hkp-frontend/src/types";
+import { ServiceDescriptor, ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
@@ -29,50 +32,71 @@ function buildPartnerBoard(
   peerPort: number | null,
   peerPath: string | null,
   peerHost: string | null,
+  facade?: FacadeDescriptor,
+  originalServices?: ServiceDescriptor[],
 ): object {
   const runtimeId = "partner-browser";
-  const board = {
+
+  const partnerServices = [
+    {
+      uuid: uuidv4(),
+      serviceId: "hookup.to/service/injector",
+      serviceName: "Message",
+      state: { plainText: true },
+    },
+    {
+      uuid: uuidv4(),
+      serviceId: "hookup.to/service/peer-socket",
+      serviceName: "Peer Socket",
+      state: {
+        mode: "Receive and Send",
+        peerName: targetPeer,
+        targetPeer: peerName,
+        extractIncomingData: true,
+        peerPort,
+        peerPath,
+        peerHost,
+      },
+    },
+    {
+      uuid: uuidv4(),
+      serviceId: "hookup.to/service/monitor",
+      serviceName: "Messages",
+    },
+    {
+      uuid: uuidv4(),
+      serviceId: "hookup.to/service/stopper",
+      serviceName: "Stopper",
+    },
+  ];
+
+  const board: any = {
     boardName: "Partner",
     runtimes: [{ id: runtimeId, name: "Browser", type: "browser" }],
-    services: {
-      [runtimeId]: [
-        {
-          uuid: uuidv4(),
-          serviceId: "hookup.to/service/injector",
-          serviceName: "Message",
-          state: { plainText: true },
-        },
-        {
-          uuid: uuidv4(),
-          serviceId: "hookup.to/service/peer-socket",
-          serviceName: "Peer Socket",
-          state: {
-            mode: "Receive and Send",
-            peerName: targetPeer,
-            targetPeer: peerName,
-            extractIncomingData: true,
-            peerPort,
-            peerPath,
-            peerHost,
-          },
-        },
-        {
-          uuid: uuidv4(),
-          serviceId: "hookup.to/service/monitor",
-          serviceName: "Messages",
-        },
-        {
-          uuid: uuidv4(),
-          serviceId: "hookup.to/service/stopper",
-          serviceName: "Stopper",
-        },
-      ],
-    },
+    services: { [runtimeId]: partnerServices },
   };
+
+  if (facade) {
+    if (originalServices) {
+      // Map original uuid → new uuid by matching serviceId
+      const uuidMap = new Map<string, string>();
+      for (const newSvc of partnerServices) {
+        const orig = originalServices.find((s) => s.serviceId === newSvc.serviceId);
+        if (orig) {
+          uuidMap.set(orig.uuid, newSvc.uuid);
+        }
+      }
+      board.facade = remapFacadeUuids(facade, uuidMap);
+    } else {
+      board.facade = facade;
+    }
+  }
+
   return resolveTemplateVarsInObject(board);
 }
 
 export default function PeerSocketUI(props: ServiceUIProps) {
+  const boardContext = useBoardContext();
   const [initialized, setInitialized] = useState(false);
   const [bypass, setBypass] = useState(false);
   const [peerName, setPeerName] = useState("");
@@ -160,8 +184,9 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     props.service.configure({ peerName: targetPeer, targetPeer: peerName });
   };
   const onSharePartnerQR = () => {
+    const allOriginalServices = Object.values(boardContext?.services ?? {}).flat();
     setPartnerQRSource(
-      buildPartnerBoard(peerName, targetPeer, peerPort, peerPath, peerHost),
+      buildPartnerBoard(peerName, targetPeer, peerPort, peerPath, peerHost, boardContext?.facade, allOriginalServices),
     );
   };
 

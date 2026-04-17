@@ -26,6 +26,7 @@ import GameOfLifeDescriptor from "./services/GameOfLife";
 import GameOfLifeRendererDescriptor from "./services/GameOfLifeRenderer";
 import GameOfLifeToNotesDescriptor from "./services/GameOfLifeToNotes";
 import GameOfLifeSynthDescriptor from "./services/GameOfLifeSynth";
+import HttpRelayClientDescriptor from "./services/HttpRelayClient";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {
@@ -86,6 +87,8 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return GameOfLifeToNotesDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/game-of-life-synth":
       return GameOfLifeSynthDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/http-relay-client":
+      return HttpRelayClientDescriptor.createUI as unknown as ServiceUIComponent;
     default:
       return null;
   }

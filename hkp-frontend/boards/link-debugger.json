@@ -1,0 +1,32 @@
+{
+  "boardName": "Link Debugger",
+  "runtimes": [
+    {
+      "id": "debug-browser",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "debug-browser": [
+      {
+        "uuid": "debug-input-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Compressed Link",
+        "state": { "plainText": true }
+      },
+      {
+        "uuid": "debug-decompress-svc",
+        "serviceId": "hookup.to/service/lz-compress",
+        "serviceName": "Decompress",
+        "state": { "mode": "decompress" }
+      },
+      {
+        "uuid": "debug-monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Board JSON"
+      }
+    ]
+  }
+}

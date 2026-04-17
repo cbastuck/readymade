@@ -1,5 +1,97 @@
 {
   "boardName": "Noise Alert",
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "main",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "align": "center",
+          "justify": "center",
+          "fill": true,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 10,
+              "align": "center",
+              "items": [
+                {
+                  "type": "level-meter",
+                  "source": {
+                    "serviceUuid": "mic-monitor-svc",
+                    "path": "levelDb"
+                  },
+                  "min": -60,
+                  "max": 0,
+                  "unit": "dB",
+                  "thresholdKnobServiceUuid": "threshold-filter-svc"
+                },
+                {
+                  "type": "knob",
+                  "label": "Alert Threshold",
+                  "min": -60,
+                  "max": 0,
+                  "defaultValue": -12,
+                  "unit": "dB",
+                  "width": 130,
+                  "height": 110,
+                  "showValue": false,
+                  "markers": [
+                    { "value": -50, "text": "faint\nnoise level" },
+                    { "value": -35, "text": "conversational\nlevel" },
+                    { "value": -20, "text": "loud" },
+                    { "value": -5, "text": "extreme" }
+                  ],
+                  "action": {
+                    "serviceUuid": "threshold-filter-svc",
+                    "configure": {
+                      "conditions": ["params.levelDb > {{value}}"]
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 10,
+              "wrap": true,
+              "justify": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Start Monitoring",
+                  "action": {
+                    "serviceUuid": "mic-monitor-svc",
+                    "configure": { "start": true }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "Stop Monitoring",
+                  "action": {
+                    "serviceUuid": "mic-monitor-svc",
+                    "configure": { "stop": true }
+                  }
+                }
+              ]
+            },
+            {
+              "type": "text-input",
+              "label": "ntfy.sh Topic",
+              "placeholder": "your-topic-name",
+              "submitLabel": "Set",
+              "action": {
+                "serviceUuid": "notifier-svc",
+                "configure": { "url": "https://ntfy.sh/$$input" }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
   "runtimes": [
     {
       "id": "browser",

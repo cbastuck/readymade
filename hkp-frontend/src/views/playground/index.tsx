@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useContext, useCallback } from "react";
+import { FacadeDescriptor } from "../../facade/types";
 
 import { withRouter, WithRouterProps } from "../../common";
 
@@ -71,6 +72,7 @@ type Props = WithRouterProps & {
   children?: React.ReactNode;
   hideNavigation?: boolean;
   menuSlot?: React.ReactNode;
+  logoSlot?: React.ReactNode;
   menuItemFactory?: BoardMenuItemFactory;
   onChangeBoardname?: (newName: string) => void;
   onSaveBoard?: (name: string, payload: BoardDescriptor) => void;
@@ -84,6 +86,7 @@ type PlaygroundInnerProps = {
   compact?: boolean;
   hideNavigation?: boolean;
   menuSlot?: React.ReactNode;
+  logoSlot?: React.ReactNode;
   menuItemFactory?: BoardMenuItemFactory;
   showShareBoardQRCodeURL: string | null;
   setShowShareBoardQRCodeURL: (url: string | null) => void;
@@ -133,6 +136,7 @@ function PlaygroundInner(props: PlaygroundInnerProps) {
         menuItemFactory={props.menuItemFactory}
         hideNavigation={props.hideNavigation}
         menuSlot={props.menuSlot}
+        logoSlot={props.logoSlot}
         includeNavigationLinks={!props.hideNavigation}
       />
 
@@ -186,6 +190,7 @@ function Playground(props: Props) {
       defaultName,
   );
   const [description, setDescription] = useState("");
+  const facadeRef = useRef<FacadeDescriptor | undefined>(undefined);
   const [initialFetched, setInitialFetched] = useState(false);
   const [acceptedSyncSenders, setAcceptedSyncSenders] =
     useState<AcceptedSyncSenders>([]);
@@ -313,6 +318,12 @@ function Playground(props: Props) {
       props.boardDescriptor
     ) {
       boardProviderRef.current?.setBoardState(props.boardDescriptor);
+      const incomingFacade = props.boardDescriptor.facade;
+      facadeRef.current = incomingFacade;
+      if (props.boardDescriptor.description !== undefined) {
+        setDescription(props.boardDescriptor.description);
+        descriptionRef.current = props.boardDescriptor.description;
+      }
     }
     prevBoardDescriptorRef.current = props.boardDescriptor;
   });
@@ -369,6 +380,7 @@ function Playground(props: Props) {
     const {
       boardName: bName = boardNameRef.current || defaultName,
       description: desc = "",
+      facade: facadeData,
       acceptedSyncSenders: accepted = [],
       rejectedSyncSenders: rejected = [],
       runtimes = [],
@@ -386,12 +398,14 @@ function Playground(props: Props) {
     rejectedSyncSendersRef.current = rejected;
     initialFetchedRef.current = true;
     descriptionRef.current = desc;
+    facadeRef.current = facadeData;
 
     return {
       boardName: bName,
       runtimes,
       services,
       registry,
+      facade: facadeData,
     };
   };
 
@@ -405,6 +419,7 @@ function Playground(props: Props) {
     return {
       ...descriptor,
       description: desc,
+      facade: facadeRef.current,
       acceptedSyncSenders: accepted,
       rejectedSyncSenders: rejected,
     };
@@ -583,6 +598,7 @@ function Playground(props: Props) {
         compact={props.compact}
         hideNavigation={props.hideNavigation}
         menuSlot={props.menuSlot}
+        logoSlot={props.logoSlot}
         menuItemFactory={props.menuItemFactory}
         showShareBoardQRCodeURL={showShareBoardQRCodeURL}
         setShowShareBoardQRCodeURL={setShowShareBoardQRCodeURL}

@@ -424,7 +424,43 @@ crow::response Server::impl::processRuntime(const crow::request &req, const std:
     }
 
     // Raw binary fallback: image/*, application/octet-stream, etc.
-    return Data(BinaryData(req.body.begin(), req.body.end()));
+    // Promote to MixedData when a filename is present in Content-Disposition so
+    // that downstream services (e.g. filesystem) can use the original filename.
+    {
+      BinaryData binary(req.body.begin(), req.body.end());
+      auto contentDisposition = req.get_header_value("Content-Disposition");
+      std::string filename;
+      if (!contentDisposition.empty())
+      {
+        auto pos = contentDisposition.find("filename=");
+        if (pos != std::string::npos)
+        {
+          filename = contentDisposition.substr(pos + 9);
+          // Strip surrounding quotes if present
+          if (filename.size() >= 2 && filename.front() == '"')
+            filename = filename.substr(1, filename.size() - 2);
+        }
+      }
+      if (!filename.empty())
+      {
+        json meta = json::object();
+        meta["path"] = filename;
+        auto uploadId      = req.get_header_value("X-Upload-Id");
+        auto chunkIndexStr = req.get_header_value("X-Chunk-Index");
+        auto totalChunksStr= req.get_header_value("X-Total-Chunks");
+        if (!uploadId.empty()) meta["uploadId"] = uploadId;
+        if (!chunkIndexStr.empty())
+        {
+          try { meta["chunkIndex"] = std::stoi(chunkIndexStr); } catch (...) {}
+        }
+        if (!totalChunksStr.empty())
+        {
+          try { meta["totalChunks"] = std::stoi(totalChunksStr); } catch (...) {}
+        }
+        return Data(MixedData{std::move(meta), std::move(binary)});
+      }
+      return Data(std::move(binary));
+    }
   };
 
   auto inputData = buildInputData();

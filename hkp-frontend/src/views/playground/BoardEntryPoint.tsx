@@ -8,6 +8,7 @@ import VSpacer from "../../components/shared/VSpacer";
 import Board from "./Board";
 
 import LoadIndicator from "./LoadIndicator";
+import FacadeRenderer from "../../facade/FacadeRenderer";
 
 type Props = {
   className?: string;
@@ -28,6 +29,7 @@ export default function BoardEntryPoint({
   description,
   onChangeBoardname,
 }: Props) {
+  const facade = boardContext.facade;
   const isPlaygroundEmpty =
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
@@ -56,23 +58,57 @@ export default function BoardEntryPoint({
       />
     );
   }
+
+  if (isPlaygroundEmpty) {
+    return (
+      <div style={t.w100} className={className}>
+        <div style={s(t.fs16, t.ls1, t.tc)}>
+          <EmptyBoard
+            boardName={boardName}
+            onChangeBoardname={onChangeBoardname}
+          />
+        </div>
+        <VSpacer />
+      </div>
+    );
+  }
+
+  const boardContent = (
+    <Board
+      boardContext={boardContext}
+      description={description}
+      boardName={boardName}
+    />
+  );
+
+  if (facade) {
+    return (
+      <div
+        className={className}
+        style={{
+          // Fill the viewport height minus toolbar
+          height: "calc(100vh - 56px)",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
+        }}
+      >
+        <FacadeRenderer
+          facade={facade}
+          boardContext={boardContext}
+          boardName={boardName}
+          runtimeContent={boardContent}
+        />
+      </div>
+    );
+  }
+
   return (
     <div style={t.w100} className={className}>
       <div style={s(t.fs16, t.ls1, t.tc)}>
         <div>
-          {isPlaygroundEmpty ? (
-            <EmptyBoard
-              boardName={boardName}
-              onChangeBoardname={onChangeBoardname}
-            />
-          ) : (
-            <Board
-              boardContext={boardContext}
-              description={description}
-              boardName={boardName}
-            />
-          )}
-          {!isPlaygroundEmpty ? saveReminder : false}
+          {boardContent}
+          {saveReminder}
         </div>
       </div>
       <VSpacer />

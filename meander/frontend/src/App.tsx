@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import HkpApp from "hkp-frontend/src/App";
 import Playground from "hkp-frontend/src/views/playground";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
+import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 
 import { Remote } from "./types";
 import MeanderAppMenu from "./MeanderAppMenu";
@@ -35,6 +37,7 @@ function App() {
   );
 
   const [boardSource, setBoardSource] = useState("");
+  const [demoBoardDialogOpen, setDemoBoardDialogOpen] = useState(false);
 
   const loadRemotes = useCallback(async () => {
     setRemotes(await getRemotes());
@@ -165,6 +168,18 @@ function App() {
     }
   };
 
+  const logoSlot = (
+    <Button
+      variant="ghost"
+      className="pl-[4px] ml-[4px] mr-[0px] pr-0 hover:drop-shadow-2xl"
+      onClick={() => setDemoBoardDialogOpen(true)}
+    >
+      <div className="px-[8px]">
+        <IconH className="stroke-[#333] hover:stroke-sky-600" width={24} height={24} />
+      </div>
+    </Button>
+  );
+
   return (
     <HkpApp>
       <Playground
@@ -180,10 +195,13 @@ function App() {
         menuItemFactory={menuItemFactory}
         hideNavigation
         menuSlot={<MeanderAppMenu />}
+        logoSlot={logoSlot}
       >
         <Board
           boardSource={boardSource}
           loadBoardItems={loadBoardItems}
+          demoBoardDialogOpen={demoBoardDialogOpen}
+          onCloseDemoBoardDialog={() => setDemoBoardDialogOpen(false)}
           onCloseBoardSource={onCloseBoardSource}
           onChangeLoadDialogVisibility={onChangeLoadDialogVisibility}
           onDeleteBoard={onDeleteBoard}

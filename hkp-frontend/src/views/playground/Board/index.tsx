@@ -97,7 +97,7 @@ export default function Board(props: Props) {
 
   const { description, boardName, boardContext } = props;
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col">
       <div style={s(t.w100)}>
         {boardContext.runtimes.map((runtime, runtimeIdx) => (
           <BoardRuntime

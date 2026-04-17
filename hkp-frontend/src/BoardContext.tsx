@@ -27,6 +27,7 @@ import { AppContextState, AppCtx } from "./AppContext";
 import { connectDevTools } from "./core/DevTools";
 import { restoreAvailableRuntimeEngines } from "./common";
 import { BoardStateRefs, Props, getRuntimeScopeApi } from "./core/boardContextTypes";
+import { FacadeDescriptor } from "./facade/types";
 import {
   fetchBoard as fetchBoardOp,
   serializeBoard as serializeBoardOp,
@@ -112,6 +113,7 @@ export type BoardContextState = BoardContextAPI &
     user: User | null;
 
     boardName?: string;
+    facade?: FacadeDescriptor;
 
     availableRuntimeEngines: Array<RuntimeClass>;
     runtimeApis: RuntimeApiMap;
@@ -167,6 +169,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
   const [availableRuntimeEngines, setAvailableRuntimeEngines] = useState<
     Array<RuntimeClass>
   >(availableRuntimeEnginesProp || restoreAvailableRuntimeEngines());
+  const [facade, setFacade] = useState<FacadeDescriptor | undefined>(undefined);
   const [isFetching, setIsFetching] = useState(false);
   const [errorOnFetch, setErrorOnFetch] = useState<Error | undefined>(
     undefined,
@@ -223,6 +226,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
     setBoardNameState,
     setIsFetching,
     setErrorOnFetch,
+    setFacade,
   });
 
   const waitForUserLogin = async () => {
@@ -398,6 +402,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(function BoardProvi
   const buildContextValue = (): BoardContextState => ({
     user,
     boardName,
+    facade,
     runtimes,
     services,
     registry,

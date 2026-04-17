@@ -1,5 +1,37 @@
 {
   "boardName": "DropApp",
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "receive",
+        "layout": {
+          "direction": "column",
+          "padding": 24,
+          "gap": 20,
+          "align": "center",
+          "justify": "center",
+          "items": [
+            {
+              "type": "qr-code",
+              "caption": "Scan with your phone to send a file",
+              "source": { "serviceUuid": "qr-code-svc", "path": "url" }
+            },
+            {
+              "type": "text-input",
+              "label": "Save folder",
+              "placeholder": "/tmp/dropitapp",
+              "submitLabel": "Set",
+              "action": {
+                "serviceUuid": "filesystem-svc",
+                "configure": { "path": "$$input" }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
   "runtimes": [
     {
       "id": "ui",
@@ -26,6 +58,23 @@
           "runtimeId": "phone-ui",
           "runtimeName": "Phone UI",
           "runtimeType": "browser",
+          "facade": {
+            "layout": "single",
+            "panels": [
+              {
+                "id": "send",
+                "layout": {
+                  "type": "file-pick",
+                  "label": "Drop a file to send",
+                  "accept": "*/*",
+                  "progressServiceUuid": "chunked-file-provider-svc",
+                  "action": {
+                    "serviceUuid": "image-picker-svc"
+                  }
+                }
+              }
+            ]
+          },
           "pipeline": [
             {
               "instanceId": "image-picker-svc",

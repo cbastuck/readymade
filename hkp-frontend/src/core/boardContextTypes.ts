@@ -13,6 +13,7 @@ import {
   User,
   RuntimeApiMap,
 } from "../types";
+import { FacadeDescriptor } from "../facade/types";
 import { BoardContextState, EngineState } from "../BoardContext";
 
 export type Props = {
@@ -63,6 +64,7 @@ export type BoardStateRefs = {
   setBoardNameState: Dispatch<SetStateAction<string | undefined>>;
   setIsFetching: Dispatch<SetStateAction<boolean>>;
   setErrorOnFetch: Dispatch<SetStateAction<Error | undefined>>;
+  setFacade: Dispatch<SetStateAction<FacadeDescriptor | undefined>>;
 };
 
 export function getRuntimeScopeApi(

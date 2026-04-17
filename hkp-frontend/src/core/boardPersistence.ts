@@ -106,6 +106,7 @@ export async function fetchBoard(
   refs.setIsFetching(true);
   try {
     const board = await propsRef.fetchBoard();
+    refs.setFacade(board.facade);
     const data = await restoreBoard(board, refs, waitForUserLogin);
     if (data) {
       refs.setBoardNameState(data.boardName);
@@ -198,6 +199,7 @@ export async function setBoardState(
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
 ) {
+  refs.setFacade(newState.facade);
   const data = await restoreBoard(newState, refs, waitForUserLogin);
   if (data) {
     refs.setBoardNameState(data.boardName);

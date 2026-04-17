@@ -7,9 +7,14 @@ import type { WaveType } from "./GameOfLifeSynth";
 
 const WAVE_TYPES: WaveType[] = [
   // Web Audio built-ins
-  "sine", "triangle", "square", "sawtooth",
+  "sine",
+  "triangle",
+  "square",
+  "sawtooth",
   // Custom PeriodicWave
-  "organ", "soft", "fifth",
+  "organ",
+  "soft",
+  "fifth",
 ];
 
 export default function GameOfLifeSynthUI(props: ServiceUIProps) {
@@ -29,13 +34,16 @@ export default function GameOfLifeSynthUI(props: ServiceUIProps) {
         if (n.waveType !== undefined) setWaveType(n.waveType);
       }}
     >
-      <div style={{ padding: "8px", fontFamily: "monospace", fontSize: "12px" }}>
+      <div
+        style={{ padding: "8px", fontFamily: "monospace", fontSize: "12px" }}
+      >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <Knob
             value={volume}
             min={0}
             max={1}
-            size={52}
+            width={52}
+            height={52}
             label={`${Math.round(volume * 100)}%`}
             onChange={(v) => {
               setVolume(v);
@@ -44,7 +52,14 @@ export default function GameOfLifeSynthUI(props: ServiceUIProps) {
           />
           <span>Volume</span>
         </div>
-        <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+        <div
+          style={{
+            marginTop: 6,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
           Wave:
           <Select
             options={WAVE_TYPES}

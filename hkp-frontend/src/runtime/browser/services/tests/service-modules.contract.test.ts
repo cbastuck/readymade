@@ -36,6 +36,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "GameOfLifeSynth.ts",
   "GithubSink.tsx",
   "GithubSource.tsx",
+  "HttpRelayClient.ts",
   "GroupBy.ts",
   "Html.tsx",
   "Injector.ts",

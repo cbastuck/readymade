@@ -7,10 +7,17 @@ TOOLCHAIN="${REPO_ROOT}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
 FRONTEND_DIR="${REPO_ROOT}/meander/frontend"
 CONFIG="${1:-Release}"
 EMBEDDED_FRONTEND="${2:-ON}"
+UNIVERSAL_BINARY="${3:-OFF}"
 
 if [[ "${EMBEDDED_FRONTEND}" != "ON" && "${EMBEDDED_FRONTEND}" != "OFF" ]]; then
     echo "ERROR: Second argument must be exactly ON or OFF."
-    echo "Usage: ./build.sh [Release|Debug|RelWithDebInfo|MinSizeRel] [ON|OFF]"
+    echo "Usage: ./build.sh [Release|Debug|RelWithDebInfo|MinSizeRel] [ON|OFF] [ON|OFF]"
+    exit 2
+fi
+
+if [[ "${UNIVERSAL_BINARY}" != "ON" && "${UNIVERSAL_BINARY}" != "OFF" ]]; then
+    echo "ERROR: Third argument must be exactly ON or OFF (universal binary)."
+    echo "Usage: ./build.sh [Release|Debug|RelWithDebInfo|MinSizeRel] [ON|OFF] [ON|OFF]"
     exit 2
 fi
 
@@ -18,6 +25,12 @@ if [[ "${EMBEDDED_FRONTEND}" == "OFF" && "${CONFIG}" != "Debug" && "${CONFIG}" !
     echo "ERROR: Dev server mode only supports Debug builds."
     echo "Use: ./build.sh Debug OFF"
     exit 2
+fi
+
+if [[ "${UNIVERSAL_BINARY}" == "ON" ]]; then
+    OSX_ARCHITECTURES="arm64;x86_64"
+else
+    OSX_ARCHITECTURES="$(uname -m)"
 fi
 
 echo "==> Building meander frontend"
@@ -38,12 +51,14 @@ fi
 echo "==> Building meander (config: ${CONFIG})"
 echo "    repo: ${REPO_ROOT}"
 echo "    build: ${BUILD_DIR}"
+echo "    universal binary: ${UNIVERSAL_BINARY}"
+echo "    architectures: ${OSX_ARCHITECTURES}"
 
 cmake \
     -B "${BUILD_DIR}" \
     -S "${REPO_ROOT}" \
     -DCMAKE_BUILD_TYPE="${CONFIG}" \
-    -DCMAKE_OSX_ARCHITECTURES="$(uname -m)" \
+    -DCMAKE_OSX_ARCHITECTURES="${OSX_ARCHITECTURES}" \
     -DBUILD_HKP_SAUCER=ON \
     -DMEANDER_USE_EMBEDDED_FRONTEND="${EMBEDDED_FRONTEND}" \
     -GXcode

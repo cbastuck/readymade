@@ -13,12 +13,16 @@ type State = {
   levelDb: number | null;
 };
 
+type TimeDomainDataBuffer = Parameters<
+  AnalyserNode["getFloatTimeDomainData"]
+>[0];
+
 class MicrophoneMonitor extends ServiceBase<State> {
   private audioContext: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
   private stream: MediaStream | null = null;
   private intervalId: ReturnType<typeof setInterval> | null = null;
-  private dataArray: Float32Array<ArrayBuffer> | null = null;
+  private dataArray: TimeDomainDataBuffer | null = null;
 
   constructor(
     app: AppInstance,
@@ -37,6 +41,13 @@ class MicrophoneMonitor extends ServiceBase<State> {
 
   private async startCapture(): Promise<void> {
     if (this.audioContext) return;
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      const msg = "Microphone requires a secure context (HTTPS or localhost)";
+      this.state.status = `error: ${msg}`;
+      this.app.notify(this, { status: this.state.status });
+      throw new Error(msg);
+    }
 
     this.state.status = "requesting mic...";
     this.app.notify(this, { status: this.state.status });

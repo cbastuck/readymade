@@ -53,6 +53,7 @@ type State = {
   runtimeName: string;
   runtimeType: string;
   pipeline: PipelineEntry[];
+  facade?: any;
 };
 
 export class BrowserSubService extends ServiceBase<State> {
@@ -105,6 +106,11 @@ export class BrowserSubService extends ServiceBase<State> {
     }
     if (config.runtimeType !== undefined) {
       this.state.runtimeType = config.runtimeType;
+      changed = true;
+    }
+
+    if (config.facade !== undefined) {
+      this.state.facade = config.facade;
       changed = true;
     }
 
@@ -270,10 +276,11 @@ export class BrowserSubService extends ServiceBase<State> {
   }
 
   buildBoardDescriptor() {
-    const { boardName, runtimeId, runtimeName, runtimeType, pipeline } =
+    const { boardName, runtimeId, runtimeName, runtimeType, pipeline, facade } =
       this.state;
     return {
       ...(boardName ? { boardName } : {}),
+      ...(facade ? { facade } : {}),
       runtimes: [{ id: runtimeId, name: runtimeName, type: runtimeType }],
       services: {
         [runtimeId]: pipeline.map((entry) => ({

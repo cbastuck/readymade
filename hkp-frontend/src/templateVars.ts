@@ -42,3 +42,28 @@ export function resolveTemplateVars(value: string): string {
 export function resolveTemplateVarsInObject<T>(obj: T): T {
   return JSON.parse(resolveTemplateVars(JSON.stringify(obj))) as T;
 }
+
+/**
+ * Returns true when the given URL (after template variable resolution) points
+ * to the local machine (localhost / 127.0.0.1 / ::1).
+ *
+ * Use this to decide whether a runtime should be excluded from a partner board
+ * link: localhost runtimes are specific to the originator's machine and cannot
+ * be reached by a partner on a different device.
+ */
+export function isLocalhostUrl(url: string | undefined): boolean {
+  if (!url) {
+    return false;
+  }
+  const resolved = resolveTemplateVars(url);
+  try {
+    const { hostname } = new URL(resolved);
+    return (
+      hostname === "localhost" ||
+      hostname === "127.0.0.1" ||
+      hostname === "::1"
+    );
+  } catch {
+    return false;
+  }
+}

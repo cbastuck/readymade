@@ -409,6 +409,7 @@ export type BoardDescriptor = {
   registry?: ServiceRegistryMap;
   boardName?: string;
   description?: string;
+  facade?: import("./facade/types").FacadeDescriptor;
 };
 
 export function isBoardDescriptor(data: any): data is BoardDescriptor {

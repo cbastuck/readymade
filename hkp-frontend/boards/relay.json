@@ -1,0 +1,51 @@
+{
+  "boardName": "HTTP Relay",
+  "runtimes": [
+    {
+      "id": "bd233a65-4597-4987-8113-9e58d2517111",
+      "name": "Browser Runtime 1",
+      "type": "browser",
+      "state": {}
+    }
+  ],
+  "services": {
+    "bd233a65-4597-4987-8113-9e58d2517111": [
+      {
+        "uuid": "d4f62733-4f4b-47a3-9fee-98eeac5aa0f6",
+        "serviceId": "hookup.to/service/http-relay-client",
+        "serviceName": "HTTP Relay Client",
+        "state": {
+          "pollUrl": "https://hookitapp.com/dx/poll.php",
+          "respondUrl": "https://hookitapp.com/dx/respond.php",
+          "status": "idle",
+          "pipeline": [
+            {
+              "serviceId": "hookup.to/service/monitor",
+              "instanceId": "relay-monitor-in",
+              "serviceName": "Monitor (in)"
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "instanceId": "relay-map",
+              "serviceName": "Map",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "greet=": "'Hello ' + params.name"
+                }
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/monitor",
+              "instanceId": "relay-monitor-out",
+              "serviceName": "Monitor (out)"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "description": "",
+  "acceptedSyncSenders": [],
+  "rejectedSyncSenders": []
+}

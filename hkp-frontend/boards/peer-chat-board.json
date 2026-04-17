@@ -1,5 +1,26 @@
 {
   "boardName": "Peer Chat",
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "chat",
+        "layout": {
+          "type": "message-list",
+          "grow": true,
+          "source": { "serviceUuid": "chat-monitor-svc" },
+          "composer": {
+            "placeholder": "Type a message…",
+            "submitLabel": "Send",
+            "action": {
+              "serviceUuid": "chat-input-svc",
+              "configure": { "inject": "$$input" }
+            }
+          }
+        }
+      }
+    ]
+  },
   "runtimes": [
     {
       "id": "chat-browser",

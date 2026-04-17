@@ -65,6 +65,16 @@ function ChunkedFileProviderUI(props: ServiceUIProps): JSX.Element {
   );
 }
 
+function appendTimestamp(filename: string): string {
+  const now = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+  const dot = filename.lastIndexOf(".");
+  return dot === -1
+    ? `${filename}_${ts}`
+    : `${filename.slice(0, dot)}_${ts}${filename.slice(dot)}`;
+}
+
 class ChunkedFileProvider {
   uuid: string;
   board: any;
@@ -105,6 +115,7 @@ class ChunkedFileProvider {
     this.running = true;
     const uploadId = generateUUID();
     const totalChunks = Math.ceil(file.size / this.chunkSize);
+    const filename = appendTimestamp(file.name);
 
     const readChunk = (offset: number): void => {
       if (offset >= file.size) {
@@ -128,7 +139,7 @@ class ChunkedFileProvider {
         const data = e.target!.result as ArrayBuffer;
         const payload: ChunkPayload = {
           data,
-          filename: file.name,
+          filename,
           mimeType: file.type || "application/octet-stream",
           chunkIndex,
           totalChunks,

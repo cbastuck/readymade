@@ -121,12 +121,26 @@ public:
         std::cerr << "Filesystem service: MixedData write requires meta.path and non-empty binary" << std::endl;
         return json{{"status", "failure"}};
       }
-      auto target = buildMixedPath(mixed->meta["path"].get<std::string>());
-      std::ofstream file(target, std::ios::binary);
+
+      int chunkIndex  = 0;
+      int totalChunks = 1;
+      if (mixed->meta.contains("chunkIndex"))
+        chunkIndex = mixed->meta["chunkIndex"].get<int>();
+      if (mixed->meta.contains("totalChunks"))
+        totalChunks = mixed->meta["totalChunks"].get<int>();
+
+      std::string target = buildMixedPath(mixed->meta["path"].get<std::string>());
+
+      // Append for every chunk after the first so the file is reassembled
+      // in order without overwriting previously written chunks.
+      bool append = (chunkIndex > 0);
+      auto mode = std::ios::binary | (append ? std::ios::app : std::ios::out);
+      std::ofstream file(target, mode);
       if (file)
       {
         file.write(reinterpret_cast<const char*>(mixed->binary.data()), mixed->binary.size());
-        return json{{"status", "success"}, {"path", target}};
+        bool done = (chunkIndex + 1 >= totalChunks);
+        return json{{"status", done ? "success" : "partial"}, {"path", target}};
       }
       std::cerr << "Filesystem service: failed to open file for writing: " << target << std::endl;
       return json{{"status", "failure"}};
