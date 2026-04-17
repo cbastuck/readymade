@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeDescriptor } from "./types";
 import { PanelRenderer } from "./panels/PanelRenderer";
@@ -29,6 +29,11 @@ export default function FacadeRenderer({
   );
   const [showEditor, setShowEditor] = useState(false);
   const [draftFacade, setDraftFacade] = useState<FacadeDescriptor>(facade);
+
+  // Reset the draft whenever a different board is loaded.
+  useEffect(() => {
+    setDraftFacade(facade);
+  }, [boardName]);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   // ── vertical (runtime) splitter ──────────────────────────────────────────
