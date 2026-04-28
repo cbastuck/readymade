@@ -1,0 +1,43 @@
+{
+  "boardName": "Match Filter Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Text",
+        "state": {
+          "recentInjection": "hello world",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "filter-svc",
+        "serviceId": "hookup.to/service/match-filter",
+        "serviceName": "Match Filter",
+        "state": {
+          "filterByTerms": [
+            "spam",
+            "bad",
+            "block"
+          ]
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

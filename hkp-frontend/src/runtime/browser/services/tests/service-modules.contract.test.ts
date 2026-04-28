@@ -71,6 +71,7 @@ const SERVICE_DESCRIPTOR_FILES = new Set([
   "XYPad.ts",
   "MicrophoneMonitor.ts",
   "Debounce.ts",
+  "Encode.ts",
 ]);
 
 type LoadedServiceModule = {

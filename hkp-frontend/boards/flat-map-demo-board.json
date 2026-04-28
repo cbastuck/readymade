@@ -1,0 +1,42 @@
+{
+  "boardName": "FlatMap Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Nested Arrays",
+        "state": { "recentInjection": [[1,2,3],[4,5],[6,7,8,9]] }
+      },
+      {
+        "uuid": "flatmap-svc",
+        "serviceId": "hookup.to/service/flat-map",
+        "serviceName": "FlatMap",
+        "state": { "expression": "params" }
+      },
+      {
+        "uuid": "circles-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "To Circles",
+        "state": {
+          "template": {
+            "type": "circle",
+            "x=": "params * 55 + 55",
+            "y": 200,
+            "radius": 20,
+            "color": "#6366f1"
+          }
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

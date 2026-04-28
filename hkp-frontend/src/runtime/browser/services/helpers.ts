@@ -213,6 +213,21 @@ export class Debouncer {
   }
 }
 
+/**
+ * Opens a URL in a new browser window or tab.
+ * In the Meander desktop app, delegates to the native C++ bridge
+ * (`saucer.exposed.openInBrowser`) because WebKit suppresses window.open()
+ * when the UIDelegate doesn't implement createWebViewWithConfiguration:…
+ */
+export function openInBrowser(url: string): void {
+  const saucer = (window as any).saucer;
+  if ((window as any).__MEANDER_CONFIG__ && saucer?.exposed?.openInBrowser) {
+    saucer.exposed.openInBrowser(url);
+  } else {
+    window.open(url, "_blank");
+  }
+}
+
 export function sleep(t: number): Promise<void> {
   return new Promise((resolve) => {
     setTimeout(resolve, t);

@@ -1,0 +1,36 @@
+{
+  "boardName": "State Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": { "periodic": true, "periodicValue": 33, "periodicUnit": "ms", "running": true, "start": true, "immediate": true }
+      },
+      {
+        "uuid": "hacker-svc",
+        "serviceId": "hookup.to/service/hacker/dangerous",
+        "serviceName": "Ball + Ring",
+        "state": {
+          "buffer": "const t = params.triggerCount;\nif (t === 1) {\n  return [{id:'ball',type:'circle',x:300,y:200,radius:18,color:'#6366f1'}, {id:'ring',type:'circle',x:300,y:200,radius:36,color:null,contour:{color:'#a5b4fc',lineWidth:4}}];\n}\nconst x = Math.round(Math.sin(t * 0.05) * 220 + 300);\nconst y = Math.round(Math.sin(t * 0.037 + 1) * 120 + 200);\nreturn [{ref:'ball',x,y}, {ref:'ring',x,y}];"
+        }
+      },
+      {
+        "uuid": "state-svc",
+        "serviceId": "hookup.to/service/state",
+        "serviceName": "State",
+        "state": {}
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

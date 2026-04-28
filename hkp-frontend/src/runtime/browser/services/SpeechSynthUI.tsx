@@ -35,19 +35,44 @@ export default function SpeechSynthUI(props: ServiceUIProps) {
 
   const onInit = (state: any) => {
     update(state);
-    const voices = speechSynthesis.getVoices();
-    const lang = "en-GB"; //"de-DE"
-    const voicesMatchingLang = voices.filter((voice) => voice.lang === lang);
-    const defaultVoice = voicesMatchingLang.find(
-      (voice) => voice.name === defaultVoiceName
-    );
 
-    props.service.configure({
-      voices: voicesMatchingLang,
-    });
-    if (currentVoice === null && defaultVoice) {
-      setCurrentVoice(defaultVoice);
-    }
+    let loaded = false;
+
+    const loadVoices = () => {
+      const all = speechSynthesis.getVoices();
+      if (all.length === 0) {
+        return;
+      }
+      if (loaded) {
+        return;
+      }
+      loaded = true;
+
+      // Prefer en-GB, fall back to any English, then all voices.
+      let pool = all.filter((v) => v.lang === "en-GB");
+      if (pool.length === 0) pool = all.filter((v) => v.lang.startsWith("en"));
+      if (pool.length === 0) pool = all;
+
+      const defaultVoice = pool.find((v) => v.name === defaultVoiceName) ?? pool[0];
+      props.service.configure({ voices: pool });
+      if (currentVoice === null && defaultVoice) {
+        setCurrentVoice(defaultVoice);
+      }
+    };
+
+    // Chrome/Firefox fire onvoiceschanged; Safari may have voices synchronously
+    // or never fire the event — poll as a fallback.
+    speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+
+    // Safari fallback: poll until voices appear (up to ~3 s).
+    let attempts = 0;
+    const poll = setInterval(() => {
+      loadVoices();
+      if (loaded || ++attempts >= 15) {
+        clearInterval(poll);
+      }
+    }, 200);
   };
   const onNotification = (notification: any) => update(notification);
 

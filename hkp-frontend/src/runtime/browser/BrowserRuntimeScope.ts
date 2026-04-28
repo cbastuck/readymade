@@ -26,6 +26,7 @@ export default class BrowserRuntimeScope implements RuntimeScope {
   app: AppImpl;
   registry: BrowserRegistry;
   authenticatedUser: User | null = null;
+  isDisposing: boolean = false;
   state: { [key: string]: any } = {};
 
   constructor(runtime: RuntimeDescriptor, registry: BrowserRegistry) {
@@ -136,13 +137,20 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     context?: ProcessContext | null,
     advanceBeforeProcess: boolean = true,
   ) => {
+    if (this.isDisposing) {
+      return null;
+    }
+
     const services = this.serviceInstances;
     const [svc_, position] = this.findServiceInstance(service?.uuid || null);
     if (position === -1) {
-      return console.error(
-        `Called next() in browser but could not find current service: ${service?.uuid} in scope:`,
-        this,
-      );
+      if (!this.isDisposing) {
+        return console.error(
+          `Called next() in browser but could not find current service: ${service?.uuid} in scope:`,
+          this,
+        );
+      }
+      return null;
     }
     let svc = svc_;
 
@@ -152,6 +160,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       !!services[i] && result !== null;
       ++i
     ) {
+      if (this.isDisposing) {
+        return null;
+      }
       svc = services[i];
       if (svc && !svc.bypass) {
         try {
@@ -169,7 +180,9 @@ export default class BrowserRuntimeScope implements RuntimeScope {
       }
     }
 
-    this.onResult(svc ? svc.uuid : null, result, context);
+    if (!this.isDisposing) {
+      this.onResult(svc ? svc.uuid : null, result, context);
+    }
     return result;
   };
 
@@ -181,6 +194,14 @@ export default class BrowserRuntimeScope implements RuntimeScope {
 
   processRuntimeByName = async (_name: string, _params: any) => {
     console.warn("processRuntimeByName not implemented");
+  };
+
+  configureServiceInRuntime = async (
+    _runtimeId: string,
+    _serviceUuid: string,
+    _config: any,
+  ): Promise<void> => {
+    console.warn("configureServiceInRuntime not implemented");
   };
 
   serializeState = () => {

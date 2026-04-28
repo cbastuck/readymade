@@ -2,5 +2,5 @@ build*
 hkp-rt/3rdparty/
 !build.sh
 *.afdesign*
-# macOS Finder metadata
 **/.DS_Store
+tmp

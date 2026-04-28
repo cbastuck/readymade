@@ -1,0 +1,65 @@
+{
+  "boardName": "Sound Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "pad-svc",
+        "serviceId": "hookup.to/service/trigger-pad",
+        "serviceName": "Notes",
+        "state": {
+          "padAssignments": {
+            "0": {
+              "frequency": 261,
+              "duration": 400,
+              "velocity": 0.8,
+              "label": "C4"
+            },
+            "1": {
+              "frequency": 329,
+              "duration": 400,
+              "velocity": 0.8,
+              "label": "E4"
+            },
+            "2": {
+              "frequency": 392,
+              "duration": 400,
+              "velocity": 0.8,
+              "label": "G4"
+            },
+            "3": {
+              "frequency": 523,
+              "duration": 400,
+              "velocity": 0.8,
+              "label": "C5"
+            }
+          }
+        }
+      },
+      {
+        "uuid": "sound-svc",
+        "serviceId": "hookup.to/service/sound",
+        "serviceName": "Sound",
+        "state": {
+          "generator": "synth",
+          "waveType": "sine",
+          "volume": 0.7
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "boardName": "Hash Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": "hello world",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "hash-svc",
+        "serviceId": "hookup.to/service/hash",
+        "serviceName": "Hash",
+        "state": {
+          "method": "sha-256",
+          "encoding": "hex"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

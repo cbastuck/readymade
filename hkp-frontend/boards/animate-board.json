@@ -1,0 +1,117 @@
+{
+  "boardName": "Animate",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 40,
+          "periodicUnit": "ms",
+          "running": true,
+          "start": true
+        }
+      },
+      {
+        "uuid": "stack-svc",
+        "serviceId": "hookup.to/service/stack",
+        "serviceName": "Stack",
+        "state": {
+          "input": "multiplex",
+          "output": "array",
+          "services": [
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Sun",
+              "template": {
+                "type": "text",
+                "text": "☀️",
+                "x=": "100 - (params.triggerCount / 50) % 100 + \"%\"",
+                "y": "20%"
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Cloud",
+              "template": {
+                "type": "text",
+                "text": "☁️",
+                "x=": "-12 + (params.triggerCount / 20) % 150 + \"%\"",
+                "y": "15%"
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Distant Tree",
+              "template": {
+                "type": "text",
+                "text": "🌳",
+                "x=": "-20 + (params.triggerCount / 7) % 150 + \"%\"",
+                "y": "65%"
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Near Tree",
+              "template": {
+                "type": "text",
+                "text": "🌲",
+                "x=": "-40 + (params.triggerCount / 2.5) % 150 + \"%\"",
+                "y": "85%"
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Walker",
+              "template": {
+                "type": "text",
+                "text": "🚶‍♀️",
+                "x=": "100 - min(params.triggerCount, 50) + \"%\"",
+                "y=": "round(95 - sin(params.triggerCount / 1.3) * 2) + \"%\""
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": {
+          "size": [400, 250],
+          "clearOnRedraw": true,
+          "resizable": true,
+          "capture": true
+        }
+      },
+      {
+        "uuid": "gif-svc",
+        "serviceId": "hookup.to/service/gif-encoder",
+        "serviceName": "GIF Recorder",
+        "state": {
+          "recording": false,
+          "delayMs": 40,
+          "maxFrames": 300,
+          "loop": true,
+          "autoDownload": false,
+          "filename": "animation.gif"
+        }
+      }
+    ]
+  }
+}

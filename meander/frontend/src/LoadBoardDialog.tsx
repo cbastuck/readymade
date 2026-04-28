@@ -1,82 +1,208 @@
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
 
-import { useContext } from "react";
-import { Trash } from "lucide-react";
+import { useContext, useEffect, useState } from "react";
+import { Clock, Trash } from "lucide-react";
 
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
-
-import { loadBoard } from "./actions";
-import Button from "hkp-frontend/src/ui-components/Button";
 import { BoardDescriptor } from "hkp-frontend/src/types";
+
+import { deleteBoard, loadBoard } from "./actions";
+import { getBackend } from "./backend";
+import { HistoryBoardSummary } from "./backend/types";
 
 type Props = {
   visible: boolean;
-  items: Array<string>;
   onSetVisible: (visible: boolean) => void;
-  onDeleteBoard: (saveName: string) => Promise<void>;
   onBoardLoaded?: (board: BoardDescriptor) => void;
 };
 
-export default function LoadBoardDialog({
-  visible,
-  items,
-  onSetVisible,
-  onDeleteBoard,
-  onBoardLoaded,
-}: Props) {
-  const avoidDefaultDomBehavior = (e: Event) => {
-    e.preventDefault();
-  };
+type BoardEntry = {
+  name: string;
+  isSaved: boolean;
+  latestTimestamp?: string;
+};
 
-  const boardContext = useContext(BoardCtx);
-  const onLoadSavedBoard = async (item: string) => {
-    const board = await loadBoard(item);
-    boardContext?.setBoardState(board);
-    return board;
-  };
-
-  const onLoad = async (item: string) => {
-    const board = await onLoadSavedBoard(item);
-    onSetVisible(false);
-    if (onBoardLoaded) {
-      onBoardLoaded(board);
-    }
-  };
-
-  if (!visible) {
-    return null;
+function formatTimestamp(iso?: string): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return iso;
   }
+}
+
+export default function LoadBoardDialog({ visible, onSetVisible, onBoardLoaded }: Props) {
+  const boardContext = useContext(BoardCtx);
+  const [entries, setEntries] = useState<Array<BoardEntry>>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!visible) return;
+    setLoading(true);
+    (async () => {
+      const backend = await getBackend();
+      const [saved, histories] = await Promise.all([
+        backend.fetchSavedBoards().catch(() => [] as string[]),
+        backend.fetchHistoryBoards().catch(() => [] as HistoryBoardSummary[]),
+      ]);
+      const savedSet = new Set(saved);
+      const merged: Array<BoardEntry> = [
+        ...saved.map((name) => ({ name, isSaved: true })),
+        ...histories
+          .filter((h) => !savedSet.has(h.name))
+          .map((h) => ({ name: h.name, isSaved: false, latestTimestamp: h.latestTimestamp })),
+      ];
+      merged.sort((a, b) => a.name.localeCompare(b.name));
+      setEntries(merged);
+      setLoading(false);
+    })();
+  }, [visible]);
+
+  const refresh = async () => {
+    const backend = await getBackend();
+    const [saved, histories] = await Promise.all([
+      backend.fetchSavedBoards().catch(() => [] as string[]),
+      backend.fetchHistoryBoards().catch(() => [] as HistoryBoardSummary[]),
+    ]);
+    const savedSet = new Set(saved);
+    const merged: Array<BoardEntry> = [
+      ...saved.map((name) => ({ name, isSaved: true })),
+      ...histories
+        .filter((h) => !savedSet.has(h.name))
+        .map((h) => ({ name: h.name, isSaved: false, latestTimestamp: h.latestTimestamp })),
+    ];
+    merged.sort((a, b) => a.name.localeCompare(b.name));
+    setEntries(merged);
+  };
+
+  const onLoad = async (entry: BoardEntry) => {
+    let board: BoardDescriptor;
+    if (entry.isSaved) {
+      board = await loadBoard(entry.name);
+    } else {
+      const history = await (await getBackend()).loadBoardHistory(entry.name);
+      if (history.length === 0) return;
+      board = history[0].snapshot;
+    }
+    boardContext?.setBoardState(board);
+    onSetVisible(false);
+    onBoardLoaded?.(board);
+  };
+
+  const onDelete = async (e: React.MouseEvent, entry: BoardEntry) => {
+    e.stopPropagation();
+    if (entry.isSaved) {
+      await deleteBoard(entry.name);
+    } else {
+      await (await getBackend()).clearBoardHistory(entry.name);
+    }
+    refresh();
+  };
+
+  const avoidDefaultDomBehavior = (e: Event) => e.preventDefault();
+
+  const saved = entries.filter((e) => e.isSaved);
+  const historyOnly = entries.filter((e) => !e.isSaved);
 
   return (
     <Dialog open={visible} onOpenChange={onSetVisible}>
       <DialogContent
-        className="sm:max-w-[80%] h-[80%] flex flex-col overflow-scroll"
+        className="sm:max-w-sm max-h-[70vh] flex flex-col gap-0 p-0"
         onPointerDownOutside={avoidDefaultDomBehavior}
         onInteractOutside={avoidDefaultDomBehavior}
       >
-        <h2>Select a Board</h2>
-        {items.map((item, idx) => (
-          <div
-            key={`{${item}.${idx}`}
-            className="py-4 px-10 border-b border-gray-200 hover:bg-gray-100 cursor-pointer flex flex-row"
-            onClick={() => onLoad(item)}
-          >
-            <div className="text-lg font-semibold">{item}</div>
-            <Button
-              className="ml-auto"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDeleteBoard(item);
-              }}
-            >
-              <Trash className="ml-auto"></Trash>
-            </Button>
-          </div>
-        ))}
+        <DialogHeader className="px-4 pt-4 pb-2">
+          <DialogTitle className="text-sm font-semibold">Load Board</DialogTitle>
+        </DialogHeader>
+
+        <div className="overflow-y-auto flex-1 pb-2">
+          {loading && (
+            <p className="px-4 py-3 text-sm text-gray-400">Loading…</p>
+          )}
+
+          {!loading && entries.length === 0 && (
+            <p className="px-4 py-3 text-sm text-gray-400">No saved boards found.</p>
+          )}
+
+          {!loading && saved.length > 0 && (
+            <>
+              <p className="px-4 py-1 text-xs font-medium text-gray-400 uppercase tracking-wide">
+                Saved
+              </p>
+              {saved.map((entry) => (
+                <Row
+                  key={entry.name}
+                  entry={entry}
+                  onLoad={onLoad}
+                  onDelete={onDelete}
+                />
+              ))}
+            </>
+          )}
+
+          {!loading && historyOnly.length > 0 && (
+            <>
+              <p className="px-4 py-1 text-xs font-medium text-amber-500 uppercase tracking-wide mt-2">
+                History (unsaved)
+              </p>
+              {historyOnly.map((entry) => (
+                <Row
+                  key={entry.name}
+                  entry={entry}
+                  onLoad={onLoad}
+                  onDelete={onDelete}
+                />
+              ))}
+            </>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function Row({
+  entry,
+  onLoad,
+  onDelete,
+}: {
+  entry: BoardEntry;
+  onLoad: (e: BoardEntry) => void;
+  onDelete: (ev: React.MouseEvent, e: BoardEntry) => void;
+}) {
+  return (
+    <div
+      className="flex items-center gap-2 px-4 py-1.5 hover:bg-gray-50 cursor-pointer group"
+      onClick={() => onLoad(entry)}
+    >
+      {!entry.isSaved && (
+        <Clock className="shrink-0 text-amber-400" size={13} />
+      )}
+      <span className={`flex-1 text-sm truncate ${entry.isSaved ? "" : "text-amber-700"}`}>
+        {entry.name}
+      </span>
+      {entry.latestTimestamp && (
+        <span className="text-xs text-gray-400 shrink-0">
+          {formatTimestamp(entry.latestTimestamp)}
+        </span>
+      )}
+      <button
+        className="shrink-0 opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+        onClick={(e) => onDelete(e, entry)}
+        title={entry.isSaved ? "Delete saved board" : "Clear history"}
+      >
+        <Trash size={13} />
+      </button>
+    </div>
   );
 }

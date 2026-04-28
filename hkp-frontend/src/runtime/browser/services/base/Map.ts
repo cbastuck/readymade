@@ -165,7 +165,9 @@ class Map extends ServiceBase<State> {
       return params;
     }
 
-    return this.mapper(params);
+    const result = await this.mapper(params);
+
+    return result;
   };
 }
 

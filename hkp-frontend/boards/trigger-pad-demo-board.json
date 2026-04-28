@@ -1,0 +1,47 @@
+{
+  "boardName": "Trigger Pad Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "pad-svc",
+        "serviceId": "hookup.to/service/trigger-pad",
+        "serviceName": "Trigger Pad",
+        "state": {
+          "padAssignments": {
+            "0": {
+              "label": "Alpha",
+              "color": "#ef4444"
+            },
+            "1": {
+              "label": "Beta",
+              "color": "#f59e0b"
+            },
+            "2": {
+              "label": "Gamma",
+              "color": "#22c55e"
+            },
+            "3": {
+              "label": "Delta",
+              "color": "#6366f1"
+            }
+          }
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

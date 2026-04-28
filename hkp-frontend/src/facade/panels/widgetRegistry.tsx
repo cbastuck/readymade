@@ -7,6 +7,8 @@ import { TextInputRenderer } from "./renderers/TextInputRenderer";
 import { QrCodeRenderer } from "./renderers/QrCodeRenderer";
 import { FilePickRenderer } from "./renderers/FilePickRenderer";
 import { MessageListRenderer } from "./renderers/MessageListRenderer";
+import { CanvasRenderer } from "./renderers/CanvasRenderer";
+import { XYPadRenderer } from "./renderers/XYPadRenderer";
 
 export type PanelContext = {
   knobValues: Record<string, number>;
@@ -30,4 +32,6 @@ export const widgetRegistry: Record<
   "qr-code": QrCodeRenderer,
   "file-pick": FilePickRenderer,
   "message-list": MessageListRenderer,
+  canvas: CanvasRenderer,
+  "xy-pad": XYPadRenderer,
 };

@@ -1,0 +1,28 @@
+{
+  "boardName": "Microphone Monitor Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "audio-in-svc",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Audio Input",
+        "state": { "timeslice": 100 }
+      },
+      {
+        "uuid": "mic-svc",
+        "serviceId": "hookup.to/service/microphone-monitor",
+        "serviceName": "Microphone Monitor",
+        "state": {}
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

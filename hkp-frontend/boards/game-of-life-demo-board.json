@@ -1,0 +1,34 @@
+{
+  "boardName": "Game of Life Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": { "periodic": true, "periodicValue": 150, "periodicUnit": "ms", "running": true, "start": true, "immediate": true }
+      },
+      {
+        "uuid": "gol-svc",
+        "serviceId": "hookup.to/service/game-of-life",
+        "serviceName": "Game of Life",
+        "state": {}
+      },
+      {
+        "uuid": "renderer-svc",
+        "serviceId": "hookup.to/service/game-of-life-renderer",
+        "serviceName": "Renderer",
+        "state": { "cellSize": 8, "canvasWidth": 600, "canvasHeight": 400 }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

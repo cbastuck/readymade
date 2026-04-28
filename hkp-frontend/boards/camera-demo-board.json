@@ -1,0 +1,28 @@
+{
+  "boardName": "Camera Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": { "periodic": true, "periodicValue": 500, "periodicUnit": "ms", "running": true, "start": true, "immediate": true }
+      },
+      {
+        "uuid": "camera-svc",
+        "serviceId": "hookup.to/service/camera",
+        "serviceName": "Camera",
+        "state": { "captureFormat": "image/jpeg" }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [640, 480] }
+      }
+    ]
+  }
+}

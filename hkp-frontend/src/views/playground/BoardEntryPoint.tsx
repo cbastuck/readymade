@@ -15,9 +15,10 @@ type Props = {
   isLoading: boolean;
   showLoginRequired: boolean;
   boardContext: BoardContextState;
-  boardName: string;
+  requestedBoardName?: string;
   description: string;
   onChangeBoardname: (newName: string) => void;
+  emptySlot?: React.ReactNode;
 };
 
 export default function BoardEntryPoint({
@@ -25,11 +26,13 @@ export default function BoardEntryPoint({
   isLoading,
   showLoginRequired,
   boardContext,
-  boardName,
+  requestedBoardName,
   description,
   onChangeBoardname,
+  emptySlot,
 }: Props) {
   const facade = boardContext.facade;
+  const boardName = boardContext.boardName || requestedBoardName || "";
   const isPlaygroundEmpty =
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
@@ -60,6 +63,13 @@ export default function BoardEntryPoint({
   }
 
   if (isPlaygroundEmpty) {
+    if (emptySlot) {
+      return (
+        <div style={t.w100} className={className}>
+          {emptySlot}
+        </div>
+      );
+    }
     return (
       <div style={t.w100} className={className}>
         <div style={s(t.fs16, t.ls1, t.tc)}>

@@ -33,7 +33,8 @@ transformations.
 | `method` | `string` | `"GET"` | HTTP method: `GET`, `POST`, `PUT`, `DELETE`, … |
 | `headers` | `Record<string, string>` | `{}` | Request headers (static or dynamic with `=` suffix) |
 | `body` | `string` | `""` | Request body (raw JSON string or plain text) |
-| `bodyFormat` | `"json" \| "text"` | `"json"` | How `body` is parsed before sending |
+| `bodyFormat` | `"json" \| "text" \| "expression"` | `"text"` | How the request body is produced (see below) |
+| `bodyExpression` | `string` | `""` | Expression evaluated against `params` to produce the body; used when `bodyFormat` is `"expression"` |
 
 ### Dynamic URLs and headers
 
@@ -52,16 +53,21 @@ expressions with `params` bound to the current input:
 
 ### `body` and `bodyFormat`
 
-When `bodyFormat` is `"json"`, the `body` string is parsed as JSON and
-merged with the incoming pipeline params:
+| Value | Behaviour |
+|---|---|
+| `"text"` (default) | `body` is sent as a plain string |
+| `"json"` | `body` is parsed as JSON. If the incoming data is an object, it is merged: `{ ...parsedBody, ...params }` |
+| `"expression"` | `bodyExpression` is evaluated as a Map-style expression with `params` bound to the incoming value. The result becomes the request body. |
 
+Example using `"json"` mode:
 ```json
 { "body": "{\"source\": \"hkp\"}", "bodyFormat": "json" }
 ```
 
-If the incoming data is an object, it is merged: `{ "source": "hkp", ...params }`.
-
-When `bodyFormat` is `"text"`, the body is sent as a plain string.
+Example using `"expression"` mode to build a dynamic body:
+```json
+{ "bodyFormat": "expression", "bodyExpression": "{ query: params.search, limit: 10 }" }
+```
 
 ---
 

@@ -1,4 +1,8 @@
-import { RuntimeClass, RuntimeDescriptor, RuntimeConfiguration } from "../types";
+import {
+  RuntimeClass,
+  RuntimeDescriptor,
+  RuntimeConfiguration,
+} from "../types";
 import { reorderRuntime } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
 
@@ -31,9 +35,7 @@ export function isRuntimeInScopeDefault(
   const ownedRuntimes = JSON.parse(
     localStorage.getItem(`runtimes-${board}`) || "[]",
   );
-  return !!ownedRuntimes.find(
-    (runtimeId: string) => runtimeId === runtime.id,
-  );
+  return !!ownedRuntimes.find((runtimeId: string) => runtimeId === runtime.id);
 }
 
 export async function addRuntime(

@@ -8,6 +8,8 @@ export const allowedServices = [
   "hookup.to/service/canvas",
   "hookup.to/service/map",
   "hookup.to/service/filter",
+  "hookup.to/shared/batcher",
+  "hookup.to/service/switch",
   "hookup.to/service/camera",
   "hookup.to/service/injector",
   "hookup.to/service/trigger-pad",
@@ -23,6 +25,9 @@ export const allowedServices = [
   "hookup.to/service/downloader",
   "hookup.to/service/mp3encoder",
   "hookup.to/service/reduce",
+  "hookup.to/service/buffer",
+  "hookup.to/service/group-by",
+  "hookup.to/service/match-filter",
   "hookup.to/service/chart",
   "hookup.to/service/spotify",
   "hookup.to/service/github-source",
@@ -54,6 +59,10 @@ export const allowedServices = [
   "sub-service",
   "hookup.to/service/lz-compress",
   "hookup.to/service/stopper",
+  "hookup.to/service/sort",
+  "hookup.to/service/limit",
+  "hookup.to/service/flat-map",
+  "hookup.to/service/smooth",
 ];
 
 export default class BrowserRegistry {
@@ -61,7 +70,7 @@ export default class BrowserRegistry {
 
   static async create(
     bundles?: Bundles,
-    user?: User
+    user?: User,
   ): Promise<BrowserRegistry> {
     const registry = new BrowserRegistry();
     registry.availableServices = defaultRegistry;
@@ -105,7 +114,7 @@ export default class BrowserRegistry {
   allowedServices() {
     const allowAllServices = true;
     return this.availableServices.filter(
-      (s) => allowAllServices || allowedServices.indexOf(s.serviceId) !== -1
+      (s) => allowAllServices || allowedServices.indexOf(s.serviceId) !== -1,
     );
   }
 

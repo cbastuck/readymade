@@ -42,7 +42,8 @@ echo "Preparing frontend dependencies"
 run_step "hkp-python" "hkp-python" ./run_tests.sh
 run_step "hkp-node" "hkp-node" npm test
 run_step "hkp-rt" "hkp-rt" ./run-tests.sh
-run_step "hkp-frontend" "hkp-frontend" npm test
+run_step "hkp-frontend demo boards" "hkp-frontend" npm run test -- src/runtime/browser/tests/demo-boards.regression.test.tsx
+run_step "hkp-frontend" "hkp-frontend" npm run test -- --exclude src/runtime/browser/tests/demo-boards.regression.test.tsx
 
 echo
 echo "========================================"

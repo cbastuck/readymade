@@ -1,0 +1,57 @@
+{
+  "boardName": "Hello World",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 1,
+          "periodicUnit": "s",
+          "running": true,
+          "start": true
+        }
+      },
+      {
+        "uuid": "map-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map",
+        "state": {
+          "template": {
+            "type": "text",
+            "y": "45%",
+            "textTransform": "uppercase-spacing-1",
+            "font": {
+              "weight": "lighter",
+              "size": "100%",
+              "family": "Helvetica Neue, sans-serif"
+            },
+            "color": "black",
+            "text=": "\"Hello World #\" + params.triggerCount"
+          }
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": {
+          "fullscreen": false,
+          "size": [400, 250],
+          "resizable": false,
+          "clearOnRedraw": true
+        }
+      }
+    ]
+  }
+}

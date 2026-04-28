@@ -1,0 +1,47 @@
+{
+  "boardName": "Decrypt Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Plaintext",
+        "state": {
+          "recentInjection": "secret message",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "encrypt-svc",
+        "serviceId": "hookup.to/service/encrypt",
+        "serviceName": "Encrypt",
+        "state": {
+          "secret": "demo-key-123"
+        }
+      },
+      {
+        "uuid": "decrypt-svc",
+        "serviceId": "hookup.to/service/decrypt",
+        "serviceName": "Decrypt",
+        "state": {
+          "secret": "demo-key-123"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

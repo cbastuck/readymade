@@ -207,7 +207,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
         fetchBoard={fetchBoard}
         runtimeApis={runtimeApis}
         user={user}
-        boardName="board-service-board"
+        initialBoardName="board-service-board"
         availableRuntimeEngines={[]}
       >
         <BoardServiceInner

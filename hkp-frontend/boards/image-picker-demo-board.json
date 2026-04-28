@@ -1,0 +1,22 @@
+{
+  "boardName": "Image Picker Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "picker-svc",
+        "serviceId": "hookup.to/service/image-picker",
+        "serviceName": "Image Picker",
+        "state": {}
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

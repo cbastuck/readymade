@@ -68,16 +68,51 @@
               "uuid": "audio-branch",
               "pipeline": [
                 {
-                  "instanceId": "gol-notes",
-                  "serviceId": "hookup.to/service/game-of-life-notes",
-                  "serviceName": "Game of Life Notes",
-                  "state": { "maxNotes": 6 }
+                  "instanceId": "gol-extract",
+                  "serviceId": "hookup.to/service/map",
+                  "serviceName": "Extract Objects",
+                  "state": { "template": { "=": "params.objects" } }
+                },
+                {
+                  "instanceId": "gol-enrich",
+                  "serviceId": "hookup.to/service/map",
+                  "serviceName": "Enrich",
+                  "state": {
+                    "template": {
+                      "alive=": "flatSum(params.matrix)",
+                      "centerCol=": "params.col + (params.matrix[0].length - 1) / 2"
+                    }
+                  }
+                },
+                {
+                  "instanceId": "gol-sort",
+                  "serviceId": "hookup.to/service/sort",
+                  "serviceName": "Sort",
+                  "state": { "by": "alive", "dir": "desc" }
+                },
+                {
+                  "instanceId": "gol-limit",
+                  "serviceId": "hookup.to/service/limit",
+                  "serviceName": "Limit",
+                  "state": { "n": 6 }
+                },
+                {
+                  "instanceId": "gol-to-notes",
+                  "serviceId": "hookup.to/service/map",
+                  "serviceName": "To Notes",
+                  "state": {
+                    "template": {
+                      "frequency=": "at([130.81, 146.83, 164.81, 196, 220, 261.63, 293.66, 329.63, 392, 440, 523.25, 587.33, 659.25, 783.99, 880], params.centerCol)",
+                      "velocity=": "min(1, params.alive / 40)",
+                      "duration": 90
+                    }
+                  }
                 },
                 {
                   "instanceId": "gol-synth",
-                  "serviceId": "hookup.to/service/game-of-life-synth",
-                  "serviceName": "Game of Life Synth",
-                  "state": { "volume": 0.25, "waveType": "sawtooth" }
+                  "serviceId": "hookup.to/service/sound",
+                  "serviceName": "Sound",
+                  "state": { "volume": 0.25, "waveType": "sawtooth", "generator": "synth" }
                 }
               ]
             }

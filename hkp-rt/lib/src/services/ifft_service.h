@@ -58,13 +58,28 @@ public:
     auto j = getJSONFromData(data);
     if (j && j->is_array() && j->size() > 0) 
     {
-      // If we have an array, we assume it's a spectrum to be transformed back to time domain
+      // If we have an array, we assume it's a spectrum to be transformed back to time domain.
+      // Two wire formats are supported:
+      //   complex mode:    [{re, im}, ...] — full complex spectrum, phase preserved → artifact-free
+      //   magnitude mode:  [mag0, mag1, ...] — magnitudes only, zero phase assumed → artifacts expected
       std::vector<complexf> spectrum;
-      for (const auto& value : *j) 
+      if ((*j)[0].is_object())
       {
-        if (value.is_number()) 
+        // Complex mode: sent by FFT with outputMode="complex"
+        for (const auto& value : *j)
         {
-          spectrum.emplace_back(value.get<float>(), 0.0f); // Convert magnitude to complex number
+          spectrum.emplace_back(value.value("re", 0.0f), value.value("im", 0.0f));
+        }
+      }
+      else
+      {
+        // Magnitude mode: legacy / magnitude-only path, zero phase
+        for (const auto& value : *j)
+        {
+          if (value.is_number())
+          {
+            spectrum.emplace_back(value.get<float>(), 0.0f);
+          }
         }
       }
 

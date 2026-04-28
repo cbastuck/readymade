@@ -42,7 +42,7 @@ any external system.
 | `mode` | `"websocket" \| "post"` | `"websocket"` | Delivery mechanism |
 | `flow` | `"stop" \| "pass"` | `"stop"` | Whether to continue the pipeline after sending |
 | `headers` | `Record<string, string>` | `{}` | HTTP headers (for `post` mode) |
-| `bypass` | `boolean` | `false` | Skip sending; disconnect WebSocket if open |
+| `bypass` | `boolean` | `true` | Skip sending; disconnect WebSocket if open. Output starts bypassed by default and must be explicitly activated. |
 
 ### `flow`
 

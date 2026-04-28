@@ -1,0 +1,54 @@
+{
+  "boardName": "Aggregator Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 300,
+          "periodicUnit": "ms",
+          "running": true,
+          "start": true,
+          "immediate": true
+        }
+      },
+      {
+        "uuid": "cat-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Random Category",
+        "state": {
+          "template": {
+            "cat=": "at(['A','B','C'], round(rand() * 2))"
+          }
+        }
+      },
+      {
+        "uuid": "agg-svc",
+        "serviceId": "hookup.to/service/aggregator",
+        "serviceName": "Aggregator",
+        "state": {
+          "interval": 2000,
+          "property": "cat"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

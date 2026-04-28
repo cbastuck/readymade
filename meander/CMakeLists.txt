@@ -29,6 +29,8 @@ add_executable(
   backend/schemeHandler.cpp
   backend/router.cpp
   backend/frontendServer.cpp
+  backend/popupWindow.cpp
+  backend/serviceRedirectHandler.cpp
 )
 
 

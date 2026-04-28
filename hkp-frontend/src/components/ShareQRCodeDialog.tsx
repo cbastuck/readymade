@@ -1,7 +1,6 @@
 import CustomDialog from "hkp-frontend/src/ui-components/CustomDialog";
 
 import QR from "./QR";
-import Copyable from "./Copyable";
 
 type Props = {
   title?: string;
@@ -29,8 +28,16 @@ export default function ShareQRCodeDialog({
       <div className="h-full w-full flex flex-col items-center">
         {url ? (
           <>
+            <a
+              href={url}
+              target="_blank"
+              rel="noreferrer"
+              className="block w-full px-10 overflow-hidden text-ellipsis whitespace-nowrap"
+            >
+              {url}
+            </a>
+
             <QR url={url || ""} />
-            <Copyable label="URL" value={url} />
           </>
         ) : (
           <div>Empty URL</div>

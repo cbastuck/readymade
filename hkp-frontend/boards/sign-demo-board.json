@@ -1,0 +1,41 @@
+{
+  "boardName": "Sign Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Message",
+        "state": {
+          "recentInjection": "hello world",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "sign-svc",
+        "serviceId": "hookup.to/service/sign",
+        "serviceName": "Sign",
+        "state": {
+          "method": "HmacSHA256",
+          "encoding": "hex",
+          "secret": "demo-secret"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

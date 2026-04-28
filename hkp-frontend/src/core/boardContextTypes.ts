@@ -18,6 +18,7 @@ import { BoardContextState, EngineState } from "../BoardContext";
 
 export type Props = {
   user: User | null;
+  initialBoardName?: string;
   boardName?: string;
   children: JSX.Element | JSX.Element[];
   availableRuntimeEngines?: Array<RuntimeClass>;
@@ -41,6 +42,7 @@ export type Props = {
   serializeBoard?: (desc: BoardDescriptor) => Promise<BoardDescriptor | null>;
   onUpdateBoardState?: (updated: BoardDescriptor) => void;
   onLoad?: (context: BoardContextState) => void;
+  onBoardInfrastructureChange?: (board: BoardDescriptor) => void;
 };
 
 export type BoardStateRefs = {

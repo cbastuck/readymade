@@ -39,6 +39,12 @@ public:
 
   json configure(Data data) override
   {
+    auto buf = getJSONFromData(data);
+    if (buf)
+    {
+      updateIfNeeded(m_windowLength, (*buf)["windowLength"]);
+      updateIfNeeded(m_outputMode, (*buf)["outputMode"]);
+    }
     return Service::configure(data);
   }
 
@@ -49,7 +55,7 @@ public:
 
   json getState() const override
   {
-    auto state = json{{ "windowLength", m_windowLength }};
+    auto state = json{{ "windowLength", m_windowLength }, { "outputMode", m_outputMode }};
     return Service::mergeBypassState(state);
   }
 
@@ -58,32 +64,30 @@ public:
     auto buffer = getRingBufferFromData(data);
     if (buffer)
     {
-      auto numSamples = buffer->availableCount();
-      if (numSamples < m_windowLength) 
+      std::vector<float> samples;
+      if (buffer->consumeExact(samples, m_windowLength) == 0)
       {
-        std::cout << "Not enough samples yet for FFT, got: " << numSamples << std::endl;
         return Null();
-      }
-      
-      if ((numSamples & (numSamples - 1)) != 0) 
-      {
-        std::cout << "FFT input size must be a power of 2, got: " << numSamples << std::endl;
-        return Null(); // or throw an exception 
-      }
-
-      std::vector<float> samples(numSamples);
-      buffer->consumeAvailable(samples, true);
-      if (samples.size() > m_windowLength) 
-      {
-        std::cout << "Resampling down from " << samples.size() << " to " << m_windowLength << std::endl;
-        resample_down(samples, m_windowLength);
       }
 
       std::vector<complexf> spectrum = fft(samples);
       auto result = json::array();
-      for (unsigned int i=0, n=numSamples/2; i<n ; ++i) 
+      if (m_outputMode == "complex")
       {
-        result.push_back(std::abs(spectrum[i])); // Store magnitude of each complex number
+        // Full complex spectrum: [{re, im}, ...] for all N bins.
+        // Preserves phase so the IFFT can reconstruct without artifacts.
+        for (const auto& bin : spectrum)
+        {
+          result.push_back({{"re", bin.real()}, {"im", bin.imag()}});
+        }
+      }
+      else
+      {
+        // Default: magnitude only (N/2 bins, phase discarded).
+        for (unsigned int i = 0, n = m_windowLength / 2; i < n; ++i)
+        {
+          result.push_back(std::abs(spectrum[i]));
+        }
       }
       return Data(result);
     }
@@ -180,6 +184,7 @@ inline void resample_down(std::vector<float>& data, size_t new_size)
   data = std::move(result);
 }
   unsigned int m_windowLength; // Length of the FFT window
+  std::string m_outputMode = "magnitude"; // "magnitude" | "complex"
 };
 
 }

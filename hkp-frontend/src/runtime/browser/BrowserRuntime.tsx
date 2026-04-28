@@ -99,6 +99,17 @@ const BrowserRuntime = forwardRef<BrowserRuntimeHandle, Props>(function BrowserR
     scope.onResult = onResult;
     scope.processRuntimeByName = props.processRuntimeByName;
     scope.authenticatedUser = user;
+    scope.configureServiceInRuntime = async (runtimeId, serviceUuid, config) => {
+      const targetScope = context?.scopes[runtimeId] as BrowserRuntimeScope | undefined;
+      if (!targetScope) {
+        console.warn(`configureServiceInRuntime: no scope for runtime "${runtimeId}"`);
+        return;
+      }
+      const [svc] = targetScope.findServiceInstance(serviceUuid);
+      if (svc?.configure) {
+        await svc.configure(config);
+      }
+    };
   }
 
   const onAction = (action: ServiceAction) => {

@@ -1,0 +1,22 @@
+{
+  "boardName": "QR Code Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "URL",
+        "state": { "recentInjection": "https://hookup.to", "plainText": true }
+      },
+      {
+        "uuid": "qr-svc",
+        "serviceId": "hookup.to/service/qr-code",
+        "serviceName": "QR Code",
+        "state": {}
+      }
+    ]
+  }
+}

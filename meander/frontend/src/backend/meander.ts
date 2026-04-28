@@ -1,6 +1,12 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { Remote } from "../types";
-import { BackendAdapter } from "./types";
+import {
+  BackendAdapter,
+  BoardHistoryEntry,
+  HistoryBoardSummary,
+} from "./types";
+
+const encodePathSegment = (value: string) => encodeURIComponent(value);
 
 /**
  * Backend implementation for the Meander desktop app.
@@ -14,14 +20,14 @@ export const meanderBackend: BackendAdapter = {
   },
 
   async loadBoard(boardName: string): Promise<BoardDescriptor> {
-    const res = await fetch(`hkp://boards/${boardName}`);
+    const res = await fetch(`hkp://boards/${encodePathSegment(boardName)}`);
     if (!res.ok) throw new Error(`Failed to load board: ${res.statusText}`);
     const board = await res.json();
     return board.boardName ? board : { ...board, boardName };
   },
 
   async saveBoard(name: string, payload: BoardDescriptor): Promise<void> {
-    const res = await fetch(`hkp://boards/${name}`, {
+    const res = await fetch(`hkp://boards/${encodePathSegment(name)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -30,7 +36,9 @@ export const meanderBackend: BackendAdapter = {
   },
 
   async deleteBoard(name: string): Promise<void> {
-    const res = await fetch(`hkp://boards/${name}`, { method: "DELETE" });
+    const res = await fetch(`hkp://boards/${encodePathSegment(name)}`, {
+      method: "DELETE",
+    });
     if (!res.ok) throw new Error(`Failed to delete board: ${res.statusText}`);
   },
 
@@ -55,5 +63,36 @@ export const meanderBackend: BackendAdapter = {
       body: JSON.stringify({ name }),
     });
     if (!res.ok) throw new Error(`Failed to delete remote: ${res.statusText}`);
+  },
+
+  async fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>> {
+    const res = await fetch("hkp://history/");
+    if (!res.ok) return [];
+    return res.json();
+  },
+
+  async pushBoardSnapshot(
+    boardName: string,
+    entry: BoardHistoryEntry,
+  ): Promise<void> {
+    const res = await fetch(`hkp://history/${encodePathSegment(boardName)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(entry),
+    });
+    if (!res.ok)
+      throw new Error(`Failed to push board snapshot: ${res.statusText}`);
+  },
+
+  async loadBoardHistory(boardName: string): Promise<Array<BoardHistoryEntry>> {
+    const res = await fetch(`hkp://history/${encodePathSegment(boardName)}`);
+    if (!res.ok) return [];
+    return res.json();
+  },
+
+  async clearBoardHistory(boardName: string): Promise<void> {
+    await fetch(`hkp://history/${encodePathSegment(boardName)}`, {
+      method: "DELETE",
+    });
   },
 };

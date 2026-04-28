@@ -9,26 +9,26 @@ import { DEFAULT_GENERATED_BOARD } from "hkp-frontend/src/runtime/browser/servic
 import { Remote } from "./types";
 import { getBackend } from "./backend";
 
-export const loadBoard = (boardName: string): Promise<BoardDescriptor> =>
-  getBackend().loadBoard(boardName);
+export const loadBoard = async (boardName: string): Promise<BoardDescriptor> =>
+  (await getBackend()).loadBoard(boardName);
 
-export const deleteBoard = (name: string): Promise<void> =>
-  getBackend().deleteBoard(name);
+export const deleteBoard = async (name: string): Promise<void> =>
+  (await getBackend()).deleteBoard(name);
 
-export const saveBoard = (name: string, payload: BoardDescriptor): Promise<void> =>
-  getBackend().saveBoard(name, payload);
+export const saveBoard = async (name: string, payload: BoardDescriptor): Promise<void> =>
+  (await getBackend()).saveBoard(name, payload);
 
-export const getRemotes = (): Promise<Array<Remote>> =>
-  getBackend().getRemotes();
+export const getRemotes = async (): Promise<Array<Remote>> =>
+  (await getBackend()).getRemotes();
 
-export const saveRemote = (remote: Remote): Promise<void> =>
-  getBackend().saveRemote(remote);
+export const saveRemote = async (remote: Remote): Promise<void> =>
+  (await getBackend()).saveRemote(remote);
 
-export const deleteRemote = (name: string): Promise<void> =>
-  getBackend().deleteRemote(name);
+export const deleteRemote = async (name: string): Promise<void> =>
+  (await getBackend()).deleteRemote(name);
 
-export const fetchSavedBoards = (): Promise<Array<string>> =>
-  getBackend().fetchSavedBoards();
+export const fetchSavedBoards = async (): Promise<Array<string>> =>
+  (await getBackend()).fetchSavedBoards();
 
 function isBoardDescriptorEmpty(board: any): boolean {
   if (!board || typeof board !== "object") {
@@ -56,7 +56,7 @@ function isBoardDescriptorEmpty(board: any): boolean {
 }
 
 export function createMenuItems(
-  setLoadBoardItems: (items: Array<string>) => void,
+  openLoadDialog: () => void,
   setBoardSource: (source: string) => void,
 ) {
   return (boardContext: BoardContextState): Array<BoardMenuItem> => [
@@ -84,10 +84,7 @@ export function createMenuItems(
     {
       title: "Load Board",
       description: "Restore a saved board",
-      onClick: async () => {
-        const items = await fetchSavedBoards();
-        setLoadBoardItems(items);
-      },
+      onClick: () => openLoadDialog(),
       disabled: false,
     },
     {

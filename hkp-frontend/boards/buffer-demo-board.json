@@ -1,0 +1,53 @@
+{
+  "boardName": "Buffer Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 300,
+          "periodicUnit": "ms",
+          "running": true,
+          "start": true,
+          "immediate": true
+        }
+      },
+      {
+        "uuid": "item-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Item",
+        "state": {
+          "template": {
+            "=": "triggerCount"
+          }
+        }
+      },
+      {
+        "uuid": "buffer-svc",
+        "serviceId": "hookup.to/service/buffer",
+        "serviceName": "Buffer",
+        "state": {
+          "capacity": 5
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

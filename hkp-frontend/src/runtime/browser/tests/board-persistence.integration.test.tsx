@@ -6,7 +6,11 @@ import BoardProvider, {
   BoardCtx,
   BoardContextState,
 } from "hkp-frontend/src/BoardContext";
-import { RuntimeApiMap, RuntimeDescriptor, ServiceDescriptor } from "hkp-frontend/src/types";
+import {
+  RuntimeApiMap,
+  RuntimeDescriptor,
+  ServiceDescriptor,
+} from "hkp-frontend/src/types";
 
 function ContextProbe({
   onChange,
@@ -181,8 +185,16 @@ describe("board persistence integration", () => {
   describe("clearBoard", () => {
     it("removes all runtimes and clears services", async () => {
       const services: ServiceDescriptor[] = [
-        { uuid: "svc-1", serviceId: "hookup.to/service/input", serviceName: "Input" },
-        { uuid: "svc-2", serviceId: "hookup.to/service/output", serviceName: "Output" },
+        {
+          uuid: "svc-1",
+          serviceId: "hookup.to/service/input",
+          serviceName: "Input",
+        },
+        {
+          uuid: "svc-2",
+          serviceId: "hookup.to/service/output",
+          serviceName: "Output",
+        },
       ];
       const api = makeApi();
       const { getCtx } = renderBoard(api, services);
@@ -214,7 +226,11 @@ describe("board persistence integration", () => {
     it("calls onClearBoard prop with prior board state", async () => {
       const onClearBoard = vi.fn(async () => {});
       const services: ServiceDescriptor[] = [
-        { uuid: "svc-x", serviceId: "hookup.to/service/input", serviceName: "Input" },
+        {
+          uuid: "svc-x",
+          serviceId: "hookup.to/service/input",
+          serviceName: "Input",
+        },
       ];
       const api = makeApi();
       const { getCtx } = renderBoard(api, services, { onClearBoard });
@@ -242,6 +258,36 @@ describe("board persistence integration", () => {
 
       await waitFor(() => {
         expect(getCtx()!.boardName).toBe("Fresh Start");
+      });
+    });
+
+    it("clears an existing facade", async () => {
+      const api = makeApi();
+      const { getCtx } = renderBoard(api);
+      await waitFor(() => expect(getCtx()).toBeTruthy());
+
+      await act(async () => {
+        await getCtx()!.setBoardState({
+          boardName: "Facade Board",
+          runtimes: [],
+          services: {},
+          facade: {
+            layout: "single",
+            panels: [],
+          } as any,
+        } as any);
+      });
+
+      await waitFor(() => {
+        expect(getCtx()!.facade).toBeTruthy();
+      });
+
+      await act(async () => {
+        await getCtx()!.clearBoard("Empty Board");
+      });
+
+      await waitFor(() => {
+        expect(getCtx()!.facade).toBeUndefined();
       });
     });
   });

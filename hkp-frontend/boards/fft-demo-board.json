@@ -1,0 +1,28 @@
+{
+  "boardName": "FFT Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "audio-in-svc",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Audio Input",
+        "state": { "timeslice": 100 }
+      },
+      {
+        "uuid": "fft-svc",
+        "serviceId": "hookup.to/service/fft",
+        "serviceName": "FFT",
+        "state": { "fftSize": 2048, "windowFunction": "hann", "outputFormat": "magnitude" }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

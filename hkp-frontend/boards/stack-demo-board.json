@@ -1,0 +1,61 @@
+{
+  "boardName": "Stack Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": { "periodic": true, "periodicValue": 1, "periodicUnit": "s", "running": true, "start": true, "immediate": true }
+      },
+      {
+        "uuid": "stack-svc",
+        "serviceId": "hookup.to/service/stack",
+        "serviceName": "Stack",
+        "state": {
+          "input": "multiplex",
+          "output": "array",
+          "services": [
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Circle",
+              "instanceId": "circle-sub",
+              "state": {
+                "template": {
+                  "type": "circle",
+                  "x=": "round(sin(triggerCount * 0.4) * 200 + 300)",
+                  "y": 200,
+                  "radius": 24,
+                  "color": "#6366f1"
+                }
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Label",
+              "instanceId": "label-sub",
+              "state": {
+                "template": {
+                  "type": "text",
+                  "text=": "concat('tick #', triggerCount)",
+                  "y": "78%",
+                  "color": "#64748b",
+                  "font": { "size": "7%", "family": "monospace" }
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

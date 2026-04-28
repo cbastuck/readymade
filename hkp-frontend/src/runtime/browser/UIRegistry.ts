@@ -19,14 +19,24 @@ import FilterUI from "./services/FilterUI";
 import FetcherUI from "./services/FetcherUI";
 import OllamaPromptUI from "./services/OllamaPromptUI";
 import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
+import ConfiguratorUI from "./services/ConfiguratorUI";
 import ImagePickerDescriptor from "./services/ImagePicker";
 import ChunkedFileProviderDescriptor from "./services/ChunkedFileProvider";
 import AsciiArtDescriptor from "./services/AsciiArt";
 import GameOfLifeDescriptor from "./services/GameOfLife";
 import GameOfLifeRendererDescriptor from "./services/GameOfLifeRenderer";
-import GameOfLifeToNotesDescriptor from "./services/GameOfLifeToNotes";
-import GameOfLifeSynthDescriptor from "./services/GameOfLifeSynth";
+import SortDescriptor from "./services/Sort";
+import LimitDescriptor from "./services/Limit";
+import FlatMapDescriptor from "./services/FlatMap";
+import SmoothDescriptor from "./services/Smooth";
 import HttpRelayClientDescriptor from "./services/HttpRelayClient";
+import AudioInputDescriptor from "./services/AudioInput";
+import AudioOutputDescriptor from "./services/AudioOutput";
+import SoundDescriptor from "./services/Sound";
+import EncryptDescriptor from "./services/Encrypt";
+import DecryptDescriptor from "./services/Decrypt";
+import HashDescriptor from "./services/Hash";
+import SignDescriptor from "./services/Sign";
 
 export function findServiceUI(serviceId: string): ServiceUIComponent | null {
   switch (serviceId) {
@@ -73,6 +83,8 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return OllamaPromptUI;
     case "sub-service":
       return BrowserSubServiceUI;
+    case "hookup.to/service/configurator":
+      return ConfiguratorUI;
     case "hookup.to/service/image-picker":
       return ImagePickerDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/chunked-file-provider":
@@ -83,12 +95,30 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return GameOfLifeDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/game-of-life-renderer":
       return GameOfLifeRendererDescriptor.createUI as unknown as ServiceUIComponent;
-    case "hookup.to/service/game-of-life-notes":
-      return GameOfLifeToNotesDescriptor.createUI as unknown as ServiceUIComponent;
-    case "hookup.to/service/game-of-life-synth":
-      return GameOfLifeSynthDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/sort":
+      return SortDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/limit":
+      return LimitDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/flat-map":
+      return FlatMapDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/smooth":
+      return SmoothDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/http-relay-client":
       return HttpRelayClientDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/audio-input":
+      return AudioInputDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/audio-output":
+      return AudioOutputDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/sound":
+      return SoundDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/encrypt":
+      return EncryptDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/decrypt":
+      return DecryptDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/hash":
+      return HashDescriptor.createUI as unknown as ServiceUIComponent;
+    case "hookup.to/service/sign":
+      return SignDescriptor.createUI as unknown as ServiceUIComponent;
     default:
       return null;
   }

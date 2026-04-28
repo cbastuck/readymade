@@ -106,6 +106,18 @@ export type KnobWidget = {
 // written as a widget leaf in board JSON alongside other typed widgets.
 export type LayoutWidget = LayoutContainer & { type: "layout" };
 
+export type CanvasWidget = {
+  type: "canvas";
+  serviceUuid: string;
+};
+
+export type XYPadWidget = {
+  type: "xy-pad";
+  serviceUuid: string;
+  width?: number;
+  height?: number;
+};
+
 export type FacadeWidget =
   | MessageListWidget
   | TextInputWidget
@@ -115,7 +127,9 @@ export type FacadeWidget =
   | FilePickWidget
   | KnobWidget
   | LevelMeterWidget
-  | LayoutWidget;
+  | LayoutWidget
+  | CanvasWidget
+  | XYPadWidget;
 
 // ---------------------------------------------------------------------------
 // Layout tree — panels declare their structure declaratively.

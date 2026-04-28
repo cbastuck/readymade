@@ -15,11 +15,16 @@ import InjectorDescriptor from "../services/Injector";
 // Data analysis
 import MapDescriptor from "../services/Map";
 import FilterDescriptor from "../services/Filter";
+import BatcherDescriptor from "../services/Batcher";
+import SwitchDescriptor from "../services/Switch";
 import SelectDescriptor from "../services/Select";
 
 // Data  Accumulators
 import AggregatorDescriptor from "../services/Aggregator";
 import CacheDescriptor from "../services/Cache";
+import BufferDescriptor from "../services/Buffer";
+import GroupByDescriptor from "../services/GroupBy";
+import MatchFilterDescriptor from "../services/MatchFilter";
 
 // Sensors
 import XYPadDecriptor from "../services/XYPad";
@@ -30,8 +35,10 @@ import TriggerPadDescriptor from "../services/TriggerPad";
 import CanvasDescriptor from "../services/Canvas";
 import GameOfLifeDescriptor from "../services/GameOfLife";
 import GameOfLifeRendererDescriptor from "../services/GameOfLifeRenderer";
-import GameOfLifeToNotesDescriptor from "../services/GameOfLifeToNotes";
-import GameOfLifeSynthDescriptor from "../services/GameOfLifeSynth";
+import SortDescriptor from "../services/Sort";
+import LimitDescriptor from "../services/Limit";
+import FlatMapDescriptor from "../services/FlatMap";
+import SmoothDescriptor from "../services/Smooth";
 
 // Structure / Containers
 import StackDescriptor from "../services/Stack";
@@ -74,6 +81,21 @@ import LZCompressDescriptor from "../services/LZCompress";
 import MicrophoneMonitorDescriptor from "../services/MicrophoneMonitor";
 import DebounceDescriptor from "../services/Debounce";
 import StopperDescriptor from "../services/Stopper";
+import ConfiguratorDescriptor from "../services/Configurator";
+import AudioInputDescriptor from "../services/AudioInput";
+import AudioOutputDescriptor from "../services/AudioOutput";
+import SoundDescriptor from "../services/Sound";
+import GifEncoderDescriptor from "../services/GifEncoder";
+
+// Crypto
+import EncryptDescriptor from "../services/Encrypt";
+import DecryptDescriptor from "../services/Decrypt";
+import HashDescriptor from "../services/Hash";
+import SignDescriptor from "../services/Sign";
+import StateDescriptor from "../services/State";
+
+// Encoding
+import EncodeDescriptor from "../services/Encode";
 
 export const defaultRegistry: Array<ServiceModule> = [
   TimerDescriptor,
@@ -89,22 +111,31 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Actor
   CanvasDescriptor,
+  GifEncoderDescriptor,
   GameOfLifeDescriptor,
   GameOfLifeRendererDescriptor,
-  GameOfLifeToNotesDescriptor,
-  GameOfLifeSynthDescriptor,
 
   // Analysis
   MapDescriptor,
   FilterDescriptor,
+  BatcherDescriptor,
   SelectDescriptor,
+  SwitchDescriptor,
+  SortDescriptor,
+  LimitDescriptor,
+  FlatMapDescriptor,
+  SmoothDescriptor,
 
   // Accumulation
   AggregatorDescriptor,
+  BufferDescriptor,
   CacheDescriptor,
+  GroupByDescriptor,
+  MatchFilterDescriptor,
 
   // Structure / Containers
   StackDescriptor,
+  StateDescriptor,
 
   // Sensors
   XYPadDecriptor,
@@ -152,6 +183,21 @@ export const defaultRegistry: Array<ServiceModule> = [
   // Flow control
   DebounceDescriptor,
   StopperDescriptor,
+  ConfiguratorDescriptor,
+
+  // Audio I/O
+  AudioInputDescriptor,
+  AudioOutputDescriptor,
+  SoundDescriptor,
+
+  // Crypto
+  EncryptDescriptor,
+  DecryptDescriptor,
+  HashDescriptor,
+  SignDescriptor,
+
+  // Encoding
+  EncodeDescriptor,
 ];
 
 export const defaultBundles = [];

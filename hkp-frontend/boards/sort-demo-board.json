@@ -1,0 +1,55 @@
+{
+  "boardName": "Sort Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": { "periodic": true, "periodicValue": 1500, "periodicUnit": "ms", "running": true, "start": true, "immediate": true }
+      },
+      {
+        "uuid": "range-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Range",
+        "state": { "template": { "=": "range(20)" } }
+      },
+      {
+        "uuid": "hues-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Random Hues",
+        "state": { "template": { "h=": "round(rand() * 360)" } }
+      },
+      {
+        "uuid": "sort-svc",
+        "serviceId": "hookup.to/service/sort",
+        "serviceName": "Sort",
+        "state": { "by": "h", "dir": "asc" }
+      },
+      {
+        "uuid": "rects-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "To Rects",
+        "state": {
+          "template": {
+            "type": "rect",
+            "x=": "round(params.h * 1.667)",
+            "y": 0,
+            "width": 32,
+            "height": 400,
+            "color=": "concat('hsl(', params.h, ',75%,55%)')"
+          }
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

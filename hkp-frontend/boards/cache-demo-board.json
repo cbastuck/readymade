@@ -1,0 +1,59 @@
+{
+  "boardName": "Cache Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 1,
+          "periodicUnit": "s",
+          "running": true,
+          "start": true,
+          "immediate": true
+        }
+      },
+      {
+        "uuid": "update-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Partial Update",
+        "state": {
+          "template": {
+            "count=": "triggerCount",
+            "label=": "concat('update-', triggerCount)"
+          }
+        }
+      },
+      {
+        "uuid": "cache-svc",
+        "serviceId": "hookup.to/service/cache",
+        "serviceName": "Cache",
+        "state": {
+          "initial": {
+            "mode": "ready",
+            "count": 0,
+            "label": "initial"
+          },
+          "updateTrigger": "process"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

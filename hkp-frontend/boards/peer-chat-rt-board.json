@@ -1,0 +1,85 @@
+{
+  "boardName": "Peer Chat (hkp-rt)",
+  "description": "P2P chat using the hkp-rt peer-server — no hkp-node required.",
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "chat",
+        "layout": {
+          "type": "message-list",
+          "grow": true,
+          "source": { "serviceUuid": "pcrt-monitor-svc" },
+          "composer": {
+            "placeholder": "Type a message…",
+            "submitLabel": "Send",
+            "action": {
+              "serviceUuid": "pcrt-input-svc",
+              "configure": { "inject": "$$input" }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "runtimes": [
+    {
+      "id": "pcrt-browser",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "pcrt-rt",
+      "name": "hkp-rt",
+      "type": "rest",
+      "url": "hkp://remotes/meander-cpp",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "pcrt-rt": [
+      {
+        "uuid": "pcrt-peer-server-svc",
+        "serviceId": "peer-server",
+        "serviceName": "Peer Server",
+        "state": {
+          "bypass": false,
+          "port": 9000,
+          "path": "/",
+          "emitEvents": false
+        }
+      }
+    ],
+    "pcrt-browser": [
+      {
+        "uuid": "pcrt-input-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Message",
+        "state": { "plainText": true }
+      },
+      {
+        "uuid": "pcrt-peer-svc",
+        "serviceId": "hookup.to/service/peer-socket",
+        "serviceName": "Peer Socket",
+        "state": {
+          "mode": "Receive and Send",
+          "extractIncomingData": true,
+          "peerPort": 9000,
+          "peerPath": "/",
+          "peerHost": "HKP_RUNTIME_HOST"
+        }
+      },
+      {
+        "uuid": "pcrt-monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Incoming Messages"
+      },
+      {
+        "uuid": "pcrt-stopper-svc",
+        "serviceId": "hookup.to/service/stopper",
+        "serviceName": "Stopper"
+      }
+    ]
+  }
+}

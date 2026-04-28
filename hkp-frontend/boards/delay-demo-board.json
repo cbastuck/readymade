@@ -1,0 +1,28 @@
+{
+  "boardName": "Delay Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "audio-in-svc",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Audio Input",
+        "state": { "timeslice": 50 }
+      },
+      {
+        "uuid": "delay-svc",
+        "serviceId": "hookup.to/service/delay",
+        "serviceName": "Delay",
+        "state": { "delayTimeMs": 300 }
+      },
+      {
+        "uuid": "audio-out-svc",
+        "serviceId": "hookup.to/service/audio-output",
+        "serviceName": "Audio Output",
+        "state": {}
+      }
+    ]
+  }
+}

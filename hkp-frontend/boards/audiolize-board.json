@@ -1,0 +1,83 @@
+{
+  "boardName": "Audiolize",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "input-svc",
+        "serviceId": "hookup.to/service/input",
+        "serviceName": "Wikipedia Recent Changes",
+        "state": {
+          "url": "https://stream.wikimedia.org/v2/stream/recentchange",
+          "running": true
+        }
+      },
+      {
+        "uuid": "map-stack-svc",
+        "serviceId": "hookup.to/service/stack",
+        "serviceName": "Map to Notes",
+        "state": {
+          "input": "multiplex",
+          "output": "array",
+          "services": [
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Snare / Hihat",
+              "template": {
+                "note=": "params.bot ? 'D4' : 'E4'"
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Bass",
+              "template": {
+                "note=": "(!params.bot && rand() < 0.2) ? 'C4' : null"
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "agg-stack-svc",
+        "serviceId": "hookup.to/service/stack",
+        "serviceName": "Aggregate",
+        "state": {
+          "input": "lanes",
+          "output": "array",
+          "services": [
+            {
+              "serviceId": "hookup.to/service/aggregator",
+              "serviceName": "Snare / Hihat Aggregator",
+              "interval": 90,
+              "property": "note",
+              "aggregator": "val_max_occ"
+            },
+            {
+              "serviceId": "hookup.to/service/aggregator",
+              "serviceName": "Bass Aggregator",
+              "interval": 180,
+              "property": "note"
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "sound-svc",
+        "serviceId": "hookup.to/service/sound",
+        "serviceName": "Sound",
+        "state": {
+          "generator": {
+            "type": "drums"
+          }
+        }
+      }
+    ]
+  }
+}

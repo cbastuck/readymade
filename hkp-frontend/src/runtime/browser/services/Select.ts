@@ -1,50 +1,28 @@
 import { AppInstance, ServiceClass } from "../../../types";
-
-/**
- * Service Documentation
- * Service ID: hookup.to/service/select
- * Service Name: Select
- * Modes: array-index selection
- * Key Config: arrayIndex
- * Input: array preferred
- * Output: selected array element or identity fallback
- * Arrays: primary behavior
- * Binary: not intended
- * MixedData: not native in browser runtime
- */
+import ServiceBase from "./ServiceBase";
+import SelectUI from "./SelectUI";
 
 const serviceId = "hookup.to/service/select";
 const serviceName = "Select";
 
-class Select {
-  uuid: string;
-  board: string;
-  app: AppInstance;
-  arrayIndex: number | undefined;
+type State = { arrayIndex: number };
 
-  constructor(
-    app: AppInstance,
-    board: string,
-    _descriptor: ServiceClass,
-    id: string,
-  ) {
-    this.uuid = id;
-    this.board = board;
-    this.app = app;
-
-    this.arrayIndex = undefined;
+class Select extends ServiceBase<State> {
+  constructor(app: AppInstance, board: string, descriptor: ServiceClass, id: string) {
+    super(app, board, descriptor, id, { arrayIndex: 0 });
   }
 
-  configure(config: { arrayIndex?: number }): void {
-    const { arrayIndex } = config;
-    if (arrayIndex !== undefined) {
-      this.arrayIndex = arrayIndex;
+  configure(config: { arrayIndex?: number }): any {
+    if (config?.arrayIndex !== undefined) {
+      this.state.arrayIndex = Math.max(0, Number(config.arrayIndex));
+      this.app.notify(this, { arrayIndex: this.state.arrayIndex });
     }
+    return this.state;
   }
 
   process(params: any): any {
-    if (Array.isArray(params) && this.arrayIndex !== undefined) {
-      return params[this.arrayIndex];
+    if (Array.isArray(params)) {
+      return params[this.state.arrayIndex];
     }
     console.warn("Unsupported input type, can't select");
     return params;
@@ -56,7 +34,7 @@ const descriptor = {
   serviceId,
   create: (app: AppInstance, board: string, desc: ServiceClass, id: string) =>
     new Select(app, board, desc, id),
-  createUI: undefined,
+  createUI: SelectUI,
 };
 
 export default descriptor;

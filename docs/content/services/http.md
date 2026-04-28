@@ -1,6 +1,6 @@
 # HTTP
 
-HTTP services for the hkp-rt runtime: an outgoing client, an incoming server, and a static file host.
+HTTP services for the hkp-rt runtime: an outgoing client and an incoming server.
 
 ---
 
@@ -8,7 +8,7 @@ HTTP services for the hkp-rt runtime: an outgoing client, an incoming server, an
 
 | Runtime | Service IDs |
 |---|---|
-| hkp-rt | `http-client`, `http-server`, `static` |
+| hkp-rt | `http-client`, `http-server` |
 
 For browser-side HTTP, use [Fetcher](./fetcher.md) (outgoing) and
 [Output](./output.md) (POST egress).
@@ -58,30 +58,6 @@ webhooks, building internal APIs, or accepting data from external services.
 
 - **Input**: not used (server triggers itself on incoming requests)
 - **Output**: incoming HTTP request data (method, path, body, headers)
-
----
-
-## static
-
-### What it does
-
-Serves files from a local directory over HTTP. This is a passive service
-that handles its own HTTP lifecycle independently of the pipeline. Use it
-alongside `http-server` or WebSocket services to serve the frontend
-assets for a self-hosted board.
-
-### Configuration
-
-| Property | Type | Description |
-|---|---|---|
-| `root` | `string` | Filesystem path to the directory to serve |
-| `host` | `string` | Interface to bind |
-| `port` | `string \| number` | Port to listen on |
-
-### Input / Output
-
-- Passes pipeline data through unchanged; HTTP serving happens as a
-  side-effect independently of the pipeline.
 
 ---
 

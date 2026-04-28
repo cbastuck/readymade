@@ -97,6 +97,7 @@ export async function fetchBoard(
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
   buildContextValue: () => BoardContextState,
+  cancellation?: { cancelled: boolean },
 ) {
   const propsRef = refs.propsRef.current!;
   if (!propsRef.fetchBoard) {
@@ -108,6 +109,27 @@ export async function fetchBoard(
     const board = await propsRef.fetchBoard();
     refs.setFacade(board.facade);
     const data = await restoreBoard(board, refs, waitForUserLogin);
+
+    // In-flight cancellation (e.g. React strict-mode unmount/remount).
+    // At this point runtimes are fully started so we must tear them down
+    // ourselves — the unmount cleanup already ran with an empty runtime list.
+    if (cancellation?.cancelled) {
+      const user = refs.userRef.current;
+      await Promise.all(
+        (data?.runtimes ?? []).map(async (rt) => {
+          const scope = data?.scopes?.[rt.id];
+          const api =
+            propsRef.runtimeApis?.[rt.type] ||
+            propsRef.runtimeApis?.[toCanonicalRuntimeClassType(rt.type)];
+          if (scope && api) {
+            await api.removeRuntime(scope, rt, user);
+          }
+        }),
+      );
+      refs.setIsFetching(false);
+      return;
+    }
+
     if (data) {
       refs.setBoardNameState(data.boardName);
       refs.setRuntimes(data.runtimes);
@@ -198,7 +220,16 @@ export async function setBoardState(
   newState: BoardDescriptor,
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
+  removeRuntime: (runtime: RuntimeDescriptor) => Promise<void>,
 ) {
+  // Destroy all existing runtimes (and their services) before loading the new
+  // board — otherwise long-lived resources like SSE streams, setInterval timers
+  // and AudioContexts keep running in the background after the board switches.
+  const currentRuntimes = refs.runtimesRef.current ?? [];
+  for (const runtime of currentRuntimes) {
+    await removeRuntime(runtime);
+  }
+
   refs.setFacade(newState.facade);
   const data = await restoreBoard(newState, refs, waitForUserLogin);
   if (data) {
@@ -212,7 +243,7 @@ export async function setBoardState(
 }
 
 export async function clearBoard(
-  newBoardNameArg: string = "New Idea",
+  newBoardNameArg: string = "Idea",
   refs: BoardStateRefs,
   removeRuntime: (runtime: RuntimeDescriptor) => Promise<void>,
 ) {
@@ -241,5 +272,6 @@ export async function clearBoard(
   refs.setRuntimes([]);
   refs.setServices({});
   refs.setRegistry({});
+  refs.setFacade(undefined);
   refs.setBoardNameState(newBoardNameArg || "");
 }

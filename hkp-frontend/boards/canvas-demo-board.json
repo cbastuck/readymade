@@ -1,0 +1,30 @@
+{
+  "boardName": "Canvas Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": { "periodic": true, "periodicValue": 1500, "periodicUnit": "ms", "running": true, "start": true, "immediate": true }
+      },
+      {
+        "uuid": "shapes-svc",
+        "serviceId": "hookup.to/service/hacker/dangerous",
+        "serviceName": "Shapes",
+        "state": {
+          "buffer": "const hue = (params.triggerCount * 37) % 360;\nreturn [\n  { type: 'rect', x: 40, y: 40, width: 160, height: 100, color: `hsl(${hue},70%,60%)` },\n  { type: 'circle', x: 350, y: 200, radius: 80, color: `hsl(${(hue+120)%360},70%,60%)` },\n  { type: 'text', text: 'Canvas', x: '50%', y: '78%', color: `hsl(${(hue+240)%360},70%,40%)`, font: { size: '12%', weight: 'bold', family: 'monospace' } }\n];"
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

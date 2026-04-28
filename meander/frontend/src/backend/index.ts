@@ -5,6 +5,6 @@ import { BackendAdapter } from "./types";
 
 export type { BackendAdapter };
 
-export function getBackend(): BackendAdapter {
-  return isMeanderApp() ? meanderBackend : browserBackend;
+export async function getBackend(): Promise<BackendAdapter> {
+  return (await isMeanderApp()) ? meanderBackend : browserBackend;
 }

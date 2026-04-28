@@ -1,0 +1,52 @@
+{
+  "boardName": "LZ Compress Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Source Text",
+        "state": {
+          "recentInjection": "Hello from hookup! Hello from hookup! Hello from hookup!",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "compress-svc",
+        "serviceId": "hookup.to/service/lz-compress",
+        "serviceName": "LZ Compress",
+        "state": {
+          "mode": "compress"
+        }
+      },
+      {
+        "uuid": "monitor-compressed-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Compressed"
+      },
+      {
+        "uuid": "decompress-svc",
+        "serviceId": "hookup.to/service/lz-compress",
+        "serviceName": "LZ Decompress",
+        "state": {
+          "mode": "decompress"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

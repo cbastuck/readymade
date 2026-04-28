@@ -1,0 +1,54 @@
+{
+  "boardName": "Reduce Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 600,
+          "periodicUnit": "ms",
+          "running": true,
+          "start": true,
+          "immediate": true
+        }
+      },
+      {
+        "uuid": "delta-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Random Delta",
+        "state": {
+          "template": {
+            "=": "round(rand() * 6) - 3"
+          }
+        }
+      },
+      {
+        "uuid": "reduce-svc",
+        "serviceId": "hookup.to/service/reduce",
+        "serviceName": "Reduce",
+        "state": {
+          "initialState": 0,
+          "reducer": "params.acc + params.value"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "boardName": "Spectral Modifier",
+  "description": "Capture microphone audio on a remote runtime, forward the FFT spectrum to the browser for visualization and spectral filtering, then reconstruct audio via IFFT on a second remote runtime.",
+  "runtimes": [
+    {
+      "id": "sm-input-rt",
+      "name": "Audio Input",
+      "type": "realtime",
+      "url": "hkp://remotes/realtime",
+      "state": {}
+    },
+    {
+      "id": "sm-browser-rt",
+      "name": "Spectrum",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "sm-output-rt",
+      "name": "Audio Output",
+      "type": "realtime",
+      "url": "hkp://remotes/realtime",
+      "state": {}
+    }
+  ],
+  "services": {
+    "sm-input-rt": [
+      {
+        "uuid": "sm-mic-svc",
+        "serviceId": "core-input",
+        "serviceName": "Microphone",
+        "state": {
+          "bypass": false
+        }
+      },
+      {
+        "uuid": "sm-fft-svc",
+        "serviceId": "fft",
+        "serviceName": "FFT",
+        "state": {
+          "bypass": false,
+          "windowLength": 512,
+          "outputMode": "complex"
+        }
+      }
+    ],
+    "sm-browser-rt": [
+      {
+        "uuid": "sm-analyzer-svc",
+        "serviceId": "hookup.to/service/analyzer",
+        "serviceName": "Analyzer",
+        "state": {
+          "bypass": false
+        }
+      },
+      {
+        "uuid": "sm-filter-svc",
+        "serviceId": "hookup.to/service/filter",
+        "serviceName": "Spectral Filter",
+        "state": {
+          "aggregator": "and",
+          "conditions": [
+            "params > 6"
+          ],
+          "bypass": true
+        }
+      }
+    ],
+    "sm-output-rt": [
+      {
+        "uuid": "sm-ifft-svc",
+        "serviceId": "ifft",
+        "serviceName": "IFFT",
+        "state": {
+          "bypass": false,
+          "windowLength": 512
+        }
+      },
+      {
+        "uuid": "sm-monitor-svc",
+        "serviceId": "monitor",
+        "serviceName": "Monitor",
+        "state": {
+          "bypass": false
+        }
+      },
+      {
+        "uuid": "sm-speaker-svc",
+        "serviceId": "core-output",
+        "serviceName": "Speaker",
+        "state": {
+          "bypass": true,
+          "mode": "buffer-incoming"
+        }
+      }
+    ]
+  }
+}

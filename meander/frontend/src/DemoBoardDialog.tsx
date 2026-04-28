@@ -8,72 +8,17 @@ import {
   DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
 
-import asciiCamBoard from "../../../hkp-frontend/boards/ascii-cam-board.json";
-import dropitappBoard from "../../../hkp-frontend/boards/dropitapp-board.json";
-import gameOfLifeBoard from "../../../hkp-frontend/boards/game-of-life-board.json";
-import linkDebuggerBoard from "../../../hkp-frontend/boards/link-debugger.json";
-import noiseAlertBoard from "../../../hkp-frontend/boards/noise-alert-board.json";
-import peerChatBoard from "../../../hkp-frontend/boards/peer-chat-board.json";
-import relayBoard from "../../../hkp-frontend/boards/relay.json";
-
-type DemoEntry = {
-  label: string;
-  description: string;
-  icon: string;
-  board: BoardDescriptor;
-};
-
-const DEMO_BOARDS: DemoEntry[] = [
-  {
-    label: "ASCII Cam",
-    description: "Render your webcam as ASCII art in the browser",
-    icon: "📷",
-    board: asciiCamBoard as unknown as BoardDescriptor,
-  },
-  {
-    label: "Drop It App",
-    description: "Drag-and-drop file sharing pipeline",
-    icon: "📂",
-    board: dropitappBoard as unknown as BoardDescriptor,
-  },
-  {
-    label: "Game of Life",
-    description: "Conway's Game of Life running in the browser runtime",
-    icon: "🧬",
-    board: gameOfLifeBoard as unknown as BoardDescriptor,
-  },
-  {
-    label: "Link Debugger",
-    description: "Decompress and inspect board QR link contents",
-    icon: "🔍",
-    board: linkDebuggerBoard as unknown as BoardDescriptor,
-  },
-  {
-    label: "Noise Alert",
-    description: "Detect loud sounds and trigger alerts",
-    icon: "🔔",
-    board: noiseAlertBoard as unknown as BoardDescriptor,
-  },
-  {
-    label: "Peer Chat",
-    description: "Two-way chat between browser tabs via WebRTC",
-    icon: "💬",
-    board: peerChatBoard as unknown as BoardDescriptor,
-  },
-  {
-    label: "Relay",
-    description: "Bridge an HTTP relay endpoint into a browser pipeline",
-    icon: "🔗",
-    board: relayBoard as unknown as BoardDescriptor,
-  },
-];
+import { DEMO_BOARDS } from "./demoBoards";
 
 type DemoBoardDialogProps = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-export default function DemoBoardDialog({ isOpen, onClose }: DemoBoardDialogProps) {
+export default function DemoBoardDialog({
+  isOpen,
+  onClose,
+}: DemoBoardDialogProps) {
   const boardContext = useContext(BoardCtx);
 
   const handleSelect = (board: BoardDescriptor) => {
@@ -93,6 +38,8 @@ export default function DemoBoardDialog({ isOpen, onClose }: DemoBoardDialogProp
             gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))",
             gap: 12,
             paddingTop: 4,
+            overflowY: "auto",
+            maxHeight: "65vh",
           }}
         >
           {DEMO_BOARDS.map((entry) => (
@@ -105,6 +52,7 @@ export default function DemoBoardDialog({ isOpen, onClose }: DemoBoardDialogProp
                 alignItems: "flex-start",
                 gap: 8,
                 padding: "20px 16px",
+                margin: "4px",
                 borderRadius: 10,
                 border: "1px solid hsl(var(--border))",
                 background: "hsl(var(--card))",

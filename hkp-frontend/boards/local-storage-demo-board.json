@@ -1,0 +1,30 @@
+{
+  "boardName": "Local Storage Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "storage-svc",
+        "serviceId": "hookup.to/service/local-storage",
+        "serviceName": "Local Storage",
+        "state": {
+          "filter": ""
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

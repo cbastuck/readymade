@@ -11,42 +11,107 @@ import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 
 const loginStateId = "spotify-login";
 
+const redirectURI =
+  window.location.protocol === "http:"
+    ? `http://127.0.0.1:${window.location.port}/serviceRedirect`
+    : `${window.location.origin}/serviceRedirect`;
+
 export default function SpotifyUI(props: ServiceUIProps) {
   const [token, setToken] = useState<string | null>(null);
+  const [clientID, setClientID] = useState<string>(
+    "e91207fc5f2e4a5db1ca562954e4c23e",
+  );
   const [profile, setProfile] = useState<{
     display_name: string;
     followers: { total: number };
     images: Array<{ url: string }>;
   } | null>(null);
-  const [selectedAction, setSelectedAction] = useState<string>("injectSavedSongs");
+  const [selectedAction, setSelectedAction] =
+    useState<string>("injectSavedSongs");
 
   const onInit = (initialState: any) => {
-    const { token: t } = initialState;
+    const { token: t, clientID: c } = initialState;
     if (t !== undefined) {
       setToken(t);
+    }
+    if (c !== undefined) {
+      setClientID(c);
     }
   };
 
   const onNotification = (notification: any) => {
-    const { token: t, profile: p } = notification;
+    const { token: t, profile: p, clientID: c } = notification;
     if (t !== undefined) {
       setToken(t);
     }
-
     if (p !== undefined) {
       setProfile(p);
+    }
+    if (c !== undefined) {
+      setClientID(c);
     }
   };
 
   const renderUser = (service: ServiceInstance) => {
     if (!token) {
       return (
-        <SpotifyOAuth
-          onToken={(t: string) => {
-            service.configure({ token: t });
-          }}
-          state={loginStateId}
-        />
+        <>
+          <div style={{ marginBottom: 8 }}>
+            <label
+              style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}
+            >
+              Client ID
+            </label>
+            <input
+              type="text"
+              placeholder="Spotify app Client ID"
+              value={clientID}
+              onChange={(e) => service.configure({ clientID: e.target.value })}
+              style={{
+                display: "block",
+                width: "100%",
+                fontSize: 12,
+                padding: "4px 6px",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: 4,
+                background: "hsl(var(--background))",
+                color: "hsl(var(--foreground))",
+                marginTop: 2,
+              }}
+            />
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <label
+              style={{ fontSize: 11, color: "hsl(var(--muted-foreground))" }}
+            >
+              Redirect URI (register this in your Spotify app)
+            </label>
+            <div
+              style={{
+                fontSize: 11,
+                padding: "3px 6px",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: 4,
+                background: "hsl(var(--muted))",
+                color: "hsl(var(--foreground))",
+                marginTop: 2,
+                wordBreak: "break-all",
+                cursor: "text",
+                userSelect: "all",
+              }}
+            >
+              {redirectURI}
+            </div>
+          </div>
+          <SpotifyOAuth
+            clientID={clientID || undefined}
+            redirectURI={redirectURI}
+            onToken={(t: string) => {
+              service.configure({ token: t });
+            }}
+            state={loginStateId}
+          />
+        </>
       );
     }
 

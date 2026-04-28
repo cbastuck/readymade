@@ -1,6 +1,17 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import { Remote } from "../types";
 
+export type BoardHistoryEntry = {
+  timestamp: string; // ISO 8601
+  label: "auto" | "manual";
+  snapshot: BoardDescriptor;
+};
+
+export type HistoryBoardSummary = {
+  name: string;
+  latestTimestamp?: string; // ISO 8601
+};
+
 export interface BackendAdapter {
   // Boards
   fetchSavedBoards(): Promise<Array<string>>;
@@ -12,4 +23,10 @@ export interface BackendAdapter {
   getRemotes(): Promise<Array<Remote>>;
   saveRemote(remote: Remote): Promise<void>;
   deleteRemote(name: string): Promise<void>;
+
+  // Board history
+  fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>>;
+  pushBoardSnapshot(boardName: string, entry: BoardHistoryEntry): Promise<void>;
+  loadBoardHistory(boardName: string): Promise<Array<BoardHistoryEntry>>;
+  clearBoardHistory(boardName: string): Promise<void>;
 }

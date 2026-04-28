@@ -1,0 +1,39 @@
+{
+  "boardName": "Encode Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": "Hello, World! Café €50",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "encode-svc",
+        "serviceId": "hookup.to/service/encode",
+        "serviceName": "Encode",
+        "state": {
+          "mode": "base64-encode"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Output"
+      }
+    ]
+  }
+}

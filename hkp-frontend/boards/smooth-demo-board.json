@@ -1,0 +1,53 @@
+{
+  "boardName": "Smooth Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": { "periodic": true, "periodicValue": 33, "periodicUnit": "ms", "running": true, "start": true, "immediate": true }
+      },
+      {
+        "uuid": "noisy-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Noisy Position",
+        "state": {
+          "template": {
+            "x=": "round(sin(now() / 1200) * 220 + 300 + rand() * 60 - 30)",
+            "y=": "round(sin(now() / 900) * 150 + 200 + rand() * 60 - 30)"
+          }
+        }
+      },
+      {
+        "uuid": "smooth-svc",
+        "serviceId": "hookup.to/service/smooth",
+        "serviceName": "Smooth",
+        "state": { "factor": 0.08 }
+      },
+      {
+        "uuid": "circle-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "To Circle",
+        "state": {
+          "template": {
+            "type": "circle",
+            "x=": "round(params.x)",
+            "y=": "round(params.y)",
+            "radius": 20,
+            "color": "#6366f1"
+          }
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

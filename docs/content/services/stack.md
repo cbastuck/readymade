@@ -26,23 +26,19 @@ processing blocks and compose complex graphs from simpler, named units.
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `services` | `ServiceDescriptor[]` | `[]` | The ordered list of sub-services |
-| `input` | `"default" \| "multiplex" \| "array"` | `"default"` | How incoming data is distributed to sub-services |
-| `output` | `"default" \| "array"` | `"default"` | How sub-service results are collected |
+| `input` | `"multiplex" \| "lanes"` | `"multiplex"` | How incoming data is distributed to sub-services |
+| `output` | `"array"` | `"array"` | How sub-service results are collected |
 
 ### Input modes
 
 | Mode | Behaviour |
 |---|---|
-| `"default"` | Passes the incoming value through the sub-pipeline in order |
-| `"multiplex"` | Fans the incoming value out to each sub-service independently; results collected |
-| `"array"` | Treats the incoming array as a list of items, running each through the sub-pipeline individually |
+| `"multiplex"` (default) | Fans the incoming value out to each sub-service independently; all results are collected and returned as an array |
+| `"lanes"` | Treats the incoming array as parallel lanes: `params[i]` is routed to sub-service `i`. If the input is not an array, it is routed to the first sub-service only. |
 
-### Output modes
+### Output
 
-| Mode | Behaviour |
-|---|---|
-| `"default"` | Emits the final value from the sub-pipeline |
-| `"array"` | Collects the result from each sub-service into an array and emits the array |
+Stack always collects the results of all sub-services into an array. `null` results are included in their index position.
 
 ---
 

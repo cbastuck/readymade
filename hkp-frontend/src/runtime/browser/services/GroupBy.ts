@@ -1,0 +1,11 @@
+import GroupByDescriptor from "hkp-frontend/src/runtime/browser/services/base/GroupBy";
+import { AppImpl, ServiceClass } from "hkp-frontend/src/types";
+
+const descriptor = {
+  serviceName: GroupByDescriptor.serviceName,
+  serviceId: GroupByDescriptor.serviceId,
+  create: (app: AppImpl, board: string, service: ServiceClass, id: string) =>
+    new GroupByDescriptor.service(app, board, service, id),
+};
+
+export default descriptor;

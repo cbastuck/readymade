@@ -6,23 +6,21 @@ import { BoardDescriptor } from "hkp-frontend/src/types";
 
 type Props = {
   boardSource?: string;
-  loadBoardItems?: Array<string> | null;
+  isLoadDialogOpen?: boolean;
   demoBoardDialogOpen?: boolean;
   onCloseDemoBoardDialog?: () => void;
   onCloseBoardSource?: () => void;
-  onChangeLoadDialogVisibility?: (visible: boolean) => void;
-  onDeleteBoard?: (saveName: string) => Promise<void>;
+  onSetLoadDialogOpen?: (open: boolean) => void;
   onBoardLoaded?: (board: BoardDescriptor) => void;
 };
 
 export default function Board({
   boardSource,
-  loadBoardItems,
+  isLoadDialogOpen = false,
   demoBoardDialogOpen = false,
   onCloseDemoBoardDialog = () => {},
   onCloseBoardSource = () => {},
-  onChangeLoadDialogVisibility = () => {},
-  onDeleteBoard = async () => {},
+  onSetLoadDialogOpen = () => {},
   onBoardLoaded = () => {},
 }: Props) {
   useJsApi();
@@ -39,10 +37,8 @@ export default function Board({
         onClose={onCloseBoardSource}
       />
       <LoadBoardDialog
-        visible={!!loadBoardItems}
-        items={loadBoardItems || []}
-        onSetVisible={onChangeLoadDialogVisibility}
-        onDeleteBoard={onDeleteBoard}
+        visible={isLoadDialogOpen}
+        onSetVisible={onSetLoadDialogOpen}
         onBoardLoaded={onBoardLoaded}
       />
     </>

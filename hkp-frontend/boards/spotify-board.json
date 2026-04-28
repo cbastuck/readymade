@@ -1,0 +1,75 @@
+{
+  "boardName": "Spotify to GitHub",
+  "runtimes": [
+    {
+      "id": "collector",
+      "name": "Collector",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "reader",
+      "name": "Reader",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "collector": [
+      {
+        "uuid": "spotify-svc",
+        "serviceId": "hookup.to/service/spotify",
+        "serviceName": "Spotify",
+        "state": { "token": "" }
+      },
+      {
+        "uuid": "map-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map Track",
+        "state": {
+          "template": {
+            "title=": "params.track.name",
+            "artist=": "params.track.artists[0].name",
+            "date=": "reformatDate(params.added_at, undefined, 'YYYY/MM')"
+          }
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      },
+      {
+        "uuid": "github-sink-svc",
+        "serviceId": "hookup.to/service/github-sink",
+        "serviceName": "GitHub Sink",
+        "state": {
+          "token": "",
+          "owner": "",
+          "repo": "",
+          "branch": "master",
+          "file": { "name": "spotty.json" }
+        }
+      }
+    ],
+    "reader": [
+      {
+        "uuid": "github-source-svc",
+        "serviceId": "hookup.to/service/github-source",
+        "serviceName": "GitHub Source",
+        "state": {
+          "token": "",
+          "owner": "",
+          "repo": "",
+          "branch": "",
+          "file": ""
+        }
+      },
+      {
+        "uuid": "reader-monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

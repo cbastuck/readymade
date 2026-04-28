@@ -25,7 +25,7 @@ class Cache {
     app: AppInstance,
     board: string,
     _descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     this.uuid = id;
     this.board = board;
@@ -60,7 +60,7 @@ class Cache {
           ...all,
           [cur]: config[cur],
         }),
-        {}
+        {},
       );
       this.values = this.merge(add);
     }

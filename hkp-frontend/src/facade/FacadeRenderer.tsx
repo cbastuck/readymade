@@ -223,8 +223,10 @@ export default function FacadeRenderer({
               padding: "4px 10px",
               borderRadius: 6,
               border: "1px solid hsl(var(--border))",
-              background: "transparent",
-              color: "hsl(var(--muted-foreground))",
+              background: showRuntime ? "hsl(var(--accent))" : "transparent",
+              color: showRuntime
+                ? "hsl(var(--accent-foreground))"
+                : "hsl(var(--muted-foreground))",
               cursor: "pointer",
               fontSize: 11,
               fontFamily: "monospace",

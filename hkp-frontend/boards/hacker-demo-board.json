@@ -1,0 +1,30 @@
+{
+  "boardName": "Hacker Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": { "periodic": true, "periodicValue": 50, "periodicUnit": "ms", "running": true, "start": true, "immediate": true }
+      },
+      {
+        "uuid": "hacker-svc",
+        "serviceId": "hookup.to/service/hacker/dangerous",
+        "serviceName": "Hacker",
+        "state": {
+          "buffer": "const t = params.triggerCount * 0.18;\nconst r = params.triggerCount * 1.8;\nconst hue = (params.triggerCount * 1.8) % 360;\nreturn { type: 'circle', x: Math.cos(t) * r + 300, y: Math.sin(t) * r + 200, radius: 4, color: 'hsl(' + hue + ', 80%, 55%)' };"
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": false, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

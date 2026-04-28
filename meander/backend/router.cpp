@@ -1,5 +1,32 @@
 #include "router.h"
 #include <sstream>
+#include <iomanip>
+
+static std::string url_decode(const std::string& encoded)
+{
+  std::string decoded;
+  decoded.reserve(encoded.size());
+  for (size_t i = 0; i < encoded.size(); ++i)
+  {
+    if (encoded[i] == '%' && i + 2 < encoded.size())
+    {
+      int val = 0;
+      std::istringstream ss(encoded.substr(i + 1, 2));
+      ss >> std::hex >> val;
+      decoded += static_cast<char>(val);
+      i += 2;
+    }
+    else if (encoded[i] == '+')
+    {
+      decoded += ' ';
+    }
+    else
+    {
+      decoded += encoded[i];
+    }
+  }
+  return decoded;
+}
 
 
 void Router::register_route(const Method& method, const std::string& path, Handler handler)
@@ -92,7 +119,7 @@ bool Router::match(const Pattern& pattern, const std::vector<std::string>& segme
   {
     if (!pattern[i].empty() && pattern[i][0] == ':')
     {
-      params[pattern[i].substr(1)] = segments[i];
+      params[pattern[i].substr(1)] = url_decode(segments[i]);
     }
     else if (pattern[i] != segments[i])
     {

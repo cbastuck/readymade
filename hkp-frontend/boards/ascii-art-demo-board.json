@@ -1,0 +1,33 @@
+{
+  "boardName": "ASCII Art Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "picker-svc",
+        "serviceId": "hookup.to/service/image-picker",
+        "serviceName": "Image Picker",
+        "state": {}
+      },
+      {
+        "uuid": "ascii-svc",
+        "serviceId": "hookup.to/service/ascii-art",
+        "serviceName": "ASCII Art",
+        "state": { "cols": 80, "rows": 40, "imageKey": "file" }
+      },
+      {
+        "uuid": "extract-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Extract ASCII",
+        "state": { "template": { "=": "params.ascii" } }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

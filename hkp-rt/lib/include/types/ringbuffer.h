@@ -39,6 +39,8 @@ public:
   unsigned int consumeAvailable(std::vector<float>& target, bool advanceReadIndex) const;
   unsigned int consumeAvailable(std::vector<uint8_t>& target, bool advanceReadIndex) const;
   unsigned int consumeAvailable(FloatRingBuffer& target);
+  unsigned int consumeExact(std::vector<float>& target, unsigned int count);
+  void skipSamples(unsigned int count);
   unsigned int consumeAvailableByAppend(std::vector<uint8_t>& target);
 
   unsigned int availableCount() const;

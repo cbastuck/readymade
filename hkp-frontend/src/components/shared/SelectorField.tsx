@@ -70,7 +70,7 @@ export default function SelectorField({
 
       <Select
         disabled={disabled}
-        value={value || undefined}
+        value={value ?? ""}
         onOpenChange={(isOpen) =>
           isOpen && onOpen?.(optionsMap)
         }

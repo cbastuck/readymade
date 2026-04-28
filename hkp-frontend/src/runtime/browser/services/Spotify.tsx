@@ -7,12 +7,15 @@ const serviceId = "hookup.to/service/spotify";
 const serviceName = "Spotify";
 
 const loginStateId = "spotify-login";
+const clientIdStateId = "spotify-client-id";
+const clientIDDefault = "e91207fc5f2e4a5db1ca562954e4c23e";
 
 class Spotify {
   uuid: string;
   board: string;
   app: AppInstance;
   token: string | undefined;
+  clientID: string | undefined;
 
   constructor(
     app: AppInstance,
@@ -25,12 +28,18 @@ class Spotify {
     this.app = app;
 
     this.token = this.app.restoreServiceData(this.uuid, loginStateId);
+    this.clientID = this.app.restoreServiceData(this.uuid, clientIdStateId) ?? clientIDDefault;
   }
 
   destroy() {}
 
   async configure(config: any) {
-    const { token, action } = config;
+    const { token, action, clientID } = config;
+    if (clientID !== undefined) {
+      this.clientID = clientID;
+      this.app.storeServiceData(this.uuid, clientIdStateId, clientID);
+      this.app.notify(this, { clientID });
+    }
     if (token !== undefined) {
       this.token = token;
       this.app.storeServiceData(this.uuid, loginStateId, token);

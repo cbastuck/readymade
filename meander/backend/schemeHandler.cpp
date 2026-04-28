@@ -57,6 +57,26 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
       "DELETE",
       "/boards/:board",
       std::bind(&SchemeHandler::handleDeleteBoard, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "GET",
+      "/history/",
+      std::bind(&SchemeHandler::handleListBoardHistories, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "POST",
+      "/history/:board",
+      std::bind(&SchemeHandler::handlePushBoardSnapshot, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "GET",
+      "/history/:board",
+      std::bind(&SchemeHandler::handleLoadBoardHistory, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "DELETE",
+      "/history/:board",
+      std::bind(&SchemeHandler::handleClearBoardHistory, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void SchemeHandler::addRoute(const Router::Method &method, const std::string &path, Router::Handler handler)
@@ -466,6 +486,251 @@ saucer::scheme::response SchemeHandler::handleDeleteBoard(const Router::Params &
           {"message", "Board deleted successfully"},
           {"board", boardName},
           {"path", path}}.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleListBoardHistories(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  namespace fs = std::filesystem;
+  auto meandersDir = m_settings.getMeandersDirPath();
+
+  json result = json::array();
+  for (const auto& entry : fs::directory_iterator(meandersDir))
+  {
+    if (!entry.is_regular_file() || entry.path().extension() != ".history")
+    {
+      continue;
+    }
+    auto boardName = Settings::decodeBoardNameFromStorage(entry.path().stem().string());
+    if (!Settings::isValidBoardName(boardName))
+    {
+      continue;
+    }
+
+    std::string latestTimestamp;
+    std::ifstream file(entry.path());
+    if (file.is_open())
+    {
+      try
+      {
+        json history;
+        file >> history;
+        if (history.is_array() && !history.empty() &&
+            history[0].is_object() && history[0].contains("timestamp") &&
+            history[0]["timestamp"].is_string())
+        {
+          latestTimestamp = history[0]["timestamp"].get<std::string>();
+        }
+      }
+      catch (...) {}
+    }
+
+    json item{{"name", boardName}};
+    if (!latestTimestamp.empty())
+    {
+      item["latestTimestamp"] = latestTimestamp;
+    }
+    result.push_back(std::move(item));
+  }
+
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(result.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+static constexpr std::size_t MAX_HISTORY_DEPTH = 50;
+
+saucer::scheme::response SchemeHandler::handlePushBoardSnapshot(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  auto boardName = p.at("board");
+  if (!Settings::isValidBoardName(boardName))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  auto content = req.content();
+  if (content.size() == 0)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("No content provided"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  json entry;
+  try
+  {
+    entry = json::parse(std::string(reinterpret_cast<const char *>(content.data()), content.size()));
+    if (entry.is_object())
+    {
+      auto snapshotIt = entry.find("snapshot");
+      if (snapshotIt != entry.end() && snapshotIt->is_object())
+      {
+        snapshotIt->erase("registry");
+      }
+    }
+  }
+  catch (const json::exception&)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid JSON payload"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  auto histPath = m_settings.getHistoryPath(boardName);
+  if (histPath.empty())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  json history = json::array();
+  if (std::filesystem::exists(histPath))
+  {
+    std::ifstream file(histPath);
+    if (file.is_open())
+    {
+      try
+      {
+        json parsed;
+        file >> parsed;
+        if (parsed.is_array())
+        {
+          history = std::move(parsed);
+        }
+      }
+      catch (...) {}
+    }
+  }
+
+  history.insert(history.begin(), entry);
+  if (history.size() > MAX_HISTORY_DEPTH)
+  {
+    history.erase(history.begin() + MAX_HISTORY_DEPTH, history.end());
+  }
+
+  std::ofstream out(histPath);
+  if (!out.is_open())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Failed to write history file"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  out << history.dump(2);
+
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"ok", true}}.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 201,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleLoadBoardHistory(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  auto boardName = p.at("board");
+  if (!Settings::isValidBoardName(boardName))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  auto histPath = m_settings.getHistoryPath(boardName);
+  if (histPath.empty())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  if (!std::filesystem::exists(histPath))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("[]"),
+        .mime = "application/json",
+        .headers = m_defaultHeaders,
+        .status = 200,
+    };
+  }
+
+  std::ifstream file(histPath);
+  if (!file.is_open())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("[]"),
+        .mime = "application/json",
+        .headers = m_defaultHeaders,
+        .status = 200,
+    };
+  }
+
+  std::string rawContent((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(rawContent),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleClearBoardHistory(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  auto boardName = p.at("board");
+  if (!Settings::isValidBoardName(boardName))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  auto histPath = m_settings.getHistoryPath(boardName);
+  if (histPath.empty())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  std::filesystem::remove(histPath);
+
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"ok", true}}.dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
       .status = 200,

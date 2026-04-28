@@ -12,4 +12,8 @@ export const browserBackend: BackendAdapter = {
   getRemotes: async () => [],
   saveRemote: async () => {},
   deleteRemote: async () => {},
+  fetchHistoryBoards: async () => [],
+  pushBoardSnapshot: async () => {},
+  loadBoardHistory: async () => [],
+  clearBoardHistory: async () => {},
 };

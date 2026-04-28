@@ -1,0 +1,36 @@
+{
+  "boardName": "XY Pad Demo",
+  "runtimes": [
+    { "id": "ui", "name": "Browser", "type": "browser", "state": { "wrapServices": false } }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "xypad-svc",
+        "serviceId": "hookup.to/service/xy-pad",
+        "serviceName": "XY Pad",
+        "state": {}
+      },
+      {
+        "uuid": "circle-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Circle at Position",
+        "state": {
+          "template": {
+            "type": "circle",
+            "x=": "params.x",
+            "y=": "params.y",
+            "radius": 24,
+            "color": "#6366f1"
+          }
+        }
+      },
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": { "clearOnRedraw": true, "resizable": true, "size": [600, 400] }
+      }
+    ]
+  }
+}

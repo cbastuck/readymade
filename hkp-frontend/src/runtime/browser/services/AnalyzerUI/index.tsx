@@ -12,6 +12,23 @@ import Bars from "./Bars";
 import Waveform from "./Waveform";
 import { isData } from "hkp-frontend/src/runtime/rest/Data";
 
+type ComplexBin = { re: number; im: number };
+
+function isComplexBin(value: unknown): value is ComplexBin {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "re" in value &&
+    "im" in value &&
+    typeof value.re === "number" &&
+    typeof value.im === "number"
+  );
+}
+
+function isComplexSpectrum(value: unknown): value is Array<ComplexBin> {
+  return Array.isArray(value) && value.length > 0 && value.every(isComplexBin);
+}
+
 export default function AnalyzerUI(props: ServiceUIProps) {
   type Modes = "spectogram-v" | "bars" | "spectogram-h" | "waveform";
   const initialWidth = 400;
@@ -27,7 +44,15 @@ export default function AnalyzerUI(props: ServiceUIProps) {
     }
 
     if (onProcess !== undefined) {
-      setData(onProcess);
+      if (isComplexSpectrum(onProcess)) {
+        // Complex spectrum from FFT outputMode="complex": extract magnitudes for display.
+        // The service itself is a pass-through so {re,im} data still reaches downstream services.
+        setData(
+          onProcess.map((bin) => Math.sqrt(bin.re * bin.re + bin.im * bin.im)),
+        );
+      } else {
+        setData(onProcess);
+      }
     }
   };
 

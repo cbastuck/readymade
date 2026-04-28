@@ -230,6 +230,7 @@ export type AppImpl = {
   ) => void;
   configureService?: (svc: ServiceDescriptor, config: any) => void;
   processRuntimeByName?: (name: string, params: any) => Promise<any>;
+  configureServiceInRuntime?: (runtimeId: string, serviceUuid: string, config: any) => Promise<void>;
 };
 
 export type CustomMenuEntry = {

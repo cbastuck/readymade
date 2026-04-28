@@ -125,6 +125,35 @@ unsigned int FloatRingBuffer::consumeBinary(float *outputBuffer, unsigned int fr
   return framesToCopy;
 }
 
+unsigned int FloatRingBuffer::consumeExact(std::vector<float>& target, unsigned int count)
+{
+  unsigned int available = m_writeIndex - m_readIndex;
+  if (available > count)
+  {
+    // Drop stale samples — skip ahead so we always consume the freshest `count` samples.
+    m_readIndex += (available - count);
+  }
+  else if (available < count)
+  {
+    // Not enough data yet; don't consume anything.
+    return 0;
+  }
+
+  target.resize(count);
+  for (unsigned int i = 0; i < count; ++i)
+  {
+    target[i] = m_buffer[(m_readIndex + i) % N];
+  }
+  m_readIndex += count;
+  return count;
+}
+
+void FloatRingBuffer::skipSamples(unsigned int count)
+{
+  unsigned int available = m_writeIndex - m_readIndex;
+  m_readIndex += std::min(count, available);
+}
+
 unsigned int FloatRingBuffer::consumeAvailable(std::vector<float>& target, bool advanceReadIndex) const
 {
   unsigned int availableSamples = m_writeIndex - m_readIndex;

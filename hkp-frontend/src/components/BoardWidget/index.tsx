@@ -70,7 +70,7 @@ export default function BoardWidget(props: Props) {
     <BoardProvider
       ref={boardContextRef}
       user={user || null}
-      boardName={board.boardName}
+      initialBoardName={board.boardName}
       fetchBoard={onFetchBoard}
       onLoad={runBoardAfterLoad ? runBoard : undefined}
       fetchAfterMount={true}

@@ -1,0 +1,37 @@
+{
+  "boardName": "Speech Synth Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Text",
+        "state": {
+          "recentInjection": "Hello from hookup dot to",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "speech-svc",
+        "serviceId": "hookup.to/service/speech-synth",
+        "serviceName": "Speech Synth",
+        "state": {}
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

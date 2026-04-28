@@ -1,6 +1,6 @@
 # Audio IO
 
-Captures audio from the system microphone (core-input) or plays audio to the system speakers (core-output) via CoreAudio.
+Records audio from a microphone and plays it back through the speakers, in both the browser and the hkp-rt native runtime.
 
 ---
 
@@ -8,11 +8,56 @@ Captures audio from the system microphone (core-input) or plays audio to the sys
 
 | Runtime | Service ID | Platform |
 |---|---|---|
+| Browser | `hookup.to/service/audio-input` | All |
+| Browser | `hookup.to/service/audio-output` | All |
 | hkp-rt | `core-input` | macOS only |
 | hkp-rt | `core-output` | macOS only |
 
-These services require a running hkp-rt instance on macOS. They are not
-available in the browser runtime or on other operating systems.
+---
+
+## Browser — Audio Input
+
+**Service ID:** `hookup.to/service/audio-input`
+
+Requests microphone access and records audio using the browser's `MediaRecorder` API. Emits `FloatRingBuffer` chunks downstream on a configurable interval.
+
+### Configuration
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `timeslice` | `number` | `1000` | Recording chunk interval in milliseconds |
+| `device` | `MediaDeviceInfo` | system default | Audio input device to use |
+
+### Commands
+
+| Action | Params | Description |
+|---|---|---|
+| `"start-recording"` | `{ timeslice? }` | Start capturing audio |
+| `"stop-recording"` | — | Stop capturing |
+
+### Output
+
+A `FloatRingBuffer` containing the most recent audio chunk at the device's native sample rate.
+
+---
+
+## Browser — Audio Output
+
+**Service ID:** `hookup.to/service/audio-output`
+
+Decodes and plays back audio data received from the pipeline through the Web Audio API.
+
+### Configuration
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `fadeInTime` | `number` | `0` | Fade-in duration in seconds when playback starts |
+
+### Input
+
+A `FloatRingBuffer` or decoded audio buffer, typically from Audio Input, FFT → IFFT, or an audio synthesis pipeline.
+
+---
 
 ---
 

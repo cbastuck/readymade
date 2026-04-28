@@ -1,0 +1,40 @@
+{
+  "boardName": "Fetcher Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Trigger",
+        "state": {
+          "recentInjection": null
+        }
+      },
+      {
+        "uuid": "fetcher-svc",
+        "serviceId": "hookup.to/service/fetcher",
+        "serviceName": "Fetcher",
+        "state": {
+          "url": "https://jsonplaceholder.typicode.com/todos/1",
+          "method": "GET",
+          "bodyFormat": "text"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

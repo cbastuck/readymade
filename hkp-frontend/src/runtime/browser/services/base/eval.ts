@@ -54,6 +54,12 @@ const globalScope = {
     arr.slice(offset, end).filter((_, i) => i % step === 0),
   sum: (x: Array<number>) =>
     x && x.reduce ? x.reduce((acc, v) => acc + v, 0) : x,
+  flatSum: (x: Array<any>) =>
+    x && x.flat ? x.flat().reduce((acc: number, v: number) => acc + v, 0) : 0,
+  at: (arr: Array<any>, i: number) =>
+    arr[Math.abs(Math.round(i)) % arr.length],
+  now: () => Date.now(),
+  range: (n: number) => Array.from({ length: Math.max(0, Math.round(n)) }, (_, i) => i),
   avg: (x: Array<number>) =>
     x && x.reduce ? x.reduce((acc, v) => acc + v, 0) / x.length : x,
   arrayToAudioBuffer: (arr: Array<number>) => {

@@ -1,0 +1,250 @@
+{
+  "boardName": "Breakout Game",
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "main",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 12,
+          "fill": true,
+          "align": "center",
+          "items": [
+            {
+              "type": "xy-pad",
+              "serviceUuid": "xy-pad-svc",
+              "width": 400
+            },
+            {
+              "type": "canvas",
+              "serviceUuid": "canvas-svc"
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "justify": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Start",
+                  "action": {
+                    "serviceUuid": "timer-svc",
+                    "configure": { "start": true }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "Stop",
+                  "action": {
+                    "serviceUuid": "timer-svc",
+                    "configure": { "running": false }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "runtimes": [
+    {
+      "id": "input",
+      "name": "Input",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "game",
+      "name": "Game",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": true }
+    },
+    {
+      "id": "canvas",
+      "name": "Canvas",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "input": [
+      {
+        "uuid": "xy-pad-svc",
+        "serviceId": "hookup.to/service/xy-pad",
+        "serviceName": "XY Pad"
+      },
+      {
+        "uuid": "map-input-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map Input",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "relX=": "params.x"
+          }
+        }
+      },
+      {
+        "uuid": "configurator-input-svc",
+        "serviceId": "hookup.to/service/configurator",
+        "serviceName": "Send to Cache",
+        "state": {
+          "targetServiceUuid": "cache-svc",
+          "targetRuntime": "game",
+          "passThrough": false,
+          "pipeline": [
+            {
+              "serviceId": "hookup.to/service/map",
+              "instanceId": "configurator-input-map",
+              "serviceName": "Wrap for Cache",
+              "state": {
+                "mode": "add",
+                "template": {
+                  "cacheProperties+": ["relX"]
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "game": [
+      {
+        "uuid": "timer-svc",
+        "serviceId": "hookup.to/service/timer",
+        "serviceName": "Timer",
+        "state": {
+          "periodic": true,
+          "periodicValue": 20,
+          "periodicUnit": "ms",
+          "running": true
+        }
+      },
+      {
+        "uuid": "cache-svc",
+        "serviceId": "hookup.to/service/cache",
+        "serviceName": "State Cache",
+        "state": {
+          "updateTrigger": "process",
+          "initial": {
+            "barX": 50,
+            "ballX": 10,
+            "ballY": 50,
+            "dX": 1,
+            "dY": 2,
+            "width": 400,
+            "height": 250
+          }
+        }
+      },
+      {
+        "uuid": "map-logic-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Game Logic",
+        "state": {
+          "template": {
+            "barX=": "params.relX * params.width || (params.barX + (params.moveX || 0))",
+            "dX=": "(params.ballX + params.dX >= params.width) || (params.ballX + params.dX * 1.1 < 5) ? min(params.dX * -1.1, 5) : params.dX",
+            "dY=": "((params.ballY < params.height && params.ballY + params.dY >= params.height && params.ballX >= params.barX && params.ballX <= params.barX + 70) || (params.ballY + params.dY < 20)) ? params.dY * -1 : params.dY",
+            "ballX=": "params.triggerCount ? params.ballX + params.dX : params.ballX",
+            "ballY=": "params.ballY > params.height + 10 ? 50 : (params.triggerCount ? params.ballY + params.dY : params.ballY)",
+            "cacheProperties+": ["ballX", "ballY", "barX", "dX", "dY"],
+            "width=": "params.width",
+            "height=": "params.height"
+          }
+        }
+      },
+      {
+        "uuid": "configurator-logic-svc",
+        "serviceId": "hookup.to/service/configurator",
+        "serviceName": "Cache Game State",
+        "state": {
+          "targetServiceUuid": "cache-svc",
+          "passThrough": true
+        }
+      },
+      {
+        "uuid": "stack-svc",
+        "serviceId": "hookup.to/service/stack",
+        "serviceName": "Render",
+        "state": {
+          "input": "multiplex",
+          "output": "array",
+          "services": [
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Ball",
+              "template": {
+                "type": "text",
+                "text": "•",
+                "x=": "params.ballX",
+                "y=": "params.ballY",
+                "color": "#454f6d"
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "serviceName": "Bar",
+              "template": {
+                "type": "rect",
+                "x=": "params.barX",
+                "y=": "params.height - 10",
+                "height": "5",
+                "width": "70",
+                "color": "#333"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "canvas": [
+      {
+        "uuid": "canvas-svc",
+        "serviceId": "hookup.to/service/canvas",
+        "serviceName": "Canvas",
+        "state": {
+          "clearOnRedraw": true,
+          "resizable": true,
+          "size": [400, 250],
+          "reportSizeUpdate": true
+        }
+      },
+      {
+        "uuid": "configurator-size-svc",
+        "serviceId": "hookup.to/service/configurator",
+        "serviceName": "Cache Size",
+        "state": {
+          "targetServiceUuid": "cache-svc",
+          "targetRuntime": "game",
+          "passThrough": false,
+          "pipeline": [
+            {
+              "serviceId": "hookup.to/service/filter",
+              "instanceId": "if-size-changed",
+              "serviceName": "If Size Changed",
+              "state": {
+                "conditions": ["params.updatedWidth || params.updatedHeight"]
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "instanceId": "map-size-inner",
+              "serviceName": "Update Size",
+              "state": {
+                "template": {
+                  "width=": "params.updatedWidth || params.width",
+                  "height=": "params.updatedHeight || params.height",
+                  "cacheProperties+": ["width", "height"]
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

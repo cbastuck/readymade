@@ -7,6 +7,7 @@
 #include "types/data.h"
 #include "./schemeHandler.h"
 #include "./frontendServer.h"
+#include "./serviceRedirectHandler.h"
 
 #if USE_SAUCER_EMBEDDED
 #include "../embedded/saucer/embedded/all.hpp"
@@ -17,13 +18,36 @@
   #include <netinet/in.h>
   #include <arpa/inet.h>
   #include <unistd.h>
+  #include <sys/wait.h>
+#endif
+#ifdef _WIN32
+  #include <windows.h>
+  #include <shellapi.h>
 #endif
 
 #ifdef NDEBUG
-    const bool isDebugBuild = false;
+    extern const bool isDebugBuild = false;
 #else
-    const bool isDebugBuild = true;
+    extern const bool isDebugBuild = true;
 #endif
+
+// Opens a URL in the OS default browser without spawning a shell (no injection risk).
+static void openUrlInSystemBrowser(const std::string &url)
+{
+#ifdef _WIN32
+  ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
+#elif defined(__APPLE__)
+  const char *args[] = {"open", url.c_str(), nullptr};
+  pid_t pid = fork();
+  if (pid == 0) { execvp("open", const_cast<char **>(args)); _exit(1); }
+  if (pid > 0)  { waitpid(pid, nullptr, 0); }
+#else
+  const char *args[] = {"xdg-open", url.c_str(), nullptr};
+  pid_t pid = fork();
+  if (pid == 0) { execvp("xdg-open", const_cast<char **>(args)); _exit(1); }
+  if (pid > 0)  { waitpid(pid, nullptr, 0); }
+#endif
+}
 
 // Determine the primary LAN IP by connecting a UDP socket to a well-known
 // address (no packet is actually sent — the OS just picks the right interface).
@@ -34,7 +58,10 @@ static std::string getLanIP()
   return "127.0.0.1";
 #else
   int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
-  if (sock < 0) return "127.0.0.1";
+  if (sock < 0)
+  {
+    return "127.0.0.1";
+  }
 
   sockaddr_in dest{};
   dest.sin_family = AF_INET;
@@ -156,6 +183,32 @@ int real_main(int argc, char *argv[])
   );
 
   std::cout << "Launched meander" << std::endl;
+
+  // Popup support.
+  //
+  // WebKit ignores window.open() when the WKUIDelegate doesn't implement
+  // createWebViewWithConfiguration:…  The frontend detects Meander via
+  // __MEANDER_CONFIG__ and calls saucer.exposed.openInBrowser() directly.
+  // The navigate handler below is kept as a fallback for target="_blank" clicks.
+  // OAuth-specific relay logic lives in ServiceRedirectHandler / serviceRedirectHandler.cpp.
+
+  ServiceRedirectHandler redirectHandler(&webview.value(), loop.application());
+
+  webview->expose("openInBrowser", [&redirectHandler](const std::string &url)
+  {
+    redirectHandler.open(url);
+  });
+
+  // Fallback: open target="_blank" link clicks in the OS default browser.
+  webview->on<saucer::webview::event::navigate>(
+    [](const saucer::navigation &nav) -> saucer::policy
+    {
+      if (!nav.new_window()) {
+        return saucer::policy::allow;
+      }
+      openUrlInSystemBrowser(nav.url().string());
+      return saucer::policy::block;
+    });
 
 #if USE_SAUCER_EMBEDDED
   webview->embed(saucer::embedded::all());

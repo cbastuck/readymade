@@ -1,57 +1,17 @@
-import { useState, useEffect, useRef, useContext, useCallback } from "react";
-import { FacadeDescriptor } from "../../facade/types";
+import { withRouter } from "../../common";
 
-import { withRouter, WithRouterProps } from "../../common";
-
-import BoardProvider, {
-  useBoardContext,
-  BoardContextState,
-  BoardProviderHandle,
-} from "../../BoardContext";
-import Toolbar from "../../components/Toolbar";
-import Footer from "hkp-frontend/src/components/Footer";
-import SaveBoardDialog from "../../components/SaveBoardDialog";
+import BoardProvider from "../../BoardContext";
 
 import { generateRandomName } from "../../core/board";
 
-import {
-  defaultName,
-  availableRuntimeEngines,
-  restoreBoardFromLocalStorage,
-  storeBoardToLocalStorage,
-} from "./common";
-import {
-  importBoard,
-  createBoardFromTemplate,
-  importFromLink,
-} from "./BoardActions";
+import { usePlaygroundController } from "./PlaygroundController";
+import PlaygroundInner from "./PlaygroundInner";
+import { PlaygroundProps } from "./Playground.types";
 
-import {
-  Action,
-  BoardDescriptor,
-  ExternalInput,
-  RuntimeDescriptor,
-  PlaygroundState,
-  RuntimeApiMap,
-  AcceptedSyncSenders,
-  RejectedSyncSenders,
-  isRuntimeRestClassType,
-  isRuntimeGraphQLClassType,
-  RuntimeClass,
-  BoardMenuItemFactory,
-} from "../../types";
-import { createBoardLink, createBoardSrcLink } from "./BoardLink";
+import { RuntimeApiMap } from "../../types";
 import browserRuntimeApi from "../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../runtime/graphql/RuntimeGraphQLApi";
 import runtimeRestApi from "../../runtime/rest/RuntimeRestApi";
-import BoardEntryPoint from "./BoardEntryPoint";
-import { AppCtx } from "../../AppContext";
-import BoardFetchError from "./BoardFetchError";
-import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
-
-const restoredAvailableRuntimeEngines = JSON.parse(
-  localStorage.getItem("available-remote-runtimes") || "[]",
-);
 
 export const runtimeApis: RuntimeApiMap = {
   browser: browserRuntimeApi,
@@ -61,505 +21,35 @@ export const runtimeApis: RuntimeApiMap = {
   rest: runtimeRestApi,
 };
 
-type Props = WithRouterProps & {
-  boardName?: string;
-  compact?: boolean;
-  availableRuntimeEngines?: Array<RuntimeClass>;
-  onUpdateAvailableRuntimeEngines?: (
-    runtimeClasses: Array<RuntimeClass>,
-  ) => void | Promise<void>;
-  boardDescriptor?: BoardDescriptor;
-  children?: React.ReactNode;
-  hideNavigation?: boolean;
-  menuSlot?: React.ReactNode;
-  logoSlot?: React.ReactNode;
-  menuItemFactory?: BoardMenuItemFactory;
-  onChangeBoardname?: (newName: string) => void;
-  onSaveBoard?: (name: string, payload: BoardDescriptor) => void;
-  onUpdateBoardState?: (newBoard: BoardDescriptor) => void;
-  onNewBoard?: (ctx?: BoardContextState) => void;
-};
-
-type PlaygroundInnerProps = {
-  boardName: string;
-  description: string;
-  compact?: boolean;
-  hideNavigation?: boolean;
-  menuSlot?: React.ReactNode;
-  logoSlot?: React.ReactNode;
-  menuItemFactory?: BoardMenuItemFactory;
-  showShareBoardQRCodeURL: string | null;
-  setShowShareBoardQRCodeURL: (url: string | null) => void;
-  isSaveDialogVisible: boolean;
-  suggestedName: string;
-  onSaveDialog: (
-    name: string,
-    desc: string,
-    isSuggestedName: boolean,
-  ) => Promise<any>;
-  setIsSaveDialogVisible: (v: boolean) => void;
-  onChangeBoardname: (newName: string) => void;
-  onUpdateAvailableRuntimeEngines?: (
-    runtimeClasses: Array<RuntimeClass>,
-  ) => void | Promise<void>;
-  propBoardName?: string;
-  children?: React.ReactNode;
-};
-
-function PlaygroundInner(props: PlaygroundInnerProps) {
-  const boardContext = useBoardContext();
-  if (!boardContext) return null;
-  return (
-    <div
-      className="w-full h-full bg-neutral-50 flex flex-col"
-      style={{ width: "100%" }}
-    >
-      <Toolbar
-        showRuntimeMenu={true}
-        onUpdateAvailableRuntimeEngines={(engines) => {
-          const filteredEngines = engines.filter(
-            (rt) =>
-              isRuntimeGraphQLClassType(rt.type) ||
-              isRuntimeRestClassType(rt.type),
-          );
-          if (props.onUpdateAvailableRuntimeEngines) {
-            props.onUpdateAvailableRuntimeEngines(filteredEngines);
-            return;
-          }
-
-          localStorage.setItem(
-            "available-remote-runtimes",
-            JSON.stringify(filteredEngines),
-          );
-        }}
-        isCompact={props.compact}
-        menuItemFactory={props.menuItemFactory}
-        hideNavigation={props.hideNavigation}
-        menuSlot={props.menuSlot}
-        logoSlot={props.logoSlot}
-        includeNavigationLinks={!props.hideNavigation}
-      />
-
-      <ShareQRCodeDialog
-        isOpen={props.showShareBoardQRCodeURL !== null}
-        url={props.showShareBoardQRCodeURL}
-        onClose={() => props.setShowShareBoardQRCodeURL(null)}
-      />
-      <SaveBoardDialog
-        isOpen={props.isSaveDialogVisible}
-        suggestedName={props.suggestedName}
-        suggestedDescription={props.description}
-        onSave={props.onSaveDialog}
-        onCancel={() => props.setIsSaveDialogVisible(false)}
-      />
-      {boardContext.errorOnFetch ? (
-        <BoardFetchError
-          boardName={props.boardName}
-          error={boardContext.errorOnFetch}
-        />
-      ) : (
-        <BoardEntryPoint
-          className="pt-2"
-          isLoading={boardContext.isFetching || !!boardContext.awaitUserLogin}
-          showLoginRequired={!!boardContext.awaitUserLogin}
-          boardContext={boardContext}
-          boardName={props.propBoardName || props.boardName}
-          description={props.description}
-          onChangeBoardname={props.onChangeBoardname}
-        />
-      )}
-      <Footer />
-      {props.children || null}
-    </div>
-  );
-}
-
-function Playground(props: Props) {
-  const appContext = useContext(AppCtx);
-
-  const boardProviderRef = useRef<BoardProviderHandle | null>(null);
-  const externalInputs = useRef<{ [runtimeId: string]: ExternalInput }>({});
-  const user = useRef(null);
-
-  const [isSaveDialogVisible, setIsSaveDialogVisible] = useState(false);
-  const [showShareBoardQRCodeURL, setShowShareBoardQRCodeURL] = useState<
-    string | null
-  >(null);
-  const [boardName, setBoardName] = useState<string>(
-    (props.match && props.match.params && props.match.params.board) ||
-      defaultName,
-  );
-  const [description, setDescription] = useState("");
-  const facadeRef = useRef<FacadeDescriptor | undefined>(undefined);
-  const [initialFetched, setInitialFetched] = useState(false);
-  const [acceptedSyncSenders, setAcceptedSyncSenders] =
-    useState<AcceptedSyncSenders>([]);
-  const [rejectedSyncSenders, setRejectedSyncSenders] =
-    useState<RejectedSyncSenders>([]);
-
-  // Keep refs for values used inside stable callbacks
-  const boardNameRef = useRef(boardName);
-  const descriptionRef = useRef(description);
-  const initialFetchedRef = useRef(initialFetched);
-  const acceptedSyncSendersRef = useRef(acceptedSyncSenders);
-  const rejectedSyncSendersRef = useRef(rejectedSyncSenders);
-
-  useEffect(() => {
-    boardNameRef.current = boardName;
-  }, [boardName]);
-  useEffect(() => {
-    descriptionRef.current = description;
-  }, [description]);
-  useEffect(() => {
-    initialFetchedRef.current = initialFetched;
-  }, [initialFetched]);
-  useEffect(() => {
-    acceptedSyncSendersRef.current = acceptedSyncSenders;
-  }, [acceptedSyncSenders]);
-  useEffect(() => {
-    rejectedSyncSendersRef.current = rejectedSyncSenders;
-  }, [rejectedSyncSenders]);
-
-  const tryFetch = useCallback(async () => {
-    try {
-      await boardProviderRef.current?.fetchBoard();
-    } catch (err: any) {
-      appContext?.pushNotification({
-        type: "error",
-        message: err.message ? err.message : `Fetch failed`,
-        timeout: 5000,
-        error: err,
-      });
-    }
-  }, [appContext]);
-
-  const saveBoard = useCallback(
-    async (showDialog = true) => {
-      if (showDialog) {
-        setIsSaveDialogVisible(true);
-      } else if (boardNameRef.current) {
-        const name = boardNameRef.current;
-        const desc = descriptionRef.current;
-        const saveName = props.boardName || name;
-        const data = await boardProviderRef.current?.state.serializeBoard();
-
-        if (props.onSaveBoard && data) {
-          props.onSaveBoard(saveName, {
-            ...data,
-            description: desc,
-          });
-        } else {
-          storeBoardToLocalStorage(
-            name,
-            JSON.stringify({ ...data, name, description: desc }),
-            desc,
-          );
-          appContext?.pushNotification({
-            type: "success",
-            message: `The Board '${saveName}' was saved.`,
-          });
-        }
-      } else {
-        appContext?.pushNotification({
-          type: "error",
-          message: "Saving board failed",
-        });
-      }
-    },
-    [appContext, props.boardName, props.onSaveBoard],
-  );
-
-  const onKey = useCallback(
-    (e: KeyboardEvent) => {
-      if (
-        (window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey) &&
-        e.keyCode === 83
-      ) {
-        e.preventDefault();
-        saveBoard(false);
-      }
-    },
-    [saveBoard],
-  );
-
-  useEffect(() => {
-    document.addEventListener("keydown", onKey, false);
-    tryFetch();
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      boardProviderRef.current?.clearBoard();
-    };
-  }, []);
-
-  // componentDidUpdate: board param changed
-  const prevMatchBoardRef = useRef(props.match?.params?.board);
-  const prevBoardNamePropRef = useRef(props.boardName);
-  const prevBoardDescriptorRef = useRef(props.boardDescriptor);
-
-  useEffect(() => {
-    const currentBoard = props.match?.params?.board;
-    const prevBoard = prevMatchBoardRef.current;
-    if (currentBoard !== prevBoard && currentBoard) {
-      onBoardChanged(currentBoard);
-    }
-    prevMatchBoardRef.current = currentBoard;
-  });
-
-  useEffect(() => {
-    if (prevBoardNamePropRef.current !== props.boardName && props.boardName) {
-      setBoardName(props.boardName);
-    }
-    prevBoardNamePropRef.current = props.boardName;
-  });
-
-  useEffect(() => {
-    if (
-      prevBoardDescriptorRef.current !== props.boardDescriptor &&
-      props.boardDescriptor
-    ) {
-      boardProviderRef.current?.setBoardState(props.boardDescriptor);
-      const incomingFacade = props.boardDescriptor.facade;
-      facadeRef.current = incomingFacade;
-      if (props.boardDescriptor.description !== undefined) {
-        setDescription(props.boardDescriptor.description);
-        descriptionRef.current = props.boardDescriptor.description;
-      }
-    }
-    prevBoardDescriptorRef.current = props.boardDescriptor;
-  });
-
-  const onBoardChanged = async (newBoard: string) => {
-    await boardProviderRef.current?.clearBoard();
-    setBoardName(newBoard);
-    setInitialFetched(false);
-    boardNameRef.current = newBoard;
-    initialFetchedRef.current = false;
-    await tryFetch();
-  };
-
-  const getInitialPlayground =
-    async (): Promise<Partial<PlaygroundState> | null> => {
-      const brd = props.match?.params?.board || props.boardName;
-      if (brd) {
-        const params = Object.fromEntries(
-          new URLSearchParams(document.location.search),
-        );
-
-        if (params.template) {
-          return createBoardFromTemplate(params.template, params);
-        } else if (params.src) {
-          return importBoard(params.src);
-        } else if (params.fromLink) {
-          return importFromLink(params.fromLink, params.vars);
-        } else {
-          const localBoard = restoreBoardFromLocalStorage(brd);
-          if (localBoard) {
-            return localBoard;
-          }
-        }
-        return {
-          runtimes: [],
-          services: {},
-          boardName: brd,
-        };
-      }
-      console.error("Playground.getInitialPlayground() - no board name");
-      return null;
-    };
-
-  const fetchBoard = async (): Promise<BoardDescriptor> => {
-    if (initialFetchedRef.current) {
-      return boardProviderRef.current!.state;
-    }
-
-    const initialBord = await getInitialPlayground();
-    if (!initialBord) {
-      return boardProviderRef.current!.state;
-    }
-
-    const {
-      boardName: bName = boardNameRef.current || defaultName,
-      description: desc = "",
-      facade: facadeData,
-      acceptedSyncSenders: accepted = [],
-      rejectedSyncSenders: rejected = [],
-      runtimes = [],
-      services = {},
-      registry = {},
-    } = initialBord;
-
-    setAcceptedSyncSenders(accepted);
-    setRejectedSyncSenders(rejected);
-    setInitialFetched(true);
-    setDescription(desc);
-
-    // Keep refs in sync immediately for same-tick usage
-    acceptedSyncSendersRef.current = accepted;
-    rejectedSyncSendersRef.current = rejected;
-    initialFetchedRef.current = true;
-    descriptionRef.current = desc;
-    facadeRef.current = facadeData;
-
-    return {
-      boardName: bName,
-      runtimes,
-      services,
-      registry,
-      facade: facadeData,
-    };
-  };
-
-  const serializeBoard = async (
-    descriptor: BoardDescriptor,
-  ): Promise<PlaygroundState | null> => {
-    const desc = descriptionRef.current;
-    const accepted = acceptedSyncSendersRef.current;
-    const rejected = rejectedSyncSendersRef.current;
-
-    return {
-      ...descriptor,
-      description: desc,
-      facade: facadeRef.current,
-      acceptedSyncSenders: accepted,
-      rejectedSyncSenders: rejected,
-    };
-  };
-
-  const onUpdateBoardState = (newState: BoardDescriptor) => {
-    if (props.onUpdateBoardState) {
-      props.onUpdateBoardState(newState);
-    }
-  };
-
-  const newBoard = async (searchParams = "") => {
-    if (props.onNewBoard) {
-      props.onNewBoard(boardProviderRef.current?.state);
-    } else {
-      await boardProviderRef.current?.clearBoard();
-      const name = generateRandomName();
-      props.navigate(`/playground/${name}${searchParams}`, {
-        replace: true,
-      });
-    }
-  };
-
-  const onRemoveRuntime = async (rt: RuntimeDescriptor) => {
-    const externalInput = externalInputs.current[rt.id];
-    if (externalInput) {
-      externalInput.close();
-      delete externalInputs.current[rt.id];
-    }
-  };
-
-  const onClearPlayground = async () => {
-    for (const ext of Object.keys(externalInputs.current)) {
-      externalInputs.current[ext].close();
-    }
-    externalInputs.current = {};
-  };
-
-  const isActionAvailable = (action: Action) => {
-    switch (action.type) {
-      case "shareBoard":
-        return false;
-      case "saveBoard":
-      case "clearBoard":
-      case "createBoardLink":
-      case "showBoardSource":
-        return true;
-
-      default:
-        break;
-    }
-    return true;
-  };
-
-  const onCreateBoardLink = async () => {
-    const data = await boardProviderRef.current?.state.serializeBoard();
-    if (data) {
-      const url = createBoardLink(
-        JSON.stringify({
-          runtimes: data.runtimes,
-          services: data.services,
-        }),
-      );
-      try {
-        navigator.clipboard.writeText(url);
-        appContext?.pushNotification({
-          type: "info",
-          message: "Board URL copied to clipboard",
-          action: {
-            label: "QR Code",
-            callback: () => {
-              setShowShareBoardQRCodeURL(url);
-            },
-          },
-        });
-      } catch (_err) {
-        appContext?.pushNotification({
-          type: "info",
-          message: "Could not copy to clipboard",
-          action: {
-            label: "QR Code",
-            callback: () => {
-              setShowShareBoardQRCodeURL(url);
-            },
-          },
-        });
-      }
-    }
-
-    return true;
-  };
-
-  const onSaveDialog = async (
-    name: string,
-    desc: string,
-    isSuggestedName: boolean,
-  ) => {
-    const data = await boardProviderRef.current?.state.serializeBoard();
-    if (props.onSaveBoard && data) {
-      props.onSaveBoard(name, { ...data, description: desc });
-    } else {
-      storeBoardToLocalStorage(
-        name,
-        JSON.stringify({ ...data, name, description: desc }),
-        desc,
-      );
-
-      if (!isSuggestedName) {
-        setTimeout(
-          () => props.navigate(`/playground/${name}`, { replace: true }),
-          0,
-        );
-      }
-    }
-
-    setDescription(desc);
-    descriptionRef.current = desc;
-    setIsSaveDialogVisible(false);
-    return data;
-  };
-
-  const onChangeBoardname = (newName: string) => {
-    if (!props.onChangeBoardname) {
-      props.navigate(`/playground/${newName}`);
-      return;
-    }
-    props.onChangeBoardname(newName);
-  };
-
-  const currentUser = (appContext && appContext?.user) || user.current;
-
-  const playgroundRuntimeEngines = props.availableRuntimeEngines
-    ? props.availableRuntimeEngines
-    : availableRuntimeEngines.concat(restoredAvailableRuntimeEngines);
+function Playground(props: PlaygroundProps) {
+  const {
+    boardProviderRef,
+    currentUser,
+    requestedBoardName,
+    description,
+    isSaveDialogVisible,
+    setIsSaveDialogVisible,
+    showShareBoardQRCodeURL,
+    setShowShareBoardQRCodeURL,
+    playgroundRuntimeEngines,
+    fetchBoard,
+    onRemoveRuntime,
+    newBoard,
+    onClearPlayground,
+    saveBoard,
+    isActionAvailable,
+    serializeBoard,
+    onUpdateBoardState,
+    onAction,
+    onSaveDialog,
+    onChangeBoardname,
+  } = usePlaygroundController(props);
 
   return (
     <BoardProvider
       ref={boardProviderRef}
       user={currentUser}
-      boardName={boardName}
+      initialBoardName={requestedBoardName}
       fetchBoard={fetchBoard}
       isRuntimeInScope={() => true}
       runtimeApis={runtimeApis}
@@ -570,30 +60,12 @@ function Playground(props: Props) {
       isActionAvailable={isActionAvailable}
       serializeBoard={serializeBoard}
       onUpdateBoardState={onUpdateBoardState}
-      onAction={(action: Action) => {
-        if (action.type === "createBoardLink") {
-          onCreateBoardLink();
-          return true;
-        } else if (action.type === "showBoardSource") {
-          boardProviderRef.current?.state.serializeBoard().then((data) => {
-            if (data) {
-              createBoardSrcLink(
-                JSON.stringify({
-                  runtimes: data.runtimes,
-                  services: data.services,
-                }),
-              );
-            }
-          });
-          return true;
-        }
-        return false;
-      }}
+      onAction={onAction}
       onRemoveService={() => {}}
       availableRuntimeEngines={playgroundRuntimeEngines}
+      onBoardInfrastructureChange={props.onBoardInfrastructureChange}
     >
       <PlaygroundInner
-        boardName={boardName}
         description={description}
         compact={props.compact}
         hideNavigation={props.hideNavigation}
@@ -612,7 +84,8 @@ function Playground(props: Props) {
         setIsSaveDialogVisible={setIsSaveDialogVisible}
         onChangeBoardname={onChangeBoardname}
         onUpdateAvailableRuntimeEngines={props.onUpdateAvailableRuntimeEngines}
-        propBoardName={props.boardName}
+        requestedBoardName={props.boardName || requestedBoardName}
+        emptySlot={props.emptySlot}
       >
         {props.children}
       </PlaygroundInner>

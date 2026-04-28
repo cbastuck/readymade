@@ -1,0 +1,46 @@
+{
+  "boardName": "Map Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "injector-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Input",
+        "state": {
+          "recentInjection": {
+            "x": 5,
+            "y": 3
+          }
+        }
+      },
+      {
+        "uuid": "map-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Map",
+        "state": {
+          "template": {
+            "sum=": "x + y",
+            "product=": "x * y",
+            "difference=": "x - y",
+            "label=": "concat('(', x, ', ', y, ')')"
+          }
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

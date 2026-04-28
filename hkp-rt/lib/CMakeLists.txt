@@ -92,6 +92,10 @@ target_sources(${PROJECT_NAME}
       src/services/http_client.cpp
       src/services/websocket_writer.cpp
       src/services/writer_session.cpp
+      src/services/peer_server/peer_registry.cpp
+      src/services/peer_server/peer_ws_session.cpp
+      src/services/peer_server/peer_server_session.cpp
+      src/services/peer_server/peer_server_listener.cpp
       src/services/filesystem.h
       src/services/map.h
       src/services/filter.h

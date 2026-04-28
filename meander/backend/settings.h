@@ -4,13 +4,15 @@
 #include <cctype>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
+#include <sstream>
 #include <string>
 #include <vector>
 
 #include <nlohmann/json.hpp>
 
 class Settings
-{ 
+{
 public:
   struct RemoteRuntimeEngine
   {
@@ -49,7 +51,7 @@ public:
     }
 
     fs::path hkpDir = homeDir / ".hkp";
-    if (!fs::exists(hkpDir)) 
+    if (!fs::exists(hkpDir))
     {
       fs::create_directory(hkpDir);
     }
@@ -60,16 +62,16 @@ public:
   {
     namespace fs = std::filesystem;
     std::vector<std::string> boardNames;
-    fs::path saveDir = m_hkpDirPath;
-    
+    fs::path saveDir = getMeandersDirPath();
+
     for (const auto& entry : fs::directory_iterator(saveDir))
     {
       if (entry.is_regular_file() && entry.path().extension() == ".hkpp")
       {
-        boardNames.push_back(entry.path().stem().string());
+        boardNames.push_back(decodeBoardNameFromStorage(entry.path().stem().string()));
       }
     }
-    
+
     return boardNames;
   }
 
@@ -79,27 +81,69 @@ public:
     {
       return false;
     }
-    for (char c : boardName)
+
+    for (size_t i = 0; i < boardName.size(); ++i)
     {
-      if (!std::isalnum(static_cast<unsigned char>(c)) && c != '-' && c != '_')
+      const unsigned char c = static_cast<unsigned char>(boardName[i]);
+      if (std::isalnum(c) || c == '-' || c == '_' || c == ' ' || c == '/')
       {
-        return false;
+        continue;
       }
+
+      return false;
     }
+
     return true;
+  }
+
+  static std::string decodeBoardNameFromStorage(const std::string& storageName)
+  {
+    std::string result;
+    result.reserve(storageName.size());
+    for (size_t i = 0; i < storageName.size(); ++i)
+    {
+      if (storageName[i] == '%' && i + 2 < storageName.size())
+      {
+        const unsigned char hi = static_cast<unsigned char>(storageName[i + 1]);
+        const unsigned char lo = static_cast<unsigned char>(storageName[i + 2]);
+        if (std::isxdigit(hi) && std::isxdigit(lo))
+        {
+          const std::string hex = storageName.substr(i + 1, 2);
+          const char decoded = static_cast<char>(std::stoi(hex, nullptr, 16));
+          result.push_back(decoded);
+          i += 2;
+          continue;
+        }
+      }
+      result.push_back(storageName[i]);
+    }
+    return result;
   }
 
   std::string getBoardsSavePath(const std::string& boardName) const
   {
     namespace fs = std::filesystem;
-    fs::path savePath = m_hkpDirPath / (boardName + ".hkpp");
-    // Verify the resolved path is still inside the intended directory
+    const std::string storageName = encodeBoardNameForStorage(boardName);
+    fs::path savePath = getMeandersDirPath() / (storageName + ".hkpp");
     fs::path canonical = fs::weakly_canonical(savePath);
     if (canonical.string().find(m_hkpDirPath.string()) != 0)
     {
       return "";
     }
     return savePath.string();
+  }
+
+  std::string getHistoryPath(const std::string& boardName) const
+  {
+    namespace fs = std::filesystem;
+    const std::string storageName = encodeBoardNameForStorage(boardName);
+    fs::path histPath = getMeandersDirPath() / (storageName + ".history");
+    fs::path canonical = fs::weakly_canonical(histPath);
+    if (canonical.string().find(m_hkpDirPath.string()) != 0)
+    {
+      return "";
+    }
+    return histPath.string();
   }
 
   bool getAllowExternalAccess() const
@@ -127,7 +171,7 @@ public:
   {
     namespace fs = std::filesystem;
     fs::path bundlesPath = m_hkpDirPath / "bundles";
-    if (!fs::exists(bundlesPath)) 
+    if (!fs::exists(bundlesPath))
     {
       fs::create_directory(bundlesPath);
     }
@@ -239,7 +283,36 @@ public:
     return writeRemoteRuntimeEngines(runtimes);
   }
 
+  std::filesystem::path getMeandersDirPath() const
+  {
+    namespace fs = std::filesystem;
+    fs::path meandersDir = m_hkpDirPath / "meanders";
+    if (!fs::exists(meandersDir))
+    {
+      fs::create_directory(meandersDir);
+    }
+    return meandersDir;
+  }
+
 private:
+  static std::string encodeBoardNameForStorage(const std::string& boardName)
+  {
+    std::ostringstream oss;
+    oss << std::uppercase << std::hex;
+    for (unsigned char c : boardName)
+    {
+      if (std::isalnum(c) || c == '-' || c == '_' || c == ' ')
+      {
+        oss << static_cast<char>(c);
+      }
+      else
+      {
+        oss << '%' << std::setw(2) << std::setfill('0') << static_cast<int>(c);
+      }
+    }
+    return oss.str();
+  }
+
   std::string getSettingsPath() const
   {
     return (m_hkpDirPath / "settings.json").string();

@@ -46,7 +46,9 @@ a Timer to achieve periodic capture.
 | | Shape |
 |---|---|
 | **Input** | Any value — receipt of any upstream data triggers a capture |
-| **Output** | A `Blob` containing the captured image |
+| **Output** | `{ image: Blob }` — an object with the image `Blob` under the key set by `captureAs` (default `"image"`) |
+
+If `captureAs` is empty, the raw `Blob` is emitted directly rather than wrapped in an object.
 
 ---
 

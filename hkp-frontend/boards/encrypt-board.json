@@ -1,0 +1,64 @@
+{
+  "boardName": "Encrypt / Decrypt",
+  "runtimes": [
+    {
+      "id": "4a788e80-c4db-4e91-ac39-4a0c84c15916",
+      "name": "Encrypt",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "345aa722-f010-48fc-830a-ac7f9dd722c2",
+      "name": "Decrypt",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "4a788e80-c4db-4e91-ac39-4a0c84c15916": [
+      {
+        "uuid": "da099fbd-9d2f-4e00-a1b5-1bf2ca0d8ffc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Injector",
+        "state": {
+          "recentInjection": "hello",
+          "plainText": true
+        }
+      },
+      {
+        "uuid": "38f832ce-b98e-4064-af0f-0c5e3582ad76",
+        "serviceId": "hookup.to/service/encrypt",
+        "serviceName": "Encrypt",
+        "state": {
+          "secret": "abcd",
+          "method": "aes",
+          "methods": ["aes"]
+        }
+      },
+      {
+        "uuid": "ea0ab30f-8d0e-4bef-bb2e-91d390a64cab",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor",
+        "state": {}
+      }
+    ],
+    "345aa722-f010-48fc-830a-ac7f9dd722c2": [
+      {
+        "uuid": "ec0cdb4d-f554-4673-8921-5d6bf3bacaf7",
+        "serviceId": "hookup.to/service/decrypt",
+        "serviceName": "Decrypt",
+        "state": {
+          "secret": "abcd",
+          "method": "aes",
+          "methods": ["aes"]
+        }
+      },
+      {
+        "uuid": "5c5b5876-83d8-4b32-a39b-71941803cddd",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor",
+        "state": {}
+      }
+    ]
+  }
+}

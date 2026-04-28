@@ -89,7 +89,11 @@ export function QrCodeRenderer({
         >
           {widget.caption}
           <div className="text-center">
-            (<a href={url} target="_blank">link</a>)
+            (
+            <a href={url} target="_blank">
+              link
+            </a>
+            )
           </div>
         </div>
       )}

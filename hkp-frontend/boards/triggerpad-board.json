@@ -1,0 +1,31 @@
+{
+  "boardName": "Trigger Pad",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "audio-input-svc",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Audio Input",
+        "state": { "timeslice": 2000 }
+      },
+      {
+        "uuid": "trigger-pad-svc",
+        "serviceId": "hookup.to/service/trigger-pad",
+        "serviceName": "Trigger Pad"
+      },
+      {
+        "uuid": "audio-output-svc",
+        "serviceId": "hookup.to/service/audio-output",
+        "serviceName": "Audio Output"
+      }
+    ]
+  }
+}
