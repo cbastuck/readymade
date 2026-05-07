@@ -179,7 +179,7 @@ describe("Service UI Behavioral Tests", () => {
       await renderServiceUIAndWait(TimerUI, props);
 
       const startButton = screen.getByRole("button", {
-        name: "Start Interval",
+        name: "Start",
       }) as HTMLButtonElement;
       expect(startButton.disabled).toBe(true);
     });
