@@ -1,0 +1,31 @@
+{
+  "boardName": "Telegram Listener Demo",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "hkp://remotes/hkp-node",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "telegram-svc",
+        "serviceId": "telegram-listener",
+        "serviceName": "Telegram Listener",
+        "state": {
+          "botToken": "",
+          "allowedChatId": "",
+          "running": false
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "monitor",
+        "serviceName": "Incoming Messages"
+      }
+    ]
+  }
+}

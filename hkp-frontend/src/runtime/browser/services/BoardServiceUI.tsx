@@ -228,7 +228,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
                     Preview Source: incoming board JSON ({activeBoardName})
                   </div>
                   <Button
-                    className="h-min ml-2"
+                    className="hkp-svc-btn h-min ml-2"
                     disabled={!activeBoardName}
                     onClick={onApplyHostedBoard}
                   >

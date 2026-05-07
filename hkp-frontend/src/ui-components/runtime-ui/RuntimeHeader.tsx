@@ -8,27 +8,23 @@ import {
   RuntimeDescriptor,
   ServiceClass,
   ServiceDescriptor,
-  ServiceRegistry,
   toCanonicalRuntimeClassType,
 } from "hkp-frontend/src/types";
 import Editable from "hkp-frontend/src/ui-components/Editable";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
+import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import { resolveTemplateVarsInObject } from "hkp-frontend/src/templateVars";
 
 import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
-import ServiceSelector from "../ServiceSelector";
-
 import RuntimeConfigurationDialog from "./RuntimeConfigurationDialog";
 import ShareAsQRDialog from "./ShareAsQRDialog";
 
 type Props = {
   runtime: RuntimeDescriptor;
-  registry: ServiceRegistry;
   isExpanded?: boolean;
   wrapServices?: boolean;
   backgroundColor?: string;
-  onAddService: (svc: ServiceClass) => void;
   onExpand: (isExpanded: boolean) => void;
   onWrapServices: (isWrapped: boolean) => void;
   onSave: () => void;
@@ -36,11 +32,9 @@ type Props = {
 
 export default function RuntimeHeader({
   runtime,
-  registry,
   isExpanded,
   wrapServices,
   backgroundColor,
-  onAddService,
   onExpand,
   onWrapServices,
   onSave,
@@ -53,6 +47,14 @@ export default function RuntimeHeader({
 
   const { name, id: runtimeId } = runtime;
   const boardContext = useContext(BoardCtx);
+  const { themeName } = useThemeControl();
+  const isPlayground = themeName === "playground";
+
+  const runtimeTypeBadge = isRuntimeBrowserClassType(runtime.type)
+    ? "browser"
+    : isRuntimeRestClassType(runtime.type)
+      ? "rest"
+      : toCanonicalRuntimeClassType(runtime.type);
   const onChangeName = (newName: string) =>
     boardContext?.setRuntimeName(runtimeId, newName);
 
@@ -222,7 +224,9 @@ export default function RuntimeHeader({
       const targetScope = boardContext.scopes[action.targetRuntimeId];
       const targetApi =
         boardContext.runtimeApis[targetRuntime.type] ||
-        boardContext.runtimeApis[toCanonicalRuntimeClassType(targetRuntime.type)];
+        boardContext.runtimeApis[
+          toCanonicalRuntimeClassType(targetRuntime.type)
+        ];
       if (targetScope && targetApi) {
         targetApi.processRuntime(targetScope, runtimeSource, null);
       }
@@ -274,7 +278,7 @@ export default function RuntimeHeader({
 
   return (
     <div
-      className="flex items-center gap-3 pl-2 cursor-move w-full overflow-clip"
+      className="flex items-center gap-3 pl-2 cursor-move w-full overflow-clip py-2"
       style={{ backgroundColor }}
     >
       <div className="flex items-end gap-3 px-2 mr-auto">
@@ -293,21 +297,20 @@ export default function RuntimeHeader({
           onShareAsQR={onShareAsQR}
           customActions={builtCustomActions}
         />
+        <div className="flex gap-2">
+          <Editable
+            className={isPlayground ? "hkp-rt-name" : "text-base-plus"}
+            id={`runtime-name-${runtimeId}`}
+            value={name}
+            title={runtimeId}
+            onChange={onChangeName}
+          />
 
-        <Editable
-          className="text-base-plus"
-          id={`runtime-name-${runtimeId}`}
-          value={name}
-          title={runtimeId}
-          onChange={onChangeName}
-        />
+          {isPlayground && (
+            <span className="hkp-rt-badge">{runtimeTypeBadge}</span>
+          )}
+        </div>
       </div>
-
-      <ServiceSelector
-        id={runtimeId}
-        registry={registry}
-        onAddService={onAddService}
-      />
 
       <RunParamsDialog
         open={showRunWithParams}

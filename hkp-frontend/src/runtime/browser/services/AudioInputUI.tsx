@@ -133,7 +133,7 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
                 milliseconds
               </NumberInput>
             </div>
-            <Button variant="outline" onClick={this.onRecord}>
+            <Button className="hkp-svc-btn" variant="outline" onClick={this.onRecord}>
               {recording ? "Stop Recording" : "Start Sliced Recording"}
             </Button>
           </div>

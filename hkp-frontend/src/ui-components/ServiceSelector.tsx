@@ -42,11 +42,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between text-base tracking-widest border-none bg-transparent"
-          style={{
-            backgroundColor: theme.popoverBackgroundColor,
-            borderColor: theme.borderColor,
-          }}
+          className="w-[200px] justify-between text-sm border-none bg-transparent hover:bg-[var(--hkp-accent-dim)] hover:text-[var(--hkp-accent)]"
           disabled={!registry || registry.length === 0}
         >
           Add Service
@@ -57,19 +53,19 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
         <Command style={{ borderRadius: theme.borderRadius }}>
           <CommandInput
             id={`service-selector-search-${id}`}
-            className="text-base"
+            className="text-sm"
             placeholder="Search Service"
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          <CommandEmpty className="text-base p-2">
+          <CommandEmpty className="text-sm p-2">
             No service found
           </CommandEmpty>
           <CommandList className="overflow-auto">
             {registry &&
               registry.map((s) => (
                 <CommandItem
-                  className="text-base"
+                  className="text-sm aria-selected:bg-[var(--hkp-accent-dim)] aria-selected:text-[var(--hkp-accent)]"
                   key={s.serviceId}
                   value={s.serviceId}
                   onSelect={(currentValue) => {

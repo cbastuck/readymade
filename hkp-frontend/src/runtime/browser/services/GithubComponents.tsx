@@ -71,7 +71,7 @@ export function GithubUser(props: UserProps) {
           <div className="flex flex-col ml-auto">
             <Image className="ml-auto" src={avatar_url} size={size} />
             <Button
-              className="ml-auto w-min h-min"
+              className="hkp-svc-btn ml-auto w-min h-min"
               onClick={() => onLogout && onLogout()}
             >
               Logout
@@ -347,6 +347,7 @@ export function GithubOAuth(props: AuthProps) {
       }}
     >
       <Button
+        className="hkp-svc-btn"
         onClick={() => {
           const url = getAuthURL({
             clientID,

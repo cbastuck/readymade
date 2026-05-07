@@ -10,6 +10,8 @@ import {
 } from "../../../types";
 import { BoardContextState } from "../../../BoardContext";
 import BoardRuntime from "./BoardRuntime";
+import { useThemeControl } from "../../../ui-components/ThemeContext";
+import RuntimeMenu from "../../../ui-components/toolbar/RuntimeMenu";
 
 type Props = {
   boardContext: BoardContextState;
@@ -96,8 +98,14 @@ export default function Board(props: Props) {
   };
 
   const { description, boardName, boardContext } = props;
+  const { themeName } = useThemeControl();
+  const isPlayground = themeName === "playground";
+
   return (
-    <div className="flex flex-col">
+    <div
+      className="flex flex-col"
+      style={{ padding: "var(--board-padding, 0px)" }}
+    >
       <div style={s(t.w100)}>
         {boardContext.runtimes.map((runtime, runtimeIdx) => (
           <BoardRuntime
@@ -114,6 +122,17 @@ export default function Board(props: Props) {
             processRuntimeByName={processRuntimeByName}
           />
         ))}
+        {isPlayground && (
+          <div
+            style={{
+              padding: "12px 8px 20px",
+              display: "flex",
+              justifyContent: "flex-start",
+            }}
+          >
+            <RuntimeMenu />
+          </div>
+        )}
       </div>
       {description && !props.headless && (
         <>

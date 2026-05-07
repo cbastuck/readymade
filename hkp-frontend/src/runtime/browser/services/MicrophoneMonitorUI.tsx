@@ -50,7 +50,7 @@ export default function MicrophoneMonitorUI(props: ServiceUIProps) {
         />
         <div className="flex gap-2">
           <Button
-            className="w-full"
+            className="hkp-svc-btn w-full"
             variant="outline"
             onClick={() => service.configure({ start: true, interval })}
             disabled={running}
@@ -58,7 +58,7 @@ export default function MicrophoneMonitorUI(props: ServiceUIProps) {
             Start
           </Button>
           <Button
-            className="w-full"
+            className="hkp-svc-btn w-full"
             variant="outline"
             onClick={() => service.configure({ stop: true })}
             disabled={!running}

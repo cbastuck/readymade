@@ -43,6 +43,7 @@ function ChunkedFileProviderUI(props: ServiceUIProps): JSX.Element {
         )}
         <div>
           <button
+            className="hkp-svc-btn"
             onClick={() => file && (props.service as any).process({ file })}
             disabled={!file}
             style={{

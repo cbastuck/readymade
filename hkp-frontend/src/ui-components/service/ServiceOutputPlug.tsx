@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Pin, PinOff, Maximize, Play } from "lucide-react";
+import { X, Pin, PinOff, Maximize } from "lucide-react";
 
 import {
   Popover,
@@ -15,6 +15,7 @@ import {
 
 import { useTheme } from "../ThemeContext";
 import FlowInspectorPopup from "./FlowInspectorPopup";
+import FlowWaveIcon from "./FlowWaveIcon";
 
 import Button from "../Button";
 import EditorDialog from "../EditorDialog";
@@ -60,48 +61,49 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
   }
 
   return (
-    <div style={{ cursor: "pointer" }}>
-      <Popover
-        open={isOpen}
-        onOpenChange={(newOpen) => !isSticky && !newOpen && onClose()}
-      >
-        <ContextMenu>
-          <ContextMenuTrigger>
-            <PopoverTrigger asChild>
-              <button onClick={onOpen}>
-                <Play
-                  size={Array.isArray(data) ? 24 : 20}
-                  fill={isActive ? theme.accentColor : "black"}
-                  stroke="none"
-                  style={{
-                    opacity: isActive ? 0.85 : 0.5,
-                    transition: "fill 400ms, opacity 400ms",
-                  }}
-                />
-              </button>
-            </PopoverTrigger>
-          </ContextMenuTrigger>
-          <ContextMenuContent>
-            <ContextMenuItem disabled={!data}>Rerun</ContextMenuItem>
-          </ContextMenuContent>
-        </ContextMenu>
+    <Popover
+      open={isOpen}
+      onOpenChange={(newOpen) => !isSticky && !newOpen && onClose()}
+    >
+      <ContextMenu>
+        <ContextMenuTrigger>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              style={{
+                marginTop: 18,
+                marginLeft: 4,
+                zIndex: 1,
+              }}
+              onClick={onOpen}
+            >
+              <FlowWaveIcon
+                isActive={!!isActive}
+                accentColor={theme.accentColor}
+              />
+            </button>
+          </PopoverTrigger>
+        </ContextMenuTrigger>
+        <ContextMenuContent>
+          <ContextMenuItem disabled={!data}>Rerun</ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
 
-        <PopoverContent className="w-[450px]">
-          <div className="flex items-center">
-            <h2 className="font-medium leading-none w-full text-left">
-              Flow Inspector
-            </h2>
-            <div className="flex">
-              <MaximizeButton onClick={onMaximize} />
-              <StickyButton isSticky={isSticky} onClick={onSticky} />
-              <CloseButton onClick={onClose} />
-            </div>
+      <PopoverContent className="w-[450px]">
+        <div className="flex items-center">
+          <h2 className="font-medium leading-none w-full text-left">
+            Flow Inspector
+          </h2>
+          <div className="flex">
+            <MaximizeButton onClick={onMaximize} />
+            <StickyButton isSticky={isSticky} onClick={onSticky} />
+            <CloseButton onClick={onClose} />
           </div>
+        </div>
 
-          <FlowInspectorPopup data={data} onInject={onInject} />
-        </PopoverContent>
-      </Popover>
-    </div>
+        <FlowInspectorPopup data={data} onInject={onInject} />
+      </PopoverContent>
+    </Popover>
   );
 }
 

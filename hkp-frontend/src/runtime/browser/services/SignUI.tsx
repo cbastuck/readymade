@@ -40,7 +40,7 @@ export default function SignUI(props: ServiceUIProps) {
         {state.method === "HmacSHA256p" && (
           <Button
             variant="outline"
-            className="w-full mt-2"
+            className="hkp-svc-btn w-full mt-2"
             onClick={() => service.configure({ finalize: true })}
           >
             Finalize

@@ -27,8 +27,8 @@ export const TextSymbol = Symbol("Text");
 export type FloatRingBuffer = {
   type: typeof FloatRingBufferSymbol;
   array: Uint8Array;
-  id: number;
-  ts: number;
+  id: number; // identifier for the rng buffer
+  ts: number; // timestamp
 };
 
 export type TextData = {

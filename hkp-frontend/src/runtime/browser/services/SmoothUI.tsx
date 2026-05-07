@@ -35,7 +35,7 @@ export default function SmoothUI(props: ServiceUIProps) {
           <span>Factor</span>
         </div>
         <Button
-          className="mt-2 w-full"
+          className="hkp-svc-btn mt-2 w-full"
           onClick={() => service.configure({ reset: true })}
         >
           Reset

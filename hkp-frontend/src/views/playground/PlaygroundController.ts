@@ -225,7 +225,10 @@ export function usePlaygroundController(
 
   const getInitialPlayground =
     async (): Promise<Partial<PlaygroundState> | null> => {
-      const brd = props.match?.params?.board || props.boardName;
+      const brd =
+        props.match?.params?.board ||
+        props.boardName ||
+        requestedBoardNameRef.current;
       if (brd) {
         const params = Object.fromEntries(
           new URLSearchParams(document.location.search),

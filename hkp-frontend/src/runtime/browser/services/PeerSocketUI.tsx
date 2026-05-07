@@ -216,7 +216,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
                   onSubmit={(peerName) => props.service.configure({ peerName })}
                 />
                 <Button
-                  className="px-1 h-[20px] mb-1"
+                  className="hkp-svc-btn px-1 h-[20px] mb-1"
                   onClick={onRandomPeerName}
                 >
                   Random
@@ -234,7 +234,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
                     }
                   />
                   <Button
-                    className="px-1 h-[20px] mb-1"
+                    className="hkp-svc-btn px-1 h-[20px] mb-1"
                     onClick={onRandomTargetPeer}
                   >
                     Random
@@ -246,7 +246,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
             {isSendAllowed && (
               <Button
                 size={null}
-                className="px-1 self-stretch w-6 mb-1"
+                className="hkp-svc-btn px-1 self-stretch w-6 mb-1"
                 onClick={onSwap}
               >
                 ⇅
@@ -255,7 +255,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
           </div>
 
           {isSendAllowed && (
-            <Button className="px-1" onClick={onSharePartnerQR}>
+            <Button className="hkp-svc-btn px-1" onClick={onSharePartnerQR}>
               Create peered partner board
             </Button>
           )}

@@ -8,7 +8,6 @@ import {
 } from "hkp-frontend/src/types";
 
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
-import GroupLabel from "hkp-frontend/src/ui-components/GroupLabel";
 import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
 import Select from "hkp-frontend/src/ui-components/Select";
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
@@ -73,39 +72,47 @@ export default function StackUI(props: ServiceUIProps) {
     const outputOptions = ["array"];
     const services = service.app.listAvailableServices();
     return (
-      <div className="w-full h-full my-4 flex flex-col gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-base text-muted-foreground">Input</span>
-          <Select
-            options={inputOptions}
-            value={input}
-            onChange={(inp) => service.configure({ input: inp })}
-          />
-
-          <span className="text-base text-muted-foreground">Output</span>
-          <Select
-            options={outputOptions}
-            value={output}
-            onChange={(out) => service.configure({ output: out })}
-          />
-        </div>
-
-        <div className="flex items-end w-full">
-          <GroupLabel>Services</GroupLabel>
-          <div className="ml-auto">
-            <ServiceSelector
-              id={service.uuid}
-              registry={services}
-              onAddService={onAppendService}
+      <div className="w-full h-full mt-2 mb-1 flex flex-col gap-2">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground">Input</span>
+            <Select
+              options={inputOptions}
+              value={input}
+              onChange={(inp) => service.configure({ input: inp })}
             />
           </div>
-        </div>
 
-        <Accordion className="mx-4" type="single" collapsible value={openItem} onValueChange={setOpenItem}>
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-muted-foreground">Output</span>
+            <Select
+              options={outputOptions}
+              value={output}
+              onChange={(out) => service.configure({ output: out })}
+            />
+          </div>
+
+          <div className="flex items-end w-full">
+            <div className="ml-auto">
+              <ServiceSelector
+                id={service.uuid}
+                registry={services}
+                onAddService={onAppendService}
+              />
+            </div>
+          </div>
+        </div>
+        <Accordion
+          className="mx-0"
+          type="single"
+          collapsible
+          value={openItem}
+          onValueChange={setOpenItem}
+        >
           {subservices.map((ssvc) => (
             <AccordionItem value={`item-${ssvc.uuid}`} key={ssvc.uuid}>
               <AccordionPrimitive.Header className="flex items-center">
-                <AccordionPrimitive.Trigger className="flex flex-1 items-center py-4 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180">
+                <AccordionPrimitive.Trigger className="flex flex-1 items-center py-2 font-medium transition-all hover:underline [&[data-state=open]>svg]:rotate-180">
                   <span title={ssvc.uuid} className="text-base">
                     {ssvc.__descriptor
                       ? ssvc.__descriptor.serviceName
@@ -123,7 +130,7 @@ export default function StackUI(props: ServiceUIProps) {
                 </Button>
               </AccordionPrimitive.Header>
 
-              <AccordionContent className="flex flex-col border p-4 overflow-auto">
+              <AccordionContent className="flex flex-col bg-muted/60 rounded-lg p-2 m-2 overflow-x-auto overflow-y-auto">
                 {service.app.createSubServiceUI(ssvc)}
               </AccordionContent>
             </AccordionItem>
@@ -139,7 +146,7 @@ export default function StackUI(props: ServiceUIProps) {
       {...props}
       onInit={onInit}
       onNotification={onNotification}
-      initialSize={{ width: 800, height: undefined }}
+      initialSize={{ width: 500, height: undefined }}
     >
       {renderMain(service)}
     </ServiceUI>

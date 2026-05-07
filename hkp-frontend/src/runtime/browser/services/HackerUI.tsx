@@ -116,7 +116,7 @@ export function HackerUIPanel({
             display: !healthStatus.error ? "none" : undefined,
           }}
         >
-          <button onClick={() => onChange(editorRef.current?.getValue())}>
+          <button className="hkp-svc-btn" onClick={() => onChange(editorRef.current?.getValue())}>
             fixed
           </button>
         </div>

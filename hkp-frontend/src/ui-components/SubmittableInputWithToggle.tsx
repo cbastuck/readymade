@@ -14,7 +14,7 @@ type Props = SubmittableInputProps & {
 export default function SubmittableInputWithToggle(props: Props) {
   const { onToggle, value, toggleValue, toggleTooltip } = props;
   return (
-    <div className="flex pr-4 py-1">
+    <div className="flex pr-4 py-0.5">
       <SubmittableInput {...props} />
       <IconButton
         style={{ display: value ? undefined : "none" }}

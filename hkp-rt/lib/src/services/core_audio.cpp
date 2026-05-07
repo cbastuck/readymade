@@ -161,6 +161,100 @@ OSStatus CoreAudioGetInputDeviceByName(AudioDeviceID *Device, const std::string 
   return kAudioHardwareUnspecifiedError;
 }
 
+OSStatus CoreAudioSetSampleRate(AudioDeviceID Device, double SampleRate)
+{
+  AudioObjectPropertyAddress Property = {
+    kAudioDevicePropertyNominalSampleRate,
+    kAudioObjectPropertyScopeGlobal,
+    kAudioObjectPropertyElementMain,
+  };
+  UInt32 PropertySize = sizeof(SampleRate);
+  return AudioObjectSetPropertyData(Device, &Property, 0, nullptr, PropertySize, &SampleRate);
+}
+
+nlohmann::json CoreAudioGetAvailableSampleRates(AudioDeviceID Device)
+{
+  AudioObjectPropertyAddress Property = {
+    kAudioDevicePropertyAvailableNominalSampleRates,
+    kAudioObjectPropertyScopeGlobal,
+    kAudioObjectPropertyElementMain,
+  };
+  UInt32 DataSize = 0;
+  OSStatus Status = AudioObjectGetPropertyDataSize(Device, &Property, 0, nullptr, &DataSize);
+  if (Status != 0 || DataSize == 0)
+    return nlohmann::json::array();
+
+  UInt32 Count = DataSize / sizeof(AudioValueRange);
+  std::vector<AudioValueRange> Ranges(Count);
+  Status = AudioObjectGetPropertyData(Device, &Property, 0, nullptr, &DataSize, Ranges.data());
+  if (Status != 0)
+    return nlohmann::json::array();
+
+  auto Result = nlohmann::json::array();
+  for (const auto& Range : Ranges)
+  {
+    if (Range.mMinimum == Range.mMaximum)
+      Result.push_back(Range.mMinimum);
+  }
+  return Result;
+}
+
+OSStatus CoreAudioGetOutputDeviceByName(AudioDeviceID *Device, const std::string &preferredDeviceName)
+{
+  UInt32 dataSize = 0;
+  AudioObjectPropertyAddress propertyAddress = {
+      kAudioHardwarePropertyDevices,
+      kAudioObjectPropertyScopeGlobal,
+      kAudioObjectPropertyElementMain
+  };
+
+  OSStatus status = AudioObjectGetPropertyDataSize(kAudioObjectSystemObject, &propertyAddress, 0, NULL, &dataSize);
+  if (status != 0 || dataSize == 0)
+  {
+    std::cerr << "Failed to get audio device list size" << std::endl;
+    return status;
+  }
+
+  UInt32 deviceCount = dataSize / sizeof(AudioDeviceID);
+  std::vector<AudioDeviceID> deviceIDs(deviceCount);
+
+  status = AudioObjectGetPropertyData(kAudioObjectSystemObject, &propertyAddress, 0, NULL, &dataSize, deviceIDs.data());
+  if (status != 0)
+  {
+    std::cerr << "Failed to get audio device IDs" << std::endl;
+    return status;
+  }
+
+  for (UInt32 i = 0; i < deviceCount; ++i)
+  {
+    AudioDeviceID deviceID = deviceIDs[i];
+    AudioObjectPropertyAddress nameAddress = {
+        kAudioDevicePropertyDeviceNameCFString,
+        kAudioObjectPropertyScopeGlobal,
+        kAudioObjectPropertyElementMain
+    };
+
+    CFStringRef deviceNameRef = NULL;
+    UInt32 nameSize = sizeof(deviceNameRef);
+    status = AudioObjectGetPropertyData(deviceID, &nameAddress, 0, NULL, &nameSize, &deviceNameRef);
+    if (status == 0 && deviceNameRef)
+    {
+      char deviceName[256];
+      CFStringGetCString(deviceNameRef, deviceName, sizeof(deviceName), kCFStringEncodingUTF8);
+      CFRelease(deviceNameRef);
+
+      if (preferredDeviceName == deviceName)
+      {
+        *Device = deviceID;
+        return noErr;
+      }
+    }
+  }
+
+  std::cerr << "Preferred output device not found: " << preferredDeviceName << std::endl;
+  return kAudioHardwareUnspecifiedError;
+}
+
 // Returns true if the device has a stream for the given scope (input/output)
 bool CoreAudioDeviceHasStream(AudioDeviceID deviceID, AudioObjectPropertyScope scope)
 {

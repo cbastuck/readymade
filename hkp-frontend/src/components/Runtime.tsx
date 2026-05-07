@@ -1,4 +1,12 @@
-import { CSSProperties, ReactElement, forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  CSSProperties,
+  ReactElement,
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 
 import { getServiceConfiguration } from "../core/actions";
 
@@ -17,7 +25,11 @@ import { BoardContextState } from "../BoardContext";
 
 import RuntimeUI from "hkp-frontend/src/ui-components/runtime-ui";
 import DropTarget from "./DropTarget";
-import { HKP_DND_SERVICE_TYPE, isServiceInstanceDrop } from "./DropTypes";
+import {
+  HKP_DND_SERVICE_TYPE,
+  HKP_DND_SERVICE_CLASS_TYPE,
+  isServiceInstanceDrop,
+} from "./DropTypes";
 
 type Props = {
   boardContext: BoardContextState;
@@ -70,7 +82,10 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
 
   const [showSettings, setShowSettings] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [wrapServices, setWrapServices] = useState<boolean | undefined>(undefined);
+  const [wrapServices, setWrapServices] = useState<boolean | undefined>(
+    undefined,
+  );
+  const [isSvcClassDragOver, setIsSvcClassDragOver] = useState(false);
 
   const implRef = useRef<RuntimeImpl | null>(null);
   const runtimeContainerRef = useRef<HTMLDivElement | null>(null);
@@ -78,7 +93,9 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
   useEffect(() => {
     setWrapServices(initialState.wrapServices);
     setExpanded(
-      expandedProp !== undefined ? expandedProp : initialState.minimized !== true
+      expandedProp !== undefined
+        ? expandedProp
+        : initialState.minimized !== true,
     );
     setShowSettings(false);
     const scope = boardContext.scopes[runtime.id];
@@ -88,7 +105,10 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onAddService = (svcClass: ServiceClass, prototype?: ServiceInstance) => {
+  const onAddService = (
+    svcClass: ServiceClass,
+    prototype?: ServiceInstance,
+  ) => {
     return boardContext && runtime
       ? boardContext.addService(svcClass, runtime, prototype)
       : null;
@@ -217,13 +237,13 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
     (runtime && boardContext && boardContext.services[runtime.id]) || [];
   const user = (boardContext && boardContext.appContext?.user) || null;
   const boardName = boardContext && boardContext.boardName;
-  const registry =
-    runtime && boardContext && boardContext.registry[runtime.id];
+  const registry = runtime && boardContext && boardContext.registry[runtime.id];
 
   const appViewMode = boardContext && boardContext.appContext?.appViewMode;
   const wide = boardContext ? appViewMode === "wide" : true;
 
-  const effectiveWrapServices = wrapServices !== undefined ? wrapServices : !wide;
+  const effectiveWrapServices =
+    wrapServices !== undefined ? wrapServices : !wide;
 
   const onArrangeServiceDefault = (serviceUuid: string, position: number) =>
     runtime &&
@@ -248,10 +268,12 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
   };
 
   const onDropService = (data: any) => {
-    const serviceData = JSON.parse(data);
-    if (isServiceInstanceDrop(serviceData)) {
-      const descriptor = serviceData.descriptor;
-      onAddService(descriptor, serviceData);
+    if (data) {
+      const serviceData = JSON.parse(data);
+      if (isServiceInstanceDrop(serviceData)) {
+        const descriptor = serviceData.descriptor;
+        onAddService(descriptor, serviceData);
+      }
     }
   };
 
@@ -280,40 +302,60 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
   };
 
   return (
-    <DropTarget
-      acceptedType={HKP_DND_SERVICE_TYPE}
-      disabled={!services || services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
-      onDrop={onDropService}
+    <div
+      className={isSvcClassDragOver ? "hkp-runtime-svc-drop-active" : undefined}
+      onDragOver={(ev) => {
+        if (ev.dataTransfer.types.includes(HKP_DND_SERVICE_CLASS_TYPE)) {
+          setIsSvcClassDragOver(true);
+          ev.preventDefault();
+        }
+      }}
+      onDragLeave={() => setIsSvcClassDragOver(false)}
+      onDrop={(ev) => {
+        const data = ev.dataTransfer.getData(HKP_DND_SERVICE_CLASS_TYPE);
+        if (data) {
+          setIsSvcClassDragOver(false);
+          onAddService(JSON.parse(data) as ServiceClass);
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+      }}
     >
-      <RuntimeUI
-        scope={scope}
-        services={services}
-        onServiceAction={onServiceAction}
-        onArrangeService={onArrangeService}
-        boardName={boardName || null}
-        user={user}
-        frameless={frameless}
-        headless={headless}
-        style={style}
-        isExpanded={expanded}
-        wrapServices={effectiveWrapServices}
-        runtime={runtime}
-        registry={registry}
-        inputs={props.inputs}
-        outputs={props.outputs}
-        onExpand={onExpand}
-        onAddService={onAddService}
-        onWrapServices={onWrapServices}
-        onResult={props.onResult}
-        processRuntimeByName={props.processRuntimeByName}
-        initialServiceFrameState={props.initialServiceFrameState}
-        onSave={onSaveRuntime}
+      <DropTarget
+        acceptedType={HKP_DND_SERVICE_TYPE}
+        disabled={!services || services.length > 0} // only drop services to empty runtime, otherwise use the drop bars to locate
+        onDrop={onDropService}
       >
-        {services && services.length === 0 && !headless && (
-          <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
-        )}
-      </RuntimeUI>
-    </DropTarget>
+        <RuntimeUI
+          scope={scope}
+          services={services}
+          onServiceAction={onServiceAction}
+          onArrangeService={onArrangeService}
+          boardName={boardName || null}
+          user={user}
+          frameless={frameless}
+          headless={headless}
+          style={style}
+          isExpanded={expanded}
+          wrapServices={effectiveWrapServices}
+          runtime={runtime}
+          registry={registry}
+          inputs={props.inputs}
+          outputs={props.outputs}
+          onExpand={onExpand}
+          onAddService={onAddService}
+          onWrapServices={onWrapServices}
+          onResult={props.onResult}
+          processRuntimeByName={props.processRuntimeByName}
+          initialServiceFrameState={props.initialServiceFrameState}
+          onSave={onSaveRuntime}
+        >
+          {services && services.length === 0 && !headless && (
+            <div style={{ height: showSettings ? 180 : 10 }} /> // just a placeholder for visual consistence
+          )}
+        </RuntimeUI>
+      </DropTarget>
+    </div>
   );
 });
 

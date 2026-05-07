@@ -1,0 +1,34 @@
+{
+  "boardName": "SMTP Email Demo",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "hkp://remotes/hkp-node",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "smtp-svc",
+        "serviceId": "smtp-email",
+        "serviceName": "SMTP Email",
+        "state": {
+          "host": "smtp.example.com",
+          "port": 587,
+          "tls": true,
+          "from": "sender@example.com",
+          "to": "recipient@example.com",
+          "subject": "HKP Notification"
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "monitor",
+        "serviceName": "Output"
+      }
+    ]
+  }
+}

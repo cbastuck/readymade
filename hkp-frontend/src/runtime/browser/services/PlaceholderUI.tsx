@@ -60,7 +60,6 @@ export default function PlaceholderUI(props: ServiceUIProps) {
             <InputField
               key={`PlaceholderUI-${service.uuid}.${prop}`}
               label={prop}
-              labelStyle={{ textTransform: "none" }}
               value={val}
               onChange={(value) => service.configure({ [prop]: value })}
               disabled={true}

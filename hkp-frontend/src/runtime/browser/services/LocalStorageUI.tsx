@@ -63,7 +63,7 @@ export default function LocalStorageUI(props: ServiceUIProps) {
           value={appliedFilter}
           onSubmit={onSubmitFilter}
         />
-        <Button className="mt-2" onClick={onProcess}>
+        <Button className="hkp-svc-btn mt-2" onClick={onProcess}>
           Process
         </Button>
       </div>

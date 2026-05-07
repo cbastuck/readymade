@@ -4,6 +4,8 @@ import { DragEvent, useContext, useState } from "react";
 import { getDraggedFiles, readFile } from "./common";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { isBoardDescriptor } from "hkp-frontend/src/types";
+import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
+import RuntimeMenu from "hkp-frontend/src/ui-components/toolbar/RuntimeMenu";
 
 type Props = {
   boardName: string;
@@ -12,16 +14,20 @@ type Props = {
 
 export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
   const boardContext = useContext(BoardCtx);
+  const { themeName } = useThemeControl();
+  const isPlayground = themeName === "playground";
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const onDragOver = (ev: DragEvent) => {
     setIsDraggingOver(true);
     ev.preventDefault();
   };
+
   const onDragEnd = () => {
     if (isDraggingOver) {
       setIsDraggingOver(false);
     }
   };
+
   const onDrop = async (ev: DragEvent) => {
     onDragEnd();
     ev.preventDefault();
@@ -32,11 +38,6 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
       if (data && isBoardDescriptor(data)) {
         boardContext?.setBoardState(data);
       }
-    } else {
-      boardContext?.appContext?.pushNotification({
-        type: "error",
-        message: "Drag not accepted, one flile allowed",
-      });
     }
   };
 
@@ -57,6 +58,49 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
       <div className="w-full text-left">is empty.</div>
     </div>
   );
+
+  if (isPlayground) {
+    return (
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 320,
+          gap: 12,
+        }}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onDragEnd={onDragEnd}
+        onDragLeave={onDragEnd}
+      >
+        <div
+          style={{
+            fontSize: 13,
+            color: "var(--text-dim, #9ca3af)",
+            fontWeight: 500,
+          }}
+        >
+          No runtimes yet
+        </div>
+        <div>
+          <RuntimeMenu triggerStyle={{ fontSize: 14, padding: "10px 22px" }} />
+        </div>
+        <div
+          style={{
+            fontSize: 11.5,
+            color: "var(--text-dim, #9ca3af)",
+            opacity: 0.7,
+          }}
+        >
+          {isDraggingOver
+            ? "Drop to import board"
+            : "or drop a board file here"}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div

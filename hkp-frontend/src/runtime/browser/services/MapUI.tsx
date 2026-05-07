@@ -6,9 +6,7 @@ import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
 
-import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
-import { createExpandableTooltip } from "hkp-frontend/src/ui-components/ExpandableTooltip";
-import MapUIModeAssist from "./MapUIModeAssist";
+import PillRadioGroup from "hkp-frontend/src/ui-components/PillRadioGroup";
 import MappingTable, { Template } from "../../../components/MappingTable";
 import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
 import { globalScopeFunctions } from "hkp-frontend/src/runtime/browser/services/base/eval.ts";
@@ -44,8 +42,10 @@ export default function MapUI(props: ServiceUIProps) {
 
   const onNotification = (notification: any) => updateState(notification);
 
-  const onModeChange = (newMode: string) =>
+  const onModeChange = (newMode: string) => {
+    setMode(newMode as Mode);
     service.configure({ mode: newMode as Mode });
+  };
 
   const mappingOptions = [Mode.REPLACE, Mode.OVERWRITE, Mode.ADD];
 
@@ -84,17 +84,11 @@ export default function MapUI(props: ServiceUIProps) {
           flexDirection: "column",
         }}
       >
-        <RadioGroup
-          id="MapMode"
+        <PillRadioGroup
           title="Mode"
-          tooltip={createExpandableTooltip(
-            "Select the mode of mapping",
-            <MapUIModeAssist />
-          )}
           options={mappingOptions}
           value={mode}
           onChange={onModeChange}
-          valueTooltips={mappingOptions.map(mapModeToTooltip)}
         />
 
         <MappingTable

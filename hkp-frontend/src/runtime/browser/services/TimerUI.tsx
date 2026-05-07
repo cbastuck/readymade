@@ -6,7 +6,7 @@ import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
-import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
+import PillRadioGroup from "hkp-frontend/src/ui-components/PillRadioGroup";
 import Slider from "hkp-frontend/src/ui-components/Slider";
 import OneOfVisible from "hkp-frontend/src/ui-components/OneOfVisible";
 import MenuIcon from "hkp-frontend/src/ui-components/MenuIcon";
@@ -130,15 +130,14 @@ export default function TimerUI(props: ServiceUIProps) {
   return (
     <ServiceUI
       {...props}
-      initialSize={{ width: 278, height: 155 }}
+      initialSize={{ width: 210, height: 180 }}
       service={service}
       onInit={onInit}
       onNotification={onNotification}
       customMenuEntries={customMenuEntries}
     >
-      <div className="flex flex-col gap-2 h-full">
-        <RadioGroup
-          id="TimerMode"
+      <div className="flex flex-col gap-3 h-full pt-2">
+        <PillRadioGroup
           title="Mode"
           options={modes}
           value={mode}
@@ -156,7 +155,11 @@ export default function TimerUI(props: ServiceUIProps) {
               min={0}
               max={1000}
             />
-            <Button variant="outline" onClick={onTriggerOneshot}>
+            <Button
+              className="hkp-svc-btn"
+              variant="outline"
+              onClick={onTriggerOneshot}
+            >
               Trigger Oneshot
             </Button>
           </div>
@@ -170,24 +173,32 @@ export default function TimerUI(props: ServiceUIProps) {
               unit={intervalUnit}
               onUnit={onIntervalUnit}
               min={1}
-              max={intervalUnit === "ms" ? 1000 : intervalUnit === "bpm" ? 300 : intervalUnit === "hz" ? 30 : 100}
+              max={
+                intervalUnit === "ms"
+                  ? 1000
+                  : intervalUnit === "bpm"
+                    ? 300
+                    : intervalUnit === "hz"
+                      ? 30
+                      : 100
+              }
             />
-            <div className="flex gap-2">
+            <div className="flex gap-[5px]">
               <Button
-                className="w-full"
-                variant="outline"
-                onClick={onStart}
-                disabled={isIntervalRunning || isBypassed}
-              >
-                Start Interval
-              </Button>
-              <Button
-                className="w-full"
+                className="hkp-svc-btn w-full"
                 variant="outline"
                 onClick={onStop}
                 disabled={!isIntervalRunning}
               >
-                Stop Interval
+                Stop
+              </Button>
+              <Button
+                className="hkp-svc-btn w-full hkp-btn-primary"
+                variant="default"
+                onClick={onStart}
+                disabled={isIntervalRunning || isBypassed}
+              >
+                Start
               </Button>
             </div>
           </div>

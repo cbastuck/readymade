@@ -50,11 +50,27 @@ export default function AppMenu() {
 
   const theme = useTheme();
   const { themeName, setThemeName } = useThemeControl();
+  const isPlayground = themeName === "playground";
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild className="ml-auto">
-        <Button variant="ghost">
-          <Menu strokeWidth={1} />
+        <Button
+          variant="ghost"
+          style={isPlayground ? {
+            width: 30, height: 30, padding: 0,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            borderRadius: 6, color: "var(--text-dim)",
+          } : undefined}
+        >
+          {isPlayground ? (
+            <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor">
+              <circle cx="2" cy="2" r="1.5" />
+              <circle cx="8" cy="2" r="1.5" />
+              <circle cx="14" cy="2" r="1.5" />
+            </svg>
+          ) : (
+            <Menu strokeWidth={1} />
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -113,6 +129,7 @@ export default function AppMenu() {
               >
                 <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
                 <DropdownMenuRadioItem value="sketch">Sketch</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="playground">Playground</DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuSubContent>
           </DropdownMenuSub>

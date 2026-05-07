@@ -1,21 +1,25 @@
 import { ReactNode, useContext } from "react";
 
-import { BoardCtx } from "../../BoardContext";
-import { useTheme, useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
+import {
+  useTheme,
+  useThemeControl,
+} from "hkp-frontend/src/ui-components/ThemeContext";
 
-import RuntimeMenu from "hkp-frontend/src/ui-components/toolbar/RuntimeMenu";
 import HomeIcon from "./HomeIcon";
 
 import AppMenu from "hkp-frontend/src/ui-components/toolbar/AppMenu";
 
-import { BoardMenuItemFactory, RuntimeClass } from "../../types";
+import { BoardMenuItemFactory } from "../../types";
 
 import BoardMenu from "hkp-frontend/src/ui-components/toolbar/BoardMenu";
+
+import { BoardCtx } from "hkp-frontend/src/BoardContext";
+
+import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 
 import "./index.css";
 
 type Props = {
-  showRuntimeMenu?: boolean;
   children?: ReactNode;
   isCompact?: boolean;
   hideNavigation?: boolean;
@@ -23,52 +27,133 @@ type Props = {
   menuItemFactory?: BoardMenuItemFactory;
   menuSlot?: ReactNode;
   logoSlot?: ReactNode;
-  onUpdateAvailableRuntimeEngines?: (
-    runtimeClasses: Array<RuntimeClass>,
-  ) => void;
 };
 
+function LogoMark() {
+  return (
+    <IconH
+      className="stroke-[#333] hover:stroke-sky-600"
+      width={24}
+      height={24}
+    />
+  );
+}
+
+function ShareIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 13 13"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+    >
+      <circle cx="10.5" cy="2.5" r="1.5" />
+      <circle cx="10.5" cy="10.5" r="1.5" />
+      <circle cx="2.5" cy="6.5" r="1.5" />
+      <line x1="3.9" y1="5.8" x2="9.1" y2="3.2" />
+      <line x1="3.9" y1="7.2" x2="9.1" y2="9.8" />
+    </svg>
+  );
+}
+
+function TbSeparator() {
+  return (
+    <div
+      style={{
+        width: 1,
+        height: 18,
+        background: "var(--border-mid, #d1d5db)",
+        flexShrink: 0,
+        margin: "0 4px",
+      }}
+    />
+  );
+}
+
 export default function Toolbar({
-  showRuntimeMenu = false,
   children = false,
   hideNavigation = false,
   menuItemFactory,
   menuSlot,
   logoSlot,
-  onUpdateAvailableRuntimeEngines,
 }: Props) {
-  const boardContext = useContext(BoardCtx);
-
-  const onAddRuntime = (rtClass: RuntimeClass) => {
-    if (boardContext) {
-      boardContext.addRuntime({
-        ...rtClass,
-        name: `${rtClass.name} ${boardContext.runtimes.length + 1}`,
-      });
-    }
-  };
-
-  const onAddRuntimeEngine = (
-    desc: RuntimeClass,
-    overwriteIfExists: boolean = false,
-  ) => {
-    const runtimes =
-      boardContext?.addAvailableRuntime(desc, overwriteIfExists) || [];
-    onUpdateAvailableRuntimeEngines?.(runtimes);
-  };
-
-  const onRemoveRuntimeEngine = (desc: RuntimeClass) => {
-    const runtimes = boardContext?.removeAvailableRuntime(desc) || [];
-    onUpdateAvailableRuntimeEngines?.(runtimes);
-  };
-
-  const onUpdateRuntimeEngine = (updated: RuntimeClass) => {
-    onAddRuntimeEngine(updated, true);
-  };
-
   const theme = useTheme();
   const { themeName } = useThemeControl();
   const isSketch = themeName === "sketch";
+  const isPlayground = themeName === "playground";
+  const boardContext = useContext(BoardCtx);
+
+  if (isPlayground) {
+    return (
+      <div
+        data-toolbar
+        className="select-none"
+        style={{
+          position: "sticky",
+          left: 0,
+          top: 0,
+          zIndex: 100,
+          width: "100%",
+          height: 52,
+          display: "flex",
+          alignItems: "center",
+          background: "var(--bg-app, white)",
+          borderTop: "1.5px solid oklch(0.89 0.006 62)",
+          borderBottom: "1.5px solid oklch(0.89 0.006 62)",
+          gap: 4,
+          padding: "0 14px",
+          boxSizing: "border-box",
+          flexShrink: 0,
+        }}
+      >
+        {/* Logo */}
+        <div style={{ marginRight: 10, flexShrink: 0 }}>
+          {logoSlot ?? <LogoMark />}
+        </div>
+
+        {/* Board menu */}
+        <BoardMenu menuItemFactory={menuItemFactory} />
+
+        <TbSeparator />
+
+        {children ? children : null}
+
+        {/* Right side */}
+        <div
+          style={{
+            marginLeft: "auto",
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          <button
+            type="button"
+            title="Share"
+            onClick={() => boardContext?.onAction({ type: "createBoardLink" })}
+            style={{
+              width: 30,
+              height: 30,
+              borderRadius: 7,
+              border: "none",
+              background: "none",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "var(--text, #1a1a1a)",
+            }}
+          >
+            <ShareIcon />
+          </button>
+          {menuSlot ?? (!hideNavigation && <AppMenu />)}
+        </div>
+      </div>
+    );
+  }
 
   const outerStyle = isSketch
     ? {
@@ -95,7 +180,11 @@ export default function Toolbar({
   return (
     <div
       data-toolbar
-      className={isSketch ? "select-none w-full" : "select-none w-full bg-gradient-to-r from-white from-20% to-zinc-100 to-100% shadow-[0_2px_3px_rgba(0,0,0,0.10)]"}
+      className={
+        isSketch
+          ? "select-none w-full"
+          : "select-none w-full bg-gradient-to-r from-white from-20% to-zinc-100 to-100% shadow-[0_2px_3px_rgba(0,0,0,0.10)]"
+      }
       style={outerStyle}
     >
       <div
@@ -107,23 +196,9 @@ export default function Toolbar({
         }}
       >
         <div className="w-full flex items-center" style={{ width: "100%" }}>
-          <div className="pr-1.5">
-            {logoSlot ?? <HomeIcon />}
-          </div>
+          <div className="pr-1.5">{logoSlot ?? <HomeIcon />}</div>
 
           <BoardMenu menuItemFactory={menuItemFactory} />
-
-          {!children && showRuntimeMenu && (
-            <RuntimeMenu
-              availableRuntimeEngines={
-                boardContext?.availableRuntimeEngines || []
-              }
-              onAddAvailableRuntimeEngine={onAddRuntimeEngine}
-              onRemoveAvailableRuntimeEngine={onRemoveRuntimeEngine}
-              onUpdateRuntimeEngine={onUpdateRuntimeEngine}
-              onAddRuntime={onAddRuntime}
-            />
-          )}
 
           {children ? children : null}
 

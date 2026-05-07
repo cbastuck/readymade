@@ -54,7 +54,7 @@ export default function FilterUI(props: ServiceUIProps) {
             />
           ))}
         <Button
-          className="my-2 w-full"
+          className="hkp-svc-btn my-2 w-full"
           onClick={() => {
             service.configure({ conditions: [...conditions, ""] });
           }}

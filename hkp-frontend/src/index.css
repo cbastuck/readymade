@@ -236,25 +236,685 @@ blockquote:after {
   border-color: rgb(213, 108, 108) !important;
 }
 
+/* ── Playground theme tokens & overrides ─────────────────────────────────── */
+
+@keyframes hkp-processing-pulse {
+  0%,
+  100% {
+    outline-color: var(--hkp-accent, #0abcfb);
+  }
+  50% {
+    outline-color: color-mix(
+      in srgb,
+      var(--hkp-accent, #0abcfb) 35%,
+      transparent
+    );
+  }
+}
+
+.hkp-service-card--processing {
+  outline: 0.29px solid var(--hkp-accent, #0abcfb);
+  outline-offset: 0px;
+  animation: hkp-processing-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes fpulse {
+  from {
+    left: -8px;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 1;
+  }
+  to {
+    left: calc(100% + 8px);
+    opacity: 0;
+  }
+}
+
+[data-theme="playground"] {
+  font-family: "DM Sans", system-ui, sans-serif;
+
+  --bg-board: oklch(0.966 0.007 62);
+  --bg-app: oklch(0.99 0.003 62);
+  --bg-card: #ffffff;
+  --bg-runtime: oklch(0.978 0.012 268);
+  --runtime-border: oklch(0.87 0.022 268);
+  --runtime-header-bg: oklch(0.948 0.028 268);
+
+  --hkp-accent: #0abcfb;
+  --hkp-accent-dim: rgb(10 188 251 / 0.12);
+  --hkp-accent-violet: #7c3aed;
+
+  --accent: var(--hkp-accent);
+  --accent-dim: var(--hkp-accent-dim);
+  --accent-violet: var(--hkp-accent-violet);
+  --accent-amber: oklch(0.73 0.14 64);
+  --accent-amber-dim: oklch(0.73 0.14 64 / 0.15);
+
+  --text: oklch(0.2 0.01 62);
+  --text-mid: oklch(0.45 0.01 62);
+  --text-dim: oklch(0.62 0.008 62);
+
+  --border: oklch(0.89 0.006 62);
+  --border-mid: oklch(0.84 0.008 62);
+
+  --shadow-card:
+    0 1px 2px oklch(0.4 0.01 280 / 0.05), 0 3px 12px oklch(0.4 0.01 280 / 0.07);
+  --shadow-runtime:
+    0 2px 8px oklch(0.4 0.02 280 / 0.07), 0 8px 28px oklch(0.4 0.02 280 / 0.05);
+  --r-card: 14px;
+  --r-runtime: 18px;
+
+  --board-dot: oklch(0.76 0.012 62);
+  --board-padding: 15px;
+}
+
+@supports (color: oklch(0 0 0)) {
+  [data-theme="playground"] {
+    --hkp-accent: oklch(0.6 0.17 195);
+    --hkp-accent-dim: oklch(0.6 0.17 195 / 0.12);
+    --hkp-accent-violet: oklch(0.54 0.2 282);
+  }
+}
+
+/* Force DM Sans on all interactive elements — globals.css @layer base sets
+   font-family on button/input directly, overriding CSS inheritance */
+[data-theme="playground"] button,
+[data-theme="playground"] input,
+[data-theme="playground"] select,
+[data-theme="playground"] textarea {
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+/* Add Runtime dashed ghost button — used on board canvas */
+.hkp-add-runtime-btn {
+  display: none;
+}
+[data-theme="playground"] .hkp-add-runtime-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: "DM Sans", system-ui, sans-serif;
+  color: var(--accent-violet);
+  background: oklch(0.97 0.01 268 / 0.35);
+  border: 2px dashed var(--runtime-border);
+  border-radius: 12px;
+  cursor: pointer;
+  opacity: 0.6;
+  align-self: flex-start;
+  transition: opacity 0.15s;
+}
+[data-theme="playground"] .hkp-add-runtime-btn:hover {
+  opacity: 1;
+}
+
+/* Add Service dashed ghost button — appears at the end of the services row */
+.hkp-add-service-btn {
+  display: none;
+}
+[data-theme="playground"] .hkp-add-service-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  min-width: 100px;
+  padding: 15px;
+  margin: 4px 4px 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: "DM Sans", system-ui, sans-serif;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1.5px dashed var(--border-mid);
+  border-radius: var(--r-card, 14px);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+[data-theme="playground"] .hkp-add-service-btn:hover {
+  border-color: var(--hkp-accent);
+  color: var(--hkp-accent);
+  background: var(--hkp-accent-dim);
+}
+
+/* ── Palette sidebar cards ────────────────────────────────────────────────── */
+
+[data-theme="playground"] .hkp-palette-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px 5px 10px;
+  margin: 1px 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: grab;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+[data-theme="playground"] .hkp-palette-card:hover {
+  background: var(--hkp-accent-dim);
+  border-color: var(--border-mid);
+}
+[data-theme="playground"] .hkp-palette-card:active {
+  cursor: grabbing;
+}
+[data-theme="playground"] .hkp-palette-card-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: var(--bg-runtime, oklch(0.978 0.012 268));
+  border: 1px solid var(--border-mid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--hkp-accent-violet, #7c3aed);
+}
+[data-theme="playground"] .hkp-palette-card-body {
+  flex: 1;
+  min-width: 0;
+}
+[data-theme="playground"] .hkp-palette-card-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="playground"] .hkp-palette-card-sub {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 1px;
+}
+[data-theme="playground"] .hkp-palette-card-desc {
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="playground"] .hkp-palette-card-drag-handle {
+  flex-shrink: 0;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+[data-theme="playground"]
+  .hkp-palette-card:hover
+  .hkp-palette-card-drag-handle {
+  opacity: 1;
+}
+
+/* ── Service card (playground) ─────────────────────────────────────────────── */
+
+/* Card hover: lift + deeper shadow */
+[data-theme="playground"] .hkp-service-card {
+  transition:
+    box-shadow 0.2s,
+    transform 0.15s !important;
+}
+[data-theme="playground"] .hkp-service-card:hover {
+  box-shadow:
+    0 2px 6px oklch(0.4 0.01 280 / 0.1),
+    0 8px 24px oklch(0.4 0.01 280 / 0.1) !important;
+  transform: translateY(-1px);
+}
+
+/* Service body: apply design spec horizontal padding to ServiceUI's inner content div.
+   Vertical spacing is left to individual service UIs to avoid double-padding. */
+[data-theme="playground"] .hkp-service-card .flex.flex-col.font-sans {
+  padding: 0 13px !important;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Service name in header: override Editable's tracking-widest / text-base */
+[data-theme="playground"] [data-service-header] [contenteditable],
+[data-theme="playground"] [data-service-header] input[type="text"],
+[data-theme="playground"] [data-service-header] span.cursor-text {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  letter-spacing: 0 !important;
+  color: var(--text, #1a1a1a) !important;
+  padding: 0 !important;
+  height: auto !important;
+  border: none !important;
+  background: transparent !important;
+}
+
+/* Service body buttons: opt-in ghost style — add hkp-svc-btn to the button element in JSX */
+[data-theme="playground"] .hkp-svc-btn {
+  border-radius: 8px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 6px 8px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  border: 1px solid var(--border-mid) !important;
+  background: none !important;
+  color: var(--text-mid) !important;
+  transition: all 0.15s !important;
+  box-shadow: none !important;
+}
+[data-theme="playground"] .hkp-svc-btn:hover:not(:disabled):not(.hkp-rpill) {
+  border-color: var(--border) !important;
+  background: var(--border) !important;
+  color: var(--text) !important;
+}
+[data-theme="playground"] .hkp-svc-btn:active:not(:disabled):not(.hkp-rpill) {
+  background: var(--hkp-accent-dim) !important;
+  border-color: var(--hkp-accent) !important;
+  color: var(--hkp-accent) !important;
+}
+[data-theme="playground"] .hkp-svc-btn:disabled {
+  opacity: 0.4 !important;
+  cursor: default !important;
+}
+[data-theme="playground"] .hkp-btn-primary {
+  background: var(--hkp-accent) !important;
+  border-color: var(--hkp-accent) !important;
+  color: white !important;
+}
+[data-theme="playground"] .hkp-btn-primary:hover:not(:disabled) {
+  filter: brightness(0.92) !important;
+  background: var(--hkp-accent) !important;
+  color: white !important;
+}
+[data-theme="playground"] .hkp-btn-primary:active:not(:disabled) {
+  filter: brightness(0.82) !important;
+  background: var(--hkp-accent) !important;
+  color: white !important;
+}
+
+/* Radio group – checked state (Radix sets role="radio" + data-state="checked") */
+[data-theme="playground"] [role="radio"][data-state="checked"] {
+  border-color: var(--hkp-accent) !important;
+  background: var(--hkp-accent-dim) !important;
+  color: var(--hkp-accent) !important;
+}
+
+/* Radio pills */
+[data-theme="playground"] .hkp-rpill {
+  border-radius: 99px !important;
+  padding: 4px 9px !important;
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  border: 1.5px solid var(--border-mid) !important;
+  background: none !important;
+  color: var(--text-mid) !important;
+}
+[data-theme="playground"] .hkp-rpill:hover {
+  border-color: var(--hkp-accent) !important;
+  background: none !important;
+  color: var(--hkp-accent) !important;
+}
+[data-theme="playground"] .hkp-rpill.sel,
+[data-theme="playground"] .hkp-rpill.sel:hover,
+[data-theme="playground"] .hkp-rpill.sel:active {
+  border-color: var(--hkp-accent) !important;
+  background: var(--hkp-accent-dim) !important;
+  color: var(--hkp-accent) !important;
+  font-weight: 500 !important;
+}
+
+/* Drop zone highlights for palette drag */
+[data-theme="playground"] .hkp-runtime-svc-drop-active {
+  outline: 2px dashed var(--hkp-accent, #0abcfb);
+  outline-offset: -2px;
+  border-radius: var(--r-runtime, 18px);
+}
+[data-theme="playground"] .hkp-board-runtime-drop-active {
+  outline: 2px dashed var(--hkp-accent, #0abcfb);
+  outline-offset: -6px;
+}
+
+/* Runtime container: reset mx-2 margin so board padding controls spacing */
+[data-theme="playground"] .hkp-runtime-container {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  align-self: flex-start;
+}
+
+/* Runtime body area: 18px padding around service cards (spec) */
+[data-theme="playground"] .hkp-runtime-container > .flex.flex-row {
+  align-items: center;
+}
+/* Reset ServiceUiContainer's own top/bottom spacing that would double-up with body padding */
+[data-theme="playground"] .hkp-runtime-container .overflow-y-hidden {
+  margin-top: 0 !important;
+  padding-bottom: 0 !important;
+  align-items: center;
+}
+
+/* ── Playground toolbar ───────────────────────────────────────────────────── */
+
+/* Board title trigger */
+[data-theme="playground"] #board-menu-trigger {
+  font-size: 13.5px !important;
+  font-weight: 500 !important;
+  color: var(--text) !important;
+  letter-spacing: 0 !important;
+  text-transform: none !important;
+  background: transparent !important;
+  padding: 4px 8px !important;
+  border-radius: 6px !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+[data-theme="playground"] #board-menu-trigger:hover,
+[data-theme="playground"] #board-menu-trigger[data-state="open"] {
+  background: var(--border) !important;
+  color: var(--text) !important;
+}
+/* Board menu dropdown items */
+[data-theme="playground"] .hkp-board-menu-item[data-highlighted] {
+  background: var(--border, #f0ece6);
+}
+[data-theme="playground"]
+  .hkp-board-menu-item[data-highlighted][data-disabled] {
+  background: none;
+}
+
+/* Add Runtime button */
+[data-theme="playground"] #runtime-menu-trigger {
+  width: auto !important;
+  min-width: 0 !important;
+  font-size: 13px !important;
+  font-weight: 400 !important;
+  letter-spacing: 0 !important;
+  color: var(--text-mid) !important;
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  padding: 4px 10px !important;
+  height: auto !important;
+  min-height: 0 !important;
+  gap: 4px !important;
+}
+[data-theme="playground"] #runtime-menu-trigger:hover {
+  background: var(--hkp-accent-dim) !important;
+  border-color: var(--hkp-accent) !important;
+  color: var(--hkp-accent) !important;
+}
+/* Command popover (RuntimeMenu + ServiceSelector) in playground */
+[data-theme="playground"] .hkp-runtime-command [cmdk-input-wrapper] {
+  border-bottom: 1px solid var(--border-mid) !important;
+}
+[data-theme="playground"] .hkp-runtime-command [cmdk-input] {
+  font-size: 12px !important;
+  color: var(--text) !important;
+  background: none !important;
+}
+[data-theme="playground"] .hkp-runtime-command [cmdk-item] {
+  font-size: 12px !important;
+  color: var(--text-mid) !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  cursor: pointer !important;
+}
+[data-theme="playground"]
+  .hkp-runtime-command
+  [cmdk-item][data-selected="true"] {
+  background: var(--border) !important;
+  color: var(--text) !important;
+}
+[data-theme="playground"] .hkp-runtime-command [cmdk-separator] {
+  background: var(--border-mid) !important;
+  height: 1px !important;
+  margin: 4px 0 !important;
+}
+[data-theme="playground"] .hkp-runtime-command [cmdk-group-heading] {
+  display: none !important;
+}
+
+/* Runtime header strip */
+[data-theme="playground"] .hkp-runtime-header {
+  background-color: var(--runtime-header-bg) !important;
+  border-bottom: 1px solid var(--runtime-border) !important;
+  border-radius: var(--r-runtime) var(--r-runtime) 0 0;
+}
+
+[data-theme="playground"] .hkp-rt-name {
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  color: var(--accent-violet) !important;
+  font-family: "DM Sans", system-ui, sans-serif !important;
+  padding: 0 !important;
+  background: none !important;
+  border: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  border-radius: 0 !important;
+  text-decoration: none !important;
+}
+
+[data-theme="playground"] .hkp-rt-badge {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: oklch(0.54 0.2 282 / 0.1);
+  color: var(--accent-violet);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+/* Service cards: lift on hover */
+[data-theme="playground"] .hkp-service-card {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+[data-theme="playground"] .hkp-service-card:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 6px oklch(0.4 0.01 280 / 0.07),
+    0 8px 20px oklch(0.4 0.01 280 / 0.09) !important;
+}
+
+/* Sidebar items hover */
+[data-theme="playground"] .hkp-sidebar-item:hover {
+  background: var(--hkp-accent-dim);
+  color: var(--hkp-accent);
+}
+[data-theme="playground"] .hkp-sidebar-item:hover svg {
+  color: var(--hkp-accent);
+}
+
+/* Flow connectors — hidden in non-playground themes */
+.hkp-flow-connector {
+  display: none;
+}
+[data-theme="playground"] .hkp-flow-connector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+[data-theme="playground"] .hkp-flow-connector:hover {
+  pointer-events: auto;
+}
+[data-theme="playground"] .hkp-fc-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 0;
+  top: 9px;
+  border-top: 1px dotted var(--border-mid);
+}
+[data-theme="playground"] .hkp-fc-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--hkp-accent);
+  animation: fpulse 1.4s linear infinite;
+  left: -8px;
+  pointer-events: none;
+}
+[data-theme="playground"] .hkp-fc-btn {
+  position: relative;
+  z-index: 1;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-mid);
+  background: var(--bg-app);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-dim);
+  pointer-events: auto;
+  padding: 0;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s,
+    color 0.15s;
+}
+[data-theme="playground"] .hkp-fc-btn:hover {
+  border-color: var(--hkp-accent);
+  background: var(--hkp-accent-dim);
+  box-shadow: 0 0 0 4px var(--hkp-accent-dim);
+  color: var(--hkp-accent);
+}
+
+/* Playground range slider */
+[data-theme="playground"] .hkp-range-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  border: none;
+  background: var(--border-mid);
+  cursor: pointer;
+}
+[data-theme="playground"] .hkp-range-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border-mid);
+}
+[data-theme="playground"] .hkp-range-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, var(--hkp-accent) 65%, black);
+  background: var(--hkp-accent);
+  box-shadow: 0 0 0 3px var(--hkp-accent-dim);
+}
+[data-theme="playground"] .hkp-range-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  border: none;
+  background: var(--border-mid);
+}
+[data-theme="playground"] .hkp-range-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid color-mix(in oklch, var(--hkp-accent) 65%, black);
+  background: var(--hkp-accent);
+  box-shadow: 0 0 0 3px var(--hkp-accent-dim);
+}
+[data-theme="playground"] .hkp-range-slider:focus-visible {
+  outline: none;
+}
+[data-theme="playground"] .hkp-range-slider:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+/* ── Bottom bar ── */
+.hkp-bot {
+  display: none;
+}
+[data-theme="playground"] .hkp-bot {
+  height: 36px;
+  background: var(--bg-app);
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+}
+[data-theme="playground"] .hkp-bot p {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+[data-theme="playground"] .hkp-bot a {
+  color: var(--hkp-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+[data-theme="playground"] .hkp-bot a:hover {
+  text-decoration: underline;
+}
+[data-theme="playground"] .hkp-bot-save-link {
+  color: var(--hkp-accent);
+  font-weight: 500;
+  cursor: pointer;
+}
+[data-theme="playground"] .hkp-bot-save-link:hover {
+  text-decoration: underline;
+}
+
 /* ── Sketch theme overrides ───────────────────────────────────────────────── */
 [data-theme="sketch"] {
   font-size: 17px;
 }
 [data-theme="sketch"] * {
-  font-family: 'Kalam', cursive !important;
+  font-family: "Kalam", cursive !important;
   font-weight: 700;
 }
 
 /* Organic border-radius on all rounded Tailwind utilities */
-[data-theme="sketch"] .rounded-none { border-radius: 3px 7px 3px 7px / 7px 3px 7px 3px !important; }
-[data-theme="sketch"] .rounded-sm   { border-radius: 3px 7px 3px 7px / 7px 3px 7px 3px !important; }
-[data-theme="sketch"] .rounded-md   { border-radius: 4px 10px 4px 10px / 10px 4px 10px 4px !important; }
-[data-theme="sketch"] .rounded-lg   { border-radius: 5px 12px 5px 12px / 12px 5px 12px 5px !important; }
-[data-theme="sketch"] .rounded-full { border-radius: 4px 10px 4px 10px / 10px 4px 10px 4px !important; }
+[data-theme="sketch"] .rounded-none {
+  border-radius: 3px 7px 3px 7px / 7px 3px 7px 3px !important;
+}
+[data-theme="sketch"] .rounded-sm {
+  border-radius: 3px 7px 3px 7px / 7px 3px 7px 3px !important;
+}
+[data-theme="sketch"] .rounded-md {
+  border-radius: 4px 10px 4px 10px / 10px 4px 10px 4px !important;
+}
+[data-theme="sketch"] .rounded-lg {
+  border-radius: 5px 12px 5px 12px / 12px 5px 12px 5px !important;
+}
+[data-theme="sketch"] .rounded-full {
+  border-radius: 4px 10px 4px 10px / 10px 4px 10px 4px !important;
+}
 
 /* Buttons: sketch shadow only on substantive (non-ghost, non-transparent) buttons */
 [data-theme="sketch"] button {
-  transition: box-shadow 150ms, transform 100ms;
+  transition:
+    box-shadow 150ms,
+    transform 100ms;
 }
 /* Buttons with a real background: default (bg-primary), secondary, white */
 [data-theme="sketch"] button.bg-primary,
@@ -293,4 +953,3 @@ blockquote:after {
 [data-theme="sketch"] .rounded-full.bg-secondary {
   border-radius: 2px !important;
 }
-

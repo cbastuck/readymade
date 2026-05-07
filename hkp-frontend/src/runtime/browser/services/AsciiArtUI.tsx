@@ -4,6 +4,7 @@ import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
 import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
+import Slider from "hkp-frontend/src/ui-components/Slider";
 
 const CHARSET_OPTIONS: { [key: string]: string } = {
   " .:-=+*#%@":  "Classic",
@@ -68,49 +69,23 @@ export default function AsciiArtUI(props: ServiceUIProps) {
           padding: "10px 0 6px",
           display: "flex",
           flexDirection: "column",
-          gap: 8,
+          gap: 10,
         }}
       >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ fontSize: 12, color: "#666" }}>Columns</span>
-          <span style={{ fontSize: 12, fontFamily: "monospace", minWidth: 24, textAlign: "right" }}>
-            {cols}
-          </span>
-        </div>
-        <input
-          type="range"
+        <Slider
+          title="Columns"
+          value={cols}
           min={20}
           max={120}
-          value={cols}
-          onChange={(e) => updateCols(Number(e.target.value))}
-          style={{ width: "100%" }}
+          onChange={updateCols}
         />
 
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <span style={{ fontSize: 12, color: "#666" }}>Rows</span>
-          <span style={{ fontSize: 12, fontFamily: "monospace", minWidth: 24, textAlign: "right" }}>
-            {rows}
-          </span>
-        </div>
-        <input
-          type="range"
+        <Slider
+          title="Rows"
+          value={rows}
           min={10}
           max={120}
-          value={rows}
-          onChange={(e) => updateRows(Number(e.target.value))}
-          style={{ width: "100%" }}
+          onChange={updateRows}
         />
 
         <SelectorField
@@ -126,7 +101,7 @@ export default function AsciiArtUI(props: ServiceUIProps) {
             alignItems: "center",
             gap: 6,
             fontSize: 12,
-            color: "#666",
+            color: "var(--text-mid, #666)",
             cursor: "pointer",
             userSelect: "none",
           }}

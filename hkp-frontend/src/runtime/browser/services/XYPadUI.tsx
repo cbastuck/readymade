@@ -259,7 +259,7 @@ export default function XYPadUI(props: ServiceUIProps) {
           }}
         >
           <Button
-            className="absolute top-0 right-0 z-[1001]"
+            className="hkp-svc-btn absolute top-0 right-0 z-[1001]"
             onClick={() => setIsFullscreen(false)}
           >
             ✕

@@ -38,7 +38,11 @@ export default function Select({
         <SelectGroup>
           <SelectLabel>{title}</SelectLabel>
           {options.map((option) => (
-            <SelectItem key={option} value={option}>
+            <SelectItem
+              key={option}
+              value={option}
+              className="focus:bg-[var(--hkp-accent-dim)] focus:text-[var(--hkp-accent)]"
+            >
               {option}
             </SelectItem>
           ))}

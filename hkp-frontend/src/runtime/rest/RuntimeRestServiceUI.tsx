@@ -11,12 +11,14 @@ import Button from "hkp-frontend/src/ui-components/Button";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import Switch from "hkp-frontend/src/ui-components/Switch";
 import SubServicePipelineUI from "../ui/SubServicePipelineUI";
+import { Size } from "hkp-frontend/src/common";
 
 type Props = ServiceUIProps & {
   onNotification?: (notification: any) => void;
   onInit?: (state: any) => void;
   children?: any;
   genericUI?: boolean;
+  initialSize?: Size;
 };
 export default function RuntimeRestServiceUI(props: Props) {
   const { service, onNotification } = props;
@@ -166,6 +168,11 @@ export default function RuntimeRestServiceUI(props: Props) {
     );
   };
 
+  const initialSize: Size | undefined =
+    props.genericUI === false
+      ? (props.initialSize ?? { width: 250, height: undefined })
+      : props.initialSize;
+
   return (
     <ServiceUI
       {...props}
@@ -173,8 +180,15 @@ export default function RuntimeRestServiceUI(props: Props) {
       onInit={props.onInit}
       onNotification={props.onNotification}
       showBypassOnlyIfExplicit={true}
+      initialSize={initialSize}
     >
-      {props.genericUI === false ? props.children : renderMain(service)}
+      {props.genericUI === false ? (
+        <div key={service.uuid} id={service.uuid} style={{ paddingBottom: 12 }}>
+          {props.children}
+        </div>
+      ) : (
+        renderMain(service)
+      )}
     </ServiceUI>
   );
 }

@@ -18,6 +18,7 @@ import {
 import { CustomMenuEntry, ServiceDescriptor } from "hkp-frontend/src/types";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import MenuIcon from "../MenuIcon";
+import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 
 type Props = {
   service: ServiceDescriptor;
@@ -29,6 +30,17 @@ type Props = {
   onConfig: () => void;
   onCustomEntry: (item: CustomMenuEntry) => void;
 };
+
+function DragHandle() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2.5, padding: 2, opacity: 0.3, cursor: "grab" }}>
+      <span style={{ display: "block", width: 11, height: 1.5, background: "var(--text, #1a1a1a)", borderRadius: 2 }} />
+      <span style={{ display: "block", width: 11, height: 1.5, background: "var(--text, #1a1a1a)", borderRadius: 2 }} />
+      <span style={{ display: "block", width: 11, height: 1.5, background: "var(--text, #1a1a1a)", borderRadius: 2 }} />
+    </div>
+  );
+}
+
 export default function ServiceSettings({
   isCollapsed,
   service,
@@ -39,12 +51,31 @@ export default function ServiceSettings({
   onConfig,
   onCustomEntry,
 }: Props) {
+  const { themeName } = useThemeControl();
+  const isPlayground = themeName === "playground";
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="p-4 h-min w-min" variant="ghost" size="icon">
-          <Menu strokeWidth={1} />
-        </Button>
+        {isPlayground ? (
+          <button
+            type="button"
+            title="Service options"
+            className="bg-transparent border-none p-0 cursor-pointer flex items-center rounded flex-shrink-0"
+            onMouseEnter={(e) => {
+              (e.currentTarget.firstChild as HTMLElement).style.opacity = "0.6";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget.firstChild as HTMLElement).style.opacity = "0.3";
+            }}
+          >
+            <DragHandle />
+          </button>
+        ) : (
+          <Button className="p-4 h-min w-min" variant="ghost" size="icon">
+            <Menu strokeWidth={1} />
+          </Button>
+        )}
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56 font-menu">
         <DropdownMenuLabel className="capitalize font-sans tracking-wider text-base">

@@ -39,6 +39,7 @@ export function SpotifyOAuth({
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <Button
+        className="hkp-svc-btn"
         style={s(t.ls1, t.fs12)}
         onClick={async () => {
 

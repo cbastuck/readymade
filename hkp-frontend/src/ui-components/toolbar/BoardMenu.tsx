@@ -1,15 +1,8 @@
-import React, { useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useContext, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+import { ChevronDown } from "lucide-react";
 
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-} from "hkp-frontend/src/ui-components/primitives/navigation-menu";
-import { cn } from "hkp-frontend/src/ui-components";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import EditorDialog from "../EditorDialog";
 import {
@@ -42,6 +35,7 @@ export default function BoardMenu({ menuItemFactory }: Props) {
   const boardContext = useContext(BoardCtx);
   const board = boardContext?.boardName;
   const [showBoardSource, setShowBoardSource] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const onEditBoardSource = useCallback(async () => {
     if (boardContext && board) {
@@ -56,7 +50,7 @@ export default function BoardMenu({ menuItemFactory }: Props) {
   const onCloseBoardSource = () => setShowBoardSource(false);
   const onApplyBoardSource = (newSource: string | object) => {
     const src = assureJSON(newSource);
-    boardContext?.setBoardState(src as BoardDescriptor); // TODO: validation
+    boardContext?.setBoardState(src as BoardDescriptor);
     onCloseBoardSource();
   };
 
@@ -89,15 +83,11 @@ export default function BoardMenu({ menuItemFactory }: Props) {
   };
 
   const onCreateBoardLink = useCallback(() => {
-    boardContext?.onAction({
-      type: "createBoardLink",
-    });
+    boardContext?.onAction({ type: "createBoardLink" });
   }, [boardContext]);
 
   const onRefineBoardWithAI = useCallback(async () => {
-    if (!boardContext || !board) {
-      return;
-    }
+    if (!boardContext || !board) return;
 
     const src = boardContext.errorOnFetch
       ? restoreBoardFromLocalStorage(board)
@@ -149,19 +139,13 @@ export default function BoardMenu({ menuItemFactory }: Props) {
             {
               title: "New Board",
               description: "Create a new board.",
-              onClick: () =>
-                boardContext?.onAction({
-                  type: "newBoard",
-                }),
+              onClick: () => boardContext?.onAction({ type: "newBoard" }),
               disabled: false,
             },
             {
               title: "Clear Board",
-              description: "Clear the current Board",
-              onClick: () =>
-                boardContext?.onAction({
-                  type: "clearBoard",
-                }),
+              description: "Clear the current board",
+              onClick: () => boardContext?.onAction({ type: "clearBoard" }),
               disabled:
                 !boardContext ||
                 !boardContext.isActionAvailable({ type: "clearBoard" }),
@@ -169,27 +153,17 @@ export default function BoardMenu({ menuItemFactory }: Props) {
             {
               title: "Save Board as",
               description: "Save the current board to the browser",
-              onClick: () =>
-                boardContext?.onAction({
-                  type: "saveBoard",
-                }),
+              onClick: () => boardContext?.onAction({ type: "saveBoard" }),
               disabled: false,
             },
             {
               title: "Edit Board Source",
-              description: "Edit the current board's source in a text editor",
+              description: "Edit the board's JSON source in a text editor",
               onClick: onEditBoardSource,
             },
             {
-              title: "Create Board Link",
-              description:
-                "Create a link or QR code allowing to share and clone the board on another device",
-              onClick: onCreateBoardLink,
-            },
-            {
               title: "Refine Board With AI",
-              description:
-                "Open the AI refiner template and inject this board JSON as the refinement base.",
+              description: "Open the AI refiner with this board as the base",
               onClick: onRefineBoardWithAI,
             },
           ],
@@ -202,90 +176,114 @@ export default function BoardMenu({ menuItemFactory }: Props) {
     ],
   );
 
-  if (!board) {
-    return null;
-  }
+  if (!board) return null;
 
   return (
-    <NavigationMenu delayDuration={10000}>
+    <>
       <EditorDialog
         title="Board Configuration"
         isOpen={showBoardSource}
         value={boardSource}
         onClose={onCloseBoardSource}
         actions={[
-          {
-            label: "Apply Changes",
-            onAction: onApplyBoardSource,
-          },
-          {
-            label: "Save to Browser",
-            onAction: onSaveBoardSource,
-          },
-          {
-            label: "Download Source",
-            onAction: onDownloadButton,
-          },
-          {
-            label: "Create share link",
-            onAction: onCreateShareLinkFromSource,
-          },
+          { label: "Apply Changes", onAction: onApplyBoardSource },
+          { label: "Save to Browser", onAction: onSaveBoardSource },
+          { label: "Download Source", onAction: onDownloadButton },
+          { label: "Create share link", onAction: onCreateShareLinkFromSource },
         ]}
       />
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <NavigationMenuTrigger
+
+      <DropdownMenuPrimitive.Root open={open} onOpenChange={setOpen}>
+        <DropdownMenuPrimitive.Trigger asChild>
+          <button
             id="board-menu-trigger"
-            className="px-2 hover:text-white data-[state=open]:text-white text-base-plus capitalize tracking-wider bg-transparent"
+            type="button"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              maxWidth: 160,
+              overflow: "hidden",
+            }}
           >
-            <div className="min-w-[30px] max-w-[130px] overflow-x-hidden text-ellipsis whitespace-nowrap text-base-plus tracking-wider">
-              {board || "Board"}
-            </div>
-          </NavigationMenuTrigger>
-          <NavigationMenuContent className="font-menu">
-            <h3 className="px-3 my-[4px] text-sky-600">{board}</h3>
-            <hr />
-            <ul className="grid gap-1 w-[200px] md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr] m-1">
-              {menuItems.map((item) => (
-                <ListItem
-                  key={item.title}
-                  title={item.title}
-                  onClick={item.onClick}
-                  disabled={item.disabled}
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {board}
+            </span>
+            <ChevronDown
+              size={12}
+              style={{
+                flexShrink: 0,
+                transition: "transform 0.18s ease",
+                transform: open ? "rotate(180deg)" : "rotate(0deg)",
+              }}
+            />
+          </button>
+        </DropdownMenuPrimitive.Trigger>
+
+        <DropdownMenuPrimitive.Portal>
+          <DropdownMenuPrimitive.Content
+            align="start"
+            sideOffset={6}
+            style={{
+              zIndex: 200,
+              minWidth: 230,
+              background: "var(--bg-card, white)",
+              border: "1px solid var(--border-mid, #e2ddd7)",
+              borderRadius: 10,
+              boxShadow:
+                "0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
+              padding: 5,
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}
+          >
+            {menuItems.map((item, i) => (
+              <DropdownMenuPrimitive.Item
+                key={item.title ?? i}
+                disabled={item.disabled}
+                onSelect={() => item.onClick?.()}
+                style={{
+                  outline: "none",
+                  borderRadius: 6,
+                  padding: "7px 10px",
+                  cursor: item.disabled ? "default" : "pointer",
+                  opacity: item.disabled ? 0.4 : 1,
+                  userSelect: "none",
+                }}
+                className="hkp-board-menu-item"
+              >
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "var(--text, #1a1a1a)",
+                    lineHeight: 1.3,
+                  }}
                 >
-                  {item.description}
-                </ListItem>
-              ))}
-            </ul>
-          </NavigationMenuContent>
-        </NavigationMenuItem>
-      </NavigationMenuList>
-    </NavigationMenu>
+                  {item.title}
+                </div>
+                {item.description && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color: "var(--text-dim, #9ca3af)",
+                      marginTop: 1,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {item.description}
+                  </div>
+                )}
+              </DropdownMenuPrimitive.Item>
+            ))}
+          </DropdownMenuPrimitive.Content>
+        </DropdownMenuPrimitive.Portal>
+      </DropdownMenuPrimitive.Root>
+    </>
   );
 }
-
-const ListItem = React.forwardRef<
-  React.ElementRef<"div">,
-  React.ComponentPropsWithoutRef<"div"> & { disabled?: boolean }
->(({ className, title, children, disabled, ...props }, ref) => {
-  return (
-    <li>
-      <NavigationMenuLink asChild>
-        <div
-          ref={ref}
-          className={cn(
-            "cursor-pointer block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-            className,
-          )}
-          {...props}
-        >
-          <div className="text-base leading-none underline">{title}</div>
-          <p className="line-clamp-2 text-[0.8rem] leading-snug  hover:text-accent-foreground">
-            {children}
-          </p>
-        </div>
-      </NavigationMenuLink>
-    </li>
-  );
-});
-ListItem.displayName = "ListItem";

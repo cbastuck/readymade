@@ -17,8 +17,7 @@ export default function ServiceWithDropBar(props: Props) {
   const theme = useTheme();
   const dropTargetStyle = {
     width: 20,
-    height: "94%",
-    margin: "10px 0px",
+    height: "100%",
     borderRadius: 3,
   };
   const onDrop = (idx: number, data: any) => {
@@ -28,7 +27,7 @@ export default function ServiceWithDropBar(props: Props) {
     }
   };
   return (
-    <div className="flex">
+    <div className="flex -ml-4">
       <DropTarget
         style={dropTargetStyle}
         activeColor={`linear-gradient(to right, #ffffff00 0%, #ffffff00 30%, ${theme.dropBarColor} 50%, #ffffff00 70%)`}

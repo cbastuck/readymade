@@ -155,6 +155,7 @@ export type ServiceClass = {
   // Optional semantic metadata that can be used by runtime engines and UI selection.
   version?: string;
   capabilities?: Array<string>;
+  description?: string;
 };
 
 export type ServiceRegistry = Array<ServiceClass>;

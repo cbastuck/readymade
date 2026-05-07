@@ -33,6 +33,7 @@ type Props = {
   frameless?: boolean;
   headless?: boolean;
   wrapServices?: boolean;
+  columnServices?: boolean;
   isExpanded?: boolean;
   style?: CSSProperties;
   outputs?: ReactElement;
@@ -59,16 +60,15 @@ export default function RuntimeUI({
   frameless,
   headless,
   wrapServices,
+  columnServices,
   style: passedStyled,
   children,
-  registry,
   isExpanded = true,
   outputs,
   inputs,
   initialServiceFrameState,
   onExpand,
   onWrapServices,
-  onAddService,
   onServiceAction,
   onArrangeService,
   onResult,
@@ -92,14 +92,17 @@ export default function RuntimeUI({
 
   const expanded = headless ? false : isExpanded;
   const horizontalLayout = "flex";
-  // TODO: not good on mobile - double check
   const horizontalLayoutWrapped =
-    "flex sm:flex-wrap flex-col sm:flex-row items-start"; // use flex-col and items-center on mobile
-  const layout = wrapServices ? horizontalLayoutWrapped : horizontalLayout;
+    "flex sm:flex-wrap flex-col sm:flex-row items-start";
+  const columnLayout = "flex flex-col";
+  const layout = columnServices ? columnLayout : (wrapServices ? horizontalLayoutWrapped : horizontalLayout);
   return (
-    <div style={{ ...style, boxShadow: theme.runtimeBoxShadow }} className="select-none mt-1 mb-2 mx-2">
+    <div
+      style={{ ...style, boxShadow: theme.runtimeBoxShadow }}
+      className="hkp-runtime-container select-none mt-1 mb-2 mx-2"
+    >
       <DragSource
-        className="bg-[#FFFFFF8F] border-b border-gray-300"
+        className="hkp-runtime-header bg-[#FFFFFF8F] border-b border-gray-300"
         value={runtime}
         type={HKP_DND_RUNTIME_TYPE}
       >
@@ -107,8 +110,6 @@ export default function RuntimeUI({
           isExpanded={isExpanded}
           wrapServices={wrapServices}
           runtime={runtime}
-          registry={registry}
-          onAddService={onAddService}
           onExpand={onExpand}
           onWrapServices={onWrapServices}
           onSave={onSave}

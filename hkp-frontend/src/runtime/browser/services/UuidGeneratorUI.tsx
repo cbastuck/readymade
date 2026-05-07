@@ -52,7 +52,7 @@ export default function UuidGeneratorUI(props: ServiceUIProps) {
           onChange={onMethod}
         />
         <Copyable label="UUID" value={uuid} />
-        <Button onClick={onGenerate}>Generate</Button>
+        <Button className="hkp-svc-btn" onClick={onGenerate}>Generate</Button>
       </div>
     </ServiceUI>
   );

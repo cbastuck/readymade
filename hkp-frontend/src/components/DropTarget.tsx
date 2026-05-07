@@ -34,7 +34,7 @@ export default function DropTarget({
   };
 
   const onDrop = (ev: DragEvent) => {
-    if (!disabled) {
+    if (!disabled && ev.dataTransfer.types.includes(acceptedType)) {
       setIsActive(false);
       onDropProp(ev.dataTransfer.getData(acceptedType));
       ev.preventDefault();

@@ -445,7 +445,7 @@ export default function AudioEditorUI(props: ServiceUIProps) {
         <div className="h-10 flex gap-2 items-center mb-2 px-2">
           <button
             onClick={handleClear}
-            className="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm text-white"
+            className="hkp-svc-btn px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-sm text-white"
           >
             Clear
           </button>
@@ -457,7 +457,7 @@ export default function AudioEditorUI(props: ServiceUIProps) {
               selectionEnd === null ||
               selectionStart === selectionEnd
             }
-            className="px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-sm text-white"
+            className="hkp-svc-btn px-3 py-1 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed rounded text-sm text-white"
             title="Play Selection"
           >
             Play
@@ -465,7 +465,7 @@ export default function AudioEditorUI(props: ServiceUIProps) {
           <button
             onClick={handleClearSelection}
             disabled={selectionStart === null}
-            className="px-3 py-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded text-sm text-white"
+            className="hkp-svc-btn px-3 py-1 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-700 disabled:cursor-not-allowed rounded text-sm text-white"
             title="Clear Selection"
           >
             Clear Sel
@@ -474,21 +474,21 @@ export default function AudioEditorUI(props: ServiceUIProps) {
           <div className="flex gap-1">
             <button
               onClick={handleZoomIn}
-              className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white"
+              className="hkp-svc-btn px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white"
               title="Zoom In"
             >
               <Plus size={14} />
             </button>
             <button
               onClick={handleZoomOut}
-              className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white"
+              className="hkp-svc-btn px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white"
               title="Zoom Out"
             >
               <Minus size={14} />
             </button>
             <button
               onClick={handleZoomReset}
-              className="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white"
+              className="hkp-svc-btn px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-white"
               title="Reset Zoom"
             >
               Reset
@@ -498,7 +498,7 @@ export default function AudioEditorUI(props: ServiceUIProps) {
             <button
               onClick={handlePanLeft}
               disabled={zoomStart === 0}
-              className="px-2 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded text-sm text-white"
+              className="hkp-svc-btn px-2 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded text-sm text-white"
               title="Pan Left (←)"
             >
               ←
@@ -506,7 +506,7 @@ export default function AudioEditorUI(props: ServiceUIProps) {
             <button
               onClick={handlePanRight}
               disabled={zoomEnd === 1}
-              className="px-2 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded text-sm text-white"
+              className="hkp-svc-btn px-2 py-1 bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed rounded text-sm text-white"
               title="Pan Right (→)"
             >
               →

@@ -2,6 +2,10 @@ import { ServiceClass, ServiceUIComponent } from "hkp-frontend/src/types";
 
 import MonitorUI from "../browser/services/MonitorUI";
 import TimerUI from "../browser/services/TimerUI";
+import ImapEmailUI from "./ui/ImapEmailUI";
+import TelegramListenerUI from "./ui/TelegramListenerUI";
+import TelegramSenderUI from "./ui/TelegramSenderUI";
+import SmtpEmailUI from "./ui/SmtpEmailUI";
 import CoreOutputUI from "./ui/CoreOutputUI";
 import CoreInputUI from "./ui/CoreInputUI";
 import FilterUI from "./ui/FilterUI";
@@ -47,6 +51,14 @@ function findServiceUIByKey(
       return HttpClientUI;
     case "timer":
       return TimerUI;
+    case "imap-email":
+      return ImapEmailUI;
+    case "telegram-listener":
+      return TelegramListenerUI;
+    case "telegram-sender":
+      return TelegramSenderUI;
+    case "smtp-email":
+      return SmtpEmailUI;
   }
   return null;
 }

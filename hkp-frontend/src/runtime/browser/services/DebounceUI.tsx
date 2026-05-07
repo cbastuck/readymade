@@ -52,6 +52,7 @@ export default function DebounceUI(props: ServiceUIProps) {
           {remaining !== null && <span>Ready in: {remaining}s</span>}
         </div>
         <Button
+          className="hkp-svc-btn"
           variant="outline"
           onClick={() => service.configure({ reset: true })}
         >

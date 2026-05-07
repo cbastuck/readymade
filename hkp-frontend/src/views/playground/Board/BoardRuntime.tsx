@@ -33,7 +33,7 @@ export default function BoardRuntime({
   const runtimeInstanceRef = useRef<RuntimeHandle | null>(null);
 
   return (
-    <DragProvider style={{ marginBottom: 5, marginTop: 5 }}>
+    <DragProvider style={{ marginBottom: 25 }}>
       <RuntimeWithDropBars index={runtimeIdx} onDrop={onDrop}>
         <Runtime
           key={`board-${runtime.id}`}

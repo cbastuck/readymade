@@ -15,7 +15,6 @@ export type Props = {
   synced?: boolean;
   disabled?: boolean;
   unit?: string;
-  labelStyle?: CSSProperties;
   style?: CSSProperties;
   isExpandable?: boolean;
   className?: string;
@@ -33,7 +32,6 @@ export default function InputField({
   synced = true,
   disabled,
   unit,
-  labelStyle: _labelStyle,
   style,
   isExpandable = false,
   className = "",
@@ -55,7 +53,7 @@ export default function InputField({
   const renderInputType = (
     val: InputValueType,
     inputType: InputFieldType,
-    lbl: string
+    lbl: string,
   ) => {
     return (
       <div

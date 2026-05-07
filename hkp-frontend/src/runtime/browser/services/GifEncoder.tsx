@@ -579,12 +579,14 @@ function GifEncoderUI(props: ServiceUIProps) {
 
         <div style={{ display: "flex", gap: 8 }}>
           <Button
+            className="hkp-svc-btn"
             variant="outline"
             onClick={() => props.service.configure({ recording: !recording })}
           >
             {recording ? "Stop Recording" : "Start Recording"}
           </Button>
           <Button
+            className="hkp-svc-btn"
             variant="outline"
             onClick={() => props.service.configure({ export: true })}
             disabled={frames === 0}
@@ -592,6 +594,7 @@ function GifEncoderUI(props: ServiceUIProps) {
             Export GIF
           </Button>
           <Button
+            className="hkp-svc-btn"
             variant="outline"
             onClick={() => props.service.configure({ clear: true })}
           >

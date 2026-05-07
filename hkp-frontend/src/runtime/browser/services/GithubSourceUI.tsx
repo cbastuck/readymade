@@ -120,7 +120,7 @@ export default function GithubSourceUI(props: ServiceUIProps) {
           onChange={(kv) => props.service.configure(kv)}
         />
         <Button
-          className="w-full mt-2"
+          className="hkp-svc-btn w-full mt-2"
           onClick={() => inject()}
           disabled={!file}
         >

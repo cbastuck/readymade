@@ -1,0 +1,35 @@
+{
+  "boardName": "IMAP Email Demo",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "hkp-node",
+      "type": "rest",
+      "url": "hkp://remotes/hkp-node",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "imap-svc",
+        "serviceId": "imap-email",
+        "serviceName": "IMAP Email",
+        "state": {
+          "host": "",
+          "port": 993,
+          "username": "",
+          "password": "",
+          "tls": true,
+          "mailbox": "INBOX",
+          "running": false
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "monitor",
+        "serviceName": "Incoming Emails"
+      }
+    ]
+  }
+}

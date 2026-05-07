@@ -37,20 +37,22 @@ export default function BoardEntryPoint({
     boardContext && boardContext.runtimes && boardContext.runtimes.length === 0;
 
   const saveReminder = (
-    <div style={{ margin: "10px 0px", fontSize: 14 }}>
-      Remember to
-      <span
-        style={{ cursor: "help", color: "#4284C4" }}
-        onClick={() => {
-          const selector = document.getElementById("board-menu-trigger");
-          if (selector) {
-            selector.click();
-          }
-        }}
-      >
-        {" save this board "}
-      </span>
-      and continue later from the <Link to="/home">home view</Link>.
+    <div className="hkp-bot">
+      <p>
+        Remember to{" "}
+        <span
+          className="hkp-bot-save-link"
+          onClick={() => {
+            const selector = document.getElementById("board-menu-trigger");
+            if (selector) {
+              selector.click();
+            }
+          }}
+        >
+          save this board
+        </span>{" "}
+        and continue later from the <Link to="/home">home view</Link>.
+      </p>
     </div>
   );
 
@@ -96,8 +98,10 @@ export default function BoardEntryPoint({
       <div
         className={className}
         style={{
-          // Fill the viewport height minus toolbar
-          height: "calc(100vh - 56px)",
+          // Fill the available height from parent layout.
+          flex: 1,
+          minHeight: 0,
+          height: "100%",
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
@@ -116,12 +120,10 @@ export default function BoardEntryPoint({
   return (
     <div style={t.w100} className={className}>
       <div style={s(t.fs16, t.ls1, t.tc)}>
-        <div>
-          {boardContent}
-          {saveReminder}
-        </div>
+        <div>{boardContent}</div>
       </div>
       <VSpacer />
+      {saveReminder}
     </div>
   );
 }

@@ -7,6 +7,7 @@ import Editable from "../Editable";
 import { CustomTooltipActions } from "../Tooltip";
 import IconButton from "../IconButton";
 import { usePushNotifications } from "hkp-frontend/src/Notifications";
+import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 
 type Props = {
   draggable?: boolean;
@@ -14,7 +15,10 @@ type Props = {
   onRename: (newName: string) => void;
 };
 export default function ServiceName({ service, onRename }: Props) {
+  const { themeName } = useThemeControl();
+  const isPlayground = themeName === "playground";
   const pusher = usePushNotifications();
+
   const onCopyInstanceID = (ev: MouseEvent) => {
     navigator.clipboard.writeText(service.uuid);
     pusher(`${service.uuid} copied to clipboard`);
@@ -32,6 +36,29 @@ export default function ServiceName({ service, onRename }: Props) {
       />
     ),
   };
+
+  if (isPlayground) {
+    return (
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          fontSize: 13,
+          fontWeight: 500,
+          color: "var(--text, #1a1a1a)",
+          display: "flex",
+          alignItems: "center",
+        }}
+      >
+        <Editable
+          value={service.serviceName}
+          onChange={onRename}
+          tooltip={tooltip}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex mb-4 font-sans">
       <Editable

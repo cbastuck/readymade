@@ -55,11 +55,12 @@ public:
          mode == "writeOnly" || 
          mode == "readOnly" || 
          mode == "writeAndAcc" || 
-         mode == "readProcessWrite") {
+         mode == "readProcessWrite" ||
+         mode == "readAndAccumulate") {
       m_state["mode"] = mode;
     }
 
-    if (mode == "writeAndAcc")
+    if (mode == "writeAndAcc" || mode == "readAndAccumulate")
     {
       m_accumulated = std::make_shared<FloatRingBuffer>(m_instanceId);
     }
@@ -90,7 +91,11 @@ public:
     }
 
     std::string mode = m_state["mode"];
-    if (mode == "writeOnly" || mode == "writeAndAcc") 
+    if (mode == "readAndAccumulate")
+    {
+      return m_accumulated ? Data(m_accumulated) : Null();
+    }
+    if (mode == "writeOnly" || mode == "writeAndAcc")
     {
       m_websocket->send(data, MessagePurpose::RESULT, getId());
     }
@@ -111,7 +116,7 @@ public:
       auto data = flatBufferToData(buffer, isBinary);
       next(data);
     }
-    else if (mode == "writeAndAcc")
+    else if (mode == "writeAndAcc" || mode == "readAndAccumulate")
     {
       if (!m_accumulated)
       {

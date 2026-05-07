@@ -43,7 +43,7 @@ export default function AudioDeviceSettings({
               <TableRow key={device.label}>
                 <TableCell className="text-base">{device.label}</TableCell>
                 <TableCell className="text-base text-right">
-                  <Button variant="outline" onClick={() => onActivate(device)}>
+                  <Button className="hkp-svc-btn" variant="outline" onClick={() => onActivate(device)}>
                     Activate
                   </Button>
                 </TableCell>

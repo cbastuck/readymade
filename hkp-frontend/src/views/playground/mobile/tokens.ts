@@ -1,0 +1,18 @@
+export const M = {
+  bg: "#f2ede8",
+  card: "#ffffff",
+  border: "#e2dbd4",
+  borderStrong: "#ccc5bc",
+  teal: "#0ab5a0",
+  tealLight: "#e6f8f6",
+  tealDark: "#089080",
+  blue: "#4a7bff",
+  blueLight: "#eef2ff",
+  textPrimary: "#1a1a1a",
+  textSecondary: "#6b6560",
+  textMuted: "#9e9790",
+  runtimeBg: "#eef2fc",
+  runtimeBorder: "#c9d4f5",
+  danger: "#ef4444",
+  green: "#22c55e",
+} as const;

@@ -38,6 +38,7 @@ export default function GameOfLifeUI(props: ServiceUIProps) {
           px
         </div>
         <button
+          className="hkp-svc-btn"
           style={{ marginTop: 8, padding: "2px 8px" }}
           onClick={() => service.configure({ reset: true })}
         >

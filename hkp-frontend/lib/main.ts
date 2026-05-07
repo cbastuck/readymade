@@ -14,6 +14,9 @@ export function useAppContext() {
   return useContext<AppContextState>(AppCtx);
 }
 
+import { MobilePlaygroundWithRouter as _MobilePlayground } from "../src/views/playground/mobile/index";
+export const MobilePlayground = _MobilePlayground;
+
 export {
   App,
   Playground,

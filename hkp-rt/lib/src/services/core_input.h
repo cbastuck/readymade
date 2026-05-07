@@ -47,6 +47,8 @@ public:
     {
       updateIfNeeded(m_deferPropagation, (*buf)["deferPropagation"]);
       updateIfNeeded(m_preferredInputDeviceName, (*buf)["preferredInputDeviceName"]);
+      updateIfNeeded(m_preferredSampleRate, (*buf)["preferredSampleRate"]);
+      updateIfNeeded(m_preferredBufferSize, (*buf)["preferredBufferSize"]);
     }
 
     return Service::configure(data);
@@ -62,8 +64,11 @@ public:
     auto state = json{};
     state["deferPropagation"] = m_deferPropagation;
     state["currentDeviceName"] = CoreAudioGetInputDeviceName(m_inputDeviceID);
-    state["availableDevices"] = CoreAudioEnumerateAvailableDevices();    
-    state["preferredInputDeviceName"] = m_preferredInputDeviceName;    
+    state["availableDevices"] = CoreAudioEnumerateAvailableDevices();
+    state["preferredInputDeviceName"] = m_preferredInputDeviceName;
+    state["sampleRate"] = m_sampleRate;
+    state["bufferSize"] = m_bufferSize;
+    state["availableSampleRates"] = m_inputDeviceID ? CoreAudioGetAvailableSampleRates(m_inputDeviceID) : json::array();
     return Service::mergeBypassState(state);
   }
 
@@ -93,12 +98,24 @@ private:
     std::string deviceName = CoreAudioGetInputDeviceName(m_inputDeviceID);
     std::cout << "Using input device: " << deviceName << std::endl;
   
-    status = CoreAudioSetBufferSize(m_inputDeviceID, BUFFER_SIZE);
+    if (m_preferredSampleRate > 0)
+    {
+      status = CoreAudioSetSampleRate(m_inputDeviceID, m_preferredSampleRate);
+      if (status != 0)
+        std::cerr << "CoreInput::start(): Failed to set sample rate to " << m_preferredSampleRate << std::endl;
+    }
+    double sampleRate = 0;
+    CoreAudioGetSampleRate(m_inputDeviceID, &sampleRate);
+    m_sampleRate = sampleRate;
+
+    UInt32 targetBufferSize = m_preferredBufferSize > 0 ? m_preferredBufferSize : BUFFER_SIZE;
+    status = CoreAudioSetBufferSize(m_inputDeviceID, targetBufferSize);
     if (status != 0)
     {
       std::cerr << "Failed to set input device buffer size" << std::endl;
       return;
     }
+    m_bufferSize = targetBufferSize;
 
     status = AudioDeviceCreateIOProcID(m_inputDeviceID, onAudioInput, this, &m_inputIOProcID);
     if (status != 0)
@@ -196,6 +213,10 @@ private:
   AudioDeviceIOProcID m_inputIOProcID = NULL;
   std::string m_preferredInputDeviceName;
   bool m_deferPropagation;
+  double m_sampleRate = 0.0;
+  UInt32 m_bufferSize = 0;
+  double m_preferredSampleRate = 0.0;
+  UInt32 m_preferredBufferSize = 0;
 };
 
 }

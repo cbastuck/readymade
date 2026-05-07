@@ -132,7 +132,7 @@ export default function QrCodeUI(props: ServiceUIProps) {
         )}
         <Button
           variant="outline"
-          className="w-full text-xs"
+          className="hkp-svc-btn w-full text-xs"
           onClick={() => {
             setError(null);
             setIsEditorOpen(true);
@@ -179,14 +179,14 @@ export default function QrCodeUI(props: ServiceUIProps) {
 
           <DialogFooter className="flex flex-wrap gap-2 justify-between">
             <div className="flex gap-2">
-              <Button variant="outline" onClick={onDecompress}>
+              <Button className="hkp-svc-btn" variant="outline" onClick={onDecompress}>
                 Decompress
               </Button>
-              <Button variant="outline" onClick={onCompress}>
+              <Button className="hkp-svc-btn" variant="outline" onClick={onCompress}>
                 Compress
               </Button>
             </div>
-            <Button onClick={onApply}>Apply</Button>
+            <Button className="hkp-svc-btn" onClick={onApply}>Apply</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

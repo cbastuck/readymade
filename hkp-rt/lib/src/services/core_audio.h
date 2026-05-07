@@ -6,12 +6,15 @@
 OSStatus CoreAudioGetBufferSize(AudioDeviceID Device, UInt32 *BufferSize);
 OSStatus CoreAudioSetBufferSize(AudioDeviceID Device, UInt32 BufferSize);
 OSStatus CoreAudioGetSampleRate(AudioDeviceID Device, double *SampleRate);
+OSStatus CoreAudioSetSampleRate(AudioDeviceID Device, double SampleRate);
+nlohmann::json CoreAudioGetAvailableSampleRates(AudioDeviceID Device);
 OSStatus CoreAudioGetSampleFormat(AudioDeviceID Device,
                                   AudioObjectPropertyScope Scope,
                                   AudioStreamBasicDescription *Format);
 OSStatus CoreAudioGetDefaultOutputDevice(AudioDeviceID *Device);
 OSStatus CoreAudioGetDefaultInputDevice(AudioDeviceID *Device);
 OSStatus CoreAudioGetInputDeviceByName(AudioDeviceID *Device, const std::string &preferredDeviceName);
+OSStatus CoreAudioGetOutputDeviceByName(AudioDeviceID *Device, const std::string &preferredDeviceName);
 
 bool CoreAudioDeviceHasStream(AudioDeviceID deviceID, AudioObjectPropertyScope scope);
 nlohmann::json CoreAudioEnumerateAvailableDevices();

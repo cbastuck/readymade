@@ -169,7 +169,7 @@ export default function FacadeRenderer({
         background: "hsl(var(--background))",
         overflow: "hidden",
         fontFamily: "'Recursive', monospace",
-        paddingBottom: "8px",
+        paddingBottom: "36px",
       }}
     >
       {/* Header */}

@@ -31,6 +31,7 @@ function ImagePickerUI(props: ServiceUIProps): JSX.Element {
           onChange={onFileChange}
         />
         <button
+          className="hkp-svc-btn"
           onClick={() => inputRef.current?.click()}
           style={{
             padding: "10px 16px",
@@ -57,6 +58,7 @@ function ImagePickerUI(props: ServiceUIProps): JSX.Element {
           />
         )}
         <button
+          className="hkp-svc-btn"
           onClick={() => file && (props.service as any).send(file)}
           disabled={!file}
           style={{

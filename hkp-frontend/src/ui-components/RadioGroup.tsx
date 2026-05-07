@@ -51,6 +51,7 @@ export default function RadioGroup({
         disabled={disabled}
         className={`py-2 flex ${vertical ? "flex-col" : ""}`}
         value={value}
+        onValueChange={onChange}
       >
         {values.map((item, idx) => {
           const optionId = `${uniqueId || title}-option-${idx}`;
@@ -64,7 +65,6 @@ export default function RadioGroup({
               <RadioGroupItem
                 value={item}
                 id={optionId}
-                onClick={() => onChange(item)}
                 disabled={disabled}
                 tooltip={tooltip}
               />

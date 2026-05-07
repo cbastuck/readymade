@@ -1,7 +1,14 @@
-import { RuntimeDescriptor, ServiceInstance } from "hkp-frontend/src/types";
+import { RuntimeClass, RuntimeDescriptor, ServiceClass, ServiceInstance } from "hkp-frontend/src/types";
 
 export const HKP_DND_SERVICE_TYPE = "application/hkp-service";
 export const HKP_DND_RUNTIME_TYPE = "application/hkp-runtime";
+
+// Palette drag types — for dragging class descriptors (not instances) from the sidebar
+export const HKP_DND_SERVICE_CLASS_TYPE = "application/hkp-service-class";
+export const HKP_DND_RUNTIME_CLASS_TYPE = "application/hkp-runtime-class";
+
+export type ServiceClassDropType = ServiceClass;
+export type RuntimeClassDropType = RuntimeClass;
 
 export type ServiceInstanceDropType = ServiceInstance;
 export function isServiceInstanceDrop(

@@ -147,6 +147,7 @@ export default function InjectorUI(props: ServiceUIProps) {
           // onItems={(items: DataTransferItemList) => setItems(items)}
         />
         <Button
+          className="hkp-svc-btn"
           onClick={() => {
             if (blob) {
               readFile(service, blob, false);
@@ -200,7 +201,7 @@ export default function InjectorUI(props: ServiceUIProps) {
         </div>
 
         <Button
-          className="h-[50px] mb-[4px]"
+          className="hkp-svc-btn h-[50px] mb-[4px]"
           style={buttonStyle}
           onClick={doInject}
         >
@@ -256,7 +257,7 @@ export default function InjectorUI(props: ServiceUIProps) {
 
         <div className="mb-2 h-full">
           <Button
-            className="h-full text-xl"
+            className="hkp-svc-btn h-full text-xl"
             style={buttonStyle}
             disabled={!file}
             onClick={() => file && readFile(service, file, loadAsText)}

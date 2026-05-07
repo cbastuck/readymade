@@ -42,7 +42,7 @@ export default function HttpHeaders({
         <h3 className="font-medium text-left tracking-[4px]">Headers</h3>
         <button
           onClick={onAddHeader}
-          className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
+          className="hkp-svc-btn px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-1"
         >
           <span>+</span>
           <span>Add Header</span>

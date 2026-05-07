@@ -134,7 +134,7 @@ export default function SpotifyUI(props: ServiceUIProps) {
           <div>{name}</div>
           <Button
             size="xs"
-            className="px-2"
+            className="hkp-svc-btn px-2"
             onClick={() => {
               service.configure({ action: "logout" });
               setToken(null);
@@ -162,6 +162,7 @@ export default function SpotifyUI(props: ServiceUIProps) {
         />
 
         <Button
+          className="hkp-svc-btn"
           style={s(t.ls1, t.fs12, t.w100, t.mt5)}
           onClick={() => service.configure({ action: selectedAction })}
         >

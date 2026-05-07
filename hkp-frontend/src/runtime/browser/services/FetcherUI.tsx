@@ -145,7 +145,7 @@ export default function FetcherUI(props: ServiceUIProps) {
           </div>
         </div>
 
-        <Button className="w-full" onClick={onFetch}>
+        <Button className="hkp-svc-btn w-full" onClick={onFetch}>
           Fetch
         </Button>
       </div>

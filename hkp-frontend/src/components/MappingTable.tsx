@@ -52,14 +52,14 @@ export default function MappingTable({
   const valueInputRef = useRef<HTMLInputElement>(null);
 
   const rows = Object.keys(template).filter(
-    (key) => typeof template[key] !== "object"
+    (key) => typeof template[key] !== "object",
   );
 
   const rowIsDynamic = rows.map((key) => key.endsWith("="));
   const rowIsSyntaxCheck = useMemo(
     () =>
       rows.map((key, idx) => !rowIsDynamic[idx] || checkSyntax(template[key])),
-    [template, rowIsDynamic, rows]
+    [template, rowIsDynamic, rows],
   );
 
   const onNewProperty = () => {
@@ -95,7 +95,7 @@ export default function MappingTable({
         cur === key
           ? { ...acc, [newKey]: template[cur] }
           : { ...acc, [cur]: template[cur] },
-      {}
+      {},
     );
     onTemplateChanged(newTemplate);
   };
@@ -106,7 +106,7 @@ export default function MappingTable({
         cur === key
           ? { ...acc, [cur]: newValue }
           : { ...acc, [cur]: template[cur] },
-      {}
+      {},
     );
     onTemplateChanged(newTemplate);
     setTimeout(() => valueInputRef.current?.blur(), 10);
@@ -115,7 +115,7 @@ export default function MappingTable({
   const onRemoveProperty = (key: string) => {
     const newTemplate = Object.keys(template).reduce(
       (acc, cur) => (cur === key ? acc : { ...acc, [cur]: template[cur] }),
-      {}
+      {},
     );
     onTemplateChanged(newTemplate);
   };
@@ -125,7 +125,7 @@ export default function MappingTable({
     const valueInputElementId = `map-value-${id}-${propIdx}`;
     delayedExec(
       () => document.getElementById(valueInputElementId)?.focus(),
-      10
+      10,
     );
   };
 
@@ -142,7 +142,9 @@ export default function MappingTable({
   return (
     <div className={`flex flex-col col-2 mt-2 gap-2 ${className}`}>
       <div className="flex h-min items-end">
-        <GroupLabel tooltip={tooltip}>{title}</GroupLabel>
+        <GroupLabel size={3} tooltip={tooltip}>
+          {title}
+        </GroupLabel>
 
         <div className="flex ml-auto">
           <Button
@@ -193,21 +195,27 @@ export default function MappingTable({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-sans tracking-widest text-base text-left p-0 h-min">
+                <TableHead
+                  className="font-sans-clean text-[11px] font-semibold tracking-[0.06em] uppercase text-left p-0 h-min"
+                  style={{ color: "var(--text-dim)" }}
+                >
                   Property
                 </TableHead>
-                <TableHead className="font-sans tracking-widest text-base text-left p-0 h-min">
+                <TableHead
+                  className="font-sans-clean text-[11px] font-semibold tracking-[0.06em] uppercase text-left p-0 h-min"
+                  style={{ color: "var(--text-dim)" }}
+                >
                   Value
                 </TableHead>
-                <TableHead className="font-sans tracking-widest text-base text-center p-0 w-min h-min">
-                  <Ellipsis size={16} className="pl-1" />
+                <TableHead className="text-center p-0 w-min h-min">
+                  <Ellipsis size={14} style={{ color: "var(--text-dim)" }} />
                 </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {rows.map((key, idx) => (
                 <TableRow
-                  className="hover:bg-white font-sans-clean"
+                  className="hover:bg-transparent font-sans-clean"
                   key={`${key}-${idx}`}
                 >
                   <TableCell className="text-left p-0 w-[50%]">
@@ -276,7 +284,12 @@ export default function MappingTable({
           </Table>
         </div>
       ) : (
-        <div className="text-left py-2 text-gray-300">No mapping available</div>
+        <div
+          className="text-left py-1 text-[11.5px] italic font-sans-clean"
+          style={{ color: "var(--text-dim)" }}
+        >
+          No mapping available
+        </div>
       )}
     </div>
   );

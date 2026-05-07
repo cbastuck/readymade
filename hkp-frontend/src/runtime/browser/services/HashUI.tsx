@@ -33,7 +33,7 @@ export default function HashUI(props: ServiceUIProps) {
         {state.method === "sha-256p" && (
           <Button
             variant="outline"
-            className="w-full mt-2"
+            className="hkp-svc-btn w-full mt-2"
             onClick={() => service.configure({ finalize: true })}
           >
             Finalize

@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 
 import {
   CustomMenuEntry,
@@ -14,7 +14,10 @@ import {
   extractServiceConfiguration,
   filterPrivateMembers,
 } from "hkp-frontend/src/runtime/browser/services/helpers";
-import { useTheme } from "hkp-frontend/src/ui-components/ThemeContext";
+import {
+  useTheme,
+  useThemeControl,
+} from "hkp-frontend/src/ui-components/ThemeContext";
 import ServiceOutputPlug from "./ServiceOutputPlug";
 
 import DragSource from "hkp-frontend/src/components/DragSource";
@@ -54,6 +57,9 @@ export default function ServiceFrame({
 
   const [signalOutput, setSignalOutput] = useState(false);
   const [serviceIsProcessing, setServiceIsProcessing] = useState(false);
+  const processingOffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   const onNotification = (notification: any) => {
     const { bypass, __internal } = notification || {};
@@ -66,10 +72,17 @@ export default function ServiceFrame({
 
       switch (state) {
         case "call-process":
+          if (processingOffTimerRef.current !== null) {
+            clearTimeout(processingOffTimerRef.current);
+            processingOffTimerRef.current = null;
+          }
           setServiceIsProcessing(true);
           return;
         case "call-process-finished":
-          setTimeout(() => setServiceIsProcessing(false), 350);
+          processingOffTimerRef.current = setTimeout(
+            () => setServiceIsProcessing(false),
+            800,
+          );
           if (data !== null) {
             setRecentProgressData(data);
             setSignalOutput(true);
@@ -84,6 +97,9 @@ export default function ServiceFrame({
   useEffect(() => {
     service.app.registerNotificationTarget?.(service, onNotification);
     return () => {
+      if (processingOffTimerRef.current !== null) {
+        clearTimeout(processingOffTimerRef.current);
+      }
       if (service.app) {
         service.app.unregisterNotificationTarget?.(service, onNotification);
       }
@@ -198,6 +214,9 @@ export default function ServiceFrame({
   };
 
   const theme = useTheme();
+  const { themeName } = useThemeControl();
+  const isPlayground = themeName === "playground";
+  const isMobile = themeName === "mobile";
 
   if (frameless) {
     return children;
@@ -209,16 +228,87 @@ export default function ServiceFrame({
 
   const cursor = "move";
 
+  if (isPlayground) {
+    return (
+      <div key={`service-frame-${uuid}`} id={`service-frame-${uuid}`}>
+        <div className="flex items-center">
+          <div
+            className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}`}
+            style={s(t.unselectable, {
+              position: "relative",
+              zIndex: 1,
+              borderRadius: "var(--r-card, 14px)",
+              background: "var(--bg-card, white)",
+              border: "1px solid var(--border-mid, #d8d2ca)",
+              flexShrink: 0,
+              margin: "4px 0",
+            })}
+          >
+            {/* Inner wrapper clips content to card radius */}
+            <div
+              style={{
+                borderRadius: "var(--r-card, 14px)",
+                overflow: "hidden",
+              }}
+            >
+              <DragSource
+                style={{ cursor }}
+                type={HKP_DND_SERVICE_TYPE}
+                value={dragData}
+              >
+                <ServiceHeader
+                  showBypassOnlyIfExplicit={!!showBypassOnlyIfExplicit}
+                  bypass={bypass}
+                  service={descriptor}
+                  isCollapsed={frameCollapsed}
+                  customMenuEntries={customMenuEntries}
+                  onExpand={onExpand}
+                  onDelete={onDelete}
+                  onBypass={onBypass}
+                  onHelp={onHelp}
+                  onConfig={onConfig}
+                  onCustomEntry={onCustomEntry}
+                  onChangeName={onChangeName}
+                />
+              </DragSource>
+
+              <div
+                data-service-body
+                style={{ display: frameCollapsed ? "none" : undefined }}
+              >
+                {children}
+              </div>
+            </div>
+
+            <EditorDialog
+              title="Service Configuration"
+              value={filteredServiceConfig}
+              isOpen={configVisible}
+              onClose={onCloseConfig}
+              actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
+            />
+          </div>
+          {!isMobile && (
+            <ServiceOutputPlug
+              isActive={signalOutput}
+              data={recentProgressData}
+              onInject={onInject}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div key={`service-frame-${uuid}`} id={`service-frame-${uuid}`}>
       <div className="flex items-center">
         <div
+          className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}`}
           style={s(t.unselectable, {
             transition: "border 800ms",
-            border: `solid ${theme.serviceBorderWidth}px ${
-              serviceIsProcessing ? theme.accentColor : theme.borderColor
-            }`,
-            borderRadius: theme.borderRadius,
+            border: `solid ${theme.serviceBorderWidth}px ${theme.borderColor}`,
+            borderRadius: theme.serviceBorderRadius ?? theme.borderRadius,
             textAlign: "center",
             backgroundColor: theme.serviceBackgroundColor,
             margin: "10px 0px",
@@ -265,13 +355,13 @@ export default function ServiceFrame({
             {children}
           </div>
         </div>
-        <div className="pl-2">
+        {!isMobile && (
           <ServiceOutputPlug
             isActive={signalOutput}
             data={recentProgressData}
             onInject={onInject}
           />
-        </div>
+        )}
       </div>
     </div>
   );
