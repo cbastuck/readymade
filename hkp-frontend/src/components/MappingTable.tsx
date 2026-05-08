@@ -148,7 +148,8 @@ export default function MappingTable({
 
         <div className="flex ml-auto">
           <Button
-            className="stroke-gray-600 hover:stroke-white hover:bg-red-500 w-win h-[24px] mr-2"
+            className="stroke-gray-600 hover:stroke-white hover:bg-red-500 w-win h-[24px] mr-2 rounded-lg"
+            variant="ghost"
             onClick={onRemoveMapping}
             disabled={isMappingChangePending}
             tooltip="Remove whole Mapping"
@@ -159,10 +160,10 @@ export default function MappingTable({
           </Button>
           {onToggleSensingMode && (
             <Button
-              className={`h-[24px] hover:bg-red-500 hover:stroke-white ${
+              className={`h-[24px] hover:bg-red-500 hover:stroke-white rounded-lg ${
                 sensingMode ? "bg-red-500 stroke-white" : ""
               }`}
-              variant="outline"
+              variant="ghost"
               onClick={onToggleSensingMode}
               tooltip={
                 sensingMode
@@ -179,7 +180,7 @@ export default function MappingTable({
           )}
           <Button
             className="h-[24px]"
-            variant="outline"
+            variant="ghost"
             onClick={onNewProperty}
             disabled={sensingMode}
             tooltip="Add a property"
