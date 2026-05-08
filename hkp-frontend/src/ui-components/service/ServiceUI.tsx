@@ -67,6 +67,7 @@ export default function ServiceUI({
         <div
           className={`flex flex-col font-sans px-4 h-full w-full ${className}`}
         >
+          <div className="h-2" />
           {children}
         </div>
       </Resizable>

@@ -136,7 +136,7 @@ export default function TimerUI(props: ServiceUIProps) {
       onNotification={onNotification}
       customMenuEntries={customMenuEntries}
     >
-      <div className="flex flex-col gap-3 h-full pt-2">
+      <div className="flex flex-col gap-3 h-full">
         <PillRadioGroup
           title="Mode"
           options={modes}

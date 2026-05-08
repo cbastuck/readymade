@@ -127,7 +127,7 @@ export default function ServiceUiContainer(props: Props) {
               <CommandList className="overflow-auto">
                 {registry.map((svc) => (
                   <CommandItem
-                    className="text-base"
+                    className="text-base aria-selected:bg-[var(--hkp-accent-dim)] aria-selected:text-[var(--hkp-accent)]"
                     key={svc.serviceId}
                     value={svc.serviceId}
                     onSelect={() => onSelectService(svc)}

@@ -623,7 +623,8 @@ blockquote:after {
 }
 /* Board menu dropdown items */
 [data-theme="playground"] .hkp-board-menu-item[data-highlighted] {
-  background: var(--border, #f0ece6);
+  background: var(--hkp-accent-dim);
+  color: var(--hkp-accent);
 }
 [data-theme="playground"]
   .hkp-board-menu-item[data-highlighted][data-disabled] {
@@ -670,8 +671,8 @@ blockquote:after {
 [data-theme="playground"]
   .hkp-runtime-command
   [cmdk-item][data-selected="true"] {
-  background: var(--border) !important;
-  color: var(--text) !important;
+  background: var(--hkp-accent-dim) !important;
+  color: var(--hkp-accent) !important;
 }
 [data-theme="playground"] .hkp-runtime-command [cmdk-separator] {
   background: var(--border-mid) !important;

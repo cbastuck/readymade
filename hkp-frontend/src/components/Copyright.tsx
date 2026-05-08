@@ -7,7 +7,7 @@ type Props = {
 export default function Copyright({ isWide }: Props) {
   return (
     <div
-      className="font-sans-clean flex text-sm"
+      className="font-sans-clean flex text-sm items-center"
       style={{
         marginLeft: "auto",
         marginRight: 10,
@@ -17,8 +17,12 @@ export default function Copyright({ isWide }: Props) {
       <span>
         {isWide ? (
           <>
-            <a href="https://cbastuck.de" target="_blank">
-              cbastuck
+            <a
+              href="https://bstck.berlin"
+              target="_blank"
+              style={{ fontSize: 9 }}
+            >
+              BSTCK BRLN
             </a>{" "}
             2026
           </>
