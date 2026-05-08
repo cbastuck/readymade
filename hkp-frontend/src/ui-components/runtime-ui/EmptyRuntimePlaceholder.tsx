@@ -40,18 +40,27 @@ export default function EmptyRuntimePlaceholder({ runtime }: Props) {
   const addServiceBtn = (
     <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
       <PopoverTrigger asChild>
-        <button type="button" className="hkp-add-service-btn" style={{ alignSelf: "auto", minHeight: 36 }}>
+        <button
+          type="button"
+          className="hkp-add-service-btn"
+          style={{ alignSelf: "auto", minHeight: 36 }}
+        >
           + Add Service
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-[200px] p-0 h-[260px] font-menu" align="start">
+      <PopoverContent
+        className="w-[200px] p-0 h-[260px] font-menu"
+        align="start"
+      >
         <Command>
           <CommandInput
             placeholder="Search service…"
             value={searchTerm}
             onValueChange={setSearchTerm}
           />
-          <CommandEmpty className="text-base p-2">No service found</CommandEmpty>
+          <CommandEmpty className="text-base p-2">
+            No service found
+          </CommandEmpty>
           <CommandList className="overflow-auto">
             {registry.map((svc) => (
               <CommandItem
@@ -82,7 +91,9 @@ export default function EmptyRuntimePlaceholder({ runtime }: Props) {
           gap: 10,
         }}
       >
-        <div style={{ fontSize: 12, color: "var(--text-dim, #9ca3af)" }}>No services yet</div>
+        <div style={{ fontSize: 12, color: "var(--text-dim, #9ca3af)" }}>
+          No services yet
+        </div>
         {addServiceBtn}
       </div>
     );

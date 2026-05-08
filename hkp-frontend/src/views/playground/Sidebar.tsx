@@ -429,14 +429,15 @@ export default function Sidebar() {
                   placeholder="Search…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  className="border rounded px-2 py-0.5"
                   style={{
                     background: "none",
-                    border: "none",
                     outline: "none",
                     fontSize: 12,
                     color: "var(--text)",
                     width: "100%",
                   }}
+                  spellCheck={false}
                 />
               </div>
             </div>

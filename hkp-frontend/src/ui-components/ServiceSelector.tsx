@@ -42,7 +42,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-[200px] justify-between text-sm border-none bg-transparent hover:bg-[var(--hkp-accent-dim)] hover:text-[var(--hkp-accent)]"
+          className="w-[200px] justify-between text-sm border-none bg-transparent hover:bg-[var(--hkp-accent-violet-dim)] hover:text-[var(--hkp-accent-violet)]"
           disabled={!registry || registry.length === 0}
         >
           Add Service
@@ -65,7 +65,7 @@ export default function ServiceSelector({ id, registry, onAddService }: Props) {
             {registry &&
               registry.map((s) => (
                 <CommandItem
-                  className="text-sm aria-selected:bg-[var(--hkp-accent-dim)] aria-selected:text-[var(--hkp-accent)]"
+                  className="text-sm aria-selected:bg-[var(--hkp-accent-violet-dim)] aria-selected:text-[var(--hkp-accent-violet)]"
                   key={s.serviceId}
                   value={s.serviceId}
                   onSelect={(currentValue) => {

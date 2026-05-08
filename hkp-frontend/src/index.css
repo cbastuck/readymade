@@ -340,21 +340,20 @@ blockquote:after {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 10px 16px;
+  padding: 10px 10px;
   font-size: 13px;
   font-weight: 500;
   font-family: "DM Sans", system-ui, sans-serif;
-  color: var(--accent-violet);
-  background: oklch(0.97 0.01 268 / 0.35);
-  border: 2px dashed var(--runtime-border);
+  border: 1px dashed var(--runtime-border);
   border-radius: 12px;
   cursor: pointer;
-  opacity: 0.6;
   align-self: flex-start;
   transition: opacity 0.15s;
 }
 [data-theme="playground"] .hkp-add-runtime-btn:hover {
-  opacity: 1;
+  background: var(--hkp-accent-violet-dim);
+  color: var(--accent-violet);
+  border-color: var(--accent-violet);
 }
 
 /* Add Service dashed ghost button — appears at the end of the services row */
@@ -367,14 +366,14 @@ blockquote:after {
   justify-content: center;
   align-self: center;
   min-width: 100px;
-  padding: 15px;
+  padding: 10px;
   margin: 4px 4px 4px 0;
   font-size: 12px;
   font-weight: 500;
   font-family: "DM Sans", system-ui, sans-serif;
   color: var(--text-dim);
   background: transparent;
-  border: 1.5px dashed var(--border-mid);
+  border: 1px dashed var(--border-mid);
   border-radius: var(--r-card, 14px);
   cursor: pointer;
   flex-shrink: 0;
@@ -384,9 +383,9 @@ blockquote:after {
     background 0.15s;
 }
 [data-theme="playground"] .hkp-add-service-btn:hover {
-  border-color: var(--hkp-accent);
-  color: var(--hkp-accent);
-  background: var(--hkp-accent-dim);
+  border-color: var(--hkp-accent-violet);
+  color: var(--hkp-accent-violet);
+  background: var(--hkp-accent-violet-dim);
 }
 
 /* ── Palette sidebar cards ────────────────────────────────────────────────── */
@@ -670,12 +669,7 @@ blockquote:after {
   padding: 6px 10px !important;
   cursor: pointer !important;
 }
-[data-theme="playground"]
-  .hkp-runtime-command
-  [cmdk-item][data-selected="true"] {
-  background: var(--hkp-accent-dim) !important;
-  color: var(--hkp-accent) !important;
-}
+
 [data-theme="playground"] .hkp-runtime-command [cmdk-separator] {
   background: var(--border-mid) !important;
   height: 1px !important;
