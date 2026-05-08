@@ -100,7 +100,7 @@ export default function Knob({
       // deltaMode 1 = line units; normalise to ~pixel equivalent
       const pixels = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
       // 200px of scroll covers the full range; up (negative deltaY) increases value
-      const delta = -(pixels / 200) * range;
+      const delta = (pixels / 200) * range;
       onChange(Math.max(min, Math.min(max, valueRef.current + delta)));
     };
     el.addEventListener("wheel", handler, { passive: false });
