@@ -19,7 +19,11 @@ import {
   DropdownMenuTrigger,
 } from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
 import MenuIcon from "../MenuIcon";
-import { useTheme, useThemeControl, ThemeName } from "hkp-frontend/src/ui-components/ThemeContext";
+import {
+  useTheme,
+  useThemeControl,
+  ThemeName,
+} from "hkp-frontend/src/ui-components/ThemeContext";
 
 export default function AppMenu() {
   const { loginWithRedirect, logout } = useAuth0();
@@ -56,11 +60,20 @@ export default function AppMenu() {
       <DropdownMenuTrigger asChild className="ml-auto">
         <Button
           variant="ghost"
-          style={isPlayground ? {
-            width: 30, height: 30, padding: 0,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            borderRadius: 6, color: "var(--text-dim)",
-          } : undefined}
+          style={
+            isPlayground
+              ? {
+                  width: 30,
+                  height: 30,
+                  padding: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: 6,
+                  color: "var(--text-dim)",
+                }
+              : undefined
+          }
         >
           {isPlayground ? (
             <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor">
@@ -127,9 +140,24 @@ export default function AppMenu() {
                 value={themeName}
                 onValueChange={(v) => setThemeName(v as ThemeName)}
               >
-                <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="sketch">Sketch</DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="playground">Playground</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem
+
+                  value="default"
+                >
+                  Default
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem
+
+                  value="sketch"
+                >
+                  Sketch
+                </DropdownMenuRadioItem>
+                <DropdownMenuRadioItem
+
+                  value="playground"
+                >
+                  Playground
+                </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>
             </DropdownMenuSubContent>
           </DropdownMenuSub>

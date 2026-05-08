@@ -285,9 +285,10 @@ blockquote:after {
   --runtime-border: oklch(0.87 0.022 268);
   --runtime-header-bg: oklch(0.948 0.028 268);
 
-  --hkp-accent: #0abcfb;
-  --hkp-accent-dim: rgb(10 188 251 / 0.12);
+  --hkp-accent: oklch(0.6 0.17 195);
+  --hkp-accent-dim: oklch(0.6 0.17 195 / 0.12);
   --hkp-accent-violet: #7c3aed;
+  --hkp-accent-violet-dim: rgb(124 58 237 / 0.12);
 
   --accent: var(--hkp-accent);
   --accent-dim: var(--hkp-accent-dim);
@@ -318,6 +319,7 @@ blockquote:after {
     --hkp-accent: oklch(0.6 0.17 195);
     --hkp-accent-dim: oklch(0.6 0.17 195 / 0.12);
     --hkp-accent-violet: oklch(0.54 0.2 282);
+    --hkp-accent-violet-dim: oklch(0.54 0.2 282 / 0.12);
   }
 }
 
@@ -623,8 +625,8 @@ blockquote:after {
 }
 /* Board menu dropdown items */
 [data-theme="playground"] .hkp-board-menu-item[data-highlighted] {
-  background: var(--hkp-accent-dim);
-  color: var(--hkp-accent);
+  background: var(--hkp-accent-violet-dim);
+  color: var(--hkp-accent-violet);
 }
 [data-theme="playground"]
   .hkp-board-menu-item[data-highlighted][data-disabled] {
