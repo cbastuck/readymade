@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { DragEvent, useRef, useState } from "react";
 
 import { s, t } from "../../../styles";
 import Description from "../Description";
@@ -7,7 +7,9 @@ import {
   RuntimeDescriptor,
   ProcessContext,
   toCanonicalRuntimeClassType,
+  isRuntimeDescriptorConfig,
 } from "../../../types";
+import { getDraggedFiles, readFile } from "../common";
 import { BoardContextState } from "../../../BoardContext";
 import BoardRuntime from "./BoardRuntime";
 import { useThemeControl } from "../../../ui-components/ThemeContext";
@@ -97,6 +99,32 @@ export default function Board(props: Props) {
     return null;
   };
 
+  const [isDraggingRuntimeOver, setIsDraggingRuntimeOver] = useState(false);
+
+  const onRuntimeDrop = async (ev: DragEvent) => {
+    setIsDraggingRuntimeOver(false);
+    ev.preventDefault();
+    const files = getDraggedFiles(ev);
+    if (files.length !== 1) {
+      return;
+    }
+    const src = await readFile(files[0], true);
+    const data = typeof src === "string" && JSON.parse(src);
+    if (data && isRuntimeDescriptorConfig(data)) {
+      const { services: rawServices, ...runtimeDesc } = data;
+      const services = rawServices.map((svc: any) => ({
+        uuid: svc.uuid,
+        serviceId: svc.serviceId,
+        serviceName: svc.serviceName ?? svc.name ?? svc.serviceId,
+        state: svc.state,
+      }));
+      boardContext.setBoardState({
+        runtimes: [...boardContext.runtimes, runtimeDesc],
+        services: { ...boardContext.services, [data.id]: services },
+      });
+    }
+  };
+
   const { description, boardName, boardContext } = props;
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
@@ -127,10 +155,33 @@ export default function Board(props: Props) {
             style={{
               padding: "12px 8px 20px",
               display: "flex",
+              alignItems: "center",
+              gap: 8,
               justifyContent: "flex-start",
+              borderRadius: 8,
+              backgroundColor: isDraggingRuntimeOver
+                ? "var(--hkp-accent-violet-dim)"
+                : undefined,
+              transition: "background-color 0.15s",
             }}
+            onDragOver={(ev) => {
+              ev.preventDefault();
+              setIsDraggingRuntimeOver(true);
+            }}
+            onDragLeave={() => setIsDraggingRuntimeOver(false)}
+            onDrop={onRuntimeDrop}
           >
             <RuntimeMenu />
+            {isDraggingRuntimeOver && (
+              <span
+                style={{
+                  fontSize: 11.5,
+                  color: "var(--hkp-accent-violet)",
+                }}
+              >
+                Drop to add runtime
+              </span>
+            )}
           </div>
         )}
       </div>

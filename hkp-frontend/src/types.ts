@@ -414,6 +414,17 @@ export type BoardDescriptor = {
   facade?: import("./facade/types").FacadeDescriptor;
 };
 
+export function isRuntimeDescriptorConfig(data: any): data is RuntimeDescriptor & { services: any[] } {
+  return (
+    data &&
+    typeof data.id === "string" &&
+    typeof data.name === "string" &&
+    typeof data.type === "string" &&
+    Array.isArray(data.services) &&
+    !Array.isArray(data.runtimes)
+  );
+}
+
 export function isBoardDescriptor(data: any): data is BoardDescriptor {
   return (
     data.runtimes &&

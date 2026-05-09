@@ -3,7 +3,7 @@ import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import { DragEvent, useContext, useState } from "react";
 import { getDraggedFiles, readFile } from "./common";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
-import { isBoardDescriptor } from "hkp-frontend/src/types";
+import { isBoardDescriptor, isRuntimeDescriptorConfig } from "hkp-frontend/src/types";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import RuntimeMenu from "hkp-frontend/src/ui-components/toolbar/RuntimeMenu";
 
@@ -37,6 +37,19 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
       const data = typeof src === "string" && JSON.parse(src);
       if (data && isBoardDescriptor(data)) {
         boardContext?.setBoardState(data);
+      } else if (data && isRuntimeDescriptorConfig(data)) {
+        const { services: rawServices, ...runtimeDesc } = data;
+        boardContext?.setBoardState({
+          runtimes: [runtimeDesc],
+          services: {
+            [data.id]: rawServices.map((svc: any) => ({
+              uuid: svc.uuid,
+              serviceId: svc.serviceId,
+              serviceName: svc.serviceName ?? svc.name ?? svc.serviceId,
+              state: svc.state,
+            })),
+          },
+        });
       }
     }
   };
@@ -95,8 +108,8 @@ export default function EmptyBoard({ boardName, onChangeBoardname }: Props) {
           }}
         >
           {isDraggingOver
-            ? "Drop to import board"
-            : "or drop a board file here"}
+            ? "Drop to import"
+            : "or drop a board or runtime file here"}
         </div>
       </div>
     );
