@@ -1,5 +1,10 @@
 #include <saucer/smartview.hpp>
 #include <saucer/modules/loop.hpp>
+#include <saucer/modules/desktop.hpp>
+
+#include <expected>
+#include <fstream>
+#include <sstream>
 
 // hkp-rt
 #include "app.h"
@@ -83,6 +88,39 @@ static std::string getLanIP()
   ::inet_ntop(AF_INET, &local.sin_addr, buf, sizeof(buf));
   return buf;
 #endif
+}
+
+// Converts a file:// URI to a native filesystem path.
+// Handles the optional "localhost" authority and percent-decodes the path.
+static std::string fileUriToPath(const std::string &uri)
+{
+  if (!uri.starts_with("file://"))
+  {
+    return uri;
+  }
+  std::string path = uri.substr(7); // strip "file://"
+  if (path.starts_with("localhost"))
+  {
+    path = path.substr(9);
+  }
+  std::string decoded;
+  decoded.reserve(path.size());
+  for (std::size_t i = 0; i < path.size(); ++i)
+  {
+    if (path[i] == '%' && i + 2 < path.size())
+    {
+      int val = 0;
+      std::istringstream ss(path.substr(i + 1, 2));
+      ss >> std::hex >> val;
+      decoded += static_cast<char>(val);
+      i += 2;
+    }
+    else
+    {
+      decoded += path[i];
+    }
+  }
+  return decoded;
 }
 
 static constexpr uint16_t FRONTEND_HTTP_PORT = 9090;
@@ -197,6 +235,54 @@ int real_main(int argc, char *argv[])
   webview->expose("openInBrowser", [&redirectHandler](const std::string &url)
   {
     redirectHandler.open(url);
+  });
+
+  auto desktop = saucer::modules::desktop{loop.application()};
+
+  webview->expose("pickFile", [&desktop](saucer::modules::picker::options opts)
+  {
+    return desktop.pick<saucer::modules::picker::type::file>(std::move(opts))
+        .transform_error(&saucer::error::message);
+  });
+
+  webview->expose("pickFolder", [&desktop](saucer::modules::picker::options opts)
+  {
+    return desktop.pick<saucer::modules::picker::type::folder>(std::move(opts))
+        .transform_error(&saucer::error::message);
+  });
+
+  webview->expose("readFile", [](const std::string &uri) -> std::expected<std::string, std::string>
+  {
+    const auto path = fileUriToPath(uri);
+    std::ifstream file(path, std::ios::binary);
+    if (!file.is_open())
+    {
+      return std::unexpected("Failed to open file: " + path);
+    }
+    std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+    return content;
+  });
+
+  webview->expose("writeFile", [](const std::string &uri, const std::string &content) -> std::expected<bool, std::string>
+  {
+    const auto path = fileUriToPath(uri);
+    std::ofstream file(path, std::ios::binary);
+    if (!file.is_open())
+    {
+      return std::unexpected("Failed to open file for writing: " + path);
+    }
+    file.write(content.data(), static_cast<std::streamsize>(content.size()));
+    if (!file)
+    {
+      return std::unexpected("Failed to write file: " + path);
+    }
+    return true;
+  });
+
+  webview->expose("pickSavePath", [&desktop](saucer::modules::picker::options opts)
+  {
+    return desktop.pick<saucer::modules::picker::type::save>(std::move(opts))
+        .transform_error(&saucer::error::message);
   });
 
   // Fallback: open target="_blank" link clicks in the OS default browser.

@@ -4,6 +4,7 @@ import {
   BackendAdapter,
   BoardHistoryEntry,
   HistoryBoardSummary,
+  PickerOptions,
 } from "./types";
 
 const encodePathSegment = (value: string) => encodeURIComponent(value);
@@ -94,5 +95,49 @@ export const meanderBackend: BackendAdapter = {
     await fetch(`hkp://history/${encodePathSegment(boardName)}`, {
       method: "DELETE",
     });
+  },
+
+  async pickFile(options?: PickerOptions): Promise<string | null> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.pickFile) {
+      return null;
+    }
+    try {
+      return await saucer.exposed.pickFile(options ?? {});
+    } catch {
+      return null;
+    }
+  },
+
+  async pickFolder(options?: PickerOptions): Promise<string | null> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.pickFolder) {
+      return null;
+    }
+    try {
+      return await saucer.exposed.pickFolder(options ?? {});
+    } catch {
+      return null;
+    }
+  },
+
+  async pickSavePath(options?: PickerOptions): Promise<string | null> {
+    const saucer = (window as any).saucer;
+    if (!saucer?.exposed?.pickSavePath) {
+      return null;
+    }
+    try {
+      return await saucer.exposed.pickSavePath(options ?? {});
+    } catch {
+      return null;
+    }
+  },
+
+  async readFile(path: string): Promise<string> {
+    return (window as any).saucer.exposed.readFile(path);
+  },
+
+  async writeFile(path: string, content: string): Promise<void> {
+    await (window as any).saucer.exposed.writeFile(path, content);
   },
 };

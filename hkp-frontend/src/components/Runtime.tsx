@@ -24,6 +24,7 @@ import {
 import { BoardContextState } from "../BoardContext";
 
 import RuntimeUI from "hkp-frontend/src/ui-components/runtime-ui";
+import { usePlatform } from "../platform/PlatformContext";
 import DropTarget from "./DropTarget";
 import {
   HKP_DND_SERVICE_TYPE,
@@ -69,6 +70,7 @@ export type RuntimeHandle = {
 };
 
 const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
+  const platform = usePlatform();
   const {
     style,
     runtime,
@@ -278,7 +280,6 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
   };
 
   const onSaveRuntime = async () => {
-    const saveLink = document.createElement("a");
     const payload = {
       ...runtime,
       services: services?.map(({ serviceId, serviceName, state, uuid }) => ({
@@ -288,12 +289,18 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
         state,
       })),
     };
+    const json = JSON.stringify(payload);
+    const filename = `runtime-${runtime.name}.json`;
 
-    const blob = new Blob([JSON.stringify(payload)], {
-      type: "application/json",
-    });
+    if (platform.saveRuntimeToDisk) {
+      await platform.saveRuntimeToDisk(json, filename);
+      return;
+    }
+
+    const saveLink = document.createElement("a");
+    const blob = new Blob([json], { type: "application/json" });
     saveLink.href = URL.createObjectURL(blob);
-    saveLink.download = `runtime-${runtime.name}.json`;
+    saveLink.download = filename;
     saveLink.click();
     setTimeout(() => {
       URL.revokeObjectURL(saveLink.href);

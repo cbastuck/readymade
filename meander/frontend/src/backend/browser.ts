@@ -16,4 +16,9 @@ export const browserBackend: BackendAdapter = {
   pushBoardSnapshot: async () => {},
   loadBoardHistory: async () => [],
   clearBoardHistory: async () => {},
+  pickFile: async () => null,
+  pickFolder: async () => null,
+  pickSavePath: async () => null,
+  readFile: async () => { throw new Error("readFile is not available in this context"); },
+  writeFile: async () => { throw new Error("writeFile is not available in this context"); },
 };

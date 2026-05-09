@@ -1,5 +1,6 @@
 import HkpApp from "hkp-frontend/src/App";
 import MeanderPlayground from "./MeanderPlayground";
+import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
 import { useEffect, useState } from "react";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import StartPage from "./StartPage";
@@ -52,25 +53,21 @@ function App() {
     window.history.replaceState(null, "", "/playground");
   };
 
-  if (view.type === "loading") {
-    return (
-      <HkpApp defaultThemeName="playground">
-        <LoadIndicator />
-      </HkpApp>
-    );
-  }
-
   return (
-    <HkpApp defaultThemeName="playground">
-      {view.type === "playground" ? (
-        <MeanderPlayground
-          initialBoard={view.board}
-          onLogo={onShowStartPage}
-        />
-      ) : (
-        <StartPage onRestoreBoard={onRestoreBoard} />
-      )}
-    </HkpApp>
+    <MeanderPlatformProvider>
+      <HkpApp defaultThemeName="playground">
+        {view.type === "loading" ? (
+          <LoadIndicator />
+        ) : view.type === "playground" ? (
+          <MeanderPlayground
+            initialBoard={view.board}
+            onLogo={onShowStartPage}
+          />
+        ) : (
+          <StartPage onRestoreBoard={onRestoreBoard} />
+        )}
+      </HkpApp>
+    </MeanderPlatformProvider>
   );
 }
 

@@ -22,6 +22,14 @@ if(NOT TARGET saucer::saucer)
     )
 endif()
 
+if(NOT TARGET saucer::desktop)
+    CPMAddPackage(
+        NAME      saucer-desktop
+        VERSION   4.1.0
+        GIT_REPOSITORY "https://github.com/saucer/desktop"
+    )
+endif()
+
 add_executable(
   ${PROJECT_NAME}
   backend/main.cpp
@@ -93,6 +101,7 @@ target_link_libraries(
   PUBLIC
   saucer::saucer
   saucer::loop
+  saucer::desktop
   hkp-rt-lib
   ${PLATFORM_LIBS}
 )

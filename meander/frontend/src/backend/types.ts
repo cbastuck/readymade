@@ -12,6 +12,11 @@ export type HistoryBoardSummary = {
   latestTimestamp?: string; // ISO 8601
 };
 
+export type PickerOptions = {
+  initial?: string;
+  filters?: string[];
+};
+
 export interface BackendAdapter {
   // Boards
   fetchSavedBoards(): Promise<Array<string>>;
@@ -29,4 +34,13 @@ export interface BackendAdapter {
   pushBoardSnapshot(boardName: string, entry: BoardHistoryEntry): Promise<void>;
   loadBoardHistory(boardName: string): Promise<Array<BoardHistoryEntry>>;
   clearBoardHistory(boardName: string): Promise<void>;
+
+  // File picker (native desktop only; returns null in browser or when cancelled)
+  pickFile(options?: PickerOptions): Promise<string | null>;
+  pickFolder(options?: PickerOptions): Promise<string | null>;
+  pickSavePath(options?: PickerOptions): Promise<string | null>;
+
+  // Native file I/O (desktop only; throws in browser)
+  readFile(path: string): Promise<string>;
+  writeFile(path: string, content: string): Promise<void>;
 }

@@ -49,6 +49,11 @@ if(BUILD_HKP_SAUCER)
         VERSION   2.1.0
         GIT_REPOSITORY "https://github.com/saucer/loop"
     )
+    CPMAddPackage(
+        NAME      saucer-desktop
+        VERSION   4.1.0
+        GIT_REPOSITORY "https://github.com/saucer/desktop"
+    )
 endif()
 
 # =============================================================================

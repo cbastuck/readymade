@@ -53,7 +53,9 @@ export default function StartPage({ onRestoreBoard }: Props) {
     onRestoreBoard(undefined);
   };
 
-  const onOpenLoadDialog = () => setIsLoadDialogOpen(true);
+  const onOpenLoadDialog = async () => {
+    setIsLoadDialogOpen(true);
+  };
 
   return (
     <div
