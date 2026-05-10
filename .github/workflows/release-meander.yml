@@ -136,5 +136,5 @@ jobs:
           gh release create "${{ inputs.tag }}" "${ASSET}" \
             --target "${{ inputs.target_ref }}" \
             --title "${{ inputs.release_name }}" \
-            --notes "Automated release from GitHub Actions." \
+            --notes-file RELEASE_NOTES.md \
             "${flags[@]}"
