@@ -20,7 +20,8 @@ cmake \
   -S "${HKP_RT_DIR}" \
   -B "${BUILD_DIR}" \
   -DCMAKE_BUILD_TYPE="${CONFIG}" \
-  -DBUILD_TESTING=ON
+  -DBUILD_TESTING=ON \
+  -DBUILD_HKP_SAUCER=OFF
 
 echo "==> Building hkp-rt tests (${CONFIG})"
 JOBS="$(sysctl -n hw.logicalcpu 2>/dev/null || echo 4)"
