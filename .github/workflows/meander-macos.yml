@@ -1,12 +1,15 @@
 name: Build Meander macOS
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Run Selected CI Tests"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
 jobs:
   build:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: macos-latest
     env:
       VCPKG_FEATURE_FLAGS: manifests,binarycaching
@@ -17,6 +20,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
           submodules: false
 
       - name: Setup Node.js
