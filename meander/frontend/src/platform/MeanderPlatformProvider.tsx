@@ -10,11 +10,13 @@ import { getBackend } from "../backend";
 // When absent the provider still wraps the tree but with an empty capabilities
 // object, so hkp-frontend components fall back to their browser defaults.
 const saucer = (window as any).saucer;
-const isNative = !!(saucer?.exposed?.pickSavePath && saucer?.exposed?.writeFile);
+const isNative = !!(
+  saucer?.exposed?.pickSavePath && saucer?.exposed?.writeFile
+);
 
 const capabilities: PlatformCapabilities = isNative
   ? {
-      saveRuntimeToDisk: async (json, filename) => {
+      saveRuntimeToDisk: async (json, _filename) => {
         const backend = await getBackend();
         const path = await backend.pickSavePath({ filters: ["*.json"] });
         if (path) {
@@ -25,7 +27,5 @@ const capabilities: PlatformCapabilities = isNative
   : {};
 
 export function MeanderPlatformProvider({ children }: { children: ReactNode }) {
-  return (
-    <PlatformProvider value={capabilities}>{children}</PlatformProvider>
-  );
+  return <PlatformProvider value={capabilities}>{children}</PlatformProvider>;
 }

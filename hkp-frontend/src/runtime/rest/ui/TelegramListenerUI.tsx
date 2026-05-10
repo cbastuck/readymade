@@ -4,7 +4,6 @@ import { ServiceUIProps } from "hkp-frontend/src/types";
 import RuntimeRestServiceUI from "../RuntimeRestServiceUI";
 import InputField from "hkp-frontend/src/components/shared/InputField";
 import Button from "hkp-frontend/src/ui-components/Button";
-import { s } from "hkp-frontend/src/styles";
 
 export default function TelegramListenerUI(props: ServiceUIProps) {
   const [botToken, setBotToken] = useState("");

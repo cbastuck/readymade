@@ -1,0 +1,61 @@
+name: Build Meander macOS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            meander/frontend/package-lock.json
+            hkp-frontend/package-lock.json
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.31"
+
+      - name: Setup vcpkg
+        shell: bash
+        run: |
+          set -euo pipefail
+          vcpkg_baseline="bba8b52f6dea74159bba855ef00376e588d6ea0a"
+          if [[ ! -f 3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake ]]; then
+            git clone https://github.com/microsoft/vcpkg.git 3rdparty/vcpkg
+          fi
+          git -C 3rdparty/vcpkg fetch origin "${vcpkg_baseline}"
+          git -C 3rdparty/vcpkg checkout --force "${vcpkg_baseline}"
+          ./3rdparty/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
+      - name: Build
+        run: ./build.sh Release ON OFF
+
+      - name: Package app bundle
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset="meander-macos-${{ github.sha }}.zip"
+          ditto -c -k --sequesterRsrc --keepParent build/meander/Release/meander.app "${asset}"
+          echo "asset=${asset}" >> "$GITHUB_OUTPUT"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: meander-macos-${{ github.sha }}
+          path: ${{ steps.package.outputs.asset }}
+          retention-days: 30

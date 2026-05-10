@@ -2,7 +2,10 @@
   "name": "hkp",
   "version-string": "1.0.0",
   "dependencies": [
-    "ffmpeg",
+    {
+      "name": "ffmpeg",
+      "platform": "!osx"
+    },
     "fdk-aac",
     "openssl",
     "boost-asio",

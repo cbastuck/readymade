@@ -1,0 +1,110 @@
+name: Release Meander macOS
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, for example v0.9.0"
+        required: true
+      release_name:
+        description: "Release title"
+        required: true
+      target_ref:
+        description: "Branch or commit to release from"
+        required: true
+        default: "main"
+      prerelease:
+        description: "Mark as prerelease"
+        required: true
+        type: boolean
+        default: false
+      draft:
+        description: "Create as draft"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: macos-latest
+    env:
+      APPLE_SIGNING_CERT_BASE64: ${{ secrets.APPLE_SIGNING_CERT_BASE64 }}
+      APPLE_SIGNING_CERT_PASSWORD: ${{ secrets.APPLE_SIGNING_CERT_PASSWORD }}
+      APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+
+      APPLE_NOTARY_API_KEY_BASE64: ${{ secrets.APPLE_NOTARY_API_KEY_BASE64 }}
+      APPLE_NOTARY_API_KEY_ID: ${{ secrets.APPLE_NOTARY_API_KEY_ID }}
+      APPLE_NOTARY_API_ISSUER_ID: ${{ secrets.APPLE_NOTARY_API_ISSUER_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.target_ref }}
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            meander/frontend/package-lock.json
+            hkp-frontend/package-lock.json
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.31"
+
+      - name: Setup vcpkg
+        shell: bash
+        run: |
+          set -euo pipefail
+          vcpkg_baseline="bba8b52f6dea74159bba855ef00376e588d6ea0a"
+          if [[ ! -f 3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake ]]; then
+            git clone https://github.com/microsoft/vcpkg.git 3rdparty/vcpkg
+          fi
+          git -C 3rdparty/vcpkg fetch origin "${vcpkg_baseline}"
+          git -C 3rdparty/vcpkg checkout --force "${vcpkg_baseline}"
+          ./3rdparty/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
+      - name: Build
+        run: ./build.sh Release ON OFF
+
+      - name: Sign app bundle
+        if: ${{ env.APPLE_SIGNING_CERT_BASE64 != '' && env.APPLE_SIGNING_CERT_PASSWORD != '' && env.APPLE_SIGNING_IDENTITY != '' }}
+        shell: bash
+        run: |
+          bash ./sign.sh build/meander/Release/meander.app
+
+      - name: Package app
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset="meander-macos-${{ inputs.tag }}.zip"
+          ditto -c -k --sequesterRsrc --keepParent build/meander/Release/meander.app "${asset}"
+          echo "ASSET=${asset}" >> "$GITHUB_ENV"
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          flags=()
+          if [[ "${{ inputs.prerelease }}" == "true" ]]; then
+            flags+=(--prerelease)
+          fi
+          if [[ "${{ inputs.draft }}" == "true" ]]; then
+            flags+=(--draft)
+          fi
+
+          gh release create "${{ inputs.tag }}" "${ASSET}" \
+            --target "${{ inputs.target_ref }}" \
+            --title "${{ inputs.release_name }}" \
+            --notes "Automated release from GitHub Actions." \
+            "${flags[@]}"

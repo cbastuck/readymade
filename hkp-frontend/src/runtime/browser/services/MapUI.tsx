@@ -111,14 +111,3 @@ export default function MapUI(props: ServiceUIProps) {
     </ServiceUI>
   );
 }
-
-function mapModeToTooltip(mode: Mode) {
-  switch (mode) {
-    case Mode.REPLACE:
-      return "Replace the whole incoming data with the mapped properties";
-    case Mode.OVERWRITE:
-      return "Overwrite the mapped properties to the incoming data";
-    case Mode.ADD:
-      return "Add the mapped properties to the incoming data";
-  }
-}
