@@ -1,7 +1,7 @@
 name: Run Selected CI Tests
 
 on:
-  pull_request:
+  #pull_request:
   push:
     branches: [main]
   workflow_dispatch:
@@ -92,9 +92,9 @@ jobs:
 
           arch="$(uname -m)"
           if [[ "${arch}" == "arm64" ]]; then
-            triplet="arm64-osx"
+            triplet="arm64-osx-release"
           else
-            triplet="x64-osx"
+            triplet="x64-osx-release"
           fi
 
           retry 3 ./3rdparty/vcpkg/vcpkg install \
