@@ -4,6 +4,10 @@ Quick instructions for building the project from the repository root.
 
 To build for dev-server mode (no embedded frontend) with the script, use `./build.sh Debug OFF` on a clean `build/` directory.
 
+## Screenshot
+
+![Meander screenshot](./meander-screenshot.png)
+
 ## Prerequisites
 
 - macOS with Xcode Command Line Tools installed
