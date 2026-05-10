@@ -63,7 +63,7 @@ export default function SelectorField({
     >
       {label &&
         (useDefaultLabel ? (
-          <GroupLabel className="mb-1">{label}</GroupLabel>
+          <GroupLabel size={4} className="mb-1">{label}</GroupLabel>
         ) : (
           label
         ))}

@@ -75,7 +75,7 @@ export default function SubServicePipelineUI({
       ) : (
         <div className="flex w-full ">
           <button
-            className="text-gray-400 hover:text-gray-600 flex items-center"
+            className="text-gray-400 hover:text-gray-600 flex items-center whitespace-nowrap"
             onClick={() => setCollapsed((c) => !c)}
             aria-label={collapsed ? "Expand pipeline" : "Collapse pipeline"}
           >
@@ -142,8 +142,7 @@ export default function SubServicePipelineUI({
               : proxyInstance;
 
             const SubServiceUI =
-              (entry.serviceId && findServiceUI(entry.serviceId)) ||
-              FallbackUI;
+              (entry.serviceId && findServiceUI(entry.serviceId)) || FallbackUI;
 
             const uiElement = React.createElement(SubServiceUI as any, {
               service: subServiceInstance,
