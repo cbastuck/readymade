@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 45
     env:
       VCPKG_FEATURE_FLAGS: manifests,binarycaching
@@ -71,6 +71,35 @@ jobs:
           retry 5 git -C 3rdparty/vcpkg fetch origin "${vcpkg_baseline}"
           git -C 3rdparty/vcpkg checkout --force "${vcpkg_baseline}"
           retry 3 ./3rdparty/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
+      - name: Install vcpkg dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          retry() {
+            local attempts="$1"
+            shift
+            local n=1
+            until "$@"; do
+              if [[ "${n}" -ge "${attempts}" ]]; then
+                return 1
+              fi
+              n=$((n + 1))
+              sleep $((n * 2))
+            done
+          }
+
+          arch="$(uname -m)"
+          if [[ "${arch}" == "arm64" ]]; then
+            triplet="arm64-osx"
+          else
+            triplet="x64-osx"
+          fi
+
+          retry 3 ./3rdparty/vcpkg/vcpkg install \
+            --x-manifest-root=3rdparty \
+            --triplet="${triplet}"
 
       - name: Prepare frontend dependencies
         working-directory: hkp-frontend
