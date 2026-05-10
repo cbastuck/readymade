@@ -137,9 +137,14 @@ export async function attachRuntimes(
     return initState;
   }
   const url = `${rtClass.url}/runtimes`;
-  const res = await fetch(url);
+  let res: Response;
+  try {
+    res = await fetch(url);
+  } catch (err: any) {
+    throw new Error(`${err?.message ?? "Load failed"}: ${url}`);
+  }
   if (!res.ok) {
-    throw new Error("Failed to fetch runtimes" + res.statusText);
+    throw new Error(`Failed to fetch runtimes (${res.status} ${res.statusText}): ${url}`);
   }
   const body = await res.json();
   const runtimes: RestRuntimeData[] = Array.isArray(body)
@@ -331,15 +336,21 @@ async function createRuntimeRequest(
     })),
     boardName: boardName || undefined,
   };
-  const res = await fetch(`${runtime.url}/runtimes`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-    headers: {
-      "content-type": "application/json",
-    },
-  });
+  const runtimesUrl = `${runtime.url}/runtimes`;
+  let res: Response;
+  try {
+    res = await fetch(runtimesUrl, {
+      method: "POST",
+      body: JSON.stringify(payload),
+      headers: {
+        "content-type": "application/json",
+      },
+    });
+  } catch (err: any) {
+    throw new Error(`${err?.message ?? "Load failed"}: ${runtimesUrl}`);
+  }
   if (!res.ok) {
-    throw new Error("Failed to create runtime" + res.statusText);
+    throw new Error(`Failed to create runtime (${res.status} ${res.statusText}): ${runtimesUrl}`);
   }
   const { registry, runtimes } = await res.json();
   const normalizedRegistry = normalizeRegistry(registry ?? []);

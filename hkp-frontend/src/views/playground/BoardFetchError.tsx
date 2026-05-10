@@ -13,9 +13,7 @@ export default function BoardFetchError({ boardName, error }: Props) {
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        height: "100%",
-        position: "fixed",
-        width: "100%",
+        flex: 1,
       }}
     >
       <h1>
