@@ -1,0 +1,95 @@
+name: Warm vcpkg Cache (macOS)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "3rdparty/vcpkg.json"
+      - "3rdparty/vcpkg-triplets/*.cmake"
+      - ".github/workflows/warm-vcpkg-cache.yml"
+
+jobs:
+  warm-cache:
+    runs-on: macos-latest
+    env:
+      VCPKG_FEATURE_FLAGS: manifests,binarycaching
+      VCPKG_BINARY_SOURCES: clear;x-gha,readwrite;files,${{ github.workspace }}/.cache/vcpkg/binary,readwrite
+      VCPKG_DOWNLOADS: ${{ github.workspace }}/.cache/vcpkg/downloads
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: false
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/vcpkg/binary
+            .cache/vcpkg/downloads
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('3rdparty/vcpkg.json', '3rdparty/vcpkg-triplets/*.cmake') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: Setup vcpkg
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          retry() {
+            local attempts="$1"
+            shift
+            local n=1
+            until "$@"; do
+              if [[ "${n}" -ge "${attempts}" ]]; then
+                return 1
+              fi
+              n=$((n + 1))
+              sleep $((n * 2))
+            done
+          }
+
+          mkdir -p .cache/vcpkg/binary .cache/vcpkg/downloads
+
+          vcpkg_baseline="bba8b52f6dea74159bba855ef00376e588d6ea0a"
+          if [[ ! -f 3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake ]]; then
+            retry 5 git clone https://github.com/microsoft/vcpkg.git 3rdparty/vcpkg
+          fi
+          retry 5 git -C 3rdparty/vcpkg fetch origin "${vcpkg_baseline}"
+          git -C 3rdparty/vcpkg checkout --force "${vcpkg_baseline}"
+          retry 3 ./3rdparty/vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
+      - name: Warm vcpkg binary cache
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          retry() {
+            local attempts="$1"
+            shift
+            local n=1
+            until "$@"; do
+              if [[ "${n}" -ge "${attempts}" ]]; then
+                return 1
+              fi
+              n=$((n + 1))
+              sleep $((n * 2))
+            done
+          }
+
+          arch="$(uname -m)"
+          if [[ "${arch}" == "arm64" ]]; then
+            triplets=("arm64-osx" "arm64-osx-release")
+          else
+            triplets=("x64-osx" "x64-osx-release")
+          fi
+
+          for triplet in "${triplets[@]}"; do
+            echo "==> Warming manifest dependencies for triplet: ${triplet}"
+            retry 3 ./3rdparty/vcpkg/vcpkg install \
+              --x-manifest-root=3rdparty \
+              --overlay-triplets=3rdparty/vcpkg-triplets \
+              --triplet="${triplet}"
+          done

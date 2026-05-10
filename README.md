@@ -31,6 +31,10 @@ This does the following:
 2. Configures CMake in `build/` (first run only)
 3. Builds the CMake project and the `meander` app target
 
+The build script also enables local vcpkg binary/download caching under `.cache/vcpkg/` by default, so repeated builds reuse prebuilt dependency artifacts instead of rebuilding large ports (for example Boost).
+
+If you want to use a shared binary source (for example a CI-provided cache), set `VCPKG_BINARY_SOURCES` before running the build script.
+
 ### Build configuration
 
 Default configuration is `Release`.

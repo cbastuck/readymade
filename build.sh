@@ -6,6 +6,9 @@ BUILD_DIR="${REPO_ROOT}/build"
 TOOLCHAIN="${REPO_ROOT}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
 VCPKG_MANIFEST_DIR="${REPO_ROOT}/3rdparty"
 VCPKG_OVERLAY_TRIPLETS_DIR="${REPO_ROOT}/3rdparty/vcpkg-triplets"
+VCPKG_CACHE_ROOT="${REPO_ROOT}/.cache/vcpkg"
+VCPKG_BINARY_CACHE_DIR="${VCPKG_CACHE_ROOT}/binary"
+VCPKG_DOWNLOADS_DIR="${VCPKG_CACHE_ROOT}/downloads"
 FRONTEND_DIR="${REPO_ROOT}/meander/frontend"
 HKP_FRONTEND_DIR="${REPO_ROOT}/hkp-frontend"
 CONFIG="${1:-Release}"
@@ -81,6 +84,20 @@ echo "    build: ${BUILD_DIR}"
 echo "    universal binary: ${UNIVERSAL_BINARY}"
 echo "    architectures: ${OSX_ARCHITECTURES}"
 
+mkdir -p "${VCPKG_BINARY_CACHE_DIR}" "${VCPKG_DOWNLOADS_DIR}"
+
+if [[ -z "${VCPKG_BINARY_SOURCES:-}" ]]; then
+    export VCPKG_BINARY_SOURCES="clear;files,${VCPKG_BINARY_CACHE_DIR},readwrite"
+fi
+
+if [[ -z "${VCPKG_DOWNLOADS:-}" ]]; then
+    export VCPKG_DOWNLOADS="${VCPKG_DOWNLOADS_DIR}"
+fi
+
+if [[ -z "${VCPKG_FEATURE_FLAGS:-}" ]]; then
+    export VCPKG_FEATURE_FLAGS="manifests,binarycaching"
+fi
+
 if [[ ! -f "${TOOLCHAIN}" ]]; then
     echo "ERROR: Missing vcpkg toolchain file: ${TOOLCHAIN}"
     echo "Ensure vcpkg is initialized at 3rdparty/vcpkg before running build.sh"
@@ -104,6 +121,8 @@ fi
 if [[ "${IS_DEBUG_CONFIG}" != "ON" ]]; then
     echo "    vcpkg overlay triplets: ${VCPKG_OVERLAY_TRIPLETS_DIR}"
 fi
+echo "    vcpkg binary sources: ${VCPKG_BINARY_SOURCES}"
+echo "    vcpkg downloads: ${VCPKG_DOWNLOADS}"
 
 CMAKE_ARGS=(
     -B "${BUILD_DIR}"
