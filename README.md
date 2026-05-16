@@ -72,6 +72,64 @@ cmake -S . -B build -DMEANDER_USE_EMBEDDED_FRONTEND=ON
 cmake --build build --target meander --config Release
 ```
 
+## Build on Windows
+
+From the repository root in **PowerShell**:
+
+If your machine blocks local PowerShell scripts, use the `-ExecutionPolicy Bypass` form shown below in the PowerShell notes.
+
+```powershell
+.\build-windows.ps1 -Configuration Release -EmbeddedFrontend ON -VcpkgTriplet x64-windows-static
+```
+
+For a clean build:
+
+```powershell
+Remove-Item -Recurse -Force .\build -ErrorAction SilentlyContinue
+powershell -ExecutionPolicy Bypass -File .\build-windows.ps1 -Configuration Release -EmbeddedFrontend ON -VcpkgTriplet x64-windows-static
+```
+
+For a **static build** (single executable with no DLL dependencies):
+
+```powershell
+Remove-Item -Recurse -Force .\build, .\.cache -ErrorAction SilentlyContinue
+powershell -ExecutionPolicy Bypass -File .\build-windows.ps1 -Configuration Release -EmbeddedFrontend ON -VcpkgTriplet x64-windows-static
+```
+
+### Windows build options
+
+- `-Configuration`: `Debug`, `Release`, `RelWithDebInfo`, or `MinSizeRel` (default: `Release`)
+- `-EmbeddedFrontend`: `ON` or `OFF` (default: `ON`)
+- `-VcpkgTriplet`: `x64-windows-static` (static libraries, no DLL dependencies) or `x64-windows` (dynamic libraries) (default: `x64-windows-static`)
+
+### Example: Debug build with dev server
+
+```powershell
+.\build-windows.ps1 -Configuration Debug -EmbeddedFrontend OFF -VcpkgTriplet x64-windows
+```
+
+**Note:** if `3rdparty/vcpkg` is missing, the Windows build script will clone the pinned `vcpkg` baseline and bootstrap it automatically. This requires `git` to be available on `PATH`.
+
+### PowerShell execution policy
+
+If you get an execution policy error:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-windows.ps1 -Configuration Release -EmbeddedFrontend ON -VcpkgTriplet x64-windows
+```
+
+Or set it for the session:
+
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+```
+
+### PowerShell and npm
+
+The Windows build script invokes `npm.cmd` directly. This avoids a known issue with the PowerShell `npm.ps1` wrapper under `Set-StrictMode -Version Latest`, which can fail with an error like `The property 'Statement' cannot be found on this object`.
+
+If you run npm commands manually in the same PowerShell environment and hit that error, use `npm.cmd` instead of `npm`.
+
 ## Run tests
 
 Run each project's test suite from the repository root:
@@ -130,12 +188,24 @@ npm test
 
 Build artifacts are generated under `build/`.
 
-On macOS, the app bundle is produced under `build/meander/<CONFIG>/`.
+### macOS
+
+The app bundle is produced under `build/meander/<CONFIG>/`.
 
 For example, a `Debug` build produces:
 
 ```text
 build/meander/Debug/meander.app
+```
+
+### Windows
+
+The executable is produced under `build/<CONFIG>/`.
+
+For example, a `Release` build produces:
+
+```text
+build/Release/meander.exe
 ```
 
 ## Rebuild from scratch

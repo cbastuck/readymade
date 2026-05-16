@@ -4,7 +4,7 @@
   "dependencies": [
     {
       "name": "ffmpeg",
-      "platform": "!osx"
+      "platform": "osx&!osx"
     },
     "fdk-aac",
     "openssl",

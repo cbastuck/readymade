@@ -1,6 +1,7 @@
 build*
 hkp-rt/3rdparty/
 !build.sh
+!build-windows.ps1
 *.afdesign*
 **/.DS_Store
 tmp

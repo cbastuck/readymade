@@ -1,0 +1,209 @@
+name: Release Meander Windows
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, for example v0.9.0"
+        required: true
+      release_name:
+        description: "Release title"
+        required: true
+      target_ref:
+        description: "Branch or commit to release from"
+        required: true
+        default: "main"
+      prerelease:
+        description: "Mark as prerelease"
+        required: true
+        type: boolean
+        default: false
+      draft:
+        description: "Create as draft"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: windows-latest
+    env:
+      VCPKG_TARGET_TRIPLET: x64-windows-static
+      VCPKG_FEATURE_FLAGS: manifests,binarycaching
+      VCPKG_BINARY_SOURCES: clear;x-gha,readwrite;files,${{ github.workspace }}\.cache\vcpkg\binary,readwrite
+      VCPKG_DOWNLOADS: ${{ github.workspace }}\.cache\vcpkg\downloads
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.target_ref || github.sha }}
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            meander/frontend/package-lock.json
+            hkp-frontend/package-lock.json
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.31"
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/vcpkg/binary
+            .cache/vcpkg/downloads
+          key: ${{ runner.os }}-vcpkg-${{ env.VCPKG_TARGET_TRIPLET }}-${{ hashFiles('3rdparty/vcpkg.json', '3rdparty/vcpkg-triplets/*.cmake') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-${{ env.VCPKG_TARGET_TRIPLET }}-
+            ${{ runner.os }}-vcpkg-
+
+      - name: Setup vcpkg
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          function Invoke-Retry {
+            param(
+              [int]$Attempts,
+              [ScriptBlock]$Command
+            )
+            for ($n = 1; $n -le $Attempts; $n++) {
+              try {
+                & $Command
+                return
+              } catch {
+                if ($n -eq $Attempts) { throw }
+                Start-Sleep -Seconds ($n * 2)
+              }
+            }
+          }
+
+          New-Item -ItemType Directory -Force -Path .cache/vcpkg/binary | Out-Null
+          New-Item -ItemType Directory -Force -Path .cache/vcpkg/downloads | Out-Null
+
+          $vcpkgBaseline = 'bba8b52f6dea74159bba855ef00376e588d6ea0a'
+          if (!(Test-Path '3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake')) {
+            Invoke-Retry -Attempts 5 -Command { git clone https://github.com/microsoft/vcpkg.git 3rdparty/vcpkg }
+          }
+
+          Invoke-Retry -Attempts 5 -Command { git -C 3rdparty/vcpkg fetch origin $vcpkgBaseline }
+          git -C 3rdparty/vcpkg checkout --force $vcpkgBaseline
+          Invoke-Retry -Attempts 3 -Command { & .\3rdparty\vcpkg\bootstrap-vcpkg.bat -disableMetrics }
+
+      - name: Build
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          .\build-windows.ps1 `
+            -Configuration Release `
+            -EmbeddedFrontend ON `
+            -VcpkgTriplet $env:VCPKG_TARGET_TRIPLET
+
+      - name: Sign executable (optional)
+        env:
+          WINDOWS_SIGNING_CERT_BASE64: ${{ secrets.WINDOWS_SIGNING_CERT_BASE64 }}
+          WINDOWS_SIGNING_CERT_PASSWORD: ${{ secrets.WINDOWS_SIGNING_CERT_PASSWORD }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if (-not $env:WINDOWS_SIGNING_CERT_BASE64 -or -not $env:WINDOWS_SIGNING_CERT_PASSWORD) {
+            Write-Host '==> Skipping signing: WINDOWS_SIGNING_CERT_BASE64 or WINDOWS_SIGNING_CERT_PASSWORD secret not configured.'
+            exit 0
+          }
+
+          $exe = Get-ChildItem -Path build -Filter meander.exe -Recurse |
+            Where-Object { $_.FullName -match '\\Release\\' } |
+            Select-Object -First 1
+
+          if (-not $exe) {
+            throw 'Could not locate meander.exe in build output for signing.'
+          }
+
+          .\scripts\sign-windows.ps1 `
+            -TargetPath $exe.FullName `
+            -CertBase64 $env:WINDOWS_SIGNING_CERT_BASE64 `
+            -CertPassword $env:WINDOWS_SIGNING_CERT_PASSWORD
+
+      - name: Package app
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
+            $packageTag = '${{ inputs.tag }}'
+          } else {
+            $packageTag = $env:GITHUB_SHA.Substring(0, 7)
+          }
+
+          $exe = Get-ChildItem -Path build -Filter meander.exe -Recurse |
+            Where-Object { $_.FullName -match '\\Release\\' } |
+            Select-Object -First 1
+
+          if (-not $exe) {
+            throw 'Could not locate meander.exe in build output.'
+          }
+
+          $staging = "meander-windows-$packageTag"
+          if (Test-Path $staging) {
+            Remove-Item -Recurse -Force $staging
+          }
+          New-Item -ItemType Directory -Path $staging | Out-Null
+
+          Copy-Item -Path (Join-Path $exe.Directory.FullName '*') -Destination $staging -Recurse -Force
+
+          $asset = "$staging.zip"
+          if (Test-Path $asset) {
+            Remove-Item -Force $asset
+          }
+          Compress-Archive -Path $staging -DestinationPath $asset -CompressionLevel Optimal
+
+          "ASSET=$asset" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Create release
+        if: ${{ github.event_name == 'workflow_dispatch' || github.ref_name == 'ci/windows' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          $flags = @()
+          if ($env:GITHUB_EVENT_NAME -eq 'workflow_dispatch') {
+            if ("${{ inputs.prerelease }}" -eq 'true') {
+              $flags += '--prerelease'
+            }
+            if ("${{ inputs.draft }}" -eq 'true') {
+              $flags += '--draft'
+            }
+
+            gh release create "${{ inputs.tag }}" "${env:ASSET}" `
+              --target "${{ inputs.target_ref }}" `
+              --title "${{ inputs.release_name }}" `
+              --notes-file RELEASE_NOTES.md `
+              @flags
+          } else {
+            $tag = "ci-windows-$($env:GITHUB_RUN_ID)-$($env:GITHUB_RUN_ATTEMPT)"
+            $title = "CI Windows Validation $($env:GITHUB_SHA.Substring(0, 7))"
+
+            $flags += '--prerelease'
+            $flags += '--draft'
+
+            gh release create $tag "${env:ASSET}" `
+              --target "$env:GITHUB_SHA" `
+              --title $title `
+              --notes "Temporary release from ci/windows push for workflow validation." `
+              @flags
+          }

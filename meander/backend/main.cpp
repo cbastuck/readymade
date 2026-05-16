@@ -313,3 +313,11 @@ int real_main(int argc, char *argv[])
 
   return 0;
 }
+
+#ifdef _WIN32
+// Windows entry point: forward to real_main to match macOS main.mm behavior
+int main(int argc, char* argv[])
+{
+  return real_main(argc, argv);
+}
+#endif

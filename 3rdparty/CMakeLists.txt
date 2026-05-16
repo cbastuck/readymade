@@ -36,26 +36,6 @@ CPMAddPackage(
     DOWNLOAD_ONLY  TRUE
 )
 
-# Saucer GUI framework + event loop module
-option(BUILD_HKP_SAUCER "Build the hkp-saucer GUI application" ON)
-if(BUILD_HKP_SAUCER)
-    CPMAddPackage(
-        NAME      saucer
-        VERSION   8.0.5
-        GIT_REPOSITORY "https://github.com/saucer/saucer"
-    )
-    CPMAddPackage(
-        NAME      saucer-loop
-        VERSION   2.1.0
-        GIT_REPOSITORY "https://github.com/saucer/loop"
-    )
-    CPMAddPackage(
-        NAME      saucer-desktop
-        VERSION   4.1.0
-        GIT_REPOSITORY "https://github.com/saucer/desktop"
-    )
-endif()
-
 # =============================================================================
 # vcpkg — included AFTER CPM so its add_library wrapper doesn't interfere
 # with packageProject ALIAS targets created by CPM-fetched packages.

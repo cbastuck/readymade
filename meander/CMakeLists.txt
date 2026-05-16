@@ -33,13 +33,16 @@ endif()
 add_executable(
   ${PROJECT_NAME}
   backend/main.cpp
-  backend/main.mm
   backend/schemeHandler.cpp
   backend/router.cpp
   backend/frontendServer.cpp
   backend/popupWindow.cpp
   backend/serviceRedirectHandler.cpp
 )
+
+if(APPLE)
+  target_sources(${PROJECT_NAME} PRIVATE backend/main.mm)
+endif()
 
 
 set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -g0" CACHE STRING "Release flags" FORCE)
@@ -64,21 +67,23 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN 1)
 
 
-# Use CMAKE_CURRENT_SOURCE_DIR so paths are correct whether built from root or standalone
-set(APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/hkp.icns")
-set_source_files_properties(${APP_ICON} PROPERTIES
+if(APPLE)
+  # Use CMAKE_CURRENT_SOURCE_DIR so paths are correct whether built from root or standalone
+  set(APP_ICON "${CMAKE_CURRENT_SOURCE_DIR}/hkp.icns")
+  set_source_files_properties(${APP_ICON} PROPERTIES
     MACOSX_PACKAGE_LOCATION "Resources"
-)
-target_sources(${PROJECT_NAME} PRIVATE ${APP_ICON})
-set_target_properties(${PROJECT_NAME} PROPERTIES
+  )
+  target_sources(${PROJECT_NAME} PRIVATE ${APP_ICON})
+  set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_ICON_FILE "hkp.icns"
     MACOSX_BUNDLE_GUI_IDENTIFIER "com.meander.app"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/macos/Info.plist"
-)
-set_target_properties(${PROJECT_NAME} PROPERTIES
+  )
+  set_target_properties(${PROJECT_NAME} PROPERTIES
     XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.meander.app"
-)
+  )
+endif()
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_23)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 23 CXX_EXTENSIONS OFF CXX_STANDARD_REQUIRED ON)
@@ -88,6 +93,11 @@ option(MEANDER_USE_EMBEDDED_FRONTEND "Build and embed frontend assets into the a
 if(MEANDER_USE_EMBEDDED_FRONTEND)
   saucer_embed("frontend/dist" TARGET ${PROJECT_NAME})
   target_compile_definitions(${PROJECT_NAME} PRIVATE USE_SAUCER_EMBEDDED)
+endif()
+
+# Define Windows version for compatibility
+if(WIN32)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0A00)  # Target Windows 10+
 endif()
 
 if (APPLE)
