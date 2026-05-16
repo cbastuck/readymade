@@ -1,0 +1,77 @@
+name: Build Meander Linux
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CC: gcc-14
+      CXX: g++-14
+      VCPKG_FEATURE_FLAGS: manifests,binarycaching
+      VCPKG_BINARY_SOURCES: clear;x-gha,readwrite;files,${{ github.workspace }}/.cache/vcpkg/binary,readwrite
+      VCPKG_DOWNLOADS: ${{ github.workspace }}/.cache/vcpkg/downloads
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            meander/frontend/package-lock.json
+            hkp-frontend/package-lock.json
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.31"
+
+      - name: Install Linux build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            gcc-14 \
+            g++-14 \
+            nasm \
+            ninja-build \
+            pkg-config \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libjson-glib-dev \
+            libwebkitgtk-6.0-dev
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/vcpkg/binary
+            .cache/vcpkg/downloads
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('3rdparty/vcpkg.json', '3rdparty/vcpkg-triplets/*.cmake') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: Build release binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-linux.sh Release ON
+
+      - name: Upload executable
+        uses: actions/upload-artifact@v5
+        with:
+          name: meander-linux-${{ github.sha }}
+          path: build-linux/meander/meander
+          retention-days: 30

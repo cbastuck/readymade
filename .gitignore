@@ -2,8 +2,10 @@ build*
 hkp-rt/3rdparty/
 !build.sh
 !build-windows.ps1
+!build-linux.sh
 *.afdesign*
 **/.DS_Store
 tmp
 hookup.to
 sign.local.env.sh 
+.cache

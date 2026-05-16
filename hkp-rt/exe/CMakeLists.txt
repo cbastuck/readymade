@@ -9,7 +9,9 @@ set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS 
 if (MSVC)
     add_compile_options(-D_WIN32_WINNT=0x0601)
     target_link_libraries(${PROJECT_NAME} hkp-rt-lib Crypt32)
-else()
-    # TODO: core foundation needed as CoreInput service uses CFRelease
+elseif(APPLE)
+    # CoreFoundation is needed on Apple for CoreInput service CFRelease usage.
     target_link_libraries(${PROJECT_NAME} hkp-rt-lib "-framework CoreFoundation")
+else()
+    target_link_libraries(${PROJECT_NAME} hkp-rt-lib)
 endif()

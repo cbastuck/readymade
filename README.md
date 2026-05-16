@@ -10,9 +10,38 @@ To build for dev-server mode (no embedded frontend) with the script, use `./buil
 
 ## Prerequisites
 
-- macOS with Xcode Command Line Tools installed
 - CMake 3.21+
 - Node.js + npm
+
+### macOS
+
+- Xcode Command Line Tools
+
+### Linux (Ubuntu)
+
+Required packages:
+
+- git
+- build-essential
+- ninja-build
+- pkg-config
+- libgtk-4-dev
+- libadwaita-1-dev
+- libjson-glib-dev
+- libwebkitgtk-6.0-dev
+
+Install all required Linux packages:
+
+```bash
+sudo apt update
+sudo apt install -y git build-essential ninja-build pkg-config libgtk-4-dev libadwaita-1-dev libjson-glib-dev libwebkitgtk-6.0-dev
+```
+
+Optional (recommended if your default compiler is too old for saucer):
+
+```bash
+sudo apt install -y gcc-14 g++-14
+```
 
 Note: vcpkg is vendored in `3rdparty/vcpkg` and is used by CMake during configure/build.
 
@@ -46,6 +75,80 @@ Default configuration is `Release`.
 ```bash
 ./build.sh Debug
 ```
+
+### Linux compiler selection
+
+On Linux, if the default compiler is too old for dependencies, build with GCC 14:
+
+```bash
+CC=gcc-14 CXX=g++-14 ./build-linux.sh
+```
+
+Debug example (keeps symbols and produces much larger binaries):
+
+```bash
+CC=gcc-14 CXX=g++-14 ./build-linux.sh Debug ON
+```
+
+### Linux runtime troubleshooting
+
+If launching `build-linux/meander/meander` fails with errors like:
+
+- `bwrap: setting up uid map: Permission denied`
+- `Failed to fully launch dbus-proxy`
+
+then WebKit's sandbox process is being blocked from creating an unprivileged user namespace.
+
+On Ubuntu 24.04+, this is commonly caused by AppArmor restriction being enabled:
+
+```bash
+sysctl kernel.apparmor_restrict_unprivileged_userns
+```
+
+If it prints `= 1`, you can either:
+
+1. Temporary system workaround (until reboot):
+
+```bash
+sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+```
+
+2. Debug-only app workaround (disables WebKit sandbox):
+
+```bash
+WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 ./build-linux/meander/meander
+```
+
+3. Ubuntu 24.04 system-policy fix (community-tested, no absolute app paths):
+
+```bash
+sudo tee /etc/apparmor.d/bwrap >/dev/null <<'EOF'
+abi <abi/4.0>,
+include <tunables/global>
+
+profile bwrap /usr/bin/bwrap flags=(unconfined) {
+	userns,
+	# Site-specific additions and overrides. See local/README for details.
+	include if exists <local/bwrap>
+}
+EOF
+
+printf 'kernel.apparmor_restrict_unprivileged_userns=0\nkernel.unprivileged_userns_clone=1\n' | sudo tee /etc/sysctl.d/99-userns.conf
+
+# Apply now (without reboot)
+sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+sudo sysctl -w kernel.unprivileged_userns_clone=1
+
+sudo systemctl restart apparmor
+```
+
+Then launch the app normally:
+
+```bash
+./build-linux/meander/meander
+```
+
+Use option 2 only for local development/testing.
 
 ## Frontend dev server
 

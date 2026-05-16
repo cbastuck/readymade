@@ -20,6 +20,7 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/cmake/CPM.cmake)
 
 # Saucer must be fetched before 3rdparty/vcpkg.cmake is included to avoid
 # alias-target conflicts in upstream packageProject() exports on Windows.
+# TODO: move this back to 3rdparty while preserving the property mentioned above
 option(BUILD_HKP_SAUCER "Build the hkp-saucer GUI application" ON)
 if(BUILD_HKP_SAUCER)
 	CPMAddPackage(

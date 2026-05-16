@@ -1,0 +1,160 @@
+name: Release Meander Linux
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, for example v0.9.0"
+        required: true
+      release_name:
+        description: "Release title"
+        required: true
+      target_ref:
+        description: "Branch or commit to release from"
+        required: true
+        default: "main"
+      prerelease:
+        description: "Mark as prerelease"
+        required: true
+        type: boolean
+        default: false
+      draft:
+        description: "Create as draft"
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CC: gcc-14
+      CXX: g++-14
+      VCPKG_FEATURE_FLAGS: manifests,binarycaching
+      VCPKG_BINARY_SOURCES: clear;x-gha,readwrite;files,${{ github.workspace }}/.cache/vcpkg/binary,readwrite
+      VCPKG_DOWNLOADS: ${{ github.workspace }}/.cache/vcpkg/downloads
+
+    steps:
+      - name: Checkout (manual release)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.target_ref }}
+          submodules: false
+
+      - name: Checkout (push testing release)
+        if: ${{ github.event_name == 'push' }}
+        uses: actions/checkout@v5
+        with:
+          submodules: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            meander/frontend/package-lock.json
+            hkp-frontend/package-lock.json
+
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: "3.31"
+
+      - name: Install Linux build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            gcc-14 \
+            g++-14 \
+            nasm \
+            ninja-build \
+            pkg-config \
+            libgtk-4-dev \
+            libadwaita-1-dev \
+            libjson-glib-dev \
+            libwebkitgtk-6.0-dev
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .cache/vcpkg/binary
+            .cache/vcpkg/downloads
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('3rdparty/vcpkg.json', '3rdparty/vcpkg-triplets/*.cmake') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
+      - name: Build release binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./build-linux.sh Release ON
+
+      - name: Resolve release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            release_tag="${{ inputs.tag }}"
+            release_name="${{ inputs.release_name }}"
+            target_ref="${{ inputs.target_ref }}"
+            prerelease="${{ inputs.prerelease }}"
+            draft="${{ inputs.draft }}"
+          else
+            short_sha="${GITHUB_SHA::7}"
+            release_tag="linux-ci-${short_sha}"
+            release_name="Linux CI Test ${short_sha}"
+            target_ref="${GITHUB_SHA}"
+            prerelease="true"
+            draft="true"
+          fi
+
+          echo "RELEASE_TAG=${release_tag}" >> "$GITHUB_ENV"
+          echo "RELEASE_NAME=${release_name}" >> "$GITHUB_ENV"
+          echo "TARGET_REF=${target_ref}" >> "$GITHUB_ENV"
+          echo "RELEASE_PRERELEASE=${prerelease}" >> "$GITHUB_ENV"
+          echo "RELEASE_DRAFT=${draft}" >> "$GITHUB_ENV"
+
+      - name: Package executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          asset="meander-linux-${RELEASE_TAG}-x64.tar.gz"
+          mkdir -p dist
+          cp build-linux/meander/meander dist/meander
+          tar -C dist -czf "${asset}" meander
+          echo "ASSET=${asset}" >> "$GITHUB_ENV"
+
+      - name: Publish release asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" "${ASSET}" --clobber
+          else
+            flags=()
+            if [[ "${RELEASE_PRERELEASE}" == "true" ]]; then
+              flags+=(--prerelease)
+            fi
+            if [[ "${RELEASE_DRAFT}" == "true" ]]; then
+              flags+=(--draft)
+            fi
+
+            gh release create "${RELEASE_TAG}" "${ASSET}" \
+              --target "${TARGET_REF}" \
+              --title "${RELEASE_NAME}" \
+              --notes-file RELEASE_NOTES.md \
+              "${flags[@]}"
+          fi

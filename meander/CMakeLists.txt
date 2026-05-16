@@ -103,7 +103,7 @@ endif()
 if (APPLE)
   set(PLATFORM_LIBS )
 else()
-  set(PLATFORM_LIBS Crypt32)
+  set(PLATFORM_LIBS)
 endif()
 
 target_link_libraries(
