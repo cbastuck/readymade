@@ -1,6 +1,6 @@
 [submodule "hkp-node"]
 	path = hkp-node
-	url = ssh://git@codeberg.org/cbastuck/hkp-node.git
+	url = ../hkp-node.git
 [submodule "hkp-python"]
 	path = hkp-python
 	url = ssh://git@codeberg.org/cbastuck/hkp-python.git
