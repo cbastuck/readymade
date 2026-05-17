@@ -1,4 +1,4 @@
-import { useContext, useRef, useState } from "react";
+import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import { FacadeDescriptor } from "hkp-frontend/src/facade/types";
 import { remapFacadeUuids } from "hkp-frontend/src/views/playground/BoardActions";
@@ -14,6 +14,7 @@ import PeersProvider, {
 import Peer from "hkp-frontend/src/components/Peer";
 import { availableDiscoveryPeerHosts } from "hkp-frontend/src/views/playground/common";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
+import ComboInput from "hkp-frontend/src/ui-components/ComboInput";
 
 import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 import { AppCtx } from "hkp-frontend/src/AppContext";
@@ -145,6 +146,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const [peerHost, setPeerHost] = useState<string | null>(null);
   const [peerSecure, setPeerSecure] = useState<boolean | null>(null);
   const [partnerQRSource, setPartnerQRSource] = useState<object | null>(null);
+  const [availablePeers, setAvailablePeers] = useState<string[]>([]);
 
   const update = (state: any) => {
     if (needsUpdate(state.bypass, bypass)) {
@@ -240,6 +242,36 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     );
   };
 
+  const fetchAvailablePeers = useCallback(async () => {
+    if (!activePeerHost) {
+      return;
+    }
+    const protocol = activePeerSecure ? "https" : "http";
+    const defaultPort = activePeerSecure ? 443 : 80;
+    const portStr =
+      activePeerPort && activePeerPort !== defaultPort
+        ? `:${activePeerPort}`
+        : "";
+    const basePath = activePeerPath ?? "/";
+    const peersPath = basePath.endsWith("/")
+      ? `${basePath}peerjs/peers`
+      : `${basePath}/peerjs/peers`;
+    const url = `${protocol}://${activePeerHost}${portStr}${peersPath}`;
+    try {
+      const response = await fetch(url);
+      if (response.ok) {
+        const peers: string[] = await response.json();
+        setAvailablePeers(peers);
+      }
+    } catch {
+      // peer list is optional — ignore network errors
+    }
+  }, [activePeerHost, activePeerPort, activePeerPath, activePeerSecure]);
+
+  useEffect(() => {
+    fetchAvailablePeers();
+  }, [fetchAvailablePeers]);
+
   return (
     <ServiceUI
       className="pb-4"
@@ -289,10 +321,11 @@ export default function PeerSocketUI(props: ServiceUIProps) {
 
               {isSendAllowed && (
                 <div className="flex items-end">
-                  <SubmittableInput
-                    fullWidth
+                  <ComboInput
                     title="Send to"
                     value={targetPeer}
+                    options={availablePeers.filter((p) => p !== peerName)}
+                    onOpen={fetchAvailablePeers}
                     onSubmit={(targetPeer) =>
                       props.service.configure({ targetPeer })
                     }
