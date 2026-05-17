@@ -27,34 +27,9 @@
       "name": "Browser",
       "type": "browser",
       "state": { "wrapServices": false, "minimized": false }
-    },
-    {
-      "id": "chat-node",
-      "name": "Node",
-      "state": { "wrapServices": false, "minimized": false },
-      "type": "rest",
-      "url": "http://127.0.0.1:8080"
     }
   ],
   "services": {
-    "chat-node": [
-      {
-        "uuid": "chat-peer-server-svc",
-        "serviceId": "peer-server",
-        "serviceName": "Peer Server",
-        "state": {
-          "bypass": false,
-          "port": 9000,
-          "path": "/",
-          "emitEvents": true
-        }
-      },
-      {
-        "uuid": "chat-node-monitor-svc",
-        "serviceId": "monitor",
-        "serviceName": "Peer Events"
-      }
-    ],
     "chat-browser": [
       {
         "uuid": "chat-input-svc",
@@ -69,9 +44,9 @@
         "state": {
           "mode": "Receive and Send",
           "extractIncomingData": true,
-          "peerPort": 9000,
           "peerPath": "/",
-          "peerHost": "HKP_RUNTIME_HOST"
+          "peerHost": "peerjs.hookitapp.com",
+          "peerSecure": true
         }
       },
       {

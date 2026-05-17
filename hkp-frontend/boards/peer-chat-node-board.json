@@ -1,6 +1,5 @@
 {
-  "boardName": "Peer Chat (hkp-rt)",
-  "description": "P2P chat using the hkp-rt peer-server — no hkp-node required.",
+  "boardName": "Peer Chat",
   "facade": {
     "layout": "single",
     "panels": [
@@ -9,12 +8,12 @@
         "layout": {
           "type": "message-list",
           "grow": true,
-          "source": { "serviceUuid": "pcrt-monitor-svc" },
+          "source": { "serviceUuid": "chat-monitor-svc" },
           "composer": {
             "placeholder": "Type a message…",
             "submitLabel": "Send",
             "action": {
-              "serviceUuid": "pcrt-input-svc",
+              "serviceUuid": "chat-input-svc",
               "configure": { "inject": "$$input" }
             }
           }
@@ -24,42 +23,47 @@
   },
   "runtimes": [
     {
-      "id": "pcrt-browser",
+      "id": "chat-browser",
       "name": "Browser",
       "type": "browser",
       "state": { "wrapServices": false, "minimized": false }
     },
     {
-      "id": "pcrt-rt",
-      "name": "hkp-rt",
+      "id": "chat-node",
+      "name": "Node",
+      "state": { "wrapServices": false, "minimized": false },
       "type": "rest",
-      "url": "hkp://remotes/meander-cpp",
-      "state": { "wrapServices": false, "minimized": false }
+      "url": "http://127.0.0.1:8080"
     }
   ],
   "services": {
-    "pcrt-rt": [
+    "chat-node": [
       {
-        "uuid": "pcrt-peer-server-svc",
+        "uuid": "chat-peer-server-svc",
         "serviceId": "peer-server",
         "serviceName": "Peer Server",
         "state": {
           "bypass": false,
           "port": 9000,
           "path": "/",
-          "emitEvents": false
+          "emitEvents": true
         }
+      },
+      {
+        "uuid": "chat-node-monitor-svc",
+        "serviceId": "monitor",
+        "serviceName": "Peer Events"
       }
     ],
-    "pcrt-browser": [
+    "chat-browser": [
       {
-        "uuid": "pcrt-input-svc",
+        "uuid": "chat-input-svc",
         "serviceId": "hookup.to/service/injector",
         "serviceName": "Message",
         "state": { "plainText": true }
       },
       {
-        "uuid": "pcrt-peer-svc",
+        "uuid": "chat-peer-svc",
         "serviceId": "hookup.to/service/peer-socket",
         "serviceName": "Peer Socket",
         "state": {
@@ -71,12 +75,12 @@
         }
       },
       {
-        "uuid": "pcrt-monitor-svc",
+        "uuid": "chat-monitor-svc",
         "serviceId": "hookup.to/service/monitor",
         "serviceName": "Incoming Messages"
       },
       {
-        "uuid": "pcrt-stopper-svc",
+        "uuid": "chat-stopper-svc",
         "serviceId": "hookup.to/service/stopper",
         "serviceName": "Stopper"
       }

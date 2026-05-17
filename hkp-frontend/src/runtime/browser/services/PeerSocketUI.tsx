@@ -26,12 +26,48 @@ import {
 import Button from "hkp-frontend/src/ui-components/Button";
 import ShareAsQRDialog from "hkp-frontend/src/ui-components/runtime-ui/ShareAsQRDialog";
 
+function parseServerUrl(input: string): {
+  host: string;
+  port: number | null;
+  path: string | null;
+  secure: boolean;
+} {
+  let url = input.trim();
+  if (!url.includes("://")) {
+    url = "ws://" + url;
+  }
+  try {
+    const parsed = new URL(url);
+    const secure = parsed.protocol === "wss:";
+    const host = parsed.hostname;
+    const port = parsed.port ? parseInt(parsed.port, 10) : null;
+    const path = parsed.pathname && parsed.pathname !== "/" ? parsed.pathname : null;
+    return { host, port, path, secure };
+  } catch {
+    return { host: input.trim(), port: null, path: null, secure: false };
+  }
+}
+
+function formatServerUrl(
+  host: string,
+  port: number | null,
+  path: string | null,
+  secure: boolean,
+): string {
+  const scheme = secure ? "wss" : "ws";
+  const defaultPort = secure ? 443 : 80;
+  const portStr = port !== null && port !== defaultPort ? `:${port}` : "";
+  const pathStr = !path || path === "/" ? "" : path;
+  return `${scheme}://${host}${portStr}${pathStr}`;
+}
+
 function buildPartnerBoard(
   peerName: string,
   targetPeer: string,
   peerPort: number | null,
   peerPath: string | null,
   peerHost: string | null,
+  peerSecure: boolean | null,
   facade?: FacadeDescriptor,
   originalServices?: ServiceDescriptor[],
 ): object {
@@ -56,6 +92,7 @@ function buildPartnerBoard(
         peerPort,
         peerPath,
         peerHost,
+        peerSecure,
       },
     },
     {
@@ -106,6 +143,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const [peerPort, setPeerPort] = useState<number | null>(null);
   const [peerPath, setPeerPath] = useState<string | null>(null);
   const [peerHost, setPeerHost] = useState<string | null>(null);
+  const [peerSecure, setPeerSecure] = useState<boolean | null>(null);
   const [partnerQRSource, setPartnerQRSource] = useState<object | null>(null);
 
   const update = (state: any) => {
@@ -136,6 +174,9 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     if (needsUpdate(state.peerHost, peerHost)) {
       setPeerHost(state.peerHost);
     }
+    if (needsUpdate(state.peerSecure, peerSecure)) {
+      setPeerSecure(state.peerSecure);
+    }
   };
 
   const onInit = (state: any) => {
@@ -162,19 +203,28 @@ export default function PeerSocketUI(props: ServiceUIProps) {
       message: error.message,
     });
 
-  // Resolve the active peer host/port/path.
-  // When peerPort is configured in state (local PeerServer), derive the host
-  // from HKP_RUNTIME_URL (available on the Meander host) or use explicit peerHost.
-  // Fall back to the classic discovery hosts when no peerPort is set.
+  // Resolve the active peer host/port/path/secure.
+  // When peerHost or peerPort is configured, use those values (custom server).
+  // Fall back to the first discovery host when neither is set.
   const resolvedPeerHost = peerHost ? resolveTemplateVars(peerHost) : null;
-  const activePeerHost =
-    peerPort !== null
-      ? (resolvedPeerHost ?? hostDescriptor?.host)
-      : hostDescriptor?.host;
-  const activePeerPort = peerPort !== null ? peerPort : hostDescriptor?.port;
-  const activePeerPath =
-    peerPort !== null ? (peerPath ?? "/") : hostDescriptor?.path;
-  const activePeerSecure = peerPort !== null ? false : hostDescriptor?.secure;
+  const isCustomServer = peerHost !== null || peerPort !== null;
+  const activePeerHost = isCustomServer
+    ? (resolvedPeerHost ?? hostDescriptor?.host)
+    : hostDescriptor?.host;
+  const activePeerPort = isCustomServer ? (peerPort ?? undefined) : hostDescriptor?.port;
+  const activePeerPath = isCustomServer ? (peerPath ?? "/") : hostDescriptor?.path;
+  const activePeerSecure = isCustomServer
+    ? (peerSecure ?? false)
+    : hostDescriptor?.secure;
+
+  const serverDisplayValue = activePeerHost
+    ? formatServerUrl(
+        activePeerHost,
+        activePeerPort ?? null,
+        activePeerPath ?? null,
+        activePeerSecure ?? false,
+      )
+    : "";
 
   const isSendAllowed = currentMode !== "Receive only";
   const isReceivedAllowed = currentMode !== "Send only";
@@ -186,7 +236,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const onSharePartnerQR = () => {
     const allOriginalServices = Object.values(boardContext?.services ?? {}).flat();
     setPartnerQRSource(
-      buildPartnerBoard(peerName, targetPeer, peerPort, peerPath, peerHost, boardContext?.facade, allOriginalServices),
+      buildPartnerBoard(peerName, targetPeer, peerPort, peerPath, peerHost, peerSecure, boardContext?.facade, allOriginalServices),
     );
   };
 
@@ -205,6 +255,20 @@ export default function PeerSocketUI(props: ServiceUIProps) {
             options={["Receive only", "Send only", "Receive and Send"]}
             value={currentMode}
             onChange={onChangeMode}
+          />
+          <SubmittableInput
+            fullWidth
+            title="PeerJS Server"
+            value={serverDisplayValue}
+            onSubmit={(value) => {
+              const trimmed = value.trim();
+              if (!trimmed) {
+                props.service.configure({ peerHost: null, peerPort: null, peerPath: null, peerSecure: null });
+              } else {
+                const { host, port, path, secure } = parseServerUrl(trimmed);
+                props.service.configure({ peerHost: host, peerPort: port, peerPath: path, peerSecure: secure });
+              }
+            }}
           />
           <div className="flex items-stretch gap-1">
             <div className="flex flex-col gap-2 flex-1">
@@ -272,7 +336,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
 
           {initialized && !bypass && (
             <Peer
-              key={`${activePeerHost}:${activePeerPort}${activePeerPath}`}
+              key={`${activePeerSecure ? "wss" : "ws"}://${activePeerHost}:${activePeerPort}${activePeerPath}`}
               name={peerName}
               onData={(envelope) => {
                 if (currentMode !== "Send only") {

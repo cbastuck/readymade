@@ -6,6 +6,7 @@ import gameOfLifeBoard from "../../../hkp-frontend/boards/game-of-life-board.jso
 import linkDebuggerBoard from "../../../hkp-frontend/boards/link-debugger.json";
 import noiseAlertBoard from "../../../hkp-frontend/boards/noise-alert-board.json";
 import peerChatBoard from "../../../hkp-frontend/boards/peer-chat-board.json";
+import peerChatNodeBoard from "../../../hkp-frontend/boards/peer-chat-node-board.json";
 import relayBoard from "../../../hkp-frontend/boards/relay.json";
 import helloworldBoard from "../../../hkp-frontend/boards/helloworld-board.json";
 import animateBoard from "../../../hkp-frontend/boards/animate-board.json";
@@ -14,7 +15,6 @@ import spotifyBoard from "../../../hkp-frontend/boards/spotify-board.json";
 import triggerpadBoard from "../../../hkp-frontend/boards/triggerpad-board.json";
 import gameBoard from "../../../hkp-frontend/boards/game-board.json";
 import encryptBoard from "../../../hkp-frontend/boards/encrypt-board.json";
-import peerChatRtBoard from "../../../hkp-frontend/boards/peer-chat-rt-board.json";
 import spectralModifierBoard from "../../../hkp-frontend/boards/spectral-modifier-board.json";
 import smoothDemoBoard from "../../../hkp-frontend/boards/smooth-demo-board.json";
 
@@ -99,10 +99,10 @@ export const DEMO_BOARDS: DemoEntry[] = [
     board: peerChatBoard as unknown as BoardDescriptor,
   },
   {
-    label: "Peer Chat (hkp-rt)",
+    label: "Peer Chat (with Node)",
     description: "P2P chat via WebRTC using the hkp-rt signaling server",
     icon: "💬",
-    board: peerChatRtBoard as unknown as BoardDescriptor,
+    board: peerChatNodeBoard as unknown as BoardDescriptor,
   },
   {
     label: "Drop It App",

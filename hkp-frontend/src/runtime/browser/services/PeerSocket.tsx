@@ -15,6 +15,7 @@ type State = {
   peerPort: number | null;
   peerPath: string | null;
   peerHost: string | null;
+  peerSecure: boolean | null;
 };
 
 class PeerSocket extends ServiceBase<State> {
@@ -32,6 +33,7 @@ class PeerSocket extends ServiceBase<State> {
       peerPort: null,
       peerPath: null,
       peerHost: null,
+      peerSecure: null,
     });
   }
 
@@ -94,6 +96,14 @@ class PeerSocket extends ServiceBase<State> {
       if (needsUpdate(host, this.state.peerHost)) {
         this.state.peerHost = host as string | null;
         this.app.notify(this, { peerHost: this.state.peerHost });
+      }
+    }
+
+    if (config.peerSecure !== undefined) {
+      const secure = config.peerSecure === "" ? null : config.peerSecure;
+      if (needsUpdate(secure, this.state.peerSecure)) {
+        this.state.peerSecure = secure as boolean | null;
+        this.app.notify(this, { peerSecure: this.state.peerSecure });
       }
     }
   }
