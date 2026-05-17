@@ -307,7 +307,7 @@ export default function Sidebar() {
     <button
       type="button"
       onClick={() => setShowManageRuntimes(true)}
-      title="Manage runtime engines"
+      title="Manage runtime servers"
       style={{
         display: "flex",
         alignItems: "center",
@@ -393,7 +393,7 @@ export default function Sidebar() {
           {/* ── Runtimes ── */}
           <SectionLabel action={cogButton}>Runtimes</SectionLabel>
           {availableRuntimes.length === 0 && (
-            <EmptyHint>No runtime engines configured</EmptyHint>
+            <EmptyHint>No runtime servers configured</EmptyHint>
           )}
           {availableRuntimes.map((rtClass, i) => (
             <RuntimeCard

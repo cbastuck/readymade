@@ -21,7 +21,7 @@ export default function AddRuntimeSheet({ open, onClose, availableEngines, onAdd
     <BottomSheet open={open} onClose={onClose} title="Add Runtime" height="55%">
       {availableEngines.length === 0 ? (
         <div style={{ color: M.textMuted, fontSize: 14, textAlign: "center", paddingTop: 24 }}>
-          No runtime engines available.
+          No runtime servers available.
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

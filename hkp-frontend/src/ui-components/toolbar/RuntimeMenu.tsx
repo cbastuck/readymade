@@ -155,7 +155,7 @@ export default function RuntimeMenu({ triggerClassName, triggerStyle }: Props) {
                 }}
               >
                 <Settings size={14} />
-                Manage Runtime Engines
+                Manage Runtime Servers
               </CommandItem>
             </CommandGroup>
           </Command>

@@ -100,7 +100,7 @@ export default function RemotesMenu({
                 className="flex gap-2 text-base"
                 onSelect={() => setShowManageRuntimesDialog(true)}
               >
-                <Settings size="18px" /> Manage Runtime Engines
+                <Settings size="18px" /> Manage Runtime Servers
               </CommandItem>
             </CommandGroup>
           </Command>
