@@ -1,0 +1,29 @@
+# Build outputs
+build*/
+hkp-rt/build*/
+.cache/
+
+# Subprojects not needed for hkp-rt server
+meander/
+hkp-frontend/
+hkp-go/
+hkp-python/
+hkp-node/
+hkp-website/
+bstck.berlin/
+hookup.to/
+docs/
+scripts/
+meander-ios/
+
+# Local secrets and tooling
+sign.local.env.sh
+tmp/
+
+# vcpkg is bootstrapped fresh in the Dockerfile
+3rdparty/vcpkg/
+
+# Artifacts
+*.tgz
+*.tar.gz
+node_modules/
