@@ -2,6 +2,7 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRONTEND_DIR="${REPO_ROOT}/meander/frontend"
 IOS_SOURCE_DIR="${REPO_ROOT}/meander-ios"
 TOOLCHAIN="${REPO_ROOT}/3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake"
 VCPKG_MANIFEST_DIR="${IOS_SOURCE_DIR}"
@@ -65,6 +66,13 @@ fi
 
 echo "    vcpkg manifest:      ${VCPKG_MANIFEST_DIR}/vcpkg.json"
 echo "    vcpkg binary cache:  ${VCPKG_BINARY_CACHE_DIR}"
+
+echo "==> Building mobile web app"
+if [[ ! -d "${FRONTEND_DIR}/node_modules" ]]; then
+    echo "    Installing frontend dependencies"
+    npm --prefix "${FRONTEND_DIR}" ci
+fi
+npm --prefix "${FRONTEND_DIR}" run build:ios
 
 cmake \
     -B "${BUILD_DIR}" \

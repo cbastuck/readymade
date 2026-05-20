@@ -2,7 +2,7 @@ import type { CSSProperties, ReactNode } from "react";
 
 export type MobileIconName =
   | "list" | "plus" | "settings" | "more" | "chevronDown" | "chevronUp"
-  | "chevronRight" | "x" | "share" | "cpu" | "timer" | "trash" | "home"
+  | "chevronRight" | "chevronLeft" | "x" | "share" | "cpu" | "timer" | "trash" | "home"
   | "layers" | "check" | "monitor" | "server" | "package" | "gitBranch"
   | "maximize2" | "minimize2";
 
@@ -14,6 +14,7 @@ const paths: Record<MobileIconName, ReactNode> = {
   chevronDown: <polyline points="6 9 12 15 18 9"/>,
   chevronUp: <polyline points="18 15 12 9 6 15"/>,
   chevronRight: <polyline points="9 6 15 12 9 18"/>,
+  chevronLeft: <polyline points="15 18 9 12 15 6"/>,
   x: <><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></>,
   share: <><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></>,
   cpu: <><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></>,
