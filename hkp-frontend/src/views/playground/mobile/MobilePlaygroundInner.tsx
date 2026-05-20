@@ -15,6 +15,8 @@ import AddRuntimeSheet from "./AddRuntimeSheet";
 import AddServiceSheet from "./AddServiceSheet";
 import ServiceSheet from "./ServiceSheet";
 import RuntimeUI from "../../../ui-components/runtime-ui";
+import { findServiceUI } from "../../../runtime/browser/UIRegistry";
+import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 
 type Tab = "board" | "browser" | "settings";
 
@@ -165,7 +167,7 @@ function ServiceCard({
           <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
         </div>
       </button>
-      {!isLast && <FlowArrow />}
+      <FlowArrow />
     </div>
   );
 }
@@ -282,7 +284,7 @@ function RuntimeCard({
           </button>
         </div>
         {/* Full service UIs via RuntimeUI */}
-        <div style={{ background: "#fff" }}>
+        <div data-theme="playground" style={{ background: "#fff" }}>
           <RuntimeUI
             runtime={runtime}
             scope={scope}
@@ -374,25 +376,6 @@ function RuntimeCard({
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <button
-            onClick={onAddService}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              padding: "5px 10px",
-              border: `1px solid ${M.runtimeBorder}`,
-              borderRadius: 8,
-              background: "#fff",
-              cursor: "pointer",
-              fontSize: 11,
-              fontWeight: 600,
-              color: M.blue,
-            }}
-          >
-            <MobileIcon name="plus" size={11} color={M.blue} />
-            Service
-          </button>
           {scope && services.length > 0 && (
             <button
               onClick={() => setFullView(true)}
@@ -454,7 +437,7 @@ function RuntimeCard({
 
       {/* Services */}
       {!collapsed && (
-        <div style={{ padding: "0 12px 12px" }}>
+        <div style={{ padding: "0 12px 6px" }}>
           {services.length === 0 ? (
             <div
               style={{
@@ -478,6 +461,33 @@ function RuntimeCard({
               />
             ))
           )}
+        </div>
+      )}
+
+      {!collapsed && (
+        <div style={{ padding: "0px 12px 12px" }}>
+          <button
+            onClick={onAddService}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: "11px 14px",
+              border: `1.5px dashed ${M.teal}`,
+              borderRadius: 14,
+              background: M.tealLight,
+              cursor: "pointer",
+              fontSize: 14,
+              fontWeight: 600,
+              color: M.tealDark,
+              fontFamily: "inherit",
+            }}
+          >
+            <MobileIcon name="plus" size={16} color={M.tealDark} />
+            Add Service
+          </button>
         </div>
       )}
     </div>
@@ -807,6 +817,151 @@ function SettingsTab({
   );
 }
 
+// ── Full-screen single-service view ───────────────────────────
+function FullServiceView({
+  service,
+  runtime,
+  onBack,
+}: {
+  service: ServiceDescriptor;
+  runtime: RuntimeDescriptor;
+  onBack: () => void;
+}) {
+  const boardContext = useBoardContext();
+  if (!boardContext) {
+    return null;
+  }
+  const { scopes } = boardContext;
+
+  const handleServiceAction = (cmd: ServiceAction) => {
+    if (cmd.action === "remove") {
+      boardContext.removeService({ uuid: cmd.service.uuid }, runtime);
+      if (cmd.service.uuid === service.uuid) {
+        onBack();
+      }
+    } else if (cmd.action === "rename" && cmd.payload) {
+      boardContext.setServiceName(runtime.id, cmd.service.uuid, cmd.payload);
+    }
+  };
+
+  const browserScope =
+    runtime.type === "browser"
+      ? (scopes[runtime.id] as BrowserRuntimeScope | undefined)
+      : undefined;
+
+  const serviceInstance =
+    browserScope?.findServiceInstance(service.uuid)?.[0] ?? null;
+  const ServiceUI = serviceInstance
+    ? (findServiceUI(service.serviceId) ??
+      browserScope?.registry.findServiceModule(service.serviceId)?.createUI ??
+      null)
+    : null;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 50,
+        background: M.bg,
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "'DM Sans', system-ui, sans-serif",
+      }}
+    >
+      {/* Header */}
+      <div
+        style={{
+          background: `rgba(242,237,232,0.95)`,
+          backdropFilter: "blur(12px)",
+          paddingTop: "max(10px, env(safe-area-inset-top))",
+          paddingBottom: "10px",
+          paddingLeft: "4px",
+          paddingRight: "16px",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          borderBottom: `1px solid ${M.border}`,
+          flexShrink: 0,
+        }}
+      >
+        <button
+          onClick={onBack}
+          style={{
+            width: 40,
+            height: 40,
+            border: "none",
+            background: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <MobileIcon
+            name="chevronLeft"
+            size={22}
+            color={M.teal}
+            strokeWidth={2}
+          />
+        </button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: M.textPrimary,
+              lineHeight: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {service.serviceName}
+          </div>
+          <div style={{ fontSize: 11, color: M.textMuted, marginTop: 2 }}>
+            {runtime.name}
+          </div>
+        </div>
+      </div>
+
+      {/* Bare service UI — no runtime chrome */}
+      <div
+        data-theme="playground"
+        style={{
+          flex: 1,
+          overflowY: "auto",
+          overflowX: "hidden",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
+        {ServiceUI && serviceInstance ? (
+          <ServiceUI
+            service={serviceInstance}
+            showBypassOnlyIfExplicit={false}
+            draggable={false}
+            onServiceAction={handleServiceAction}
+          />
+        ) : (
+          <div
+            style={{
+              padding: 24,
+              fontSize: 14,
+              color: M.textMuted,
+              textAlign: "center",
+            }}
+          >
+            {scopes[runtime.id]
+              ? "Service UI not available"
+              : "Runtime not yet initialized"}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Tab bar button ─────────────────────────────────────────────
 function TabButton({
   label,
@@ -868,7 +1023,10 @@ function TopBar({
       style={{
         background: `rgba(242,237,232,0.92)`,
         backdropFilter: "blur(12px)",
-        padding: "10px 16px",
+        paddingTop: "max(10px, env(safe-area-inset-top))",
+        paddingBottom: "10px",
+        paddingLeft: "16px",
+        paddingRight: "16px",
         display: "flex",
         alignItems: "center",
         gap: 12,
@@ -939,6 +1097,10 @@ export default function MobilePlaygroundInner({
     useState<ServiceDescriptor | null>(null);
   const [selectedServiceRuntime, setSelectedServiceRuntime] =
     useState<RuntimeDescriptor | null>(null);
+  const [fullScreenService, setFullScreenService] = useState<{
+    service: ServiceDescriptor;
+    runtime: RuntimeDescriptor;
+  } | null>(null);
 
   if (!boardContext) {
     return null;
@@ -1049,7 +1211,10 @@ export default function MobilePlaygroundInner({
           borderTop: `1px solid ${M.border}`,
           display: "flex",
           alignItems: "center",
-          padding: "8px 0 16px",
+          paddingTop: "8px",
+          paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+          paddingLeft: 0,
+          paddingRight: 0,
           flexShrink: 0,
         }}
       >
@@ -1098,6 +1263,13 @@ export default function MobilePlaygroundInner({
         onRemove={handleRemoveService}
         onRename={handleRenameService}
       />
+      {fullScreenService && (
+        <FullServiceView
+          service={fullScreenService.service}
+          runtime={fullScreenService.runtime}
+          onBack={() => setFullScreenService(null)}
+        />
+      )}
     </div>
   );
 }

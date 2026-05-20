@@ -51,7 +51,7 @@ export default function BottomSheet({ open, onClose, title, children, height = "
           background: M.card,
           borderRadius: "20px 20px 0 0",
           height,
-          transition: "transform 0.3s cubic-bezier(0.32,0.72,0,1)",
+          transition: "transform 0.3s cubic-bezier(0.32,0.72,0,1), height 0.3s cubic-bezier(0.32,0.72,0,1)",
           transform: animating ? "translateY(0)" : "translateY(100%)",
           display: "flex",
           flexDirection: "column",

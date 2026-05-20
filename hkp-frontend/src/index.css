@@ -803,6 +803,7 @@ blockquote:after {
   border: none;
   background: var(--border-mid);
   cursor: pointer;
+  touch-action: none;
 }
 [data-theme="playground"] .hkp-range-slider::-webkit-slider-runnable-track {
   height: 4px;

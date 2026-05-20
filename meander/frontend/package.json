@@ -9,6 +9,7 @@
     "start": "npm run dev",
     "dev": "vite --port 5555",
     "build": "tsc -b && vite build",
+    "build:ios": "tsc -b && vite build --config vite.config.ios.ts",
     "lint": "eslint .",
     "preview": "vite preview"
   },
