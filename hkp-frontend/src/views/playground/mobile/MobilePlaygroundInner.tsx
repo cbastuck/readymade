@@ -92,12 +92,10 @@ function RuntimeConnector() {
 // ── Service card ───────────────────────────────────────────────
 function ServiceCard({
   service,
-  isLast,
   onTap,
   active,
 }: {
   service: ServiceDescriptor;
-  isLast: boolean;
   onTap: () => void;
   active: boolean;
 }) {
@@ -455,7 +453,6 @@ function RuntimeCard({
               <ServiceCard
                 key={svc.uuid}
                 service={svc}
-                isLast={i === services.length - 1}
                 onTap={() => onServiceTap(svc, runtime)}
                 active={activeServiceId === svc.uuid}
               />
