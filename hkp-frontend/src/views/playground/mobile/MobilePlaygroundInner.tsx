@@ -449,7 +449,7 @@ function RuntimeCard({
               No services — tap + Service to add one
             </div>
           ) : (
-            services.map((svc, i) => (
+            services.map((svc) => (
               <ServiceCard
                 key={svc.uuid}
                 service={svc}
