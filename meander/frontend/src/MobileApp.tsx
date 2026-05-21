@@ -27,7 +27,7 @@ export default function MobileApp() {
 
   return (
     <MeanderPlatformProvider>
-      <HkpApp defaultThemeName="mobile">
+      <HkpApp defaultThemeName="playground">
         <MobilePlaygroundWithRouter
           boardName={boardName}
           onChangeBoardname={setBoardName}

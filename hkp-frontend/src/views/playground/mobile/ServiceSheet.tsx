@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import BottomSheet from "./BottomSheet";
 import MobileIcon from "./MobileIcon";
-import { M } from "./tokens";
+import { M, SERVICE_UI_ZOOM } from "./tokens";
 import {
   ServiceAction,
   ServiceDescriptor,
@@ -44,6 +44,18 @@ type Props = {
   onRename: (runtimeId: string, instanceId: string, name: string) => void;
 };
 
+const ZOOM_STORAGE_KEY = "hkp-service-ui-zoom";
+
+function loadZoom(): number {
+  try {
+    const v = localStorage.getItem(ZOOM_STORAGE_KEY);
+    if (v !== null) {
+      return Math.min(2.5, Math.max(0.5, Number(v)));
+    }
+  } catch {}
+  return SERVICE_UI_ZOOM;
+}
+
 export default function ServiceSheet({
   open,
   onClose,
@@ -56,6 +68,11 @@ export default function ServiceSheet({
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState("");
   const [uiExpanded, setUiExpanded] = useState(false);
+  const [zoomLevel, setZoomLevel] = useState(loadZoom);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
+  const zoomRef = useRef(zoomLevel);
+  zoomRef.current = zoomLevel;
 
   useEffect(() => {
     if (!open) {
@@ -63,6 +80,41 @@ export default function ServiceSheet({
       setEditingName(false);
     }
   }, [open]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) { return; }
+
+    const onStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchRef.current = { startDist: Math.hypot(dx, dy), startZoom: zoomRef.current };
+      }
+    };
+
+    const onMove = (e: TouchEvent) => {
+      if (e.touches.length !== 2 || !pinchRef.current) { return; }
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      const next = Math.min(2.5, Math.max(0.5, pinchRef.current.startZoom * (dist / pinchRef.current.startDist)));
+      setZoomLevel(next);
+      try { localStorage.setItem(ZOOM_STORAGE_KEY, String(next)); } catch {}
+    };
+
+    const onEnd = () => { pinchRef.current = null; };
+
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+    };
+  }, [uiExpanded]);
 
   const handleNameSubmit = () => {
     if (service && runtime && nameValue.trim()) {
@@ -180,6 +232,7 @@ export default function ServiceSheet({
             style={{
               display: "flex",
               alignItems: "center",
+              justifyContent: "space-between",
               gap: 8,
               marginBottom: 12,
               flexShrink: 0,
@@ -205,22 +258,29 @@ export default function ServiceSheet({
               <MobileIcon name="minimize2" size={13} color={M.textSecondary} />
               Collapse
             </button>
+            <span style={{ fontSize: 11, color: M.textMuted, fontVariantNumeric: "tabular-nums" }}>
+              {Math.round(zoomLevel * 100)}%
+            </span>
           </div>
 
           {/* Service UI */}
           <div
-            data-theme="playground"
+            ref={scrollRef}
             style={{
               flex: 1,
               overflowY: "auto",
-              overflowX: "hidden",
+              overflowX: "auto",
               WebkitOverflowScrolling: "touch" as never,
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
             }}
           >
-            {renderServiceUI()}
+            <div
+              style={{
+                zoom: zoomLevel,
+                width: `calc(100% / ${zoomLevel})`,
+              }}
+            >
+              {renderServiceUI()}
+            </div>
           </div>
         </div>
       ) : (
