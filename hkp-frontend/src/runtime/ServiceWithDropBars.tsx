@@ -12,7 +12,7 @@ type Props = {
   onDrop: (svcUuid: string, pos: number) => void;
 };
 
-export default function ServiceWithDropBar(props: Props) {
+export default function ServiceWithDropBars(props: Props) {
   const { onDrop: onDropProp, index } = props;
   const theme = useTheme();
   const dropTargetStyle = {
