@@ -13,12 +13,24 @@ import {
 import { useBoardContext } from "../../../BoardContext";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import { findServiceUI as findBrowserServiceUI } from "../../../runtime/browser/UIRegistry";
+import {
+  getServiceConfig as getBrowserServiceConfig,
+  configureService as configureBrowserService,
+} from "../../../runtime/browser/BrowserRuntimeApi";
 import { makeServiceInstance as makeRestInstance } from "../../../runtime/rest/RuntimeRest";
 import { findServiceUI as findRestServiceUI } from "../../../runtime/rest/UIRegistry";
 import RuntimeRestServiceUI from "../../../runtime/rest/RuntimeRestServiceUI";
+import {
+  getServiceConfig as getRestServiceConfig,
+  configureService as configureRestService,
+} from "../../../runtime/rest/RuntimeRestApi";
 import { makeServiceInstance as makeGraphQLInstance } from "../../../runtime/graphql/RuntimeGraphQL";
 import { findServiceUI as findGraphQLServiceUI } from "../../../runtime/graphql/UIRegistry";
 import RuntimeGraphQLServiceUI from "../../../runtime/graphql/RuntimeGraphQLServiceUI";
+import {
+  getServiceConfig as getGraphQLServiceConfig,
+  configureService as configureGraphQLService,
+} from "../../../runtime/graphql/RuntimeGraphQLApi";
 
 function NotAvailable({ reason }: { reason: string }) {
   return (
@@ -68,6 +80,11 @@ export default function ServiceSheet({
   const [editingName, setEditingName] = useState(false);
   const [nameValue, setNameValue] = useState("");
   const [uiExpanded, setUiExpanded] = useState(false);
+  const [configExpanded, setConfigExpanded] = useState(false);
+  const [configText, setConfigText] = useState("");
+  const [configError, setConfigError] = useState<string | null>(null);
+  const [configSaving, setConfigSaving] = useState(false);
+  const configReturnTo = useRef<"ui" | "root">("root");
   const [zoomLevel, setZoomLevel] = useState(loadZoom);
   const scrollRef = useRef<HTMLDivElement>(null);
   const pinchRef = useRef<{ startDist: number; startZoom: number } | null>(null);
@@ -77,7 +94,9 @@ export default function ServiceSheet({
   useEffect(() => {
     if (!open) {
       setUiExpanded(false);
+      setConfigExpanded(false);
       setEditingName(false);
+      setConfigError(null);
     }
   }, [open]);
 
@@ -126,6 +145,64 @@ export default function ServiceSheet({
   if (!service || !runtime) {
     return null;
   }
+
+  const openConfig = async () => {
+    if (!boardContext || !service || !runtime) { return; }
+    configReturnTo.current = uiExpanded ? "ui" : "root";
+    const scope = boardContext.scopes[runtime.id];
+    let config: any = {};
+    try {
+      if (isRuntimeBrowserClassType(runtime.type) && scope) {
+        config = await getBrowserServiceConfig(scope, service);
+      } else if (isRuntimeRestClassType(runtime.type) && scope) {
+        config = await getRestServiceConfig(scope, service);
+      } else if (isRuntimeGraphQLClassType(runtime.type) && scope) {
+        config = await getGraphQLServiceConfig(scope, service);
+      } else {
+        config = service.state ?? {};
+      }
+    } catch {
+      config = service.state ?? {};
+    }
+    setConfigText(JSON.stringify(config, null, 2));
+    setConfigError(null);
+    setConfigExpanded(true);
+  };
+
+  const applyConfig = async () => {
+    if (!boardContext || !service || !runtime) { return; }
+    let parsed: any;
+    try {
+      parsed = JSON.parse(configText);
+    } catch (e: any) {
+      setConfigError(`Invalid JSON: ${e.message}`);
+      return;
+    }
+    const scope = boardContext.scopes[runtime.id];
+    if (!scope) {
+      setConfigError("Runtime not initialized");
+      return;
+    }
+    setConfigSaving(true);
+    setConfigError(null);
+    try {
+      if (isRuntimeBrowserClassType(runtime.type)) {
+        await configureBrowserService(scope, service, parsed);
+      } else if (isRuntimeRestClassType(runtime.type)) {
+        await configureRestService(scope, service, parsed);
+      } else if (isRuntimeGraphQLClassType(runtime.type)) {
+        await configureGraphQLService(scope, service, parsed);
+      }
+      setConfigExpanded(false);
+      if (configReturnTo.current === "ui") {
+        setUiExpanded(true);
+      }
+    } catch (e: any) {
+      setConfigError(`Failed to apply: ${e.message}`);
+    } finally {
+      setConfigSaving(false);
+    }
+  };
 
   const renderServiceUI = () => {
     if (!boardContext) {
@@ -221,9 +298,106 @@ export default function ServiceSheet({
       open={open}
       onClose={onClose}
       title={service.serviceName}
-      height={uiExpanded ? "92%" : "60%"}
+      height={uiExpanded || configExpanded ? "92%" : "60%"}
     >
-      {uiExpanded ? (
+      {configExpanded ? (
+        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          {/* Config toolbar */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              marginBottom: 12,
+              flexShrink: 0,
+            }}
+          >
+            <button
+              onClick={() => setConfigExpanded(false)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "6px 10px",
+                border: `1px solid ${M.border}`,
+                borderRadius: 8,
+                background: M.card,
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 500,
+                color: M.textSecondary,
+                fontFamily: "inherit",
+              }}
+            >
+              <MobileIcon name="minimize2" size={13} color={M.textSecondary} />
+              Collapse
+            </button>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={applyConfig}
+              disabled={configSaving}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 4,
+                padding: "6px 14px",
+                border: "none",
+                borderRadius: 8,
+                background: configSaving ? M.tealLight : M.teal,
+                color: configSaving ? M.tealDark : "#fff",
+                cursor: configSaving ? "default" : "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: "inherit",
+              }}
+            >
+              <MobileIcon name="check" size={13} color={configSaving ? M.tealDark : "#fff"} />
+              {configSaving ? "Applying…" : "Apply"}
+            </button>
+          </div>
+
+          {/* Error */}
+          {configError && (
+            <div
+              style={{
+                marginBottom: 8,
+                padding: "8px 12px",
+                background: "#fff5f5",
+                border: `1px solid ${M.danger}`,
+                borderRadius: 8,
+                fontSize: 12,
+                color: M.danger,
+                flexShrink: 0,
+              }}
+            >
+              {configError}
+            </div>
+          )}
+
+          {/* JSON textarea */}
+          <textarea
+            value={configText}
+            onChange={(e) => {
+              setConfigText(e.target.value);
+              setConfigError(null);
+            }}
+            spellCheck={false}
+            style={{
+              flex: 1,
+              resize: "none",
+              border: `1.5px solid ${configError ? M.danger : M.border}`,
+              borderRadius: 10,
+              padding: "12px",
+              fontFamily: "monospace",
+              fontSize: 12,
+              color: M.textPrimary,
+              background: "#f8f5f2",
+              outline: "none",
+              lineHeight: 1.6,
+            }}
+          />
+        </div>
+      ) : uiExpanded ? (
         <div
           style={{ display: "flex", flexDirection: "column", height: "100%" }}
         >
@@ -282,34 +456,85 @@ export default function ServiceSheet({
               {renderServiceUI()}
             </div>
           </div>
+
+          {/* Configure button */}
+          <div style={{ flexShrink: 0, paddingTop: 8 }}>
+            <button
+              onClick={() => { setUiExpanded(false); openConfig(); }}
+              style={{
+                width: "100%",
+                height: 40,
+                border: `1.5px solid ${M.teal}`,
+                borderRadius: 10,
+                background: M.tealLight,
+                color: M.tealDark,
+                fontFamily: "inherit",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+              }}
+            >
+              <MobileIcon name="settings" size={14} color={M.tealDark} />
+              Configure
+            </button>
+          </div>
         </div>
       ) : (
         <div
           style={{ display: "flex", flexDirection: "column", gap: 20 }}
           onFocus={() => !nameValue && setNameValue(service.serviceName)}
         >
-          {/* Show Service UI button */}
-          <button
-            onClick={() => setUiExpanded(true)}
-            style={{
-              height: 46,
-              border: "none",
-              borderRadius: 12,
-              background: M.teal,
-              color: "#fff",
-              fontFamily: "inherit",
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            <MobileIcon name="maximize2" size={16} color="#fff" />
-            Show Service UI
-          </button>
+          {/* Action buttons */}
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={() => setUiExpanded(true)}
+              style={{
+                flex: 1,
+                height: 46,
+                border: "none",
+                borderRadius: 12,
+                background: M.teal,
+                color: "#fff",
+                fontFamily: "inherit",
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              <MobileIcon name="maximize2" size={16} color="#fff" />
+              Service UI
+            </button>
+            <button
+              onClick={openConfig}
+              style={{
+                flex: 1,
+                height: 46,
+                border: `1.5px solid ${M.teal}`,
+                borderRadius: 12,
+                background: M.tealLight,
+                color: M.tealDark,
+                fontFamily: "inherit",
+                fontSize: 15,
+                fontWeight: 600,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
+              }}
+            >
+              <MobileIcon name="settings" size={16} color={M.tealDark} />
+              Configure
+            </button>
+          </div>
 
           {/* Name row */}
           <div>
