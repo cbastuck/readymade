@@ -216,7 +216,7 @@ export default function ServiceFrame({
   const theme = useTheme();
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
-  const isMobile = themeName === "mobile";
+  const isTouch = typeof window !== "undefined" && window.matchMedia("(pointer: coarse)").matches;
 
   if (frameless) {
     return children;
@@ -288,7 +288,7 @@ export default function ServiceFrame({
               actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
             />
           </div>
-          {!isMobile && (
+          {!isTouch && (
             <ServiceOutputPlug
               isActive={signalOutput}
               data={recentProgressData}

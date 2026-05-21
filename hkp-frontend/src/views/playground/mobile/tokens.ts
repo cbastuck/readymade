@@ -1,3 +1,5 @@
+export const SERVICE_UI_ZOOM = 1.3;
+
 export const M = {
   bg: "#f2ede8",
   card: "#ffffff",

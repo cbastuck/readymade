@@ -9,12 +9,11 @@ import {
   ServiceRegistry,
   RuntimeScope,
 } from "../../../types";
-import { M } from "./tokens";
+import { M, SERVICE_UI_ZOOM } from "./tokens";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import AddRuntimeSheet from "./AddRuntimeSheet";
 import AddServiceSheet from "./AddServiceSheet";
 import ServiceSheet from "./ServiceSheet";
-import RuntimeUI from "../../../ui-components/runtime-ui";
 import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 
@@ -175,8 +174,6 @@ function RuntimeCard({
   runtime,
   services,
   scope,
-  registry,
-  boardName,
   boardContext,
   activeServiceId,
   onServiceTap,
@@ -196,6 +193,7 @@ function RuntimeCard({
 }) {
   const [collapsed, setCollapsed] = useState(false);
   const [fullView, setFullView] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleServiceAction = (cmd: ServiceAction) => {
     if (cmd.action === "remove") {
@@ -209,20 +207,27 @@ function RuntimeCard({
     return (
       <div
         style={{
-          borderRadius: 18,
-          overflow: "hidden",
-          border: `1.5px solid ${M.runtimeBorder}`,
+          position: "fixed",
+          inset: 0,
+          zIndex: 50,
+          background: M.bg,
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         {/* Compact header strip for returning to card view */}
         <div
           style={{
             background: M.runtimeBg,
-            padding: "8px 12px",
+            paddingTop: "max(10px, env(safe-area-inset-top))",
+            paddingBottom: 10,
+            paddingLeft: 12,
+            paddingRight: 12,
             display: "flex",
             alignItems: "center",
             gap: 8,
             borderBottom: `1px solid ${M.runtimeBorder}`,
+            flexShrink: 0,
           }}
         >
           <div
@@ -281,29 +286,47 @@ function RuntimeCard({
             <MobileIcon name="minimize2" size={14} color={M.textSecondary} />
           </button>
         </div>
-        {/* Full service UIs via RuntimeUI */}
-        <div data-theme="playground" style={{ background: "#fff" }}>
-          <RuntimeUI
-            runtime={runtime}
-            scope={scope}
-            services={services}
-            registry={registry}
-            boardName={boardName}
-            isExpanded={true}
-            wrapServices={false}
-            columnServices={true}
-            frameless={true}
-            onExpand={() => {}}
-            onWrapServices={() => {}}
-            onAddService={(svc: ServiceClass) =>
-              boardContext.addService(svc, runtime)
-            }
-            onServiceAction={handleServiceAction}
-            onArrangeService={() => {}}
-            onResult={async () => {}}
-            processRuntimeByName={async () => {}}
-            onSave={() => {}}
-          />
+        {/* Full service UIs — rendered directly so cards fill the container */}
+        <div
+          style={{
+            flex: 1,
+            overflowY: "auto",
+            overflowX: "hidden",
+            WebkitOverflowScrolling: "touch",
+            background: "#fff",
+            padding: "6px",
+          }}
+        >
+          <div
+            style={{
+              zoom: SERVICE_UI_ZOOM,
+              width: `calc(100% / ${SERVICE_UI_ZOOM})`,
+            }}
+          >
+            {services.map((svc) => {
+              const browserScope = scope as BrowserRuntimeScope | undefined;
+              const instance =
+                browserScope?.findServiceInstance(svc.uuid)?.[0] ?? null;
+              const UI = instance
+                ? (findServiceUI(svc.serviceId) ??
+                  browserScope?.registry.findServiceModule(svc.serviceId)
+                    ?.createUI ??
+                  null)
+                : null;
+              if (!UI || !instance) {
+                return null;
+              }
+              return (
+                <UI
+                  key={svc.uuid}
+                  service={instance}
+                  showBypassOnlyIfExplicit={false}
+                  draggable={false}
+                  onServiceAction={handleServiceAction}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
     );
@@ -394,23 +417,6 @@ function RuntimeCard({
             </button>
           )}
           <button
-            onClick={onRemoveRuntime}
-            style={{
-              width: 28,
-              height: 28,
-              border: "none",
-              background: "rgba(255,255,255,0.5)",
-              borderRadius: 7,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-            title="Remove runtime"
-          >
-            <MobileIcon name="trash" size={13} color={M.textMuted} />
-          </button>
-          <button
             onClick={() => setCollapsed(!collapsed)}
             style={{
               width: 28,
@@ -430,6 +436,69 @@ function RuntimeCard({
               color={M.textSecondary}
             />
           </button>
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setMenuOpen((v) => !v)}
+              title="More options"
+              style={{
+                width: 28,
+                height: 28,
+                border: "none",
+                background: "rgba(255,255,255,0.5)",
+                borderRadius: 7,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <MobileIcon name="more" size={14} color={M.textSecondary} />
+            </button>
+            {menuOpen && (
+              <>
+                <div
+                  onClick={() => setMenuOpen(false)}
+                  style={{ position: "fixed", inset: 0, zIndex: 100 }}
+                />
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "calc(100% + 6px)",
+                    right: 0,
+                    background: "#fff",
+                    border: `1px solid ${M.border}`,
+                    borderRadius: 10,
+                    boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                    minWidth: 148,
+                    zIndex: 101,
+                    overflow: "hidden",
+                  }}
+                >
+                  <button
+                    onClick={() => { setMenuOpen(false); onRemoveRuntime(); }}
+                    style={{
+                      width: "100%",
+                      padding: "12px 14px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      border: "none",
+                      background: "none",
+                      cursor: "pointer",
+                      textAlign: "left",
+                      fontSize: 14,
+                      fontFamily: "inherit",
+                      fontWeight: 500,
+                      color: M.danger,
+                    }}
+                  >
+                    <MobileIcon name="trash" size={14} color={M.danger} />
+                    Delete Runtime
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -925,7 +994,6 @@ function FullServiceView({
 
       {/* Bare service UI — no runtime chrome */}
       <div
-        data-theme="playground"
         style={{
           flex: 1,
           overflowY: "auto",
@@ -933,27 +1001,34 @@ function FullServiceView({
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {ServiceUI && serviceInstance ? (
-          <ServiceUI
-            service={serviceInstance}
-            showBypassOnlyIfExplicit={false}
-            draggable={false}
-            onServiceAction={handleServiceAction}
-          />
-        ) : (
-          <div
-            style={{
-              padding: 24,
-              fontSize: 14,
-              color: M.textMuted,
-              textAlign: "center",
-            }}
-          >
-            {scopes[runtime.id]
-              ? "Service UI not available"
-              : "Runtime not yet initialized"}
-          </div>
-        )}
+        <div
+          style={{
+            zoom: SERVICE_UI_ZOOM,
+            width: `calc(100% / ${SERVICE_UI_ZOOM})`,
+          }}
+        >
+          {ServiceUI && serviceInstance ? (
+            <ServiceUI
+              service={serviceInstance}
+              showBypassOnlyIfExplicit={false}
+              draggable={false}
+              onServiceAction={handleServiceAction}
+            />
+          ) : (
+            <div
+              style={{
+                padding: 24,
+                fontSize: 14,
+                color: M.textMuted,
+                textAlign: "center",
+              }}
+            >
+              {scopes[runtime.id]
+                ? "Service UI not available"
+                : "Runtime not yet initialized"}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
