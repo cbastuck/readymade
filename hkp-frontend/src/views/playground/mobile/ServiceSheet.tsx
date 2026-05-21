@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import BottomSheet from "./BottomSheet";
+import JsonEditor from "./JsonEditor";
 import MobileIcon from "./MobileIcon";
 import { M, SERVICE_UI_ZOOM } from "./tokens";
 import {
@@ -81,7 +82,7 @@ export default function ServiceSheet({
   const [nameValue, setNameValue] = useState("");
   const [uiExpanded, setUiExpanded] = useState(false);
   const [configExpanded, setConfigExpanded] = useState(false);
-  const [configText, setConfigText] = useState("");
+  const [configDraft, setConfigDraft] = useState<any>(null);
   const [configError, setConfigError] = useState<string | null>(null);
   const [configSaving, setConfigSaving] = useState(false);
   const configReturnTo = useRef<"ui" | "root">("root");
@@ -164,20 +165,13 @@ export default function ServiceSheet({
     } catch {
       config = service.state ?? {};
     }
-    setConfigText(JSON.stringify(config, null, 2));
+    setConfigDraft(config);
     setConfigError(null);
     setConfigExpanded(true);
   };
 
   const applyConfig = async () => {
     if (!boardContext || !service || !runtime) { return; }
-    let parsed: any;
-    try {
-      parsed = JSON.parse(configText);
-    } catch (e: any) {
-      setConfigError(`Invalid JSON: ${e.message}`);
-      return;
-    }
     const scope = boardContext.scopes[runtime.id];
     if (!scope) {
       setConfigError("Runtime not initialized");
@@ -187,11 +181,11 @@ export default function ServiceSheet({
     setConfigError(null);
     try {
       if (isRuntimeBrowserClassType(runtime.type)) {
-        await configureBrowserService(scope, service, parsed);
+        await configureBrowserService(scope, service, configDraft);
       } else if (isRuntimeRestClassType(runtime.type)) {
-        await configureRestService(scope, service, parsed);
+        await configureRestService(scope, service, configDraft);
       } else if (isRuntimeGraphQLClassType(runtime.type)) {
-        await configureGraphQLService(scope, service, parsed);
+        await configureGraphQLService(scope, service, configDraft);
       }
       setConfigExpanded(false);
       if (configReturnTo.current === "ui") {
@@ -374,28 +368,14 @@ export default function ServiceSheet({
             </div>
           )}
 
-          {/* JSON textarea */}
-          <textarea
-            value={configText}
-            onChange={(e) => {
-              setConfigText(e.target.value);
-              setConfigError(null);
-            }}
-            spellCheck={false}
-            style={{
-              flex: 1,
-              resize: "none",
-              border: `1.5px solid ${configError ? M.danger : M.border}`,
-              borderRadius: 10,
-              padding: "12px",
-              fontFamily: "monospace",
-              fontSize: 12,
-              color: M.textPrimary,
-              background: "#f8f5f2",
-              outline: "none",
-              lineHeight: 1.6,
-            }}
-          />
+          {/* JSON editor */}
+          <div style={{ flex: 1, minHeight: 0 }}>
+            <JsonEditor
+              value={configDraft}
+              onChange={setConfigDraft}
+              rootLabel={service?.serviceId ?? "root"}
+            />
+          </div>
         </div>
       ) : uiExpanded ? (
         <div
