@@ -89,7 +89,7 @@ export default function ServiceUiContainer(props: Props) {
               display: collapsed ? "none" : "flex",
               flexDirection: "row",
               position: "relative",
-              zIndex: 1,
+              zIndex: services.length - pos,
               paddingBottom: 10,
             }}
           >
