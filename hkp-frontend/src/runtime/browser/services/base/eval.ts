@@ -44,6 +44,12 @@ const globalScope = {
   parse: (x: string | undefined) =>
     x !== undefined ? JSON.parse(x) : "<parse undefined>",
   concat: (...args: string[]) => args.join(""),
+  lower: (s: unknown) => (s != null ? String(s).toLowerCase() : s),
+  upper: (s: unknown) => (s != null ? String(s).toUpperCase() : s),
+  contains: (haystack: unknown, needle: unknown) =>
+    haystack != null && needle != null
+      ? String(haystack).includes(String(needle))
+      : false,
   reformatDate,
   // Current date/time as a formatted string (moment format tokens), e.g.
   // formatNow('dddd, MMMM, D. YYYY HH:mm') -> "Friday, July, 17. 2026 21:13"
