@@ -1,0 +1,73 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:24.04 AS builder
+
+ARG DEBIAN_FRONTEND=noninteractive
+ENV CC=gcc-14 CXX=g++-14
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential gcc-14 g++-14 \
+        cmake ninja-build pkg-config \
+        git curl zip unzip tar nasm \
+        ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── vcpkg bootstrap ────────────────────────────────────────────────────────────
+# 3rdparty/CMakeLists.txt hardcodes include(…/vcpkg/scripts/buildsystems/vcpkg.cmake),
+# so vcpkg must live at exactly 3rdparty/vcpkg/ relative to the build root.
+ARG VCPKG_BASELINE=bba8b52f6dea74159bba855ef00376e588d6ea0a
+WORKDIR /build/3rdparty
+RUN git init vcpkg \
+    && git -C vcpkg remote add origin https://github.com/microsoft/vcpkg.git \
+    && git -C vcpkg fetch --depth=1 origin "${VCPKG_BASELINE}" \
+    && git -C vcpkg checkout FETCH_HEAD \
+    && vcpkg/bootstrap-vcpkg.sh -disableMetrics
+
+# ── vcpkg install ─────────────────────────────────────────────────────────────
+# Copy manifest files first — this layer is cached until vcpkg.json or triplets change.
+COPY 3rdparty/vcpkg.json ./vcpkg.json
+COPY 3rdparty/vcpkg-triplets ./vcpkg-triplets
+
+ENV VCPKG_FEATURE_FLAGS=manifests,binarycaching
+
+# Compile all dependencies; installs to /build/3rdparty/vcpkg_installed/.
+# cmake will then skip re-installation via VCPKG_MANIFEST_INSTALL=OFF.
+RUN vcpkg/vcpkg install \
+        --x-manifest-root=/build/3rdparty \
+        --triplet=x64-linux-release \
+        --overlay-triplets=/build/3rdparty/vcpkg-triplets
+
+# ── source ─────────────────────────────────────────────────────────────────────
+COPY 3rdparty/cmake ./cmake
+COPY 3rdparty/CMakeLists.txt ./CMakeLists.txt
+COPY 3rdparty/crow.h ./crow.h
+COPY 3rdparty/yas ./yas
+
+WORKDIR /build
+COPY hkp-rt ./hkp-rt
+
+# ── cmake configure + build ────────────────────────────────────────────────────
+RUN cmake -B out -S hkp-rt \
+        -GNinja \
+        -DCMAKE_BUILD_TYPE=Release \
+        -DVCPKG_MANIFEST_DIR=/build/3rdparty \
+        -DVCPKG_TARGET_TRIPLET=x64-linux-release \
+        -DVCPKG_OVERLAY_TRIPLETS=/build/3rdparty/vcpkg-triplets \
+        -DVCPKG_INSTALLED_DIR=/build/3rdparty/vcpkg_installed \
+        -DVCPKG_MANIFEST_INSTALL=OFF \
+        "-DCMAKE_C_FLAGS_RELEASE=-O3 -DNDEBUG -g0" \
+        "-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG -g0" \
+    && cmake --build out --parallel "$(nproc)" \
+    && strip out/exe/hkp-rt
+
+# ── runtime image ──────────────────────────────────────────────────────────────
+FROM ubuntu:24.04
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /build/out/exe/hkp-rt /usr/local/bin/hkp-rt
+EXPOSE 5556
+
+# Usage: hkp-rt [port] [externalIP] [config.json]
+# Mount a config via: -v /path/to/config.json:/config.json
+ENTRYPOINT ["hkp-rt"]
+CMD ["5556", "0.0.0.0"]
