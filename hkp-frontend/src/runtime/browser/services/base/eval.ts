@@ -3,7 +3,7 @@ import moment from "moment";
 import { v4 as uuidv4, v7 as uuidv7 } from "uuid";
 import jsep from "jsep";
 import { AppImpl, AppInstance } from "hkp-frontend/src/types";
-import { getVault } from "hkp-frontend/src/vault";
+import { vaultGet, vaultSet } from "hkp-frontend/src/vault";
 
 export type Expression = jsep.Expression;
 
@@ -23,14 +23,11 @@ export function parseExpression(f: string): Expression | SyntaxError {
 }
 
 export function fromVault(globalId: string) {
-  const vault = getVault("uservault");
-  return vault.get("global", globalId);
+  return vaultGet(globalId);
 }
 
 export function toVault(globalId: string, value: string) {
-  const vault = getVault("uservault");
-  vault.set("global", globalId, value);
-  vault.save();
+  vaultSet(globalId, value);
 }
 
 const globalScope = {
@@ -138,6 +135,7 @@ export async function evalExpression(
   return expEval(ast, {
     ...params,
     ...globalScope,
+    variables: app?.getRuntimeVariable() ?? {},
     getServiceConfig,
     processRuntime,
   });

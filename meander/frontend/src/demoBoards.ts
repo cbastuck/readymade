@@ -17,6 +17,7 @@ import gameBoard from "../../../hkp-frontend/boards/game-board.json";
 import encryptBoard from "../../../hkp-frontend/boards/encrypt-board.json";
 import spectralModifierBoard from "../../../hkp-frontend/boards/spectral-modifier-board.json";
 import smoothDemoBoard from "../../../hkp-frontend/boards/smooth-demo-board.json";
+import alpacaBoard from "../../../hkp-frontend/boards/alpaca-board.json";
 
 export type DemoEntry = {
   label: string;
@@ -26,6 +27,13 @@ export type DemoEntry = {
 };
 
 export const DEMO_BOARDS: DemoEntry[] = [
+  {
+    label: "Alpaca Markets",
+    description:
+      "Live stock trade feed via Alpaca WebSocket — enter your API key to watch real-time trades",
+    icon: "📈",
+    board: alpacaBoard as unknown as BoardDescriptor,
+  },
   {
     label: "Smooth",
     description:

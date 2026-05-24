@@ -35,6 +35,7 @@ export interface BackendAdapter {
   loadBoardHistory(boardName: string): Promise<Array<BoardHistoryEntry>>;
   clearBoardHistory(boardName: string): Promise<void>;
 
+
   // File picker (native desktop only; returns null in browser or when cancelled)
   pickFile(options?: PickerOptions): Promise<string | null>;
   pickFolder(options?: PickerOptions): Promise<string | null>;

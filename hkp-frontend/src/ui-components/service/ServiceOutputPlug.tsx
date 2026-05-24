@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const MAX_HISTORY = 10;
 import { X, Pin, PinOff, Maximize } from "lucide-react";
 
 import {
@@ -31,6 +33,14 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [history, setHistory] = useState<any[]>(() =>
+    data != null ? [structuredClone(data)] : [],
+  );
+
+  useEffect(() => {
+    if (data == null) return;
+    setHistory((prev) => [structuredClone(data), ...prev].slice(0, MAX_HISTORY));
+  }, [data]);
 
   const onOpen = () => setIsOpen(true);
 
@@ -101,7 +111,7 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
           </div>
         </div>
 
-        <FlowInspectorPopup data={data} onInject={onInject} />
+        <FlowInspectorPopup history={history} onInject={onInject} />
       </PopoverContent>
     </Popover>
   );

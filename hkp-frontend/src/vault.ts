@@ -1,57 +1,36 @@
 import { InstanceId } from "./types";
 
-type Store = { [serviceId: string]: { [key: string]: string } };
-
-export class Vault {
-  store: Store = {};
-  id: string;
-  constructor(id: string, item: string) {
-    this.store = JSON.parse(item);
-    this.id = id;
-  }
-
-  get(instanceId: string, key: string) {
-    return decrypt(this.store[instanceId]?.[key]);
-  }
-
-  set(instanceId: string, key: string, value: string) {
-    this.store[instanceId] = this.store[instanceId] || {};
-    this.store[instanceId][key] = encrypt(value);
+declare global {
+  interface Window {
+    __HKP_VAULT__?: Record<string, string>;
   }
 }
 
-export function getVault(vaultId: "uservault") {
-  const restoredData = localStorage.getItem(`hkp-vault-${vaultId}`);
-  const vault = new Vault(vaultId, restoredData || "{}");
+const cache: Record<string, string> = { ...(window.__HKP_VAULT__ ?? {}) };
+
+export function vaultGet(key: string): string | null {
+  return cache[key] ?? null;
+}
+
+export function vaultSet(key: string, value: string) {
+  cache[key] = value;
+}
+
+// TODO: the following two functions are currently under evaluation
+
+// Namespaced accessor kept for backward compat (SecretField, HttpRelayClientUI).
+// Keys are stored flat as "${instanceId}.${key}" in the shared cache.
+// Used by hkp-frontend/src/components/shared/SecretField.tsx
+export function getVault(_vaultId: "uservault") {
   return {
-    set: vault.set.bind(vault),
-    get: vault.get.bind(vault),
-    save: () =>
-      localStorage.setItem(
-        `hkp-vault-${vault.id}`,
-        JSON.stringify(vault.store)
-      ),
+    get: (instanceId: string, key: string) => vaultGet(`${instanceId}.${key}`),
+    set: (instanceId: string, key: string, value: string) =>
+      vaultSet(`${instanceId}.${key}`, value),
+    save: () => {},
   };
 }
 
-export function secretId(vaultId: "uservault", svc: InstanceId, key: string) {
-  return `${vaultId}.${svc.uuid}.${key}`;
-}
-
-// TODO: real safety needed
-const dummy = 200;
-function encrypt(value: string) {
-  return value
-    .split("")
-    .map((x: string) => String.fromCharCode(x.charCodeAt(0) + dummy))
-    .join("");
-}
-
-function decrypt(value: string | undefined) {
-  return value !== undefined
-    ? value
-        .split("")
-        .map((x) => String.fromCharCode(x.charCodeAt(0) - dummy))
-        .join("")
-    : null;
+// used in /hkp-frontend/src/runtime/browser/services/OpenAIPromptUI.tsx
+export function secretId(_vaultId: "uservault", svc: InstanceId, key: string) {
+  return `${_vaultId}.${svc.uuid}.${key}`;
 }

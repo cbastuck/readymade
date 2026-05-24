@@ -66,5 +66,7 @@ export function createRuntimeGraphQLApp(scope: RuntimeGraphQLScope): AppImpl {
       return null;
     },
     listAvailableServices: () => [],
+    getRuntimeVariable: () => ({}),
+    setRuntimeVariable: (_key: string, _value: any) => {},
   };
 }

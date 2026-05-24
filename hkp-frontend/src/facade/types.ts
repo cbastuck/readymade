@@ -28,6 +28,19 @@ export type TextInputWidget = {
   label?: string;
   placeholder?: string;
   submitLabel?: string;
+  secret?: boolean;
+  vaultKey?: string;
+  action?: FacadeWidgetAction;
+};
+
+export type JsonInputWidget = {
+  type: "json-input";
+  label?: string;
+  // Constrains and initializes the root value type.
+  mode: "array" | "object";
+  // Optional seed value shown on first render.
+  defaultValue?: unknown;
+  submitLabel?: string;
   action: FacadeWidgetAction;
 };
 
@@ -121,6 +134,7 @@ export type XYPadWidget = {
 export type FacadeWidget =
   | MessageListWidget
   | TextInputWidget
+  | JsonInputWidget
   | StatusIndicatorWidget
   | ButtonWidget
   | QrCodeWidget

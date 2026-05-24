@@ -15,6 +15,7 @@ import { onServiceProcess, onServiceResult } from "../serviceState";
 
 export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
   const notificationTargets = new NotificationTargets();
+  const boardVariables: Record<string, any> = {};
   const app = {
     getAuthenticatedUser: () => scope.authenticatedUser,
     next: (svc: InstanceId | null, result: any) => {
@@ -105,11 +106,18 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
         },
       });
     },
+    getRuntimeVariable: () => boardVariables,
+    setRuntimeVariable: (key: string, value: any) => {
+      boardVariables[key] = value;
+    },
     listAvailableServices: () => scope.registry.allowedServices(),
     processRuntimeByName: (name: string, params: any) =>
       scope?.processRuntimeByName(name, params),
-    configureServiceInRuntime: (runtimeId: string, serviceUuid: string, config: any) =>
-      scope.configureServiceInRuntime(runtimeId, serviceUuid, config),
+    configureServiceInRuntime: (
+      runtimeId: string,
+      serviceUuid: string,
+      config: any,
+    ) => scope.configureServiceInRuntime(runtimeId, serviceUuid, config),
   };
 
   return app;

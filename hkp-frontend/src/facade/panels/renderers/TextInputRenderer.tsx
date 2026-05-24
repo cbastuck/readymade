@@ -1,37 +1,68 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { TextInputWidget } from "../../types";
 import { findService } from "../../findService";
 import { WidgetRendererProps } from "../widgetRegistry";
-
-function applyInput(template: unknown, input: string): unknown {
-  if (typeof template === "string") {
-    return template.replace("$$input", input);
-  }
-  return template;
-}
+import { useVault } from "hkp-frontend/src/VaultContext";
+import { vaultSet } from "hkp-frontend/src/vault";
+import { applyInput } from "../../applyInput";
 
 export function TextInputRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<TextInputWidget>) {
   const [value, setValue] = useState("");
+  const [vaultResolved, setVaultResolved] = useState<string | null>(null);
+  const autoSubmitted = useRef(false);
+  const { getSecret } = useVault();
+
+  useEffect(() => {
+    if (!widget.vaultKey) {
+      return;
+    }
+    const secret = getSecret(widget.vaultKey);
+    if (secret) {
+      setValue(secret);
+      setVaultResolved(secret);
+    }
+  }, [widget.vaultKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const service = useMemo(
-    () => findService(boardContext, widget.action.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.action.serviceUuid],
+    () =>
+      widget.action
+        ? findService(boardContext, widget.action.serviceUuid)
+        : null,
+    [boardContext.scopes, boardContext.services, widget.action?.serviceUuid],
   );
+
+  // Auto-submit vault value to the service as soon as both are ready.
+  useEffect(() => {
+    if (!vaultResolved || !service || !widget.action || autoSubmitted.current) {
+      return;
+    }
+    autoSubmitted.current = true;
+    const configure: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(widget.action.configure)) {
+      configure[k] = applyInput(v, vaultResolved);
+    }
+    service.configure(configure);
+  }, [vaultResolved, service]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = useCallback(() => {
     const text = value.trim();
-    if (!text || !service) {
+    if (!text) {
       return;
     }
-    const configure: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(widget.action.configure)) {
-      configure[k] = applyInput(v, text);
+    if (widget.vaultKey) {
+      vaultSet(widget.vaultKey, text);
     }
-    service.configure(configure);
-  }, [value, service, widget.action.configure]);
+    if (service && widget.action) {
+      const configure: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(widget.action.configure)) {
+        configure[k] = applyInput(v, text);
+      }
+      service.configure(configure);
+    }
+  }, [value, service, widget.action, widget.vaultKey]);
 
   return (
     <div
@@ -58,6 +89,7 @@ export function TextInputRenderer({
       )}
       <div style={{ display: "flex", gap: 6 }}>
         <input
+          type={widget.secret ? "password" : "text"}
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => {

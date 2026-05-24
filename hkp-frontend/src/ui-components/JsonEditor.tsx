@@ -1,116 +1,57 @@
-import { ReactNode, useEffect, useRef, useState } from "react";
-import { M } from "./tokens";
-import MobileIcon from "./MobileIcon";
+import { ReactNode, useState } from "react";
 import {
   Path, JsonType, JSON_TYPES,
   getAtPath, setAtPath, deleteAtPath, addAtPath, defaultForType,
-} from "hkp-frontend/src/ui-components/json-editor/helpers";
+} from "./json-editor/helpers";
 
-// ── Swipe-to-delete row ────────────────────────────────────────
+// ── Inline icons ───────────────────────────────────────────────
 
-const DELETE_W = 68;
-
-function SwipeableRow({ onDelete, children }: { onDelete: () => void; children: ReactNode }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
-  const gestureRef = useRef<{
-    x: number;
-    y: number;
-    startOffset: number;
-    dir: "h" | "v" | null;
-  } | null>(null);
-  const offsetRef = useRef(0);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    const content = contentRef.current;
-    if (!el || !content) { return; }
-
-    const snap = (target: number) => {
-      offsetRef.current = target;
-      content.style.transition = "transform 0.2s ease";
-      content.style.transform = `translateX(${target}px)`;
-    };
-
-    const onStart = (e: TouchEvent) => {
-      gestureRef.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-        startOffset: offsetRef.current,
-        dir: null,
-      };
-      content.style.transition = "none";
-    };
-
-    const onMove = (e: TouchEvent) => {
-      const g = gestureRef.current;
-      if (!g) { return; }
-      const dx = e.touches[0].clientX - g.x;
-      const dy = e.touches[0].clientY - g.y;
-      if (g.dir === null) {
-        if (Math.abs(dx) > 6) { g.dir = "h"; }
-        else if (Math.abs(dy) > 6) { g.dir = "v"; }
-      }
-      if (g.dir !== "h") { return; }
-      e.preventDefault();
-      const next = Math.max(-DELETE_W, Math.min(0, g.startOffset + dx));
-      offsetRef.current = next;
-      content.style.transform = `translateX(${next}px)`;
-    };
-
-    const onEnd = () => {
-      const g = gestureRef.current;
-      if (g?.dir === "h") {
-        snap(offsetRef.current < -DELETE_W / 2 ? -DELETE_W : 0);
-      }
-      gestureRef.current = null;
-    };
-
-    el.addEventListener("touchstart", onStart, { passive: true });
-    el.addEventListener("touchmove", onMove, { passive: false });
-    el.addEventListener("touchend", onEnd, { passive: true });
-    return () => {
-      el.removeEventListener("touchstart", onStart);
-      el.removeEventListener("touchmove", onMove);
-      el.removeEventListener("touchend", onEnd);
-    };
-  }, []);
-
-  const handleDelete = () => {
-    const content = contentRef.current;
-    if (content) {
-      content.style.transition = "transform 0.15s ease";
-      content.style.transform = "translateX(0)";
-    }
-    offsetRef.current = 0;
-    onDelete();
-  };
-
+function IconChevronRight({ size = 16 }: { size?: number }) {
   return (
-    <div ref={containerRef} style={{ position: "relative", overflow: "hidden" }}>
-      {/* Delete zone revealed on swipe */}
-      <div
-        onClick={handleDelete}
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="9 6 15 12 9 18"/>
+    </svg>
+  );
+}
+
+function IconPlus({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/>
+      <line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+  );
+}
+
+// ── Deletable row (desktop: ×-button) ──────────────────────────
+
+function DeletableRow({ onDelete, children }: { onDelete: () => void; children: ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <div style={{ flex: 1 }}>{children}</div>
+      <button
+        onClick={onDelete}
+        title="Remove"
         style={{
-          position: "absolute",
-          right: 0,
-          top: 0,
-          bottom: 0,
-          width: DELETE_W,
-          background: M.danger,
+          flexShrink: 0,
+          width: 22,
+          height: 22,
+          border: "none",
+          borderRadius: 4,
+          background: "transparent",
+          color: "hsl(var(--muted-foreground))",
+          cursor: "pointer",
+          fontSize: 14,
+          lineHeight: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: "pointer",
         }}
       >
-        <MobileIcon name="trash" size={18} color="#fff" />
-      </div>
-
-      {/* Sliding content */}
-      <div ref={contentRef} style={{ position: "relative", background: M.card }}>
-        {children}
-      </div>
+        ×
+      </button>
     </div>
   );
 }
@@ -136,26 +77,26 @@ function AddFieldForm({
 
   const inputStyle: React.CSSProperties = {
     flex: 1,
-    height: 36,
-    border: `1px solid ${M.teal}`,
-    borderRadius: 8,
-    padding: "0 10px",
+    height: 32,
+    border: "1px solid var(--hkp-accent)",
+    borderRadius: 6,
+    padding: "0 8px",
     fontFamily: "inherit",
     fontSize: 13,
-    color: M.textPrimary,
-    background: M.card,
+    color: "hsl(var(--foreground))",
+    background: "hsl(var(--card))",
     outline: "none",
   };
 
   const selectStyle: React.CSSProperties = {
-    height: 36,
-    border: `1px solid ${M.border}`,
-    borderRadius: 8,
-    padding: "0 8px",
+    height: 32,
+    border: "1px solid hsl(var(--border))",
+    borderRadius: 6,
+    padding: "0 6px",
     fontFamily: "inherit",
     fontSize: 13,
-    color: M.textPrimary,
-    background: M.card,
+    color: "hsl(var(--foreground))",
+    background: "hsl(var(--card))",
     outline: "none",
     cursor: "pointer",
   };
@@ -163,11 +104,11 @@ function AddFieldForm({
   return (
     <div
       style={{
-        padding: "12px 0 4px",
-        borderTop: `1.5px dashed ${M.teal}`,
+        padding: "10px 0 4px",
+        borderTop: "1.5px dashed var(--hkp-accent)",
         display: "flex",
         flexDirection: "column",
-        gap: 8,
+        gap: 6,
         marginTop: 4,
       }}
     >
@@ -184,26 +125,20 @@ function AddFieldForm({
           style={inputStyle}
         />
       )}
-      <div style={{ display: "flex", gap: 8 }}>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as JsonType)}
-          style={selectStyle}
-        >
+      <div style={{ display: "flex", gap: 6 }}>
+        <select value={type} onChange={(e) => setType(e.target.value as JsonType)} style={selectStyle}>
           {JSON_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
+            <option key={t} value={t}>{t}</option>
           ))}
         </select>
         <button
           onClick={handleSubmit}
           style={{
             flex: 1,
-            height: 36,
+            height: 32,
             border: "none",
-            borderRadius: 8,
-            background: M.teal,
+            borderRadius: 6,
+            background: "var(--hkp-accent)",
             color: "#fff",
             fontFamily: "inherit",
             fontSize: 13,
@@ -216,12 +151,12 @@ function AddFieldForm({
         <button
           onClick={onCancel}
           style={{
-            height: 36,
-            padding: "0 12px",
-            border: `1px solid ${M.border}`,
-            borderRadius: 8,
-            background: M.card,
-            color: M.textSecondary,
+            height: 32,
+            padding: "0 10px",
+            border: "1px solid hsl(var(--border))",
+            borderRadius: 6,
+            background: "transparent",
+            color: "hsl(var(--muted-foreground))",
             fontFamily: "inherit",
             fontSize: 13,
             cursor: "pointer",
@@ -243,11 +178,11 @@ function BoolToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
       aria-checked={value}
       onClick={() => onChange(!value)}
       style={{
-        width: 44,
-        height: 26,
-        borderRadius: 13,
+        width: 40,
+        height: 22,
+        borderRadius: 11,
         border: "none",
-        background: value ? M.teal : M.borderStrong,
+        background: value ? "var(--hkp-accent)" : "hsl(var(--border))",
         cursor: "pointer",
         position: "relative",
         transition: "background 0.15s",
@@ -257,10 +192,10 @@ function BoolToggle({ value, onChange }: { value: boolean; onChange: (v: boolean
       <span
         style={{
           position: "absolute",
-          top: 3,
-          left: value ? 21 : 3,
-          width: 20,
-          height: 20,
+          top: 2,
+          left: value ? 19 : 2,
+          width: 18,
+          height: 18,
           borderRadius: "50%",
           background: "#fff",
           transition: "left 0.15s",
@@ -283,7 +218,7 @@ function ValueWidget({
 }) {
   if (value === null || value === undefined) {
     return (
-      <span style={{ fontSize: 12, color: M.textMuted, fontFamily: "monospace" }}>
+      <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", fontFamily: "monospace" }}>
         {String(value)}
       </span>
     );
@@ -300,15 +235,15 @@ function ValueWidget({
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
         style={{
-          width: 100,
-          height: 32,
-          border: `1px solid ${M.border}`,
+          width: 90,
+          height: 28,
+          border: "1px solid hsl(var(--border))",
           borderRadius: 6,
-          padding: "0 8px",
+          padding: "0 6px",
           fontFamily: "inherit",
           fontSize: 13,
-          color: M.textPrimary,
-          background: "#f8f5f2",
+          color: "hsl(var(--foreground))",
+          background: "hsl(var(--muted))",
           outline: "none",
           textAlign: "right",
         }}
@@ -324,22 +259,21 @@ function ValueWidget({
         onChange={(e) => onChange(e.target.value)}
         style={{
           width: "100%",
-          maxWidth: 180,
-          height: 32,
-          border: `1px solid ${M.border}`,
+          maxWidth: 160,
+          height: 28,
+          border: "1px solid hsl(var(--border))",
           borderRadius: 6,
-          padding: "0 8px",
+          padding: "0 6px",
           fontFamily: "inherit",
           fontSize: 13,
-          color: M.textPrimary,
-          background: "#f8f5f2",
+          color: "hsl(var(--foreground))",
+          background: "hsl(var(--muted))",
           outline: "none",
         }}
       />
     );
   }
 
-  // object or array → drill-in button
   const isArr = Array.isArray(value);
   const count = isArr ? value.length : Object.keys(value).length;
   return (
@@ -348,19 +282,19 @@ function ValueWidget({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 6,
-        padding: "5px 10px",
-        border: `1px solid ${M.border}`,
-        borderRadius: 8,
-        background: "#f8f5f2",
+        gap: 4,
+        padding: "4px 8px",
+        border: "1px solid hsl(var(--border))",
+        borderRadius: 6,
+        background: "hsl(var(--muted))",
         cursor: "pointer",
         fontFamily: "monospace",
         fontSize: 12,
-        color: M.textSecondary,
+        color: "hsl(var(--muted-foreground))",
       }}
     >
       {isArr ? `[ ${count} ]` : `{ ${count} }`}
-      <MobileIcon name="chevronRight" size={12} color={M.textMuted} />
+      <IconChevronRight size={11} />
     </button>
   );
 }
@@ -383,10 +317,10 @@ function PropertyRow({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: 10,
-        padding: "8px 0",
-        borderBottom: `1px solid ${M.border}`,
-        minHeight: 44,
+        gap: 8,
+        padding: "6px 0",
+        borderBottom: "1px solid hsl(var(--border))",
+        minHeight: 38,
       }}
     >
       <span
@@ -394,7 +328,7 @@ function PropertyRow({
         style={{
           fontSize: 12,
           fontFamily: "monospace",
-          color: M.textSecondary,
+          color: "hsl(var(--muted-foreground))",
           flexShrink: 0,
           width: "38%",
           overflow: "hidden",
@@ -447,7 +381,6 @@ export default function JsonEditor({ value, onChange, rootLabel = "root" }: Prop
     setAddingField(false);
   };
 
-  // crumbs[i] navigates to path.slice(0, i)
   const crumbs = [rootLabel, ...path.map(String)];
 
   return (
@@ -459,7 +392,7 @@ export default function JsonEditor({ value, onChange, rootLabel = "root" }: Prop
           alignItems: "center",
           flexShrink: 0,
           overflowX: "auto",
-          paddingBottom: 10,
+          paddingBottom: 8,
           scrollbarWidth: "none",
           gap: 2,
         }}
@@ -469,17 +402,17 @@ export default function JsonEditor({ value, onChange, rootLabel = "root" }: Prop
           return (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
               {i > 0 && (
-                <span style={{ fontSize: 12, color: M.textMuted, userSelect: "none" }}>/</span>
+                <span style={{ fontSize: 12, color: "hsl(var(--muted-foreground))", userSelect: "none" }}>/</span>
               )}
               <button
                 onClick={() => setPath(path.slice(0, i))}
                 disabled={isCurrent}
                 style={{
-                  padding: "3px 7px",
+                  padding: "2px 6px",
                   border: "none",
-                  borderRadius: 6,
-                  background: isCurrent ? M.tealLight : "transparent",
-                  color: isCurrent ? M.tealDark : M.textSecondary,
+                  borderRadius: 5,
+                  background: isCurrent ? "hsl(var(--accent))" : "transparent",
+                  color: isCurrent ? "var(--hkp-accent)" : "hsl(var(--muted-foreground))",
                   fontSize: 12,
                   fontWeight: isCurrent ? 600 : 400,
                   fontFamily: "monospace",
@@ -499,9 +432,9 @@ export default function JsonEditor({ value, onChange, rootLabel = "root" }: Prop
         {entries.length === 0 && !addingField && (
           <div
             style={{
-              padding: "16px 0",
+              padding: "12px 0",
               fontSize: 13,
-              color: M.textMuted,
+              color: "hsl(var(--muted-foreground))",
               textAlign: "center",
               fontStyle: "italic",
             }}
@@ -511,17 +444,16 @@ export default function JsonEditor({ value, onChange, rootLabel = "root" }: Prop
         )}
 
         {entries.map(([key, val]) => (
-          <SwipeableRow key={String(key)} onDelete={() => handleDelete(key)}>
+          <DeletableRow key={String(key)} onDelete={() => handleDelete(key)}>
             <PropertyRow
               label={String(key)}
               value={val}
               onChange={(newVal) => handleChange(key, newVal)}
               onDrillIn={() => setPath([...path, key])}
             />
-          </SwipeableRow>
+          </DeletableRow>
         ))}
 
-        {/* Add field */}
         {isObject && (
           addingField ? (
             <AddFieldForm
@@ -537,18 +469,18 @@ export default function JsonEditor({ value, onChange, rootLabel = "root" }: Prop
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: 6,
-                padding: "14px 0",
+                gap: 5,
+                padding: "10px 0",
                 border: "none",
                 background: "transparent",
                 cursor: "pointer",
                 fontSize: 13,
                 fontWeight: 500,
-                color: M.teal,
+                color: "var(--hkp-accent)",
                 fontFamily: "inherit",
               }}
             >
-              <MobileIcon name="plus" size={14} color={M.teal} />
+              <IconPlus size={13} />
               Add field
             </button>
           )

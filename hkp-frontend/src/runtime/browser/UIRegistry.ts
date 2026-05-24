@@ -4,6 +4,7 @@ import TimerUI from "./services/TimerUI";
 import MonitorUI from "./services/MonitorUI";
 import CanvasUI from "./services/CanvasUI";
 import InputUI from "./services/InputUI";
+import WebsocketClientUI from "./services/WebsocketClientUI";
 import StackUI from "./services/StackUI";
 import CameraUI from "./services/CameraUI";
 import XYPadUI from "./services/XYPadUI";
@@ -20,6 +21,8 @@ import FetcherUI from "./services/FetcherUI";
 import OllamaPromptUI from "./services/OllamaPromptUI";
 import BrowserSubServiceUI from "./services/BrowserSubServiceUI";
 import ConfiguratorUI from "./services/ConfiguratorUI";
+import ProcessRouterUI from "./services/ProcessRouterUI";
+import IfServiceUI from "./services/IfServiceUI";
 import ImagePickerDescriptor from "./services/ImagePicker";
 import ChunkedFileProviderDescriptor from "./services/ChunkedFileProvider";
 import AsciiArtDescriptor from "./services/AsciiArt";
@@ -48,6 +51,8 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return CanvasUI;
     case "hookup.to/service/input":
       return InputUI;
+    case "hookup.to/service/websocket-client":
+      return WebsocketClientUI;
     case "hookup.to/service/trigger-pad":
       return TriggerPadUI;
     case "hookup.to/service/hacker/considered":
@@ -85,6 +90,10 @@ export function findServiceUI(serviceId: string): ServiceUIComponent | null {
       return BrowserSubServiceUI;
     case "hookup.to/service/configurator":
       return ConfiguratorUI;
+    case "hookup.to/service/process-router":
+      return ProcessRouterUI;
+    case "hookup.to/service/if":
+      return IfServiceUI;
     case "hookup.to/service/image-picker":
       return ImagePickerDescriptor.createUI as unknown as ServiceUIComponent;
     case "hookup.to/service/chunked-file-provider":

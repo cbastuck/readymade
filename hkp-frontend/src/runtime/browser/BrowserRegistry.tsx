@@ -63,6 +63,9 @@ export const allowedServices = [
   "hookup.to/service/limit",
   "hookup.to/service/flat-map",
   "hookup.to/service/smooth",
+  "hookup.to/service/set-runtime-variable",
+  "hookup.to/service/if",
+  "hookup.to/service/feedback",
 ];
 
 export default class BrowserRegistry {

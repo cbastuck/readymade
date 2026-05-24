@@ -22,6 +22,7 @@ const serviceName = "Map";
 
 type State = {
   mode: "replace" | "add" | "overwrite";
+  arrayMode: "array" | "single";
   template: { [key: string]: any };
   sensingMode: boolean;
 };
@@ -38,13 +39,14 @@ class Map extends ServiceBase<State> {
   ) {
     super(app, board, descriptor, id, {
       mode: "replace",
+      arrayMode: "array",
       template: {},
       sensingMode: false,
     });
   }
 
   async configure(config: any) {
-    const { template, mode, sensingMode } = config;
+    const { template, mode, arrayMode, sensingMode } = config;
     if (template !== undefined) {
       this.updateTemplate(template);
     }
@@ -52,6 +54,10 @@ class Map extends ServiceBase<State> {
     if (mode !== undefined) {
       this.state.mode = mode;
       this.app.notify(this, { mode });
+    }
+
+    if (arrayMode !== undefined) {
+      this.state.arrayMode = arrayMode;
     }
 
     if (sensingMode !== undefined) {
@@ -152,9 +158,7 @@ class Map extends ServiceBase<State> {
       return null;
     }
 
-    //TODO: who needs this??? - new concept for handling arrays ...
-    // probably generic
-    if (Array.isArray(params)) {
+    if (this.state.arrayMode !== "single" && Array.isArray(params)) {
       return await Promise.all(params.map(this.mapper));
     }
 
