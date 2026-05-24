@@ -1,0 +1,230 @@
+{
+  "boardName": "Alpaca Markets",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "alpaca-feedback",
+        "serviceId": "hookup.to/service/feedback",
+        "serviceName": "Alpaca Feed",
+        "state": {
+          "skipFeedbackWhen": "handshakeComplete",
+          "pipeline": [
+            {
+              "serviceId": "hookup.to/service/websocket-client",
+              "instanceId": "ws-inner",
+              "serviceName": "Alpaca Stream",
+              "state": {
+                "url": "wss://stream.data.alpaca.markets/v2/iex",
+                "bypass": true
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/map",
+              "instanceId": "unpack-inner",
+              "serviceName": "Unpack",
+              "state": {
+                "arrayMode": "single",
+                "template": { "=": "params[0]" }
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/if",
+              "instanceId": "auth-response",
+              "serviceName": "Auth",
+              "state": {
+                "condition": "params.T == 'success' && params.msg == 'connected'",
+                "pipeline": [
+                  {
+                    "serviceId": "hookup.to/service/map",
+                    "instanceId": "auth-map",
+                    "serviceName": "Auth Message",
+                    "state": {
+                      "template": {
+                        "action": "auth",
+                        "key=": "fromVault('alpaca.apiKey')",
+                        "secret=": "fromVault('alpaca.apiSecret')"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/if",
+              "instanceId": "subscribe-response",
+              "serviceName": "Subscribe",
+              "state": {
+                "condition": "params.T == 'success' && params.msg == 'authenticated'",
+                "pipeline": [
+                  {
+                    "serviceId": "hookup.to/service/map",
+                    "instanceId": "subscribe-map",
+                    "serviceName": "Subscribe Message",
+                    "state": {
+                      "template": {
+                        "action": "subscribe",
+                        "trades": ["AAPL", "MSFT", "TSLA", "NVDA"]
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "serviceId": "hookup.to/service/if",
+              "instanceId": "subscribe-ack-detect",
+              "serviceName": "Detect Subscribe Ack",
+              "state": {
+                "condition": "params.T == 'subscription'",
+                "pipeline": [
+                  {
+                    "serviceId": "hookup.to/service/set-runtime-variable",
+                    "instanceId": "set-handshake-flag",
+                    "serviceName": "Set Flag",
+                    "state": { "key": "handshakeComplete", "value": true }
+                  },
+                  {
+                    "serviceId": "hookup.to/service/stopper",
+                    "instanceId": "ack-stopper",
+                    "serviceName": "Stop"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "format-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Format Trade",
+        "state": {
+          "template": {
+            "symbol=": "params.S",
+            "price=": "params.p",
+            "size=": "params.s",
+            "time=": "params.t",
+            "text=": "concat(params.S, '  $', string(params.p), '  ×', string(params.s))"
+          }
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Trade Feed",
+        "state": { "maxEntries": 100 }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "main",
+        "layout": {
+          "direction": "column",
+          "gap": 10,
+          "padding": 16,
+          "fill": true,
+          "items": [
+            {
+              "type": "message-list",
+              "grow": true,
+              "source": { "serviceUuid": "monitor-svc" }
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "items": [
+                {
+                  "type": "text-input",
+                  "label": "API Key",
+                  "placeholder": "Alpaca API key",
+                  "submitLabel": "Set",
+                  "secret": true,
+                  "vaultKey": "alpaca.apiKey"
+                },
+                {
+                  "type": "text-input",
+                  "label": "API Secret",
+                  "placeholder": "Alpaca secret key",
+                  "submitLabel": "Set",
+                  "secret": true,
+                  "vaultKey": "alpaca.apiSecret"
+                }
+              ]
+            },
+            {
+              "type": "json-input",
+              "label": "Symbols",
+              "mode": "array",
+              "defaultValue": ["AAPL", "MSFT", "TSLA", "NVDA"],
+              "submitLabel": "Apply",
+              "action": {
+                "serviceUuid": "alpaca-feedback",
+                "configure": {
+                  "configureService": {
+                    "instanceId": "subscribe-response",
+                    "state": {
+                      "configureService": {
+                        "instanceId": "subscribe-map",
+                        "state": {
+                          "template": {
+                            "action": "subscribe",
+                            "trades": "$$input"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "direction": "row",
+              "gap": 8,
+              "justify": "center",
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Connect",
+                  "action": {
+                    "serviceUuid": "alpaca-feedback",
+                    "configure": {
+                      "configureService": {
+                        "instanceId": "ws-inner",
+                        "state": { "bypass": false }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "Disconnect",
+                  "action": {
+                    "serviceUuid": "alpaca-feedback",
+                    "configure": {
+                      "configureService": {
+                        "instanceId": "ws-inner",
+                        "state": { "bypass": true }
+                      },
+                      "resetVariable": "handshakeComplete"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

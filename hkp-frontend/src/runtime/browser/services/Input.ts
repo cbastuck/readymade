@@ -30,7 +30,7 @@ class Input extends ServiceBase<State> {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) {
     super(app, board, descriptor, id, {
       url: "",
@@ -100,6 +100,7 @@ class Input extends ServiceBase<State> {
     this._websocket = new WebsocketChannel(
       `input-service-${this.uuid}`,
       (params: any) => {
+        console.log("INPOUT RECEIVE", params);
         if (!this.bypass) {
           const { action } = params;
           if (action === "ping") {
@@ -109,7 +110,7 @@ class Input extends ServiceBase<State> {
         }
       },
       isSecureConnection(),
-      this.onCloseWebsocket
+      this.onCloseWebsocket,
     );
 
     try {
@@ -150,7 +151,7 @@ class Input extends ServiceBase<State> {
 
     const urlWithAuth = createAuthorizedURL(
       url,
-      this.app.getAuthenticatedUser()
+      this.app.getAuthenticatedUser(),
     );
     if (mode === "websocket") {
       this.doConnectWebsocket(urlWithAuth);
@@ -205,7 +206,7 @@ const descriptor = {
     app: AppInstance,
     board: string,
     descriptor: ServiceClass,
-    id: string
+    id: string,
   ) => new Input(app, board, descriptor, id),
   createUI: InputUI,
 };

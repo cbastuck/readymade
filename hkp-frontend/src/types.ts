@@ -232,6 +232,8 @@ export type AppImpl = {
   configureService?: (svc: ServiceDescriptor, config: any) => void;
   processRuntimeByName?: (name: string, params: any) => Promise<any>;
   configureServiceInRuntime?: (runtimeId: string, serviceUuid: string, config: any) => Promise<void>;
+  getRuntimeVariable: () => Record<string, any>;
+  setRuntimeVariable: (key: string, value: any) => void;
 };
 
 export type CustomMenuEntry = {

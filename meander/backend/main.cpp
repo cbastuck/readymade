@@ -13,6 +13,7 @@
 #include "./schemeHandler.h"
 #include "./frontendServer.h"
 #include "./serviceRedirectHandler.h"
+#include "./vault.h"
 
 #if USE_SAUCER_EMBEDDED
 #include "../embedded/saucer/embedded/all.hpp"
@@ -129,6 +130,8 @@ static constexpr uint16_t RUNTIME_API_PORT = 8887;
 int real_main(int argc, char *argv[])
 {
   saucer::webview::register_scheme("hkp");
+  Vault vault;
+
   auto app = saucer::application::create({.id = "Meander"});
   if (!app.has_value())
   {
@@ -176,6 +179,10 @@ int real_main(int argc, char *argv[])
   };
   webview->inject(saucer::script{
     .code   = "window.__MEANDER_CONFIG__ = " + configJson.dump() + ";",
+    .run_at = saucer::script::time::creation,
+  });
+  webview->inject(saucer::script{
+    .code   = "window.__HKP_VAULT__ = " + vault.getAll().dump() + ";",
     .run_at = saucer::script::time::creation,
   });
   auto allowedOrigins = "*"; // allow all origins for CORS
@@ -283,6 +290,11 @@ int real_main(int argc, char *argv[])
   {
     return desktop.pick<saucer::modules::picker::type::save>(std::move(opts))
         .transform_error(&saucer::error::message);
+  });
+
+  webview->expose("setSecret", [&vault](const std::string& key, const std::string& value) -> bool
+  {
+    return vault.setSecret(key, value);
   });
 
   // Fallback: open target="_blank" link clicks in the OS default browser.

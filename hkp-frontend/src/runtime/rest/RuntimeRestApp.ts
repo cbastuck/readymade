@@ -66,5 +66,7 @@ export function createRuntimeRestApp(scope: RuntimeRestScope): AppImpl {
     ) => {
       notificationTargets.unregister(svc, onNotification);
     },
+    getRuntimeVariable: () => ({}),
+    setRuntimeVariable: (_key: string, _value: any) => {},
   };
 }

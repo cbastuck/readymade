@@ -8,6 +8,7 @@ import DangerousHacker from "../services/DangerousHacker";
 
 // Data I/O
 import InputDescriptor from "../services/Input";
+import WebsocketClientDescriptor from "../services/WebsocketClient";
 import OutputDescriptor from "../services/Output";
 import FetcherDesriptor from "../services/Fetcher";
 import InjectorDescriptor from "../services/Injector";
@@ -82,10 +83,16 @@ import MicrophoneMonitorDescriptor from "../services/MicrophoneMonitor";
 import DebounceDescriptor from "../services/Debounce";
 import StopperDescriptor from "../services/Stopper";
 import ConfiguratorDescriptor from "../services/Configurator";
+import ProcessRouterDescriptor from "../services/ProcessRouter";
 import AudioInputDescriptor from "../services/AudioInput";
 import AudioOutputDescriptor from "../services/AudioOutput";
 import SoundDescriptor from "../services/Sound";
 import GifEncoderDescriptor from "../services/GifEncoder";
+
+// Runtime control
+import SetRuntimeVariableDescriptor from "../services/SetRuntimeVariable";
+import IfServiceDescriptor from "../services/IfService";
+import FeedbackServiceDescriptor from "../services/FeedbackService";
 
 // Crypto
 import EncryptDescriptor from "../services/Encrypt";
@@ -105,6 +112,7 @@ export const defaultRegistry: Array<ServiceModule> = [
 
   // Data I/O
   InputDescriptor,
+  WebsocketClientDescriptor,
   OutputDescriptor,
   InjectorDescriptor,
   FetcherDesriptor,
@@ -184,6 +192,10 @@ export const defaultRegistry: Array<ServiceModule> = [
   DebounceDescriptor,
   StopperDescriptor,
   ConfiguratorDescriptor,
+  ProcessRouterDescriptor,
+  SetRuntimeVariableDescriptor,
+  IfServiceDescriptor,
+  FeedbackServiceDescriptor,
 
   // Audio I/O
   AudioInputDescriptor,
