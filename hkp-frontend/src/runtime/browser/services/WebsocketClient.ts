@@ -5,12 +5,17 @@ import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import { createAuthorizedURL } from "hkp-frontend/src/views/playground/common";
 import WebsocketClientUI from "./WebsocketClientUI";
+import { isFloatRingBuffer } from "../../rest/Data";
+import { serializeYasRingBuffer } from "../../rest/Message";
 
 const serviceId = "hookup.to/service/websocket-client";
 const serviceName = "WebSocket Client";
 
+type Protocol = { id: string; type: string };
+
 type State = {
   url: string;
+  protocol: Protocol | null;
 };
 
 class WebsocketClient extends ServiceBase<State> {
@@ -22,13 +27,17 @@ class WebsocketClient extends ServiceBase<State> {
     descriptor: ServiceClass,
     id: string,
   ) {
-    super(app, board, descriptor, id, { url: "" });
+    super(app, board, descriptor, id, { url: "", protocol: null });
   }
 
   async configure(config: any) {
-    const { url, bypass } = config;
+    const { url, bypass, protocol } = config;
 
     let reconnect = bypass === false;
+
+    if (protocol !== undefined) {
+      this.state.protocol = protocol;
+    }
 
     if (url !== undefined && url) {
       this.state.url = url;
@@ -80,6 +89,9 @@ class WebsocketClient extends ServiceBase<State> {
 
     try {
       await this._websocket.open({ absolute: urlWithAuth });
+      if (this.state.protocol) {
+        this._websocket.send(this.state.protocol);
+      }
       this.setBypass(false);
     } catch (_err) {
       this.setBypass(true);
@@ -87,9 +99,12 @@ class WebsocketClient extends ServiceBase<State> {
   }
 
   async process(params: any) {
-    if (this._websocket) {
-      console.log("WebsocketClient.process", params);
-      this._websocket.send(params);
+    if (this._websocket && params != null) {
+      if (isFloatRingBuffer(params)) {
+        this._websocket.send(serializeYasRingBuffer(params), true);
+      } else {
+        this._websocket.send(params);
+      }
     }
     return null;
   }

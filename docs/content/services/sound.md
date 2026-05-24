@@ -21,7 +21,7 @@ Sound receives note events from the pipeline and plays them through the browser'
 | `synth` | Oscillator-based synthesis. Converts note names (e.g. `"C4"`) to Hz using standard MIDI tuning (A4 = 440 Hz). Configurable waveform and envelope (see *Envelope*). Also accepts `NoteFrame` objects from the Game of Life pipeline. |
 | `drums` | Synthesises kick, snare, and hi-hat patterns using only the Web Audio API — no sample files required. Note names are mapped to drum types via `drumMap`. |
 
-The service passes the incoming data through unchanged after triggering audio playback.
+The service passes the incoming data through unchanged after triggering audio playback, unless `routing` says to hand on the audio itself (see *Routing*).
 
 All Sound instances on a page share one audio context. It is opened when the first Sound is created, not when the first note plays, because opening one blocks while the audio device starts (about 150 ms measured in Chromium). A context opened before the page has had a user gesture starts suspended, and is resumed on the first gesture anywhere on the page. It is closed a few seconds after the last Sound goes, so a pipeline rebuilt around its Sounds does not reopen the device.
 
@@ -43,6 +43,21 @@ A note is started the moment its input arrives. It is heard after the latency th
 | `tempoSlot` | `string` | `"tempo"` | The slot a tempo in BPM is read from when the input carries none |
 | `drumMap` | `object` | `{ C4: "kick", D4: "snare", E4: "hihat" }` | Map of note name → drum type for `drums` mode |
 | `trigger` | `string` \| `null` | `null` | What to play for an input that names no note of its own, such as a Timer tick: a note name, or in `drums` mode also `"kick"`, `"snare"` or `"hihat"`. Unset, such an input plays nothing. A note the input names always wins. |
+| `routing` | `"direct"` \| `"output"` \| `"both"` | `"direct"` | Where the generated audio goes (see *Routing*) |
+
+### Routing
+
+`direct` plays the audio through the soundcard and passes the input on, as
+above. `output` captures it instead of playing it: the service returns a
+`FloatRingBuffer` of the float32 PCM generated since it was last called, at the
+audio context's sample rate, for a service that sends or processes audio — a
+WebSocket Client streaming it to a C++ runtime, for one.
+`both` plays it and returns it.
+
+The capture runs behind the notes that cause it, so the buffer a call returns
+holds what was generated up to then, and the first call returns nothing, which
+stops the pipeline there. Each Sound has a bus of its own on the shared audio
+context, so routing one leaves the others as they were.
 
 ### Envelope
 
@@ -84,4 +99,4 @@ has to come with the input.
 | | Shape |
 |---|---|
 | **Input** | Note object, array of note objects, or `NoteFrame` |
-| **Output** | Pass-through (original input unchanged) |
+| **Output** | Pass-through (original input unchanged); with `routing` `output` or `both`, a `FloatRingBuffer` of the generated audio |
