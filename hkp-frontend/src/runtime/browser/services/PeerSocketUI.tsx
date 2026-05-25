@@ -1,10 +1,7 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { useBoardContext } from "hkp-frontend/src/BoardContext";
-import { FacadeDescriptor } from "hkp-frontend/src/facade/types";
-import { remapFacadeUuids } from "hkp-frontend/src/views/playground/BoardActions";
 import { v4 as uuidv4 } from "uuid";
 
-import { ServiceDescriptor, ServiceUIProps } from "hkp-frontend/src/types";
+import { ServiceUIProps } from "hkp-frontend/src/types";
 import ServiceUI, {
   needsUpdate,
 } from "hkp-frontend/src/ui-components/service/ServiceUI";
@@ -20,12 +17,8 @@ import RadioGroup from "hkp-frontend/src/ui-components/RadioGroup";
 import { AppCtx } from "hkp-frontend/src/AppContext";
 import Switch from "hkp-frontend/src/ui-components/Switch";
 
-import {
-  resolveTemplateVars,
-  resolveTemplateVarsInObject,
-} from "hkp-frontend/src/templateVars";
+import { resolveTemplateVars } from "hkp-frontend/src/templateVars";
 import Button from "hkp-frontend/src/ui-components/Button";
-import ShareAsQRDialog from "hkp-frontend/src/ui-components/runtime-ui/ShareAsQRDialog";
 
 function parseServerUrl(input: string): {
   host: string;
@@ -42,7 +35,8 @@ function parseServerUrl(input: string): {
     const secure = parsed.protocol === "wss:";
     const host = parsed.hostname;
     const port = parsed.port ? parseInt(parsed.port, 10) : null;
-    const path = parsed.pathname && parsed.pathname !== "/" ? parsed.pathname : null;
+    const path =
+      parsed.pathname && parsed.pathname !== "/" ? parsed.pathname : null;
     return { host, port, path, secure };
   } catch {
     return { host: input.trim(), port: null, path: null, secure: false };
@@ -62,79 +56,7 @@ function formatServerUrl(
   return `${scheme}://${host}${portStr}${pathStr}`;
 }
 
-function buildPartnerBoard(
-  peerName: string,
-  targetPeer: string,
-  peerPort: number | null,
-  peerPath: string | null,
-  peerHost: string | null,
-  peerSecure: boolean | null,
-  facade?: FacadeDescriptor,
-  originalServices?: ServiceDescriptor[],
-): object {
-  const runtimeId = "partner-browser";
-
-  const partnerServices = [
-    {
-      uuid: uuidv4(),
-      serviceId: "hookup.to/service/injector",
-      serviceName: "Message",
-      state: { plainText: true },
-    },
-    {
-      uuid: uuidv4(),
-      serviceId: "hookup.to/service/peer-socket",
-      serviceName: "Peer Socket",
-      state: {
-        mode: "Receive and Send",
-        peerName: targetPeer,
-        targetPeer: peerName,
-        extractIncomingData: true,
-        peerPort,
-        peerPath,
-        peerHost,
-        peerSecure,
-      },
-    },
-    {
-      uuid: uuidv4(),
-      serviceId: "hookup.to/service/monitor",
-      serviceName: "Messages",
-    },
-    {
-      uuid: uuidv4(),
-      serviceId: "hookup.to/service/stopper",
-      serviceName: "Stopper",
-    },
-  ];
-
-  const board: any = {
-    boardName: "Partner",
-    runtimes: [{ id: runtimeId, name: "Browser", type: "browser" }],
-    services: { [runtimeId]: partnerServices },
-  };
-
-  if (facade) {
-    if (originalServices) {
-      // Map original uuid → new uuid by matching serviceId
-      const uuidMap = new Map<string, string>();
-      for (const newSvc of partnerServices) {
-        const orig = originalServices.find((s) => s.serviceId === newSvc.serviceId);
-        if (orig) {
-          uuidMap.set(orig.uuid, newSvc.uuid);
-        }
-      }
-      board.facade = remapFacadeUuids(facade, uuidMap);
-    } else {
-      board.facade = facade;
-    }
-  }
-
-  return resolveTemplateVarsInObject(board);
-}
-
 export default function PeerSocketUI(props: ServiceUIProps) {
-  const boardContext = useBoardContext();
   const [initialized, setInitialized] = useState(false);
   const [bypass, setBypass] = useState(false);
   const [peerName, setPeerName] = useState("");
@@ -145,7 +67,6 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const [peerPath, setPeerPath] = useState<string | null>(null);
   const [peerHost, setPeerHost] = useState<string | null>(null);
   const [peerSecure, setPeerSecure] = useState<boolean | null>(null);
-  const [partnerQRSource, setPartnerQRSource] = useState<object | null>(null);
   const [availablePeers, setAvailablePeers] = useState<string[]>([]);
 
   const update = (state: any) => {
@@ -213,8 +134,12 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const activePeerHost = isCustomServer
     ? (resolvedPeerHost ?? hostDescriptor?.host)
     : hostDescriptor?.host;
-  const activePeerPort = isCustomServer ? (peerPort ?? undefined) : hostDescriptor?.port;
-  const activePeerPath = isCustomServer ? (peerPath ?? "/") : hostDescriptor?.path;
+  const activePeerPort = isCustomServer
+    ? (peerPort ?? undefined)
+    : hostDescriptor?.port;
+  const activePeerPath = isCustomServer
+    ? (peerPath ?? "/")
+    : hostDescriptor?.path;
   const activePeerSecure = isCustomServer
     ? (peerSecure ?? false)
     : hostDescriptor?.secure;
@@ -234,12 +159,6 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const onRandomTargetPeer = () => setTargetPeer(uuidv4());
   const onSwap = () => {
     props.service.configure({ peerName: targetPeer, targetPeer: peerName });
-  };
-  const onSharePartnerQR = () => {
-    const allOriginalServices = Object.values(boardContext?.services ?? {}).flat();
-    setPartnerQRSource(
-      buildPartnerBoard(peerName, targetPeer, peerPort, peerPath, peerHost, peerSecure, boardContext?.facade, allOriginalServices),
-    );
   };
 
   const fetchAvailablePeers = useCallback(async () => {
@@ -295,10 +214,20 @@ export default function PeerSocketUI(props: ServiceUIProps) {
             onSubmit={(value) => {
               const trimmed = value.trim();
               if (!trimmed) {
-                props.service.configure({ peerHost: null, peerPort: null, peerPath: null, peerSecure: null });
+                props.service.configure({
+                  peerHost: null,
+                  peerPort: null,
+                  peerPath: null,
+                  peerSecure: null,
+                });
               } else {
                 const { host, port, path, secure } = parseServerUrl(trimmed);
-                props.service.configure({ peerHost: host, peerPort: port, peerPath: path, peerSecure: secure });
+                props.service.configure({
+                  peerHost: host,
+                  peerPort: port,
+                  peerPath: path,
+                  peerSecure: secure,
+                });
               }
             }}
           />
@@ -351,12 +280,6 @@ export default function PeerSocketUI(props: ServiceUIProps) {
             )}
           </div>
 
-          {isSendAllowed && (
-            <Button className="hkp-svc-btn px-1" onClick={onSharePartnerQR}>
-              Create peered partner board
-            </Button>
-          )}
-
           {isReceivedAllowed && (
             <Switch
               title="Unpack received data"
@@ -389,12 +312,6 @@ export default function PeerSocketUI(props: ServiceUIProps) {
           )}
         </div>
       </PeersProvider>
-
-      <ShareAsQRDialog
-        isOpen={partnerQRSource !== null}
-        runtimeSource={partnerQRSource}
-        onClose={() => setPartnerQRSource(null)}
-      />
     </ServiceUI>
   );
 }
