@@ -22,6 +22,7 @@ type Props = {
   label?: string;
   options: Options;
   className?: string;
+  triggerClassName?: string;
   uppercaseValues?: boolean;
   uppercaseKeys?: boolean;
   disabled?: boolean;
@@ -42,6 +43,7 @@ export default function SelectorField({
   options: optionsMap,
   disabled = false,
   className,
+  triggerClassName,
   onChange,
   onOpen,
 }: Props) {
@@ -63,7 +65,9 @@ export default function SelectorField({
     >
       {label &&
         (useDefaultLabel ? (
-          <GroupLabel size={4} className="mb-1">{label}</GroupLabel>
+          <GroupLabel size={4} className="mb-1">
+            {label}
+          </GroupLabel>
         ) : (
           label
         ))}
@@ -71,9 +75,7 @@ export default function SelectorField({
       <Select
         disabled={disabled}
         value={value ?? ""}
-        onOpenChange={(isOpen) =>
-          isOpen && onOpen?.(optionsMap)
-        }
+        onOpenChange={(isOpen) => isOpen && onOpen?.(optionsMap)}
         onValueChange={(newValue) =>
           onChange({
             index: options.findIndex((x) => x.value === newValue),
@@ -81,7 +83,9 @@ export default function SelectorField({
           })
         }
       >
-        <SelectTrigger className="w-full h-min rounded-none">
+        <SelectTrigger
+          className={`w-full ${triggerClassName ?? "h-min rounded-none"}`}
+        >
           <SelectValue className="font-menu" placeholder="Select ..." />
         </SelectTrigger>
         <SelectContent className="font-menu">

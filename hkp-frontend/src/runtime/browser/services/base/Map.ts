@@ -23,13 +23,27 @@ const serviceName = "Map";
 type State = {
   mode: "replace" | "add" | "overwrite";
   arrayMode: "array" | "single";
-  template: { [key: string]: any };
+  template: any;
   sensingMode: boolean;
 };
+
+type StructuredTemplateNode =
+  | { type: "value"; value: any }
+  | { type: "expression"; expression: any }
+  | { type: "array"; items: StructuredTemplateNode[] }
+  | {
+      type: "object";
+      entries: Array<{
+        key: string;
+        dynamic: boolean;
+        node: StructuredTemplateNode;
+      }>;
+    };
 
 class Map extends ServiceBase<State> {
   _terms: { [key: string]: any } = {};
   _properties: { [key: string]: any } = {};
+  _structuredTemplate: StructuredTemplateNode | undefined = undefined;
 
   constructor(
     app: AppInstance,
@@ -73,6 +87,17 @@ class Map extends ServiceBase<State> {
   }
 
   updateTemplate(template: any) {
+    this._structuredTemplate = undefined;
+
+    if (isStructuredTemplate(template)) {
+      this.state.template = deepCopy(template);
+      this._structuredTemplate = compileStructuredTemplate(template);
+      this._terms = {};
+      this._properties = {};
+      this.app.notify(this, { template });
+      return;
+    }
+
     this.state.template = flatten(template); // store as flat object for persistence
 
     this._properties = Object.keys(template).reduce((all, cur) => {
@@ -107,6 +132,31 @@ class Map extends ServiceBase<State> {
 
   mapper = async (x: any) => {
     try {
+      if (this._structuredTemplate) {
+        const mapped = await this.evalStructuredTemplateNode(
+          this._structuredTemplate,
+          x,
+        );
+
+        const canMergeObjects =
+          mapped !== null &&
+          typeof mapped === "object" &&
+          !Array.isArray(mapped) &&
+          x !== null &&
+          typeof x === "object" &&
+          !Array.isArray(x);
+
+        if (!canMergeObjects || this.state.mode === "replace") {
+          return mapped;
+        }
+
+        if (this.state.mode === "overwrite") {
+          return { ...x, ...mapped };
+        }
+
+        return { ...mapped, ...x };
+      }
+
       const keys = this._terms ? Object.keys(this._terms) : [];
       // map to scalar value (not an object) if only an '=', i.e. empty string
       if (keys.length === 1 && keys[0] === "") {
@@ -172,6 +222,99 @@ class Map extends ServiceBase<State> {
     const result = await this.mapper(params);
 
     return result;
+  };
+
+  private evalStructuredTemplateNode = async (
+    node: StructuredTemplateNode,
+    params: any,
+  ): Promise<any> => {
+    if (node.type === "value") {
+      return deepCopy(node.value);
+    }
+
+    if (node.type === "expression") {
+      return await evalExpression(node.expression, { params }, this.app);
+    }
+
+    if (node.type === "array") {
+      const out = [];
+      for (const item of node.items) {
+        out.push(await this.evalStructuredTemplateNode(item, params));
+      }
+      return out;
+    }
+
+    const entries = node.entries;
+    if (
+      entries.length === 1 &&
+      entries[0].dynamic &&
+      entries[0].key === "" &&
+      entries[0].node.type === "expression"
+    ) {
+      return await this.evalStructuredTemplateNode(entries[0].node, params);
+    }
+
+    const out: any = {};
+    for (const entry of entries) {
+      const value = await this.evalStructuredTemplateNode(entry.node, params);
+      if (entry.key.indexOf(".") !== -1) {
+        merge(out, value, entry.key);
+      } else {
+        out[entry.key] = value;
+      }
+    }
+    return out;
+  };
+}
+
+function isStructuredTemplate(template: any) {
+  return Array.isArray(template) || hasNestedStructure(template);
+}
+
+function hasNestedStructure(template: any): boolean {
+  if (
+    template === null ||
+    typeof template !== "object" ||
+    Array.isArray(template)
+  ) {
+    return false;
+  }
+
+  return Object.values(template).some(
+    (value) => value !== null && typeof value === "object",
+  );
+}
+
+function compileStructuredTemplate(template: any): StructuredTemplateNode {
+  if (Array.isArray(template)) {
+    return {
+      type: "array",
+      items: template.map((item) => compileStructuredTemplate(item)),
+    };
+  }
+
+  if (template !== null && typeof template === "object") {
+    const entries = Object.keys(template).map((key) => {
+      const value = template[key];
+      const dynamic = key.endsWith("=");
+      return {
+        key: dynamic ? key.slice(0, -1) : key,
+        dynamic,
+        node: dynamic
+          ? { type: "expression" as const, expression: parseExpression(value) }
+          : compileStructuredTemplate(value),
+      };
+    });
+
+    return {
+      type: "object",
+      entries,
+    };
+  }
+
+  return {
+    type: "value",
+    value: template,
   };
 }
 
