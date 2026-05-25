@@ -10,6 +10,7 @@ import {
 import {
   FacadeDescriptor,
   FacadePanel,
+  FacadeWidgetAction,
   FacadeWidget,
   LayoutItem,
   LayoutContainer,
@@ -26,47 +27,76 @@ export function remapFacadeUuids(
   uuidMap: Map<string, string>,
 ): FacadeDescriptor {
   const remap = (uuid: string) => uuidMap.get(uuid) ?? uuid;
+  function remapAction(action: FacadeWidgetAction): FacadeWidgetAction;
+  function remapAction(action: undefined): undefined;
+  function remapAction(
+    action?: FacadeWidgetAction,
+  ): FacadeWidgetAction | undefined {
+    if (!action) {
+      return undefined;
+    }
+    return {
+      ...action,
+      serviceUuid: remap(action.serviceUuid),
+    };
+  }
 
   const remapWidget = (widget: FacadeWidget): FacadeWidget => {
     switch (widget.type) {
       case "message-list":
         return {
           ...widget,
-          source: { ...widget.source, serviceUuid: remap(widget.source.serviceUuid) },
+          source: {
+            ...widget.source,
+            serviceUuid: remap(widget.source.serviceUuid),
+          },
           composer: widget.composer
             ? {
                 ...widget.composer,
-                action: {
-                  ...widget.composer.action,
-                  serviceUuid: remap(widget.composer.action.serviceUuid),
-                },
+                action: remapAction(widget.composer.action)!,
               }
             : undefined,
         };
       case "text-input":
         return {
           ...widget,
-          action: { ...widget.action, serviceUuid: remap(widget.action.serviceUuid) },
+          action: widget.action ? remapAction(widget.action) : undefined,
         };
       case "status-indicator":
         return {
           ...widget,
-          source: { ...widget.source, serviceUuid: remap(widget.source.serviceUuid) },
+          source: {
+            ...widget.source,
+            serviceUuid: remap(widget.source.serviceUuid),
+          },
         };
       case "button":
         return {
           ...widget,
-          action: { ...widget.action, serviceUuid: remap(widget.action.serviceUuid) },
+          action: remapAction(widget.action)!,
+        };
+      case "canvas":
+        return {
+          ...widget,
+          serviceUuid: remap(widget.serviceUuid),
+        };
+      case "xy-pad":
+        return {
+          ...widget,
+          serviceUuid: remap(widget.serviceUuid),
         };
       case "knob":
         return {
           ...widget,
-          action: { ...widget.action, serviceUuid: remap(widget.action.serviceUuid) },
+          action: remapAction(widget.action)!,
         };
       case "level-meter":
         return {
           ...widget,
-          source: { ...widget.source, serviceUuid: remap(widget.source.serviceUuid) },
+          source: {
+            ...widget.source,
+            serviceUuid: remap(widget.source.serviceUuid),
+          },
           thresholdKnobServiceUuid: widget.thresholdKnobServiceUuid
             ? remap(widget.thresholdKnobServiceUuid)
             : undefined,
@@ -74,12 +104,18 @@ export function remapFacadeUuids(
       case "qr-code":
         return {
           ...widget,
-          source: { ...widget.source, serviceUuid: remap(widget.source.serviceUuid) },
+          source: {
+            ...widget.source,
+            serviceUuid: remap(widget.source.serviceUuid),
+          },
         };
       case "file-pick":
         return {
           ...widget,
-          action: { ...widget.action, serviceUuid: remap(widget.action.serviceUuid) },
+          action: {
+            ...widget.action,
+            serviceUuid: remap(widget.action.serviceUuid),
+          },
           progressServiceUuid: widget.progressServiceUuid
             ? remap(widget.progressServiceUuid)
             : undefined,

@@ -43,6 +43,11 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "qr-code",
+              "caption": "Scan to open the phone controller",
+              "source": { "serviceUuid": "controller-qr-svc", "path": "url" }
             }
           ]
         }
@@ -67,10 +72,30 @@
       "name": "Canvas",
       "type": "browser",
       "state": { "wrapServices": false, "minimized": false }
+    },
+    {
+      "id": "phone-share",
+      "name": "Phone Controller",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": true }
     }
   ],
   "services": {
     "input": [
+      {
+        "uuid": "peer-socket-svc",
+        "serviceId": "hookup.to/service/peer-socket",
+        "serviceName": "Peer Socket",
+        "state": {
+          "mode": "Receive only",
+          "extractIncomingData": true,
+          "peerName": "breakout-host",
+          "targetPeer": "breakout-phone",
+          "peerPath": "/",
+          "peerHost": "peerjs.hookitapp.com",
+          "peerSecure": true
+        }
+      },
       {
         "uuid": "xy-pad-svc",
         "serviceId": "hookup.to/service/xy-pad",
@@ -244,6 +269,85 @@
             }
           ]
         }
+      }
+    ],
+    "phone-share": [
+      {
+        "uuid": "phone-board-svc",
+        "serviceId": "sub-service",
+        "serviceName": "Phone Board",
+        "state": {
+          "mode": "source",
+          "boardName": "Breakout Controller",
+          "runtimeId": "phone-ui",
+          "runtimeName": "Phone UI",
+          "runtimeType": "browser",
+          "facade": {
+            "layout": "single",
+            "panels": [
+              {
+                "id": "controller",
+                "layout": {
+                  "direction": "column",
+                  "padding": 12,
+                  "gap": 12,
+                  "align": "center",
+                  "justify": "center",
+                  "fill": true,
+                  "items": [
+                    {
+                      "type": "xy-pad",
+                      "serviceUuid": "phone-xy-pad-svc",
+                      "width": 320,
+                      "height": 320
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "pipeline": [
+            {
+              "instanceId": "phone-xy-pad-svc",
+              "serviceId": "hookup.to/service/xy-pad",
+              "serviceName": "XY Pad"
+            },
+            {
+              "instanceId": "phone-peer-socket-svc",
+              "serviceId": "hookup.to/service/peer-socket",
+              "serviceName": "Peer Socket",
+              "state": {
+                "mode": "Send only",
+                "peerName": "breakout-phone",
+                "targetPeer": "breakout-host",
+                "peerPath": "/",
+                "peerHost": "peerjs.hookitapp.com",
+                "peerSecure": true
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "controller-link-svc",
+        "serviceId": "hookup.to/service/lz-compress",
+        "serviceName": "Compress Controller Board"
+      },
+      {
+        "uuid": "controller-url-svc",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Controller URL",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "url=": "concat('HKP_WEBAPP_URL/playground/breakout-controller?fromLink=', params)"
+          }
+        }
+      },
+      {
+        "uuid": "controller-qr-svc",
+        "serviceId": "hookup.to/service/qr-code",
+        "serviceName": "Controller QR"
       }
     ]
   }
