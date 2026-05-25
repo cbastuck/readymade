@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { ReactNode, useMemo, useRef, useState } from "react";
 import {
   Trash,
   Plus,
@@ -29,6 +29,7 @@ type Props = {
   id: string;
   className?: string;
   title: string;
+  titleTrailing?: ReactNode;
   template: { [key: string]: string };
   tooltip?: string;
   sensingMode?: boolean;
@@ -41,6 +42,7 @@ export default function MappingTable({
   id,
   className,
   title,
+  titleTrailing,
   template,
   sensingMode,
   tooltip,
@@ -141,10 +143,13 @@ export default function MappingTable({
 
   return (
     <div className={`flex flex-col col-2 mt-2 gap-2 ${className}`}>
-      <div className="flex h-min items-end">
-        <GroupLabel size={3} tooltip={tooltip}>
-          {title}
-        </GroupLabel>
+      <div className="flex h-min items-center">
+        <div className="flex items-end gap-2">
+          <GroupLabel size={3} tooltip={tooltip}>
+            {title}
+          </GroupLabel>
+          {titleTrailing}
+        </div>
 
         <div className="flex ml-auto">
           <Button

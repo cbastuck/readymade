@@ -28,12 +28,19 @@ function createMockApp() {
     next: vi.fn(),
     sendAction: vi.fn(),
     processRuntimeByName: vi.fn(),
+    getRuntimeVariable: vi.fn(() => ({})),
+    setRuntimeVariable: vi.fn(),
   };
 }
 
 function createMapService() {
   const app = createMockApp();
-  const service = new MapService(app as any, "test-board", {} as any, "map-1");
+  const service = new MapService(
+    app as any,
+    "test-board",
+    {} as any,
+    "map-1",
+  ) as any;
   return { service, app };
 }
 
@@ -679,5 +686,58 @@ describe("Map service – various input data shapes", () => {
     await service.configure({ template: { "asNum=": "number(params.val)" } });
     const result = await service.process({ val: "99" });
     expect(result).toEqual({ asNum: 99 });
+  });
+
+  it("supports a structured array template with nested expressions", async () => {
+    const { service } = createMapService();
+    await service.configure({
+      template: [
+        {
+          type: "circle",
+          "x=": "round(params.raw.x)",
+          "y=": "round(params.raw.y)",
+          color: "#ef4444",
+        },
+        {
+          type: "circle",
+          "x=": "round(params.x)",
+          "y=": "round(params.y)",
+          color: "#6366f1",
+        },
+      ],
+    });
+
+    const result = await service.process({
+      raw: { x: 10.2, y: 20.8 },
+      x: 100.4,
+      y: 200.6,
+    });
+
+    expect(result).toEqual([
+      { type: "circle", x: 10, y: 21, color: "#ef4444" },
+      { type: "circle", x: 100, y: 201, color: "#6366f1" },
+    ]);
+  });
+
+  it("supports nested object templates with dynamic fields", async () => {
+    const { service } = createMapService();
+    await service.configure({
+      template: {
+        chart: {
+          type: "point",
+          "x=": "params.x * 2",
+          "y=": "params.y * 3",
+        },
+      },
+    });
+
+    const result = await service.process({ x: 4, y: 5 });
+    expect(result).toEqual({
+      chart: {
+        type: "point",
+        x: 8,
+        y: 15,
+      },
+    });
   });
 });

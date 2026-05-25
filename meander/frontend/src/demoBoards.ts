@@ -3,11 +3,8 @@ import { BoardDescriptor } from "hkp-frontend/src/types";
 import asciiCamBoard from "../../../hkp-frontend/boards/ascii-cam-board.json";
 import dropitappBoard from "../../../hkp-frontend/boards/dropitapp-board.json";
 import gameOfLifeBoard from "../../../hkp-frontend/boards/game-of-life-board.json";
-import linkDebuggerBoard from "../../../hkp-frontend/boards/link-debugger.json";
 import noiseAlertBoard from "../../../hkp-frontend/boards/noise-alert-board.json";
 import peerChatBoard from "../../../hkp-frontend/boards/peer-chat-board.json";
-import peerChatNodeBoard from "../../../hkp-frontend/boards/peer-chat-node-board.json";
-import relayBoard from "../../../hkp-frontend/boards/relay.json";
 import helloworldBoard from "../../../hkp-frontend/boards/helloworld-board.json";
 import animateBoard from "../../../hkp-frontend/boards/animate-board.json";
 import audiolizeBoard from "../../../hkp-frontend/boards/audiolize-board.json";
@@ -18,6 +15,10 @@ import encryptBoard from "../../../hkp-frontend/boards/encrypt-board.json";
 import spectralModifierBoard from "../../../hkp-frontend/boards/spectral-modifier-board.json";
 import smoothDemoBoard from "../../../hkp-frontend/boards/smooth-demo-board.json";
 import alpacaBoard from "../../../hkp-frontend/boards/alpaca-board.json";
+
+//import linkDebuggerBoard from "../../../hkp-frontend/boards/link-debugger.json";
+//import peerChatNodeBoard from "../../../hkp-frontend/boards/peer-chat-node-board.json";
+//import relayBoard from "../../../hkp-frontend/boards/relay.json";
 
 export type DemoEntry = {
   label: string;
@@ -106,30 +107,34 @@ export const DEMO_BOARDS: DemoEntry[] = [
     icon: "💬",
     board: peerChatBoard as unknown as BoardDescriptor,
   },
+  /*
   {
     label: "Peer Chat (with Node)",
     description: "P2P chat via WebRTC using the hkp-rt signaling server",
     icon: "💬",
     board: peerChatNodeBoard as unknown as BoardDescriptor,
   },
+  */
   {
     label: "Drop It App",
     description: "Drag-and-drop file sharing pipeline",
     icon: "📂",
     board: dropitappBoard as unknown as BoardDescriptor,
   },
+  /*
   {
     label: "Relay",
     description: "Bridge an HTTP relay endpoint into a browser pipeline",
     icon: "🔗",
     board: relayBoard as unknown as BoardDescriptor,
-  },
+  }, 
   {
     label: "Link Debugger",
     description: "Decompress and inspect board QR link contents",
     icon: "🔍",
     board: linkDebuggerBoard as unknown as BoardDescriptor,
   },
+  */
   {
     label: "Spotify to GitHub",
     description: "Archive your Spotify liked tracks to a GitHub repository",
