@@ -16,6 +16,7 @@ import {
   createBoardFromTemplate,
   importFromLink,
 } from "./BoardActions";
+import { findDemoBoard } from "../../demoRegistry";
 
 import {
   Action,
@@ -225,15 +226,22 @@ export function usePlaygroundController(
 
   const getInitialPlayground =
     async (): Promise<Partial<PlaygroundState> | null> => {
+      const params = Object.fromEntries(
+        new URLSearchParams(document.location.search),
+      );
+
+      if (params.demo) {
+        const demo = findDemoBoard(params.demo);
+        if (demo) {
+          return demo;
+        }
+      }
+
       const brd =
         props.match?.params?.board ||
         props.boardName ||
         requestedBoardNameRef.current;
       if (brd) {
-        const params = Object.fromEntries(
-          new URLSearchParams(document.location.search),
-        );
-
         if (params.template) {
           return createBoardFromTemplate(params.template, params);
         } else if (params.src) {

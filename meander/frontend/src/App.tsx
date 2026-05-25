@@ -7,6 +7,16 @@ import StartPage from "./StartPage";
 import { getBackend } from "./backend";
 import LoadIndicator from "./LoadIndicator";
 import { VaultProvider } from "hkp-frontend/src/VaultContext";
+import { DEMO_BOARDS } from "./demoBoards";
+
+function demoSlug(label: string): string {
+  return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+function findDemoBySlug(slug: string): BoardDescriptor | undefined {
+  const match = DEMO_BOARDS.find((e) => demoSlug(e.label) === slug);
+  return match?.board as BoardDescriptor | undefined;
+}
 
 function shouldRenderPlaygroundFromUrl() {
   const { pathname } = window.location;
@@ -39,6 +49,14 @@ function App() {
 
   useEffect(() => {
     if (view.type !== "loading") return;
+    const demoParam = new URLSearchParams(window.location.search).get("demo");
+    if (demoParam) {
+      const board = findDemoBySlug(demoParam);
+      if (board) {
+        setView({ type: "playground", board });
+        return;
+      }
+    }
     tryResumeLastBoard().then((board) =>
       setView({ type: "playground", board: board ?? null }),
     );
