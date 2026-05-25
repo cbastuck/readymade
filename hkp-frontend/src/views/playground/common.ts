@@ -18,7 +18,7 @@ export const availableRuntimeEngines: Array<RuntimeClass> = [
 
 export function getLocalBoard(
   selectedBoard: string,
-  prefix: string = localStoragePrefix
+  prefix: string = localStoragePrefix,
 ) {
   const item = localStorage.getItem(`${prefix}${selectedBoard}`);
   if (!item) {
@@ -38,7 +38,7 @@ export function removeLocalBoard(board: SavedBoard) {
 }
 
 export function getLocalBoards(
-  prefix: string = localStoragePrefix
+  prefix: string = localStoragePrefix,
 ): Array<SavedBoard> {
   const savedBoards: Array<SavedBoard> = [];
   for (const key in localStorage) {
@@ -79,7 +79,7 @@ export type LocalBoard = {
 };
 
 export function restoreBoardFromLocalStorage(
-  name: string
+  name: string,
 ): PlaygroundState | null {
   const storageName = name ? `${localStoragePrefix}${name}` : "hkp-playground";
   const data = localStorage.getItem(storageName);
@@ -97,7 +97,7 @@ export function restoreBoardFromLocalStorage(
 export function storeBoardToLocalStorage(
   boardName: string,
   source: string,
-  description?: string
+  description?: string,
 ) {
   const item: LocalBoard = {
     source,
@@ -106,7 +106,7 @@ export function storeBoardToLocalStorage(
   };
   localStorage.setItem(
     `${localStoragePrefix}${boardName}`,
-    JSON.stringify(item)
+    JSON.stringify(item),
   );
 }
 
@@ -114,7 +114,7 @@ const isSecureConnection = window.location.protocol === "https:";
 
 export const availableDiscoveryPeerHosts: Array<PeerJsHostDescriptor> = [
   {
-    host: "peers.hookup.to",
+    host: "peerjs.hookitapp.com",
     port: 443,
     path: "/",
     secure: true,
@@ -132,7 +132,7 @@ export const defaultDiscoveryPeer = availableDiscoveryPeerHosts[0];
 export function readFile(
   file: File | Blob,
   loadAsText: boolean,
-  progressFn?: (p: number) => void
+  progressFn?: (p: number) => void,
 ) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -195,7 +195,7 @@ export function createAuthorizedURL(url: string, user: User | null) {
     (x) =>
       x.host === parsedURL.host &&
       x.protocol === parsedURL.protocol &&
-      x.port === parsedURL.port
+      x.port === parsedURL.port,
   );
 
   if (!allowed) {
@@ -204,7 +204,7 @@ export function createAuthorizedURL(url: string, user: User | null) {
 
   if (!isSecureProtocol(parsedURL.protocol)) {
     console.warn(
-      `Authenticated request to an allowed but non-secure destination: ${parsedURL.protocol}`
+      `Authenticated request to an allowed but non-secure destination: ${parsedURL.protocol}`,
     );
   }
   return url + `?token=${user.idToken}`;
