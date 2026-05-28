@@ -13,7 +13,7 @@
       {
         "uuid": "alpaca-feedback",
         "serviceId": "hookup.to/service/feedback",
-        "serviceName": "Alpaca Feed",
+        "serviceName": "Alpaca Feed Feedback",
         "state": {
           "skipFeedbackWhen": "handshakeComplete",
           "pipeline": [
@@ -136,11 +136,6 @@
           "fill": true,
           "items": [
             {
-              "type": "message-list",
-              "grow": true,
-              "source": { "serviceUuid": "monitor-svc" }
-            },
-            {
               "direction": "row",
               "gap": 8,
               "items": [
@@ -221,6 +216,15 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "data-table",
+              "grow": true,
+              "source": { "serviceUuid": "monitor-svc" },
+              "columns": ["symbol", "price", "size", "time"],
+              "pageSize": 10,
+              "maxPages": 50,
+              "overflow": "drop-oldest"
             }
           ]
         }
