@@ -292,6 +292,33 @@ int real_main(int argc, char *argv[])
         .transform_error(&saucer::error::message);
   });
 
+  webview->expose("saveJSON", [&desktop](const std::string &content) -> std::expected<bool, std::string>
+  {
+    auto picked = desktop.pick<saucer::modules::picker::type::save>(
+        saucer::modules::picker::options{.filters = {"*.json"}}
+    );
+    if (!picked.has_value())
+    {
+      return std::unexpected(picked.error().message());
+    }
+    std::filesystem::path path{fileUriToPath(picked.value().string())};
+    if (path.extension() != ".json")
+    {
+      path += ".json";
+    }
+    std::ofstream file(path);
+    if (!file.is_open())
+    {
+      return std::unexpected("Failed to open file: " + path.string());
+    }
+    file << content;
+    if (!file)
+    {
+      return std::unexpected("Failed to write file: " + path.string());
+    }
+    return true;
+  });
+
   webview->expose("setSecret", [&vault](const std::string& key, const std::string& value) -> bool
   {
     return vault.setSecret(key, value);

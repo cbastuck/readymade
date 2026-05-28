@@ -117,7 +117,6 @@ export class FeedbackService extends ServiceBase<State> {
 
   // FeedbackService is a self-driving source; synchronous process() is unused.
   process(_params: any): any {
-    console.log("FEEDBACK SERVICE-process", _params);
     return null;
   }
 

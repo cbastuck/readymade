@@ -88,6 +88,7 @@ export const DEMO_BOARDS: DemoEntry[] = [
     icon: "🎙️",
     board: triggerpadBoard as unknown as BoardDescriptor,
   },
+  /*
   {
     label: "Spectral Modifier",
     description:
@@ -95,6 +96,7 @@ export const DEMO_BOARDS: DemoEntry[] = [
     icon: "🎚️",
     board: spectralModifierBoard as unknown as BoardDescriptor,
   },
+  */
   {
     label: "Noise Alert",
     description: "Detect loud sounds and trigger alerts",

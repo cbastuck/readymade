@@ -26,13 +26,8 @@ enum EditorMode {
 const ADD_ITEM_ACTION = "__add_item__";
 const REMOVE_ITEM_ACTION = "__remove_item__";
 
-function isFlatObjectTemplateShape(template: any): template is Template {
-  if (!template || typeof template !== "object" || Array.isArray(template)) {
-    return false;
-  }
-  return Object.values(template).every(
-    (value) => value === null || typeof value !== "object",
-  );
+function isObjectTemplate(template: any): template is Template {
+  return !!template && typeof template === "object" && !Array.isArray(template);
 }
 
 export default function MapUI(props: ServiceUIProps) {
@@ -47,11 +42,11 @@ export default function MapUI(props: ServiceUIProps) {
   const [isSensingMode, setIsSensingMode] = useState(false);
 
   const editableItems = useMemo(() => {
-    if (isFlatObjectTemplateShape(template)) {
+    if (isObjectTemplate(template)) {
       return [template as Template];
     }
 
-    if (Array.isArray(template) && template.every(isFlatObjectTemplateShape)) {
+    if (Array.isArray(template) && template.every(isObjectTemplate)) {
       return template as Template[];
     }
 
@@ -195,16 +190,17 @@ export default function MapUI(props: ServiceUIProps) {
 
   const customMenuEntries = [
     {
-      name: "Editor: Table",
-      icon: <MenuIcon icon={Table2} />,
-      onClick: () => onEditorModeChange(EditorMode.TABLE),
-      disabled: editorMode === EditorMode.TABLE,
-    },
-    {
-      name: "Editor: JSON",
-      icon: <MenuIcon icon={Braces} />,
-      onClick: () => onEditorModeChange(EditorMode.JSON),
-      disabled: editorMode === EditorMode.JSON,
+      name: editorMode === EditorMode.TABLE ? "Editor: JSON" : "Editor: Table",
+      icon:
+        editorMode === EditorMode.TABLE ? (
+          <MenuIcon icon={Braces} />
+        ) : (
+          <MenuIcon icon={Table2} />
+        ),
+      onClick: () =>
+        onEditorModeChange(
+          editorMode === EditorMode.TABLE ? EditorMode.JSON : EditorMode.TABLE,
+        ),
     },
     {
       name: "Inject Data",

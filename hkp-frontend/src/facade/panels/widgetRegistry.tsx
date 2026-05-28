@@ -10,6 +10,7 @@ import { FilePickRenderer } from "./renderers/FilePickRenderer";
 import { MessageListRenderer } from "./renderers/MessageListRenderer";
 import { CanvasRenderer } from "./renderers/CanvasRenderer";
 import { XYPadRenderer } from "./renderers/XYPadRenderer";
+import { DataTableRenderer } from "./renderers/DataTableRenderer";
 
 export type PanelContext = {
   knobValues: Record<string, number>;
@@ -36,4 +37,5 @@ export const widgetRegistry: Record<
   "message-list": MessageListRenderer,
   canvas: CanvasRenderer,
   "xy-pad": XYPadRenderer,
+  "data-table": DataTableRenderer,
 };

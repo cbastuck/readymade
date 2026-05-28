@@ -131,6 +131,19 @@ export type XYPadWidget = {
   height?: number;
 };
 
+export type DataTableWidget = {
+  type: "data-table";
+  source: FacadeWidgetSource;
+  // Items per page. Default: 50.
+  pageSize?: number;
+  // Max number of pages to keep in the buffer. Default: 100.
+  maxPages?: number;
+  // What to do when the buffer is full. Default: "drop-oldest".
+  overflow?: "drop-new" | "drop-oldest";
+  // Explicit ordered column list. When omitted, columns are derived from incoming data.
+  columns?: string[];
+};
+
 export type FacadeWidget =
   | MessageListWidget
   | TextInputWidget
@@ -143,7 +156,8 @@ export type FacadeWidget =
   | LevelMeterWidget
   | LayoutWidget
   | CanvasWidget
-  | XYPadWidget;
+  | XYPadWidget
+  | DataTableWidget;
 
 // ---------------------------------------------------------------------------
 // Layout tree — panels declare their structure declaratively.
