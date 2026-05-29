@@ -93,6 +93,7 @@ import GifEncoderDescriptor from "../services/GifEncoder";
 import SetRuntimeVariableDescriptor from "../services/SetRuntimeVariable";
 import IfServiceDescriptor from "../services/IfService";
 import FeedbackServiceDescriptor from "../services/FeedbackService";
+import TickRuleDeltaDescriptor from "../services/TickRuleDelta";
 
 // Crypto
 import EncryptDescriptor from "../services/Encrypt";
@@ -196,6 +197,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   SetRuntimeVariableDescriptor,
   IfServiceDescriptor,
   FeedbackServiceDescriptor,
+  TickRuleDeltaDescriptor,
 
   // Audio I/O
   AudioInputDescriptor,

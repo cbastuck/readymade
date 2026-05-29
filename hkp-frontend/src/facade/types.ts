@@ -12,6 +12,21 @@ export type FacadeWidgetAction = {
   configure: Record<string, unknown>;
 };
 
+// Typed action entries for the new `actions` array on input widgets.
+export type ConfigureAction = {
+  type: "configure";
+  serviceUuid: string;
+  configure: Record<string, unknown>;
+};
+
+export type SetStateAction = {
+  type: "set-state";
+  // Facade state key to write. The widget's current value ($$input equivalent) is stored.
+  key: string;
+};
+
+export type WidgetAction = ConfigureAction | SetStateAction;
+
 export type MessageListWidget = {
   type: "message-list";
   source: FacadeWidgetSource;
@@ -31,6 +46,7 @@ export type TextInputWidget = {
   secret?: boolean;
   vaultKey?: string;
   action?: FacadeWidgetAction;
+  actions?: WidgetAction[];
 };
 
 export type JsonInputWidget = {
@@ -38,10 +54,12 @@ export type JsonInputWidget = {
   label?: string;
   // Constrains and initializes the root value type.
   mode: "array" | "object";
-  // Optional seed value shown on first render.
+  // Optional seed value shown on first render. Accepts a { "$state": "key" } reference.
   defaultValue?: unknown;
   submitLabel?: string;
-  action: FacadeWidgetAction;
+  action?: FacadeWidgetAction;
+  actions?: WidgetAction[];
+  width?: number | string;
 };
 
 export type StatusIndicatorWidget = {
@@ -53,7 +71,8 @@ export type StatusIndicatorWidget = {
 export type ButtonWidget = {
   type: "button";
   label: string;
-  action: FacadeWidgetAction;
+  action?: FacadeWidgetAction;
+  actions?: WidgetAction[];
 };
 
 export type QrCodeWidget = {
@@ -86,6 +105,14 @@ export type LevelMeterWidget = {
   unit?: string;
   // serviceUuid of the knob whose current value is drawn as a threshold line.
   thresholdKnobServiceUuid?: string;
+};
+
+export type BipolarMeterWidget = {
+  type: "bipolar-meter";
+  source: FacadeWidgetSource;
+  label?: string;
+  width?: number;
+  height?: number;
 };
 
 export type KnobWidget = {
@@ -131,6 +158,19 @@ export type XYPadWidget = {
   height?: number;
 };
 
+export type LineChartWidget = {
+  type: "line-chart";
+  source: FacadeWidgetSource;
+  // Max data points retained per symbol. Default: 200.
+  maxPoints?: number;
+  height?: number;
+  width?: number;
+  // Show % change from each symbol's first price so all lines share one Y scale.
+  normalize?: boolean;
+  // When set, only this symbol's data is plotted (for one-chart-per-symbol layouts).
+  symbol?: string;
+};
+
 export type DataTableWidget = {
   type: "data-table";
   source: FacadeWidgetSource;
@@ -144,6 +184,24 @@ export type DataTableWidget = {
   columns?: string[];
 };
 
+// A state reference used in widget props to read from facade state.
+export type FacadeStateRef = { $state: string };
+
+// Renders one child widget per item in an array. Items can be a static array
+// or a facade state reference. "{{item}}" in template string values is replaced
+// with each item.
+export type RepeatWidget = {
+  type: "repeat";
+  items: unknown[] | FacadeStateRef;
+  template: LayoutItem;
+  // When set, items are laid out in a CSS grid with this many columns.
+  // When absent, items stack in a flex column (or row if direction is set).
+  columns?: number;
+  direction?: "row" | "column";
+  gap?: number;
+  wrap?: boolean;
+};
+
 export type FacadeWidget =
   | MessageListWidget
   | TextInputWidget
@@ -154,10 +212,13 @@ export type FacadeWidget =
   | FilePickWidget
   | KnobWidget
   | LevelMeterWidget
+  | BipolarMeterWidget
+  | LineChartWidget
   | LayoutWidget
   | CanvasWidget
   | XYPadWidget
-  | DataTableWidget;
+  | DataTableWidget
+  | RepeatWidget;
 
 // ---------------------------------------------------------------------------
 // Layout tree — panels declare their structure declaratively.
@@ -168,7 +229,7 @@ export type LayoutContainer = {
   direction: "row" | "column";
   gap?: number;
   padding?: number;
-  align?: string;   // alignItems
+  align?: string; // alignItems
   justify?: string; // justifyContent
   wrap?: boolean;
   grow?: boolean;
@@ -194,4 +255,10 @@ export type FacadeDescriptor = {
   // "single" renders one panel full-size; "columns" renders panels side-by-side.
   layout: "single" | "columns";
   panels: FacadePanel[];
+  // Initial values for the shared facade state store.
+  state?: Record<string, unknown>;
+  // Actions fired once when the facade mounts (and when the board changes).
+  // { "$state": "key" } references in configure payloads resolve against the
+  // current facade state, so services can be seeded from state on load.
+  init?: WidgetAction[];
 };

@@ -1,4 +1,6 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+import { FacadeStateContext } from "./FacadeStateContext";
+import { executeActions } from "./executeActions";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import { FacadeDescriptor } from "./types";
 import { PanelRenderer } from "./panels/PanelRenderer";
@@ -23,6 +25,34 @@ export default function FacadeRenderer({
   boardName,
   runtimeContent,
 }: FacadeRendererProps) {
+  // ── facade state store ───────────────────────────────────────────────────
+  const [facadeState, setFacadeStateRaw] = useState<Record<string, unknown>>(
+    () => facade.state ?? {},
+  );
+
+  useEffect(() => {
+    setFacadeStateRaw(facade.state ?? {});
+  }, [boardName]);
+
+  const setFacadeStateEntry = useCallback((key: string, value: unknown) => {
+    setFacadeStateRaw((prev) => ({ ...prev, [key]: value }));
+  }, []);
+
+  // Keep a ref so the init effect always sees the latest state at fire time.
+  const facadeStateRef = useRef(facadeState);
+  facadeStateRef.current = facadeState;
+
+  useEffect(() => {
+    if (!facade.init?.length) { return; }
+    executeActions({
+      actions: facade.init,
+      value: undefined,
+      boardContext,
+      setState: setFacadeStateEntry,
+      state: facadeStateRef.current,
+    });
+  }, [boardName]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const storageKey = `hkp-facade-runtime-${boardName}`;
   const [showRuntime, setShowRuntime] = useState(
     () => localStorage.getItem(storageKey) === "true",
@@ -161,6 +191,9 @@ export default function FacadeRenderer({
   const multiPanel = draftFacade.panels.length > 1;
 
   return (
+    <FacadeStateContext.Provider
+      value={{ state: facadeState, setState: setFacadeStateEntry }}
+    >
     <div
       style={{
         display: "flex",
@@ -330,5 +363,6 @@ export default function FacadeRenderer({
         onClose={() => setShareUrl(null)}
       />
     </div>
+    </FacadeStateContext.Provider>
   );
 }

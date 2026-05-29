@@ -99,7 +99,6 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
             />
           ) : (
             <BoardEntryPoint
-              className="pt-2"
               isLoading={
                 boardContext.isFetching || !!boardContext.awaitUserLogin
               }

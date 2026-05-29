@@ -1,10 +1,10 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { TextInputWidget } from "../../types";
-import { findService } from "../../findService";
 import { WidgetRendererProps } from "../widgetRegistry";
 import { useVault } from "hkp-frontend/src/VaultContext";
 import { vaultSet } from "hkp-frontend/src/vault";
-import { applyInput } from "../../applyInput";
+import { useFacadeState } from "../../FacadeStateContext";
+import { executeActions } from "../../executeActions";
 
 export function TextInputRenderer({
   widget,
@@ -14,6 +14,7 @@ export function TextInputRenderer({
   const [vaultResolved, setVaultResolved] = useState<string | null>(null);
   const autoSubmitted = useRef(false);
   const { getSecret } = useVault();
+  const { setState } = useFacadeState();
 
   useEffect(() => {
     if (!widget.vaultKey) {
@@ -26,26 +27,15 @@ export function TextInputRenderer({
     }
   }, [widget.vaultKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const service = useMemo(
-    () =>
-      widget.action
-        ? findService(boardContext, widget.action.serviceUuid)
-        : null,
-    [boardContext.scopes, boardContext.services, widget.action?.serviceUuid],
-  );
-
   // Auto-submit vault value to the service as soon as both are ready.
   useEffect(() => {
-    if (!vaultResolved || !service || !widget.action || autoSubmitted.current) {
+    const hasActions = widget.action || widget.actions?.length;
+    if (!vaultResolved || !hasActions || autoSubmitted.current) {
       return;
     }
     autoSubmitted.current = true;
-    const configure: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(widget.action.configure)) {
-      configure[k] = applyInput(v, vaultResolved);
-    }
-    service.configure(configure);
-  }, [vaultResolved, service]); // eslint-disable-line react-hooks/exhaustive-deps
+    executeActions({ action: widget.action, actions: widget.actions, value: vaultResolved, boardContext, setState });
+  }, [vaultResolved]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const submit = useCallback(() => {
     const text = value.trim();
@@ -55,14 +45,8 @@ export function TextInputRenderer({
     if (widget.vaultKey) {
       vaultSet(widget.vaultKey, text);
     }
-    if (service && widget.action) {
-      const configure: Record<string, unknown> = {};
-      for (const [k, v] of Object.entries(widget.action.configure)) {
-        configure[k] = applyInput(v, text);
-      }
-      service.configure(configure);
-    }
-  }, [value, service, widget.action, widget.vaultKey]);
+    executeActions({ action: widget.action, actions: widget.actions, value: text, boardContext, setState });
+  }, [value, widget.action, widget.actions, widget.vaultKey, boardContext, setState]);
 
   return (
     <div

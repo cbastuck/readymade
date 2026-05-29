@@ -27,6 +27,8 @@ import {
 } from "hkp-frontend/src/components/DropTypes";
 import { assureJSON } from "hkp-frontend/src/common";
 
+const DOCS_SERVICES_URL = "https://hookitapp.com/documentation/services";
+
 type Props = {
   service: ServiceInstance;
   showBypassOnlyIfExplicit?: boolean;
@@ -60,6 +62,7 @@ export default function ServiceFrame({
   const processingOffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const onNotification = (notification: any) => {
     const { bypass, __internal } = notification || {};
@@ -153,13 +156,7 @@ export default function ServiceFrame({
     }
   };
 
-  const onHelp = () => {
-    const serviceId = service.serviceId || service.__descriptor?.serviceId;
-    const parts = serviceId?.split("/") || [];
-    if (parts.length > 1) {
-      console.log("ServiceFrame.onHelp", parts);
-    }
-  };
+  const helpUrl = `${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`;
 
   const onConfig = () => setConfigVisible(true);
 
@@ -235,6 +232,7 @@ export default function ServiceFrame({
       <div key={`service-frame-${uuid}`} id={`service-frame-${uuid}`}>
         <div className="flex items-center">
           <div
+            ref={cardRef}
             className={`hkp-service-card${serviceIsProcessing ? " hkp-service-card--processing" : ""}`}
             style={s(t.unselectable, {
               position: "relative",
@@ -257,6 +255,7 @@ export default function ServiceFrame({
                 style={{ cursor }}
                 type={HKP_DND_SERVICE_TYPE}
                 value={dragData}
+                dragImageRef={cardRef}
               >
                 <ServiceHeader
                   showBypassOnlyIfExplicit={!!showBypassOnlyIfExplicit}
@@ -267,7 +266,7 @@ export default function ServiceFrame({
                   onExpand={onExpand}
                   onDelete={onDelete}
                   onBypass={onBypass}
-                  onHelp={onHelp}
+                  helpUrl={helpUrl}
                   onConfig={onConfig}
                   onCustomEntry={onCustomEntry}
                   onChangeName={onChangeName}
@@ -288,7 +287,18 @@ export default function ServiceFrame({
               isOpen={configVisible}
               onClose={onCloseConfig}
               actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
-            />
+            >
+              <span>
+                Service ID:{" "}
+                <a
+                  href={`${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {serviceId}
+                </a>
+              </span>
+            </EditorDialog>
           </div>
           {!isTouch && (
             <ServiceOutputPlug
@@ -333,7 +343,7 @@ export default function ServiceFrame({
               onExpand={onExpand}
               onDelete={onDelete}
               onBypass={onBypass}
-              onHelp={onHelp}
+              helpUrl={helpUrl}
               onConfig={onConfig}
               onCustomEntry={onCustomEntry}
               onChangeName={onChangeName}

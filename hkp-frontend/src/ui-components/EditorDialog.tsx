@@ -105,7 +105,7 @@ export default function EditorDialog({
         {/* Header */}
         <div
           style={{
-            padding: "13px 60px 13px 16px",
+            padding: "13px 60px 0px 16px",
             borderBottom: "1px solid var(--border, #e2ddd7)",
             flexShrink: 0,
           }}
@@ -132,7 +132,7 @@ export default function EditorDialog({
         {children && (
           <div
             style={{
-              padding: "10px 16px 0",
+              padding: "0px 13px",
               flexShrink: 0,
               fontSize: 13,
               color: "var(--text-mid, #666)",

@@ -26,17 +26,50 @@ type Props = {
   customMenuEntries?: Array<CustomMenuEntry>;
   onExpand: (expanded: boolean) => void;
   onDelete: () => void;
-  onHelp: () => void;
+  helpUrl: string;
   onConfig: () => void;
   onCustomEntry: (item: CustomMenuEntry) => void;
 };
 
 function DragHandle() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 2.5, padding: 2, opacity: 0.3, cursor: "grab" }}>
-      <span style={{ display: "block", width: 11, height: 1.5, background: "var(--text, #1a1a1a)", borderRadius: 2 }} />
-      <span style={{ display: "block", width: 11, height: 1.5, background: "var(--text, #1a1a1a)", borderRadius: 2 }} />
-      <span style={{ display: "block", width: 11, height: 1.5, background: "var(--text, #1a1a1a)", borderRadius: 2 }} />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 2.5,
+        padding: 2,
+        opacity: 0.3,
+        cursor: "grab",
+      }}
+    >
+      <span
+        style={{
+          display: "block",
+          width: 11,
+          height: 1.5,
+          background: "var(--text, #1a1a1a)",
+          borderRadius: 2,
+        }}
+      />
+      <span
+        style={{
+          display: "block",
+          width: 11,
+          height: 1.5,
+          background: "var(--text, #1a1a1a)",
+          borderRadius: 2,
+        }}
+      />
+      <span
+        style={{
+          display: "block",
+          width: 11,
+          height: 1.5,
+          background: "var(--text, #1a1a1a)",
+          borderRadius: 2,
+        }}
+      />
     </div>
   );
 }
@@ -45,7 +78,7 @@ export default function ServiceSettings({
   isCollapsed,
   service,
   customMenuEntries,
-  onHelp,
+  helpUrl,
   onExpand,
   onDelete,
   onConfig,
@@ -107,13 +140,11 @@ export default function ServiceSettings({
             <span>Expand</span>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem
-          onClick={onHelp}
-          className="text-base"
-          disabled={true}
-        >
-          <MenuIcon icon={Info} />
-          <span>Documentation</span>
+        <DropdownMenuItem asChild className="text-base">
+          <a href={helpUrl} target="_blank" rel="noopener noreferrer" style={{ color: "inherit", textDecoration: "none" }}>
+            <MenuIcon icon={Info} />
+            <span>Documentation</span>
+          </a>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={onDelete} className="text-base">

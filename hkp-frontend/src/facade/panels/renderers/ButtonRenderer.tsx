@@ -1,16 +1,17 @@
 import { ButtonWidget } from "../../types";
-import { findService } from "../../findService";
 import { WidgetRendererProps } from "../widgetRegistry";
+import { useFacadeState } from "../../FacadeStateContext";
+import { executeActions } from "../../executeActions";
 
 export function ButtonRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<ButtonWidget>) {
+  const { setState } = useFacadeState();
   return (
     <button
       onClick={() => {
-        const service = findService(boardContext, widget.action.serviceUuid);
-        service?.configure(widget.action.configure);
+        executeActions({ action: widget.action, actions: widget.actions, value: undefined, boardContext, setState });
       }}
       style={{
         padding: "9px 20px",

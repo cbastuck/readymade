@@ -1,4 +1,4 @@
-import { ReactElement, useMemo, useState } from "react";
+import { ReactElement, useMemo, useRef, useState } from "react";
 
 import ServiceWithDropBars from "./ServiceWithDropBars";
 import { RuntimeDescriptor, ServiceClass, ServiceInstance } from "../types";
@@ -53,6 +53,9 @@ export default function ServiceUiContainer(props: Props) {
   const boardContext = useBoardContext();
   const registry = boardContext?.registry[runtime.id] ?? [];
 
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCountRef = useRef(0);
+
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -60,6 +63,10 @@ export default function ServiceUiContainer(props: Props) {
     boardContext?.addService(svc, runtime);
     setSearchTerm("");
     setPopoverOpen(false);
+  };
+
+  const onDropServiceClass = (svc: ServiceClass, insertAtIndex: number) => {
+    boardContext?.addService(svc, runtime, undefined, insertAtIndex);
   };
 
   const runtimeId = runtime.id;
@@ -80,6 +87,20 @@ export default function ServiceUiContainer(props: Props) {
       className={`overflow-y-hidden w-full pb-4 mt-3 p-4 ${className || ""} ${
         wrapServices ? "flex-wrap" : ""
       }`}
+      onDragStart={() => {
+        dragCountRef.current += 1;
+        setIsDragging(true);
+      }}
+      onDragEnd={() => {
+        dragCountRef.current = Math.max(0, dragCountRef.current - 1);
+        if (dragCountRef.current === 0) {
+          setIsDragging(false);
+        }
+      }}
+      onDrop={() => {
+        dragCountRef.current = 0;
+        setIsDragging(false);
+      }}
     >
       {serviceElements.flatMap((serviceElement, pos) => {
         const card = (
@@ -95,8 +116,10 @@ export default function ServiceUiContainer(props: Props) {
           >
             <ServiceWithDropBars
               index={pos}
+              isFirst={pos === 0}
+              isDragging={isDragging}
               onDrop={onArrangeService}
-              allowDropBehind={pos === services.length - 1}
+              onDropServiceClass={onDropServiceClass}
             >
               {serviceElement}
             </ServiceWithDropBars>
