@@ -1,9 +1,34 @@
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
-import { LayoutItem, LayoutContainer, LayoutWidget, KnobWidget } from "../types";
+import { LayoutItem, LayoutContainer, LayoutWidget, KnobWidget, RepeatWidget, FacadeStateRef } from "../types";
 import { PanelContext, widgetRegistry } from "./widgetRegistry";
+import { useFacadeState } from "../FacadeStateContext";
 
 export function isContainer(item: LayoutItem): item is LayoutContainer | LayoutWidget {
-  return "items" in item;
+  return "items" in item && (!("type" in item) || (item as any).type !== "repeat");
+}
+
+function isStateRef(value: unknown): value is FacadeStateRef {
+  return typeof value === "object" && value !== null && "$state" in value;
+}
+
+// Recursively replaces "{{item}}" in string values with the current item.
+function interpolateTemplate(template: unknown, item: unknown): unknown {
+  if (typeof template === "string") {
+    if (template === "{{item}}") { return item; }
+    if (typeof item === "string") { return template.replace(/\{\{item\}\}/g, item); }
+    return template;
+  }
+  if (Array.isArray(template)) {
+    return template.map((v) => interpolateTemplate(v, item));
+  }
+  if (template !== null && typeof template === "object") {
+    const result: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(template)) {
+      result[k] = interpolateTemplate(v, item);
+    }
+    return result;
+  }
+  return template;
 }
 
 // Walk the layout tree and collect initial knob values keyed by action.serviceUuid.
@@ -32,6 +57,44 @@ export function LayoutNode({
   boardContext: BoardContextState;
   panelContext: PanelContext;
 }) {
+  const { state: facadeState } = useFacadeState();
+
+  if ("type" in item && item.type === "repeat") {
+    const repeat = item as RepeatWidget;
+    const rawItems = isStateRef(repeat.items)
+      ? facadeState[(repeat.items as FacadeStateRef)["$state"]]
+      : repeat.items;
+    const items = Array.isArray(rawItems) ? rawItems : [];
+    const containerStyle = repeat.columns != null
+      ? {
+          display: "grid" as const,
+          gridTemplateColumns: `repeat(${repeat.columns}, 1fr)`,
+          gap: repeat.gap,
+        }
+      : {
+          display: "flex" as const,
+          flexDirection: (repeat.direction ?? "column") as "row" | "column",
+          gap: repeat.gap,
+          flexWrap: (repeat.wrap ? "wrap" : undefined) as "wrap" | undefined,
+        };
+
+    return (
+      <div style={containerStyle}>
+        {items.map((it, i) => {
+          const resolved = interpolateTemplate(repeat.template, it) as LayoutItem;
+          return (
+            <LayoutNode
+              key={i}
+              item={resolved}
+              boardContext={boardContext}
+              panelContext={panelContext}
+            />
+          );
+        })}
+      </div>
+    );
+  }
+
   if (isContainer(item)) {
     return (
       <div

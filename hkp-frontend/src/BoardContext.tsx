@@ -81,6 +81,7 @@ type BoardContextAPI = {
     desc: ServiceClass,
     rt: RuntimeDescriptor,
     prototype?: ServiceInstance,
+    insertAtIndex?: number,
   ) => void;
   removeService: (svc: InstanceId, rt: RuntimeDescriptor) => void;
 
@@ -414,7 +415,8 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       service: ServiceClass,
       runtime: RuntimeDescriptor,
       prototype?: ServiceInstance,
-    ) => addServiceOp(service, runtime, getRefs(), prototype);
+      insertAtIndex?: number,
+    ) => addServiceOp(service, runtime, getRefs(), prototype, insertAtIndex);
     const removeService = (service: InstanceId, runtime: RuntimeDescriptor) =>
       removeServiceOp(service, runtime, getRefs());
     const removeAllServices = (runtime: RuntimeDescriptor) =>

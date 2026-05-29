@@ -15,7 +15,7 @@ type Props = {
   onExpand: (isExpanded: boolean) => void;
   onDelete: () => void;
   onBypass: (isBypass: boolean) => void;
-  onHelp: () => void;
+  helpUrl: string;
   onConfig: () => void;
   onCustomEntry: (item: CustomMenuEntry) => void;
   onChangeName: (newName: string) => void;
@@ -30,7 +30,7 @@ export default function ServiceHeader({
   onBypass,
   onExpand,
   onDelete,
-  onHelp,
+  helpUrl,
   onConfig,
   onCustomEntry,
   onChangeName,
@@ -58,7 +58,7 @@ export default function ServiceHeader({
           customMenuEntries={customMenuEntries}
           onExpand={onExpand}
           onDelete={onDelete}
-          onHelp={onHelp}
+          helpUrl={helpUrl}
           onConfig={onConfig}
           onCustomEntry={onCustomEntry}
         />
@@ -86,7 +86,7 @@ export default function ServiceHeader({
         customMenuEntries={customMenuEntries}
         onExpand={onExpand}
         onDelete={onDelete}
-        onHelp={onHelp}
+        helpUrl={helpUrl}
         onConfig={onConfig}
         onCustomEntry={onCustomEntry}
       />

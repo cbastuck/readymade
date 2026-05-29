@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 import {
@@ -37,6 +37,8 @@ export default function SubServicePipelineUI({
   const pipeline: PipelineEntry[] = service.state?.pipeline ?? [];
   const registry = service.app.listAvailableServices();
   const [collapsed, setCollapsed] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragCountRef = useRef(0);
 
   const findDescriptor = (serviceId: string): ServiceClass | undefined =>
     registry.find((entry) => entry.serviceId === serviceId);
@@ -97,7 +99,23 @@ export default function SubServicePipelineUI({
       )}
 
       {!collapsed && (
-        <div className="flex flex-row">
+        <div
+          className="flex flex-row"
+          onDragStart={() => {
+            dragCountRef.current += 1;
+            setIsDragging(true);
+          }}
+          onDragEnd={() => {
+            dragCountRef.current = Math.max(0, dragCountRef.current - 1);
+            if (dragCountRef.current === 0) {
+              setIsDragging(false);
+            }
+          }}
+          onDrop={() => {
+            dragCountRef.current = 0;
+            setIsDragging(false);
+          }}
+        >
           {pipeline.map((entry, pos) => {
             const descriptor = findDescriptor(entry.serviceId);
 
@@ -155,8 +173,9 @@ export default function SubServicePipelineUI({
               <ServiceWithDropBars
                 key={entry.instanceId}
                 index={pos}
+                isFirst={pos === 0}
+                isDragging={isDragging}
                 onDrop={rearrange}
-                allowDropBehind={pos === pipeline.length - 1}
               >
                 <div className="px-0.5">{uiElement}</div>
               </ServiceWithDropBars>

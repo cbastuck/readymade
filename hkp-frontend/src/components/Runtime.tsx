@@ -318,6 +318,11 @@ const Runtime = forwardRef<RuntimeHandle, Props>(function Runtime(props, _ref) {
         }
       }}
       onDragLeave={() => setIsSvcClassDragOver(false)}
+      onDropCapture={(ev) => {
+        if (ev.dataTransfer.types.includes(HKP_DND_SERVICE_CLASS_TYPE)) {
+          setIsSvcClassDragOver(false);
+        }
+      }}
       onDrop={(ev) => {
         const data = ev.dataTransfer.getData(HKP_DND_SERVICE_CLASS_TYPE);
         if (data) {

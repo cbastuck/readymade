@@ -1,37 +1,41 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { JsonInputWidget } from "../../types";
-import { findService } from "../../findService";
 import { WidgetRendererProps } from "../widgetRegistry";
-import { applyInput } from "../../applyInput";
+import { useFacadeState } from "../../FacadeStateContext";
+import { executeActions } from "../../executeActions";
 import JsonEditor from "hkp-frontend/src/ui-components/JsonEditor";
-
-function seedValue(widget: JsonInputWidget): unknown {
-  if (widget.defaultValue !== undefined) {
-    return widget.defaultValue;
-  }
-  return widget.mode === "array" ? [] : {};
-}
 
 export function JsonInputRenderer({
   widget,
   boardContext,
 }: WidgetRendererProps<JsonInputWidget>) {
-  const [value, setValue] = useState(() => seedValue(widget));
+  const { state: facadeState, setState } = useFacadeState();
 
-  const service = useMemo(
-    () => findService(boardContext, widget.action.serviceUuid),
-    [boardContext.scopes, boardContext.services, widget.action.serviceUuid],
-  );
+  const [value, setValue] = useState(() => {
+    const dv = widget.defaultValue;
+    if (
+      dv !== null &&
+      typeof dv === "object" &&
+      !Array.isArray(dv) &&
+      "$state" in dv
+    ) {
+      const key = (dv as { $state: string })["$state"];
+      const stateVal = facadeState[key];
+      if (stateVal !== undefined) {
+        return stateVal;
+      }
+    }
+    return dv !== undefined ? dv : widget.mode === "array" ? [] : {};
+  });
 
   const submit = () => {
-    if (!service) {
-      return;
-    }
-    const configure: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(widget.action.configure)) {
-      configure[k] = applyInput(v, value);
-    }
-    service.configure(configure);
+    executeActions({
+      action: widget.action,
+      actions: widget.actions,
+      value,
+      boardContext,
+      setState,
+    });
   };
 
   return (
@@ -65,17 +69,20 @@ export function JsonInputRenderer({
           minHeight: 80,
           maxHeight: 240,
           overflowY: "auto",
+          width: widget.width,
         }}
       >
-        <JsonEditor value={value} onChange={setValue} rootLabel={widget.mode} />
+        <JsonEditor
+          value={value}
+          onChange={setValue}
+          rootLabel={widget.mode}
+          showBreadcrumbs={false}
+        />
+
+        <button onClick={submit} className="hkp-svc-btn w-full">
+          {widget.submitLabel ?? "Apply"}
+        </button>
       </div>
-      <button
-        onClick={submit}
-        className="hkp-svc-btn"
-        style={{ alignSelf: "flex-start" }}
-      >
-        {widget.submitLabel ?? "Apply"}
-      </button>
     </div>
   );
 }

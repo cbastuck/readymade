@@ -71,7 +71,7 @@
                     "state": {
                       "template": {
                         "action": "subscribe",
-                        "trades": ["AAPL", "MSFT", "TSLA", "NVDA"]
+                        "trades": []
                       }
                     }
                   }
@@ -117,6 +117,12 @@
         }
       },
       {
+        "uuid": "tick-delta-svc",
+        "serviceId": "hookup.to/service/tick-rule-delta",
+        "serviceName": "Volume Delta",
+        "state": { "interval": 1000 }
+      },
+      {
         "uuid": "monitor-svc",
         "serviceId": "hookup.to/service/monitor",
         "serviceName": "Trade Feed",
@@ -126,6 +132,31 @@
   },
   "facade": {
     "layout": "single",
+    "state": {
+      "symbols": ["AAPL", "MSFT", "TSLA", "NVDA"]
+    },
+    "init": [
+      {
+        "type": "configure",
+        "serviceUuid": "alpaca-feedback",
+        "configure": {
+          "configureService": {
+            "instanceId": "subscribe-response",
+            "state": {
+              "configureService": {
+                "instanceId": "subscribe-map",
+                "state": {
+                  "template": {
+                    "action": "subscribe",
+                    "trades": { "$state": "symbols" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
     "panels": [
       {
         "id": "main",
@@ -137,6 +168,7 @@
           "items": [
             {
               "direction": "row",
+              "justify": "center",
               "gap": 8,
               "items": [
                 {
@@ -158,30 +190,45 @@
               ]
             },
             {
-              "type": "json-input",
-              "label": "Symbols",
-              "mode": "array",
-              "defaultValue": ["AAPL", "MSFT", "TSLA", "NVDA"],
-              "submitLabel": "Apply",
-              "action": {
-                "serviceUuid": "alpaca-feedback",
-                "configure": {
-                  "configureService": {
-                    "instanceId": "subscribe-response",
-                    "state": {
-                      "configureService": {
-                        "instanceId": "subscribe-map",
-                        "state": {
-                          "template": {
-                            "action": "subscribe",
-                            "trades": "$$input"
+              "type": "layout",
+              "direction": "row",
+              "justify": "center",
+              "items": [
+                {
+                  "type": "json-input",
+                  "label": "Symbols",
+                  "mode": "array",
+                  "defaultValue": { "$state": "symbols" },
+                  "submitLabel": "Apply",
+                  "width": 500,
+                  "actions": [
+                    {
+                      "type": "set-state",
+                      "key": "symbols"
+                    },
+                    {
+                      "type": "configure",
+                      "serviceUuid": "alpaca-feedback",
+                      "configure": {
+                        "configureService": {
+                          "instanceId": "subscribe-response",
+                          "state": {
+                            "configureService": {
+                              "instanceId": "subscribe-map",
+                              "state": {
+                                "template": {
+                                  "action": "subscribe",
+                                  "trades": "$$input"
+                                }
+                              }
+                            }
                           }
                         }
                       }
                     }
-                  }
+                  ]
                 }
-              }
+              ]
             },
             {
               "direction": "row",
@@ -216,6 +263,41 @@
                   }
                 }
               ]
+            },
+            {
+              "type": "layout",
+              "direction": "row",
+              "justify": "center",
+              "items": [
+                {
+                  "type": "repeat",
+                  "items": { "$state": "symbols" },
+                  "direction": "column",
+                  "gap": 6,
+                  "template": {
+                    "type": "bipolar-meter",
+                    "source": {
+                      "serviceUuid": "tick-delta-svc",
+                      "path": "{{item}}"
+                    },
+                    "label": "{{item}}"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "repeat",
+              "items": { "$state": "symbols" },
+              "columns": 2,
+              "gap": 8,
+              "template": {
+                "type": "line-chart",
+                "source": { "serviceUuid": "monitor-svc" },
+                "symbol": "{{item}}",
+                "height": 150,
+                "width": 400,
+                "maxPoints": 300
+              }
             },
             {
               "type": "data-table",

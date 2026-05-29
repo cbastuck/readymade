@@ -13,6 +13,7 @@ export async function addService(
   runtime: RuntimeDescriptor,
   refs: BoardStateRefs,
   prototype?: ServiceInstance,
+  insertAtIndex?: number,
 ): Promise<ServiceDescriptor | null> {
   const [scope, api] = getRuntimeScopeApi(runtime.id, refs);
   if (!api || !scope) {
@@ -22,10 +23,21 @@ export async function addService(
   }
   const svc = await api.addService(scope, service, prototype?.uuid);
   if (svc) {
-    refs.setServices((prev) => ({
-      ...prev,
-      [runtime.id]: prev[runtime.id].concat(svc),
-    }));
+    const currentList = refs.servicesRef.current![runtime.id];
+    if (insertAtIndex !== undefined) {
+      const newList = [...currentList];
+      newList.splice(insertAtIndex, 0, svc);
+      refs.setServices((prev) => ({ ...prev, [runtime.id]: newList }));
+      const rearranged = await api.rearrangeServices(scope, newList);
+      if (rearranged) {
+        refs.setServices((prev) => ({ ...prev, [runtime.id]: rearranged }));
+      }
+    } else {
+      refs.setServices((prev) => ({
+        ...prev,
+        [runtime.id]: prev[runtime.id].concat(svc),
+      }));
+    }
   }
   if (prototype) {
     await api.configureService(

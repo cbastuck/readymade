@@ -5,10 +5,10 @@ type Props = {
   className?: string;
   style?: CSSProperties;
   children?: JSX.Element;
-  acceptedType: string;
+  acceptedType: string | string[];
   disabled?: boolean;
   activeColor?: string;
-  onDrop: (data: any) => void;
+  onDrop: (data: any, type: string) => void;
 };
 
 export default function DropTarget({
@@ -22,8 +22,10 @@ export default function DropTarget({
 }: Props) {
   const [isActive, setIsActive] = useState(false);
   const theme = useTheme();
+  const types = Array.isArray(acceptedType) ? acceptedType : [acceptedType];
+
   const onDragOver = (ev: DragEvent) => {
-    if (ev.dataTransfer.types.includes(acceptedType) && !disabled) {
+    if (types.some((t) => ev.dataTransfer.types.includes(t)) && !disabled) {
       setIsActive(true);
       ev.preventDefault();
     }
@@ -34,9 +36,10 @@ export default function DropTarget({
   };
 
   const onDrop = (ev: DragEvent) => {
-    if (!disabled && ev.dataTransfer.types.includes(acceptedType)) {
+    const matchedType = types.find((t) => ev.dataTransfer.types.includes(t));
+    if (!disabled && matchedType) {
       setIsActive(false);
-      onDropProp(ev.dataTransfer.getData(acceptedType));
+      onDropProp(ev.dataTransfer.getData(matchedType), matchedType);
       ev.preventDefault();
       ev.stopPropagation();
     }
