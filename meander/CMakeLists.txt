@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(meander LANGUAGES CXX VERSION 1.0)
+project(Meander LANGUAGES CXX VERSION 1.0)
 
 # CPM is already included by the root CMakeLists.txt when built from there.
 # When building standalone, include it from the sibling project's copy.
