@@ -109,14 +109,14 @@ jobs:
         if: ${{ env.APPLE_SIGNING_CERT_BASE64 != '' && env.APPLE_SIGNING_CERT_PASSWORD != '' && env.APPLE_SIGNING_IDENTITY != '' }}
         shell: bash
         run: |
-          bash ./sign.sh build/meander/Release/meander.app
+          bash ./sign.sh build/meander/Release/Meander.app
 
       - name: Package app
         shell: bash
         run: |
           set -euo pipefail
           asset="meander-macos-${{ inputs.tag }}.zip"
-          ditto -c -k --sequesterRsrc --keepParent build/meander/Release/meander.app "${asset}"
+          ditto -c -k --sequesterRsrc --keepParent build/meander/Release/Meander.app "${asset}"
           echo "ASSET=${asset}" >> "$GITHUB_ENV"
 
       - name: Create release
