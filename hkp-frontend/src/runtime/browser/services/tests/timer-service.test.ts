@@ -180,9 +180,10 @@ describe("Timer service – configure() property updates", () => {
 
 describe("Timer service – stop command", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] });
   });
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
@@ -255,9 +256,10 @@ describe("Timer service – stop command", () => {
 
 describe("Timer service – periodic mode", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] });
   });
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
@@ -440,9 +442,10 @@ describe("Timer service – periodic mode", () => {
 
 describe("Timer service – until condition", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] });
   });
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
@@ -483,9 +486,10 @@ describe("Timer service – until condition", () => {
 
 describe("Timer service – one-shot via configure(start)", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] });
   });
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
@@ -538,9 +542,10 @@ describe("Timer service – one-shot via configure(start)", () => {
 
 describe("Timer service – process() one-shot mode", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] });
   });
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 
@@ -649,9 +654,10 @@ describe("Timer service – nextTimerArgument", () => {
 
 describe("Timer service – destroy()", () => {
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.useFakeTimers({ toFake: ["setTimeout", "setInterval", "clearTimeout", "clearInterval"] });
   });
   afterEach(() => {
+    vi.clearAllTimers();
     vi.useRealTimers();
   });
 

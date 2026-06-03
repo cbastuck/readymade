@@ -62,7 +62,7 @@
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.2.2",
     "unique-names-generator": "^4.7.1",
-    "uuid": "^10.0.0",
+    "uuid": "^14.0.0",
     "vite-plugin-svgr": "^4.3.0",
     "web-streams-polyfill": "^3.2.0",
     "web-vitals": "^2.1.4"
@@ -92,6 +92,9 @@
     "typescript": "^5.2.2",
     "vite": "^6.3.5",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "^3.1.4"
+    "vitest": "^4.1.8"
+  },
+  "overrides": {
+    "dompurify": "^3.4.8"
   }
 }
