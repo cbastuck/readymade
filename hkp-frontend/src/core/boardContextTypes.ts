@@ -29,6 +29,18 @@ export type Props = {
   fetchBoard?: () => Promise<BoardDescriptor>;
   isRuntimeInScope?: () => boolean;
   onRemoveRuntime?: (runtime: RuntimeDescriptor) => Promise<void>;
+  /**
+   * Called for each runtime when BoardProvider unmounts. Receives a
+   * `defaultHandler` that performs the standard teardown (closes the WebSocket
+   * and sends DELETE to the runtime server). Omit the call to `defaultHandler`
+   * to suppress teardown for that runtime — useful for cloud boards where the
+   * coordinator owns the runtime lifecycle.
+   */
+  onUnmountRuntime?: (
+    runtime: RuntimeDescriptor,
+    scope: RuntimeScope,
+    defaultHandler: () => void,
+  ) => void;
   newBoard?: (searchParams?: string) => void;
   onClearBoard?: (
     board: BoardDescriptor,

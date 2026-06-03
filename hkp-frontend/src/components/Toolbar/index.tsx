@@ -1,4 +1,6 @@
 import { ReactNode, useContext } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Monitor, Cloud } from "lucide-react";
 
 import {
   useTheme,
@@ -70,6 +72,53 @@ function TbSeparator() {
         margin: "0 4px",
       }}
     />
+  );
+}
+
+function ViewToggle() {
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const isCloud = pathname.startsWith("/cloud-boards");
+  const btnBase: React.CSSProperties = {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    border: "none",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "background 0.12s, color 0.12s",
+  };
+  const activeStyle: React.CSSProperties = {
+    ...btnBase,
+    background: "oklch(0.89 0.006 62)",
+    color: "var(--text, #1a1a1a)",
+  };
+  const inactiveStyle: React.CSSProperties = {
+    ...btnBase,
+    background: "none",
+    color: "var(--text-dim, #9ca3af)",
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <button
+        type="button"
+        title="Local boards"
+        style={!isCloud ? activeStyle : inactiveStyle}
+        onClick={() => navigate("/playground")}
+      >
+        <Monitor size={14} />
+      </button>
+      <button
+        type="button"
+        title="Cloud boards"
+        style={isCloud ? activeStyle : inactiveStyle}
+        onClick={() => navigate("/cloud-boards")}
+      >
+        <Cloud size={14} />
+      </button>
+    </div>
   );
 }
 
@@ -149,6 +198,9 @@ export default function Toolbar({
           >
             <ShareIcon />
           </button>
+          <TbSeparator />
+          <ViewToggle />
+          <TbSeparator />
           {menuSlot ?? (!hideNavigation && <AppMenu />)}
         </div>
       </div>

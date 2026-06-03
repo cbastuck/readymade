@@ -397,7 +397,12 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     };
 
     const addRuntime = (rtClass: RuntimeClass) =>
-      addRuntimeOp(rtClass, getRefs(), waitForUserLogin);
+      addRuntimeOp(rtClass, getRefs(), waitForUserLogin, (err) => {
+        appContext?.pushNotification({
+          message: `Failed to connect to "${rtClass.name}": ${err.message}`,
+          type: "error",
+        });
+      });
     const updateRuntime = (runtimeId: string, updated: RuntimeConfiguration) =>
       updateRuntimeOp(runtimeId, updated, getRefs());
     const arrangeRuntimes = (runtimeId: string, targetPosition: number) =>
@@ -555,10 +560,17 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
           cancellation.cancelled = true;
         }
         // Clean up runtimes that are already committed to state (real unmount path).
+        const onUnmountRuntime = propsRef.current?.onUnmountRuntime;
         for (const runtime of providerStateRef.current.runtimes) {
           const [scope, api] = getRuntimeScopeApi(runtime.id, getRefs());
           if (api && scope) {
-            api.removeRuntime(scope, runtime, userRef.current);
+            const defaultHandler = () =>
+              api.removeRuntime(scope, runtime, userRef.current);
+            if (onUnmountRuntime) {
+              onUnmountRuntime(runtime, scope, defaultHandler);
+            } else {
+              defaultHandler();
+            }
           } else {
             console.warn(
               `BoardProvider unmount: api or scope missing for runtime: ${runtime.id}`,

@@ -237,7 +237,7 @@ class Map extends ServiceBase<State> {
     }
 
     if (node.type === "array") {
-      const out = [];
+      const out: any[] = [];
       for (const item of node.items) {
         out.push(await this.evalStructuredTemplateNode(item, params));
       }

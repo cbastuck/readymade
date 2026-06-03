@@ -89,6 +89,7 @@ export interface RuntimeScope {
 
   serializeState?: () => any;
   setState?: (partialUpdate: { [key: string]: any }) => void;
+  close?: () => Promise<void>;
 }
 
 export type ExternalInput = {

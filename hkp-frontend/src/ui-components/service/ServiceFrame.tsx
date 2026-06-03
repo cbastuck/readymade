@@ -59,7 +59,11 @@ export default function ServiceFrame({
 
   const [signalOutput, setSignalOutput] = useState(false);
   const [serviceIsProcessing, setServiceIsProcessing] = useState(false);
+  const [serviceIdCopied, setServiceIdCopied] = useState(false);
   const processingOffTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const copyFeedbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
   const cardRef = useRef<HTMLDivElement>(null);
@@ -102,6 +106,9 @@ export default function ServiceFrame({
     return () => {
       if (processingOffTimerRef.current !== null) {
         clearTimeout(processingOffTimerRef.current);
+      }
+      if (copyFeedbackTimerRef.current !== null) {
+        clearTimeout(copyFeedbackTimerRef.current);
       }
       if (service.app) {
         service.app.unregisterNotificationTarget?.(service, onNotification);
@@ -210,6 +217,50 @@ export default function ServiceFrame({
     onAction({ action: "rename", service, payload: { value: newName } });
   };
 
+  const copyServiceUuid = async () => {
+    const value = `${service.uuid ?? ""}`;
+    if (!value) {
+      return;
+    }
+
+    const setCopiedFeedback = () => {
+      setServiceIdCopied(true);
+      if (copyFeedbackTimerRef.current) {
+        clearTimeout(copyFeedbackTimerRef.current);
+      }
+      copyFeedbackTimerRef.current = setTimeout(
+        () => setServiceIdCopied(false),
+        1200,
+      );
+    };
+
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(value);
+        setCopiedFeedback();
+        return;
+      }
+    } catch {
+      // Fall through to legacy copy method.
+    }
+
+    const input = document.createElement("textarea");
+    input.value = value;
+    input.style.position = "fixed";
+    input.style.opacity = "0";
+    document.body.appendChild(input);
+    input.focus();
+    input.select();
+    try {
+      const successful = document.execCommand("copy");
+      if (successful) {
+        setCopiedFeedback();
+      }
+    } finally {
+      document.body.removeChild(input);
+    }
+  };
+
   const theme = useTheme();
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
@@ -288,8 +339,8 @@ export default function ServiceFrame({
               onClose={onCloseConfig}
               actions={[{ label: "Apply Changes", onAction: onApplyConfig }]}
             >
-              <span>
-                Service ID:{" "}
+              <div>
+                Service:{" "}
                 <a
                   href={`${DOCS_SERVICES_URL}?serviceId=${encodeURIComponent(serviceId)}`}
                   target="_blank"
@@ -297,7 +348,31 @@ export default function ServiceFrame({
                 >
                   {serviceId}
                 </a>
-              </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+
+                  gap: 8,
+                }}
+              >
+                <span>Service ID:{` ${service.uuid}`}</span>
+                <button
+                  type="button"
+                  onClick={copyServiceUuid}
+                  style={{
+                    border: "1px solid #b8b2ab",
+                    borderRadius: 6,
+                    padding: "2px 8px",
+                    fontSize: 12,
+                    background: "#f8f6f3",
+                    cursor: "pointer",
+                  }}
+                >
+                  {serviceIdCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
             </EditorDialog>
           </div>
           {!isTouch && (

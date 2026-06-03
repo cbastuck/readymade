@@ -106,3 +106,16 @@ export function storeAvailableRuntimeEngines(engines: RuntimeClass[]) {
     JSON.stringify(filteredEngines),
   );
 }
+
+export type CoordinatorDescriptor = {
+  name: string;
+  url: string;
+};
+
+export function restoreCoordinators(): CoordinatorDescriptor[] {
+  return JSON.parse(localStorage.getItem("hkp-coordinators") || "[]");
+}
+
+export function storeCoordinators(coordinators: CoordinatorDescriptor[]): void {
+  localStorage.setItem("hkp-coordinators", JSON.stringify(coordinators));
+}

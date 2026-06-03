@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { LogIn, LogOut, Menu, Palette, User, Server } from "lucide-react";
+import { LogIn, LogOut, Menu, Palette, User } from "lucide-react";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useNavigate } from "react-router-dom";
 
@@ -93,17 +93,6 @@ export default function AppMenu() {
         <DropdownMenuGroup>
           <DropdownMenuItem
             className="text-base"
-            onClick={() => navigate("/remotes")}
-          >
-            <MenuIcon icon={Server} />
-            <span>Remotes</span>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            className="text-base"
             onClick={() => (isLoggedIn ? navigate("/profile") : onLogin())}
           >
             {isLoggedIn ? (
@@ -118,6 +107,7 @@ export default function AppMenu() {
               </>
             )}
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
 
           {/*
             <DropdownMenuItem
@@ -140,22 +130,13 @@ export default function AppMenu() {
                 value={themeName}
                 onValueChange={(v) => setThemeName(v as ThemeName)}
               >
-                <DropdownMenuRadioItem
-
-                  value="default"
-                >
+                <DropdownMenuRadioItem value="default">
                   Default
                 </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem
-
-                  value="sketch"
-                >
+                <DropdownMenuRadioItem value="sketch">
                   Sketch
                 </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem
-
-                  value="playground"
-                >
+                <DropdownMenuRadioItem value="playground">
                   Playground
                 </DropdownMenuRadioItem>
               </DropdownMenuRadioGroup>

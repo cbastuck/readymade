@@ -29,6 +29,7 @@ export function remapFacadeUuids(
   const remap = (uuid: string) => uuidMap.get(uuid) ?? uuid;
   function remapAction(action: FacadeWidgetAction): FacadeWidgetAction;
   function remapAction(action: undefined): undefined;
+  function remapAction(action: FacadeWidgetAction | undefined): FacadeWidgetAction | undefined;
   function remapAction(
     action?: FacadeWidgetAction,
   ): FacadeWidgetAction | undefined {
