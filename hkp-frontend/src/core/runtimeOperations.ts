@@ -42,6 +42,7 @@ export async function addRuntime(
   rtClass: RuntimeClass,
   refs: BoardStateRefs,
   waitForUserLogin: () => Promise<void>,
+  onError?: (err: Error) => void,
 ): Promise<void> {
   const propsRef = refs.propsRef.current!;
   const api = propsRef.runtimeApis?.[rtClass.type];
@@ -83,6 +84,7 @@ export async function addRuntime(
     }
   } catch (err: any) {
     console.error("BoardContext.addRuntime", err, err.stack);
+    onError?.(err);
     await waitForUserLogin();
   }
 }

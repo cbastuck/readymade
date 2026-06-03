@@ -12,7 +12,7 @@ import spotifyBoard from "../../../hkp-frontend/boards/spotify-board.json";
 import triggerpadBoard from "../../../hkp-frontend/boards/triggerpad-board.json";
 import gameBoard from "../../../hkp-frontend/boards/game-board.json";
 import encryptBoard from "../../../hkp-frontend/boards/encrypt-board.json";
-import spectralModifierBoard from "../../../hkp-frontend/boards/spectral-modifier-board.json";
+// import spectralModifierBoard from "../../../hkp-frontend/boards/spectral-modifier-board.json";
 import smoothDemoBoard from "../../../hkp-frontend/boards/smooth-demo-board.json";
 import alpacaBoard from "../../../hkp-frontend/boards/alpaca-board.json";
 

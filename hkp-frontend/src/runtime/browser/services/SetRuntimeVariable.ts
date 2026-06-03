@@ -45,7 +45,7 @@ class SetRuntimeVariable {
     return params;
   }
 
-  getConfiguration() {
+  async getConfiguration() {
     return { ...this.state, bypass: this.bypass };
   }
 }

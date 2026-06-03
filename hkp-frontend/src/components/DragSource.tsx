@@ -6,7 +6,7 @@ type Props = {
   children: JSX.Element | JSX.Element[];
   value?: any;
   type: string;
-  dragImageRef?: RefObject<HTMLElement>;
+  dragImageRef?: RefObject<HTMLElement | null>;
 };
 export default function DragSource({
   className,

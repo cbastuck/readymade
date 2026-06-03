@@ -298,7 +298,7 @@ The app bundle is produced under `build/meander/<CONFIG>/`.
 For example, a `Debug` build produces:
 
 ```text
-build/meander/Debug/meander.app
+build/meander/Debug/Meander.app
 ```
 
 ### Windows
@@ -308,7 +308,7 @@ The executable is produced under `build/<CONFIG>/`.
 For example, a `Release` build produces:
 
 ```text
-build/Release/meander.exe
+build/Release/Meander.exe
 ```
 
 ## Rebuild from scratch
