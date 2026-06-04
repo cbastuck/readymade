@@ -28,6 +28,7 @@ import CoordinatorsMenu from "./CoordinatorsMenu";
 import CloudBoard from "./Board";
 import Sidebar from "../playground/Sidebar";
 import { useCoordinatorBridge } from "./useCoordinatorBridge";
+import ManageCoordinatorsDialog from "./ManageCoordinatorsDialog";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -88,6 +89,7 @@ type LandingProps = {
     board: CoordinatorBoardInfo,
   ) => void;
   onNewBoard: (coordinator: CoordinatorDescriptor) => void;
+  onManageCoordinators: () => void;
 };
 
 function CloudBoardsLanding({
@@ -97,6 +99,7 @@ function CloudBoardsLanding({
   isLoading,
   onSelectBoard,
   onNewBoard,
+  onManageCoordinators,
 }: LandingProps) {
   if (!user) {
     return (
@@ -117,14 +120,32 @@ function CloudBoardsLanding({
       <div className="mx-auto max-w-4xl">
         {coordinators.length === 0 ? (
           <div
-            className="rounded-3xl border border-slate-200 bg-white/90 shadow-2xl shadow-slate-200/60 px-8 py-10 text-center"
+            className="rounded-3xl border border-slate-200 bg-white/90 shadow-2xl shadow-slate-200/60 px-8 py-10 flex flex-col items-center gap-4"
             style={{ backdropFilter: "blur(8px)" }}
           >
             <p className="text-slate-400 text-sm">
               Add a coordinator to get started
             </p>
+            <button
+              onClick={onManageCoordinators}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+              style={{ fontSize: "0.8rem", fontWeight: 600 }}
+            >
+              <Plus size={13} />
+              Add coordinator
+            </button>
           </div>
         ) : (
+          <div className="flex flex-col gap-3">
+          <div className="flex justify-end">
+            <button
+              onClick={onManageCoordinators}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+              style={{ fontSize: "0.75rem", fontWeight: 600 }}
+            >
+              Manage coordinators
+            </button>
+          </div>
           <div
             className="rounded-3xl border border-slate-200 bg-white/90 shadow-2xl shadow-slate-200/60"
             style={{ backdropFilter: "blur(8px)" }}
@@ -189,6 +210,7 @@ function CloudBoardsLanding({
               </div>
             ))}
           </div>
+          </div>
         )}
       </div>
     </div>
@@ -247,6 +269,7 @@ export default function CloudBoards({
   const [coordinators, setCoordinators] = useState<CoordinatorDescriptor[]>(
     () => restoreCoordinators(),
   );
+  const [isManageCoordinatorsOpen, setIsManageCoordinatorsOpen] = useState(false);
   const [selectedCoordinator, setSelectedCoordinator] = useState<
     CoordinatorDescriptor | undefined
   >();
@@ -592,11 +615,20 @@ export default function CloudBoards({
                 isLoading={isLoadingAllBoards}
                 onSelectBoard={onSelectBoardFromLanding}
                 onNewBoard={onNewBoard}
+                onManageCoordinators={() => setIsManageCoordinatorsOpen(true)}
               />
             )}
           </div>
         </div>
       </div>
+
+      <ManageCoordinatorsDialog
+        isOpen={isManageCoordinatorsOpen}
+        coordinators={coordinators}
+        onAdd={onAddCoordinator}
+        onRemove={onRemoveCoordinator}
+        onClose={() => setIsManageCoordinatorsOpen(false)}
+      />
     </BoardProvider>
   );
 }
