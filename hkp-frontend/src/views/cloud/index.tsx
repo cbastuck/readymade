@@ -17,7 +17,11 @@ import {
   storeAvailableRuntimeEngines,
 } from "../../common";
 import { useAppContext } from "../../AppContext";
-import { BoardDescriptor, RuntimeClass, isRuntimeBrowserClassType } from "../../types";
+import {
+  BoardDescriptor,
+  RuntimeClass,
+  isRuntimeBrowserClassType,
+} from "../../types";
 import {
   CoordinatorBoardInfo,
   listCoordinatorBoards,
@@ -137,79 +141,79 @@ function CloudBoardsLanding({
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-          <div className="flex justify-end">
-            <button
-              onClick={onManageCoordinators}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-              style={{ fontSize: "0.75rem", fontWeight: 600 }}
-            >
-              Manage coordinators
-            </button>
-          </div>
-          <div
-            className="rounded-3xl border border-slate-200 bg-white/90 shadow-2xl shadow-slate-200/60"
-            style={{ backdropFilter: "blur(8px)" }}
-          >
-            {allCoordinatorBoards.map((group, idx) => (
-              <div
-                key={group.coordinator.url}
-                className={
-                  idx < allCoordinatorBoards.length - 1
-                    ? "border-b border-slate-200"
-                    : ""
-                }
+            <div className="flex justify-end">
+              <button
+                onClick={onManageCoordinators}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                style={{ fontSize: "0.75rem", fontWeight: 600 }}
               >
-                <div className="px-8 py-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <p
-                      className="uppercase tracking-[0.2em] text-slate-500"
-                      style={{ fontSize: "0.72rem", fontWeight: 600 }}
-                    >
-                      {group.coordinator.name}
-                    </p>
-                    <button
-                      onClick={() => onNewBoard(group.coordinator)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
-                      style={{ fontSize: "0.75rem", fontWeight: 600 }}
-                    >
-                      <Plus size={12} />
-                      New board
-                    </button>
-                  </div>
-                  {isLoading ? (
-                    <p className="text-slate-400 text-sm py-4">Loading…</p>
-                  ) : group.error ? (
-                    <p className="text-red-400 text-sm py-4">
-                      Failed to load boards from this coordinator.
-                    </p>
-                  ) : group.boards.length === 0 ? (
-                    <p className="text-slate-400 text-sm py-4">
-                      No boards yet — create one to get started.
-                    </p>
-                  ) : (
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fill, minmax(200px, 1fr))",
-                        gap: 8,
-                      }}
-                    >
-                      {group.boards.map((board) => (
-                        <BoardLandingCard
-                          key={board.boardName}
-                          board={board}
-                          onClick={() =>
-                            onSelectBoard(group.coordinator, board)
-                          }
-                        />
-                      ))}
+                Manage coordinators
+              </button>
+            </div>
+            <div
+              className="rounded-3xl border border-slate-200 bg-white/90 shadow-2xl shadow-slate-200/60"
+              style={{ backdropFilter: "blur(8px)" }}
+            >
+              {allCoordinatorBoards.map((group, idx) => (
+                <div
+                  key={group.coordinator.url}
+                  className={
+                    idx < allCoordinatorBoards.length - 1
+                      ? "border-b border-slate-200"
+                      : ""
+                  }
+                >
+                  <div className="px-8 py-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <p
+                        className="uppercase tracking-[0.2em] text-slate-500"
+                        style={{ fontSize: "0.72rem", fontWeight: 600 }}
+                      >
+                        {group.coordinator.name}
+                      </p>
+                      <button
+                        onClick={() => onNewBoard(group.coordinator)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 transition-colors"
+                        style={{ fontSize: "0.75rem", fontWeight: 600 }}
+                      >
+                        <Plus size={12} />
+                        New board
+                      </button>
                     </div>
-                  )}
+                    {isLoading ? (
+                      <p className="text-slate-400 text-sm py-4">Loading…</p>
+                    ) : group.error ? (
+                      <p className="text-red-400 text-sm py-4">
+                        Failed to load boards from this coordinator.
+                      </p>
+                    ) : group.boards.length === 0 ? (
+                      <p className="text-slate-400 text-sm py-4">
+                        No boards yet — create one to get started.
+                      </p>
+                    ) : (
+                      <div
+                        style={{
+                          display: "grid",
+                          gridTemplateColumns:
+                            "repeat(auto-fill, minmax(200px, 1fr))",
+                          gap: 8,
+                        }}
+                      >
+                        {group.boards.map((board) => (
+                          <BoardLandingCard
+                            key={board.boardName}
+                            board={board}
+                            onClick={() =>
+                              onSelectBoard(group.coordinator, board)
+                            }
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -238,7 +242,11 @@ function CloudBoardInner({ board, bridgeWsUrl, userId }: InnerProps) {
   }
   return (
     <div className="flex-1 overflow-auto">
-      <CloudBoard boardContext={boardContext} boardName={board.boardName} bridgeWs={bridgeWs} />
+      <CloudBoard
+        boardContext={boardContext}
+        boardName={board.boardName}
+        bridgeWs={bridgeWs}
+      />
     </div>
   );
 }
@@ -269,7 +277,8 @@ export default function CloudBoards({
   const [coordinators, setCoordinators] = useState<CoordinatorDescriptor[]>(
     () => restoreCoordinators(),
   );
-  const [isManageCoordinatorsOpen, setIsManageCoordinatorsOpen] = useState(false);
+  const [isManageCoordinatorsOpen, setIsManageCoordinatorsOpen] =
+    useState(false);
   const [selectedCoordinator, setSelectedCoordinator] = useState<
     CoordinatorDescriptor | undefined
   >();
@@ -321,14 +330,14 @@ export default function CloudBoards({
     }
     return listCoordinatorBoards(
       selectedCoordinator.url,
-      user.username,
+      user.userId,
       user.idToken,
     );
   }, [selectedCoordinator, user]);
 
   const { data: boards = [], mutate: reloadBoards } = useSWR(
     selectedCoordinator && user
-      ? `boards:${selectedCoordinator.url}:${user.username}`
+      ? `boards:${selectedCoordinator.url}:${user.userId}`
       : null,
     boardsFetcher,
     { revalidateOnFocus: false },
@@ -344,7 +353,7 @@ export default function CloudBoards({
     const results = await Promise.allSettled(
       coordinators.map(async (c) => ({
         coordinator: c,
-        boards: await listCoordinatorBoards(c.url, user.username, user.idToken),
+        boards: await listCoordinatorBoards(c.url, user.userId, user.idToken),
         error: false,
       })),
     );
@@ -361,7 +370,7 @@ export default function CloudBoards({
     mutate: reloadAllBoards,
   } = useSWR(
     user
-      ? `all-boards:${user.username}:${coordinators.map((c) => c.url).join(",")}`
+      ? `all-boards:${user.userId}:${coordinators.map((c) => c.url).join(",")}`
       : null,
     allBoardsFetcher,
     { revalidateOnFocus: false },
@@ -451,7 +460,7 @@ export default function CloudBoards({
     try {
       await registerCoordinatorBoard(
         coordinator.url,
-        user.username,
+        user.userId,
         user.idToken,
         emptyConfig,
       );
@@ -459,7 +468,7 @@ export default function CloudBoards({
       // Select the newly created board from the refreshed list.
       const refreshed = await listCoordinatorBoards(
         coordinator.url,
-        user.username,
+        user.userId,
         user.idToken,
       );
       const created = refreshed.find((b) => b.boardName === boardName);
@@ -487,10 +496,19 @@ export default function CloudBoards({
       // This prevents the infra effect from tearing down the bridge WebSocket on
       // every initial board load (object references change even for identical data).
       const runtimeKey = (rts: typeof newDescriptor.runtimes) =>
-        rts.map((r) => `${r.id}:${r.type}`).sort().join("|");
+        rts
+          .map((r) => `${r.id}:${r.type}`)
+          .sort()
+          .join("|");
       const serviceKey = (svcs: typeof newDescriptor.services) =>
         Object.entries(svcs ?? {})
-          .map(([rid, s]) => `${rid}:${s.map((x) => x.uuid).sort().join(",")}`)
+          .map(
+            ([rid, s]) =>
+              `${rid}:${s
+                .map((x) => x.uuid)
+                .sort()
+                .join(",")}`,
+          )
           .sort()
           .join("|");
 
@@ -507,7 +525,7 @@ export default function CloudBoards({
       try {
         await registerCoordinatorBoard(
           selectedCoordinator.url,
-          user.username,
+          user.userId,
           user.idToken,
           { ...newDescriptor, boardName: selectedBoard.boardName },
         );
@@ -600,7 +618,8 @@ export default function CloudBoards({
                     selectedCoordinator
                       ? selectedCoordinator.url
                           .replace(/^http(s?):\/\//, "ws$1://")
-                          .replace(/\/coordinator\/?$/, "") + "/coordinator/bridge"
+                          .replace(/\/coordinator\/?$/, "") +
+                        "/coordinator/bridge"
                       : null
                   }
                   userId={user?.username ?? null}
