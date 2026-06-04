@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import useSWR from "swr";
 import { ArrowRight, Plus } from "lucide-react";
 
@@ -505,6 +506,7 @@ export default function CloudBoards({
   );
 
   const showCoordinatorInToolbar = false;
+  const boardCanvasRef = useBlockSwipeNavigation<HTMLDivElement>();
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -549,9 +551,11 @@ export default function CloudBoards({
         >
           <Sidebar />
           <div
+            ref={boardCanvasRef}
             style={{
               flex: 1,
               overflow: "auto",
+              overscrollBehaviorX: "none",
               display: "flex",
               flexDirection: "column",
               background:

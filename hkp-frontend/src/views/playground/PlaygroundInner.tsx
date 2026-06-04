@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import { useBoardContext } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "hkp-frontend/src/components/Footer";
@@ -17,6 +18,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
   const { themeName } = useThemeControl();
   const isPlayground = themeName === "playground";
   const [isRtClassDragOver, setIsRtClassDragOver] = useState(false);
+  const boardCanvasRef = useBlockSwipeNavigation<HTMLDivElement>();
 
   if (!boardContext) {
     return null;
@@ -58,9 +60,11 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
           className={
             isRtClassDragOver ? "hkp-board-runtime-drop-active" : undefined
           }
+          ref={boardCanvasRef}
           style={{
             flex: 1,
             overflow: "auto",
+            overscrollBehaviorX: "none",
             display: "flex",
             flexDirection: "column",
             ...(isPlayground
