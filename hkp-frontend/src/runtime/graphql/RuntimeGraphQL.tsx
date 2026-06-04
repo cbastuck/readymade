@@ -92,7 +92,7 @@ export default function RuntimeGraphQL({
 
   return (
     !collapsed && (
-      <div className="flex overflow-x-auto">
+      <div className="flex overflow-x-auto overscroll-x-none">
         <ServiceUiContainer
           className="flex"
           userId={user?.userId}
