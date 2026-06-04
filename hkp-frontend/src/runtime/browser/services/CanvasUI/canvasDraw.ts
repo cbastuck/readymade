@@ -183,15 +183,8 @@ export function drawRect(
   dim: Pick<DrawContext, "width" | "height">,
 ): void {
   const { width: cW, height: cH } = dim;
-  const {
-    x,
-    y,
-    length,
-    width = length,
-    height = length,
-    color,
-    contour,
-  } = data || {};
+  const length = (data || {}).length;
+  const { x, y, width = length, height = length, color, contour } = data || {};
 
   ctx.save();
   const drawPath = (ctx: CanvasRenderingContext2D) => {
