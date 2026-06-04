@@ -15,6 +15,13 @@ import {
 import RuntimeRestScope from "./RuntimeRestScope";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 
+function authHeaders(user: User | null): Record<string, string> {
+  if (!user?.idToken) {
+    return {};
+  }
+  return { Authorization: `Bearer ${user.idToken}` };
+}
+
 function normalizeRegistry(registry: ServiceClass[]): ServiceClass[] {
   return registry.map((entry) => {
     if (entry.serviceId !== "sub-service") {
@@ -41,7 +48,7 @@ async function createScope(
 
 export async function addRuntime(
   rtClass: RuntimeClass,
-  _user: User | null,
+  user: User | null,
   boardName = "",
 ) {
   const { name: passedName, type, url } = rtClass;
@@ -57,6 +64,7 @@ export async function addRuntime(
     runtime,
     [],
     boardName,
+    user,
   );
   return {
     runtime,
@@ -76,7 +84,7 @@ export async function removeRuntime(
 
   const res = await fetch(`${runtime.url}/runtimes/${runtime.id}`, {
     method: "DELETE",
-    headers: {},
+    headers: { ...authHeaders(scope.authenticatedUser) },
   });
   if (!res.ok) {
     throw new Error("Failed to remove runtime" + res.statusText);
@@ -86,7 +94,7 @@ export async function removeRuntime(
 async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
-  _user: User | null,
+  user: User | null,
   boardName?: string,
 ): Promise<RestoreRuntimeResult | null> {
   const svcs = services.map((s) => ({
@@ -100,7 +108,7 @@ async function restoreRuntime(
     registry,
     scope,
     services: createdServices,
-  } = await createRuntimeRequest(runtime, svcs, boardName);
+  } = await createRuntimeRequest(runtime, svcs, boardName, user);
   return {
     runtime,
     services: createdServices,
@@ -125,7 +133,7 @@ type RestRuntimeData = {
 
 export async function attachRuntimes(
   rtClass: RuntimeClass,
-  _user: User | null,
+  user: User | null,
 ): Promise<EngineState> {
   const initState: EngineState = {
     runtimes: [],
@@ -139,7 +147,7 @@ export async function attachRuntimes(
   const url = `${rtClass.url}/runtimes`;
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetch(url, { headers: { ...authHeaders(user) } });
   } catch (err: any) {
     throw new Error(`${err?.message ?? "Load failed"}: ${url}`);
   }
@@ -158,6 +166,7 @@ export async function attachRuntimes(
   return runtimes.reduce((acc: any, cur: RestRuntimeData) => {
     const rt: RuntimeDescriptor = { ...rtClass, ...cur };
     const scope = new RuntimeRestScope(rt, cur.outputUrl);
+    scope.authenticatedUser = user;
     scope.registry = registry;
     return {
       ...acc,
@@ -187,6 +196,7 @@ export async function processRuntime(
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders(scope.authenticatedUser),
       },
       body: JSON.stringify(params),
     });
@@ -200,7 +210,8 @@ export async function processRuntime(
 
 export async function addService(scope: RuntimeScope, service: ServiceClass) {
   const runtime = scope.descriptor;
-  const scopeRegistry = (scope as RuntimeRestScope).registry || [];
+  const restScope = scope as RuntimeRestScope;
+  const scopeRegistry = restScope.registry || [];
   const descriptor =
     scopeRegistry.find((entry) => entry.serviceId === service.serviceId) ||
     service;
@@ -213,6 +224,7 @@ export async function addService(scope: RuntimeScope, service: ServiceClass) {
     body: JSON.stringify(payload),
     headers: {
       "content-type": "application/json",
+      ...authHeaders(restScope.authenticatedUser),
     },
   });
   if (!res.ok) {
@@ -239,6 +251,7 @@ export async function removeService(
       method: "DELETE",
       headers: {
         "content-type": "application/json",
+        ...authHeaders((scope as RuntimeRestScope).authenticatedUser),
       },
     },
   );
@@ -263,6 +276,7 @@ export async function configureService(
       body: JSON.stringify(config),
       headers: {
         "content-type": "application/json",
+        ...authHeaders((scope as RuntimeRestScope).authenticatedUser),
       },
     },
   );
@@ -283,6 +297,7 @@ export async function getServiceConfig(
   const runtime = scope.descriptor;
   const res = await fetch(
     `${runtime.url}/runtimes/${runtime.id}/services/${service.uuid}`,
+    { headers: { ...authHeaders((scope as RuntimeRestScope).authenticatedUser) } },
   );
   if (!res.ok) {
     throw new Error("Failed to get service configure: " + res.statusText);
@@ -311,6 +326,7 @@ export async function rearrangeServices(
     body: JSON.stringify(newOrder.map((s) => s.uuid)),
     headers: {
       "content-type": "application/json",
+      ...authHeaders((scope as RuntimeRestScope).authenticatedUser),
     },
   });
   if (!res.ok) {
@@ -325,6 +341,7 @@ async function createRuntimeRequest(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
   boardName?: string,
+  user?: User | null,
 ) {
   const payload = {
     name: runtime.name,
@@ -344,6 +361,7 @@ async function createRuntimeRequest(
       body: JSON.stringify(payload),
       headers: {
         "content-type": "application/json",
+        ...authHeaders(user ?? null),
       },
     });
   } catch (err: any) {
@@ -359,6 +377,7 @@ async function createRuntimeRequest(
     throw new Error("Failed to create runtime - no runtime was addeed");
   }
   const scope = await createScope(runtime, rt.outputUrl);
+  scope.authenticatedUser = user ?? null;
   scope.registry = normalizedRegistry;
 
   return {
