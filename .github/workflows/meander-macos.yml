@@ -84,7 +84,7 @@ jobs:
         run: |
           set -euo pipefail
           asset="meander-macos-${{ github.sha }}.zip"
-          ditto -c -k --sequesterRsrc --keepParent build/meander/Release/meander.app "${asset}"
+          ditto -c -k --sequesterRsrc --keepParent build/meander/Release/Meander.app "${asset}"
           echo "asset=${asset}" >> "$GITHUB_OUTPUT"
 
       - name: Upload artifact

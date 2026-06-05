@@ -2,11 +2,11 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_PATH="${1:-${REPO_ROOT}/build/meander/Release/meander.app}"
+APP_PATH="${1:-${REPO_ROOT}/build/meander/Release/Meander.app}"
 
 if [[ ! -d "${APP_PATH}" ]]; then
     echo "ERROR: App bundle not found: ${APP_PATH}" >&2
-    echo "Usage: bash ./sign.sh [path/to/meander.app]" >&2
+    echo "Usage: bash ./sign.sh [path/to/Meander.app]" >&2
     exit 2
 fi
 
