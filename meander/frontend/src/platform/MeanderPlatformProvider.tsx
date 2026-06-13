@@ -4,6 +4,7 @@ import {
   PlatformProvider,
 } from "hkp-frontend/src/platform/PlatformContext";
 import { getBackend } from "../backend";
+import { meanderLogin } from "../auth/meanderLogin";
 
 // Capabilities are only wired up when the native saucer APIs are actually present
 // (i.e. running inside the Meander desktop webview, not in a plain browser).
@@ -23,6 +24,9 @@ const capabilities: PlatformCapabilities = isNative
           await backend.writeFile(path, json);
         }
       },
+      // Native Auth0 login (system browser + PKCE). hkp-frontend's cloud view
+      // calls this instead of the web redirect when present.
+      login: meanderLogin,
     }
   : {};
 

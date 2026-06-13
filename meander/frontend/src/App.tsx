@@ -2,7 +2,9 @@ import HkpApp from "hkp-frontend/src/App";
 import MeanderPlayground from "./MeanderPlayground";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
 import { useEffect, useState } from "react";
+import { useLocation } from "hkp-frontend/src/router";
 import { BoardDescriptor } from "hkp-frontend/src/types";
+import CloudBoards from "hkp-frontend/src/views/cloud";
 import StartPage from "./StartPage";
 import { getBackend } from "./backend";
 import LoadIndicator from "./LoadIndicator";
@@ -43,6 +45,24 @@ type View =
   | { type: "playground"; board: BoardDescriptor | null };
 
 function App() {
+  return (
+    <VaultProvider>
+      <MeanderPlatformProvider>
+        <HkpApp defaultThemeName="playground">
+          <MeanderShell />
+        </HkpApp>
+      </MeanderPlatformProvider>
+    </VaultProvider>
+  );
+}
+
+/**
+ * Lives inside HkpApp's Router so it can react to the route. The toolbar's cloud
+ * button navigates to /cloud-boards; we render the shared (login-gated) cloud
+ * view for that route and the local playground/start otherwise.
+ */
+function MeanderShell() {
+  const location = useLocation();
   const [view, setView] = useState<View>(() =>
     shouldRenderPlaygroundFromUrl() ? { type: "loading" } : { type: "start" },
   );
@@ -72,24 +92,19 @@ function App() {
     window.history.replaceState(null, "", "/playground");
   };
 
-  return (
-    <VaultProvider>
-      <MeanderPlatformProvider>
-        <HkpApp defaultThemeName="playground">
-          {view.type === "loading" ? (
-            <LoadIndicator />
-          ) : view.type === "playground" ? (
-            <MeanderPlayground
-              initialBoard={view.board}
-              onLogo={onShowStartPage}
-            />
-          ) : (
-            <StartPage onRestoreBoard={onRestoreBoard} />
-          )}
-        </HkpApp>
-      </MeanderPlatformProvider>
-    </VaultProvider>
-  );
+  if (location.pathname.startsWith("/cloud-boards")) {
+    return <CloudBoards />;
+  }
+
+  if (view.type === "loading") {
+    return <LoadIndicator />;
+  }
+  if (view.type === "playground") {
+    return (
+      <MeanderPlayground initialBoard={view.board} onLogo={onShowStartPage} />
+    );
+  }
+  return <StartPage onRestoreBoard={onRestoreBoard} />;
 }
 
 export default App;

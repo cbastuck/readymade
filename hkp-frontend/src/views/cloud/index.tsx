@@ -33,6 +33,8 @@ import CloudBoard from "./Board";
 import Sidebar from "../playground/Sidebar";
 import { useCoordinatorBridge } from "./useCoordinatorBridge";
 import ManageCoordinatorsDialog from "./ManageCoordinatorsDialog";
+import CloudLoginGate from "./CloudLoginGate";
+import { useCloudLogin } from "../../auth/useCloudLogin";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -268,6 +270,7 @@ export default function CloudBoards({
 }: CloudBoardsProps = {}) {
   const appContext = useAppContext();
   const user = appContext?.user ?? null;
+  const login = useCloudLogin();
 
   const boardProviderRef = useRef<BoardProviderHandle>(null);
 
@@ -553,6 +556,11 @@ export default function CloudBoards({
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
+  // Cloud boards require an authenticated session — gate the entire view.
+  if (!user) {
+    return <CloudLoginGate onLogin={login} />;
+  }
+
   return (
     <BoardProvider
       ref={boardProviderRef}
@@ -624,7 +632,7 @@ export default function CloudBoards({
                         "/coordinator/bridge"
                       : null
                   }
-                  userId={user?.username ?? null}
+                  userId={user?.userId ?? null}
                   idToken={user?.idToken ?? null}
                 />
               </div>
