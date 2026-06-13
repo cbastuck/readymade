@@ -16,11 +16,22 @@ type BridgeInboundMessage = {
   requestId: string;
 };
 
+/** Append the bearer token to a WebSocket URL as ?access_token= for auth. */
+function withAccessToken(wsUrl: string, token: string | null): string {
+  if (!token) {
+    return wsUrl;
+  }
+  const url = new URL(wsUrl);
+  url.searchParams.set("access_token", token);
+  return url.toString();
+}
+
 export function useCoordinatorBridge(
   wsUrl: string | null,
   userId: string | null,
   boardName: string | null,
   boardContext: BoardContextState | null,
+  idToken: string | null = null,
 ): CoordinatorBridge {
   const wsRef = useRef<WebSocket | null>(null);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
@@ -58,7 +69,7 @@ export function useCoordinatorBridge(
     // the wrong value and triggers a spurious reconnect loop.
     let intentionallyClosed = false;
 
-    const ws = new WebSocket(wsUrl);
+    const ws = new WebSocket(withAccessToken(wsUrl, idToken));
     wsRef.current = ws;
 
     ws.onopen = () => {
@@ -139,7 +150,7 @@ export function useCoordinatorBridge(
       ws.close();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wsUrl, userId, boardName, reconnectAttempt]);
+  }, [wsUrl, userId, boardName, reconnectAttempt, idToken]);
 
   // Re-register runtimeIds with the already-open socket when new browser
   // runtimes are added to the board.

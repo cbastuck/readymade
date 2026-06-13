@@ -42,8 +42,9 @@ function normalizeRegistry(registry: ServiceClass[]): ServiceClass[] {
 async function createScope(
   runtime: RuntimeDescriptor,
   runtimeOutputUrl: string,
+  user: User | null,
 ): Promise<RuntimeRestScope> {
-  return new RuntimeRestScope(runtime, runtimeOutputUrl);
+  return new RuntimeRestScope(runtime, runtimeOutputUrl, user);
 }
 
 export async function addRuntime(
@@ -165,8 +166,7 @@ export async function attachRuntimes(
   // TODO: get rid of the any type
   return runtimes.reduce((acc: any, cur: RestRuntimeData) => {
     const rt: RuntimeDescriptor = { ...rtClass, ...cur };
-    const scope = new RuntimeRestScope(rt, cur.outputUrl);
-    scope.authenticatedUser = user;
+    const scope = new RuntimeRestScope(rt, cur.outputUrl, user);
     scope.registry = registry;
     return {
       ...acc,
@@ -376,8 +376,7 @@ async function createRuntimeRequest(
   if (!rt) {
     throw new Error("Failed to create runtime - no runtime was addeed");
   }
-  const scope = await createScope(runtime, rt.outputUrl);
-  scope.authenticatedUser = user ?? null;
+  const scope = await createScope(runtime, rt.outputUrl, user ?? null);
   scope.registry = normalizedRegistry;
 
   return {

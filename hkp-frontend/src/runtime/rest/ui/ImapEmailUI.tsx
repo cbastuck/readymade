@@ -12,6 +12,8 @@ export default function ImapEmailUI(props: ServiceUIProps) {
   const [port, setPort] = useState("993");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  // The server masks the password (write-only); this flag tells us one is stored.
+  const [passwordConfigured, setPasswordConfigured] = useState(false);
   const [tls, setTls] = useState(true);
   const [mailbox, setMailbox] = useState("INBOX");
   const [running, setRunning] = useState(false);
@@ -22,6 +24,10 @@ export default function ImapEmailUI(props: ServiceUIProps) {
     if (state.port !== undefined) setPort(String(state.port));
     if (state.username !== undefined) setUsername(state.username);
     if (state.password !== undefined) setPassword(state.password);
+    if (state.passwordConfigured !== undefined) {
+      setPasswordConfigured(state.passwordConfigured);
+    }
+
     if (state.tls !== undefined) setTls(state.tls);
     if (state.mailbox !== undefined) setMailbox(state.mailbox);
     if (state.running !== undefined) setRunning(state.running);
@@ -69,11 +75,14 @@ export default function ImapEmailUI(props: ServiceUIProps) {
         />
 
         <InputField
-          label="Password"
+          label={passwordConfigured ? "Password (stored)" : "Password"}
           type="password"
           value={password}
           onChange={(v) => {
             setPassword(v);
+            if (v) {
+              setPasswordConfigured(true);
+            }
             configure({ password: v });
           }}
         />
@@ -103,7 +112,10 @@ export default function ImapEmailUI(props: ServiceUIProps) {
           <Button
             className="hkp-svc-btn"
             onClick={() => configure({ connect: !running })}
-            disabled={!running && (!host || !username || !password)}
+            disabled={
+              !running &&
+              (!host || !username || (!password && !passwordConfigured))
+            }
           >
             {running ? "Disconnect" : "Connect"}
           </Button>

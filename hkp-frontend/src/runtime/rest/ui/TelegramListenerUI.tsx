@@ -7,12 +7,17 @@ import Button from "hkp-frontend/src/ui-components/Button";
 
 export default function TelegramListenerUI(props: ServiceUIProps) {
   const [botToken, setBotToken] = useState("");
+  // The server masks the bot token (write-only); this flag tells us one is stored.
+  const [botTokenConfigured, setBotTokenConfigured] = useState(false);
   const [allowedChatId, setAllowedChatId] = useState("");
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
 
   const onUpdate = useCallback((state: any) => {
     if (state.botToken !== undefined) setBotToken(state.botToken);
+    if (state.botTokenConfigured !== undefined) {
+      setBotTokenConfigured(state.botTokenConfigured);
+    }
     if (state.allowedChatId !== undefined)
       setAllowedChatId(state.allowedChatId);
     if (state.running !== undefined) setRunning(state.running);
@@ -32,11 +37,14 @@ export default function TelegramListenerUI(props: ServiceUIProps) {
     >
       <div className="flex flex-col">
         <InputField
-          label="Bot Token"
+          label={botTokenConfigured ? "Bot Token (stored)" : "Bot Token"}
           type="password"
           value={botToken}
           onChange={(v) => {
             setBotToken(v);
+            if (v) {
+              setBotTokenConfigured(true);
+            }
             configure({ botToken: v });
           }}
         />
@@ -54,7 +62,7 @@ export default function TelegramListenerUI(props: ServiceUIProps) {
           <Button
             className="hkp-svc-btn"
             onClick={() => configure({ connect: !running })}
-            disabled={!running && !botToken}
+            disabled={!running && !botToken && !botTokenConfigured}
           >
             {running ? "Disconnect" : "Connect"}
           </Button>

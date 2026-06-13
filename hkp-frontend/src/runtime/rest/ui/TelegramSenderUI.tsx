@@ -6,11 +6,16 @@ import InputField from "hkp-frontend/src/components/shared/InputField";
 
 export default function TelegramSenderUI(props: ServiceUIProps) {
   const [botToken, setBotToken] = useState("");
+  // The server masks the bot token (write-only); this flag tells us one is stored.
+  const [botTokenConfigured, setBotTokenConfigured] = useState(false);
   const [chatId, setChatId] = useState("");
   const [error, setError] = useState("");
 
   const onUpdate = useCallback((state: any) => {
     if (state.botToken !== undefined) setBotToken(state.botToken);
+    if (state.botTokenConfigured !== undefined) {
+      setBotTokenConfigured(state.botTokenConfigured);
+    }
     if (state.chatId !== undefined) setChatId(state.chatId);
     if (state.error !== undefined) setError(state.error);
   }, []);
@@ -28,11 +33,14 @@ export default function TelegramSenderUI(props: ServiceUIProps) {
     >
       <div className="flex flex-col">
         <InputField
-          label="Bot Token"
+          label={botTokenConfigured ? "Bot Token (stored)" : "Bot Token"}
           type="password"
           value={botToken}
           onChange={(v) => {
             setBotToken(v);
+            if (v) {
+              setBotTokenConfigured(true);
+            }
             configure({ botToken: v });
           }}
         />
@@ -46,9 +54,7 @@ export default function TelegramSenderUI(props: ServiceUIProps) {
           }}
         />
 
-        {error && (
-          <div className="text-xs text-red-500 break-all">{error}</div>
-        )}
+        {error && <div className="text-xs text-red-500 break-all">{error}</div>}
       </div>
     </RuntimeRestServiceUI>
   );

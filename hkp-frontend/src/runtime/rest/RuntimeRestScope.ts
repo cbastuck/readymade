@@ -18,6 +18,19 @@ import {
 } from "./Message";
 import { TextSymbol, isData } from "./Data";
 
+/** Append the bearer token to a WebSocket URL as ?access_token= for auth. */
+export function withAccessToken(
+  wsUrl: string,
+  token: string | undefined,
+): string {
+  if (!token) {
+    return wsUrl;
+  }
+  const url = new URL(wsUrl);
+  url.searchParams.set("access_token", token);
+  return url.toString();
+}
+
 export default class RuntimeRestScope implements RuntimeScope {
   descriptor: RuntimeDescriptor;
   app: AppImpl;
@@ -25,11 +38,19 @@ export default class RuntimeRestScope implements RuntimeScope {
   runtimeOutput: WebSocket | undefined;
   registry: ServiceRegistry = [];
 
-  constructor(runtime: RuntimeDescriptor, runtimeOutputUrl: string) {
+  constructor(
+    runtime: RuntimeDescriptor,
+    runtimeOutputUrl: string,
+    user: User | null = null,
+  ) {
     this.descriptor = runtime;
+    this.authenticatedUser = user;
     this.app = createRuntimeRestApp(this);
     if (runtimeOutputUrl) {
-      this.runtimeOutput = new WebSocket(runtimeOutputUrl);
+      // authenticate the WS upgrade the same way it authenticates REST
+      this.runtimeOutput = new WebSocket(
+        withAccessToken(runtimeOutputUrl, user?.idToken),
+      );
 
       this.runtimeOutput.onmessage = async (event) => {
         const isBinary = typeof event.data !== "string";
