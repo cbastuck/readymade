@@ -227,15 +227,17 @@ type InnerProps = {
   board: CoordinatorBoardInfo;
   bridgeWsUrl: string | null;
   userId: string | null;
+  idToken: string | null;
 };
 
-function CloudBoardInner({ board, bridgeWsUrl, userId }: InnerProps) {
+function CloudBoardInner({ board, bridgeWsUrl, userId, idToken }: InnerProps) {
   const boardContext = useBoardContext();
   const { ws: bridgeWs } = useCoordinatorBridge(
     bridgeWsUrl,
     userId,
     board.boardName,
     boardContext,
+    idToken,
   );
   if (!boardContext) {
     return null;
@@ -623,6 +625,7 @@ export default function CloudBoards({
                       : null
                   }
                   userId={user?.username ?? null}
+                  idToken={user?.idToken ?? null}
                 />
               </div>
             )}
