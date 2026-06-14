@@ -114,7 +114,17 @@ function ViewToggle() {
         type="button"
         title="Cloud boards"
         style={isCloud ? activeStyle : inactiveStyle}
-        onClick={() => navigate("/cloud-boards")}
+        onClick={() =>
+          // When already on cloud, signal CloudBoards to drop the open board and
+          // return to the coordinators overview (the URL alone can't express this
+          // since board selection lives in component state, not the path).
+          navigate(
+            "/cloud-boards",
+            isCloud
+              ? { state: { showOverview: Date.now() }, replace: true }
+              : undefined,
+          )
+        }
       >
         <Cloud size={14} />
       </button>
