@@ -33,6 +33,7 @@ import CloudBoard from "./Board";
 import Sidebar from "../playground/Sidebar";
 import { useCoordinatorBridge } from "./useCoordinatorBridge";
 import ManageCoordinatorsDialog from "./ManageCoordinatorsDialog";
+import NewBoardDialog from "./NewBoardDialog";
 import CloudLoginGate from "./CloudLoginGate";
 import { useCloudLogin } from "../../auth/useCloudLogin";
 
@@ -447,7 +448,7 @@ export default function CloudBoards({
 
   // ── New board ───────────────────────────────────────────────────────────────
 
-  const onNewBoard = async (coordinatorOverride?: CoordinatorDescriptor) => {
+  const onNewBoard = (coordinatorOverride?: CoordinatorDescriptor) => {
     const coordinator = coordinatorOverride ?? selectedCoordinator;
     if (!coordinator || !user) {
       toast.warning(
@@ -455,11 +456,17 @@ export default function CloudBoards({
       );
       return;
     }
-    const boardName = prompt("Board name:");
+    // Open a styled dialog instead of window.prompt, which doesn't render in
+    // the Meander (saucer) webview and is visually inconsistent across targets.
+    setNewBoardCoordinator(coordinator);
+  };
 
-    if (!boardName) {
+  const createBoard = async (boardName: string) => {
+    const coordinator = newBoardCoordinator;
+    if (!coordinator || !user) {
       return;
     }
+    setNewBoardCoordinator(undefined);
     const emptyConfig: BoardDescriptor = {
       boardName,
       runtimes: [],
@@ -689,6 +696,18 @@ export default function CloudBoards({
         onAdd={onAddCoordinator}
         onRemove={onRemoveCoordinator}
         onClose={() => setIsManageCoordinatorsOpen(false)}
+      />
+
+      <NewBoardDialog
+        isOpen={!!newBoardCoordinator}
+        coordinatorName={newBoardCoordinator?.name}
+        existingBoardNames={
+          allCoordinatorBoards
+            .find((g) => g.coordinator.url === newBoardCoordinator?.url)
+            ?.boards.map((b) => b.boardName) ?? []
+        }
+        onCreate={createBoard}
+        onClose={() => setNewBoardCoordinator(undefined)}
       />
     </BoardProvider>
   );
