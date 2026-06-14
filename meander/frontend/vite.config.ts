@@ -14,6 +14,10 @@ export default defineConfig({
   },
   plugins: [svgr(), react()],
   resolve: {
+    // hkp-frontend has its own node_modules; without deduping, its files pull in
+    // a second copy of React (and react-router-dom), which breaks hooks with
+    // "Invalid hook call". Force a single copy across the merged source tree.
+    dedupe: ["react", "react-dom", "react-router", "react-router-dom"],
     alias: {
       fs: path.resolve(import.meta.dirname, "src/shims/fs.ts"),
       // meander/frontend imports from the sibling hkp-frontend package.

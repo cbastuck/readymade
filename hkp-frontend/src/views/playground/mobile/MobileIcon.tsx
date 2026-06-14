@@ -4,7 +4,7 @@ export type MobileIconName =
   | "list" | "plus" | "settings" | "more" | "chevronDown" | "chevronUp"
   | "chevronRight" | "chevronLeft" | "x" | "share" | "cpu" | "timer" | "trash" | "home"
   | "layers" | "check" | "monitor" | "server" | "package" | "gitBranch"
-  | "maximize2" | "minimize2";
+  | "maximize2" | "minimize2" | "cloud" | "refresh";
 
 const paths: Record<MobileIconName, ReactNode> = {
   list: <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>,
@@ -29,6 +29,8 @@ const paths: Record<MobileIconName, ReactNode> = {
   gitBranch: <><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></>,
   maximize2: <><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></>,
   minimize2: <><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="10" y1="14" x2="3" y2="21"/><line x1="21" y1="3" x2="14" y2="10"/></>,
+  cloud: <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>,
+  refresh: <><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></>,
 };
 
 type Props = {

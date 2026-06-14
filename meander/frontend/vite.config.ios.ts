@@ -17,6 +17,10 @@ export default defineConfig({
     emptyOutDir: true,
   },
   resolve: {
+    // hkp-frontend has its own node_modules; without deduping, its files pull in
+    // a second copy of React (and react-router-dom), which breaks hooks with
+    // "Invalid hook call". Force a single copy across the merged source tree.
+    dedupe: ["react", "react-dom", "react-router", "react-router-dom"],
     alias: {
       fs: path.resolve(rootDir, "src/shims/fs.ts"),
       "hkp-frontend/src": path.join(hkpFrontendRoot, "src"),
