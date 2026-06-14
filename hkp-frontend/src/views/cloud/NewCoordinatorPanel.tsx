@@ -35,7 +35,8 @@ export default function NewCoordinatorPanel({ onAdd }: Props) {
       </Label>
       <Input
         id="coord-name"
-        className="font-menu text-md"
+        // text-base (16px) avoids iOS auto-zoom on focus (anything < 16px zooms).
+        className="font-menu text-base"
         placeholder="My Coordinator"
         value={name}
         onChange={(ev) => setName(ev.target.value)}
@@ -49,7 +50,7 @@ export default function NewCoordinatorPanel({ onAdd }: Props) {
       </Label>
       <Input
         id="coord-url"
-        className="font-menu text-md"
+        className="font-menu text-base"
         placeholder="http://127.0.0.1:8080/coordinator"
         value={url}
         onChange={(ev) => setUrl(ev.target.value)}

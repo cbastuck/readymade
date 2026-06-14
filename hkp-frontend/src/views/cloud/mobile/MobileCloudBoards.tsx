@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { type TouchEvent, useCallback, useRef, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 
@@ -28,9 +28,10 @@ import {
   CoordinatorBoardInfo,
   listCoordinatorBoards,
   registerCoordinatorBoard,
+  deleteCoordinatorBoard,
 } from "../coordinatorClient";
 import { useCoordinatorBridge } from "../useCoordinatorBridge";
-import CloudBoard from "../Board";
+import MobileBoardCanvas from "../../playground/mobile/MobileBoardCanvas";
 import CloudLoginGate from "../CloudLoginGate";
 import ManageCoordinatorsDialog from "../ManageCoordinatorsDialog";
 import NewBoardDialog from "../NewBoardDialog";
@@ -106,14 +107,18 @@ function SectionHeader({
   );
 }
 
-// ── Overview: a single board row ────────────────────────────────────────────────
+// ── Overview: a single board row (swipe left to reveal delete) ──────────────────
+
+const ROW_ACTION_WIDTH = 84;
 
 function BoardRow({
   board,
   onOpen,
+  onDelete,
 }: {
   board: CoordinatorBoardInfo;
   onOpen: () => void;
+  onDelete: () => void;
 }) {
   const date = new Date(board.createdAt);
   const dateLabel = isNaN(date.getTime())
@@ -125,53 +130,127 @@ function BoardRow({
       });
   const running = board.status === "running";
 
+  // Horizontal swipe-to-reveal. `dx` is the foreground offset (0…-ACTION_WIDTH).
+  const [dx, setDx] = useState(0);
+  const startXRef = useRef(0);
+  const baseRef = useRef(0);
+  const draggingRef = useRef(false);
+  const movedRef = useRef(false);
+
+  const onTouchStart = (e: TouchEvent) => {
+    startXRef.current = e.touches[0].clientX;
+    baseRef.current = dx;
+    draggingRef.current = true;
+    movedRef.current = false;
+  };
+  const onTouchMove = (e: TouchEvent) => {
+    if (!draggingRef.current) {
+      return;
+    }
+    const delta = e.touches[0].clientX - startXRef.current;
+    if (Math.abs(delta) > 6) {
+      movedRef.current = true;
+    }
+    const next = Math.max(-ROW_ACTION_WIDTH, Math.min(0, baseRef.current + delta));
+    setDx(next);
+  };
+  const onTouchEnd = () => {
+    draggingRef.current = false;
+    setDx((prev) => (prev < -ROW_ACTION_WIDTH / 2 ? -ROW_ACTION_WIDTH : 0));
+  };
+
+  // A tap after swiping (or while the delete action is revealed) just closes the
+  // row instead of opening the board.
+  const handleTap = () => {
+    if (movedRef.current || dx !== 0) {
+      setDx(0);
+      return;
+    }
+    onOpen();
+  };
+
   return (
-    <button
-      onClick={onOpen}
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        padding: "12px 14px",
-        background: M.card,
-        border: `1px solid ${M.border}`,
-        borderRadius: 12,
-        cursor: "pointer",
-        textAlign: "left",
-        fontFamily: "inherit",
-      }}
-    >
-      <div
+    <div style={{ position: "relative", borderRadius: 12, overflow: "hidden" }}>
+      {/* Delete action behind the row */}
+      <button
+        onClick={onDelete}
         style={{
-          width: 8,
-          height: 8,
-          borderRadius: "50%",
-          background: running ? M.green : M.danger,
-          flexShrink: 0,
+          position: "absolute",
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: ROW_ACTION_WIDTH,
+          border: "none",
+          background: M.danger,
+          color: "#fff",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 4,
+          cursor: "pointer",
+          fontFamily: "inherit",
         }}
-      />
-      <div style={{ flex: 1, minWidth: 0 }}>
+      >
+        <MobileIcon name="trash" size={16} color="#fff" />
+        <span style={{ fontSize: 11, fontWeight: 600 }}>Delete</span>
+      </button>
+
+      {/* Foreground row */}
+      <div
+        onClick={handleTap}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+        style={{
+          position: "relative",
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "12px 14px",
+          background: M.card,
+          border: `1px solid ${M.border}`,
+          borderRadius: 12,
+          cursor: "pointer",
+          textAlign: "left",
+          boxSizing: "border-box",
+          transform: `translateX(${dx}px)`,
+          transition: draggingRef.current ? "none" : "transform 0.2s ease",
+          touchAction: "pan-y",
+        }}
+      >
         <div
           style={{
-            fontSize: 14,
-            fontWeight: 600,
-            color: M.textPrimary,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            background: running ? M.green : M.danger,
+            flexShrink: 0,
           }}
-        >
-          {board.boardName}
-        </div>
-        {dateLabel && (
-          <div style={{ fontSize: 11, color: M.textMuted, marginTop: 1 }}>
-            {dateLabel}
+        />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: M.textPrimary,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {board.boardName}
           </div>
-        )}
+          {dateLabel && (
+            <div style={{ fontSize: 11, color: M.textMuted, marginTop: 1 }}>
+              {dateLabel}
+            </div>
+          )}
+        </div>
+        <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
       </div>
-      <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
-    </button>
+    </div>
   );
 }
 
@@ -183,6 +262,7 @@ function CloudOverview({
   isLoading,
   onOpenBoard,
   onNewBoard,
+  onDeleteBoard,
   onManageCoordinators,
 }: {
   coordinators: CoordinatorDescriptor[];
@@ -193,6 +273,10 @@ function CloudOverview({
     board: CoordinatorBoardInfo,
   ) => void;
   onNewBoard: (coordinator: CoordinatorDescriptor) => void;
+  onDeleteBoard: (
+    coordinator: CoordinatorDescriptor,
+    board: CoordinatorBoardInfo,
+  ) => void;
   onManageCoordinators: () => void;
 }) {
   return (
@@ -273,6 +357,7 @@ function CloudOverview({
                       key={board.boardName}
                       board={board}
                       onOpen={() => onOpenBoard(group.coordinator, board)}
+                      onDelete={() => onDeleteBoard(group.coordinator, board)}
                     />
                   ))}
                 </div>
@@ -337,21 +422,22 @@ function MobileCloudBoardCanvas({
     <div
       style={{
         flex: 1,
-        overflowY: "auto",
-        WebkitOverflowScrolling: "touch",
-        padding: 12,
+        minHeight: 0,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {errors.length > 0 && (
         <div
           style={{
-            margin: "0 0 12px",
+            margin: "12px 12px 0",
             borderRadius: 12,
             border: `1px solid ${M.danger}`,
             background: "#fef2f2",
             padding: "10px 12px",
             fontSize: 13,
             color: "#991b1b",
+            flexShrink: 0,
           }}
         >
           <div style={{ fontWeight: 600 }}>
@@ -364,11 +450,7 @@ function MobileCloudBoardCanvas({
           </ul>
         </div>
       )}
-      <CloudBoard
-        boardContext={boardContext}
-        boardName={board.boardName}
-        bridgeWs={bridgeWs}
-      />
+      <MobileBoardCanvas bridge={{ ws: bridgeWs }} />
     </div>
   );
 }
@@ -617,6 +699,38 @@ export default function MobileCloudBoards() {
     }
   };
 
+  // ── Delete board ──────────────────────────────────────────────────────────────
+
+  const onDeleteBoard = async (
+    coordinator: CoordinatorDescriptor,
+    board: CoordinatorBoardInfo,
+  ) => {
+    if (!user) {
+      return;
+    }
+    // If the board being deleted is the one currently open, close it first.
+    if (
+      selectedCoordinator?.url === coordinator.url &&
+      selectedBoard?.boardName === board.boardName
+    ) {
+      setSelectedBoard(undefined);
+      setSelectedCoordinator(undefined);
+      setShowOverview(true);
+    }
+    try {
+      await deleteCoordinatorBoard(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        board.boardName,
+      );
+      await reloadAllBoards();
+    } catch (err) {
+      console.error("[cloud-mobile] Failed to delete board:", err);
+      toast.error("Failed to delete board");
+    }
+  };
+
   // ── Auto-sync to coordinator on infrastructure change ─────────────────────────
   // Mirrors the desktop view: when the user adds/removes runtimes or services in
   // the open board, re-register it so the coordinator can provision them.
@@ -763,6 +877,7 @@ export default function MobileCloudBoards() {
             isLoading={isLoadingAllBoards}
             onOpenBoard={onOpenBoard}
             onNewBoard={onNewBoard}
+            onDeleteBoard={onDeleteBoard}
             onManageCoordinators={() => setIsManageOpen(true)}
           />
         )}

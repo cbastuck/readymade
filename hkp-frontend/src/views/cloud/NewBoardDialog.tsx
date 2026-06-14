@@ -71,7 +71,9 @@ export default function NewBoardDialog({
           <Input
             id="new-board-name"
             autoFocus
-            className="font-menu text-md"
+            // text-base (16px): keep ≥16px so iOS Safari/WKWebView doesn't
+            // auto-zoom the viewport when the field is focused.
+            className="font-menu text-base"
             placeholder="My Board"
             value={name}
             onChange={(ev) => setName(ev.target.value)}
@@ -81,6 +83,7 @@ export default function NewBoardDialog({
                 onSubmit();
               }
             }}
+            spellCheck={false}
           />
           {isDuplicate && (
             <p className="text-sm text-red-500">
