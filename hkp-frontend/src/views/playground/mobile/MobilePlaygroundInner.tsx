@@ -16,8 +16,9 @@ import AddServiceSheet from "./AddServiceSheet";
 import ServiceSheet from "./ServiceSheet";
 import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
+import MobileCloudBoards from "../../cloud/mobile/MobileCloudBoards";
 
-type Tab = "board" | "browser" | "settings";
+type Tab = "board" | "cloud" | "settings";
 
 type MobilePlaygroundInnerProps = {
   suggestedName?: string;
@@ -634,164 +635,6 @@ function BoardTab({
   );
 }
 
-// ── Browser tab ────────────────────────────────────────────────
-function BrowserTab() {
-  const boardContext = useBoardContext();
-  if (!boardContext) return null;
-  const { runtimes, services } = boardContext;
-  const allServices = runtimes.flatMap((rt) =>
-    (services[rt.id] ?? []).map((s) => ({ ...s, _rtName: rt.name })),
-  );
-
-  return (
-    <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.1em",
-          color: M.textMuted,
-          textTransform: "uppercase",
-          marginBottom: 10,
-        }}
-      >
-        Runtimes
-      </div>
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 6,
-          marginBottom: 24,
-        }}
-      >
-        {runtimes.map((rt) => (
-          <div
-            key={rt.id}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 12px",
-              background: M.card,
-              borderRadius: 10,
-              border: `1px solid ${M.border}`,
-            }}
-          >
-            <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: M.blue,
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: M.textPrimary,
-                flex: 1,
-              }}
-            >
-              {rt.name}
-            </span>
-            <span
-              style={{
-                fontSize: 11,
-                color: M.textMuted,
-                background: "#f0ede9",
-                padding: "2px 7px",
-                borderRadius: 5,
-              }}
-            >
-              {rt.type}
-            </span>
-          </div>
-        ))}
-        {runtimes.length === 0 && (
-          <div
-            style={{
-              fontSize: 13,
-              color: M.textMuted,
-              fontStyle: "italic",
-              padding: "4px 0",
-            }}
-          >
-            No runtimes
-          </div>
-        )}
-      </div>
-
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.1em",
-          color: M.textMuted,
-          textTransform: "uppercase",
-          marginBottom: 10,
-        }}
-      >
-        Services
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {allServices.map((s) => (
-          <div
-            key={s.uuid}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "10px 12px",
-              background: M.card,
-              borderRadius: 10,
-              border: `1px solid ${M.border}`,
-            }}
-          >
-            <div
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: M.teal,
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                fontSize: 14,
-                fontWeight: 500,
-                color: M.textPrimary,
-                flex: 1,
-              }}
-            >
-              {s.serviceName}
-            </span>
-            <span style={{ fontSize: 11, color: M.textMuted }}>
-              {s._rtName}
-            </span>
-            <MobileIcon name="chevronRight" size={13} color={M.textMuted} />
-          </div>
-        ))}
-        {allServices.length === 0 && (
-          <div
-            style={{
-              fontSize: 13,
-              color: M.textMuted,
-              fontStyle: "italic",
-              padding: "4px 0",
-            }}
-          >
-            No services
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Settings tab ───────────────────────────────────────────────
 function SettingsTab({
   boardName,
@@ -1235,11 +1078,14 @@ export default function MobilePlaygroundInner({
         fontFamily: "'DM Sans', system-ui, sans-serif",
       }}
     >
-      <TopBar
-        boardName={displayName}
-        runtimeCount={rtCount}
-        serviceCount={svcCount}
-      />
+      {/* The cloud view renders its own header; hide the local-board TopBar there. */}
+      {tab !== "cloud" && (
+        <TopBar
+          boardName={displayName}
+          runtimeCount={rtCount}
+          serviceCount={svcCount}
+        />
+      )}
 
       {/* Dot-grid background for board tab */}
       <div
@@ -1269,7 +1115,7 @@ export default function MobilePlaygroundInner({
             onShowAddRuntime={() => setShowAddRuntime(true)}
           />
         )}
-        {tab === "browser" && <BrowserTab />}
+        {tab === "cloud" && <MobileCloudBoards />}
         {tab === "settings" && (
           <SettingsTab boardName={displayName} onSaveBoard={onSaveBoard} />
         )}
@@ -1297,10 +1143,10 @@ export default function MobilePlaygroundInner({
           onClick={() => setTab("board")}
         />
         <TabButton
-          label="Browser"
-          icon="list"
-          active={tab === "browser"}
-          onClick={() => setTab("browser")}
+          label="Cloud"
+          icon="cloud"
+          active={tab === "cloud"}
+          onClick={() => setTab("cloud")}
         />
         <TabButton
           label="Settings"
