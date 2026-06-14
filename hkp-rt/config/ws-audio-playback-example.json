@@ -1,0 +1,23 @@
+{
+  "runtimeId": "ws-audio-playback",
+  "services": [
+    {
+      "serviceId": "core-output",
+      "instanceId": "core-output-1",
+      "state": {
+        "bypass": false,
+        "pipeline": [
+          {
+            "serviceId": "websocket-socket",
+            "instanceId": "ws-source-1",
+            "state": {
+              "port": "9002",
+              "mode": "readAndAccumulate",
+              "bypass": false
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
