@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import useSWR from "swr";
 import { ArrowRight, Plus } from "lucide-react";
@@ -288,6 +289,10 @@ export default function CloudBoards({
   );
   const [isManageCoordinatorsOpen, setIsManageCoordinatorsOpen] =
     useState(false);
+  // Coordinator the New Board dialog is creating a board on; undefined = closed.
+  const [newBoardCoordinator, setNewBoardCoordinator] = useState<
+    CoordinatorDescriptor | undefined
+  >();
   const [selectedCoordinator, setSelectedCoordinator] = useState<
     CoordinatorDescriptor | undefined
   >();
@@ -300,6 +305,12 @@ export default function CloudBoards({
   const [mountedBoard, setMountedBoard] = useState<
     CoordinatorBoardInfo | undefined
   >();
+  // Pure view toggle: when true, show the coordinators overview even though a
+  // board is still selected/mounted. This lets the user return to the overview
+  // (via the toolbar Cloud button) WITHOUT clearing selection or re-hydrating
+  // the board — re-hydration would re-register the board with the coordinator
+  // and restart remote runtimes (e.g. an hkp-node timer).
+  const [showOverview, setShowOverview] = useState(false);
 
   // ── Coordinator management ──────────────────────────────────────────────────
 
@@ -391,6 +402,12 @@ export default function CloudBoards({
   };
 
   const onSelectBoard = (board: CoordinatorBoardInfo) => {
+    setShowOverview(false);
+    // Re-revealing the board that's already mounted? Skip re-hydration — calling
+    // setBoardState again would re-register the board and restart remote runtimes.
+    if (selectedBoard?.boardName === board.boardName) {
+      return;
+    }
     setSelectedBoard(board);
     setMountedBoard(board);
     // Hydrate the BoardProvider with the board's config from the coordinator.
@@ -404,6 +421,16 @@ export default function CloudBoards({
     coordinator: CoordinatorDescriptor,
     board: CoordinatorBoardInfo,
   ) => {
+    setShowOverview(false);
+    // Re-revealing the already-open board? Just leave the overview — don't
+    // re-hydrate it, which would re-register the board with the coordinator and
+    // restart remote runtimes (e.g. an hkp-node timer).
+    if (
+      selectedCoordinator?.url === coordinator.url &&
+      selectedBoard?.boardName === board.boardName
+    ) {
+      return;
+    }
     setSelectedCoordinator(coordinator);
     setSelectedBoard(board);
     setMountedBoard(board);
@@ -445,6 +472,19 @@ export default function CloudBoards({
       boardProviderRef.current?.setBoardState(match.config);
     }
   }, [boards]);
+
+  // Return to the coordinators overview when the toolbar's Cloud button is
+  // pressed while already on the cloud view. This only flips the view flag — the
+  // selected/mounted board stays fully intact and running so its remote runtimes
+  // (and the bridge WebSocket) are untouched.
+  const location = useLocation();
+  const showOverviewSignal = (location.state as { showOverview?: number } | null)
+    ?.showOverview;
+  useEffect(() => {
+    if (showOverviewSignal) {
+      setShowOverview(true);
+    }
+  }, [showOverviewSignal]);
 
   // ── New board ───────────────────────────────────────────────────────────────
 
@@ -645,7 +685,9 @@ export default function CloudBoards({
               <div
                 style={{
                   display:
-                    selectedCoordinator && selectedBoard ? "contents" : "none",
+                    !showOverview && selectedCoordinator && selectedBoard
+                      ? "contents"
+                      : "none",
                 }}
               >
                 {openBoardErrors.length > 0 && (
@@ -675,7 +717,7 @@ export default function CloudBoards({
                 />
               </div>
             )}
-            {!(selectedCoordinator && selectedBoard) && (
+            {(showOverview || !(selectedCoordinator && selectedBoard)) && (
               <CloudBoardsLanding
                 user={user}
                 coordinators={coordinators}
