@@ -68,15 +68,38 @@ export const allowedServices = [
   "hookup.to/service/feedback",
 ];
 
+// Services excluded from the iOS (App Store) build. The Dangerous Hacker
+// executes arbitrary user/LLM-authored JavaScript via the Function constructor
+// (evilEval in services/base/eval.ts), which App Review guideline 2.5.2
+// disallows. OllamaHackerComposite drives the Dangerous Hacker, so it goes too.
+// The sandboxed "Considered Hacker" (expression-eval) remains available.
+// The native shell sets window.__MEANDER_IOS__ before any page JS runs.
+const iosExcludedServiceIds = new Set<string>([
+  "hookup.to/service/hacker/dangerous",
+  "hookup.to/service/ollama-hacker",
+]);
+
+function buildAvailableServices(): Array<ServiceModule> {
+  const isIOS =
+    typeof window !== "undefined" &&
+    (window as unknown as { __MEANDER_IOS__?: boolean }).__MEANDER_IOS__ === true;
+  if (!isIOS) {
+    return defaultRegistry;
+  }
+  return defaultRegistry.filter(
+    (module) => !iosExcludedServiceIds.has(module.serviceId),
+  );
+}
+
 export default class BrowserRegistry {
-  availableServices: Array<ServiceModule> = defaultRegistry;
+  availableServices: Array<ServiceModule> = buildAvailableServices();
 
   static async create(
     bundles?: Bundles,
     user?: User,
   ): Promise<BrowserRegistry> {
     const registry = new BrowserRegistry();
-    registry.availableServices = defaultRegistry;
+    registry.availableServices = buildAvailableServices();
     if (bundles && bundles.length) {
       await registry.loadBundles(bundles);
     }
