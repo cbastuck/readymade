@@ -61,9 +61,12 @@ function BoardLandingCard({
         day: "numeric",
         year: "numeric",
       });
+  const errorText =
+    board.status === "error" ? (board.errors ?? []).join("\n") : "";
   return (
     <button
       onClick={onClick}
+      title={errorText || undefined}
       className="flex flex-col items-start gap-2 p-4 rounded-xl border border-slate-200 bg-white text-left cursor-pointer transition-all hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
     >
       <div className="flex items-center gap-2 w-full">
@@ -528,21 +531,29 @@ export default function CloudBoards({
       }
 
       try {
-        await registerCoordinatorBoard(
+        const info = await registerCoordinatorBoard(
           selectedCoordinator.url,
           user.userId,
           user.idToken,
           { ...newDescriptor, boardName: selectedBoard.boardName },
         );
-        // Keep selectedBoard.config in sync so future comparisons stay accurate.
+        // Keep selectedBoard.config (and the live status/errors) in sync so the
+        // open board reflects provisioning failures instead of looking healthy.
         setSelectedBoard((prev) =>
           prev
             ? {
                 ...prev,
                 config: { ...newDescriptor, boardName: prev.boardName },
+                status: info.status,
+                errors: info.errors,
               }
             : prev,
         );
+        if (info.status === "error" && info.errors?.length) {
+          toast.error("A cloud runtime failed to start", {
+            description: info.errors.join("\n"),
+          });
+        }
         await reloadBoards();
       } catch (err) {
         console.error("[cloud] Failed to sync board to coordinator:", err);
@@ -553,6 +564,14 @@ export default function CloudBoards({
 
   const showCoordinatorInToolbar = false;
   const boardCanvasRef = useBlockSwipeNavigation<HTMLDivElement>();
+
+  // Live status for the open board: prefer the freshly-listed entry, fall back to
+  // the locally-tracked selection. Drives the in-board error banner.
+  const openBoard =
+    boards.find((b) => b.boardName === mountedBoard?.boardName) ??
+    selectedBoard;
+  const openBoardErrors =
+    openBoard?.status === "error" ? (openBoard.errors ?? []) : [];
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -622,6 +641,18 @@ export default function CloudBoards({
                     selectedCoordinator && selectedBoard ? "contents" : "none",
                 }}
               >
+                {openBoardErrors.length > 0 && (
+                  <div className="m-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+                    <div className="font-semibold">
+                      This board didn’t fully start — runtime output won’t flow.
+                    </div>
+                    <ul className="mt-1 list-disc pl-5 break-words">
+                      {openBoardErrors.map((e, i) => (
+                        <li key={i}>{e}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <CloudBoardInner
                   board={mountedBoard}
                   bridgeWsUrl={

@@ -5,6 +5,9 @@ export type CoordinatorBoardInfo = {
   status: "running" | "error";
   createdAt: string;
   config: BoardDescriptor;
+  /** Reasons the session failed to come up cleanly (e.g. a runtime that could
+   *  not be provisioned). Present when status is "error". */
+  errors?: string[];
 };
 
 async function coordinatorFetch(
