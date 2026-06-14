@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BoardContextState } from "../../BoardContext";
 import {
   isRuntimeBrowserClassType,
@@ -46,16 +46,25 @@ export function useCoordinatorBridge(
   const boardContextRef = useRef(boardContext);
   boardContextRef.current = boardContext;
 
-  function sendRegistration(ws: WebSocket) {
-    ws.send(
-      JSON.stringify({
-        type: "connect",
-        userId,
-        boardName,
-        runtimeIds,
-      }),
-    );
-  }
+  // runtimeIds is a fresh array each render. The connection effect must NOT
+  // reconnect when it changes (a dedicated effect re-registers on the live
+  // socket), so read the latest value through a ref instead of a dependency.
+  const runtimeIdsRef = useRef(runtimeIds);
+  runtimeIdsRef.current = runtimeIds;
+
+  const sendRegistration = useCallback(
+    (ws: WebSocket) => {
+      ws.send(
+        JSON.stringify({
+          type: "connect",
+          userId,
+          boardName,
+          runtimeIds: runtimeIdsRef.current,
+        }),
+      );
+    },
+    [userId, boardName],
+  );
 
   useEffect(() => {
     if (!wsUrl || !userId || !boardName) {
@@ -73,6 +82,14 @@ export function useCoordinatorBridge(
     wsRef.current = ws;
 
     ws.onopen = () => {
+      // If we were torn down while still connecting (e.g. StrictMode's
+      // mount→unmount→mount in dev), close cleanly now instead of registering —
+      // closing an already-open socket avoids the browser's noisy
+      // "closed before the connection is established" error.
+      if (intentionallyClosed) {
+        ws.close();
+        return;
+      }
       console.log("[bridge] Connected to coordinator bridge");
       sendRegistration(ws);
     };
@@ -147,10 +164,13 @@ export function useCoordinatorBridge(
     return () => {
       intentionallyClosed = true;
       wsRef.current = null;
-      ws.close();
+      // Aborting a still-connecting socket makes the browser log a (harmless)
+      // error; instead let onopen close it once the handshake completes.
+      if (ws.readyState !== WebSocket.CONNECTING) {
+        ws.close();
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wsUrl, userId, boardName, reconnectAttempt, idToken]);
+  }, [wsUrl, userId, boardName, reconnectAttempt, idToken, sendRegistration]);
 
   // Re-register runtimeIds with the already-open socket when new browser
   // runtimes are added to the board.
@@ -159,8 +179,7 @@ export function useCoordinatorBridge(
     if (ws && ws.readyState === WebSocket.OPEN) {
       sendRegistration(ws);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [runtimeIdsKey]);
+  }, [runtimeIdsKey, sendRegistration]);
 
   return { ws: wsRef.current };
 }

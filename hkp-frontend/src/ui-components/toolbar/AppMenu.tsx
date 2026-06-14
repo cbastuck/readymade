@@ -58,33 +58,27 @@ export default function AppMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild className="ml-auto">
-        <Button
-          variant="ghost"
-          style={
-            isPlayground
-              ? {
-                  width: 30,
-                  height: 30,
-                  padding: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: 6,
-                  color: "var(--text-dim)",
-                }
-              : undefined
-          }
-        >
-          {isPlayground ? (
-            <svg width="16" height="4" viewBox="0 0 16 4" fill="currentColor">
-              <circle cx="2" cy="2" r="1.5" />
-              <circle cx="8" cy="2" r="1.5" />
-              <circle cx="14" cy="2" r="1.5" />
-            </svg>
-          ) : (
+        <div className="px-4">
+          <Button
+            variant="ghost"
+            style={
+              isPlayground
+                ? {
+                    width: 30,
+                    height: 30,
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: 6,
+                    color: "var(--text-dim)",
+                  }
+                : undefined
+            }
+          >
             <Menu strokeWidth={1} />
-          )}
-        </Button>
+          </Button>
+        </div>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="w-56 mx-4 font-menu"
