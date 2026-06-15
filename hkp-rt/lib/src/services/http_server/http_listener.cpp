@@ -104,10 +104,10 @@ void Listener::on_accept(beast::error_code ec, tcp::socket socket)
   else
   {
     std::make_shared<Session>(*this, std::move(socket))->run();
+    
+    // Accept another connection
+    do_accept();
   }
-
-  // Accept another connection
-  do_accept();
 }
 
 } // namespace hkp

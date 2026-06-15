@@ -233,6 +233,10 @@ void Session::sendDataSync(Data& data, bool useEventStream)
     rb->consumeAvailable(binaryData, true);
     sendBinaryData(binaryData);
   }
+  else if (auto str = getStringFromData(data); str)
+  {
+    sendHtmlResponse(*str);
+  }
   else if (isUndefined(data))
   {
     std::cerr << "Session::sendDataSync: Undefined data not supported" << std::endl;
@@ -240,7 +244,7 @@ void Session::sendDataSync(Data& data, bool useEventStream)
   else
   {
     // Handle undefined data case
-    std::cerr << "Session::sendDataSync: Undefined data not supported" << std::endl;
+    std::cerr << "Session::sendDataSync: data type not supported: " << data.which() << std::endl;
   }
 }
 
