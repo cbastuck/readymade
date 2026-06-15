@@ -5,104 +5,13 @@ import { M } from "./tokens";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import MobileBoardCanvas from "./MobileBoardCanvas";
 import MobileCloudBoards from "../../cloud/mobile/MobileCloudBoards";
+import MobileHub from "./MobileHub";
 
-type Tab = "board" | "cloud" | "settings";
+type Tab = "board" | "cloud" | "hub";
 
 type MobilePlaygroundInnerProps = {
   suggestedName?: string;
-  onSaveBoard?: () => void;
 };
-
-// ── Settings tab ───────────────────────────────────────────────
-function SettingsTab({
-  boardName,
-  onSaveBoard,
-}: {
-  boardName: string;
-  onSaveBoard?: () => void;
-}) {
-  const boardContext = useBoardContext();
-  if (!boardContext) return null;
-  const rtCount = boardContext.runtimes.length;
-  const svcCount = Object.values(boardContext.services).flat().length;
-
-  return (
-    <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.1em",
-          color: M.textMuted,
-          textTransform: "uppercase",
-          marginBottom: 10,
-        }}
-      >
-        Board
-      </div>
-      <div
-        style={{
-          background: M.card,
-          borderRadius: 14,
-          border: `1px solid ${M.border}`,
-          overflow: "hidden",
-        }}
-      >
-        {[
-          ["Name", boardName || "Untitled"],
-          ["Runtimes", String(rtCount)],
-          ["Services", String(svcCount)],
-        ].map(([k, v], i, a) => (
-          <div
-            key={k}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              padding: "13px 16px",
-              borderBottom: i < a.length - 1 ? `1px solid ${M.border}` : "none",
-            }}
-          >
-            <span style={{ fontSize: 14, color: M.textPrimary, flex: 1 }}>
-              {k}
-            </span>
-            <span style={{ fontSize: 14, color: M.textMuted }}>{v}</span>
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.1em",
-          color: M.textMuted,
-          textTransform: "uppercase",
-          margin: "20px 0 10px",
-        }}
-      >
-        Actions
-      </div>
-      <button
-        onClick={onSaveBoard}
-        style={{
-          width: "100%",
-          height: 46,
-          border: "none",
-          borderRadius: 14,
-          background: M.teal,
-          color: "#fff",
-          fontFamily: "inherit",
-          fontSize: 15,
-          fontWeight: 600,
-          cursor: "pointer",
-          marginBottom: 10,
-        }}
-      >
-        Save Board
-      </button>
-    </div>
-  );
-}
 
 // ── Tab bar button ─────────────────────────────────────────────
 function TabButton({
@@ -228,7 +137,6 @@ function TopBar({
 // ── Root ───────────────────────────────────────────────────────
 export default function MobilePlaygroundInner({
   suggestedName,
-  onSaveBoard,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
   const [tab, setTab] = useState<Tab>("board");
@@ -275,8 +183,11 @@ export default function MobilePlaygroundInner({
       >
         {tab === "board" && <MobileBoardCanvas />}
         {tab === "cloud" && <MobileCloudBoards />}
-        {tab === "settings" && (
-          <SettingsTab boardName={displayName} onSaveBoard={onSaveBoard} />
+        {tab === "hub" && (
+          <MobileHub
+            suggestedName={displayName}
+            onBoardLoaded={() => setTab("board")}
+          />
         )}
       </div>
 
@@ -308,10 +219,10 @@ export default function MobilePlaygroundInner({
           onClick={() => setTab("cloud")}
         />
         <TabButton
-          label="Settings"
-          icon="settings"
-          active={tab === "settings"}
-          onClick={() => setTab("settings")}
+          label="Hub"
+          icon="package"
+          active={tab === "hub"}
+          onClick={() => setTab("hub")}
         />
       </div>
     </div>

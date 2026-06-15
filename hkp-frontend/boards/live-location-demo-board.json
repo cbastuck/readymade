@@ -1,0 +1,93 @@
+{
+  "boardName": "Live Location",
+  "description": "Share your phone's live GPS position over a link. The Meander iOS app runs a tiny HTTP server on your device; anyone who opens the link (or scans the QR) on the same network gets your current coordinates as JSON. Native iOS only — the geo-location service exists exclusively in the Meander app, and nothing is shared until you tap Start.",
+  "runtimes": [
+    {
+      "id": "ios",
+      "name": "meander-ios",
+      "type": "rest",
+      "url": "hkp://remotes/meander-ios",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ios": [
+      {
+        "uuid": "live-location-server",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Live Location Server",
+        "state": {
+          "port": 8080,
+          "mode": "process_on_session",
+          "bypass": true,
+          "pipeline": [
+            {
+              "instanceId": "gps",
+              "serviceId": "geo-location",
+              "serviceName": "Location",
+              "state": {
+                "accuracy": "best",
+                "bypass": true
+              }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "share",
+        "title": "Live Location",
+        "layout": {
+          "direction": "column",
+          "padding": 24,
+          "gap": 20,
+          "align": "center",
+          "justify": "center",
+          "fill": true,
+          "items": [
+            {
+              "type": "qr-code",
+              "caption": "Scan to see my live location",
+              "source": {
+                "serviceUuid": "live-location-server",
+                "path": "url"
+              }
+            },
+            {
+              "type": "button",
+              "label": "Start sharing",
+              "action": {
+                "serviceUuid": "live-location-server",
+                "configure": {
+                  "bypass": false,
+                  "configureService": {
+                    "instanceId": "gps",
+                    "state": { "bypass": false }
+                  }
+                }
+              }
+            },
+            {
+              "type": "button",
+              "label": "Stop sharing",
+              "action": {
+                "serviceUuid": "live-location-server",
+                "configure": {
+                  "bypass": true,
+                  "configureService": {
+                    "instanceId": "gps",
+                    "state": { "bypass": true }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

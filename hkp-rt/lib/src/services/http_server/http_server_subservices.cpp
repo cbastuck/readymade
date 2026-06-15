@@ -12,10 +12,67 @@
 #include <algorithm>
 #include <thread>
 
+#if !defined(_WIN32)
+#include <ifaddrs.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#endif
+
 namespace beast = boost::beast;
 namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
+
+namespace {
+
+// Best-effort primary LAN IPv4, so the running server can advertise a link that
+// other devices on the same network can reach (it binds 0.0.0.0). Prefers the
+// Wi-Fi interface (en0 on Apple platforms). Falls back to loopback.
+std::string primaryIPv4()
+{
+  std::string result = "127.0.0.1";
+#if !defined(_WIN32)
+  struct ifaddrs* ifaddr = nullptr;
+  if (getifaddrs(&ifaddr) == -1)
+  {
+    return result;
+  }
+  bool foundPreferred = false;
+  for (struct ifaddrs* ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next)
+  {
+    if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
+    {
+      continue;
+    }
+    if (!(ifa->ifa_flags & IFF_UP) || (ifa->ifa_flags & IFF_LOOPBACK))
+    {
+      continue;
+    }
+    char buf[INET_ADDRSTRLEN] = {0};
+    auto* sin = reinterpret_cast<struct sockaddr_in*>(ifa->ifa_addr);
+    if (!inet_ntop(AF_INET, &sin->sin_addr, buf, sizeof(buf)))
+    {
+      continue;
+    }
+    const std::string name = ifa->ifa_name ? ifa->ifa_name : "";
+    if (!foundPreferred)
+    {
+      result = buf; // first non-loopback candidate
+    }
+    if (name == "en0") // Wi-Fi on iOS/macOS — strongly preferred
+    {
+      result = buf;
+      foundPreferred = true;
+      break;
+    }
+  }
+  freeifaddrs(ifaddr);
+#endif
+  return result;
+}
+
+} // namespace
 
 namespace hkp {
 
@@ -176,6 +233,9 @@ json HttpServerSubservices::getState() const
 
   return Service::mergeStateWith(json{
     {"port", m_impl->port()},
+    {"host", m_host},
+    {"url", m_url},
+    {"status", isBypass() ? "offline" : "online"},
     {"pipeline", pipeline}
   });
 }
@@ -227,8 +287,13 @@ bool HttpServerSubservices::start()
   }
 
   std::cout << "HttpServerSubservices::start() HTTP server started on port: " << m_impl->port() << std::endl;
+  m_host = primaryIPv4();
+  m_url  = "http://" + m_host + ":" + std::to_string(m_impl->port()) + "/";
   sendNotification(json{
-    {"port", m_impl->port()}
+    {"port",   m_impl->port()},
+    {"host",   m_host},
+    {"url",    m_url},
+    {"status", "online"}
   });
   return true;
 }
@@ -240,6 +305,9 @@ bool HttpServerSubservices::stop()
     std::cout << "HttpServerSubservices::stop() HTTP server is not running" << std::endl;
     return false;
   }
+  m_host.clear();
+  m_url.clear();
+  sendNotification(json{{"status", "offline"}});
   return m_impl->stop();
 }
 
