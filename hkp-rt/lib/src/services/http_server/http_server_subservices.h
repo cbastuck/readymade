@@ -60,6 +60,10 @@ private:
   std::string m_mode;
   std::shared_ptr<SubRuntime> m_subservices;
   std::vector<json> m_subserviceConfig;
+  // Reachable LAN address of the running server, published so facade widgets
+  // (QR code / status) can present a scannable link. Empty while stopped.
+  std::string m_host;
+  std::string m_url;
 };
 
 } // namespace hkp

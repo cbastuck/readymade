@@ -13,12 +13,13 @@ import {
   toCanonicalRuntimeClassType,
 } from "../../../types";
 import { M, SERVICE_UI_ZOOM } from "./tokens";
-import MobileIcon from "./MobileIcon";
+import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import AddRuntimeSheet from "./AddRuntimeSheet";
 import AddServiceSheet from "./AddServiceSheet";
 import ServiceSheet from "./ServiceSheet";
 import { findServiceUI } from "../../../runtime/browser/UIRegistry";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
+import MobileFacadeView from "./MobileFacadeView";
 
 // Presence of a `bridge` prop means this canvas renders a *cloud* board: browser
 // runtime results are forwarded to the coordinator over `bridge.ws`. When omitted
@@ -913,10 +914,80 @@ function useWireBrowserScopes(
   }, [boardContext, runtimes, scopes]);
 }
 
+// ── App ⇄ Board view toggle (only shown when the board has a facade) ──────────
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: "facade" | "board";
+  onChange: (v: "facade" | "board") => void;
+}) {
+  const segments: Array<{ value: "facade" | "board"; label: string; icon: MobileIconName }> = [
+    { value: "facade", label: "App", icon: "home" },
+    { value: "board", label: "Board", icon: "list" },
+  ];
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        padding: "8px 0",
+        flexShrink: 0,
+        background: M.bg,
+        borderBottom: `1px solid ${M.border}`,
+      }}
+    >
+      <div
+        style={{
+          display: "inline-flex",
+          background: M.card,
+          border: `1px solid ${M.border}`,
+          borderRadius: 10,
+          padding: 3,
+          gap: 2,
+        }}
+      >
+        {segments.map((seg) => {
+          const active = view === seg.value;
+          return (
+            <button
+              key={seg.value}
+              onClick={() => onChange(seg.value)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "6px 14px",
+                border: "none",
+                borderRadius: 8,
+                background: active ? M.teal : "transparent",
+                color: active ? "#fff" : M.textSecondary,
+                fontFamily: "inherit",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              <MobileIcon
+                name={seg.icon}
+                size={14}
+                color={active ? "#fff" : M.textMuted}
+                strokeWidth={active ? 2.2 : 1.8}
+              />
+              {seg.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Canvas root ─────────────────────────────────────────────────
 export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
   const boardContext = useBoardContext();
 
+  const [view, setView] = useState<"facade" | "board">("facade");
   const [showAddRuntime, setShowAddRuntime] = useState(false);
   const [addServiceRuntime, setAddServiceRuntime] =
     useState<RuntimeDescriptor | null>(null);
@@ -931,11 +1002,20 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
 
   useWireBrowserScopes(boardContext, bridge);
 
+  // When a different board loads, prefer its facade ("App") view by default,
+  // mirroring the desktop where the facade is shown first when present.
+  const loadedBoardName = boardContext?.boardName;
+  useEffect(() => {
+    setView("facade");
+  }, [loadedBoardName]);
+
   if (!boardContext) {
     return null;
   }
 
-  const { runtimes, registry, availableRuntimeEngines } = boardContext;
+  const { runtimes, registry, availableRuntimeEngines, facade, boardName } =
+    boardContext;
+  const showFacade = !!facade && view === "facade";
 
   const handleAddRuntime = (rtClass: RuntimeClass) => {
     boardContext.addRuntime({
@@ -984,21 +1064,35 @@ export default function MobileBoardCanvas({ bridge }: MobileBoardCanvasProps) {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
-        backgroundImage:
-          "radial-gradient(circle, #c8c0b8 1px, transparent 1px)",
-        backgroundSize: "20px 20px",
+        ...(showFacade
+          ? {}
+          : {
+              backgroundImage:
+                "radial-gradient(circle, #c8c0b8 1px, transparent 1px)",
+              backgroundSize: "20px 20px",
+            }),
       }}
     >
-      <BoardList
-        onServiceTap={(svc, rt) => {
-          setSelectedService(svc);
-          setSelectedServiceRuntime(rt);
-        }}
-        activeServiceId={selectedService?.uuid ?? null}
-        onAddService={setAddServiceRuntime}
-        onRemoveRuntime={handleRemoveRuntime}
-        onShowAddRuntime={() => setShowAddRuntime(true)}
-      />
+      {facade && <ViewToggle view={view} onChange={setView} />}
+
+      {showFacade ? (
+        <MobileFacadeView
+          facade={facade}
+          boardContext={boardContext}
+          boardName={boardName ?? ""}
+        />
+      ) : (
+        <BoardList
+          onServiceTap={(svc, rt) => {
+            setSelectedService(svc);
+            setSelectedServiceRuntime(rt);
+          }}
+          activeServiceId={selectedService?.uuid ?? null}
+          onAddService={setAddServiceRuntime}
+          onRemoveRuntime={handleRemoveRuntime}
+          onShowAddRuntime={() => setShowAddRuntime(true)}
+        />
+      )}
 
       {/* Sheets */}
       <AddRuntimeSheet

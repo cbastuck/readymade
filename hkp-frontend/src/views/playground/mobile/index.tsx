@@ -58,10 +58,7 @@ function MobilePlayground(props: PlaygroundProps) {
       availableRuntimeEngines={playgroundRuntimeEngines}
       onBoardInfrastructureChange={props.onBoardInfrastructureChange}
     >
-      <MobilePlaygroundInner
-        suggestedName={suggestedName}
-        onSaveBoard={() => saveBoard(true)}
-      />
+      <MobilePlaygroundInner suggestedName={suggestedName} />
     </BoardProvider>
   );
 }
