@@ -11,6 +11,7 @@ import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
 import { findServiceUI as restFindServiceUI } from "../rest/UIRegistry";
 import RuntimeRestServiceUI from "../rest/RuntimeRestServiceUI";
 import ServiceWithDropBars from "../ServiceWithDropBars";
+import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
 
 type PipelineEntry = {
   serviceId: string;
@@ -39,6 +40,13 @@ export default function SubServicePipelineUI({
   const [collapsed, setCollapsed] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragCountRef = useRef(0);
+  const isMobileHost = useIsMobileHost();
+
+  // The mobile host renders its own breadcrumb pipeline navigation, so don't
+  // draw the desktop drag-and-drop editor on top of it.
+  if (isMobileHost) {
+    return null;
+  }
 
   const findDescriptor = (serviceId: string): ServiceClass | undefined =>
     registry.find((entry) => entry.serviceId === serviceId);

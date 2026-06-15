@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useBoardContext } from "../../../BoardContext";
+import { MobileHostContext } from "../../../MobileHostContext";
 import { M } from "./tokens";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import MobileBoardCanvas from "./MobileBoardCanvas";
@@ -242,6 +243,7 @@ export default function MobilePlaygroundInner({
   const svcCount = Object.values(services).flat().length;
 
   return (
+    <MobileHostContext.Provider value={true}>
     <div
       style={{
         width: "100%",
@@ -313,5 +315,6 @@ export default function MobilePlaygroundInner({
         />
       </div>
     </div>
+    </MobileHostContext.Provider>
   );
 }
