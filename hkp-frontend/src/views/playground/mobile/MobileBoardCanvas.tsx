@@ -792,14 +792,22 @@ function FullServiceView({
 }
 
 /**
- * Wires the per-runtime scope hooks that the desktop `BrowserRuntime` component
- * normally installs (the mobile renderer doesn't mount it). Without this, browser
- * runtime results have nowhere to go: `scope.onResult` would be the unset stub, so
- * the coordinator never receives `result-from-browser` and notifications are lost.
+ * Wires the per-runtime scope hooks that the desktop `BrowserRuntime` /
+ * `RuntimeRest` components normally install (the mobile renderer mounts neither).
+ *
+ * `scope.onResult` is wired for *every* runtime — without it results have nowhere
+ * to go: the coordinator never receives `result-from-browser`, and a remote (REST)
+ * runtime awaiting a response (e.g. a C++ HTTP server using RESULT_AWAITING_RESPONSE)
+ * is never resolved, so the request hangs. The remaining hooks
+ * (`processRuntimeByName`, `configureServiceInRuntime`, `onAction`) are browser-only.
  *
  * - Cloud board (`bridge` set): forward browser results to the coordinator, and
  *   resolve coordinator-initiated calls via `context.onResolve`.
- * - Playground (`bridge` omitted): chain results to the next runtime locally.
+ * - Playground (`bridge` omitted): resolve awaiting callers, else chain results to
+ *   the next runtime locally.
+ *
+ * NOTE: this hook hand-rolls scope wiring that overlaps with the desktop runtime
+ * components and `Board`'s `onRuntimeResult`. See `docs/todos/scope-wiring-refactor.md`.
  */
 function useWireBrowserScopes(
   boardContext: BoardContextState | null,
@@ -820,60 +828,27 @@ function useWireBrowserScopes(
     const { runtimes, scopes, runtimeApis, appContext, user } = boardContext;
 
     for (const rt of runtimes) {
-      if (!isRuntimeBrowserClassType(rt.type)) {
-        continue;
-      }
-      const scope = scopes[rt.id] as BrowserRuntimeScope | undefined;
+      const scope = scopes[rt.id] as RuntimeScope | undefined;
       if (!scope) {
         continue;
       }
 
       scope.authenticatedUser = user;
 
-      scope.processRuntimeByName = async (name: string, params: unknown) => {
-        const target = runtimes.find((r) => r.name === name);
-        if (target) {
-          const targetScope = scopes[target.id];
-          const targetApi =
-            runtimeApis[target.type] ||
-            runtimeApis[toCanonicalRuntimeClassType(target.type)];
-          if (targetScope && targetApi) {
-            return targetApi.processRuntime(targetScope, params, null);
-          }
-        }
-        console.error(
-          `MobileBoardCanvas.processRuntimeByName: no runtime named "${name}"`,
-        );
-      };
-
-      scope.configureServiceInRuntime = async (
-        runtimeId: string,
-        serviceUuid: string,
-        config: unknown,
-      ) => {
-        const targetScope = scopes[runtimeId] as
-          | BrowserRuntimeScope
-          | undefined;
-        const svc = targetScope?.findServiceInstance(serviceUuid)?.[0];
-        if (svc?.configure) {
-          await svc.configure(config);
-        }
-      };
-
-      scope.onAction = (action: ServiceAction) => {
-        if (action.action === "notification" && action.payload) {
-          appContext?.pushNotification(action.payload);
-          return true;
-        }
-        return false;
-      };
-
+      // `onResult` must be wired for *every* runtime that hands a result back to
+      // the app, not just browser runtimes. On desktop the per-runtime
+      // <BrowserRuntime>/<RuntimeRest> components install it; the mobile renderer
+      // mounts neither, so we wire it here. A remote (REST) runtime needs it just
+      // as much: a C++ HTTP server using the inversion-of-control pull pattern
+      // pushes its result with `context.onResolve` set (RESULT_AWAITING_RESPONSE)
+      // and parks the HTTP connection until we resolve it. Left on the unset stub,
+      // that resolve never fires and the request hangs forever.
       scope.onResult = async (
         _instanceId: string | null,
         result: unknown,
         context?: ProcessContext | null,
       ) => {
-        // A coordinator-initiated call carries its own resolver.
+        // A coordinator- or runtime-initiated call carries its own resolver.
         if (context?.onResolve) {
           context.onResolve(result);
           return;
@@ -882,7 +857,7 @@ function useWireBrowserScopes(
         const activeBridge = bridgeRef.current;
         if (activeBridge) {
           // Cloud board: the coordinator routes to the next runtime — just hand
-          // the browser result back to it.
+          // the result back to it.
           const ws = activeBridge.ws;
           if (ws && ws.readyState === WebSocket.OPEN && result !== null) {
             ws.send(
@@ -907,6 +882,54 @@ function useWireBrowserScopes(
         if (nextApi && nextScope && result !== null) {
           nextApi.processRuntime(nextScope, result, null, context);
         }
+      };
+
+      // The remaining hooks exist only on browser scopes; remote (REST) scopes
+      // drive notifications and config through their own REST/WebSocket handlers.
+      if (!isRuntimeBrowserClassType(rt.type)) {
+        continue;
+      }
+      const browserScope = scope as BrowserRuntimeScope;
+
+      browserScope.processRuntimeByName = async (
+        name: string,
+        params: unknown,
+      ) => {
+        const target = runtimes.find((r) => r.name === name);
+        if (target) {
+          const targetScope = scopes[target.id];
+          const targetApi =
+            runtimeApis[target.type] ||
+            runtimeApis[toCanonicalRuntimeClassType(target.type)];
+          if (targetScope && targetApi) {
+            return targetApi.processRuntime(targetScope, params, null);
+          }
+        }
+        console.error(
+          `MobileBoardCanvas.processRuntimeByName: no runtime named "${name}"`,
+        );
+      };
+
+      browserScope.configureServiceInRuntime = async (
+        runtimeId: string,
+        serviceUuid: string,
+        config: unknown,
+      ) => {
+        const targetScope = scopes[runtimeId] as
+          | BrowserRuntimeScope
+          | undefined;
+        const svc = targetScope?.findServiceInstance(serviceUuid)?.[0];
+        if (svc?.configure) {
+          await svc.configure(config);
+        }
+      };
+
+      browserScope.onAction = (action: ServiceAction) => {
+        if (action.action === "notification" && action.payload) {
+          appContext?.pushNotification(action.payload);
+          return true;
+        }
+        return false;
       };
     }
     // Re-wire when the set of runtimes or their scopes changes (e.g. a runtime is
