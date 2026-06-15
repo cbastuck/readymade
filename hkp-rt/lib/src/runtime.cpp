@@ -580,9 +580,16 @@ void Runtime::onSessionJSONData(json msg)
       // sendResult() dispatches to sendHtmlResponse() rather than
       // sendJsonResponseWithCors().
       if (data.is_string())
-        callback(Data(data.get<std::string>()));
+      {
+        auto str = data.get<std::string>();
+        Data d = Data(str);
+        callback(d);
+      }
       else
-        callback(Data(data));
+      {
+        Data d = Data(data);
+        callback(d);
+      }
     }
     else
     {

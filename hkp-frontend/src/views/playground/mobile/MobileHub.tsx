@@ -354,7 +354,7 @@ export default function MobileHub({
               outline: "none",
               background: "transparent",
               fontFamily: "inherit",
-              fontSize: 15,
+              fontSize: 16, // >=16 prevents iOS auto-zoom on focus
               fontWeight: 600,
               color: M.textPrimary,
               padding: "12px 0",

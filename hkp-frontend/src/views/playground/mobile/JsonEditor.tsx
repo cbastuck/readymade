@@ -141,7 +141,7 @@ function AddFieldForm({
     borderRadius: 8,
     padding: "0 10px",
     fontFamily: "inherit",
-    fontSize: 13,
+    fontSize: 16, // >=16 prevents iOS auto-zoom on focus
     color: M.textPrimary,
     background: M.card,
     outline: "none",
@@ -153,7 +153,7 @@ function AddFieldForm({
     borderRadius: 8,
     padding: "0 8px",
     fontFamily: "inherit",
-    fontSize: 13,
+    fontSize: 16, // >=16 prevents iOS auto-zoom on focus
     color: M.textPrimary,
     background: M.card,
     outline: "none",
@@ -306,7 +306,7 @@ function ValueWidget({
           borderRadius: 6,
           padding: "0 8px",
           fontFamily: "inherit",
-          fontSize: 13,
+          fontSize: 16, // >=16 prevents iOS auto-zoom on focus
           color: M.textPrimary,
           background: "#f8f5f2",
           outline: "none",
@@ -330,7 +330,7 @@ function ValueWidget({
           borderRadius: 6,
           padding: "0 8px",
           fontFamily: "inherit",
-          fontSize: 13,
+          fontSize: 16, // >=16 prevents iOS auto-zoom on focus
           color: M.textPrimary,
           background: "#f8f5f2",
           outline: "none",
