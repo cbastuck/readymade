@@ -15,6 +15,7 @@ import peerChatBoard from "../boards/peer-chat-board.json";
 import peerChatNodeBoard from "../boards/peer-chat-node-board.json";
 import dropitappBoard from "../boards/dropitapp-board.json";
 import liveLocationBoard from "../boards/live-location-demo-board.json";
+import microphoneSpeakerBoard from "../boards/microphone-speaker-demo-board.json";
 import relayBoard from "../boards/relay.json";
 import linkDebuggerBoard from "../boards/link-debugger.json";
 import spotifyBoard from "../boards/spotify-board.json";
@@ -36,6 +37,7 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   "peer-chat-with-node": peerChatNodeBoard as unknown as BoardDescriptor,
   "drop-it-app": dropitappBoard as unknown as BoardDescriptor,
   "live-location": liveLocationBoard as unknown as BoardDescriptor,
+  "microphone-speaker": microphoneSpeakerBoard as unknown as BoardDescriptor,
   "relay": relayBoard as unknown as BoardDescriptor,
   "link-debugger": linkDebuggerBoard as unknown as BoardDescriptor,
   "spotify-to-github": spotifyBoard as unknown as BoardDescriptor,

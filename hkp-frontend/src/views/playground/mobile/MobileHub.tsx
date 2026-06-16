@@ -14,6 +14,7 @@ import { M } from "./tokens";
 import MobileIcon from "./MobileIcon";
 
 import liveLocationBoard from "../../../../boards/live-location-demo-board.json";
+import microphoneSpeakerBoard from "../../../../boards/microphone-speaker-demo-board.json";
 
 // ── Bundled demo boards (ready-to-run examples) ────────────────
 type DemoEntry = {
@@ -30,6 +31,13 @@ const DEMO_BOARDS: DemoEntry[] = [
       "Share your phone's live GPS position over a link — native Meander iOS only.",
     icon: "📍",
     board: liveLocationBoard as unknown as BoardDescriptor,
+  },
+  {
+    label: "Microphone → Speaker",
+    description:
+      "Live mic-to-speaker audio passthrough — native Meander iOS only. Use headphones.",
+    icon: "🎤",
+    board: microphoneSpeakerBoard as unknown as BoardDescriptor,
   },
 ];
 

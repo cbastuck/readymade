@@ -1,0 +1,86 @@
+{
+  "boardName": "Microphone → Speaker",
+  "description": "Live audio passthrough on the Meander iOS app: the native microphone service captures from the device mic and pushes each block straight into the native speaker service, which plays it back. Both services exist only in the Meander iOS app (the macOS equivalents are core-input / core-output). Nothing is captured until you tap Start — the first tap triggers the microphone permission prompt. Use headphones to avoid feedback.",
+  "runtimes": [
+    {
+      "id": "ios",
+      "name": "meander-ios",
+      "type": "rest",
+      "url": "hkp://remotes/meander-ios",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ios": [
+      {
+        "uuid": "mic",
+        "serviceId": "microphone",
+        "serviceName": "Microphone",
+        "state": {
+          "bypass": true,
+          "deferPropagation": false
+        }
+      },
+      {
+        "uuid": "speaker",
+        "serviceId": "speaker",
+        "serviceName": "Speaker",
+        "state": {
+          "bypass": true,
+          "mode": "buffer-incoming"
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "passthrough",
+        "title": "Microphone → Speaker",
+        "layout": {
+          "direction": "column",
+          "padding": 24,
+          "gap": 16,
+          "align": "center",
+          "justify": "center",
+          "fill": true,
+          "items": [
+            {
+              "type": "button",
+              "label": "Start",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "speaker",
+                  "configure": { "bypass": false }
+                },
+                {
+                  "type": "configure",
+                  "serviceUuid": "mic",
+                  "configure": { "bypass": false }
+                }
+              ]
+            },
+            {
+              "type": "button",
+              "label": "Stop",
+              "actions": [
+                {
+                  "type": "configure",
+                  "serviceUuid": "mic",
+                  "configure": { "bypass": true }
+                },
+                {
+                  "type": "configure",
+                  "serviceUuid": "speaker",
+                  "configure": { "bypass": true }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
