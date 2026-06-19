@@ -18,7 +18,8 @@ namespace hkp
   public:
     Server(std::shared_ptr<App> app,
            const std::string& name,
-           const std::string& allowedOrigins);
+           const std::string& allowedOrigins,
+           const std::string& displayName = "");
     ~Server();
   
     void start(const std::string& externalIP, unsigned int port, const std::string& bindAddress = "0.0.0.0");

@@ -1,4 +1,4 @@
-import { type TouchEvent, useCallback, useRef, useState } from "react";
+import { type TouchEvent, useCallback, useEffect, useRef, useState } from "react";
 import useSWR from "swr";
 import { toast } from "sonner";
 
@@ -10,10 +10,7 @@ import { useAppContext } from "../../../AppContext";
 import { useCloudLogin } from "../../../auth/useCloudLogin";
 import {
   CoordinatorDescriptor,
-  restoreCoordinators,
-  storeCoordinators,
   restoreAvailableRuntimeEngines,
-  storeAvailableRuntimeEngines,
 } from "../../../common";
 import {
   BoardDescriptor,
@@ -23,6 +20,7 @@ import {
 import { runtimeApis } from "../../playground";
 import { M } from "../../playground/mobile/tokens";
 import MobileIcon from "../../playground/mobile/MobileIcon";
+import { useMobileConnections } from "../../playground/mobile/MobileConnections";
 
 import {
   CoordinatorBoardInfo,
@@ -550,9 +548,9 @@ export default function MobileCloudBoards() {
     ...restoreAvailableRuntimeEngines(),
   ]);
 
-  const [coordinators, setCoordinators] = useState<CoordinatorDescriptor[]>(() =>
-    restoreCoordinators(),
-  );
+  // Coordinators are shared with the Hub tab so edits there reflect here live.
+  const { coordinators, addCoordinator, removeCoordinator, runtimeEngines } =
+    useMobileConnections();
   const [isManageOpen, setIsManageOpen] = useState(false);
   const [newBoardCoordinator, setNewBoardCoordinator] = useState<
     CoordinatorDescriptor | undefined
@@ -571,31 +569,39 @@ export default function MobileCloudBoards() {
   // ── Coordinator management ────────────────────────────────────────────────────
 
   const onAddCoordinator = (coordinator: CoordinatorDescriptor) => {
-    const updated = [...coordinators, coordinator];
-    setCoordinators(updated);
-    storeCoordinators(updated);
-
-    const baseUrl = coordinator.url.replace(/\/coordinator\/?$/, "");
-    const rtClass: RuntimeClass = {
-      type: "rest",
-      name: coordinator.name,
-      url: baseUrl,
-    };
-    const updatedEngines =
-      boardProviderRef.current?.addAvailableRuntime(rtClass, false) ?? [];
-    storeAvailableRuntimeEngines(updatedEngines);
+    // Engine registration is handled by the reconcile effect below.
+    addCoordinator(coordinator);
   };
 
   const onRemoveCoordinator = (coordinator: CoordinatorDescriptor) => {
-    const updated = coordinators.filter((c) => c.url !== coordinator.url);
-    setCoordinators(updated);
-    storeCoordinators(updated);
+    removeCoordinator(coordinator);
     if (selectedCoordinator?.url === coordinator.url) {
       setSelectedCoordinator(undefined);
       setSelectedBoard(undefined);
       setShowOverview(true);
     }
   };
+
+  // Register a REST runtime engine for each coordinator (and any Hub-managed
+  // external runtimes) so the cloud board provider can provision them.
+  useEffect(() => {
+    const ref = boardProviderRef.current;
+    if (!ref) {
+      return;
+    }
+    for (const c of coordinators) {
+      const baseUrl = c.url.replace(/\/coordinator\/?$/, "");
+      const rtClass: RuntimeClass = {
+        type: "rest",
+        name: c.name,
+        url: baseUrl,
+      };
+      ref.addAvailableRuntime(rtClass, true);
+    }
+    for (const rt of runtimeEngines) {
+      ref.addAvailableRuntime(rt, true);
+    }
+  }, [coordinators, runtimeEngines]);
 
   // ── Board listing across all coordinators ─────────────────────────────────────
 

@@ -27,8 +27,14 @@
   #include <sys/wait.h>
 #endif
 #ifdef _WIN32
+  #ifndef WIN32_LEAN_AND_MEAN
+  #define WIN32_LEAN_AND_MEAN
+  #endif
+  #include <winsock2.h>
+  #include <ws2tcpip.h>
   #include <windows.h>
   #include <shellapi.h>
+  #pragma comment(lib, "Ws2_32.lib")
 #endif
 
 #ifdef NDEBUG
@@ -60,8 +66,38 @@ static void openUrlInSystemBrowser(const std::string &url)
 static std::string getLanIP()
 {
 #ifdef _WIN32
-  // Windows: fall back to localhost.
-  return "127.0.0.1";
+  // Same UDP-connect trick as the POSIX path, via Winsock.
+  WSADATA wsaData;
+  if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+  {
+    return "127.0.0.1";
+  }
+  std::string result = "127.0.0.1";
+  SOCKET sock = ::socket(AF_INET, SOCK_DGRAM, 0);
+  if (sock != INVALID_SOCKET)
+  {
+    sockaddr_in dest{};
+    dest.sin_family = AF_INET;
+    dest.sin_port   = htons(53);
+    ::inet_pton(AF_INET, "8.8.8.8", &dest.sin_addr);
+
+    if (::connect(sock, reinterpret_cast<sockaddr*>(&dest), sizeof(dest)) == 0)
+    {
+      sockaddr_in local{};
+      int len = sizeof(local);
+      if (::getsockname(sock, reinterpret_cast<sockaddr*>(&local), &len) == 0)
+      {
+        char buf[INET_ADDRSTRLEN];
+        if (::inet_ntop(AF_INET, &local.sin_addr, buf, sizeof(buf)))
+        {
+          result = buf;
+        }
+      }
+    }
+    ::closesocket(sock);
+  }
+  WSACleanup();
+  return result;
 #else
   int sock = ::socket(AF_INET, SOCK_DGRAM, 0);
   if (sock < 0)
@@ -132,7 +168,7 @@ int real_main(int argc, char *argv[])
   saucer::webview::register_scheme("hkp");
   Vault vault;
 
-  auto app = saucer::application::create({.id = "Meander"});
+  auto app = saucer::application::create({.id = "Readymade"});
   if (!app.has_value())
   {
     std::cerr << "Failed to create saucer application" << std::endl;
@@ -158,7 +194,7 @@ int real_main(int argc, char *argv[])
     return saucer::status::handled;
   });
 
-  window->set_title("Meander");
+  window->set_title("Readymade");
   webview->set_dev_tools(isDebugBuild);
   window->set_size({1024, 800});
   window->set_background({255, 255, 255, 255}); // white background
@@ -173,9 +209,13 @@ int real_main(int argc, char *argv[])
   // hkp-frontend can resolve HKP_WEBAPP_URL / HKP_RUNTIME_URL without any
   // fetch calls. Runs before the page's own scripts (time::creation).
   auto configJson = nlohmann::json{
-    {"lanIp",        lanIP},
-    {"frontendPort", FRONTEND_HTTP_PORT},
-    {"apiPort",      settings.getAllowExternalAccess() ? RUNTIME_API_PORT : 0},
+    {"lanIp",               lanIP},
+    {"frontendPort",        FRONTEND_HTTP_PORT},
+    {"apiPort",             settings.getAllowExternalAccess() ? RUNTIME_API_PORT : 0},
+    // The actual bound port and exposure flag, surfaced for the Settings/About
+    // tab so it can show the runtime URL in both localhost-only and LAN modes.
+    {"runtimePort",         RUNTIME_API_PORT},
+    {"allowExternalAccess", settings.getAllowExternalAccess()},
   };
   webview->inject(saucer::script{
     .code   = "window.__MEANDER_CONFIG__ = " + configJson.dump() + ";",

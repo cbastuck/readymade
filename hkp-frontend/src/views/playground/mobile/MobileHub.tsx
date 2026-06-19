@@ -3,15 +3,11 @@ import { toast } from "sonner";
 
 import { useBoardContext } from "../../../BoardContext";
 import { BoardDescriptor, SavedBoard } from "../../../types";
-import {
-  getLocalBoard,
-  getLocalBoards,
-  removeLocalBoard,
-  storeBoardToLocalStorage,
-} from "../common";
-import { createBoardLink } from "../BoardLink";
+import { getLocalBoard, getLocalBoards, removeLocalBoard } from "../common";
 import { M } from "./tokens";
-import MobileIcon from "./MobileIcon";
+import MobileIcon, { type MobileIconName } from "./MobileIcon";
+import ManageRuntimesSheet from "./ManageRuntimesSheet";
+import ManageCoordinatorsSheet from "./ManageCoordinatorsSheet";
 
 import liveLocationBoard from "../../../../boards/live-location-demo-board.json";
 import microphoneSpeakerBoard from "../../../../boards/microphone-speaker-demo-board.json";
@@ -250,15 +246,10 @@ export default function MobileHub({
 }) {
   const boardContext = useBoardContext();
   const [saved, setSaved] = useState<SavedBoard[]>([]);
-  const [nameDraft, setNameDraft] = useState("");
+  const [sheet, setSheet] = useState<null | "runtimes" | "coordinators">(null);
 
   const refresh = () => setSaved(getLocalBoards());
   useEffect(refresh, []);
-
-  const contextName = boardContext?.boardName;
-  useEffect(() => {
-    setNameDraft(contextName || suggestedName || "");
-  }, [contextName, suggestedName]);
 
   if (!boardContext) {
     return null;
@@ -266,39 +257,7 @@ export default function MobileHub({
 
   const rtCount = boardContext.runtimes.length;
   const svcCount = Object.values(boardContext.services).flat().length;
-
-  const onSave = async () => {
-    const name = nameDraft.trim() || "Untitled";
-    const data = await boardContext.serializeBoard();
-    if (!data) {
-      toast.error("Could not read the current board");
-      return;
-    }
-    // Persist boardName alongside the source so loading restores the name.
-    storeBoardToLocalStorage(
-      name,
-      JSON.stringify({ ...data, boardName: name, name }),
-      data.description,
-    );
-    refresh();
-    toast.success(`Saved “${name}” to this device`);
-  };
-
-  const onShare = async () => {
-    const name = nameDraft.trim() || "Untitled";
-    const data = await boardContext.serializeBoard();
-    if (!data) {
-      toast.error("Could not read the current board");
-      return;
-    }
-    const link = createBoardLink(JSON.stringify({ ...data, boardName: name }));
-    try {
-      await navigator.clipboard.writeText(link);
-      toast.success("Share link copied to clipboard");
-    } catch {
-      toast.message("Share link", { description: link });
-    }
-  };
+  const displayName = boardContext.boardName || suggestedName || "Untitled Board";
 
   const loadDescriptor = async (descriptor: BoardDescriptor, label: string) => {
     await boardContext.setBoardState(descriptor);
@@ -334,94 +293,67 @@ export default function MobileHub({
       <SectionHeader title="This board" />
       <div
         style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
           background: M.card,
           borderRadius: 14,
           border: `1px solid ${M.border}`,
           padding: 14,
-          marginBottom: 10,
+          marginBottom: 4,
         }}
       >
         <div
           style={{
+            width: 38,
+            height: 38,
+            borderRadius: 10,
+            background: M.tealLight,
             display: "flex",
             alignItems: "center",
-            gap: 10,
-            border: `1px solid ${M.border}`,
-            borderRadius: 10,
-            padding: "0 12px",
-            background: M.bg,
+            justifyContent: "center",
+            flexShrink: 0,
           }}
         >
-          <input
-            value={nameDraft}
-            onChange={(e) => setNameDraft(e.target.value)}
-            placeholder="Board name"
-            style={{
-              flex: 1,
-              border: "none",
-              outline: "none",
-              background: "transparent",
-              fontFamily: "inherit",
-              fontSize: 16, // >=16 prevents iOS auto-zoom on focus
-              fontWeight: 600,
-              color: M.textPrimary,
-              padding: "12px 0",
-              minWidth: 0,
-            }}
-          />
-          <MobileIcon name="layers" size={15} color={M.textMuted} />
+          <MobileIcon name="layers" size={18} color={M.tealDark} />
         </div>
-        <div style={{ fontSize: 12, color: M.textMuted, marginTop: 10 }}>
-          {rtCount} runtime{rtCount !== 1 ? "s" : ""} · {svcCount} service
-          {svcCount !== 1 ? "s" : ""}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: M.textPrimary,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {displayName}
+          </div>
+          <div style={{ fontSize: 12, color: M.textMuted, marginTop: 2 }}>
+            {rtCount} runtime{rtCount !== 1 ? "s" : ""} · {svcCount} service
+            {svcCount !== 1 ? "s" : ""}
+          </div>
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 10, marginBottom: 4 }}>
-        <button
-          onClick={onSave}
-          style={{
-            flex: 1,
-            height: 46,
-            border: "none",
-            borderRadius: 14,
-            background: M.teal,
-            color: "#fff",
-            fontFamily: "inherit",
-            fontSize: 15,
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          }}
-        >
-          <MobileIcon name="check" size={16} color="#fff" strokeWidth={2.2} />
-          Save
-        </button>
-        <button
-          onClick={onShare}
-          style={{
-            flex: 1,
-            height: 46,
-            border: `1.5px solid ${M.teal}`,
-            borderRadius: 14,
-            background: M.card,
-            color: M.tealDark,
-            fontFamily: "inherit",
-            fontSize: 15,
-            fontWeight: 600,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          }}
-        >
-          <MobileIcon name="share" size={16} color={M.tealDark} strokeWidth={2} />
-          Share link
-        </button>
+      {/* ── Connections ── */}
+      <div style={{ marginTop: 24 }}>
+        <SectionHeader title="Connections" />
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <ConnectionButton
+            icon="server"
+            label="Manage Runtimes"
+            sublabel="External runtime servers for the board"
+            onClick={() => setSheet("runtimes")}
+          />
+          <ConnectionButton
+            icon="cloud"
+            label="Manage Coordinators"
+            sublabel="Cloud hosts that run shared boards"
+            onClick={() => setSheet("coordinators")}
+          />
+        </div>
       </div>
 
       {/* ── Saved boards ── */}
@@ -437,7 +369,8 @@ export default function MobileHub({
               lineHeight: 1.5,
             }}
           >
-            No saved boards yet — tap Save to keep this board on your device.
+            No saved boards yet — use the ⋯ menu to keep this board on your
+            device.
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -466,7 +399,74 @@ export default function MobileHub({
           ))}
         </div>
       </div>
+
+      {/* ── Connection management sheets ── */}
+      <ManageRuntimesSheet
+        open={sheet === "runtimes"}
+        onClose={() => setSheet(null)}
+      />
+      <ManageCoordinatorsSheet
+        open={sheet === "coordinators"}
+        onClose={() => setSheet(null)}
+      />
     </div>
+  );
+}
+
+// ── Connection row (opens a management sheet) ──────────────────
+function ConnectionButton({
+  icon,
+  label,
+  sublabel,
+  onClick,
+}: {
+  icon: MobileIconName;
+  label: string;
+  sublabel: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: "12px 14px",
+        width: "100%",
+        background: M.card,
+        border: `1px solid ${M.border}`,
+        borderRadius: 12,
+        cursor: "pointer",
+        textAlign: "left",
+        fontFamily: "inherit",
+        boxSizing: "border-box",
+      }}
+    >
+      <div
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 9,
+          background: M.blueLight,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+        }}
+      >
+        <MobileIcon name={icon} size={18} color={M.blue} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: M.textPrimary }}>
+          {label}
+        </div>
+        <div style={{ fontSize: 11, color: M.textMuted, marginTop: 2 }}>
+          {sublabel}
+        </div>
+      </div>
+      <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
+    </button>
   );
 }
 

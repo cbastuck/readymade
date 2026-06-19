@@ -77,11 +77,11 @@ if(APPLE)
   set_target_properties(${PROJECT_NAME} PROPERTIES
     MACOSX_BUNDLE TRUE
     MACOSX_BUNDLE_ICON_FILE "hkp.icns"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "com.meander.app"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "com.readymadeit.app"
     MACOSX_BUNDLE_INFO_PLIST "${CMAKE_CURRENT_SOURCE_DIR}/macos/Info.plist"
   )
   set_target_properties(${PROJECT_NAME} PROPERTIES
-    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.meander.app"
+    XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "com.readymadeit.app"
   )
 endif()
 

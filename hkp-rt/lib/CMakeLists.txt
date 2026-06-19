@@ -72,6 +72,7 @@ target_sources(${PROJECT_NAME}
       src/service.cpp
       src/sub_runtime.cpp
       src/app.cpp
+      src/discovery/discovery.cpp
       src/http/server.cpp
       src/types/models.cpp 
       src/types/message.cpp
