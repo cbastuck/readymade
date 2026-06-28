@@ -161,6 +161,31 @@ void announceOnAllInterfaces(int sock, const std::vector<in_addr>& ifaceAddrs,
   }
 }
 
+// Sends a multicast PTR query for our service out every interface, soliciting
+// (unicast) responses from peers. Active querying is what makes discovery
+// reliable over Wi-Fi power-save.
+void queryOnAllInterfaces(int sock, const std::vector<in_addr>& ifaceAddrs, void* buffer,
+                          size_t capacity, const std::string& serviceType)
+{
+  auto sendOnce = [&]()
+  {
+    mdns_query_send(sock, MDNS_RECORDTYPE_PTR, serviceType.c_str(), serviceType.size(),
+                    buffer, capacity, 0);
+  };
+
+  if (ifaceAddrs.empty())
+  {
+    sendOnce();
+    return;
+  }
+  for (const auto& ifaddr : ifaceAddrs)
+  {
+    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,
+               reinterpret_cast<const char*>(&ifaddr), sizeof(ifaddr));
+    sendOnce();
+  }
+}
+
 // Records of one peer accumulated across the per-record callbacks of a packet.
 struct PeerAccum
 {
@@ -173,6 +198,16 @@ struct PeerAccum
 struct ParseContext
 {
   std::map<std::string, PeerAccum> byInstance; // keyed by service instance name
+
+  // Materials for answering incoming queries via unicast (set when advertising).
+  // A separate buffer is required because the receive buffer still holds the
+  // query packet being parsed while the callback builds the answer.
+  bool canRespond = false;
+  void* respondBuffer = nullptr;
+  size_t respondCapacity = 0;
+  const std::string* serviceType = nullptr;
+  const mdns_record_t* answer = nullptr;            // our PTR record
+  const std::vector<mdns_record_t>* additional = nullptr; // SRV + TXT
 };
 
 // Extracts the DNS name of the record currently being parsed.
@@ -191,19 +226,33 @@ bool isOurService(const std::string& name)
   return name.find(kServiceType) != std::string::npos;
 }
 
-int discoveryCallback(int /*sock*/, const struct sockaddr* from, size_t /*addrlen*/,
-                      mdns_entry_type_t entry, uint16_t /*query_id*/, uint16_t rtype,
+int discoveryCallback(int sock, const struct sockaddr* from, size_t addrlen,
+                      mdns_entry_type_t entry, uint16_t query_id, uint16_t rtype,
                       uint16_t /*rclass*/, uint32_t /*ttl*/, const void* data, size_t size,
                       size_t name_offset, size_t /*name_length*/, size_t record_offset,
                       size_t record_length, void* user_data)
 {
-  // We only care about announced answers, not questions.
+  auto* ctx = static_cast<ParseContext*>(user_data);
+
+  // Answer incoming queries for our service via UNICAST. Unicast is reliably
+  // delivered even to a Wi-Fi client in power-save (unlike multicast), so the
+  // asker — which is actively querying — gets a dependable response.
   if (entry == MDNS_ENTRYTYPE_QUESTION)
   {
+    if (ctx->canRespond && (rtype == MDNS_RECORDTYPE_PTR || rtype == MDNS_RECORDTYPE_ANY))
+    {
+      const std::string qname = extractRecordName(data, size, name_offset);
+      if (isOurService(qname))
+      {
+        mdns_query_answer_unicast(
+            sock, from, addrlen, ctx->respondBuffer, ctx->respondCapacity, query_id,
+            MDNS_RECORDTYPE_PTR, ctx->serviceType->c_str(), ctx->serviceType->size(),
+            *ctx->answer, nullptr, 0, ctx->additional->data(), ctx->additional->size());
+      }
+    }
     return 0;
   }
 
-  auto* ctx = static_cast<ParseContext*>(user_data);
   const std::string ip = sockaddrToIp(from);
   char strbuf[256] = {0};
 
@@ -466,24 +515,32 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
     additional.push_back(txtRecord);
   }
 
-  // 32-bit aligned packet buffer required by the library.
+  // 32-bit aligned packet buffers required by the library. A second buffer is
+  // needed for unicast answers, since the receive buffer still holds the query
+  // being parsed when we build the answer inside the callback.
   uint32_t buffer[512];
+  uint32_t respondBuffer[512];
 
   const auto deadline =
       std::chrono::steady_clock::now() + std::chrono::seconds(durationSeconds);
-  // Far enough in the past to announce immediately, without the overflow that
+  // Far enough in the past to broadcast immediately, without the overflow that
   // time_point::min() would cause when subtracted from now().
-  auto lastAnnounce = std::chrono::steady_clock::now() - std::chrono::hours(1);
+  auto lastBroadcast = std::chrono::steady_clock::now() - std::chrono::hours(1);
 
   while (!m_stop.load() && std::chrono::steady_clock::now() < deadline)
   {
     const auto now = std::chrono::steady_clock::now();
-    if (advertise && self.port > 0 &&
-        now - lastAnnounce >= std::chrono::seconds(2))
+    if (now - lastBroadcast >= std::chrono::seconds(2))
     {
-      announceOnAllInterfaces(sock, ifaceAddrs, buffer, sizeof(buffer), ptrRecord,
-                              additional, /*goodbye=*/false);
-      lastAnnounce = now;
+      // Unsolicited multicast announce (helps passive listeners) plus an active
+      // query (solicits reliable unicast answers — the Wi-Fi-robust path).
+      if (advertise && self.port > 0)
+      {
+        announceOnAllInterfaces(sock, ifaceAddrs, buffer, sizeof(buffer), ptrRecord,
+                                additional, /*goodbye=*/false);
+      }
+      queryOnAllInterfaces(sock, ifaceAddrs, buffer, sizeof(buffer), serviceType);
+      lastBroadcast = now;
     }
 
     fd_set readfds;
@@ -497,6 +554,12 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
     if (ready > 0 && FD_ISSET(sock, &readfds))
     {
       ParseContext ctx;
+      ctx.canRespond = advertise && self.port > 0;
+      ctx.respondBuffer = respondBuffer;
+      ctx.respondCapacity = sizeof(respondBuffer);
+      ctx.serviceType = &serviceType;
+      ctx.answer = &ptrRecord;
+      ctx.additional = &additional;
       mdns_socket_listen(sock, buffer, sizeof(buffer), discoveryCallback, &ctx);
 
       std::lock_guard<std::mutex> lock(m_mutex);
