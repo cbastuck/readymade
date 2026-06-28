@@ -15,6 +15,28 @@ import {
 import RuntimeRestScope from "./RuntimeRestScope";
 import { EngineState } from "hkp-frontend/src/BoardContext";
 
+// A runtime reports its notification WebSocket URL using its own externalIP,
+// which is 127.0.0.1 for an embedded runtime (correct only for a client on the
+// same host — e.g. the simulator). For a remote runtime we must connect to the
+// same host we reached the runtime at, so rewrite the ws URL's host to the
+// runtime's URL host while preserving the server-assigned ws port and path.
+function resolveOutputUrl(
+  outputUrl: string,
+  runtimeUrl: string | undefined,
+): string {
+  if (!outputUrl || !runtimeUrl) {
+    return outputUrl;
+  }
+  try {
+    const out = new URL(outputUrl);
+    const base = new URL(runtimeUrl);
+    out.hostname = base.hostname;
+    return out.toString();
+  } catch {
+    return outputUrl;
+  }
+}
+
 function authHeaders(user: User | null): Record<string, string> {
   if (!user?.idToken) {
     return {};
@@ -166,7 +188,11 @@ export async function attachRuntimes(
   // TODO: get rid of the any type
   return runtimes.reduce((acc: any, cur: RestRuntimeData) => {
     const rt: RuntimeDescriptor = { ...rtClass, ...cur };
-    const scope = new RuntimeRestScope(rt, cur.outputUrl, user);
+    const scope = new RuntimeRestScope(
+      rt,
+      resolveOutputUrl(cur.outputUrl, rtClass.url),
+      user,
+    );
     scope.registry = registry;
     return {
       ...acc,
@@ -376,7 +402,11 @@ async function createRuntimeRequest(
   if (!rt) {
     throw new Error("Failed to create runtime - no runtime was addeed");
   }
-  const scope = await createScope(runtime, rt.outputUrl, user ?? null);
+  const scope = await createScope(
+    runtime,
+    resolveOutputUrl(rt.outputUrl, runtime.url),
+    user ?? null,
+  );
   scope.registry = normalizedRegistry;
 
   return {

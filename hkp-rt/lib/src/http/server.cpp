@@ -1,10 +1,15 @@
 #include "server.h"
 
+#include <algorithm>
+
 #include <crow.h>
 #include <crow/middlewares/cors.h>
 
 #include <app.h>
 #include <types/validation.h>
+
+#include "discovery/discovery.h"
+#include "uuid.h"
 
 namespace hkp
 {
@@ -21,12 +26,22 @@ struct JsonResponse : crow::response
 };
 struct Server::impl
 {
-  impl(std::shared_ptr<App> a, const std::string& n, const std::string& ao = "*")
+  impl(std::shared_ptr<App> a, const std::string& n, const std::string& ao = "*",
+       const std::string& dn = "")
     : app(a)
     , name(n)
     , allowedOrigins(ao)
+    , displayName(dn)
   {
     setupRoutes(allowedOrigins);
+  }
+
+  // Friendly name shown to peers during discovery. Platforms that have a better
+  // name than the hostname (e.g. iOS, UIDevice.name) pass it in; otherwise fall
+  // back to the machine hostname.
+  std::string discoveryName() const
+  {
+    return displayName.empty() ? discoveryDeviceName() : displayName;
   }
 
   void setupRoutes(const std::string& allowedOrigins)
@@ -79,6 +94,19 @@ struct Server::impl
   
     CROW_ROUTE(crow, "/runtimes/<string>/services/<string>")
         .methods("DELETE"_method)([this](const crow::request &req, std::string runtimeId, std::string instanceId) -> crow::response { return deleteService(runtimeId, instanceId); });
+
+    // ── LAN discovery ──
+    CROW_ROUTE(crow, "/discover")
+        .methods("POST"_method)([this](const crow::request &req) { return startDiscover(req); });
+
+    CROW_ROUTE(crow, "/discover")
+        .methods("GET"_method)([this]() { return getDiscover(); });
+
+    CROW_ROUTE(crow, "/discover")
+        .methods("DELETE"_method)([this]() { return stopDiscover(); });
+
+    CROW_ROUTE(crow, "/identity")
+        .methods("GET"_method)([this]() { return getIdentity(); });
     }
 
   crow::response getRuntimes();
@@ -102,18 +130,87 @@ struct Server::impl
     return JsonResponse(_body, allowedOrigins);
   }
 
+  // ── LAN discovery ──────────────────────────────────────────────────────────
+  // Advertising is only meaningful when the runtime is LAN-reachable (bound to
+  // 0.0.0.0); a localhost-only instance can still browse for peers.
+  json discoverState()
+  {
+    auto peers = json::array();
+    for (const auto& peer : discovery.peers())
+    {
+      peers.push_back(peer);
+    }
+    return json{
+        {"active", discovery.isActive()},
+        {"endsAt", discovery.endsAtEpochMs()},
+        {"peers", peers},
+    };
+  }
+
+  crow::response startDiscover(const crow::request& req)
+  {
+    int seconds = 30;
+    if (!req.body.empty())
+    {
+      try
+      {
+        auto body = json::parse(req.body);
+        if (body.contains("durationSeconds") && body["durationSeconds"].is_number_integer())
+        {
+          seconds = body["durationSeconds"].get<int>();
+        }
+      }
+      catch (...) { /* fall back to default */ }
+    }
+    seconds = std::clamp(seconds, 5, 120);
+
+    DiscoveryManager::Identity self;
+    self.id = instanceId;
+    self.name = discoveryName();
+    self.port = crow.port();
+    discovery.start(self, /*advertise=*/bindAddress == "0.0.0.0", seconds);
+    return makeJsonResponse(discoverState());
+  }
+
+  crow::response getDiscover()
+  {
+    return makeJsonResponse(discoverState());
+  }
+
+  crow::response stopDiscover()
+  {
+    discovery.stop();
+    return makeJsonResponse(discoverState());
+  }
+
+  crow::response getIdentity()
+  {
+    return makeJsonResponse(json{
+        {"id", instanceId},
+        {"name", discoveryName()},
+        {"platform", discoveryPlatformName()},
+        {"port", crow.port()},
+        {"exposed", bindAddress == "0.0.0.0"},
+    });
+  }
+
   crow::Crow<crow::CORSHandler> crow;
   std::string externalIP;
   std::shared_ptr<App> app;
   std::string name;
   std::string allowedOrigins;
+  std::string displayName;
+  std::string bindAddress;
+  std::string instanceId = generateUUID();
+  DiscoveryManager discovery;
 };
 
 Server::Server(
-  std::shared_ptr<App> app, 
+  std::shared_ptr<App> app,
   const std::string& name,
-  const std::string& allowedOrigins
-) : m_impl(std::make_unique<impl>(app, name, allowedOrigins))
+  const std::string& allowedOrigins,
+  const std::string& displayName
+) : m_impl(std::make_unique<impl>(app, name, allowedOrigins, displayName))
 {
   app->setServer(this);
 }
@@ -131,6 +228,7 @@ void Server::handleRequest(crow::request& req, crow::response& res)
 void Server::start(const std::string& externalIP, unsigned int port, const std::string& bindAddress)
 {
   m_impl->externalIP = externalIP;
+  m_impl->bindAddress = bindAddress;
   m_impl->crow.bindaddr(bindAddress).port(port).run();
 }
 

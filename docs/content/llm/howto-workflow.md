@@ -7,7 +7,7 @@ how to export and restore a board.
 
 ---
 
-## Architecture overview
+## Readymade architecture overview
 
 The platform uses a **pipeline model**: services within a runtime are
 ordered in a list. When the runtime processes data, each service receives
@@ -18,11 +18,11 @@ the output of the previous service as its input. A service returning
 Timer ──► Map ──► Canvas
 ```
 
-| Layer  | Role                                                           |
-|--------|----------------------------------------------------------------|
-| Timer  | Emits a tick object every N ms with an incrementing counter   |
+| Layer  | Role                                                             |
+| ------ | ---------------------------------------------------------------- |
+| Timer  | Emits a tick object every N ms with an incrementing counter      |
 | Map    | Transforms the tick into a canvas draw command using expressions |
-| Canvas | Receives the draw command and renders it via CanvasUI          |
+| Canvas | Receives the draw command and renders it via CanvasUI            |
 
 ---
 
@@ -65,12 +65,12 @@ zero when the timer is restarted.
 
 ### Configuration
 
-| Property       | Type    | Description                            |
-|----------------|---------|----------------------------------------|
-| `periodicValue`| number  | How long between ticks                 |
-| `periodicUnit` | string  | Unit: `"ms"`, `"s"`, `"m"`, …         |
-| `periodic`     | boolean | Enable repeating mode                  |
-| `running`      | boolean | Start the timer immediately on restore |
+| Property        | Type    | Description                            |
+| --------------- | ------- | -------------------------------------- |
+| `periodicValue` | number  | How long between ticks                 |
+| `periodicUnit`  | string  | Unit: `"ms"`, `"s"`, `"m"`, …          |
+| `periodic`      | boolean | Enable repeating mode                  |
+| `running`       | boolean | Start the timer immediately on restore |
 
 For smooth animation at ~20 fps, use 50 ms:
 
@@ -110,19 +110,19 @@ Map transforms its input object into a new object according to a
 The expression evaluator exposes a safe global scope (no raw `Math`
 object). Key available names:
 
-| Name       | Equivalent to      |
-|------------|--------------------|
-| `sin`      | `Math.sin`         |
-| `round`    | `Math.round`       |
-| `min`      | `Math.min`         |
-| `max`      | `Math.max`         |
-| `rand`     | `Math.random`      |
-| `string`   | `String(x)`        |
-| `number`   | `Number(x)`        |
-| `concat`   | `` `${x}${y}` ``   |
-| `sum`      | sum of array       |
-| `avg`      | average of array   |
-| `moment`   | moment.js          |
+| Name     | Equivalent to    |
+| -------- | ---------------- |
+| `sin`    | `Math.sin`       |
+| `round`  | `Math.round`     |
+| `min`    | `Math.min`       |
+| `max`    | `Math.max`       |
+| `rand`   | `Math.random`    |
+| `string` | `String(x)`      |
+| `number` | `Number(x)`      |
+| `concat` | `` `${x}${y}` `` |
+| `sum`    | sum of array     |
+| `avg`    | average of array |
+| `moment` | moment.js        |
 
 > **Note — no `cos`:** The global scope does not expose `Math.cos`.
 > Use the identity `cos(θ) = sin(θ + π/2)` instead:
@@ -145,28 +145,28 @@ y(t) = cy + r * sin(t)   →   round(cy + r * sin(t))
 Where `t = triggerCount * speed`. Choose `speed` to control how fast the
 circle is traversed — a full revolution takes `2π / speed` ticks.
 
-| Speed  | Ticks per revolution | Time at 50 ms/tick |
-|--------|----------------------|--------------------|
-| 0.10   | ~63                  | ~3.1 s             |
-| 0.05   | ~126                 | ~6.3 s             |
-| 0.02   | ~314                 | ~15.7 s            |
+| Speed | Ticks per revolution | Time at 50 ms/tick |
+| ----- | -------------------- | ------------------ |
+| 0.10  | ~63                  | ~3.1 s             |
+| 0.05  | ~126                 | ~6.3 s             |
+| 0.02  | ~314                 | ~15.7 s            |
 
 ### Canvas text draw element
 
 The canvas `update()` function accepts objects with a `type` field.
 For text:
 
-| Field          | Type              | Description                                   |
-|----------------|-------------------|-----------------------------------------------|
-| `type`         | `"text"`          | Required                                      |
-| `text`         | string            | The string to render                          |
-| `x`            | number or `"N%"`  | Pixel offset from left (omit to horizontally center) |
-| `y`            | number or `"N%"`  | Pixel offset from top baseline (omit to vertically center) |
-| `font`         | string or object  | CSS font string e.g. `"bold 22px Arial"`      |
-| `color`        | string            | Fill color e.g. `"#3b82f6"`                  |
-| `contour`      | `{color, lineWidth}` | Optional text outline                      |
-| `textTransform`| string            | `"uppercase"`, `"lowercase"`, `"lowercase-spacing-1"`, … |
-| `onClick`      | action            | Optional click handler dispatched via `app.next` |
+| Field           | Type                 | Description                                                |
+| --------------- | -------------------- | ---------------------------------------------------------- |
+| `type`          | `"text"`             | Required                                                   |
+| `text`          | string               | The string to render                                       |
+| `x`             | number or `"N%"`     | Pixel offset from left (omit to horizontally center)       |
+| `y`             | number or `"N%"`     | Pixel offset from top baseline (omit to vertically center) |
+| `font`          | string or object     | CSS font string e.g. `"bold 22px Arial"`                   |
+| `color`         | string               | Fill color e.g. `"#3b82f6"`                                |
+| `contour`       | `{color, lineWidth}` | Optional text outline                                      |
+| `textTransform` | string               | `"uppercase"`, `"lowercase"`, `"lowercase-spacing-1"`, …   |
+| `onClick`       | action               | Optional click handler dispatched via `app.next`           |
 
 ### Map configuration for this workflow
 
