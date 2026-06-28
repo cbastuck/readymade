@@ -122,6 +122,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_WINDOWS" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
   add_definitions(-D_WIN32_WINNT=0x0600)
   target_compile_options(${PROJECT_NAME} PRIVATE /bigobj)
+  # ws2_32: Winsock; iphlpapi: GetAdaptersAddresses (LAN discovery interface enumeration).
+  target_link_libraries(${PROJECT_NAME} PUBLIC ws2_32 iphlpapi)
 endif()
 
 if(IOS)

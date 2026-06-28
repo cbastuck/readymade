@@ -14,10 +14,13 @@
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
+#include <iphlpapi.h>
 #else
 #include <arpa/inet.h>
 #include <sys/select.h>
 #include <unistd.h>
+#include <ifaddrs.h>
+#include <net/if.h>
 #endif
 
 namespace hkp
@@ -54,6 +57,84 @@ std::string sockaddrToIp(const struct sockaddr* from)
     }
   }
   return std::string();
+}
+
+// Opens one mDNS socket per usable IPv4 interface (joining/sending multicast on
+// each), so discovery is not at the mercy of which interface INADDR_ANY happens
+// to pick — critical on machines with virtual adapters (Hyper-V/WSL/VPN), where
+// the wrong interface silently breaks discovery. Falls back to a single
+// INADDR_ANY socket when enumeration yields nothing.
+std::vector<int> openInterfaceSockets()
+{
+  std::vector<int> socks;
+
+#ifdef _WIN32
+  ULONG bufLen = 16 * 1024;
+  std::vector<char> buffer(bufLen);
+  auto* adapters = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buffer.data());
+  ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+  ULONG ret = GetAdaptersAddresses(AF_INET, flags, nullptr, adapters, &bufLen);
+  if (ret == ERROR_BUFFER_OVERFLOW)
+  {
+    buffer.resize(bufLen);
+    adapters = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buffer.data());
+    ret = GetAdaptersAddresses(AF_INET, flags, nullptr, adapters, &bufLen);
+  }
+  if (ret == NO_ERROR)
+  {
+    for (auto* adapter = adapters; adapter; adapter = adapter->Next)
+    {
+      if (adapter->OperStatus != IfOperStatusUp ||
+          adapter->IfType == IF_TYPE_SOFTWARE_LOOPBACK)
+      {
+        continue;
+      }
+      for (auto* ua = adapter->FirstUnicastAddress; ua; ua = ua->Next)
+      {
+        if (ua->Address.lpSockaddr->sa_family != AF_INET)
+        {
+          continue;
+        }
+        sockaddr_in saddr = *reinterpret_cast<sockaddr_in*>(ua->Address.lpSockaddr);
+        saddr.sin_port = htons(MDNS_PORT);
+        int sock = mdns_socket_open_ipv4(&saddr);
+        if (sock >= 0)
+        {
+          socks.push_back(sock);
+        }
+      }
+    }
+  }
+#else
+  struct ifaddrs* ifaddr = nullptr;
+  if (getifaddrs(&ifaddr) == 0)
+  {
+    for (auto* ifa = ifaddr; ifa; ifa = ifa->ifa_next)
+    {
+      if (!ifa->ifa_addr || ifa->ifa_addr->sa_family != AF_INET)
+      {
+        continue;
+      }
+      if (!(ifa->ifa_flags & IFF_UP) || (ifa->ifa_flags & IFF_LOOPBACK))
+      {
+        continue;
+      }
+      sockaddr_in saddr = *reinterpret_cast<sockaddr_in*>(ifa->ifa_addr);
+      saddr.sin_port = htons(MDNS_PORT);
+#ifdef __APPLE__
+      saddr.sin_len = sizeof(saddr);
+#endif
+      int sock = mdns_socket_open_ipv4(&saddr);
+      if (sock >= 0)
+      {
+        socks.push_back(sock);
+      }
+    }
+    freeifaddrs(ifaddr);
+  }
+#endif
+
+  return socks;
 }
 
 // Records of one peer accumulated across the per-record callbacks of a packet.
@@ -274,19 +355,28 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
   bool wsaInit = (WSAStartup(MAKEWORD(2, 2), &wsa) == 0);
 #endif
 
-  struct sockaddr_in bindAddr;
-  std::memset(&bindAddr, 0, sizeof(bindAddr));
-  bindAddr.sin_family = AF_INET;
-  bindAddr.sin_addr.s_addr = INADDR_ANY;
-  bindAddr.sin_port = htons(MDNS_PORT);
-#ifdef __APPLE__
-  bindAddr.sin_len = sizeof(bindAddr);
-#endif
-
-  int sock = mdns_socket_open_ipv4(&bindAddr);
-  if (sock < 0)
+  std::vector<int> socks = openInterfaceSockets();
+  if (socks.empty())
   {
-    std::cerr << "DiscoveryManager: failed to open mDNS socket" << std::endl;
+    // Fallback: a single socket on the default interface.
+    struct sockaddr_in bindAddr;
+    std::memset(&bindAddr, 0, sizeof(bindAddr));
+    bindAddr.sin_family = AF_INET;
+    bindAddr.sin_addr.s_addr = INADDR_ANY;
+    bindAddr.sin_port = htons(MDNS_PORT);
+#ifdef __APPLE__
+    bindAddr.sin_len = sizeof(bindAddr);
+#endif
+    int sock = mdns_socket_open_ipv4(&bindAddr);
+    if (sock >= 0)
+    {
+      socks.push_back(sock);
+    }
+  }
+
+  if (socks.empty())
+  {
+    std::cerr << "DiscoveryManager: failed to open any mDNS socket" << std::endl;
     m_active.store(false);
 #ifdef _WIN32
     if (wsaInit) { WSACleanup(); }
@@ -357,23 +447,40 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
     if (advertise && self.port > 0 &&
         now - lastAnnounce >= std::chrono::seconds(2))
     {
-      mdns_announce_multicast(sock, buffer, sizeof(buffer), ptrRecord, nullptr, 0,
-                              additional.data(), additional.size());
+      for (int sock : socks)
+      {
+        mdns_announce_multicast(sock, buffer, sizeof(buffer), ptrRecord, nullptr, 0,
+                                additional.data(), additional.size());
+      }
       lastAnnounce = now;
     }
 
     fd_set readfds;
     FD_ZERO(&readfds);
-    FD_SET(sock, &readfds);
+    int maxfd = 0;
+    for (int sock : socks)
+    {
+      FD_SET(sock, &readfds);
+      if (sock > maxfd)
+      {
+        maxfd = sock;
+      }
+    }
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 250000; // 250 ms
 
-    int ready = select(sock + 1, &readfds, nullptr, nullptr, &timeout);
-    if (ready > 0 && FD_ISSET(sock, &readfds))
+    int ready = select(maxfd + 1, &readfds, nullptr, nullptr, &timeout);
+    if (ready > 0)
     {
       ParseContext ctx;
-      mdns_socket_listen(sock, buffer, sizeof(buffer), discoveryCallback, &ctx);
+      for (int sock : socks)
+      {
+        if (FD_ISSET(sock, &readfds))
+        {
+          mdns_socket_listen(sock, buffer, sizeof(buffer), discoveryCallback, &ctx);
+        }
+      }
 
       std::lock_guard<std::mutex> lock(m_mutex);
       for (const auto& [instance, acc] : ctx.byInstance)
@@ -403,13 +510,15 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
     }
   }
 
-  if (advertise && self.port > 0)
+  for (int sock : socks)
   {
-    mdns_goodbye_multicast(sock, buffer, sizeof(buffer), ptrRecord, nullptr, 0,
-                           additional.data(), additional.size());
+    if (advertise && self.port > 0)
+    {
+      mdns_goodbye_multicast(sock, buffer, sizeof(buffer), ptrRecord, nullptr, 0,
+                             additional.data(), additional.size());
+    }
+    mdns_socket_close(sock);
   }
-
-  mdns_socket_close(sock);
   m_active.store(false);
   m_endsAtMs.store(0);
 #ifdef _WIN32
