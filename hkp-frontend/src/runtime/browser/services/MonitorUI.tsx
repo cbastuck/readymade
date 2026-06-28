@@ -91,6 +91,11 @@ export default function MonitorUI(props: ServiceUIProps) {
 
   const toggleAsciiMode = () => setAsciiMode((prev) => !prev);
 
+  const canUseSpeechSynthesis =
+    typeof window !== "undefined" &&
+    typeof window.speechSynthesis !== "undefined" &&
+    typeof SpeechSynthesisUtterance !== "undefined";
+
   const { service } = props;
   const customMenuEntries = [
     {
@@ -134,10 +139,13 @@ export default function MonitorUI(props: ServiceUIProps) {
       name: "Read it",
       icon: <MenuIcon icon={Speech} />,
       onClick: () => {
+        if (!canUseSpeechSynthesis) {
+          return;
+        }
         const utterance = new SpeechSynthesisUtterance(message);
-        speechSynthesis.speak(utterance);
+        window.speechSynthesis.speak(utterance);
       },
-      disabled: !message || !speechSynthesis,
+      disabled: !message || !canUseSpeechSynthesis,
     },
   ];
 

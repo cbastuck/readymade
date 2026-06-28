@@ -17,9 +17,39 @@ Set-StrictMode -Version Latest
 
 $npm = 'npm.cmd'
 $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$buildDir = Join-Path $repoRoot 'build'
 $toolchain = Join-Path $repoRoot '3rdparty/vcpkg/scripts/buildsystems/vcpkg.cmake'
 $vcpkgRoot = Join-Path $repoRoot '3rdparty/vcpkg'
 $vcpkgManifest = Join-Path $repoRoot '3rdparty/vcpkg.json'
+
+function Reset-BuildDirectoryIfTripletChanged {
+  param(
+    [Parameter(Mandatory = $true)]
+    [string]$BuildDir,
+
+    [Parameter(Mandatory = $true)]
+    [string]$RequestedTriplet
+  )
+
+  $cachePath = Join-Path $BuildDir 'CMakeCache.txt'
+  if (-not (Test-Path $cachePath)) {
+    return
+  }
+
+  $cacheTripletLine = Select-String -Path $cachePath -Pattern '^VCPKG_TARGET_TRIPLET:STRING=' | Select-Object -First 1
+  if (-not $cacheTripletLine) {
+    return
+  }
+
+  $cachedTriplet = ($cacheTripletLine.Line -split '=', 2)[1]
+  if ($cachedTriplet -eq $RequestedTriplet) {
+    return
+  }
+
+  Write-Host "==> Cached triplet '$cachedTriplet' does not match requested '$RequestedTriplet'"
+  Write-Host "==> Removing stale build directory: $BuildDir"
+  Remove-Item -Recurse -Force $BuildDir
+}
 
 function Get-VcpkgBaseline {
   param(
@@ -90,6 +120,7 @@ function Initialize-Vcpkg {
 
 Write-Host "==> Building meander frontend"
 Write-Host "    embedded frontend: $EmbeddedFrontend"
+Write-Host " using triplet: $ $VcpkgTriplet"
 
 if ($EmbeddedFrontend -eq 'ON') {
   & $npm --prefix hkp-frontend ci
@@ -109,8 +140,10 @@ if (-not (Test-Path $vcpkgManifest)) {
   throw "Missing vcpkg manifest: $vcpkgManifest"
 }
 
+Reset-BuildDirectoryIfTripletChanged -BuildDir $buildDir -RequestedTriplet $VcpkgTriplet
+
 Write-Host "==> Configuring CMake"
-cmake -B build -S . `
+cmake -B $buildDir -S . `
   -G "$Generator" -A $Architecture `
   -DVCPKG_MANIFEST_DIR=3rdparty `
   "-DVCPKG_TARGET_TRIPLET=$VcpkgTriplet" `
@@ -122,7 +155,7 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "==> Building CMake target (config: $Configuration)"
-cmake --build build --config $Configuration --parallel
+cmake --build $buildDir --config $Configuration --parallel
 
 if ($LASTEXITCODE -ne 0) {
   throw 'CMake build failed.'

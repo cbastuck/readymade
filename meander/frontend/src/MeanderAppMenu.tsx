@@ -1,11 +1,14 @@
-import { Menu, Palette } from "lucide-react";
+import { useState } from "react";
+import { Menu, Palette, Settings } from "lucide-react";
 
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -16,33 +19,50 @@ import {
   useThemeControl,
 } from "hkp-frontend/src/ui-components/ThemeContext";
 
+import MeanderSettingsDialog from "./MeanderSettingsDialog";
+
 export default function MeanderAppMenu() {
   const { themeName, setThemeName } = useThemeControl();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild className="ml-auto">
-        <Button variant="ghost">
-          <Menu strokeWidth={1} />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-48 mx-4">
-        <DropdownMenuSub>
-          <DropdownMenuSubTrigger className="text-base">
-            <Palette size={16} className="mr-2" />
-            <span>Theme</span>
-          </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent>
-            <DropdownMenuRadioGroup
-              value={themeName}
-              onValueChange={(v) => setThemeName(v as ThemeName)}
-            >
-              <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="sketch">Sketch</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
-          </DropdownMenuSubContent>
-        </DropdownMenuSub>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild className="ml-auto">
+          <Button variant="ghost">
+            <Menu strokeWidth={1} />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-48 mx-4">
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="text-base">
+              <Palette size={16} className="mr-2" />
+              <span>Theme</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuRadioGroup
+                value={themeName}
+                onValueChange={(v) => setThemeName(v as ThemeName)}
+              >
+                <DropdownMenuRadioItem value="default">Default</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="sketch">Sketch</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="text-base"
+            onSelect={() => setIsSettingsOpen(true)}
+          >
+            <Settings size={16} className="mr-2" />
+            <span>Settings</span>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <MeanderSettingsDialog
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+      />
+    </>
   );
 }

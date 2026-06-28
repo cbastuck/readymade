@@ -1,11 +1,21 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
+
 import { useBoardContext } from "../../../BoardContext";
 import { MobileHostContext } from "../../../MobileHostContext";
+import { storeBoardToLocalStorage } from "../common";
+import { createBoardLink } from "../BoardLink";
 import { M } from "./tokens";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import MobileBoardCanvas from "./MobileBoardCanvas";
 import MobileCloudBoards from "../../cloud/mobile/MobileCloudBoards";
 import MobileHub from "./MobileHub";
+import {
+  MobileConnectionsProvider,
+  useMobileConnections,
+} from "./MobileConnections";
+import BoardMenuSheet from "./BoardMenuSheet";
+import SaveBoardSheet from "./SaveBoardSheet";
 
 type Tab = "board" | "cloud" | "hub";
 
@@ -64,10 +74,12 @@ function TopBar({
   boardName,
   runtimeCount,
   serviceCount,
+  onMenu,
 }: {
   boardName: string;
   runtimeCount: number;
   serviceCount: number;
+  onMenu: () => void;
 }) {
   return (
     <div
@@ -116,6 +128,8 @@ function TopBar({
         </div>
       </div>
       <button
+        onClick={onMenu}
+        aria-label="Board menu"
         style={{
           width: 34,
           height: 34,
@@ -134,12 +148,40 @@ function TopBar({
   );
 }
 
-// ── Root ───────────────────────────────────────────────────────
-export default function MobilePlaygroundInner({
-  suggestedName,
-}: MobilePlaygroundInnerProps) {
+// ── Shell (runs inside the connections provider) ───────────────
+function PlaygroundShell({ suggestedName }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
+  const { runtimeEngines } = useMobileConnections();
   const [tab, setTab] = useState<Tab>("board");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
+
+  // Surface Hub-managed external runtimes in the local board provider's
+  // available-engine pool so a newly registered runtime is immediately
+  // available on the Board tab's Add-runtime sheet. Additive for engines a
+  // loaded board contributed (we never strip those); but reconcile entries that
+  // share a URL so a corrected type/name from the Hub propagates live instead
+  // of only on the next load. Removals still persist via the store.
+  useEffect(() => {
+    if (!boardContext) {
+      return;
+    }
+    const available = boardContext.availableRuntimeEngines;
+    for (const rt of runtimeEngines) {
+      if (!rt.url) {
+        continue;
+      }
+      const existing = available.find((e) => e.url === rt.url);
+      if (!existing) {
+        boardContext.addAvailableRuntime(rt, true);
+      } else if (existing.type !== rt.type || existing.name !== rt.name) {
+        // addAvailableRuntime overwrites by name, so drop the stale entry first
+        // (its name may differ from the corrected one) before re-adding.
+        boardContext.removeAvailableRuntime(existing);
+        boardContext.addAvailableRuntime(rt, true);
+      }
+    }
+  }, [runtimeEngines, boardContext]);
 
   if (!boardContext) {
     return null;
@@ -150,8 +192,46 @@ export default function MobilePlaygroundInner({
   const rtCount = runtimes.length;
   const svcCount = Object.values(services).flat().length;
 
+  const onSave = async (name: string) => {
+    const finalName = name.trim() || "Untitled";
+    const data = await boardContext.serializeBoard();
+    if (!data) {
+      toast.error("Could not read the current board");
+      return;
+    }
+    // Persist boardName alongside the source so loading restores the name.
+    storeBoardToLocalStorage(
+      finalName,
+      JSON.stringify({ ...data, boardName: finalName, name: finalName }),
+      data.description,
+    );
+    toast.success(`Saved “${finalName}” to this device`);
+  };
+
+  const onShare = async () => {
+    const data = await boardContext.serializeBoard();
+    if (!data) {
+      toast.error("Could not read the current board");
+      return;
+    }
+    const link = createBoardLink(
+      JSON.stringify({ ...data, boardName: displayName }),
+    );
+    try {
+      await navigator.clipboard.writeText(link);
+      toast.success("Share link copied to clipboard");
+    } catch {
+      toast.message("Share link", { description: link });
+    }
+  };
+
+  const onNew = async () => {
+    await boardContext.clearBoard();
+    setTab("board");
+    toast.success("Started a new board");
+  };
+
   return (
-    <MobileHostContext.Provider value={true}>
     <div
       style={{
         width: "100%",
@@ -170,6 +250,7 @@ export default function MobilePlaygroundInner({
           boardName={displayName}
           runtimeCount={rtCount}
           serviceCount={svcCount}
+          onMenu={() => setMenuOpen(true)}
         />
       )}
 
@@ -225,7 +306,42 @@ export default function MobilePlaygroundInner({
           onClick={() => setTab("hub")}
         />
       </div>
+
+      <BoardMenuSheet
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        onSave={() => setSaveOpen(true)}
+        onShare={onShare}
+        onNew={onNew}
+      />
+      <SaveBoardSheet
+        open={saveOpen}
+        initialName={displayName}
+        onClose={() => setSaveOpen(false)}
+        onSave={(name) => {
+          setSaveOpen(false);
+          void onSave(name);
+        }}
+      />
     </div>
+  );
+}
+
+// ── Root ───────────────────────────────────────────────────────
+export default function MobilePlaygroundInner({
+  suggestedName,
+}: MobilePlaygroundInnerProps) {
+  const boardContext = useBoardContext();
+
+  if (!boardContext) {
+    return null;
+  }
+
+  return (
+    <MobileHostContext.Provider value={true}>
+      <MobileConnectionsProvider>
+        <PlaygroundShell suggestedName={suggestedName} />
+      </MobileConnectionsProvider>
     </MobileHostContext.Provider>
   );
 }

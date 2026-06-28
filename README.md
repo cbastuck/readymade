@@ -43,6 +43,11 @@ Optional (recommended if your default compiler is too old for saucer):
 sudo apt install -y gcc-14 g++-14
 ```
 
+Compiler requirement on Linux (from saucer):
+
+- GCC/G++ 14+
+- Clang/Clang++ 20+
+
 Note: vcpkg is vendored in `3rdparty/vcpkg` and is used by CMake during configure/build.
 
 ## License and copyright
@@ -78,7 +83,13 @@ Default configuration is `Release`.
 
 ### Linux compiler selection
 
-On Linux, if the default compiler is too old for dependencies, build with GCC 14:
+On Linux, `build-linux.sh` prefers a modern compiler automatically when `CC`/`CXX` are not set:
+
+- `g++-16`, `g++-15`, `g++-14`, then `clang++-20`
+
+It also sets a matching `CC` (`gcc-<ver>` or `clang-<ver>`) when available.
+
+To force a specific compiler toolchain, set `CC` and `CXX` explicitly:
 
 ```bash
 CC=gcc-14 CXX=g++-14 ./build-linux.sh
@@ -189,6 +200,7 @@ For a clean build:
 
 ```powershell
 Remove-Item -Recurse -Force .\build -ErrorAction SilentlyContinue
+
 powershell -ExecutionPolicy Bypass -File .\build-windows.ps1 -Configuration Release -EmbeddedFrontend ON -VcpkgTriplet x64-windows-static
 ```
 
@@ -232,6 +244,71 @@ Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
 The Windows build script invokes `npm.cmd` directly. This avoids a known issue with the PowerShell `npm.ps1` wrapper under `Set-StrictMode -Version Latest`, which can fail with an error like `The property 'Statement' cannot be found on this object`.
 
 If you run npm commands manually in the same PowerShell environment and hit that error, use `npm.cmd` instead of `npm`.
+
+## iOS app (device + simulator)
+
+The iOS app (`meander-ios/`) embeds `hkp-rt` as a native runtime and loads the
+hkp-frontend web app inside a `WKWebView`. It is built from `meander-ios/` via
+CMake presets (the Xcode generator), separately from the desktop build:
+
+```bash
+cmake --preset ios-device       # or ios-simulator
+cmake --build build/meander-ios-device --config Release
+# then open build/meander-ios-device/MeanderIOS.xcodeproj to run/sign on a device
+```
+
+### ⚠️ Refresh the bundled web app before every device build
+
+This is the easiest mistake to make. On **device** (and any Release build), the
+app bundles the web app instead of using the dev server, and **building the iOS
+app does not rebuild the frontend**. If you forget, you ship a stale UI.
+
+Before building the iOS app for a device, run:
+
+```bash
+cd meander/frontend
+npm run build:ios
+```
+
+`build:ios` (`tsc -b && vite build --config vite.config.ios.ts`) writes the
+build **directly** into `meander-ios/MeanderIOS/Resources/WebApp`
+(`vite.config.ios.ts` sets `outDir` there with `emptyOutDir: true`), which the
+iOS CMake target globs (`CONFIGURE_DEPENDS`) into Copy Bundle Resources.
+(The older `meander/frontend/copy-to-ios.sh` is now redundant — `build:ios`
+writes to the bundle directly.)
+
+**Order matters:** run `npm run build:ios` **before** the CMake/Xcode build, not
+during it. Vite emits content-hashed filenames and `emptyOutDir` rewrites the
+folder each run; CMake resolves the resource glob at *configure* time, so a
+frontend build that runs mid-Xcode-build would bundle stale/missing files.
+Running it first lets `CONFIGURE_DEPENDS` re-glob the fresh files on the next
+build. (Automating this as part of the iOS build is a TODO.)
+
+The **simulator** dev flow is unaffected: it uses `DEV_WEBAPP_URL` (the live Vite
+dev server on `:5555`), so the bundled `WebApp` only matters for device/Release.
+
+### Signing & the multicast entitlement (real devices)
+
+LAN discovery uses raw multicast sockets, which require Apple's
+`com.apple.developer.networking.multicast` entitlement. It is already declared in
+`meander-ios/MeanderIOS/Resources/MeanderIOS.entitlements` and wired via
+`XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS`. For a device build you must:
+
+1. Register the App ID (`com.readymadeit.app-ios`) in the Apple Developer portal
+   and enable the **Multicast Networking** capability on it (requires the
+   approved entitlement + a paid Developer Program account).
+2. Build/sign with a provisioning profile that includes it (automatic signing
+   with your Team selected works once the capability is enabled on the App ID).
+
+Verify the signed app actually carries it:
+
+```bash
+codesign -d --entitlements - /path/to/MeanderIOS.app
+# expect: com.apple.developer.networking.multicast = true
+```
+
+The iOS Simulator is permissive about multicast and does not need the
+entitlement; a physical device does.
 
 ## Run tests
 

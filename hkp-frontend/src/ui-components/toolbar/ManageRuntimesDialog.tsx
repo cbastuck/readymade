@@ -13,6 +13,7 @@ import { RuntimeClass } from "hkp-frontend/src/types";
 
 import NewRuntimePanel from "./NewRuntimePanel";
 import ExistingRuntimesPanel from "./ExistingRuntimesPanel";
+import DiscoverRuntimesPanel from "./DiscoverRuntimesPanel";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { useState } from "react";
 
@@ -61,6 +62,11 @@ export default function ManageRuntimesDialog({
           remoteRuntimes={remoteRuntimes}
           onRemoveRuntime={onRemoveRuntimeEngine}
           onChangeRuntimeColor={onChangeRuntimeColor}
+        />
+
+        <DiscoverRuntimesPanel
+          existing={remoteRuntimes}
+          onAdd={onAddRuntimeEngine}
         />
 
         <Popover open={showNewRuntimePanel}>

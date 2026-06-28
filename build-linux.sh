@@ -88,6 +88,34 @@ else
     exit 2
 fi
 
+# Saucer 8.x requires newer compilers (GNU >= 14, Clang >= 20).
+# Prefer an installed modern toolchain when CC/CXX are not already set.
+if [[ -z "${CXX:-}" ]]; then
+    for candidate in g++-16 g++-15 g++-14 clang++-20; do
+        if command -v "${candidate}" >/dev/null 2>&1; then
+            export CXX="${candidate}"
+            break
+        fi
+    done
+fi
+
+if [[ -n "${CXX:-}" && -z "${CC:-}" ]]; then
+    case "${CXX}" in
+        g++-*)
+            cc_candidate="gcc-${CXX#g++-}"
+            if command -v "${cc_candidate}" >/dev/null 2>&1; then
+                export CC="${cc_candidate}"
+            fi
+            ;;
+        clang++-*)
+            cc_candidate="clang-${CXX#clang++-}"
+            if command -v "${cc_candidate}" >/dev/null 2>&1; then
+                export CC="${cc_candidate}"
+            fi
+            ;;
+    esac
+fi
+
 echo "==> Building meander frontend"
 echo "    frontend: ${FRONTEND_DIR}"
 echo "    embedded frontend: ${EMBEDDED_FRONTEND}"
@@ -112,6 +140,12 @@ echo "==> Building meander (config: ${CONFIG})"
 echo "    repo: ${REPO_ROOT}"
 echo "    build: ${BUILD_DIR}"
 echo "    architecture: ${LINUX_ARCHITECTURE}"
+if [[ -n "${CC:-}" ]]; then
+    echo "    C compiler: ${CC}"
+fi
+if [[ -n "${CXX:-}" ]]; then
+    echo "    C++ compiler: ${CXX}"
+fi
 if [[ "${IS_DEBUG_CONFIG}" == "ON" ]]; then
     echo "    note: Debug build keeps symbols and skips stripping by design"
 fi
@@ -184,6 +218,13 @@ CMAKE_ARGS=(
     -DMEANDER_USE_EMBEDDED_FRONTEND="${EMBEDDED_FRONTEND}"
     -GNinja
 )
+
+if [[ -n "${CC:-}" ]]; then
+    CMAKE_ARGS+=("-DCMAKE_C_COMPILER=${CC}")
+fi
+if [[ -n "${CXX:-}" ]]; then
+    CMAKE_ARGS+=("-DCMAKE_CXX_COMPILER=${CXX}")
+fi
 
 if [[ "${IS_DEBUG_CONFIG}" != "ON" ]]; then
     # Ensure non-Debug binaries do not carry debug symbols.
