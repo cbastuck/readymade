@@ -189,6 +189,7 @@ For a clean build:
 
 ```powershell
 Remove-Item -Recurse -Force .\build -ErrorAction SilentlyContinue
+
 powershell -ExecutionPolicy Bypass -File .\build-windows.ps1 -Configuration Release -EmbeddedFrontend ON -VcpkgTriplet x64-windows-static
 ```
 
