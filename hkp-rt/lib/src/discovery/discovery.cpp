@@ -433,6 +433,13 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
   // NB: must pass an explicit address with port MDNS_PORT — a null saddr binds
   // an ephemeral port (the library's one-shot query mode) and would never
   // receive announcements.
+  // Responder/announcer socket bound to INADDR_ANY:5353: receives multicast
+  // announces + incoming queries, and sends our announces + unicast answers.
+  // INADDR_ANY (not a specific interface addr) is required to receive multicast
+  // on Windows. NB: must pass an explicit MDNS_PORT — a null saddr binds an
+  // ephemeral port. This socket can be starved on Windows when another process
+  // (Bonjour / native mDNS) owns 5353; the separate query socket below makes
+  // browsing work regardless.
   struct sockaddr_in bindAddr;
   std::memset(&bindAddr, 0, sizeof(bindAddr));
   bindAddr.sin_family = AF_INET;
@@ -441,10 +448,16 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
 #ifdef __APPLE__
   bindAddr.sin_len = sizeof(bindAddr);
 #endif
-  int sock = mdns_socket_open_ipv4(&bindAddr);
-  if (sock < 0)
+  int recvSock = mdns_socket_open_ipv4(&bindAddr);
+
+  // Browse socket on an ephemeral port (null saddr). Queries are sent from here
+  // and peers reply via UNICAST to this private port — so discovering peers does
+  // NOT depend on owning 5353 (which another mDNS daemon may hold on Windows).
+  int querySock = mdns_socket_open_ipv4(nullptr);
+
+  if (recvSock < 0 && querySock < 0)
   {
-    std::cerr << "DiscoveryManager: failed to open mDNS socket" << std::endl;
+    std::cerr << "DiscoveryManager: failed to open any mDNS socket" << std::endl;
     m_active.store(false);
 #ifdef _WIN32
     if (wsaInit) { WSACleanup(); }
@@ -452,19 +465,22 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
     return;
   }
 
-  // Join the multicast group on every interface so we receive announcements no
-  // matter which adapter they arrive on (an INADDR_ANY bind alone joins only the
-  // default interface). Sending is steered per-interface via IP_MULTICAST_IF
-  // below. Errors (e.g. already-joined) are ignored.
+  // Join the multicast group on every interface so the responder socket receives
+  // announcements/queries regardless of which adapter they arrive on (an
+  // INADDR_ANY bind alone joins only the default interface). Errors (e.g.
+  // already-joined) are ignored.
   const std::vector<in_addr> ifaceAddrs = collectInterfaceAddrs();
-  for (const auto& ifaddr : ifaceAddrs)
+  if (recvSock >= 0)
   {
-    struct ip_mreq req;
-    std::memset(&req, 0, sizeof(req));
-    req.imr_multiaddr.s_addr = mdnsMulticastAddr();
-    req.imr_interface = ifaddr;
-    setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-               reinterpret_cast<const char*>(&req), sizeof(req));
+    for (const auto& ifaddr : ifaceAddrs)
+    {
+      struct ip_mreq req;
+      std::memset(&req, 0, sizeof(req));
+      req.imr_multiaddr.s_addr = mdnsMulticastAddr();
+      req.imr_interface = ifaddr;
+      setsockopt(recvSock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
+                 reinterpret_cast<const char*>(&req), sizeof(req));
+    }
   }
 
   // Persistent strings backing the announce records (mdns_string_t holds borrowed
@@ -532,26 +548,39 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
     const auto now = std::chrono::steady_clock::now();
     if (now - lastBroadcast >= std::chrono::seconds(2))
     {
-      // Unsolicited multicast announce (helps passive listeners) plus an active
-      // query (solicits reliable unicast answers — the Wi-Fi-robust path).
-      if (advertise && self.port > 0)
+      // Unsolicited multicast announce on the responder socket (helps passive
+      // listeners + lets others find us), plus an active query from the browse
+      // socket (solicits reliable unicast answers — robust over Wi-Fi power-save
+      // and independent of who owns 5353).
+      if (advertise && self.port > 0 && recvSock >= 0)
       {
-        announceOnAllInterfaces(sock, ifaceAddrs, buffer, sizeof(buffer), ptrRecord,
+        announceOnAllInterfaces(recvSock, ifaceAddrs, buffer, sizeof(buffer), ptrRecord,
                                 additional, /*goodbye=*/false);
       }
-      queryOnAllInterfaces(sock, ifaceAddrs, buffer, sizeof(buffer), serviceType);
+      queryOnAllInterfaces(querySock >= 0 ? querySock : recvSock, ifaceAddrs, buffer,
+                           sizeof(buffer), serviceType);
       lastBroadcast = now;
     }
 
     fd_set readfds;
     FD_ZERO(&readfds);
-    FD_SET(sock, &readfds);
+    int maxfd = 0;
+    if (recvSock >= 0)
+    {
+      FD_SET(recvSock, &readfds);
+      maxfd = std::max(maxfd, recvSock);
+    }
+    if (querySock >= 0)
+    {
+      FD_SET(querySock, &readfds);
+      maxfd = std::max(maxfd, querySock);
+    }
     struct timeval timeout;
     timeout.tv_sec = 0;
     timeout.tv_usec = 250000; // 250 ms
 
-    int ready = select(sock + 1, &readfds, nullptr, nullptr, &timeout);
-    if (ready > 0 && FD_ISSET(sock, &readfds))
+    int ready = select(maxfd + 1, &readfds, nullptr, nullptr, &timeout);
+    if (ready > 0)
     {
       ParseContext ctx;
       ctx.canRespond = advertise && self.port > 0;
@@ -560,7 +589,16 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
       ctx.serviceType = &serviceType;
       ctx.answer = &ptrRecord;
       ctx.additional = &additional;
-      mdns_socket_listen(sock, buffer, sizeof(buffer), discoveryCallback, &ctx);
+      // Answers (multicast announces + unicast query replies) arrive on either
+      // socket; questions to answer arrive on the responder socket.
+      if (recvSock >= 0 && FD_ISSET(recvSock, &readfds))
+      {
+        mdns_socket_listen(recvSock, buffer, sizeof(buffer), discoveryCallback, &ctx);
+      }
+      if (querySock >= 0 && FD_ISSET(querySock, &readfds))
+      {
+        mdns_socket_listen(querySock, buffer, sizeof(buffer), discoveryCallback, &ctx);
+      }
 
       std::lock_guard<std::mutex> lock(m_mutex);
       for (const auto& [instance, acc] : ctx.byInstance)
@@ -590,12 +628,19 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
     }
   }
 
-  if (advertise && self.port > 0)
+  if (advertise && self.port > 0 && recvSock >= 0)
   {
-    announceOnAllInterfaces(sock, ifaceAddrs, buffer, sizeof(buffer), ptrRecord,
+    announceOnAllInterfaces(recvSock, ifaceAddrs, buffer, sizeof(buffer), ptrRecord,
                             additional, /*goodbye=*/true);
   }
-  mdns_socket_close(sock);
+  if (recvSock >= 0)
+  {
+    mdns_socket_close(recvSock);
+  }
+  if (querySock >= 0)
+  {
+    mdns_socket_close(querySock);
+  }
   m_active.store(false);
   m_endsAtMs.store(0);
 #ifdef _WIN32
