@@ -62,9 +62,10 @@ body,
   a:hover {
     color: #747bff;
   }
-  button {
-    background-color: #f9f9f9;
-  }
+  /* No bare `button { background-color }` rule here: tailwind's preflight
+     sets `button { background-color: transparent }` at the same element
+     specificity, so which one wins depends on stylesheet load order — it
+     painted a stray #f9f9f9 box behind icon buttons on some builds only. */
 }
 
 .hkp-fnt-color {
@@ -290,7 +291,10 @@ blockquote:after {
   --hkp-accent-violet: #7c3aed;
   --hkp-accent-violet-dim: rgb(124 58 237 / 0.12);
 
-  --accent: var(--hkp-accent);
+  /* No --accent alias here: globals.css owns --accent as raw HSL channels
+     for hsl(var(--accent)) tailwind utilities, and redefining it as a color
+     at equal specificity made the winner load-order dependent. Tailwind's
+     `accent` color maps to var(--hkp-accent, hsl(var(--accent))) instead. */
   --accent-dim: var(--hkp-accent-dim);
   --accent-violet: var(--hkp-accent-violet);
   --accent-amber: oklch(0.73 0.14 64);
