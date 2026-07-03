@@ -1,5 +1,9 @@
 /// <reference types="react" />
 
+// Injected by Vite's `define` (see buildVersion.ts):
+// `<hkp-frontend package.json version>.<short git hash of this build>`.
+declare const __READYMADE_BUILD_VERSION__: string;
+
 declare module "*.svg?react" {
   const content: React.FunctionComponent<React.SVGAttributes<SVGElement>>;
   export default content;

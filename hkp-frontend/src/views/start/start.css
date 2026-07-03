@@ -1,0 +1,219 @@
+/* Start page — scoped under .hkp-start so nothing leaks into the playground. */
+
+.hkp-start {
+  --st-accent: var(--hkp-accent, #3b5bff);
+  --st-ink: #14161c;
+  --st-mut: #9a9fae;
+  --st-line: #e6e8ee;
+}
+
+.hkp-start ::selection {
+  background: var(--st-accent);
+  color: #fff;
+}
+
+.hkp-start .st-h::-webkit-scrollbar {
+  height: 10px;
+}
+.hkp-start .st-v::-webkit-scrollbar {
+  width: 8px;
+}
+.hkp-start .st-h::-webkit-scrollbar-thumb,
+.hkp-start .st-v::-webkit-scrollbar-thumb {
+  background: #d6d9e0;
+  border-radius: 8px;
+}
+.hkp-start .st-h::-webkit-scrollbar-track,
+.hkp-start .st-v::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hkp-start .st-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.hkp-start .st-row:hover {
+  background: #f5f6f9;
+}
+.hkp-start .st-row--sel {
+  background: #eef1ff;
+}
+.hkp-start .st-row--sel:hover {
+  background: #e7ecff;
+}
+
+.hkp-start .st-open {
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--st-accent);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  opacity: 0;
+  transform: translateX(4px);
+  transition: opacity 0.12s, transform 0.12s;
+}
+.hkp-start .st-row:hover .st-open {
+  opacity: 1;
+  transform: none;
+}
+.hkp-start .st-open:hover {
+  filter: brightness(1.1);
+}
+
+.hkp-start .st-remove {
+  color: #b9bdc9;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 0;
+  background: transparent;
+  border: none;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+.hkp-start .st-row:hover .st-remove {
+  opacity: 1;
+}
+.hkp-start .st-remove:hover {
+  color: #e0355f;
+}
+
+.hkp-start .st-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  padding: 9px 15px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.hkp-start .st-btn-ghost {
+  color: var(--st-ink);
+  background: #fff;
+  border: 1px solid #d9dce3;
+}
+.hkp-start .st-btn-ghost:hover {
+  background: #f5f6f9;
+  border-color: #c7cbd4;
+}
+.hkp-start .st-btn-primary {
+  color: #fff;
+  background: var(--st-accent);
+  border: none;
+  font-weight: 700;
+  padding: 10px 18px;
+}
+.hkp-start .st-btn-primary:hover {
+  filter: brightness(1.08);
+}
+
+.hkp-start .st-add {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--st-mut);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.hkp-start .st-add:hover {
+  background: #f0f1f4;
+  color: var(--st-ink);
+}
+
+.hkp-start .st-newfolder {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: calc(100% - 4px);
+  margin: 4px 2px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--st-mut);
+  background: transparent;
+  border: 1px dashed #d6d9e0;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.hkp-start .st-newfolder:hover {
+  border-color: var(--st-accent);
+  color: var(--st-accent);
+}
+
+.hkp-start .st-news-btn {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.16);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.hkp-start .st-news-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.hkp-start .st-search {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--st-ink);
+  background: #fff;
+  border: 1px solid #d9dce3;
+  border-radius: 9px;
+  padding: 7px 12px;
+  width: 220px;
+  outline: none;
+}
+.hkp-start .st-search:focus {
+  border-color: var(--st-accent);
+}
+.hkp-start .st-search::placeholder {
+  color: #b0b5c2;
+}
+
+.hkp-start .st-iconbtn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7080;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.hkp-start .st-iconbtn:hover {
+  background: #f0f1f4;
+  color: #14161c;
+}
