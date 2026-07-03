@@ -78,7 +78,7 @@ else
     echo "==> Skipping frontend build because embedded frontend is OFF"
 fi
 
-echo "==> Building meander (config: ${CONFIG})"
+echo "==> Building Readymade (config: ${CONFIG})"
 echo "    repo: ${REPO_ROOT}"
 echo "    build: ${BUILD_DIR}"
 echo "    universal binary: ${UNIVERSAL_BINARY}"

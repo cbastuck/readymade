@@ -40,7 +40,7 @@ case "${CONFIG}" in
         ;;
 esac
 
-echo "==> Building MeanderIOS"
+echo "==> Building ReadymadeIOS"
 echo "    target:  ${TARGET} (${CMAKE_SYSROOT})"
 echo "    config:  ${CONFIG}"
 echo "    triplet: ${VCPKG_TARGET_TRIPLET}"
@@ -93,4 +93,4 @@ cmake --build "${BUILD_DIR}" --config "${CONFIG}" --parallel "$(sysctl -n hw.log
 
 echo ""
 echo "==> Done: ${BUILD_DIR}"
-echo "    Xcode project: ${BUILD_DIR}/MeanderIOS.xcodeproj"
+echo "    Xcode project: ${BUILD_DIR}/ReadymadeIOS.xcodeproj"

@@ -7,7 +7,7 @@ const rootDir = import.meta.dirname;
 const hkpFrontendRoot = path.resolve(rootDir, "../../hkp-frontend");
 const iosWebAppDir = path.resolve(
   rootDir,
-  "../../meander-ios/MeanderIOS/Resources/WebApp",
+  "../../meander-ios/ReadymadeIOS/Resources/WebApp",
 );
 
 export default defineConfig({

@@ -248,14 +248,30 @@ If you run npm commands manually in the same PowerShell environment and hit that
 ## iOS app (device + simulator)
 
 The iOS app (`meander-ios/`) embeds `hkp-rt` as a native runtime and loads the
-hkp-frontend web app inside a `WKWebView`. It is built from `meander-ios/` via
-CMake presets (the Xcode generator), separately from the desktop build:
+hkp-frontend web app inside a `WKWebView`. It is built from `meander-ios/`
+(the Xcode generator), separately from the desktop build.
+
+**One-shot build (recommended)** — from the repo root, `build-ios.sh` builds the
+mobile web app, configures with the vcpkg toolchain, and builds the
+`ReadymadeIOS` target in one go:
+
+```bash
+./build-ios.sh device           # or: ./build-ios.sh simulator
+# optional 2nd arg: Release (default) | Debug | RelWithDebInfo | MinSizeRel
+# output: build/meander-ios-device/ReadymadeIOS.xcodeproj  (built .app alongside)
+```
+
+**Generate-and-open in Xcode** — if you'd rather just generate the project and
+build/sign interactively in Xcode, use the CMake presets from `meander-ios/`:
 
 ```bash
 cmake --preset ios-device       # or ios-simulator
 cmake --build build/meander-ios-device --config Release
-# then open build/meander-ios-device/MeanderIOS.xcodeproj to run/sign on a device
+# then open build/meander-ios-device/ReadymadeIOS.xcodeproj to run/sign on a device
 ```
+
+(`build-ios.sh` runs `build:ios` for you; with the preset route you must refresh
+the bundled web app yourself — see the next section.)
 
 ### ⚠️ Refresh the bundled web app before every device build
 
@@ -271,7 +287,7 @@ npm run build:ios
 ```
 
 `build:ios` (`tsc -b && vite build --config vite.config.ios.ts`) writes the
-build **directly** into `meander-ios/MeanderIOS/Resources/WebApp`
+build **directly** into `meander-ios/ReadymadeIOS/Resources/WebApp`
 (`vite.config.ios.ts` sets `outDir` there with `emptyOutDir: true`), which the
 iOS CMake target globs (`CONFIGURE_DEPENDS`) into Copy Bundle Resources.
 (The older `meander/frontend/copy-to-ios.sh` is now redundant — `build:ios`
@@ -291,7 +307,7 @@ dev server on `:5555`), so the bundled `WebApp` only matters for device/Release.
 
 LAN discovery uses raw multicast sockets, which require Apple's
 `com.apple.developer.networking.multicast` entitlement. It is already declared in
-`meander-ios/MeanderIOS/Resources/MeanderIOS.entitlements` and wired via
+`meander-ios/ReadymadeIOS/Resources/ReadymadeIOS.entitlements` and wired via
 `XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS`. For a device build you must:
 
 1. Register the App ID (`com.readymadeit.app-ios`) in the Apple Developer portal
@@ -303,7 +319,7 @@ LAN discovery uses raw multicast sockets, which require Apple's
 Verify the signed app actually carries it:
 
 ```bash
-codesign -d --entitlements - /path/to/MeanderIOS.app
+codesign -d --entitlements - /path/to/ReadymadeIOS.app
 # expect: com.apple.developer.networking.multicast = true
 ```
 
@@ -375,7 +391,7 @@ The app bundle is produced under `build/meander/<CONFIG>/`.
 For example, a `Debug` build produces:
 
 ```text
-build/meander/Debug/Meander.app
+build/meander/Debug/Readymade.app
 ```
 
 ### Windows
@@ -385,7 +401,7 @@ The executable is produced under `build/<CONFIG>/`.
 For example, a `Release` build produces:
 
 ```text
-build/Release/Meander.exe
+build/Release/Readymade.exe
 ```
 
 ## Rebuild from scratch
