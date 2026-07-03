@@ -5,6 +5,7 @@ import {
   BoardHistoryEntry,
   HistoryBoardSummary,
   PickerOptions,
+  RuntimeSettings,
 } from "./types";
 
 const encodePathSegment = (value: string) => encodeURIComponent(value);
@@ -64,6 +65,24 @@ export const meanderBackend: BackendAdapter = {
       body: JSON.stringify({ name }),
     });
     if (!res.ok) throw new Error(`Failed to delete remote: ${res.statusText}`);
+  },
+
+  async getRuntimeSettings(): Promise<RuntimeSettings> {
+    const res = await fetch("hkp://settings");
+    if (!res.ok) throw new Error(`Failed to load settings: ${res.statusText}`);
+    return res.json();
+  },
+
+  async setRuntimeSettings(
+    settings: Partial<RuntimeSettings>,
+  ): Promise<RuntimeSettings> {
+    const res = await fetch("hkp://settings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(settings),
+    });
+    if (!res.ok) throw new Error(`Failed to save settings: ${res.statusText}`);
+    return res.json();
   },
 
   async fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>> {

@@ -290,8 +290,8 @@ npm run build:ios
 build **directly** into `meander-ios/ReadymadeIOS/Resources/WebApp`
 (`vite.config.ios.ts` sets `outDir` there with `emptyOutDir: true`), which the
 iOS CMake target globs (`CONFIGURE_DEPENDS`) into Copy Bundle Resources.
-(The older `meander/frontend/copy-to-ios.sh` is now redundant — `build:ios`
-writes to the bundle directly.)
+(`npm run update:ios` is an alias for `build:ios`. The old `copy-to-ios.sh` was
+removed — it copied the stale desktop `dist/`, clobbering the fresh build.)
 
 **Order matters:** run `npm run build:ios` **before** the CMake/Xcode build, not
 during it. Vite emits content-hashed filenames and `emptyOutDir` rewrites the

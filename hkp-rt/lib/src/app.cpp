@@ -127,6 +127,17 @@ json App::getServices(const std::string &runtimeId) const
   return (*rt)->getServices();
 }
 
+void App::dispatchRuntimeWsMessage(const std::string& runtimeId, const std::string& message, bool isBinary)
+{
+  auto rt = findRuntime(runtimeId);
+  if (rt == m_runtimes.end())
+  {
+    std::cerr << "App::dispatchRuntimeWsMessage: unknown runtime " << runtimeId << std::endl;
+    return;
+  }
+  (*rt)->onWebSocketMessage(message, isBinary);
+}
+
 json App::appendService(const std::string& runtimeId, const ServiceConfiguration& service) {
   auto rt = findRuntime(runtimeId);
   if (rt == m_runtimes.end())

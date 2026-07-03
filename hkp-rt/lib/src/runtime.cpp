@@ -8,7 +8,6 @@
 #include "./service.h"
 #include "./server.h"
 #include "./sub_runtime.h"
-#include "./common/websocket_server.h"
 
 #include <types/validation.h>
 #include <types/message.h>
@@ -21,59 +20,54 @@ Runtime::Runtime(OwnsMe<App> app, const std::string& runtimeId, const std::strin
   : m_app(app)
   , m_runtimeId(runtimeId)
   , m_runtimeName(runtimeName)
-  , m_websocket(std::make_unique<WebsocketServer>(
-      WebsocketConfig::withHost("0.0.0.0").withPath("/" + runtimeId).withRandomPort(),
-      [this](boost::beast::flat_buffer& buffer, bool isBinary){ 
-        if (isBinary)
-        {
-          try 
-          {
-            MessageHeader header;
-            auto data = Message::deserialize(buffer, &header);
-            this->onSessionBinaryData(data, header);
-          } 
-          catch (const std::exception& e) 
-          {
-            std::cerr << "Runtime::Runtime.onWebsocket Failed to process incoming binary buffer: " << e.what() << std::endl;
-          }
-        }
-        else
-        {
-          auto data = boost::beast::buffers_to_string(buffer.data()); // handle JSON data
-          json msg;
-          try 
-          {
-            msg = json::parse(data);
-          }
-          catch (const std::exception& e) 
-          {
-            std::cerr << "Runtime::Runtime.onWebsocket Failed to process incoming data: " << e.what() << std::endl;
-          }
-          try
-          {
-            if (!msg.is_object())
-            {
-              std::cerr << "Runtime::m_websocket::onSessionData: Invalid JSON object received" << data << std::endl;
-              return;
-            }
-            this->onSessionJSONData(msg);
-          }
-          catch (const std::exception& e)
-          {
-            std::cerr << "Runtime::Runtime.onWebsocket Failed to process incoming JSON message: " << e.what() << std::endl;
-          }
-        }
-      })
-    )
 {
-  m_websocket->start();
-    
-  std::cout << "Bound to port: " << m_websocket->getBoundPort() << std::endl; 
+  // Notifications are served by the shared Server WebSocket (one port for the
+  // whole process, multiplexed by runtimeId), not a per-runtime socket. Nothing
+  // to start here; the Server owns the transport.
 }
 
-Runtime::~Runtime()
+Runtime::~Runtime() = default;
+
+void Runtime::onWebSocketMessage(const std::string& message, bool isBinary)
 {
-  m_websocket->stop();
+  if (isBinary)
+  {
+    try
+    {
+      MessageHeader header;
+      auto data = Message::deserializeFromString(message, &header);
+      onSessionBinaryData(data, header);
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "Runtime::onWebSocketMessage failed to process binary frame: " << e.what() << std::endl;
+    }
+    return;
+  }
+
+  json msg;
+  try
+  {
+    msg = json::parse(message);
+  }
+  catch (const std::exception& e)
+  {
+    std::cerr << "Runtime::onWebSocketMessage failed to parse JSON: " << e.what() << std::endl;
+    return;
+  }
+  if (!msg.is_object())
+  {
+    std::cerr << "Runtime::onWebSocketMessage: invalid JSON object received: " << message << std::endl;
+    return;
+  }
+  try
+  {
+    onSessionJSONData(msg);
+  }
+  catch (const std::exception& e)
+  {
+    std::cerr << "Runtime::onWebSocketMessage failed to handle JSON message: " << e.what() << std::endl;
+  }
 }
 
 void Runtime::loadFromDisk(const std::string& path)
@@ -184,7 +178,9 @@ RuntimeConfiguration Runtime::getConfiguration() const
   auto server = m_app->getServer();
   if (server)
   {
-    config.outputUrl = "ws://" + server->externalIP() + ":" + std::to_string(m_websocket->getBoundPort()) + "/" + m_runtimeId;
+    // Notifications share the REST server's port; the connection binds to this
+    // runtime via the protocol handshake ({type, id}), so the path is fixed.
+    config.outputUrl = "ws://" + server->externalIP() + ":" + std::to_string(server->port()) + "/notifications";
   }
   
   return config;
@@ -230,14 +226,16 @@ json Runtime::getServices() const
 
 void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sender, std::function<void(Data)> callback)
 {
-  // do not send directly, but schedule the notification to be sent
-  // writing to websocket is not thread-safe
-  m_app->postCallback([this, data, purpose, sender, callback]() {
-    if (m_websocket)
+  // Marshal onto the event loop and hand the serialized frame to the shared
+  // Server WebSocket, which fans it out to the connections bound to this
+  // runtime. (Server::sendNotification / Crow's send_binary are thread-safe.)
+  m_app->postCallback([this, data, purpose, sender]() {
+    auto server = m_app->getServer();
+    if (server)
     {
-      m_websocket->send(data, purpose, sender);
+      server->sendNotification(m_runtimeId, Message::serializeToString(data, purpose, sender));
     }
-  });   
+  });
 }
 
 Data Runtime::process(Data data, json context)

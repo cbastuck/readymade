@@ -30,10 +30,23 @@ public:
 
   static Data deserialize(BufferType& buffer, MessageHeader* outHeader = nullptr);
   static void serialize(
-    const Data& data, 
-    MessagePurpose purpose, 
-    const std::string& sender, 
+    const Data& data,
+    MessagePurpose purpose,
+    const std::string& sender,
     WebSocketStream& stream
+  );
+
+  // String-based variants for transports that work in std::string frames
+  // (e.g. Crow WebSocket connections) rather than a Beast stream / flat_buffer.
+  // The wire format is identical: YAS header bytes followed by the payload.
+  static std::string serializeToString(
+    const Data& data,
+    MessagePurpose purpose,
+    const std::string& sender
+  );
+  static Data deserializeFromString(
+    const std::string& bytes,
+    MessageHeader* outHeader = nullptr
   );
 
 private:

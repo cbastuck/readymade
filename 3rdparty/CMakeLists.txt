@@ -36,6 +36,17 @@ CPMAddPackage(
     DOWNLOAD_ONLY  TRUE
 )
 
+# jwt-cpp — header-only JWT verification (RS256 via OpenSSL) used by the runtime
+# LAN auth layer. DOWNLOAD_ONLY: skip its CMakeLists (which exports targets and
+# pulls picojson); we expose the include dir and use the nlohmann/json traits.
+CPMAddPackage(
+    NAME jwt-cpp
+    VERSION 0.7.0
+    GIT_REPOSITORY "https://github.com/Thalhammer/jwt-cpp"
+    GIT_TAG v0.7.0
+    DOWNLOAD_ONLY TRUE
+)
+
 # =============================================================================
 # vcpkg — included AFTER CPM so its add_library wrapper doesn't interfere
 # with packageProject ALIAS targets created by CPM-fetched packages.
@@ -71,6 +82,12 @@ endif()
 
 if(minimp4_ADDED)
     target_include_directories(${PROJECT_NAME} INTERFACE ${minimp4_SOURCE_DIR})
+endif()
+
+if(jwt-cpp_ADDED)
+    target_include_directories(${PROJECT_NAME} INTERFACE ${jwt-cpp_SOURCE_DIR}/include)
+    # Use nlohmann/json (already a dep) rather than the bundled picojson.
+    target_compile_definitions(${PROJECT_NAME} INTERFACE JWT_DISABLE_PICOJSON)
 endif()
 
 target_link_libraries(${PROJECT_NAME} INTERFACE

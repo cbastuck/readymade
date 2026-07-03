@@ -73,6 +73,7 @@ target_sources(${PROJECT_NAME}
       src/sub_runtime.cpp
       src/app.cpp
       src/discovery/discovery.cpp
+      src/http/auth.cpp
       src/http/server.cpp
       src/types/models.cpp 
       src/types/message.cpp

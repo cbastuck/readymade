@@ -53,6 +53,11 @@ public:
 
   void processScheduled();
 
+  // Handles a raw notification-WebSocket frame routed here by the Server's WS
+  // layer (after the connection bound itself to this runtime via the protocol
+  // handshake). Binary frames are YAS-encoded messages; text frames are JSON.
+  void onWebSocketMessage(const std::string& message, bool isBinary);
+
   json appendService(const ServiceConfiguration& newService);
   bool insertService(std::shared_ptr<Service> newService, std::shared_ptr<Service> predecessor = nullptr);
   bool removeService(const std::string& instanceId);
@@ -88,7 +93,6 @@ private:
   std::string m_runtimeName;
   std::string m_boardName;
   std::list<std::shared_ptr<Service>> m_services; // TODO: not thread safe
-  std::unique_ptr<WebsocketServer> m_websocket;
   std::vector<RuntimeInput> m_inputs;
   ProcessContext m_processContext;
   std::array<std::function<void()>, 100> m_scheduledProcesses;

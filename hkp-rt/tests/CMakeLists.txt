@@ -52,3 +52,11 @@ target_link_libraries(hkp-rt-service-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2
 target_compile_features(hkp-rt-service-tests PRIVATE cxx_std_20)
 hkp_ad_hoc_sign_target(hkp-rt-service-tests)
 catch_discover_tests(hkp-rt-service-tests)
+
+add_executable(hkp-rt-auth-tests
+  auth.test.cpp
+)
+target_link_libraries(hkp-rt-auth-tests PRIVATE hkp-rt-lib hkp-rt-deps Catch2::Catch2WithMain)
+target_compile_features(hkp-rt-auth-tests PRIVATE cxx_std_20)
+hkp_ad_hoc_sign_target(hkp-rt-auth-tests)
+catch_discover_tests(hkp-rt-auth-tests)

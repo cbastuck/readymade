@@ -48,6 +48,11 @@ public:
   
   Data processRuntimeWithName(const std::string& name, const Data& params) const;
 
+  // Delivers a notification-WebSocket message (raw frame) to the runtime it
+  // belongs to. Called by the Server's WS layer once a connection has bound
+  // itself to a runtimeId via the protocol handshake.
+  void dispatchRuntimeWsMessage(const std::string& runtimeId, const std::string& message, bool isBinary);
+
   void postCallback(std::function<void()> callback);
 
   void setServer(Server* server) { m_server = server; }

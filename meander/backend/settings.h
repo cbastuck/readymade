@@ -11,6 +11,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <auth.h>
+
 class Settings
 {
 public:
@@ -32,12 +34,15 @@ public:
     namespace fs = std::filesystem;
     fs::path homeDir;
 
-    // Try to get HOME or USERPROFILE environment variable in a platform-independent way
+    // Resolve the home directory: USERPROFILE on Windows, HOME everywhere else
+    // (macOS and Linux). The previous check keyed on __APPLE__, which wrongly
+    // sent Linux down the USERPROFILE path — unset there, so it fell back to the
+    // working directory and missed ~/.hkp/settings.json entirely.
     const char* homeEnv = getenv(
-    #if defined(__APPLE__)
-      "HOME"
-    #else
+    #if defined(_WIN32)
       "USERPROFILE"
+    #else
+      "HOME"
     #endif
     );
 
@@ -165,6 +170,105 @@ public:
     }
     catch (...) {}
     return false;
+  }
+
+  // Reads the `auth` block of settings.json into an AuthConfig. Populates only
+  // the issuers + allowed emails (data); the caller sets the mode based on
+  // whether the runtime is exposed (see main.cpp). An absent/empty block yields
+  // an empty config, which — when the runtime is exposed — denies everyone.
+  hkp::AuthConfig getAuthConfig() const
+  {
+    hkp::AuthConfig config;
+    const auto settings = readSettings();
+    const auto authIt = settings.find("auth");
+    if (authIt == settings.end() || !authIt->is_object())
+    {
+      return config;
+    }
+    const auto& auth = *authIt;
+
+    const auto usersIt = auth.find("allowedUsers");
+    if (usersIt != auth.end() && usersIt->is_array())
+    {
+      for (const auto& entry : *usersIt)
+      {
+        if (entry.is_string())
+        {
+          config.allowedEmails.push_back(entry.get<std::string>());
+        }
+      }
+    }
+
+    const auto issuersIt = auth.find("issuers");
+    if (issuersIt != auth.end() && issuersIt->is_array())
+    {
+      for (const auto& entry : *issuersIt)
+      {
+        if (!entry.is_object())
+        {
+          continue;
+        }
+        hkp::TrustedIssuer issuer;
+        if (const auto it = entry.find("iss"); it != entry.end() && it->is_string())
+        {
+          issuer.iss = it->get<std::string>();
+        }
+        if (const auto it = entry.find("jwksUri"); it != entry.end() && it->is_string())
+        {
+          issuer.jwksUri = it->get<std::string>();
+        }
+        if (const auto it = entry.find("audiences"); it != entry.end() && it->is_array())
+        {
+          for (const auto& aud : *it)
+          {
+            if (aud.is_string())
+            {
+              issuer.audiences.push_back(aud.get<std::string>());
+            }
+          }
+        }
+        if (!issuer.iss.empty())
+        {
+          config.issuers.push_back(std::move(issuer));
+        }
+      }
+    }
+
+    return config;
+  }
+
+  // Writes allowExternalRuntimeAccess. Takes effect on next app start (the bind
+  // address is chosen once, at startup).
+  bool setAllowExternalAccess(bool enabled) const
+  {
+    auto settings = readSettings();
+    settings["allowExternalRuntimeAccess"] = enabled;
+    return writeSettings(settings);
+  }
+
+  // Writes auth.allowedUsers. Also ensures auth.issuers contains the default
+  // Auth0 issuer, otherwise an exposed runtime would be Jwt-but-no-issuer and
+  // deny everyone. Allow-list changes take effect on next app start.
+  bool setAllowedUsers(const std::vector<std::string>& emails) const
+  {
+    using json = nlohmann::json;
+    auto settings = readSettings();
+    if (!settings["auth"].is_object())
+    {
+      settings["auth"] = json::object();
+    }
+    auto& auth = settings["auth"];
+    auth["allowedUsers"] = emails;
+    if (!auth.contains("issuers") || !auth["issuers"].is_array() || auth["issuers"].empty())
+    {
+      auth["issuers"] = json::array({
+        json{
+          {"iss", "https://hookitapp.eu.auth0.com/"},
+          {"audiences", json::array({"gpk8IFPKfaOTQUzpDRO7vBajOnB72rkM"})},
+        },
+      });
+    }
+    return writeSettings(settings);
   }
 
   std::string getBundlesPath() const

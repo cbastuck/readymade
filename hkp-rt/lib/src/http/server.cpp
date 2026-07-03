@@ -1,18 +1,85 @@
 #include "server.h"
 
 #include <algorithm>
+#include <map>
+#include <mutex>
+#include <set>
 
 #include <crow.h>
 #include <crow/middlewares/cors.h>
 
 #include <app.h>
+#include <auth.h>
 #include <types/validation.h>
 
+#include "common/websocket_protocol.h"
 #include "discovery/discovery.h"
 #include "uuid.h"
 
 namespace hkp
 {
+
+// Per-connection bookkeeping for a notification WebSocket, stored as the Crow
+// connection's userdata. `runtimeId` is empty until the client sends its
+// protocol handshake ({type, id}); after that the connection is registered
+// against that runtime and forwards/receives its messages.
+struct WsConnState
+{
+  std::string runtimeId;
+  std::string type;  // "writer" | "reader" | "readwrite"
+};
+
+// Crow middleware that gates every route on the runtime's Authenticator.
+// In no-auth mode (loopback bind) it is a pass-through. CORS preflight
+// (OPTIONS) requests carry no Authorization header and must never be gated.
+struct AuthMiddleware
+{
+  struct context {};
+
+  Authenticator* authenticator = nullptr;
+  std::string allowedOrigins = "*";
+
+  void before_handle(crow::request& req, crow::response& res, context&)
+  {
+    if (!authenticator || authenticator->isNoAuth())
+    {
+      return;
+    }
+    if (req.method == crow::HTTPMethod::Options)
+    {
+      return;
+    }
+    // WebSocket upgrades are authenticated in the WS onaccept handler instead:
+    // a browser cannot set an Authorization header on a handshake, so the token
+    // rides in ?access_token=. Gating here would 401 every notification socket.
+    if (req.upgrade)
+    {
+      return;
+    }
+    // The local machine is always trusted, even when the runtime is bound to
+    // 0.0.0.0 for LAN access: the loopback interface cannot be reached from
+    // off-host, so a loopback-source request is necessarily this machine's own
+    // UI. This lets the owner drive (and start discovery on) their own runtime
+    // without having to add themselves to the allow-list; only genuine LAN peers
+    // are challenged for a token.
+    if (isLoopbackHost(req.remote_ip_address))
+    {
+      return;
+    }
+    const auto result = authenticator->authorize(req.get_header_value("Authorization"));
+    if (result.status == AuthStatus::Ok)
+    {
+      return;
+    }
+    res.code = (result.status == AuthStatus::Forbidden) ? 403 : 401;
+    res.add_header("Access-Control-Allow-Origin", allowedOrigins);
+    res.end();
+  }
+
+  void after_handle(crow::request&, crow::response&, context&) {}
+};
+
+using CrowApp = crow::Crow<crow::CORSHandler, AuthMiddleware>;
 
 struct JsonResponse : crow::response
 {
@@ -20,18 +87,19 @@ struct JsonResponse : crow::response
       : crow::response{_body.dump()}
   {
     add_header("Access-Control-Allow-Origin", allowedOrigins);
-    add_header("Access-Control-Allow-Headers", "Content-Type");
+    add_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
     add_header("Content-Type", "application/json");
   }
 };
 struct Server::impl
 {
   impl(std::shared_ptr<App> a, const std::string& n, const std::string& ao = "*",
-       const std::string& dn = "")
+       const std::string& dn = "", AuthConfig ac = {})
     : app(a)
     , name(n)
     , allowedOrigins(ao)
     , displayName(dn)
+    , authenticator(std::make_unique<Authenticator>(std::move(ac)))
   {
     setupRoutes(allowedOrigins);
   }
@@ -47,8 +115,12 @@ struct Server::impl
   void setupRoutes(const std::string& allowedOrigins)
   {
     auto& cors = crow.get_middleware<crow::CORSHandler>();
-    cors.global().origin(allowedOrigins);
-  
+    cors.global().origin(allowedOrigins).headers("Content-Type", "Authorization");
+
+    auto& authMiddleware = crow.get_middleware<AuthMiddleware>();
+    authMiddleware.authenticator = authenticator.get();
+    authMiddleware.allowedOrigins = allowedOrigins;
+
     CROW_ROUTE(crow, "/runtimes")
         .methods("GET"_method)([this]() { return getRuntimes(); }); 
   
@@ -107,6 +179,15 @@ struct Server::impl
 
     CROW_ROUTE(crow, "/identity")
         .methods("GET"_method)([this]() { return getIdentity(); });
+
+    // ── Notification WebSocket ──
+    // One socket for every runtime in this process; connections bind to a
+    // runtime via their protocol handshake. Authenticated in onaccept (the HTTP
+    // AuthMiddleware deliberately skips upgrades).
+    CROW_WEBSOCKET_ROUTE(crow, "/notifications")
+        .onaccept([this](const crow::request& req, void** userdata) { return wsOnAccept(req, userdata); })
+        .onmessage([this](crow::websocket::connection& conn, const std::string& message, bool isBinary) { wsOnMessage(conn, message, isBinary); })
+        .onclose([this](crow::websocket::connection& conn, const std::string& /*reason*/, uint16_t /*code*/) { wsOnClose(conn); });
     }
 
   crow::response getRuntimes();
@@ -124,6 +205,12 @@ struct Server::impl
   crow::response processRuntime(const crow::request &req, const std::string& runtimeId);
   crow::response getRuntimeInputs(const crow::request &req, const std::string& runtimeId);
   crow::response getRuntimeInput(const crow::request &req, const std::string& runtimeId, const std::string& inputId);
+
+  // ── Notification WebSocket ──────────────────────────────────────────────────
+  bool wsOnAccept(const crow::request& req, void** userdata);
+  void wsOnMessage(crow::websocket::connection& conn, const std::string& message, bool isBinary);
+  void wsOnClose(crow::websocket::connection& conn);
+  void sendNotification(const std::string& runtimeId, const std::string& frame);
 
   JsonResponse makeJsonResponse(const json &_body)
   {
@@ -194,7 +281,7 @@ struct Server::impl
     });
   }
 
-  crow::Crow<crow::CORSHandler> crow;
+  CrowApp crow;
   std::string externalIP;
   std::shared_ptr<App> app;
   std::string name;
@@ -202,15 +289,23 @@ struct Server::impl
   std::string displayName;
   std::string bindAddress;
   std::string instanceId = generateUUID();
+  std::unique_ptr<Authenticator> authenticator;
   DiscoveryManager discovery;
+
+  // runtimeId → live notification connections. Guarded by wsMutex because it is
+  // touched from Crow's IO thread (accept/message/close) and the App event-loop
+  // thread (sendNotification).
+  std::mutex wsMutex;
+  std::map<std::string, std::set<crow::websocket::connection*>> wsByRuntime;
 };
 
 Server::Server(
   std::shared_ptr<App> app,
   const std::string& name,
   const std::string& allowedOrigins,
-  const std::string& displayName
-) : m_impl(std::make_unique<impl>(app, name, allowedOrigins, displayName))
+  const std::string& displayName,
+  AuthConfig authConfig
+) : m_impl(std::make_unique<impl>(app, name, allowedOrigins, displayName, std::move(authConfig)))
 {
   app->setServer(this);
 }
@@ -633,6 +728,109 @@ crow::response Server::impl::getRuntimeInput(const crow::request &req, const std
     }
   }
   return crow::response{crow::status::NOT_FOUND};
+}
+
+bool Server::impl::wsOnAccept(const crow::request& req, void** userdata)
+{
+  // Same policy as the REST AuthMiddleware: no-auth mode and loopback clients
+  // are always allowed; otherwise the token (carried in ?access_token= because
+  // a browser can't set headers on a handshake) must verify and be allow-listed.
+  bool allowed = authenticator->isNoAuth() || isLoopbackHost(req.remote_ip_address);
+  if (!allowed)
+  {
+    if (const char* token = req.url_params.get("access_token"))
+    {
+      allowed = authenticator->authorize(std::string("Bearer ") + token).status == AuthStatus::Ok;
+    }
+  }
+  if (!allowed)
+  {
+    return false;  // reject the upgrade
+  }
+  *userdata = new WsConnState();
+  return true;
+}
+
+void Server::impl::wsOnMessage(crow::websocket::connection& conn, const std::string& message, bool isBinary)
+{
+  auto* state = static_cast<WsConnState*>(conn.userdata());
+  if (!state)
+  {
+    return;
+  }
+
+  // The first frame is the protocol handshake ({type, id}); it binds this
+  // connection to a runtime. Everything after it is runtime traffic.
+  if (state->runtimeId.empty())
+  {
+    try
+    {
+      auto protocol = WebsocketProtocol::parse(message);
+      state->runtimeId = protocol.id;
+      state->type = protocol.type;
+      std::lock_guard<std::mutex> lock(wsMutex);
+      wsByRuntime[state->runtimeId].insert(&conn);
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "Server WS: invalid protocol handshake: " << e.what() << std::endl;
+    }
+    return;
+  }
+
+  app->dispatchRuntimeWsMessage(state->runtimeId, message, isBinary);
+}
+
+void Server::impl::wsOnClose(crow::websocket::connection& conn)
+{
+  auto* state = static_cast<WsConnState*>(conn.userdata());
+  if (!state)
+  {
+    return;
+  }
+  {
+    std::lock_guard<std::mutex> lock(wsMutex);
+    auto it = wsByRuntime.find(state->runtimeId);
+    if (it != wsByRuntime.end())
+    {
+      it->second.erase(&conn);
+      if (it->second.empty())
+      {
+        wsByRuntime.erase(it);
+      }
+    }
+  }
+  delete state;
+  conn.userdata(nullptr);
+}
+
+void Server::impl::sendNotification(const std::string& runtimeId, const std::string& frame)
+{
+  std::lock_guard<std::mutex> lock(wsMutex);
+  auto it = wsByRuntime.find(runtimeId);
+  if (it == wsByRuntime.end())
+  {
+    return;
+  }
+  for (auto* conn : it->second)
+  {
+    auto* state = static_cast<WsConnState*>(conn->userdata());
+    if (state && state->type == "writer")
+    {
+      continue;  // write-only clients don't receive notifications
+    }
+    conn->send_binary(frame);
+  }
+}
+
+void Server::sendNotification(const std::string& runtimeId, const std::string& frame)
+{
+  m_impl->sendNotification(runtimeId, frame);
+}
+
+void Server::setAllowedUsers(const std::vector<std::string>& emails)
+{
+  m_impl->authenticator->setAllowedEmails(emails);
 }
 
 }

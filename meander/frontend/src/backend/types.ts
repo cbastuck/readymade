@@ -17,6 +17,13 @@ export type PickerOptions = {
   filters?: string[];
 };
 
+// Runtime-access settings backed by ~/.hkp/settings.json (desktop). Changes take
+// effect on the next app start.
+export type RuntimeSettings = {
+  allowExternalRuntimeAccess: boolean;
+  allowedUsers: string[];
+};
+
 export interface BackendAdapter {
   // Boards
   fetchSavedBoards(): Promise<Array<string>>;
@@ -28,6 +35,11 @@ export interface BackendAdapter {
   getRemotes(): Promise<Array<Remote>>;
   saveRemote(remote: Remote): Promise<void>;
   deleteRemote(name: string): Promise<void>;
+
+  // Runtime-access settings (settings.json). Optional: absent on hosts without
+  // a settings store; callers should feature-detect.
+  getRuntimeSettings?(): Promise<RuntimeSettings>;
+  setRuntimeSettings?(settings: Partial<RuntimeSettings>): Promise<RuntimeSettings>;
 
   // Board history
   fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>>;

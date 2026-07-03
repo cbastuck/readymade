@@ -73,6 +73,38 @@ export function stopDiscover(): Promise<DiscoverState> {
   return discoverFetch("DELETE");
 }
 
+// Authorization state of a discovered peer relative to the current user.
+// - "authorized": the peer accepted our token (or requires no auth) — addable.
+// - "locked":     the peer requires auth and rejected us (401/403).
+// - "unreachable": the peer's runtime could not be probed (down / network).
+// - "probing":    a probe is in flight.
+export type PeerAuthStatus = "authorized" | "locked" | "unreachable" | "probing";
+
+// Probes a discovered peer's authenticated /identity endpoint to learn whether
+// the current user is allowed to drive it. A LAN-exposed runtime now gates every
+// route, so a 401/403 here means "locked" rather than "down". The browser can
+// read the status on a cross-origin failure because the runtime adds the CORS
+// origin header to its 401/403 responses.
+export async function probePeerAuthorization(
+  peer: DiscoveredPeer,
+  idToken: string | undefined | null,
+): Promise<PeerAuthStatus> {
+  try {
+    const res = await fetch(`http://${peer.host}:${peer.port}/identity`, {
+      headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
+    });
+    if (res.ok) {
+      return "authorized";
+    }
+    if (res.status === 401 || res.status === 403) {
+      return "locked";
+    }
+    return "unreachable";
+  } catch {
+    return "unreachable";
+  }
+}
+
 // Converts a discovered peer into a REST runtime engine ready to register.
 export function peerToRuntimeClass(peer: DiscoveredPeer): RuntimeClass {
   return {

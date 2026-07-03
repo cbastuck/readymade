@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import HkpApp from "hkp-frontend/src/App";
 import MobilePlaygroundWithRouter from "hkp-frontend/src/views/playground/mobile/index";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
+import RuntimeUserSync from "./RuntimeUserSync";
 import { Remote } from "./types";
 import { getRemotes } from "./actions";
 
@@ -28,6 +29,7 @@ export default function MobileApp() {
   return (
     <MeanderPlatformProvider>
       <HkpApp defaultThemeName="playground">
+        <RuntimeUserSync />
         <MobilePlaygroundWithRouter
           boardName={boardName}
           onChangeBoardname={setBoardName}

@@ -38,5 +38,7 @@ int main(int argc, char **argv)
     }
   }
 
-  server.start(externalIP, port);
+  // Bind loopback-only by default: the standalone exe has no auth config, so
+  // exposing it on 0.0.0.0 would be an unauthenticated LAN surface.
+  server.start(externalIP, port, "127.0.0.1");
 }
