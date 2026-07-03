@@ -300,7 +300,11 @@ blockquote:after {
   --text-mid: oklch(0.45 0.01 62);
   --text-dim: oklch(0.62 0.008 62);
 
-  --border: oklch(0.89 0.006 62);
+  /* Named --hkp-border (not --border) on purpose: globals.css defines
+     --border as raw HSL channels for hsl(var(--border)) tailwind utilities,
+     and both selectors hit <html> with equal specificity — redefining it as a
+     color makes the winner load-order dependent (same trap as --hkp-accent). */
+  --hkp-border: oklch(0.89 0.006 62);
   --border-mid: oklch(0.84 0.008 62);
 
   --shadow-card:
@@ -511,8 +515,8 @@ blockquote:after {
   box-shadow: none !important;
 }
 [data-theme="playground"] .hkp-svc-btn:hover:not(:disabled):not(.hkp-rpill) {
-  border-color: var(--border) !important;
-  background: var(--border) !important;
+  border-color: var(--hkp-border) !important;
+  background: var(--hkp-border) !important;
   color: var(--text) !important;
 }
 [data-theme="playground"] .hkp-svc-btn:active:not(:disabled):not(.hkp-rpill) {
@@ -619,7 +623,7 @@ blockquote:after {
 }
 [data-theme="playground"] #board-menu-trigger:hover,
 [data-theme="playground"] #board-menu-trigger[data-state="open"] {
-  background: var(--border) !important;
+  background: var(--hkp-border) !important;
   color: var(--text) !important;
 }
 /* Board menu dropdown items */
@@ -641,7 +645,7 @@ blockquote:after {
   letter-spacing: 0 !important;
   color: var(--text-mid) !important;
   background: transparent !important;
-  border: 1px solid var(--border) !important;
+  border: 1px solid var(--hkp-border) !important;
   border-radius: 6px !important;
   padding: 4px 10px !important;
   height: auto !important;
@@ -850,7 +854,7 @@ blockquote:after {
 [data-theme="playground"] .hkp-bot {
   height: 36px;
   background: var(--bg-app);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--hkp-border);
   display: flex;
   align-items: center;
   justify-content: center;

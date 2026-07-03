@@ -71,6 +71,10 @@ export default function Editable({
               borderBottom: "solid 1px",
               borderColor: "#ddd",
               paddingBottom: "2.5px",
+              // Inline, not bg-transparent: the Input primitive's
+              // bg-background utility has equal specificity, so which class
+              // wins depends on generated-CSS order (differs dev vs build).
+              background: "transparent",
             }}
             ref={(elem) => {
               if (elem) {
