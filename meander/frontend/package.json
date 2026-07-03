@@ -10,6 +10,7 @@
     "dev": "vite --port 5555",
     "build": "tsc -b && vite build",
     "build:ios": "tsc -b && vite build --config vite.config.ios.ts",
+    "update:ios": "npm run build:ios",
     "lint": "eslint .",
     "preview": "vite preview"
   },

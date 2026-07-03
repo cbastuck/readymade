@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
 
+import { useAppContext } from "../../../AppContext";
+import { useCloudLogin } from "../../../auth/useCloudLogin";
+import { useCloudLogout } from "../../../auth/useCloudLogout";
+import { usePlatform } from "../../../platform/PlatformContext";
 import BottomSheet from "./BottomSheet";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
+import RuntimeAccessSheet from "./RuntimeAccessSheet";
 import { M } from "./tokens";
 
 type Props = {
@@ -79,6 +84,12 @@ export default function BoardMenuSheet({
   onNew,
 }: Props) {
   const [confirmNew, setConfirmNew] = useState(false);
+  const [accessOpen, setAccessOpen] = useState(false);
+  const { user } = useAppContext();
+  const cloudLogin = useCloudLogin();
+  const cloudLogout = useCloudLogout();
+  const platform = usePlatform();
+  const canEditAccess = !!platform.getRuntimeSettings;
 
   // Forget any pending "new board" confirmation whenever the menu closes.
   useEffect(() => {
@@ -88,6 +99,7 @@ export default function BoardMenuSheet({
   }, [open]);
 
   return (
+    <>
     <BottomSheet open={open} onClose={onClose} title="Board" height="auto">
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <MenuRow
@@ -176,7 +188,46 @@ export default function BoardMenuSheet({
             onClick={() => setConfirmNew(true)}
           />
         )}
+
+        {canEditAccess && (
+          <MenuRow
+            icon="lock"
+            iconColor={M.textSecondary}
+            label="Runtime access"
+            sublabel="Expose to LAN, manage allowed users"
+            onClick={() => {
+              onClose();
+              setAccessOpen(true);
+            }}
+          />
+        )}
+
+        {user ? (
+          <MenuRow
+            icon="user"
+            iconColor={M.textSecondary}
+            label="Log out"
+            sublabel={user.username || "Signed in"}
+            onClick={() => {
+              onClose();
+              void cloudLogout();
+            }}
+          />
+        ) : (
+          <MenuRow
+            icon="user"
+            iconColor={M.blue}
+            label="Login"
+            sublabel="Sign in to your account"
+            onClick={() => {
+              onClose();
+              void cloudLogin();
+            }}
+          />
+        )}
       </div>
     </BottomSheet>
+    <RuntimeAccessSheet open={accessOpen} onClose={() => setAccessOpen(false)} />
+    </>
   );
 }

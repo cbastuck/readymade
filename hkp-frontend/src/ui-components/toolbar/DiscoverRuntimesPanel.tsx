@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Check, Monitor, Plus, RefreshCw, Search, Smartphone } from "lucide-react";
+import { Check, Lock, Monitor, Plus, RefreshCw, Search, Smartphone } from "lucide-react";
 
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { RuntimeClass } from "hkp-frontend/src/types";
@@ -11,6 +11,7 @@ import {
   startDiscover,
   stopDiscover,
 } from "hkp-frontend/src/runtime/discovery/DiscoveryApi";
+import { usePeerAuthorization } from "hkp-frontend/src/runtime/discovery/usePeerAuthorization";
 
 type Props = {
   existing: Array<RuntimeClass>;
@@ -24,6 +25,7 @@ export default function DiscoverRuntimesPanel({ existing, onAdd }: Props) {
 
   const [discovering, setDiscovering] = useState(false);
   const [peers, setPeers] = useState<DiscoveredPeer[]>([]);
+  const authByPeer = usePeerAuthorization(peers);
   const [endsAt, setEndsAt] = useState(0);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const pollRef = useRef<number | null>(null);
@@ -117,30 +119,44 @@ export default function DiscoverRuntimesPanel({ existing, onAdd }: Props) {
       {peers.map((peer) => {
         const rtClass = peerToRuntimeClass(peer);
         const added = existing.some((e) => e.url === rtClass.url);
-        const PlatformIcon = peer.platform === "ios" ? Smartphone : Monitor;
+        const locked = authByPeer[peer.id] === "locked";
+        const PlatformIcon = locked
+          ? Lock
+          : peer.platform === "ios"
+            ? Smartphone
+            : Monitor;
         return (
           <div
             key={peer.id}
             className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2"
           >
-            <PlatformIcon size={18} className="shrink-0 text-slate-400" />
+            <PlatformIcon
+              size={18}
+              className={locked ? "shrink-0 text-amber-500" : "shrink-0 text-slate-400"}
+            />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-semibold text-slate-800">
                 {peer.name}
               </div>
               <div className="truncate text-xs text-slate-500">
-                {peer.host}:{peer.port}
+                {locked ? "Not authorized on this device" : `${peer.host}:${peer.port}`}
               </div>
             </div>
             <Button
               variant="outline"
               size="sm"
-              disabled={added}
+              disabled={added || locked}
               onClick={() => onAdd(rtClass)}
               className="gap-1"
             >
-              {added ? <Check size={14} /> : <Plus size={14} />}
-              {added ? "Added" : "Add"}
+              {locked ? (
+                <Lock size={14} />
+              ) : added ? (
+                <Check size={14} />
+              ) : (
+                <Plus size={14} />
+              )}
+              {locked ? "Locked" : added ? "Added" : "Add"}
             </Button>
           </div>
         );

@@ -77,6 +77,16 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
       "DELETE",
       "/history/:board",
       std::bind(&SchemeHandler::handleClearBoardHistory, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "GET",
+      "/settings",
+      std::bind(&SchemeHandler::handleGetSettings, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "POST",
+      "/settings",
+      std::bind(&SchemeHandler::handleSaveSettings, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void SchemeHandler::addRoute(const Router::Method &method, const std::string &path, Router::Handler handler)
@@ -86,6 +96,21 @@ void SchemeHandler::addRoute(const Router::Method &method, const std::string &pa
 
 saucer::scheme::response SchemeHandler::handleRequest(const saucer::scheme::request &req)
 {
+  // Answer CORS preflight for every route. On Windows (WebView2) the embedded
+  // frontend runs from `saucer://embedded`, so non-simple requests (e.g. a POST
+  // with a JSON Content-Type) to the `hkp://` scheme are cross-origin and get
+  // preflighted; the OPTIONS response must have an ok status and the CORS
+  // headers or the browser blocks the actual request.
+  if (req.method() == "OPTIONS")
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str(""),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 204,
+    };
+  }
+
   auto res = m_router.route(req);
   if (res)
   {
@@ -734,5 +759,87 @@ saucer::scheme::response SchemeHandler::handleClearBoardHistory(const Router::Pa
       .mime = "application/json",
       .headers = m_defaultHeaders,
       .status = 200,
+  };
+}
+
+json SchemeHandler::currentRuntimeSettings() const
+{
+  auto allowedUsers = json::array();
+  for (const auto& email : m_settings.getAuthConfig().allowedEmails)
+  {
+    allowedUsers.push_back(email);
+  }
+  return json{
+      {"allowExternalRuntimeAccess", m_settings.getAllowExternalAccess()},
+      {"allowedUsers", allowedUsers},
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleGetSettings(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(currentRuntimeSettings().dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleSaveSettings(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto content = req.content();
+  if (content.size() == 0)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("No content provided"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  json payload;
+  try
+  {
+    payload = json::parse(
+        std::string(reinterpret_cast<const char *>(content.data()), content.size()));
+  }
+  catch (...)
+  {
+    payload = json();
+  }
+  if (!payload.is_object())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid settings payload"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  const auto exposeIt = payload.find("allowExternalRuntimeAccess");
+  if (exposeIt != payload.end() && exposeIt->is_boolean())
+  {
+    m_settings.setAllowExternalAccess(exposeIt->get<bool>());
+  }
+
+  const auto usersIt = payload.find("allowedUsers");
+  if (usersIt != payload.end() && usersIt->is_array())
+  {
+    std::vector<std::string> emails;
+    for (const auto& entry : *usersIt)
+    {
+      if (entry.is_string())
+      {
+        emails.push_back(entry.get<std::string>());
+      }
+    }
+    m_settings.setAllowedUsers(emails);
+  }
+
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(currentRuntimeSettings().dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
   };
 }

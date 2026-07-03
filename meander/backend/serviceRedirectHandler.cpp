@@ -2,6 +2,25 @@
 #include <nlohmann/json.hpp>
 #include <string_view>
 
+namespace {
+
+bool isServiceRedirectCallback(std::string_view url)
+{
+  // Match the actual callback path, not just any URL that happens to contain
+  // the redirect path as a query parameter or fragment.
+  const auto schemePos = url.find("://");
+  const auto pathStart = url.find('/', schemePos == std::string_view::npos ? 0 : schemePos + 3);
+  if (pathStart == std::string_view::npos) {
+    return false;
+  }
+
+  const auto pathEnd = url.find_first_of("?#", pathStart);
+  const auto path = url.substr(pathStart, pathEnd == std::string_view::npos ? std::string_view::npos : pathEnd - pathStart);
+  return path == "/serviceRedirect";
+}
+
+} // namespace
+
 ServiceRedirectHandler::ServiceRedirectHandler(saucer::smartview *mainView, saucer::application *app)
   : mainView_(mainView), app_(app)
 {}
@@ -18,8 +37,8 @@ void ServiceRedirectHandler::open(const std::string &url)
     nullptr,
     [this](const saucer::navigation &nav) -> saucer::policy
     {
-      auto urlStr = nav.url().string();
-      if (urlStr.find("/serviceRedirect") == std::string::npos) {
+      const auto urlStr = nav.url().string();
+      if (!isServiceRedirectCallback(urlStr)) {
         return saucer::policy::allow;
       }
 

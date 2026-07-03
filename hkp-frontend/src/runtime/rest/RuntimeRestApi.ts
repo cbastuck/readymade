@@ -30,7 +30,15 @@ function resolveOutputUrl(
   try {
     const out = new URL(outputUrl);
     const base = new URL(runtimeUrl);
-    out.hostname = base.hostname;
+    // The embedded local runtime is addressed through the custom `hkp://remotes/`
+    // proxy scheme, whose authority ("remotes") is a routing label, not a real
+    // network host — copying it would yield ws://remotes:port and fail DNS. The
+    // runtime is always co-located with its webview here, so target loopback.
+    if (base.protocol !== "http:" && base.protocol !== "https:") {
+      out.hostname = "127.0.0.1";
+    } else {
+      out.hostname = base.hostname;
+    }
     return out.toString();
   } catch {
     return outputUrl;

@@ -67,9 +67,9 @@ function AppProvider({ children }: Props) {
       const idJwt = idToken.__raw;
       if (idJwt && idJwt !== userRef.current?.idToken) {
         try {
-          const { username, userId, features, picture } = processToken(idJwt);
+          const { username, userId, features, picture, email } = processToken(idJwt);
           setTimeout(() => {
-            setUser({ username, userId, features, picture, idToken: idJwt });
+            setUser({ username, userId, features, picture, email, idToken: idJwt });
             resolve();
           });
         } catch (err) {

@@ -374,6 +374,7 @@ export type Bundles = Array<string>;
 export type User = {
   username: string;
   userId: string;
+  email?: string;
   picture?: string;
   updatedAt?: string;
   features?: {

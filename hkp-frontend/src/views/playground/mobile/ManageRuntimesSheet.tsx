@@ -13,6 +13,7 @@ import {
   startDiscover,
   stopDiscover,
 } from "../../../runtime/discovery/DiscoveryApi";
+import { usePeerAuthorization } from "../../../runtime/discovery/usePeerAuthorization";
 
 const PLATFORM_ICON: Record<string, MobileIconName> = {
   ios: "cpu",
@@ -61,6 +62,7 @@ export default function ManageRuntimesSheet({ open, onClose }: Props) {
   const supportsDiscovery = isDiscoverySupported();
   const [discovering, setDiscovering] = useState(false);
   const [peers, setPeers] = useState<DiscoveredPeer[]>([]);
+  const authByPeer = usePeerAuthorization(peers);
   const [endsAt, setEndsAt] = useState(0);
   const [nowMs, setNowMs] = useState(() => Date.now());
   const pollRef = useRef<number | null>(null);
@@ -306,8 +308,10 @@ export default function ManageRuntimesSheet({ open, onClose }: Props) {
           {peers.map((peer) => {
             const rtClass = peerToRuntimeClass(peer);
             const added = runtimeEngines.some((e) => e.url === rtClass.url);
-            const iconName: MobileIconName =
-              PLATFORM_ICON[peer.platform] ?? "server";
+            const locked = authByPeer[peer.id] === "locked";
+            const iconName: MobileIconName = locked
+              ? "lock"
+              : PLATFORM_ICON[peer.platform] ?? "server";
             return (
               <div
                 key={peer.id}
@@ -326,14 +330,18 @@ export default function ManageRuntimesSheet({ open, onClose }: Props) {
                     width: 36,
                     height: 36,
                     borderRadius: 9,
-                    background: M.blueLight,
+                    background: locked ? "rgba(0,0,0,0.06)" : M.blueLight,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     flexShrink: 0,
                   }}
                 >
-                  <MobileIcon name={iconName} size={18} color={M.blue} />
+                  <MobileIcon
+                    name={iconName}
+                    size={18}
+                    color={locked ? M.textMuted : M.blue}
+                  />
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div
@@ -358,30 +366,30 @@ export default function ManageRuntimesSheet({ open, onClose }: Props) {
                       whiteSpace: "nowrap",
                     }}
                   >
-                    {peer.host}:{peer.port}
+                    {locked ? "Not authorized on this device" : `${peer.host}:${peer.port}`}
                   </div>
                 </div>
                 <button
                   onClick={() => addRuntimeEngine(rtClass)}
-                  disabled={added}
-                  aria-label={`Add ${peer.name}`}
+                  disabled={added || locked}
+                  aria-label={locked ? `${peer.name} locked` : `Add ${peer.name}`}
                   style={{
                     width: 34,
                     height: 34,
                     border: "none",
-                    background: added ? "rgba(0,0,0,0.06)" : M.tealLight,
+                    background: added || locked ? "rgba(0,0,0,0.06)" : M.tealLight,
                     borderRadius: 9,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    cursor: added ? "default" : "pointer",
+                    cursor: added || locked ? "default" : "pointer",
                     flexShrink: 0,
                   }}
                 >
                   <MobileIcon
-                    name={added ? "check" : "plus"}
+                    name={locked ? "lock" : added ? "check" : "plus"}
                     size={16}
-                    color={added ? M.textMuted : M.tealDark}
+                    color={added || locked ? M.textMuted : M.tealDark}
                     strokeWidth={2.2}
                   />
                 </button>

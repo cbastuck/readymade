@@ -36,6 +36,10 @@ private:
   saucer::scheme::response handleLoadBoardHistory(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleClearBoardHistory(const Router::Params &p, const saucer::scheme::request &req) const;
 
+  saucer::scheme::response handleGetSettings(const Router::Params &p, const saucer::scheme::request &req) const;
+  saucer::scheme::response handleSaveSettings(const Router::Params &p, const saucer::scheme::request &req) const;
+  nlohmann::json currentRuntimeSettings() const;
+
 private:
   std::shared_ptr<hkp::Server> m_server;
   std::map<std::string, std::string> m_defaultHeaders;

@@ -208,6 +208,13 @@ int real_main(int argc, char *argv[])
   // Inject runtime config into the webview as a global variable so the
   // hkp-frontend can resolve HKP_WEBAPP_URL / HKP_RUNTIME_URL without any
   // fetch calls. Runs before the page's own scripts (time::creation).
+  // Whether the exposed runtime has a usable auth allow-list. When external
+  // access is on but this is false, the runtime fails closed (denies everyone),
+  // so the Settings/About tab can warn the user to configure it.
+  const auto displayAuthCfg = settings.getAuthConfig();
+  const bool authConfigured =
+      !displayAuthCfg.issuers.empty() && !displayAuthCfg.allowedEmails.empty();
+
   auto configJson = nlohmann::json{
     {"lanIp",               lanIP},
     {"frontendPort",        FRONTEND_HTTP_PORT},
@@ -216,6 +223,8 @@ int real_main(int argc, char *argv[])
     // tab so it can show the runtime URL in both localhost-only and LAN modes.
     {"runtimePort",         RUNTIME_API_PORT},
     {"allowExternalAccess", settings.getAllowExternalAccess()},
+    // True only when exposed AND an allow-list is configured (auth enforced).
+    {"authConfigured",      settings.getAllowExternalAccess() && authConfigured},
   };
   webview->inject(saucer::script{
     .code   = "window.__MEANDER_CONFIG__ = " + configJson.dump() + ";",
@@ -226,8 +235,27 @@ int real_main(int argc, char *argv[])
     .run_at = saucer::script::time::creation,
   });
   auto allowedOrigins = "*"; // allow all origins for CORS
+
+  // Auth gate. A loopback bind is itself the access boundary, so no auth is
+  // required there. When exposed on the LAN we require a verified, allow-listed
+  // user — and fail closed: an exposed runtime with no issuers/allowed users
+  // configured denies every request rather than running open.
+  hkp::AuthConfig authConfig;
+  if (!hkp::isLoopbackHost(bindAddress))
+  {
+    authConfig = settings.getAuthConfig();
+    authConfig.mode = hkp::AuthMode::Jwt;
+    if (authConfig.issuers.empty() || authConfig.allowedEmails.empty())
+    {
+      std::cerr << "[auth] WARNING: runtime is exposed on " << bindAddress
+                << " but no trusted issuers / allowed users are configured in "
+                   "~/.hkp/settings.json — all LAN requests will be denied."
+                << std::endl;
+    }
+  }
+
   auto hkpApp = std::make_shared<hkp::App>();
-  auto server = std::make_shared<hkp::Server>(hkpApp, "meander-cpp", allowedOrigins);
+  auto server = std::make_shared<hkp::Server>(hkpApp, "meander-cpp", allowedOrigins, "", std::move(authConfig));
   auto t = std::make_shared<std::thread>([server, lanIP, bindAddress]()
   {
     server->start(lanIP, RUNTIME_API_PORT, bindAddress);

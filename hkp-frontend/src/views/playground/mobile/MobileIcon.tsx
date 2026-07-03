@@ -4,7 +4,7 @@ export type MobileIconName =
   | "list" | "plus" | "settings" | "more" | "chevronDown" | "chevronUp"
   | "chevronRight" | "chevronLeft" | "x" | "share" | "cpu" | "timer" | "trash" | "home"
   | "layers" | "check" | "monitor" | "server" | "package" | "gitBranch"
-  | "maximize2" | "minimize2" | "cloud" | "refresh" | "search";
+  | "maximize2" | "minimize2" | "cloud" | "refresh" | "search" | "lock" | "user";
 
 const paths: Record<MobileIconName, ReactNode> = {
   list: <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>,
@@ -32,6 +32,8 @@ const paths: Record<MobileIconName, ReactNode> = {
   cloud: <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>,
   refresh: <><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></>,
   search: <><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></>,
+  lock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
+  user: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
 };
 
 type Props = {
