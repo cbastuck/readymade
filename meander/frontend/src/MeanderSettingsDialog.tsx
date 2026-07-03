@@ -14,6 +14,7 @@ import {
   TabsTrigger,
 } from "hkp-frontend/src/ui-components/primitives/tabs";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
+import AppearanceSettings from "hkp-frontend/src/ui-components/AppearanceSettings";
 
 import { getBackend } from "./backend";
 import { RuntimeSettings } from "./backend/types";
@@ -49,10 +50,14 @@ export default function MeanderSettingsDialog({ open, onOpenChange }: Props) {
         <Tabs defaultValue="about">
           <TabsList>
             <TabsTrigger value="about">About</TabsTrigger>
+            <TabsTrigger value="appearance">Appearance</TabsTrigger>
             <TabsTrigger value="access">Access</TabsTrigger>
           </TabsList>
           <TabsContent value="about">
             <AboutTab />
+          </TabsContent>
+          <TabsContent value="appearance">
+            <AppearanceSettings />
           </TabsContent>
           <TabsContent value="access">
             <AccessTab />

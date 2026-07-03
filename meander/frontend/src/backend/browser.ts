@@ -1,8 +1,12 @@
+import { localStorageStartPageStore } from "hkp-frontend/src/views/start";
 import { BackendAdapter } from "./types";
+
+const startPageStore = localStorageStartPageStore();
 
 /**
  * No-op backend for regular browsers where the hkp:// scheme is unavailable.
  * Board and remote persistence simply do nothing / return empty state.
+ * The start page tree falls back to localStorage.
  */
 export const browserBackend: BackendAdapter = {
   fetchSavedBoards: async () => [],
@@ -12,6 +16,8 @@ export const browserBackend: BackendAdapter = {
   getRemotes: async () => [],
   saveRemote: async () => {},
   deleteRemote: async () => {},
+  loadStartPageTree: () => startPageStore.load(),
+  saveStartPageTree: (tree) => startPageStore.save(tree),
   fetchHistoryBoards: async () => [],
   pushBoardSnapshot: async () => {},
   loadBoardHistory: async () => [],

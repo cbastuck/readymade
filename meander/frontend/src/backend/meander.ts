@@ -1,4 +1,8 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
+import {
+  StartPageTree,
+  normalizeStartPageTree,
+} from "hkp-frontend/src/views/start";
 import { Remote } from "../types";
 import {
   BackendAdapter,
@@ -83,6 +87,26 @@ export const meanderBackend: BackendAdapter = {
     });
     if (!res.ok) throw new Error(`Failed to save settings: ${res.statusText}`);
     return res.json();
+  },
+
+  async loadStartPageTree(): Promise<StartPageTree | null> {
+    const res = await fetch("hkp://startpage");
+    if (!res.ok) return null;
+    try {
+      return normalizeStartPageTree(await res.json());
+    } catch {
+      return null;
+    }
+  },
+
+  async saveStartPageTree(tree: StartPageTree): Promise<void> {
+    const res = await fetch("hkp://startpage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(tree),
+    });
+    if (!res.ok)
+      throw new Error(`Failed to save start page tree: ${res.statusText}`);
   },
 
   async fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>> {

@@ -3,6 +3,8 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 
+import { readBuildVersion } from "./buildVersion";
+
 const rootDir = import.meta.dirname;
 const hkpFrontendRoot = path.resolve(rootDir, "../../hkp-frontend");
 const iosWebAppDir = path.resolve(
@@ -11,6 +13,9 @@ const iosWebAppDir = path.resolve(
 );
 
 export default defineConfig({
+  define: {
+    __READYMADE_BUILD_VERSION__: JSON.stringify(readBuildVersion(rootDir)),
+  },
   plugins: [svgr(), react()],
   build: {
     outDir: iosWebAppDir,

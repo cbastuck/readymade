@@ -1,4 +1,5 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
+import { StartPageTree } from "hkp-frontend/src/views/start";
 import { Remote } from "../types";
 
 export type BoardHistoryEntry = {
@@ -40,6 +41,10 @@ export interface BackendAdapter {
   // a settings store; callers should feature-detect.
   getRuntimeSettings?(): Promise<RuntimeSettings>;
   setRuntimeSettings?(settings: Partial<RuntimeSettings>): Promise<RuntimeSettings>;
+
+  // Start page folder tree (startpage.json next to the saved boards)
+  loadStartPageTree(): Promise<StartPageTree | null>;
+  saveStartPageTree(tree: StartPageTree): Promise<void>;
 
   // Board history
   fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>>;

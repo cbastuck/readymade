@@ -3,9 +3,16 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import svgr from "vite-plugin-svgr";
 
+import { readBuildVersion } from "./buildVersion";
+
 const hkpFrontendRoot = path.resolve(import.meta.dirname, "../../hkp-frontend");
 
 export default defineConfig({
+  define: {
+    __READYMADE_BUILD_VERSION__: JSON.stringify(
+      readBuildVersion(import.meta.dirname),
+    ),
+  },
   server: {
     host: "0.0.0.0", // added only for using the frontend in Meander iOS app - remove if not needed
     fs: {

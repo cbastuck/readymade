@@ -16,7 +16,9 @@ function demoSlug(label: string): string {
 }
 
 function findDemoBySlug(slug: string): BoardDescriptor | undefined {
-  const match = DEMO_BOARDS.find((e) => demoSlug(e.label) === slug);
+  const match = DEMO_BOARDS.find(
+    (e) => e.slug === slug || demoSlug(e.label) === slug,
+  );
   return match?.board as BoardDescriptor | undefined;
 }
 

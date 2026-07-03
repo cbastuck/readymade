@@ -138,6 +138,12 @@ public:
     return savePath.string();
   }
 
+  // The start page's folder/tag hierarchy, stored next to the saved boards.
+  std::string getStartPagePath() const
+  {
+    return (getMeandersDirPath() / "startpage.json").string();
+  }
+
   std::string getHistoryPath(const std::string& boardName) const
   {
     namespace fs = std::filesystem;

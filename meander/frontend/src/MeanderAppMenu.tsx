@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { LogIn, LogOut, Menu, Palette, Search, Settings } from "lucide-react";
+import { LogIn, LogOut, Menu, Search, Settings } from "lucide-react";
 
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { useAppContext } from "hkp-frontend/src/AppContext";
@@ -9,18 +9,9 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
   DropdownMenuSeparator,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
-import {
-  ThemeName,
-  useThemeControl,
-} from "hkp-frontend/src/ui-components/ThemeContext";
 import { useBoardContext } from "hkp-frontend/src/BoardContext";
 import {
   isRuntimeGraphQLClassType,
@@ -38,7 +29,6 @@ const isRemoteRuntime = (rt: RuntimeClass) =>
   isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type);
 
 export default function MeanderAppMenu() {
-  const { themeName, setThemeName } = useThemeControl();
   const { user } = useAppContext();
   const cloudLogin = useCloudLogin();
   const cloudLogout = useCloudLogout();
@@ -122,28 +112,8 @@ export default function MeanderAppMenu() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-48 mx-4">
-          <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="text-base">
-              <Palette size={16} className="mr-2" />
-              <span>Theme</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent>
-              <DropdownMenuRadioGroup
-                value={themeName}
-                onValueChange={(v) => setThemeName(v as ThemeName)}
-              >
-                <DropdownMenuRadioItem value="default">
-                  Default
-                </DropdownMenuRadioItem>
-                <DropdownMenuRadioItem value="sketch">
-                  Sketch
-                </DropdownMenuRadioItem>
-              </DropdownMenuRadioGroup>
-            </DropdownMenuSubContent>
-          </DropdownMenuSub>
           {canManageRemotes && (
             <>
-              <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-base"
                 onSelect={() => setIsManageRuntimesOpen(true)}
@@ -151,9 +121,9 @@ export default function MeanderAppMenu() {
                 <Search size={16} className="mr-2" />
                 <span>Manage Remotes</span>
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
             </>
           )}
-          <DropdownMenuSeparator />
           {user ? (
             <DropdownMenuItem
               className="text-base"

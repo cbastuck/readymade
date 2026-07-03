@@ -87,6 +87,16 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
       "POST",
       "/settings",
       std::bind(&SchemeHandler::handleSaveSettings, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "GET",
+      "/startpage",
+      std::bind(&SchemeHandler::handleGetStartPage, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "POST",
+      "/startpage",
+      std::bind(&SchemeHandler::handleSaveStartPage, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void SchemeHandler::addRoute(const Router::Method &method, const std::string &path, Router::Handler handler)
@@ -781,6 +791,81 @@ saucer::scheme::response SchemeHandler::handleGetSettings(const Router::Params &
       .data = saucer::stash::from_str(currentRuntimeSettings().dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleGetStartPage(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto path = m_settings.getStartPagePath();
+  std::ifstream file(path);
+  if (!file.is_open())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Start page tree not found"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+  std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(content),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleSaveStartPage(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto content = req.content();
+  if (content.size() == 0)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("No content provided"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  // Validate that the payload is JSON before persisting it.
+  try
+  {
+    const auto payload = json::parse(
+        std::string(reinterpret_cast<const char *>(content.data()), content.size()));
+    if (!payload.is_object())
+    {
+      throw json::type_error::create(302, "start page tree must be an object", nullptr);
+    }
+  }
+  catch (const json::exception&)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid JSON payload"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  std::ofstream file(m_settings.getStartPagePath());
+  if (!file.is_open())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Failed to open file for writing"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  file.write(reinterpret_cast<const char *>(content.data()), content.size());
+
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"ok", true}}.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 201,
   };
 }
 
