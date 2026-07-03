@@ -415,7 +415,6 @@ export default function Sidebar() {
                   display: "flex",
                   alignItems: "center",
                   gap: 6,
-                  background: "var(--border, #f3f0eb)",
                   borderRadius: 7,
                   padding: "4px 8px",
                 }}

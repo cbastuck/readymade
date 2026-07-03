@@ -84,7 +84,7 @@ export default function EditorDialog({
         style={{
           padding: 0,
           background: "var(--bg-card, white)",
-          border: "1px solid var(--border, #e2ddd7)",
+          border: "1px solid var(--hkp-border, #e2ddd7)",
           borderRadius: 16,
           boxShadow:
             "0 4px 24px oklch(0.4 0.01 280 / 0.12), 0 1px 4px oklch(0.4 0.01 280 / 0.06)",
@@ -106,7 +106,7 @@ export default function EditorDialog({
         <div
           style={{
             padding: "13px 60px 0px 16px",
-            borderBottom: "1px solid var(--border, #e2ddd7)",
+            borderBottom: "1px solid var(--hkp-border, #e2ddd7)",
             flexShrink: 0,
           }}
         >
@@ -157,7 +157,7 @@ export default function EditorDialog({
           <div
             style={{
               padding: "11px 16px",
-              borderTop: "1px solid var(--border, #e2ddd7)",
+              borderTop: "1px solid var(--hkp-border, #e2ddd7)",
               display: "flex",
               gap: 6,
               justifyContent: "flex-end",
@@ -172,7 +172,7 @@ export default function EditorDialog({
                 style={btnBase}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLButtonElement).style.background =
-                    "var(--border, #e2ddd7)";
+                    "var(--hkp-border, #e2ddd7)";
                   (e.currentTarget as HTMLButtonElement).style.color =
                     "var(--text, #1a1a1a)";
                 }}

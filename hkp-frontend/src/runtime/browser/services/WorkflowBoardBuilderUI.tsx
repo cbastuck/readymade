@@ -105,7 +105,7 @@ function DialogBtn({
         if (primary) {
           el.style.filter = "brightness(0.92)";
         } else {
-          el.style.background = "var(--border, #e2ddd7)";
+          el.style.background = "var(--hkp-border, #e2ddd7)";
           el.style.color = "var(--text, #1a1a1a)";
         }
       }}
@@ -345,7 +345,7 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
           }}
           onMouseEnter={(e) => {
             const el = e.currentTarget as HTMLButtonElement;
-            el.style.background = "var(--border, #e2ddd7)";
+            el.style.background = "var(--hkp-border, #e2ddd7)";
             el.style.color = "var(--text, #1a1a1a)";
           }}
           onMouseLeave={(e) => {
@@ -378,7 +378,7 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
           style={{
             padding: 0,
             background: "var(--bg-card, white)",
-            border: "1px solid var(--border, #e2ddd7)",
+            border: "1px solid var(--hkp-border, #e2ddd7)",
             borderRadius: 16,
             boxShadow:
               "0 4px 24px oklch(0.4 0.01 280 / 0.12), 0 1px 4px oklch(0.4 0.01 280 / 0.06)",
@@ -397,7 +397,7 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
           <div
             style={{
               padding: "13px 44px 13px 16px",
-              borderBottom: "1px solid var(--border, #e2ddd7)",
+              borderBottom: "1px solid var(--hkp-border, #e2ddd7)",
               flexShrink: 0,
             }}
           >
@@ -434,7 +434,7 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
               display: "grid",
               gridTemplateColumns: "1fr 1fr",
               gap: 1,
-              background: "var(--border, #e2ddd7)",
+              background: "var(--hkp-border, #e2ddd7)",
             }}
           >
             <div
@@ -487,7 +487,7 @@ export default function WorkflowBoardBuilderUI(props: ServiceUIProps) {
           <div
             style={{
               padding: "11px 16px",
-              borderTop: "1px solid var(--border, #e2ddd7)",
+              borderTop: "1px solid var(--hkp-border, #e2ddd7)",
               display: "flex",
               gap: 6,
               justifyContent: "flex-end",
