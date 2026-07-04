@@ -24,6 +24,8 @@ export interface CloudBoardSummary {
   hasImage: boolean;
   /** "owner" for own boards, "viewer" for boards shared with the caller. */
   role: "owner" | "viewer";
+  /** Share recipients; only present on boards the caller owns. */
+  sharedWith?: string[] | null;
   createdAt: string;
   updatedAt: string;
 }

@@ -39,6 +39,12 @@ interface Props {
   onRemoveFromFolder?: () => void;
   /** Deletes the board entirely; asked to confirm with a second click. */
   onDelete?: () => void;
+  /** Revokes a share recipient's access (owner side); renders the board's
+   *  sharedWith list with a Revoke action per entry. */
+  onRevokeShare?: (email: string) => Promise<void>;
+  /** Removes the user from a board shared with them (viewer side); asked to
+   *  confirm with a second click. */
+  onLeaveShare?: () => Promise<void>;
 }
 
 function formatTimestamp(iso: string): string {
@@ -200,8 +206,13 @@ export default function BoardDetails({
   loadHistory,
   onRemoveFromFolder,
   onDelete,
+  onRevokeShare,
+  onLeaveShare,
 }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingLeave, setConfirmingLeave] = useState(false);
+  const [shareBusy, setShareBusy] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [cloudState, setCloudState] = useState<
@@ -226,6 +237,37 @@ export default function BoardDetails({
       setUploadError(reasonOf(err));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const revokeShare = async (email: string) => {
+    if (!onRevokeShare || shareBusy) {
+      return;
+    }
+    setShareBusy(email);
+    setShareError(null);
+    try {
+      await onRevokeShare(email);
+    } catch (err) {
+      setShareError(reasonOf(err));
+    } finally {
+      setShareBusy(null);
+    }
+  };
+
+  const leaveShare = async () => {
+    if (!onLeaveShare || shareBusy) {
+      return;
+    }
+    setShareBusy("__leave__");
+    setShareError(null);
+    try {
+      await onLeaveShare();
+    } catch (err) {
+      setShareError(reasonOf(err));
+    } finally {
+      setShareBusy(null);
+      setConfirmingLeave(false);
     }
   };
 
@@ -451,6 +493,72 @@ export default function BoardDetails({
           </div>
         )}
 
+        {board.sharedWith && board.sharedWith.length > 0 && (
+          <div style={{ width: "100%", flex: "0 0 auto" }}>
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--st-mut)",
+                marginBottom: 8,
+              }}
+            >
+              Shared with
+            </div>
+            {board.sharedWith.map((email) => (
+              <div
+                key={email}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "3px 0",
+                }}
+              >
+                <span
+                  style={{
+                    flex: "1 1 auto",
+                    minWidth: 0,
+                    fontSize: 12.5,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {email}
+                </span>
+                {onRevokeShare && (
+                  <button
+                    type="button"
+                    disabled={shareBusy !== null}
+                    onClick={() => void revokeShare(email)}
+                    style={{
+                      flex: "0 0 auto",
+                      border: "none",
+                      background: "none",
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: "#e0355f",
+                      cursor: shareBusy !== null ? "default" : "pointer",
+                      opacity: shareBusy !== null ? 0.5 : 1,
+                      padding: "2px 4px",
+                    }}
+                  >
+                    {shareBusy === email ? "Revoking…" : "Revoke"}
+                  </button>
+                )}
+              </div>
+            ))}
+            {shareError && (
+              <div style={{ marginTop: 6, fontSize: 12, color: "#e0355f" }}>
+                {shareError}
+              </div>
+            )}
+          </div>
+        )}
+
         <div style={{ flex: "1 1 auto" }} />
 
         <div
@@ -506,6 +614,41 @@ export default function BoardDetails({
             >
               Remove from folder
             </button>
+          )}
+          {onLeaveShare && (
+            <>
+              {confirmingLeave ? (
+                <button
+                  className="st-btn st-btn-ghost"
+                  style={{
+                    justifyContent: "center",
+                    color: "#e0355f",
+                    borderColor: "#e0355f",
+                  }}
+                  disabled={shareBusy !== null}
+                  onClick={() => void leaveShare()}
+                >
+                  {shareBusy === "__leave__"
+                    ? "Removing…"
+                    : `Really leave “${board.name}”?`}
+                </button>
+              ) : (
+                <button
+                  className="st-btn st-btn-ghost"
+                  style={{ justifyContent: "center", color: "#e0355f" }}
+                  onClick={() => setConfirmingLeave(true)}
+                >
+                  Remove me from this board
+                </button>
+              )}
+              {shareError && !board.sharedWith?.length && (
+                <div
+                  style={{ fontSize: 12, color: "#e0355f", textAlign: "center" }}
+                >
+                  {shareError}
+                </div>
+              )}
+            </>
           )}
           {onDelete &&
             (confirmingDelete ? (

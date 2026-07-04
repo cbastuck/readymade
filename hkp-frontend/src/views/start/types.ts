@@ -53,6 +53,7 @@ export type BoardAction =
   | { kind: "saved"; name: string }
   | { kind: "demo"; slug: string }
   | { kind: "cloud"; coordinatorUrl: string; boardName: string }
+  | { kind: "cloud-stored"; id: string; name: string }
   | { kind: "runtime"; name: string };
 
 export interface BoardNode {
@@ -75,6 +76,14 @@ export interface BoardNode {
    *  (as opposed to a loose saved board or a virtual entry) — only those can
    *  be removed from their folder. */
   persisted?: boolean;
+  /** Cloud storage id, set on boards from the cloud board storage (the
+   *  Shared source); enables the share management details. */
+  cloudId?: string;
+  /** The user's relation to the cloud-stored board. */
+  cloudRole?: "owner" | "viewer";
+  /** Share recipients (owner side); shown in the details column with a
+   *  Revoke action per entry when the host provides onRevokeShare. */
+  sharedWith?: string[];
 }
 
 export interface FolderNode {
