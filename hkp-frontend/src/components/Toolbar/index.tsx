@@ -18,6 +18,7 @@ import BoardMenu from "hkp-frontend/src/ui-components/toolbar/BoardMenu";
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 
 import ShareMenu from "./ShareMenu";
+import UpdateCloudButton from "./UpdateCloudButton";
 
 import "./index.css";
 
@@ -167,6 +168,7 @@ export default function Toolbar({
             gap: 4,
           }}
         >
+          <UpdateCloudButton />
           <ShareMenu />
           <TbSeparator />
           <ViewToggle />

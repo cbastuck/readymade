@@ -78,6 +78,13 @@ export interface StartPageProps {
    *  "Upload to cloud" action in the details column. Hosts pass it for
    *  logged-in users only. */
   uploadBoardToCloud?: (boardName: string) => Promise<void>;
+  /** Revokes a share recipient's access to one of the user's cloud-stored
+   *  boards; applies to boards with cloudRole "owner" and a sharedWith list
+   *  (the Shared → From me source). */
+  onRevokeShare?: (board: BoardNode, email: string) => Promise<void>;
+  /** Removes the user from a board shared with them; applies to boards with
+   *  cloudRole "viewer" (the Shared → With me source). */
+  onLeaveShare?: (board: BoardNode) => Promise<void>;
   /** Native image picker replacing the <input type="file"> flow — required in
    *  webviews without file-input support (Meander desktop). */
   pickBoardArtImage?: () => Promise<Blob | null>;
@@ -144,6 +151,8 @@ export default function StartPage(props: StartPageProps) {
     onDeleteBoard,
     uploadBoardArt,
     uploadBoardToCloud,
+    onRevokeShare,
+    onLeaveShare,
     pickBoardArtImage,
     runtimes,
     withCloud,
@@ -491,6 +500,16 @@ export default function StartPage(props: StartPageProps) {
       onUploadToCloud={
         detailIsSaved && uploadBoardToCloud
           ? () => uploadBoardToCloud(detail.board.name)
+          : undefined
+      }
+      onRevokeShare={
+        detail.board.cloudRole === "owner" && onRevokeShare
+          ? (email) => onRevokeShare(detail.board, email)
+          : undefined
+      }
+      onLeaveShare={
+        detail.board.cloudRole === "viewer" && onLeaveShare
+          ? () => onLeaveShare(detail.board)
           : undefined
       }
       loadHistory={
