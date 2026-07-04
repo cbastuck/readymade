@@ -74,6 +74,10 @@ export interface StartPageProps {
   /** Uploads a (already downscaled) board artwork image and returns its URL;
    *  enables "Upload image…" in the details column's artwork editor. */
   uploadBoardArt?: (boardName: string, image: Blob) => Promise<string>;
+  /** Uploads a saved board to the user's cloud storage; enables the
+   *  "Upload to cloud" action in the details column. Hosts pass it for
+   *  logged-in users only. */
+  uploadBoardToCloud?: (boardName: string) => Promise<void>;
   /** Native image picker replacing the <input type="file"> flow — required in
    *  webviews without file-input support (Meander desktop). */
   pickBoardArtImage?: () => Promise<Blob | null>;
@@ -139,6 +143,7 @@ export default function StartPage(props: StartPageProps) {
     listBoardHistory,
     onDeleteBoard,
     uploadBoardArt,
+    uploadBoardToCloud,
     pickBoardArtImage,
     runtimes,
     withCloud,
@@ -482,6 +487,11 @@ export default function StartPage(props: StartPageProps) {
       pickImage={pickBoardArtImage}
       onOpen={
         detail.board.action ? () => onOpen(detail.board.action!) : undefined
+      }
+      onUploadToCloud={
+        detailIsSaved && uploadBoardToCloud
+          ? () => uploadBoardToCloud(detail.board.name)
+          : undefined
       }
       loadHistory={
         detailIsSaved && listBoardHistory

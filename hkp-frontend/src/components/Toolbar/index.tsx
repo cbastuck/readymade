@@ -1,4 +1,4 @@
-import { ReactNode, useContext } from "react";
+import { ReactNode } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Monitor, Cloud } from "lucide-react";
 
@@ -15,9 +15,9 @@ import { BoardMenuItemFactory } from "../../types";
 
 import BoardMenu from "hkp-frontend/src/ui-components/toolbar/BoardMenu";
 
-import { BoardCtx } from "hkp-frontend/src/BoardContext";
-
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
+
+import ShareMenu from "./ShareMenu";
 
 import "./index.css";
 
@@ -38,26 +38,6 @@ function LogoMark() {
       width={24}
       height={24}
     />
-  );
-}
-
-function ShareIcon() {
-  return (
-    <svg
-      width="13"
-      height="13"
-      viewBox="0 0 13 13"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-    >
-      <circle cx="10.5" cy="2.5" r="1.5" />
-      <circle cx="10.5" cy="10.5" r="1.5" />
-      <circle cx="2.5" cy="6.5" r="1.5" />
-      <line x1="3.9" y1="5.8" x2="9.1" y2="3.2" />
-      <line x1="3.9" y1="7.2" x2="9.1" y2="9.8" />
-    </svg>
   );
 }
 
@@ -143,8 +123,6 @@ export default function Toolbar({
   const { themeName } = useThemeControl();
   const isSketch = themeName === "sketch";
   const isPlayground = themeName === "playground";
-  const boardContext = useContext(BoardCtx);
-
   if (isPlayground) {
     return (
       <div
@@ -189,25 +167,7 @@ export default function Toolbar({
             gap: 4,
           }}
         >
-          <button
-            type="button"
-            title="Share"
-            onClick={() => boardContext?.onAction({ type: "createBoardLink" })}
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: 7,
-              border: "none",
-              background: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--text, #1a1a1a)",
-            }}
-          >
-            <ShareIcon />
-          </button>
+          <ShareMenu />
           <TbSeparator />
           <ViewToggle />
           <TbSeparator />
