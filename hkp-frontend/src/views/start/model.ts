@@ -1,4 +1,5 @@
 import {
+  BoardArt,
   BoardNode,
   BoardState,
   FolderNode,
@@ -20,6 +21,27 @@ export function defaultStartPageTree(): StartPageTree {
   };
 }
 
+function normalizeBoardArt(raw: unknown): BoardArt | null {
+  if (!raw || typeof raw !== "object") {
+    return null;
+  }
+  const art = raw as Record<string, unknown>;
+  if (art.kind === "color" && typeof art.color === "string") {
+    return { kind: "color", color: art.color };
+  }
+  if (
+    art.kind === "gradient" &&
+    typeof art.from === "string" &&
+    typeof art.to === "string"
+  ) {
+    return { kind: "gradient", from: art.from, to: art.to };
+  }
+  if (art.kind === "image" && typeof art.url === "string") {
+    return { kind: "image", url: art.url };
+  }
+  return null;
+}
+
 /** Accept whatever was stored and coerce it into a valid tree. */
 export function normalizeStartPageTree(raw: unknown): StartPageTree {
   if (!raw || typeof raw !== "object") {
@@ -29,7 +51,56 @@ export function normalizeStartPageTree(raw: unknown): StartPageTree {
   if (!Array.isArray(items)) {
     return defaultStartPageTree();
   }
-  return { version: 1, items: items.map(normalizeNode).filter(isPersistedNode) };
+
+  const boardArt: Record<string, BoardArt> = {};
+  const rawArt = (raw as { boardArt?: unknown }).boardArt;
+  if (rawArt && typeof rawArt === "object") {
+    for (const [name, value] of Object.entries(rawArt)) {
+      const art = normalizeBoardArt(value);
+      if (art) {
+        boardArt[name] = art;
+      }
+    }
+  }
+
+  return {
+    version: 1,
+    items: items.map(normalizeNode).filter(isPersistedNode),
+    ...(Object.keys(boardArt).length > 0 ? { boardArt } : {}),
+  };
+}
+
+/** Sets (or clears, with null) the artwork of a board. */
+export function setBoardArt(
+  tree: StartPageTree,
+  boardName: string,
+  art: BoardArt | null,
+): StartPageTree {
+  const next = JSON.parse(JSON.stringify(tree)) as StartPageTree;
+  const map = { ...(next.boardArt ?? {}) };
+  if (art) {
+    map[boardName] = art;
+  } else {
+    delete map[boardName];
+  }
+  if (Object.keys(map).length > 0) {
+    next.boardArt = map;
+  } else {
+    delete next.boardArt;
+  }
+  return next;
+}
+
+/** CSS background for a BoardArt value. */
+export function artCss(art: BoardArt): string {
+  switch (art.kind) {
+    case "color":
+      return art.color;
+    case "gradient":
+      return gradient(art.from, art.to);
+    case "image":
+      return `url("${art.url}") center / cover no-repeat`;
+  }
 }
 
 function normalizeNode(raw: unknown): PersistedNode | null {
@@ -155,6 +226,10 @@ export function buildMyBoardsFolder(
 ): FolderNode {
   const saved = new Set(savedBoards);
   const stateFor = (name: string): BoardState => boardStates[name] ?? "saved";
+  const customArtFor = (name: string): string | undefined => {
+    const art = tree.boardArt?.[name];
+    return art ? artCss(art) : undefined;
+  };
 
   const hydrate = (nodes: PersistedNode[], path: string[]): TreeNode[] =>
     nodes.flatMap<TreeNode>((node) => {
@@ -168,6 +243,7 @@ export function buildMyBoardsFolder(
             name: node.name,
             state: stateFor(node.name),
             action: { kind: "saved", name: node.name },
+            art: customArtFor(node.name),
             persisted: true,
           },
         ];
@@ -190,6 +266,7 @@ export function buildMyBoardsFolder(
       name,
       state: stateFor(name),
       action: { kind: "saved", name },
+      art: customArtFor(name),
     }));
 
   return {

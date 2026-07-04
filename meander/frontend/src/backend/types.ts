@@ -46,6 +46,10 @@ export interface BackendAdapter {
   loadStartPageTree(): Promise<StartPageTree | null>;
   saveStartPageTree(tree: StartPageTree): Promise<void>;
 
+  // Board artwork image (stored next to the board file); returns the URL to
+  // render the image from.
+  uploadBoardArt(boardName: string, image: Blob): Promise<string>;
+
   // Board history
   fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>>;
   pushBoardSnapshot(boardName: string, entry: BoardHistoryEntry): Promise<void>;

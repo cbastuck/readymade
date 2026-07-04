@@ -8,12 +8,14 @@ import {
   StartPage as SharedStartPage,
   StartPageStore,
   BoardAction,
+  BoardHistoryItem,
   BoardState,
   createEmptyBoard,
   initialsOf,
   splitBuildVersion,
 } from "hkp-frontend/src/views/start";
 import { getBackend } from "./backend";
+import { isMeanderApp } from "./isMeanderApp";
 import LoadBoardDialog from "./LoadBoardDialog";
 import MeanderAppMenu from "./MeanderAppMenu";
 
@@ -26,9 +28,11 @@ export default function StartPage({ onRestoreBoard }: Props) {
   const navigate = useNavigate();
   const [lastSessionName, setLastSessionName] = useState<string | null>(null);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
+  const [inApp, setInApp] = useState(false);
 
   useEffect(() => {
     setLastSessionName(localStorage.getItem("lastActiveBoardName"));
+    void isMeanderApp().then(setInApp);
   }, []);
 
   // Persisted via hkp://startpage in the desktop app (startpage.json next to
@@ -46,6 +50,20 @@ export default function StartPage({ onRestoreBoard }: Props) {
     [],
   );
 
+  const listBoardHistory = useCallback(
+    async (name: string): Promise<BoardHistoryItem[]> => {
+      const backend = await getBackend();
+      const entries = await backend.loadBoardHistory(name);
+      return entries.map((entry) => ({
+        timestamp: entry.timestamp,
+        label: entry.label,
+        open: () => onRestoreBoard(entry.snapshot),
+      }));
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   const describeBoard = useCallback(async (name: string) => {
     try {
       return (await (await getBackend()).loadBoard(name)).description;
@@ -56,6 +74,33 @@ export default function StartPage({ onRestoreBoard }: Props) {
 
   const deleteBoard = useCallback(async (name: string) => {
     await (await getBackend()).deleteBoard(name);
+  }, []);
+
+  const uploadBoardArt = useCallback(
+    async (name: string, image: Blob) =>
+      (await getBackend()).uploadBoardArt(name, image),
+    [],
+  );
+
+  // The saucer webview doesn't open a panel for <input type="file">, so pick
+  // via the native dialog and pull the bytes through hkp://local-image.
+  const pickBoardArtImage = useCallback(async (): Promise<Blob | null> => {
+    const backend = await getBackend();
+    const picked = await backend.pickFile({
+      filters: ["*.jpg", "*.jpeg", "*.png", "*.webp", "*.gif"],
+    });
+    if (!picked) {
+      return null;
+    }
+    // pickFile returns a file:// URL; the scheme route needs a plain path.
+    const path = picked.startsWith("file://")
+      ? decodeURIComponent(new URL(picked).pathname)
+      : picked;
+    const res = await fetch(`hkp://local-image/${encodeURIComponent(path)}`);
+    if (!res.ok) {
+      throw new Error(`Could not read image: ${res.statusText}`);
+    }
+    return res.blob();
   }, []);
 
   const openSavedBoard = async (name: string) => {
@@ -133,7 +178,10 @@ export default function StartPage({ onRestoreBoard }: Props) {
         onContinueRecent={() => void handleResume()}
         onLoadBoard={() => setIsLoadDialogOpen(true)}
         describeBoard={describeBoard}
+        listBoardHistory={listBoardHistory}
         onDeleteBoard={deleteBoard}
+        uploadBoardArt={uploadBoardArt}
+        pickBoardArtImage={inApp ? pickBoardArtImage : undefined}
         excludeDemoTags={["iOS only"]}
         title="Readymade"
         badge={currentVersion.version}

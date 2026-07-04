@@ -2,6 +2,8 @@ export { default as StartPage } from "./StartPage";
 export type { StartPageProps, RuntimeEntry } from "./StartPage";
 export type {
   BoardAction,
+  BoardArt,
+  BoardHistoryItem,
   BoardNode,
   BoardState,
   FolderNode,

@@ -109,6 +109,23 @@ export const meanderBackend: BackendAdapter = {
       throw new Error(`Failed to save start page tree: ${res.statusText}`);
   },
 
+  async uploadBoardArt(boardName: string, image: Blob): Promise<string> {
+    const res = await fetch(`hkp://board-art/${encodePathSegment(boardName)}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      // As a buffer, not the Blob: WKWebView can drop streamed Blob bodies on
+      // custom scheme requests, which arrives as an empty payload.
+      body: await image.arrayBuffer(),
+    });
+    if (!res.ok) {
+      // The handler reports the reason as plain text in the body.
+      const reason = await res.text().catch(() => "");
+      throw new Error(reason || res.statusText || `Upload failed (${res.status})`);
+    }
+    // Cache-buster so a re-upload under the same name shows immediately.
+    return `hkp://board-art/${encodePathSegment(boardName)}?v=${Date.now()}`;
+  },
+
   async fetchHistoryBoards(): Promise<Array<HistoryBoardSummary>> {
     const res = await fetch("hkp://history/");
     if (!res.ok) return [];

@@ -18,6 +18,14 @@ export const browserBackend: BackendAdapter = {
   deleteRemote: async () => {},
   loadStartPageTree: () => startPageStore.load(),
   saveStartPageTree: (tree) => startPageStore.save(tree),
+  // No hkp:// storage in a plain browser — inline the (small) image instead.
+  uploadBoardArt: (_boardName, image) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(image);
+    }),
   fetchHistoryBoards: async () => [],
   pushBoardSnapshot: async () => {},
   loadBoardHistory: async () => [],
