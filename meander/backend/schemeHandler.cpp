@@ -1,5 +1,9 @@
 #include "./schemeHandler.h"
 
+#include <algorithm>
+#include <cctype>
+#include <set>
+
 #include <nlohmann/json.hpp>
 
 #include <crow.h>
@@ -97,6 +101,21 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
       "POST",
       "/startpage",
       std::bind(&SchemeHandler::handleSaveStartPage, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "GET",
+      "/board-art/:board",
+      std::bind(&SchemeHandler::handleGetBoardArt, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "POST",
+      "/board-art/:board",
+      std::bind(&SchemeHandler::handleSaveBoardArt, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "GET",
+      "/local-image/:path",
+      std::bind(&SchemeHandler::handleGetLocalImage, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 void SchemeHandler::addRoute(const Router::Method &method, const std::string &path, Router::Handler handler)
@@ -851,6 +870,159 @@ saucer::scheme::response SchemeHandler::handleSaveStartPage(const Router::Params
 
   std::ofstream file(m_settings.getStartPagePath());
   if (!file.is_open())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Failed to open file for writing"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 500,
+    };
+  }
+  file.write(reinterpret_cast<const char *>(content.data()), content.size());
+
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"ok", true}}.dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+      .status = 201,
+  };
+}
+
+saucer::scheme::response SchemeHandler::handleGetBoardArt(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  auto boardName = p.at("board");
+  if (!Settings::isValidBoardName(boardName))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  const auto path = m_settings.getBoardArtPath(boardName);
+  std::ifstream file(path, std::ios::binary);
+  if (path.empty() || !file.is_open())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Board art not found"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+
+  std::vector<std::uint8_t> bytes(
+      (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+  return saucer::scheme::response{
+      .data = saucer::stash::from(std::move(bytes)),
+      .mime = "image/jpeg",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+// The saucer webview does not open a panel for <input type="file">, so the
+// frontend picks images via the native picker (saucer.exposed.pickFile) and
+// fetches the bytes through this route to downscale them in-canvas. Reading
+// is limited to image extensions; the webview already has arbitrary text
+// reads via the exposed readFile, so this adds no new exposure.
+saucer::scheme::response SchemeHandler::handleGetLocalImage(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  namespace fs = std::filesystem;
+  const auto path = p.at("path");
+
+  std::string extension = fs::path(path).extension().string();
+  std::transform(extension.begin(), extension.end(), extension.begin(),
+                 [](unsigned char c) { return std::tolower(c); });
+  static const std::set<std::string> allowed{
+      ".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".avif"};
+  if (!allowed.contains(extension))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Not an image file"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 415,
+    };
+  }
+
+  std::error_code ec;
+  const auto size = fs::file_size(path, ec);
+  constexpr std::uintmax_t MAX_LOCAL_IMAGE_BYTES = 32ull * 1024 * 1024;
+  if (ec || size == 0 || size > MAX_LOCAL_IMAGE_BYTES)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Image not readable"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+
+  std::ifstream file(path, std::ios::binary);
+  if (!file.is_open())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Image not readable"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+  std::vector<std::uint8_t> bytes(
+      (std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+  return saucer::scheme::response{
+      .data = saucer::stash::from(std::move(bytes)),
+      .mime = "application/octet-stream",
+      .headers = m_defaultHeaders,
+      .status = 200,
+  };
+}
+
+// The uploaded artwork is a small client-side-downscaled JPEG; cap defensively.
+static constexpr std::size_t MAX_BOARD_ART_BYTES = 4 * 1024 * 1024;
+
+saucer::scheme::response SchemeHandler::handleSaveBoardArt(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  auto boardName = p.at("board");
+  if (!Settings::isValidBoardName(boardName))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Invalid board name"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  const auto content = req.content();
+  if (content.size() == 0)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("No image data received"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+  if (content.size() > MAX_BOARD_ART_BYTES)
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str(
+            "Image too large (max " +
+            std::to_string(MAX_BOARD_ART_BYTES / (1024 * 1024)) + " MB)"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 413,
+    };
+  }
+
+  const auto path = m_settings.getBoardArtPath(boardName);
+  std::ofstream file(path, std::ios::binary);
+  if (path.empty() || !file.is_open())
   {
     return saucer::scheme::response{
         .data = saucer::stash::from_str("Failed to open file for writing"),

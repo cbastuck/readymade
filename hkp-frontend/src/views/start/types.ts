@@ -22,9 +22,18 @@ export type PersistedFolder = {
 
 export type PersistedNode = PersistedBoardRef | PersistedFolder;
 
+/** User-chosen artwork for a board; boards without an entry get the
+ *  deterministic name-derived gradient. */
+export type BoardArt =
+  | { kind: "color"; color: string }
+  | { kind: "gradient"; from: string; to: string }
+  | { kind: "image"; url: string };
+
 export type StartPageTree = {
   version: 1;
   items: PersistedNode[];
+  /** Artwork per board name — board-level, not per folder reference. */
+  boardArt?: Record<string, BoardArt>;
 };
 
 // ── View model ────────────────────────────────────────────────────────────────
@@ -95,6 +104,18 @@ export interface NewsItem {
   /** CSS background of the banner. */
   bg: string;
   onAction?: () => void;
+}
+
+// ── Board history ─────────────────────────────────────────────────────────────
+
+/** One saved version of a board, shown in the details column's history list.
+ *  `open` loads that version into the editor. */
+export interface BoardHistoryItem {
+  /** ISO 8601 */
+  timestamp: string;
+  /** e.g. "auto" | "manual" */
+  label?: string;
+  open: () => void;
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────

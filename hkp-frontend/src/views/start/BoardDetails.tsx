@@ -1,17 +1,184 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
-import { artFor, stateMeta } from "./model";
-import { BoardNode } from "./types";
+import { artFor, gradient, stateMeta } from "./model";
+import { BoardArt, BoardHistoryItem, BoardNode } from "./types";
+
+/** Preset swatches for the artwork picker: solids and matching gradients. */
+const ART_COLORS = ["#3b5bff", "#17b877", "#f2a417", "#e0355f", "#5b5b6b"];
+const ART_GRADIENTS: Array<[string, string]> = [
+  ["#3b5bff", "#6a3bff"],
+  ["#17b877", "#0a8a72"],
+  ["#f2a417", "#c76a00"],
+  ["#e0355f", "#a01040"],
+  ["#2fb6c9", "#1f7d9a"],
+];
 
 interface Props {
   board: BoardNode;
   /** Resolved description (host-loaded for saved boards). */
   description?: string;
+  /** Current custom artwork; enables the artwork editor together with
+   *  onChangeArt. */
+  art?: BoardArt;
+  /** Sets (or clears, with null) the board's artwork. */
+  onChangeArt?: (art: BoardArt | null) => void;
+  /** Uploads an image and files it as the board's artwork. */
+  onUploadImage?: (image: Blob) => Promise<void>;
+  /** Host-provided image picker (native file dialog). When set, "Upload
+   *  image…" calls this instead of the hidden <input type="file"> — needed in
+   *  webviews that don't open a panel for file inputs (Meander/saucer). */
+  pickImage?: () => Promise<Blob | null>;
   onOpen?: () => void;
+  /** Loads the board's saved versions; enables the collapsible History
+   *  section. Fetched lazily on first expand. */
+  loadHistory?: () => Promise<BoardHistoryItem[]>;
   /** Unfiles the board from the folder it is selected in. */
   onRemoveFromFolder?: () => void;
   /** Deletes the board entirely; asked to confirm with a second click. */
   onDelete?: () => void;
+}
+
+function formatTimestamp(iso: string): string {
+  const date = new Date(iso);
+  if (isNaN(date.getTime())) {
+    return iso;
+  }
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function HistorySection({
+  loadHistory,
+}: {
+  loadHistory: () => Promise<BoardHistoryItem[]>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  const [items, setItems] = useState<BoardHistoryItem[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  const toggle = () => {
+    const next = !expanded;
+    setExpanded(next);
+    if (next && items === null) {
+      loadHistory()
+        .then(setItems)
+        .catch(() => setFailed(true));
+    }
+  };
+
+  return (
+    <div style={{ width: "100%", flex: "0 0 auto" }}>
+      <button
+        className="st-btn st-btn-ghost"
+        style={{ justifyContent: "center", width: "100%" }}
+        onClick={toggle}
+      >
+        {expanded ? "Close History" : "Open History"}
+        {items !== null && ` (${items.length})`}
+      </button>
+
+      {/* No own scrollbar — the list unfolds into the details panel, which
+          scrolls as a whole. */}
+      {expanded && (
+        <div style={{ marginTop: 8 }}>
+          {failed && (
+            <div style={{ fontSize: 12, color: "#e0355f" }}>
+              Could not load the history.
+            </div>
+          )}
+          {!failed && items === null && (
+            <div style={{ fontSize: 12, color: "#9a9fae" }}>Loading…</div>
+          )}
+          {items !== null && items.length === 0 && (
+            <div style={{ fontSize: 12, color: "#9a9fae" }}>
+              No saved versions yet.
+            </div>
+          )}
+          {items?.map((item, index) => (
+            <div
+              key={`${item.timestamp}-${index}`}
+              className="st-row"
+              style={{ padding: "4px 6px" }}
+              onClick={item.open}
+              title="Open this version"
+            >
+              <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+                <span style={{ fontSize: 12.5, fontWeight: 600 }}>
+                  {formatTimestamp(item.timestamp)}
+                </span>
+                {item.label && (
+                  <span
+                    style={{
+                      marginLeft: 6,
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      color: "#9a9fae",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    {item.label}
+                  </span>
+                )}
+              </div>
+              <button
+                className="st-open"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  item.open();
+                }}
+              >
+                Open
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function artEquals(a: BoardArt | undefined, b: BoardArt): boolean {
+  if (!a || a.kind !== b.kind) {
+    return false;
+  }
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function ArtSwatch({
+  background,
+  selected,
+  title,
+  onClick,
+}: {
+  background: string;
+  selected: boolean;
+  title: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      title={title}
+      onClick={onClick}
+      style={{
+        width: 24,
+        height: 24,
+        borderRadius: 7,
+        background,
+        border: "2px solid #fff",
+        boxShadow: selected
+          ? "0 0 0 2px var(--st-accent)"
+          : "0 0 0 1px #dfe2e9",
+        cursor: "pointer",
+        padding: 0,
+        flex: "0 0 auto",
+      }}
+    />
+  );
 }
 
 /**
@@ -21,12 +188,50 @@ interface Props {
 export default function BoardDetails({
   board,
   description,
+  art,
+  onChangeArt,
+  onUploadImage,
+  pickImage,
   onOpen,
+  loadHistory,
   onRemoveFromFolder,
   onDelete,
 }: Props) {
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meta = stateMeta(board.state);
+
+  const reasonOf = (err: unknown): string =>
+    err instanceof Error && err.message ? err.message : "Please try again.";
+
+  const uploadImage = async (image: Blob | null | undefined) => {
+    if (!image || !onUploadImage) {
+      return;
+    }
+    setUploading(true);
+    setUploadError(null);
+    try {
+      await onUploadImage(image);
+    } catch (err) {
+      setUploadError(reasonOf(err));
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const startImagePick = async () => {
+    if (pickImage) {
+      try {
+        await uploadImage(await pickImage());
+      } catch (err) {
+        setUploadError(reasonOf(err));
+      }
+      return;
+    }
+    fileInputRef.current?.click();
+  };
 
   return (
     <div
@@ -132,6 +337,97 @@ export default function BoardDetails({
           </p>
         )}
 
+        {onChangeArt && (
+          <div style={{ width: "100%", flex: "0 0 auto" }}>
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--st-mut)",
+                marginBottom: 8,
+              }}
+            >
+              Artwork
+            </div>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {ART_COLORS.map((color) => (
+                <ArtSwatch
+                  key={color}
+                  background={color}
+                  title={color}
+                  selected={artEquals(art, { kind: "color", color })}
+                  onClick={() => onChangeArt({ kind: "color", color })}
+                />
+              ))}
+              {ART_GRADIENTS.map(([from, to]) => (
+                <ArtSwatch
+                  key={`${from}-${to}`}
+                  background={gradient(from, to)}
+                  title={`${from} → ${to}`}
+                  selected={artEquals(art, { kind: "gradient", from, to })}
+                  onClick={() => onChangeArt({ kind: "gradient", from, to })}
+                />
+              ))}
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginTop: 10,
+              }}
+            >
+              {onUploadImage && (
+                <>
+                  {!pickImage && (
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        void uploadImage(e.target.files?.[0]);
+                        e.target.value = "";
+                      }}
+                    />
+                  )}
+                  <button
+                    className="st-btn st-btn-ghost"
+                    style={{ fontSize: 12.5, padding: "6px 11px" }}
+                    disabled={uploading}
+                    onClick={() => void startImagePick()}
+                  >
+                    {uploading ? "Uploading…" : "Upload image…"}
+                  </button>
+                </>
+              )}
+              {art && (
+                <button
+                  className="st-btn st-btn-ghost"
+                  style={{ fontSize: 12.5, padding: "6px 11px" }}
+                  onClick={() => onChangeArt(null)}
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+            {uploadError && (
+              <div style={{ marginTop: 6, fontSize: 12, color: "#e0355f" }}>
+                Upload failed — {uploadError}
+              </div>
+            )}
+          </div>
+        )}
+
         <div style={{ flex: "1 1 auto" }} />
 
         <div
@@ -184,6 +480,10 @@ export default function BoardDetails({
               </button>
             ))}
         </div>
+
+        {/* Last on purpose: the unfolded history can get long and scrolls
+            with the whole panel, below the always-reachable actions. */}
+        {loadHistory && <HistorySection loadHistory={loadHistory} />}
       </div>
     </div>
   );

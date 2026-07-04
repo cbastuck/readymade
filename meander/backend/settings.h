@@ -144,6 +144,21 @@ public:
     return (getMeandersDirPath() / "startpage.json").string();
   }
 
+  // Custom board artwork image (JPEG uploaded from the start page), stored
+  // next to the board file.
+  std::string getBoardArtPath(const std::string& boardName) const
+  {
+    namespace fs = std::filesystem;
+    const std::string storageName = encodeBoardNameForStorage(boardName);
+    fs::path artPath = getMeandersDirPath() / (storageName + ".art");
+    fs::path canonical = fs::weakly_canonical(artPath);
+    if (canonical.string().find(m_hkpDirPath.string()) != 0)
+    {
+      return "";
+    }
+    return artPath.string();
+  }
+
   std::string getHistoryPath(const std::string& boardName) const
   {
     namespace fs = std::filesystem;

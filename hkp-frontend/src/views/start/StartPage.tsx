@@ -13,14 +13,17 @@ import {
   isAttentionState,
   removeNode,
   searchBoards,
+  setBoardArt,
   stateMeta,
 } from "./model";
+import { downscaleImage } from "./imageUpload";
 import { buildDemosFolder } from "./demosSource";
 import { useCloudFolder } from "./useCloudSource";
 import { DEFAULT_NEWS } from "./news";
 import { StartPageStore } from "./store";
 import {
   BoardAction,
+  BoardHistoryItem,
   BoardNode,
   BoardState,
   FolderNode,
@@ -62,9 +65,18 @@ export interface StartPageProps {
   onLoadBoard?: () => void;
   /** Resolves the description of a saved board for the details column. */
   describeBoard?: (name: string) => Promise<string | undefined>;
+  /** Lists the saved versions of a board (with an open action each); enables
+   *  the History section in the details column. */
+  listBoardHistory?: (name: string) => Promise<BoardHistoryItem[]>;
   /** Deletes a saved board entirely; enables "Delete board" in the details
    *  column. The board list is refreshed afterwards. */
   onDeleteBoard?: (name: string) => void | Promise<void>;
+  /** Uploads a (already downscaled) board artwork image and returns its URL;
+   *  enables "Upload image…" in the details column's artwork editor. */
+  uploadBoardArt?: (boardName: string, image: Blob) => Promise<string>;
+  /** Native image picker replacing the <input type="file"> flow — required in
+   *  webviews without file-input support (Meander desktop). */
+  pickBoardArtImage?: () => Promise<Blob | null>;
   /** Runtimes surfaced as a source folder (external instances). */
   runtimes?: RuntimeEntry[];
   /** Show the Cloud source (requires AppContext + coordinators). */
@@ -124,7 +136,10 @@ export default function StartPage(props: StartPageProps) {
     onContinueRecent,
     onLoadBoard,
     describeBoard,
+    listBoardHistory,
     onDeleteBoard,
+    uploadBoardArt,
+    pickBoardArtImage,
     runtimes,
     withCloud,
     extraSources,
@@ -439,13 +454,39 @@ export default function StartPage(props: StartPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detail?.board.name, detail?.board.action?.kind, describeBoard]);
 
+  // The artwork editor applies to the user's own (saved) boards only.
+  const detailIsSaved = detail?.board.action?.kind === "saved";
+
   const detailNode = detail ? (
     <BoardDetails
       key={detail.board.name}
       board={detail.board}
       description={detailDescription}
+      art={detailIsSaved ? tree?.boardArt?.[detail.board.name] : undefined}
+      onChangeArt={
+        detailIsSaved && tree
+          ? (art) => updateTree(setBoardArt(tree, detail.board.name, art))
+          : undefined
+      }
+      onUploadImage={
+        detailIsSaved && tree && uploadBoardArt
+          ? async (file) => {
+              const image = await downscaleImage(file);
+              const url = await uploadBoardArt(detail.board.name, image);
+              updateTree(
+                setBoardArt(tree, detail.board.name, { kind: "image", url }),
+              );
+            }
+          : undefined
+      }
+      pickImage={pickBoardArtImage}
       onOpen={
         detail.board.action ? () => onOpen(detail.board.action!) : undefined
+      }
+      loadHistory={
+        detailIsSaved && listBoardHistory
+          ? () => listBoardHistory(detail.board.name)
+          : undefined
       }
       onRemoveFromFolder={
         detail.parentPath && tree
