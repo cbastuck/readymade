@@ -223,6 +223,7 @@ export function buildMyBoardsFolder(
   tree: StartPageTree,
   savedBoards: string[],
   boardStates: Record<string, BoardState> = {},
+  extraFolders: FolderNode[] = [],
 ): FolderNode {
   const saved = new Set(savedBoards);
   const stateFor = (name: string): BoardState => boardStates[name] ?? "saved";
@@ -273,7 +274,9 @@ export function buildMyBoardsFolder(
     type: "folder",
     name: "My Boards",
     userPath: [],
-    children: [...hydrate(tree.items, []), ...loose],
+    // Virtual folders (e.g. the host's cloud "Uploaded" view) come last,
+    // after the user's own hierarchy and the loose saved boards.
+    children: [...hydrate(tree.items, []), ...loose, ...extraFolders],
   };
 }
 

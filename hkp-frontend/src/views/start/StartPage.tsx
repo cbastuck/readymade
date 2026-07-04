@@ -94,6 +94,9 @@ export interface StartPageProps {
   withCloud?: boolean;
   /** Additional host-provided sources appended after the built-in ones. */
   extraSources?: FolderNode[];
+  /** Virtual folders appended inside My Boards, after the user's own
+   *  hierarchy (e.g. an "Uploaded" view of the user's cloud boards). */
+  myBoardsExtraFolders?: FolderNode[];
   /** Demo entries with any of these tags are hidden (e.g. "iOS only"). */
   excludeDemoTags?: string[];
   news?: NewsItem[];
@@ -157,6 +160,7 @@ export default function StartPage(props: StartPageProps) {
     runtimes,
     withCloud,
     extraSources,
+    myBoardsExtraFolders,
     excludeDemoTags,
     news,
     title = "Boards",
@@ -211,7 +215,12 @@ export default function StartPage(props: StartPageProps) {
     const list: TreeNode[] = [];
     list.push(buildDemosFolder({ excludeTags: excludeDemoTags }));
     list.push(
-      buildMyBoardsFolder(tree ?? defaultStartPageTree(), savedBoards, boardStates),
+      buildMyBoardsFolder(
+        tree ?? defaultStartPageTree(),
+        savedBoards,
+        boardStates,
+        myBoardsExtraFolders,
+      ),
     );
     if (withCloud) {
       list.push(cloudFolder);
@@ -243,6 +252,7 @@ export default function StartPage(props: StartPageProps) {
     cloudFolder,
     runtimes,
     extraSources,
+    myBoardsExtraFolders,
   ]);
 
   // ── Row / column view models ────────────────────────────────────────────────
