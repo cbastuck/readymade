@@ -29,6 +29,9 @@ interface Props {
    *  webviews that don't open a panel for file inputs (Meander/saucer). */
   pickImage?: () => Promise<Blob | null>;
   onOpen?: () => void;
+  /** Uploads the board to the user's cloud storage; enables the
+   *  "Upload to cloud" action (hosts pass it for logged-in users only). */
+  onUploadToCloud?: () => Promise<void>;
   /** Loads the board's saved versions; enables the collapsible History
    *  section. Fetched lazily on first expand. */
   loadHistory?: () => Promise<BoardHistoryItem[]>;
@@ -193,6 +196,7 @@ export default function BoardDetails({
   onUploadImage,
   pickImage,
   onOpen,
+  onUploadToCloud,
   loadHistory,
   onRemoveFromFolder,
   onDelete,
@@ -200,6 +204,10 @@ export default function BoardDetails({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [cloudState, setCloudState] = useState<
+    "idle" | "busy" | "done" | "error"
+  >("idle");
+  const [cloudError, setCloudError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meta = stateMeta(board.state);
 
@@ -218,6 +226,21 @@ export default function BoardDetails({
       setUploadError(reasonOf(err));
     } finally {
       setUploading(false);
+    }
+  };
+
+  const uploadToCloud = async () => {
+    if (!onUploadToCloud || cloudState === "busy") {
+      return;
+    }
+    setCloudState("busy");
+    setCloudError(null);
+    try {
+      await onUploadToCloud();
+      setCloudState("done");
+    } catch (err) {
+      setCloudError(reasonOf(err));
+      setCloudState("error");
     }
   };
 
@@ -447,6 +470,33 @@ export default function BoardDetails({
             >
               Open board
             </button>
+          )}
+          {onUploadToCloud && (
+            <>
+              <button
+                className="st-btn st-btn-ghost"
+                style={{ justifyContent: "center" }}
+                disabled={cloudState === "busy"}
+                onClick={() => void uploadToCloud()}
+              >
+                {cloudState === "busy"
+                  ? "Uploading…"
+                  : cloudState === "done"
+                    ? "Uploaded to cloud ✓"
+                    : "Upload to cloud"}
+              </button>
+              {cloudState === "error" && cloudError && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#e0355f",
+                    textAlign: "center",
+                  }}
+                >
+                  Upload failed — {cloudError}
+                </div>
+              )}
+            </>
           )}
           {onRemoveFromFolder && (
             <button
