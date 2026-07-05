@@ -407,7 +407,7 @@ int real_main(int argc, char *argv[])
   webview->embed(saucer::embedded::all());
   webview->serve("/index.html");
 #else
-  webview->set_url("http://localhost:5555");
+  webview->set_url("http://localhost:8555");
 #endif
 
   loop.run();

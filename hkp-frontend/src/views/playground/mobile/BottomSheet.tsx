@@ -8,9 +8,13 @@ type Props = {
   title: string;
   children: ReactNode;
   height?: string;
+  /** Stacking level of the sheet. Content that opens body-portaled popups
+   *  (Radix popover / dropdown, both z-50) needs a value below 50 so the
+   *  popups land above the sheet. */
+  zIndex?: number;
 };
 
-export default function BottomSheet({ open, onClose, title, children, height = "75%" }: Props) {
+export default function BottomSheet({ open, onClose, title, children, height = "75%", zIndex = 100 }: Props) {
   const [visible, setVisible] = useState(false);
   const [animating, setAnimating] = useState(false);
 
@@ -35,7 +39,7 @@ export default function BottomSheet({ open, onClose, title, children, height = "
       style={{
         position: "absolute",
         inset: 0,
-        zIndex: 100,
+        zIndex,
         background: animating ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0)",
         transition: "background 0.3s",
       }}

@@ -21,6 +21,8 @@ type Tab = "board" | "cloud" | "hub";
 
 type MobilePlaygroundInnerProps = {
   suggestedName?: string;
+  /** Navigates back to the host's start page; renders a home button when set. */
+  onHome?: () => void;
 };
 
 // ── Tab bar button ─────────────────────────────────────────────
@@ -75,11 +77,13 @@ function TopBar({
   runtimeCount,
   serviceCount,
   onMenu,
+  onHome,
 }: {
   boardName: string;
   runtimeCount: number;
   serviceCount: number;
   onMenu: () => void;
+  onHome?: () => void;
 }) {
   return (
     <div
@@ -97,6 +101,26 @@ function TopBar({
         flexShrink: 0,
       }}
     >
+      {onHome && (
+        <button
+          onClick={onHome}
+          aria-label="Back to start page"
+          style={{
+            width: 34,
+            height: 34,
+            border: "none",
+            background: "rgba(0,0,0,0.06)",
+            borderRadius: 9,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            flexShrink: 0,
+          }}
+        >
+          <MobileIcon name="chevronLeft" size={17} color={M.textSecondary} />
+        </button>
+      )}
       <div
         style={{
           width: 32,
@@ -149,7 +173,7 @@ function TopBar({
 }
 
 // ── Shell (runs inside the connections provider) ───────────────
-function PlaygroundShell({ suggestedName }: MobilePlaygroundInnerProps) {
+function PlaygroundShell({ suggestedName, onHome }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
   const { runtimeEngines } = useMobileConnections();
   const [tab, setTab] = useState<Tab>("board");
@@ -251,6 +275,7 @@ function PlaygroundShell({ suggestedName }: MobilePlaygroundInnerProps) {
           runtimeCount={rtCount}
           serviceCount={svcCount}
           onMenu={() => setMenuOpen(true)}
+          onHome={onHome}
         />
       )}
 
@@ -330,6 +355,7 @@ function PlaygroundShell({ suggestedName }: MobilePlaygroundInnerProps) {
 // ── Root ───────────────────────────────────────────────────────
 export default function MobilePlaygroundInner({
   suggestedName,
+  onHome,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
 
@@ -340,7 +366,7 @@ export default function MobilePlaygroundInner({
   return (
     <MobileHostContext.Provider value={true}>
       <MobileConnectionsProvider>
-        <PlaygroundShell suggestedName={suggestedName} />
+        <PlaygroundShell suggestedName={suggestedName} onHome={onHome} />
       </MobileConnectionsProvider>
     </MobileHostContext.Provider>
   );

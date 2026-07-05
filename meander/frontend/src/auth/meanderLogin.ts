@@ -12,10 +12,10 @@ import { randomUrlSafe, s256Challenge } from "./pkce";
 // (postMessage → MessageDispatcher), then exchange the code for tokens here.
 // PKCE means this is a public client with no secret, so the token exchange is
 // safe to run in the webview via fetch (the same way auth0-spa-js does).
-const AUTH0_DOMAIN = "hookitapp.eu.auth0.com";
+export const AUTH0_DOMAIN = "hookitapp.eu.auth0.com";
 // Configured as a Native application in Auth0. The id_token's `aud` is this
 // client id, which is what hkp-node verifies against (AUTH0_AUDIENCE).
-const AUTH0_CLIENT_ID = "gpk8IFPKfaOTQUzpDRO7vBajOnB72rkM";
+export const AUTH0_CLIENT_ID = "gpk8IFPKfaOTQUzpDRO7vBajOnB72rkM";
 
 /**
  * Redirect target the native popup intercepts and relays back. Must be listed in

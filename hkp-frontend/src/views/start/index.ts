@@ -1,5 +1,10 @@
 export { default as StartPage } from "./StartPage";
-export type { StartPageProps, RuntimeEntry } from "./StartPage";
+export type {
+  StartPageProps,
+  RuntimeEntry,
+  RemotesController,
+} from "./StartPage";
+export { default as MobileStartPage } from "./mobile/MobileStartPage";
 export type {
   BoardAction,
   BoardArt,
@@ -23,3 +28,5 @@ export {
 } from "./model";
 export { DEFAULT_NEWS } from "./news";
 export { createEmptyBoard } from "./emptyBoard";
+export { useCloudBoardSources } from "./useCloudBoardSources";
+export type { CloudBoardSources } from "./useCloudBoardSources";

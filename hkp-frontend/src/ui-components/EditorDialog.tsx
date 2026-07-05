@@ -3,8 +3,10 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogHeader,
   DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 
 import Editor from "hkp-frontend/src/components/shared/Editor/index";
 
@@ -20,20 +22,6 @@ type Props = {
   autofocus?: boolean;
   children?: ReactNode;
   onClose: () => void;
-};
-
-const btnBase: React.CSSProperties = {
-  padding: "6px 14px",
-  borderRadius: 8,
-  border: "1.5px solid var(--border-mid, #d5d0c8)",
-  background: "none",
-  fontFamily: "'DM Sans', system-ui, sans-serif",
-  fontSize: 12,
-  fontWeight: 500,
-  cursor: "pointer",
-  color: "var(--text-mid, #666)",
-  transition: "background 0.15s, color 0.15s",
-  whiteSpace: "nowrap" as const,
 };
 
 export default function EditorDialog({
@@ -81,69 +69,30 @@ export default function EditorDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onChangeDialogOpen}>
       <DialogContent
-        style={{
-          padding: 0,
-          background: "var(--bg-card, white)",
-          border: "1px solid var(--hkp-border, #e2ddd7)",
-          borderRadius: 16,
-          boxShadow:
-            "0 4px 24px oklch(0.4 0.01 280 / 0.12), 0 1px 4px oklch(0.4 0.01 280 / 0.06)",
-          fontFamily: "'DM Sans', system-ui, sans-serif",
-          width: "80vw",
-          maxWidth: "80vw",
-          height: "80vh",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-        className="sm:max-w-[80%]"
+        className="flex h-[80vh] w-[80vw] max-w-[80vw] flex-col gap-0 overflow-hidden p-0"
         onPointerDownOutside={avoidDefaultDomBehavior}
         onInteractOutside={avoidDefaultDomBehavior}
         additionalHeaderButtons={additionalHeaderButtons}
         aria-describedby={description ? descriptionId : undefined}
       >
-        {/* Header */}
-        <div
-          style={{
-            padding: "13px 60px 0px 16px",
-            borderBottom: "1px solid var(--hkp-border, #e2ddd7)",
-            flexShrink: 0,
-          }}
-        >
-          <DialogTitle
-            style={{
-              fontSize: 13.5,
-              fontWeight: 600,
-              color: "var(--text, #1a1a1a)",
-              letterSpacing: 0,
-              lineHeight: 1.3,
-            }}
-          >
-            {title}
-          </DialogTitle>
+        <DialogHeader className="shrink-0 border-b px-4 py-3 pr-16">
+          <DialogTitle>{title}</DialogTitle>
           {description && (
             <DialogDescription id={descriptionId} className="sr-only">
               {description}
             </DialogDescription>
           )}
-        </div>
+        </DialogHeader>
 
         {/* Optional content slot */}
         {children && (
-          <div
-            style={{
-              padding: "0px 13px",
-              flexShrink: 0,
-              fontSize: 13,
-              color: "var(--text-mid, #666)",
-            }}
-          >
+          <div className="shrink-0 px-4 py-2 text-sm text-muted-foreground">
             {children}
           </div>
         )}
 
         {/* Editor — fills remaining space */}
-        <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+        <div className="min-h-0 flex-1 overflow-hidden">
           <Editor
             ref={editor}
             value={v}
@@ -152,39 +101,17 @@ export default function EditorDialog({
           />
         </div>
 
-        {/* Footer */}
         {actions && actions.length > 0 && (
-          <div
-            style={{
-              padding: "11px 16px",
-              borderTop: "1px solid var(--hkp-border, #e2ddd7)",
-              display: "flex",
-              gap: 6,
-              justifyContent: "flex-end",
-              flexShrink: 0,
-            }}
-          >
+          <div className="flex shrink-0 justify-end gap-2 border-t px-4 py-3">
             {actions.map((action) => (
-              <button
+              <Button
                 key={action.label}
-                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => onButton(action)}
-                style={btnBase}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "var(--hkp-border, #e2ddd7)";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "var(--text, #1a1a1a)";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.background =
-                    "none";
-                  (e.currentTarget as HTMLButtonElement).style.color =
-                    "var(--text-mid, #666)";
-                }}
               >
                 {action.label}
-              </button>
+              </Button>
             ))}
           </div>
         )}

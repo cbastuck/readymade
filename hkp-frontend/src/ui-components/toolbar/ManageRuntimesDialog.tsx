@@ -1,21 +1,13 @@
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
-
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "hkp-frontend/src/ui-components/primitives/popover";
 
 import { RuntimeClass } from "hkp-frontend/src/types";
 
-import NewRuntimePanel from "./NewRuntimePanel";
-import ExistingRuntimesPanel from "./ExistingRuntimesPanel";
-import DiscoverRuntimesPanel from "./DiscoverRuntimesPanel";
-import { Button } from "hkp-frontend/src/ui-components/primitives/button";
-import { useState } from "react";
+import ManageRuntimesContent from "./ManageRuntimesContent";
 
 type Props = {
   remoteRuntimes: Array<RuntimeClass>;
@@ -34,55 +26,24 @@ export default function ManageRuntimesDialog({
   onUpdateRuntimeEngine,
   onClose,
 }: Props) {
-  const [showNewRuntimePanel, setShowNewRuntimePanel] = useState(false);
-  const onAddRuntime = (rt: RuntimeClass) => {
-    onAddRuntimeEngine(rt);
-    setShowNewRuntimePanel(false);
-  };
-
   const onChangeDialogOpen = (newOpen: boolean) => {
     if (!newOpen) {
-      if (showNewRuntimePanel) {
-        setShowNewRuntimePanel(false);
-      } else {
-        onClose();
-      }
+      onClose();
     }
-  };
-
-  const onChangeRuntimeColor = (rt: RuntimeClass, color: string) => {
-    onUpdateRuntimeEngine({ ...rt, color });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onChangeDialogOpen}>
       <DialogContent className="sm:max-w-[825px] h-[80vh] flex flex-col overflow-y-scroll">
-        <h2>Manage runtimes</h2>
-        <ExistingRuntimesPanel
+        <DialogHeader>
+          <DialogTitle>Manage runtimes</DialogTitle>
+        </DialogHeader>
+        <ManageRuntimesContent
           remoteRuntimes={remoteRuntimes}
-          onRemoveRuntime={onRemoveRuntimeEngine}
-          onChangeRuntimeColor={onChangeRuntimeColor}
+          onRemoveRuntimeEngine={onRemoveRuntimeEngine}
+          onAddRuntimeEngine={onAddRuntimeEngine}
+          onUpdateRuntimeEngine={onUpdateRuntimeEngine}
         />
-
-        <DiscoverRuntimesPanel
-          existing={remoteRuntimes}
-          onAdd={onAddRuntimeEngine}
-        />
-
-        <Popover open={showNewRuntimePanel}>
-          <PopoverTrigger asChild>
-            <Button
-              className="text-md tracking-widest"
-              variant="outline"
-              onClick={() => setShowNewRuntimePanel(true)}
-            >
-              Add an external Runtime
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <NewRuntimePanel onAddRuntime={onAddRuntime} />
-          </PopoverContent>
-        </Popover>
       </DialogContent>
     </Dialog>
   );

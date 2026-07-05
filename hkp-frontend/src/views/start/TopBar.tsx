@@ -141,7 +141,7 @@ export default function TopBar({
           </span>{" "}
           Create board
         </button>
-        {menuSlot}
+
         {(initials || onAvatarClick) && (
           <button
             title={avatarTitle}
@@ -168,6 +168,7 @@ export default function TopBar({
             {initials ?? <User size={19} strokeWidth={1.75} />}
           </button>
         )}
+        {menuSlot}
       </div>
     </header>
   );

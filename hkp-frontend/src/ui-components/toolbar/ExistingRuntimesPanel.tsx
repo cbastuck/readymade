@@ -1,23 +1,6 @@
-import { Button } from "hkp-frontend/src/ui-components/primitives/button";
-
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "hkp-frontend/src/ui-components/primitives/table";
-
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "hkp-frontend/src/ui-components/primitives/dropdown-menu";
+import { X } from "lucide-react";
 
 import { RuntimeClass } from "hkp-frontend/src/types";
-import { MoreHorizontal } from "lucide-react";
 import { ColorPicker } from "../ColorPicker";
 
 type Props = {
@@ -32,50 +15,49 @@ export default function ExistingRuntimesPanel({
   onChangeRuntimeColor,
 }: Props) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow className="tracking-widest font-sans text-md">
-          <TableHead className="w-[100px]">Name</TableHead>
-          <TableHead>Url</TableHead>
-          <TableHead>Color</TableHead>
-          <TableHead className="text-right ">Action</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {remoteRuntimes.map((rt, idx) => (
-          <TableRow key={`${rt.name}-${rt.url}-${idx}`}>
-            <TableCell className="font-menu text-md">{rt.name}</TableCell>
-            <TableCell className="font-menu text-md">{rt.url}</TableCell>
-            <TableCell className="font-menu text-md">
-              <ColorPicker
-                showPaletteOnly={true}
-                disabled={rt.url?.startsWith("hkp://remotes/")}
-                onChange={(color) => onChangeRuntimeColor(rt, color)}
-                value={rt.color || "white"}
-              />
-            </TableCell>
-            <TableCell className="text-right">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    disabled={rt.url?.startsWith("hkp://remotes/")}
-                    className="tracking-widest"
-                    onClick={() => onRemoveRuntime(rt)}
-                  >
-                    Remove
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="flex flex-col gap-2 rounded-lg border border-slate-200 p-3">
+      <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+        Registered remotes
+      </span>
+
+      {remoteRuntimes.length === 0 && (
+        <p className="py-1 text-center text-sm italic text-slate-400">
+          No remote runtimes registered yet.
+        </p>
+      )}
+
+      {remoteRuntimes.map((rt, idx) => {
+        const builtIn = rt.url?.startsWith("hkp://remotes/") ?? false;
+        return (
+          <div
+            key={`${rt.name}-${rt.url}-${idx}`}
+            className="flex items-center gap-3 rounded-md border border-slate-200 bg-white px-3 py-2"
+          >
+            <ColorPicker
+              showPaletteOnly={true}
+              disabled={builtIn}
+              onChange={(color) => onChangeRuntimeColor(rt, color)}
+              value={rt.color || "white"}
+              className="h-6 w-6 shrink-0"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold text-slate-800">
+                {rt.name}
+              </div>
+              <div className="truncate text-xs text-slate-500">{rt.url}</div>
+            </div>
+            {!builtIn && (
+              <button
+                onClick={() => onRemoveRuntime(rt)}
+                aria-label={`Remove ${rt.name}`}
+                className="shrink-0 text-slate-400 hover:text-red-600"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }

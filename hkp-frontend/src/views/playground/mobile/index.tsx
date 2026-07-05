@@ -16,7 +16,12 @@ const runtimeApis: RuntimeApiMap = {
   rest: runtimeRestApi,
 };
 
-function MobilePlayground(props: PlaygroundProps) {
+type MobilePlaygroundProps = PlaygroundProps & {
+  /** Navigates back to the host's start page (renders a home button). */
+  onHome?: () => void;
+};
+
+function MobilePlayground(props: MobilePlaygroundProps) {
   const {
     boardProviderRef,
     currentUser,
@@ -58,7 +63,7 @@ function MobilePlayground(props: PlaygroundProps) {
       availableRuntimeEngines={playgroundRuntimeEngines}
       onBoardInfrastructureChange={props.onBoardInfrastructureChange}
     >
-      <MobilePlaygroundInner suggestedName={suggestedName} />
+      <MobilePlaygroundInner suggestedName={suggestedName} onHome={props.onHome} />
     </BoardProvider>
   );
 }

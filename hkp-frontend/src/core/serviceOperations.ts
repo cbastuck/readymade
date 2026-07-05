@@ -4,6 +4,7 @@ import {
   ServiceDescriptor,
   ServiceInstance,
   InstanceId,
+  isRuntimeBrowserClassType,
 } from "../types";
 import { reorderService } from "../views/playground/BoardActions";
 import { BoardStateRefs, getRuntimeScopeApi } from "./boardContextTypes";
@@ -45,6 +46,15 @@ export async function addService(
       prototype,
       prototype.state || prototype,
     );
+  } else if (svc && isRuntimeBrowserClassType(runtime.type)) {
+    // Initialise a freshly inserted browser service with an initial configure,
+    // symmetric with restore (which configures every service on load). Without
+    // it, a service that establishes a side effect in configure() — e.g.
+    // PeerSocket opening its signaling connection — would stay dormant until the
+    // user next changed its configuration. Restore uses a different add path
+    // (BrowserRuntimeApi.restoreRuntime) and configures with the persisted
+    // state, so this does not double-configure restored services.
+    await api.configureService(scope, svc, {});
   }
 
   return svc;

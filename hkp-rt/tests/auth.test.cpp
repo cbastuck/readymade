@@ -218,7 +218,13 @@ TEST_CASE("Tampered signature is rejected", "[auth]")
 {
   auto auth = makeAuthenticator();
   auto token = mintToken({});
-  // Flip the final character of the signature segment.
-  token.back() = (token.back() == 'A') ? 'B' : 'A';
+  // Flip a character at the start of the signature segment. (Flipping the very
+  // last character is unreliable: the RS256 signature is 2048 bits, so the final
+  // base64url character carries only 2 meaningful bits with 4 zero-padding bits,
+  // and a lenient decoder ignores those — the decoded signature would be
+  // unchanged.)
+  const auto sigStart = token.find_last_of('.') + 1;
+  REQUIRE(sigStart < token.size());
+  token[sigStart] = (token[sigStart] == 'A') ? 'B' : 'A';
   CHECK(auth.authorize(bearer(token)).status == AuthStatus::Unauthenticated);
 }

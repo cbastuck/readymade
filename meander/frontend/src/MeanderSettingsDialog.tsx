@@ -15,9 +15,18 @@ import {
 } from "hkp-frontend/src/ui-components/primitives/tabs";
 import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import AppearanceSettings from "hkp-frontend/src/ui-components/AppearanceSettings";
+import ManageRuntimesContent from "hkp-frontend/src/ui-components/toolbar/ManageRuntimesContent";
+import { useBoardContext } from "hkp-frontend/src/BoardContext";
+import {
+  isRuntimeGraphQLClassType,
+  isRuntimeRestClassType,
+  RuntimeClass,
+} from "hkp-frontend/src/types";
+import { isDiscoverySupported } from "hkp-frontend/src/runtime/discovery/DiscoveryApi";
 
 import { getBackend } from "./backend";
 import { RuntimeSettings } from "./backend/types";
+import { useBackendRemotes } from "./useBackendRemotes";
 
 type MeanderConfig = {
   lanIp?: string;
@@ -41,6 +50,8 @@ type Props = {
 };
 
 export default function MeanderSettingsDialog({ open, onOpenChange }: Props) {
+  const canManageRemotes = isDiscoverySupported();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg w-[90vw]">
@@ -51,6 +62,9 @@ export default function MeanderSettingsDialog({ open, onOpenChange }: Props) {
           <TabsList>
             <TabsTrigger value="about">About</TabsTrigger>
             <TabsTrigger value="appearance">Appearance</TabsTrigger>
+            {canManageRemotes && (
+              <TabsTrigger value="remotes">Remotes</TabsTrigger>
+            )}
             <TabsTrigger value="access">Access</TabsTrigger>
           </TabsList>
           <TabsContent value="about">
@@ -59,12 +73,72 @@ export default function MeanderSettingsDialog({ open, onOpenChange }: Props) {
           <TabsContent value="appearance">
             <AppearanceSettings />
           </TabsContent>
+          {canManageRemotes && (
+            <TabsContent value="remotes">
+              <RemotesTab />
+            </TabsContent>
+          )}
           <TabsContent value="access">
             <AccessTab />
           </TabsContent>
         </Tabs>
       </DialogContent>
     </Dialog>
+  );
+}
+
+const isRemoteRuntime = (rt: RuntimeClass) =>
+  isRuntimeGraphQLClassType(rt.type) || isRuntimeRestClassType(rt.type);
+
+function RemotesTab() {
+  // Remote management works anywhere inside the Meander host. On a board it is
+  // backed by the live board context; on the start page (no board) it is backed
+  // directly by the persisted remotes in settings.json. The backend hook
+  // fetches on mount, and the tab mounts when selected, so the list is fresh
+  // each time the tab is opened.
+  const boardContext = useBoardContext();
+  const backendRemotes = useBackendRemotes();
+
+  const persistRemoteRuntimes = (allEngines: RuntimeClass[]) => {
+    localStorage.setItem(
+      "available-remote-runtimes",
+      JSON.stringify(allEngines.filter(isRemoteRuntime)),
+    );
+  };
+
+  let remoteRuntimes: RuntimeClass[];
+  let onAddRuntimeEngine: (desc: RuntimeClass) => void;
+  let onRemoveRuntimeEngine: (desc: RuntimeClass) => void;
+  let onUpdateRuntimeEngine: (desc: RuntimeClass) => void;
+
+  if (boardContext) {
+    // Mirror RuntimeMenu so a runtime added here matches the toolbar's behaviour.
+    remoteRuntimes = (boardContext.availableRuntimeEngines ?? []).filter(
+      isRemoteRuntime,
+    );
+    onAddRuntimeEngine = (desc) =>
+      persistRemoteRuntimes(boardContext.addAvailableRuntime(desc, false) ?? []);
+    onRemoveRuntimeEngine = (desc) =>
+      persistRemoteRuntimes(boardContext.removeAvailableRuntime(desc) ?? []);
+    onUpdateRuntimeEngine = (desc) =>
+      persistRemoteRuntimes(boardContext.addAvailableRuntime(desc, true) ?? []);
+  } else {
+    remoteRuntimes = backendRemotes.runtimes;
+    onAddRuntimeEngine = backendRemotes.onAdd;
+    onRemoveRuntimeEngine = backendRemotes.onRemove;
+    onUpdateRuntimeEngine = backendRemotes.onUpdate;
+  }
+
+  return (
+    <div className="max-h-[60vh] overflow-y-auto pt-2">
+      <ManageRuntimesContent
+        remoteRuntimes={remoteRuntimes}
+        onAddRuntimeEngine={onAddRuntimeEngine}
+        onRemoveRuntimeEngine={onRemoveRuntimeEngine}
+        onUpdateRuntimeEngine={onUpdateRuntimeEngine}
+        inlineNewRuntimePanel
+      />
+    </div>
   );
 }
 

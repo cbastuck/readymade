@@ -1,8 +1,9 @@
-import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
+import { AppInstance, DataEnvelope, ServiceClass } from "hkp-frontend/src/types";
 
 import PeerSocketUI from "./PeerSocketUI";
 import ServiceBase from "./ServiceBase";
 import { needsUpdate } from "hkp-frontend/src/ui-components/service/ServiceUI";
+import PeerConnection, { resolveActivePeerHost } from "./PeerConnection";
 
 const serviceName = "Peer Socket";
 const serviceId = "hookup.to/service/peer-socket";
@@ -19,6 +20,13 @@ type State = {
 };
 
 class PeerSocket extends ServiceBase<State> {
+  // The live peer connection is owned by the service, not its UI, so it stays
+  // alive whether or not the ServiceUI panel is mounted (crucial on mobile,
+  // where panels mount lazily). The connection is established lazily on the
+  // first configure() — never in the constructor — so instantiating the
+  // service (e.g. in tests) never opens a socket.
+  private connection: PeerConnection;
+
   constructor(
     app: AppInstance,
     board: string,
@@ -35,9 +43,47 @@ class PeerSocket extends ServiceBase<State> {
       peerHost: null,
       peerSecure: null,
     });
+
+    this.connection = new PeerConnection({
+      onData: (envelope) => this.handleIncoming(envelope),
+      onError: (err) => this.pushErrorNotification(err.message),
+    });
+
+    // Override ServiceBase's arrow-function property so toggling bypass also
+    // starts/stops the live connection.
+    this.setBypass = (bypass: boolean) => {
+      this.bypass = !!bypass;
+      this.app.notify(this as any, { bypass: this.bypass });
+      this.syncConnection();
+    };
+  }
+
+  // Forward an inbound envelope to the next service, honouring the mode and the
+  // unpack-received-data setting. Send-only sockets ignore inbound data.
+  private handleIncoming(envelope: DataEnvelope) {
+    if (this.state.mode === "Send only") {
+      return;
+    }
+    const data = this.state.extractIncomingData ? envelope?.data : envelope;
+    this.app.next(this, data);
+  }
+
+  // Bring the live connection in line with the current state + bypass. Cheap to
+  // call repeatedly: PeerConnection.connect() is a no-op when nothing changed.
+  private syncConnection() {
+    if (this.bypass) {
+      this.connection.close();
+      return;
+    }
+    this.connection.connect(
+      this.state.peerName,
+      resolveActivePeerHost(this.state),
+    );
   }
 
   configure(config: any) {
+    // Backwards-compatible manual injection path: a caller (e.g. a facade) can
+    // still push inbound data through configure({ incoming }).
     if (config.incoming !== undefined) {
       const data = this.state.extractIncomingData
         ? config.incoming.data
@@ -106,10 +152,21 @@ class PeerSocket extends ServiceBase<State> {
         this.app.notify(this, { peerSecure: this.state.peerSecure });
       }
     }
+
+    // Apply any identity/host/bypass change to the live connection.
+    this.syncConnection();
   }
 
   process(params: any) {
+    // Receive-only sockets never send upstream data on.
+    if (this.state.mode !== "Receive only") {
+      void this.connection.sendData(this.state.targetPeer, params);
+    }
     this.app.notify(this, { data: params });
+  }
+
+  destroy() {
+    this.connection.close();
   }
 }
 
