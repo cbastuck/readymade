@@ -60,7 +60,9 @@
   flex: 0 0 auto;
   opacity: 0;
   transform: translateX(4px);
-  transition: opacity 0.12s, transform 0.12s;
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
 }
 .hkp-start .st-row:hover .st-open {
   opacity: 1;

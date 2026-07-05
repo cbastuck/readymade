@@ -3,13 +3,13 @@ import type { CSSProperties, ReactNode } from "react";
 
 import "./start.css";
 
+import { RuntimeClass } from "hkp-frontend/src/types";
+
 import {
   addBoardRef,
   addFolder,
   artFor,
   attentionCount,
-  buildMyBoardsFolder,
-  defaultStartPageTree,
   isAttentionState,
   removeNode,
   searchBoards,
@@ -17,10 +17,9 @@ import {
   stateMeta,
 } from "./model";
 import { downscaleImage } from "./imageUpload";
-import { buildDemosFolder } from "./demosSource";
-import { useCloudFolder } from "./useCloudSource";
 import { DEFAULT_NEWS } from "./news";
 import { StartPageStore } from "./store";
+import { RuntimeEntry, useStartPageModel } from "./useStartPageModel";
 import {
   BoardAction,
   BoardHistoryItem,
@@ -28,7 +27,6 @@ import {
   BoardState,
   FolderNode,
   NewsItem,
-  StartPageTree,
   TreeNode,
 } from "./types";
 import TopBar from "./TopBar";
@@ -38,9 +36,19 @@ import { ColumnVM } from "./Column";
 import { RowVM } from "./Row";
 import BoardDetails from "./BoardDetails";
 
-export interface RuntimeEntry {
-  name: string;
-  url?: string;
+export type { RuntimeEntry };
+
+/** Host-backed store of remote runtime engines for the manage-remotes UI
+ *  (list / discover / add / remove). Where the entries persist is the host's
+ *  business: Meander keeps them in settings.json, the website in
+ *  localStorage. */
+export interface RemotesController {
+  runtimes: RuntimeClass[];
+  onAdd: (rt: RuntimeClass) => void;
+  onRemove: (rt: RuntimeClass) => void;
+  onUpdate: (rt: RuntimeClass) => void;
+  /** Called right before the manage UI opens; hosts re-read their store. */
+  refresh?: () => void;
 }
 
 export interface StartPageProps {
@@ -90,6 +98,11 @@ export interface StartPageProps {
   pickBoardArtImage?: () => Promise<Blob | null>;
   /** Runtimes surfaced as a source folder (external instances). */
   runtimes?: RuntimeEntry[];
+  /** Remote runtime management (list / discover / add). When set, the mobile
+   *  start page shows a remotes button in the top bar that opens the shared
+   *  manage-remotes UI; desktop hosts surface the same UI via their app menu
+   *  (ManageRuntimesDialog). */
+  manageRemotes?: RemotesController;
   /** Show the Cloud source (requires AppContext + coordinators). */
   withCloud?: boolean;
   /** Additional host-provided sources appended after the built-in ones. */
@@ -173,22 +186,20 @@ export default function StartPage(props: StartPageProps) {
     menuSlot,
   } = props;
 
-  const [tree, setTree] = useState<StartPageTree | null>(null);
-  const [savedBoards, setSavedBoards] = useState<string[]>([]);
   const [selectedNames, setSelectedNames] = useState<string[]>(restoreSelection);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    void store.load().then((loaded) => setTree(loaded ?? defaultStartPageTree()));
-  }, [store]);
-
-  const refreshSavedBoards = useCallback(() => {
-    if (listSavedBoards) {
-      void listSavedBoards().then(setSavedBoards).catch(() => setSavedBoards([]));
-    }
-  }, [listSavedBoards]);
-
-  useEffect(refreshSavedBoards, [refreshSavedBoards]);
+  const { tree, updateTree, roots, savedBoards, refreshSavedBoards } =
+    useStartPageModel({
+      store,
+      listSavedBoards,
+      boardStates,
+      runtimes,
+      withCloud,
+      extraSources,
+      myBoardsExtraFolders,
+      excludeDemoTags,
+    });
 
   const selectAt = useCallback((level: number, name: string) => {
     setSelectedNames((prev) => {
@@ -198,62 +209,6 @@ export default function StartPage(props: StartPageProps) {
       return next;
     });
   }, []);
-
-  const updateTree = useCallback(
-    (next: StartPageTree) => {
-      setTree(next);
-      void store.save(next);
-    },
-    [store],
-  );
-
-  // ── Sources (root folders) ──────────────────────────────────────────────────
-
-  const cloudFolder = useCloudFolder(withCloud === true);
-
-  const roots = useMemo<TreeNode[]>(() => {
-    const list: TreeNode[] = [];
-    list.push(buildDemosFolder({ excludeTags: excludeDemoTags }));
-    list.push(
-      buildMyBoardsFolder(
-        tree ?? defaultStartPageTree(),
-        savedBoards,
-        boardStates,
-        myBoardsExtraFolders,
-      ),
-    );
-    if (withCloud) {
-      list.push(cloudFolder);
-    }
-    if (runtimes && runtimes.length > 0) {
-      list.push({
-        type: "folder",
-        name: "Runtimes",
-        source: true,
-        children: runtimes.map<BoardNode>((rt) => ({
-          type: "board",
-          name: rt.name,
-          state: "runtime",
-          sub: rt.url ?? "Runtime",
-          action: { kind: "runtime", name: rt.name },
-        })),
-      });
-    }
-    for (const source of extraSources ?? []) {
-      list.push(source);
-    }
-    return list;
-  }, [
-    tree,
-    savedBoards,
-    boardStates,
-    excludeDemoTags,
-    withCloud,
-    cloudFolder,
-    runtimes,
-    extraSources,
-    myBoardsExtraFolders,
-  ]);
 
   // ── Row / column view models ────────────────────────────────────────────────
 

@@ -182,7 +182,7 @@ export function getDraggedFiles(ev: DragEvent): Array<File> {
 }
 
 // TODO: read this from settings
-const allowList: Array<URL> = [new URL("http://localhost:5555")];
+const allowList: Array<URL> = [new URL("http://localhost:8555")];
 
 // Important: handle with care
 export function createAuthorizedURL(url: string, user: User | null) {

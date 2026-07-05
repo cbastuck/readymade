@@ -295,13 +295,13 @@ removed — it copied the stale desktop `dist/`, clobbering the fresh build.)
 
 **Order matters:** run `npm run build:ios` **before** the CMake/Xcode build, not
 during it. Vite emits content-hashed filenames and `emptyOutDir` rewrites the
-folder each run; CMake resolves the resource glob at *configure* time, so a
+folder each run; CMake resolves the resource glob at _configure_ time, so a
 frontend build that runs mid-Xcode-build would bundle stale/missing files.
 Running it first lets `CONFIGURE_DEPENDS` re-glob the fresh files on the next
 build. (Automating this as part of the iOS build is a TODO.)
 
 The **simulator** dev flow is unaffected: it uses `DEV_WEBAPP_URL` (the live Vite
-dev server on `:5555`), so the bundled `WebApp` only matters for device/Release.
+dev server on `:8555`), so the bundled `WebApp` only matters for device/Release.
 
 ### Signing & the multicast entitlement (real devices)
 

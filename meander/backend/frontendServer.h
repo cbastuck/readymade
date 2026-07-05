@@ -9,7 +9,7 @@
  *
  * In SAUCER_EMBEDDED builds the content comes from the same compiled-in byte
  * arrays that the webview uses.  In dev builds every request is proxied to the
- * vite dev server at localhost:5555 so the phone sees the same live code as
+ * vite dev server at localhost:8555 so the phone sees the same live code as
  * the desktop.
  *
  * All unrecognised paths fall back to index.html so that client-side routing

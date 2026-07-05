@@ -6,6 +6,7 @@ import {
 } from "hkp-frontend/src/platform/PlatformContext";
 import { getBackend } from "../backend";
 import { meanderLogin } from "../auth/meanderLogin";
+import { iosLogin } from "../auth/iosLogin";
 
 // Capabilities are only wired up when the native saucer APIs are actually present
 // (i.e. running inside the Meander desktop webview, not in a plain browser).
@@ -65,6 +66,8 @@ const capabilities: PlatformCapabilities = isNative
   : isIOS
     ? {
         setRuntimeAllowedUser: setRuntimeAllowedUserIOS,
+        // Native Auth0 login via the ASWebAuthenticationSession bridge.
+        login: iosLogin,
         ...runtimeSettingsCapabilities,
       }
     : {};
