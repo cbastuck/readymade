@@ -55,7 +55,7 @@ export function TextInputRenderer({
         flexDirection: "column",
         gap: 4,
         width: "100%",
-        maxWidth: 360,
+        maxWidth: widget.width !== undefined ? "100%" : 360,
       }}
     >
       {widget.label && (

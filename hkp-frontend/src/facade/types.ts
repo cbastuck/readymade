@@ -45,6 +45,9 @@ export type TextInputWidget = {
   submitLabel?: string;
   secret?: boolean;
   vaultKey?: string;
+  // Overrides the default 360px cap so the field fills its layout slot. Set by
+  // the layout `width` when the input sits in a sized row/column.
+  width?: number | string;
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
 };
@@ -237,10 +240,17 @@ export type LayoutContainer = {
   // overflow. Use this to give justify/align room to work, e.g. vertically
   // centering content inside a panel.
   fill?: boolean;
+  // CSS width of this node (e.g. "80%" or 200). Siblings shrink to fit, so
+  // ratios like 75% / 25% hold even with a gap between them. Combine with a
+  // parent's align:"center" to centre a width-constrained row/column.
+  width?: number | string;
   items: LayoutItem[];
 };
 
-// Widgets may carry an optional grow flag to fill remaining space in their parent.
+// Widgets may carry an optional grow flag to fill remaining space in their
+// parent. To size a widget to a proportion of its parent, wrap it in a
+// container that carries `width` (widget-internal `width`, e.g. on knob or
+// text-input, controls the widget's own drawing, not its layout slot).
 export type LayoutLeaf = FacadeWidget & { grow?: boolean };
 
 export type LayoutItem = LayoutContainer | LayoutLeaf;

@@ -108,6 +108,9 @@ export function LayoutNode({
           flexWrap: item.wrap ? "wrap" : undefined,
           flex: item.fill || item.grow ? 1 : undefined,
           overflow: item.grow ? "hidden" : undefined,
+          ...(item.width !== undefined
+            ? { width: item.width, flexShrink: 1, minWidth: 0 }
+            : {}),
         }}
       >
         {item.items.map((child, i) => (

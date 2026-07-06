@@ -1,0 +1,94 @@
+{
+  "boardName": "P2P Sender",
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "sender",
+        "title": "Send to peer",
+        "layout": {
+          "direction": "column",
+          "padding": 16,
+          "align": "center",
+          "items": [
+            {
+              "direction": "row",
+              "width": "80%",
+              "gap": 12,
+              "align": "flex-start",
+              "justify": "flex-start",
+              "items": [
+                {
+                  "direction": "column",
+                  "width": "75%",
+                  "items": [
+                    {
+                      "type": "text-input",
+                      "width": "100%",
+                      "label": "Message",
+                      "placeholder": "Type something to send…",
+                      "submitLabel": "Send",
+                      "action": {
+                        "serviceUuid": "sender-input-svc",
+                        "configure": { "inject": "$$input" }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "direction": "column",
+                  "width": "25%",
+                  "items": [
+                    {
+                      "type": "text-input",
+                      "width": "100%",
+                      "label": "Receiver name",
+                      "placeholder": "Peer to send to…",
+                      "submitLabel": "Connect",
+                      "action": {
+                        "serviceUuid": "sender-peer-svc",
+                        "configure": { "targetPeer": "$$input" }
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "runtimes": [
+    {
+      "id": "sender-browser",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "sender-browser": [
+      {
+        "uuid": "sender-input-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Injector",
+        "state": { "plainText": true }
+      },
+      {
+        "uuid": "sender-peer-svc",
+        "serviceId": "hookup.to/service/peer-socket",
+        "serviceName": "Peer Socket",
+        "state": {
+          "mode": "Send only",
+          "peerName": "hkp-p2p-sender",
+          "targetPeer": "hkp-p2p-receiver",
+          "extractIncomingData": true,
+          "peerHost": "peerjs.hookitapp.com",
+          "peerPath": "/",
+          "peerSecure": true
+        }
+      }
+    ]
+  }
+}
