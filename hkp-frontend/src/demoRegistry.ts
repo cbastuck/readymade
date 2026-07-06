@@ -13,6 +13,8 @@ import spectralModifierBoard from "../boards/spectral-modifier-board.json";
 import noiseAlertBoard from "../boards/noise-alert-board.json";
 import peerChatBoard from "../boards/peer-chat-board.json";
 import peerChatNodeBoard from "../boards/peer-chat-node-board.json";
+import p2pSenderBoard from "../boards/p2p-sender-demo-board.json";
+import p2pReceiverBoard from "../boards/p2p-receiver-demo-board.json";
 import dropitappBoard from "../boards/dropitapp-board.json";
 import liveLocationBoard from "../boards/live-location-demo-board.json";
 import microphoneSpeakerBoard from "../boards/microphone-speaker-demo-board.json";
@@ -35,6 +37,8 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   "noise-alert": noiseAlertBoard as unknown as BoardDescriptor,
   "peer-chat": peerChatBoard as unknown as BoardDescriptor,
   "peer-chat-with-node": peerChatNodeBoard as unknown as BoardDescriptor,
+  "p2p-sender": p2pSenderBoard as unknown as BoardDescriptor,
+  "p2p-receiver": p2pReceiverBoard as unknown as BoardDescriptor,
   "drop-it-app": dropitappBoard as unknown as BoardDescriptor,
   "live-location": liveLocationBoard as unknown as BoardDescriptor,
   "microphone-speaker": microphoneSpeakerBoard as unknown as BoardDescriptor,

@@ -1,0 +1,65 @@
+{
+  "boardName": "P2P Receiver",
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "receiver",
+        "title": "Received from peer",
+        "layout": {
+          "direction": "column",
+          "gap": 12,
+          "padding": 16,
+          "items": [
+            {
+              "type": "text-input",
+              "label": "Your name",
+              "placeholder": "The name senders will send to…",
+              "submitLabel": "Set name",
+              "action": {
+                "serviceUuid": "receiver-peer-svc",
+                "configure": { "peerName": "$$input" }
+              }
+            },
+            {
+              "type": "message-list",
+              "grow": true,
+              "source": { "serviceUuid": "receiver-monitor-svc" }
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "runtimes": [
+    {
+      "id": "receiver-browser",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false, "minimized": false }
+    }
+  ],
+  "services": {
+    "receiver-browser": [
+      {
+        "uuid": "receiver-peer-svc",
+        "serviceId": "hookup.to/service/peer-socket",
+        "serviceName": "Peer Socket",
+        "state": {
+          "mode": "Receive only",
+          "peerName": "hkp-p2p-receiver",
+          "targetPeer": "hkp-p2p-sender",
+          "extractIncomingData": true,
+          "peerHost": "peerjs.hookitapp.com",
+          "peerPath": "/",
+          "peerSecure": true
+        }
+      },
+      {
+        "uuid": "receiver-monitor-svc",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Monitor"
+      }
+    ]
+  }
+}

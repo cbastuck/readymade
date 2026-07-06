@@ -103,6 +103,22 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["WebRTC", "P2P"],
   },
   {
+    slug: "p2p-sender",
+    label: "P2P Sender",
+    description:
+      "Inject text and push it to a peer over WebRTC — pair it with the P2P Receiver. Edit the board to send other data types.",
+    icon: "📤",
+    tags: ["WebRTC", "P2P"],
+  },
+  {
+    slug: "p2p-receiver",
+    label: "P2P Receiver",
+    description:
+      "Receives whatever the P2P Sender pushes over WebRTC and shows it in a live monitor — no server, no account.",
+    icon: "📥",
+    tags: ["WebRTC", "P2P"],
+  },
+  {
     slug: "drop-it-app",
     label: "Drop It App",
     description:
