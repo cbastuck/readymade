@@ -68,22 +68,25 @@ export const allowedServices = [
   "hookup.to/service/feedback",
 ];
 
-// Services excluded from the iOS (App Store) build. The Dangerous Hacker
+// Services excluded from native mobile app-store builds. The Dangerous Hacker
 // executes arbitrary user/LLM-authored JavaScript via the Function constructor
 // (evilEval in services/base/eval.ts), which App Review guideline 2.5.2
 // disallows. OllamaHackerComposite drives the Dangerous Hacker, so it goes too.
 // The sandboxed "Considered Hacker" (expression-eval) remains available.
-// The native shell sets window.__MEANDER_IOS__ before any page JS runs.
+// The native shells set their platform marker before any page JS runs.
 const iosExcludedServiceIds = new Set<string>([
   "hookup.to/service/hacker/dangerous",
   "hookup.to/service/ollama-hacker",
 ]);
 
 function buildAvailableServices(): Array<ServiceModule> {
-  const isIOS =
+  const isNativeMobile =
     typeof window !== "undefined" &&
-    (window as unknown as { __MEANDER_IOS__?: boolean }).__MEANDER_IOS__ === true;
-  if (!isIOS) {
+    (((window as unknown as { __MEANDER_IOS__?: boolean }).__MEANDER_IOS__ ===
+      true) ||
+      ((window as unknown as { __MEANDER_ANDROID__?: boolean })
+        .__MEANDER_ANDROID__ === true));
+  if (!isNativeMobile) {
     return defaultRegistry;
   }
   return defaultRegistry.filter(

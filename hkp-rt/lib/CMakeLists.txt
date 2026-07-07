@@ -110,8 +110,18 @@ target_link_libraries(${PROJECT_NAME} PUBLIC hkp-rt-deps)
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_20)
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 20 CXX_EXTENSIONS OFF CXX_STANDARD_REQUIRED ON)
 
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID)
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_LINUX" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
+endif()
+
+if(ANDROID)
+  # Android is POSIX/Linux-like: it reuses the getifaddrs + BSD-socket paths, so
+  # define IS_LINUX alongside IS_ANDROID. discoveryPlatformName() checks
+  # IS_ANDROID first and reports "android". No CoreFoundation/frameworks here;
+  # liblog provides __android_log_print for native logging.
+  target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_ANDROID" "IS_LINUX" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)
+  find_library(ANDROID_LOG_LIB log)
+  target_link_libraries(${PROJECT_NAME} PUBLIC ${ANDROID_LOG_LIB})
 endif()
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
   target_compile_definitions(${PROJECT_NAME} PUBLIC "IS_MACOS" ${PLATFORM_DEFINES} CROW_USE_BOOST=1)

@@ -13,7 +13,9 @@ export default function AuthProvider({
   clientId = "gpk8IFPKfaOTQUzpDRO7vBajOnB72rkM",
   redirectUri = `${location.protocol}//${location.host}/authRedirect`,
 }: Props) {
-  const disableAuth = location.href.startsWith("http://192.168.");
+  const disableAuth =
+    location.href.startsWith("http://192.168.") ||
+    location.href.startsWith("http://10.0.");
   if (disableAuth) {
     return children;
   }

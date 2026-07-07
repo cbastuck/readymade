@@ -10,7 +10,9 @@
     "dev": "vite --port 8555",
     "build": "tsc -b && vite build",
     "build:ios": "tsc -b && vite build --config vite.config.ios.ts",
+    "build:android": "tsc -b && vite build --config vite.config.android.ts",
     "update:ios": "npm run build:ios",
+    "update:android": "npm run build:android",
     "lint": "eslint .",
     "preview": "vite preview"
   },

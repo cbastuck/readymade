@@ -7,8 +7,10 @@ import MobileApp from "./MobileApp.tsx";
 import "hkp-frontend/app/globals.css";
 import "hkp-frontend/src/index.css";
 
-const isMeanderIOS = (window as any).__MEANDER_IOS__ === true;
-const Root = isMeanderIOS ? MobileApp : App;
+const isMeanderMobileNative =
+  (window as any).__MEANDER_IOS__ === true ||
+  (window as any).__MEANDER_ANDROID__ === true;
+const Root = isMeanderMobileNative ? MobileApp : App;
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

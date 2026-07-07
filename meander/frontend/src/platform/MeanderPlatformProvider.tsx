@@ -18,14 +18,21 @@ const isNative = !!(
   saucer?.exposed?.pickSavePath && saucer?.exposed?.writeFile
 );
 const isIOS = (window as any).__MEANDER_IOS__ === true;
+const isAndroid = (window as any).__MEANDER_ANDROID__ === true;
 
 // iOS: the embedded runtime is LAN-exposed and enforces Jwt auth with an empty
 // allow-list (locked) until the owner signs in. This pushes the signed-in email
 // to the native runtime (via a WKScriptMessageHandler) so it admits the owner's
 // other devices; sending null on logout re-locks it.
-const setRuntimeAllowedUserIOS = (email: string | null) => {
-  const handler = (window as any).webkit?.messageHandlers?.hkpRuntimeAuth;
-  handler?.postMessage({ email: email ?? null });
+const setRuntimeAllowedUserNative = (email: string | null) => {
+  const payload = { email: email ?? null };
+  const nativeHandler = (window as any).hkpRuntimeAuth;
+  if (nativeHandler?.postMessage) {
+    nativeHandler.postMessage(payload);
+    return;
+  }
+  const webkitHandler = (window as any).webkit?.messageHandlers?.hkpRuntimeAuth;
+  webkitHandler?.postMessage(payload);
 };
 
 // Runtime-access settings (exposure + allow-list) flow through the backend's
@@ -77,10 +84,11 @@ const capabilities: PlatformCapabilities = isNative
       login: meanderLogin,
       ...runtimeSettingsCapabilities,
     }
-  : isIOS
+  : isIOS || isAndroid
     ? {
-        setRuntimeAllowedUser: setRuntimeAllowedUserIOS,
-        // Native Auth0 login via the ASWebAuthenticationSession bridge.
+        setRuntimeAllowedUser: setRuntimeAllowedUserNative,
+        // Native Auth0 login via ASWebAuthenticationSession on iOS and browser
+        // redirect capture on Android.
         login: iosLogin,
         ...runtimeSettingsCapabilities,
       }
