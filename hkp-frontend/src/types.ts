@@ -1,6 +1,7 @@
 import { Component, FunctionComponent, ReactElement, ReactNode } from "react";
 import PeerJs, { DataConnection } from "peerjs";
 import { BoardContextState, EngineState } from "./BoardContext";
+import type { RuntimeTokenRequest } from "./platform/PlatformContext";
 
 export type InstanceId = {
   uuid: string;
@@ -235,6 +236,11 @@ export type AppImpl = {
   configureServiceInRuntime?: (runtimeId: string, serviceUuid: string, config: any) => Promise<void>;
   getRuntimeVariable: () => Record<string, any>;
   setRuntimeVariable: (key: string, value: any) => void;
+  // Mints a short-lived capability token from the host's embedded runtime,
+  // scoped to the requested action (e.g. processing a runtime). The host maps
+  // the action to the REST request it authorizes; callers express intent, not
+  // REST details. Provided by the host platform; absent on plain web.
+  mintToken?: (request: RuntimeTokenRequest) => Promise<string | null>;
 };
 
 export type CustomMenuEntry = {

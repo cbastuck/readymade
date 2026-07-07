@@ -97,6 +97,11 @@
         }
       },
       {
+        "uuid": "upload-token-injector-svc",
+        "serviceId": "hookup.to/service/http-uploader-token-injector",
+        "serviceName": "HTTP Uploader Token Injector"
+      },
+      {
         "uuid": "lz-compress-svc",
         "serviceId": "hookup.to/service/lz-compress",
         "serviceName": "LZ Compress"

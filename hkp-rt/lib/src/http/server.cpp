@@ -1,6 +1,7 @@
 #include "server.h"
 
 #include <algorithm>
+#include <chrono>
 #include <map>
 #include <mutex>
 #include <set>
@@ -32,11 +33,25 @@ struct WsConnState
 // Crow middleware that gates every route on the runtime's Authenticator.
 // In no-auth mode (loopback bind) it is a pass-through. CORS preflight
 // (OPTIONS) requests carry no Authorization header and must never be gated.
+// Extracts the token from an "Authorization: Bearer <token>" header value.
+// Returns empty when the header is missing or not a bearer credential.
+inline std::string bearerToken(const std::string& header)
+{
+  constexpr const char* prefix = "Bearer ";
+  constexpr size_t prefixLen = 7;
+  if (header.size() <= prefixLen || header.compare(0, prefixLen, prefix) != 0)
+  {
+    return "";
+  }
+  return header.substr(prefixLen);
+}
+
 struct AuthMiddleware
 {
   struct context {};
 
   Authenticator* authenticator = nullptr;
+  CapabilityStore* capabilities = nullptr;
   std::string allowedOrigins = "*";
 
   void before_handle(crow::request& req, crow::response& res, context&)
@@ -66,6 +81,17 @@ struct AuthMiddleware
     {
       return;
     }
+    // Scoped capability tokens are checked before JWT, exactly like an opaque
+    // token — but bound to a single method+path. For example, a phone that
+    // scanned a freshly minted QR can POST to its one upload runtime and nothing
+    // else; a token presented for any other route (or to mint more tokens) fails
+    // the scope match here and falls through to the JWT path, which denies it.
+    if (capabilities &&
+        capabilities->authorize(bearerToken(req.get_header_value("Authorization")),
+                                 crow::method_name(req.method), req.url))
+    {
+      return;
+    }
     const auto result = authenticator->authorize(req.get_header_value("Authorization"));
     if (result.status == AuthStatus::Ok)
     {
@@ -87,7 +113,9 @@ struct JsonResponse : crow::response
       : crow::response{_body.dump()}
   {
     add_header("Access-Control-Allow-Origin", allowedOrigins);
-    add_header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    add_header("Access-Control-Allow-Headers",
+               "Content-Type, Authorization, Content-Disposition, "
+               "X-Upload-Id, X-Chunk-Index, X-Total-Chunks");
     add_header("Content-Type", "application/json");
   }
 };
@@ -115,10 +143,13 @@ struct Server::impl
   void setupRoutes(const std::string& allowedOrigins)
   {
     auto& cors = crow.get_middleware<crow::CORSHandler>();
-    cors.global().origin(allowedOrigins).headers("Content-Type", "Authorization");
+    cors.global().origin(allowedOrigins).headers(
+        "Content-Type", "Authorization", "Content-Disposition",
+        "X-Upload-Id", "X-Chunk-Index", "X-Total-Chunks");
 
     auto& authMiddleware = crow.get_middleware<AuthMiddleware>();
     authMiddleware.authenticator = authenticator.get();
+    authMiddleware.capabilities = &capabilities;
     authMiddleware.allowedOrigins = allowedOrigins;
 
     CROW_ROUTE(crow, "/runtimes")
@@ -290,6 +321,7 @@ struct Server::impl
   std::string bindAddress;
   std::string instanceId = generateUUID();
   std::unique_ptr<Authenticator> authenticator;
+  CapabilityStore capabilities;
   DiscoveryManager discovery;
 
   // runtimeId → live notification connections. Guarded by wsMutex because it is
@@ -831,6 +863,19 @@ void Server::sendNotification(const std::string& runtimeId, const std::string& f
 void Server::setAllowedUsers(const std::vector<std::string>& emails)
 {
   m_impl->authenticator->setAllowedEmails(emails);
+}
+
+std::string Server::mintProcessRuntimeGrant(const std::string& runtimeId, std::chrono::seconds ttl)
+{
+  // Only mint for a runtime that actually exists in this process, so a token can
+  // never be scoped to a phantom endpoint.
+  if (runtimeId.empty() || !m_impl->app->getRuntime(runtimeId))
+  {
+    std::cerr << "[auth] refusing to mint process-runtime grant for unknown or empty runtime '"
+              << runtimeId << "'" << std::endl;
+    return "";
+  }
+  return m_impl->capabilities.mintProcessRuntimeGrant(runtimeId, ttl);
 }
 
 }

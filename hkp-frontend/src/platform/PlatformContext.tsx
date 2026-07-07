@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, useContext, ReactNode } from "react";
 
 // Runtime-access settings the host persists (exposure + allow-list). Changes
 // take effect on the host's next start.
@@ -6,6 +6,18 @@ export type RuntimeAccessSettings = {
   allowExternalRuntimeAccess: boolean;
   allowedUsers: string[];
 };
+
+/**
+ * A request for a scoped capability token, expressed as the semantic action the
+ * caller wants to authorize on the host's embedded runtime. The host maps each
+ * action to the concrete REST request shape (method + path) the token is scoped
+ * to, so callers express intent and never encode REST details themselves.
+ *
+ * Extend this union as more out-of-band capabilities are needed (e.g. adding or
+ * removing a service on a runtime); each new action stays a localized change to
+ * the host's translation and its transport.
+ */
+export type RuntimeTokenRequest = { action: "processRuntime"; runtimeId: string };
 
 export interface PlatformCapabilities {
   saveRuntimeToDisk?: (json: string, filename: string) => Promise<void>;
@@ -38,12 +50,49 @@ export interface PlatformCapabilities {
   setRuntimeSettings?: (
     patch: Partial<RuntimeAccessSettings>,
   ) => Promise<RuntimeAccessSettings>;
+  /**
+   * Mints a short-lived capability token from the host's embedded runtime,
+   * scoped to the requested action (see RuntimeTokenRequest). Handed to an
+   * out-of-band device (e.g. a phone via a QR code) so it can perform just that
+   * one action without a user session. Resolves to null if the host can't mint
+   * (unknown runtime, no embedded runtime). Absent on the plain web platform.
+   */
+  mintToken?: (request: RuntimeTokenRequest) => Promise<string | null>;
 }
 
 const PlatformContext = createContext<PlatformCapabilities>({});
 
-export const PlatformProvider = PlatformContext.Provider;
+// Module-level mirror of the active capabilities, so non-React code (e.g. a
+// browser runtime service that runs during board load) can reach host
+// capabilities that otherwise only live in React context. Set during
+// PlatformProvider's render — i.e. at the app root, before any board mounts or
+// processes — which avoids the timing races of wiring capabilities onto a
+// per-runtime scope from a UI component's render.
+let activeCapabilities: PlatformCapabilities = {};
+
+export function PlatformProvider({
+  value,
+  children,
+}: {
+  value: PlatformCapabilities;
+  children: ReactNode;
+}) {
+  activeCapabilities = value;
+  return (
+    <PlatformContext.Provider value={value}>{children}</PlatformContext.Provider>
+  );
+}
 
 export function usePlatform(): PlatformCapabilities {
   return useContext(PlatformContext);
+}
+
+// Non-React accessor for the host's token minter. Resolves to null when no host
+// capability is present (plain web), mirroring PlatformCapabilities.mintToken.
+export function mintTokenViaPlatform(
+  request: RuntimeTokenRequest,
+): Promise<string | null> {
+  return activeCapabilities.mintToken
+    ? activeCapabilities.mintToken(request)
+    : Promise.resolve(null);
 }

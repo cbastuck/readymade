@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -106,6 +107,57 @@ public:
   // key. Useful for offline key pinning and for deterministic, network-free
   // tests. Safe to call before serving.
   void pinSigningKey(const std::string& iss, const std::string& kid, const std::string& pem);
+
+private:
+  struct Impl;
+  std::unique_ptr<Impl> m_impl;
+};
+
+// A short-lived, scoped capability grant. Possession of the token authorizes
+// exactly one request shape — a specific HTTP method + path (a runtime's
+// process endpoint) — until it expires, and nothing else.
+//
+// The point is least privilege for out-of-band devices: a trusted caller (the
+// host's own owner UI) mints a grant and hands the token to an unauthenticated
+// device through a side channel (a QR code). That device can process one
+// runtime without a user session, but a leaked or sniffed token cannot drive
+// the wider API — it is bound to a single method + path, so it is deliberately
+// NOT routed through the (unscoped) OpaqueTokenResolver, which would resolve to
+// a full principal.
+//
+// The middleware checks this BEFORE JWT verification. Grants are reusable
+// within their TTL (a chunked upload issues many POSTs); confidentiality on the
+// wire and short lifetimes — not single use — bound the exposure.
+class CapabilityStore
+{
+public:
+  CapabilityStore();
+  ~CapabilityStore();
+
+  CapabilityStore(const CapabilityStore&) = delete;
+  CapabilityStore& operator=(const CapabilityStore&) = delete;
+
+  // Mints a token authorizing exactly one request shape — `method path` — for
+  // `ttl` (clamped to a sane maximum). Returns the raw token — the only point
+  // at which it exists in cleartext server-side; only its SHA-256 digest is
+  // retained. Returns an empty string if either argument is empty or secure
+  // randomness is unavailable.
+  std::string mintGrant(const std::string& method, const std::string& path,
+                        std::chrono::seconds ttl);
+
+  // Convenience wrapper for the process-runtime endpoint: mints a grant scoped
+  // to `POST /runtimes/<runtimeId>`. Returns "" if `runtimeId` is empty. Add
+  // sibling wrappers as more scoped capabilities are needed.
+  std::string mintProcessRuntimeGrant(const std::string& runtimeId,
+                                      std::chrono::seconds ttl);
+
+  // True iff `token` is an unexpired grant whose scope matches this exact
+  // method + path. Expired grants are pruned opportunistically.
+  bool authorize(const std::string& token, const std::string& method,
+                 const std::string& path) const;
+
+  // Revokes every outstanding grant (e.g. a "stop sharing" action).
+  void clear();
 
 private:
   struct Impl;

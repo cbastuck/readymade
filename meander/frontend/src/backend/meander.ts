@@ -89,6 +89,21 @@ export const meanderBackend: BackendAdapter = {
     return res.json();
   },
 
+  async mintProcessRuntimeToken(runtimeId: string): Promise<string | null> {
+    // The hkp:// scheme reaches the embedded runtime in-process; being able to
+    // call it is itself the authorization (same trust as loopback).
+    const res = await fetch("hkp://mint-token/process-runtime", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ runtimeId }),
+    });
+    if (!res.ok) {
+      return null;
+    }
+    const body = await res.json();
+    return typeof body.token === "string" ? body.token : null;
+  },
+
   async loadStartPageTree(): Promise<StartPageTree | null> {
     const res = await fetch("hkp://startpage");
     if (!res.ok) return null;
@@ -120,7 +135,9 @@ export const meanderBackend: BackendAdapter = {
     if (!res.ok) {
       // The handler reports the reason as plain text in the body.
       const reason = await res.text().catch(() => "");
-      throw new Error(reason || res.statusText || `Upload failed (${res.status})`);
+      throw new Error(
+        reason || res.statusText || `Upload failed (${res.status})`,
+      );
     }
     // Cache-buster so a re-upload under the same name shows immediately.
     return `hkp://board-art/${encodePathSegment(boardName)}?v=${Date.now()}`;

@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <iostream>
 #include <set>
 
 #include <nlohmann/json.hpp>
@@ -91,6 +92,11 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
       "POST",
       "/settings",
       std::bind(&SchemeHandler::handleSaveSettings, this, std::placeholders::_1, std::placeholders::_2));
+
+  m_router.register_route(
+      "POST",
+      "/mint-token/process-runtime",
+      std::bind(&SchemeHandler::handleMintProcessRuntimeToken, this, std::placeholders::_1, std::placeholders::_2));
 
   m_router.register_route(
       "GET",
@@ -1096,6 +1102,56 @@ saucer::scheme::response SchemeHandler::handleSaveSettings(const Router::Params 
 
   return saucer::scheme::response{
       .data = saucer::stash::from_str(currentRuntimeSettings().dump()),
+      .mime = "application/json",
+      .headers = m_defaultHeaders,
+  };
+}
+
+// Mints a scoped capability token for the embedded runtime. Reachable only
+// through the hkp:// scheme — i.e. from this app's own webview — so being able
+// to call it is itself the authorization (same trust as loopback). The minted
+// token authorizes POST /runtimes/<runtimeId> and nothing else; it is handed to
+// an out-of-band device (a phone) via a QR code.
+saucer::scheme::response SchemeHandler::handleMintProcessRuntimeToken(const Router::Params &p, const saucer::scheme::request &req) const
+{
+  const auto content = req.content();
+  json payload;
+  try
+  {
+    payload = json::parse(
+        std::string(reinterpret_cast<const char *>(content.data()), content.size()));
+  }
+  catch (...)
+  {
+    payload = json();
+  }
+
+  const auto runtimeId = payload.is_object() ? payload.value("runtimeId", std::string{}) : std::string{};
+  if (runtimeId.empty())
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Missing runtimeId"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 400,
+    };
+  }
+
+  const std::string token = m_server->mintProcessRuntimeGrant(runtimeId);
+  if (token.empty())
+  {
+    std::cerr << "[mint-token/process-runtime] mint failed for runtime='" << runtimeId
+              << "' (unknown runtime or no randomness)" << std::endl;
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str("Unknown runtime or unavailable"),
+        .mime = "text/plain",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+
+  return saucer::scheme::response{
+      .data = saucer::stash::from_str(json{{"token", token}}.dump()),
       .mime = "application/json",
       .headers = m_defaultHeaders,
   };

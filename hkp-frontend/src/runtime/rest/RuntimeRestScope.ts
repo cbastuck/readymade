@@ -137,7 +137,13 @@ export default class RuntimeRestScope implements RuntimeScope {
     context: ProcessContext | null,
     type: "processRuntime" | "resolveResult",
   ): boolean {
-    if (!this.runtimeOutput) {
+    // Only an OPEN socket can be sent on — calling send() while it is still
+    // CONNECTING (or CLOSING/CLOSED) throws InvalidStateError. Treating a
+    // not-yet-open socket like a missing one makes the caller fall back to a
+    // REST POST, so the message is still delivered. This matters when a result
+    // is produced before the runtime's output WS has finished connecting (e.g.
+    // an async service emits during board load).
+    if (!this.runtimeOutput || this.runtimeOutput.readyState !== WebSocket.OPEN) {
       return false;
     }
     if (isData(params)) {

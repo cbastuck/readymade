@@ -77,7 +77,7 @@ struct FrontendServer::Impl
   // are not forwarded (phones don't need HMR); plain HTTP assets are enough.
 
   static constexpr const char* DEV_HOST = "localhost";
-  static constexpr const char* DEV_PORT = "5555";
+  static constexpr const char* DEV_PORT = "8555";
 
   void init() {} // nothing to pre-load
 

@@ -77,6 +77,7 @@ import AudioEditor from "../services/AudioEditor";
 import QrCodeDescriptor from "../services/QrCode";
 import ImagePickerDescriptor from "../services/ImagePicker";
 import HTTPUploaderDescriptor from "../services/HTTPUploader";
+import HttpUploaderTokenInjectorDescriptor from "../services/HttpUploaderTokenInjector";
 import BrowserSubServiceDescriptor from "../services/BrowserSubService";
 import LZCompressDescriptor from "../services/LZCompress";
 import MicrophoneMonitorDescriptor from "../services/MicrophoneMonitor";
@@ -183,6 +184,7 @@ export const defaultRegistry: Array<ServiceModule> = [
   QrCodeDescriptor,
   ImagePickerDescriptor,
   HTTPUploaderDescriptor,
+  HttpUploaderTokenInjectorDescriptor,
   BrowserSubServiceDescriptor,
   LZCompressDescriptor,
 

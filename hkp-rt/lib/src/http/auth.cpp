@@ -2,10 +2,15 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <iostream>
+#include <iterator>
 #include <map>
 #include <mutex>
 #include <set>
+
+#include <openssl/rand.h>
+#include <openssl/sha.h>
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -22,6 +27,7 @@
 #endif
 #include <jwt-cpp/traits/nlohmann-json/traits.h>
 
+#include "../common/string_util.h"
 #include "../services/root_certificates.h"
 
 namespace
@@ -439,6 +445,119 @@ AuthResult Authenticator::authorize(const std::string& authorizationHeader) cons
   principal.sub = readStringClaim(decoded, "sub");
   principal.iss = issuer->iss;
   return {AuthStatus::Ok, std::move(principal)};
+}
+
+namespace
+{
+// Upper bound on a grant's lifetime. A short out-of-band transfer needs only
+// minutes (for example, handing a QR-scanned token to a phone); capping here
+// means a caller that asks for a longer TTL still gets a short-lived token, so
+// a leaked token self-expires quickly.
+constexpr std::chrono::seconds kMaxGrantTtl{15 * 60};
+
+// SHA-256 of the token, hex-encoded. We store this rather than the raw token so
+// the server never keeps the cleartext secret at rest.
+std::string sha256Hex(const std::string& input)
+{
+  unsigned char digest[SHA256_DIGEST_LENGTH];
+  SHA256(reinterpret_cast<const unsigned char*>(input.data()), input.size(), digest);
+  return toHex(digest, sizeof(digest));
+}
+}  // namespace
+
+struct CapabilityStore::Impl
+{
+  struct Grant
+  {
+    std::string method;  // e.g. "POST"
+    std::string path;    // e.g. "/runtimes/upload-server"
+    std::chrono::steady_clock::time_point expiry;
+  };
+
+  std::mutex mutex;
+  std::map<std::string, Grant> grants;  // key: sha256Hex(token)
+
+  void pruneExpiredLocked(std::chrono::steady_clock::time_point now)
+  {
+    for (auto it = grants.begin(); it != grants.end();)
+    {
+      it = (it->second.expiry <= now) ? grants.erase(it) : std::next(it);
+    }
+  }
+};
+
+CapabilityStore::CapabilityStore() : m_impl(std::make_unique<Impl>()) {}
+CapabilityStore::~CapabilityStore() = default;
+
+std::string CapabilityStore::mintGrant(const std::string& method,
+                                       const std::string& path,
+                                       std::chrono::seconds ttl)
+{
+  if (method.empty() || path.empty())
+  {
+    return "";
+  }
+
+  // 256 bits of CSPRNG output → unguessable bearer token.
+  unsigned char raw[32];
+  if (RAND_bytes(raw, sizeof(raw)) != 1)
+  {
+    std::cerr << "[auth] RAND_bytes failed; refusing to mint capability token" << std::endl;
+    return "";
+  }
+  const std::string token = toHex(raw, sizeof(raw));
+
+  const auto requested = ttl < std::chrono::seconds{0} ? std::chrono::seconds{0} : ttl;
+  const auto clamped = std::min(requested, kMaxGrantTtl);
+
+  Impl::Grant grant;
+  grant.method = method;
+  grant.path = path;
+  grant.expiry = std::chrono::steady_clock::now() + clamped;
+
+  std::lock_guard<std::mutex> lock(m_impl->mutex);
+  m_impl->pruneExpiredLocked(std::chrono::steady_clock::now());
+  m_impl->grants[sha256Hex(token)] = std::move(grant);
+  return token;
+}
+
+std::string CapabilityStore::mintProcessRuntimeGrant(const std::string& runtimeId,
+                                                     std::chrono::seconds ttl)
+{
+  if (runtimeId.empty())
+  {
+    return "";
+  }
+  return mintGrant("POST", "/runtimes/" + runtimeId, ttl);
+}
+
+bool CapabilityStore::authorize(const std::string& token, const std::string& method,
+                                const std::string& path) const
+{
+  if (token.empty())
+  {
+    return false;
+  }
+
+  const auto now = std::chrono::steady_clock::now();
+  const std::string key = sha256Hex(token);
+
+  std::lock_guard<std::mutex> lock(m_impl->mutex);
+  m_impl->pruneExpiredLocked(now);
+
+  const auto it = m_impl->grants.find(key);
+  if (it == m_impl->grants.end())
+  {
+    return false;
+  }
+  const auto& grant = it->second;
+  return grant.expiry > now && grant.method == method && grant.path == path;
+}
+
+void CapabilityStore::clear()
+{
+  std::lock_guard<std::mutex> lock(m_impl->mutex);
+  m_impl->grants.clear();
 }
 
 }  // namespace hkp

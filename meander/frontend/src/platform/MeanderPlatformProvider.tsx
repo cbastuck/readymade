@@ -3,6 +3,7 @@ import {
   PlatformCapabilities,
   PlatformProvider,
   RuntimeAccessSettings,
+  RuntimeTokenRequest,
 } from "hkp-frontend/src/platform/PlatformContext";
 import { getBackend } from "../backend";
 import { meanderLogin } from "../auth/meanderLogin";
@@ -46,6 +47,19 @@ const runtimeSettingsCapabilities: Partial<PlatformCapabilities> = {
       backend.setRuntimeSettings?.(patch) ??
       Promise.resolve({ allowExternalRuntimeAccess: false, allowedUsers: [] })
     );
+  },
+  // Mints a scoped capability token from the embedded runtime via the hkp://
+  // scheme (in-process, owner-only). Handed to an out-of-band device by a QR.
+  // The semantic action is translated to its backend transport here; add a
+  // case as new mint-token actions are introduced.
+  mintToken: async (request: RuntimeTokenRequest): Promise<string | null> => {
+    const backend = await getBackend();
+    switch (request.action) {
+      case "processRuntime":
+        return (await backend.mintProcessRuntimeToken?.(request.runtimeId)) ?? null;
+      default:
+        return null;
+    }
   },
 };
 
