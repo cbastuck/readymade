@@ -327,11 +327,55 @@ const char* discoveryPlatformName()
   return "macos";
 #elif defined(IS_WINDOWS)
   return "windows";
+#elif defined(IS_ANDROID)
+  // Checked before IS_LINUX: the Android build defines both (it reuses the
+  // POSIX/Linux socket + getifaddrs paths) but should report as "android".
+  return "android";
 #elif defined(IS_LINUX)
   return "linux";
 #else
   return "unknown";
 #endif
+}
+
+namespace
+{
+// Process-wide platform hooks (see setDiscoveryPlatformHooks). Guarded by a
+// mutex because start()/setter may race with the discover thread.
+std::mutex g_discoveryHooksMutex;
+DiscoveryPlatformHooks g_discoveryHooks;
+
+void invokeDiscoveryWindowStart()
+{
+  std::function<void()> fn;
+  {
+    std::lock_guard<std::mutex> lock(g_discoveryHooksMutex);
+    fn = g_discoveryHooks.onWindowStart;
+  }
+  if (fn)
+  {
+    fn();
+  }
+}
+
+void invokeDiscoveryWindowStop()
+{
+  std::function<void()> fn;
+  {
+    std::lock_guard<std::mutex> lock(g_discoveryHooksMutex);
+    fn = g_discoveryHooks.onWindowStop;
+  }
+  if (fn)
+  {
+    fn();
+  }
+}
+} // namespace
+
+void setDiscoveryPlatformHooks(DiscoveryPlatformHooks hooks)
+{
+  std::lock_guard<std::mutex> lock(g_discoveryHooksMutex);
+  g_discoveryHooks = std::move(hooks);
 }
 
 std::string discoveryDeviceName()
@@ -467,6 +511,10 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
 #endif
     return;
   }
+
+  // Sockets are open; notify the platform (Android acquires its multicast lock
+  // here). Paired with invokeDiscoveryWindowStop() at the end of the window.
+  invokeDiscoveryWindowStart();
 
   // Join the multicast group on every interface so the responder socket receives
   // announcements/queries regardless of which adapter they arrive on (an
@@ -644,6 +692,11 @@ void DiscoveryManager::run(Identity self, bool advertise, int durationSeconds)
   {
     mdns_socket_close(querySock);
   }
+
+  // Window closed: release any platform resources acquired at window start
+  // (Android releases its multicast lock here).
+  invokeDiscoveryWindowStop();
+
   m_active.store(false);
   m_endsAtMs.store(0);
 #ifdef _WIN32

@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <mutex>
 #include <string>
@@ -9,6 +10,8 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
+
+#include <discovery_hooks.h>
 
 namespace hkp
 {
@@ -32,6 +35,10 @@ const char* discoveryPlatformName();
 // A friendly name for this machine (hostname / computer name), used as the
 // default display name a peer shows for this instance.
 std::string discoveryDeviceName();
+
+// DiscoveryPlatformHooks + setDiscoveryPlatformHooks are declared in the public
+// header <discovery_hooks.h> (included above) so host layers can register hooks
+// without depending on this private header. They are used by run() below.
 
 // Transient, symmetric LAN discovery over mDNS.
 //

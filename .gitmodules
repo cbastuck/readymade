@@ -13,3 +13,6 @@
 [submodule "meander-ios"]
 	path = meander-ios
 	url = ssh://git@codeberg.org/cbastuck/meander-ios.git
+[submodule "meander-android"]
+	path = meander-android
+	url = ssh://git@codeberg.org/cbastuck/meander-android.git
