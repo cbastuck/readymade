@@ -42,6 +42,12 @@ export interface BackendAdapter {
   getRuntimeSettings?(): Promise<RuntimeSettings>;
   setRuntimeSettings?(settings: Partial<RuntimeSettings>): Promise<RuntimeSettings>;
 
+  // Mints a short-lived capability token from the embedded runtime, scoped to
+  // processing `runtimeId` (POST /runtimes/<runtimeId>). Returns null if the
+  // host can't mint. Absent on the plain-browser backend. One transport per
+  // capability: add a sibling method when a new mint-token action is needed.
+  mintProcessRuntimeToken?(runtimeId: string): Promise<string | null>;
+
   // Start page folder tree (startpage.json next to the saved boards)
   loadStartPageTree(): Promise<StartPageTree | null>;
   saveStartPageTree(tree: StartPageTree): Promise<void>;

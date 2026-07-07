@@ -10,6 +10,10 @@ import {
 } from "../../types";
 import { appendSubservice } from "./BrowserRuntimeApi";
 import BrowserRuntimeScope from "./BrowserRuntimeScope";
+import {
+  mintTokenViaPlatform,
+  RuntimeTokenRequest,
+} from "hkp-frontend/src/platform/PlatformContext";
 import NotificationTargets from "../NotificationsTargets";
 import { onServiceProcess, onServiceResult } from "../serviceState";
 
@@ -18,6 +22,12 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
   const boardVariables: Record<string, any> = {};
   const app = {
     getAuthenticatedUser: () => scope.authenticatedUser,
+
+    // Backed by the module-level platform bridge (set by PlatformProvider at the
+    // app root), so it works regardless of when this app was constructed or
+    // whether the runtime's UI component has rendered. Null on plain web.
+    mintToken: (request: RuntimeTokenRequest): Promise<string | null> =>
+      mintTokenViaPlatform(request),
     next: (svc: InstanceId | null, result: any) => {
       if (svc) {
         onServiceProcess(app, svc, undefined);

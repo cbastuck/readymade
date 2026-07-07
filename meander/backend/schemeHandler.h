@@ -39,6 +39,8 @@ private:
   saucer::scheme::response handleGetSettings(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleSaveSettings(const Router::Params &p, const saucer::scheme::request &req) const;
 
+  saucer::scheme::response handleMintProcessRuntimeToken(const Router::Params &p, const saucer::scheme::request &req) const;
+
   saucer::scheme::response handleGetStartPage(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleSaveStartPage(const Router::Params &p, const saucer::scheme::request &req) const;
 

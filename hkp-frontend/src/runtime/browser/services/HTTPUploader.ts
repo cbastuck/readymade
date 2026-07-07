@@ -8,6 +8,12 @@ const serviceName = "HTTP Uploader";
 type State = {
   url: string;
   status: string | null;
+  // Scoped, short-lived capability token minted by the trusted host and baked
+  // into this board via the QR link. Sent as a bearer credential so an
+  // unauthenticated device (a phone) can push to the one upload runtime it was
+  // granted, without a user session. Empty when uploading to an unauthenticated
+  // target (e.g. a loopback runtime).
+  authToken: string;
 };
 
 class HTTPUploader extends ServiceBase<State> {
@@ -17,13 +23,18 @@ class HTTPUploader extends ServiceBase<State> {
     descriptor: ServiceClass,
     id: string
   ) {
-    super(app, board, descriptor, id, { url: "", status: null });
+    super(app, board, descriptor, id, { url: "", status: null, authToken: "" });
   }
 
   async configure(config: any) {
     if (config.url !== undefined && config.url !== this.state.url) {
       this.state.url = config.url;
       this.app.notify(this, { url: this.state.url });
+    }
+    if (config.authToken !== undefined && config.authToken !== this.state.authToken) {
+      this.state.authToken = config.authToken;
+      // Deliberately not notified: the token is a secret, kept out of the
+      // notification stream (and thus out of UI/logs).
     }
   }
 
@@ -41,16 +52,21 @@ class HTTPUploader extends ServiceBase<State> {
     this.state.status = status;
     this.app.notify(this, { status });
 
+    const headers: Record<string, string> = {
+      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Type": mimeType,
+      "X-Upload-Id": uploadId,
+      "X-Chunk-Index": String(chunkIndex),
+      "X-Total-Chunks": String(totalChunks),
+    };
+    if (this.state.authToken) {
+      headers["Authorization"] = `Bearer ${this.state.authToken}`;
+    }
+
     try {
       const res = await fetch(url, {
         method: "POST",
-        headers: {
-          "Content-Disposition": `attachment; filename="${filename}"`,
-          "Content-Type": mimeType,
-          "X-Upload-Id": uploadId,
-          "X-Chunk-Index": String(chunkIndex),
-          "X-Total-Chunks": String(totalChunks),
-        },
+        headers,
         body: data,
       });
 

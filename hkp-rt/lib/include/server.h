@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -41,6 +42,16 @@ namespace hkp
     // Used by hosts that learn the permitted identity after start (e.g. iOS on
     // login). No-op unless the server was started in Jwt auth mode.
     void setAllowedUsers(const std::vector<std::string>& emails);
+
+    // Mints a short-lived capability token scoped to POST /runtimes/<runtimeId>
+    // (the process endpoint) for handing to an out-of-band device via a QR code.
+    // Returns the raw token, or "" if the runtime is unknown/empty or secure
+    // randomness is unavailable. Intended to be called in-process by the host's
+    // own scheme handler (the owner's local app), so it is deliberately NOT
+    // exposed as a network route — possession of the token alone can only
+    // process that one runtime.
+    std::string mintProcessRuntimeGrant(const std::string& runtimeId,
+                                        std::chrono::seconds ttl = std::chrono::seconds{10 * 60});
 
     void handleRequest(crow::request& req, crow::response& res);
 

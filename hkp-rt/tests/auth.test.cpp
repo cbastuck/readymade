@@ -228,3 +228,115 @@ TEST_CASE("Tampered signature is rejected", "[auth]")
   token[sigStart] = (token[sigStart] == 'A') ? 'B' : 'A';
   CHECK(auth.authorize(bearer(token)).status == AuthStatus::Unauthenticated);
 }
+
+// ── Scoped upload capability tokens ──────────────────────────────────────────
+
+using namespace std::chrono_literals;
+
+TEST_CASE("Capability token authorizes exactly its minted scope", "[auth][capability]")
+{
+  CapabilityStore store;
+  const auto token = store.mintProcessRuntimeGrant("upload-server", 60s);
+  REQUIRE_FALSE(token.empty());
+  // 256-bit token, hex-encoded.
+  CHECK(token.size() == 64);
+  CHECK(store.authorize(token, "POST", "/runtimes/upload-server"));
+}
+
+TEST_CASE("Capability token is reusable within its TTL", "[auth][capability]")
+{
+  // Chunked uploads issue many POSTs against one token — it must not be single use.
+  CapabilityStore store;
+  const auto token = store.mintProcessRuntimeGrant("upload-server", 60s);
+  for (int i = 0; i < 5; ++i)
+  {
+    CHECK(store.authorize(token, "POST", "/runtimes/upload-server"));
+  }
+}
+
+TEST_CASE("Capability token is denied off-scope", "[auth][capability]")
+{
+  CapabilityStore store;
+  const auto token = store.mintProcessRuntimeGrant("upload-server", 60s);
+
+  SECTION("wrong method")
+  {
+    CHECK_FALSE(store.authorize(token, "GET", "/runtimes/upload-server"));
+    CHECK_FALSE(store.authorize(token, "DELETE", "/runtimes/upload-server"));
+  }
+  SECTION("wrong path — a different runtime")
+  {
+    CHECK_FALSE(store.authorize(token, "POST", "/runtimes/other-runtime"));
+  }
+  SECTION("wrong path — the mint endpoint (cannot escalate to minting)")
+  {
+    CHECK_FALSE(store.authorize(token, "POST", "/auth/upload-token"));
+  }
+  SECTION("wrong path — a sub-resource of the scoped runtime")
+  {
+    CHECK_FALSE(store.authorize(token, "POST", "/runtimes/upload-server/services"));
+  }
+}
+
+TEST_CASE("Unknown or empty capability token is denied", "[auth][capability]")
+{
+  CapabilityStore store;
+  store.mintProcessRuntimeGrant("upload-server", 60s);
+  CHECK_FALSE(store.authorize("", "POST", "/runtimes/upload-server"));
+  CHECK_FALSE(store.authorize("deadbeef", "POST", "/runtimes/upload-server"));
+}
+
+TEST_CASE("Expired capability token is denied", "[auth][capability]")
+{
+  CapabilityStore store;
+  const auto token = store.mintProcessRuntimeGrant("upload-server", 0s);
+  // A zero-second TTL is already in the past by the time we check.
+  CHECK_FALSE(store.authorize(token, "POST", "/runtimes/upload-server"));
+}
+
+TEST_CASE("Cleared capability tokens are revoked", "[auth][capability]")
+{
+  CapabilityStore store;
+  const auto token = store.mintProcessRuntimeGrant("upload-server", 60s);
+  REQUIRE(store.authorize(token, "POST", "/runtimes/upload-server"));
+  store.clear();
+  CHECK_FALSE(store.authorize(token, "POST", "/runtimes/upload-server"));
+}
+
+TEST_CASE("Minting requires a runtime id", "[auth][capability]")
+{
+  CapabilityStore store;
+  CHECK(store.mintProcessRuntimeGrant("", 60s).empty());
+}
+
+TEST_CASE("Generic mintGrant scopes to an arbitrary method and path", "[auth][capability]")
+{
+  // The process-runtime wrapper is one caller of the generic core; the core can
+  // scope a token to any single method+path.
+  CapabilityStore store;
+  const auto token = store.mintGrant("DELETE", "/runtimes/foo/services/bar", 60s);
+  REQUIRE_FALSE(token.empty());
+  CHECK(store.authorize(token, "DELETE", "/runtimes/foo/services/bar"));
+  CHECK_FALSE(store.authorize(token, "POST", "/runtimes/foo/services/bar"));
+  CHECK_FALSE(store.authorize(token, "DELETE", "/runtimes/foo"));
+}
+
+TEST_CASE("Generic mintGrant requires a method and a path", "[auth][capability]")
+{
+  CapabilityStore store;
+  CHECK(store.mintGrant("", "/runtimes/foo", 60s).empty());
+  CHECK(store.mintGrant("POST", "", 60s).empty());
+}
+
+TEST_CASE("Distinct grants scope independently", "[auth][capability]")
+{
+  CapabilityStore store;
+  const auto a = store.mintProcessRuntimeGrant("runtime-a", 60s);
+  const auto b = store.mintProcessRuntimeGrant("runtime-b", 60s);
+  CHECK(a != b);
+  CHECK(store.authorize(a, "POST", "/runtimes/runtime-a"));
+  CHECK(store.authorize(b, "POST", "/runtimes/runtime-b"));
+  // A grant for one runtime never authorizes the other.
+  CHECK_FALSE(store.authorize(a, "POST", "/runtimes/runtime-b"));
+  CHECK_FALSE(store.authorize(b, "POST", "/runtimes/runtime-a"));
+}

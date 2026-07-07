@@ -7,7 +7,7 @@
   "author": "cbastuck <mail@cbastuck.de>",
   "scripts": {
     "start": "npm run dev",
-    "dev": "vite --port 5555",
+    "dev": "vite --port 8555",
     "build": "tsc -b && vite build",
     "build:ios": "tsc -b && vite build --config vite.config.ios.ts",
     "update:ios": "npm run build:ios",
