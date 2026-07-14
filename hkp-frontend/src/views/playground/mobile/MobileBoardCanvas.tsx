@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useBoardContext, BoardContextState } from "../../../BoardContext";
 import {
   ProcessContext,
@@ -94,70 +94,158 @@ function RuntimeConnector() {
   );
 }
 
+// ── Reorder steppers (up/down) ─────────────────────────────────
+// Shared by service cards and runtime rows in reorder mode. Ends are disabled
+// (can't move the first item up or the last item down).
+function Stepper({
+  canUp,
+  canDown,
+  onUp,
+  onDown,
+}: {
+  canUp: boolean;
+  canDown: boolean;
+  onUp: () => void;
+  onDown: () => void;
+}) {
+  const btn = (enabled: boolean): CSSProperties => ({
+    width: 34,
+    height: 30,
+    border: `1px solid ${M.border}`,
+    borderRadius: 8,
+    background: enabled ? "#fff" : "rgba(0,0,0,0.03)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: enabled ? "pointer" : "default",
+    padding: 0,
+  });
+  return (
+    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+      <button
+        onClick={onUp}
+        disabled={!canUp}
+        aria-label="Move up"
+        style={btn(canUp)}
+      >
+        <MobileIcon
+          name="chevronUp"
+          size={15}
+          color={canUp ? M.textSecondary : M.textMuted}
+          strokeWidth={2}
+        />
+      </button>
+      <button
+        onClick={onDown}
+        disabled={!canDown}
+        aria-label="Move down"
+        style={btn(canDown)}
+      >
+        <MobileIcon
+          name="chevronDown"
+          size={15}
+          color={canDown ? M.textSecondary : M.textMuted}
+          strokeWidth={2}
+        />
+      </button>
+    </div>
+  );
+}
+
 // ── Service card ───────────────────────────────────────────────
 function ServiceCard({
   service,
   onTap,
   active,
+  reordering,
+  canUp,
+  canDown,
+  onMoveUp,
+  onMoveDown,
 }: {
   service: ServiceDescriptor;
   onTap: () => void;
   active: boolean;
+  reordering: boolean;
+  canUp: boolean;
+  canDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
 }) {
-  return (
-    <div>
-      <button
-        onClick={onTap}
+  const body = (
+    <>
+      <div
         style={{
-          width: "100%",
-          background: M.card,
-          border: `1.5px solid ${active ? M.teal : M.border}`,
-          borderRadius: 14,
-          padding: "12px 14px",
+          width: 36,
+          height: 36,
+          borderRadius: 9,
+          background: M.tealLight,
           display: "flex",
           alignItems: "center",
-          gap: 12,
-          cursor: "pointer",
-          textAlign: "left",
-          boxShadow: active
-            ? `0 0 0 3px ${M.tealLight}`
-            : "0 1px 3px rgba(0,0,0,0.06)",
-          transition: "all 0.15s",
+          justifyContent: "center",
+          flexShrink: 0,
         }}
       >
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 9,
-            background: M.tealLight,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-          }}
-        >
-          <MobileIcon name="cpu" size={18} color={M.tealDark} />
+        <MobileIcon name="cpu" size={18} color={M.tealDark} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: M.textPrimary }}>
+          {service.serviceName}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, fontWeight: 600, color: M.textPrimary }}>
-            {service.serviceName}
+        {service.description && (
+          <div
+            style={{
+              fontSize: 12,
+              color: M.textMuted,
+              marginTop: 1,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {service.description}
           </div>
-          {service.description && (
-            <div
-              style={{
-                fontSize: 12,
-                color: M.textMuted,
-                marginTop: 1,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {service.description}
-            </div>
-          )}
-        </div>
+        )}
+      </div>
+    </>
+  );
+
+  const cardStyle: CSSProperties = {
+    width: "100%",
+    background: M.card,
+    border: `1.5px solid ${active ? M.teal : M.border}`,
+    borderRadius: 14,
+    padding: "12px 14px",
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    textAlign: "left",
+    boxShadow: active
+      ? `0 0 0 3px ${M.tealLight}`
+      : "0 1px 3px rgba(0,0,0,0.06)",
+    transition: "all 0.15s",
+  };
+
+  if (reordering) {
+    // A static row dedicated to reordering — tapping the body does nothing; the
+    // steppers own all interaction.
+    return (
+      <div style={{ ...cardStyle, cursor: "default", marginBottom: 8 }}>
+        {body}
+        <Stepper
+          canUp={canUp}
+          canDown={canDown}
+          onUp={onMoveUp}
+          onDown={onMoveDown}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <button onClick={onTap} style={{ ...cardStyle, cursor: "pointer" }}>
+        {body}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div
             style={{
@@ -200,6 +288,17 @@ function RuntimeCard({
   const [collapsed, setCollapsed] = useState(false);
   const [fullView, setFullView] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reordering, setReordering] = useState(false);
+  // Reordering is only meaningful with 2+ services; if a removal drops the list
+  // to a single service, fall back to the normal (tappable) rendering.
+  const isReordering = reordering && services.length > 1;
+
+  const moveService = (svc: ServiceDescriptor, index: number, dir: -1 | 1) => {
+    // reorderService treats the target as an insertion slot and subtracts 1 when
+    // moving down; up → index-1, down → index+2 lands the service one slot over.
+    const target = dir === -1 ? index - 1 : index + 2;
+    boardContext.arrangeService(runtime, svc.uuid, target);
+  };
 
   const handleServiceAction = (cmd: ServiceAction) => {
     if (cmd.action === "remove") {
@@ -403,7 +502,31 @@ function RuntimeCard({
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {scope && services.length > 0 && (
+          {services.length > 1 && !collapsed && (
+            <button
+              onClick={() => setReordering((v) => !v)}
+              title={isReordering ? "Done reordering" : "Reorder services"}
+              style={{
+                width: 28,
+                height: 28,
+                border: "none",
+                background: isReordering ? M.teal : "rgba(255,255,255,0.5)",
+                borderRadius: 7,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+              }}
+            >
+              <MobileIcon
+                name={isReordering ? "check" : "moveVertical"}
+                size={14}
+                color={isReordering ? "#fff" : M.textSecondary}
+                strokeWidth={isReordering ? 2.2 : 1.8}
+              />
+            </button>
+          )}
+          {scope && services.length > 0 && !isReordering && (
             <button
               onClick={() => setFullView(true)}
               title="Show full service UIs"
@@ -524,19 +647,24 @@ function RuntimeCard({
               No services — tap + Service to add one
             </div>
           ) : (
-            services.map((svc) => (
+            services.map((svc, i) => (
               <ServiceCard
                 key={svc.uuid}
                 service={svc}
                 onTap={() => onServiceTap(svc, runtime)}
                 active={activeServiceId === svc.uuid}
+                reordering={isReordering}
+                canUp={i > 0}
+                canDown={i < services.length - 1}
+                onMoveUp={() => moveService(svc, i, -1)}
+                onMoveDown={() => moveService(svc, i, 1)}
               />
             ))
           )}
         </div>
       )}
 
-      {!collapsed && (
+      {!collapsed && !isReordering && (
         <div style={{ padding: "0px 12px 12px" }}>
           <button
             onClick={onAddService}
@@ -566,6 +694,70 @@ function RuntimeCard({
   );
 }
 
+// ── Compact runtime row (runtime reorder mode) ─────────────────
+function RuntimeReorderRow({
+  runtime,
+  serviceCount,
+  canUp,
+  canDown,
+  onMoveUp,
+  onMoveDown,
+}: {
+  runtime: RuntimeDescriptor;
+  serviceCount: number;
+  canUp: boolean;
+  canDown: boolean;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+}) {
+  return (
+    <div
+      style={{
+        background: M.runtimeBg,
+        border: `1.5px solid ${M.runtimeBorder}`,
+        borderRadius: 14,
+        padding: "12px 14px",
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+      }}
+    >
+      <div
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: M.blue,
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 600,
+            color: M.textPrimary,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {runtime.name}
+        </div>
+        <div style={{ fontSize: 11, color: M.textMuted, marginTop: 1 }}>
+          {runtime.type} · {serviceCount} service{serviceCount !== 1 ? "s" : ""}
+        </div>
+      </div>
+      <Stepper
+        canUp={canUp}
+        canDown={canDown}
+        onUp={onMoveUp}
+        onDown={onMoveDown}
+      />
+    </div>
+  );
+}
+
 // ── Board list (runtimes + services) ────────────────────────────
 function BoardList({
   onServiceTap,
@@ -581,8 +773,19 @@ function BoardList({
   onShowAddRuntime: () => void;
 }) {
   const boardContext = useBoardContext();
+  const [reorderingRuntimes, setReorderingRuntimes] = useState(false);
   if (!boardContext) return null;
   const { runtimes, services, scopes, registry, boardName } = boardContext;
+
+  // Only meaningful with 2+ runtimes; a removal that drops to one exits the mode.
+  const isReorderingRuntimes = reorderingRuntimes && runtimes.length > 1;
+
+  const moveRuntime = (rt: RuntimeDescriptor, index: number, dir: -1 | 1) => {
+    // Same insertion-slot semantics as reorderService: up → index-1,
+    // down → index+2 (reorderRuntime subtracts 1 when moving down).
+    const target = dir === -1 ? index - 1 : index + 2;
+    boardContext.arrangeRuntime(rt.id, target);
+  };
 
   return (
     <div
@@ -595,45 +798,92 @@ function BoardList({
       }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {runtimes.map((rt, i) => (
-          <div key={rt.id}>
-            <RuntimeCard
-              runtime={rt}
-              services={services[rt.id] ?? []}
-              scope={scopes[rt.id]}
-              registry={registry[rt.id] ?? []}
-              boardName={boardName ?? ""}
-              boardContext={boardContext}
-              activeServiceId={activeServiceId}
-              onServiceTap={onServiceTap}
-              onAddService={() => onAddService(rt)}
-              onRemoveRuntime={() => onRemoveRuntime(rt)}
-            />
-            {i < runtimes.length - 1 && <RuntimeConnector />}
-          </div>
-        ))}
+        {isReorderingRuntimes
+          ? runtimes.map((rt, i) => (
+              <RuntimeReorderRow
+                key={rt.id}
+                runtime={rt}
+                serviceCount={(services[rt.id] ?? []).length}
+                canUp={i > 0}
+                canDown={i < runtimes.length - 1}
+                onMoveUp={() => moveRuntime(rt, i, -1)}
+                onMoveDown={() => moveRuntime(rt, i, 1)}
+              />
+            ))
+          : runtimes.map((rt, i) => (
+              <div key={rt.id}>
+                <RuntimeCard
+                  runtime={rt}
+                  services={services[rt.id] ?? []}
+                  scope={scopes[rt.id]}
+                  registry={registry[rt.id] ?? []}
+                  boardName={boardName ?? ""}
+                  boardContext={boardContext}
+                  activeServiceId={activeServiceId}
+                  onServiceTap={onServiceTap}
+                  onAddService={() => onAddService(rt)}
+                  onRemoveRuntime={() => onRemoveRuntime(rt)}
+                />
+                {i < runtimes.length - 1 && <RuntimeConnector />}
+              </div>
+            ))}
 
-        <button
-          onClick={onShowAddRuntime}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-            padding: 14,
-            border: `1.5px dashed ${M.borderStrong}`,
-            borderRadius: 16,
-            background: "rgba(255,255,255,0.5)",
-            color: M.textSecondary,
-            fontFamily: "inherit",
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: "pointer",
-          }}
-        >
-          <MobileIcon name="plus" size={16} color={M.textSecondary} />
-          Add Runtime
-        </button>
+        {!isReorderingRuntimes && (
+          <button
+            onClick={onShowAddRuntime}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: 14,
+              border: `1.5px dashed ${M.borderStrong}`,
+              borderRadius: 16,
+              background: "rgba(255,255,255,0.5)",
+              color: M.textSecondary,
+              fontFamily: "inherit",
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            <MobileIcon name="plus" size={16} color={M.textSecondary} />
+            Add Runtime
+          </button>
+        )}
+
+        {runtimes.length > 1 && (
+          <button
+            onClick={() => setReorderingRuntimes((v) => !v)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              padding: 14,
+              border: `1.5px ${isReorderingRuntimes ? "solid" : "dashed"} ${
+                isReorderingRuntimes ? M.teal : M.borderStrong
+              }`,
+              borderRadius: 16,
+              background: isReorderingRuntimes
+                ? M.teal
+                : "rgba(255,255,255,0.5)",
+              color: isReorderingRuntimes ? "#fff" : M.textSecondary,
+              fontFamily: "inherit",
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            <MobileIcon
+              name={isReorderingRuntimes ? "check" : "moveVertical"}
+              size={16}
+              color={isReorderingRuntimes ? "#fff" : M.textSecondary}
+              strokeWidth={isReorderingRuntimes ? 2.2 : 1.8}
+            />
+            {isReorderingRuntimes ? "Done" : "Reorder Runtimes"}
+          </button>
+        )}
       </div>
       <div style={{ height: 20 }} />
     </div>
