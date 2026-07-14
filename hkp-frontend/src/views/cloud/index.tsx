@@ -486,6 +486,53 @@ export default function CloudBoards({
     }
   }, [showOverviewSignal]);
 
+  // Open a specific board on arrival — the start page's "Cloud Boards" source
+  // navigates here with this signal instead of driving the internal state
+  // itself. The `at` nonce re-triggers it on repeat navigations; the pending
+  // ref is consumed once fulfilled so a later board-list revalidation can't
+  // yank the user back to it.
+  const openBoardSignal = (
+    location.state as {
+      openBoard?: { coordinatorUrl: string; boardName: string; at: number };
+    } | null
+  )?.openBoard;
+  const pendingOpenBoard = useRef<{
+    coordinatorUrl: string;
+    boardName: string;
+  } | null>(null);
+  useEffect(() => {
+    if (openBoardSignal) {
+      pendingOpenBoard.current = {
+        coordinatorUrl: openBoardSignal.coordinatorUrl,
+        boardName: openBoardSignal.boardName,
+      };
+    }
+    // Only the nonce should re-arm the pending open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openBoardSignal?.at]);
+  useEffect(() => {
+    const target = pendingOpenBoard.current;
+    if (!target) {
+      return;
+    }
+    const coordinator = coordinators.find((c) => c.url === target.coordinatorUrl);
+    if (!coordinator) {
+      return;
+    }
+    const group = allCoordinatorBoards.find(
+      (g) => g.coordinator.url === target.coordinatorUrl,
+    );
+    const board = group?.boards.find((b) => b.boardName === target.boardName);
+    if (!board) {
+      // Boards for this coordinator haven't loaded yet — wait for the next
+      // render (this effect re-runs when allCoordinatorBoards updates).
+      return;
+    }
+    pendingOpenBoard.current = null;
+    onSelectBoardFromLanding(coordinator, board);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coordinators, allCoordinatorBoards]);
+
   // ── New board ───────────────────────────────────────────────────────────────
 
   const onNewBoard = (coordinatorOverride?: CoordinatorDescriptor) => {

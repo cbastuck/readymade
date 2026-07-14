@@ -6,11 +6,14 @@ import {
 } from "./model";
 import { buildDemosFolder } from "./demosSource";
 import { useCloudFolder } from "./useCloudSource";
+import { useCloudBoardsFolder } from "./useCloudBoardsFolder";
+import { useRemotesFolder } from "./useRemotesFolder";
 import { StartPageStore } from "./store";
 import {
   BoardNode,
   BoardState,
   FolderNode,
+  RemotesController,
   StartPageTree,
   TreeNode,
 } from "./types";
@@ -29,8 +32,14 @@ export interface StartPageModelOptions {
   boardStates?: Record<string, BoardState>;
   /** Runtimes surfaced as a source folder (external instances). */
   runtimes?: RuntimeEntry[];
+  /** Configured remotes; surfaced as a "Remotes" source that drills into the
+   *  runtimes running on each server. Omit to hide the source. */
+  remotes?: RemotesController;
   /** Show the Cloud source (requires AppContext + coordinators). */
   withCloud?: boolean;
+  /** Show the "Cloud Boards" source: coordinators → their registered boards.
+   *  Requires AppContext; login-gated. */
+  cloudBoards?: boolean;
   /** Additional host-provided sources appended after the built-in ones. */
   extraSources?: FolderNode[];
   /** Virtual folders appended inside My Boards, after the user's own
@@ -64,7 +73,9 @@ export function useStartPageModel(
     listSavedBoards,
     boardStates,
     runtimes,
+    remotes,
     withCloud,
+    cloudBoards,
     extraSources,
     myBoardsExtraFolders,
     excludeDemoTags,
@@ -94,6 +105,8 @@ export function useStartPageModel(
   );
 
   const cloudFolder = useCloudFolder(withCloud === true);
+  const cloudBoardsFolder = useCloudBoardsFolder(cloudBoards === true);
+  const remotesFolder = useRemotesFolder(remotes);
 
   const roots = useMemo<TreeNode[]>(() => {
     const list: TreeNode[] = [];
@@ -109,6 +122,9 @@ export function useStartPageModel(
     if (withCloud) {
       list.push(cloudFolder);
     }
+    if (cloudBoardsFolder) {
+      list.push(cloudBoardsFolder);
+    }
     if (runtimes && runtimes.length > 0) {
       list.push({
         type: "folder",
@@ -123,6 +139,9 @@ export function useStartPageModel(
         })),
       });
     }
+    if (remotesFolder) {
+      list.push(remotesFolder);
+    }
     for (const source of extraSources ?? []) {
       list.push(source);
     }
@@ -134,7 +153,9 @@ export function useStartPageModel(
     excludeDemoTags,
     withCloud,
     cloudFolder,
+    cloudBoardsFolder,
     runtimes,
+    remotesFolder,
     extraSources,
     myBoardsExtraFolders,
   ]);

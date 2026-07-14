@@ -324,6 +324,9 @@ export function attentionCount(node: TreeNode): number {
   if (node.type === "board") {
     return isAttentionState(node.state) ? 1 : 0;
   }
+  if (node.type === "runtime") {
+    return 0;
+  }
   return node.children.reduce((sum, child) => sum + attentionCount(child), 0);
 }
 
@@ -402,6 +405,10 @@ export function searchBoards(roots: TreeNode[], query: string): SearchResult[] {
     for (const node of nodes) {
       if (node.type === "folder") {
         walk(node.children, [...path, node.name]);
+        continue;
+      }
+      if (node.type === "runtime") {
+        // Live runtimes aren't part of board search (phase 1).
         continue;
       }
       const haystack = [node.name, ...(node.tags ?? []), ...path]
