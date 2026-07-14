@@ -19,6 +19,7 @@ import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.s
 
 import ShareMenu from "./ShareMenu";
 import UpdateCloudButton from "./UpdateCloudButton";
+import AccountAvatar from "./AccountAvatar";
 
 import "./index.css";
 
@@ -173,6 +174,7 @@ export default function Toolbar({
           <TbSeparator />
           <ViewToggle />
           <TbSeparator />
+          <AccountAvatar />
           {menuSlot ?? (!hideNavigation && <AppMenu />)}
         </div>
       </div>
@@ -226,6 +228,16 @@ export default function Toolbar({
 
           {children ? children : null}
 
+          <div
+            style={{
+              marginLeft: "auto",
+              display: "flex",
+              alignItems: "center",
+              paddingRight: 6,
+            }}
+          >
+            <AccountAvatar />
+          </div>
           {menuSlot ?? (!hideNavigation && <AppMenu />)}
         </div>
       </div>

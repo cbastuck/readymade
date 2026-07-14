@@ -3,8 +3,6 @@ import type { CSSProperties, ReactNode } from "react";
 
 import "./start.css";
 
-import { RuntimeClass } from "hkp-frontend/src/types";
-
 import {
   addBoardRef,
   addFolder,
@@ -27,6 +25,8 @@ import {
   BoardState,
   FolderNode,
   NewsItem,
+  RemotesController,
+  RuntimeNode,
   TreeNode,
 } from "./types";
 import TopBar from "./TopBar";
@@ -35,21 +35,10 @@ import ColumnBrowser from "./ColumnBrowser";
 import { ColumnVM } from "./Column";
 import { RowVM } from "./Row";
 import BoardDetails from "./BoardDetails";
+import RuntimeDetails from "./RuntimeDetails";
 
 export type { RuntimeEntry };
-
-/** Host-backed store of remote runtime engines for the manage-remotes UI
- *  (list / discover / add / remove). Where the entries persist is the host's
- *  business: Meander keeps them in settings.json, the website in
- *  localStorage. */
-export interface RemotesController {
-  runtimes: RuntimeClass[];
-  onAdd: (rt: RuntimeClass) => void;
-  onRemove: (rt: RuntimeClass) => void;
-  onUpdate: (rt: RuntimeClass) => void;
-  /** Called right before the manage UI opens; hosts re-read their store. */
-  refresh?: () => void;
-}
+export type { RemotesController };
 
 export interface StartPageProps {
   /** Persistence for the user's folder tree. */
@@ -105,6 +94,9 @@ export interface StartPageProps {
   manageRemotes?: RemotesController;
   /** Show the Cloud source (requires AppContext + coordinators). */
   withCloud?: boolean;
+  /** Show the "Cloud Boards" source: coordinators → their registered boards
+   *  (requires AppContext; login-gated). */
+  withCloudBoards?: boolean;
   /** Additional host-provided sources appended after the built-in ones. */
   extraSources?: FolderNode[];
   /** Virtual folders appended inside My Boards, after the user's own
@@ -171,7 +163,9 @@ export default function StartPage(props: StartPageProps) {
     onLeaveShare,
     pickBoardArtImage,
     runtimes,
+    manageRemotes,
     withCloud,
+    withCloudBoards,
     extraSources,
     myBoardsExtraFolders,
     excludeDemoTags,
@@ -195,7 +189,9 @@ export default function StartPage(props: StartPageProps) {
       listSavedBoards,
       boardStates,
       runtimes,
+      remotes: manageRemotes,
       withCloud,
+      cloudBoards: withCloudBoards,
       extraSources,
       myBoardsExtraFolders,
       excludeDemoTags,
@@ -264,6 +260,36 @@ export default function StartPage(props: StartPageProps) {
         };
       }
 
+      if (node.type === "runtime") {
+        // A runtime is a terminal row (like a board): selecting it opens the
+        // read-only details panel. No Open action in phase 1.
+        return {
+          key: opts.key,
+          name: node.name,
+          art: "linear-gradient(160deg, #17b877, #0a8a72)",
+          glyph: "",
+          isBoard: true,
+          dot: false,
+          dotColor: "#17b877",
+          sub:
+            opts.subOverride ??
+            (node.boardName ? `Board · ${node.boardName}` : "Runtime"),
+          subColor: "#9a9fae",
+          badge: "",
+          selected: opts.selected,
+          onClick: opts.onClick,
+          onOpen: undefined,
+          onRefresh: node.onRefresh
+            ? (e) => {
+                e.stopPropagation();
+                node.onRefresh!();
+              }
+            : undefined,
+          refreshing: node.refreshing,
+          onRemove: undefined,
+        };
+      }
+
       const count = node.children.length;
       const badgeCount = attentionCount(node);
       return {
@@ -285,6 +311,13 @@ export default function StartPage(props: StartPageProps) {
         badge: badgeCount ? String(badgeCount) : "",
         selected: opts.selected,
         onClick: opts.onClick,
+        onRefresh: node.onRefresh
+          ? (e) => {
+              e.stopPropagation();
+              node.onRefresh!();
+            }
+          : undefined,
+        refreshing: node.refreshing,
         onRemove:
           node.userPath && node.userPath.length > 0 && tree
             ? (e) => {
@@ -308,7 +341,10 @@ export default function StartPage(props: StartPageProps) {
     let items = roots;
     let parent: FolderNode | null = null;
     let level = 0;
-    let detailBoard: { board: BoardNode; parentPath?: string[] } | null = null;
+    let detailSel:
+      | { kind: "board"; board: BoardNode; parentPath?: string[] }
+      | { kind: "runtime"; runtime: RuntimeNode }
+      | null = null;
 
     while (true) {
       const selectedName = selectedNames[level];
@@ -362,10 +398,13 @@ export default function StartPage(props: StartPageProps) {
         level++;
       } else {
         if (selected && selected.type === "board") {
-          detailBoard = {
+          detailSel = {
+            kind: "board",
             board: selected,
             parentPath: selected.persisted ? editablePath : undefined,
           };
+        } else if (selected && selected.type === "runtime") {
+          detailSel = { kind: "runtime", runtime: selected };
         }
         break;
       }
@@ -374,7 +413,7 @@ export default function StartPage(props: StartPageProps) {
     return {
       columns: cols,
       breadcrumb: crumbs.length ? crumbs.join("  ›  ") : "Sources",
-      detail: detailBoard,
+      detail: detailSel,
     };
   }, [
     roots,
@@ -405,10 +444,13 @@ export default function StartPage(props: StartPageProps) {
 
   // ── Details column ──────────────────────────────────────────────────────────
 
+  const detailBoard = detail?.kind === "board" ? detail : null;
+  const detailRuntime = detail?.kind === "runtime" ? detail.runtime : null;
+
   const [detailDescription, setDetailDescription] = useState<string | undefined>();
 
   useEffect(() => {
-    const board = detail?.board;
+    const board = detailBoard?.board;
     setDetailDescription(board?.description);
     if (
       !board ||
@@ -431,78 +473,80 @@ export default function StartPage(props: StartPageProps) {
     };
     // Keyed by the board identity, not the (per-render) detail object.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail?.board.name, detail?.board.action?.kind, describeBoard]);
+  }, [detailBoard?.board.name, detailBoard?.board.action?.kind, describeBoard]);
 
   // The artwork editor applies to the user's own (saved) boards only.
-  const detailIsSaved = detail?.board.action?.kind === "saved";
+  const detailIsSaved = detailBoard?.board.action?.kind === "saved";
 
-  const detailNode = detail ? (
+  const detailNode = detailBoard ? (
     <BoardDetails
-      key={detail.board.name}
-      board={detail.board}
+      key={detailBoard.board.name}
+      board={detailBoard.board}
       description={detailDescription}
-      art={detailIsSaved ? tree?.boardArt?.[detail.board.name] : undefined}
+      art={detailIsSaved ? tree?.boardArt?.[detailBoard.board.name] : undefined}
       onChangeArt={
         detailIsSaved && tree
-          ? (art) => updateTree(setBoardArt(tree, detail.board.name, art))
+          ? (art) => updateTree(setBoardArt(tree, detailBoard.board.name, art))
           : undefined
       }
       onUploadImage={
         detailIsSaved && tree && uploadBoardArt
           ? async (file) => {
               const image = await downscaleImage(file);
-              const url = await uploadBoardArt(detail.board.name, image);
+              const url = await uploadBoardArt(detailBoard.board.name, image);
               updateTree(
-                setBoardArt(tree, detail.board.name, { kind: "image", url }),
+                setBoardArt(tree, detailBoard.board.name, { kind: "image", url }),
               );
             }
           : undefined
       }
       pickImage={pickBoardArtImage}
       onOpen={
-        detail.board.action ? () => onOpen(detail.board.action!) : undefined
+        detailBoard.board.action ? () => onOpen(detailBoard.board.action!) : undefined
       }
       onUploadToCloud={
         detailIsSaved && uploadBoardToCloud
-          ? () => uploadBoardToCloud(detail.board.name)
+          ? () => uploadBoardToCloud(detailBoard.board.name)
           : undefined
       }
       onRevokeShare={
-        detail.board.cloudRole === "owner" && onRevokeShare
-          ? (email) => onRevokeShare(detail.board, email)
+        detailBoard.board.cloudRole === "owner" && onRevokeShare
+          ? (email) => onRevokeShare(detailBoard.board, email)
           : undefined
       }
       onLeaveShare={
-        detail.board.cloudRole === "viewer" && onLeaveShare
-          ? () => onLeaveShare(detail.board)
+        detailBoard.board.cloudRole === "viewer" && onLeaveShare
+          ? () => onLeaveShare(detailBoard.board)
           : undefined
       }
       loadHistory={
         detailIsSaved && listBoardHistory
-          ? () => listBoardHistory(detail.board.name)
+          ? () => listBoardHistory(detailBoard.board.name)
           : undefined
       }
       onRemoveFromFolder={
-        detail.parentPath && tree
+        detailBoard.parentPath && tree
           ? () =>
               updateTree(
-                removeNode(tree, detail.parentPath!, {
+                removeNode(tree, detailBoard.parentPath!, {
                   type: "board",
-                  name: detail.board.name,
+                  name: detailBoard.board.name,
                 }),
               )
           : undefined
       }
       onDelete={
-        detail.board.action?.kind === "saved" && onDeleteBoard
+        detailBoard.board.action?.kind === "saved" && onDeleteBoard
           ? () => {
               void Promise.resolve(
-                onDeleteBoard((detail.board.action as { name: string }).name),
+                onDeleteBoard((detailBoard.board.action as { name: string }).name),
               ).then(refreshSavedBoards);
             }
           : undefined
       }
     />
+  ) : detailRuntime ? (
+    <RuntimeDetails key={detailRuntime.id} runtime={detailRuntime} />
   ) : undefined;
 
   // ── Render ──────────────────────────────────────────────────────────────────

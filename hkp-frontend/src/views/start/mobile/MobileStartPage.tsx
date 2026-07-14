@@ -232,11 +232,14 @@ export default function MobileStartPage(props: StartPageProps) {
         parent = node;
         items = node.children;
         pages.push({ folder: node });
-      } else {
+      } else if (node.type === "board") {
         detail = {
           board: node,
           parentPath: node.persisted ? parent?.userPath : undefined,
         };
+        break;
+      } else {
+        // Runtime nodes aren't navigable on mobile yet (desktop-only source).
         break;
       }
     }
@@ -764,13 +767,13 @@ export default function MobileStartPage(props: StartPageProps) {
                           folder={node}
                           onTap={() => push(node.name)}
                         />
-                      ) : (
+                      ) : node.type === "board" ? (
                         <BoardRow
                           key={`root-${node.name}-${index}`}
                           board={node}
                           onTap={() => push(node.name)}
                         />
-                      ),
+                      ) : null,
                     )}
                   </div>
                 </div>
@@ -818,7 +821,7 @@ export default function MobileStartPage(props: StartPageProps) {
                         : undefined
                     }
                   />
-                ) : (
+                ) : node.type === "board" ? (
                   <BoardRow
                     key={`${node.name}-${index}`}
                     board={node}
@@ -835,7 +838,7 @@ export default function MobileStartPage(props: StartPageProps) {
                         : undefined
                     }
                   />
-                ),
+                ) : null,
               )}
             </div>
           </Slide>

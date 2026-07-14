@@ -94,6 +94,51 @@
   color: #e0355f;
 }
 
+.hkp-start .st-refresh {
+  color: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--st-accent);
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: translateX(4px);
+  transition:
+    opacity 0.12s,
+    transform 0.12s;
+}
+.hkp-start .st-row:hover .st-refresh {
+  opacity: 1;
+  transform: none;
+}
+.hkp-start .st-refresh:hover {
+  filter: brightness(1.1);
+}
+.hkp-start .st-refresh--busy {
+  opacity: 1;
+  transform: none;
+  cursor: default;
+}
+.hkp-start .st-refresh-icon {
+  display: inline-block;
+}
+.hkp-start .st-refresh--busy .st-refresh-icon {
+  animation: st-spin 0.8s linear infinite;
+}
+@keyframes st-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .hkp-start .st-btn {
   display: inline-flex;
   align-items: center;

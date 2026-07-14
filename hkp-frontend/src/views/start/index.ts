@@ -14,6 +14,8 @@ export type {
   FolderNode,
   NewsItem,
   PersistedNode,
+  RuntimeNode,
+  RuntimeServiceInfo,
   StartPageTree,
   TreeNode,
 } from "./types";

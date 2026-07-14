@@ -10,6 +10,8 @@
  *    runtimes) that is computed per render and never stored.
  */
 
+import { RuntimeClass } from "hkp-frontend/src/types";
+
 // ── Persisted model ───────────────────────────────────────────────────────────
 
 export type PersistedBoardRef = { type: "board"; name: string };
@@ -86,6 +88,41 @@ export interface BoardNode {
   sharedWith?: string[];
 }
 
+/** One service inside a remote runtime, shown read-only in RuntimeDetails.
+ *  Mirrors the shape returned by a host's GET /runtimes. */
+export interface RuntimeServiceInfo {
+  uuid: string;
+  serviceId: string;
+  serviceName: string;
+  /** Current service state as the host reports it; rendered as JSON. */
+  state?: unknown;
+}
+
+/**
+ * A runtime currently instantiated on a remote server. Unlike a board it is a
+ * live object owned by the server, not a document the user stores — the start
+ * page observes it read-only. Reached by drilling Remotes → <server> →
+ * <runtime>. `boardName` is the board the runtime was created for, when the
+ * creator supplied one; the server tracks no coordinator attribution.
+ */
+export interface RuntimeNode {
+  type: "runtime";
+  /** The runtime's id on its host server (its stable identifier). */
+  id: string;
+  /** Display name; falls back to the id when the runtime is unnamed. */
+  name: string;
+  /** Base URL of the remote server hosting this runtime. */
+  remoteUrl: string;
+  /** Board the runtime was created for, when known. */
+  boardName?: string;
+  services: RuntimeServiceInfo[];
+  /** Manual re-fetch of just this runtime (GET /runtimes/:id); when set, the
+   *  row shows a refresh button. */
+  onRefresh?: () => void;
+  /** True while onRefresh is in flight; drives the row's spinner. */
+  refreshing?: boolean;
+}
+
 export interface FolderNode {
   type: "folder";
   name: string;
@@ -99,9 +136,27 @@ export interface FolderNode {
   userPath?: string[];
   /** Message shown when the folder is empty (e.g. "Login required"). */
   emptyHint?: string;
+  /** Manual re-fetch of the folder's live children (Remotes source). When set,
+   *  the row shows a refresh button. */
+  onRefresh?: () => void;
+  /** True while onRefresh is in flight; drives the row's spinner. */
+  refreshing?: boolean;
 }
 
-export type TreeNode = BoardNode | FolderNode;
+export type TreeNode = BoardNode | FolderNode | RuntimeNode;
+
+/** Host-backed store of remote runtime engines for the manage-remotes UI
+ *  (list / discover / add / remove) and the Remotes source. Where the entries
+ *  persist is the host's business: Meander keeps them in settings.json, the
+ *  website in localStorage. */
+export interface RemotesController {
+  runtimes: RuntimeClass[];
+  onAdd: (rt: RuntimeClass) => void;
+  onRemove: (rt: RuntimeClass) => void;
+  onUpdate: (rt: RuntimeClass) => void;
+  /** Called right before the manage UI opens; hosts re-read their store. */
+  refresh?: () => void;
+}
 
 // ── News banner ───────────────────────────────────────────────────────────────
 

@@ -14,8 +14,11 @@ import {
   initialsOf,
   splitBuildVersion,
 } from "hkp-frontend/src/views/start";
+import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
+import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
 import { getBackend } from "./backend";
 import { isMeanderApp } from "./isMeanderApp";
+import { useBackendRemotes } from "./useBackendRemotes";
 import LoadBoardDialog from "./LoadBoardDialog";
 import MeanderAppMenu from "./MeanderAppMenu";
 
@@ -25,7 +28,10 @@ type Props = {
 
 export default function StartPage({ onRestoreBoard }: Props) {
   const { user } = useAppContext();
+  const cloudLogin = useCloudLogin();
+  const cloudLogout = useCloudLogout();
   const navigate = useNavigate();
+  const remotes = useBackendRemotes();
   const [lastSessionName, setLastSessionName] = useState<string | null>(null);
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [inApp, setInApp] = useState(false);
@@ -150,7 +156,18 @@ export default function StartPage({ onRestoreBoard }: Props) {
         break;
       }
       case "cloud":
-        navigate("/cloud-boards");
+        // Open the board in the Cloud Boards view — the same live coordinator
+        // session the toolbar icon uses. The state signal tells it which board
+        // to select and hydrate on arrival (see CloudBoards' openBoard effect).
+        navigate("/cloud-boards", {
+          state: {
+            openBoard: {
+              coordinatorUrl: action.coordinatorUrl,
+              boardName: action.boardName,
+              at: Date.now(),
+            },
+          },
+        });
         break;
       case "runtime":
         // No runtime detail view in the desktop app yet.
@@ -180,6 +197,8 @@ export default function StartPage({ onRestoreBoard }: Props) {
         describeBoard={describeBoard}
         listBoardHistory={listBoardHistory}
         onDeleteBoard={deleteBoard}
+        manageRemotes={remotes}
+        withCloudBoards
         uploadBoardArt={uploadBoardArt}
         pickBoardArtImage={inApp ? pickBoardArtImage : undefined}
         excludeDemoTags={["iOS only"]}
@@ -187,6 +206,14 @@ export default function StartPage({ onRestoreBoard }: Props) {
         badge={currentVersion.version}
         badgeDetail={currentVersion.hash}
         initials={initialsOf(user?.username)}
+        avatarTitle={
+          user
+            ? user.username
+              ? `Log out (${user.username})`
+              : "Log out"
+            : "Log in"
+        }
+        onAvatarClick={() => void (user ? cloudLogout() : cloudLogin())}
         menuSlot={<MeanderAppMenu />}
       />
       <LoadBoardDialog

@@ -22,6 +22,11 @@ export interface RowVM {
   onOpen?: (e: MouseEvent) => void;
   /** Removes the entry from its folder; absent hides the remove button. */
   onRemove?: (e: MouseEvent) => void;
+  /** Re-fetches a folder's live children (Remotes source); absent hides the
+   *  refresh button. */
+  onRefresh?: (e: MouseEvent) => void;
+  /** Spins the refresh button while a refresh is in flight. */
+  refreshing?: boolean;
 }
 
 export default function Row({ it }: { it: RowVM }) {
@@ -98,6 +103,17 @@ export default function Row({ it }: { it: RowVM }) {
           onClick={it.onRemove}
         >
           ✕
+        </button>
+      )}
+
+      {it.onRefresh && (
+        <button
+          className={"st-refresh" + (it.refreshing ? " st-refresh--busy" : "")}
+          title="Refresh"
+          onClick={it.onRefresh}
+          disabled={it.refreshing}
+        >
+          <span className="st-refresh-icon">&#8635;</span>
         </button>
       )}
 
