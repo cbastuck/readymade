@@ -64,6 +64,11 @@ function MobilePlayground(props: MobilePlaygroundProps) {
       onBoardInfrastructureChange={props.onBoardInfrastructureChange}
     >
       <MobilePlaygroundInner suggestedName={suggestedName} onHome={props.onHome} />
+      {/* Host-provided children rendered inside the board context (e.g. the
+          Readymade share consumer, which injects a shared item into the open
+          board once its runtime is ready). Wrapped so ReactNode satisfies
+          BoardProvider's JSX.Element children type. */}
+      <>{props.children}</>
     </BoardProvider>
   );
 }

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import HkpApp from "hkp-frontend/src/App";
 import MobilePlaygroundWithRouter from "hkp-frontend/src/views/playground/mobile/index";
 import {
@@ -24,6 +24,13 @@ import { BoardDescriptor } from "hkp-frontend/src/types";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
 import RuntimeUserSync from "./RuntimeUserSync";
 import { useBackendRemotes } from "./useBackendRemotes";
+import {
+  SharePayload,
+  drainNextShare,
+  mirrorBoardsToNative,
+} from "./share/shareInbox";
+import ShareBoardPicker from "./share/ShareBoardPicker";
+import BoardShareConsumer from "./share/BoardShareConsumer";
 
 // Boards on iOS live in the webview's localStorage (the same store the mobile
 // playground's save sheet writes to), and so does the start-page folder tree.
@@ -74,6 +81,9 @@ function StartScreen({
 
   const deleteBoard = useCallback((name: string) => {
     localStorage.removeItem(`${localStoragePrefix}${name}`);
+    // Deleting happens on the start page (no session change), so refresh the
+    // share extension's board mirror here.
+    mirrorBoardsToNative(getLocalBoards().map((board) => board.name));
   }, []);
 
   const handleCreateNamedBoard = (name: string) => {
@@ -155,6 +165,97 @@ export default function MobileApp() {
   const [session, setSession] = useState<BoardSession | null>(null);
   const remotes = useBackendRemotes();
 
+  // Share feature: a share captured by the iOS share extension is delivered by
+  // the native bridge, previewed in a picker, then injected into the board the
+  // user chooses. `pendingShare` awaits a board choice; `shareToInject` is the
+  // chosen-but-not-yet-consumed share the BoardShareConsumer runs once ready.
+  const [pendingShare, setPendingShare] = useState<SharePayload | null>(null);
+  const [shareToInject, setShareToInject] = useState<SharePayload | null>(null);
+  // True while a share is in flight (picking or injecting), so newly delivered
+  // shares queue on window.__READYMADE_SHARES__ instead of clobbering the UI.
+  const shareActiveRef = useRef(false);
+
+  const promoteNextShare = useCallback(() => {
+    if (shareActiveRef.current) {
+      return;
+    }
+    const next = drainNextShare();
+    console.log(
+      "[ReadymadeShare] promoteNextShare drained:",
+      next ? next.url ?? next.text ?? next.id : "none",
+      next?.boardName ? `→ board "${next.boardName}"` : "",
+    );
+    if (!next) {
+      return;
+    }
+    shareActiveRef.current = true;
+    const boards = getLocalBoards().map((board) => board.name);
+    if (next.boardName && boards.includes(next.boardName)) {
+      // Pre-tagged in the share extension's picker: skip the in-app picker and
+      // run the board directly. Close any other open board first; the effect
+      // below opens the target once the session is clear.
+      setShareToInject(next);
+      setSession((prev) => (prev?.name === next.boardName ? prev : null));
+    } else {
+      // Untagged (or the tagged board no longer exists): ask in-app.
+      setPendingShare(next);
+    }
+  }, []);
+
+  // Opens the pre-tagged board once no other board is open. Split from
+  // promoteNextShare because closing a different board takes a render pass.
+  useEffect(() => {
+    if (shareToInject?.boardName && session === null) {
+      setSession({ name: shareToInject.boardName });
+    }
+  }, [shareToInject, session]);
+
+  // Keep the native share extension's board picker in sync: mirror the board
+  // names whenever the user lands on the start page (which is also where
+  // boards get created, renamed, and deleted).
+  useEffect(() => {
+    mirrorBoardsToNative(getLocalBoards().map((board) => board.name));
+  }, [session]);
+
+  useEffect(() => {
+    // Native pushes each envelope onto the queue and then calls this; also
+    // drain anything queued before mount (cold launch from the share sheet).
+    window.__readymadeOnShare = promoteNextShare;
+    promoteNextShare();
+    return () => {
+      if (window.__readymadeOnShare === promoteNextShare) {
+        delete window.__readymadeOnShare;
+      }
+    };
+  }, [promoteNextShare]);
+
+  const shareBoards = useCallback(
+    () => getLocalBoards().map((board) => board.name),
+    [],
+  );
+
+  const handlePickShareBoard = useCallback(
+    (name: string) => {
+      // Keep shareActiveRef true through injection; released on consume.
+      setShareToInject(pendingShare);
+      setPendingShare(null);
+      setSession({ name });
+    },
+    [pendingShare],
+  );
+
+  const handleCancelShare = useCallback(() => {
+    shareActiveRef.current = false;
+    setPendingShare(null);
+    promoteNextShare();
+  }, [promoteNextShare]);
+
+  const handleShareConsumed = useCallback(() => {
+    setShareToInject(null);
+    shareActiveRef.current = false;
+    promoteNextShare();
+  }, [promoteNextShare]);
+
   const availableRuntimeEngines = useMemo(
     () => [
       { type: "browser", name: "Browser Runtime" },
@@ -179,6 +280,19 @@ export default function MobileApp() {
             onNewBoard={() => setSession({})}
             onHome={() => setSession(null)}
             availableRuntimeEngines={availableRuntimeEngines}
+          >
+            <BoardShareConsumer
+              payload={shareToInject}
+              onConsumed={handleShareConsumed}
+            />
+          </MobilePlaygroundWithRouter>
+        )}
+        {pendingShare && (
+          <ShareBoardPicker
+            share={pendingShare}
+            boards={shareBoards()}
+            onPick={handlePickShareBoard}
+            onCancel={handleCancelShare}
           />
         )}
       </HkpApp>
