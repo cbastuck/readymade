@@ -43,6 +43,10 @@
     extern const bool isDebugBuild = true;
 #endif
 
+#ifdef __APPLE__
+#include "./shareRouter.h"
+#endif
+
 // Opens a URL in the OS default browser without spawning a shell (no injection risk).
 static void openUrlInSystemBrowser(const std::string &url)
 {
@@ -184,6 +188,10 @@ int real_main(int argc, char *argv[])
   }
   auto window  = windowResult.value();
   auto webview = saucer::smartview::create({.window = window});
+
+#ifdef __APPLE__
+  meanderSetShareNudgeWebview(&webview.value());
+#endif
 
   // Grant media permissions so getUserMedia() works inside the webview.
   // The webview only loads trusted local content (localhost / hkp://) so
@@ -411,6 +419,10 @@ int real_main(int argc, char *argv[])
 #endif
 
   loop.run();
+
+#ifdef __APPLE__
+  meanderSetShareNudgeWebview(nullptr);
+#endif
 
   frontendServer->stop();
   frontendThread->join();

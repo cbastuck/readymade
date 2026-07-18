@@ -47,6 +47,7 @@ private:
   saucer::scheme::response handleGetBoardArt(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleSaveBoardArt(const Router::Params &p, const saucer::scheme::request &req) const;
   saucer::scheme::response handleGetLocalImage(const Router::Params &p, const saucer::scheme::request &req) const;
+
   nlohmann::json currentRuntimeSettings() const;
 
 private:

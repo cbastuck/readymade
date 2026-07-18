@@ -19,7 +19,8 @@ export default function ShareBoardPicker({
   onPick: (boardName: string) => void;
   onCancel: () => void;
 }) {
-  const preview = share.url ?? share.text ?? "Shared content";
+  const preview =
+    share.file?.name ?? share.url ?? share.text ?? "Shared content";
 
   return (
     <div

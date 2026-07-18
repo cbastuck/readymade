@@ -52,8 +52,24 @@ security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD
 security list-keychains -d user -s "${KEYCHAIN_PATH}" $(security list-keychains -d user | tr -d '"')
 
 
+# Sign inside-out: the share extension carries its own entitlements (sandbox +
+# App Group), the app its own (App Group only) — a --deep sign would stamp the
+# app's entitlements onto the nested .appex, so each bundle is signed explicitly.
+ENTITLEMENTS_APP="${REPO_ROOT}/meander/macos/Readymade.entitlements"
+ENTITLEMENTS_APPEX="${REPO_ROOT}/meander/macos/ShareExtension/ShareExtension.entitlements"
+APPEX_PATH="${APP_PATH}/Contents/PlugIns/ReadymadeShareExtension.appex"
+
+if [[ -d "${APPEX_PATH}" ]]; then
+    echo "==> Signing share extension"
+    /usr/bin/codesign --force --options runtime --timestamp --keychain "${KEYCHAIN_PATH}" \
+        --entitlements "${ENTITLEMENTS_APPEX}" \
+        --sign "${APPLE_SIGNING_IDENTITY}" "${APPEX_PATH}"
+fi
+
 echo "==> Signing app bundle"
-/usr/bin/codesign --force --deep --options runtime --timestamp --keychain "${KEYCHAIN_PATH}" --sign "${APPLE_SIGNING_IDENTITY}" "${APP_PATH}"
+/usr/bin/codesign --force --options runtime --timestamp --keychain "${KEYCHAIN_PATH}" \
+    --entitlements "${ENTITLEMENTS_APP}" \
+    --sign "${APPLE_SIGNING_IDENTITY}" "${APP_PATH}"
 /usr/bin/codesign --verify --deep --strict --verbose=2 "${APP_PATH}"
 
 if [[ -n "${APPLE_NOTARY_API_KEY_PATH:-}" ]]; then

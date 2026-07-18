@@ -24,6 +24,20 @@
     <key>NSCameraUsageDescription</key>
     <string>This app needs camera access to capture video input.</string>
 
+    <!-- readymade:// — opened by the share extension after it drops an
+         envelope into the App Group inbox, to launch/foreground the app. -->
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.readymadeit.app</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>readymade</string>
+            </array>
+        </dict>
+    </array>
+
     <!-- File type definition -->
     <key>UTExportedTypeDeclarations</key>
     <array>

@@ -16,6 +16,8 @@ import {
 import { getBackend } from "./backend";
 import { BoardHistoryEntry } from "./backend/types";
 import Board from "./Board";
+import { SharePayload } from "./share/shareInbox";
+import BoardShareConsumer from "./share/BoardShareConsumer";
 import { BoardContextState } from "hkp-frontend/src/BoardContext";
 import {
   BoardDescriptor,
@@ -30,10 +32,16 @@ const isBuiltInRemote = (url?: string) =>
 type Props = {
   initialBoard?: BoardDescriptor | null;
   onLogo: () => void;
+  /** A captured share to inject at the board's pipeline head (run once). */
+  shareToInject?: SharePayload | null;
+  /** Called after the share was injected, so the shell can promote the next. */
+  onShareConsumed?: () => void;
 };
 export default function MeanderPlayground({
   initialBoard = null,
   onLogo,
+  shareToInject = null,
+  onShareConsumed,
 }: Props) {
   const [boardName, setBoardName] = useState("Idea");
   const [remotes, setRemotes] = useState<Array<Remote> | null>(null);
@@ -192,6 +200,10 @@ export default function MeanderPlayground({
         onCloseBoardSource={onCloseBoardSource}
         onSetLoadDialogOpen={setIsLoadDialogOpen}
         onBoardLoaded={onBoardLoaded}
+      />
+      <BoardShareConsumer
+        payload={shareToInject}
+        onConsumed={onShareConsumed ?? (() => {})}
       />
     </Playground>
   );
