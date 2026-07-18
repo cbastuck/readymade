@@ -23,9 +23,13 @@ type State = {
   pushRecording: boolean;
   recordingMode: string;
   stream: MediaStream | undefined;
+  format: string;
 };
 
 const recordingModeOptions = ["On Push", "Time Slices"];
+
+const formatOptions = ["Compressed", "PCM 16 kHz"];
+const formatValues = ["blob", "pcm"];
 
 export default class AudioInputUI extends Component<ServiceUIProps, State> {
   state: State = {
@@ -37,18 +41,25 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
     pushRecording: false,
     recordingMode: recordingModeOptions[0],
     stream: undefined,
+    format: formatValues[0],
   };
 
   onInit = (initialState: any) => {
-    const { timeslice, availableDevices } = initialState;
+    const { timeslice, availableDevices, format } = initialState;
     this.setState({
       devices: availableDevices,
       timeslice,
+      format: formatValues.includes(format) ? format : formatValues[0],
     });
   };
 
   onNotification = (notification: any) => {
-    const { isRecording, timeslice, availableDevices, stream } = notification;
+    const { isRecording, timeslice, availableDevices, stream, format } =
+      notification;
+
+    if (format !== undefined && formatValues.includes(format)) {
+      this.setState({ format });
+    }
 
     if (isRecording !== undefined) {
       this.setState({ recording: isRecording });
@@ -94,8 +105,15 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
     this.setState({ pushRecording: false });
   };
 
+  onChangeFormat = (newFormat: string) => {
+    const index = formatOptions.indexOf(newFormat);
+    if (index >= 0) {
+      this.props.service.configure({ format: formatValues[index] });
+    }
+  };
+
   renderMain = (service: ServiceInstance) => {
-    const { recording, timeslice, recordingMode } = this.state;
+    const { recording, timeslice, recordingMode, format } = this.state;
     return (
       <div className="flex flex-col text-left mx-5 h-full">
         <WaveformDisplay
@@ -108,6 +126,13 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
           options={recordingModeOptions}
           value={recordingMode}
           onChange={(newMode) => this.setState({ recordingMode: newMode })}
+        />
+
+        <RadioGroup
+          title="Output Format"
+          options={formatOptions}
+          value={formatOptions[formatValues.indexOf(format)]}
+          onChange={this.onChangeFormat}
         />
 
         <OneOfVisible current={recordingModeOptions.indexOf(recordingMode)}>

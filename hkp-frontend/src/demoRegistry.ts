@@ -22,6 +22,7 @@ import relayBoard from "../boards/relay.json";
 import linkDebuggerBoard from "../boards/link-debugger.json";
 import spotifyBoard from "../boards/spotify-board.json";
 import encryptBoard from "../boards/encrypt-board.json";
+import voiceNotesBoard from "../boards/speech-to-text-demo-board.json";
 
 const REGISTRY: Record<string, BoardDescriptor> = {
   "alpaca-markets": alpacaBoard as unknown as BoardDescriptor,
@@ -46,6 +47,7 @@ const REGISTRY: Record<string, BoardDescriptor> = {
   "link-debugger": linkDebuggerBoard as unknown as BoardDescriptor,
   "spotify-to-github": spotifyBoard as unknown as BoardDescriptor,
   "encrypt-decrypt": encryptBoard as unknown as BoardDescriptor,
+  "voice-notes": voiceNotesBoard as unknown as BoardDescriptor,
 };
 
 export function findDemoBoard(slug: string): BoardDescriptor | undefined {
