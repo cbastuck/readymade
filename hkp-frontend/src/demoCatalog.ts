@@ -143,6 +143,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     tags: ["API key"],
   },
   {
+    slug: "voice-notes",
+    label: "Voice Notes",
+    description:
+      "Speak and get the transcript — the browser records PCM audio, a local Whisper model in the Python runtime transcribes it, and the text flows back into a monitor.",
+    icon: "🗣️",
+    tags: ["Audio", "AI/ML", "Needs Python"],
+  },
+  {
     slug: "encrypt-decrypt",
     label: "Encrypt / Decrypt",
     description:

@@ -28,18 +28,28 @@ type Props = {
   onInject: (data: any) => void;
 };
 
+// Typed Data objects (FloatRingBuffer etc.) carry a Symbol tag, which
+// structuredClone rejects with DataCloneError — keep the reference instead.
+function safeClone(data: any): any {
+  try {
+    return structuredClone(data);
+  } catch (_err) {
+    return data;
+  }
+}
+
 export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
   const theme = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const [isSticky, setIsSticky] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [history, setHistory] = useState<any[]>(() =>
-    data != null ? [structuredClone(data)] : [],
+    data != null ? [safeClone(data)] : [],
   );
 
   useEffect(() => {
     if (data == null) return;
-    setHistory((prev) => [structuredClone(data), ...prev].slice(0, MAX_HISTORY));
+    setHistory((prev) => [safeClone(data), ...prev].slice(0, MAX_HISTORY));
   }, [data]);
 
   const onOpen = () => setIsOpen(true);

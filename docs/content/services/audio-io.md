@@ -19,13 +19,22 @@ Records audio from a microphone and plays it back through the speakers, in both 
 
 **Service ID:** `hookup.to/service/audio-input`
 
-Requests microphone access and records audio using the browser's `MediaRecorder` API. Emits `FloatRingBuffer` chunks downstream on a configurable interval.
+Requests microphone access and records audio in one of two output formats:
+
+- **`blob`** (default) — records with the browser's `MediaRecorder` API and
+  emits compressed audio `Blob` chunks (webm/opus on Chrome, mp4/aac on
+  Safari) downstream on a configurable interval.
+- **`pcm`** — captures raw samples with an `AudioWorklet`, accumulates them
+  while recording, and on stop emits a single `FloatRingBuffer` of
+  **16 kHz mono float32** samples — the contract expected by the Python
+  [Speech To Text](./speech-to-text.md) service.
 
 ### Configuration
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `timeslice` | `number` | `1000` | Recording chunk interval in milliseconds |
+| `timeslice` | `number` | `1000` | Recording chunk interval in milliseconds (`blob` format) |
+| `format` | `string` | `"blob"` | Output format: `"blob"` or `"pcm"` |
 | `device` | `MediaDeviceInfo` | system default | Audio input device to use |
 
 ### Commands
@@ -33,11 +42,12 @@ Requests microphone access and records audio using the browser's `MediaRecorder`
 | Action | Params | Description |
 |---|---|---|
 | `"start-recording"` | `{ timeslice? }` | Start capturing audio |
-| `"stop-recording"` | — | Stop capturing |
+| `"stop-recording"` | — | Stop capturing; in `pcm` format this emits the recording |
 
 ### Output
 
-A `FloatRingBuffer` containing the most recent audio chunk at the device's native sample rate.
+`blob`: compressed audio `Blob` chunks while recording.
+`pcm`: one `FloatRingBuffer` (16 kHz mono float32) emitted when recording stops.
 
 ---
 

@@ -1,0 +1,136 @@
+{
+  "boardName": "Voice Notes",
+  "description": "Speak into the microphone and get the transcript as text — powered by an open-source Whisper model running locally in the hkp-python runtime. The browser records raw PCM audio (16 kHz mono), ships it to Python as a FloatRingBuffer over the YAS wire format, the speech-to-text service transcribes it with faster-whisper, and the resulting JSON flows back into a browser monitor. Requires the Python runtime on port 8080 with the ASR extra installed: pip install \"hkp-python[asr]\". The first transcription downloads the model, so give it a moment.",
+  "runtimes": [
+    {
+      "id": "recorder",
+      "name": "Recorder",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "display",
+      "name": "Transcript",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    }
+  ],
+  "services": {
+    "recorder": [
+      {
+        "uuid": "mic",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Microphone",
+        "state": {
+          "format": "pcm",
+          "timeslice": 1000
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "stt",
+        "serviceId": "speech-to-text",
+        "serviceName": "Speech To Text",
+        "state": {
+          "model": "small",
+          "language": "auto",
+          "computeType": "int8",
+          "device": "auto"
+        }
+      }
+    ],
+    "display": [
+      {
+        "uuid": "transcript-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Transcript"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "voice-notes",
+        "title": "Voice Notes",
+        "layout": {
+          "direction": "column",
+          "padding": 24,
+          "gap": 16,
+          "align": "center",
+          "justify": "center",
+          "fill": true,
+          "items": [
+            {
+              "type": "status-indicator",
+              "source": {
+                "serviceUuid": "stt",
+                "path": "status"
+              },
+              "statusColors": {
+                "idle": "#22c55e",
+                "loading": "#3b82f6",
+                "transcribing": "#f59e0b",
+                "error": "#ef4444"
+              }
+            },
+            {
+              "type": "message-list",
+              "source": {
+                "serviceUuid": "transcript-monitor",
+                "path": "text"
+              }
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "● Record",
+                  "action": {
+                    "serviceUuid": "mic",
+                    "configure": {
+                      "command": {
+                        "action": "start-recording"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "■ Stop & Transcribe",
+                  "action": {
+                    "serviceUuid": "mic",
+                    "configure": {
+                      "command": {
+                        "action": "stop-recording"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
