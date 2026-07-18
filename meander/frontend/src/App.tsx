@@ -1,7 +1,7 @@
 import HkpApp from "hkp-frontend/src/App";
 import MeanderPlayground from "./MeanderPlayground";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "hkp-frontend/src/router";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import CloudBoards from "hkp-frontend/src/views/cloud";
@@ -10,6 +10,8 @@ import { getBackend } from "./backend";
 import LoadIndicator from "./LoadIndicator";
 import { VaultProvider } from "hkp-frontend/src/VaultContext";
 import { DEMO_BOARDS } from "./demoBoards";
+import { useShareFlow } from "./share/useShareFlow";
+import ShareOverlay from "./share/ShareOverlay";
 
 function demoSlug(label: string): string {
   return label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -68,6 +70,32 @@ function MeanderShell() {
   const [view, setView] = useState<View>(() =>
     shouldRenderPlaygroundFromUrl() ? { type: "loading" } : { type: "start" },
   );
+  // Bumped when a share opens a board while the playground is already mounted:
+  // the playground only honors its board descriptor on the initial fetch, so a
+  // fresh key forces a remount with the picked board.
+  const [playgroundKey, setPlaygroundKey] = useState(0);
+
+  // Share feature (see MobileApp.tsx for the iOS counterpart): the state
+  // machine lives in useShareFlow; this component only supplies how to open
+  // the picked board and where to render the overlay/consumer.
+  const openBoardForShare = useCallback(async (name: string) => {
+    const backend = await getBackend();
+    const board = await backend.loadBoard(name);
+    setPlaygroundKey((key) => key + 1);
+    setView({ type: "playground", board });
+    window.history.replaceState(null, "", "/playground");
+  }, []);
+  const share = useShareFlow(openBoardForShare);
+
+  const onShowStartPage = () => {
+    setView({ type: "start" });
+    window.history.replaceState(null, "", "/");
+  };
+
+  const onRestoreBoard = (board: BoardDescriptor | null | undefined) => {
+    setView({ type: "playground", board: board ?? null });
+    window.history.replaceState(null, "", "/playground");
+  };
 
   useEffect(() => {
     if (view.type !== "loading") return;
@@ -84,29 +112,31 @@ function MeanderShell() {
     );
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const onShowStartPage = () => {
-    setView({ type: "start" });
-    window.history.replaceState(null, "", "/");
-  };
-
-  const onRestoreBoard = (board: BoardDescriptor | null | undefined) => {
-    setView({ type: "playground", board: board ?? null });
-    window.history.replaceState(null, "", "/playground");
-  };
-
+  let content;
   if (location.pathname.startsWith("/cloud-boards")) {
-    return <CloudBoards />;
+    content = <CloudBoards />;
+  } else if (view.type === "loading") {
+    content = <LoadIndicator />;
+  } else if (view.type === "playground") {
+    content = (
+      <MeanderPlayground
+        key={playgroundKey}
+        initialBoard={view.board}
+        onLogo={onShowStartPage}
+        shareToInject={share.shareToInject}
+        onShareConsumed={share.onShareConsumed}
+      />
+    );
+  } else {
+    content = <StartPage onRestoreBoard={onRestoreBoard} />;
   }
 
-  if (view.type === "loading") {
-    return <LoadIndicator />;
-  }
-  if (view.type === "playground") {
-    return (
-      <MeanderPlayground initialBoard={view.board} onLogo={onShowStartPage} />
-    );
-  }
-  return <StartPage onRestoreBoard={onRestoreBoard} />;
+  return (
+    <>
+      {content}
+      <ShareOverlay flow={share} />
+    </>
+  );
 }
 
 export default App;

@@ -3,8 +3,10 @@
 #include <vector>
 #include <iostream>
 
+#include "./shareInbox.h"
+
 // Forward declaration of your existing main logic
-int real_main(int argc, char* argv[]); 
+int real_main(int argc, char* argv[]);
 
 @interface AppDelegate : NSObject <NSApplicationDelegate>
 @end
@@ -37,6 +39,22 @@ int real_main(int argc, char* argv[]);
 
     // Terminate the app after handling files
     [NSApp terminate:nil];
+}
+
+// The share extension opens readymade://share?id=… after dropping an envelope
+// into the App Group inbox — launching the app if needed, foregrounding it
+// otherwise. The URL itself carries no payload we act on; it is a wake-up. The
+// web app drains the inbox on focus anyway, but the nudge makes it immediate
+// (and covers the case where our window was already focused).
+- (void)application:(NSApplication *)application openURLs:(NSArray<NSURL *> *)urls {
+    for (NSURL *url in urls) {
+        if ([url.scheme isEqualToString:@"readymade"]) {
+            NSLog(@"[ReadymadeShare] openURLs: %@", url);
+            [NSApp activateIgnoringOtherApps:YES];
+            meanderNotifyShareUrlOpened();
+            return;
+        }
+    }
 }
 
 @end

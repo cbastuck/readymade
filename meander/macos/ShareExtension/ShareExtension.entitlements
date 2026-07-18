@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- macOS app extensions must be sandboxed. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<!-- Shared drop box with the host app. Must match the macOS branch of
+	     ShareInbox.swift, backend/shareInbox.h, and Readymade.entitlements. -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.readymadeit.app</string>
+	</array>
+</dict>
+</plist>

@@ -12,6 +12,10 @@
 
 #include "server.h"
 
+#ifdef __APPLE__
+#include "./shareRouter.h"
+#endif
+
 using json = nlohmann::json;
 
 SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings& settings)
@@ -122,6 +126,11 @@ SchemeHandler::SchemeHandler(std::shared_ptr<hkp::Server> server, const Settings
       "GET",
       "/local-image/:path",
       std::bind(&SchemeHandler::handleGetLocalImage, this, std::placeholders::_1, std::placeholders::_2));
+
+#ifdef __APPLE__
+  // "Share to Readymade" routes live in their own router (shareRouter.cpp).
+  registerShareRoutes(*this, m_defaultHeaders);
+#endif
 }
 
 void SchemeHandler::addRoute(const Router::Method &method, const std::string &path, Router::Handler handler)

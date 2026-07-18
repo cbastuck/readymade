@@ -237,9 +237,16 @@ export default function MobileApp() {
   const handlePickShareBoard = useCallback(
     (name: string) => {
       // Keep shareActiveRef true through injection; released on consume.
-      setShareToInject(pendingShare);
+      const share = pendingShare;
       setPendingShare(null);
-      setSession({ name });
+      if (!share) {
+        return;
+      }
+      // Same deferred-open path as pre-tagged shares: close any other open
+      // board first (the effect above opens the target once the session is
+      // clear), so the share cannot run through the wrong board's pipeline.
+      setShareToInject({ ...share, boardName: name });
+      setSession((prev) => (prev?.name === name ? prev : null));
     },
     [pendingShare],
   );

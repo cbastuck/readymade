@@ -18,6 +18,30 @@ export type SharePayload = {
    * directly; when absent the in-app picker asks.
    */
   boardName?: string;
+  /**
+   * Metadata of a binary payload (image, PDF, any file) accompanying the
+   * share. The bytes live natively and are fetched on demand from
+   * hkp://share-files/<id> right before injection (see fetchSharedFileData).
+   */
+  file?: {
+    name: string;
+    mimeType: string;
+    size: number;
+  };
+};
+
+/**
+ * The shape a board's first service receives as its input when a share is
+ * injected: the envelope, with the binary payload (if any) resolved to bytes.
+ */
+export type ShareInput = Omit<SharePayload, "file"> & {
+  file?: {
+    name: string;
+    mimeType: string;
+    size: number;
+    /** The payload bytes; absent if fetching them failed. */
+    data?: Uint8Array;
+  };
 };
 
 declare global {
@@ -41,6 +65,34 @@ export function drainNextShare(): SharePayload | null {
     return queue.shift() ?? null;
   }
   return null;
+}
+
+/**
+ * Fetch the binary payload of a share from the native shell. Returns null when
+ * there is no payload (or it is gone — e.g. already released).
+ */
+export async function fetchSharedFileData(
+  id: string,
+): Promise<Uint8Array | null> {
+  try {
+    const response = await fetch(`hkp://share-files/${id}`);
+    if (!response.ok) {
+      return null;
+    }
+    return new Uint8Array(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Release a share's binary payload once the board has consumed it, so the
+ * native side can delete the file. Fire-and-forget.
+ */
+export function releaseSharedFile(id: string): void {
+  void fetch(`hkp://share-files/${id}`, { method: "DELETE" }).catch(() => {
+    // Sweep on the native side cleans up if this never lands.
+  });
 }
 
 /**
