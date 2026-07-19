@@ -14,6 +14,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    // Pin the timezone so local-time formatting (moment, Date) is
+    // deterministic regardless of the machine running the tests.
+    env: { TZ: "Europe/Berlin" },
     setupFiles: "./src/test/setupTests.ts",
     alias: {
       streamsaver: path.resolve(__dirname, "./src/test/mocks/streamsaver.ts"),
