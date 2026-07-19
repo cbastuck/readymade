@@ -124,12 +124,12 @@ jobs:
             exit 0
           }
 
-          $exe = Get-ChildItem -Path build -Filter Meander.exe -Recurse |
+          $exe = Get-ChildItem -Path build -Filter Readymade.exe -Recurse |
             Where-Object { $_.FullName -match '\\Release\\' } |
             Select-Object -First 1
 
           if (-not $exe) {
-            throw 'Could not locate Meander.exe in build output for signing.'
+            throw 'Could not locate Readymade.exe in build output for signing.'
           }
 
           .\scripts\sign-windows.ps1 `
@@ -148,12 +148,12 @@ jobs:
             $packageTag = $env:GITHUB_SHA.Substring(0, 7)
           }
 
-          $exe = Get-ChildItem -Path build -Filter Meander.exe -Recurse |
+          $exe = Get-ChildItem -Path build -Filter Readymade.exe -Recurse |
             Where-Object { $_.FullName -match '\\Release\\' } |
             Select-Object -First 1
 
           if (-not $exe) {
-            throw 'Could not locate Meander.exe in build output.'
+            throw 'Could not locate Readymade.exe in build output.'
           }
 
           $staging = "meander-windows-$packageTag"
