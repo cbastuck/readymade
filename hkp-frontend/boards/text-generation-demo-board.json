@@ -1,0 +1,51 @@
+{
+  "boardName": "Text Generation Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "prompt-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Prompt",
+        "state": {
+          "recentInjection": "Explain quantum computing in one paragraph."
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "llm-svc",
+        "serviceId": "text-generation",
+        "serviceName": "Text Generation",
+        "state": {
+          "serverUrl": "http://127.0.0.1:8081",
+          "systemPrompt": "You are a helpful assistant",
+          "temperature": 0.7,
+          "topP": 0.95,
+          "topK": 20,
+          "maxTokens": 512,
+          "thinking": false
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "monitor",
+        "serviceName": "Generated Text"
+      }
+    ]
+  }
+}

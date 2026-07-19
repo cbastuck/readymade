@@ -20,6 +20,7 @@ const serviceName = "Board-Service";
 type Config = {
   result: any;
   selectedBoard: string;
+  boardSource: "selected" | "input";
   command?: {
     action: string;
     params: any;
@@ -32,6 +33,7 @@ class BoardService {
   board: string;
   uuid: string;
   selectedBoard: string | null = null;
+  boardSource: "selected" | "input" = "selected";
 
   constructor(
     app: AppImpl,
@@ -51,6 +53,10 @@ class BoardService {
 
     if (config.selectedBoard !== undefined) {
       this.selectedBoard = config.selectedBoard;
+    }
+
+    if (config.boardSource === "selected" || config.boardSource === "input") {
+      this.boardSource = config.boardSource;
     }
   }
 

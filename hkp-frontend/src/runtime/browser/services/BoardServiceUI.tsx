@@ -40,6 +40,7 @@ function BoardServiceInner({ renderContent }: BoardServiceInnerProps) {
 type Config = {
   result: any;
   selectedBoard: string;
+  boardSource: "selected" | "input";
   command?: {
     action: string;
     params: any;
@@ -54,6 +55,12 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   useEffect(() => setSavedBoards(getLocalBoards()), []);
 
   const [selectedSavedBoard, setSelectedSavedBoard] = useState("");
+  const [boardSource, setBoardSource] = useState<"selected" | "input">(
+    "selected",
+  );
+  // In "input" board-source mode the board to play arrives with each payload
+  // ({ board, payload }); a ref keeps fetchBoard free of stale-closure issues.
+  const dynamicBoardName = useRef<string | null>(null);
   const [incomingBoard, setIncomingBoard] = useState<BoardDescriptor | null>(
     null,
   );
@@ -78,6 +85,9 @@ export default function BoardServiceUI(props: ServiceUIProps) {
     if (update.selectedBoard !== undefined) {
       setSelectedSavedBoard(update.selectedBoard);
     }
+    if (update.boardSource === "selected" || update.boardSource === "input") {
+      setBoardSource(update.boardSource);
+    }
   }, []);
 
   const onInit = useCallback(
@@ -87,7 +97,42 @@ export default function BoardServiceUI(props: ServiceUIProps) {
 
   const pendingPromise = useRef<any>(null);
 
+  const playCurrentBoard = (params: any) =>
+    new Promise((resolve, reject) => {
+      pendingPromise.current = { resolve, reject };
+      boardProviderRef.current?.onAction({
+        type: "playBoard",
+        params,
+      });
+    });
+
   const processSingle = async (params: any) => {
+    if (boardSource === "input") {
+      // Skill-router shape: { board: "<saved board name>", payload: {...} }.
+      // Anything else (e.g. an upstream error JSON) passes through untouched
+      // so it stays visible on downstream monitors.
+      if (
+        !params ||
+        typeof params !== "object" ||
+        typeof params.board !== "string"
+      ) {
+        return params;
+      }
+      if (!getLocalBoard(params.board)) {
+        return { error: `Board '${params.board}' not found in saved boards` };
+      }
+      const boardChanged = dynamicBoardName.current !== params.board;
+      dynamicBoardName.current = params.board;
+      if (boardChanged) {
+        setIncomingBoard(null);
+        boardProviderRef.current?.fetchBoard();
+        // Give the nested board a moment to instantiate its runtimes/services
+        // before playing into it.
+        await new Promise((resolve) => setTimeout(resolve, 150));
+      }
+      return playCurrentBoard(params.payload);
+    }
+
     if (isBoardDescriptorPayload(params)) {
       const nextBoard = normalizeBoardDescriptor(params);
       setIncomingBoard(nextBoard);
@@ -99,13 +144,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
       };
     }
 
-    return new Promise((resolve, reject) => {
-      pendingPromise.current = { resolve, reject };
-      boardProviderRef.current?.onAction({
-        type: "playBoard",
-        params,
-      });
-    });
+    return playCurrentBoard(params);
   };
 
   const process = async (params: any | Array<any>) => {
@@ -142,6 +181,19 @@ export default function BoardServiceUI(props: ServiceUIProps) {
   const activeBoardName = incomingBoard?.boardName || selectedBoard;
 
   const fetchBoard = useCallback(() => {
+    if (boardSource === "input") {
+      if (!dynamicBoardName.current) {
+        return null;
+      }
+      const board = getLocalBoard(dynamicBoardName.current);
+      if (!board) {
+        throw new Error(
+          `Board with name: '${dynamicBoardName.current}' was not found`,
+        );
+      }
+      return board;
+    }
+
     if (incomingBoard) {
       return incomingBoard;
     }
@@ -154,7 +206,7 @@ export default function BoardServiceUI(props: ServiceUIProps) {
       throw new Error(`Board with name: '${selectedBoard}' was not found`);
     }
     return board;
-  }, [incomingBoard, selectedBoard]);
+  }, [boardSource, incomingBoard, selectedBoard]);
 
   const onChangeSavedBoard = useCallback(
     (boardContext: BoardContextState, board: string) => {
@@ -237,6 +289,27 @@ export default function BoardServiceUI(props: ServiceUIProps) {
                 </>
               ) : (
                 <div className="flex flex-col gap-2">
+                  <SelectorField
+                    label="Source"
+                    value={boardSource}
+                    options={{
+                      selected: "selected board",
+                      input: "board name from input",
+                    }}
+                    onChange={({ value }) => {
+                      service.configure({ boardSource: value });
+                      setBoardSource(value as "selected" | "input");
+                    }}
+                  />
+                  {boardSource === "input" && (
+                    <div className="text-xs text-neutral-600">
+                      Plays the saved board named by the incoming{" "}
+                      {"{ board, payload }"}
+                      {dynamicBoardName.current
+                        ? ` — last: ${dynamicBoardName.current}`
+                        : ""}
+                    </div>
+                  )}
                   <div className="flex items-center">
                     <SelectorField
                       label="Board"

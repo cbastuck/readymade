@@ -1,4 +1,4 @@
-# hkp Build Guide
+# Readymade Build Guide
 
 Quick instructions for building the project from the repository root.
 
@@ -6,7 +6,7 @@ To build for dev-server mode (no embedded frontend) with the script, use `./buil
 
 ## Screenshot
 
-![Meander screenshot](./meander-screenshot.png)
+![Readymade screenshot](./readymade-screenshot.png)
 
 ## Prerequisites
 
@@ -67,7 +67,7 @@ This does the following:
 
 1. Builds the web app in `meander/frontend` (`npm run build`)
 2. Configures CMake in `build/` (first run only)
-3. Builds the CMake project and the `meander` app target
+3. Builds the CMake project and the `Readymade` app target
 
 The build script also enables local vcpkg binary/download caching under `.cache/vcpkg/` by default, so repeated builds reuse prebuilt dependency artifacts instead of rebuilding large ports (for example Boost).
 
@@ -103,7 +103,7 @@ CC=gcc-14 CXX=g++-14 ./build-linux.sh Debug ON
 
 ### Linux runtime troubleshooting
 
-If launching `build-linux/meander/meander` fails with errors like:
+If launching `build-linux/meander/Readymade` fails with errors like:
 
 - `bwrap: setting up uid map: Permission denied`
 - `Failed to fully launch dbus-proxy`
@@ -127,7 +127,7 @@ sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
 2. Debug-only app workaround (disables WebKit sandbox):
 
 ```bash
-WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 ./build-linux/meander/meander
+WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 ./build-linux/meander/Readymade
 ```
 
 3. Ubuntu 24.04 system-policy fix (community-tested, no absolute app paths):
@@ -156,7 +156,7 @@ sudo systemctl restart apparmor
 Then launch the app normally:
 
 ```bash
-./build-linux/meander/meander
+./build-linux/meander/Readymade
 ```
 
 Use option 2 only for local development/testing.
@@ -183,7 +183,7 @@ Example `Release` build from repo root:
 
 ```bash
 cmake -S . -B build -DMEANDER_USE_EMBEDDED_FRONTEND=ON
-cmake --build build --target meander --config Release
+cmake --build build --target Readymade --config Release
 ```
 
 ## Build on Windows

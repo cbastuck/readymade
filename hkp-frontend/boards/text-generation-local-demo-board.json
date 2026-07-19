@@ -1,0 +1,80 @@
+{
+  "boardName": "Text Generation Local Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "playback",
+      "name": "Playback",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "prompt-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Prompt",
+        "state": {
+          "recentInjection": "Explain quantum computing in one paragraph."
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "llm-svc",
+        "serviceId": "text-generation",
+        "serviceName": "Text Generation (local)",
+        "state": {
+          "backend": "local",
+          "modelPath": "~/models/Qwen3-0.6B-Q8_0.gguf",
+          "contextSize": 4096,
+          "gpuLayers": -1,
+          "systemPrompt": "You are a helpful assistant. Answer in one or two short spoken sentences — no markdown, no lists. /no_think",
+          "temperature": 0.7,
+          "topP": 0.95,
+          "topK": 20,
+          "maxTokens": 512
+        }
+      },
+      {
+        "uuid": "monitor-svc",
+        "serviceId": "monitor",
+        "serviceName": "Generated Text"
+      },
+      {
+        "uuid": "tts-svc",
+        "serviceId": "text-to-speech",
+        "serviceName": "Text To Speech",
+        "state": {
+          "model": "kokoro-v1.0",
+          "voice": "af_heart",
+          "speed": 1.0,
+          "lang": "en-us"
+        }
+      }
+    ],
+    "playback": [
+      {
+        "uuid": "speaker-svc",
+        "serviceId": "hookup.to/service/audio-output",
+        "serviceName": "Audio Output",
+        "state": {
+          "sampleRate": 24000
+        }
+      }
+    ]
+  }
+}

@@ -2,6 +2,10 @@ import { AppInstance, ServiceClass } from "hkp-frontend/src/types";
 import ServiceBase from "./ServiceBase";
 import { toArrayBuffer } from "./helpers";
 import { decodeBuffer } from "./audio/audioHelper";
+import {
+  convertToFloat32Array,
+  isFloatRingBuffer,
+} from "hkp-frontend/src/runtime/rest/Data";
 import AudioOutputUI from "./AudioOutputUI";
 
 const serviceId = "hookup.to/service/audio-output";
@@ -9,6 +13,7 @@ const serviceName = "Audio Output";
 
 type State = {
   fadeInTime: number;
+  sampleRate: number;
 };
 
 class AudioOutput extends ServiceBase<State> {
@@ -23,6 +28,7 @@ class AudioOutput extends ServiceBase<State> {
   ) {
     super(app, board, descriptor, id, {
       fadeInTime: 0,
+      sampleRate: 24000,
     });
 
     const AudioContextClass =
@@ -36,10 +42,14 @@ class AudioOutput extends ServiceBase<State> {
   }
 
   configure(config: any) {
-    const { fadeInTime } = config;
+    const { fadeInTime, sampleRate } = config;
     if (fadeInTime !== undefined) {
       this.state.fadeInTime = fadeInTime;
       this.app.notify(this, { fadeInTime });
+    }
+    if (typeof sampleRate === "number" && sampleRate > 0) {
+      this.state.sampleRate = sampleRate;
+      this.app.notify(this, { sampleRate });
     }
 
     if (config.command) {
@@ -115,6 +125,21 @@ class AudioOutput extends ServiceBase<State> {
     if (params instanceof AudioBuffer) {
       source = this.audioCtx.createBufferSource();
       source.buffer = params;
+    }
+
+    // Raw float32 samples (e.g. from the hkp-python text-to-speech service).
+    if (isFloatRingBuffer(params)) {
+      const floats = convertToFloat32Array(params.array);
+      if (floats.length > 0) {
+        const buffer = this.audioCtx.createBuffer(
+          1,
+          floats.length,
+          this.state.sampleRate,
+        );
+        buffer.getChannelData(0).set(floats);
+        source = this.audioCtx.createBufferSource();
+        source.buffer = buffer;
+      }
     }
 
     if (source) {

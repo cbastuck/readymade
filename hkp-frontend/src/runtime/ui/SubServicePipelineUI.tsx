@@ -27,6 +27,8 @@ type Props = {
    *  When provided and non-null, the real instance is used for the service UI so
    *  that notification channels (app.registerNotificationTarget) wire up correctly. */
   getActualInstance?: (instanceId: string) => ServiceInstance | null;
+  /** Start with the pipeline content folded (e.g. Switch branches). */
+  defaultCollapsed?: boolean;
 };
 
 export default function SubServicePipelineUI({
@@ -34,10 +36,11 @@ export default function SubServicePipelineUI({
   findServiceUI = restFindServiceUI,
   FallbackUI = RuntimeRestServiceUI,
   getActualInstance,
+  defaultCollapsed = false,
 }: Props) {
   const pipeline: PipelineEntry[] = service.state?.pipeline ?? [];
   const registry = service.app.listAvailableServices();
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [isDragging, setIsDragging] = useState(false);
   const dragCountRef = useRef(0);
   const isMobileHost = useIsMobileHost();
@@ -96,13 +99,15 @@ export default function SubServicePipelineUI({
               <ChevronDown size={14} strokeWidth={1.5} />
             )}
           </button>
-          <div className="flex ml-auto">
-            <ServiceSelector
-              id={`sub-pipeline-${service.uuid}`}
-              registry={registry}
-              onAddService={append}
-            />
-          </div>
+          {!collapsed && (
+            <div className="flex ml-auto">
+              <ServiceSelector
+                id={`sub-pipeline-${service.uuid}`}
+                registry={registry}
+                onAddService={append}
+              />
+            </div>
+          )}
         </div>
       )}
 

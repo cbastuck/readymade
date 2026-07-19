@@ -74,6 +74,12 @@ export type StatusIndicatorWidget = {
 export type ButtonWidget = {
   type: "button";
   label: string;
+  // Optional live dot rendered left of the label, driven by a service
+  // notification (e.g. a microphone's isRecording flag).
+  indicator?: {
+    source: FacadeWidgetSource;
+    statusColors?: Record<string, string>;
+  };
   action?: FacadeWidgetAction;
   actions?: WidgetAction[];
 };

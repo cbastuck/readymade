@@ -203,9 +203,13 @@ remaining space in their parent container.
 
 ### Widget types
 
-**button** — sends a configure payload to a service:
+**button** — sends a configure payload to a service. An optional `indicator` renders a live
+dot left of the label, driven by a service notification (values are matched via `String(value)`,
+so booleans work):
 ```json
-{ "type": "button", "label": "Start", "action": { "serviceUuid": "timer-svc", "configure": { "start": true } } }
+{ "type": "button", "label": "Start", "action": { "serviceUuid": "timer-svc", "configure": { "start": true } },
+  "indicator": { "source": { "serviceUuid": "mic-svc", "path": "isRecording" },
+                 "statusColors": { "true": "#ef4444", "false": "#6b7280" } } }
 ```
 
 **text-input** — text field that configures a service on submit. `$$input` is replaced with the typed value:

@@ -6,11 +6,8 @@ import AudioInputUI from "./AudioInputUI";
 const serviceId = "hookup.to/service/audio-input";
 const serviceName = "Audio Input";
 
-// The pcm format resamples to this rate before emitting — it is the rate
-// speech models (Whisper family) expect; consumers rely on this contract
-// because FloatRingBuffer carries no sample-rate field.
-export const PCM_SAMPLE_RATE = 16000;
-
+// "blob" emits compressed MediaRecorder blobs; "pcm" emits raw PCM samples
+// wrapped in a FloatRingBuffer, resampled to the configured pcmSampleRate.
 export type AudioInputFormat = "blob" | "pcm";
 
 type State = {
@@ -18,6 +15,9 @@ type State = {
   isRecording: boolean;
   availableDevices: MediaDeviceInfo[];
   format: AudioInputFormat;
+  // Rate pcm output is resampled to before emitting. The default suits
+  // Whisper-family speech models; board creators set it to match consumers.
+  pcmSampleRate: number;
 };
 
 type PcmCapture = {
@@ -80,6 +80,7 @@ class AudioInput extends ServiceBase<State> {
       isRecording: false,
       availableDevices: [],
       format: "blob",
+      pcmSampleRate: 16000,
     });
     this.recorder = undefined;
     this._stream = undefined;
@@ -100,6 +101,11 @@ class AudioInput extends ServiceBase<State> {
     if (format === "blob" || format === "pcm") {
       this.state.format = format;
       this.app.notify(this, { format });
+    }
+
+    if (typeof config.pcmSampleRate === "number" && config.pcmSampleRate > 0) {
+      this.state.pcmSampleRate = config.pcmSampleRate;
+      this.app.notify(this, { pcmSampleRate: this.state.pcmSampleRate });
     }
 
     if (device !== undefined) {
@@ -250,7 +256,7 @@ class AudioInput extends ServiceBase<State> {
       offset += chunk.length;
     }
 
-    const resampled = downsampleLinear(samples, captureRate, PCM_SAMPLE_RATE);
+    const resampled = downsampleLinear(samples, captureRate, this.state.pcmSampleRate);
     this.app.next(this, {
       type: FloatRingBufferSymbol,
       array: new Uint8Array(resampled.buffer),

@@ -1,0 +1,230 @@
+{
+  "boardName": "Voice Assistant",
+  "description": "A fully local voice assistant: push Record, speak, push Stop — the browser captures 16 kHz PCM audio and ships it to the hkp-python runtime, where speech-to-text (faster-whisper) transcribes it, text-generation answers via a local llama-server on port 8081, and text-to-speech (Kokoro-82M) synthesizes the reply, which plays back through the browser Audio Output. Requires the Python runtime on port 8080 with both extras installed (pip install \"hkp-python[asr,tts]\") and an OpenAI-compatible LLM server on port 8081. First use downloads the Whisper and Kokoro models, so give it a moment.",
+  "runtimes": [
+    {
+      "id": "recorder",
+      "name": "Recorder",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "playback",
+      "name": "Playback",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    }
+  ],
+  "services": {
+    "recorder": [
+      {
+        "uuid": "mic",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Microphone",
+        "state": {
+          "format": "pcm",
+          "timeslice": 1000
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "stt",
+        "serviceId": "speech-to-text",
+        "serviceName": "Speech To Text",
+        "state": {
+          "model": "small",
+          "language": "auto",
+          "computeType": "int8",
+          "device": "auto"
+        }
+      },
+      {
+        "uuid": "transcript-monitor",
+        "serviceId": "monitor",
+        "serviceName": "Transcript"
+      },
+      {
+        "uuid": "llm",
+        "serviceId": "text-generation",
+        "serviceName": "Text Generation",
+        "state": {
+          "serverUrl": "http://127.0.0.1:8081",
+          "systemPrompt": "You are a helpful voice assistant. Answer in one or two short spoken sentences — no markdown, no lists.",
+          "temperature": 0.7,
+          "topP": 0.95,
+          "topK": 20,
+          "maxTokens": 256,
+          "thinking": false
+        }
+      },
+      {
+        "uuid": "answer-monitor",
+        "serviceId": "monitor",
+        "serviceName": "Answer"
+      },
+      {
+        "uuid": "tts",
+        "serviceId": "text-to-speech",
+        "serviceName": "Text To Speech",
+        "state": {
+          "model": "kokoro-v1.0",
+          "voice": "af_heart",
+          "speed": 1.0,
+          "lang": "en-us"
+        }
+      }
+    ],
+    "playback": [
+      {
+        "uuid": "speaker",
+        "serviceId": "hookup.to/service/audio-output",
+        "serviceName": "Audio Output",
+        "state": {
+          "sampleRate": 24000
+        }
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "voice-assistant",
+        "title": "Voice Assistant",
+        "layout": {
+          "direction": "column",
+          "padding": 24,
+          "gap": 16,
+          "align": "center",
+          "justify": "center",
+          "fill": true,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "stt",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "loading": "#3b82f6",
+                    "transcribing": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "llm",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "generating": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "tts",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "downloading": "#3b82f6",
+                    "loading": "#3b82f6",
+                    "generating": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "fill": true,
+              "items": [
+                {
+                  "type": "message-list",
+                  "source": {
+                    "serviceUuid": "transcript-monitor",
+                    "path": "text"
+                  }
+                },
+                {
+                  "type": "message-list",
+                  "source": {
+                    "serviceUuid": "answer-monitor",
+                    "path": "text"
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Record",
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "mic",
+                      "path": "isRecording"
+                    },
+                    "statusColors": {
+                      "true": "#ef4444",
+                      "false": "#6b7280"
+                    }
+                  },
+                  "action": {
+                    "serviceUuid": "mic",
+                    "configure": {
+                      "command": {
+                        "action": "start-recording"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "■ Stop & Answer",
+                  "action": {
+                    "serviceUuid": "mic",
+                    "configure": {
+                      "command": {
+                        "action": "stop-recording"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
