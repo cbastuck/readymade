@@ -5,6 +5,7 @@ hkp-rt/3rdparty/
 !build-linux.sh
 !build-ios.sh
 !build-android.sh
+!buildVersion.ts
 *.afdesign*
 **/.DS_Store
 tmp
