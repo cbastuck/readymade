@@ -272,6 +272,110 @@ describe("Map service – replace mode", () => {
     expect(result).toBe(10);
   });
 
+  it("slug() normalizes voice-transcribed identifiers (send-ntfy board template)", async () => {
+    const { service } = createMapService();
+    await service.configure({
+      template: {
+        "config.data.url=": "'https://ntfy.sh/' + slug(params.topic)",
+        "config.data.body=": "params.message",
+      },
+    });
+    const result = (await service.process({
+      // ASR capitalizes spelled-out letters and can inject punctuation.
+      topic: "CB, ABC",
+      message: "coming soon",
+    })) as any;
+    expect(result.config.data.url).toBe("https://ntfy.sh/cbabc");
+    expect(result.config.data.body).toBe("coming soon");
+  });
+
+  it("formatNow() builds a speakable date sentence (current-time board template)", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 6, 17, 21, 13));
+    try {
+      const { service } = createMapService();
+      await service.configure({
+        template: {
+          "text=": "\"Today it's \" + formatNow('dddd, MMMM, D. YYYY HH:mm')",
+        },
+      });
+      const result = (await service.process({})) as any;
+      expect(result.text).toBe("Today it's Friday, July, 17. 2026 21:13");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("computes minutes until departure (next-bus board template)", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-07-18T11:24:00+02:00"));
+    try {
+      // Two-stage pipeline like the board: extraction runs find() once and
+      // exposes the picked departure as an observable intermediate.
+      const { service: pick } = createMapService();
+      await pick.configure({
+        template: { "next=": "find(params.departures, 'isFuture(item.when)')" },
+      });
+      const { service: sentence } = createMapService();
+      await sentence.configure({
+        template: {
+          "text=":
+            "params.next ? 'The bus leaves in ' + moment(params.next.when).diff(moment(), 'minutes') + ' minutes at ' + moment(params.next.when).format('HH:mm') + '.' : 'I found no upcoming departures.'",
+        },
+      });
+      const run = async (input: any) =>
+        (await sentence.process(await pick.process(input))) as any;
+
+      const result = await run({
+        departures: [{ tripId: "1|2|3", when: "2026-07-18T11:36:00+02:00" }],
+      });
+      expect(result.text).toBe("The bus leaves in 12 minutes at 11:36.");
+
+      // The API keeps delayed/just-departed entries (and cancelled ones with
+      // when = null) at the head — the first *upcoming* departure counts.
+      const delayedHead = await run({
+        departures: [
+          { tripId: "a", when: "2026-07-18T11:21:00+02:00" },
+          { tripId: "b", when: null },
+          { tripId: "c", when: "2026-07-18T11:31:00+02:00" },
+        ],
+      });
+      expect(delayedHead.text).toBe("The bus leaves in 7 minutes at 11:31.");
+
+      const empty = await run({ departures: [] });
+      expect(empty.text).toBe("I found no upcoming departures.");
+
+      // Only past/cancelled departures in the window.
+      const stale = await run({
+        departures: [{ tripId: "a", when: "2026-07-18T11:20:00+02:00" }],
+      });
+      expect(stale.text).toBe("I found no upcoming departures.");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("find/filter take expression-string predicates over item and index", async () => {
+    const { service } = createMapService();
+    await service.configure({
+      template: {
+        "cheapest=": "find(params.offers, 'item.price < 10').name",
+        "affordable=": "filter(params.offers, 'item.price < 30')",
+        "firstTwo=": "filter(params.offers, 'index < 2')",
+      },
+    });
+    const result = (await service.process({
+      offers: [
+        { name: "gold", price: 99 },
+        { name: "silver", price: 25 },
+        { name: "basic", price: 5 },
+      ],
+    })) as any;
+    expect(result.cheapest).toBe("basic");
+    expect(result.affordable.map((o: any) => o.name)).toEqual(["silver", "basic"]);
+    expect(result.firstTwo.map((o: any) => o.name)).toEqual(["gold", "silver"]);
+  });
+
   it("scalar string concatenation expression", async () => {
     const { service } = createMapService();
     await service.configure({

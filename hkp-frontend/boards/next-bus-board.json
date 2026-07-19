@@ -1,0 +1,52 @@
+{
+  "boardName": "next bus",
+  "description": "Skill target board: fetches the next departures for a specific stop/direction from the BVG transport.rest API, takes the first departure's 'when' timestamp and returns the minutes until it leaves as a speakable sentence, e.g. { \"text\": \"The next bus leaves in 7 minutes.\" } — or a fallback sentence when no departure is found in the window. Change the stop, direction, or time window via the Fetcher's url state. Used by the Voice Assistant + Skills board; the outer board's text-to-speech announces the result. Save this board locally as 'next bus' so the dispatcher can find it by name.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "fetch-departures",
+        "serviceId": "hookup.to/service/fetcher",
+        "serviceName": "Fetch Departures",
+        "state": {
+          "url": "https://v6.bvg.transport.rest/stops/900100003/departures?direction=900120004&duration=10&linesOfStops=false&remarks=true&language=en",
+          "method": "GET"
+        }
+      },
+      {
+        "uuid": "pick-departure",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Pick Departure",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "next=": "find(params.departures, 'isFuture(item.when)')"
+          }
+        }
+      },
+      {
+        "uuid": "build-sentence",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Build Sentence",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "text=": "params.next ? 'The bus leaves in ' + moment(params.next.when).diff(moment(), 'minutes') + ' minutes at ' + moment(params.next.when).format('HH:mm') + '.' : 'I found no upcoming departures.'"
+          }
+        }
+      },
+      {
+        "uuid": "sentence-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Sentence"
+      }
+    ]
+  }
+}

@@ -112,6 +112,11 @@ export default function ServiceUiContainer(props: Props) {
               position: "relative",
               zIndex: services.length - pos,
               paddingBottom: 10,
+              // The card inside refuses to shrink (flexShrink: 0), so a
+              // shrinking wrapper makes cards overflow it unclipped and
+              // overlap the next service; keep natural width and let the
+              // runtime row scroll horizontally instead.
+              flexShrink: 0,
             }}
           >
             <ServiceWithDropBars

@@ -21,6 +21,9 @@ interface Props {
   recentBoardName?: string | null;
   onContinueRecent?: () => void;
   onLoadBoard?: () => void;
+  /** Label of the load-board button, e.g. "Import board"; defaults to
+   *  "Load board". */
+  loadBoardLabel?: string;
   onCreateBoard: () => void;
   /** Host-provided extra controls (e.g. the app menu), rendered rightmost. */
   menuSlot?: ReactNode;
@@ -48,6 +51,7 @@ export default function TopBar({
   recentBoardName,
   onContinueRecent,
   onLoadBoard,
+  loadBoardLabel,
   onCreateBoard,
   menuSlot,
 }: Props) {
@@ -132,7 +136,7 @@ export default function TopBar({
         )}
         {onLoadBoard && (
           <button className="st-btn st-btn-ghost" onClick={onLoadBoard}>
-            Load board
+            {loadBoardLabel ?? "Load board"}
           </button>
         )}
         <button className="st-btn st-btn-primary" onClick={onCreateBoard}>

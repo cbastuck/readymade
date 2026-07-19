@@ -1,0 +1,79 @@
+{
+  "boardName": "next bus switch",
+  "description": "Switch-based variant of the 'next bus' skill board: fetches the next departures for a specific stop/direction from the BVG transport.rest API, picks the first upcoming departure, and branches through the Switch service — the matched case builds 'The bus leaves in N minutes at HH:mm.', the default case answers 'I found no upcoming departures.' No conditional logic lives in template strings. Change the stop, direction, or time window via the Fetcher's url state. Save this board locally as 'next bus switch' and point the skill-router's 'next bus departure' skill at it to use this version.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "fetch-departures",
+        "serviceId": "hookup.to/service/fetcher",
+        "serviceName": "Fetch Departures",
+        "state": {
+          "url": "https://v6.bvg.transport.rest/stops/900100003/departures?direction=900120004&duration=10&linesOfStops=false&remarks=true&language=en",
+          "method": "GET"
+        }
+      },
+      {
+        "uuid": "pick-departure",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Pick Departure",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "next=": "find(params.departures, 'isFuture(item.when)')"
+          }
+        }
+      },
+      {
+        "uuid": "branch-sentence",
+        "serviceId": "hookup.to/service/switch",
+        "serviceName": "Branch Sentence",
+        "state": {
+          "cases": [
+            {
+              "when": "params.next",
+              "pipeline": [
+                {
+                  "serviceId": "hookup.to/service/map",
+                  "instanceId": "departure-sentence",
+                  "serviceName": "Departure Sentence",
+                  "state": {
+                    "mode": "replace",
+                    "template": {
+                      "text=": "'The bus leaves in ' + moment(params.next.when).diff(moment(), 'minutes') + ' minutes at ' + moment(params.next.when).format('HH:mm') + '.'"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "default": [
+            {
+              "serviceId": "hookup.to/service/map",
+              "instanceId": "fallback-sentence",
+              "serviceName": "Fallback Sentence",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "text": "I found no upcoming departures."
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "sentence-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Sentence"
+      }
+    ]
+  }
+}

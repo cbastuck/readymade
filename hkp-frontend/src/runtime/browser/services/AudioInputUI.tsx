@@ -24,11 +24,12 @@ type State = {
   recordingMode: string;
   stream: MediaStream | undefined;
   format: string;
+  pcmSampleRate: number;
 };
 
 const recordingModeOptions = ["On Push", "Time Slices"];
 
-const formatOptions = ["Compressed", "PCM 16 kHz"];
+const formatOptions = ["Compressed", "PCM"];
 const formatValues = ["blob", "pcm"];
 
 export default class AudioInputUI extends Component<ServiceUIProps, State> {
@@ -42,23 +43,32 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
     recordingMode: recordingModeOptions[0],
     stream: undefined,
     format: formatValues[0],
+    pcmSampleRate: 16000,
   };
 
   onInit = (initialState: any) => {
-    const { timeslice, availableDevices, format } = initialState;
+    const { timeslice, availableDevices, format, pcmSampleRate } = initialState;
     this.setState({
       devices: availableDevices,
       timeslice,
       format: formatValues.includes(format) ? format : formatValues[0],
+      pcmSampleRate:
+        typeof pcmSampleRate === "number"
+          ? pcmSampleRate
+          : this.state.pcmSampleRate,
     });
   };
 
   onNotification = (notification: any) => {
-    const { isRecording, timeslice, availableDevices, stream, format } =
+    const { isRecording, timeslice, availableDevices, stream, format, pcmSampleRate } =
       notification;
 
     if (format !== undefined && formatValues.includes(format)) {
       this.setState({ format });
+    }
+
+    if (pcmSampleRate !== undefined) {
+      this.setState({ pcmSampleRate });
     }
 
     if (isRecording !== undefined) {
@@ -113,7 +123,8 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
   };
 
   renderMain = (service: ServiceInstance) => {
-    const { recording, timeslice, recordingMode, format } = this.state;
+    const { recording, timeslice, recordingMode, format, pcmSampleRate } =
+      this.state;
     return (
       <div className="flex flex-col text-left mx-5 h-full">
         <WaveformDisplay
@@ -134,6 +145,20 @@ export default class AudioInputUI extends Component<ServiceUIProps, State> {
           value={formatOptions[formatValues.indexOf(format)]}
           onChange={this.onChangeFormat}
         />
+
+        {format === "pcm" && (
+          <div className="flex">
+            <NumberInput
+              title="Sample Rate"
+              value={pcmSampleRate}
+              onChange={(newRate) =>
+                service.configure({ pcmSampleRate: Number(newRate) })
+              }
+            >
+              Hz
+            </NumberInput>
+          </div>
+        )}
 
         <OneOfVisible current={recordingModeOptions.indexOf(recordingMode)}>
           <div className="py-4 h-full">

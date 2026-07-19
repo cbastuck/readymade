@@ -1,0 +1,52 @@
+{
+  "boardName": "send ntfy",
+  "description": "Skill target board: takes { topic, message } as input, POSTs the message to https://ntfy.sh/<topic> and returns a speakable confirmation ({ text: 'Notification sent to topic ...' }) so the outer board's text-to-speech can announce it. Used by the Skill Router demos — the skill-router service dispatches here via a Board-Service in 'board name from input' mode. Save this board locally as 'send ntfy' so the dispatcher can find it by name.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "build-request",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Build Request",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "config.serviceId": "hookup.to/service/fetcher",
+            "config.data.method": "POST",
+            "config.data.url=": "'https://ntfy.sh/' + slug(params.topic)",
+            "config.data.body=": "params.message"
+          }
+        }
+      },
+      {
+        "uuid": "post-ntfy",
+        "serviceId": "hookup.to/service/fetcher",
+        "serviceName": "POST ntfy",
+        "state": {}
+      },
+      {
+        "uuid": "build-confirmation",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Build Confirmation",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "text=": "'Notification sent to topic ' + params.topic"
+          }
+        }
+      },
+      {
+        "uuid": "result-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Confirmation"
+      }
+    ]
+  }
+}

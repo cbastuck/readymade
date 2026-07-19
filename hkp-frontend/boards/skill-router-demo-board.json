@@ -1,0 +1,210 @@
+{
+  "boardName": "Skill Router",
+  "description": "Voice-controlled skill dispatch: push Record and say e.g. 'send a notification to topic X and message hello'. The browser ships 16 kHz PCM audio to the hkp-python runtime, speech-to-text transcribes it, and the skill-router service asks the local LLM (llama-server on port 8081) to match the request against the configured skills and extract the payload. On a match it emits { board, payload }; a Board-Service in 'board name from input' mode then plays the named saved board ('send ntfy') with that payload. No match stops the pipeline. Requires: hkp-python on port 8080 (pip install \"hkp-python[asr]\"), an OpenAI-compatible LLM server on port 8081, and the 'send ntfy' board saved locally.",
+  "runtimes": [
+    {
+      "id": "recorder",
+      "name": "Recorder",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "dispatch",
+      "name": "Dispatch",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    }
+  ],
+  "services": {
+    "recorder": [
+      {
+        "uuid": "mic",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Microphone",
+        "state": {
+          "format": "pcm",
+          "timeslice": 1000
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "stt",
+        "serviceId": "speech-to-text",
+        "serviceName": "Speech To Text",
+        "state": {
+          "model": "small",
+          "language": "auto",
+          "computeType": "int8",
+          "device": "auto"
+        }
+      },
+      {
+        "uuid": "transcript-monitor",
+        "serviceId": "monitor",
+        "serviceName": "Transcript"
+      },
+      {
+        "uuid": "router",
+        "serviceId": "skill-router",
+        "serviceName": "Skill Router",
+        "state": {
+          "serverUrl": "http://127.0.0.1:8081",
+          "temperature": 0.1,
+          "maxTokens": 256,
+          "skills": [
+            {
+              "action": "send notification",
+              "board": "send ntfy",
+              "payload": {
+                "topic": "the ntfy topic name",
+                "message": "the message text to send"
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "dispatch": [
+      {
+        "uuid": "dispatcher",
+        "serviceId": "hookup.to/service/board-service",
+        "serviceName": "Skill Dispatch",
+        "state": {
+          "boardSource": "input"
+        }
+      },
+      {
+        "uuid": "dispatch-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Dispatch Result"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "skill-router",
+        "title": "Skill Router",
+        "layout": {
+          "direction": "column",
+          "padding": 24,
+          "gap": 16,
+          "align": "center",
+          "justify": "center",
+          "fill": true,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "stt",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "loading": "#3b82f6",
+                    "transcribing": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "router",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "routing": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "fill": true,
+              "items": [
+                {
+                  "type": "message-list",
+                  "source": {
+                    "serviceUuid": "transcript-monitor",
+                    "path": "text"
+                  }
+                },
+                {
+                  "type": "message-list",
+                  "source": {
+                    "serviceUuid": "dispatch-monitor"
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Record",
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "mic",
+                      "path": "isRecording"
+                    },
+                    "statusColors": {
+                      "true": "#ef4444",
+                      "false": "#6b7280"
+                    }
+                  },
+                  "action": {
+                    "serviceUuid": "mic",
+                    "configure": {
+                      "command": {
+                        "action": "start-recording"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "Stop & Dispatch",
+                  "action": {
+                    "serviceUuid": "mic",
+                    "configure": {
+                      "command": {
+                        "action": "stop-recording"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "boardName": "current time",
+  "description": "Skill target board: answers with the current date and time as a speakable sentence, e.g. { \"text\": \"Today it's Friday, July, 17. 2026 21:13\" }. Used by the Voice Assistant + Skills board — the skill-router dispatches here, and the outer board's text-to-speech turns the returned text into audio. Save this board locally as 'current time' so the dispatcher can find it by name.",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "build-sentence",
+        "serviceId": "hookup.to/service/map",
+        "serviceName": "Build Sentence",
+        "state": {
+          "mode": "replace",
+          "template": {
+            "text=": "\"Today it's \" + formatNow('dddd, MMMM, D. YYYY HH:mm')"
+          }
+        }
+      },
+      {
+        "uuid": "sentence-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Sentence"
+      }
+    ]
+  }
+}

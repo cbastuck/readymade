@@ -48,7 +48,9 @@ export default function ServiceOutputPlug({ isActive, data, onInject }: Props) {
   );
 
   useEffect(() => {
-    if (data == null) return;
+    if (data == null) {
+      return;
+    }
     setHistory((prev) => [safeClone(data), ...prev].slice(0, MAX_HISTORY));
   }, [data]);
 

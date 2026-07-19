@@ -1,0 +1,316 @@
+{
+  "boardName": "Voice Assistant + Skills",
+  "description": "Voice assistant with skill dispatch: push Record and speak. The transcript goes to the skill-router — on a match (e.g. 'send a notification to topic X and message hello', 'what time is it', or 'when does the next bus leave') it early-returns { board, payload } past the LLM, and the browser Board-Service plays the named skill board. Both branches converge on one text-to-speech stage after the dispatcher: skill boards return { text: ... } (the dispatcher passes LLM answers through untouched), so skill results and LLM answers are spoken through the same voice. Requires hkp-python on port 8080 (pip install \"hkp-python[asr,tts]\"), an OpenAI-compatible LLM server on port 8081, and the 'send ntfy', 'current time', and 'next bus switch' boards saved locally.",
+  "runtimes": [
+    {
+      "id": "recorder",
+      "name": "Recorder",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "python",
+      "name": "Python",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "dispatch",
+      "name": "Dispatch",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "python-tts",
+      "name": "Speak",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    },
+    {
+      "id": "speaker",
+      "name": "Speaker",
+      "type": "browser",
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
+    }
+  ],
+  "services": {
+    "recorder": [
+      {
+        "uuid": "mic",
+        "serviceId": "hookup.to/service/audio-input",
+        "serviceName": "Microphone",
+        "state": {
+          "format": "pcm",
+          "timeslice": 1000
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "stt",
+        "serviceId": "speech-to-text",
+        "serviceName": "Speech To Text",
+        "state": {
+          "model": "small",
+          "language": "auto",
+          "computeType": "int8",
+          "device": "auto"
+        }
+      },
+      {
+        "uuid": "transcript-monitor",
+        "serviceId": "monitor",
+        "serviceName": "Transcript"
+      },
+      {
+        "uuid": "router",
+        "serviceId": "skill-router",
+        "serviceName": "Skill Router",
+        "state": {
+          "serverUrl": "http://127.0.0.1:8081",
+          "temperature": 0.1,
+          "maxTokens": 256,
+          "noMatch": "forward",
+          "skills": [
+            {
+              "action": "send notification",
+              "board": "send ntfy",
+              "payload": {
+                "topic": "the ntfy topic name",
+                "message": "the message text to send"
+              }
+            },
+            {
+              "action": "tell the current time and date",
+              "board": "current time",
+              "payload": {}
+            },
+            {
+              "action": "next bus departure",
+              "board": "next bus switch",
+              "payload": {}
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "llm",
+        "serviceId": "text-generation",
+        "serviceName": "Text Generation",
+        "state": {
+          "serverUrl": "http://127.0.0.1:8081",
+          "systemPrompt": "You are a helpful voice assistant. Answer in one or two short spoken sentences — no markdown, no lists.",
+          "temperature": 0.7,
+          "topP": 0.95,
+          "topK": 20,
+          "maxTokens": 256,
+          "thinking": false
+        }
+      },
+      {
+        "uuid": "answer-monitor",
+        "serviceId": "monitor",
+        "serviceName": "Answer"
+      }
+    ],
+    "dispatch": [
+      {
+        "uuid": "dispatcher",
+        "serviceId": "hookup.to/service/board-service",
+        "serviceName": "Skill Dispatch",
+        "state": {
+          "boardSource": "input"
+        }
+      }
+    ],
+    "python-tts": [
+      {
+        "uuid": "tts",
+        "serviceId": "text-to-speech",
+        "serviceName": "Text To Speech",
+        "state": {
+          "model": "kokoro-v1.0",
+          "voice": "af_heart",
+          "speed": 1.0,
+          "lang": "en-us"
+        }
+      }
+    ],
+    "speaker": [
+      {
+        "uuid": "speaker",
+        "serviceId": "hookup.to/service/audio-output",
+        "serviceName": "Audio Output",
+        "state": {
+          "sampleRate": 24000
+        }
+      },
+      {
+        "uuid": "output-monitor",
+        "serviceId": "hookup.to/service/monitor",
+        "serviceName": "Output"
+      }
+    ]
+  },
+  "facade": {
+    "layout": "single",
+    "panels": [
+      {
+        "id": "voice-skills",
+        "title": "Voice Assistant + Skills",
+        "layout": {
+          "direction": "column",
+          "padding": 24,
+          "gap": 16,
+          "align": "center",
+          "justify": "center",
+          "fill": true,
+          "items": [
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "stt",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "loading": "#3b82f6",
+                    "transcribing": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "router",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "routing": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "llm",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "generating": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                },
+                {
+                  "type": "status-indicator",
+                  "source": {
+                    "serviceUuid": "tts",
+                    "path": "status"
+                  },
+                  "statusColors": {
+                    "idle": "#22c55e",
+                    "downloading": "#3b82f6",
+                    "loading": "#3b82f6",
+                    "generating": "#f59e0b",
+                    "error": "#ef4444"
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "fill": true,
+              "items": [
+                {
+                  "type": "message-list",
+                  "source": {
+                    "serviceUuid": "transcript-monitor",
+                    "path": "text"
+                  }
+                },
+                {
+                  "type": "message-list",
+                  "source": {
+                    "serviceUuid": "answer-monitor",
+                    "path": "text"
+                  }
+                },
+                {
+                  "type": "message-list",
+                  "source": {
+                    "serviceUuid": "router",
+                    "path": "matched"
+                  }
+                }
+              ]
+            },
+            {
+              "direction": "row",
+              "gap": 12,
+              "items": [
+                {
+                  "type": "button",
+                  "label": "Record",
+                  "indicator": {
+                    "source": {
+                      "serviceUuid": "mic",
+                      "path": "isRecording"
+                    },
+                    "statusColors": {
+                      "true": "#ef4444",
+                      "false": "#6b7280"
+                    }
+                  },
+                  "action": {
+                    "serviceUuid": "mic",
+                    "configure": {
+                      "command": {
+                        "action": "start-recording"
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "button",
+                  "label": "Stop",
+                  "action": {
+                    "serviceUuid": "mic",
+                    "configure": {
+                      "command": {
+                        "action": "stop-recording"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "boardName": "Text To Speech Demo",
+  "runtimes": [
+    {
+      "id": "ui",
+      "name": "Browser",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "python",
+      "name": "hkp-python",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": { "wrapServices": false }
+    },
+    {
+      "id": "ui-out",
+      "name": "Browser Output",
+      "type": "browser",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "ui": [
+      {
+        "uuid": "text-svc",
+        "serviceId": "hookup.to/service/injector",
+        "serviceName": "Text",
+        "state": {
+          "recentInjection": "Hello! I am your local voice, running entirely on this machine.",
+          "plainText": true
+        }
+      }
+    ],
+    "python": [
+      {
+        "uuid": "tts-svc",
+        "serviceId": "text-to-speech",
+        "serviceName": "Text To Speech",
+        "state": {
+          "model": "kokoro-v1.0",
+          "voice": "af_heart",
+          "speed": 1.0,
+          "lang": "en-us"
+        }
+      }
+    ],
+    "ui-out": [
+      {
+        "uuid": "audio-out-svc",
+        "serviceId": "hookup.to/service/audio-output",
+        "serviceName": "Audio Output",
+        "state": { "sampleRate": 24000 }
+      }
+    ]
+  }
+}

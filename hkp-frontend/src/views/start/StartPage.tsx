@@ -60,6 +60,9 @@ export interface StartPageProps {
   onContinueRecent?: () => void;
   /** Opens the host's load-board dialog / file picker. */
   onLoadBoard?: () => void;
+  /** Label of the load-board button, e.g. "Import board"; defaults to
+   *  "Load board". */
+  loadBoardLabel?: string;
   /** Resolves the description of a saved board for the details column. */
   describeBoard?: (name: string) => Promise<string | undefined>;
   /** Lists the saved versions of a board (with an open action each); enables
@@ -154,6 +157,7 @@ export default function StartPage(props: StartPageProps) {
     recentBoardName,
     onContinueRecent,
     onLoadBoard,
+    loadBoardLabel,
     describeBoard,
     listBoardHistory,
     onDeleteBoard,
@@ -574,6 +578,7 @@ export default function StartPage(props: StartPageProps) {
         recentBoardName={recentBoardName}
         onContinueRecent={onContinueRecent}
         onLoadBoard={onLoadBoard}
+        loadBoardLabel={loadBoardLabel}
         onCreateBoard={onCreateBoard}
         menuSlot={menuSlot}
       />

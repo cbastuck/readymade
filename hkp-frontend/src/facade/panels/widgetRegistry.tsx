@@ -13,6 +13,7 @@ import { XYPadRenderer } from "./renderers/XYPadRenderer";
 import { DataTableRenderer } from "./renderers/DataTableRenderer";
 import { BipolarMeterRenderer } from "./renderers/BipolarMeterRenderer";
 import { LineChartRenderer } from "./renderers/LineChartRenderer";
+import { StatusIndicatorRenderer } from "./renderers/StatusIndicatorRenderer";
 
 export type PanelContext = {
   knobValues: Record<string, number>;
@@ -42,4 +43,5 @@ export const widgetRegistry: Record<
   "data-table": DataTableRenderer,
   "bipolar-meter": BipolarMeterRenderer,
   "line-chart": LineChartRenderer,
+  "status-indicator": StatusIndicatorRenderer,
 };
