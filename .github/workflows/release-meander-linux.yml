@@ -131,7 +131,7 @@ jobs:
           set -euo pipefail
           asset="meander-linux-${RELEASE_TAG}-x64.tar.gz"
           mkdir -p dist
-          cp build-linux/meander/meander dist/meander
+          cp build-linux/meander/Readymade dist/meander
           tar -C dist -czf "${asset}" meander
           echo "ASSET=${asset}" >> "$GITHUB_ENV"
 
