@@ -50,6 +50,15 @@ jobs:
           ref: ${{ inputs.target_ref }}
           submodules: false
 
+      # The macOS share extension compiles ShareInbox.swift out of the
+      # meander-ios submodule. Its .gitmodules URL is SSH (Codeberg), which the
+      # runner has no key for — point it at the public HTTPS mirror instead.
+      - name: Checkout meander-ios submodule
+        run: |
+          git submodule init meander-ios
+          git config submodule.meander-ios.url https://codeberg.org/cbastuck/meander-ios.git
+          git submodule update meander-ios
+
       - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
