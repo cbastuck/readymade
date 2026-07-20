@@ -33,6 +33,7 @@
 #include "./services/sub_service.h"
 #include "./services/if_service.h"
 #include "./services/peer_server/peer_server.h"
+#include "./services/text_generation.h"
 
 #if HKP_MP4_TO_WAV_ENABLED
   #include "./services/mp4_to_wav.h"
@@ -68,6 +69,7 @@ using ServiceTypes = Registry::TypeList<
   ,SubService
   ,IfService
   ,PeerServerService
+  ,TextGeneration
 #if HKP_MP4_TO_WAV_ENABLED
   ,Mp4ToWav
 #endif

@@ -47,6 +47,35 @@ CPMAddPackage(
     DOWNLOAD_ONLY TRUE
 )
 
+# llama.cpp — in-process LLM inference for the text-generation service's local
+# backend. Off for iOS/Android: those builds would pay the compile time and
+# binary size, and the text-generation service still works there through its
+# server backend, which needs no dependency at all.
+if(IOS OR ANDROID)
+    set(_HKP_LLAMA_DEFAULT OFF)
+else()
+    set(_HKP_LLAMA_DEFAULT ON)
+endif()
+option(HKP_LLAMA_ENABLED "Embed llama.cpp for the text-generation local backend" ${_HKP_LLAMA_DEFAULT})
+
+if(HKP_LLAMA_ENABLED)
+    CPMAddPackage(
+        NAME llama_cpp
+        GIT_REPOSITORY "https://github.com/ggml-org/llama.cpp"
+        GIT_TAG b10069
+        OPTIONS
+            "LLAMA_BUILD_TESTS OFF"
+            "LLAMA_BUILD_EXAMPLES OFF"
+            "LLAMA_BUILD_SERVER OFF"
+            "LLAMA_BUILD_TOOLS OFF"
+            "LLAMA_BUILD_COMMON OFF"
+            "LLAMA_CURL OFF"
+            # Embed the Metal shaders in the binary so no .metal file has to sit
+            # next to the runtime at load time.
+            "GGML_METAL_EMBED_LIBRARY ON"
+    )
+endif()
+
 # =============================================================================
 # vcpkg — included AFTER CPM so its add_library wrapper doesn't interfere
 # with packageProject ALIAS targets created by CPM-fetched packages.
@@ -82,6 +111,14 @@ endif()
 
 if(minimp4_ADDED)
     target_include_directories(${PROJECT_NAME} INTERFACE ${minimp4_SOURCE_DIR})
+endif()
+
+if(HKP_LLAMA_ENABLED AND TARGET llama)
+    target_link_libraries(${PROJECT_NAME} INTERFACE llama)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE HKP_LLAMA_ENABLED)
+    message(STATUS "hkp-rt-deps: text-generation local backend enabled (llama.cpp)")
+else()
+    message(STATUS "hkp-rt-deps: text-generation local backend disabled (server backend still available)")
 endif()
 
 if(jwt-cpp_ADDED)
