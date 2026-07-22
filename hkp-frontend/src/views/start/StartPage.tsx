@@ -126,8 +126,10 @@ export interface StartPageProps {
   menuSlot?: ReactNode;
 }
 
-const COLUMN_WIDTH_ROOT = "236px";
-const COLUMN_WIDTH = "300px";
+const COLUMN_WIDTH_ROOT = 236;
+const COLUMN_WIDTH = 300;
+const COLUMN_WIDTH_MIN = 150;
+const COLUMN_WIDTH_MAX = 720;
 
 // Where the user last browsed to, as a path of node names. Names (not indices)
 // survive the tree changing between visits; unresolvable tails are dropped
@@ -149,6 +151,28 @@ function restoreSelection(): string[] {
     // fall through to the default
   }
   return ["Demos"];
+}
+
+// User-set column widths, by column level (index 0 is the Sources column).
+// Levels the user never dragged keep their default.
+const COLUMN_WIDTHS_STORAGE_KEY = "hkp-startpage-column-widths";
+
+function restoreColumnWidths(): number[] {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(COLUMN_WIDTHS_STORAGE_KEY) ?? "",
+    ) as unknown;
+    if (Array.isArray(parsed) && parsed.every((w) => typeof w === "number")) {
+      return parsed;
+    }
+  } catch {
+    // fall through to the defaults
+  }
+  return [];
+}
+
+function defaultColumnWidth(level: number): number {
+  return level === 0 ? COLUMN_WIDTH_ROOT : COLUMN_WIDTH;
 }
 
 export default function StartPage(props: StartPageProps) {
@@ -193,6 +217,8 @@ export default function StartPage(props: StartPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   // Board whose folder chooser is open, by name.
   const [assignBoard, setAssignBoard] = useState<string | null>(null);
+  const [columnWidths, setColumnWidths] =
+    useState<number[]>(restoreColumnWidths);
 
   const { tree, updateTree, roots, savedBoards, refreshSavedBoards } =
     useStartPageModel({
@@ -207,6 +233,22 @@ export default function StartPage(props: StartPageProps) {
       myBoardsExtraFolders,
       excludeDemoTags,
     });
+
+  const resizeColumn = useCallback((level: number, width: number) => {
+    setColumnWidths((prev) => {
+      const next = [...prev];
+      // Levels the user skipped over keep their default.
+      for (let i = 0; i < level; i++) {
+        next[i] ??= defaultColumnWidth(i);
+      }
+      next[level] = Math.max(
+        COLUMN_WIDTH_MIN,
+        Math.min(COLUMN_WIDTH_MAX, Math.round(width)),
+      );
+      localStorage.setItem(COLUMN_WIDTHS_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const selectAt = useCallback((level: number, name: string) => {
     setSelectedNames((prev) => {
@@ -369,7 +411,8 @@ export default function StartPage(props: StartPageProps) {
       cols.push({
         key: `col${level}-${parent ? parent.name : "root"}`,
         title: level === 0 ? "Sources" : parent?.name ?? "Folder",
-        width: level === 0 ? COLUMN_WIDTH_ROOT : COLUMN_WIDTH,
+        width: columnWidths[level] ?? defaultColumnWidth(level),
+        onResize: (width) => resizeColumn(capturedLevel, width),
         emptyHint: parent?.emptyHint,
         items: items.map((node, index) =>
           rowVM(node, {
@@ -436,6 +479,8 @@ export default function StartPage(props: StartPageProps) {
     savedBoards,
     onCreateNamedBoard,
     onOpen,
+    columnWidths,
+    resizeColumn,
   ]);
 
   const searchResults = useMemo<RowVM[]>(() => {
