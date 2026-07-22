@@ -34,6 +34,8 @@
 #include "./services/if_service.h"
 #include "./services/peer_server/peer_server.h"
 #include "./services/text_generation.h"
+#include "./services/speech_to_text.h"
+#include "./services/text_to_speech.h"
 
 #if HKP_MP4_TO_WAV_ENABLED
   #include "./services/mp4_to_wav.h"
@@ -70,6 +72,8 @@ using ServiceTypes = Registry::TypeList<
   ,IfService
   ,PeerServerService
   ,TextGeneration
+  ,SpeechToText
+  ,TextToSpeech
 #if HKP_MP4_TO_WAV_ENABLED
   ,Mp4ToWav
 #endif

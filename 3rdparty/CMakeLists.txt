@@ -8,14 +8,54 @@ include(cmake/CPM.cmake)
 # packageProject() ALIAS targets are created before vcpkg wraps add_library.
 # =============================================================================
 
-# nlohmann/json — declared before inja so inja reuses this version
-CPMAddPackage(
-    NAME nlohmann_json
-    VERSION 3.11.3
-    GIT_REPOSITORY "https://github.com/nlohmann/json"
-    GIT_TAG v3.11.3
-    OPTIONS "JSON_BuildTests OFF"
-)
+# sherpa-onnx — in-process speech inference for the speech-to-text (Whisper) and
+# text-to-speech (Kokoro) services' local backend. Uses onnxruntime (fetched by
+# sherpa itself), a separate symbol space from llama.cpp's ggml, so the two ML
+# stacks coexist without a duplicate-ggml clash. Off for iOS/Android for the same
+# reason as llama.cpp: those builds fall back to the services' server backend.
+#
+# Declared FIRST because sherpa unconditionally add_subdirectory()s its own
+# nlohmann/json, creating the `nlohmann_json` target. Adding it before our own
+# nlohmann_json (which is then guarded with NOT TARGET below) lets the whole
+# build share one json target instead of colliding on a duplicate add_library.
+if(IOS OR ANDROID)
+    set(_HKP_SPEECH_DEFAULT OFF)
+else()
+    set(_HKP_SPEECH_DEFAULT ON)
+endif()
+option(HKP_SPEECH_ENABLED "Embed sherpa-onnx for the speech-to-text/text-to-speech local backends" ${_HKP_SPEECH_DEFAULT})
+
+if(HKP_SPEECH_ENABLED)
+    CPMAddPackage(
+        NAME sherpa_onnx
+        GIT_REPOSITORY "https://github.com/k2-fsa/sherpa-onnx"
+        GIT_TAG v1.13.4
+        OPTIONS
+            "SHERPA_ONNX_ENABLE_C_API ON"
+            "SHERPA_ONNX_ENABLE_TTS ON"
+            "SHERPA_ONNX_ENABLE_PORTAUDIO OFF"
+            "SHERPA_ONNX_ENABLE_WEBSOCKET OFF"
+            "SHERPA_ONNX_ENABLE_BINARY OFF"
+            "SHERPA_ONNX_ENABLE_TESTS OFF"
+            "SHERPA_ONNX_ENABLE_CHECK OFF"
+            "SHERPA_ONNX_ENABLE_PYTHON OFF"
+            "SHERPA_ONNX_ENABLE_JNI OFF"
+            "SHERPA_ONNX_ENABLE_SPEAKER_DIARIZATION OFF"
+            "BUILD_SHARED_LIBS OFF"
+    )
+endif()
+
+# nlohmann/json — declared before inja so inja reuses this version. Skipped when
+# sherpa-onnx already created the target (see above) so the build shares one copy.
+if(NOT TARGET nlohmann_json)
+    CPMAddPackage(
+        NAME nlohmann_json
+        VERSION 3.11.3
+        GIT_REPOSITORY "https://github.com/nlohmann/json"
+        GIT_TAG v3.11.3
+        OPTIONS "JSON_BuildTests OFF"
+    )
+endif()
 
 # Inja template engine (header-only) — DOWNLOAD_ONLY skips its CMakeLists.txt
 # which would otherwise try to export targets and fail with the nlohmann_json dep.
@@ -119,6 +159,14 @@ if(HKP_LLAMA_ENABLED AND TARGET llama)
     message(STATUS "hkp-rt-deps: text-generation local backend enabled (llama.cpp)")
 else()
     message(STATUS "hkp-rt-deps: text-generation local backend disabled (server backend still available)")
+endif()
+
+if(HKP_SPEECH_ENABLED AND TARGET sherpa-onnx-c-api)
+    target_link_libraries(${PROJECT_NAME} INTERFACE sherpa-onnx-c-api)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE HKP_SPEECH_ENABLED)
+    message(STATUS "hkp-rt-deps: speech-to-text/text-to-speech local backends enabled (sherpa-onnx)")
+else()
+    message(STATUS "hkp-rt-deps: speech-to-text/text-to-speech local backends disabled (server backend still available)")
 endif()
 
 if(jwt-cpp_ADDED)

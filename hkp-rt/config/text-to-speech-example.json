@@ -1,0 +1,28 @@
+{
+  "id": "text-to-speech-example",
+  "name": "Text To Speech",
+  "services": [
+    {
+      "serviceId": "text-to-speech",
+      "uuid": "text-to-speech-1",
+      "name": "Text To Speech",
+      "state": {
+        "backend": "local",
+        "modelPath": "~/models/kokoro-en-v0_19/model.onnx",
+        "voicesPath": "~/models/kokoro-en-v0_19/voices.bin",
+        "tokensPath": "~/models/kokoro-en-v0_19/tokens.txt",
+        "dataDir": "~/models/kokoro-en-v0_19/espeak-ng-data",
+        "speakerId": 0,
+        "speed": 1.0
+      }
+    },
+    {
+      "serviceId": "core-output",
+      "uuid": "core-output-1",
+      "name": "Audio Output",
+      "state": {
+        "sampleRate": 24000
+      }
+    }
+  ]
+}
