@@ -283,7 +283,7 @@ export default function StartPage(props: StartPageProps) {
           key: opts.key,
           name: node.name,
           art: node.art ?? artFor(node.name),
-          glyph: "",
+          iconColor: "#fff",
           isBoard: true,
           dot: attention,
           dotColor: meta.dot,
@@ -320,7 +320,7 @@ export default function StartPage(props: StartPageProps) {
           key: opts.key,
           name: node.name,
           art: "linear-gradient(160deg, #17b877, #0a8a72)",
-          glyph: "",
+          iconColor: "#fff",
           isBoard: true,
           dot: false,
           dotColor: "#17b877",
@@ -353,7 +353,9 @@ export default function StartPage(props: StartPageProps) {
           (node.source
             ? "linear-gradient(160deg, #3a3d4a, #14161c)"
             : "linear-gradient(160deg, #eef0f4, #dfe2ea)"),
-        glyph: node.name.charAt(0).toUpperCase(),
+        // White reads on the dark source tiles and on host-provided artwork;
+        // the light default tile needs a dark stroke.
+        iconColor: node.source || node.art ? "#fff" : "#5b6070",
         isBoard: false,
         dot: false,
         dotColor: "#fff",

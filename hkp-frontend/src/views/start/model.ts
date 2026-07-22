@@ -259,29 +259,17 @@ export function setBoardFiled(
     : removeNode(tree, path, { type: "board", name: boardName });
 }
 
-/** All board names referenced anywhere in the persisted tree. */
-export function referencedBoards(tree: StartPageTree): Set<string> {
-  const names = new Set<string>();
-  const walk = (nodes: PersistedNode[]) => {
-    for (const node of nodes) {
-      if (node.type === "board") {
-        names.add(node.name);
-      } else {
-        walk(node.children);
-      }
-    }
-  };
-  walk(tree.items);
-  return names;
-}
-
 // ── View tree construction ────────────────────────────────────────────────────
 
+/** Virtual folder inside "My Boards" holding every saved board. */
+export const ALL_BOARDS_FOLDER = "All Boards";
+
 /**
- * Build the "My Boards" view folder: the persisted hierarchy hydrated against
- * the actual saved boards, followed by all saved boards not filed anywhere.
- * Board refs whose board no longer exists are dropped from the view (the
- * persisted tree is left untouched).
+ * Build the "My Boards" view folder: the virtual "All Boards" folder listing
+ * every saved board (filed or not), followed by the persisted hierarchy
+ * hydrated against the actual saved boards — so the top level stays a list of
+ * folders. Board refs whose board no longer exists are dropped from the view
+ * (the persisted tree is left untouched).
  */
 export function buildMyBoardsFolder(
   tree: StartPageTree,
@@ -323,24 +311,26 @@ export function buildMyBoardsFolder(
       ];
     });
 
-  const filed = referencedBoards(tree);
-  const loose = savedBoards
-    .filter((name) => !filed.has(name))
-    .map<BoardNode>((name) => ({
+  const allBoards: FolderNode = {
+    type: "folder",
+    name: ALL_BOARDS_FOLDER,
+    emptyHint: "No boards saved yet",
+    children: savedBoards.map<BoardNode>((name) => ({
       type: "board",
       name,
       state: stateFor(name),
       action: { kind: "saved", name },
       art: customArtFor(name),
-    }));
+    })),
+  };
 
   return {
     type: "folder",
     name: "My Boards",
     userPath: [],
-    // Virtual folders (e.g. the host's cloud "Uploaded" view) come last,
-    // after the user's own hierarchy and the loose saved boards.
-    children: [...hydrate(tree.items, []), ...loose, ...extraFolders],
+    // The flat "All Boards" view first, then the user's own hierarchy, then
+    // the host's virtual folders (e.g. its cloud "Uploaded" view).
+    children: [allBoards, ...hydrate(tree.items, []), ...extraFolders],
   };
 }
 
