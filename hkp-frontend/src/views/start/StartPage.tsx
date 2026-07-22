@@ -8,10 +8,14 @@ import {
   addFolder,
   artFor,
   attentionCount,
+  boardFolderPaths,
+  folderKey,
   isAttentionState,
+  listFolders,
   removeNode,
   searchBoards,
   setBoardArt,
+  setBoardFiled,
   stateMeta,
 } from "./model";
 import { downscaleImage } from "./imageUpload";
@@ -36,6 +40,7 @@ import { ColumnVM } from "./Column";
 import { RowVM } from "./Row";
 import BoardDetails from "./BoardDetails";
 import RuntimeDetails from "./RuntimeDetails";
+import FolderPicker from "./FolderPicker";
 
 export type { RuntimeEntry };
 export type { RemotesController };
@@ -186,6 +191,8 @@ export default function StartPage(props: StartPageProps) {
 
   const [selectedNames, setSelectedNames] = useState<string[]>(restoreSelection);
   const [searchQuery, setSearchQuery] = useState("");
+  // Board whose folder chooser is open, by name.
+  const [assignBoard, setAssignBoard] = useState<string | null>(null);
 
   const { tree, updateTree, roots, savedBoards, refreshSavedBoards } =
     useStartPageModel({
@@ -479,8 +486,36 @@ export default function StartPage(props: StartPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailBoard?.board.name, detailBoard?.board.action?.kind, describeBoard]);
 
-  // The artwork editor applies to the user's own (saved) boards only.
+  // The artwork editor and the folder chooser apply to the user's own (saved)
+  // boards only.
   const detailIsSaved = detailBoard?.board.action?.kind === "saved";
+
+  // ── Folder assignment ───────────────────────────────────────────────────────
+
+  const folderOptions = useMemo(
+    () => (tree ? listFolders(tree) : []),
+    [tree],
+  );
+
+  const detailFolders = useMemo(
+    () =>
+      tree && detailIsSaved && detailBoard
+        ? boardFolderPaths(tree, detailBoard.board.name).map((path) =>
+            path.join(" › "),
+          )
+        : [],
+    [tree, detailIsSaved, detailBoard],
+  );
+
+  const assignedKeys = useMemo(
+    () =>
+      new Set(
+        tree && assignBoard
+          ? boardFolderPaths(tree, assignBoard).map(folderKey)
+          : [],
+      ),
+    [tree, assignBoard],
+  );
 
   const detailNode = detailBoard ? (
     <BoardDetails
@@ -526,6 +561,12 @@ export default function StartPage(props: StartPageProps) {
       loadHistory={
         detailIsSaved && listBoardHistory
           ? () => listBoardHistory(detailBoard.board.name)
+          : undefined
+      }
+      folders={detailFolders}
+      onAssignFolders={
+        detailIsSaved && tree
+          ? () => setAssignBoard(detailBoard.board.name)
           : undefined
       }
       onRemoveFromFolder={
@@ -591,6 +632,26 @@ export default function StartPage(props: StartPageProps) {
         searchResults={searchResults}
         detail={detailNode}
       />
+      {assignBoard && tree && (
+        <FolderPicker
+          boardName={assignBoard}
+          folders={folderOptions}
+          assigned={assignedKeys}
+          onToggle={(path, filed) =>
+            updateTree(setBoardFiled(tree, path, assignBoard, filed))
+          }
+          onCreateFolder={(parentPath, name) =>
+            updateTree(
+              addBoardRef(
+                addFolder(tree, parentPath, name),
+                [...parentPath, name],
+                assignBoard,
+              ),
+            )
+          }
+          onClose={() => setAssignBoard(null)}
+        />
+      )}
     </div>
   );
 }

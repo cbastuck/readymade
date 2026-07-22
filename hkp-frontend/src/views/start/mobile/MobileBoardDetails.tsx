@@ -189,6 +189,8 @@ export default function MobileBoardDetails({
   description,
   onOpen,
   onUploadToCloud,
+  folders,
+  onAssignFolders,
   onRemoveFromFolder,
   onDelete,
   onRevokeShare,
@@ -199,6 +201,10 @@ export default function MobileBoardDetails({
   description?: string;
   onOpen?: () => void;
   onUploadToCloud?: () => Promise<void>;
+  /** Folders the board is filed in, each as a display path ("Work › Audio"). */
+  folders?: string[];
+  /** Opens the folder chooser; enables the "Assign folders…" action. */
+  onAssignFolders?: () => void;
   onRemoveFromFolder?: () => void;
   onDelete?: () => void;
   onRevokeShare?: (email: string) => Promise<void>;
@@ -328,6 +334,37 @@ export default function MobileBoardDetails({
           </p>
         )}
       </div>
+
+      {onAssignFolders && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <SectionLabel>Folders</SectionLabel>
+          {folders && folders.length > 0 ? (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {folders.map((path) => (
+                <span
+                  key={path}
+                  style={{
+                    padding: "5px 10px",
+                    borderRadius: 999,
+                    background: M.card,
+                    border: `1px solid ${M.border}`,
+                    color: M.textPrimary,
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                  }}
+                >
+                  {path}
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: M.textMuted, padding: "0 4px" }}>
+              Not in a folder
+            </div>
+          )}
+          <ActionButton label="Assign folders…" onClick={onAssignFolders} />
+        </div>
+      )}
 
       {board.sharedWith && board.sharedWith.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

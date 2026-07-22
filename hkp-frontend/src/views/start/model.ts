@@ -195,6 +195,70 @@ export function removeNode(
   return next;
 }
 
+/** One folder of the persisted tree, flattened for list rendering. */
+export interface FolderOption {
+  /** Folder names from the tree root down to this folder. */
+  path: string[];
+  name: string;
+  /** Nesting level; 0 for top-level folders. */
+  depth: number;
+}
+
+/** Stable key for a folder path (names may contain any character). */
+export function folderKey(path: string[]): string {
+  return path.join("\u0000");
+}
+
+/** All folders of the persisted tree, depth-first in tree order. */
+export function listFolders(tree: StartPageTree): FolderOption[] {
+  const options: FolderOption[] = [];
+  const walk = (nodes: PersistedNode[], path: string[]) => {
+    for (const node of nodes) {
+      if (node.type !== "folder") {
+        continue;
+      }
+      const here = [...path, node.name];
+      options.push({ path: here, name: node.name, depth: path.length });
+      walk(node.children, here);
+    }
+  };
+  walk(tree.items, []);
+  return options;
+}
+
+/** Paths of every folder the board is filed in. */
+export function boardFolderPaths(
+  tree: StartPageTree,
+  boardName: string,
+): string[][] {
+  const paths: string[][] = [];
+  const walk = (nodes: PersistedNode[], path: string[]) => {
+    for (const node of nodes) {
+      if (node.type === "board") {
+        if (node.name === boardName && path.length > 0) {
+          paths.push(path);
+        }
+        continue;
+      }
+      walk(node.children, [...path, node.name]);
+    }
+  };
+  walk(tree.items, []);
+  return paths;
+}
+
+/** Files (or unfiles) a board in the folder at `path`. */
+export function setBoardFiled(
+  tree: StartPageTree,
+  path: string[],
+  boardName: string,
+  filed: boolean,
+): StartPageTree {
+  return filed
+    ? addBoardRef(tree, path, boardName)
+    : removeNode(tree, path, { type: "board", name: boardName });
+}
+
 /** All board names referenced anywhere in the persisted tree. */
 export function referencedBoards(tree: StartPageTree): Set<string> {
   const names = new Set<string>();
