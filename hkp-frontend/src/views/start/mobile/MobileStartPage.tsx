@@ -206,6 +206,7 @@ export default function MobileStartPage(props: StartPageProps) {
     recentBoardName,
     onContinueRecent,
     onLoadBoard,
+    loadBoardLabel,
     describeBoard,
     listBoardHistory,
     onDeleteBoard,
@@ -815,7 +816,7 @@ export default function MobileStartPage(props: StartPageProps) {
                       cursor: "pointer",
                     }}
                   >
-                    Load board
+                    {loadBoardLabel ?? "Load board"}
                   </button>
                 )}
               </div>

@@ -9,6 +9,7 @@ Injects a configured static value into the pipeline, replacing or providing the 
 | Runtime | Service ID |
 |---|---|
 | Browser | `hookup.to/service/injector` |
+| hkp-rt | `injector` |
 
 ---
 
@@ -34,6 +35,7 @@ bypassing the normal pipeline flow.
 | Property | Type | Default | Description |
 |---|---|---|---|
 | `inject` | `any` | `undefined` | Value to store and emit. Setting this fires an immediate `app.next()` |
+| `injectBinary` | `string` | `undefined` | hkp-rt only: base64 payload to store and emit as `BinaryData` |
 | `recentInjection` | `any` | `undefined` | Restore the last injected value on board load (set automatically) |
 | `plainText` | `boolean` | `false` | Treat the stored value as a plain string rather than parsed JSON |
 
@@ -56,6 +58,28 @@ pipeline without waiting for an upstream event.
 |---|---|
 | **Input** | Any value (used as fallback when no injection is set) |
 | **Output** | The configured `recentInjection` value, or the input if none is set |
+
+---
+
+## hkp-rt specifics
+
+The hkp-rt service behaves identically, with the differences that come
+from living behind a REST API rather than in the same process as the UI:
+
+- A JSON string is injected as `String`, any other JSON value as `JSON`.
+- Files are injected as base64 through `injectBinary` and arrive
+  downstream as `BinaryData`. Text files still use `inject`.
+- The reported state carries `recentInjectionSize` (byte count) instead
+  of `recentInjection` after a binary injection, so that large payloads
+  are not echoed back to the UI.
+- Injections are pushed downstream asynchronously (through the runtime's
+  io_context), so `configure` returns before the pipeline has run.
+
+Run the example config:
+
+```bash
+./build/hkp-rt/exe/hkp-rt 8887 127.0.0.1 hkp-rt/config/injector-example.json
+```
 
 ---
 

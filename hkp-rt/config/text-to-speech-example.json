@@ -8,10 +8,10 @@
       "name": "Text To Speech",
       "state": {
         "backend": "local",
-        "modelPath": "~/models/kokoro-en-v0_19/model.onnx",
-        "voicesPath": "~/models/kokoro-en-v0_19/voices.bin",
-        "tokensPath": "~/models/kokoro-en-v0_19/tokens.txt",
-        "dataDir": "~/models/kokoro-en-v0_19/espeak-ng-data",
+        "modelPath": "~/Development/claude/models/kokoro-en-v0_19/model.onnx",
+        "voicesPath": "~/Development/claude/models/kokoro-en-v0_19/voices.bin",
+        "tokensPath": "~/Development/claude/models/kokoro-en-v0_19/tokens.txt",
+        "dataDir": "~/Development/claude/models/kokoro-en-v0_19/espeak-ng-data",
         "speakerId": 0,
         "speed": 1.0
       }

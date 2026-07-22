@@ -27,6 +27,7 @@
 #include "./services/ifft_service.h"
 #include "./services/wav_reader.h"
 #include "./services/filesystem.h"
+#include "./services/injector.h"
 #include "./services/map.h"
 #include "./services/stopper.h"
 #include "./services/hold.h"
@@ -65,6 +66,7 @@ using ServiceTypes = Registry::TypeList<
   ,Filter
   ,WavReader
   ,Filesystem
+  ,Injector
   ,Map
   ,Stopper
   ,Hold
