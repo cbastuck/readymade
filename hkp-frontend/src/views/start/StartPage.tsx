@@ -86,7 +86,7 @@ export interface StartPageProps {
    *  cloudRole "viewer" (the Shared → With me source). */
   onLeaveShare?: (board: BoardNode) => Promise<void>;
   /** Native image picker replacing the <input type="file"> flow — required in
-   *  webviews without file-input support (Meander desktop). */
+   *  webviews without file-input support (Readymade desktop). */
   pickBoardArtImage?: () => Promise<Blob | null>;
   /** Runtimes surfaced as a source folder (external instances). */
   runtimes?: RuntimeEntry[];

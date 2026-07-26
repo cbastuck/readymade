@@ -1,6 +1,6 @@
 {
   "boardName": "Microphone → Speaker",
-  "description": "Live audio passthrough on the Meander iOS app: the native microphone service captures from the device mic and pushes each block straight into the native speaker service, which plays it back. Both services exist only in the Meander iOS app (the macOS equivalents are core-input / core-output). Nothing is captured until you tap Start — the first tap triggers the microphone permission prompt. Use headphones to avoid feedback.",
+  "description": "Live audio passthrough on the Readymade iOS app: the native microphone service captures from the device mic and pushes each block straight into the native speaker service, which plays it back. Both services exist only in the Readymade iOS app (the macOS equivalents are core-input / core-output). Nothing is captured until you tap Start — the first tap triggers the microphone permission prompt. Use headphones to avoid feedback.",
   "runtimes": [
     {
       "id": "ios",

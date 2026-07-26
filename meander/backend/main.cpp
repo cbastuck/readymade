@@ -303,7 +303,7 @@ int real_main(int argc, char *argv[])
     }
   );
 
-  std::cout << "Launched meander" << std::endl;
+  std::cout << "Launched Readymade" << std::endl;
 
   // Popup support.
   //

@@ -81,7 +81,7 @@ Authentication is supported for managed cloud deployments.
 ### Realtime Runtime (`type: "realtime"`)
 
 An embedded hkp-rt instance hosted directly inside a desktop
-application. Used by [**Meander**](#meander--local-and-remote-together)
+application. Used by [**Readymade**](#readymade--local-and-remote-together)
 and hkp-saucer. From the board's point of view it behaves like a remote
 runtime, but the server runs locally in the same process as the UI —
 removing any network overhead and enabling direct audio I/O on the host
@@ -152,14 +152,14 @@ by a Board Blueprint.
 
 ---
 
-## Meander — local and remote together
+## Readymade — local and remote together
 
-**Meander** is a native desktop application (macOS) that bundles the
-hkp-rt C++ runtime alongside the browser-based board UI. When Meander
+**Readymade** is a native desktop application (macOS) that bundles the
+hkp-rt C++ runtime alongside the browser-based board UI. When Readymade
 starts, it launches an embedded hkp-rt server on a local port and
 exposes it to the frontend as a `realtime` runtime.
 
-This means a single board opened in Meander can simultaneously use:
+This means a single board opened in Readymade can simultaneously use:
 
 - **Browser services** — running in the embedded WebView (JS, no install
   needed).
@@ -169,13 +169,13 @@ This means a single board opened in Meander can simultaneously use:
 - **Remote services** — connecting to additional hkp-rt instances
   running elsewhere on the network or in the cloud.
 
-A Board Blueprint authored in Meander is portable: the same JSON can be
-loaded on a headless server, in a plain browser, or on another Meander
+A Board Blueprint authored in Readymade is portable: the same JSON can be
+loaded on a headless server, in a plain browser, or on another Readymade
 installation. Services whose runtime type is not available on the target
 will simply not restore — the rest of the board remains intact.
 
 ```
-┌────────────────────────── Meander ───────────────────────────┐
+┌───────────────────────── Readymade ──────────────────────────┐
 │                                                              │
 │  ┌── Browser Runtime ───┐   ┌── Realtime Runtime ─────────┐ │
 │  │  Timer → Map         │   │  core-input → fft → monitor │ │

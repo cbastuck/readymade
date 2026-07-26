@@ -10,7 +10,7 @@ import { meanderLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
 
 // Capabilities are only wired up when the native saucer APIs are actually present
-// (i.e. running inside the Meander desktop webview, not in a plain browser).
+// (i.e. running inside the Readymade desktop webview, not in a plain browser).
 // When absent the provider still wraps the tree but with an empty capabilities
 // object, so hkp-frontend components fall back to their browser defaults.
 const saucer = (window as any).saucer;

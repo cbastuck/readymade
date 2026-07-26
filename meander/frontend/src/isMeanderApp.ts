@@ -8,7 +8,7 @@ function probe(): Promise<boolean> {
 
 /**
  * Returns true when the hkp:// custom scheme is reachable — i.e. the page is
- * running inside the Meander desktop app (either served via hkp:/saucer: in
+ * running inside the Readymade desktop app (either served via hkp:/saucer: in
  * production, or via a dev server while the webview integration is active).
  *
  * Returns false in a regular browser where hkp:// is not registered.

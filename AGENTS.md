@@ -13,7 +13,7 @@ blocks; boards are the apps you build with them.
 
 The top-level container. Everything lives on a board. Boards have names and may be associated
 with a user account, but this is not required — the playground (hookitapp.com/playground) and
-Meander app (macOS + iOS) run boards locally in the browser with no backend. There is
+Readymade app (MacOS + iOS + Android) run boards locally in the browser with no backend. There is
 currently no cloud persistence; boards live in the browser.
 
 ### Runtime
@@ -149,18 +149,18 @@ definitions live in `hkp-frontend/src/facade/types.ts`.
 A **LayoutItem** is either a container (`{ "direction": "row|column", "items": [...] }`)
 or a widget leaf with a `"type"` field. Widgets reference services by `serviceUuid`.
 
-| Widget type | What it does |
-|---|---|
-| `button` | Sends a configure payload to a service on click |
-| `text-input` | Text field; `$$input` in the configure payload becomes the typed value |
-| `knob` | Rotary control; `{{value}}` in configure payload becomes the numeric value |
-| `level-meter` | Vertical bar driven by a service notification |
-| `canvas` | Embeds a Canvas service's drawing surface |
-| `xy-pad` | Embeds an XY Pad service |
-| `qr-code` | Displays a QR code from a service notification |
-| `message-list` | Scrolling message thread with optional inline composer |
-| `status-indicator` | Coloured dot driven by a service notification |
-| `file-pick` | File chooser that sends the file to a service |
+| Widget type        | What it does                                                               |
+| ------------------ | -------------------------------------------------------------------------- |
+| `button`           | Sends a configure payload to a service on click                            |
+| `text-input`       | Text field; `$$input` in the configure payload becomes the typed value     |
+| `knob`             | Rotary control; `{{value}}` in configure payload becomes the numeric value |
+| `level-meter`      | Vertical bar driven by a service notification                              |
+| `canvas`           | Embeds a Canvas service's drawing surface                                  |
+| `xy-pad`           | Embeds an XY Pad service                                                   |
+| `qr-code`          | Displays a QR code from a service notification                             |
+| `message-list`     | Scrolling message thread with optional inline composer                     |
+| `status-indicator` | Coloured dot driven by a service notification                              |
+| `file-pick`        | File chooser that sends the file to a service                              |
 
 Use `/new-board` for the full widget schema and board design workflow.
 
@@ -191,8 +191,8 @@ meander-ios/           iOS-specific native layer
 
 ## Codex skills (slash commands)
 
-| Command                | What it does                                  |
-| ---------------------- | --------------------------------------------- |
+| Command                | What it does                                                 |
+| ---------------------- | ------------------------------------------------------------ |
 | `/new-board`           | Design a complete board — runtimes, services, wiring, facade |
 | `/new-browser-service` | Scaffold a browser runtime service end-to-end                |
 | `/new-node-service`    | Scaffold a Node.js runtime service end-to-end                |

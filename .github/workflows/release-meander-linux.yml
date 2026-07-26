@@ -1,4 +1,4 @@
-name: Release Meander Linux
+name: Release Readymade Linux
 
 on:
   workflow_dispatch:

@@ -6,7 +6,7 @@ import {
 
 import { randomUrlSafe, s256Challenge } from "./pkce";
 
-// The native Meander app can't use Auth0's in-page web redirect, so it runs the
+// The native Readymade app can't use Auth0's in-page web redirect, so it runs the
 // RFC 8252 native flow: open the Auth0 login in the browser (via the existing
 // openInBrowser bridge), capture the redirect through the /serviceRedirect relay
 // (postMessage → MessageDispatcher), then exchange the code for tokens here.
@@ -55,7 +55,7 @@ export async function meanderLogin(): Promise<string | null> {
   const redirect = redirectUri();
 
   console.log(
-    `[meander-login] Using redirect_uri ${redirect} — ensure it is an Allowed Callback URL in Auth0.`,
+    `[Readymade-login] Using redirect_uri ${redirect} — ensure it is an Allowed Callback URL in Auth0.`,
   );
 
   const authorizeUrl =

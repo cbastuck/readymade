@@ -544,7 +544,7 @@ export default function CloudBoards({
       return;
     }
     // Open a styled dialog instead of window.prompt, which doesn't render in
-    // the Meander (saucer) webview and is visually inconsistent across targets.
+    // the Readymade webview and is visually inconsistent across targets.
     setNewBoardCoordinator(coordinator);
   };
 

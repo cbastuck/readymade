@@ -147,7 +147,7 @@ export type TreeNode = BoardNode | FolderNode | RuntimeNode;
 
 /** Host-backed store of remote runtime engines for the manage-remotes UI
  *  (list / discover / add / remove) and the Remotes source. Where the entries
- *  persist is the host's business: Meander keeps them in settings.json, the
+ *  persist is the host's business: Readymade keeps them in settings.json, the
  *  website in localStorage. */
 export interface RemotesController {
   runtimes: RuntimeClass[];

@@ -16,7 +16,7 @@
 namespace hkp
 {
 
-// A Meander instance found on the local network during a discover window.
+// A Readymade instance found on the local network during a discover window.
 struct DiscoveredPeer
 {
   std::string id;        // stable per-instance UUID (from the TXT record)

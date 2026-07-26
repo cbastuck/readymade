@@ -215,7 +215,7 @@ export class Debouncer {
 
 /**
  * Opens a URL in a new browser window or tab.
- * In the Meander desktop app, delegates to the native C++ bridge
+ * In the Readymade desktop app, delegates to the native C++ bridge
  * (`saucer.exposed.openInBrowser`) because WebKit suppresses window.open()
  * when the UIDelegate doesn't implement createWebViewWithConfiguration:…
  */

@@ -14,7 +14,7 @@ import { BoardNode, FolderNode } from "./types";
 
 /**
  * Start-page sources backed by the cloud board storage (api/boards.php),
- * shared by every host with a cloud login (website desktop + mobile, Meander):
+ * shared by every host with a cloud login (website desktop + mobile, Readymade):
  * the "Shared" source (With me / From me), the virtual "Uploaded" folder for
  * My Boards, and the share-management / upload actions. Requires an
  * AppContext ancestor; everything degrades gracefully while logged out.

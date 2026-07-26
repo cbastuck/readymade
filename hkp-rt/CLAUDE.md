@@ -105,9 +105,9 @@ Services pass `Data` objects (defined in `hkp-rt/lib/include/types/data.h`) thro
 - Utilities: `static`, `filesystem`, `wav-reader`
 - FFmpeg (optional bundle): `ffmpeg` — compiled as `hkp-rt-bundle` shared library, auto-copied to `~/.hkp/bundles/` on build
 
-### Meander
+### Readymade
 
-Native GUI app (`meander/`) that embeds `hkp-rt-lib`. Uses the Saucer framework (webview-based UI). The backend (`meander/backend/`) is C++ and links `hkp-rt-lib` + `saucer::saucer`. Frontend assets can be embedded at compile time with `COMILE_USING_SAUCER_EMBEDDINGS=ON`.
+Native GUI app (`Readymade/`) that embeds `hkp-rt-lib`. Uses the Saucer framework (webview-based UI). The backend (`meander/backend/`) is C++ and links `hkp-rt-lib` + `saucer::saucer`. Frontend assets can be embedded at compile time with `COMILE_USING_SAUCER_EMBEDDINGS=ON`.
 
 ### Configuration
 

@@ -58,7 +58,7 @@ else
     fi
 fi
 
-echo "==> Building meander frontend"
+echo "==> Building Readymade frontend"
 echo "    frontend: ${FRONTEND_DIR}"
 echo "    embedded frontend: ${EMBEDDED_FRONTEND}"
 

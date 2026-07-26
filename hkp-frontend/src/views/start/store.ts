@@ -2,7 +2,7 @@ import { normalizeStartPageTree } from "./model";
 import { StartPageTree } from "./types";
 
 /**
- * Persistence seam for the start-page folder tree. The Meander desktop app
+ * Persistence seam for the start-page folder tree. The Readymade desktop app
  * backs this with a JSON file via the hkp:// scheme; browsers fall back to
  * localStorage until the website gains cloud persistence.
  */
