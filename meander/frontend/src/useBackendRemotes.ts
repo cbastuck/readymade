@@ -14,7 +14,7 @@ const toRemote = (desc: RuntimeClass): Remote => ({
 });
 
 /**
- * Remote runtime engines backed by the Meander backend (the persisted remotes
+ * Remote runtime engines backed by the Readymade backend (the persisted remotes
  * in settings.json / the native store) — the source of truth outside a live
  * board context. Satisfies the start page's RemotesController, so it plugs
  * straight into the shared manage-remotes UI.

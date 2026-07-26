@@ -24,14 +24,14 @@ const DEMO_BOARDS: DemoEntry[] = [
   {
     label: "Live Location",
     description:
-      "Share your phone's live GPS position over a link — native Meander iOS only.",
+      "Share your phone's live GPS position over a link — native Readymade iOS only.",
     icon: "📍",
     board: liveLocationBoard as unknown as BoardDescriptor,
   },
   {
     label: "Microphone → Speaker",
     description:
-      "Live mic-to-speaker audio passthrough — native Meander iOS only. Use headphones.",
+      "Live mic-to-speaker audio passthrough — native Readymade iOS only. Use headphones.",
     icon: "🎤",
     board: microphoneSpeakerBoard as unknown as BoardDescriptor,
   },

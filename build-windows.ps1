@@ -118,7 +118,7 @@ function Initialize-Vcpkg {
   }
 }
 
-Write-Host "==> Building meander frontend"
+Write-Host "==> Building Readymade frontend"
 Write-Host "    embedded frontend: $EmbeddedFrontend"
 Write-Host " using triplet: $ $VcpkgTriplet"
 

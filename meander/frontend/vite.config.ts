@@ -14,7 +14,7 @@ export default defineConfig({
     ),
   },
   server: {
-    host: "0.0.0.0", // added only for using the frontend in Meander iOS app - remove if not needed
+    host: "0.0.0.0", // added only for using the frontend in Readymade iOS app - remove if not needed
     fs: {
       allow: [".", hkpFrontendRoot],
     },

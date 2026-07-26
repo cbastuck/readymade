@@ -13,7 +13,7 @@ import { initialsOf } from "hkp-frontend/src/views/start";
  * Initials on a filled tile when signed in, a generic user icon when signed
  * out. Clicking logs in (signed out) or logs out (signed in) via the
  * platform-agnostic cloud hooks, so it behaves the same in the website and the
- * native Meander/Readymade webview.
+ * native Readymade webview.
  */
 export default function AccountAvatar() {
   const { user } = useAppContext();

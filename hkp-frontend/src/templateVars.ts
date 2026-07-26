@@ -1,4 +1,4 @@
-// Populated by the Meander C++ host via webview->inject() at page creation time.
+// Populated by the Readymade C++ host via webview->inject() at page creation time.
 // Undefined when running in a plain browser (e.g. a phone opening the webapp).
 declare const __MEANDER_CONFIG__: Record<string, any> | undefined;
 

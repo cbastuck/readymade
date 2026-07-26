@@ -1,6 +1,6 @@
 {
   "boardName": "Live Location",
-  "description": "Share your phone's live GPS position over a link. The Meander iOS app runs a tiny HTTP server on your device; anyone who opens the link (or scans the QR) on the same network gets your current coordinates as JSON. Native iOS only — the geo-location service exists exclusively in the Meander app, and nothing is shared until you tap Start.",
+  "description": "Share your phone's live GPS position over a link. The Readymade iOS app runs a tiny HTTP server on your device; anyone who opens the link (or scans the QR) on the same network gets your current coordinates as JSON. Native iOS only — the geo-location service exists exclusively in the Readymade app, and nothing is shared until you tap Start.",
   "runtimes": [
     {
       "id": "ios",

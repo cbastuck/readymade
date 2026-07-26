@@ -13,7 +13,7 @@ const THEME_OPTIONS: Array<{ id: ThemeName; label: string }> = [
 
 /**
  * App-wide appearance controls (theme, harmonized accent pair, font), backed
- * by ThemeContext. Shared between the Meander settings dialog and the website
+ * by ThemeContext. Shared between the Readymade settings dialog and the website
  * settings dialog — must live under a ThemeProvider.
  */
 export default function AppearanceSettings() {

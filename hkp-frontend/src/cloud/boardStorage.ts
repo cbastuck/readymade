@@ -7,7 +7,7 @@
  * Every call needs the Auth0 ID token from the shared cloud login
  * (AppContext user.idToken); the endpoint verifies issuer + audience.
  * The default base URL is same-origin `/api`, which is right for the
- * website; hosts on other origins (Meander) pass an absolute `baseUrl`.
+ * website; hosts on other origins (Readymade) pass an absolute `baseUrl`.
  */
 
 export interface CloudBoardsOptions {

@@ -38,7 +38,7 @@ constexpr const char* kServiceType = "_readymade._tcp.local.";
 // does not split the name into extra labels.
 std::string sanitizeLabel(const std::string& in)
 {
-  std::string out = in.empty() ? std::string("Meander") : in;
+  std::string out = in.empty() ? std::string("Readymade") : in;
   std::replace(out.begin(), out.end(), '.', '-');
   return out;
 }
@@ -387,7 +387,7 @@ std::string discoveryDeviceName()
   {
     return std::string(buf, size);
   }
-  return "Meander";
+  return "Readymade";
 #else
   char buf[256] = {0};
   if (gethostname(buf, sizeof(buf) - 1) == 0 && buf[0] != '\0')
@@ -399,9 +399,9 @@ std::string discoveryDeviceName()
     {
       host.resize(dot);
     }
-    return host.empty() ? std::string("Meander") : host;
+    return host.empty() ? std::string("Readymade") : host;
   }
-  return "Meander";
+  return "Readymade";
 #endif
 }
 

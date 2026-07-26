@@ -24,7 +24,7 @@ export interface PlatformCapabilities {
   /**
    * Platform-specific login. Resolves to a raw OIDC id_token JWT on success, or
    * null if the user cancelled. Provided by hosts where the standard Auth0 web
-   * redirect flow can't run (e.g. the native Meander app, which uses a
+   * redirect flow can't run (e.g. the native Readymade app, which uses a
    * system-browser PKCE flow). When absent, callers fall back to the web Auth0
    * redirect login.
    */

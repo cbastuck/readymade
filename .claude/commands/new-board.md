@@ -281,7 +281,7 @@ notification value.
 
 ## Step 6 — Register as a demo board (optional)
 
-If this board should appear in the Meander app demo list, add it to
+If this board should appear in the Readymade app demo list, add it to
 `meander/frontend/src/demoBoards.ts`:
 
 ```typescript

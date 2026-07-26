@@ -1,6 +1,6 @@
 import { RuntimeClass } from "../../types";
 
-// A Meander instance found on the local network during a discover window.
+// A Readymade instance found on the local network during a discover window.
 // Mirrors the C++ DiscoveredPeer struct (hkp-rt/lib/src/discovery/discovery.h).
 export type DiscoveredPeer = {
   id: string;
@@ -34,7 +34,7 @@ function localRuntimeBaseUrl(): string | null {
   return null;
 }
 
-// True when running inside a Meander host that exposes a local runtime, i.e.
+// True when running inside a Readymade host that exposes a local runtime, i.e.
 // when discovery is usable at all (it is not available in a plain browser).
 export function isDiscoverySupported(): boolean {
   return localRuntimeBaseUrl() !== null;
@@ -46,7 +46,7 @@ async function discoverFetch(
 ): Promise<DiscoverState> {
   const base = localRuntimeBaseUrl();
   if (!base) {
-    throw new Error("Discovery is only available in the Meander app");
+    throw new Error("Discovery is only available in the Readymade app");
   }
   const res = await fetch(`${base}/discover`, {
     method,

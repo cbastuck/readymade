@@ -288,7 +288,7 @@ export default function ManageRuntimesSheet({ open, onClose }: Props) {
             />
             {discovering
               ? `Searching… ${remainingSeconds}s`
-              : "Find Meander instances"}
+              : "Find Readymade instances"}
           </button>
 
           {discovering && peers.length === 0 && (

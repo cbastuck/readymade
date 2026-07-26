@@ -1,4 +1,4 @@
-name: Release Meander macOS
+name: Release Readymade MacOS
 
 on:
   workflow_dispatch:

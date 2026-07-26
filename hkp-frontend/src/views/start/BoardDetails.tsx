@@ -26,7 +26,7 @@ interface Props {
   onUploadImage?: (image: Blob) => Promise<void>;
   /** Host-provided image picker (native file dialog). When set, "Upload
    *  image…" calls this instead of the hidden <input type="file"> — needed in
-   *  webviews that don't open a panel for file inputs (Meander/saucer). */
+   *  webviews that don't open a panel for file inputs (Readymade). */
   pickImage?: () => Promise<Blob | null>;
   onOpen?: () => void;
   /** Uploads the board to the user's cloud storage; enables the

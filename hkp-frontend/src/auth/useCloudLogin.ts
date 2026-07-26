@@ -7,13 +7,13 @@ import { useAppContext } from "../AppContext";
 /**
  * Returns a login trigger that adapts to the host platform:
  *
- * - When the platform provides its own `login` (e.g. the native Meander app,
+ * - When the platform provides its own `login` (e.g. the native Readymade app,
  *   which can't use Auth0's web redirect), run it and feed the resulting raw
  *   id_token into the app session via `updateToken`.
  * - Otherwise fall back to the standard Auth0 single-page redirect flow.
  *
  * Requires an `<Auth0Provider>` ancestor for the web fallback (present in both
- * the website and the Meander webview today).
+ * the website and the Readymade webview today).
  */
 export function useCloudLogin(): () => Promise<void> {
   const platform = usePlatform();

@@ -1,4 +1,4 @@
-name: Build Meander Linux
+name: Build Readymade Linux
 
 on:
   push:
@@ -73,5 +73,5 @@ jobs:
         uses: actions/upload-artifact@v5
         with:
           name: meander-linux-${{ github.sha }}
-          path: build-linux/meander/meander
+          path: build-linux/meander/Readymade
           retention-days: 30
