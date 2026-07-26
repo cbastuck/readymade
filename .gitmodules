@@ -3,16 +3,13 @@
 	url = ../hkp-node.git
 [submodule "hkp-python"]
 	path = hkp-python
-	url = ssh://git@codeberg.org/cbastuck/hkp-python.git
-[submodule "hkp-go"]
-	path = hkp-go
-	url = ssh://git@codeberg.org/cbastuck/hkp-go.git
+	url = ../hkp-python.git
 [submodule "hkp-website"]
 	path = hkp-website
 	url = ssh://git@codeberg.org/cbastuck/hkp-website.git
 [submodule "meander-ios"]
 	path = meander-ios
-	url = ssh://git@codeberg.org/cbastuck/meander-ios.git
+	url = ../meander-ios.git
 [submodule "meander-android"]
 	path = meander-android
-	url = ssh://git@codeberg.org/cbastuck/meander-android.git
+	url = ../meander-android.git
