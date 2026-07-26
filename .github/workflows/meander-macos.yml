@@ -1,15 +1,10 @@
 name: Build Meander macOS
 
 on:
-  workflow_run:
-    workflows: ["Run Selected CI Tests"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
 
 jobs:
   build:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: macos-latest
     env:
       VCPKG_FEATURE_FLAGS: manifests,binarycaching
@@ -20,7 +15,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
+          ref: ${{ github.sha }}
           submodules: false
 
       # The macOS share extension compiles ShareInbox.swift out of the
