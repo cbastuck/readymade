@@ -18,6 +18,10 @@ export default defineConfig({
     // deterministic regardless of the machine running the tests.
     env: { TZ: "Europe/Berlin" },
     setupFiles: "./src/test/setupTests.ts",
+    // CI runners transform the module graph across many workers at once, so
+    // both tests and hooks run far slower there than locally.
+    testTimeout: 20000,
+    hookTimeout: 20000,
     alias: {
       streamsaver: path.resolve(__dirname, "./src/test/mocks/streamsaver.ts"),
       jstat: path.resolve(__dirname, "./src/test/mocks/jstat.ts"),

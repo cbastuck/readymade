@@ -1,9 +1,14 @@
 import React from "react";
-import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, vi, afterEach } from "vitest";
 import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import { ServiceUIProps, ServiceInstance } from "hkp-frontend/src/types";
+
+import AggregatorUI from "../AggregatorUI";
+import BrowserSubServiceUI from "../BrowserSubServiceUI";
+import InputUI from "../InputUI";
+import TimerUI from "../TimerUI";
 
 type AnyComponent = React.ComponentType<ServiceUIProps>;
 
@@ -84,13 +89,6 @@ async function renderServiceUIAndWait(
 
 describe("Service UI Advanced Behavior Tests", () => {
   describe("User Interaction Tests", () => {
-    let TimerUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../TimerUI");
-      TimerUI = mod.default;
-    });
-
     it("should update UI state when user changes interval input", async () => {
       const service = createMockServiceWithSpies({
         periodic: true,
@@ -172,13 +170,6 @@ describe("Service UI Advanced Behavior Tests", () => {
   });
 
   describe("InputUI Interaction Tests", () => {
-    let InputUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../InputUI");
-      InputUI = mod.default;
-    });
-
     it("should update url when user submits form", async () => {
       const service = createMockServiceWithSpies({
         url: "https://example.com",
@@ -233,13 +224,6 @@ describe("Service UI Advanced Behavior Tests", () => {
   });
 
   describe("Sub-Service Management Tests (BrowserSubServiceUI)", () => {
-    let BrowserSubServiceUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../BrowserSubServiceUI");
-      BrowserSubServiceUI = mod.default;
-    });
-
     it("should track service instances in state", async () => {
       const mockInstances = [
         {
@@ -404,13 +388,6 @@ describe("Service UI Advanced Behavior Tests", () => {
   });
 
   describe("Performance Benchmarks", () => {
-    let AggregatorUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../AggregatorUI");
-      AggregatorUI = mod.default;
-    });
-
     it("should initialize within reasonable time (< 100ms)", async () => {
       const service = createMockServiceWithSpies({
         interval: 100,
@@ -488,13 +465,6 @@ describe("Service UI Advanced Behavior Tests", () => {
   });
 
   describe("Error Recovery and Edge Cases", () => {
-    let InputUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../InputUI");
-      InputUI = mod.default;
-    });
-
     it("should handle configure throwing an error gracefully", async () => {
       const service = createMockServiceWithSpies({
         url: "",
