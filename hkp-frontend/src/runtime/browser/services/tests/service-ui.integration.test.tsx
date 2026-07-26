@@ -1,8 +1,14 @@
 import React from "react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, waitFor, screen } from "@testing-library/react";
 
 import { ServiceUIProps, ServiceInstance } from "hkp-frontend/src/types";
+
+import AggregatorUI from "../AggregatorUI";
+import BrowserSubServiceUI from "../BrowserSubServiceUI";
+import InputUI from "../InputUI";
+import OutputUI from "../OutputUI";
+import TimerUI from "../TimerUI";
 
 type AnyComponent = React.ComponentType<ServiceUIProps>;
 
@@ -78,13 +84,6 @@ async function renderServiceUIAndWait(
 
 describe("Service UI Behavioral Tests", () => {
   describe("AggregatorUI - Configuration API", () => {
-    let AggregatorUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../AggregatorUI");
-      AggregatorUI = mod.default;
-    });
-
     it("should initialize with default state values", async () => {
       const service = createMockServiceWithSpies({
         interval: 0,
@@ -141,13 +140,6 @@ describe("Service UI Behavioral Tests", () => {
   });
 
   describe("TimerUI - Configuration API", () => {
-    let TimerUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../TimerUI");
-      TimerUI = mod.default;
-    });
-
     it("should initialize with periodic and oneshot state", async () => {
       const service = createMockServiceWithSpies({
         periodic: false,
@@ -217,13 +209,6 @@ describe("Service UI Behavioral Tests", () => {
   });
 
   describe("InputUI - Configuration API", () => {
-    let InputUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../InputUI");
-      InputUI = mod.default;
-    });
-
     it("should initialize with url and mode from state", async () => {
       const service = createMockServiceWithSpies({
         url: "https://example.com/events",
@@ -276,13 +261,6 @@ describe("Service UI Behavioral Tests", () => {
   });
 
   describe("OutputUI - Configuration API", () => {
-    let OutputUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../OutputUI");
-      OutputUI = mod.default;
-    });
-
     it("should initialize and render", async () => {
       const service = createMockServiceWithSpies({
         format: "json",
@@ -306,13 +284,6 @@ describe("Service UI Behavioral Tests", () => {
   });
 
   describe("BrowserSubServiceUI - Configuration API", () => {
-    let BrowserSubServiceUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../BrowserSubServiceUI");
-      BrowserSubServiceUI = mod.default;
-    });
-
     it("should initialize with empty instances and iteration state", async () => {
       const service = createMockServiceWithSpies({
         instances: [],

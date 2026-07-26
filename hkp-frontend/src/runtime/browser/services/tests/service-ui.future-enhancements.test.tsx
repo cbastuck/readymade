@@ -1,11 +1,13 @@
 import React from "react";
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
 import { ServiceInstance, ServiceUIProps } from "hkp-frontend/src/types";
 
-type AnyComponent = React.ComponentType<ServiceUIProps>;
+import AggregatorUI from "../AggregatorUI";
+import BrowserSubServiceUI from "../BrowserSubServiceUI";
+import InputUI from "../InputUI";
 
 function createMockService(
   stateOverride?: Record<string, any>,
@@ -64,13 +66,6 @@ function getStableSnapshotMarkup(container: HTMLElement): string {
 
 describe("Service UI Future Enhancements", () => {
   describe("Service Lifecycle", () => {
-    let InputUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../InputUI");
-      InputUI = mod.default;
-    });
-
     it("mounts, configures, and unregisters notification targets on unmount", async () => {
       const service = createMockService({
         url: "https://example.com",
@@ -98,18 +93,6 @@ describe("Service UI Future Enhancements", () => {
   });
 
   describe("Visual Regression", () => {
-    let AggregatorUI: AnyComponent;
-    let InputUI: AnyComponent;
-
-    beforeEach(async () => {
-      const [agg, input] = await Promise.all([
-        import("../AggregatorUI"),
-        import("../InputUI"),
-      ]);
-      AggregatorUI = agg.default;
-      InputUI = input.default;
-    });
-
     it("matches snapshot for AggregatorUI initial render", async () => {
       const service = createMockService({
         interval: 100,
@@ -142,13 +125,6 @@ describe("Service UI Future Enhancements", () => {
   });
 
   describe("Accessibility", () => {
-    let InputUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../InputUI");
-      InputUI = mod.default;
-    });
-
     it("renders accessible interactive controls with names", async () => {
       const service = createMockService({
         url: "",
@@ -207,13 +183,6 @@ describe("Service UI Future Enhancements", () => {
   });
 
   describe("Deeply Nested Sub-services Stress", () => {
-    let BrowserSubServiceUI: AnyComponent;
-
-    beforeEach(async () => {
-      const mod = await import("../BrowserSubServiceUI");
-      BrowserSubServiceUI = mod.default;
-    });
-
     it("renders with many nested sub-services without crashing", async () => {
       const nestedInstances = Array.from({ length: 25 }, (_, idx) => ({
         uuid: `sub-${idx + 1}`,
