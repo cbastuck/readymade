@@ -12,7 +12,7 @@ blocks; boards are the apps you build with them.
 ### Board
 
 The top-level container. Everything lives on a board. Boards have names and may be associated
-with a user account, but this is not required — the playground (hookitapp.com/playground) and
+with a user account, but this is not required — the playground (readymadeit.com/playground) and
 Readymade app (MacOS + iOS + Android) run boards locally in the browser with no backend. There is
 currently no cloud persistence; boards live in the browser.
 
