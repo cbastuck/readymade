@@ -1,6 +1,6 @@
 ## Download
 
-Visit [hookitapp.com](https://hookitapp.com) for more information and additional resources.
+Visit [readymadeit.com](https://readymadeit.com) for more information and additional resources.
 
 ## Important Notice
 
