@@ -8,13 +8,17 @@
         "layout": {
           "type": "message-list",
           "grow": true,
-          "source": { "serviceUuid": "chat-monitor-svc" },
+          "source": {
+            "serviceUuid": "chat-monitor-svc"
+          },
           "composer": {
-            "placeholder": "Type a message…",
+            "placeholder": "Type a message\u2026",
             "submitLabel": "Send",
             "action": {
               "serviceUuid": "chat-input-svc",
-              "configure": { "inject": "$$input" }
+              "configure": {
+                "inject": "$$input"
+              }
             }
           }
         }
@@ -26,12 +30,18 @@
       "id": "chat-browser",
       "name": "Browser",
       "type": "browser",
-      "state": { "wrapServices": false, "minimized": false }
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      }
     },
     {
       "id": "chat-node",
       "name": "Node",
-      "state": { "wrapServices": false, "minimized": false },
+      "state": {
+        "wrapServices": false,
+        "minimized": false
+      },
       "type": "rest",
       "url": "http://127.0.0.1:8080"
     }
@@ -44,8 +54,6 @@
         "serviceName": "Peer Server",
         "state": {
           "bypass": false,
-          "port": 9000,
-          "path": "/",
           "emitEvents": true
         }
       },
@@ -60,7 +68,9 @@
         "uuid": "chat-input-svc",
         "serviceId": "hookup.to/service/injector",
         "serviceName": "Message",
-        "state": { "plainText": true }
+        "state": {
+          "plainText": true
+        }
       },
       {
         "uuid": "chat-peer-svc",
@@ -69,9 +79,7 @@
         "state": {
           "mode": "Receive and Send",
           "extractIncomingData": true,
-          "peerPort": 9000,
-          "peerPath": "/",
-          "peerHost": "HKP_RUNTIME_HOST"
+          "peerMount": "chat-node/chat-peer-server-svc"
         }
       },
       {

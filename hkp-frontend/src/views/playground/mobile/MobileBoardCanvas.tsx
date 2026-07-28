@@ -1174,6 +1174,14 @@ function useWireBrowserScopes(
         }
       };
 
+      browserScope.getServiceStateInRuntime = (
+        runtimeId: string,
+        serviceUuid: string,
+      ) =>
+        boardContext?.services[runtimeId]?.find(
+          (svc) => svc.uuid === serviceUuid,
+        )?.state;
+
       browserScope.onAction = (action: ServiceAction) => {
         if (action.action === "notification" && action.payload) {
           appContext?.pushNotification(action.payload);

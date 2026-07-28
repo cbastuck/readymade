@@ -128,6 +128,8 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       serviceUuid: string,
       config: any,
     ) => scope.configureServiceInRuntime(runtimeId, serviceUuid, config),
+    getServiceStateInRuntime: (runtimeId: string, serviceUuid: string) =>
+      scope.getServiceStateInRuntime(runtimeId, serviceUuid),
   };
 
   return app;

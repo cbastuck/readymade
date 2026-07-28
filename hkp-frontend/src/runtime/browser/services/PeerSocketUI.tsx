@@ -59,6 +59,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const [peerPath, setPeerPath] = useState<string | null>(null);
   const [peerHost, setPeerHost] = useState<string | null>(null);
   const [peerSecure, setPeerSecure] = useState<boolean | null>(null);
+  const [peerMount, setPeerMount] = useState<string | null>(null);
   const [availablePeers, setAvailablePeers] = useState<string[]>([]);
 
   // This panel is a pure view: it reflects service state and issues configure()
@@ -89,6 +90,9 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     if (needsUpdate(state.peerSecure, peerSecure)) {
       setPeerSecure(state.peerSecure);
     }
+    if (needsUpdate(state.peerMount, peerMount)) {
+      setPeerMount(state.peerMount);
+    }
   };
 
   const onInit = (state: any) => update(state);
@@ -99,22 +103,24 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   };
 
   // Resolve the active server the same way the service does, so the displayed
-  // URL and the fetched peer list match the connection the service holds.
-  const activeHost = resolveActivePeerHost({
-    peerHost,
-    peerPort,
-    peerPath,
-    peerSecure,
-  });
+  // URL and the fetched peer list match the connection the service holds. Null
+  // means a Peer Server reference whose runtime has not published an endpoint
+  // yet, which is a normal state during board load.
+  const activeHost = resolveActivePeerHost(
+    { peerHost, peerPort, peerPath, peerSecure, peerMount },
+    (props.service as any)?.app?.getServiceStateInRuntime,
+  );
 
-  const serverDisplayValue = activeHost.host
+  const serverDisplayValue = activeHost?.host
     ? formatServerUrl(
         activeHost.host,
         activeHost.port ?? null,
         activeHost.path,
         activeHost.secure,
       )
-    : "";
+    : peerMount
+      ? `${peerMount} (waiting for endpoint)`
+      : "";
 
   const isSendAllowed = currentMode !== "Receive only";
   const onRandomPeerName = () => setPeerName(uuidv4());
@@ -124,7 +130,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   };
 
   const fetchAvailablePeers = useCallback(async () => {
-    if (!activeHost.host) {
+    if (!activeHost?.host) {
       return;
     }
     const protocol = activeHost.secure ? "https" : "http";
@@ -147,7 +153,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     } catch {
       // peer list is optional — ignore network errors
     }
-  }, [activeHost.host, activeHost.port, activeHost.path, activeHost.secure]);
+  }, [activeHost?.host, activeHost?.port, activeHost?.path, activeHost?.secure]);
 
   useEffect(() => {
     fetchAvailablePeers();
@@ -174,12 +180,16 @@ export default function PeerSocketUI(props: ServiceUIProps) {
           value={serverDisplayValue}
           onSubmit={(value) => {
             const trimmed = value.trim();
+            // Typing a server here is an explicit override, so it also drops any
+            // Peer Server reference — otherwise the reference would keep winning
+            // and the typed value would appear to be ignored.
             if (!trimmed) {
               props.service.configure({
                 peerHost: null,
                 peerPort: null,
                 peerPath: null,
                 peerSecure: null,
+                peerMount: null,
               });
             } else {
               const { host, port, path, secure } = parseServerUrl(trimmed);
@@ -188,6 +198,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
                 peerPort: port,
                 peerPath: path,
                 peerSecure: secure,
+                peerMount: null,
               });
             }
           }}

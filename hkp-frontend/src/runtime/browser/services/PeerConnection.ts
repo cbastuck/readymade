@@ -3,6 +3,10 @@ import Peerjs, { DataConnection } from "peerjs";
 import { DataEnvelope, PeerJsHostDescriptor } from "hkp-frontend/src/types";
 import { availableDiscoveryPeerHosts } from "hkp-frontend/src/views/playground/common";
 import { resolveTemplateVars } from "hkp-frontend/src/templateVars";
+import {
+  parseMountRef,
+  resolveMountEndpoint,
+} from "hkp-frontend/src/runtime/board/mountRef";
 
 /**
  * The subset of PeerSocket state needed to resolve which PeerJS server to
@@ -14,6 +18,9 @@ export type PeerHostState = {
   peerPort: number | null;
   peerPath: string | null;
   peerSecure: boolean | null;
+  /** `"<runtimeId>/<serviceUuid>"` of a Peer Server whose endpoint the runtime
+   *  assigns. Takes precedence over the manual host/port/path fields. */
+  peerMount: string | null;
 };
 
 export type PeerHostParams = {
@@ -28,8 +35,30 @@ export type PeerHostParams = {
  * the first discovery host when neither host nor port is set. Shared by the
  * service (which owns the live connection) and the UI (which displays the
  * server and fetches the peer list) so both always agree on the target server.
+ *
+ * A `peerMount` reference wins over the manual fields, but only once it
+ * resolves: a Peer Server's address is assigned by its runtime at load time, and
+ * runtimes restore concurrently, so an unresolved reference here means "not
+ * ready yet". Resolution therefore happens at connect time rather than at board
+ * load, and the caller retries.
  */
-export function resolveActivePeerHost(state: PeerHostState): PeerHostParams {
+export function resolveActivePeerHost(
+  state: PeerHostState,
+  readServiceState?: (runtimeId: string, serviceUuid: string) => unknown,
+): PeerHostParams | null {
+  const mountRef = parseMountRef(state.peerMount);
+  if (mountRef) {
+    const endpoint = resolveMountEndpoint(mountRef, readServiceState);
+    return endpoint
+      ? {
+          host: endpoint.host,
+          port: endpoint.port,
+          path: endpoint.path,
+          secure: endpoint.secure,
+        }
+      : null;
+  }
+
   const hostDescriptor: PeerJsHostDescriptor | undefined =
     availableDiscoveryPeerHosts[0];
   const resolvedPeerHost = state.peerHost

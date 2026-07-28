@@ -204,6 +204,13 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     console.warn("configureServiceInRuntime not implemented");
   };
 
+  // Overridden by the host that has board context (see BrowserRuntime). Silent
+  // when unset: callers treat "not resolvable" as a normal, retryable state.
+  getServiceStateInRuntime = (
+    _runtimeId: string,
+    _serviceUuid: string,
+  ): any => undefined;
+
   serializeState = () => {
     return this.state;
   };

@@ -125,6 +125,12 @@ const BrowserRuntime = forwardRef<BrowserRuntimeHandle, Props>(
           await svc.configure(config);
         }
       };
+      // Read across runtimes from the board's service table, which is where a
+      // remote runtime's state lands — a REST runtime has no local instances to
+      // look up, so findServiceInstance would not see it.
+      scope.getServiceStateInRuntime = (runtimeId, serviceUuid) =>
+        context?.services[runtimeId]?.find((svc) => svc.uuid === serviceUuid)
+          ?.state;
     }
 
     const onAction = (action: ServiceAction) => {
