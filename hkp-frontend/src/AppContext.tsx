@@ -179,7 +179,11 @@ function AppProvider({ children }: Props) {
   return (
     <Provider value={value}>
       <ResizeObserver onChange={onResize} />
-      <RestoredUser onToken={onToken} onResolved={markAuthResolved} />
+      <RestoredUser
+        onToken={onToken}
+        onResolved={markAuthResolved}
+        onError={(message) => pushNotification({ message, type: "error" })}
+      />
       {children}
     </Provider>
   );
