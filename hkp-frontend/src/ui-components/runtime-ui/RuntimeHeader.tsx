@@ -14,6 +14,7 @@ import Editable from "hkp-frontend/src/ui-components/Editable";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import { resolveTemplateVarsInObject } from "hkp-frontend/src/templateVars";
+import { resolveMountRefsInBoard } from "hkp-frontend/src/runtime/board/mountRef";
 
 import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
@@ -179,7 +180,18 @@ export default function RuntimeHeader({
       runtimes: [{ id: runtime.id, name: runtime.name, type: runtime.type }],
       services: { [runtime.id]: servicesWithState },
     };
-    setShareAsQRSource(resolveTemplateVarsInObject(boardSource));
+    // Only this one runtime travels, so any mount reference pointing at another
+    // one has to be baked into a concrete address here or it never resolves on
+    // the receiving device. Read from the live board, which still has them all.
+    const readServiceState = (runtimeId: string, serviceUuid: string) =>
+      (boardContext.services[runtimeId] ?? []).find(
+        (svc) => svc.uuid === serviceUuid,
+      )?.state;
+    setShareAsQRSource(
+      resolveTemplateVarsInObject(
+        resolveMountRefsInBoard(boardSource, readServiceState),
+      ),
+    );
   };
 
   const builtCustomActions = (runtime.customActions ?? []).map((action) => ({

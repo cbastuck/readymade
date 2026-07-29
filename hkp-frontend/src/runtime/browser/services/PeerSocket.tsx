@@ -18,6 +18,13 @@ type State = {
   peerHost: string | null;
   peerSecure: boolean | null;
   peerMount: string | null;
+  /**
+   * Whether this socket may ask its signalling server who else is connected.
+   * A server can refuse on its own (see PeerJsHostDescriptor.discoverable);
+   * this is the same choice made locally, for servers configured by hand where
+   * there is no descriptor to carry it. Off means no such request is ever sent.
+   */
+  peerDiscovery: boolean;
 };
 
 /** How long to keep waiting for a referenced Peer Server's runtime to publish
@@ -50,6 +57,7 @@ class PeerSocket extends ServiceBase<State> {
       peerHost: null,
       peerSecure: null,
       peerMount: null,
+      peerDiscovery: true,
     });
 
     this.connection = new PeerConnection({
@@ -210,6 +218,14 @@ class PeerSocket extends ServiceBase<State> {
       if (needsUpdate(mount, this.state.peerMount)) {
         this.state.peerMount = mount as string | null;
         this.app.notify(this, { peerMount: this.state.peerMount });
+      }
+    }
+
+    if (config.peerDiscovery !== undefined) {
+      const discovery = !!config.peerDiscovery;
+      if (needsUpdate(discovery, this.state.peerDiscovery)) {
+        this.state.peerDiscovery = discovery;
+        this.app.notify(this, { peerDiscovery: this.state.peerDiscovery });
       }
     }
 

@@ -253,7 +253,10 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
 
     const appContext = useContext(AppCtx);
 
-    const [user, setUser] = useState<User | null>(userProp);
+    // The user is owned by the host and arrives as a prop. Mirroring it into
+    // state only added a render's worth of lag, which async work reading it
+    // through a ref would observe as a null user.
+    const user = userProp;
     const [boardName, setBoardNameState] = useState<string | undefined>(
       initialBoardName ?? boardNameProp,
     );
@@ -285,8 +288,8 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const inFlightFetchesRef = useRef<Set<{ cancelled: boolean }>>(new Set());
 
     // Refs to latest state/props for use inside async closures
-    const userRef = useRef(user);
-    userRef.current = user;
+    const userRef = useRef(userProp);
+    userRef.current = userProp;
     const boardNameRef = useRef(boardName);
     boardNameRef.current = boardName;
     const providerStateRef = useRef(state);
@@ -325,9 +328,6 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
 
     // Sync props -> state
     useEffect(() => {
-      setUser(userProp);
-    }, [userProp]);
-    useEffect(() => {
       if (availableRuntimeEnginesProp) {
         setAvailableRuntimeEngines(availableRuntimeEnginesProp);
       }
@@ -336,6 +336,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     // Build the refs bundle passed to operation functions
     const getRefs = (): BoardStateRefs => ({
       userRef,
+      appContextRef,
       boardNameRef,
       runtimesRef: asRef(providerStateRef.current.runtimes),
       servicesRef: asRef(providerStateRef.current.services),

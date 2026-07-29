@@ -10,6 +10,8 @@
  * The reference format is `"<runtimeId>/<serviceUuid>"`.
  */
 
+import { deepClone } from "./traversal";
+
 export type MountRef = {
   runtimeId: string;
   serviceUuid: string;
@@ -102,4 +104,74 @@ export function resolveMountEndpoint(
   return typeof state?.url === "string"
     ? parseMountEndpoint(state.url)
     : null;
+}
+
+/**
+ * Service state fields holding a mount reference, and how to write the resolved
+ * endpoint back as concrete connection settings for that service's client.
+ * Add an entry here when a service gains its own reference field.
+ */
+const MOUNT_REF_FIELDS: Record<
+  string,
+  (endpoint: MountEndpoint) => Record<string, unknown>
+> = {
+  peerMount: (endpoint) => ({
+    peerHost: endpoint.host,
+    peerPort: endpoint.port,
+    peerPath: endpoint.path,
+    peerSecure: endpoint.secure,
+  }),
+};
+
+/**
+ * Rewrites every mount reference in a board into concrete connection settings.
+ *
+ * A reference is meaningful only inside the board that also holds the runtime
+ * it names. Boards exported to another device are not that board: a partner
+ * board drops runtimes the partner cannot reach, and a shared single-runtime
+ * board carries just one. Handing those a reference leaves the receiver waiting
+ * for an endpoint that will never appear, so exports resolve it here — the same
+ * contract template variables already follow.
+ *
+ * References that cannot be resolved are left untouched rather than blanked, so
+ * a board exported before its runtime came up still describes what it wanted.
+ */
+export function resolveMountRefsInBoard<T>(
+  board: T,
+  readServiceState: (runtimeId: string, serviceUuid: string) => unknown,
+): T {
+  const resolved = deepClone(board);
+
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      node.forEach(walk);
+      return;
+    }
+    if (!node || typeof node !== "object") {
+      return;
+    }
+
+    const obj = node as Record<string, unknown>;
+    for (const [field, toSettings] of Object.entries(MOUNT_REF_FIELDS)) {
+      const raw = obj[field];
+      const ref = parseMountRef(typeof raw === "string" ? raw : null);
+      if (!ref) {
+        continue;
+      }
+      const endpoint = resolveMountEndpoint(ref, readServiceState);
+      if (!endpoint) {
+        continue;
+      }
+      Object.assign(obj, toSettings(endpoint));
+      delete obj[field];
+    }
+
+    // Services nest inside sub-service pipelines, so keep descending.
+    for (const value of Object.values(obj)) {
+      walk(value);
+    }
+  };
+
+  walk(resolved);
+  return resolved;
 }

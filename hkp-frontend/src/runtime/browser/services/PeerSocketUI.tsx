@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 
 import { ServiceUIProps } from "hkp-frontend/src/types";
@@ -50,6 +50,29 @@ function formatServerUrl(
   return `${scheme}://${host}${portStr}${pathStr}`;
 }
 
+/**
+ * Outcome of the last peer-list lookup. The list is only fetched when the user
+ * opens the dropdown, so "idle" means nobody has asked yet.
+ */
+type PeerListStatus =
+  | "idle"
+  | "loading"
+  | "ready"
+  | "off"
+  | "prohibited"
+  | "declined"
+  | "error";
+
+const PEER_LIST_HINTS: Record<PeerListStatus, string> = {
+  idle: "Open to look up peers",
+  loading: "Looking up peers…",
+  ready: "No peers found",
+  off: "Peer lookup is switched off",
+  prohibited: "Peer discovery is disabled for this server",
+  declined: "This server does not publish its peer list",
+  error: "Could not reach the peer server",
+};
+
 export default function PeerSocketUI(props: ServiceUIProps) {
   const [peerName, setPeerName] = useState("");
   const [targetPeer, setTargetPeer] = useState("");
@@ -61,6 +84,8 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const [peerSecure, setPeerSecure] = useState<boolean | null>(null);
   const [peerMount, setPeerMount] = useState<string | null>(null);
   const [availablePeers, setAvailablePeers] = useState<string[]>([]);
+  const [peerListStatus, setPeerListStatus] = useState<PeerListStatus>("idle");
+  const [peerDiscovery, setPeerDiscovery] = useState(true);
 
   // This panel is a pure view: it reflects service state and issues configure()
   // calls. The live peer connection is owned by the PeerSocket service, so it
@@ -92,6 +117,9 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     }
     if (needsUpdate(state.peerMount, peerMount)) {
       setPeerMount(state.peerMount);
+    }
+    if (needsUpdate(state.peerDiscovery, peerDiscovery)) {
+      setPeerDiscovery(state.peerDiscovery);
     }
   };
 
@@ -129,10 +157,29 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     props.service.configure({ peerName: targetPeer, targetPeer: peerName });
   };
 
+  // Asking a signalling server who is connected to it is a request some
+  // operators would rather not receive, and its outcome is worth reporting
+  // either way — an empty dropdown alone cannot say whether there are no peers,
+  // the server declined, or it was unreachable.
   const fetchAvailablePeers = useCallback(async () => {
     if (!activeHost?.host) {
       return;
     }
+    if (!peerDiscovery) {
+      // Switched off locally: this is the lever for hand-configured servers,
+      // which have no descriptor to carry an opt-out.
+      setAvailablePeers([]);
+      setPeerListStatus("off");
+      return;
+    }
+    if (!activeHost.discoverable) {
+      // Prohibited for this server: answer from the descriptor without letting
+      // a request leave the client.
+      setAvailablePeers([]);
+      setPeerListStatus("prohibited");
+      return;
+    }
+
     const protocol = activeHost.secure ? "https" : "http";
     const defaultPort = activeHost.secure ? 443 : 80;
     const portStr =
@@ -144,20 +191,36 @@ export default function PeerSocketUI(props: ServiceUIProps) {
       ? `${basePath}peerjs/peers`
       : `${basePath}/peerjs/peers`;
     const url = `${protocol}://${activeHost.host}${portStr}${peersPath}`;
+
+    setPeerListStatus("loading");
     try {
       const response = await fetch(url);
       if (response.ok) {
         const peers: string[] = await response.json();
         setAvailablePeers(peers);
+        setPeerListStatus("ready");
+        return;
       }
+      setAvailablePeers([]);
+      // A refusal is the server's policy, not a fault — worth telling apart
+      // from a server that could not be reached at all.
+      setPeerListStatus(
+        response.status === 401 || response.status === 403
+          ? "declined"
+          : "error",
+      );
     } catch {
-      // peer list is optional — ignore network errors
+      setAvailablePeers([]);
+      setPeerListStatus("error");
     }
-  }, [activeHost?.host, activeHost?.port, activeHost?.path, activeHost?.secure]);
-
-  useEffect(() => {
-    fetchAvailablePeers();
-  }, [fetchAvailablePeers]);
+  }, [
+    activeHost?.host,
+    activeHost?.port,
+    activeHost?.path,
+    activeHost?.secure,
+    activeHost?.discoverable,
+    peerDiscovery,
+  ]);
 
   return (
     <ServiceUI
@@ -226,6 +289,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
                   title="Send to"
                   value={targetPeer}
                   options={availablePeers.filter((p) => p !== peerName)}
+                  emptyHint={PEER_LIST_HINTS[peerListStatus]}
                   onOpen={fetchAvailablePeers}
                   onSubmit={(targetPeer) =>
                     props.service.configure({ targetPeer })
@@ -258,6 +322,16 @@ export default function PeerSocketUI(props: ServiceUIProps) {
             checked={extractIncomingData}
             onCheckedChange={(newChecked) =>
               props.service.configure({ extractIncomingData: newChecked })
+            }
+          />
+        )}
+
+        {isSendAllowed && (
+          <Switch
+            title="Discovery"
+            checked={peerDiscovery}
+            onCheckedChange={(newChecked) =>
+              props.service.configure({ peerDiscovery: newChecked })
             }
           />
         )}

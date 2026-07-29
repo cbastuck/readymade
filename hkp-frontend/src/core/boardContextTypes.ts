@@ -15,6 +15,7 @@ import {
 } from "../types";
 import { FacadeDescriptor } from "../facade/types";
 import { BoardContextState, EngineState } from "../BoardContext";
+import { AppContextState } from "../AppContext";
 
 export type Props = {
   user: User | null;
@@ -59,6 +60,8 @@ export type Props = {
 
 export type BoardStateRefs = {
   userRef: RefObject<User | null>;
+  /** Absent on hosts that build a partial refs bundle (e.g. tests). */
+  appContextRef?: RefObject<AppContextState | null>;
   boardNameRef: RefObject<string | undefined>;
   runtimesRef: RefObject<Array<RuntimeDescriptor>>;
   servicesRef: RefObject<{ [runtimeId: string]: Array<ServiceDescriptor> }>;

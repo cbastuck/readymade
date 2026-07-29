@@ -2,12 +2,28 @@ import { IdToken, useAuth0 } from "@auth0/auth0-react";
 
 type Props = {
   onToken: (claims: IdToken) => void;
+  /**
+   * Called once the Auth0 session has settled, whether or not anyone is signed
+   * in — including when restoring the token failed. Callers that need
+   * credentials at startup wait on this instead of polling for a user, so it
+   * must fire on every terminal path or they wait forever.
+   */
+  onResolved?: () => void;
 };
 
-export default function RestoredUser({ onToken }: Props) {
+export default function RestoredUser({ onToken, onResolved }: Props) {
   const { getIdTokenClaims, isLoading, isAuthenticated, logout } = useAuth0();
   const onRestore = async () => {
-    if (!isLoading && isAuthenticated) {
+    if (isLoading) {
+      // Still settling — a later render reports the outcome.
+      return;
+    }
+    if (!isAuthenticated) {
+      onResolved?.();
+      return;
+    }
+
+    try {
       const idToken: IdToken | undefined = await getIdTokenClaims();
       if (idToken) {
         try {
@@ -22,6 +38,8 @@ export default function RestoredUser({ onToken }: Props) {
           }
         }
       }
+    } finally {
+      onResolved?.();
     }
   };
 

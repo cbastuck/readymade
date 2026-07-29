@@ -28,6 +28,8 @@ export type PeerHostParams = {
   port: number | undefined;
   path: string;
   secure: boolean;
+  /** Whether this server may be asked for its peer list. See PeerJsHostDescriptor. */
+  discoverable: boolean;
 };
 
 /**
@@ -55,6 +57,8 @@ export function resolveActivePeerHost(
           port: endpoint.port,
           path: endpoint.path,
           secure: endpoint.secure,
+          // A runtime-hosted peer server publishes its peer list.
+          discoverable: true,
         }
       : null;
   }
@@ -65,6 +69,10 @@ export function resolveActivePeerHost(
     ? resolveTemplateVars(state.peerHost)
     : null;
   const isCustomServer = state.peerHost !== null || state.peerPort !== null;
+  // Discoverability belongs to the host, so it follows the descriptor only when
+  // the descriptor's host is the one we actually ended up on (a custom port
+  // alone still leaves us there). A host the user typed is assumed discoverable.
+  const usingDescriptorHost = !isCustomServer || !resolvedPeerHost;
   return {
     host: isCustomServer
       ? (resolvedPeerHost ?? hostDescriptor?.host)
@@ -76,6 +84,9 @@ export function resolveActivePeerHost(
     secure: isCustomServer
       ? (state.peerSecure ?? false)
       : (hostDescriptor?.secure ?? false),
+    discoverable: usingDescriptorHost
+      ? (hostDescriptor?.discoverable ?? true)
+      : true,
   };
 }
 

@@ -118,6 +118,16 @@ export type PeerJsHostDescriptor = {
   port: number;
   path: string;
   secure: boolean;
+  /**
+   * Whether this server may be asked for its list of connected peers.
+   *
+   * Opt-out: a server is assumed discoverable, because most are and the answer
+   * is only knowable by asking. Set `false` for a server that must never be
+   * probed — either because it refuses on principle, or because the request
+   * itself would disclose more than the operator wants. A `false` here is
+   * honoured without a request ever leaving the client.
+   */
+  discoverable?: boolean;
 };
 
 
