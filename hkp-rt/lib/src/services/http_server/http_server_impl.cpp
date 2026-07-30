@@ -35,10 +35,20 @@ unsigned short HttpServerImpl::start()
     std::cout << "HttpServerImpl::start() Stopped HTTP server thread" << std::endl;
   });
   
-  std::cout << "HttpServerImpl::start() Starting HTTP server on port: " << m_port << std::endl;
+  std::cout << "HttpServerImpl::start() Starting HTTP server on port: "
+            << (m_port == 0 ? std::string("0 (any free port)") : std::to_string(m_port))
+            << std::endl;
   auto address = net::ip::make_address("0.0.0.0");
   m_listener = std::make_shared<Listener>(*this, tcp::endpoint{address, m_port});
-  return m_listener->start();
+
+  // Port 0 asks the OS for any free port, so the port we are actually listening
+  // on is only known once the acceptor is bound. Keep it: everything downstream
+  // — the log line, getState, the published url — reads back through port(),
+  // and would otherwise keep reporting the 0 that was requested rather than the
+  // port a client has to connect to.
+  m_port = m_listener->start();
+  std::cout << "HttpServerImpl::start() Listening on port: " << m_port << std::endl;
+  return m_port;
 }
 
 bool HttpServerImpl::stop()
