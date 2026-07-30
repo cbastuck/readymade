@@ -10,12 +10,14 @@ import {
   attentionCount,
   boardFolderPaths,
   folderKey,
+  formatModifiedShort,
   isAttentionState,
   listFolders,
   removeNode,
   searchBoards,
   setBoardArt,
   setBoardFiled,
+  sortNodes,
   stateMeta,
 } from "./model";
 import { downscaleImage } from "./imageUpload";
@@ -26,11 +28,13 @@ import {
   BoardAction,
   BoardHistoryItem,
   BoardNode,
+  BoardSort,
   BoardState,
   FolderNode,
   NewsItem,
   RemotesController,
   RuntimeNode,
+  SavedBoardEntry,
   TreeNode,
 } from "./types";
 import TopBar from "./TopBar";
@@ -48,8 +52,10 @@ export type { RemotesController };
 export interface StartPageProps {
   /** Persistence for the user's folder tree. */
   store: StartPageStore;
-  /** Saved board names for "My Boards"; omit when the host has no storage. */
-  listSavedBoards?: () => Promise<string[]>;
+  /** Saved boards for "My Boards"; omit when the host has no storage. Hosts
+   *  that track a last-write time list entries instead of bare names — that
+   *  timestamp is what the details panel and the "recent" sort use. */
+  listSavedBoards?: () => Promise<Array<string | SavedBoardEntry>>;
   /** Live board states keyed by board name (running / needs-input / …). */
   boardStates?: Record<string, BoardState>;
   /** Opens a board (saved / demo / cloud / runtime) — resolved by the host. */
@@ -175,6 +181,14 @@ function defaultColumnWidth(level: number): number {
   return level === 0 ? COLUMN_WIDTH_ROOT : COLUMN_WIDTH;
 }
 
+// How board rows are ordered inside a column; the Sources column keeps its
+// fixed order either way (it holds only folders).
+const SORT_STORAGE_KEY = "hkp-startpage-sort";
+
+function restoreSort(): BoardSort {
+  return localStorage.getItem(SORT_STORAGE_KEY) === "recent" ? "recent" : "name";
+}
+
 export default function StartPage(props: StartPageProps) {
   const {
     store,
@@ -219,6 +233,12 @@ export default function StartPage(props: StartPageProps) {
   const [assignBoard, setAssignBoard] = useState<string | null>(null);
   const [columnWidths, setColumnWidths] =
     useState<number[]>(restoreColumnWidths);
+  const [sort, setSort] = useState<BoardSort>(restoreSort);
+
+  const changeSort = useCallback((next: BoardSort) => {
+    setSort(next);
+    localStorage.setItem(SORT_STORAGE_KEY, next);
+  }, []);
 
   const { tree, updateTree, roots, savedBoards, refreshSavedBoards } =
     useStartPageModel({
@@ -275,9 +295,12 @@ export default function StartPage(props: StartPageProps) {
       if (node.type === "board") {
         const meta = stateMeta(node.state);
         const attention = isAttentionState(node.state);
+        // While sorting by date the subtitle carries it, so the order the rows
+        // are in is readable off the list.
         const sub =
           opts.subOverride ??
           node.sub ??
+          (sort === "recent" ? formatModifiedShort(node.modified) : undefined) ??
           (node.by ? `${meta.label} · ${node.by}` : meta.label);
         return {
           key: opts.key,
@@ -387,7 +410,7 @@ export default function StartPage(props: StartPageProps) {
             : undefined,
       };
     },
-    [tree, updateTree, onOpen],
+    [tree, updateTree, onOpen, sort],
   );
 
   const { columns, breadcrumb, detail } = useMemo(() => {
@@ -402,6 +425,7 @@ export default function StartPage(props: StartPageProps) {
       | null = null;
 
     while (true) {
+      items = sortNodes(items, sort);
       const selectedName = selectedNames[level];
       const sel =
         selectedName != null
@@ -483,6 +507,7 @@ export default function StartPage(props: StartPageProps) {
     onOpen,
     columnWidths,
     resizeColumn,
+    sort,
   ]);
 
   const searchResults = useMemo<RowVM[]>(() => {
@@ -678,6 +703,8 @@ export default function StartPage(props: StartPageProps) {
         onSearchQuery={setSearchQuery}
         searchResults={searchResults}
         detail={detailNode}
+        sort={sort}
+        onSort={changeSort}
       />
       {assignBoard && tree && (
         <FolderPicker

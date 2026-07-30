@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import Column, { ColumnVM } from "./Column";
 import Row, { RowVM } from "./Row";
+import { BoardSort } from "./types";
 
 interface Props {
   columns: ColumnVM[];
@@ -13,6 +14,63 @@ interface Props {
   searchResults: RowVM[];
   /** Details column for the selected board, rendered after the columns. */
   detail?: ReactNode;
+  /** Current board order; drives the Name / Recent toggle. */
+  sort: BoardSort;
+  onSort: (sort: BoardSort) => void;
+}
+
+const SORT_OPTIONS: Array<{ value: BoardSort; label: string; title: string }> =
+  [
+    { value: "name", label: "Name", title: "Sort boards by name" },
+    { value: "recent", label: "Recent", title: "Sort boards by last modified" },
+  ];
+
+function SortToggle({
+  sort,
+  onSort,
+}: {
+  sort: BoardSort;
+  onSort: (sort: BoardSort) => void;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 2,
+        padding: 2,
+        borderRadius: 9,
+        background: "#e9ebf0",
+        flex: "0 0 auto",
+      }}
+    >
+      {SORT_OPTIONS.map((option) => {
+        const active = option.value === sort;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            title={option.title}
+            onClick={() => onSort(option.value)}
+            style={{
+              border: "none",
+              borderRadius: 7,
+              padding: "4px 10px",
+              fontSize: 12,
+              fontWeight: 600,
+              fontFamily: "inherit",
+              cursor: "pointer",
+              color: active ? "#14161c" : "#6b7080",
+              background: active ? "#fff" : "transparent",
+              boxShadow: active ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
+            }}
+          >
+            {option.label}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function ColumnBrowser({
@@ -22,6 +80,8 @@ export default function ColumnBrowser({
   onSearchQuery,
   searchResults,
   detail,
+  sort,
+  onSort,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const searching = searchQuery.trim().length > 0;
@@ -54,7 +114,14 @@ export default function ColumnBrowser({
           marginBottom: 12,
         }}
       >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 10, minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 10,
+            minWidth: 0,
+          }}
+        >
           <h2
             style={{
               margin: 0,
@@ -81,7 +148,15 @@ export default function ColumnBrowser({
               : breadcrumb}
           </span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14, flex: "0 0 auto" }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            flex: "0 0 auto",
+          }}
+        >
+          {!searching && <SortToggle sort={sort} onSort={onSort} />}
           <input
             className="st-search"
             type="search"
@@ -107,7 +182,10 @@ export default function ColumnBrowser({
         }}
       >
         {searching ? (
-          <div className="st-v" style={{ flex: "1 1 auto", overflowY: "auto", padding: 6 }}>
+          <div
+            className="st-v"
+            style={{ flex: "1 1 auto", overflowY: "auto", padding: 6 }}
+          >
             {searchResults.map((it) => (
               <Row key={it.key} it={it} />
             ))}

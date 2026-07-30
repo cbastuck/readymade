@@ -16,6 +16,7 @@ export type {
   PersistedNode,
   RuntimeNode,
   RuntimeServiceInfo,
+  SavedBoardEntry,
   StartPageTree,
   TreeNode,
 } from "./types";
