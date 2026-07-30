@@ -8,7 +8,8 @@ import {
 import { getBackend } from "../backend";
 import { meanderLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
-import { clearSession, loadSession, saveSession } from "../auth/session";
+import { loadSession, saveSession } from "../auth/session";
+import { meanderLogout } from "../auth/meanderLogout";
 
 // Capabilities are only wired up when the native saucer APIs are actually present
 // (i.e. running inside the Readymade desktop webview, not in a plain browser).
@@ -99,7 +100,7 @@ const capabilities: PlatformCapabilities = isNative
       // Native Auth0 login (system browser + PKCE). hkp-frontend's cloud view
       // calls this instead of the web redirect when present.
       login: withPersistedSession(meanderLogin),
-      logout: async () => clearSession(),
+      logout: meanderLogout,
       restoreSession: async () => loadSession(),
       ...runtimeSettingsCapabilities,
     }
@@ -109,7 +110,7 @@ const capabilities: PlatformCapabilities = isNative
         // Native Auth0 login via ASWebAuthenticationSession on iOS and browser
         // redirect capture on Android.
         login: withPersistedSession(iosLogin),
-        logout: async () => clearSession(),
+        logout: meanderLogout,
         restoreSession: async () => loadSession(),
         ...runtimeSettingsCapabilities,
       }
