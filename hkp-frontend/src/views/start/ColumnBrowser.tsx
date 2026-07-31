@@ -17,6 +17,10 @@ interface Props {
   /** Current board order; drives the Name / Recent toggle. */
   sort: BoardSort;
   onSort: (sort: BoardSort) => void;
+  /** Whether the boards on screen carry a modification time. Sources whose
+   *  boards have none (demos, cloud) show the toggle disabled rather than
+   *  offering an order it cannot produce. */
+  sortable: boolean;
 }
 
 const SORT_OPTIONS: Array<{ value: BoardSort; label: string; title: string }> =
@@ -25,12 +29,16 @@ const SORT_OPTIONS: Array<{ value: BoardSort; label: string; title: string }> =
     { value: "recent", label: "Recent", title: "Sort boards by last modified" },
   ];
 
+const NO_DATE_HINT = "These boards carry no modification date";
+
 function SortToggle({
   sort,
   onSort,
+  sortable,
 }: {
   sort: BoardSort;
   onSort: (sort: BoardSort) => void;
+  sortable: boolean;
 }) {
   return (
     <div
@@ -42,15 +50,17 @@ function SortToggle({
         borderRadius: 9,
         background: "#e9ebf0",
         flex: "0 0 auto",
+        opacity: sortable ? 1 : 0.5,
       }}
     >
       {SORT_OPTIONS.map((option) => {
-        const active = option.value === sort;
+        const active = sortable && option.value === sort;
         return (
           <button
             key={option.value}
             type="button"
-            title={option.title}
+            disabled={!sortable}
+            title={sortable ? option.title : NO_DATE_HINT}
             onClick={() => onSort(option.value)}
             style={{
               border: "none",
@@ -59,7 +69,7 @@ function SortToggle({
               fontSize: 12,
               fontWeight: 600,
               fontFamily: "inherit",
-              cursor: "pointer",
+              cursor: sortable ? "pointer" : "default",
               color: active ? "#14161c" : "#6b7080",
               background: active ? "#fff" : "transparent",
               boxShadow: active ? "0 1px 2px rgba(0,0,0,0.08)" : "none",
@@ -82,6 +92,7 @@ export default function ColumnBrowser({
   detail,
   sort,
   onSort,
+  sortable,
 }: Props) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const searching = searchQuery.trim().length > 0;
@@ -156,7 +167,9 @@ export default function ColumnBrowser({
             flex: "0 0 auto",
           }}
         >
-          {!searching && <SortToggle sort={sort} onSort={onSort} />}
+          {!searching && (
+            <SortToggle sort={sort} onSort={onSort} sortable={sortable} />
+          )}
           <input
             className="st-search"
             type="search"

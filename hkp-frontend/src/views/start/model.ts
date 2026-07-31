@@ -367,6 +367,15 @@ export function sortNodes(nodes: TreeNode[], sort: BoardSort): TreeNode[] {
   return nodes.map((node) => (node.type === "board" ? boards[next++] : node));
 }
 
+/**
+ * Whether ordering these rows by time can produce anything other than the name
+ * order — true once one board reports a modification time. Sources that keep no
+ * timestamp (demos, cloud boards) answer false, and the UI offers no "recent".
+ */
+export function hasModifiedBoards(nodes: TreeNode[]): boolean {
+  return nodes.some((node) => node.type === "board" && !!node.modified);
+}
+
 /** A board's last-write time for the details panel; undefined when unknown. */
 export function formatModified(iso: string | undefined): string | undefined {
   const date = parseDate(iso);

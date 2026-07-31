@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildMyBoardsFolder,
   formatModified,
+  hasModifiedBoards,
   sortNodes,
 } from "../views/start/model";
 import { BoardNode, FolderNode, TreeNode } from "../views/start/types";
@@ -69,6 +70,24 @@ describe("sortNodes", () => {
       "Alpha",
       "zulu",
     ]);
+  });
+});
+
+describe("hasModifiedBoards", () => {
+  it("is false for a source whose boards carry no timestamp", () => {
+    expect(hasModifiedBoards([board("Sequencer"), board("Sampler")])).toBe(
+      false,
+    );
+  });
+
+  it("is false for a column of folders alone", () => {
+    expect(hasModifiedBoards([folder("Audio"), folder("Canvas")])).toBe(false);
+  });
+
+  it("is true once one board reports a timestamp", () => {
+    expect(
+      hasModifiedBoards([board("Sampler"), board("Mixer", "2026-07-30T10:00:00Z")]),
+    ).toBe(true);
   });
 });
 

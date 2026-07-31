@@ -11,6 +11,7 @@ import {
   boardFolderPaths,
   folderKey,
   formatModifiedShort,
+  hasModifiedBoards,
   isAttentionState,
   listFolders,
   removeNode,
@@ -413,12 +414,15 @@ export default function StartPage(props: StartPageProps) {
     [tree, updateTree, onOpen, sort],
   );
 
-  const { columns, breadcrumb, detail } = useMemo(() => {
+  const { columns, breadcrumb, detail, sortable } = useMemo(() => {
     const cols: ColumnVM[] = [];
     const crumbs: string[] = [];
     let items = roots;
     let parent: FolderNode | null = null;
     let level = 0;
+    // Whether "recent" is meaningful for what is on screen — the drilled-into
+    // source decides, since only some hosts report a modification time.
+    let dated = false;
     let detailSel:
       | { kind: "board"; board: BoardNode; parentPath?: string[] }
       | { kind: "runtime"; runtime: RuntimeNode }
@@ -426,6 +430,7 @@ export default function StartPage(props: StartPageProps) {
 
     while (true) {
       items = sortNodes(items, sort);
+      dated = dated || hasModifiedBoards(items);
       const selectedName = selectedNames[level];
       const sel =
         selectedName != null
@@ -494,6 +499,7 @@ export default function StartPage(props: StartPageProps) {
       columns: cols,
       breadcrumb: crumbs.length ? crumbs.join("  ›  ") : "Sources",
       detail: detailSel,
+      sortable: dated,
     };
   }, [
     roots,
@@ -705,6 +711,7 @@ export default function StartPage(props: StartPageProps) {
         detail={detailNode}
         sort={sort}
         onSort={changeSort}
+        sortable={sortable}
       />
       {assignBoard && tree && (
         <FolderPicker
