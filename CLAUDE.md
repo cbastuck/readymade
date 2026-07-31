@@ -16,6 +16,28 @@ with a user account, but this is not required — the playground (readymadeit.co
 Readymade app (MacOS + iOS + Android + Linux + Windows) run boards locally in the browser with no backend. There is
 currently no cloud persistence; boards live in the browser.
 
+### Coordinator
+
+The instance that **owns** a board: it holds the board's engine state — the runtimes, the
+services, and the state each of those last reported — and answers anything that needs a view
+of the whole board rather than one runtime (resolving a mount, baking references for export).
+
+Coordinating a board and hosting a runtime are **separate roles**, even where one process
+plays both:
+
+| Board runs as        | Coordinator | Hosts browser runtimes | Hosts remote runtimes  |
+| -------------------- | ----------- | ---------------------- | ---------------------- |
+| Playground/Readymade | the browser | the browser            | the browser drives them |
+| Cloud board          | hkp-node    | a connected browser    | hkp-node provisions them |
+
+The browser playing both roles is the historical case, not the general one. A runtime host may
+pass the coordinator to the services it hosts (`AppInstance.coordinator`), which is how a
+service reaches beyond its own runtime; a host that cannot see the board leaves it unset, and
+callers treat that as a lookup that has not resolved yet.
+
+- `hkp-frontend/src/core/coordinator.ts` — the interface and the browser implementation
+- `hkp-node/src/coordinator/` — the cloud-board coordinator
+
 ### Runtime
 
 A board contains one or more runtimes. Runtimes are **chained** — the output of one becomes
@@ -138,7 +160,7 @@ two people load the same board against one server.
 
 A service that must be reachable from outside (`http-server-subservices`, `peer-server`) does
 not bind a port. Its runtime assigns it an opaque path on the runtime's own server and
-publishes the address in the service's state as `url`:
+publishes the address in the service's state as `__hkpMount`:
 
 ```
 http://<host>:<port>/hosted/<mountId>
@@ -147,9 +169,27 @@ http://<host>:<port>/hosted/<mountId>
 These endpoints are unauthenticated by design — they exist for outside callers holding no
 token — so the unguessable id is what gates access. Because the address is assigned at load
 time, a board that needs to point a client at one references the *service* rather than
-hard-coding an address: `"peerMount": "<runtimeId>/<serviceUuid>"`. Resolution is lazy (see
-`hkp-frontend/src/runtime/board/mountRef.ts`), because a board restores all its runtimes
+hard-coding an address, in that same field:
+
+```json
+"__hkpMount": "hkp-mount://<runtimeId>/<serviceUuid>"
+```
+
+One field on both sides: **`__hkpMount` says where a mount is.** The owner publishes an
+`http(s)://` address there; a consumer points at the owner with a `hkp-mount://` reference
+there, and asks the board's coordinator to resolve it (`coordinator.resolveMount`). The
+vocabulary — field, scheme, parsing — lives in `hkp-frontend/src/runtime/board/mount.ts`;
+resolution needs a view of the whole board and therefore belongs to the coordinator.
+The scheme is what tells the two forms apart — a bare `<runtimeId>/<serviceUuid>` would be
+indistinguishable from a relative URL, and the hosts these boards run on resolve those
+against a base that differs between builds (`hkp://` packaged, `http://` in dev). Exporting
+a board substitutes the resolved address into the same field, so a receiving service reads
+it exactly as it always does. Resolution is lazy, because a board restores all its runtimes
 concurrently and the referenced runtime may not have published yet.
+
+The `__hkp` prefix marks a state property whose meaning is defined outside the service
+holding it — generic board machinery reads and rewrites it. Reserved: services must not use
+such a name for anything else.
 
 ---
 
