@@ -113,8 +113,58 @@ export type FontPreset = {
   label: string;
   /** CSS font-family; empty string means "whatever the theme defines". */
   family: string;
-  /** Google Fonts family query, loaded lazily on first use. */
-  google?: string;
+  /** Bundled webfont, registered lazily on first use. */
+  webfont?: WebfontSource;
+};
+
+/** A bundled family: one entry per subset, each with the URL of its woff2. */
+type WebfontSource = {
+  family: string;
+  /** Weight range the variable font covers, as the CSS font-weight value. */
+  weight: string;
+  subsets: { url: string; unicodeRange: string }[];
+};
+
+// Latin ranges as published by Google Fonts for these families.
+const LATIN_RANGE =
+  "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, " +
+  "U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, " +
+  "U+2212, U+2215, U+FEFF, U+FFFD";
+const LATIN_EXT_RANGE =
+  "U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, " +
+  "U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, " +
+  "U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF";
+
+// Resolved by the bundler, so the files ship with the app and the browser
+// fetches them from this origin only when a preset that uses them is active.
+const SPACE_GROTESK: WebfontSource = {
+  family: "Space Grotesk",
+  weight: "400 700",
+  subsets: [
+    {
+      url: new URL("../assets/fonts/space-grotesk-latin.woff2", import.meta.url).href,
+      unicodeRange: LATIN_RANGE,
+    },
+    {
+      url: new URL("../assets/fonts/space-grotesk-latin-ext.woff2", import.meta.url).href,
+      unicodeRange: LATIN_EXT_RANGE,
+    },
+  ],
+};
+
+const ARCHIVO: WebfontSource = {
+  family: "Archivo",
+  weight: "400 800",
+  subsets: [
+    {
+      url: new URL("../assets/fonts/archivo-latin.woff2", import.meta.url).href,
+      unicodeRange: LATIN_RANGE,
+    },
+    {
+      url: new URL("../assets/fonts/archivo-latin-ext.woff2", import.meta.url).href,
+      unicodeRange: LATIN_EXT_RANGE,
+    },
+  ],
 };
 
 export const FONT_PRESETS: FontPreset[] = [
@@ -123,13 +173,13 @@ export const FONT_PRESETS: FontPreset[] = [
     id: "character",
     label: "Character",
     family: "'Space Grotesk', 'DM Sans', system-ui, sans-serif",
-    google: "Space+Grotesk:wght@400;500;600;700",
+    webfont: SPACE_GROTESK,
   },
   {
     id: "swiss",
     label: "Swiss",
     family: "'Archivo', 'DM Sans', system-ui, sans-serif",
-    google: "Archivo:wght@400;500;600;700;800",
+    webfont: ARCHIVO,
   },
 ];
 
@@ -154,19 +204,31 @@ function restoreAppearance(): AppearanceState {
   }
 }
 
-function ensureGoogleFontLoaded(preset: FontPreset) {
-  if (!preset.google) {
+/** Registers a preset's bundled webfont once. The browser downloads the woff2
+ *  only when text actually renders in that family. */
+function ensureWebfontLoaded(preset: FontPreset) {
+  if (!preset.webfont) {
     return;
   }
   const id = `hkp-font-${preset.id}`;
   if (document.getElementById(id)) {
     return;
   }
-  const link = document.createElement("link");
-  link.id = id;
-  link.rel = "stylesheet";
-  link.href = `https://fonts.googleapis.com/css2?family=${preset.google}&display=swap`;
-  document.head.appendChild(link);
+  const style = document.createElement("style");
+  style.id = id;
+  style.textContent = preset.webfont.subsets
+    .map(
+      (subset) => `@font-face {
+  font-family: "${preset.webfont!.family}";
+  font-style: normal;
+  font-weight: ${preset.webfont!.weight};
+  font-display: swap;
+  src: url("${subset.url}") format("woff2");
+  unicode-range: ${subset.unicodeRange};
+}`,
+    )
+    .join("\n");
+  document.head.appendChild(style);
 }
 
 function applyAppearance(appearance: AppearanceState) {
@@ -196,7 +258,7 @@ function applyAppearance(appearance: AppearanceState) {
   if (!font || !font.family) {
     root.style.removeProperty("--hkp-start-font");
   } else {
-    ensureGoogleFontLoaded(font);
+    ensureWebfontLoaded(font);
     root.style.setProperty("--hkp-start-font", font.family);
   }
 }
