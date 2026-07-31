@@ -179,11 +179,17 @@ export default function FacadeRenderer({
       });
     }
 
-    const resolved = resolveTemplateVarsInObject({
-      runtimes: partnerRuntimes,
-      services: partnerServices,
-      facade: draftFacade,
-    });
+    // A mount reference typically names one of the very runtimes dropped above
+    // (a peer server on the originator's local runtime), so the source of the
+    // address is gone from the partner board by design — which is exactly why
+    // it must be baked in. The coordinator resolves against the whole board.
+    const resolved = resolveTemplateVarsInObject(
+      boardContext.coordinator.resolveMountsInBoard({
+        runtimes: partnerRuntimes,
+        services: partnerServices,
+        facade: draftFacade,
+      }),
+    );
     const url = createBoardLink(JSON.stringify(resolved));
     setShareUrl(url);
   };

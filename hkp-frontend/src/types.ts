@@ -1,6 +1,7 @@
 import { Component, FunctionComponent, ReactElement, ReactNode } from "react";
 import PeerJs, { DataConnection } from "peerjs";
 import { BoardContextState, EngineState } from "./BoardContext";
+import type { BoardCoordinator } from "./core/coordinator";
 import type { RuntimeTokenRequest } from "./platform/PlatformContext";
 
 export type InstanceId = {
@@ -118,6 +119,16 @@ export type PeerJsHostDescriptor = {
   port: number;
   path: string;
   secure: boolean;
+  /**
+   * Whether this server may be asked for its list of connected peers.
+   *
+   * Opt-out: a server is assumed discoverable, because most are and the answer
+   * is only knowable by asking. Set `false` for a server that must never be
+   * probed — either because it refuses on principle, or because the request
+   * itself would disclose more than the operator wants. A `false` here is
+   * honoured without a request ever leaving the client.
+   */
+  discoverable?: boolean;
 };
 
 
@@ -234,6 +245,11 @@ export type AppImpl = {
   configureService?: (svc: ServiceDescriptor, config: any) => void;
   processRuntimeByName?: (name: string, params: any) => Promise<any>;
   configureServiceInRuntime?: (runtimeId: string, serviceUuid: string, config: any) => Promise<void>;
+  // The coordinator of the board this service belongs to, for questions that
+  // span runtimes — resolving an address a runtime assigns at load time, say.
+  // Absent on hosts that do not know the board they are part of; callers treat
+  // that the same as a lookup that has not resolved yet.
+  coordinator?: BoardCoordinator;
   getRuntimeVariable: () => Record<string, any>;
   setRuntimeVariable: (key: string, value: any) => void;
   // Mints a short-lived capability token from the host's embedded runtime,

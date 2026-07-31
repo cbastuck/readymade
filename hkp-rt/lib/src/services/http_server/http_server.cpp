@@ -7,7 +7,12 @@
 #include "./http_server_impl.h"
 #include "./http_listener.h"
 #include "./http_session.h"
+#include "./request_decode.h"
 
+#include <algorithm>
+#include <cctype>
+#include <optional>
+#include <string>
 #include <thread>
 
 namespace beast = boost::beast;
@@ -16,6 +21,8 @@ namespace net = boost::asio;
 using tcp = net::ip::tcp;
 
 namespace hkp {
+
+using namespace request_decode;
 
 HttpServer::HttpServer(const std::string& instanceId)
   : Service(instanceId, serviceId())
@@ -33,24 +40,6 @@ HttpServer::~HttpServer()
   m_impl->stop();
 }
 
-// Extract the filename from a Content-Disposition header value.
-// e.g. "attachment; filename=\"photo.jpg\"" -> "photo.jpg"
-static std::string extractFilename(const std::string& contentDisposition)
-{
-  std::string filename = "upload";
-  auto pos = contentDisposition.find("filename=");
-  if (pos != std::string::npos)
-  {
-    filename = contentDisposition.substr(pos + 9);
-    filename.erase(std::remove(filename.begin(), filename.end(), '"'),  filename.end());
-    filename.erase(std::remove(filename.begin(), filename.end(), '\''), filename.end());
-    filename.erase(0, filename.find_first_not_of(" \t"));
-    auto last = filename.find_last_not_of(" \t\r\n");
-    if (last != std::string::npos) filename.resize(last + 1);
-  }
-  return filename;
-}
-
 void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::string& path, const std::string& method, bool /*awaitResponse*/)
 {
   // OPTIONS is a protocol-level concern (CORS preflight) — handle inline, never enters pipeline.
@@ -60,15 +49,28 @@ void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::strin
     return;
   }
 
-  // Build a MixedData that uniformly describes the request.
+  // Describe the request uniformly.
   // meta["method"]      — HTTP method so downstream services can route on it.
-  // meta["requestPath"] — the URL path.
-  // meta["path"]        — filename (for body-carrying requests); used by filesystem service.
+  // meta["requestPath"] — the URL path, without the query string.
+  // meta["query"]       — decoded query parameters.
+  // meta["path"]        — filename; set only for file transfers, and what the
+  //                       filesystem service writes to.
   // meta["contentType"] — Content-Type header (for body-carrying requests).
-  // binary              — raw request body (empty for GET/HEAD).
+  //
+  // What leaves this service depends on what the body turns out to be:
+  //   * bytes that cannot be interpreted (an upload) → MixedData, meta + binary
+  //   * a body whose type says what it means, or none → JSON, meta + body
+  // Emitting MixedData unconditionally is what made a Map downstream fail: it
+  // only accepts plain JSON, so a request it could have handled stopped there.
   MixedData request;
+  std::string requestPath;
+  json query;
+  splitTarget(path, requestPath, query);
   request.meta["method"]      = method;
-  request.meta["requestPath"] = path;
+  request.meta["requestPath"] = requestPath;
+  request.meta["query"]       = query;
+
+  std::optional<json> decodedBody;
 
   if (method == "POST" || method == "PUT" || method == "PATCH")
   {
@@ -77,7 +79,6 @@ void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::strin
     const auto contentType        = session->getRequestHeader("content-type");
     const auto filename           = extractFilename(contentDisposition);
 
-    request.meta["path"]        = filename;
     request.meta["contentType"] = contentType;
 
     // Chunked upload: client sends X-Upload-Id + X-Chunk-Index + X-Total-Chunks.
@@ -122,7 +123,10 @@ void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::strin
           assembly.totalChunks = totalChunks;
           assembly.filename    = filename;
           assembly.contentType = contentType;
-          assembly.requestPath = path;
+          // The split path, matching the non-chunked branch — an assembled
+          // upload should not describe itself differently from a plain one.
+          assembly.requestPath = requestPath;
+          assembly.query       = query;
           assembly.chunks.resize(totalChunks);
         }
 
@@ -136,7 +140,9 @@ void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::strin
             binary.insert(binary.end(), chunk.begin(), chunk.end());
 
           assembled.meta   = json{{"method", "POST"}, {"path", assembly.filename},
-                                  {"contentType", assembly.contentType}, {"requestPath", assembly.requestPath}};
+                                  {"contentType", assembly.contentType},
+                                  {"requestPath", assembly.requestPath},
+                                  {"query", assembly.query}};
           assembled.binary = std::move(binary);
           m_assemblies.erase(uploadId);
           complete = true;
@@ -158,12 +164,39 @@ void HttpServer::onNewSession(std::shared_ptr<Session> session, const std::strin
       return;
     }
 
-    // Non-chunked body — attach it directly.
-    request.binary = BinaryData(body.begin(), body.end());
+    // Non-chunked body. A file transfer keeps its bytes and its filename; any
+    // other body is decoded when its content type says what it means.
+    if (isFileTransfer(contentDisposition, uploadId))
+    {
+      request.meta["path"] = filename;
+      request.binary       = BinaryData(body.begin(), body.end());
+    }
+    else
+    {
+      decodedBody = decodeBody(body, contentType);
+      if (!decodedBody)
+      {
+        request.binary = BinaryData(body.begin(), body.end());
+      }
+    }
   }
 
   // Forward into the pipeline; let downstream services (e.g. method-router) decide what to do.
-  auto data = Data(request);
+  // Bytes we could not interpret stay MixedData so the filesystem service still
+  // receives them; everything else goes as plain JSON, which every
+  // JSON-consuming service can act on.
+  Data data = Null();
+  if (request.binary.empty())
+  {
+    json envelope = json{{"meta", request.meta}};
+    if (decodedBody) envelope["body"] = *decodedBody;
+    data = Data(envelope);
+  }
+  else
+  {
+    data = Data(request);
+  }
+
   nextAsync(data, [session](Data result) {
     session->sendResult(result);
   });

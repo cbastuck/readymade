@@ -7,9 +7,12 @@
 #include "./http_server_impl.h"
 #include "./http_listener.h"
 #include "./http_session.h"
+#include "./request_decode.h"
 #include "../../uuid.h"
 
 #include <algorithm>
+#include <optional>
+#include <string>
 #include <thread>
 
 #if !defined(_WIN32)
@@ -76,6 +79,8 @@ std::string primaryIPv4()
 
 namespace hkp {
 
+using namespace request_decode;
+
 HttpServerSubservices::HttpServerSubservices(const std::string& instanceId)
   : Service(instanceId, serviceId())
   , m_impl(std::make_shared<HttpServerImpl>())
@@ -105,8 +110,62 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
     return;
   }
 
-  auto req = json{{"path", path}, {"method", method}};
-  Data data(req);
+  // Describe the request the same way hkp-node's http-server-subservices does,
+  // so a pipeline written for one runtime works on the other:
+  //   meta.method / meta.path / meta.query, plus meta.contentType and
+  //   meta.filename when the request carries a body.
+  // The body then arrives in exactly one form — decoded as `body` when its
+  // content type says what the bytes mean, raw as MixedData binary otherwise.
+  json meta;
+  std::string requestPath;
+  json query;
+  splitTarget(path, requestPath, query);
+  meta["method"] = method;
+  meta["path"]   = requestPath;
+  meta["query"]  = query;
+
+  std::optional<json> decodedBody;
+  BinaryData rawBody;
+
+  if (session && (method == "POST" || method == "PUT" || method == "PATCH"))
+  {
+    const auto& body              = session->getRequestBody();
+    const auto contentDisposition = session->getRequestHeader("content-disposition");
+    const auto contentType        = session->getRequestHeader("content-type");
+    const auto uploadId           = session->getRequestHeader("x-upload-id");
+
+    if (!contentType.empty()) meta["contentType"] = contentType;
+
+    // A named attachment is a file to keep whole, whatever its content type.
+    if (isFileTransfer(contentDisposition, uploadId))
+    {
+      meta["filename"] = extractFilename(contentDisposition);
+      rawBody          = BinaryData(body.begin(), body.end());
+    }
+    else
+    {
+      decodedBody = decodeBody(body, contentType);
+      if (!decodedBody && !body.empty())
+      {
+        rawBody = BinaryData(body.begin(), body.end());
+      }
+    }
+  }
+
+  Data data = Null();
+  if (rawBody.empty())
+  {
+    json envelope = json{{"meta", meta}};
+    if (decodedBody) envelope["body"] = *decodedBody;
+    data = Data(envelope);
+  }
+  else
+  {
+    MixedData mixed;
+    mixed.meta   = meta;
+    mixed.binary = std::move(rawBody);
+    data = Data(mixed);
+  }
 
   // Apply nested subservices first, then continue with outer runtime services.
   if (m_subservices && !m_subservices->empty())
@@ -234,7 +293,9 @@ json HttpServerSubservices::getState() const
   return Service::mergeStateWith(json{
     {"port", m_impl->port()},
     {"host", m_host},
-    {"url", m_url},
+    // Public endpoint. Reserved name: generic board machinery reads and
+    // rewrites it (see the frontend's runtime/board/mount).
+    {"__hkpMount", m_url},
     {"status", isBypass() ? "offline" : "online"},
     {"pipeline", pipeline}
   });
@@ -292,7 +353,7 @@ bool HttpServerSubservices::start()
   sendNotification(json{
     {"port",   m_impl->port()},
     {"host",   m_host},
-    {"url",    m_url},
+    {"__hkpMount", m_url},
     {"status", "online"}
   });
   return true;

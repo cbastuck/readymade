@@ -179,7 +179,14 @@ export default function RuntimeHeader({
       runtimes: [{ id: runtime.id, name: runtime.name, type: runtime.type }],
       services: { [runtime.id]: servicesWithState },
     };
-    setShareAsQRSource(resolveTemplateVarsInObject(boardSource));
+    // Only this one runtime travels, so any mount reference pointing at another
+    // one has to be baked into a concrete address here or it never resolves on
+    // the receiving device. The coordinator still sees the whole board.
+    setShareAsQRSource(
+      resolveTemplateVarsInObject(
+        boardContext.coordinator.resolveMountsInBoard(boardSource),
+      ),
+    );
   };
 
   const builtCustomActions = (runtime.customActions ?? []).map((action) => ({

@@ -35,12 +35,20 @@ export function findService(
       app: (scope as any).app,
       state: desc.state,
       configure: async (config: any) => {
+        // The remote runtime authenticates this the same way it authenticates
+        // every other call, and resolves the runtime inside the token holder's
+        // own namespace — so the token is what makes the runtime reachable at
+        // all, not just an authorisation check.
+        const idToken = (scope as any).authenticatedUser?.idToken;
         await fetch(
           `${runtime.url}/runtimes/${runtime.id}/services/${uuid}`,
           {
             method: "POST",
             body: JSON.stringify(config),
-            headers: { "content-type": "application/json" },
+            headers: {
+              "content-type": "application/json",
+              ...(idToken ? { Authorization: `Bearer ${idToken}` } : {}),
+            },
           },
         );
       },

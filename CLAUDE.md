@@ -130,6 +130,27 @@ Runtime order = chain order. Services within a runtime are ordered top-to-bottom
 is their wiring. Use `"HKP_RUNTIME_HOST"` as a placeholder in remote URLs when the host
 isn't known at design time.
 
+Runtime ids are unique **per user**, not globally — hkp-node namespaces runtimes by the
+authenticated `sub`, so the stable ids boards ship (`node`, `chat-node`) don't collide when
+two people load the same board against one server.
+
+### Service endpoints (mounts)
+
+A service that must be reachable from outside (`http-server-subservices`, `peer-server`) does
+not bind a port. Its runtime assigns it an opaque path on the runtime's own server and
+publishes the address in the service's state as `url`:
+
+```
+http://<host>:<port>/hosted/<mountId>
+```
+
+These endpoints are unauthenticated by design — they exist for outside callers holding no
+token — so the unguessable id is what gates access. Because the address is assigned at load
+time, a board that needs to point a client at one references the *service* rather than
+hard-coding an address: `"peerMount": "<runtimeId>/<serviceUuid>"`. Resolution is lazy (see
+`hkp-frontend/src/runtime/board/mountRef.ts`), because a board restores all its runtimes
+concurrently and the referenced runtime may not have published yet.
+
 ---
 
 ## Facade layer

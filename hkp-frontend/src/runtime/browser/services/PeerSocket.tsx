@@ -17,7 +17,20 @@ type State = {
   peerPath: string | null;
   peerHost: string | null;
   peerSecure: boolean | null;
+  __hkpMount: string | null;
+  /**
+   * Whether this socket may ask its signalling server who else is connected.
+   * A server can refuse on its own (see PeerJsHostDescriptor.discoverable);
+   * this is the same choice made locally, for servers configured by hand where
+   * there is no descriptor to carry it. Off means no such request is ever sent.
+   */
+  peerDiscovery: boolean;
 };
+
+/** How long to keep waiting for a referenced Peer Server's runtime to publish
+ *  its endpoint before giving up on the connection attempt. */
+const MOUNT_RESOLVE_TIMEOUT_MS = 15000;
+const MOUNT_RETRY_INTERVAL_MS = 250;
 
 class PeerSocket extends ServiceBase<State> {
   // The live peer connection is owned by the service, not its UI, so it stays
@@ -26,6 +39,7 @@ class PeerSocket extends ServiceBase<State> {
   // first configure() — never in the constructor — so instantiating the
   // service (e.g. in tests) never opens a socket.
   private connection: PeerConnection;
+  private mountRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(
     app: AppInstance,
@@ -42,6 +56,8 @@ class PeerSocket extends ServiceBase<State> {
       peerPath: null,
       peerHost: null,
       peerSecure: null,
+      __hkpMount: null,
+      peerDiscovery: true,
     });
 
     this.connection = new PeerConnection({
@@ -71,14 +87,52 @@ class PeerSocket extends ServiceBase<State> {
   // Bring the live connection in line with the current state + bypass. Cheap to
   // call repeatedly: PeerConnection.connect() is a no-op when nothing changed.
   private syncConnection() {
+    this.cancelMountRetry();
+
     if (this.bypass) {
       this.connection.close();
       return;
     }
-    this.connection.connect(
-      this.state.peerName,
-      resolveActivePeerHost(this.state),
-    );
+
+    const host = resolveActivePeerHost(this.state, this.app.coordinator);
+    if (host) {
+      this.connection.connect(this.state.peerName, host);
+      return;
+    }
+
+    // Only a mount reference can fail to resolve, and only because the runtime
+    // that owns the Peer Server has not published its endpoint yet — boards
+    // restore their runtimes concurrently, so this service can be configured
+    // first. Poll until it appears rather than leaving the socket dead.
+    this.retryMountResolve(Date.now() + MOUNT_RESOLVE_TIMEOUT_MS);
+  }
+
+  private retryMountResolve(deadline: number) {
+    this.mountRetryTimer = setTimeout(() => {
+      this.mountRetryTimer = null;
+      if (this.bypass) {
+        return;
+      }
+      const host = resolveActivePeerHost(this.state, this.app.coordinator);
+      if (host) {
+        this.connection.connect(this.state.peerName, host);
+        return;
+      }
+      if (Date.now() >= deadline) {
+        this.pushErrorNotification(
+          `Peer Server "${this.state.__hkpMount}" did not publish an endpoint`,
+        );
+        return;
+      }
+      this.retryMountResolve(deadline);
+    }, MOUNT_RETRY_INTERVAL_MS);
+  }
+
+  private cancelMountRetry() {
+    if (this.mountRetryTimer !== null) {
+      clearTimeout(this.mountRetryTimer);
+      this.mountRetryTimer = null;
+    }
   }
 
   configure(config: any) {
@@ -153,6 +207,22 @@ class PeerSocket extends ServiceBase<State> {
       }
     }
 
+    if (config.__hkpMount !== undefined) {
+      const mount = config.__hkpMount === "" ? null : config.__hkpMount;
+      if (needsUpdate(mount, this.state.__hkpMount)) {
+        this.state.__hkpMount = mount as string | null;
+        this.app.notify(this, { __hkpMount: this.state.__hkpMount });
+      }
+    }
+
+    if (config.peerDiscovery !== undefined) {
+      const discovery = !!config.peerDiscovery;
+      if (needsUpdate(discovery, this.state.peerDiscovery)) {
+        this.state.peerDiscovery = discovery;
+        this.app.notify(this, { peerDiscovery: this.state.peerDiscovery });
+      }
+    }
+
     // Apply any identity/host/bypass change to the live connection.
     this.syncConnection();
   }
@@ -166,6 +236,7 @@ class PeerSocket extends ServiceBase<State> {
   }
 
   destroy() {
+    this.cancelMountRetry();
     this.connection.close();
   }
 }

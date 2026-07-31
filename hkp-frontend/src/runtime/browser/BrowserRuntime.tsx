@@ -125,6 +125,10 @@ const BrowserRuntime = forwardRef<BrowserRuntimeHandle, Props>(
           await svc.configure(config);
         }
       };
+      // Hosting a runtime and coordinating the board are separate roles that
+      // this browser happens to play at once. Hand the host the coordinator
+      // rather than a board lookup, so services ask the board's owner.
+      scope.coordinator = context?.coordinator ?? null;
     }
 
     const onAction = (action: ServiceAction) => {

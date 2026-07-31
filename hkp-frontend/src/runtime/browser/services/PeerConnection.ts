@@ -3,6 +3,7 @@ import Peerjs, { DataConnection } from "peerjs";
 import { DataEnvelope, PeerJsHostDescriptor } from "hkp-frontend/src/types";
 import { availableDiscoveryPeerHosts } from "hkp-frontend/src/views/playground/common";
 import { resolveTemplateVars } from "hkp-frontend/src/templateVars";
+import { BoardCoordinator } from "hkp-frontend/src/core/coordinator";
 
 /**
  * The subset of PeerSocket state needed to resolve which PeerJS server to
@@ -14,6 +15,9 @@ export type PeerHostState = {
   peerPort: number | null;
   peerPath: string | null;
   peerSecure: boolean | null;
+  /** Peer Server to connect to, as a `hkp-mount://` reference or an address.
+   *  Takes precedence over the manual host/port/path fields. */
+  __hkpMount: string | null;
 };
 
 export type PeerHostParams = {
@@ -21,6 +25,8 @@ export type PeerHostParams = {
   port: number | undefined;
   path: string;
   secure: boolean;
+  /** Whether this server may be asked for its peer list. See PeerJsHostDescriptor. */
+  discoverable: boolean;
 };
 
 /**
@@ -28,14 +34,41 @@ export type PeerHostParams = {
  * the first discovery host when neither host nor port is set. Shared by the
  * service (which owns the live connection) and the UI (which displays the
  * server and fetches the peer list) so both always agree on the target server.
+ *
+ * A `__hkpMount` value wins over the manual fields, but only once it resolves:
+ * a Peer Server's address is assigned by its runtime at load time, and runtimes
+ * restore concurrently, so an unresolved reference here means "not ready yet".
+ * Resolution therefore happens at connect time rather than at board load, and
+ * the caller retries.
  */
-export function resolveActivePeerHost(state: PeerHostState): PeerHostParams {
+export function resolveActivePeerHost(
+  state: PeerHostState,
+  coordinator?: BoardCoordinator | null,
+): PeerHostParams | null {
+  if (state.__hkpMount) {
+    const endpoint = coordinator?.resolveMount(state.__hkpMount) ?? null;
+    return endpoint
+      ? {
+          host: endpoint.host,
+          port: endpoint.port,
+          path: endpoint.path,
+          secure: endpoint.secure,
+          // Assumed, like any server without a descriptor to opt out.
+          discoverable: true,
+        }
+      : null;
+  }
+
   const hostDescriptor: PeerJsHostDescriptor | undefined =
     availableDiscoveryPeerHosts[0];
   const resolvedPeerHost = state.peerHost
     ? resolveTemplateVars(state.peerHost)
     : null;
   const isCustomServer = state.peerHost !== null || state.peerPort !== null;
+  // Discoverability belongs to the host, so it follows the descriptor only when
+  // the descriptor's host is the one we actually ended up on (a custom port
+  // alone still leaves us there). A host the user typed is assumed discoverable.
+  const usingDescriptorHost = !isCustomServer || !resolvedPeerHost;
   return {
     host: isCustomServer
       ? (resolvedPeerHost ?? hostDescriptor?.host)
@@ -47,6 +80,9 @@ export function resolveActivePeerHost(state: PeerHostState): PeerHostParams {
     secure: isCustomServer
       ? (state.peerSecure ?? false)
       : (hostDescriptor?.secure ?? false),
+    discoverable: usingDescriptorHost
+      ? (hostDescriptor?.discoverable ?? true)
+      : true,
   };
 }
 
