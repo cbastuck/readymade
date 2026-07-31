@@ -19,6 +19,7 @@ vi.mock("hkp-frontend/src/templateVars", () => ({
 }));
 
 import { resolveActivePeerHost } from "../PeerConnection";
+import { createBoardCoordinator } from "hkp-frontend/src/core/coordinator";
 
 const base = {
   peerHost: null,
@@ -52,10 +53,19 @@ describe("peer host discoverability", () => {
     // Assumed like any other server without a descriptor to opt out: the
     // client cannot know the policy of a server it was only handed an address
     // for.
-    const read = () => ({ __hkpMount: "http://127.0.0.1:8080/hosted/abc" });
+    const coordinator = createBoardCoordinator(() => ({
+      services: {
+        node: [
+          {
+            uuid: "peer-svc",
+            state: { __hkpMount: "http://127.0.0.1:8080/hosted/abc" },
+          },
+        ],
+      },
+    }));
     const resolved = resolveActivePeerHost(
       { ...base, __hkpMount: "hkp-mount://node/peer-svc" },
-      read,
+      coordinator,
     );
     expect(resolved).toMatchObject({
       host: "127.0.0.1",

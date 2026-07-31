@@ -136,7 +136,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   // yet, which is a normal state during board load.
   const activeHost = resolveActivePeerHost(
     { peerHost, peerPort, peerPath, peerSecure, __hkpMount: mount },
-    (props.service as any)?.app?.getServiceStateInRuntime,
+    (props.service as any)?.app?.coordinator,
   );
 
   const serverDisplayValue = activeHost?.host

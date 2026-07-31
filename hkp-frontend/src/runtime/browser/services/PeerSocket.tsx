@@ -94,10 +94,7 @@ class PeerSocket extends ServiceBase<State> {
       return;
     }
 
-    const host = resolveActivePeerHost(
-      this.state,
-      this.app.getServiceStateInRuntime,
-    );
+    const host = resolveActivePeerHost(this.state, this.app.coordinator);
     if (host) {
       this.connection.connect(this.state.peerName, host);
       return;
@@ -116,10 +113,7 @@ class PeerSocket extends ServiceBase<State> {
       if (this.bypass) {
         return;
       }
-      const host = resolveActivePeerHost(
-        this.state,
-        this.app.getServiceStateInRuntime,
-      );
+      const host = resolveActivePeerHost(this.state, this.app.coordinator);
       if (host) {
         this.connection.connect(this.state.peerName, host);
         return;

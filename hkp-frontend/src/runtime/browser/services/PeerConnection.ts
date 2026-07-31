@@ -3,7 +3,7 @@ import Peerjs, { DataConnection } from "peerjs";
 import { DataEnvelope, PeerJsHostDescriptor } from "hkp-frontend/src/types";
 import { availableDiscoveryPeerHosts } from "hkp-frontend/src/views/playground/common";
 import { resolveTemplateVars } from "hkp-frontend/src/templateVars";
-import { resolveMount } from "hkp-frontend/src/runtime/board/mount";
+import { BoardCoordinator } from "hkp-frontend/src/core/coordinator";
 
 /**
  * The subset of PeerSocket state needed to resolve which PeerJS server to
@@ -43,10 +43,10 @@ export type PeerHostParams = {
  */
 export function resolveActivePeerHost(
   state: PeerHostState,
-  readServiceState?: (runtimeId: string, serviceUuid: string) => unknown,
+  coordinator?: BoardCoordinator | null,
 ): PeerHostParams | null {
   if (state.__hkpMount) {
-    const endpoint = resolveMount(state.__hkpMount, readServiceState);
+    const endpoint = coordinator?.resolveMount(state.__hkpMount) ?? null;
     return endpoint
       ? {
           host: endpoint.host,

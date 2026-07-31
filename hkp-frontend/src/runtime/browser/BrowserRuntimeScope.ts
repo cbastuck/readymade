@@ -10,6 +10,7 @@ import {
   ServiceInstance,
   User,
 } from "../../types";
+import { BoardCoordinator } from "hkp-frontend/src/core/coordinator";
 import BrowserRegistry from "./BrowserRegistry";
 import { createBrowserRuntimeApp } from "./BrowserRuntimeApp";
 import api from "./BrowserRuntimeApi";
@@ -204,12 +205,10 @@ export default class BrowserRuntimeScope implements RuntimeScope {
     console.warn("configureServiceInRuntime not implemented");
   };
 
-  // Overridden by the host that has board context (see BrowserRuntime). Silent
-  // when unset: callers treat "not resolvable" as a normal, retryable state.
-  getServiceStateInRuntime = (
-    _runtimeId: string,
-    _serviceUuid: string,
-  ): any => undefined;
+  // Assigned by the host that has board context (see BrowserRuntime). Null when
+  // this scope runs outside a board it can see: callers treat "no coordinator"
+  // as a normal, retryable state rather than an error.
+  coordinator: BoardCoordinator | null = null;
 
   serializeState = () => {
     return this.state;

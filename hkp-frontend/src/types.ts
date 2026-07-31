@@ -1,6 +1,7 @@
 import { Component, FunctionComponent, ReactElement, ReactNode } from "react";
 import PeerJs, { DataConnection } from "peerjs";
 import { BoardContextState, EngineState } from "./BoardContext";
+import type { BoardCoordinator } from "./core/coordinator";
 import type { RuntimeTokenRequest } from "./platform/PlatformContext";
 
 export type InstanceId = {
@@ -244,11 +245,11 @@ export type AppImpl = {
   configureService?: (svc: ServiceDescriptor, config: any) => void;
   processRuntimeByName?: (name: string, params: any) => Promise<any>;
   configureServiceInRuntime?: (runtimeId: string, serviceUuid: string, config: any) => Promise<void>;
-  // Reads a service's last known state from any runtime on the board. Used to
-  // resolve addresses a runtime assigns at load time (see runtime/board/mount).
-  // Returns undefined while the owning runtime is still loading, since runtimes
-  // restore concurrently. Absent on hosts that cannot see across runtimes.
-  getServiceStateInRuntime?: (runtimeId: string, serviceUuid: string) => any;
+  // The coordinator of the board this service belongs to, for questions that
+  // span runtimes — resolving an address a runtime assigns at load time, say.
+  // Absent on hosts that do not know the board they are part of; callers treat
+  // that the same as a lookup that has not resolved yet.
+  coordinator?: BoardCoordinator;
   getRuntimeVariable: () => Record<string, any>;
   setRuntimeVariable: (key: string, value: any) => void;
   // Mints a short-lived capability token from the host's embedded runtime,

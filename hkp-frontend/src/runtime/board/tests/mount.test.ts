@@ -4,8 +4,7 @@ import {
   formatMountRef,
   parseMountEndpoint,
   parseMountRef,
-  resolveMount,
-  resolveMountsInBoard,
+  substituteMountsInBoard,
 } from "../mount";
 
 describe("mount references", () => {
@@ -92,57 +91,12 @@ describe("mount endpoints", () => {
   });
 });
 
-describe("resolveMount", () => {
-  const ref = "hkp-mount://chat-node/peer-svc";
-
-  it("reads the published address from the referenced service state", () => {
-    const read = (runtimeId: string, serviceUuid: string) =>
-      runtimeId === "chat-node" && serviceUuid === "peer-svc"
-        ? { __hkpMount: "http://127.0.0.1:8080/hosted/deadbeef" }
-        : undefined;
-
-    expect(resolveMount(ref, read)).toEqual({
-      host: "127.0.0.1",
-      port: 8080,
-      path: "/hosted/deadbeef",
-      secure: false,
-    });
-  });
-
-  it("takes an already-resolved address without consulting any service", () => {
-    // What a consumer holds after export: same field, same call, no reference.
-    expect(
-      resolveMount("http://192.168.1.5:8080/hosted/abc123", undefined),
-    ).toEqual({
-      host: "192.168.1.5",
-      port: 8080,
-      path: "/hosted/abc123",
-      secure: false,
-    });
-  });
-
-  it("resolves to null while the owning runtime has not published yet", () => {
-    // Runtimes restore concurrently, so this is a normal transient state that
-    // the caller retries — not a failure.
-    expect(resolveMount(ref, () => undefined)).toBeNull();
-    expect(resolveMount(ref, () => ({}))).toBeNull();
-    expect(resolveMount(ref, () => ({ __hkpMount: "" }))).toBeNull();
-  });
-
-  it("resolves to null on hosts that cannot read across runtimes", () => {
-    expect(resolveMount(ref, undefined)).toBeNull();
-  });
-
-  it("resolves to null without a value", () => {
-    expect(resolveMount(null, () => ({ __hkpMount: "http://h/x" }))).toBeNull();
-  });
-});
-
-describe("resolveMountsInBoard", () => {
-  const liveState = (runtimeId: string, serviceUuid: string) =>
-    runtimeId === "chat-node" && serviceUuid === "peer-svc"
-      ? { __hkpMount: "http://192.168.1.5:8080/hosted/abc123" }
-      : undefined;
+describe("substituteMountsInBoard", () => {
+  // Stands in for the coordinator, which is what resolves in production.
+  const liveState = (value: string) =>
+    value === "hkp-mount://chat-node/peer-svc"
+      ? "http://192.168.1.5:8080/hosted/abc123"
+      : null;
 
   /** A partner board: the runtime owning the peer server has been dropped. */
   const partnerBoard = () => ({
@@ -162,7 +116,7 @@ describe("resolveMountsInBoard", () => {
   });
 
   it("replaces a reference with the address it resolves to", () => {
-    const out: any = resolveMountsInBoard(partnerBoard(), liveState);
+    const out: any = substituteMountsInBoard(partnerBoard(), liveState);
     const state = out.services["chat-browser"][0].state;
 
     // Same field, so the receiving service reads it exactly as it always does.
@@ -174,7 +128,7 @@ describe("resolveMountsInBoard", () => {
 
   it("does not mutate the board it was given", () => {
     const board = partnerBoard();
-    resolveMountsInBoard(board, liveState);
+    substituteMountsInBoard(board, liveState);
     expect((board.services["chat-browser"][0].state as any).__hkpMount).toBe(
       "hkp-mount://chat-node/peer-svc",
     );
@@ -183,7 +137,7 @@ describe("resolveMountsInBoard", () => {
   it("leaves an unresolvable reference in place", () => {
     // Exported before the runtime came up: keep what the board asked for rather
     // than silently blanking it into an unconfigured socket.
-    const out: any = resolveMountsInBoard(partnerBoard(), () => undefined);
+    const out: any = substituteMountsInBoard(partnerBoard(), () => null);
     expect(out.services["chat-browser"][0].state.__hkpMount).toBe(
       "hkp-mount://chat-node/peer-svc",
     );
@@ -197,7 +151,7 @@ describe("resolveMountsInBoard", () => {
         ui: [{ uuid: "s", state: { __hkpMount: "http://h:80/hosted/abc" } }],
       },
     };
-    const out: any = resolveMountsInBoard(board, liveState);
+    const out: any = substituteMountsInBoard(board, liveState);
     expect(out.services.ui[0].state.__hkpMount).toBe("http://h:80/hosted/abc");
   });
 
@@ -220,7 +174,7 @@ describe("resolveMountsInBoard", () => {
         ],
       },
     };
-    const out: any = resolveMountsInBoard(board, liveState);
+    const out: any = substituteMountsInBoard(board, liveState);
     expect(out.services.ui[0].state.pipeline[0].state.__hkpMount).toBe(
       "http://192.168.1.5:8080/hosted/abc123",
     );

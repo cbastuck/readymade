@@ -19,6 +19,10 @@
  * The `__hkp` prefix marks a property whose meaning is defined outside the
  * service holding it: generic board machinery reads and rewrites it, so the
  * name is reserved and services must not use it for anything else.
+ *
+ * This module is the vocabulary — the field, the scheme, and how to read and
+ * write both forms. Resolving one form into the other needs a view of the whole
+ * board and therefore lives with the board's coordinator (`core/coordinator`).
  */
 
 import { deepClone } from "./traversal";
@@ -108,55 +112,10 @@ export function parseMountEndpoint(
 }
 
 /**
- * Resolves whatever a consuming service holds in `__hkpMount` to an address:
- * a reference by reading the owner's published `__hkpMount`, an address by
- * parsing it directly. Consumers call this and handle null; they never inspect
- * which form they were given.
- *
- * `readServiceState` is absent on hosts that cannot see across runtimes, and
- * returns nothing while the owning runtime is still loading — boards restore
- * their runtimes concurrently, so a browser service can reach this point before
- * the remote runtime has published anything. Both cases resolve to null and are
- * expected to be retried rather than reported as failures.
- */
-export function resolveMount(
-  value: string | null | undefined,
-  readServiceState:
-    | ((runtimeId: string, serviceUuid: string) => unknown)
-    | undefined,
-): MountEndpoint | null {
-  return parseMountEndpoint(resolveMountUrl(value, readServiceState));
-}
-
-/**
- * The address form of a `__hkpMount` value: the owner's published URL for a
- * reference, the value itself when it is already an address. Null while a
- * reference has nothing to resolve to yet.
- */
-export function resolveMountUrl(
-  value: string | null | undefined,
-  readServiceState:
-    | ((runtimeId: string, serviceUuid: string) => unknown)
-    | undefined,
-): string | null {
-  const ref = parseMountRef(value);
-  if (!ref) {
-    return value ?? null;
-  }
-  if (!readServiceState) {
-    return null;
-  }
-  const state = readServiceState(ref.runtimeId, ref.serviceUuid) as
-    | Record<string, unknown>
-    | null
-    | undefined;
-  const published = state?.[MOUNT_FIELD];
-  return typeof published === "string" && published ? published : null;
-}
-
-/**
  * Rewrites every mount reference in a board into the address it currently
- * resolves to.
+ * resolves to. Resolution itself belongs to the board's coordinator, which is
+ * the only instance that can see across runtimes; this walks the document and
+ * substitutes what the coordinator hands back (see `core/coordinator`).
  *
  * A reference is meaningful only inside the board that also holds the runtime
  * it names. Boards exported to another device are not that board: a partner
@@ -171,9 +130,9 @@ export function resolveMountUrl(
  * untouched rather than blanked, so a board exported before its runtime came up
  * still describes what it wanted.
  */
-export function resolveMountsInBoard<T>(
+export function substituteMountsInBoard<T>(
   board: T,
-  readServiceState: (runtimeId: string, serviceUuid: string) => unknown,
+  resolveMountUrl: (value: string) => string | null,
 ): T {
   const resolved = deepClone(board);
 
@@ -189,7 +148,7 @@ export function resolveMountsInBoard<T>(
     const obj = node as Record<string, unknown>;
     const raw = obj[MOUNT_FIELD];
     if (typeof raw === "string" && parseMountRef(raw)) {
-      const url = resolveMountUrl(raw, readServiceState);
+      const url = resolveMountUrl(raw);
       if (url) {
         obj[MOUNT_FIELD] = url;
       }
