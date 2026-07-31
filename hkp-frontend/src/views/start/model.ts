@@ -1,10 +1,12 @@
 import {
   BoardArt,
   BoardNode,
+  BoardSort,
   BoardState,
   FolderNode,
   PersistedFolder,
   PersistedNode,
+  SavedBoardEntry,
   SearchResult,
   StartPageTree,
   TreeNode,
@@ -273,11 +275,11 @@ export const ALL_BOARDS_FOLDER = "All Boards";
  */
 export function buildMyBoardsFolder(
   tree: StartPageTree,
-  savedBoards: string[],
+  savedBoards: SavedBoardEntry[],
   boardStates: Record<string, BoardState> = {},
   extraFolders: FolderNode[] = [],
 ): FolderNode {
-  const saved = new Set(savedBoards);
+  const saved = new Map(savedBoards.map((board) => [board.name, board]));
   const stateFor = (name: string): BoardState => boardStates[name] ?? "saved";
   const customArtFor = (name: string): string | undefined => {
     const art = tree.boardArt?.[name];
@@ -287,7 +289,8 @@ export function buildMyBoardsFolder(
   const hydrate = (nodes: PersistedNode[], path: string[]): TreeNode[] =>
     nodes.flatMap<TreeNode>((node) => {
       if (node.type === "board") {
-        if (!saved.has(node.name)) {
+        const entry = saved.get(node.name);
+        if (!entry) {
           return [];
         }
         return [
@@ -297,6 +300,7 @@ export function buildMyBoardsFolder(
             state: stateFor(node.name),
             action: { kind: "saved", name: node.name },
             art: customArtFor(node.name),
+            modified: entry.modified,
             persisted: true,
           },
         ];
@@ -315,12 +319,13 @@ export function buildMyBoardsFolder(
     type: "folder",
     name: ALL_BOARDS_FOLDER,
     emptyHint: "No boards saved yet",
-    children: savedBoards.map<BoardNode>((name) => ({
+    children: savedBoards.map<BoardNode>(({ name, modified }) => ({
       type: "board",
       name,
       state: stateFor(name),
       action: { kind: "saved", name },
       art: customArtFor(name),
+      modified,
     })),
   };
 
@@ -332,6 +337,79 @@ export function buildMyBoardsFolder(
     // the host's virtual folders (e.g. its cloud "Uploaded" view).
     children: [allBoards, ...hydrate(tree.items, []), ...extraFolders],
   };
+}
+
+// ── Ordering ──────────────────────────────────────────────────────────────────
+
+/**
+ * Order the rows of one column: folders keep their position (the user's own
+ * arrangement), boards are sorted among themselves. Boards without a timestamp
+ * sort last in "recent" mode and fall back to the name order.
+ */
+export function sortNodes(nodes: TreeNode[], sort: BoardSort): TreeNode[] {
+  const byName = (a: TreeNode, b: TreeNode) =>
+    a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  const timeOf = (node: TreeNode): number => {
+    const raw = node.type === "board" ? node.modified : undefined;
+    const time = raw ? new Date(raw).getTime() : NaN;
+    return isNaN(time) ? -Infinity : time;
+  };
+
+  const boards = nodes
+    .filter((node) => node.type === "board")
+    .sort((a, b) =>
+      sort === "recent" ? timeOf(b) - timeOf(a) || byName(a, b) : byName(a, b),
+    );
+
+  // Splice the sorted boards back into the slots the boards occupied, so any
+  // folders (and runtime rows) stay where the source put them.
+  let next = 0;
+  return nodes.map((node) => (node.type === "board" ? boards[next++] : node));
+}
+
+/**
+ * Whether ordering these rows by time can produce anything other than the name
+ * order — true once one board reports a modification time. Sources that keep no
+ * timestamp (demos, cloud boards) answer false, and the UI offers no "recent".
+ */
+export function hasModifiedBoards(nodes: TreeNode[]): boolean {
+  return nodes.some((node) => node.type === "board" && !!node.modified);
+}
+
+/** A board's last-write time for the details panel; undefined when unknown. */
+export function formatModified(iso: string | undefined): string | undefined {
+  const date = parseDate(iso);
+  return date?.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** The same time compressed to a row subtitle: the year is dropped for dates
+ *  in the current year, the clock time for older ones. */
+export function formatModifiedShort(iso: string | undefined): string | undefined {
+  const date = parseDate(iso);
+  if (!date) {
+    return undefined;
+  }
+  const thisYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleString(
+    undefined,
+    thisYear
+      ? { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
+      : { year: "numeric", month: "short", day: "numeric" },
+  );
+}
+
+function parseDate(iso: string | undefined): Date | undefined {
+  if (!iso) {
+    return undefined;
+  }
+  const date = new Date(iso);
+  return isNaN(date.getTime()) ? undefined : date;
 }
 
 // ── State presentation ────────────────────────────────────────────────────────

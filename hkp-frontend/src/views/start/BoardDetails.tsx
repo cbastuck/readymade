@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 
-import { artFor, gradient, stateMeta } from "./model";
+import { artFor, formatModified, gradient, stateMeta } from "./model";
 import { BoardArt, BoardHistoryItem, BoardNode } from "./types";
 
 /** Preset swatches for the artwork picker: solids and matching gradients. */
@@ -228,6 +228,7 @@ export default function BoardDetails({
   const [cloudError, setCloudError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meta = stateMeta(board.state);
+  const modified = formatModified(board.modified);
 
   const reasonOf = (err: unknown): string =>
     err instanceof Error && err.message ? err.message : "Please try again.";
@@ -393,6 +394,18 @@ export default function BoardDetails({
             />
             {board.by ? `${meta.label} · ${board.by}` : meta.label}
           </div>
+          {modified && (
+            <div
+              style={{
+                marginTop: 3,
+                fontSize: 11.5,
+                fontWeight: 500,
+                color: "#9a9fae",
+              }}
+            >
+              Modified {modified}
+            </div>
+          )}
         </div>
 
         {description && (

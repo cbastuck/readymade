@@ -10,6 +10,7 @@ const startPageStore = localStorageStartPageStore();
  */
 export const browserBackend: BackendAdapter = {
   fetchSavedBoards: async () => [],
+  fetchSavedBoardEntries: async () => [],
   loadBoard: async () => { throw new Error("Board loading is not available in this context"); },
   saveBoard: async () => {},
   deleteBoard: async () => {},

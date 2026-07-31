@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import useSWR from "swr";
@@ -266,12 +266,16 @@ type CloudBoardsProps = {
   initialCoordinatorName?: string;
   initialBoardName?: string;
   onNavigate?: (coordinatorName: string, boardName: string) => void;
+  /** Top-left logo. Hosts pass a control that navigates home; without one the
+   *  Toolbar renders a decorative mark that looks clickable but is not. */
+  logoSlot?: ReactNode;
 };
 
 export default function CloudBoards({
   initialCoordinatorName,
   initialBoardName,
   onNavigate,
+  logoSlot,
 }: CloudBoardsProps = {}) {
   const appContext = useAppContext();
   const user = appContext?.user ?? null;
@@ -694,7 +698,7 @@ export default function CloudBoards({
         className="w-full h-full flex flex-col"
         style={{ background: "var(--bg-app, #fafafa)" }}
       >
-        <Toolbar>
+        <Toolbar logoSlot={logoSlot}>
           {showCoordinatorInToolbar && (
             <CoordinatorsMenu
               coordinators={coordinators}

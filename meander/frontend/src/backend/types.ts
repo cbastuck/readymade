@@ -1,5 +1,5 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
-import { StartPageTree } from "hkp-frontend/src/views/start";
+import { SavedBoardEntry, StartPageTree } from "hkp-frontend/src/views/start";
 import { Remote } from "../types";
 
 export type BoardHistoryEntry = {
@@ -28,6 +28,9 @@ export type RuntimeSettings = {
 export interface BackendAdapter {
   // Boards
   fetchSavedBoards(): Promise<Array<string>>;
+  // The same listing with each board's last-write time, for the start page's
+  // details panel and its "recent" sort.
+  fetchSavedBoardEntries(): Promise<Array<SavedBoardEntry>>;
   loadBoard(boardName: string): Promise<BoardDescriptor>;
   saveBoard(name: string, payload: BoardDescriptor): Promise<void>;
   deleteBoard(name: string): Promise<void>;

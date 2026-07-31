@@ -1,5 +1,6 @@
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import {
+  SavedBoardEntry,
   StartPageTree,
   normalizeStartPageTree,
 } from "hkp-frontend/src/views/start";
@@ -23,6 +24,18 @@ export const meanderBackend: BackendAdapter = {
     const res = await fetch("hkp://boards/");
     const boardNames: Array<string> = await res.json();
     return boardNames.map((name) => decodeURIComponent(name));
+  },
+
+  async fetchSavedBoardEntries(): Promise<Array<SavedBoardEntry>> {
+    const res = await fetch("hkp://boards/?meta=1");
+    const boards: Array<string | SavedBoardEntry> = await res.json();
+    // Hosts that keep no timestamp ignore the parameter and answer with plain
+    // names; both shapes are listings of the same boards.
+    return boards.map((board) =>
+      typeof board === "string"
+        ? { name: decodeURIComponent(board) }
+        : { name: decodeURIComponent(board.name), modified: board.modified },
+    );
   },
 
   async loadBoard(boardName: string): Promise<BoardDescriptor> {

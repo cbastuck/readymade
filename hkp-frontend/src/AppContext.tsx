@@ -6,6 +6,8 @@ import ResizeObserver, { OnChangeEvent } from "./ResizeObserver";
 import { processToken } from "./core/Auth";
 import { User, Notification, AppViewMode } from "./types";
 import RestoredUser from "./RestoredUser";
+import RestoredPlatformUser from "./RestoredPlatformUser";
+import { usePlatform } from "./platform/PlatformContext";
 
 export type AppContextState = {
   user: User | null;
@@ -15,11 +17,12 @@ export type AppContextState = {
   updateToken: (incomingToken: IdToken) => Promise<void>;
   logout: () => void;
   /**
-   * Resolves once the Auth0 session has settled — with the restored user, or
-   * null when nobody is signed in. Restoring an ID token is asynchronous, so on
-   * a cold page load `user` is briefly null even for a signed-in visitor.
-   * Anything that authenticates an outbound request during startup must await
-   * this rather than reading `user`, or it will send no credentials.
+   * Resolves once every session source has settled — with the restored user, or
+   * null when nobody is signed in. Sources are the Auth0 client (web) and the
+   * host's own session (native login); both are asynchronous, so on a cold page
+   * load `user` is briefly null even for a signed-in visitor. Anything that
+   * authenticates an outbound request during startup must await this rather than
+   * reading `user`, or it will send no credentials.
    */
   waitForAuthResolved: () => Promise<User | null>;
 };
@@ -70,8 +73,21 @@ function AppProvider({ children }: Props) {
     return { promise, settle };
   });
 
-  const markAuthResolved = () => authResolved.settle();
   const waitForAuthResolved = () => authResolved.promise;
+
+  // Auth can be restored from two independent places: the Auth0 client (web) and
+  // the host's own session (native login). Both must settle before the state is
+  // declared resolved — marking it on the first one lets a caller proceed while
+  // the other is still restoring, which is exactly the unauthenticated-request
+  // bug this gate exists to prevent.
+  const platform = usePlatform();
+  const pendingRestores = useRef(platform.restoreSession ? 2 : 1);
+  const markAuthResolved = () => {
+    pendingRestores.current -= 1;
+    if (pendingRestores.current <= 0) {
+      authResolved.settle();
+    }
+  };
 
   const pushNotification = (notification: Notification) => {
     const action = notification.action
@@ -180,6 +196,11 @@ function AppProvider({ children }: Props) {
     <Provider value={value}>
       <ResizeObserver onChange={onResize} />
       <RestoredUser
+        onToken={onToken}
+        onResolved={markAuthResolved}
+        onError={(message) => pushNotification({ message, type: "error" })}
+      />
+      <RestoredPlatformUser
         onToken={onToken}
         onResolved={markAuthResolved}
         onError={(message) => pushNotification({ message, type: "error" })}

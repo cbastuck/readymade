@@ -420,13 +420,42 @@ saucer::scheme::response SchemeHandler::handleRemoteForward(const Router::Params
   };
 }
 
+// True for "?meta=1" — the caller wants the listing as objects carrying each
+// board's last-write time rather than bare names.
+static bool wantsBoardMetadata(const saucer::scheme::request &req)
+{
+  auto parsed = boost::urls::parse_uri_reference(req.url().string());
+  if (!parsed)
+  {
+    return false;
+  }
+  for (const auto &param : parsed->params())
+  {
+    if (param.key == "meta" && param.value != "0")
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 saucer::scheme::response SchemeHandler::handleListBoards(const Router::Params &p, const saucer::scheme::request &req) const
 {
-  auto vec = m_settings.getSavedBoards();
+  const bool withMetadata = wantsBoardMetadata(req);
   json boardsArr = json::array();
-  for (const auto &board : vec)
+  for (const auto &board : m_settings.getSavedBoardEntries())
   {
-    boardsArr.push_back(board);
+    if (!withMetadata)
+    {
+      boardsArr.push_back(board.name);
+      continue;
+    }
+    json item{{"name", board.name}};
+    if (!board.modified.empty())
+    {
+      item["modified"] = board.modified;
+    }
+    boardsArr.push_back(std::move(item));
   }
   return saucer::scheme::response{
       .data = saucer::stash::from_str(boardsArr.dump()),

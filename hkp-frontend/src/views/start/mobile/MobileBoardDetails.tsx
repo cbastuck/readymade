@@ -1,7 +1,7 @@
 import { useState, type ReactNode } from "react";
 
 import { M } from "../../playground/mobile/tokens";
-import { artFor, stateMeta } from "../model";
+import { artFor, formatModified, stateMeta } from "../model";
 import { BoardHistoryItem, BoardNode } from "../types";
 
 function reasonOf(err: unknown): string {
@@ -220,6 +220,7 @@ export default function MobileBoardDetails({
   );
   const [cloudError, setCloudError] = useState<string | null>(null);
   const meta = stateMeta(board.state);
+  const modified = formatModified(board.modified);
 
   const revokeShare = async (email: string) => {
     if (!onRevokeShare || shareBusy) {
@@ -319,6 +320,18 @@ export default function MobileBoardDetails({
             />
             {board.by ? `${meta.label} · ${board.by}` : meta.label}
           </div>
+          {modified && (
+            <div
+              style={{
+                marginTop: 3,
+                fontSize: 11.5,
+                fontWeight: 500,
+                color: M.textMuted,
+              }}
+            >
+              Modified {modified}
+            </div>
+          )}
         </div>
         {description && (
           <p

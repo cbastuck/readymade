@@ -2,6 +2,8 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
+#include <ctime>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -63,21 +65,69 @@ public:
     m_hkpDirPath = hkpDir;
   }
 
-  std::vector<std::string> getSavedBoards() const
+  struct SavedBoard
+  {
+    std::string name;
+    /** Last write time as ISO 8601 UTC; empty when it could not be read. */
+    std::string modified;
+  };
+
+  std::vector<SavedBoard> getSavedBoardEntries() const
   {
     namespace fs = std::filesystem;
-    std::vector<std::string> boardNames;
+    std::vector<SavedBoard> boards;
     fs::path saveDir = getMeandersDirPath();
 
     for (const auto& entry : fs::directory_iterator(saveDir))
     {
       if (entry.is_regular_file() && entry.path().extension() == ".hkpp")
       {
-        boardNames.push_back(decodeBoardNameFromStorage(entry.path().stem().string()));
+        boards.push_back(SavedBoard{
+            decodeBoardNameFromStorage(entry.path().stem().string()),
+            isoWriteTime(entry.path()),
+        });
       }
     }
 
+    return boards;
+  }
+
+  std::vector<std::string> getSavedBoards() const
+  {
+    std::vector<std::string> boardNames;
+    for (const auto& board : getSavedBoardEntries())
+    {
+      boardNames.push_back(board.name);
+    }
     return boardNames;
+  }
+
+  // The file clock's epoch is unspecified, so shift by the offset between the
+  // two clocks' "now" instead of assuming they share one.
+  static std::string isoWriteTime(const std::filesystem::path& path)
+  {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    const auto fileTime = fs::last_write_time(path, ec);
+    if (ec)
+    {
+      return {};
+    }
+
+    const auto systemTime = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+        fileTime - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+    const std::time_t seconds = std::chrono::system_clock::to_time_t(systemTime);
+
+    std::tm utc{};
+#if defined(_WIN32)
+    gmtime_s(&utc, &seconds);
+#else
+    gmtime_r(&seconds, &utc);
+#endif
+
+    std::ostringstream out;
+    out << std::put_time(&utc, "%Y-%m-%dT%H:%M:%SZ");
+    return out.str();
   }
 
   static bool isValidBoardName(const std::string& boardName)

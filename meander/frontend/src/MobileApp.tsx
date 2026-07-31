@@ -64,7 +64,13 @@ function StartScreen({
   } = useCloudBoardSources();
 
   const listSavedBoards = useCallback(
-    async () => getLocalBoards().map((board) => board.name),
+    async () =>
+      // createdAt is written on every save, so it is the board's last-write
+      // time — what the details panel and the "recent" sort want.
+      getLocalBoards().map((board) => ({
+        name: board.name,
+        modified: board.createdAt,
+      })),
     [],
   );
 

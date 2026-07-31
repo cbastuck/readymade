@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocation } from "hkp-frontend/src/router";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import CloudBoards from "hkp-frontend/src/views/cloud";
+import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 import StartPage from "./StartPage";
 import { getBackend } from "./backend";
 import LoadIndicator from "./LoadIndicator";
@@ -47,6 +48,31 @@ type View =
   | { type: "start" }
   | { type: "loading" }
   | { type: "playground"; board: BoardDescriptor | null };
+
+/** Top-left logo for the cloud view, matching the playground's. */
+function CloudLogo({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      title="Start"
+      onClick={onClick}
+      style={{
+        background: "none",
+        border: "none",
+        padding: "4px 12px",
+        cursor: "pointer",
+        display: "flex",
+        alignItems: "center",
+      }}
+    >
+      <IconH
+        className="stroke-[#333] hover:stroke-sky-600"
+        width={24}
+        height={24}
+      />
+    </button>
+  );
+}
 
 function App() {
   return (
@@ -114,7 +140,9 @@ function MeanderShell() {
 
   let content;
   if (location.pathname.startsWith("/cloud-boards")) {
-    content = <CloudBoards />;
+    // Same logo affordance as the playground: without a slot the Toolbar
+    // renders a mark that looks clickable but goes nowhere.
+    content = <CloudBoards logoSlot={<CloudLogo onClick={onShowStartPage} />} />;
   } else if (view.type === "loading") {
     content = <LoadIndicator />;
   } else if (view.type === "playground") {

@@ -32,6 +32,17 @@ export interface PlatformCapabilities {
   /** Platform-specific logout, when the platform owns the session. */
   logout?: () => Promise<void>;
   /**
+   * Restores a previously established platform session, resolving to a raw
+   * id_token or null when there is none (or it has expired).
+   *
+   * Hosts whose `login` is their own flow must implement this: nothing else holds
+   * that token, so without it a page reload silently signs the user out. App
+   * startup waits for this before declaring the auth state settled, so anything
+   * that needs credentials — notably restoring a board with a remote runtime —
+   * does not race it.
+   */
+  restoreSession?: () => Promise<string | null>;
+  /**
    * Tells the host's embedded runtime which user is allowed to drive it from
    * other devices (the signed-in user's email, or null when signed out). Hosts
    * with a LAN-exposed embedded runtime (e.g. iOS) implement this to gate

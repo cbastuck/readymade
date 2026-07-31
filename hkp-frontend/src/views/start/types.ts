@@ -86,7 +86,22 @@ export interface BoardNode {
   /** Share recipients (owner side); shown in the details column with a
    *  Revoke action per entry when the host provides onRevokeShare. */
   sharedWith?: string[];
+  /** When the board was last written, ISO 8601. Only hosts that track a
+   *  timestamp for their storage report one; absent everywhere else. */
+  modified?: string;
 }
+
+/** A saved board as the host lists it. Hosts that keep no timestamp may return
+ *  the bare name instead. */
+export interface SavedBoardEntry {
+  name: string;
+  /** Last write time, ISO 8601. */
+  modified?: string;
+}
+
+/** Order of the board rows in a column. Folders keep their own order in every
+ *  mode — only boards are sorted. */
+export type BoardSort = "name" | "recent";
 
 /** One service inside a remote runtime, shown read-only in RuntimeDetails.
  *  Mirrors the shape returned by a host's GET /runtimes. */
