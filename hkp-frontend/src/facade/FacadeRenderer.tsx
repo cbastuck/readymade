@@ -11,7 +11,7 @@ import {
   isLocalhostUrl,
   resolveTemplateVarsInObject,
 } from "hkp-frontend/src/templateVars";
-import { resolveMountRefsInBoard } from "hkp-frontend/src/runtime/board/mountRef";
+import { resolveMountsInBoard } from "hkp-frontend/src/runtime/board/mount";
 
 type FacadeRendererProps = {
   facade: FacadeDescriptor;
@@ -188,7 +188,7 @@ export default function FacadeRenderer({
       data.services[runtimeId]?.find((svc) => svc.uuid === serviceUuid)?.state;
 
     const resolved = resolveTemplateVarsInObject(
-      resolveMountRefsInBoard(
+      resolveMountsInBoard(
         {
           runtimes: partnerRuntimes,
           services: partnerServices,

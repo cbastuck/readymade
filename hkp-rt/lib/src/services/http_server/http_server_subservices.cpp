@@ -293,7 +293,9 @@ json HttpServerSubservices::getState() const
   return Service::mergeStateWith(json{
     {"port", m_impl->port()},
     {"host", m_host},
-    {"url", m_url},
+    // Public endpoint. Reserved name: generic board machinery reads and
+    // rewrites it (see the frontend's runtime/board/mount).
+    {"__hkpMount", m_url},
     {"status", isBypass() ? "offline" : "online"},
     {"pipeline", pipeline}
   });
@@ -351,7 +353,7 @@ bool HttpServerSubservices::start()
   sendNotification(json{
     {"port",   m_impl->port()},
     {"host",   m_host},
-    {"url",    m_url},
+    {"__hkpMount", m_url},
     {"status", "online"}
   });
   return true;

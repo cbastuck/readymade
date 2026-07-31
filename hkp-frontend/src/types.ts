@@ -245,7 +245,7 @@ export type AppImpl = {
   processRuntimeByName?: (name: string, params: any) => Promise<any>;
   configureServiceInRuntime?: (runtimeId: string, serviceUuid: string, config: any) => Promise<void>;
   // Reads a service's last known state from any runtime on the board. Used to
-  // resolve addresses a runtime assigns at load time (see runtime/board/mountRef).
+  // resolve addresses a runtime assigns at load time (see runtime/board/mount).
   // Returns undefined while the owning runtime is still loading, since runtimes
   // restore concurrently. Absent on hosts that cannot see across runtimes.
   getServiceStateInRuntime?: (runtimeId: string, serviceUuid: string) => any;

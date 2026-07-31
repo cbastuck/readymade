@@ -82,7 +82,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   const [peerPath, setPeerPath] = useState<string | null>(null);
   const [peerHost, setPeerHost] = useState<string | null>(null);
   const [peerSecure, setPeerSecure] = useState<boolean | null>(null);
-  const [peerMount, setPeerMount] = useState<string | null>(null);
+  const [mount, setMount] = useState<string | null>(null);
   const [availablePeers, setAvailablePeers] = useState<string[]>([]);
   const [peerListStatus, setPeerListStatus] = useState<PeerListStatus>("idle");
   const [peerDiscovery, setPeerDiscovery] = useState(true);
@@ -115,8 +115,8 @@ export default function PeerSocketUI(props: ServiceUIProps) {
     if (needsUpdate(state.peerSecure, peerSecure)) {
       setPeerSecure(state.peerSecure);
     }
-    if (needsUpdate(state.peerMount, peerMount)) {
-      setPeerMount(state.peerMount);
+    if (needsUpdate(state.__hkpMount, mount)) {
+      setMount(state.__hkpMount);
     }
     if (needsUpdate(state.peerDiscovery, peerDiscovery)) {
       setPeerDiscovery(state.peerDiscovery);
@@ -135,7 +135,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
   // means a Peer Server reference whose runtime has not published an endpoint
   // yet, which is a normal state during board load.
   const activeHost = resolveActivePeerHost(
-    { peerHost, peerPort, peerPath, peerSecure, peerMount },
+    { peerHost, peerPort, peerPath, peerSecure, __hkpMount: mount },
     (props.service as any)?.app?.getServiceStateInRuntime,
   );
 
@@ -146,8 +146,8 @@ export default function PeerSocketUI(props: ServiceUIProps) {
         activeHost.path,
         activeHost.secure,
       )
-    : peerMount
-      ? `${peerMount} (waiting for endpoint)`
+    : mount
+      ? `${mount} (waiting for endpoint)`
       : "";
 
   const isSendAllowed = currentMode !== "Receive only";
@@ -252,7 +252,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
                 peerPort: null,
                 peerPath: null,
                 peerSecure: null,
-                peerMount: null,
+                __hkpMount: null,
               });
             } else {
               const { host, port, path, secure } = parseServerUrl(trimmed);
@@ -261,7 +261,7 @@ export default function PeerSocketUI(props: ServiceUIProps) {
                 peerPort: port,
                 peerPath: path,
                 peerSecure: secure,
-                peerMount: null,
+                __hkpMount: null,
               });
             }
           }}

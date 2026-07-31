@@ -79,7 +79,7 @@
         "state": {
           "mode": "Receive and Send",
           "extractIncomingData": true,
-          "peerMount": "chat-node/chat-peer-server-svc"
+          "__hkpMount": "hkp-mount://chat-node/chat-peer-server-svc"
         }
       },
       {

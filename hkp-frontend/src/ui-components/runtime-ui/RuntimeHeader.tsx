@@ -14,7 +14,7 @@ import Editable from "hkp-frontend/src/ui-components/Editable";
 import { BoardCtx } from "hkp-frontend/src/BoardContext";
 import { useThemeControl } from "hkp-frontend/src/ui-components/ThemeContext";
 import { resolveTemplateVarsInObject } from "hkp-frontend/src/templateVars";
-import { resolveMountRefsInBoard } from "hkp-frontend/src/runtime/board/mountRef";
+import { resolveMountsInBoard } from "hkp-frontend/src/runtime/board/mount";
 
 import RunParamsDialog from "./RunParamsDialog";
 import RuntimeSettings from "./RuntimeSettings";
@@ -189,7 +189,7 @@ export default function RuntimeHeader({
       )?.state;
     setShareAsQRSource(
       resolveTemplateVarsInObject(
-        resolveMountRefsInBoard(boardSource, readServiceState),
+        resolveMountsInBoard(boardSource, readServiceState),
       ),
     );
   };

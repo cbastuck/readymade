@@ -17,7 +17,7 @@ type State = {
   peerPath: string | null;
   peerHost: string | null;
   peerSecure: boolean | null;
-  peerMount: string | null;
+  __hkpMount: string | null;
   /**
    * Whether this socket may ask its signalling server who else is connected.
    * A server can refuse on its own (see PeerJsHostDescriptor.discoverable);
@@ -56,7 +56,7 @@ class PeerSocket extends ServiceBase<State> {
       peerPath: null,
       peerHost: null,
       peerSecure: null,
-      peerMount: null,
+      __hkpMount: null,
       peerDiscovery: true,
     });
 
@@ -126,7 +126,7 @@ class PeerSocket extends ServiceBase<State> {
       }
       if (Date.now() >= deadline) {
         this.pushErrorNotification(
-          `Peer Server "${this.state.peerMount}" did not publish an endpoint`,
+          `Peer Server "${this.state.__hkpMount}" did not publish an endpoint`,
         );
         return;
       }
@@ -213,11 +213,11 @@ class PeerSocket extends ServiceBase<State> {
       }
     }
 
-    if (config.peerMount !== undefined) {
-      const mount = config.peerMount === "" ? null : config.peerMount;
-      if (needsUpdate(mount, this.state.peerMount)) {
-        this.state.peerMount = mount as string | null;
-        this.app.notify(this, { peerMount: this.state.peerMount });
+    if (config.__hkpMount !== undefined) {
+      const mount = config.__hkpMount === "" ? null : config.__hkpMount;
+      if (needsUpdate(mount, this.state.__hkpMount)) {
+        this.state.__hkpMount = mount as string | null;
+        this.app.notify(this, { __hkpMount: this.state.__hkpMount });
       }
     }
 

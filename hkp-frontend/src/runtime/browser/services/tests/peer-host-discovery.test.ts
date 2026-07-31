@@ -25,7 +25,7 @@ const base = {
   peerPort: null,
   peerPath: null,
   peerSecure: null,
-  peerMount: null,
+  __hkpMount: null,
 };
 
 describe("peer host discoverability", () => {
@@ -48,10 +48,13 @@ describe("peer host discoverability", () => {
     ).toBe(true);
   });
 
-  it("assumes a runtime-hosted peer server is discoverable", () => {
-    const read = () => ({ url: "http://127.0.0.1:8080/hosted/abc" });
+  it("assumes a peer server reached through a mount is discoverable", () => {
+    // Assumed like any other server without a descriptor to opt out: the
+    // client cannot know the policy of a server it was only handed an address
+    // for.
+    const read = () => ({ __hkpMount: "http://127.0.0.1:8080/hosted/abc" });
     const resolved = resolveActivePeerHost(
-      { ...base, peerMount: "node/peer-svc" },
+      { ...base, __hkpMount: "hkp-mount://node/peer-svc" },
       read,
     );
     expect(resolved).toMatchObject({
