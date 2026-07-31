@@ -19,7 +19,6 @@ import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
 import { getBackend } from "./backend";
 import { isMeanderApp } from "./isMeanderApp";
 import { useBackendRemotes } from "./useBackendRemotes";
-import LoadBoardDialog from "./LoadBoardDialog";
 import MeanderAppMenu from "./MeanderAppMenu";
 
 type Props = {
@@ -33,7 +32,6 @@ export default function StartPage({ onRestoreBoard }: Props) {
   const navigate = useNavigate();
   const remotes = useBackendRemotes();
   const [lastSessionName, setLastSessionName] = useState<string | null>(null);
-  const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [inApp, setInApp] = useState(false);
 
   useEffect(() => {
@@ -131,6 +129,41 @@ export default function StartPage({ onRestoreBoard }: Props) {
     await openSavedBoard(lastSessionName);
   };
 
+  // Imports a board file picked from disk: saves it under its boardName (a
+  // numbered suffix avoids clobbering an existing saved board) and opens it.
+  const handleImportBoard = async () => {
+    const backend = await getBackend();
+    const path = await backend.pickFile({ filters: ["*.hkpp", "*.json"] });
+    if (!path) {
+      return;
+    }
+    const source = await backend.readFile(path);
+    let board: BoardDescriptor;
+    try {
+      board = JSON.parse(source) as BoardDescriptor;
+    } catch {
+      window.alert(`"${path}" is not a valid board file.`);
+      return;
+    }
+    const fileName =
+      path
+        .split("/")
+        .pop()
+        ?.replace(/\.(hkpp|json)$/i, "") || "Imported board";
+    const name = board.boardName?.trim() || fileName;
+    const taken = new Set(await backend.fetchSavedBoards());
+    let unique = name;
+    for (let i = 2; taken.has(unique); i++) {
+      unique = `${name} ${i}`;
+    }
+    try {
+      await backend.saveBoard(unique, { ...board, boardName: unique });
+    } catch {
+      // Opening still works; the board just isn't on disk yet.
+    }
+    onRestoreBoard({ ...board, boardName: unique });
+  };
+
   const handleCreateNamedBoard = async (name: string) => {
     const board = createEmptyBoard(name);
     const backend = await getBackend();
@@ -183,44 +216,38 @@ export default function StartPage({ onRestoreBoard }: Props) {
   const currentVersion = splitBuildVersion(__READYMADE_BUILD_VERSION__);
 
   return (
-    <>
-      <SharedStartPage
-        store={store}
-        listSavedBoards={listSavedBoards}
-        boardStates={boardStates}
-        onOpen={handleOpen}
-        onCreateBoard={() => onRestoreBoard(undefined)}
-        onCreateNamedBoard={(name) => void handleCreateNamedBoard(name)}
-        recentBoardName={lastSessionName}
-        onContinueRecent={() => void handleResume()}
-        onLoadBoard={() => setIsLoadDialogOpen(true)}
-        describeBoard={describeBoard}
-        listBoardHistory={listBoardHistory}
-        onDeleteBoard={deleteBoard}
-        manageRemotes={remotes}
-        withCloudBoards
-        uploadBoardArt={uploadBoardArt}
-        pickBoardArtImage={inApp ? pickBoardArtImage : undefined}
-        excludeDemoTags={["iOS only"]}
-        title="Readymade"
-        badge={currentVersion.version}
-        badgeDetail={currentVersion.hash}
-        initials={initialsOf(user?.username)}
-        avatarTitle={
-          user
-            ? user.username
-              ? `Log out (${user.username})`
-              : "Log out"
-            : "Log in"
-        }
-        onAvatarClick={() => void (user ? cloudLogout() : cloudLogin())}
-        menuSlot={<MeanderAppMenu />}
-      />
-      <LoadBoardDialog
-        visible={isLoadDialogOpen}
-        onSetVisible={setIsLoadDialogOpen}
-        onBoardLoaded={(board) => onRestoreBoard(board)}
-      />
-    </>
+    <SharedStartPage
+      store={store}
+      listSavedBoards={listSavedBoards}
+      boardStates={boardStates}
+      onOpen={handleOpen}
+      onCreateBoard={() => onRestoreBoard(undefined)}
+      onCreateNamedBoard={(name) => void handleCreateNamedBoard(name)}
+      recentBoardName={lastSessionName}
+      onContinueRecent={() => void handleResume()}
+      onLoadBoard={() => void handleImportBoard()}
+      loadBoardLabel="Import board"
+      describeBoard={describeBoard}
+      listBoardHistory={listBoardHistory}
+      onDeleteBoard={deleteBoard}
+      manageRemotes={remotes}
+      withCloudBoards
+      uploadBoardArt={uploadBoardArt}
+      pickBoardArtImage={inApp ? pickBoardArtImage : undefined}
+      excludeDemoTags={["iOS only"]}
+      title="Readymade"
+      badge={currentVersion.version}
+      badgeDetail={currentVersion.hash}
+      initials={initialsOf(user?.username)}
+      avatarTitle={
+        user
+          ? user.username
+            ? `Log out (${user.username})`
+            : "Log out"
+          : "Log in"
+      }
+      onAvatarClick={() => void (user ? cloudLogout() : cloudLogin())}
+      menuSlot={<MeanderAppMenu />}
+    />
   );
 }

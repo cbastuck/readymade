@@ -8,8 +8,12 @@ import {
   addBoardRef,
   addFolder,
   artFor,
+  boardFolderPaths,
+  folderKey,
+  listFolders,
   removeNode,
   searchBoards,
+  setBoardFiled,
 } from "../model";
 import { DEFAULT_NEWS } from "../news";
 import { useStartPageModel } from "../useStartPageModel";
@@ -19,6 +23,7 @@ import { BoardRow, FolderRow } from "./MobileRows";
 import MobileBoardDetails from "./MobileBoardDetails";
 import ManageRemotesSheet from "./ManageRemotesSheet";
 import NameSheet from "./NameSheet";
+import AssignFoldersSheet from "./AssignFoldersSheet";
 
 // ── Page transition (subtle slide-in on push/pop) ─────────────────────────────
 
@@ -214,6 +219,8 @@ export default function MobileStartPage(props: StartPageProps) {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [remotesSheetOpen, setRemotesSheetOpen] = useState(false);
   const [nameSheet, setNameSheet] = useState<null | "folder" | "board">(null);
+  // Board whose folder chooser is open, by name.
+  const [assignBoard, setAssignBoard] = useState<string | null>(null);
 
   const nav = useMemo<ResolvedNav>(() => {
     const pages: ResolvedNav["pages"] = [{ folder: null }];
@@ -292,6 +299,28 @@ export default function MobileStartPage(props: StartPageProps) {
   }, [detail?.board.name, detail?.board.action?.kind, describeBoard]);
 
   const detailIsSaved = detail?.board.action?.kind === "saved";
+
+  // ── Folder assignment ───────────────────────────────────────────────────────
+
+  const folderOptions = useMemo(() => (tree ? listFolders(tree) : []), [tree]);
+
+  const detailFolders = useMemo(
+    () =>
+      tree && detailIsSaved && detail
+        ? boardFolderPaths(tree, detail.board.name).map((p) => p.join(" › "))
+        : [],
+    [tree, detailIsSaved, detail],
+  );
+
+  const assignedKeys = useMemo(
+    () =>
+      new Set(
+        tree && assignBoard
+          ? boardFolderPaths(tree, assignBoard).map(folderKey)
+          : [],
+      ),
+    [tree, assignBoard],
+  );
 
   // ── Search ──────────────────────────────────────────────────────────────────
 
@@ -521,6 +550,12 @@ export default function MobileStartPage(props: StartPageProps) {
               onUploadToCloud={
                 detailIsSaved && uploadBoardToCloud
                   ? () => uploadBoardToCloud(detail.board.name)
+                  : undefined
+              }
+              folders={detailFolders}
+              onAssignFolders={
+                detailIsSaved && tree
+                  ? () => setAssignBoard(detail.board.name)
                   : undefined
               }
               onRemoveFromFolder={
@@ -951,6 +986,23 @@ export default function MobileStartPage(props: StartPageProps) {
           }
         }}
       />
+      {assignBoard && tree && (
+        <AssignFoldersSheet
+          open
+          boardName={assignBoard}
+          folders={folderOptions}
+          assigned={assignedKeys}
+          onToggle={(path, filed) =>
+            updateTree(setBoardFiled(tree, path, assignBoard, filed))
+          }
+          onCreateFolder={(name) =>
+            updateTree(
+              addBoardRef(addFolder(tree, [], name), [name], assignBoard),
+            )
+          }
+          onClose={() => setAssignBoard(null)}
+        />
+      )}
     </div>
   );
 }

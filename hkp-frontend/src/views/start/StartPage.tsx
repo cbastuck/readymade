@@ -8,10 +8,14 @@ import {
   addFolder,
   artFor,
   attentionCount,
+  boardFolderPaths,
+  folderKey,
   isAttentionState,
+  listFolders,
   removeNode,
   searchBoards,
   setBoardArt,
+  setBoardFiled,
   stateMeta,
 } from "./model";
 import { downscaleImage } from "./imageUpload";
@@ -36,6 +40,7 @@ import { ColumnVM } from "./Column";
 import { RowVM } from "./Row";
 import BoardDetails from "./BoardDetails";
 import RuntimeDetails from "./RuntimeDetails";
+import FolderPicker from "./FolderPicker";
 
 export type { RuntimeEntry };
 export type { RemotesController };
@@ -121,8 +126,10 @@ export interface StartPageProps {
   menuSlot?: ReactNode;
 }
 
-const COLUMN_WIDTH_ROOT = "236px";
-const COLUMN_WIDTH = "300px";
+const COLUMN_WIDTH_ROOT = 236;
+const COLUMN_WIDTH = 300;
+const COLUMN_WIDTH_MIN = 150;
+const COLUMN_WIDTH_MAX = 720;
 
 // Where the user last browsed to, as a path of node names. Names (not indices)
 // survive the tree changing between visits; unresolvable tails are dropped
@@ -144,6 +151,28 @@ function restoreSelection(): string[] {
     // fall through to the default
   }
   return ["Demos"];
+}
+
+// User-set column widths, by column level (index 0 is the Sources column).
+// Levels the user never dragged keep their default.
+const COLUMN_WIDTHS_STORAGE_KEY = "hkp-startpage-column-widths";
+
+function restoreColumnWidths(): number[] {
+  try {
+    const parsed = JSON.parse(
+      localStorage.getItem(COLUMN_WIDTHS_STORAGE_KEY) ?? "",
+    ) as unknown;
+    if (Array.isArray(parsed) && parsed.every((w) => typeof w === "number")) {
+      return parsed;
+    }
+  } catch {
+    // fall through to the defaults
+  }
+  return [];
+}
+
+function defaultColumnWidth(level: number): number {
+  return level === 0 ? COLUMN_WIDTH_ROOT : COLUMN_WIDTH;
 }
 
 export default function StartPage(props: StartPageProps) {
@@ -186,6 +215,10 @@ export default function StartPage(props: StartPageProps) {
 
   const [selectedNames, setSelectedNames] = useState<string[]>(restoreSelection);
   const [searchQuery, setSearchQuery] = useState("");
+  // Board whose folder chooser is open, by name.
+  const [assignBoard, setAssignBoard] = useState<string | null>(null);
+  const [columnWidths, setColumnWidths] =
+    useState<number[]>(restoreColumnWidths);
 
   const { tree, updateTree, roots, savedBoards, refreshSavedBoards } =
     useStartPageModel({
@@ -200,6 +233,22 @@ export default function StartPage(props: StartPageProps) {
       myBoardsExtraFolders,
       excludeDemoTags,
     });
+
+  const resizeColumn = useCallback((level: number, width: number) => {
+    setColumnWidths((prev) => {
+      const next = [...prev];
+      // Levels the user skipped over keep their default.
+      for (let i = 0; i < level; i++) {
+        next[i] ??= defaultColumnWidth(i);
+      }
+      next[level] = Math.max(
+        COLUMN_WIDTH_MIN,
+        Math.min(COLUMN_WIDTH_MAX, Math.round(width)),
+      );
+      localStorage.setItem(COLUMN_WIDTHS_STORAGE_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
 
   const selectAt = useCallback((level: number, name: string) => {
     setSelectedNames((prev) => {
@@ -234,7 +283,7 @@ export default function StartPage(props: StartPageProps) {
           key: opts.key,
           name: node.name,
           art: node.art ?? artFor(node.name),
-          glyph: "",
+          iconColor: "#fff",
           isBoard: true,
           dot: attention,
           dotColor: meta.dot,
@@ -271,7 +320,7 @@ export default function StartPage(props: StartPageProps) {
           key: opts.key,
           name: node.name,
           art: "linear-gradient(160deg, #17b877, #0a8a72)",
-          glyph: "",
+          iconColor: "#fff",
           isBoard: true,
           dot: false,
           dotColor: "#17b877",
@@ -304,7 +353,9 @@ export default function StartPage(props: StartPageProps) {
           (node.source
             ? "linear-gradient(160deg, #3a3d4a, #14161c)"
             : "linear-gradient(160deg, #eef0f4, #dfe2ea)"),
-        glyph: node.name.charAt(0).toUpperCase(),
+        // White reads on the dark source tiles and on host-provided artwork;
+        // the light default tile needs a dark stroke.
+        iconColor: node.source || node.art ? "#fff" : "#5b6070",
         isBoard: false,
         dot: false,
         dotColor: "#fff",
@@ -362,7 +413,8 @@ export default function StartPage(props: StartPageProps) {
       cols.push({
         key: `col${level}-${parent ? parent.name : "root"}`,
         title: level === 0 ? "Sources" : parent?.name ?? "Folder",
-        width: level === 0 ? COLUMN_WIDTH_ROOT : COLUMN_WIDTH,
+        width: columnWidths[level] ?? defaultColumnWidth(level),
+        onResize: (width) => resizeColumn(capturedLevel, width),
         emptyHint: parent?.emptyHint,
         items: items.map((node, index) =>
           rowVM(node, {
@@ -429,6 +481,8 @@ export default function StartPage(props: StartPageProps) {
     savedBoards,
     onCreateNamedBoard,
     onOpen,
+    columnWidths,
+    resizeColumn,
   ]);
 
   const searchResults = useMemo<RowVM[]>(() => {
@@ -479,8 +533,36 @@ export default function StartPage(props: StartPageProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailBoard?.board.name, detailBoard?.board.action?.kind, describeBoard]);
 
-  // The artwork editor applies to the user's own (saved) boards only.
+  // The artwork editor and the folder chooser apply to the user's own (saved)
+  // boards only.
   const detailIsSaved = detailBoard?.board.action?.kind === "saved";
+
+  // ── Folder assignment ───────────────────────────────────────────────────────
+
+  const folderOptions = useMemo(
+    () => (tree ? listFolders(tree) : []),
+    [tree],
+  );
+
+  const detailFolders = useMemo(
+    () =>
+      tree && detailIsSaved && detailBoard
+        ? boardFolderPaths(tree, detailBoard.board.name).map((path) =>
+            path.join(" › "),
+          )
+        : [],
+    [tree, detailIsSaved, detailBoard],
+  );
+
+  const assignedKeys = useMemo(
+    () =>
+      new Set(
+        tree && assignBoard
+          ? boardFolderPaths(tree, assignBoard).map(folderKey)
+          : [],
+      ),
+    [tree, assignBoard],
+  );
 
   const detailNode = detailBoard ? (
     <BoardDetails
@@ -526,6 +608,12 @@ export default function StartPage(props: StartPageProps) {
       loadHistory={
         detailIsSaved && listBoardHistory
           ? () => listBoardHistory(detailBoard.board.name)
+          : undefined
+      }
+      folders={detailFolders}
+      onAssignFolders={
+        detailIsSaved && tree
+          ? () => setAssignBoard(detailBoard.board.name)
           : undefined
       }
       onRemoveFromFolder={
@@ -591,6 +679,26 @@ export default function StartPage(props: StartPageProps) {
         searchResults={searchResults}
         detail={detailNode}
       />
+      {assignBoard && tree && (
+        <FolderPicker
+          boardName={assignBoard}
+          folders={folderOptions}
+          assigned={assignedKeys}
+          onToggle={(path, filed) =>
+            updateTree(setBoardFiled(tree, path, assignBoard, filed))
+          }
+          onCreateFolder={(parentPath, name) =>
+            updateTree(
+              addBoardRef(
+                addFolder(tree, parentPath, name),
+                [...parentPath, name],
+                assignBoard,
+              ),
+            )
+          }
+          onClose={() => setAssignBoard(null)}
+        />
+      )}
     </div>
   );
 }
