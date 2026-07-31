@@ -148,6 +148,7 @@ RuntimeConfiguration Runtime::getConfiguration() const
     sc.instanceId = svc->getId();
     if (const auto* serviceClass = m_app->findServiceClass(sc.serviceId))
     {
+      sc.version = serviceClass->version;
       sc.capabilities = serviceClass->capabilities;
     }
     sc.state = svc->getState();
@@ -218,6 +219,13 @@ json Runtime::getServices() const
       { "instanceId", svc->getId() },
       { "instanceName", svc->getName() },
     };
+    if (const auto* serviceClass = m_app->findServiceClass(svc->getServiceId()))
+    {
+      if (!serviceClass->version.empty())
+      {
+        s["version"] = serviceClass->version;
+      }
+    }
     s.update(json{{"state", svc->getState()}});
     services.push_back(s);
   }

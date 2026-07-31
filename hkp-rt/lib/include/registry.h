@@ -39,6 +39,7 @@ public:
   {
     ServiceClass descriptor;
     descriptor.serviceId = T::serviceId();
+    descriptor.version = serviceVersion<T>();
     descriptor.capabilities = serviceCapabilities<T>();
     m_availableServices.push_back(descriptor);
 
@@ -85,6 +86,30 @@ private:
   static std::vector<std::string> serviceCapabilities()
   {
     return ServiceCapabilitiesProvider<T>::get();
+  }
+
+  template<typename T, typename = void>
+  struct ServiceVersionProvider
+  {
+    static std::string get()
+    {
+      return {};
+    }
+  };
+
+  template<typename T>
+  struct ServiceVersionProvider<T, std::void_t<decltype(T::version())>>
+  {
+    static std::string get()
+    {
+      return T::version();
+    }
+  };
+
+  template<typename T>
+  static std::string serviceVersion()
+  {
+    return ServiceVersionProvider<T>::get();
   }
 
   std::vector<ServiceClass> m_availableServices;
