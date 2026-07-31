@@ -14,6 +14,7 @@ import {
   BoardState,
   FolderNode,
   RemotesController,
+  SavedBoardEntry,
   StartPageTree,
   TreeNode,
 } from "./types";
@@ -26,8 +27,10 @@ export interface RuntimeEntry {
 export interface StartPageModelOptions {
   /** Persistence for the user's folder tree. */
   store: StartPageStore;
-  /** Saved board names for "My Boards"; omit when the host has no storage. */
-  listSavedBoards?: () => Promise<string[]>;
+  /** Saved boards for "My Boards"; omit when the host has no storage. Hosts
+   *  that track a last-write time list entries instead of bare names — that
+   *  timestamp is what the details panel and the "recent" sort use. */
+  listSavedBoards?: () => Promise<Array<string | SavedBoardEntry>>;
   /** Live board states keyed by board name (running / needs-input / …). */
   boardStates?: Record<string, BoardState>;
   /** Runtimes surfaced as a source folder (external instances). */
@@ -56,6 +59,7 @@ export interface StartPageModel {
   updateTree: (next: StartPageTree) => void;
   /** The view tree's root folders (Demos, My Boards, Cloud, …). */
   roots: TreeNode[];
+  /** Names of the host's saved boards. */
   savedBoards: string[];
   refreshSavedBoards: () => void;
 }
@@ -82,7 +86,7 @@ export function useStartPageModel(
   } = options;
 
   const [tree, setTree] = useState<StartPageTree | null>(null);
-  const [savedBoards, setSavedBoards] = useState<string[]>([]);
+  const [savedEntries, setSavedEntries] = useState<SavedBoardEntry[]>([]);
 
   useEffect(() => {
     void store.load().then((loaded) => setTree(loaded ?? defaultStartPageTree()));
@@ -90,7 +94,15 @@ export function useStartPageModel(
 
   const refreshSavedBoards = useCallback(() => {
     if (listSavedBoards) {
-      void listSavedBoards().then(setSavedBoards).catch(() => setSavedBoards([]));
+      void listSavedBoards()
+        .then((boards) =>
+          setSavedEntries(
+            boards.map((board) =>
+              typeof board === "string" ? { name: board } : board,
+            ),
+          ),
+        )
+        .catch(() => setSavedEntries([]));
     }
   }, [listSavedBoards]);
 
@@ -114,7 +126,7 @@ export function useStartPageModel(
     list.push(
       buildMyBoardsFolder(
         tree ?? defaultStartPageTree(),
-        savedBoards,
+        savedEntries,
         boardStates,
         myBoardsExtraFolders,
       ),
@@ -148,7 +160,7 @@ export function useStartPageModel(
     return list;
   }, [
     tree,
-    savedBoards,
+    savedEntries,
     boardStates,
     excludeDemoTags,
     withCloud,
@@ -159,6 +171,11 @@ export function useStartPageModel(
     extraSources,
     myBoardsExtraFolders,
   ]);
+
+  const savedBoards = useMemo(
+    () => savedEntries.map((entry) => entry.name),
+    [savedEntries],
+  );
 
   return { tree, updateTree, roots, savedBoards, refreshSavedBoards };
 }

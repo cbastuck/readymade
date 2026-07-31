@@ -50,7 +50,7 @@ export default function StartPage({ onRestoreBoard }: Props) {
   );
 
   const listSavedBoards = useCallback(
-    async () => (await getBackend()).fetchSavedBoards(),
+    async () => (await getBackend()).fetchSavedBoardEntries(),
     [],
   );
 

@@ -8,6 +8,8 @@ import {
 import { getBackend } from "../backend";
 import { meanderLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
+import { loadSession, saveSession } from "../auth/session";
+import { meanderLogout } from "../auth/meanderLogout";
 
 // Capabilities are only wired up when the native saucer APIs are actually present
 // (i.e. running inside the Readymade desktop webview, not in a plain browser).
@@ -70,6 +72,22 @@ const runtimeSettingsCapabilities: Partial<PlatformCapabilities> = {
   },
 };
 
+/**
+ * Keeps a successful native login across reloads. The token is the only thing
+ * the native flow returns, so if it is not persisted here nothing else will.
+ */
+function withPersistedSession(
+  login: () => Promise<string | null>,
+): () => Promise<string | null> {
+  return async () => {
+    const idToken = await login();
+    if (idToken) {
+      saveSession(idToken);
+    }
+    return idToken;
+  };
+}
+
 const capabilities: PlatformCapabilities = isNative
   ? {
       saveRuntimeToDisk: async (json, _filename) => {
@@ -81,7 +99,9 @@ const capabilities: PlatformCapabilities = isNative
       },
       // Native Auth0 login (system browser + PKCE). hkp-frontend's cloud view
       // calls this instead of the web redirect when present.
-      login: meanderLogin,
+      login: withPersistedSession(meanderLogin),
+      logout: meanderLogout,
+      restoreSession: async () => loadSession(),
       ...runtimeSettingsCapabilities,
     }
   : isIOS || isAndroid
@@ -89,7 +109,9 @@ const capabilities: PlatformCapabilities = isNative
         setRuntimeAllowedUser: setRuntimeAllowedUserNative,
         // Native Auth0 login via ASWebAuthenticationSession on iOS and browser
         // redirect capture on Android.
-        login: iosLogin,
+        login: withPersistedSession(iosLogin),
+        logout: meanderLogout,
+        restoreSession: async () => loadSession(),
         ...runtimeSettingsCapabilities,
       }
     : {};

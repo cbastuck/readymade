@@ -5,7 +5,7 @@
       "id": "node",
       "name": "hkp-node",
       "type": "rest",
-      "url": "hkp://remotes/hkp-node",
+      "url": "http://localhost:8080",
       "state": { "wrapServices": false }
     }
   ],
