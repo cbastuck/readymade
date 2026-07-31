@@ -1,12 +1,17 @@
 import { useState } from "react";
 
 import Row, { RowVM } from "./Row";
+import ColumnResizer from "./ColumnResizer";
 
 export interface ColumnVM {
   key: string;
   title: string;
-  width: string;
+  /** Rendered width in pixels. */
+  width: number;
   items: RowVM[];
+  /** Applies a new width while the user drags the right border; the caller
+   *  clamps and persists it. Absent columns are not resizable. */
+  onResize?: (width: number) => void;
   /** Message shown when the column has no items. */
   emptyHint?: string;
   /** Creates a subfolder here — the header "+" affordance; absent on
@@ -64,7 +69,8 @@ export default function Column({ col }: { col: ColumnVM }) {
   return (
     <div
       style={{
-        flex: "0 0 " + col.width,
+        position: "relative",
+        flex: `0 0 ${col.width}px`,
         width: col.width,
         borderRight: "1px solid #eceef3",
         display: "flex",
@@ -72,6 +78,9 @@ export default function Column({ col }: { col: ColumnVM }) {
         minHeight: 0,
       }}
     >
+      {col.onResize && (
+        <ColumnResizer width={col.width} onResize={col.onResize} />
+      )}
       <div
         style={{
           flex: "0 0 auto",

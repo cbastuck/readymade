@@ -195,29 +195,81 @@ export function removeNode(
   return next;
 }
 
-/** All board names referenced anywhere in the persisted tree. */
-export function referencedBoards(tree: StartPageTree): Set<string> {
-  const names = new Set<string>();
-  const walk = (nodes: PersistedNode[]) => {
+/** One folder of the persisted tree, flattened for list rendering. */
+export interface FolderOption {
+  /** Folder names from the tree root down to this folder. */
+  path: string[];
+  name: string;
+  /** Nesting level; 0 for top-level folders. */
+  depth: number;
+}
+
+/** Stable key for a folder path (names may contain any character). */
+export function folderKey(path: string[]): string {
+  return path.join("\u0000");
+}
+
+/** All folders of the persisted tree, depth-first in tree order. */
+export function listFolders(tree: StartPageTree): FolderOption[] {
+  const options: FolderOption[] = [];
+  const walk = (nodes: PersistedNode[], path: string[]) => {
     for (const node of nodes) {
-      if (node.type === "board") {
-        names.add(node.name);
-      } else {
-        walk(node.children);
+      if (node.type !== "folder") {
+        continue;
       }
+      const here = [...path, node.name];
+      options.push({ path: here, name: node.name, depth: path.length });
+      walk(node.children, here);
     }
   };
-  walk(tree.items);
-  return names;
+  walk(tree.items, []);
+  return options;
+}
+
+/** Paths of every folder the board is filed in. */
+export function boardFolderPaths(
+  tree: StartPageTree,
+  boardName: string,
+): string[][] {
+  const paths: string[][] = [];
+  const walk = (nodes: PersistedNode[], path: string[]) => {
+    for (const node of nodes) {
+      if (node.type === "board") {
+        if (node.name === boardName && path.length > 0) {
+          paths.push(path);
+        }
+        continue;
+      }
+      walk(node.children, [...path, node.name]);
+    }
+  };
+  walk(tree.items, []);
+  return paths;
+}
+
+/** Files (or unfiles) a board in the folder at `path`. */
+export function setBoardFiled(
+  tree: StartPageTree,
+  path: string[],
+  boardName: string,
+  filed: boolean,
+): StartPageTree {
+  return filed
+    ? addBoardRef(tree, path, boardName)
+    : removeNode(tree, path, { type: "board", name: boardName });
 }
 
 // ── View tree construction ────────────────────────────────────────────────────
 
+/** Virtual folder inside "My Boards" holding every saved board. */
+export const ALL_BOARDS_FOLDER = "All Boards";
+
 /**
- * Build the "My Boards" view folder: the persisted hierarchy hydrated against
- * the actual saved boards, followed by all saved boards not filed anywhere.
- * Board refs whose board no longer exists are dropped from the view (the
- * persisted tree is left untouched).
+ * Build the "My Boards" view folder: the virtual "All Boards" folder listing
+ * every saved board (filed or not), followed by the persisted hierarchy
+ * hydrated against the actual saved boards — so the top level stays a list of
+ * folders. Board refs whose board no longer exists are dropped from the view
+ * (the persisted tree is left untouched).
  */
 export function buildMyBoardsFolder(
   tree: StartPageTree,
@@ -259,24 +311,26 @@ export function buildMyBoardsFolder(
       ];
     });
 
-  const filed = referencedBoards(tree);
-  const loose = savedBoards
-    .filter((name) => !filed.has(name))
-    .map<BoardNode>((name) => ({
+  const allBoards: FolderNode = {
+    type: "folder",
+    name: ALL_BOARDS_FOLDER,
+    emptyHint: "No boards saved yet",
+    children: savedBoards.map<BoardNode>((name) => ({
       type: "board",
       name,
       state: stateFor(name),
       action: { kind: "saved", name },
       art: customArtFor(name),
-    }));
+    })),
+  };
 
   return {
     type: "folder",
     name: "My Boards",
     userPath: [],
-    // Virtual folders (e.g. the host's cloud "Uploaded" view) come last,
-    // after the user's own hierarchy and the loose saved boards.
-    children: [...hydrate(tree.items, []), ...loose, ...extraFolders],
+    // The flat "All Boards" view first, then the user's own hierarchy, then
+    // the host's virtual folders (e.g. its cloud "Uploaded" view).
+    children: [allBoards, ...hydrate(tree.items, []), ...extraFolders],
   };
 }
 

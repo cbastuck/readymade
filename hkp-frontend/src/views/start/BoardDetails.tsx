@@ -35,6 +35,11 @@ interface Props {
   /** Loads the board's saved versions; enables the collapsible History
    *  section. Fetched lazily on first expand. */
   loadHistory?: () => Promise<BoardHistoryItem[]>;
+  /** Folders the board is filed in, each as a display path ("Work › Audio");
+   *  shown as chips above the actions. */
+  folders?: string[];
+  /** Opens the folder chooser; enables the "Assign folders…" action. */
+  onAssignFolders?: () => void;
   /** Unfiles the board from the folder it is selected in. */
   onRemoveFromFolder?: () => void;
   /** Deletes the board entirely; asked to confirm with a second click. */
@@ -204,6 +209,8 @@ export default function BoardDetails({
   onOpen,
   onUploadToCloud,
   loadHistory,
+  folders,
+  onAssignFolders,
   onRemoveFromFolder,
   onDelete,
   onRevokeShare,
@@ -493,6 +500,46 @@ export default function BoardDetails({
           </div>
         )}
 
+        {onAssignFolders && (
+          <div style={{ width: "100%", flex: "0 0 auto" }}>
+            <div
+              style={{
+                fontSize: 10.5,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "var(--st-mut)",
+                marginBottom: 8,
+              }}
+            >
+              Folders
+            </div>
+            {folders && folders.length > 0 ? (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                {folders.map((path) => (
+                  <span
+                    key={path}
+                    style={{
+                      padding: "3px 8px",
+                      borderRadius: 999,
+                      background: "#eef1ff",
+                      color: "#4557c4",
+                      fontSize: 11.5,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {path}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12, color: "#9a9fae" }}>
+                Not in a folder
+              </div>
+            )}
+          </div>
+        )}
+
         {board.sharedWith && board.sharedWith.length > 0 && (
           <div style={{ width: "100%", flex: "0 0 auto" }}>
             <div
@@ -605,6 +652,15 @@ export default function BoardDetails({
                 </div>
               )}
             </>
+          )}
+          {onAssignFolders && (
+            <button
+              className="st-btn st-btn-ghost"
+              style={{ justifyContent: "center" }}
+              onClick={onAssignFolders}
+            >
+              Assign folders…
+            </button>
           )}
           {onRemoveFromFolder && (
             <button

@@ -6,8 +6,8 @@ export interface RowVM {
   name: string;
   /** CSS background of the artwork tile. */
   art: string;
-  /** Letter shown on folder tiles; empty for boards. */
-  glyph: string;
+  /** Stroke color of the folder icon; unused on board rows. */
+  iconColor: string;
   isBoard: boolean;
   /** Attention dot on the artwork tile. */
   dot: boolean;
@@ -27,6 +27,24 @@ export interface RowVM {
   onRefresh?: (e: MouseEvent) => void;
   /** Spins the refresh button while a refresh is in flight. */
   refreshing?: boolean;
+}
+
+/** Tells folder tiles apart from the boards' plain artwork at a glance. */
+function FolderIcon({ color }: { color: string }) {
+  return (
+    <svg
+      width={19}
+      height={19}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+    </svg>
+  );
 }
 
 export default function Row({ it }: { it: RowVM }) {
@@ -51,7 +69,7 @@ export default function Row({ it }: { it: RowVM }) {
           position: "relative",
         }}
       >
-        {it.glyph}
+        {!it.isBoard && <FolderIcon color={it.iconColor} />}
         {it.dot && (
           <span
             style={{

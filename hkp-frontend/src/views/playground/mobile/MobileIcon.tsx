@@ -5,7 +5,7 @@ export type MobileIconName =
   | "chevronRight" | "chevronLeft" | "x" | "share" | "cpu" | "timer" | "trash" | "home"
   | "layers" | "check" | "monitor" | "server" | "package" | "gitBranch"
   | "maximize2" | "minimize2" | "cloud" | "refresh" | "search" | "lock" | "user"
-  | "moveVertical";
+  | "moveVertical" | "folder";
 
 const paths: Record<MobileIconName, ReactNode> = {
   list: <><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></>,
@@ -36,6 +36,7 @@ const paths: Record<MobileIconName, ReactNode> = {
   lock: <><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>,
   user: <><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>,
   moveVertical: <><polyline points="8 18 12 22 16 18"/><polyline points="8 6 12 2 16 6"/><line x1="12" y1="2" x2="12" y2="22"/></>,
+  folder: <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>,
 };
 
 type Props = {

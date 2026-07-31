@@ -254,7 +254,7 @@ export function BoardRow({
   );
 }
 
-/** Folder row: glyph tile, name, item count, attention badge. */
+/** Folder row: folder-icon tile, name, item count, attention badge. */
 export function FolderRow({
   folder,
   onTap,
@@ -271,7 +271,9 @@ export function FolderRow({
     (folder.source
       ? "linear-gradient(160deg, #3a3d4a, #14161c)"
       : "linear-gradient(160deg, #eef0f4, #dfe2ea)");
-  const glyphColor = folder.source || folder.art ? "#fff" : "#5b6070";
+  // White reads on the dark source tiles and on host-provided artwork; the
+  // light default tile needs a dark stroke.
+  const iconColor = folder.source || folder.art ? "#fff" : "#5b6070";
 
   return (
     <SwipeRow actionLabel="Remove" onAction={onRemove} onTap={onTap}>
@@ -285,13 +287,10 @@ export function FolderRow({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 16,
-            fontWeight: 700,
-            color: glyphColor,
             flexShrink: 0,
           }}
         >
-          {folder.name.charAt(0).toUpperCase()}
+          <MobileIcon name="folder" size={20} color={iconColor} />
         </div>
         <RowText
           name={folder.name}
