@@ -11,6 +11,9 @@ struct ServiceClass
   ServiceClass(std::string serviceId) : serviceId{serviceId} {}
 
   std::string serviceId;
+  // Set by services whose state and configuration follow a revised contract, so
+  // the frontend can pick the matching UI ("<serviceId>@<version>").
+  std::string version;
   std::vector<std::string> capabilities;
 };
 
