@@ -44,22 +44,6 @@
   src: url("./assets/fonts/Walkway Black.ttf") format("truetype");
 }
 
-font-face {
-  font-family: "hkp-fnt-serif-dry";
-  src: url("./assets/fonts/cutive.regular.ttf") format("truetype");
-}
-
-@font-face {
-  font-family: "hkp-fnt-serif";
-  src: url("./assets/fonts/Cabin-VariableFont_wdth,wght.ttf") format("truetype");
-  size-adjust: 115%;
-}
-
-@font-face {
-  font-family: "hkp-fnt-lato";
-  src: url("./assets/fonts/lato-v15-latin-regular.ttf") format("truetype");
-}
-
 :root {
   color-scheme: light dark;
   font-synthesis: none;
