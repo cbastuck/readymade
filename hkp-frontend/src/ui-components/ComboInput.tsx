@@ -21,6 +21,10 @@ type Props = {
   value: string;
   options: string[];
   placeholder?: string;
+  /** Shown in place of the option list when there is nothing to offer, so an
+   *  empty dropdown can explain itself rather than look broken. Callers know
+   *  what the options are and why there are none, so the wording is theirs. */
+  emptyHint?: string;
   onOpen?: () => void;
   onSubmit: (value: string) => void;
 };
@@ -30,6 +34,7 @@ export default function ComboInput({
   value,
   options,
   placeholder,
+  emptyHint,
   onOpen,
   onSubmit,
 }: Props) {
@@ -121,7 +126,9 @@ export default function ComboInput({
             }
           >
             {options.length === 0 ? (
-              <div className="text-sm px-2 py-1 opacity-50">No peers found</div>
+              <div className="text-sm px-2 py-1 opacity-50">
+                {emptyHint ?? "No options"}
+              </div>
             ) : (
               <div className="max-h-48 overflow-y-auto flex flex-col">
                 {options.map((opt) => (

@@ -1174,6 +1174,8 @@ function useWireBrowserScopes(
         }
       };
 
+      browserScope.coordinator = boardContext?.coordinator ?? null;
+
       browserScope.onAction = (action: ServiceAction) => {
         if (action.action === "notification" && action.payload) {
           appContext?.pushNotification(action.payload);

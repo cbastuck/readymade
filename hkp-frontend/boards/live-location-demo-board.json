@@ -54,7 +54,7 @@
               "caption": "Scan to see my live location",
               "source": {
                 "serviceUuid": "live-location-server",
-                "path": "url"
+                "path": "__hkpMount"
               }
             },
             {

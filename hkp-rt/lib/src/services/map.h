@@ -92,9 +92,12 @@ private:
       
       for (auto& [key, value] : templateNode.items())
       {
-        // Process both key and value with inja templates
+        // Process both key and value with inja templates. The value stays json:
+        // processValue yields whatever the template asked for, and forcing it
+        // through std::string throws for any non-string scalar — a template as
+        // ordinary as {"hello": 123} would abort the pipeline.
         std::string processedKey = processInjaTemplate(key, inputData);
-        std::string processedValue = processValue(value, inputData);
+        json processedValue = processValue(value, inputData);
         result[processedKey] = processedValue;
       }
       

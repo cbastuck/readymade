@@ -58,6 +58,7 @@ private:
     std::string filename;
     std::string contentType;
     std::string requestPath;
+    json query;
   };
 
 private:

@@ -402,7 +402,13 @@ saucer::scheme::response SchemeHandler::handleRemoteForward(const Router::Params
 
   crow::response crowRes;
   m_server->handleRequest(crowReq, crowRes);
-  std::map<std::string, std::string> resHeaders;
+
+  // Start from the default headers so a forwarded response always carries CORS,
+  // then let the runtime's own headers win. Forwarding only what the runtime set
+  // means any response it produces without CORS headers — which its error paths
+  // do — is blocked by the browser, and the real status is reported as a CORS
+  // failure instead of the error it actually was.
+  std::map<std::string, std::string> resHeaders = m_defaultHeaders;
   for (const auto &[key, value] : crowRes.headers)
   {
     resHeaders[key] = value;

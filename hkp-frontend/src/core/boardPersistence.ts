@@ -50,7 +50,22 @@ export async function restoreBoard(
     await waitForUserLogin();
   }
 
-  const currentUser = refs.userRef.current;
+  // Remote runtimes authenticate every call with the user's ID token. Restoring
+  // that token is asynchronous, so on a cold page load it is not in context yet
+  // and the board would provision with no credentials — which a runtime that
+  // requires auth answers with 401. The reauth gate above does not cover this:
+  // it only ever waits for GraphQL runtimes, and only for an interactive login.
+  // Here the user may well be signed in already; we just have to let the
+  // session settle first.
+  const hasRemoteRuntime = boardRuntimes.some(
+    (rtClass) => toCanonicalRuntimeClassType(rtClass.type) !== "browser",
+  );
+  const currentUser =
+    refs.userRef.current ??
+    (hasRemoteRuntime
+      ? ((await refs.appContextRef?.current?.waitForAuthResolved()) ?? null)
+      : null);
+
   const restored: Array<RestoreRuntimeResult | null> = await Promise.all(
     boardRuntimes.map((rt) => {
       const api =

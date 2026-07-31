@@ -14,11 +14,22 @@ export type AppContextState = {
   popNotification: () => void;
   updateToken: (incomingToken: IdToken) => Promise<void>;
   logout: () => void;
+  /**
+   * Resolves once the Auth0 session has settled — with the restored user, or
+   * null when nobody is signed in. Restoring an ID token is asynchronous, so on
+   * a cold page load `user` is briefly null even for a signed-in visitor.
+   * Anything that authenticates an outbound request during startup must await
+   * this rather than reading `user`, or it will send no credentials.
+   */
+  waitForAuthResolved: () => Promise<User | null>;
 };
 
 type Props = {
   children: JSX.Element | JSX.Element[];
 };
+
+/** Upper bound on how long a caller waits for the Auth0 session to settle. */
+const AUTH_RESOLVE_TIMEOUT_MS = 5000;
 
 const AppCtx = createContext<AppContextState>({
   user: null,
@@ -27,6 +38,7 @@ const AppCtx = createContext<AppContextState>({
   popNotification: () => {},
   updateToken: async (_: IdToken) => {},
   logout: () => {},
+  waitForAuthResolved: async () => null,
 });
 const { Provider } = AppCtx;
 
@@ -38,6 +50,28 @@ function AppProvider({ children }: Props) {
   // being re-created on every render.
   const userRef = useRef<User | null>(user);
   userRef.current = user;
+
+  // Auth restore is asynchronous, so callers needing credentials at startup wait
+  // on this one deferred rather than reading `user` and finding it briefly null.
+  const [authResolved] = useState(() => {
+    let resolve!: (user: User | null) => void;
+    const promise = new Promise<User | null>((r) => {
+      resolve = r;
+    });
+    // Reads userRef at settle time, so it always reports the user as it stands
+    // when auth actually finished — not as it was when this was created.
+    const settle = () => resolve(userRef.current);
+    // Never block indefinitely on an auth state that fails to settle (an
+    // unreachable Auth0, a host that renders no session restorer). Callers then
+    // proceed unauthenticated — a visible 401 rather than a board that silently
+    // never loads. Resolving twice is a no-op, so arming this unconditionally
+    // is safe.
+    setTimeout(settle, AUTH_RESOLVE_TIMEOUT_MS);
+    return { promise, settle };
+  });
+
+  const markAuthResolved = () => authResolved.settle();
+  const waitForAuthResolved = () => authResolved.promise;
 
   const pushNotification = (notification: Notification) => {
     const action = notification.action
@@ -65,19 +99,33 @@ function AppProvider({ children }: Props) {
   const onToken = (idToken: IdToken): Promise<void> => {
     return new Promise((resolve, reject) => {
       const idJwt = idToken.__raw;
-      if (idJwt && idJwt !== userRef.current?.idToken) {
-        try {
-          const { username, userId, features, picture, email } = processToken(idJwt);
-          setTimeout(() => {
-            setUser({ username, userId, features, picture, email, idToken: idJwt });
-            resolve();
-          });
-        } catch (err) {
-          reject(err);
-          return;
-        }
+      // Nothing to apply: no token, or the one we already hold.
+      if (!idJwt || idJwt === userRef.current?.idToken) {
+        resolve();
+        return;
       }
-      resolve();
+
+      let restored: User;
+      try {
+        const { username, userId, features, picture, email } =
+          processToken(idJwt);
+        restored = { username, userId, features, picture, email, idToken: idJwt };
+      } catch (err) {
+        reject(err);
+        return;
+      }
+
+      // Applying the user is deferred because this runs from RestoredUser's
+      // render pass. The promise must resolve *inside* that callback: awaiting
+      // onToken has to mean "the user is available", and resolving earlier
+      // hands callers a context that still looks signed out.
+      setTimeout(() => {
+        // Set the ref alongside the state so waiters resolved from here see the
+        // user before React has re-rendered.
+        userRef.current = restored;
+        setUser(restored);
+        resolve();
+      });
     });
   };
 
@@ -125,12 +173,17 @@ function AppProvider({ children }: Props) {
     popNotification,
     updateToken: onToken,
     logout,
+    waitForAuthResolved,
   };
 
   return (
     <Provider value={value}>
       <ResizeObserver onChange={onResize} />
-      <RestoredUser onToken={onToken} />
+      <RestoredUser
+        onToken={onToken}
+        onResolved={markAuthResolved}
+        onError={(message) => pushNotification({ message, type: "error" })}
+      />
       {children}
     </Provider>
   );

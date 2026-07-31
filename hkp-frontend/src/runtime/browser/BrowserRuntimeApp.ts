@@ -128,6 +128,11 @@ export function createBrowserRuntimeApp(scope: BrowserRuntimeScope): AppImpl {
       serviceUuid: string,
       config: any,
     ) => scope.configureServiceInRuntime(runtimeId, serviceUuid, config),
+    get coordinator() {
+      // Read through, not captured: the host assigns the coordinator after the
+      // scope exists, and a board can be torn down under a live service.
+      return scope.coordinator ?? undefined;
+    },
   };
 
   return app;

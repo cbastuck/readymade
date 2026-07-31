@@ -15,6 +15,8 @@ import {
 } from "../types";
 import { FacadeDescriptor } from "../facade/types";
 import { BoardContextState, EngineState } from "../BoardContext";
+import { BoardCoordinator } from "./coordinator";
+import { AppContextState } from "../AppContext";
 
 export type Props = {
   user: User | null;
@@ -25,6 +27,14 @@ export type Props = {
   runtimeApis?: RuntimeApiMap;
   fetchAfterMount?: boolean;
   initialState?: EngineState;
+  /**
+   * The instance that owns this board. Omit when this provider owns it — the
+   * playground and Readymade, where the browser holds the engine state. A host
+   * whose board is coordinated elsewhere (a cloud board, coordinated by
+   * hkp-node) passes that coordinator instead, so services and runtime hosts
+   * ask the owner rather than a local copy of it.
+   */
+  coordinator?: BoardCoordinator;
 
   fetchBoard?: () => Promise<BoardDescriptor>;
   isRuntimeInScope?: () => boolean;
@@ -59,6 +69,8 @@ export type Props = {
 
 export type BoardStateRefs = {
   userRef: RefObject<User | null>;
+  /** Absent on hosts that build a partial refs bundle (e.g. tests). */
+  appContextRef?: RefObject<AppContextState | null>;
   boardNameRef: RefObject<string | undefined>;
   runtimesRef: RefObject<Array<RuntimeDescriptor>>;
   servicesRef: RefObject<{ [runtimeId: string]: Array<ServiceDescriptor> }>;

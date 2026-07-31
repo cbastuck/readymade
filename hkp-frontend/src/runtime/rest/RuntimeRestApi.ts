@@ -52,6 +52,28 @@ function authHeaders(user: User | null): Record<string, string> {
   return { Authorization: `Bearer ${user.idToken}` };
 }
 
+/**
+ * A 401 has two very different causes, and the distinction is the whole
+ * diagnosis: either we sent no credentials at all (not signed in, or the
+ * session had not been restored yet when the board loaded), or we sent a token
+ * the runtime rejected (wrong audience, expired, not on the email allowlist).
+ * The bare status cannot be told apart by whoever reads the error, so say which.
+ */
+function describeAuthFailure(
+  res: Response,
+  user: User | null,
+  url: string,
+): string | null {
+  if (res.status !== 401 && res.status !== 403) {
+    return null;
+  }
+  return user?.idToken
+    ? `${res.status} ${res.statusText}: the runtime rejected this account's token — ` +
+        `check AUTH0_AUDIENCE matches the app's client id and that ALLOWED_EMAILS permits it (${url})`
+    : `${res.status} ${res.statusText}: no credentials were sent — sign in on this site, ` +
+        `then reload the board (${url})`;
+}
+
 function normalizeRegistry(registry: ServiceClass[]): ServiceClass[] {
   return registry.map((entry) => {
     if (entry.serviceId !== "sub-service") {
@@ -183,7 +205,12 @@ export async function attachRuntimes(
     throw new Error(`${err?.message ?? "Load failed"}: ${url}`);
   }
   if (!res.ok) {
-    throw new Error(`Failed to fetch runtimes (${res.status} ${res.statusText}): ${url}`);
+    const authFailure = describeAuthFailure(res, user, url);
+    throw new Error(
+      authFailure
+        ? `Failed to fetch runtimes — ${authFailure}`
+        : `Failed to fetch runtimes (${res.status} ${res.statusText}): ${url}`,
+    );
   }
   const body = await res.json();
   const runtimes: RestRuntimeData[] = Array.isArray(body)
@@ -402,7 +429,12 @@ async function createRuntimeRequest(
     throw new Error(`${err?.message ?? "Load failed"}: ${runtimesUrl}`);
   }
   if (!res.ok) {
-    throw new Error(`Failed to create runtime (${res.status} ${res.statusText}): ${runtimesUrl}`);
+    const authFailure = describeAuthFailure(res, user ?? null, runtimesUrl);
+    throw new Error(
+      authFailure
+        ? `Failed to create runtime — ${authFailure}`
+        : `Failed to create runtime (${res.status} ${res.statusText}): ${runtimesUrl}`,
+    );
   }
   const { registry, runtimes } = await res.json();
   const normalizedRegistry = normalizeRegistry(registry ?? []);

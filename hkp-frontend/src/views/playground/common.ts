@@ -118,6 +118,9 @@ export const availableDiscoveryPeerHosts: Array<PeerJsHostDescriptor> = [
     port: 443,
     path: "/",
     secure: true,
+    // Deliberately never publishes its peer list, so asking would only ever
+    // return 401 and disclose that we asked.
+    discoverable: false,
   },
   {
     host: `peers.${window.location.hostname}`,

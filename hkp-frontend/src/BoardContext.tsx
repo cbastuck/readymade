@@ -28,6 +28,10 @@ import {
   RuntimeConfiguration,
 } from "./types";
 import { AppContextState, AppCtx } from "./AppContext";
+import {
+  BoardCoordinator,
+  createBoardCoordinator,
+} from "./core/coordinator";
 import { connectDevTools } from "./core/DevTools";
 import { restoreAvailableRuntimeEngines } from "./common";
 import {
@@ -120,6 +124,10 @@ export type EngineState = {
 export type BoardContextState = BoardContextAPI &
   EngineState & {
     user: User | null;
+
+    /** The instance that owns this board's engine state and answers questions
+     *  that span runtimes (see core/coordinator). */
+    coordinator: BoardCoordinator;
 
     boardName?: string;
     facade?: FacadeDescriptor;
@@ -249,11 +257,15 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       runtimeApis: runtimeApisProp,
       fetchAfterMount,
       initialState,
+      coordinator: coordinatorProp,
     } = props;
 
     const appContext = useContext(AppCtx);
 
-    const [user, setUser] = useState<User | null>(userProp);
+    // The user is owned by the host and arrives as a prop. Mirroring it into
+    // state only added a render's worth of lag, which async work reading it
+    // through a ref would observe as a null user.
+    const user = userProp;
     const [boardName, setBoardNameState] = useState<string | undefined>(
       initialBoardName ?? boardNameProp,
     );
@@ -285,12 +297,24 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     const inFlightFetchesRef = useRef<Set<{ cancelled: boolean }>>(new Set());
 
     // Refs to latest state/props for use inside async closures
-    const userRef = useRef(user);
-    userRef.current = user;
+    const userRef = useRef(userProp);
+    userRef.current = userProp;
     const boardNameRef = useRef(boardName);
     boardNameRef.current = boardName;
     const providerStateRef = useRef(state);
     providerStateRef.current = state;
+    // A board is owned by whoever holds its engine state, which is this provider
+    // unless the host says otherwise — a cloud board is coordinated by hkp-node,
+    // and this browser is then a participant rather than the owner. One local
+    // instance for the provider's lifetime, reading through the ref so the
+    // services and hosts it is handed to always see current state.
+    const localCoordinatorRef = useRef<BoardCoordinator | null>(null);
+    if (!localCoordinatorRef.current) {
+      localCoordinatorRef.current = createBoardCoordinator(
+        () => providerStateRef.current,
+      );
+    }
+    const coordinator = coordinatorProp ?? localCoordinatorRef.current;
     const propsRef = useRef(props);
     propsRef.current = props;
     const appContextRef = useRef(appContext);
@@ -325,9 +349,6 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
 
     // Sync props -> state
     useEffect(() => {
-      setUser(userProp);
-    }, [userProp]);
-    useEffect(() => {
       if (availableRuntimeEnginesProp) {
         setAvailableRuntimeEngines(availableRuntimeEnginesProp);
       }
@@ -336,6 +357,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
     // Build the refs bundle passed to operation functions
     const getRefs = (): BoardStateRefs => ({
       userRef,
+      appContextRef,
       boardNameRef,
       runtimesRef: asRef(providerStateRef.current.runtimes),
       servicesRef: asRef(providerStateRef.current.services),
@@ -633,6 +655,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
 
     const buildContextValue = (): BoardContextState => ({
       user,
+      coordinator,
       boardName,
       facade,
       runtimes,
