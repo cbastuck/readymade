@@ -175,10 +175,15 @@ json App::getRegistry() const
   auto r = json::array();
    for (auto svc : m_registry->availableServices()) 
    {
-     r.push_back(json{
-       { "serviceName", svc.serviceId }, 
+     auto entry = json{
+       { "serviceName", svc.serviceId },
        { "serviceId", svc.serviceId },
-       { "capabilities", svc.capabilities }});
+       { "capabilities", svc.capabilities }};
+     if (!svc.version.empty())
+     {
+       entry["version"] = svc.version;
+     }
+     r.push_back(entry);
    }
   return r;
 }
