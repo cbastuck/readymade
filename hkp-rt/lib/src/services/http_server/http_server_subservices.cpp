@@ -1,5 +1,7 @@
 #include "./http_server_subservices.h"
 
+#include "../../mount.h"
+
 #include <boost/beast.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/json.hpp>
@@ -306,7 +308,7 @@ json HttpServerSubservices::getState() const
     {"host", m_host},
     // Public endpoint. Reserved name: generic board machinery reads and
     // rewrites it (see the frontend's runtime/board/mount).
-    {"__hkpMount", m_url},
+    {MOUNT_FIELD, m_url},
     {"status", isBypass() ? "offline" : "online"},
     {"pipeline", pipeline}
   });
@@ -364,7 +366,7 @@ bool HttpServerSubservices::start()
   sendNotification(json{
     {"port",   m_impl->port()},
     {"host",   m_host},
-    {"__hkpMount", m_url},
+    {MOUNT_FIELD, m_url},
     {"status", "online"}
   });
   return true;

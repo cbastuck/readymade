@@ -8,7 +8,7 @@ HTTP services: an outgoing client and an incoming server.
 
 | Runtime | Service IDs |
 |---|---|
-| hkp-rt | `http-client`, `http-server` |
+| hkp-rt | `http-client`, `http-server`, `http-server-subservices` |
 | hkp-node | `http-client`, `http-server-subservices` |
 
 For browser-side HTTP, use [Fetcher](./fetcher.md) (outgoing) and
@@ -65,6 +65,9 @@ UI panel), with these differences:
   and calls the rest of the pipeline itself when the response arrives.
 
 #### Calling an endpoint whose address is assigned at load time
+
+Supported by the hkp-node and hkp-rt clients alike (`__hkpMount` plus `path`;
+hkp-rt keeps its URL templating for the `url` case).
 
 A service that hosts an endpoint does not bind a port — its runtime assigns it a
 path and publishes the address. That address is not knowable when a board is
