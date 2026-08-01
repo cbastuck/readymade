@@ -10,6 +10,10 @@ The Timer service produces trigger events on a time-based schedule. It supports 
 
 **Available in:**
 - Browser Runtime — service ID `hookup.to/service/timer`
+- hkp-node — service ID `timer`
+- hkp-python — service ID `timer` (also answers to `hookup.to/service/timer`, the
+  id it used before it matched the other runtimes; that alias is not advertised
+  in the registry)
 - hkp-rt — service ID `timer`
 
 ---
