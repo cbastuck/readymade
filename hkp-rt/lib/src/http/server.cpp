@@ -241,6 +241,7 @@ struct Server::impl
   bool wsOnAccept(const crow::request& req, void** userdata);
   void wsOnMessage(crow::websocket::connection& conn, const std::string& message, bool isBinary);
   void wsOnClose(crow::websocket::connection& conn);
+  void reapIfAbandoned(const std::string& runtimeId);
   void sendNotification(const std::string& runtimeId, const std::string& frame);
 
   JsonResponse makeJsonResponse(const json &_body)
@@ -820,6 +821,7 @@ void Server::impl::wsOnClose(crow::websocket::connection& conn)
   {
     return;
   }
+  bool abandoned = false;
   {
     std::lock_guard<std::mutex> lock(wsMutex);
     auto it = wsByRuntime.find(state->runtimeId);
@@ -829,11 +831,44 @@ void Server::impl::wsOnClose(crow::websocket::connection& conn)
       if (it->second.empty())
       {
         wsByRuntime.erase(it);
+        abandoned = true;
       }
     }
   }
+
+  if (abandoned)
+  {
+    reapIfAbandoned(state->runtimeId);
+  }
+
   delete state;
   conn.userdata(nullptr);
+}
+
+/**
+ * Tears down a runtime whose creator asked for cleanup, now that its last
+ * client has disconnected.
+ *
+ * Whoever created it said whether it should outlive its clients. A browser
+ * running a board is that board's controller and asks for cleanup: closing the
+ * tab should not leave runtimes behind. A coordinator, a config file or a
+ * script says nothing, and their runtimes stay until deleted — a headless
+ * runtime is not an abandoned one, and a runtime is never reaped because of who
+ * happened to connect to it.
+ */
+void Server::impl::reapIfAbandoned(const std::string& runtimeId)
+{
+  // getConfiguration carries the declaration back, so the public API is enough
+  // to answer this — no need to reach for the Runtime itself.
+  auto config = app->getRuntime(runtimeId);
+  if (!config || !config->garbageCollected)
+  {
+    return;
+  }
+  std::cout << "Server: releasing runtime \"" << runtimeId
+            << "\" — its last client disconnected and it asked to be cleaned up"
+            << std::endl;
+  app->removeRuntime(runtimeId);
 }
 
 void Server::impl::sendNotification(const std::string& runtimeId, const std::string& frame)

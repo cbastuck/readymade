@@ -144,18 +144,108 @@ export async function removeRuntime(
   }
 }
 
+/**
+ * Whether a runtime already running under this id is the one this board wants.
+ *
+ * Compared by service identity only — uuid and serviceId, in order — never by
+ * state: a running service's state legitimately drifts (a timer's count, a
+ * server's assigned address), and treating that as a difference would rebuild
+ * the runtime on every reload, which is the opposite of the point.
+ */
+function isSameRuntime(
+  running: Array<ServiceDescriptor> | undefined,
+  wanted: Array<{ uuid: string; serviceId: string }>,
+): boolean {
+  const current = running ?? [];
+  if (current.length !== wanted.length) {
+    return false;
+  }
+  return wanted.every(
+    (svc, index) =>
+      current[index]?.uuid === svc.uuid &&
+      current[index]?.serviceId === svc.serviceId,
+  );
+}
+
+/**
+ * Attaches to a runtime that is already running under this board's id, or
+ * returns null so the caller provisions one.
+ *
+ * Asking first is what tells the two intents apart. Reloading a page, or opening
+ * a board someone else is running, means "attach": the services keep running and
+ * whatever addresses they published stay valid. Posting the board means
+ * "provision": create it, replacing anything under that id. Only the client
+ * knows which it meant, so it says so by asking before it posts — rather than
+ * posting always and leaving each runtime to guess (which they do differently:
+ * hkp-node reuses, hkp-python and hkp-rt rebuild).
+ *
+ * A runtime whose services no longer match the board is not the board's runtime,
+ * so it is left to be replaced.
+ */
+async function attachRuntime(
+  runtime: RuntimeDescriptor,
+  services: Array<{ uuid: string; serviceId: string }>,
+  user: User | null,
+): Promise<RestoreRuntimeResult | null> {
+  let res: Response;
+  try {
+    res = await fetch(`${runtime.url}/runtimes`, {
+      headers: { ...authHeaders(user) },
+    });
+  } catch {
+    // Unreachable, or not a runtime server. Let provisioning report it: its
+    // error messages already tell auth failures apart from the rest.
+    return null;
+  }
+  if (!res.ok) {
+    return null;
+  }
+
+  const body = await res.json();
+  const runtimes: RestRuntimeData[] = Array.isArray(body)
+    ? body
+    : (body.runtimes ?? []);
+  const existing = runtimes.find((rt) => rt.id === runtime.id);
+  if (!existing || !isSameRuntime(existing.services, services)) {
+    return null;
+  }
+
+  const registry = normalizeRegistry(
+    Array.isArray(body) ? [] : (body.registry ?? []),
+  );
+  const descriptor: RuntimeDescriptor = { ...runtime, ...existing };
+  const scope = new RuntimeRestScope(
+    descriptor,
+    resolveOutputUrl(existing.outputUrl, runtime.url),
+    user,
+  );
+  scope.registry = registry;
+  return {
+    runtime: descriptor,
+    // The running services, not the board's: their state is what is live.
+    services: existing.services,
+    scope,
+    registry,
+  };
+}
+
 async function restoreRuntime(
   runtime: RuntimeDescriptor,
   services: Array<ServiceDescriptor>,
   user: User | null,
   boardName?: string,
 ): Promise<RestoreRuntimeResult | null> {
-  const svcs = services.map((s) => ({
+  const svcs = (services ?? []).map((s) => ({
     uuid: s.uuid || uuidv4(),
     serviceName: s.serviceName,
     serviceId: s.serviceId,
     state: (s as any).state, // TODO:
   }));
+
+  const attached = await attachRuntime(runtime, svcs, user);
+  if (attached) {
+    return attached;
+  }
 
   const {
     registry,
@@ -407,6 +497,12 @@ async function createRuntimeRequest(
   const payload = {
     name: runtime.name,
     id: runtime.id,
+    // This browser is the board's controller, so its runtimes should not
+    // outlive it: when the last client disconnects — the tab closes, or the
+    // page is reloaded — the runtime server frees them. A board that should
+    // keep running without a browser is one to deploy to a coordinator, which
+    // provisions its runtimes without asking for cleanup.
+    garbageCollected: true,
     services: services.map((s) => ({
       uuid: s.uuid || uuidv4(),
       serviceId: s.serviceId,

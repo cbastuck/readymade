@@ -45,6 +45,7 @@ add_executable(hkp-rt-service-tests
   service_map.test.cpp
   service_static.test.cpp
   service_cache.test.cpp
+  runtime_lifecycle.test.cpp
   service_stopper.test.cpp
   service_http_client_mount.test.cpp
   service_sub_service.test.cpp
