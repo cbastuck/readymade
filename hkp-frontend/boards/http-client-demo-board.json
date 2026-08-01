@@ -1,0 +1,79 @@
+{
+  "boardName": "HTTP Client Demo",
+  "description": "A node HTTP Client calling an endpoint hosted by another runtime on the same hkp-node server (runtime ids are namespaced per user, so two boards' runtimes never collide). The endpoint's address is assigned when the board loads, so nothing here hard-codes one: the client names the service that owns it (hkp-mount://endpoint-node/echo-server) and the board's coordinator hands over the address once it exists. Needs hkp-node running locally on port 8080; the response appears in the Monitor every 5 seconds. Runtime order matters: runtimes are chained, so the passive endpoint goes last — ahead of the caller it would feed the caller its own answer and the two would call each other in a loop.",
+  "runtimes": [
+    {
+      "id": "caller-node",
+      "name": "Caller",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    },
+    {
+      "id": "endpoint-node",
+      "name": "Endpoint",
+      "type": "rest",
+      "url": "http://127.0.0.1:8080",
+      "state": {
+        "wrapServices": false
+      }
+    }
+  ],
+  "services": {
+    "endpoint-node": [
+      {
+        "uuid": "echo-server",
+        "serviceId": "http-server-subservices",
+        "serviceName": "Echo Endpoint",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_session",
+          "pipeline": [
+            {
+              "instanceId": "echo-map",
+              "serviceId": "map",
+              "serviceName": "Answer",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "servedBy": "endpoint-node",
+                  "youAsked=": "params.meta.path"
+                }
+              }
+            }
+          ]
+        }
+      }
+    ],
+    "caller-node": [
+      {
+        "uuid": "tick",
+        "serviceId": "timer",
+        "serviceName": "Every 5 seconds",
+        "state": {
+          "periodic": true,
+          "periodicValue": 5,
+          "periodicUnit": "s",
+          "running": true
+        }
+      },
+      {
+        "uuid": "call",
+        "serviceId": "http-client",
+        "serviceName": "Call The Endpoint",
+        "state": {
+          "__hkpMount": "hkp-mount://endpoint-node/echo-server",
+          "path": "/hello",
+          "method": "get"
+        }
+      },
+      {
+        "uuid": "response-monitor",
+        "serviceId": "monitor",
+        "serviceName": "Response"
+      }
+    ]
+  }
+}
