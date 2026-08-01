@@ -10,6 +10,7 @@ HTTP services: an outgoing client and an incoming server.
 |---|---|
 | hkp-rt | `http-client`, `http-server`, `http-server-subservices` |
 | hkp-node | `http-client`, `http-server-subservices` |
+| hkp-python | `http-client`, `http-server-subservices` |
 
 For browser-side HTTP, use [Fetcher](./fetcher.md) (outgoing) and
 [Output](./output.md) (POST egress).
@@ -38,9 +39,9 @@ equivalent of the browser's [Fetcher](./fetcher.md) service.
 - **Input**: any value; may be merged into the request body
 - **Output**: HTTP response body, parsed as JSON if the Content-Type is `application/json`, otherwise a string
 
-### On hkp-node
+### On hkp-node and hkp-python
 
-The node implementation shares the configuration above (and therefore the same
+These two implementations share the configuration above (and therefore the same
 UI panel), with these differences:
 
 | Property | Type | Description |
@@ -66,8 +67,8 @@ UI panel), with these differences:
 
 #### Calling an endpoint whose address is assigned at load time
 
-Supported by the hkp-node and hkp-rt clients alike (`__hkpMount` plus `path`;
-hkp-rt keeps its URL templating for the `url` case).
+Supported by every runtime's client (`__hkpMount` plus `path`; hkp-rt keeps its
+URL templating for the `url` case).
 
 A service that hosts an endpoint does not bind a port — its runtime assigns it a
 path and publishes the address. That address is not knowable when a board is
