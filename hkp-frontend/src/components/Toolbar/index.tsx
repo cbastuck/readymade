@@ -31,6 +31,10 @@ type Props = {
   menuItemFactory?: BoardMenuItemFactory;
   menuSlot?: ReactNode;
   logoSlot?: ReactNode;
+  /** Actions for the view that owns the board — deploying, for one. Passed in
+   *  rather than rendered here, because a view that only attaches to a board
+   *  has no business offering them. */
+  actionsSlot?: ReactNode;
 };
 
 function LogoMark() {
@@ -120,6 +124,7 @@ export default function Toolbar({
   menuItemFactory,
   menuSlot,
   logoSlot,
+  actionsSlot,
 }: Props) {
   const theme = useTheme();
   const { themeName } = useThemeControl();
@@ -169,6 +174,7 @@ export default function Toolbar({
             gap: 4,
           }}
         >
+          {actionsSlot}
           <UpdateCloudButton />
           <ShareMenu />
           <TbSeparator />

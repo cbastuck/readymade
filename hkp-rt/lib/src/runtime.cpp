@@ -103,6 +103,7 @@ void Runtime::load(const RuntimeConfiguration& config)
   }
   m_runtimeId = config.runtimeId;
   m_runtimeName = config.runtimeName;
+  m_garbageCollected = config.garbageCollected;
   auto services = config.services;
   for (auto &service : services)
   {
@@ -140,6 +141,7 @@ RuntimeConfiguration Runtime::getConfiguration() const
   config.runtimeId = m_runtimeId;
   config.runtimeName = m_runtimeName; 
   config.boardName = m_boardName;
+  config.garbageCollected = m_garbageCollected;
 
   for (auto &svc : m_services)
   {

@@ -2,7 +2,9 @@ import { BoardDescriptor } from "../../types";
 
 export type CoordinatorBoardInfo = {
   boardName: string;
-  status: "running" | "error";
+  /** "stopped" is a board the coordinator still holds but no longer runs — its
+   *  config is kept, so deploying it again starts it back up. */
+  status: "running" | "stopped" | "error";
   createdAt: string;
   config: BoardDescriptor;
   /** Reasons the session failed to come up cleanly (e.g. a runtime that could
@@ -54,6 +56,30 @@ export async function registerCoordinatorBoard(
   );
   if (!res.ok) {
     throw new Error(`Failed to register board: ${res.status}`);
+  }
+  return res.json() as Promise<CoordinatorBoardInfo>;
+}
+
+/**
+ * Stops a board's runtimes without giving up the board.
+ *
+ * It keeps its place and its config — a coordinator's boards live only in its
+ * memory, so stopping one must not be able to lose it. Deploying the board
+ * again is what provisions and runs it.
+ */
+export async function stopCoordinatorBoard(
+  coordinatorUrl: string,
+  username: string,
+  idToken: string,
+  boardName: string,
+): Promise<CoordinatorBoardInfo> {
+  const res = await coordinatorFetch(
+    `${coordinatorUrl}/users/${encodeURIComponent(username)}/boards/${encodeURIComponent(boardName)}/stop`,
+    idToken,
+    { method: "POST" },
+  );
+  if (!res.ok) {
+    throw new Error(`Failed to stop board: ${res.status}`);
   }
   return res.json() as Promise<CoordinatorBoardInfo>;
 }

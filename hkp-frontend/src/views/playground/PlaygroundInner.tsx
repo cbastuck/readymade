@@ -4,6 +4,7 @@ import { useBoardContext } from "../../BoardContext";
 import Toolbar from "../../components/Toolbar";
 import Footer from "hkp-frontend/src/components/Footer";
 import SaveBoardDialog from "../../components/SaveBoardDialog";
+import DeployMenu from "../../components/Toolbar/DeployMenu";
 import BoardEntryPoint from "./BoardEntryPoint";
 import BoardFetchError from "./BoardFetchError";
 import ShareQRCodeDialog from "hkp-frontend/src/components/ShareQRCodeDialog";
@@ -35,6 +36,7 @@ export default function PlaygroundInner(props: PlaygroundInnerProps) {
         hideNavigation={props.hideNavigation}
         menuSlot={props.menuSlot}
         logoSlot={props.logoSlot}
+        actionsSlot={<DeployMenu />}
         includeNavigationLinks={!props.hideNavigation}
       />
 

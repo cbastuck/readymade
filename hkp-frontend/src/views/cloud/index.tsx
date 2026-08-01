@@ -1,5 +1,5 @@
 import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import useSWR from "swr";
 import { ArrowRight, Plus } from "lucide-react";
@@ -26,13 +26,20 @@ import {
 import {
   CoordinatorBoardInfo,
   listCoordinatorBoards,
-  registerCoordinatorBoard,
+  stopCoordinatorBoard,
 } from "./coordinatorClient";
 import { toast } from "sonner";
 import CoordinatorsMenu from "./CoordinatorsMenu";
 import CloudBoard from "./Board";
 import Sidebar from "../playground/Sidebar";
 import { useCoordinatorBridge } from "./useCoordinatorBridge";
+import { CoordinatorSnapshotStore } from "./coordinatorSnapshot";
+import {
+  CoordinatorBridgeAccess,
+  createBridgeRuntimeApi,
+} from "./bridgeRuntimeApi";
+import { createBoardCoordinator } from "hkp-frontend/src/core/coordinator";
+import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import ManageCoordinatorsDialog from "./ManageCoordinatorsDialog";
 import NewBoardDialog from "./NewBoardDialog";
 import CloudLoginGate from "./CloudLoginGate";
@@ -235,17 +242,51 @@ type InnerProps = {
   bridgeWsUrl: string | null;
   userId: string | null;
   idToken: string | null;
+  bridgeAccess: CoordinatorBridgeAccess;
+  onHydrate: (config: BoardDescriptor) => void;
 };
 
-function CloudBoardInner({ board, bridgeWsUrl, userId, idToken }: InnerProps) {
+function CloudBoardInner({
+  board,
+  bridgeWsUrl,
+  userId,
+  idToken,
+  bridgeAccess,
+  onHydrate,
+}: InnerProps) {
   const boardContext = useBoardContext();
-  const { ws: bridgeWs } = useCoordinatorBridge(
+  const { ws: bridgeWs, configureRemoteService } = useCoordinatorBridge(
     bridgeWsUrl,
     userId,
     board.boardName,
     boardContext,
     idToken,
+    bridgeAccess.snapshot,
   );
+
+  // The host built the attached-mode api around this object before the socket
+  // existed; give it the way to send now that it does.
+  bridgeAccess.configureRemoteService = configureRemoteService;
+
+  // The board is hydrated from what the coordinator says it is — which only
+  // arrives once it has said it. Hydrating from the saved config first would
+  // render services with no live state and, worse, with no addresses for the
+  // mounts they point at.
+  const hydratedRef = useRef<string | null>(null);
+  useEffect(() => {
+    const hydrate = () => {
+      const config = bridgeAccess.snapshot.getConfig() as
+        | BoardDescriptor
+        | null;
+      if (!config || hydratedRef.current === board.boardName) {
+        return;
+      }
+      hydratedRef.current = board.boardName;
+      onHydrate(config);
+    };
+    hydrate();
+    return bridgeAccess.snapshot.subscribe(hydrate);
+  }, [bridgeAccess, board.boardName, onHydrate]);
   if (!boardContext) {
     return null;
   }
@@ -282,6 +323,24 @@ export default function CloudBoards({
   const login = useCloudLogin();
 
   const boardProviderRef = useRef<BoardProviderHandle>(null);
+
+  // This view attaches; it never owns. A board here belongs to the coordinator
+  // that provisions it, and boards are built in the playground and deployed —
+  // so there is no second owner to switch to.
+
+  // Created here rather than inside the bridge hook: the attached-mode runtime
+  // api and the board coordinator are built from it, and both are props of the
+  // provider that hosts the hook.
+  const bridgeAccessRef = useRef<CoordinatorBridgeAccess | null>(null);
+  if (!bridgeAccessRef.current) {
+    bridgeAccessRef.current = {
+      snapshot: new CoordinatorSnapshotStore(),
+      configureRemoteService: async () => {
+        throw new Error("Not attached to a coordinator");
+      },
+    };
+  }
+  const bridgeAccess = bridgeAccessRef.current;
 
   const [initialRuntimeEngines] = useState<RuntimeClass[]>(() => [
     { name: "Browser Runtime", type: "browser" },
@@ -391,7 +450,6 @@ export default function CloudBoards({
   const {
     data: allCoordinatorBoards = [],
     isLoading: isLoadingAllBoards,
-    mutate: reloadAllBoards,
   } = useSWR(
     user
       ? `all-boards:${user.userId}:${coordinators.map((c) => c.url).join(",")}`
@@ -414,8 +472,8 @@ export default function CloudBoards({
     }
     setSelectedBoard(board);
     setMountedBoard(board);
-    // Hydrate the BoardProvider with the board's config from the coordinator.
-    boardProviderRef.current?.setBoardState(board.config);
+    // Hydration waits for the coordinator's snapshot: only it knows the live
+    // state, including the addresses of the mounts services point at.
     if (selectedCoordinator) {
       onNavigate?.(selectedCoordinator.name, board.boardName);
     }
@@ -438,7 +496,6 @@ export default function CloudBoards({
     setSelectedCoordinator(coordinator);
     setSelectedBoard(board);
     setMountedBoard(board);
-    boardProviderRef.current?.setBoardState(board.config);
     onNavigate?.(coordinator.name, board.boardName);
   };
 
@@ -482,6 +539,7 @@ export default function CloudBoards({
   // selected/mounted board stays fully intact and running so its remote runtimes
   // (and the bridge WebSocket) are untouched.
   const location = useLocation();
+  const navigate = useNavigate();
   const showOverviewSignal = (location.state as { showOverview?: number } | null)
     ?.showOverview;
   useEffect(() => {
@@ -539,6 +597,36 @@ export default function CloudBoards({
 
   // ── New board ───────────────────────────────────────────────────────────────
 
+  /**
+   * Stops the board without giving it up.
+   *
+   * The coordinator releases the runtimes and keeps the board — its config
+   * included, since a coordinator's boards live only in its memory. Deploying
+   * the board again is what starts it back up.
+   */
+  const onStopBoard = async () => {
+    const board = selectedBoard;
+    const coordinator = selectedCoordinator;
+    if (!board || !coordinator || !user) {
+      return;
+    }
+    try {
+      const info = await stopCoordinatorBoard(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        board.boardName,
+      );
+      setSelectedBoard(info);
+      setMountedBoard(info);
+      await reloadBoards();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to stop the board",
+      );
+    }
+  };
+
   const onNewBoard = (coordinatorOverride?: CoordinatorDescriptor) => {
     const coordinator = coordinatorOverride ?? selectedCoordinator;
     if (!coordinator || !user) {
@@ -552,113 +640,16 @@ export default function CloudBoards({
     setNewBoardCoordinator(coordinator);
   };
 
-  const createBoard = async (boardName: string) => {
-    const coordinator = newBoardCoordinator;
-    if (!coordinator || !user) {
-      return;
-    }
+  /**
+   * Starts a new board where boards are built: the playground.
+   *
+   * Nothing is created on the coordinator here — a board arrives on one by
+   * being deployed, and an empty record would be a board this view cannot fill.
+   */
+  const createBoard = (boardName: string) => {
     setNewBoardCoordinator(undefined);
-    const emptyConfig: BoardDescriptor = {
-      boardName,
-      runtimes: [],
-      services: {},
-    };
-    try {
-      await registerCoordinatorBoard(
-        coordinator.url,
-        user.userId,
-        user.idToken,
-        emptyConfig,
-      );
-      await Promise.all([reloadBoards(), reloadAllBoards()]);
-      // Select the newly created board from the refreshed list.
-      const refreshed = await listCoordinatorBoards(
-        coordinator.url,
-        user.userId,
-        user.idToken,
-      );
-      const created = refreshed.find((b) => b.boardName === boardName);
-      if (created) {
-        setSelectedCoordinator(coordinator);
-        onSelectBoard(created);
-      }
-    } catch (err) {
-      console.error("[cloud] Failed to create board:", err);
-    }
+    navigate(`/playground/${encodeURIComponent(boardName)}`);
   };
-
-  // ── Auto-sync to coordinator on infrastructure change ───────────────────────
-  // When the user adds/removes runtimes or services in the CloudBoard view,
-  // serialize the new board state and re-register it with the coordinator so
-  // the coordinator can provision any new runtimes and update its session.
-
-  const onBoardInfrastructureChange = useCallback(
-    async (newDescriptor: BoardDescriptor) => {
-      if (!selectedCoordinator || !selectedBoard || !user) {
-        return;
-      }
-
-      // Skip re-registration when nothing the coordinator cares about has changed.
-      // This prevents the infra effect from tearing down the bridge WebSocket on
-      // every initial board load (object references change even for identical data).
-      const runtimeKey = (rts: typeof newDescriptor.runtimes) =>
-        rts
-          .map((r) => `${r.id}:${r.type}`)
-          .sort()
-          .join("|");
-      const serviceKey = (svcs: typeof newDescriptor.services) =>
-        Object.entries(svcs ?? {})
-          .map(
-            ([rid, s]) =>
-              `${rid}:${s
-                .map((x) => x.uuid)
-                .sort()
-                .join(",")}`,
-          )
-          .sort()
-          .join("|");
-
-      const coordConfig = selectedBoard.config;
-      if (
-        runtimeKey(newDescriptor.runtimes) ===
-          runtimeKey(coordConfig?.runtimes ?? []) &&
-        serviceKey(newDescriptor.services) ===
-          serviceKey(coordConfig?.services ?? {})
-      ) {
-        return;
-      }
-
-      try {
-        const info = await registerCoordinatorBoard(
-          selectedCoordinator.url,
-          user.userId,
-          user.idToken,
-          { ...newDescriptor, boardName: selectedBoard.boardName },
-        );
-        // Keep selectedBoard.config (and the live status/errors) in sync so the
-        // open board reflects provisioning failures instead of looking healthy.
-        setSelectedBoard((prev) =>
-          prev
-            ? {
-                ...prev,
-                config: { ...newDescriptor, boardName: prev.boardName },
-                status: info.status,
-                errors: info.errors,
-              }
-            : prev,
-        );
-        if (info.status === "error" && info.errors?.length) {
-          toast.error("A cloud runtime failed to start", {
-            description: info.errors.join("\n"),
-          });
-        }
-        await reloadBoards();
-      } catch (err) {
-        console.error("[cloud] Failed to sync board to coordinator:", err);
-      }
-    },
-    [selectedCoordinator, selectedBoard, user, reloadBoards],
-  );
 
   const showCoordinatorInToolbar = false;
   const boardCanvasRef = useBlockSwipeNavigation<HTMLDivElement>();
@@ -678,11 +669,23 @@ export default function CloudBoards({
     return <CloudLoginGate onLogin={login} />;
   }
 
+  // A "rest" runtime is reached through the coordinator here rather than
+  // dialled: same runtime type, same board, different way in.
+  const attachedRuntimeApis = {
+    ...runtimeApis,
+    rest: createBridgeRuntimeApi(bridgeAccess),
+    realtime: createBridgeRuntimeApi(bridgeAccess),
+  };
+  const boardCoordinator = createBoardCoordinator(() =>
+    bridgeAccess.snapshot.asCoordinatorState(),
+  );
+
   return (
     <BoardProvider
       ref={boardProviderRef}
       user={user}
-      runtimeApis={runtimeApis}
+      coordinator={boardCoordinator}
+      runtimeApis={attachedRuntimeApis}
       availableRuntimeEngines={initialRuntimeEngines}
       onRemoveRuntime={async () => {}}
       onUnmountRuntime={(runtime, scope, defaultHandler) => {
@@ -692,7 +695,6 @@ export default function CloudBoards({
           scope.close?.();
         }
       }}
-      onBoardInfrastructureChange={onBoardInfrastructureChange}
     >
       <div
         className="w-full h-full flex flex-col"
@@ -753,6 +755,17 @@ export default function CloudBoards({
                     </ul>
                   </div>
                 )}
+                <div className="flex items-center gap-2 px-3 py-2 text-sm">
+                  <span className="text-gray-500">
+                    {openBoard?.status === "stopped"
+                      ? `Stopped — deploy it again from the playground to run it on ${selectedCoordinator?.name ?? "this coordinator"}`
+                      : `Deployed to ${selectedCoordinator?.name ?? "a coordinator"} — it keeps running when you close this`}
+                  </span>
+                  <div className="flex-1" />
+                  {openBoard?.status !== "stopped" && (
+                    <Button onClick={() => void onStopBoard()}>Stop</Button>
+                  )}
+                </div>
                 <CloudBoardInner
                   board={mountedBoard}
                   bridgeWsUrl={
@@ -765,6 +778,10 @@ export default function CloudBoards({
                   }
                   userId={user?.userId ?? null}
                   idToken={user?.idToken ?? null}
+                  bridgeAccess={bridgeAccess}
+                  onHydrate={(config) =>
+                    boardProviderRef.current?.setBoardState(config)
+                  }
                 />
               </div>
             )}

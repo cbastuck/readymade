@@ -93,6 +93,12 @@ inline std::optional<RuntimeConfiguration> validateRuntime(json config)
   }
   conf.runtimeName = *runtimeName;
 
+  // Absent means persist; see RuntimeConfiguration::garbageCollected.
+  auto garbageCollected = config.find("garbageCollected");
+  conf.garbageCollected =
+    garbageCollected != config.end() && garbageCollected->is_boolean() &&
+    garbageCollected->get<bool>();
+
   auto services = config.find("services");
   if (services == config.end())
   {

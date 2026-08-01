@@ -100,6 +100,17 @@ type BoardContextAPI = {
 
   clearBoard: (emptyBoardName?: string) => Promise<void>;
 
+  /**
+   * Gives up ownership of the board's remote runtimes.
+   *
+   * Deploying hands a board to a coordinator, which provisions the runtimes
+   * itself — under the same ids, because they are the board's. From that moment
+   * they are the coordinator's, and this browser tearing them down on its way
+   * out would delete a board someone else now owns. Called before the handover
+   * is attempted, so a navigation that lands in between cannot do that either.
+   */
+  handOverRuntimes: () => void;
+
   fetchBoard: () => Promise<void>;
   isActionAvailable: (action: Action) => boolean;
   onAction: (action: Action) => void;
@@ -567,6 +578,14 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       }
     };
 
+    // Set once the board is deployed; see handOverRuntimes. A ref rather than
+    // state because the unmount cleanup below reads it, and that runs after the
+    // last render.
+    const handedOverRef = useRef(false);
+    const handOverRuntimes = () => {
+      handedOverRef.current = true;
+    };
+
     // Mount + unmount in one effect so we share a per-mount cancellation token.
     // In React strict mode the sequence is: mount → unmount → remount.
     // The first fetch sees `cancelled = true` when it finishes and tears down
@@ -592,8 +611,16 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         for (const runtime of providerStateRef.current.runtimes) {
           const [scope, api] = getRuntimeScopeApi(runtime.id, getRefs());
           if (api && scope) {
+            const handedOver =
+              handedOverRef.current &&
+              !isRuntimeBrowserClassType(runtime.type as RuntimeClassType);
             const defaultHandler = () =>
-              api.removeRuntime(scope, runtime, userRef.current);
+              handedOver
+                ? // Deleting would take down the deployed board: the runtime
+                  //  under this id belongs to the coordinator now. Dropping the
+                  //  connection is all this browser still owns.
+                  scope.close?.()
+                : api.removeRuntime(scope, runtime, userRef.current);
             if (onUnmountRuntime) {
               onUnmountRuntime(runtime, scope, defaultHandler);
             } else {
@@ -719,6 +746,7 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
       removeAllServices,
       setBoardName,
       clearBoard,
+      handOverRuntimes,
       onAction,
       isRuntimeInScope,
       acquireRuntimeScope,
