@@ -10,6 +10,7 @@ Unconditionally stops the pipeline by returning `null` on every tick.
 |---|---|
 | Browser | `hookup.to/service/stopper` |
 | hkp-node | `stopper` |
+| hkp-rt | `stopper` |
 
 ---
 
@@ -39,7 +40,7 @@ pipeline.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `bypass` | `boolean` | `false` | Pass input through instead of stopping (hkp-node) |
+| `bypass` | `boolean` | `false` | Pass input through instead of stopping (hkp-node, hkp-rt) |
 
 The browser implementation accepts but ignores all configuration.
 

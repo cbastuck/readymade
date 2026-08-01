@@ -53,6 +53,15 @@ unsigned short HttpServerImpl::start()
 
 bool HttpServerImpl::stop()
 {
+  // Stopping is idempotent. The destructor calls it unconditionally, and a
+  // bypass toggle may already have stopped the server — this call would then be
+  // the second, dereferencing the listener the first one reset. It is also the
+  // state a server that never started is in, since it starts out bypassed.
+  if (!m_listener)
+  {
+    return false;
+  }
+
   std::cout << "HttpServerImpl::stop() Stopping HTTP server on port: " << m_port << std::endl;
   for (auto & session : m_sessions)
   {
