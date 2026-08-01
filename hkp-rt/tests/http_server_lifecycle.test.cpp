@@ -28,12 +28,15 @@ TEST_CASE("destroying a server that was already stopped is safe",
   {
     HttpServerSubservices server("http-1");
 
-    // Port 0 asks the OS for a free one, so tests never collide.
+    // Port 0 asks the OS for a free one, so tests never collide. Configured in
+    // its own call, before unbypassing: configure() applies bypass before the
+    // rest of the state, so asking to start in the same call would bind first
+    // and then apply the requested port over the one it bound.
     server.configure(Data(json{
       {"port", 0},
       {"mode", "process_on_session"},
-      {"bypass", false},
     }));
+    server.configure(Data(json{{"bypass", false}}));
     REQUIRE(server.getState().value("port", 0) != 0);
 
     // Bypassing stops the server; leaving this scope stops it a second time.
