@@ -8,7 +8,10 @@ import {
   ServiceUIComponent,
 } from "hkp-frontend/src/types";
 import ServiceSelector from "hkp-frontend/src/ui-components/ServiceSelector";
-import { findServiceUI as restFindServiceUI } from "../rest/UIRegistry";
+import {
+  findServiceUI as restFindServiceUI,
+  type ServiceLookup,
+} from "../rest/UIRegistry";
 import RuntimeRestServiceUI from "../rest/RuntimeRestServiceUI";
 import ServiceWithDropBars from "../ServiceWithDropBars";
 import { useIsMobileHost } from "hkp-frontend/src/MobileHostContext";
@@ -21,7 +24,9 @@ type PipelineEntry = {
 
 type Props = {
   service: ServiceInstance;
-  findServiceUI?: (serviceId: string) => ServiceUIComponent | null;
+  findServiceUI?: (
+    service: string | ServiceLookup,
+  ) => ServiceUIComponent | null;
   FallbackUI?: React.ComponentType<any>;
   /** Optional: returns the real in-process service instance for a given instanceId.
    *  When provided and non-null, the real instance is used for the service UI so
@@ -172,8 +177,20 @@ export default function SubServicePipelineUI({
               ? { ...realInstance, configure: configureProxy }
               : proxyInstance;
 
+            // Look the service up the way a top-level one is looked up: by id
+            // *and* version. A pipeline entry carries neither version nor
+            // capabilities — only the runtime's registry knows them — so
+            // without this a versioned service falls back to the UI of its
+            // older revision.
+            const entryDescriptor = findDescriptor(entry.serviceId);
             const SubServiceUI =
-              (entry.serviceId && findServiceUI(entry.serviceId)) || FallbackUI;
+              (entry.serviceId &&
+                findServiceUI({
+                  serviceId: entry.serviceId,
+                  version: entryDescriptor?.version,
+                  capabilities: entryDescriptor?.capabilities,
+                })) ||
+              FallbackUI;
 
             const uiElement = React.createElement(SubServiceUI as any, {
               service: subServiceInstance,
