@@ -55,11 +55,11 @@ export default function NewBoardDialog({
         <DialogTitle className="text-lg font-semibold tracking-widest">
           New Board
         </DialogTitle>
-        {coordinatorName && (
-          <p className="text-sm text-muted-foreground -mt-2">
-            on {coordinatorName}
-          </p>
-        )}
+        <p className="text-sm text-muted-foreground -mt-2">
+          {coordinatorName
+            ? `Opens in the playground, where boards are built. Deploy it to ${coordinatorName} when it does what you want.`
+            : "Opens in the playground, where boards are built."}
+        </p>
 
         <div className="flex flex-col gap-2">
           <Label

@@ -68,6 +68,8 @@ public:
   std::list<std::shared_ptr<Service>>::const_iterator findServiceById(const std::string& instanceId) const;
 
   inline const std::string &getId() const { return m_runtimeId; }
+  /** See RuntimeConfiguration::garbageCollected. False means persist. */
+  inline bool isGarbageCollected() const { return m_garbageCollected; }
   inline const std::string &getName() const { return m_runtimeName; }
 
   inline void setBoardName(const std::string &name) { m_boardName = name; }
@@ -90,6 +92,7 @@ private:
 private:
   OwnsMe<App> m_app;
   std::string m_runtimeId;
+  bool m_garbageCollected = false;
   std::string m_runtimeName;
   std::string m_boardName;
   std::list<std::shared_ptr<Service>> m_services; // TODO: not thread safe

@@ -66,6 +66,20 @@ struct RuntimeConfiguration
   std::string runtimeId;
   std::string runtimeName;
   std::string boardName;
+  /**
+   * Whether this runtime should be torn down once the last client that was
+   * connected to it disconnects.
+   *
+   * Declared by whoever creates it, because only they know: a browser running a
+   * board says true — it is the controller, and its runtimes should not outlive
+   * it — while a coordinator, a config file or a script says nothing and gets a
+   * runtime that lives until it is deleted.
+   *
+   * False means persist. Cleanup is opted into, so nothing that exists today
+   * starts disappearing, and a runtime is never reaped because of who happened
+   * to connect to it.
+   */
+  bool garbageCollected = false;
   std::vector<ServiceConfiguration> services;
 
   // readonly values 
