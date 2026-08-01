@@ -167,10 +167,21 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
     data = Data(mixed);
   }
 
-  // Apply nested subservices first, then continue with outer runtime services.
+  // A configured nested pipeline is the handler for this request: what it
+  // returns is what the caller gets. The outer runtime still runs and its
+  // result still drives the rest of the board, but it runs after the answer is
+  // decided — it is where the side effects of having served a request live, not
+  // where the answer is shaped. Without a nested pipeline the rest of the board
+  // is the handler instead, and its result is the answer.
   if (m_subservices && !m_subservices->empty())
   {
-    data = m_subservices->process(data);
+    Data answer = m_subservices->process(data);
+    session->sendDataSync(answer);
+    // No callback: nothing downstream is awaited, because the caller has been
+    // answered already. Registering one would leave the runtime waiting for a
+    // response to a request nobody is holding open.
+    next(answer, true);
+    return;
   }
 
   if (!awaitResponse)

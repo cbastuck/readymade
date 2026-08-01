@@ -108,6 +108,33 @@ webhooks, building internal APIs, or accepting data from external services.
 - **Input**: not used (server triggers itself on incoming requests)
 - **Output**: incoming HTTP request data (method, path, body, headers)
 
+### What answers the caller
+
+Who handles a request depends on whether a nested pipeline is configured:
+
+| Nested pipeline | Answer comes from |
+|---|---|
+| configured | the nested pipeline |
+| none | the services after the server, and the rest of the board |
+
+**With subservices**, the nested pipeline is the handler and what it returns is
+what the caller gets. The services after the server still run, and their result
+still drives the next runtime — but they run *after the answer is decided*.
+That is where the side effects of having served a request belong: logging it,
+forwarding it, notifying something.
+
+**Without subservices**, the rest of the board is the handler. The request flows
+into the services after the server and whatever they return is the answer. This
+is the inversion of control the service is built around, and it is what lets a
+board answer an endpoint at all.
+
+Keeping the two apart is what makes a nested pipeline worth configuring: having
+declared a handler, you can add services behind the server without silently
+rewriting an HTTP contract from a distance. It also means a runtime that serves
+an endpoint can be made terminal with a [Stopper](./stopper.md) — ending the
+chain so it does not drive the runtime that calls it — while still answering its
+callers normally.
+
 ---
 
 ## Typical pattern: API bridge
