@@ -1,10 +1,10 @@
 {
   "boardName": "HTTP Client Demo",
-  "description": "A node HTTP Client calling an endpoint hosted by another runtime on the same hkp-node server (runtime ids are namespaced per user, so two boards' runtimes never collide). The endpoint's address is assigned when the board loads, so nothing here hard-codes one: the client names the service that owns it (hkp-mount://endpoint-node/echo-server) and the board's coordinator hands over the address once it exists. Needs hkp-node running locally on port 8080; the response appears in the Monitor every 5 seconds. Runtime order matters: runtimes are chained, so the passive endpoint goes last — ahead of the caller it would feed the caller its own answer and the two would call each other in a loop.",
+  "description": "A node HTTP Client calling an endpoint hosted by another runtime on the same hkp-node server (runtime ids are namespaced per user, so two boards' runtimes never collide). The endpoint's address is assigned when the board loads, so nothing here hard-codes one: the client names the service that owns it (hkp-mount://endpoint-node/echo-server) and the board's coordinator hands over the address once it exists. Needs hkp-node running locally on port 8080; the response appears in the Monitor every 5 seconds. The endpoint runtime ends in a Stopper: its nested pipeline answers the HTTP caller, and stopping there keeps its result from driving the runtime that calls it — which would call the endpoint again, in a loop.",
   "runtimes": [
     {
-      "id": "caller-node",
-      "name": "Caller",
+      "id": "endpoint-node",
+      "name": "Endpoint",
       "type": "rest",
       "url": "http://127.0.0.1:8080",
       "state": {
@@ -12,8 +12,8 @@
       }
     },
     {
-      "id": "endpoint-node",
-      "name": "Endpoint",
+      "id": "caller-node",
+      "name": "Caller",
       "type": "rest",
       "url": "http://127.0.0.1:8080",
       "state": {
@@ -45,6 +45,11 @@
             }
           ]
         }
+      },
+      {
+        "uuid": "endpoint-stopper",
+        "serviceId": "stopper",
+        "serviceName": "End Of Chain"
       }
     ],
     "caller-node": [
