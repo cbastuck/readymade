@@ -1,5 +1,7 @@
 #include "./schemeHandler.h"
 
+#include "./remoteRoute.h"
+
 #include <algorithm>
 #include <cctype>
 #include <iostream>
@@ -389,6 +391,24 @@ saucer::scheme::response SchemeHandler::handleDeleteRemote(const Router::Params 
 
 saucer::scheme::response SchemeHandler::handleRemoteForward(const Router::Params &p, const saucer::scheme::request &req) const
 {
+  // Refuse a request addressed to any runtime but ours; see remoteRoute.h for
+  // why the rule lives there and what answering everything used to cost.
+  if (!readymade::isOwnRemote(p, m_server->name()))
+  {
+    return saucer::scheme::response{
+        .data = saucer::stash::from_str((
+          json{
+            {"error", "Unknown remote"},
+            {"remote", readymade::requestedRemote(p)},
+            {"expected", m_server->name()},
+          }).dump()
+        ),
+        .mime = "application/json",
+        .headers = m_defaultHeaders,
+        .status = 404,
+    };
+  }
+
   crow::request crowReq;
   auto forwardedUrl = std::string("/") + p.at("*");
   crowReq.url = forwardedUrl;
