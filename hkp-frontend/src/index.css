@@ -1,3 +1,5 @@
+@import "./fonts.css";
+
 /* Recursive, bundled rather than fetched from fonts.googleapis.com so no
  * request leaves the app on load. Variable font, latin subsets, SIL OFL 1.1
  * (see assets/fonts/OFL-Recursive.txt). */
