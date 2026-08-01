@@ -1,4 +1,5 @@
 import { ServiceUIComponent } from "../../types";
+import type { ServiceLookup } from "../rest/UIRegistry";
 import MapUI from "./services/MapUI";
 import TimerUI from "./services/TimerUI";
 import MonitorUI from "./services/MonitorUI";
@@ -41,7 +42,17 @@ import DecryptDescriptor from "./services/Decrypt";
 import HashDescriptor from "./services/Hash";
 import SignDescriptor from "./services/Sign";
 
-export function findServiceUI(serviceId: string): ServiceUIComponent | null {
+/**
+ * Browser services are not versioned, so a lookup's `version` and
+ * `capabilities` are ignored here. The shape is accepted so this and the REST
+ * registry can be used interchangeably by components that take one as a prop
+ * (see SubServicePipelineUI).
+ */
+export function findServiceUI(
+  service: string | ServiceLookup,
+): ServiceUIComponent | null {
+  const serviceId =
+    typeof service === "string" ? service : (service.serviceId ?? "");
   switch (serviceId) {
     case "hookup.to/service/timer":
       return TimerUI;

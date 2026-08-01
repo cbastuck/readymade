@@ -14,7 +14,7 @@ import MapUIV1 from "../browser/services/MapUI";
 import HttpClientUI from "./ui/HttpClientUI";
 import SkillRouterUI from "./ui/SkillRouterUI";
 
-type ServiceLookup = {
+export type ServiceLookup = {
   serviceId?: ServiceClass["serviceId"];
   version?: ServiceClass["version"];
   capabilities?: ServiceClass["capabilities"];
