@@ -19,6 +19,7 @@
 #include <iostream>
 #include <string>
 
+#include "../mount.h"
 #include "./root_certificates.h"
 #include "../common/inja.h"
 #include "../common/string_util.h"  
@@ -48,6 +49,8 @@ json HttpClient::configure(Data data)
   if (buf)
   {
     updateIfNeeded(m_impl->url, (*buf)["url"]);
+    updateIfNeeded(m_impl->mount, (*buf)[MOUNT_FIELD]);
+    updateIfNeeded(m_impl->path, (*buf)["path"]);
     updateIfNeeded(m_impl->userAgent, (*buf)["userAgent"]);
     updateIfNeeded(m_impl->method, (*buf)["method"]);
     if (buf->contains("headers"))
@@ -76,6 +79,9 @@ json HttpClient::getState() const
 {
   return Service::mergeStateWith(json{
     { "url", m_impl->url },
+    // Reserved name: the board's coordinator reads and rewrites it.
+    { MOUNT_FIELD, m_impl->mount },
+    { "path", m_impl->path },
     { "userAgent", m_impl->userAgent },
     { "method", m_impl->method },
     { "headers", m_impl->headers },
@@ -116,13 +122,33 @@ Data HttpClient::process(Data data)
     return data;
   }
 
-  if (!j.contains("url") && m_impl->url.empty())
+  // A mount wins over a typed url: naming a service is the more specific
+  // instruction, and its address is not knowable when a board is written.
+  std::string mount = j.value(MOUNT_FIELD, m_impl->mount);
+  std::string url;
+  if (!mount.empty())
   {
-    std::cerr << "HTTPClient service: JSON data does not contain required fields: " << j.dump() <<  std::endl;
-    return data;
+    if (isMountReference(mount))
+    {
+      // Only the board's coordinator can turn a reference into an address, and
+      // it has not done so yet. Stop rather than fall back to url, which would
+      // silently call something the board did not ask for.
+      std::cerr << "HTTPClient service: waiting for " << mount
+                << " to publish an endpoint" << std::endl;
+      return Null();
+    }
+    url = joinMountPath(mount, j.value("path", m_impl->path));
   }
-  std::string urlOrTemplate = j.value("url", m_impl->url);
-  std::string url = processInjaTemplate(urlOrTemplate, j);
+  else
+  {
+    if (!j.contains("url") && m_impl->url.empty())
+    {
+      std::cerr << "HTTPClient service: JSON data does not contain required fields: " << j.dump() <<  std::endl;
+      return data;
+    }
+    std::string urlOrTemplate = j.value("url", m_impl->url);
+    url = processInjaTemplate(urlOrTemplate, j);
+  }
   std::string method = j.contains("method") ? j["method"] : "get";
    
   try

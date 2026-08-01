@@ -11,6 +11,11 @@ struct HttpClientImpl
   boost::asio::io_context ioc;
   std::string userAgent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Safari/605.1.15";
   std::string url;
+  // Endpoint to call when set, as an address or a hkp-mount:// reference; takes
+  // precedence over url. See mount.h.
+  std::string mount;
+  // Appended to the mount, so one endpoint can be called at several paths.
+  std::string path;
   std::string method = "get";
   std::map<std::string, std::string> headers;
   std::string body;
