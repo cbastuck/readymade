@@ -9,6 +9,7 @@ import HttpHeaders from "./HttpHeaders";
 
 export default function HttpClientUI(props: ServiceUIProps) {
   const [url, setUrl] = useState<string>("");
+  const [mount, setMount] = useState<string>("");
   const [method, setMethod] = useState<string>("get");
 
   const userAgentOptions = useMemo<Record<string, string>>(
@@ -46,6 +47,9 @@ export default function HttpClientUI(props: ServiceUIProps) {
     (message: any) => {
       if (message.url !== undefined) {
         setUrl(message.url);
+      }
+      if (message.__hkpMount !== undefined) {
+        setMount(message.__hkpMount);
       }
       if (message.method !== undefined) {
         setMethod(message.method);
@@ -201,6 +205,21 @@ export default function HttpClientUI(props: ServiceUIProps) {
     >
       <div className="flex flex-col gap-2">
         <div className="text-sm text-gray-500">
+          {mount && (
+            // The board points this service at a service that owns an endpoint,
+            // rather than at an address. Shown read-only: the address is
+            // assigned by a runtime and resolved by the board's coordinator, so
+            // it is not the user's to type, and it takes precedence over URL.
+            <div className="py-1 w-[25rem]">
+              <div className="text-xs uppercase tracking-wide">Mount</div>
+              <div className="font-mono text-xs break-all">
+                {mount}
+                {mount.startsWith("hkp-mount://") && (
+                  <span className="italic"> — waiting for an endpoint</span>
+                )}
+              </div>
+            </div>
+          )}
           <div className="py-1 w-[25rem] flex gap-2">
             <InputField label="URL" value={url} onChange={onChangeUrl} />
             <div className="w-min">

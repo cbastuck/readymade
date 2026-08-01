@@ -158,6 +158,14 @@ export const DEMO_CATALOG: DemoCatalogEntry[] = [
     icon: "🔐",
     tags: ["Crypto"],
   },
+  {
+    slug: "http-client",
+    label: "HTTP Client",
+    description:
+      "A node service calling an endpoint hosted by another runtime. Neither board nor service knows the address: the endpoint names its owner, and the board's coordinator resolves it once the runtime assigns one.",
+    icon: "🔌",
+    tags: ["hkp-node", "Mounts", "HTTP"],
+  },
 ];
 
 export const ALL_DEMO_TAGS = Array.from(

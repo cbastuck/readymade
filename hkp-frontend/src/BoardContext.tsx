@@ -26,12 +26,18 @@ import {
   User,
   ServiceInstance,
   RuntimeConfiguration,
+  RuntimeClassType,
+  isRuntimeBrowserClassType,
 } from "./types";
 import { AppContextState, AppCtx } from "./AppContext";
 import {
   BoardCoordinator,
   createBoardCoordinator,
 } from "./core/coordinator";
+import {
+  configureKey,
+  pendingMountConfigures,
+} from "./core/mountPublication";
 import { connectDevTools } from "./core/DevTools";
 import { restoreAvailableRuntimeEngines } from "./common";
 import {
@@ -652,6 +658,40 @@ const BoardProvider = forwardRef<BoardProviderHandle, Props>(
         }
       };
     }, []);
+
+    // Services on remote runtimes cannot resolve a mount reference themselves —
+    // only whoever owns the board sees across runtimes. When this browser is
+    // that owner, hand them the address as soon as there is one. Board state
+    // changes as runtimes come up, which is exactly when an address appears.
+    const sentMountsRef = useRef(new Map<string, string>());
+    useEffect(() => {
+      const pending = pendingMountConfigures(
+        { runtimes, services },
+        coordinator,
+        sentMountsRef.current,
+        (type) => !isRuntimeBrowserClassType(type as RuntimeClassType),
+      );
+      for (const { runtimeId, serviceUuid, url } of pending) {
+        const [scope, api] = getRuntimeScopeApi(runtimeId, getRefs());
+        if (!scope || !api?.configureService) {
+          continue;
+        }
+        sentMountsRef.current.set(configureKey(runtimeId, serviceUuid), url);
+        void Promise.resolve(
+          api.configureService(scope, { uuid: serviceUuid }, {
+            __hkpMount: url,
+          }),
+        ).catch((err) => {
+          // Let the next state change try again rather than leaving the
+          // consumer configured in this browser's bookkeeping only.
+          sentMountsRef.current.delete(configureKey(runtimeId, serviceUuid));
+          console.error(
+            `Failed to hand mount address to "${runtimeId}/${serviceUuid}"`,
+            err,
+          );
+        });
+      }
+    }, [runtimes, services, coordinator]);
 
     const buildContextValue = (): BoardContextState => ({
       user,
