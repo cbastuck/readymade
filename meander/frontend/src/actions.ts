@@ -6,6 +6,7 @@ import {
   saveWorkflowRefinementSeed,
 } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/RefinementSession";
 import { DEFAULT_GENERATED_BOARD } from "hkp-frontend/src/runtime/browser/services/workflow-prompt/DefaultWorkflowBoard";
+import { saveBoardInCloudMenuItem } from "hkp-frontend/src/cloud/saveBoard";
 import { Remote } from "./types";
 import { getBackend } from "./backend";
 
@@ -146,6 +147,7 @@ export function createMenuItems(
         }),
       disabled: false,
     },
+    saveBoardInCloudMenuItem(boardContext),
   ];
 }
 

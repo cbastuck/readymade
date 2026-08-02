@@ -10,6 +10,7 @@ import {
   storeBoardToLocalStorage,
 } from "hkp-frontend/src/views/playground/common";
 import { createBoardLink } from "hkp-frontend/src/views/playground/BoardLink";
+import { saveBoardInCloudMenuItem } from "hkp-frontend/src/cloud/saveBoard";
 import { assureJSON, stringifyIfNeeded } from "hkp-frontend/src/common";
 import {
   BoardDescriptor,
@@ -156,6 +157,7 @@ export default function BoardMenu({ menuItemFactory }: Props) {
               onClick: () => boardContext?.onAction({ type: "saveBoard" }),
               disabled: false,
             },
+            ...(boardContext ? [saveBoardInCloudMenuItem(boardContext)] : []),
             {
               title: "Edit Board Source",
               description: "Edit the board's JSON source in a text editor",

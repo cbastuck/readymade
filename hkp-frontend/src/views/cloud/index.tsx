@@ -2,7 +2,7 @@ import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import useSWR from "swr";
-import { ArrowRight, Plus } from "lucide-react";
+import { ArrowRight, Cloud, CloudOff, Plus } from "lucide-react";
 
 import BoardProvider, {
   BoardProviderHandle,
@@ -39,7 +39,6 @@ import {
   createBridgeRuntimeApi,
 } from "./bridgeRuntimeApi";
 import { createBoardCoordinator } from "hkp-frontend/src/core/coordinator";
-import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import ManageCoordinatorsDialog from "./ManageCoordinatorsDialog";
 import NewBoardDialog from "./NewBoardDialog";
 import CloudLoginGate from "./CloudLoginGate";
@@ -661,6 +660,59 @@ export default function CloudBoards({
     bridgeAccess.snapshot.asCoordinatorState(),
   );
 
+  const isStopped = openBoard?.status === "stopped";
+  const coordinatorName = selectedCoordinator?.name ?? "a coordinator";
+  const boardIsOpen = !!(mountedBoard && selectedCoordinator && selectedBoard);
+  const statusSlot = boardIsOpen ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <span
+        title={
+          isStopped
+            ? "Deploy it again from the playground to run it"
+            : "It keeps running when you close this"
+        }
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          minWidth: 0,
+          fontSize: 12.5,
+          color: "var(--text-dim, #6b7280)",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
+        {isStopped ? (
+          <CloudOff size={14} strokeWidth={1.75} />
+        ) : (
+          <Cloud size={14} strokeWidth={1.75} />
+        )}
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+          {isStopped ? "Stopped on" : "Deployed to"} {coordinatorName}
+        </span>
+      </span>
+      {!isStopped && (
+        <button
+          type="button"
+          onClick={() => void onStopBoard()}
+          style={{
+            flexShrink: 0,
+            border: "none",
+            background: "none",
+            padding: "2px 4px",
+            fontSize: 12.5,
+            fontWeight: 600,
+            color: "var(--hkp-accent, #3b5bff)",
+            cursor: "pointer",
+          }}
+        >
+          Stop
+        </button>
+      )}
+    </div>
+  ) : null;
+
   return (
     <BoardProvider
       ref={boardProviderRef}
@@ -681,7 +733,7 @@ export default function CloudBoards({
         className="w-full h-full flex flex-col"
         style={{ background: "var(--bg-app, #fafafa)" }}
       >
-        <Toolbar logoSlot={logoSlot}>
+        <Toolbar logoSlot={logoSlot} statusSlot={statusSlot}>
           {showCoordinatorInToolbar && (
             <CoordinatorsMenu
               coordinators={coordinators}
@@ -734,17 +786,6 @@ export default function CloudBoards({
                     </ul>
                   </div>
                 )}
-                <div className="flex items-center gap-2 px-3 py-2 text-sm">
-                  <span className="text-gray-500">
-                    {openBoard?.status === "stopped"
-                      ? `Stopped — deploy it again from the playground to run it on ${selectedCoordinator?.name ?? "this coordinator"}`
-                      : `Deployed to ${selectedCoordinator?.name ?? "a coordinator"} — it keeps running when you close this`}
-                  </span>
-                  <div className="flex-1" />
-                  {openBoard?.status !== "stopped" && (
-                    <Button onClick={() => void onStopBoard()}>Stop</Button>
-                  )}
-                </div>
                 <CloudBoardInner
                   board={mountedBoard}
                   bridgeWsUrl={

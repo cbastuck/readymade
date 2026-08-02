@@ -7,8 +7,8 @@ import {
   listCloudBoards,
   shareCloudBoard,
   unshareCloudBoard,
-  upsertCloudBoard,
 } from "hkp-frontend/src/cloud/boardStorage";
+import { saveBoardToCloud } from "hkp-frontend/src/cloud/saveBoard";
 import {
   Dialog,
   DialogContent,
@@ -167,19 +167,10 @@ export default function ShareMenu() {
     setBusy(true);
     setError(null);
     try {
-      const data = await boardContext.serializeBoard();
-      if (!data) {
-        throw new Error("Could not serialize the current board");
-      }
-      const name = boardContext.boardName || data.boardName || "Untitled board";
+      // Sharing uploads first: you cannot grant access to a board the cloud
+      // does not have yet.
+      const { id } = await saveBoardToCloud(boardContext, user);
       const auth = { idToken: user.idToken };
-      const { id } = await upsertCloudBoard(auth, {
-        name,
-        data: data as unknown as Record<string, unknown>,
-        metadata: data.description
-          ? { description: data.description }
-          : undefined,
-      });
       for (const email of emails) {
         await shareCloudBoard(auth, id, email);
       }
