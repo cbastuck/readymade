@@ -16,7 +16,6 @@ import BoardMenu from "hkp-frontend/src/ui-components/toolbar/BoardMenu";
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 
 import ShareMenu from "./ShareMenu";
-import UpdateCloudButton from "./UpdateCloudButton";
 import AccountAvatar from "./AccountAvatar";
 
 import "./index.css";
@@ -33,7 +32,31 @@ type Props = {
    *  rather than rendered here, because a view that only attaches to a board
    *  has no business offering them. */
   actionsSlot?: ReactNode;
+  /** Where the board runs, shown centred between the board menu and the
+   *  account controls. Centred by taking it out of the flow, so it stays put
+   *  as either side changes width. */
+  statusSlot?: ReactNode;
 };
+
+/** Holds the status slot in the middle of the bar without letting it push the
+ *  controls around, and without swallowing clicks meant for them. */
+function CentredStatus({ children }: { children: ReactNode }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: "50%",
+        transform: "translateX(-50%)",
+        display: "flex",
+        alignItems: "center",
+        maxWidth: "min(46%, 460px)",
+        pointerEvents: "none",
+      }}
+    >
+      <div style={{ pointerEvents: "auto", minWidth: 0 }}>{children}</div>
+    </div>
+  );
+}
 
 function LogoMark() {
   return (
@@ -66,6 +89,7 @@ export default function Toolbar({
   menuSlot,
   logoSlot,
   actionsSlot,
+  statusSlot,
 }: Props) {
   const theme = useTheme();
   const { themeName } = useThemeControl();
@@ -106,6 +130,8 @@ export default function Toolbar({
 
         {children ? children : null}
 
+        {statusSlot && <CentredStatus>{statusSlot}</CentredStatus>}
+
         {/* Right side */}
         <div
           style={{
@@ -116,7 +142,6 @@ export default function Toolbar({
           }}
         >
           {actionsSlot}
-          <UpdateCloudButton />
           <ShareMenu />
           <TbSeparator />
           <AccountAvatar />
@@ -172,6 +197,8 @@ export default function Toolbar({
           <BoardMenu menuItemFactory={menuItemFactory} />
 
           {children ? children : null}
+
+          {statusSlot && <CentredStatus>{statusSlot}</CentredStatus>}
 
           <div
             style={{

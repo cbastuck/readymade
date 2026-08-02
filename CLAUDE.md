@@ -35,7 +35,16 @@ pass the coordinator to the services it hosts (`AppInstance.coordinator`), which
 service reaches beyond its own runtime; a host that cannot see the board leaves it unset, and
 callers treat that as a lookup that has not resolved yet.
 
+A board moves between the two by being **deployed**: built in the playground, where the
+browser owns it, then handed to a coordinator that provisions the same runtimes itself and
+keeps them running with nobody watching. From then on a browser attaches to it — reads and
+configures — and structural changes mean changing the board in the playground and deploying
+again. Which side a runtime is cleaned up by is declared when it is created, in the create
+payload: `garbageCollected: true` reaps it when its last client disconnects (what a browser
+asks for), and saying nothing persists it until an explicit DELETE (what a coordinator gets).
+
 - `hkp-frontend/src/core/coordinator.ts` — the interface and the browser implementation
+- `hkp-frontend/src/core/deploy.ts` — handing a board to a coordinator
 - `hkp-node/src/coordinator/` — the cloud-board coordinator
 
 ### Runtime
