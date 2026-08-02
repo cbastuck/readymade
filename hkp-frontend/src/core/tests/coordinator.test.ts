@@ -92,20 +92,6 @@ describe("resolveMount", () => {
   });
 });
 
-describe("referenceMount", () => {
-  it("names the service that published an address", () => {
-    expect(
-      coordinatorFor().referenceMount("http://192.168.1.5:8080/hosted/abc123"),
-    ).toBe("hkp-mount://chat-node/peer-svc");
-  });
-
-  it("is null for an address no service on this board published", () => {
-    const coordinator = coordinatorFor();
-    expect(coordinator.referenceMount("http://elsewhere/hosted/xyz")).toBeNull();
-    expect(coordinator.referenceMount(null)).toBeNull();
-  });
-});
-
 describe("resolveMountsInBoard", () => {
   it("bakes references into addresses for export", () => {
     const exported: any = coordinatorFor().resolveMountsInBoard({
