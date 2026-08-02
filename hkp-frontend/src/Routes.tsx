@@ -6,7 +6,6 @@ import {
 } from "react-router-dom";
 
 import Playground from "./views/playground/index";
-import CloudBoards from "./views/cloud/index";
 
 import AuthRedirect from "./views/AuthRedirect";
 import AuthRedirectAuth0 from "./views/AuthRedirectAuth0";
@@ -32,7 +31,9 @@ export default function Routes(): JSX.Element {
       <Route path="/serviceRedirect" element={<ServiceRedirect />} />
       <Route path="/remotes" element={<Remotes />} />
       <Route path="/remotes/:remote" element={<Remotes />} />
-      <Route path="/cloud-boards" element={<CloudBoards />} />
+      {/* This app has no start page, and cloud boards are reached from one —
+          so it hosts no cloud view, and anything aimed at one lands here. */}
+      <Route path="*" element={<Navigate replace to="/playground" />} />
     </RouterRoutes>
   );
 }

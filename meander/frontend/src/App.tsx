@@ -2,7 +2,7 @@ import HkpApp from "hkp-frontend/src/App";
 import MeanderPlayground from "./MeanderPlayground";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
 import { useCallback, useEffect, useState } from "react";
-import { useLocation } from "hkp-frontend/src/router";
+import { useLocation, useNavigate } from "hkp-frontend/src/router";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import CloudBoards from "hkp-frontend/src/views/cloud";
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
@@ -87,12 +87,18 @@ function App() {
 }
 
 /**
- * Lives inside HkpApp's Router so it can react to the route. The toolbar's cloud
- * button navigates to /cloud-boards; we render the shared (login-gated) cloud
- * view for that route and the local playground/start otherwise.
+ * Lives inside HkpApp's Router so it can react to the route. The start page's
+ * Cloud Boards source navigates to /cloud-boards; we render the shared
+ * (login-gated) cloud view for that route and the local playground/start
+ * otherwise.
  */
 function MeanderShell() {
   const location = useLocation();
+  // Which shell view is showing is decided by the route below, so leaving one
+  // has to go through the router. history.replaceState changes the URL without
+  // telling it, which leaves the cloud view rendering over a start page that
+  // thinks it is showing.
+  const navigate = useNavigate();
   const [view, setView] = useState<View>(() =>
     shouldRenderPlaygroundFromUrl() ? { type: "loading" } : { type: "start" },
   );
@@ -109,18 +115,18 @@ function MeanderShell() {
     const board = await backend.loadBoard(name);
     setPlaygroundKey((key) => key + 1);
     setView({ type: "playground", board });
-    window.history.replaceState(null, "", "/playground");
-  }, []);
+    navigate("/playground", { replace: true });
+  }, [navigate]);
   const share = useShareFlow(openBoardForShare);
 
   const onShowStartPage = () => {
     setView({ type: "start" });
-    window.history.replaceState(null, "", "/");
+    navigate("/", { replace: true });
   };
 
   const onRestoreBoard = (board: BoardDescriptor | null | undefined) => {
     setView({ type: "playground", board: board ?? null });
-    window.history.replaceState(null, "", "/playground");
+    navigate("/playground", { replace: true });
   };
 
   useEffect(() => {

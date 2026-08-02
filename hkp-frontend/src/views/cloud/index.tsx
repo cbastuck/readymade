@@ -362,18 +362,12 @@ export default function CloudBoards({
   const [selectedBoard, setSelectedBoard] = useState<
     CoordinatorBoardInfo | undefined
   >();
-  // The last board that was explicitly opened. Kept alive even when the user
-  // navigates to the landing so notification targets (and the WebSocket) stay
-  // registered throughout. Cleared only when the coordinator is removed.
+  // The board that is open. Kept mounted (hidden) rather than unmounted when
+  // there is nothing to show, so notification targets and the WebSocket stay
+  // registered. Cleared only when the coordinator is removed.
   const [mountedBoard, setMountedBoard] = useState<
     CoordinatorBoardInfo | undefined
   >();
-  // Pure view toggle: when true, show the coordinators overview even though a
-  // board is still selected/mounted. This lets the user return to the overview
-  // (via the toolbar Cloud button) WITHOUT clearing selection or re-hydrating
-  // the board — re-hydration would re-register the board with the coordinator
-  // and restart remote runtimes (e.g. an hkp-node timer).
-  const [showOverview, setShowOverview] = useState(false);
 
   // ── Coordinator management ──────────────────────────────────────────────────
 
@@ -464,8 +458,7 @@ export default function CloudBoards({
   };
 
   const onSelectBoard = (board: CoordinatorBoardInfo) => {
-    setShowOverview(false);
-    // Re-revealing the board that's already mounted? Skip re-hydration — calling
+    // Selecting the board that is already open? Skip re-hydration — calling
     // setBoardState again would re-register the board and restart remote runtimes.
     if (selectedBoard?.boardName === board.boardName) {
       return;
@@ -483,10 +476,9 @@ export default function CloudBoards({
     coordinator: CoordinatorDescriptor,
     board: CoordinatorBoardInfo,
   ) => {
-    setShowOverview(false);
-    // Re-revealing the already-open board? Just leave the overview — don't
-    // re-hydrate it, which would re-register the board with the coordinator and
-    // restart remote runtimes (e.g. an hkp-node timer).
+    // Selecting the board that is already open? Don't re-hydrate it, which
+    // would re-register the board with the coordinator and restart remote
+    // runtimes (e.g. an hkp-node timer).
     if (
       selectedCoordinator?.url === coordinator.url &&
       selectedBoard?.boardName === board.boardName
@@ -534,19 +526,8 @@ export default function CloudBoards({
     }
   }, [boards]);
 
-  // Return to the coordinators overview when the toolbar's Cloud button is
-  // pressed while already on the cloud view. This only flips the view flag — the
-  // selected/mounted board stays fully intact and running so its remote runtimes
-  // (and the bridge WebSocket) are untouched.
   const location = useLocation();
   const navigate = useNavigate();
-  const showOverviewSignal = (location.state as { showOverview?: number } | null)
-    ?.showOverview;
-  useEffect(() => {
-    if (showOverviewSignal) {
-      setShowOverview(true);
-    }
-  }, [showOverviewSignal]);
 
   // Open a specific board on arrival — the start page's "Cloud Boards" source
   // navigates here with this signal instead of driving the internal state
@@ -738,9 +719,7 @@ export default function CloudBoards({
               <div
                 style={{
                   display:
-                    !showOverview && selectedCoordinator && selectedBoard
-                      ? "contents"
-                      : "none",
+                    selectedCoordinator && selectedBoard ? "contents" : "none",
                 }}
               >
                 {openBoardErrors.length > 0 && (
@@ -785,7 +764,7 @@ export default function CloudBoards({
                 />
               </div>
             )}
-            {(showOverview || !(selectedCoordinator && selectedBoard)) && (
+            {!(selectedCoordinator && selectedBoard) && (
               <CloudBoardsLanding
                 user={user}
                 coordinators={coordinators}
