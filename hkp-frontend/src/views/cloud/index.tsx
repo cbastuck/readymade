@@ -26,6 +26,7 @@ import {
 import {
   CoordinatorBoardInfo,
   listCoordinatorBoards,
+  registerCoordinatorBoard,
   stopCoordinatorBoard,
 } from "./coordinatorClient";
 import { toast } from "sonner";
@@ -607,6 +608,42 @@ export default function CloudBoards({
     }
   };
 
+  /**
+   * Runs a stopped board again.
+   *
+   * Stopping keeps the board and its config on the coordinator, so starting it
+   * is registering that same config — the coordinator provisions the runtimes
+   * again. No trip through the playground: this board is already deployed, and
+   * nothing about it is being changed.
+   */
+  const onStartBoard = async () => {
+    const board = openBoard;
+    const coordinator = selectedCoordinator;
+    if (!board?.config || !coordinator || !user) {
+      return;
+    }
+    try {
+      const info = await registerCoordinatorBoard(
+        coordinator.url,
+        user.userId,
+        user.idToken,
+        { ...board.config, boardName: board.boardName },
+      );
+      setSelectedBoard(info);
+      setMountedBoard(info);
+      if (info.status === "error" && info.errors?.length) {
+        toast.error("A cloud runtime failed to start", {
+          description: info.errors.join("\n"),
+        });
+      }
+      await reloadBoards();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Failed to start the board",
+      );
+    }
+  };
+
   const onNewBoard = (coordinatorOverride?: CoordinatorDescriptor) => {
     const coordinator = coordinatorOverride ?? selectedCoordinator;
     if (!coordinator || !user) {
@@ -668,7 +705,7 @@ export default function CloudBoards({
       <span
         title={
           isStopped
-            ? "Deploy it again from the playground to run it"
+            ? "Its runtimes are released; Start provisions them again"
             : "It keeps running when you close this"
         }
         style={{
@@ -692,24 +729,22 @@ export default function CloudBoards({
           {isStopped ? "Stopped on" : "Deployed to"} {coordinatorName}
         </span>
       </span>
-      {!isStopped && (
-        <button
-          type="button"
-          onClick={() => void onStopBoard()}
-          style={{
-            flexShrink: 0,
-            border: "none",
-            background: "none",
-            padding: "2px 4px",
-            fontSize: 12.5,
-            fontWeight: 600,
-            color: "var(--hkp-accent, #3b5bff)",
-            cursor: "pointer",
-          }}
-        >
-          Stop
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={() => void (isStopped ? onStartBoard() : onStopBoard())}
+        style={{
+          flexShrink: 0,
+          border: "none",
+          background: "none",
+          padding: "2px 4px",
+          fontSize: 12.5,
+          fontWeight: 600,
+          color: "var(--hkp-accent, #3b5bff)",
+          cursor: "pointer",
+        }}
+      >
+        {isStopped ? "Start" : "Stop"}
+      </button>
     </div>
   ) : null;
 

@@ -154,8 +154,12 @@ export function createBridgeRuntimeApi(
       return state;
     },
 
+    // A stopped board still renders its services — the board is what it is,
+    // running or not — but the coordinator holds no state for them. That is an
+    // empty configuration, not a missing one: panels read this as a plain
+    // object, and handing them nothing crashes them.
     getServiceConfig: async (scope: RuntimeScope, service: InstanceId) =>
-      bridge.snapshot.getServiceState(scope.descriptor.id, service.uuid),
+      bridge.snapshot.getServiceState(scope.descriptor.id, service.uuid) ?? {},
 
     removeRuntime: async (scope: RuntimeScope) => {
       // Leaving the view does not stop the board; the runtime is the
