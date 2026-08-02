@@ -131,6 +131,47 @@ describe("the board a coordinator reports", () => {
   });
 });
 
+/**
+ * Whether a board is running is the coordinator's to say, and it says it here.
+ * The REST board listing carries a status too, but only as fresh as the last
+ * fetch — a board stopped by someone else moves through the bridge, so the view
+ * has to be able to read it from this store.
+ */
+describe("the status of the open board", () => {
+  it("is whatever the last snapshot said", () => {
+    const store = new CoordinatorSnapshotStore();
+
+    store.apply({ ...snapshot(1), status: "running" });
+    expect(store.getStatus()).toBe("running");
+
+    // Stopping releases the runtimes; the board itself stays.
+    store.apply({ ...snapshot(2), status: "stopped", runtimes: [] });
+    expect(store.getStatus()).toBe("stopped");
+  });
+
+  it("tells subscribers, so a view reading it can re-render", () => {
+    const store = new CoordinatorSnapshotStore();
+    store.apply({ ...snapshot(1), status: "running" });
+
+    const seen: Array<string | null> = [];
+    store.subscribe(() => seen.push(store.getStatus()));
+    store.apply({ ...snapshot(2), status: "stopped", runtimes: [] });
+
+    expect(seen).toEqual(["stopped"]);
+  });
+
+  it("is unknown before the first snapshot, and again once dropped", () => {
+    // Null rather than a guess: during a reconnect this store knows nothing,
+    // and claiming "running" would be inventing it.
+    const store = new CoordinatorSnapshotStore();
+    expect(store.getStatus()).toBeNull();
+
+    store.apply({ ...snapshot(1), status: "running" });
+    store.clear();
+    expect(store.getStatus()).toBeNull();
+  });
+});
+
 describe("resolving mounts against what the coordinator reported", () => {
   it("reads as the shape a board coordinator expects", () => {
     // So a browser service's hkp-mount:// reference resolves to the address the

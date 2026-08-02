@@ -1,4 +1,11 @@
-import { ReactNode, useCallback, useEffect, useRef, useState } from "react";
+import {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useBlockSwipeNavigation } from "../../runtime/useBlockSwipeNavigation";
 import useSWR from "swr";
@@ -671,13 +678,24 @@ export default function CloudBoards({
   const showCoordinatorInToolbar = false;
   const boardCanvasRef = useBlockSwipeNavigation<HTMLDivElement>();
 
-  // Live status for the open board: prefer the freshly-listed entry, fall back to
-  // the locally-tracked selection. Drives the in-board error banner.
+  // The open board as last listed: the freshly-listed entry, falling back to the
+  // locally-tracked selection. Carries the errors a failed provisioning reported.
   const openBoard =
     boards.find((b) => b.boardName === mountedBoard?.boardName) ??
     selectedBoard;
+
+  // Whether it is running comes from the coordinator, not from that listing.
+  // The listing is only as fresh as the last time something re-fetched it, so a
+  // board stopped from another tab — or by anyone else watching it — would go
+  // on being shown as running here. The coordinator tells every bridge, so this
+  // browser already knows; it just has to read it.
+  const liveStatus = useSyncExternalStore(
+    (onChange) => bridgeAccess.snapshot.subscribe(onChange),
+    () => bridgeAccess.snapshot.getStatus(),
+  );
+  const boardStatus = liveStatus ?? openBoard?.status;
   const openBoardErrors =
-    openBoard?.status === "error" ? (openBoard.errors ?? []) : [];
+    boardStatus === "error" ? (openBoard?.errors ?? []) : [];
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -697,7 +715,7 @@ export default function CloudBoards({
     bridgeAccess.snapshot.asCoordinatorState(),
   );
 
-  const isStopped = openBoard?.status === "stopped";
+  const isStopped = boardStatus === "stopped";
   const coordinatorName = selectedCoordinator?.name ?? "a coordinator";
   const boardIsOpen = !!(mountedBoard && selectedCoordinator && selectedBoard);
   const statusSlot = boardIsOpen ? (
