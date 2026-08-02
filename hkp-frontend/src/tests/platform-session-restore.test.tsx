@@ -1,4 +1,4 @@
-import { act, render } from "@testing-library/react";
+import { act, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import AppProvider, { useAppContext } from "../AppContext";
@@ -107,13 +107,13 @@ describe("platform session restore", () => {
     });
     expect(settled).toBe(false);
 
+    // Applying the token hops through a timer and a state update before the
+    // gate opens. Waiting a fixed tick assumed a particular number of hops and
+    // failed whenever the run took one more, so wait for the outcome instead.
     await act(async () => {
       releasePlatform(raw);
-      // Applying the token is deferred through a timer, so let it run before
-      // asserting that the gate opened.
-      await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    expect(settled).toBe(true);
+    await waitFor(() => expect(settled).toBe(true));
     expect(getCtx().user?.idToken).toBe(raw);
   });
 
