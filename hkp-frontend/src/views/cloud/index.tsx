@@ -694,8 +694,10 @@ export default function CloudBoards({
     () => bridgeAccess.snapshot.getStatus(),
   );
   const boardStatus = liveStatus ?? openBoard?.status;
-  const openBoardErrors =
-    boardStatus === "error" ? (openBoard?.errors ?? []) : [];
+  // Shown whenever there are any, not only for a board that failed to start:
+  // stopping reports the runtimes it could not release, and those are still
+  // running somewhere with nothing tracking them.
+  const openBoardErrors = openBoard?.errors ?? [];
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -830,7 +832,9 @@ export default function CloudBoards({
                 {openBoardErrors.length > 0 && (
                   <div className="m-3 rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
                     <div className="font-semibold">
-                      This board didn’t fully start — runtime output won’t flow.
+                      {boardStatus === "stopped"
+                        ? "This board stopped, but not everything let go."
+                        : "This board didn’t fully start — runtime output won’t flow."}
                     </div>
                     <ul className="mt-1 list-disc pl-5 break-words">
                       {openBoardErrors.map((e, i) => (
