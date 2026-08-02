@@ -24,7 +24,6 @@
 import {
   MountEndpoint,
   MOUNT_FIELD,
-  formatMountRef,
   parseMountEndpoint,
   parseMountRef,
   substituteMountsInBoard,
@@ -55,13 +54,6 @@ export interface BoardCoordinator {
   /** A `__hkpMount` value as an address: the owner's published URL for a
    *  reference, the value itself when it is already an address. */
   resolveMountUrl(value: string | null | undefined): string | null;
-
-  /**
-   * The reverse: a published address as a reference to the service that owns
-   * it, or null when no service on this board published it. Turns a baked
-   * address back into something that survives the owner moving.
-   */
-  referenceMount(url: string | null | undefined): string | null;
 
   /**
    * Every mount reference in a board document, replaced by the address it
@@ -95,21 +87,6 @@ export function createBoardCoordinator(
     getServiceState,
     resolveMountUrl,
     resolveMount: (value) => parseMountEndpoint(resolveMountUrl(value)),
-    referenceMount: (url) => {
-      if (!url) {
-        return null;
-      }
-      const { services } = readState();
-      for (const [runtimeId, runtimeServices] of Object.entries(services)) {
-        for (const svc of runtimeServices) {
-          const state = svc.state as Record<string, unknown> | undefined;
-          if (state?.[MOUNT_FIELD] === url) {
-            return formatMountRef({ runtimeId, serviceUuid: svc.uuid });
-          }
-        }
-      }
-      return null;
-    },
     resolveMountsInBoard: (board) =>
       substituteMountsInBoard(board, resolveMountUrl),
   };

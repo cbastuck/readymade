@@ -65,7 +65,6 @@ describe("board ownership", () => {
       getServiceState: vi.fn(),
       resolveMount: vi.fn(),
       resolveMountUrl: vi.fn(() => "http://elsewhere:9000/hosted/xyz"),
-      referenceMount: vi.fn(),
       resolveMountsInBoard: vi.fn(),
     } as unknown as BoardCoordinator;
 
