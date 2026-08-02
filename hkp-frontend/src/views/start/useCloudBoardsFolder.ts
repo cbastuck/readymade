@@ -14,12 +14,24 @@ type CoordinatorState = {
   loading?: boolean;
 };
 
+/** Stopping a board is something the user did; only "error" is a failure. */
+function statusLabel(status: CoordinatorBoardInfo["status"]): string {
+  switch (status) {
+    case "running":
+      return "Running in cloud";
+    case "stopped":
+      return "Stopped";
+    default:
+      return "Failed to start";
+  }
+}
+
 function boardNode(coordinatorUrl: string, board: CoordinatorBoardInfo): BoardNode {
   return {
     type: "board",
     name: board.boardName,
     state: board.status === "running" ? "running" : "needs-input",
-    sub: board.status === "running" ? "Running in cloud" : "Failed to start",
+    sub: statusLabel(board.status),
     // Reuse the existing cloud action; the host opens it in the Cloud Boards
     // view (the same live coordinator session the toolbar icon uses).
     action: { kind: "cloud", coordinatorUrl, boardName: board.boardName },

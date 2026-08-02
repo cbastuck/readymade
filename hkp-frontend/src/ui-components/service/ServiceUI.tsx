@@ -111,17 +111,26 @@ export function useServiceLifecycle(
   const notify = async () => {
     const config = await (service.getConfiguration?.() ||
       Promise.resolve(extractServiceConfiguration(service)));
+    // Panels read this as their state and reach straight into it. A service
+    // that reports nothing — one on a board that is not running — would
+    // otherwise take the page down from inside a handler nobody can catch.
+    const state = config ?? {};
     if (onInitRef.current) {
-      onInitRef.current(config);
+      onInitRef.current(state);
     } else if (onNotificationRef.current) {
-      onNotificationRef.current(config);
+      onNotificationRef.current(state);
     }
   };
 
   useEffect(() => {
     if (initializedForService.current !== service) {
       initializedForService.current = service;
-      notify();
+      notify().catch((err) => {
+        console.error(
+          `Failed to initialise the panel of service "${service.uuid}":`,
+          err,
+        );
+      });
     }
   }, [service]);
 }
