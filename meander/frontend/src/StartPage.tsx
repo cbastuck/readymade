@@ -14,6 +14,8 @@ import {
   initialsOf,
   splitBuildVersion,
 } from "hkp-frontend/src/views/start";
+import { forkBoard } from "hkp-frontend/src/core/forkBoard";
+import { listCoordinatorBoards } from "hkp-frontend/src/views/cloud/coordinatorClient";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
 import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
 import { getBackend } from "./backend";
@@ -176,6 +178,46 @@ export default function StartPage({ onRestoreBoard }: Props) {
     onRestoreBoard(board);
   };
 
+  /**
+   * Forks a deployed board into an editable copy here.
+   *
+   * The coordinator holds the board's config, so that is what is copied — with
+   * every runtime and service id renamed, or the copy would provision over the
+   * runtimes the original is running on. The copy is saved and opened; stopping
+   * the original and deploying the fork is the user's call, deliberately.
+   */
+  const handleForkBoard = async (action: {
+    coordinatorUrl: string;
+    boardName: string;
+  }) => {
+    if (!user) {
+      throw new Error("Log in to fork a cloud board");
+    }
+    const boards = await listCoordinatorBoards(
+      action.coordinatorUrl,
+      user.userId,
+      user.idToken,
+    );
+    const source = boards.find((b) => b.boardName === action.boardName);
+    if (!source?.config) {
+      throw new Error(`"${action.boardName}" has no config to fork`);
+    }
+    const { board } = forkBoard(source.config as BoardDescriptor);
+    const backend = await getBackend();
+    const taken = new Set(await backend.fetchSavedBoards());
+    let name = board.boardName ?? `${action.boardName} fork`;
+    for (let i = 2; taken.has(name); i++) {
+      name = `${board.boardName} ${i}`;
+    }
+    const forked = { ...board, boardName: name };
+    try {
+      await backend.saveBoard(name, forked);
+    } catch {
+      // Opening still works; the fork just isn't on disk yet.
+    }
+    onRestoreBoard(forked);
+  };
+
   const handleOpen = (action: BoardAction) => {
     switch (action.kind) {
       case "saved":
@@ -221,6 +263,7 @@ export default function StartPage({ onRestoreBoard }: Props) {
       listSavedBoards={listSavedBoards}
       boardStates={boardStates}
       onOpen={handleOpen}
+      forkBoard={handleForkBoard}
       onCreateBoard={() => onRestoreBoard(undefined)}
       onCreateNamedBoard={(name) => void handleCreateNamedBoard(name)}
       recentBoardName={lastSessionName}

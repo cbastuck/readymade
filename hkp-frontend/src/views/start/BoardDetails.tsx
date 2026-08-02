@@ -32,6 +32,10 @@ interface Props {
   /** Uploads the board to the user's cloud storage; enables the
    *  "Upload to cloud" action (hosts pass it for logged-in users only). */
   onUploadToCloud?: () => Promise<void>;
+  /** Copies the board into an editable board of its own and opens it; enables
+   *  "Fork board". Hosts pass it for boards there is no other way back from —
+   *  a deployed one, whose ids belong to the coordinator running it. */
+  onFork?: () => Promise<void>;
   /** Loads the board's saved versions; enables the collapsible History
    *  section. Fetched lazily on first expand. */
   loadHistory?: () => Promise<BoardHistoryItem[]>;
@@ -208,6 +212,7 @@ export default function BoardDetails({
   pickImage,
   onOpen,
   onUploadToCloud,
+  onFork,
   loadHistory,
   folders,
   onAssignFolders,
@@ -226,6 +231,8 @@ export default function BoardDetails({
     "idle" | "busy" | "done" | "error"
   >("idle");
   const [cloudError, setCloudError] = useState<string | null>(null);
+  const [forkState, setForkState] = useState<"idle" | "busy" | "error">("idle");
+  const [forkError, setForkError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const meta = stateMeta(board.state);
   const modified = formatModified(board.modified);
@@ -291,6 +298,23 @@ export default function BoardDetails({
     } catch (err) {
       setCloudError(reasonOf(err));
       setCloudState("error");
+    }
+  };
+
+  const fork = async () => {
+    if (!onFork || forkState === "busy") {
+      return;
+    }
+    setForkState("busy");
+    setForkError(null);
+    try {
+      // No "done" state: forking opens the copy, so this panel is on its way
+      // out by the time it finishes.
+      await onFork();
+      setForkState("idle");
+    } catch (err) {
+      setForkError(reasonOf(err));
+      setForkState("error");
     }
   };
 
@@ -638,6 +662,21 @@ export default function BoardDetails({
             >
               Open board
             </button>
+          )}
+          {onFork && (
+            <>
+              <button
+                className="st-btn st-btn-ghost"
+                style={{ justifyContent: "center" }}
+                disabled={forkState === "busy"}
+                onClick={() => void fork()}
+              >
+                {forkState === "busy" ? "Forking…" : "Fork board"}
+              </button>
+              {forkState === "error" && forkError && (
+                <div style={{ fontSize: 12, color: "#e0355f" }}>{forkError}</div>
+              )}
+            </>
           )}
           {onUploadToCloud && (
             <>
