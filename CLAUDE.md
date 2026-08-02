@@ -46,6 +46,7 @@ asks for), and saying nothing persists it until an explicit DELETE (what a coord
 - `hkp-frontend/src/core/coordinator.ts` — the interface and the browser implementation
 - `hkp-frontend/src/core/deploy.ts` — handing a board to a coordinator
 - `hkp-node/src/coordinator/` — the cloud-board coordinator
+- `CLOUD-BOARDS.md` — the provisioning walkthrough: who owns what, in what order
 
 ### Runtime
 
