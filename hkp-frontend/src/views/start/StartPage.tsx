@@ -90,6 +90,11 @@ export interface StartPageProps {
    *  "Upload to cloud" action in the details column. Hosts pass it for
    *  logged-in users only. */
   uploadBoardToCloud?: (boardName: string) => Promise<void>;
+  /** Forks a deployed board into an editable copy and opens it; enables "Fork
+   *  board" in the details column for boards opened from a coordinator. The
+   *  host fetches the board's config, forks it (core/forkBoard), saves the copy
+   *  and opens it — a deployed board has no other way back to an editor. */
+  forkBoard?: (action: Extract<BoardAction, { kind: "cloud" }>) => Promise<void>;
   /** Revokes a share recipient's access to one of the user's cloud-stored
    *  boards; applies to boards with cloudRole "owner" and a sharedWith list
    *  (the Shared → From me source). */
@@ -207,6 +212,7 @@ export default function StartPage(props: StartPageProps) {
     onDeleteBoard,
     uploadBoardArt,
     uploadBoardToCloud,
+    forkBoard,
     onRevokeShare,
     onLeaveShare,
     pickBoardArtImage,
@@ -624,6 +630,11 @@ export default function StartPage(props: StartPageProps) {
       onUploadToCloud={
         detailIsSaved && uploadBoardToCloud
           ? () => uploadBoardToCloud(detailBoard.board.name)
+          : undefined
+      }
+      onFork={
+        forkBoard && detailBoard.board.action?.kind === "cloud"
+          ? () => forkBoard(detailBoard.board.action as Extract<BoardAction, { kind: "cloud" }>)
           : undefined
       }
       onRevokeShare={
