@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import HkpApp from "hkp-frontend/src/App";
+// The app signs users in through Auth0's Native application (the RFC 8252 flow
+// in iosLogin/meanderLogin), so that is the one the Auth0 client here is
+// configured for.
+import { AUTH0_CLIENT_ID } from "./auth/meanderLogin";
 import MobilePlaygroundWithRouter from "hkp-frontend/src/views/playground/mobile/index";
 import {
   MobileStartPage,
@@ -279,7 +283,7 @@ export default function MobileApp() {
 
   return (
     <MeanderPlatformProvider>
-      <HkpApp defaultThemeName="playground">
+      <HkpApp defaultThemeName="playground" clientId={AUTH0_CLIENT_ID}>
         <RuntimeUserSync />
         {session === null ? (
           <StartScreen onOpenSession={setSession} remotes={remotes} />
