@@ -335,7 +335,13 @@ public:
       auth["issuers"] = json::array({
         json{
           {"iss", "https://hookitapp.eu.auth0.com/"},
-          {"audiences", json::array({"gpk8IFPKfaOTQUzpDRO7vBajOnB72rkM"})},
+          // Both Auth0 applications: the token's `aud` is the client id that
+          // signed the caller in, and a browser reaching this runtime over the
+          // LAN carries the website's, not the app's.
+          {"audiences", json::array({
+                          "gpk8IFPKfaOTQUzpDRO7vBajOnB72rkM",  // Native — the apps
+                          "x4iF0MBYfd25oLdJbATNe03dCDUtBs74",  // SPA — website
+                        })},
         },
       });
     }
