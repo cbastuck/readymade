@@ -1,4 +1,7 @@
 import HkpApp from "hkp-frontend/src/App";
+// The app signs users in through Auth0's Native application (the RFC 8252 flow
+// in meanderLogin), so that is the one the Auth0 client here is configured for.
+import { AUTH0_CLIENT_ID } from "./auth/meanderLogin";
 import MeanderPlayground from "./MeanderPlayground";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
 import { useCallback, useEffect, useState } from "react";
@@ -78,7 +81,7 @@ function App() {
   return (
     <VaultProvider>
       <MeanderPlatformProvider>
-        <HkpApp defaultThemeName="playground">
+        <HkpApp defaultThemeName="playground" clientId={AUTH0_CLIENT_ID}>
           <MeanderShell />
         </HkpApp>
       </MeanderPlatformProvider>

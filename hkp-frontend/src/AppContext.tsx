@@ -6,6 +6,7 @@ import ResizeObserver, { OnChangeEvent } from "./ResizeObserver";
 import { processToken } from "./core/Auth";
 import { User, Notification, AppViewMode } from "./types";
 import RestoredUser from "./RestoredUser";
+import RefreshedUser from "./RefreshedUser";
 import RestoredPlatformUser from "./RestoredPlatformUser";
 import { usePlatform } from "./platform/PlatformContext";
 
@@ -205,6 +206,10 @@ function AppProvider({ children }: Props) {
         onResolved={markAuthResolved}
         onError={(message) => pushNotification({ message, type: "error" })}
       />
+      {/* Keeps the session ahead of its own expiry, however it was established:
+          every path that signs someone in ends at onToken, so the token this
+          reads is the current one whether it came from a restore or a login. */}
+      <RefreshedUser idToken={user?.idToken} onToken={onToken} />
       {children}
     </Provider>
   );

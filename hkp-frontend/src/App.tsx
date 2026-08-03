@@ -12,12 +12,18 @@ import "../app/globals.css";
 type Props = {
   children: React.ReactNode;
   defaultThemeName?: ThemeName;
+  /**
+   * The Auth0 application this host signs users in through (see AuthProvider).
+   * Passed through rather than defaulted here, because which application is
+   * right depends on the host and this shell is mounted by several.
+   */
+  clientId: string;
 };
 
-export default function App({ children, defaultThemeName }: Props) {
+export default function App({ children, defaultThemeName, clientId }: Props) {
   return (
     <Router>
-      <AuthProvider>
+      <AuthProvider clientId={clientId}>
         <AppProvider>
           <ThemeProvider defaultThemeName={defaultThemeName}>
             <div className="h-full w-full">
