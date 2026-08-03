@@ -1,6 +1,7 @@
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID } from "./meanderLogin";
 import {
   clearSession,
+  hasStoredSession,
   loadRefreshToken,
   loadSession,
   saveSession,
@@ -99,5 +100,17 @@ export function refreshNativeSession(): Promise<string | null> {
  * when it is not, or null when nobody is signed in.
  */
 export async function restoreNativeSession(): Promise<string | null> {
-  return loadSession() ?? (await refreshNativeSession());
+  const stored = loadSession();
+  if (stored) {
+    return stored;
+  }
+  // Which of the two very different reasons a start has no usable token: an
+  // empty store (the session did not survive the app closing) or a stored token
+  // that has aged out (renewable, if a refresh token came with it).
+  console.log(
+    `[session] Startup restore — stored: ${hasStoredSession()}, renewable: ${Boolean(
+      loadRefreshToken(),
+    )}`,
+  );
+  return refreshNativeSession();
 }
