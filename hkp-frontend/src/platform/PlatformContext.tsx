@@ -43,6 +43,18 @@ export interface PlatformCapabilities {
    */
   restoreSession?: () => Promise<string | null>;
   /**
+   * Renews a host-owned session, resolving to a fresh raw id_token or null when
+   * it cannot be renewed (nothing stored, or the credential behind it is spent).
+   *
+   * Hosts whose `login` is their own flow implement this so the session can
+   * outlive its id_token: the app keeps a token that expires in hours, while the
+   * session behind it lasts days, and without renewal the difference shows up as
+   * a user who looks signed out and is then signed straight back in without
+   * being asked for anything. Called shortly before expiry, and at startup when
+   * the stored token has already aged out.
+   */
+  refreshSession?: () => Promise<string | null>;
+  /**
    * Tells the host's embedded runtime which user is allowed to drive it from
    * other devices (the signed-in user's email, or null when signed out). Hosts
    * with a LAN-exposed embedded runtime (e.g. iOS) implement this to gate

@@ -6,9 +6,13 @@ import {
   RuntimeTokenRequest,
 } from "hkp-frontend/src/platform/PlatformContext";
 import { getBackend } from "../backend";
-import { meanderLogin } from "../auth/meanderLogin";
+import { meanderLogin, type NativeLogin } from "../auth/meanderLogin";
 import { iosLogin } from "../auth/iosLogin";
-import { loadSession, saveSession } from "../auth/session";
+import { saveSession } from "../auth/session";
+import {
+  refreshNativeSession,
+  restoreNativeSession,
+} from "../auth/refreshSession";
 import { meanderLogout } from "../auth/meanderLogout";
 
 // Capabilities are only wired up when the native saucer APIs are actually present
@@ -73,18 +77,24 @@ const runtimeSettingsCapabilities: Partial<PlatformCapabilities> = {
 };
 
 /**
- * Keeps a successful native login across reloads. The token is the only thing
- * the native flow returns, so if it is not persisted here nothing else will.
+ * Keeps a successful native login across reloads. The tokens are the only thing
+ * the native flow returns, so if they are not persisted here nothing else will.
+ *
+ * The refresh token is what lets the session outlive the id_token's few hours; a
+ * flow that returns none (the iOS/Android bridge does the exchange natively and
+ * hands back only an id_token) keeps the shorter session it always had.
  */
 function withPersistedSession(
-  login: () => Promise<string | null>,
+  login: () => Promise<NativeLogin | string | null>,
 ): () => Promise<string | null> {
   return async () => {
-    const idToken = await login();
-    if (idToken) {
-      saveSession(idToken);
+    const result = await login();
+    if (!result) {
+      return null;
     }
-    return idToken;
+    const session = typeof result === "string" ? { idToken: result } : result;
+    saveSession(session.idToken, session.refreshToken);
+    return session.idToken;
   };
 }
 
@@ -101,7 +111,8 @@ const capabilities: PlatformCapabilities = isNative
       // calls this instead of the web redirect when present.
       login: withPersistedSession(meanderLogin),
       logout: meanderLogout,
-      restoreSession: async () => loadSession(),
+      restoreSession: restoreNativeSession,
+      refreshSession: refreshNativeSession,
       ...runtimeSettingsCapabilities,
     }
   : isIOS || isAndroid
@@ -111,7 +122,12 @@ const capabilities: PlatformCapabilities = isNative
         // redirect capture on Android.
         login: withPersistedSession(iosLogin),
         logout: meanderLogout,
-        restoreSession: async () => loadSession(),
+        // The mobile bridges exchange tokens natively and return only an
+        // id_token, so there is normally nothing to renew with — but the
+        // capability is wired all the same, so a bridge that starts returning a
+        // refresh token needs no change here.
+        restoreSession: restoreNativeSession,
+        refreshSession: refreshNativeSession,
         ...runtimeSettingsCapabilities,
       }
     : {};

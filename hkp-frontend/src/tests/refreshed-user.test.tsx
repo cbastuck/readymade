@@ -80,15 +80,44 @@ describe("RefreshedUser", () => {
     expect(auth0.getAccessTokenSilently).toHaveBeenCalled();
   });
 
-  it("leaves it to the host when the host owns the session", async () => {
-    // The native app's token is not in the Auth0 cache, and renewing it there
-    // would mean a silent-auth iframe from an origin Auth0 rejects.
+  it("renews through the host when the host owns the session", async () => {
+    // The native app's token is not in the Auth0 cache, so the renewal goes to
+    // the host — asking Auth0 there would mean a silent-auth iframe it rejects.
+    const refreshSession = vi.fn(async () => "host-renewed");
+    const { onToken } = renderRefresh(jwtExpiringIn(60), {
+      restoreSession: async () => null,
+      refreshSession,
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(51_000);
+    });
+    expect(refreshSession).toHaveBeenCalled();
+    expect(auth0.getAccessTokenSilently).not.toHaveBeenCalled();
+    expect(onToken).toHaveBeenCalledWith({ __raw: "host-renewed" });
+  });
+
+  it("schedules nothing for a host that owns the session and cannot renew it", async () => {
+    // The mobile bridges return only an id_token: nothing to renew with, and
+    // Auth0 must not be asked on their behalf.
     renderRefresh(jwtExpiringIn(60), { restoreSession: async () => null });
 
     await act(async () => {
       vi.advanceTimersByTime(120_000);
     });
     expect(auth0.getAccessTokenSilently).not.toHaveBeenCalled();
+  });
+
+  it("applies nothing when the host's renewal comes back empty", async () => {
+    const { onToken } = renderRefresh(jwtExpiringIn(60), {
+      restoreSession: async () => null,
+      refreshSession: async () => null,
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(51_000);
+    });
+    expect(onToken).not.toHaveBeenCalled();
   });
 
   it("schedules nothing when nobody is signed in", async () => {

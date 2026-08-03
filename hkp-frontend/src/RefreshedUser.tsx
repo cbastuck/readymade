@@ -45,14 +45,16 @@ function expiryOf(token: string): number | null {
 export default function RefreshedUser({ idToken, onToken }: Props) {
   const { getAccessTokenSilently, getIdTokenClaims } = useAuth0();
   const platform = usePlatform();
-  const hostOwnsSession = Boolean(platform.restoreSession);
+  const { refreshSession, restoreSession } = platform;
+  const hostOwnsSession = Boolean(restoreSession);
 
   useEffect(() => {
-    // A host that runs its own login keeps its tokens where the Auth0 client
-    // cannot see them, so there is nothing here to renew — and asking anyway
-    // means a silent-auth iframe from an origin Auth0 refuses, which costs the
-    // SDK's full 60s timeout to find out.
-    if (!idToken || hostOwnsSession) {
+    // Whoever owns the session owns renewing it. A host that runs its own login
+    // keeps its tokens where the Auth0 client cannot see them, so asking Auth0
+    // there means a silent-auth iframe from an origin it refuses — 60s of the
+    // SDK's timeout to learn nothing. Such a host renews through its own
+    // capability, and where it offers none there is nothing to schedule.
+    if (!idToken || (hostOwnsSession && !refreshSession)) {
       return;
     }
     const expiresAt = expiryOf(idToken);
@@ -60,13 +62,22 @@ export default function RefreshedUser({ idToken, onToken }: Props) {
       return;
     }
 
+    /** A renewed token from whichever side of the app holds the session. */
+    const renewedToken = async (): Promise<IdToken | undefined> => {
+      if (refreshSession) {
+        const renewed = await refreshSession();
+        return renewed ? ({ __raw: renewed } as IdToken) : undefined;
+      }
+      // cacheMode "off" is what makes this a renewal: the cached entry is keyed
+      // to the access token's lifetime, not the id_token's, so without it the
+      // SDK would hand back the very token that is about to expire.
+      await getAccessTokenSilently({ cacheMode: "off" });
+      return await getIdTokenClaims();
+    };
+
     const renew = async () => {
       try {
-        // cacheMode "off" is what makes this a renewal: the cached entry is
-        // keyed to the access token's lifetime, not the id_token's, so without
-        // it the SDK would hand back the very token that is about to expire.
-        await getAccessTokenSilently({ cacheMode: "off" });
-        const claims: IdToken | undefined = await getIdTokenClaims();
+        const claims = await renewedToken();
         if (!claims) {
           return;
         }
@@ -74,7 +85,9 @@ export default function RefreshedUser({ idToken, onToken }: Props) {
         console.log("refreshed user");
       } catch (err) {
         // The session is over, or Auth0 is unreachable. Nothing here can fix
-        // either; the next load restores or asks for a sign-in.
+        // either; the next load restores or asks for a sign-in. (A host-owned
+        // renewal reports failure as null rather than by throwing, so that
+        // lands above: nothing to apply, nothing further to schedule.)
         console.warn(
           "[auth] Could not refresh the session before it expired:",
           err,
@@ -90,7 +103,7 @@ export default function RefreshedUser({ idToken, onToken }: Props) {
     // against. The callbacks are recreated by their providers on every render,
     // so depending on them would restart the timer continuously.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idToken, hostOwnsSession]);
+  }, [idToken, hostOwnsSession, refreshSession]);
 
   return null;
 }

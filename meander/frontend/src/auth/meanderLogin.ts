@@ -44,11 +44,17 @@ function waitForRedirect(
   });
 }
 
+export type NativeLogin = {
+  idToken: string;
+  /** Absent unless the Auth0 application grants offline access. */
+  refreshToken?: string;
+};
+
 /**
- * Drives the Auth0 Authorization Code + PKCE flow and returns the raw id_token
- * JWT, or null if the user cancelled (no code returned).
+ * Drives the Auth0 Authorization Code + PKCE flow and returns the tokens, or
+ * null if the user cancelled (no code returned).
  */
-export async function meanderLogin(): Promise<string | null> {
+export async function meanderLogin(): Promise<NativeLogin | null> {
   const verifier = randomUrlSafe(32);
   const challenge = await s256Challenge(verifier);
   const state = randomUrlSafe(16);
@@ -64,7 +70,11 @@ export async function meanderLogin(): Promise<string | null> {
       response_type: "code",
       client_id: AUTH0_CLIENT_ID,
       redirect_uri: redirect,
-      scope: "openid profile email",
+      // offline_access asks for a refresh token, without which the session ends
+      // when the id_token does — hours, against the days the session at Auth0
+      // lasts. Asking is not getting: whether one is issued depends on how the
+      // Auth0 application is configured, which the token exchange reports below.
+      scope: "openid profile email offline_access",
       code_challenge: challenge,
       code_challenge_method: "S256",
       state,
@@ -99,6 +109,26 @@ export async function meanderLogin(): Promise<string | null> {
     throw new Error(`Token exchange failed (${tokenRes.status})`);
   }
 
-  const token = (await tokenRes.json()) as { id_token?: string };
-  return token.id_token ?? null;
+  const token = (await tokenRes.json()) as {
+    id_token?: string;
+    refresh_token?: string;
+    /** What Auth0 granted, which is not always what was asked for. */
+    scope?: string;
+  };
+
+  // Whether a refresh token came back decides whether the session can outlive
+  // the id_token, and it is settled by Auth0 application settings invisible from
+  // here — so it is reported rather than assumed. Presence and granted scope
+  // only, never the tokens: this goes to a console anyone can open.
+  console.log(
+    token.refresh_token
+      ? "[Readymade-login] refresh_token received — the session is renewable."
+      : `[Readymade-login] No refresh_token in the token response. Granted scope: ${
+          token.scope ?? "(none reported)"
+        }`,
+  );
+
+  return token.id_token
+    ? { idToken: token.id_token, refreshToken: token.refresh_token }
+    : null;
 }
