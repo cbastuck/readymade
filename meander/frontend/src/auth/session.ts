@@ -69,6 +69,16 @@ export function loadRefreshToken(): string | null {
   return read()?.refreshToken ?? null;
 }
 
+/**
+ * Whether a session is stored at all, valid or not.
+ *
+ * Distinguishes "the store is empty" from "what is in it cannot be used", which
+ * otherwise look identical from the outside and have opposite causes.
+ */
+export function hasStoredSession(): boolean {
+  return read() !== null;
+}
+
 export function clearSession(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
