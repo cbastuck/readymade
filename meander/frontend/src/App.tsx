@@ -4,10 +4,12 @@ import HkpApp from "hkp-frontend/src/App";
 import { AUTH0_CLIENT_ID } from "./auth/meanderLogin";
 import MeanderPlayground from "./MeanderPlayground";
 import { MeanderPlatformProvider } from "./platform/MeanderPlatformProvider";
-import { useCallback, useEffect, useState } from "react";
+import { ReactNode, useCallback, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "hkp-frontend/src/router";
 import { BoardDescriptor } from "hkp-frontend/src/types";
 import CloudBoards from "hkp-frontend/src/views/cloud";
+import Remotes from "hkp-frontend/src/views/remotes";
+import { useBackendRemotes } from "./useBackendRemotes";
 import IconH from "hkp-frontend/src/components/Toolbar/assets/hkp-single-dot-h.svg?react";
 import StartPage from "./StartPage";
 import { getBackend } from "./backend";
@@ -74,6 +76,35 @@ function CloudLogo({ onClick }: { onClick: () => void }) {
         height={24}
       />
     </button>
+  );
+}
+
+/**
+ * The start page's Remotes source opens a runtime here:
+ * /remotes/<server>/<runtimeId>. Read-only — the runtime belongs to whoever
+ * created it, which the server does not record.
+ */
+function RemoteRuntimeView({
+  path,
+  logoSlot,
+}: {
+  path: string;
+  logoSlot: ReactNode;
+}) {
+  const remotes = useBackendRemotes();
+  const [remoteName, runtimeId] = path
+    .replace(/^\/remotes\/?/, "")
+    .split("/")
+    .filter(Boolean)
+    .map(decodeURIComponent);
+
+  return (
+    <Remotes
+      remotes={remotes.runtimes}
+      remoteName={remoteName}
+      runtimeId={runtimeId}
+      logoSlot={logoSlot}
+    />
   );
 }
 
@@ -152,6 +183,13 @@ function MeanderShell() {
     // Same logo affordance as the playground: without a slot the Toolbar
     // renders a mark that looks clickable but goes nowhere.
     content = <CloudBoards logoSlot={<CloudLogo onClick={onShowStartPage} />} />;
+  } else if (location.pathname.startsWith("/remotes")) {
+    content = (
+      <RemoteRuntimeView
+        path={location.pathname}
+        logoSlot={<CloudLogo onClick={onShowStartPage} />}
+      />
+    );
   } else if (view.type === "loading") {
     content = <LoadIndicator />;
   } else if (view.type === "playground") {

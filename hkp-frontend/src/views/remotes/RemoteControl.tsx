@@ -6,49 +6,72 @@ import { ProcessContext, RuntimeClass } from "hkp-frontend/src/types";
 
 type Props = {
   runtimeClass: RuntimeClass;
+  /** Show only this runtime; every runtime on the server when absent. */
+  runtimeId?: string;
 };
 
-export default function RemoteControl({ runtimeClass }: Props) {
+/**
+ * The runtimes of a remote server, rendered with their real service panels.
+ *
+ * The panels are live: each runtime's scope holds the server's own WebSocket,
+ * so a service that reports through notifications — a Monitor, whose output is
+ * no part of its state — says here what it says to the board that owns it.
+ */
+export default function RemoteControl({ runtimeClass, runtimeId }: Props) {
   const context = useContext(BoardCtx);
-  const runtimes = context?.runtimes || [];
+  const runtimes = (context?.runtimes || []).filter(
+    (rt) => !runtimeId || rt.id === runtimeId,
+  );
 
+  // A result belongs to the board this runtime is part of, and that board's
+  // next runtime is not here: this view watches one link of a chain, not the
+  // chain. The server routes its own output as it always did.
   const onResult = async (
-    uuid: string | null,
-    result: any,
-    context?: ProcessContext | null,
-  ) => {
-    console.log("RemoteControl.onResult", uuid, result, context);
-  };
+    _uuid: string | null,
+    _result: unknown,
+    _ctx?: ProcessContext | null,
+  ) => {};
 
-  const processRuntimeByName = async (name: string, params: any) => {
-    console.log("RemoteControl.processRuntimeByName", name, params);
-  };
+  const processRuntimeByName = async () => undefined;
 
   if (!context) {
-    return <div>Loading...</div>;
+    return null;
+  }
+
+  if (runtimes.length === 0) {
+    return (
+      <div
+        style={{
+          flex: "1 1 auto",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "#9a9fae",
+          fontSize: 13,
+        }}
+      >
+        {runtimeId
+          ? `No runtime "${runtimeId}" on this server any more.`
+          : "This server is running no runtimes."}
+      </div>
+    );
   }
 
   return (
-    <div className="flex flex-col overflow-hidden bg-white shadow-md rounded-lg p-4 m-4">
-      <h3>Runtime "{runtimeClass.name}"</h3>
-      <span className="font-menu text-md">
-        running on <a href={runtimeClass.url}>{runtimeClass.url}</a>
-      </span>
-
-      <div className="flex flex-col justify-between overflow-scroll w-full m-2">
-        {runtimes.map((rt, idx) => (
+    <div className="flex-1 overflow-auto">
+      <div
+        className="flex flex-col"
+        style={{ padding: "var(--board-padding, 0px)" }}
+      >
+        {runtimes.map((rt) => (
           <Runtime
-            key={`engine-control-${idx}`}
+            key={`remote-runtime-${rt.id}`}
             boardContext={context}
             runtime={{ ...runtimeClass, ...rt }}
-            initialState={{
-              wrapServices: true,
-              minimized: true,
-            }}
+            initialState={{ wrapServices: false, minimized: false }}
             expanded={true}
             onResult={onResult}
             processRuntimeByName={processRuntimeByName}
-            initialServiceFrameState={{ collapsed: true }}
           />
         ))}
       </div>
