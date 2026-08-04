@@ -3,18 +3,22 @@ import { toast } from "sonner";
 
 import { useBoardContext } from "../../../BoardContext";
 import { MobileHostContext } from "../../../MobileHostContext";
+import { withCoordinatorEngines } from "../../../common";
 import { storeBoardToLocalStorage } from "../common";
 import { createBoardLink } from "../BoardLink";
 import { M } from "./tokens";
 import MobileIcon, { type MobileIconName } from "./MobileIcon";
 import MobileBoardCanvas from "./MobileBoardCanvas";
-import MobileCloudBoards from "../../cloud/mobile/MobileCloudBoards";
+import MobileCloudBoards, {
+  type OpenCloudBoardSignal,
+} from "../../cloud/mobile/MobileCloudBoards";
 import MobileHub from "./MobileHub";
 import {
   MobileConnectionsProvider,
   useMobileConnections,
 } from "./MobileConnections";
 import BoardMenuSheet from "./BoardMenuSheet";
+import DeployBoardSheet from "./DeployBoardSheet";
 import SaveBoardSheet from "./SaveBoardSheet";
 
 type Tab = "board" | "cloud" | "hub";
@@ -23,6 +27,9 @@ type MobilePlaygroundInnerProps = {
   suggestedName?: string;
   /** Navigates back to the host's start page; renders a home button when set. */
   onHome?: () => void;
+  /** Cloud board to open: lands on the Cloud tab with that board hydrated,
+   *  which is how a host opens one from outside the playground. */
+  openCloudBoard?: OpenCloudBoardSignal;
 };
 
 // ── Tab bar button ─────────────────────────────────────────────
@@ -173,25 +180,45 @@ function TopBar({
 }
 
 // ── Shell (runs inside the connections provider) ───────────────
-function PlaygroundShell({ suggestedName, onHome }: MobilePlaygroundInnerProps) {
+function PlaygroundShell({
+  suggestedName,
+  onHome,
+  openCloudBoard,
+}: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
-  const { runtimeEngines } = useMobileConnections();
-  const [tab, setTab] = useState<Tab>("board");
+  const { runtimeEngines, coordinators } = useMobileConnections();
+  const [tab, setTab] = useState<Tab>(openCloudBoard ? "cloud" : "board");
+  // Which cloud board the Cloud tab should open: what the host asked for, or
+  // the board this session just deployed (deploying is how a local board
+  // becomes one).
+  const [cloudTarget, setCloudTarget] = useState(openCloudBoard);
+
+  // A host asking for another cloud board while the playground is already up
+  // brings the Cloud tab back to the front (the nonce re-fires it).
+  useEffect(() => {
+    if (openCloudBoard) {
+      setCloudTarget(openCloudBoard);
+      setTab("cloud");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openCloudBoard?.at]);
   const [menuOpen, setMenuOpen] = useState(false);
   const [saveOpen, setSaveOpen] = useState(false);
+  const [deployOpen, setDeployOpen] = useState(false);
 
-  // Surface Hub-managed external runtimes in the local board provider's
-  // available-engine pool so a newly registered runtime is immediately
-  // available on the Board tab's Add-runtime sheet. Additive for engines a
-  // loaded board contributed (we never strip those); but reconcile entries that
-  // share a URL so a corrected type/name from the Hub propagates live instead
-  // of only on the next load. Removals still persist via the store.
+  // Surface Hub-managed external runtimes — and the hosts behind the Hub's
+  // coordinators, which serve runtimes from the same address — in the local
+  // board provider's available-engine pool, so one registered on the Hub is
+  // immediately available on the Board tab's Add-runtime sheet. Additive for
+  // engines a loaded board contributed (we never strip those); but reconcile
+  // entries that share a URL so a corrected type/name from the Hub propagates
+  // live instead of only on the next load. Removals still persist via the store.
   useEffect(() => {
     if (!boardContext) {
       return;
     }
     const available = boardContext.availableRuntimeEngines;
-    for (const rt of runtimeEngines) {
+    for (const rt of withCoordinatorEngines(runtimeEngines, coordinators)) {
       if (!rt.url) {
         continue;
       }
@@ -205,7 +232,7 @@ function PlaygroundShell({ suggestedName, onHome }: MobilePlaygroundInnerProps) 
         boardContext.addAvailableRuntime(rt, true);
       }
     }
-  }, [runtimeEngines, boardContext]);
+  }, [runtimeEngines, coordinators, boardContext]);
 
   if (!boardContext) {
     return null;
@@ -288,7 +315,7 @@ function PlaygroundShell({ suggestedName, onHome }: MobilePlaygroundInnerProps) 
         }}
       >
         {tab === "board" && <MobileBoardCanvas />}
-        {tab === "cloud" && <MobileCloudBoards />}
+        {tab === "cloud" && <MobileCloudBoards openBoard={cloudTarget} />}
         {tab === "hub" && (
           <MobileHub
             suggestedName={displayName}
@@ -338,6 +365,22 @@ function PlaygroundShell({ suggestedName, onHome }: MobilePlaygroundInnerProps) 
         onSave={() => setSaveOpen(true)}
         onShare={onShare}
         onNew={onNew}
+        onDeploy={() => setDeployOpen(true)}
+      />
+      <DeployBoardSheet
+        open={deployOpen}
+        onClose={() => setDeployOpen(false)}
+        onDeployed={(coordinator, name) => {
+          // The board is the coordinator's now — attach to it where cloud
+          // boards live, instead of leaving the handed-over copy in front.
+          setCloudTarget({
+            coordinatorUrl: coordinator.url,
+            boardName: name,
+            at: Date.now(),
+          });
+          setTab("cloud");
+        }}
+        onManageCoordinators={() => setTab("cloud")}
       />
       <SaveBoardSheet
         open={saveOpen}
@@ -356,6 +399,7 @@ function PlaygroundShell({ suggestedName, onHome }: MobilePlaygroundInnerProps) 
 export default function MobilePlaygroundInner({
   suggestedName,
   onHome,
+  openCloudBoard,
 }: MobilePlaygroundInnerProps) {
   const boardContext = useBoardContext();
 
@@ -366,7 +410,11 @@ export default function MobilePlaygroundInner({
   return (
     <MobileHostContext.Provider value={true}>
       <MobileConnectionsProvider>
-        <PlaygroundShell suggestedName={suggestedName} onHome={onHome} />
+        <PlaygroundShell
+          suggestedName={suggestedName}
+          onHome={onHome}
+          openCloudBoard={openCloudBoard}
+        />
       </MobileConnectionsProvider>
     </MobileHostContext.Provider>
   );

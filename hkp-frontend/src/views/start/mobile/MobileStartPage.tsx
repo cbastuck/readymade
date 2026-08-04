@@ -18,9 +18,16 @@ import {
 import { DEFAULT_NEWS } from "../news";
 import { useStartPageModel } from "../useStartPageModel";
 import type { StartPageProps } from "../StartPage";
-import { BoardNode, FolderNode, NewsItem } from "../types";
-import { BoardRow, FolderRow } from "./MobileRows";
+import {
+  BoardAction,
+  BoardNode,
+  FolderNode,
+  NewsItem,
+  RuntimeNode,
+} from "../types";
+import { BoardRow, FolderRow, RuntimeRow } from "./MobileRows";
 import MobileBoardDetails from "./MobileBoardDetails";
+import MobileRuntimeDetails from "./MobileRuntimeDetails";
 import ManageRemotesSheet from "./ManageRemotesSheet";
 import NameSheet from "./NameSheet";
 import AssignFoldersSheet from "./AssignFoldersSheet";
@@ -152,11 +159,28 @@ function SectionHeader({ title }: { title: string }) {
 
 // ── Navigation resolution ─────────────────────────────────────────────────────
 
+/** Opening a runtime row: which server, and which runtime on it. */
+function runtimeAction(runtime: RuntimeNode): BoardAction {
+  return {
+    kind: "runtime",
+    name: runtime.name,
+    remoteName: runtime.remoteName,
+    remoteUrl: runtime.remoteUrl,
+    runtimeId: runtime.id,
+  };
+}
+
+/** What the pushed details page shows: a board, or a runtime running on a
+ *  remote server (reached through the Remotes source). */
+type DetailSelection =
+  | { kind: "board"; board: BoardNode; parentPath?: string[] }
+  | { kind: "runtime"; runtime: RuntimeNode };
+
 interface ResolvedNav {
   /** Folder chain from root; pages[0] is the (virtual) root. */
   pages: Array<{ folder: FolderNode | null }>;
-  /** Set when the path ends on a board — the pushed details page. */
-  detail: { board: BoardNode; parentPath?: string[] } | null;
+  /** Set when the path ends on a terminal node — the pushed details page. */
+  detail: DetailSelection | null;
   /** The path with any unresolvable tail dropped. */
   resolvedPath: string[];
 }
@@ -189,6 +213,8 @@ export default function MobileStartPage(props: StartPageProps) {
     runtimes,
     manageRemotes,
     withCloud,
+    withCloudBoards,
+    canOpen,
     extraSources,
     myBoardsExtraFolders,
     excludeDemoTags,
@@ -208,11 +234,18 @@ export default function MobileStartPage(props: StartPageProps) {
       listSavedBoards,
       boardStates,
       runtimes,
+      remotes: manageRemotes,
       withCloud,
+      cloudBoards: withCloudBoards,
       extraSources,
       myBoardsExtraFolders,
       excludeDemoTags,
     });
+
+  // Hosts without a view for an action kind (the app has no cloud-coordinator
+  // or remote-runtime view) still browse those sources — the entry is shown,
+  // its Open action is not.
+  const canOpenAction = (action: BoardAction) => canOpen?.(action) ?? true;
 
   const [path, setPath] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -241,12 +274,13 @@ export default function MobileStartPage(props: StartPageProps) {
         pages.push({ folder: node });
       } else if (node.type === "board") {
         detail = {
+          kind: "board",
           board: node,
           parentPath: node.persisted ? parent?.userPath : undefined,
         };
         break;
       } else {
-        // Runtime nodes aren't navigable on mobile yet (desktop-only source).
+        detail = { kind: "runtime", runtime: node };
         break;
       }
     }
@@ -268,12 +302,13 @@ export default function MobileStartPage(props: StartPageProps) {
   // ── Details page wiring ─────────────────────────────────────────────────────
 
   const detail = nav.detail;
+  const detailBoard = detail?.kind === "board" ? detail.board : null;
   const [detailDescription, setDetailDescription] = useState<
     string | undefined
   >();
 
   useEffect(() => {
-    const board = detail?.board;
+    const board = detailBoard;
     setDetailDescription(board?.description);
     if (
       !board ||
@@ -296,9 +331,9 @@ export default function MobileStartPage(props: StartPageProps) {
     };
     // Keyed by the board identity, not the (per-render) detail object.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [detail?.board.name, detail?.board.action?.kind, describeBoard]);
+  }, [detailBoard?.name, detailBoard?.action?.kind, describeBoard]);
 
-  const detailIsSaved = detail?.board.action?.kind === "saved";
+  const detailIsSaved = detailBoard?.action?.kind === "saved";
 
   // ── Folder assignment ───────────────────────────────────────────────────────
 
@@ -306,10 +341,10 @@ export default function MobileStartPage(props: StartPageProps) {
 
   const detailFolders = useMemo(
     () =>
-      tree && detailIsSaved && detail
-        ? boardFolderPaths(tree, detail.board.name).map((p) => p.join(" › "))
+      tree && detailIsSaved && detailBoard
+        ? boardFolderPaths(tree, detailBoard.name).map((p) => p.join(" › "))
         : [],
-    [tree, detailIsSaved, detail],
+    [tree, detailIsSaved, detailBoard],
   );
 
   const assignedKeys = useMemo(
@@ -333,7 +368,9 @@ export default function MobileStartPage(props: StartPageProps) {
 
   const atRoot = nav.pages.length === 1 && !detail;
   const headerTitle = detail
-    ? detail.board.name
+    ? detail.kind === "board"
+      ? detail.board.name
+      : detail.runtime.name
     : currentFolder
       ? currentFolder.name
       : title;
@@ -536,14 +573,26 @@ export default function MobileStartPage(props: StartPageProps) {
           WebkitOverflowScrolling: "touch",
         }}
       >
-        {detail ? (
+        {detail?.kind === "runtime" ? (
+          <Slide id={`runtime-${detail.runtime.id}`}>
+            <MobileRuntimeDetails
+              key={detail.runtime.id}
+              runtime={detail.runtime}
+              onOpen={
+                canOpenAction(runtimeAction(detail.runtime))
+                  ? () => onOpen(runtimeAction(detail.runtime))
+                  : undefined
+              }
+            />
+          </Slide>
+        ) : detail ? (
           <Slide id={`detail-${detail.board.name}`}>
             <MobileBoardDetails
               key={detail.board.name}
               board={detail.board}
               description={detailDescription}
               onOpen={
-                detail.board.action
+                detail.board.action && canOpenAction(detail.board.action)
                   ? () => onOpen(detail.board.action!)
                   : undefined
               }
@@ -873,7 +922,13 @@ export default function MobileStartPage(props: StartPageProps) {
                         : undefined
                     }
                   />
-                ) : null,
+                ) : (
+                  <RuntimeRow
+                    key={`${node.name}-${index}`}
+                    runtime={node}
+                    onTap={() => push(node.name)}
+                  />
+                ),
               )}
             </div>
           </Slide>

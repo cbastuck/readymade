@@ -10,6 +10,7 @@ import { useAppContext } from "../../../AppContext";
 import { useCloudLogin } from "../../../auth/useCloudLogin";
 import {
   CoordinatorDescriptor,
+  coordinatorRuntimeEngine,
   restoreAvailableRuntimeEngines,
 } from "../../../common";
 import {
@@ -41,6 +42,16 @@ type AllCoordinatorBoards = {
   boards: CoordinatorBoardInfo[];
   error: boolean;
 };
+
+/** "Open this board on arrival" — a caller that knows which board the user
+ *  picked (the start page's Cloud Boards source) hands the view a target
+ *  instead of driving its internal state. `at` is a nonce, so asking for the
+ *  same board again re-triggers the open. */
+export interface OpenCloudBoardSignal {
+  coordinatorUrl: string;
+  boardName: string;
+  at: number;
+}
 
 // Derive the bridge WebSocket URL from a coordinator's REST URL.
 function bridgeWsUrlFor(coordinator: CoordinatorDescriptor): string {
@@ -536,7 +547,12 @@ function CloudTopBar({
 
 // ── Root ────────────────────────────────────────────────────────────────────────
 
-export default function MobileCloudBoards() {
+export default function MobileCloudBoards({
+  openBoard,
+}: {
+  /** Board to open on arrival; absent shows the overview. */
+  openBoard?: OpenCloudBoardSignal;
+} = {}) {
   const appContext = useAppContext();
   const user = appContext?.user ?? null;
   const login = useCloudLogin();
@@ -590,13 +606,7 @@ export default function MobileCloudBoards() {
       return;
     }
     for (const c of coordinators) {
-      const baseUrl = c.url.replace(/\/coordinator\/?$/, "");
-      const rtClass: RuntimeClass = {
-        type: "rest",
-        name: c.name,
-        url: baseUrl,
-      };
-      ref.addAvailableRuntime(rtClass, true);
+      ref.addAvailableRuntime(coordinatorRuntimeEngine(c), true);
     }
     for (const rt of runtimeEngines) {
       ref.addAvailableRuntime(rt, true);
@@ -660,6 +670,36 @@ export default function MobileCloudBoards() {
   const onBackToOverview = () => {
     setShowOverview(true);
   };
+
+  // Open the board a caller asked for. Arming and fulfilling are separate
+  // because the board lists load after mount: the pending ref waits for the
+  // target's coordinator to report it, and is consumed once opened so a later
+  // revalidation can't yank the user back to it.
+  const pendingOpenBoard = useRef<OpenCloudBoardSignal | null>(null);
+  useEffect(() => {
+    if (openBoard) {
+      pendingOpenBoard.current = openBoard;
+    }
+    // Only the nonce should re-arm the pending open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openBoard?.at]);
+  useEffect(() => {
+    const target = pendingOpenBoard.current;
+    if (!target) {
+      return;
+    }
+    const coordinator = coordinators.find((c) => c.url === target.coordinatorUrl);
+    const board = allCoordinatorBoards
+      .find((g) => g.coordinator.url === target.coordinatorUrl)
+      ?.boards.find((b) => b.boardName === target.boardName);
+    if (!coordinator || !board) {
+      // Not listed yet — this effect re-runs when the boards arrive.
+      return;
+    }
+    pendingOpenBoard.current = null;
+    onOpenBoard(coordinator, board);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [coordinators, allCoordinatorBoards]);
 
   // ── New board ─────────────────────────────────────────────────────────────────
 

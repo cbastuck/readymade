@@ -15,6 +15,8 @@ type Props = {
   onSave: () => void;
   onShare: () => void;
   onNew: () => void;
+  /** Opens the deploy chooser — hands the board to a coordinator. */
+  onDeploy: () => void;
 };
 
 function MenuRow({
@@ -82,6 +84,7 @@ export default function BoardMenuSheet({
   onSave,
   onShare,
   onNew,
+  onDeploy,
 }: Props) {
   const [confirmNew, setConfirmNew] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
@@ -120,6 +123,16 @@ export default function BoardMenuSheet({
           onClick={() => {
             onClose();
             onShare();
+          }}
+        />
+        <MenuRow
+          icon="cloud"
+          iconColor={M.tealDark}
+          label="Deploy board"
+          sublabel="Keep it running on a coordinator"
+          onClick={() => {
+            onClose();
+            onDeploy();
           }}
         />
 
