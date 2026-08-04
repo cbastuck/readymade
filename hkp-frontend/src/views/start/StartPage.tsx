@@ -31,6 +31,7 @@ import {
   BoardNode,
   BoardSort,
   BoardState,
+  CoordinatorsController,
   FolderNode,
   NewsItem,
   RemotesController,
@@ -48,7 +49,7 @@ import RuntimeDetails from "./RuntimeDetails";
 import FolderPicker from "./FolderPicker";
 
 export type { RuntimeEntry };
-export type { RemotesController };
+export type { CoordinatorsController, RemotesController };
 
 export interface StartPageProps {
   /** Persistence for the user's folder tree. */
@@ -117,6 +118,12 @@ export interface StartPageProps {
   /** Show the "Cloud Boards" source: coordinators → their registered boards
    *  (requires AppContext; login-gated). */
   withCloudBoards?: boolean;
+  /** Coordinator management. When set, the Cloud Boards source lists this
+   *  controller's coordinators — so one added in the host's manage UI shows up
+   *  right away — and offers that UI as an action at the foot of the column.
+   *  Their hosts also join the Remotes source, a coordinator host being a
+   *  runtime host too. */
+  manageCoordinators?: CoordinatorsController;
   /** Whether the host can act on an action kind. Hosts lacking a view for one
    *  (the iOS/Android app has no cloud-coordinator or remote-runtime view)
    *  return false, and the entry is browsable without an Open action.
@@ -236,6 +243,7 @@ export default function StartPage(props: StartPageProps) {
     manageRemotes,
     withCloud,
     withCloudBoards,
+    manageCoordinators,
     extraSources,
     myBoardsExtraFolders,
     excludeDemoTags,
@@ -272,6 +280,7 @@ export default function StartPage(props: StartPageProps) {
       remotes: manageRemotes,
       withCloud,
       cloudBoards: withCloudBoards,
+      coordinators: manageCoordinators,
       extraSources,
       myBoardsExtraFolders,
       excludeDemoTags,
@@ -467,6 +476,7 @@ export default function StartPage(props: StartPageProps) {
         width: columnWidths[level] ?? defaultColumnWidth(level),
         onResize: (width) => resizeColumn(capturedLevel, width),
         emptyHint: parent?.emptyHint,
+        action: parent?.action,
         items: items.map((node, index) =>
           rowVM(node, {
             key: `${node.type}-${node.name}-${index}`,

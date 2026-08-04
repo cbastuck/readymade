@@ -12,6 +12,7 @@ import { StartPageStore } from "./store";
 import {
   BoardNode,
   BoardState,
+  CoordinatorsController,
   FolderNode,
   RemotesController,
   SavedBoardEntry,
@@ -43,6 +44,10 @@ export interface StartPageModelOptions {
   /** Show the "Cloud Boards" source: coordinators → their registered boards.
    *  Requires AppContext; login-gated. */
   cloudBoards?: boolean;
+  /** Coordinators the host manages: the Cloud Boards source lists them, and
+   *  their hosts join the Remotes source. Omit to read the stored ones
+   *  read-only (Cloud Boards only). */
+  coordinators?: CoordinatorsController;
   /** Additional host-provided sources appended after the built-in ones. */
   extraSources?: FolderNode[];
   /** Virtual folders appended inside My Boards, after the user's own
@@ -80,6 +85,7 @@ export function useStartPageModel(
     remotes,
     withCloud,
     cloudBoards,
+    coordinators,
     extraSources,
     myBoardsExtraFolders,
     excludeDemoTags,
@@ -117,8 +123,11 @@ export function useStartPageModel(
   );
 
   const cloudFolder = useCloudFolder(withCloud === true);
-  const cloudBoardsFolder = useCloudBoardsFolder(cloudBoards === true);
-  const remotesFolder = useRemotesFolder(remotes);
+  const cloudBoardsFolder = useCloudBoardsFolder(
+    cloudBoards === true,
+    coordinators,
+  );
+  const remotesFolder = useRemotesFolder(remotes, coordinators);
 
   const roots = useMemo<TreeNode[]>(() => {
     const list: TreeNode[] = [];

@@ -2,6 +2,7 @@ export { default as StartPage } from "./StartPage";
 export type {
   StartPageProps,
   RuntimeEntry,
+  CoordinatorsController,
   RemotesController,
 } from "./StartPage";
 export { default as MobileStartPage } from "./mobile/MobileStartPage";
