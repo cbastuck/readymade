@@ -163,10 +163,98 @@ deployed board keeps running.
 
 ---
 
+## Persistence
+
+A coordinator keeps its boards as one JSON file each, under
+`HKP_COORDINATOR_DATA_DIR` (default `~/.hkp/coordinator/boards`). Setting that
+variable to the empty string keeps them in memory instead.
+
+**It persists the board, not the run**: `userId`, `boardName`, `createdAt`,
+`config`. Never the provisioned runtimes, live service state, registries, mount
+addresses, session tokens or status — each describes one run against processes
+that may not exist on load, so writing them down would persist claims that are
+false when read back.
+
+- **Paths are hashed**, never built from the names: `<sha256(userId)>/<sha256(boardName)>.json`.
+  Both names come off the wire, so a board called `../../etc/passwd` must not
+  escape the root — and `Foo` and `foo`, two boards to the coordinator, must not
+  become one file on a case-insensitive filesystem. Real names live inside.
+- **Writes are temp-then-rename**, so a crash leaves the previous board intact
+  rather than half of the new one. Files are `0600`, directories `0700`: a board
+  config carries service state, which can carry credentials.
+- **A restored board is stopped**, and can be nothing else — provisioning and
+  minting a session token both need the user's JWT, and at boot there is no
+  user. Starting it is the owner's move.
+- **A corrupt or newer-format file is skipped and logged**, never fatal.
+- A failing save does not fail a deploy: the board runs, and only its survival
+  of a restart is in doubt.
+
+### One directory, one coordinator
+
+Not enforced, and worth knowing: two coordinator processes pointed at the same
+data directory both restore every board and both believe they own them. They
+would then provision the same runtime ids against the same runtime servers and
+replace each other's runtimes, which looks like runtimes randomly restarting.
+There is no lock — keep a data directory to a single coordinator.
+
+### The orphan window
+
+Runtimes are provisioned to persist, so they outlive the coordinator that made
+them. After a restart they are still running with nothing tracking them —
+holding their mounts, keeping their state. Pressing **Start** re-registers the
+same config under the same runtime ids, and `POST /runtimes` replaces, so the
+orphan is destroyed and rebuilt. A board that is never started again keeps its
+orphan; nothing sweeps for them.
+
+`tests/coordinator-restart.test.ts` covers this end to end.
+
+Stopping reports the same kind of residue: a runtime the coordinator could not
+release is very likely still running, so `stop()` collects those and the board
+carries them in `errors[]` while its status stays `stopped`. A `404` is not one
+of them — it means there is no such runtime, which is what was asked for. The
+runtimes disagree about saying so (hkp-node answers `200` whether or not it held
+one; hkp-python and hkp-rt answer `404`), so anything treating every non-2xx as
+a failure will cry wolf on two of the three.
+
+---
+
+## Forking a deployed board
+
+A deployed board is the coordinator's; the way back to an editor is to **fork**
+it — "Fork board" in the start page's details column, for boards opened from a
+coordinator. The host reads the board's config from the coordinator, copies it
+with `hkp-frontend/src/core/forkBoard.ts`, saves it and opens it. Stopping the
+original and deploying the fork stays the user's call.
+
+**Every id is renamed, and everything naming an id is renamed with it.** A copy
+that kept them would provision over the runtimes the original is running on —
+an editor whose changes land on the deployed board. What gets rewritten:
+
+| Kind | Where |
+| --- | --- |
+| Runtime ids | `runtimes[].id`, the keys of `services`, `targetRuntime`, `runtimeId` |
+| Service ids | each service `uuid`, the `instanceId` of services nested in a pipeline, `targetServiceUuid`, the facade's `serviceUuid` |
+| Mounts | `__hkpMount`, when it holds a `hkp-mount://` reference |
+
+Rewriting is driven by **field name, not by value**: an id like `node` or
+`mon-1` is an ordinary string that can appear anywhere in a board, and replacing
+every occurrence would corrupt data that merely reads like an id. The cost is
+that a service inventing its own way to name another service is not carried
+across — `KNOWN_REFERENCE_FIELDS` in that file is where such a field is added.
+
+A `__hkpMount` holding an *address* rather than a reference is left as it is: it
+may name something outside the board entirely, and a fork has no basis for
+deciding it meant the copy. An owner's runtime republishes its own address on
+load regardless.
+
+---
+
 ## Not built
 
 - **Resuming** a board a coordinator already runs (the `GET`-first path on the
-  coordinator side). Registering always deploys.
+  coordinator side). Registering always deploys — which is also what Start does
+  to a stopped board: the coordinator kept its config, so starting it is
+  registering that config again.
 - **Fork a deployed board** back into the playground. It needs runtime ids
   regenerated on copy, or the fork attaches to the live board's runtimes and
   edits land on the deployed one. Until then, changing a deployed board means
