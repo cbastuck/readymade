@@ -195,9 +195,23 @@ export default class RuntimeRestScope implements RuntimeScope {
   };
 
   close = async (): Promise<void> => {
-    if (this.runtimeOutput) {
-      this.runtimeOutput.close();
-      this.runtimeOutput = undefined;
+    const socket = this.runtimeOutput;
+    if (!socket) {
+      return;
     }
+    this.runtimeOutput = undefined;
+    if (socket.readyState === WebSocket.CONNECTING) {
+      // Aborting a still-connecting socket makes the browser log an error
+      // ("closed before the connection is established") that reads like a
+      // failure and is not one. Let the handshake finish and close then. A
+      // scope is dropped while connecting whenever a view is mounted and
+      // unmounted in quick succession — React's development double-invoke does
+      // it on every mount.
+      socket.onopen = () => socket.close();
+      socket.onerror = null;
+      socket.onmessage = null;
+      return;
+    }
+    socket.close();
   };
 }

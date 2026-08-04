@@ -21,12 +21,17 @@ interface RemoteRuntimePayload {
 /** Give up on an unreachable remote quickly rather than hanging the source. */
 const FETCH_TIMEOUT_MS = 4000;
 
-function toRuntimeNode(rt: RemoteRuntimePayload, url: string): RuntimeNode {
+function toRuntimeNode(
+  rt: RemoteRuntimePayload,
+  url: string,
+  remoteName: string,
+): RuntimeNode {
   return {
     type: "runtime",
     id: rt.id,
     name: rt.name || rt.id,
     remoteUrl: url,
+    remoteName,
     boardName: rt.boardName || undefined,
     services: (rt.services ?? []).map((svc) => ({
       uuid: svc.uuid,
@@ -41,6 +46,7 @@ function toRuntimeNode(rt: RemoteRuntimePayload, url: string): RuntimeNode {
  *  never recreates a runtime (which hkp-rt would do for a re-POSTed id). */
 async function listRemoteRuntimes(
   url: string,
+  remoteName: string,
   idToken: string | undefined,
 ): Promise<RuntimeNode[]> {
   const controller = new AbortController();
@@ -57,7 +63,7 @@ async function listRemoteRuntimes(
     const runtimes: RemoteRuntimePayload[] = Array.isArray(body)
       ? body
       : (body.runtimes ?? []);
-    return runtimes.map((rt) => toRuntimeNode(rt, url));
+    return runtimes.map((rt) => toRuntimeNode(rt, url, remoteName));
   } finally {
     clearTimeout(timer);
   }
@@ -67,6 +73,7 @@ async function listRemoteRuntimes(
  *  no longer exists on the server (404), so the caller can drop it. */
 async function getRemoteRuntime(
   url: string,
+  remoteName: string,
   id: string,
   idToken: string | undefined,
 ): Promise<RuntimeNode | null> {
@@ -86,7 +93,7 @@ async function getRemoteRuntime(
     const body = await res.json();
     // Both hosts return the runtime object directly; tolerate a wrapper.
     const payload: RemoteRuntimePayload = body?.runtimes?.[0] ?? body;
-    return toRuntimeNode(payload, url);
+    return toRuntimeNode(payload, url, remoteName);
   } finally {
     clearTimeout(timer);
   }
@@ -147,7 +154,7 @@ export function useRemotesFolder(
         [key]: { runtimes: prev[key]?.runtimes, loading: true },
       }));
       try {
-        const runtimes = await listRemoteRuntimes(rt.url, user?.idToken);
+        const runtimes = await listRemoteRuntimes(rt.url, key, user?.idToken);
         if (mountedRef.current) {
           setByRemote((prev) => ({ ...prev, [key]: { runtimes } }));
         }
@@ -173,6 +180,7 @@ export function useRemotesFolder(
       try {
         const updated = await getRemoteRuntime(
           parent.url,
+          rkey,
           runtimeId,
           user?.idToken,
         );

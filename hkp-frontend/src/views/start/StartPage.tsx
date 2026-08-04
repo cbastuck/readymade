@@ -195,6 +195,17 @@ function restoreSort(): BoardSort {
   return localStorage.getItem(SORT_STORAGE_KEY) === "recent" ? "recent" : "name";
 }
 
+/** Opening a runtime row: which server, and which runtime on it. */
+function runtimeAction(runtime: RuntimeNode): BoardAction {
+  return {
+    kind: "runtime",
+    name: runtime.name,
+    remoteName: runtime.remoteName,
+    remoteUrl: runtime.remoteUrl,
+    runtimeId: runtime.id,
+  };
+}
+
 export default function StartPage(props: StartPageProps) {
   const {
     store,
@@ -680,7 +691,11 @@ export default function StartPage(props: StartPageProps) {
       }
     />
   ) : detailRuntime ? (
-    <RuntimeDetails key={detailRuntime.id} runtime={detailRuntime} />
+    <RuntimeDetails
+      key={detailRuntime.id}
+      runtime={detailRuntime}
+      onOpen={() => onOpen(runtimeAction(detailRuntime))}
+    />
   ) : undefined;
 
   // ── Render ──────────────────────────────────────────────────────────────────
