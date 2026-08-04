@@ -62,9 +62,16 @@ export default function RuntimeRest({
     // BoardContext descriptors from overwriting live config updates.
     setServicesWithConfig((prev) => {
       const prevMap = new Map(prev.map((s) => [s.uuid, s]));
-      return makeServiceInstances(services).map(
-        (newInst) => prevMap.get(newInst.uuid) ?? newInst,
-      );
+      return makeServiceInstances(services).map((newInst) => {
+        const prevInst = prevMap.get(newInst.uuid);
+        // Only an instance built on the runtime's current scope may be kept. An
+        // instance closes over the scope it was made from — its app, and with it
+        // the notification targets its panel registered — so keeping one across
+        // a re-restore would leave the panel listening to a scope nothing
+        // reports to any more, and a service that only ever speaks through
+        // notifications (a Monitor) would go silent.
+        return prevInst && prevInst.app === newInst.app ? prevInst : newInst;
+      });
     });
   }, [services, makeServiceInstances]);
 
