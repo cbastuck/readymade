@@ -1,4 +1,4 @@
-import { act, render, waitFor } from "@testing-library/react";
+import { act, render } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import AppProvider, { useAppContext } from "../AppContext";
@@ -89,32 +89,43 @@ describe("platform session restore", () => {
     // session was still loading — the exact bug the gate exists to prevent.
     const raw = fakeJwt("bob");
     let releasePlatform!: (token: string | null) => void;
-    const getCtx = renderWithPlatform({
-      restoreSession: () =>
-        new Promise<string | null>((resolve) => {
-          releasePlatform = resolve;
-        }),
-    });
 
-    let settled = false;
-    await act(async () => {
-      void getCtx()
-        .waitForAuthResolved()
-        .then(() => {
-          settled = true;
-        });
-      await Promise.resolve();
-    });
-    expect(settled).toBe(false);
+    // The gate also opens on its own safety timeout, so the assertions below
+    // only mean anything while that timeout is known not to have fired. Fake
+    // timers make "well before it fires" an exact statement instead of a
+    // wall-clock bet that a loaded CI machine loses.
+    vi.useFakeTimers();
+    try {
+      const getCtx = renderWithPlatform({
+        restoreSession: () =>
+          new Promise<string | null>((resolve) => {
+            releasePlatform = resolve;
+          }),
+      });
 
-    // Applying the token hops through a timer and a state update before the
-    // gate opens. Waiting a fixed tick assumed a particular number of hops and
-    // failed whenever the run took one more, so wait for the outcome instead.
-    await act(async () => {
-      releasePlatform(raw);
-    });
-    await waitFor(() => expect(settled).toBe(true));
-    expect(getCtx().user?.idToken).toBe(raw);
+      let settled = false;
+      await act(async () => {
+        void getCtx()
+          .waitForAuthResolved()
+          .then(() => {
+            settled = true;
+          });
+        await Promise.resolve();
+      });
+      expect(settled).toBe(false);
+
+      // Applying the token hops through a timer and a state update before the
+      // gate opens, so let the timers run — but only a fraction of the safety
+      // timeout, which would otherwise open the gate no matter what.
+      await act(async () => {
+        releasePlatform(raw);
+        await vi.advanceTimersByTimeAsync(50);
+      });
+      expect(settled).toBe(true);
+      expect(getCtx().user?.idToken).toBe(raw);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("resolves with null when the host has no stored session", async () => {
