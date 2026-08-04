@@ -119,3 +119,45 @@ export function restoreCoordinators(): CoordinatorDescriptor[] {
 export function storeCoordinators(coordinators: CoordinatorDescriptor[]): void {
   localStorage.setItem("hkp-coordinators", JSON.stringify(coordinators));
 }
+
+/**
+ * The runtime host behind a coordinator.
+ *
+ * Coordinating a board and hosting runtimes are separate roles played by the
+ * same process: the coordinator API lives under `/coordinator`, the runtime
+ * API at the server root. A board can therefore put runtimes on the host of a
+ * coordinator it knows, which is why coordinators appear among the available
+ * engines.
+ */
+export function coordinatorRuntimeEngine(
+  coordinator: CoordinatorDescriptor,
+): RuntimeClass {
+  return {
+    type: "rest",
+    name: coordinator.name,
+    url: coordinator.url.replace(/\/coordinator\/?$/, ""),
+  };
+}
+
+/**
+ * `engines` plus an entry for every coordinator whose host is not already
+ * among them. Engines win on a URL collision — an explicitly configured remote
+ * carries the name and type the user gave it.
+ */
+export function withCoordinatorEngines(
+  engines: Array<RuntimeClass>,
+  coordinators: CoordinatorDescriptor[],
+): Array<RuntimeClass> {
+  const key = (url?: string) => (url ?? "").replace(/\/$/, "");
+  const seen = new Set(engines.map((rt) => key(rt.url)));
+  const derived: RuntimeClass[] = [];
+  for (const coordinator of coordinators) {
+    const engine = coordinatorRuntimeEngine(coordinator);
+    if (seen.has(key(engine.url))) {
+      continue;
+    }
+    seen.add(key(engine.url));
+    derived.push(engine);
+  }
+  return derived.length > 0 ? engines.concat(derived) : engines;
+}

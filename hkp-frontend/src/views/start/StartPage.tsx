@@ -117,6 +117,11 @@ export interface StartPageProps {
   /** Show the "Cloud Boards" source: coordinators → their registered boards
    *  (requires AppContext; login-gated). */
   withCloudBoards?: boolean;
+  /** Whether the host can act on an action kind. Hosts lacking a view for one
+   *  (the iOS/Android app has no cloud-coordinator or remote-runtime view)
+   *  return false, and the entry is browsable without an Open action.
+   *  Honoured by the mobile start page; absent means every kind opens. */
+  canOpen?: (action: BoardAction) => boolean;
   /** Additional host-provided sources appended after the built-in ones. */
   extraSources?: FolderNode[];
   /** Virtual folders appended inside My Boards, after the user's own

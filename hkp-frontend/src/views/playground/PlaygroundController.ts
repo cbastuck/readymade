@@ -1,4 +1,11 @@
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FacadeDescriptor } from "../../facade/types";
 
 import { BoardProviderHandle } from "../../BoardContext";
@@ -29,6 +36,7 @@ import {
   RuntimeClass,
 } from "../../types";
 import { createBoardLink, createBoardSrcLink } from "./BoardLink";
+import { restoreCoordinators, withCoordinatorEngines } from "../../common";
 import { AppCtx } from "../../AppContext";
 import { PlaygroundProps } from "./Playground.types";
 
@@ -472,9 +480,23 @@ export function usePlaygroundController(
 
   const currentUser = (appContext && appContext?.user) || user.current;
 
-  const playgroundRuntimeEngines = props.availableRuntimeEngines
-    ? props.availableRuntimeEngines
-    : availableRuntimeEngines.concat(restoredAvailableRuntimeEngines);
+  // Coordinators come last and only when their host isn't already configured
+  // as a remote: a board may put runtimes on the server behind a coordinator
+  // it knows, without the user registering the same address twice. Read once
+  // per mount, like the restored engines above.
+  const configuredCoordinators = useMemo(() => restoreCoordinators(), []);
+  // Memoized because BoardProvider resets its engine pool whenever this prop
+  // changes identity, which would drop engines added while a board is open.
+  const playgroundRuntimeEngines = useMemo(
+    () =>
+      withCoordinatorEngines(
+        props.availableRuntimeEngines
+          ? props.availableRuntimeEngines
+          : availableRuntimeEngines.concat(restoredAvailableRuntimeEngines),
+        configuredCoordinators,
+      ),
+    [props.availableRuntimeEngines, configuredCoordinators],
+  );
 
   return {
     boardProviderRef,

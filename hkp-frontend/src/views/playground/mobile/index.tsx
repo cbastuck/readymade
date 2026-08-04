@@ -7,6 +7,7 @@ import browserRuntimeApi from "../../../runtime/browser/BrowserRuntimeApi";
 import remoteRuntimeApi from "../../../runtime/graphql/RuntimeGraphQLApi";
 import runtimeRestApi from "../../../runtime/rest/RuntimeRestApi";
 import MobilePlaygroundInner from "./MobilePlaygroundInner";
+import type { OpenCloudBoardSignal } from "../../cloud/mobile/MobileCloudBoards";
 
 const runtimeApis: RuntimeApiMap = {
   browser: browserRuntimeApi,
@@ -19,6 +20,9 @@ const runtimeApis: RuntimeApiMap = {
 type MobilePlaygroundProps = PlaygroundProps & {
   /** Navigates back to the host's start page (renders a home button). */
   onHome?: () => void;
+  /** Cloud board to open on arrival — boots into the Cloud tab with that
+   *  board hydrated instead of the local board. */
+  openCloudBoard?: OpenCloudBoardSignal;
 };
 
 function MobilePlayground(props: MobilePlaygroundProps) {
@@ -63,7 +67,11 @@ function MobilePlayground(props: MobilePlaygroundProps) {
       availableRuntimeEngines={playgroundRuntimeEngines}
       onBoardInfrastructureChange={props.onBoardInfrastructureChange}
     >
-      <MobilePlaygroundInner suggestedName={suggestedName} onHome={props.onHome} />
+      <MobilePlaygroundInner
+        suggestedName={suggestedName}
+        onHome={props.onHome}
+        openCloudBoard={props.openCloudBoard}
+      />
       {/* Host-provided children rendered inside the board context (e.g. the
           Readymade share consumer, which injects a shared item into the open
           board once its runtime is ready). Wrapped so ReactNode satisfies

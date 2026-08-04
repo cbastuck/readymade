@@ -3,7 +3,7 @@ import { useRef, useState, type ReactNode, type TouchEvent } from "react";
 import { M } from "../../playground/mobile/tokens";
 import MobileIcon from "../../playground/mobile/MobileIcon";
 import { artFor, attentionCount, isAttentionState, stateMeta } from "../model";
-import { BoardNode, FolderNode } from "../types";
+import { BoardNode, FolderNode, RuntimeNode } from "../types";
 
 const ROW_ACTION_WIDTH = 92;
 
@@ -171,6 +171,44 @@ function RowText({
   );
 }
 
+/** Manual re-fetch button for rows standing for live data (a remote server, a
+ *  coordinator, a runtime) — their content can change with no signal to us.
+ *  Stops the tap from also opening the row. */
+function RefreshButton({
+  onRefresh,
+  busy,
+}: {
+  onRefresh: () => void;
+  busy?: boolean;
+}) {
+  return (
+    <button
+      aria-label="Refresh"
+      title="Refresh"
+      disabled={busy}
+      onClick={(e) => {
+        e.stopPropagation();
+        onRefresh();
+      }}
+      style={{
+        width: 30,
+        height: 30,
+        border: "none",
+        background: "rgba(0,0,0,0.05)",
+        borderRadius: 8,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: busy ? "default" : "pointer",
+        opacity: busy ? 0.45 : 1,
+        flexShrink: 0,
+      }}
+    >
+      <MobileIcon name="refresh" size={14} color={M.textSecondary} />
+    </button>
+  );
+}
+
 /** Board row: artwork tile, name, state subtitle with attention dot. */
 export function BoardRow({
   board,
@@ -296,6 +334,12 @@ export function FolderRow({
           name={folder.name}
           sub={count === 0 ? "Empty" : `${count} ${count === 1 ? "item" : "items"}`}
         />
+        {folder.onRefresh && (
+          <RefreshButton
+            onRefresh={folder.onRefresh}
+            busy={folder.refreshing}
+          />
+        )}
         {badge > 0 && (
           <span
             style={{
@@ -316,6 +360,48 @@ export function FolderRow({
           >
             {badge}
           </span>
+        )}
+        <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
+      </RowShell>
+    </SwipeRow>
+  );
+}
+
+/** Runtime row: a live runtime on a remote server, reached by drilling into the
+ *  Remotes source. Terminal like a board row — tapping opens its details. */
+export function RuntimeRow({
+  runtime,
+  onTap,
+}: {
+  runtime: RuntimeNode;
+  onTap: () => void;
+}) {
+  return (
+    <SwipeRow actionLabel="Remove" onTap={onTap}>
+      <RowShell>
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            borderRadius: 10,
+            background: "linear-gradient(160deg, #17b877, #0a8a72)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <MobileIcon name="cpu" size={19} color="#fff" />
+        </div>
+        <RowText
+          name={runtime.name}
+          sub={runtime.boardName ? `Board · ${runtime.boardName}` : "Runtime"}
+        />
+        {runtime.onRefresh && (
+          <RefreshButton
+            onRefresh={runtime.onRefresh}
+            busy={runtime.refreshing}
+          />
         )}
         <MobileIcon name="chevronRight" size={14} color={M.textMuted} />
       </RowShell>

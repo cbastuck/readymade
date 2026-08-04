@@ -5,6 +5,7 @@ import HkpApp from "hkp-frontend/src/App";
 // configured for.
 import { AUTH0_CLIENT_ID } from "./auth/meanderLogin";
 import MobilePlaygroundWithRouter from "hkp-frontend/src/views/playground/mobile/index";
+import type { OpenCloudBoardSignal } from "hkp-frontend/src/views/cloud/mobile/MobileCloudBoards";
 import {
   MobileStartPage,
   localStorageStartPageStore,
@@ -45,6 +46,9 @@ const buildVersion = splitBuildVersion(__READYMADE_BUILD_VERSION__);
 type BoardSession = {
   name?: string;
   descriptor?: BoardDescriptor;
+  /** Set when the session was opened to run a cloud board: the playground
+   *  boots into its Cloud tab with that board hydrated. */
+  cloudBoard?: OpenCloudBoardSignal;
 };
 
 function StartScreen({
@@ -133,8 +137,20 @@ function StartScreen({
             console.error("Could not open the cloud board", err);
           });
         break;
-      // No cloud-coordinator / runtime detail views in the iOS app yet.
       case "cloud":
+        // Cloud boards run in the playground's Cloud tab — open a session that
+        // lands there with this board hydrated, rather than a local copy.
+        onOpenSession({
+          cloudBoard: {
+            coordinatorUrl: action.coordinatorUrl,
+            boardName: action.boardName,
+            at: Date.now(),
+          },
+        });
+        break;
+      // Browsable from the start page's Remotes source, but nothing in the app
+      // attaches to a remote runtime; canOpen below keeps the entry read-only
+      // rather than dead.
       case "runtime":
         break;
     }
@@ -155,6 +171,8 @@ function StartScreen({
       onRevokeShare={onRevokeShare}
       onLeaveShare={onLeaveShare}
       manageRemotes={remotes}
+      withCloudBoards
+      canOpen={(action) => action.kind !== "runtime"}
       title="Readymade"
       badge={buildVersion.version}
       badgeDetail={buildVersion.hash}
@@ -291,6 +309,7 @@ export default function MobileApp() {
           <MobilePlaygroundWithRouter
             boardName={session.name}
             boardDescriptor={session.descriptor}
+            openCloudBoard={session.cloudBoard}
             onChangeBoardname={(name: string) =>
               setSession((prev) => ({ ...prev, name }))
             }
