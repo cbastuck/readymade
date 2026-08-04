@@ -3,6 +3,7 @@ import {
   Routes as RouterRoutes,
   Navigate,
   useLocation,
+  useParams,
 } from "react-router-dom";
 
 import Playground from "./views/playground/index";
@@ -15,6 +16,7 @@ import Profile from "./views/profile";
 import Remotes from "./views/remotes";
 import ServiceRedirect from "./views/ServiceRedirect";
 import { generateRandomName } from "./core/board";
+import { restoreAvailableRuntimeEngines } from "./common";
 import { replacePlaceholders } from "./core/url";
 
 export default function Routes(): JSX.Element {
@@ -29,12 +31,26 @@ export default function Routes(): JSX.Element {
       <Route path="/authRedirect" element={<AuthRedirectAuth0 />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/serviceRedirect" element={<ServiceRedirect />} />
-      <Route path="/remotes" element={<Remotes />} />
-      <Route path="/remotes/:remote" element={<Remotes />} />
+      <Route path="/remotes" element={<RemotesRoute />} />
+      <Route path="/remotes/:remote" element={<RemotesRoute />} />
+      <Route path="/remotes/:remote/:runtimeId" element={<RemotesRoute />} />
       {/* This app has no start page, and cloud boards are reached from one —
           so it hosts no cloud view, and anything aimed at one lands here. */}
       <Route path="*" element={<Navigate replace to="/playground" />} />
     </RouterRoutes>
+  );
+}
+
+/** This app keeps its remotes in localStorage; other hosts have their own store
+ *  and pass their own list. */
+function RemotesRoute(): JSX.Element {
+  const { remote, runtimeId } = useParams();
+  return (
+    <Remotes
+      remotes={restoreAvailableRuntimeEngines() || []}
+      remoteName={remote}
+      runtimeId={runtimeId}
+    />
   );
 }
 

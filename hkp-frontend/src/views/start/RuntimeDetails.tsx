@@ -105,12 +105,19 @@ function ServiceRow({ service }: { service: RuntimeServiceInfo }) {
 }
 
 /**
- * Read-only details column for a runtime running on a remote server: its
- * server, the board it was created for, its id, and the services it hosts with
- * their current state. Observation only — the live inspector and per-service
- * configuration are a later step.
+ * Details column for a runtime running on a remote server: its server, the
+ * board it was created for, its id, and the services it hosts with their
+ * current state — a snapshot, taken when the source last listed it.
+ *
+ * Open watches it live instead, in the attached remote view (views/remotes).
  */
-export default function RuntimeDetails({ runtime }: { runtime: RuntimeNode }) {
+export default function RuntimeDetails({
+  runtime,
+  onOpen,
+}: {
+  runtime: RuntimeNode;
+  onOpen?: () => void;
+}) {
   return (
     <div
       style={{
@@ -200,6 +207,17 @@ export default function RuntimeDetails({ runtime }: { runtime: RuntimeNode }) {
             Running
           </div>
         </div>
+
+        {onOpen && (
+          <button
+            className="st-btn st-btn-primary"
+            style={{ justifyContent: "center", width: "100%" }}
+            onClick={onOpen}
+            title="Watch this runtime live — its services can be configured, not added, removed or reordered"
+          >
+            Open runtime
+          </button>
+        )}
 
         <div
           style={{

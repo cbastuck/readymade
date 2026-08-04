@@ -245,7 +245,14 @@ export default function StartPage({ onRestoreBoard }: Props) {
         });
         break;
       case "runtime":
-        // No runtime detail view in the desktop app yet.
+        // Watch the runtime live in the attached remote view. Nothing here owns
+        // it — the server records no attribution — so that view only ever reads
+        // and configures.
+        navigate(
+          action.runtimeId
+            ? `/remotes/${encodeURIComponent(action.remoteName)}/${encodeURIComponent(action.runtimeId)}`
+            : `/remotes/${encodeURIComponent(action.remoteName)}`,
+        );
         break;
     }
   };

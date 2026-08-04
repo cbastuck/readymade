@@ -56,7 +56,18 @@ export type BoardAction =
   | { kind: "demo"; slug: string }
   | { kind: "cloud"; coordinatorUrl: string; boardName: string }
   | { kind: "cloud-stored"; id: string; name: string }
-  | { kind: "runtime"; name: string };
+  /** Watch a runtime running on a remote server. Carries the server by the name
+   *  the Remotes source shows — what a host looks it up by in its own store —
+   *  and the runtime's id on it. Without an id the whole server is watched,
+   *  which is what a row standing for a server rather than one of its runtimes
+   *  can say. */
+  | {
+      kind: "runtime";
+      name: string;
+      remoteName: string;
+      remoteUrl?: string;
+      runtimeId?: string;
+    };
 
 export interface BoardNode {
   type: "board";
@@ -128,6 +139,8 @@ export interface RuntimeNode {
   name: string;
   /** Base URL of the remote server hosting this runtime. */
   remoteUrl: string;
+  /** The server as the host names it — how a host finds it in its own store. */
+  remoteName: string;
   /** Board the runtime was created for, when known. */
   boardName?: string;
   services: RuntimeServiceInfo[];

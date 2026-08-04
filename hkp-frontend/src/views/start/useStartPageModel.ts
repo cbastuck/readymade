@@ -147,7 +147,12 @@ export function useStartPageModel(
           name: rt.name,
           state: "runtime",
           sub: rt.url ?? "Runtime",
-          action: { kind: "runtime", name: rt.name },
+          action: {
+            kind: "runtime",
+            name: rt.name,
+            remoteName: rt.name,
+            remoteUrl: rt.url,
+          },
         })),
       });
     }
