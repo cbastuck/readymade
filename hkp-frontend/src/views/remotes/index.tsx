@@ -1,4 +1,5 @@
 import { ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Server } from "lucide-react";
 
 import BoardProvider, { EngineState } from "hkp-frontend/src/BoardContext";
 import Toolbar from "hkp-frontend/src/components/Toolbar";
@@ -52,51 +53,51 @@ function Centred({ children }: { children: ReactNode }) {
   );
 }
 
-/** Server · board · runtime id, and that nothing here can be changed. */
-function RemoteHeader({
+/**
+ * Which runtime is being watched, and that nothing structural about it can be
+ * changed here. Goes in the toolbar's centre slot, where a view says where its
+ * board is running — the same place a cloud board names its coordinator.
+ */
+function RemoteStatus({
   remote,
   runtimeId,
 }: {
   remote: RuntimeClass;
   runtimeId?: string;
 }) {
+  const where = `${remote.name ? `${remote.name} · ` : ""}${remote.url ?? ""}`;
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "baseline",
-        gap: 10,
-        padding: "10px 16px",
-        borderBottom: "1px solid #eceef3",
-        minWidth: 0,
-      }}
-    >
-      <span style={{ fontSize: 13, fontWeight: 700, letterSpacing: "-0.01em" }}>
-        {runtimeId ?? remote.name ?? remote.url}
-      </span>
+    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
       <span
+        title={`${runtimeId ?? "Every runtime"} on ${where}`}
         style={{
-          fontSize: 11.5,
-          color: "#9a9fae",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          minWidth: 0,
+          fontSize: 12.5,
+          color: "var(--text-dim, #6b7280)",
+          whiteSpace: "nowrap",
           overflow: "hidden",
           textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
         }}
       >
-        on {remote.name ? `${remote.name} · ` : ""}
-        {remote.url}
+        <Server size={14} strokeWidth={1.75} style={{ flexShrink: 0 }} />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+          {runtimeId ? `${runtimeId} on ` : ""}
+          {where}
+        </span>
       </span>
       <span
-        title="This runtime belongs to whoever created it; services can be configured, not added, removed or reordered."
+        title="This runtime belongs to whoever created it: its services can be configured, not added, removed or reordered."
         style={{
-          marginLeft: "auto",
-          flex: "0 0 auto",
+          flexShrink: 0,
           fontSize: 11,
           fontWeight: 600,
-          color: "#6b7080",
-          background: "#f4f5f7",
+          color: "var(--text-dim, #6b7280)",
+          background: "var(--bg-subtle, #f4f5f7)",
           borderRadius: 999,
-          padding: "3px 9px",
+          padding: "2px 8px",
         }}
       >
         Observing
@@ -196,12 +197,12 @@ export default function Remotes({
   const state = attached?.state;
   const isLoading = !!remote && !state && !error;
 
-  const shell = (children: ReactNode) => (
+  const shell = (children: ReactNode, statusSlot?: ReactNode) => (
     <div
       className="w-full h-full flex flex-col"
       style={{ background: "var(--bg-app, #fafafa)" }}
     >
-      <Toolbar logoSlot={logoSlot} />
+      <Toolbar logoSlot={logoSlot} statusSlot={statusSlot} />
       {children}
     </div>
   );
@@ -248,10 +249,8 @@ export default function Remotes({
       }}
     >
       {shell(
-        <>
-          <RemoteHeader remote={remote} runtimeId={runtimeId} />
-          <RemoteControl runtimeClass={remote} runtimeId={runtimeId} />
-        </>,
+        <RemoteControl runtimeClass={remote} runtimeId={runtimeId} />,
+        <RemoteStatus remote={remote} runtimeId={runtimeId} />,
       )}
     </BoardProvider>
   );
