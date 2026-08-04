@@ -2,7 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { RuntimeClass } from "hkp-frontend/src/types";
 import { useAppContext } from "../../AppContext";
-import { FolderNode, RemotesController, RuntimeNode } from "./types";
+import { withCoordinatorEngines } from "../../common";
+import {
+  CoordinatorsController,
+  FolderNode,
+  RemotesController,
+  RuntimeNode,
+} from "./types";
 
 /** Runtime as a host reports it in GET /runtimes. Only the fields the Remotes
  *  source needs are modelled; hosts may send more. */
@@ -118,9 +124,17 @@ const remoteKey = (rt: RuntimeClass): string => rt.name || rt.url || "";
  * offline or unauthorised server degrades to a hint instead of failing the
  * whole source. Each remote row also exposes a manual refresh, since a runtime
  * list can change on the board that owns it without any signal to us.
+ *
+ * Coordinator hosts are listed alongside the explicitly configured remotes:
+ * coordinating a board and hosting runtimes are separate roles of the same
+ * server, and the runtimes a coordinator provisioned are on its host like any
+ * other. Same rule as the engine picker (withCoordinatorEngines) — a
+ * configured remote wins on a URL collision, since it carries the name and
+ * type the user gave it.
  */
 export function useRemotesFolder(
   remotes: RemotesController | undefined,
+  coordinators?: CoordinatorsController,
 ): FolderNode | null {
   const { user } = useAppContext();
   const [byRemote, setByRemote] = useState<Record<string, RemoteState>>({});
@@ -135,7 +149,11 @@ export function useRemotesFolder(
     };
   }, []);
 
-  const configured = useMemo(() => remotes?.runtimes ?? [], [remotes]);
+  const coordinatorList = coordinators?.coordinators;
+  const configured = useMemo(
+    () => withCoordinatorEngines(remotes?.runtimes ?? [], coordinatorList ?? []),
+    [remotes, coordinatorList],
+  );
   // Re-fetch when the set of remote URLs (or the auth token) changes.
   const urlsKey = configured.map((rt) => rt.url ?? "").join("|");
 

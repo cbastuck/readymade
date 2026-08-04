@@ -11,6 +11,7 @@
  */
 
 import { RuntimeClass } from "hkp-frontend/src/types";
+import { CoordinatorDescriptor } from "hkp-frontend/src/common";
 
 // ── Persisted model ───────────────────────────────────────────────────────────
 
@@ -169,6 +170,12 @@ export interface FolderNode {
   onRefresh?: () => void;
   /** True while onRefresh is in flight; drives the row's spinner. */
   refreshing?: boolean;
+  /** Affordance shown at the foot of this folder's column, next to whatever
+   *  the folder holds — the place a source puts the action that changes what
+   *  it lists (configuring the servers behind it, say). Shown whether or not
+   *  the folder has children, since an empty source is exactly when it is
+   *  needed. */
+  action?: { label: string; onClick: () => void };
 }
 
 export type TreeNode = BoardNode | FolderNode | RuntimeNode;
@@ -184,6 +191,22 @@ export interface RemotesController {
   onUpdate: (rt: RuntimeClass) => void;
   /** Called right before the manage UI opens; hosts re-read their store. */
   refresh?: () => void;
+}
+
+/** Host-backed store of the user's coordinators — what the Cloud Boards source
+ *  lists and whose hosts join the Remotes source — plus the way back into the
+ *  host's UI for changing that list. The host owns both ends: it holds the
+ *  state the manage UI writes, so a coordinator added there shows up in the
+ *  sources without a reload. Where the entries persist is the host's business
+ *  — the website keeps them in localStorage. */
+export interface CoordinatorsController {
+  coordinators: CoordinatorDescriptor[];
+  onAdd: (coordinator: CoordinatorDescriptor) => void;
+  onRemove: (coordinator: CoordinatorDescriptor) => void;
+  /** Opens the host's coordinator management UI. When set, the Cloud Boards
+   *  source offers it as an action — the source is where a user notices that
+   *  no coordinator is configured. */
+  onManage?: () => void;
 }
 
 // ── News banner ───────────────────────────────────────────────────────────────

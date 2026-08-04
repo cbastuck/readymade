@@ -6,7 +6,7 @@ import {
   CoordinatorBoardInfo,
   listCoordinatorBoards,
 } from "../cloud/coordinatorClient";
-import { BoardNode, FolderNode } from "./types";
+import { BoardNode, CoordinatorsController, FolderNode } from "./types";
 
 type CoordinatorState = {
   boards?: CoordinatorBoardInfo[];
@@ -48,10 +48,18 @@ function boardNode(coordinatorUrl: string, board: CoordinatorBoardInfo): BoardNo
  *
  * Each coordinator row exposes a manual refresh, since a board's cloud status
  * (running / failed) can change without any signal to us.
+ *
+ * A host that manages coordinators itself passes a controller: its list is
+ * what the source shows — so an added coordinator appears at once — and its
+ * manage action is offered at the foot of the column. Without one the stored
+ * coordinators are read directly and the source stays read-only.
  */
-export function useCloudBoardsFolder(enabled: boolean): FolderNode | null {
+export function useCloudBoardsFolder(
+  enabled: boolean,
+  controller?: CoordinatorsController,
+): FolderNode | null {
   const { user } = useAppContext();
-  const [coordinators, setCoordinators] = useState<CoordinatorDescriptor[]>([]);
+  const [stored, setStored] = useState<CoordinatorDescriptor[]>([]);
   const [byCoordinator, setByCoordinator] = useState<
     Record<string, CoordinatorState>
   >({});
@@ -64,9 +72,15 @@ export function useCloudBoardsFolder(enabled: boolean): FolderNode | null {
     };
   }, []);
 
+  // Only read the store when no controller holds the list; keyed on whether
+  // there is one rather than on its (per-render) identity.
+  const hostManaged = controller !== undefined;
   useEffect(() => {
-    setCoordinators(enabled ? restoreCoordinators() : []);
-  }, [enabled]);
+    setStored(enabled && !hostManaged ? restoreCoordinators() : []);
+  }, [enabled, hostManaged]);
+
+  const coordinators = controller?.coordinators ?? stored;
+  const onManage = controller?.onManage;
 
   const urlsKey = coordinators.map((c) => c.url).join("|");
 
@@ -111,6 +125,11 @@ export function useCloudBoardsFolder(enabled: boolean): FolderNode | null {
   }, [urlsKey, fetchCoordinator, user]);
 
   const folder = useMemo<FolderNode>(() => {
+    // Configuring coordinators is independent of the login the board listing
+    // needs, so the action is offered either way.
+    const manageAction = onManage
+      ? { label: "Manage coordinators", onClick: onManage }
+      : undefined;
     if (!user) {
       return {
         type: "folder",
@@ -118,6 +137,7 @@ export function useCloudBoardsFolder(enabled: boolean): FolderNode | null {
         source: true,
         children: [],
         emptyHint: "Log in to see your cloud boards",
+        action: manageAction,
       };
     }
     const children = coordinators.map<FolderNode>((coordinator) => {
@@ -147,8 +167,9 @@ export function useCloudBoardsFolder(enabled: boolean): FolderNode | null {
       children,
       emptyHint:
         coordinators.length === 0 ? "No coordinators configured" : undefined,
+      action: manageAction,
     };
-  }, [user, coordinators, byCoordinator, fetchCoordinator]);
+  }, [user, coordinators, byCoordinator, fetchCoordinator, onManage]);
 
   return enabled ? folder : null;
 }

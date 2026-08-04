@@ -1,17 +1,9 @@
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
 } from "hkp-frontend/src/ui-components/primitives/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "hkp-frontend/src/ui-components/primitives/popover";
-import { Button } from "hkp-frontend/src/ui-components/primitives/button";
 import { CoordinatorDescriptor } from "../../common";
-import ExistingCoordinatorsPanel from "./ExistingCoordinatorsPanel";
-import NewCoordinatorPanel from "./NewCoordinatorPanel";
+import ManageCoordinatorsContent from "./ManageCoordinatorsContent";
 
 type Props = {
   isOpen: boolean;
@@ -28,44 +20,25 @@ export default function ManageCoordinatorsDialog({
   onRemove,
   onClose,
 }: Props) {
-  const [showNewPanel, setShowNewPanel] = useState(false);
-
-  const onChangeDialogOpen = (newOpen: boolean) => {
-    if (!newOpen) {
-      if (showNewPanel) {
-        setShowNewPanel(false);
-      } else {
-        onClose();
-      }
-    }
-  };
-
-  const handleAdd = (coordinator: CoordinatorDescriptor) => {
-    onAdd(coordinator);
-    setShowNewPanel(false);
-  };
-
   return (
-    <Dialog open={isOpen} onOpenChange={onChangeDialogOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(newOpen) => {
+        if (!newOpen) {
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="sm:max-w-[700px] flex flex-col gap-4">
-        <h2 className="text-lg font-semibold tracking-widest">Manage Coordinators</h2>
+        <h2 className="text-lg font-semibold tracking-widest">
+          Manage Coordinators
+        </h2>
 
-        <ExistingCoordinatorsPanel coordinators={coordinators} onRemove={onRemove} />
-
-        <Popover open={showNewPanel}>
-          <PopoverTrigger asChild>
-            <Button
-              className="text-md tracking-widest self-start"
-              variant="outline"
-              onClick={() => setShowNewPanel(true)}
-            >
-              Add Coordinator
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80">
-            <NewCoordinatorPanel onAdd={handleAdd} />
-          </PopoverContent>
-        </Popover>
+        <ManageCoordinatorsContent
+          coordinators={coordinators}
+          onAdd={onAdd}
+          onRemove={onRemove}
+        />
       </DialogContent>
     </Dialog>
   );

@@ -19,6 +19,9 @@ export interface ColumnVM {
   onNewFolder?: (name: string) => void;
   /** "New board" affordance — creates an empty board filed in this folder. */
   onNewBoard?: (name: string) => void;
+  /** Folder-provided action shown at the foot of the column (e.g. managing the
+   *  servers a source lists), independent of whether the column has items. */
+  action?: { label: string; onClick: () => void };
 }
 
 function NameInput({
@@ -164,6 +167,12 @@ export default function Column({ col }: { col: ColumnVM }) {
               <span style={{ fontSize: 15, lineHeight: 0 }}>+</span> New board
             </button>
           ))}
+
+        {col.action && (
+          <button className="st-newfolder" onClick={col.action.onClick}>
+            {col.action.label}
+          </button>
+        )}
       </div>
     </div>
   );
