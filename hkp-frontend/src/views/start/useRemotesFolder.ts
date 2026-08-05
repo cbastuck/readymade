@@ -136,7 +136,7 @@ export function useRemotesFolder(
   remotes: RemotesController | undefined,
   coordinators?: CoordinatorsController,
 ): FolderNode | null {
-  const { user } = useAppContext();
+  const { user, waitForAuthResolved } = useAppContext();
   const [byRemote, setByRemote] = useState<Record<string, RemoteState>>({});
   // Per-runtime refresh spinners, keyed by `${remoteKey}/${runtimeId}`.
   const [busyRuntimes, setBusyRuntimes] = useState<Record<string, boolean>>({});
@@ -151,11 +151,23 @@ export function useRemotesFolder(
 
   const coordinatorList = coordinators?.coordinators;
   const configured = useMemo(
-    () => withCoordinatorEngines(remotes?.runtimes ?? [], coordinatorList ?? []),
+    () =>
+      withCoordinatorEngines(remotes?.runtimes ?? [], coordinatorList ?? []),
     [remotes, coordinatorList],
   );
   // Re-fetch when the set of remote URLs (or the auth token) changes.
   const urlsKey = configured.map((rt) => rt.url ?? "").join("|");
+
+  // Restoring the session is asynchronous, so on a cold page load `user` is
+  // still null for a signed-in visitor. Reading it directly here would send a
+  // credential-less request that an authenticating host answers with 401 —
+  // which is a wasted round trip. Wait for auth to settle, then use whatever
+  // it resolved to (null when genuinely signed out, so unauthenticated hosts
+  // on the LAN are still browsable).
+  const resolveToken = useCallback(
+    async () => user?.idToken ?? (await waitForAuthResolved())?.idToken,
+    [user?.idToken, waitForAuthResolved],
+  );
 
   const fetchRemote = useCallback(
     async (rt: RuntimeClass) => {
@@ -172,7 +184,11 @@ export function useRemotesFolder(
         [key]: { runtimes: prev[key]?.runtimes, loading: true },
       }));
       try {
-        const runtimes = await listRemoteRuntimes(rt.url, key, user?.idToken);
+        const runtimes = await listRemoteRuntimes(
+          rt.url,
+          key,
+          await resolveToken(),
+        );
         if (mountedRef.current) {
           setByRemote((prev) => ({ ...prev, [key]: { runtimes } }));
         }
@@ -182,7 +198,7 @@ export function useRemotesFolder(
         }
       }
     },
-    [user?.idToken],
+    [resolveToken],
   );
 
   // Re-fetch just one runtime (its state can change on the board that owns it
@@ -200,7 +216,7 @@ export function useRemotesFolder(
           parent.url,
           rkey,
           runtimeId,
-          user?.idToken,
+          await resolveToken(),
         );
         if (mountedRef.current) {
           setByRemote((prev) => {
@@ -226,7 +242,7 @@ export function useRemotesFolder(
         }
       }
     },
-    [user?.idToken],
+    [resolveToken],
   );
 
   useEffect(() => {
