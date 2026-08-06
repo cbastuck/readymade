@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { M } from "../../playground/mobile/tokens";
@@ -21,6 +21,7 @@ import type { StartPageProps } from "../StartPage";
 import {
   BoardAction,
   BoardNode,
+  CoordinatorsController,
   FolderNode,
   NewsItem,
   RuntimeNode,
@@ -214,6 +215,7 @@ export default function MobileStartPage(props: StartPageProps) {
     manageRemotes,
     withCloud,
     withCloudBoards,
+    manageCoordinators,
     canOpen,
     extraSources,
     myBoardsExtraFolders,
@@ -228,6 +230,32 @@ export default function MobileStartPage(props: StartPageProps) {
     menuSlot,
   } = props;
 
+  // Declared before the model because the sources reach back into this sheet:
+  // it is where connections are managed on mobile.
+  const [remotesSheetOpen, setRemotesSheetOpen] = useState(false);
+  const connectionsLabel = manageCoordinators
+    ? "Manage connections"
+    : "Manage remotes";
+
+  const openConnections = useCallback(() => {
+    manageRemotes?.refresh?.();
+    setRemotesSheetOpen(true);
+  }, [manageRemotes]);
+
+  // Mobile hosts the coordinator UI in the connections sheet, so the Cloud
+  // Boards source's manage action opens it — unless the host named a surface
+  // of its own.
+  const coordinators = useMemo<CoordinatorsController | undefined>(
+    () =>
+      manageCoordinators
+        ? {
+            ...manageCoordinators,
+            onManage: manageCoordinators.onManage ?? openConnections,
+          }
+        : undefined,
+    [manageCoordinators, openConnections],
+  );
+
   const { tree, updateTree, roots, savedBoards, refreshSavedBoards } =
     useStartPageModel({
       store,
@@ -237,6 +265,7 @@ export default function MobileStartPage(props: StartPageProps) {
       remotes: manageRemotes,
       withCloud,
       cloudBoards: withCloudBoards,
+      coordinators,
       extraSources,
       myBoardsExtraFolders,
       excludeDemoTags,
@@ -250,7 +279,6 @@ export default function MobileStartPage(props: StartPageProps) {
   const [path, setPath] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [addSheetOpen, setAddSheetOpen] = useState(false);
-  const [remotesSheetOpen, setRemotesSheetOpen] = useState(false);
   const [nameSheet, setNameSheet] = useState<null | "folder" | "board">(null);
   // Board whose folder chooser is open, by name.
   const [assignBoard, setAssignBoard] = useState<string | null>(null);
@@ -470,14 +498,11 @@ export default function MobileStartPage(props: StartPageProps) {
                 </span>
               )}
             </div>
-            {manageRemotes && (
+            {(manageRemotes || manageCoordinators) && (
               <button
-                title="Manage remotes"
-                aria-label="Manage remotes"
-                onClick={() => {
-                  manageRemotes.refresh?.();
-                  setRemotesSheetOpen(true);
-                }}
+                title={connectionsLabel}
+                aria-label={connectionsLabel}
+                onClick={openConnections}
                 style={iconButtonStyle}
               >
                 <MobileIcon name="server" size={16} color={M.textSecondary} />
@@ -930,6 +955,27 @@ export default function MobileStartPage(props: StartPageProps) {
                   />
                 ),
               )}
+              {currentFolder!.action && (
+                <button
+                  onClick={currentFolder!.action.onClick}
+                  style={{
+                    width: "100%",
+                    boxSizing: "border-box",
+                    padding: "13px 14px",
+                    borderRadius: 12,
+                    border: `1px dashed ${M.border}`,
+                    background: "transparent",
+                    color: M.textSecondary,
+                    fontSize: 15,
+                    fontWeight: 600,
+                    fontFamily: "inherit",
+                    cursor: "pointer",
+                    textAlign: "left",
+                  }}
+                >
+                  {currentFolder!.action.label}
+                </button>
+              )}
             </div>
           </Slide>
         )}
@@ -999,11 +1045,12 @@ export default function MobileStartPage(props: StartPageProps) {
         </div>
       </BottomSheet>
 
-      {manageRemotes && (
+      {(manageRemotes || manageCoordinators) && (
         <ManageRemotesSheet
           open={remotesSheetOpen}
           onClose={() => setRemotesSheetOpen(false)}
           remotes={manageRemotes}
+          coordinators={coordinators}
         />
       )}
 

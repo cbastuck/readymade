@@ -15,6 +15,7 @@ import {
   initialsOf,
   splitBuildVersion,
   useCloudBoardSources,
+  useLocalStorageCoordinators,
 } from "hkp-frontend/src/views/start";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
 import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
@@ -61,6 +62,10 @@ function StartScreen({
   const { user } = useAppContext();
   const cloudLogin = useCloudLogin();
   const cloudLogout = useCloudLogout();
+  // Coordinators live in the webview's localStorage, like the boards — the
+  // same list the playground's connections sheet and deploy menu read. No
+  // onManage: the start page manages them in its own connections sheet.
+  const coordinators = useLocalStorageCoordinators();
 
   const {
     sharedSource,
@@ -172,6 +177,7 @@ function StartScreen({
       onLeaveShare={onLeaveShare}
       manageRemotes={remotes}
       withCloudBoards
+      manageCoordinators={coordinators}
       canOpen={(action) => action.kind !== "runtime"}
       title="Readymade"
       badge={buildVersion.version}
