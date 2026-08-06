@@ -309,6 +309,34 @@ function RuntimeCard({
   };
 
   if (fullView && scope) {
+    // Full view renders the services' own UI panels, which live on the service
+    // instances a browser scope holds. A remote runtime has no such instances
+    // here — on desktop its panels are built by the RuntimeRest component,
+    // which the mobile renderer never mounts — so it expands to a hint instead.
+    const fullViewScope = isRuntimeBrowserClassType(runtime.type)
+      ? (scope as BrowserRuntimeScope)
+      : undefined;
+    const fullViewPanels = services.map((svc) => {
+      const instance = fullViewScope?.findServiceInstance(svc.uuid)?.[0] ?? null;
+      const UI = instance
+        ? (findServiceUI(svc.serviceId) ??
+          fullViewScope?.registry.findServiceModule(svc.serviceId)?.createUI ??
+          null)
+        : null;
+      if (!UI || !instance) {
+        return null;
+      }
+      return (
+        <UI
+          key={svc.uuid}
+          service={instance}
+          showBypassOnlyIfExplicit={false}
+          draggable={false}
+          onServiceAction={handleServiceAction}
+        />
+      );
+    });
+
     return (
       <div
         style={{
@@ -408,29 +436,22 @@ function RuntimeCard({
               width: `calc(100% / ${SERVICE_UI_ZOOM})`,
             }}
           >
-            {services.map((svc) => {
-              const browserScope = scope as BrowserRuntimeScope | undefined;
-              const instance =
-                browserScope?.findServiceInstance(svc.uuid)?.[0] ?? null;
-              const UI = instance
-                ? (findServiceUI(svc.serviceId) ??
-                  browserScope?.registry.findServiceModule(svc.serviceId)
-                    ?.createUI ??
-                  null)
-                : null;
-              if (!UI || !instance) {
-                return null;
-              }
-              return (
-                <UI
-                  key={svc.uuid}
-                  service={instance}
-                  showBypassOnlyIfExplicit={false}
-                  draggable={false}
-                  onServiceAction={handleServiceAction}
-                />
-              );
-            })}
+            {fullViewPanels.some(Boolean) ? (
+              fullViewPanels
+            ) : (
+              <div
+                style={{
+                  padding: 24,
+                  fontSize: 14,
+                  color: M.textMuted,
+                  textAlign: "center",
+                }}
+              >
+                {fullViewScope
+                  ? "No service UIs available"
+                  : "Service UIs of a remote runtime are shown on desktop only"}
+              </div>
+            )}
           </div>
         </div>
       </div>
