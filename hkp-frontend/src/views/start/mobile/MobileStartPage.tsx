@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 
+import { openInBrowser } from "../../../runtime/browser/services/helpers";
 import { M } from "../../playground/mobile/tokens";
 import MobileIcon from "../../playground/mobile/MobileIcon";
 import BottomSheet from "../../playground/mobile/BottomSheet";
@@ -224,6 +225,7 @@ export default function MobileStartPage(props: StartPageProps) {
     title = "Boards",
     badge,
     badgeDetail,
+    badgeDetailHref,
     initials,
     onAvatarClick,
     avatarTitle,
@@ -489,12 +491,33 @@ export default function MobileStartPage(props: StartPageProps) {
                   }}
                 >
                   {badge}
-                  {badgeDetail && (
-                    <span style={{ fontWeight: 500, opacity: 0.7 }}>
-                      {" "}
-                      {badgeDetail}
-                    </span>
-                  )}
+                  {badgeDetail &&
+                    (badgeDetailHref ? (
+                      <a
+                        href={badgeDetailHref}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          openInBrowser(badgeDetailHref);
+                        }}
+                        style={{
+                          fontWeight: 500,
+                          opacity: 0.7,
+                          color: "inherit",
+                          textDecoration: "underline",
+                          textUnderlineOffset: 2,
+                        }}
+                      >
+                        {" "}
+                        {badgeDetail}
+                      </a>
+                    ) : (
+                      <span style={{ fontWeight: 500, opacity: 0.7 }}>
+                        {" "}
+                        {badgeDetail}
+                      </span>
+                    ))}
                 </span>
               )}
             </div>

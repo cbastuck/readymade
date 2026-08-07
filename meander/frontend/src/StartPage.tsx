@@ -14,6 +14,7 @@ import {
   initialsOf,
   splitBuildVersion,
 } from "hkp-frontend/src/views/start";
+import { commitUrl } from "hkp-frontend/src/projectMeta";
 import { forkBoard } from "hkp-frontend/src/core/forkBoard";
 import { listCoordinatorBoards } from "hkp-frontend/src/views/cloud/coordinatorClient";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
@@ -288,6 +289,7 @@ export default function StartPage({ onRestoreBoard }: Props) {
       title="Readymade"
       badge={currentVersion.version}
       badgeDetail={currentVersion.hash}
+      badgeDetailHref={commitUrl(currentVersion.hash)}
       initials={initialsOf(user?.username)}
       avatarTitle={
         user
