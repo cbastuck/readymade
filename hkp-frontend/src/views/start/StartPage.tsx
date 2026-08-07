@@ -141,6 +141,9 @@ export interface StartPageProps {
   badge?: string;
   /** Secondary, smaller part of the badge chip (e.g. the build hash). */
   badgeDetail?: string;
+  /** Makes the badge detail a link opening in a new tab (e.g. the commit the
+   *  build hash names). */
+  badgeDetailHref?: string;
   logo?: ReactNode;
   initials?: string;
   /** Avatar click action: log in while logged out, log out while logged in. */
@@ -251,6 +254,7 @@ export default function StartPage(props: StartPageProps) {
     title = "Boards",
     badge,
     badgeDetail,
+    badgeDetailHref,
     logo,
     initials,
     onAvatarClick,
@@ -731,6 +735,7 @@ export default function StartPage(props: StartPageProps) {
         title={title}
         badge={badge}
         badgeDetail={badgeDetail}
+        badgeDetailHref={badgeDetailHref}
         logo={logo}
         initials={initials}
         onAvatarClick={onAvatarClick}

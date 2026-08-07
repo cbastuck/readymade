@@ -17,6 +17,7 @@ import {
   useCloudBoardSources,
   useLocalStorageCoordinators,
 } from "hkp-frontend/src/views/start";
+import { commitUrl } from "hkp-frontend/src/projectMeta";
 import { useCloudLogin } from "hkp-frontend/src/auth/useCloudLogin";
 import { useCloudLogout } from "hkp-frontend/src/auth/useCloudLogout";
 import {
@@ -182,6 +183,7 @@ function StartScreen({
       title="Readymade"
       badge={buildVersion.version}
       badgeDetail={buildVersion.hash}
+      badgeDetailHref={commitUrl(buildVersion.hash)}
       initials={initialsOf(user?.username)}
       avatarTitle={
         user

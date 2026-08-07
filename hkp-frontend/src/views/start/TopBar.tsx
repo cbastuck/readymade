@@ -1,12 +1,17 @@
 import type { CSSProperties, ReactNode } from "react";
 import { User } from "lucide-react";
 
+import { openInBrowser } from "../../runtime/browser/services/helpers";
+
 interface Props {
   title: string;
   /** Small chip next to the title, e.g. the version number. */
   badge?: string;
   /** Secondary part of the chip (e.g. the build hash), rendered smaller. */
   badgeDetail?: string;
+  /** Makes the detail part a link opening in a new tab (e.g. the commit the
+   *  build hash names). Plain text when absent. */
+  badgeDetailHref?: string;
   /** Logo mark; defaults to the first letter of the title on an accent tile. */
   logo?: ReactNode;
   /** Avatar initials of the logged-in user; a generic user icon when absent. */
@@ -44,6 +49,7 @@ export default function TopBar({
   title,
   badge,
   badgeDetail,
+  badgeDetailHref,
   logo,
   initials,
   onAvatarClick,
@@ -105,11 +111,33 @@ export default function TopBar({
             }}
           >
             {badge}
-            {badgeDetail && (
-              <span style={{ fontSize: 9.5, fontWeight: 500, opacity: 0.7 }}>
-                {badgeDetail}
-              </span>
-            )}
+            {badgeDetail &&
+              (badgeDetailHref ? (
+                <a
+                  href={badgeDetailHref}
+                  target="_blank"
+                  rel="noreferrer"
+                  title={`View ${badgeDetail} on GitHub`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    openInBrowser(badgeDetailHref);
+                  }}
+                  style={{
+                    fontSize: 9.5,
+                    fontWeight: 500,
+                    opacity: 0.7,
+                    color: "inherit",
+                    textDecoration: "underline",
+                    textUnderlineOffset: 2,
+                  }}
+                >
+                  {badgeDetail}
+                </a>
+              ) : (
+                <span style={{ fontSize: 9.5, fontWeight: 500, opacity: 0.7 }}>
+                  {badgeDetail}
+                </span>
+              ))}
           </span>
         )}
       </div>
