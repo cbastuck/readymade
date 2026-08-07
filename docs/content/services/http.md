@@ -139,6 +139,21 @@ an endpoint can be made terminal with a [Stopper](./stopper.md) — ending the
 chain so it does not drive the runtime that calls it — while still answering its
 callers normally.
 
+### Where the nested pipeline is entered from (hkp-node)
+
+`mode` says which arrivals run the nested pipeline:
+
+| `mode` | Requests | Data from the outer chain |
+|---|---|---|
+| `process_on_session` (default) | run the nested pipeline | passed through untouched |
+| `process_on_data` | answered with the last value stored, verbatim | stored; the nested pipeline is not used |
+| `process_on_both` | run the nested pipeline | runs the nested pipeline, and its result carries on down the chain |
+
+`process_on_both` gives the nested pipeline two entry points. It is still a
+single ordered list, and what one entry point produces is gone by the time the
+other arrives — see [Hold](./hold.md), which keeps a producer's latest value
+available to a caller that shows up later.
+
 ---
 
 ## Typical pattern: API bridge

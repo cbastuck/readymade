@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import BottomSheet from "./BottomSheet";
 import JsonEditor from "./JsonEditor";
 import MobileIcon from "./MobileIcon";
@@ -16,6 +17,8 @@ import {
   isRuntimeGraphQLClassType,
 } from "../../../types";
 import { useBoardContext } from "../../../BoardContext";
+import { copyToClipboard } from "../../../clipboard";
+import { MOUNT_FIELD } from "../../../runtime/board/mount";
 import BrowserRuntimeScope from "../../../runtime/browser/BrowserRuntimeScope";
 import { findServiceUI as findBrowserServiceUI } from "../../../runtime/browser/UIRegistry";
 import {
@@ -113,6 +116,7 @@ export default function ServiceSheet({
   // `rootState` is the live state of the top-level service (it contains the
   // whole nested pipeline tree). `path` is the breadcrumb trail of sub-services
   // we've drilled into. The "active" node is resolved by walking the tree.
+  const [mountCopied, setMountCopied] = useState(false);
   const [rootState, setRootState] = useState<any>(null);
   const [path, setPath] = useState<Crumb[]>([]);
   const [addPickerOpen, setAddPickerOpen] = useState(false);
@@ -208,6 +212,29 @@ export default function ServiceSheet({
       setPath((p) => p.slice(0, active.validDepth));
     }
   }, [active.validDepth, path.length]);
+
+  // Both forms live in the same field: the address a mount owner published, or
+  // the reference a consumer points at it with. Either is worth copying.
+  const mountValue =
+    typeof active.state?.[MOUNT_FIELD] === "string"
+      ? (active.state[MOUNT_FIELD] as string)
+      : "";
+
+  const copyMount = async () => {
+    if (!(await copyToClipboard(mountValue))) {
+      toast.error("Could not copy the mount");
+      return;
+    }
+    setMountCopied(true);
+  };
+
+  useEffect(() => {
+    if (!mountCopied) {
+      return;
+    }
+    const timer = setTimeout(() => setMountCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [mountCopied]);
 
   const isRoot = path.length === 0;
   const activeCaps = isRoot ? rootCaps : capsOf(active.serviceId);
@@ -980,6 +1007,75 @@ export default function ServiceSheet({
                 </span>
               </div>
             </div>
+
+            {/* Mount — an address the runtime assigned, so it is read and
+                handed on rather than typed; selecting it by touch is awkward. */}
+            {mountValue && (
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: "0.08em",
+                    color: M.textMuted,
+                    textTransform: "uppercase",
+                    marginBottom: 8,
+                  }}
+                >
+                  Mount
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 14px",
+                    background: "#f8f5f2",
+                    borderRadius: 10,
+                    border: `1px solid ${M.border}`,
+                  }}
+                >
+                  <span
+                    style={{
+                      flex: 1,
+                      fontSize: 12,
+                      color: M.textSecondary,
+                      fontFamily: "monospace",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {mountValue}
+                  </span>
+                  <button
+                    onClick={copyMount}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                      flexShrink: 0,
+                      height: 36,
+                      padding: "0 12px",
+                      border: `1px solid ${M.teal}`,
+                      borderRadius: 8,
+                      background: M.tealLight,
+                      color: M.tealDark,
+                      fontFamily: "inherit",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <MobileIcon
+                      name={mountCopied ? "check" : "copy"}
+                      size={14}
+                      color={M.tealDark}
+                    />
+                    {mountCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* State preview */}
             {active.state !== undefined && (

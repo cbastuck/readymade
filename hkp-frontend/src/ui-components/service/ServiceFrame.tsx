@@ -26,6 +26,7 @@ import {
   ServiceInstanceDropType,
 } from "hkp-frontend/src/components/DropTypes";
 import { assureJSON } from "hkp-frontend/src/common";
+import { copyToClipboard } from "hkp-frontend/src/clipboard";
 
 const DOCS_SERVICES_URL = "https://hookitapp.com/documentation/services";
 
@@ -218,47 +219,17 @@ export default function ServiceFrame({
   };
 
   const copyServiceUuid = async () => {
-    const value = `${service.uuid ?? ""}`;
-    if (!value) {
+    if (!(await copyToClipboard(`${service.uuid ?? ""}`))) {
       return;
     }
-
-    const setCopiedFeedback = () => {
-      setServiceIdCopied(true);
-      if (copyFeedbackTimerRef.current) {
-        clearTimeout(copyFeedbackTimerRef.current);
-      }
-      copyFeedbackTimerRef.current = setTimeout(
-        () => setServiceIdCopied(false),
-        1200,
-      );
-    };
-
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(value);
-        setCopiedFeedback();
-        return;
-      }
-    } catch {
-      // Fall through to legacy copy method.
+    setServiceIdCopied(true);
+    if (copyFeedbackTimerRef.current) {
+      clearTimeout(copyFeedbackTimerRef.current);
     }
-
-    const input = document.createElement("textarea");
-    input.value = value;
-    input.style.position = "fixed";
-    input.style.opacity = "0";
-    document.body.appendChild(input);
-    input.focus();
-    input.select();
-    try {
-      const successful = document.execCommand("copy");
-      if (successful) {
-        setCopiedFeedback();
-      }
-    } finally {
-      document.body.removeChild(input);
-    }
+    copyFeedbackTimerRef.current = setTimeout(
+      () => setServiceIdCopied(false),
+      1200,
+    );
   };
 
   const theme = useTheme();

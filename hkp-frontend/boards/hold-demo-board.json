@@ -1,0 +1,67 @@
+{
+  "boardName": "Hold Demo",
+  "runtimes": [
+    {
+      "id": "node",
+      "name": "node1.readymadeit.com",
+      "type": "rest",
+      "url": "https://node1.readymadeit.com",
+      "state": { "wrapServices": false }
+    }
+  ],
+  "services": {
+    "node": [
+      {
+        "uuid": "endpoint",
+        "serviceId": "http-server-subservices",
+        "serviceName": "HttpServerSubservices",
+        "state": {
+          "bypass": false,
+          "mode": "process_on_session",
+          "pipeline": [
+            {
+              "uuid": "ticker",
+              "serviceId": "timer",
+              "serviceName": "Timer",
+              "state": {
+                "periodic": true,
+                "periodicValue": 1,
+                "periodicUnit": "s",
+                "start": true
+              }
+            },
+            {
+              "uuid": "hold",
+              "serviceId": "hold",
+              "serviceName": "Hold",
+              "state": {
+                "property": "triggerCount"
+              }
+            },
+            {
+              "uuid": "format",
+              "serviceId": "map",
+              "serviceName": "Map",
+              "state": {
+                "mode": "replace",
+                "template": {
+                  "=": "'tick ' + params.triggerCount"
+                }
+              }
+            }
+          ]
+        }
+      },
+      {
+        "uuid": "served",
+        "serviceId": "monitor",
+        "serviceName": "Served"
+      },
+      {
+        "uuid": "end",
+        "serviceId": "stopper",
+        "serviceName": "Stopper"
+      }
+    ]
+  }
+}

@@ -5,6 +5,8 @@ import {
   Path, JsonType, JSON_TYPES,
   getAtPath, setAtPath, deleteAtPath, addAtPath, defaultForType,
 } from "hkp-frontend/src/ui-components/json-editor/helpers";
+import { copyToClipboard } from "hkp-frontend/src/clipboard";
+import { MOUNT_FIELD } from "hkp-frontend/src/runtime/board/mount";
 
 // ── Swipe-to-delete row ────────────────────────────────────────
 
@@ -367,6 +369,46 @@ function ValueWidget({
 
 // ── Property row ───────────────────────────────────────────────
 
+/** Copies a value the row shows but that is impractical to select by touch. */
+function RowCopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) { return; }
+    const timer = setTimeout(() => setCopied(false), 1500);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  return (
+    <button
+      onClick={async () => {
+        if (await copyToClipboard(value)) {
+          setCopied(true);
+        }
+      }}
+      title="Copy"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        width: 32,
+        height: 32,
+        flexShrink: 0,
+        border: `1px solid ${M.border}`,
+        borderRadius: 6,
+        background: copied ? M.tealLight : "#f8f5f2",
+        cursor: "pointer",
+      }}
+    >
+      <MobileIcon
+        name={copied ? "check" : "copy"}
+        size={14}
+        color={copied ? M.tealDark : M.textSecondary}
+      />
+    </button>
+  );
+}
+
 function PropertyRow({
   label,
   value,
@@ -378,6 +420,7 @@ function PropertyRow({
   onChange: (v: any) => void;
   onDrillIn: () => void;
 }) {
+  const isMount = label === MOUNT_FIELD && typeof value === "string" && !!value;
   return (
     <div
       style={{
@@ -404,8 +447,17 @@ function PropertyRow({
       >
         {label}
       </span>
-      <div style={{ flex: 1, display: "flex", justifyContent: "flex-end" }}>
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          gap: 6,
+        }}
+      >
         <ValueWidget value={value} onChange={onChange} onDrillIn={onDrillIn} />
+        {isMount && <RowCopyButton value={value} />}
       </div>
     </div>
   );
