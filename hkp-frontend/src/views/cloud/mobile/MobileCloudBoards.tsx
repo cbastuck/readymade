@@ -27,6 +27,7 @@ import {
   CoordinatorBoardInfo,
   listCoordinatorBoards,
   registerCoordinatorBoard,
+  stopCoordinatorBoard,
   deleteCoordinatorBoard,
 } from "../coordinatorClient";
 import { useCoordinatorBridge } from "../useCoordinatorBridge";
@@ -466,14 +467,30 @@ function MobileCloudBoardCanvas({
 
 // ── Top bar ─────────────────────────────────────────────────────────────────────
 
+// A board here is someone else's to run — it lives on a coordinator and keeps
+// going when the phone is put away — and it is otherwise rendered by the same
+// canvas as a local board. The teal edge and the cloud line under the title are
+// what tell the two apart at a glance; the local playground's bar is a plain
+// hairline.
 function CloudTopBar({
   title,
+  subtitle,
   onBack,
   onRefresh,
+  runState,
 }: {
   title: string;
+  /** Where the board lives, e.g. "Deployed to node1"; absent on the overview. */
+  subtitle?: string;
   onBack?: () => void;
   onRefresh?: () => void;
+  /** Start/Stop control for the open board — the mobile counterpart of the
+   *  desktop toolbar's status slot. Absent on the overview. */
+  runState?: {
+    stopped: boolean;
+    busy: boolean;
+    onToggle: () => void;
+  };
 }) {
   return (
     <div
@@ -487,7 +504,7 @@ function CloudTopBar({
         display: "flex",
         alignItems: "center",
         gap: 6,
-        borderBottom: `1px solid ${M.border}`,
+        borderBottom: `2px solid ${M.teal}`,
         flexShrink: 0,
       }}
     >
@@ -509,19 +526,71 @@ function CloudTopBar({
           <MobileIcon name="chevronLeft" size={22} color={M.teal} strokeWidth={2} />
         </button>
       )}
-      <span
-        style={{
-          flex: 1,
-          fontSize: 16,
-          fontWeight: 700,
-          color: M.textPrimary,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {title}
-      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            fontSize: 16,
+            fontWeight: 700,
+            color: M.textPrimary,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {title}
+        </div>
+        {subtitle && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              marginTop: 1,
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: M.tealDark,
+              overflow: "hidden",
+            }}
+          >
+            <MobileIcon name="cloud" size={12} color={M.tealDark} />
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {subtitle}
+            </span>
+          </div>
+        )}
+      </div>
+      {runState && (
+        <button
+          onClick={runState.onToggle}
+          disabled={runState.busy}
+          title={
+            runState.stopped
+              ? "Its runtimes are released; Start provisions them again"
+              : "It keeps running when you close this"
+          }
+          style={{
+            flexShrink: 0,
+            padding: "7px 14px",
+            borderRadius: 9,
+            border: `1px solid ${runState.stopped ? M.teal : M.border}`,
+            background: runState.stopped ? M.tealLight : "#fff",
+            color: runState.stopped ? M.tealDark : M.textSecondary,
+            fontSize: 13,
+            fontWeight: 600,
+            fontFamily: "inherit",
+            cursor: runState.busy ? "default" : "pointer",
+            opacity: runState.busy ? 0.5 : 1,
+          }}
+        >
+          {runState.stopped ? "Start" : "Stop"}
+        </button>
+      )}
       {onRefresh && (
         <button
           onClick={onRefresh}
@@ -581,6 +650,9 @@ export default function MobileCloudBoards({
   >();
   // View toggle: when true show the overview even though a board is still mounted.
   const [showOverview, setShowOverview] = useState(true);
+  // True while a start/stop request is in flight, so a second tap cannot
+  // register the board twice.
+  const [runToggleBusy, setRunToggleBusy] = useState(false);
 
   // ── Coordinator management ────────────────────────────────────────────────────
 
@@ -853,6 +925,59 @@ export default function MobileCloudBoards({
   const openBoardErrors =
     openBoardLive?.status === "error" ? (openBoardLive.errors ?? []) : [];
 
+  // ── Start / stop the open board ───────────────────────────────────────────────
+
+  /**
+   * Runs a stopped board again, or stops a running one — the same pair the
+   * desktop toolbar offers.
+   *
+   * Stopping releases the runtimes but keeps the board and its config on the
+   * coordinator, so starting it is registering that same config: no trip
+   * through the playground, since this board is already deployed and nothing
+   * about it is being changed.
+   */
+  const onToggleBoardRunning = async () => {
+    const coordinator = selectedCoordinator;
+    const board = openBoardLive;
+    if (!board || !coordinator || !user || runToggleBusy) {
+      return;
+    }
+    const stopped = board.status === "stopped";
+    if (stopped && !board.config) {
+      toast.error("This board has no config on the coordinator to start");
+      return;
+    }
+    setRunToggleBusy(true);
+    try {
+      const info = stopped
+        ? await registerCoordinatorBoard(coordinator.url, user.userId, user.idToken, {
+            ...board.config,
+            boardName: board.boardName,
+          })
+        : await stopCoordinatorBoard(
+            coordinator.url,
+            user.userId,
+            user.idToken,
+            board.boardName,
+          );
+      setSelectedBoard(info);
+      if (info.status === "error" && info.errors?.length) {
+        toast.error("A cloud runtime failed to start", {
+          description: info.errors.join("\n"),
+        });
+      }
+      await reloadAllBoards();
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : `Failed to ${stopped ? "start" : "stop"} the board`,
+      );
+    } finally {
+      setRunToggleBusy(false);
+    }
+  };
+
   // ── Render ────────────────────────────────────────────────────────────────────
 
   // Cloud boards require an authenticated session — gate the entire view.
@@ -891,8 +1016,24 @@ export default function MobileCloudBoards({
       >
         <CloudTopBar
           title={boardIsOpen ? (selectedBoard?.boardName ?? "Board") : "Cloud Boards"}
+          subtitle={
+            boardIsOpen
+              ? `${openBoardLive?.status === "stopped" ? "Stopped on" : "Deployed to"} ${
+                  selectedCoordinator?.name ?? "a coordinator"
+                }`
+              : undefined
+          }
           onBack={boardIsOpen ? onBackToOverview : undefined}
           onRefresh={boardIsOpen ? undefined : () => reloadAllBoards()}
+          runState={
+            boardIsOpen && openBoardLive
+              ? {
+                  stopped: openBoardLive.status === "stopped",
+                  busy: runToggleBusy,
+                  onToggle: () => void onToggleBoardRunning(),
+                }
+              : undefined
+          }
         />
 
         {/* Keep the board mounted in the background while browsing the overview
