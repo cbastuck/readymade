@@ -13,6 +13,7 @@ import MapUIV0 from "./ui/MapUI";
 import MapUIV1 from "../browser/services/MapUI";
 import HttpClientUI from "./ui/HttpClientUI";
 import SkillRouterUI from "./ui/SkillRouterUI";
+import HoldUI from "./ui/HoldUI";
 
 export type ServiceLookup = {
   serviceId?: ServiceClass["serviceId"];
@@ -52,6 +53,8 @@ function findServiceUIByKey(
       return HttpClientUI;
     case "skill-router":
       return SkillRouterUI;
+    case "hold":
+      return HoldUI;
     case "timer":
       return TimerUI;
     case "imap-email":

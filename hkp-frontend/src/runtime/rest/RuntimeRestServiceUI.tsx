@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Copy } from "lucide-react";
 
 import { ServiceInstance, ServiceUIProps } from "../../types";
 
@@ -7,7 +6,8 @@ import SelectorField from "hkp-frontend/src/components/shared/SelectorField";
 import InputText from "../../components/shared/InputText";
 import Slider from "../../components/shared/Slider";
 import ServiceUI from "hkp-frontend/src/ui-components/service/ServiceUI";
-import Button from "hkp-frontend/src/ui-components/Button";
+import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
+import { MOUNT_FIELD } from "hkp-frontend/src/runtime/board/mount";
 import SubmittableInput from "hkp-frontend/src/ui-components/SubmittableInput";
 import Switch from "hkp-frontend/src/ui-components/Switch";
 import SubServicePipelineUI from "../ui/SubServicePipelineUI";
@@ -133,6 +133,11 @@ export default function RuntimeRestServiceUI(props: Props) {
           const type =
             t === "string" ? (visibility === "hide" ? "password" : "text") : t;
 
+          // A mount address is assigned by the runtime and read by whoever
+          // dials it, so it is taken far more often than it is typed.
+          const isMount =
+            prop === MOUNT_FIELD || prop.endsWith(`.${MOUNT_FIELD}`);
+
           return (
             <div
               className="flex items-end"
@@ -151,13 +156,8 @@ export default function RuntimeRestServiceUI(props: Props) {
                 type={type}
                 disabled={readonly}
               />
-              {readonly && (
-                <Button
-                  className="h-min w-min"
-                  variant="ghost"
-                  icon={<Copy size={14} />}
-                  onClick={() => navigator.clipboard.writeText(val)}
-                />
+              {(readonly || isMount) && (
+                <CopyButton value={String(val ?? "")} label={prop} />
               )}
             </div>
           );

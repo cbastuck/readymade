@@ -5,6 +5,7 @@ import SelectorField, {
 } from "hkp-frontend/src/components/shared/SelectorField";
 import { useCallback, useMemo, useState } from "react";
 import InputField from "hkp-frontend/src/components/shared/InputField";
+import CopyButton from "hkp-frontend/src/ui-components/CopyButton";
 import HttpHeaders from "./HttpHeaders";
 
 export default function HttpClientUI(props: ServiceUIProps) {
@@ -212,11 +213,14 @@ export default function HttpClientUI(props: ServiceUIProps) {
             // it is not the user's to type, and it takes precedence over URL.
             <div className="py-1 w-[25rem]">
               <div className="text-xs uppercase tracking-wide">Mount</div>
-              <div className="font-mono text-xs break-all">
-                {mount}
-                {mount.startsWith("hkp-mount://") && (
-                  <span className="italic"> — waiting for an endpoint</span>
-                )}
+              <div className="flex items-start gap-1">
+                <div className="font-mono text-xs break-all flex-1">
+                  {mount}
+                  {mount.startsWith("hkp-mount://") && (
+                    <span className="italic"> — waiting for an endpoint</span>
+                  )}
+                </div>
+                <CopyButton value={mount} label="mount" />
               </div>
             </div>
           )}
