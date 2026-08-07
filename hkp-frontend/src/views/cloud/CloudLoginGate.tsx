@@ -1,5 +1,7 @@
 import { useState } from "react";
 
+import ContactMail from "../../components/ContactMail";
+
 type Props = {
   onLogin: () => Promise<void>;
 };
@@ -77,7 +79,7 @@ export default function CloudLoginGate({ onLogin }: Props) {
             Terms of Use
           </a>{" "}
           are what apply. Found a security problem? Good-faith research is
-          welcome — tell us at christoph@bstck.berlin.
+          welcome — tell us at <ContactMail />.
         </div>
       </div>
     </div>

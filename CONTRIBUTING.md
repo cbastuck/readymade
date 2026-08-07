@@ -17,6 +17,16 @@ See [CLA.md](./CLA.md) for the full text.
 (Once set up: this will be handled automatically — a bot will prompt
 you to sign electronically via GitHub when you open your first PR.)
 
+## How we treat each other
+
+The [Code of Conduct](./CODE_OF_CONDUCT.md) applies to issues, pull requests,
+code review, and discussions. Its second half — what we hope Readymade gets used
+for — is a wish rather than a rule, and changes nothing about the AGPL rights you
+have in the code.
+
+Security problems go to christoph@bstck.berlin rather than a public issue; see
+[SECURITY.md](./SECURITY.md).
+
 ## How to contribute
 
 - Open an issue to discuss non-trivial changes before starting work.

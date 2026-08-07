@@ -110,3 +110,12 @@ guide for the exact artifact path.
 
 - License: GNU AGPL v3.0 (see `LICENSE`)
 - Copyright ownership: see `COPYRIGHT`
+
+## Project documents
+
+- [CONTRIBUTING](./CONTRIBUTING.md) — how to contribute, and the CLA
+- [Code of Conduct](./CODE_OF_CONDUCT.md) — how we treat each other in the project's
+  spaces, and what we hope Readymade gets used for
+- [Security policy](./SECURITY.md) — reporting a vulnerability, safe harbour, self-hosting
+  notes
+- [Trademark](./TRADEMARK.md) — using the Readymade name and logo
