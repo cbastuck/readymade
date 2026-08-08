@@ -46,9 +46,7 @@ export default function CloudLoginGate({ onLogin }: Props) {
 
   return (
     <div className="flex flex-col items-center justify-center w-full h-full gap-4 text-center px-6">
-      <div className="text-neutral-500 text-base">
-        Sign in to use cloud boards
-      </div>
+      <div className="text-neutral-500">Sign in to use cloud boards</div>
       <button
         className="hkp-svc-btn px-4 py-2 rounded-lg border border-slate-300 bg-white text-sm font-medium text-slate-800 cursor-pointer transition-all hover:bg-slate-50 hover:border-slate-400 disabled:opacity-60 disabled:cursor-default"
         onClick={handleClick}
