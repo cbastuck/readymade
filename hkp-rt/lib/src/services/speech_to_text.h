@@ -60,6 +60,7 @@ public:
   std::string getServiceId() const override;
   json getState() const override;
   Data process(Data data) override;
+  void shutdown() override;
 
 private:
   std::unique_ptr<SpeechToTextImpl> m_impl;

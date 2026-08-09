@@ -62,6 +62,12 @@ public:
   inline const std::string &getName() const { return m_instanceName; }
   virtual std::string getServiceId() const = 0;
 
+  // Called by the host (Runtime) before it tears itself down, while the host and
+  // its service list are still fully alive. A service that runs work on a
+  // background thread joins it here, so its final emit() drives the pipeline
+  // through a live host rather than half-destroyed state. Default: nothing.
+  virtual void shutdown() {}
+
   // Inputs are a static property of a service, and are not supposed to change through lifetime.
   // Usually services don't provide additional inputs, examples that do are websocket_server_service.h,
   // or in general any "-T-shaped" service.

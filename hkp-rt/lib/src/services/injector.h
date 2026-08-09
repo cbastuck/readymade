@@ -40,13 +40,17 @@ public:
       if (j->contains("inject"))
       {
         setInjection(toData((*j)["inject"]));
-        nextAsync(m_injection); // posts via the App io_context - safe from the HTTP thread
+        // emit (not nextAsync) so the injector reports its own output as a
+        // "call-process-finished" lifecycle event — otherwise the flow started
+        // from configure() never brackets the injector itself and its output
+        // plug / flow inspector stays empty.
+        emit(m_injection);
       }
 
       if (j->contains("injectBinary") && (*j)["injectBinary"].is_string())
       {
         setInjection(decodeBase64((*j)["injectBinary"].get<std::string>()));
-        nextAsync(m_injection);
+        emit(m_injection);
       }
 
       if (j->contains("recentInjection"))

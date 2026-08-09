@@ -628,8 +628,18 @@ TextGeneration::TextGeneration(const std::string& instanceId)
 
 TextGeneration::~TextGeneration()
 {
-  // Let any in-flight generation finish so the worker never touches a
-  // half-destroyed service (it calls sendNotification/emit through the base).
+  // Backstop: the host calls shutdown() first (while it is still alive), so this
+  // is normally a no-op. Still join here for a service destroyed on its own.
+  if (m_impl && m_impl->worker.joinable())
+  {
+    m_impl->worker.join();
+  }
+}
+
+void TextGeneration::shutdown()
+{
+  // Join any in-flight generation so its emit() runs while the host is still
+  // alive. Idempotent — the destructor's join then finds nothing to do.
   if (m_impl && m_impl->worker.joinable())
   {
     m_impl->worker.join();
