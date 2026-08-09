@@ -9,6 +9,8 @@ Keeps the latest value one side of a pipeline produced, and replays it to the ot
 | Runtime | Service ID |
 |---|---|
 | hkp-node | `hold` |
+| hkp-python | `hold` |
+| hkp-rt | `hold` |
 
 ---
 
@@ -56,7 +58,10 @@ go with the value either way: they say how often each side has called for what i
 Reported state also carries `held` — `null` while nothing is held — along with `readCount`
 and `writeCount`, so a producer that has stopped writing shows up as reads without writes.
 A held value that cannot travel as JSON is described in `held` rather than sent; the value
-itself is untouched.
+itself is untouched. In hkp-rt everything held is already JSON, so that case does not arise.
+
+Bypassing Hold in hkp-rt passes the input straight through without holding or replaying —
+the base class does not call the service at all.
 
 ---
 

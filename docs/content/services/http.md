@@ -139,7 +139,7 @@ an endpoint can be made terminal with a [Stopper](./stopper.md) — ending the
 chain so it does not drive the runtime that calls it — while still answering its
 callers normally.
 
-### Where the nested pipeline is entered from (hkp-node)
+### Where the nested pipeline is entered from
 
 `mode` says which arrivals run the nested pipeline:
 
