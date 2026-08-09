@@ -4,6 +4,7 @@
 #include <functional>
 #include <list>
 #include <map>
+#include <vector>
 #include <memory>
 #include <string>
 
@@ -150,8 +151,22 @@ public:
       [&](const auto& s) { return s->getId() == svc.getId(); });
   }
 
-  void sendData(Data, MessagePurpose, const std::string&,
-                std::function<void(Data)>) override {}
+  // What the board would receive. A nested pipeline forwards through its
+  // parent, so anything a nested service reports has to land here.
+  struct Sent { Data data; MessagePurpose purpose; std::string sender; };
+  std::vector<Sent> sent;
+
+  void sendData(Data data, MessagePurpose purpose, const std::string& sender,
+                std::function<void(Data)>) override {
+    sent.push_back({ std::move(data), purpose, sender });
+  }
+
+  size_t notificationsFrom(const std::string& sender) const {
+    return static_cast<size_t>(std::count_if(
+      sent.cbegin(), sent.cend(), [&](const Sent& s) {
+        return s.sender == sender && s.purpose == MessagePurpose::NOTIFICATION;
+      }));
+  }
 
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override {
@@ -759,4 +774,125 @@ TEST_CASE("SubService::process with inner next() bubbles to outer host",
 
   REQUIRE(nextCaller->callCount    == 1);
   REQUIRE(outerReceiver->callCount == 1);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// What a nested pipeline reports, and what it leaves behind when it goes.
+//
+// hkp-node and hkp-python needed fixing on both counts: their nested runtimes
+// had no notification target and never tore their pipelines down. hkp-rt gets
+// both from its structure — SubRuntime::sendData forwards to the parent host,
+// and the services are owned by shared_ptr, so replacing a pipeline destroys
+// them. These pin that, since neither is obvious from the call sites.
+// ──────────────────────────────────────────────────────────────────────────────
+
+namespace {
+
+// Reports state of its own accord, the way Hold and Timer do.
+class ReportingService final : public Service {
+public:
+  explicit ReportingService(const std::string& id)
+    : Service(id, "reporting") {}
+
+  std::string getServiceId() const override { return "reporting"; }
+
+  Data process(Data data) override {
+    sendNotification(json{{"seen", ++callCount}});
+    return data;
+  }
+
+  int callCount = 0;
+};
+
+// Says when it was destroyed, the way a service holding a timer or socket
+// would have to be for its resources to be released.
+class DestructionRecorder final : public Service {
+public:
+  DestructionRecorder(const std::string& id, std::vector<std::string>& destroyed)
+    : Service(id, "destruction-recorder"), m_destroyed(destroyed) {}
+
+  ~DestructionRecorder() { m_destroyed.push_back(getId()); }
+
+  std::string getServiceId() const override { return "destruction-recorder"; }
+
+  Data process(Data data) override { return data; }
+
+private:
+  std::vector<std::string>& m_destroyed;
+};
+
+} // namespace
+
+TEST_CASE("A nested service's notifications reach the board",
+          "[services][sub-service][notifications]") {
+  MockRuntimeHost host;
+
+  host.factory = [&](const std::string&, const std::string& id)
+    -> std::shared_ptr<Service>
+  {
+    return std::make_shared<ReportingService>(id);
+  };
+
+  auto subSvc = std::make_shared<SubService>("sub-1");
+  host.addService(subSvc);
+  subSvc->configure(json{{"pipeline", json::array({
+    json{{"serviceId", "reporting"}, {"instanceId", "nested-1"}}
+  })}});
+
+  subSvc->process(json{{"x", 1}});
+
+  // Once: the nested pipeline forwards to the parent, and nothing forwards it
+  // a second time on the way.
+  REQUIRE(host.notificationsFrom("nested-1") == 1);
+}
+
+TEST_CASE("Replacing a nested pipeline destroys the services it held",
+          "[services][sub-service][teardown]") {
+  std::vector<std::string> destroyed;
+  MockRuntimeHost host;
+
+  host.factory = [&](const std::string&, const std::string& id)
+    -> std::shared_ptr<Service>
+  {
+    return std::make_shared<DestructionRecorder>(id, destroyed);
+  };
+
+  auto subSvc = std::make_shared<SubService>("sub-1");
+  host.addService(subSvc);
+  subSvc->configure(json{{"pipeline", json::array({
+    json{{"serviceId", "destruction-recorder"}, {"instanceId", "nested-1"}}
+  })}});
+
+  REQUIRE(destroyed.empty());
+
+  subSvc->configure(json{{"pipeline", json::array({
+    json{{"serviceId", "destruction-recorder"}, {"instanceId", "nested-2"}}
+  })}});
+
+  // The pipeline being replaced is unreachable; its services go with it.
+  REQUIRE(destroyed == std::vector<std::string>{ "nested-1" });
+}
+
+TEST_CASE("Destroying the owner destroys the services its pipeline held",
+          "[services][sub-service][teardown]") {
+  std::vector<std::string> destroyed;
+
+  {
+    MockRuntimeHost host;
+    host.factory = [&](const std::string&, const std::string& id)
+      -> std::shared_ptr<Service>
+    {
+      return std::make_shared<DestructionRecorder>(id, destroyed);
+    };
+
+    auto subSvc = std::make_shared<SubService>("sub-1");
+    host.addService(subSvc);
+    subSvc->configure(json{{"pipeline", json::array({
+      json{{"serviceId", "destruction-recorder"}, {"instanceId", "nested-1"}}
+    })}});
+
+    REQUIRE(destroyed.empty());
+  }
+
+  REQUIRE(destroyed == std::vector<std::string>{ "nested-1" });
 }

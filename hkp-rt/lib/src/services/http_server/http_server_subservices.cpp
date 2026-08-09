@@ -88,7 +88,13 @@ HttpServerSubservices::HttpServerSubservices(const std::string& instanceId)
   , m_impl(std::make_shared<HttpServerImpl>())
 {
   m_bypass = true; // Start in bypass mode
-  m_mode = "process_on_session"; // alternative: "process_on_data"
+  // Where the nested pipeline is entered from. Alternatives:
+  //   process_on_data — data from the outer chain is stored and served back to
+  //     requests verbatim; the nested pipeline is not used.
+  //   process_on_both — both entry points run the nested pipeline. It is a
+  //     single ordered list either way, so a service inside it that needs to
+  //     tell a request from a data arrival has to do so from the input.
+  m_mode = "process_on_session";
   m_impl->setOnSessionOpenedCallback(
     [this](std::shared_ptr<Session> session, const std::string& path, const std::string& method) {
       onNewSession(session, path, method);
@@ -106,7 +112,7 @@ void HttpServerSubservices::onNewSession(std::shared_ptr<Session> session,
                                          const std::string& method,
                                          bool awaitResponse)
 {
-  if (m_mode != "process_on_session" || !session)
+  if ((m_mode != "process_on_session" && m_mode != "process_on_both") || !session)
   {
     std::cerr << "HttpServerSubservices::onNewSession: should not be called in mode " << m_mode << std::endl;
     return;
@@ -221,7 +227,10 @@ json HttpServerSubservices::configure(Data data)
 
   if (updateIfNeeded(m_mode, (*buf)["mode"]))
   {
-    if (m_mode == "process_on_session")
+    // process_on_both serves requests exactly as process_on_session does; what
+    // it adds is running the nested pipeline for data arriving from the outer
+    // chain too, which happens in process().
+    if (m_mode == "process_on_session" || m_mode == "process_on_both")
     {
       m_impl->setOnSessionOpenedCallback(
         [this](std::shared_ptr<Session> session, const std::string& path, const std::string& method) {
@@ -340,6 +349,16 @@ Data HttpServerSubservices::process(Data data)
   if (m_mode == "process_on_data")
   {
     m_impl->processData(data);
+    return data;
+  }
+
+  // Routing only: the nested pipeline handles data arriving from the outer
+  // chain exactly as it handles a request, and what it returns carries on down
+  // the chain. Whatever has to survive between the two — a value one side
+  // produces and the other reads — is a service's job, not this one's.
+  if (m_mode == "process_on_both" && !isBypass() && m_subservices && !m_subservices->empty())
+  {
+    return m_subservices->process(data);
   }
 
   return data;

@@ -1,0 +1,41 @@
+{
+  "runtimeId": "hold-example",
+  "services": [
+    {
+      "serviceId": "http-server-subservices",
+      "instanceId": "endpoint-1",
+      "state": {
+        "bypass": false,
+        "pipeline": [
+          {
+            "serviceId": "timer",
+            "instanceId": "ticker-1",
+            "state": {
+              "periodic": true,
+              "periodicValue": 1,
+              "periodicUnit": "s",
+              "start": true
+            }
+          },
+          {
+            "serviceId": "hold",
+            "instanceId": "hold-1",
+            "state": {
+              "property": "triggerCount"
+            }
+          },
+          {
+            "serviceId": "map",
+            "instanceId": "format-1",
+            "state": {
+              "mode": "replace",
+              "template": {
+                "=": "'tick ' + params.triggerCount"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
