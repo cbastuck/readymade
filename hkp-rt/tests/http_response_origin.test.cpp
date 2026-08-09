@@ -1,6 +1,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <list>
@@ -76,12 +77,22 @@ public:
     services.push_back(std::move(svc));
   }
 
+  // Counts calls naming a service this host does not hold. Never REQUIRE here:
+  // the server calls processFrom from its io thread, Catch2's macros are not
+  // thread-safe, and a failing one throws — an exception escaping that thread
+  // terminates the process instead of failing the test. Assert this on the test
+  // thread instead.
+  std::atomic<int> unknownServiceCalls{0};
+
   Data processFrom(const Service& svc, Data data,
                    bool advanceBefore,
                    std::function<void(Data)> callback) override {
     auto it = std::find_if(services.begin(), services.end(),
       [&](const auto& s) { return s->getId() == svc.getId(); });
-    REQUIRE(it != services.end());
+    if (it == services.end()) {
+      ++unknownServiceCalls;
+      return data;
+    }
 
     for (auto next = advanceBefore ? std::next(it) : it;
          next != services.end(); ++next) {
@@ -153,6 +164,18 @@ struct Endpoint {
   MockRuntimeHost host;
   std::shared_ptr<HttpServerSubservices> server;
 
+  // With a nested pipeline the service answers the caller *before* running the
+  // services behind it, so httpGet can return — and this object can start being
+  // destroyed — while the server's io thread is still inside processFrom,
+  // walking a service list going out from under it. Bypassing stops the server
+  // and joins that thread, and a destructor body runs before any member is
+  // destroyed, so by the time `host` goes there is nothing left in flight.
+  ~Endpoint() {
+    if (server) {
+      server->configure(Data(json{{"bypass", true}}));
+    }
+  }
+
   unsigned short port() const {
     return server->getState().value("port", static_cast<unsigned short>(0));
   }
@@ -196,6 +219,7 @@ TEST_CASE("the nested pipeline answers when it is the only handler",
   auto endpoint = serve(/*withSubservices=*/true, /*withOuterService=*/false);
   REQUIRE(endpoint->port() != 0);
   REQUIRE(httpGet(endpoint->port(), "/") == R"({"from":"subservice"})");
+  REQUIRE(endpoint->host.unknownServiceCalls == 0);
 }
 
 TEST_CASE("the nested pipeline still answers when services follow the server",
@@ -205,6 +229,7 @@ TEST_CASE("the nested pipeline still answers when services follow the server",
   auto endpoint = serve(/*withSubservices=*/true, /*withOuterService=*/true);
   REQUIRE(endpoint->port() != 0);
   REQUIRE(httpGet(endpoint->port(), "/") == R"({"from":"subservice"})");
+  REQUIRE(endpoint->host.unknownServiceCalls == 0);
 }
 
 TEST_CASE("the outer runtime answers when there is no nested pipeline",
