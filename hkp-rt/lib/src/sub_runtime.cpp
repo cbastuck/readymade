@@ -149,6 +149,12 @@ void SubRuntime::sendData(Data data, MessagePurpose purpose,
   m_parent.sendData(std::move(data), purpose, sender, std::move(callback));
 }
 
+void SubRuntime::notifyProcessFinished(const Service&, const Data&)
+{
+  // Nested services aren't surfaced as top-level frames, so a SubRuntime sends
+  // no per-service "call-process" bracket and has none to close here.
+}
+
 std::shared_ptr<SubRuntime> SubRuntime::createSubRuntime(const Service& ownerInParent,
                                                          const json& servicesConfig)
 {

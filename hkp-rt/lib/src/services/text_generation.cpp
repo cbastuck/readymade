@@ -1,12 +1,14 @@
 #include "./text_generation.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <functional>
 #include <iostream>
 #include <mutex>
 #include <optional>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <boost/beast/core.hpp>
@@ -529,6 +531,26 @@ private:
 
 #endif // HKP_LLAMA_ENABLED
 
+// An immutable snapshot of everything a single generation needs, taken on the
+// pipeline thread before the work is handed to the worker.  It lets the worker
+// run without touching the service's mutable config, which configure() may
+// change concurrently; only the local model object stays shared (guarded by
+// TextGenerationImpl::localMutex).
+struct GenParams
+{
+  std::string backend;
+  std::string serverUrl;
+  std::string model;
+  json messages;
+  double temperature = kDefaultTemperature;
+  double topP = kDefaultTopP;
+  int topK = kDefaultTopK;
+  int maxTokens = kDefaultMaxTokens;
+  double timeoutSec = kDefaultTimeoutSec;
+  std::optional<bool> thinking;
+  bool stream = true;
+};
+
 } // namespace
 
 struct TextGenerationImpl
@@ -551,6 +573,14 @@ struct TextGenerationImpl
   // full result is still emitted once, when generation finishes.
   bool stream = true;
   std::string status = "idle";
+
+  // Inference is long-running, so process() hands it to this worker instead of
+  // blocking the pipeline thread (the App event loop / UI thread). `generating`
+  // admits one generation at a time; `localMutex` guards the shared local model
+  // so configure() never reloads it while the worker is decoding.
+  std::atomic<bool> generating{ false };
+  std::thread worker;
+  std::mutex localMutex;
 
   // Local-backend config lives on LocalLlama when it is compiled in, so that
   // the loaded-model cache is invalidated in lockstep with the values.
@@ -596,7 +626,15 @@ TextGeneration::TextGeneration(const std::string& instanceId)
 {
 }
 
-TextGeneration::~TextGeneration() = default;
+TextGeneration::~TextGeneration()
+{
+  // Let any in-flight generation finish so the worker never touches a
+  // half-destroyed service (it calls sendNotification/emit through the base).
+  if (m_impl && m_impl->worker.joinable())
+  {
+    m_impl->worker.join();
+  }
+}
 
 json TextGeneration::configure(Data data)
 {
@@ -624,12 +662,22 @@ json TextGeneration::configure(Data data)
       }
     }
     updateIfNeeded(m_impl->model, (*j)["model"]);
-    if (j->contains("modelPath") && (*j)["modelPath"].is_string())
     {
-      m_impl->modelPathRef() = expandUser((*j)["modelPath"].get<std::string>());
+      // Mutate the local model's paths and invalidate its cached model together,
+      // under the lock the worker holds while decoding, so a reload can never
+      // race an in-flight generation (which would free the model out from under
+      // it). A configure() arriving mid-generation blocks here until it ends.
+      std::lock_guard<std::mutex> lock(m_impl->localMutex);
+      if (j->contains("modelPath") && (*j)["modelPath"].is_string())
+      {
+        m_impl->modelPathRef() = expandUser((*j)["modelPath"].get<std::string>());
+      }
+      updateIfNeeded(m_impl->contextSizeRef(), (*j)["contextSize"]);
+      updateIfNeeded(m_impl->gpuLayersRef(), (*j)["gpuLayers"]);
+#ifdef HKP_LLAMA_ENABLED
+      m_impl->local.invalidateIfStale();
+#endif
     }
-    updateIfNeeded(m_impl->contextSizeRef(), (*j)["contextSize"]);
-    updateIfNeeded(m_impl->gpuLayersRef(), (*j)["gpuLayers"]);
     updateIfNeeded(m_impl->systemPrompt, (*j)["systemPrompt"]);
     updateIfNeeded(m_impl->temperature, (*j)["temperature"]);
     updateIfNeeded(m_impl->topP, (*j)["topP"]);
@@ -646,10 +694,6 @@ json TextGeneration::configure(Data data)
     {
       m_impl->stream = (*j)["stream"];
     }
-
-#ifdef HKP_LLAMA_ENABLED
-    m_impl->local.invalidateIfStale();
-#endif
   }
   return Service::configure(data);
 }
@@ -717,6 +761,9 @@ Data TextGeneration::process(Data data)
     return Null();
   }
 
+  // These close over `this` only, so a copy survives the return of process()
+  // and can run on the worker thread. sendNotification marshals onto the App
+  // event loop, so it is safe to call from there.
   auto setStatus = [this](const std::string& status, const std::string& detail = {})
   {
     m_impl->status = status;
@@ -728,7 +775,7 @@ Data TextGeneration::process(Data data)
     sendNotification(Data(payload));
   };
 
-  auto fail = [&](const std::string& message) -> Data
+  auto fail = [this, setStatus](const std::string& message) -> Data
   {
     setStatus("error");
     json result = { { "error", message } };
@@ -736,7 +783,12 @@ Data TextGeneration::process(Data data)
     return Data(result);
   };
 
-  // ── Build the message list ────────────────────────────────────────────────
+  auto notifyText = [this](const std::string& text)
+  {
+    sendNotification(Data(json{ { "streamText", text } }));
+  };
+
+  // ── Build the message list (cheap; stays on the pipeline thread) ────────────
   json messages = json::array();
   std::string prompt;
   if (auto str = getStringFromData(data); str)
@@ -786,206 +838,272 @@ Data TextGeneration::process(Data data)
     }
   }
 
-  auto notifyText = [this](const std::string& text)
+  // Only one generation may run at a time: the local llama_context is single
+  // threaded with a per-call KV cache, and the server backend opens one
+  // connection. Reject an overlapping request rather than corrupt that state.
+  bool expected = false;
+  if (!m_impl->generating.compare_exchange_strong(expected, true))
   {
-    sendNotification(Data(json{ { "streamText", text } }));
+    setStatus("error", "a generation is already in progress");
+    // Defer rather than stop: the in-flight generation is still running and its
+    // emit() will close this service's processing bracket.
+    return deferCompletion();
+  }
+
+  // Snapshot the config so the worker never reads fields configure() may change
+  // underneath it. The local model object itself stays shared, guarded by
+  // localMutex.
+  GenParams params;
+  params.backend = m_impl->backend;
+  params.serverUrl = m_impl->serverUrl;
+  params.model = m_impl->model;
+  params.messages = std::move(messages);
+  params.temperature = m_impl->temperature;
+  params.topP = m_impl->topP;
+  params.topK = m_impl->topK;
+  params.maxTokens = m_impl->maxTokens;
+  params.timeoutSec = m_impl->timeoutSec;
+  params.thinking = m_impl->thinking;
+  params.stream = m_impl->stream;
+
+  // The inference below runs for seconds; doing it here would block the thread
+  // that drives the pipeline (the App event loop / UI thread). Compute it in a
+  // worker instead and emit() the result when done — the same inversion of
+  // control a cache-miss uses — so the services after this one run then.
+  auto generate = [this, setStatus, fail, notifyText, params]() -> Data
+  {
+    const auto started = std::chrono::steady_clock::now();
+    json response;
+
+    if (params.backend == "local")
+    {
+#ifdef HKP_LLAMA_ENABLED
+      // Held across ensure()+generate() so configure() cannot reload the model
+      // mid-decode (see configure()).
+      std::unique_lock<std::mutex> lock(m_impl->localMutex);
+      if (m_impl->local.modelPath.empty())
+      {
+        return fail("local backend needs a modelPath pointing to a .gguf file");
+      }
+
+      if (!m_impl->local.isLoaded())
+      {
+        setStatus("loading", "loading model '" + m_impl->local.modelPath + "'");
+      }
+      if (auto error = m_impl->local.ensure(); !error.empty())
+      {
+        return fail(error);
+      }
+
+      std::vector<ChatMessage> chat;
+      chat.reserve(params.messages.size());
+      for (const auto& message : params.messages)
+      {
+        chat.push_back({ message.value("role", std::string("user")),
+                         message.value("content", std::string{}) });
+      }
+
+      auto rendered = m_impl->local.applyChatTemplate(chat);
+      if (rendered.empty())
+      {
+        return fail("failed to apply the model's chat template");
+      }
+
+      setStatus("generating");
+      auto generation = m_impl->local.generate(
+        rendered,
+        params.temperature,
+        params.topP,
+        params.topK,
+        params.maxTokens,
+        params.stream ? notifyText : std::function<void(const std::string&)>{}
+      );
+      const std::string modelId = m_impl->local.modelPath;
+      lock.unlock();
+
+      // A context overrun or decode failure still leaves usable text behind, so
+      // only a completely empty generation is treated as an error.
+      if (!generation.error.empty() && generation.text.empty())
+      {
+        return fail("generation failed: " + generation.error);
+      }
+      if (params.stream)
+      {
+        sendNotification(Data(json{ { "streamText", generation.text }, { "streamDone", true } }));
+      }
+
+      response = {
+        { "choices", json::array({ json{ { "message", json{ { "role", "assistant" },
+                                                            { "content", generation.text } } } } }) },
+        { "model", modelId },
+        { "usage", json{ { "prompt_tokens", generation.promptTokens },
+                         { "completion_tokens", generation.completionTokens } } }
+      };
+#else
+      return fail(kBuildHint);
+#endif
+    }
+    else
+    {
+      json payload = {
+        { "messages", params.messages },
+        { "temperature", params.temperature },
+        { "top_p", params.topP },
+        { "top_k", params.topK },
+        { "max_tokens", params.maxTokens },
+        { "stream", params.stream }
+      };
+      if (!params.model.empty())
+      {
+        payload["model"] = params.model;
+      }
+      if (params.thinking)
+      {
+        // llama-server extension (Qwen-style chat templates); only sent when
+        // explicitly configured so other backends never see the field.
+        payload["chat_template_kwargs"] = json{ { "enable_thinking", *params.thinking } };
+      }
+
+      setStatus("generating");
+      try
+      {
+        auto parsed = urls::parse_uri_reference(params.serverUrl);
+        if (parsed.has_error())
+        {
+          return fail("serverUrl is not a valid URL: " + params.serverUrl);
+        }
+        const auto url = parsed.value();
+        const auto host = std::string(url.encoded_host());
+        const bool isHttps = url.scheme_id() == urls::scheme::https;
+        auto port = url.port();
+        if (port.empty())
+        {
+          port = isHttps ? "443" : "80";
+        }
+        const auto target = std::string(url.encoded_path()) + "/v1/chat/completions";
+        const auto timeout = std::chrono::milliseconds(static_cast<long long>(params.timeoutSec * 1000));
+        const auto body = payload.dump();
+
+        net::io_context ioc;
+        tcp::resolver resolver(ioc);
+        const auto endpoints = resolver.resolve(host, port);
+
+        if (isHttps)
+        {
+          ssl::context ctx(ssl::context::tlsv12_client);
+          load_root_certificates(ctx);
+          ctx.set_verify_mode(ssl::verify_peer);
+
+          beast::ssl_stream<beast::tcp_stream> stream(ioc, ctx);
+          if (!SSL_set_tlsext_host_name(stream.native_handle(), host.c_str()))
+          {
+            beast::error_code ec{ static_cast<int>(::ERR_get_error()), net::error::get_ssl_category() };
+            throw beast::system_error{ ec };
+          }
+          beast::get_lowest_layer(stream).expires_after(timeout);
+          beast::get_lowest_layer(stream).connect(endpoints);
+          stream.handshake(ssl::stream_base::client);
+          response = chatCompletion(stream, host, target, body, params.stream, notifyText);
+
+          beast::error_code ec;
+          stream.shutdown(ec);
+        }
+        else
+        {
+          beast::tcp_stream stream(ioc);
+          stream.expires_after(timeout);
+          stream.connect(endpoints);
+          response = chatCompletion(stream, host, target, body, params.stream, notifyText);
+
+          beast::error_code ec;
+          stream.socket().shutdown(tcp::socket::shutdown_both, ec);
+        }
+      }
+      catch (const ServerError& e)
+      {
+        // The server answered and said no; its message is the useful part.
+        return fail(e.what());
+      }
+      catch (const std::exception&)
+      {
+        // Anything else is a transport failure — most often nothing listening.
+        return fail(serverHint(params.serverUrl));
+      }
+
+      if (params.stream)
+      {
+        std::string text;
+        std::string thinking;
+        if (response.contains("choices") && response["choices"].is_array() && !response["choices"].empty())
+        {
+          splitThinking(response["choices"][0]["message"], text, thinking);
+        }
+        sendNotification(Data(json{ { "streamText", text }, { "streamDone", true } }));
+      }
+    }
+
+    // ── Build the result ──────────────────────────────────────────────────────
+    if (!response.contains("choices") || !response["choices"].is_array() || response["choices"].empty()
+        || !response["choices"][0].contains("message"))
+    {
+      return fail("unexpected response shape: " + response.dump().substr(0, 200));
+    }
+
+    std::string text;
+    std::string thinking;
+    splitThinking(response["choices"][0]["message"], text, thinking);
+
+    const auto usage = response.value("usage", json::object());
+    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now() - started).count();
+
+    json result = {
+      { "text", text },
+      { "model", response.value("model", params.model) },
+      { "durationMs", elapsed },
+      { "usage", json{ { "promptTokens", usage.value("prompt_tokens", 0) },
+                       { "completionTokens", usage.value("completion_tokens", 0) } } }
+    };
+    if (!thinking.empty())
+    {
+      result["thinking"] = thinking;
+    }
+
+    setStatus("idle");
+    sendNotification(Data(result));
+    return Data(result);
   };
 
-  const auto started = std::chrono::steady_clock::now();
-  json response;
-
-  if (m_impl->backend == "local")
+  // A previous worker may have finished but not been joined yet; reap it before
+  // launching the next. The generating CAS above guarantees single ownership of
+  // the thread handle at this point.
+  if (m_impl->worker.joinable())
   {
-#ifdef HKP_LLAMA_ENABLED
-    if (m_impl->local.modelPath.empty())
-    {
-      return fail("local backend needs a modelPath pointing to a .gguf file");
-    }
-
-    if (!m_impl->local.isLoaded())
-    {
-      setStatus("loading", "loading model '" + m_impl->local.modelPath + "'");
-    }
-    if (auto error = m_impl->local.ensure(); !error.empty())
-    {
-      return fail(error);
-    }
-
-    std::vector<ChatMessage> chat;
-    chat.reserve(messages.size());
-    for (const auto& message : messages)
-    {
-      chat.push_back({ message.value("role", std::string("user")),
-                       message.value("content", std::string{}) });
-    }
-
-    auto rendered = m_impl->local.applyChatTemplate(chat);
-    if (rendered.empty())
-    {
-      return fail("failed to apply the model's chat template");
-    }
-
-    setStatus("generating");
-    auto generation = m_impl->local.generate(
-      rendered,
-      m_impl->temperature,
-      m_impl->topP,
-      m_impl->topK,
-      m_impl->maxTokens,
-      m_impl->stream ? notifyText : std::function<void(const std::string&)>{}
-    );
-
-    // A context overrun or decode failure still leaves usable text behind, so
-    // only a completely empty generation is treated as an error.
-    if (!generation.error.empty() && generation.text.empty())
-    {
-      return fail("generation failed: " + generation.error);
-    }
-    if (m_impl->stream)
-    {
-      sendNotification(Data(json{ { "streamText", generation.text }, { "streamDone", true } }));
-    }
-
-    response = {
-      { "choices", json::array({ json{ { "message", json{ { "role", "assistant" },
-                                                          { "content", generation.text } } } } }) },
-      { "model", m_impl->local.modelPath },
-      { "usage", json{ { "prompt_tokens", generation.promptTokens },
-                       { "completion_tokens", generation.completionTokens } } }
-    };
-#else
-    return fail(kBuildHint);
-#endif
+    m_impl->worker.join();
   }
-  else
+  m_impl->worker = std::thread([this, generate]()
   {
-    json payload = {
-      { "messages", messages },
-      { "temperature", m_impl->temperature },
-      { "top_p", m_impl->topP },
-      { "top_k", m_impl->topK },
-      { "max_tokens", m_impl->maxTokens },
-      { "stream", m_impl->stream }
-    };
-    if (!m_impl->model.empty())
-    {
-      payload["model"] = m_impl->model;
-    }
-    if (m_impl->thinking)
-    {
-      // llama-server extension (Qwen-style chat templates); only sent when
-      // explicitly configured so other backends never see the field.
-      payload["chat_template_kwargs"] = json{ { "enable_thinking", *m_impl->thinking } };
-    }
-
-    setStatus("generating");
     try
     {
-      auto parsed = urls::parse_uri_reference(m_impl->serverUrl);
-      if (parsed.has_error())
+      Data out = generate();
+      if (!isNull(out))
       {
-        return fail("serverUrl is not a valid URL: " + m_impl->serverUrl);
-      }
-      const auto url = parsed.value();
-      const auto host = std::string(url.encoded_host());
-      const bool isHttps = url.scheme_id() == urls::scheme::https;
-      auto port = url.port();
-      if (port.empty())
-      {
-        port = isHttps ? "443" : "80";
-      }
-      const auto target = std::string(url.encoded_path()) + "/v1/chat/completions";
-      const auto timeout = std::chrono::milliseconds(static_cast<long long>(m_impl->timeoutSec * 1000));
-      const auto body = payload.dump();
-
-      net::io_context ioc;
-      tcp::resolver resolver(ioc);
-      const auto endpoints = resolver.resolve(host, port);
-
-      if (isHttps)
-      {
-        ssl::context ctx(ssl::context::tlsv12_client);
-        load_root_certificates(ctx);
-        ctx.set_verify_mode(ssl::verify_peer);
-
-        beast::ssl_stream<beast::tcp_stream> stream(ioc, ctx);
-        if (!SSL_set_tlsext_host_name(stream.native_handle(), host.c_str()))
-        {
-          beast::error_code ec{ static_cast<int>(::ERR_get_error()), net::error::get_ssl_category() };
-          throw beast::system_error{ ec };
-        }
-        beast::get_lowest_layer(stream).expires_after(timeout);
-        beast::get_lowest_layer(stream).connect(endpoints);
-        stream.handshake(ssl::stream_base::client);
-        response = chatCompletion(stream, host, target, body, m_impl->stream, notifyText);
-
-        beast::error_code ec;
-        stream.shutdown(ec);
-      }
-      else
-      {
-        beast::tcp_stream stream(ioc);
-        stream.expires_after(timeout);
-        stream.connect(endpoints);
-        response = chatCompletion(stream, host, target, body, m_impl->stream, notifyText);
-
-        beast::error_code ec;
-        stream.socket().shutdown(tcp::socket::shutdown_both, ec);
+        // Drive the services after this one with the finished result. This
+        // starts a fresh pipeline traversal on the event loop.
+        emit(out);
       }
     }
-    catch (const ServerError& e)
+    catch (const std::exception& e)
     {
-      // The server answered and said no; its message is the useful part.
-      return fail(e.what());
+      std::cerr << "text-generation worker failed: " << e.what() << std::endl;
     }
-    catch (const std::exception&)
-    {
-      // Anything else is a transport failure — most often nothing listening.
-      return fail(serverHint(m_impl->serverUrl));
-    }
+    m_impl->generating = false;
+  });
 
-    if (m_impl->stream)
-    {
-      std::string text;
-      std::string thinking;
-      if (response.contains("choices") && response["choices"].is_array() && !response["choices"].empty())
-      {
-        splitThinking(response["choices"][0]["message"], text, thinking);
-      }
-      sendNotification(Data(json{ { "streamText", text }, { "streamDone", true } }));
-    }
-  }
-
-  // ── Emit the result ───────────────────────────────────────────────────────
-  if (!response.contains("choices") || !response["choices"].is_array() || response["choices"].empty()
-      || !response["choices"][0].contains("message"))
-  {
-    return fail("unexpected response shape: " + response.dump().substr(0, 200));
-  }
-
-  std::string text;
-  std::string thinking;
-  splitThinking(response["choices"][0]["message"], text, thinking);
-
-  const auto usage = response.value("usage", json::object());
-  const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-    std::chrono::steady_clock::now() - started).count();
-
-  json result = {
-    { "text", text },
-    { "model", response.value("model", m_impl->model) },
-    { "durationMs", elapsed },
-    { "usage", json{ { "promptTokens", usage.value("prompt_tokens", 0) },
-                     { "completionTokens", usage.value("completion_tokens", 0) } } }
-  };
-  if (!thinking.empty())
-  {
-    result["thinking"] = thinking;
-  }
-
-  setStatus("idle");
-  sendNotification(Data(result));
-  return Data(result);
+  // Stop the synchronous push; the worker emit()s the result when it is ready,
+  // which also closes this service's processing bracket (deferCompletion tells
+  // the runtime to withhold the immediate "call-process-finished").
+  return deferCompletion();
 }
 
 }

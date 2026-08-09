@@ -1,8 +1,12 @@
 #include "./text_to_speech.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <iostream>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <types/ringbuffer.h>
@@ -178,6 +182,21 @@ private:
 
 #endif // HKP_SPEECH_ENABLED
 
+// An immutable snapshot of everything one synthesis needs, taken on the pipeline
+// thread before the work is handed to the worker. Only the local engine stays
+// shared (guarded by localMutex).
+struct TtsParams
+{
+  std::string backend;
+  std::string serverUrl;
+  std::string model;
+  std::string voice;
+  int speakerId = 0;
+  double speed = kDefaultSpeed;
+  double timeoutSec = kDefaultTimeoutSec;
+  std::string text;
+};
+
 } // namespace
 
 struct TextToSpeechImpl
@@ -190,6 +209,14 @@ struct TextToSpeechImpl
   double speed = kDefaultSpeed;
   double timeoutSec = kDefaultTimeoutSec;
   std::string status = "idle";
+
+  // Synthesis is long-running, so process() hands it to this worker instead of
+  // blocking the pipeline thread (the App event loop / UI thread). `generating`
+  // admits one at a time; `localMutex` guards the shared engine so configure()
+  // never reloads it while the worker is synthesizing.
+  std::atomic<bool> generating{ false };
+  std::thread worker;
+  std::mutex localMutex;
 
   // Local-backend config lives on LocalKokoro when it is compiled in, so that
   // the loaded-engine cache is invalidated in lockstep with the values.
@@ -270,7 +297,15 @@ TextToSpeech::TextToSpeech(const std::string& instanceId)
 {
 }
 
-TextToSpeech::~TextToSpeech() = default;
+TextToSpeech::~TextToSpeech()
+{
+  // Let any in-flight synthesis finish so the worker never touches a
+  // half-destroyed service (it calls sendNotification/emit through the base).
+  if (m_impl && m_impl->worker.joinable())
+  {
+    m_impl->worker.join();
+  }
+}
 
 json TextToSpeech::configure(Data data)
 {
@@ -300,14 +335,25 @@ json TextToSpeech::configure(Data data)
     updateIfNeeded(m_impl->model, (*j)["model"]);
     updateIfNeeded(m_impl->voice, (*j)["voice"]);
     updateIfNeeded(m_impl->speakerId, (*j)["speakerId"]);
-    if (j->contains("modelPath") && (*j)["modelPath"].is_string())   { m_impl->modelPathRef()  = speech::expandUser((*j)["modelPath"].get<std::string>()); }
-    if (j->contains("voicesPath") && (*j)["voicesPath"].is_string()) { m_impl->voicesPathRef() = speech::expandUser((*j)["voicesPath"].get<std::string>()); }
-    if (j->contains("tokensPath") && (*j)["tokensPath"].is_string()) { m_impl->tokensPathRef() = speech::expandUser((*j)["tokensPath"].get<std::string>()); }
-    if (j->contains("dataDir") && (*j)["dataDir"].is_string())       { m_impl->dataDirRef()    = speech::expandUser((*j)["dataDir"].get<std::string>()); }
-    if (j->contains("lexicon") && (*j)["lexicon"].is_string())       { m_impl->lexiconRef()    = speech::expandUser((*j)["lexicon"].get<std::string>()); }
-    if (j->contains("dictDir") && (*j)["dictDir"].is_string())       { m_impl->dictDirRef()    = speech::expandUser((*j)["dictDir"].get<std::string>()); }
-    updateIfNeeded(m_impl->langRef(), (*j)["lang"]);
-    updateIfNeeded(m_impl->numThreadsRef(), (*j)["numThreads"]);
+    {
+      // Mutate the engine's model paths/config and invalidate its cached engine
+      // together, under the lock the worker holds while synthesizing, so a
+      // reload can never race an in-flight synthesis (which would free the
+      // engine out from under it). A configure() arriving mid-run blocks here
+      // until it ends.
+      std::lock_guard<std::mutex> lock(m_impl->localMutex);
+      if (j->contains("modelPath") && (*j)["modelPath"].is_string())   { m_impl->modelPathRef()  = speech::expandUser((*j)["modelPath"].get<std::string>()); }
+      if (j->contains("voicesPath") && (*j)["voicesPath"].is_string()) { m_impl->voicesPathRef() = speech::expandUser((*j)["voicesPath"].get<std::string>()); }
+      if (j->contains("tokensPath") && (*j)["tokensPath"].is_string()) { m_impl->tokensPathRef() = speech::expandUser((*j)["tokensPath"].get<std::string>()); }
+      if (j->contains("dataDir") && (*j)["dataDir"].is_string())       { m_impl->dataDirRef()    = speech::expandUser((*j)["dataDir"].get<std::string>()); }
+      if (j->contains("lexicon") && (*j)["lexicon"].is_string())       { m_impl->lexiconRef()    = speech::expandUser((*j)["lexicon"].get<std::string>()); }
+      if (j->contains("dictDir") && (*j)["dictDir"].is_string())       { m_impl->dictDirRef()    = speech::expandUser((*j)["dictDir"].get<std::string>()); }
+      updateIfNeeded(m_impl->langRef(), (*j)["lang"]);
+      updateIfNeeded(m_impl->numThreadsRef(), (*j)["numThreads"]);
+#ifdef HKP_SPEECH_ENABLED
+      m_impl->local.invalidateIfStale();
+#endif
+    }
     updateIfNeeded(m_impl->timeoutSec, (*j)["timeoutSec"]);
     if (j->contains("speed") && (*j)["speed"].is_number())
     {
@@ -317,10 +363,6 @@ json TextToSpeech::configure(Data data)
         m_impl->speed = speed;
       }
     }
-
-#ifdef HKP_SPEECH_ENABLED
-    m_impl->local.invalidateIfStale();
-#endif
   }
   return Service::configure(data);
 }
@@ -360,6 +402,9 @@ Data TextToSpeech::process(Data data)
     return Null();
   }
 
+  // These close over `this` only, so a copy survives the return of process()
+  // and can run on the worker thread. sendNotification marshals onto the App
+  // event loop, so it is safe to call from there.
   auto setStatus = [this](const std::string& status, const std::string& detail = {})
   {
     m_impl->status = status;
@@ -371,7 +416,7 @@ Data TextToSpeech::process(Data data)
     sendNotification(Data(payload));
   };
 
-  auto fail = [&](const std::string& message) -> Data
+  auto fail = [this, setStatus](const std::string& message) -> Data
   {
     setStatus("error");
     json result = { { "error", message } };
@@ -379,7 +424,7 @@ Data TextToSpeech::process(Data data)
     return Data(result);
   };
 
-  // ── Extract the text ──────────────────────────────────────────────────────
+  // ── Extract the text (cheap; stays on the pipeline thread) ──────────────────
   std::string text;
   if (auto str = getStringFromData(data); str)
   {
@@ -405,111 +450,172 @@ Data TextToSpeech::process(Data data)
     return fail("text-to-speech expects String input or JSON with 'text' or 'prompt'");
   }
 
-  const auto started = std::chrono::steady_clock::now();
-  std::vector<float> samples;
-  int sampleRate = kDefaultSampleRate;
-
-  if (m_impl->backend == "local")
+  // Only one synthesis at a time: the local engine is not reentrant and the
+  // server backend opens one connection. Reject an overlapping request.
+  bool expected = false;
+  if (!m_impl->generating.compare_exchange_strong(expected, true))
   {
-#ifdef HKP_SPEECH_ENABLED
-    if (m_impl->local.modelPath.empty() || m_impl->local.voicesPath.empty() ||
-        m_impl->local.tokensPath.empty())
-    {
-      return fail("local backend needs modelPath, voicesPath, and tokensPath (a sherpa Kokoro model)");
-    }
-
-    if (!m_impl->local.isLoaded())
-    {
-      setStatus("loading", "loading Kokoro model");
-    }
-    if (auto error = m_impl->local.ensure(); !error.empty())
-    {
-      return fail(error);
-    }
-
-    setStatus("generating");
-    auto synthesis = m_impl->local.generate(text, m_impl->speed, m_impl->speakerId);
-    if (!synthesis.error.empty())
-    {
-      return fail("synthesis failed: " + synthesis.error);
-    }
-    samples = std::move(synthesis.samples);
-    sampleRate = synthesis.sampleRate;
-#else
-    return fail(kBuildHint);
-#endif
+    setStatus("error", "a synthesis is already in progress");
+    // Defer rather than stop: the in-flight synthesis is still running and its
+    // emit() will close this service's processing bracket.
+    return deferCompletion();
   }
-  else
+
+  TtsParams params;
+  params.backend = m_impl->backend;
+  params.serverUrl = m_impl->serverUrl;
+  params.model = m_impl->model;
+  params.voice = m_impl->voice;
+  params.speakerId = m_impl->speakerId;
+  params.speed = m_impl->speed;
+  params.timeoutSec = m_impl->timeoutSec;
+  params.text = std::move(text);
+
+  // The synthesis below runs for seconds; doing it here would block the thread
+  // that drives the pipeline (the App event loop / UI thread). Compute it in a
+  // worker instead and emit() the audio when done, so the services after this
+  // one run then (inversion of control).
+  auto synthesize = [this, setStatus, fail, params]() -> Data
   {
-    setStatus("generating");
-    json payload = {
-      { "model", m_impl->model },
-      { "input", text },
-      { "voice", m_impl->voice },
-      { "response_format", "wav" },
-      { "speed", m_impl->speed }
+    const auto started = std::chrono::steady_clock::now();
+    std::vector<float> samples;
+    int sampleRate = kDefaultSampleRate;
+
+    if (params.backend == "local")
+    {
+#ifdef HKP_SPEECH_ENABLED
+      // Held across ensure()+generate() so configure() cannot reload the engine
+      // mid-synthesis (see configure()).
+      std::unique_lock<std::mutex> lock(m_impl->localMutex);
+      if (m_impl->local.modelPath.empty() || m_impl->local.voicesPath.empty() ||
+          m_impl->local.tokensPath.empty())
+      {
+        return fail("local backend needs modelPath, voicesPath, and tokensPath (a sherpa Kokoro model)");
+      }
+
+      if (!m_impl->local.isLoaded())
+      {
+        setStatus("loading", "loading Kokoro model");
+      }
+      if (auto error = m_impl->local.ensure(); !error.empty())
+      {
+        return fail(error);
+      }
+
+      setStatus("generating");
+      auto synthesis = m_impl->local.generate(params.text, params.speed, params.speakerId);
+      lock.unlock();
+
+      if (!synthesis.error.empty())
+      {
+        return fail("synthesis failed: " + synthesis.error);
+      }
+      samples = std::move(synthesis.samples);
+      sampleRate = synthesis.sampleRate;
+#else
+      return fail(kBuildHint);
+#endif
+    }
+    else
+    {
+      setStatus("generating");
+      json payload = {
+        { "model", params.model },
+        { "input", params.text },
+        { "voice", params.voice },
+        { "response_format", "wav" },
+        { "speed", params.speed }
+      };
+      try
+      {
+        const auto timeout = std::chrono::milliseconds(
+          static_cast<long long>(params.timeoutSec * 1000));
+        auto response = speech::httpPost(
+          params.serverUrl, "/v1/audio/speech",
+          "application/json", "audio/wav", payload.dump(), timeout);
+
+        if (response.status >= 400)
+        {
+          return fail("server returned HTTP " + std::to_string(response.status) + ": " +
+                      response.body.substr(0, 200));
+        }
+        if (!speech::readWavPcm(response.body, samples, sampleRate))
+        {
+          return fail("server response was not a 16-bit PCM WAV (Content-Type: " +
+                      response.contentType + ")");
+        }
+      }
+      catch (const speech::ServerError& e)
+      {
+        return fail(e.what());
+      }
+      catch (const std::exception&)
+      {
+        return fail(serverHint(params.serverUrl));
+      }
+    }
+
+    if (samples.empty())
+    {
+      return fail("synthesis produced no audio");
+    }
+
+    // ── Build the audio ───────────────────────────────────────────────────────
+    // One FloatRingBuffer hop is capped at the runtime's fixed buffer size; keep
+    // the head of a longer utterance and report the truncation.
+    auto ring = std::make_shared<FloatRingBuffer>("text-to-speech");
+    const size_t capacity = ring->getInternalBufferSize();
+    const bool truncated = samples.size() > capacity;
+    const size_t emitted = truncated ? capacity : samples.size();
+    ring->appendBinary(reinterpret_cast<const char*>(samples.data()), emitted * sizeof(float));
+
+    const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::steady_clock::now() - started).count();
+
+    json meta = {
+      { "voice", params.voice },
+      { "sampleRate", sampleRate },
+      { "samples", static_cast<uint64_t>(emitted) },
+      { "audioMs", sampleRate > 0 ? static_cast<int>(static_cast<double>(emitted) / sampleRate * 1000.0) : 0 },
+      { "generationMs", static_cast<int>(elapsed) }
     };
+    if (truncated)
+    {
+      meta["truncated"] = static_cast<uint64_t>(samples.size() - capacity);
+    }
+
+    setStatus("idle");
+    sendNotification(Data(meta));
+    return Data(ring);
+  };
+
+  // Reap a previous finished-but-unjoined worker before launching the next; the
+  // generating CAS above guarantees single ownership of the thread handle here.
+  if (m_impl->worker.joinable())
+  {
+    m_impl->worker.join();
+  }
+  m_impl->worker = std::thread([this, synthesize]()
+  {
     try
     {
-      const auto timeout = std::chrono::milliseconds(
-        static_cast<long long>(m_impl->timeoutSec * 1000));
-      auto response = speech::httpPost(
-        m_impl->serverUrl, "/v1/audio/speech",
-        "application/json", "audio/wav", payload.dump(), timeout);
-
-      if (response.status >= 400)
+      Data out = synthesize();
+      if (!isNull(out))
       {
-        return fail("server returned HTTP " + std::to_string(response.status) + ": " +
-                    response.body.substr(0, 200));
-      }
-      if (!speech::readWavPcm(response.body, samples, sampleRate))
-      {
-        return fail("server response was not a 16-bit PCM WAV (Content-Type: " +
-                    response.contentType + ")");
+        emit(out);
       }
     }
-    catch (const speech::ServerError& e)
+    catch (const std::exception& e)
     {
-      return fail(e.what());
+      std::cerr << "text-to-speech worker failed: " << e.what() << std::endl;
     }
-    catch (const std::exception&)
-    {
-      return fail(serverHint(m_impl->serverUrl));
-    }
-  }
+    m_impl->generating = false;
+  });
 
-  if (samples.empty())
-  {
-    return fail("synthesis produced no audio");
-  }
-
-  // ── Emit the audio ────────────────────────────────────────────────────────
-  // One FloatRingBuffer hop is capped at the runtime's fixed buffer size; keep
-  // the head of a longer utterance and report the truncation.
-  auto ring = std::make_shared<FloatRingBuffer>("text-to-speech");
-  const size_t capacity = ring->getInternalBufferSize();
-  const bool truncated = samples.size() > capacity;
-  const size_t emitted = truncated ? capacity : samples.size();
-  ring->appendBinary(reinterpret_cast<const char*>(samples.data()), emitted * sizeof(float));
-
-  const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
-    std::chrono::steady_clock::now() - started).count();
-
-  json meta = {
-    { "voice", m_impl->voice },
-    { "sampleRate", sampleRate },
-    { "samples", static_cast<uint64_t>(emitted) },
-    { "audioMs", sampleRate > 0 ? static_cast<int>(static_cast<double>(emitted) / sampleRate * 1000.0) : 0 },
-    { "generationMs", static_cast<int>(elapsed) }
-  };
-  if (truncated)
-  {
-    meta["truncated"] = static_cast<uint64_t>(samples.size() - capacity);
-  }
-
-  setStatus("idle");
-  sendNotification(Data(meta));
-  return Data(ring);
+  // Stop the synchronous push; the worker emit()s the audio when it is ready,
+  // which also closes this service's processing bracket (deferCompletion tells
+  // the runtime to withhold the immediate "call-process-finished").
+  return deferCompletion();
 }
 
 }

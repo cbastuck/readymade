@@ -1,7 +1,11 @@
 #include "./speech_to_text.h"
 
+#include <atomic>
 #include <chrono>
+#include <iostream>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "./speech_http.h"
@@ -172,6 +176,19 @@ private:
 
 #endif // HKP_SPEECH_ENABLED
 
+// An immutable snapshot of everything one transcription needs, taken on the
+// pipeline thread before the work is handed to the worker. The audio samples are
+// moved in; only the local recognizer stays shared (guarded by localMutex).
+struct SttParams
+{
+  std::string backend;
+  std::string serverUrl;
+  std::string model;
+  int sampleRate = kDefaultSampleRate;
+  double timeoutSec = kDefaultTimeoutSec;
+  std::vector<float> samples;
+};
+
 } // namespace
 
 struct SpeechToTextImpl
@@ -182,6 +199,14 @@ struct SpeechToTextImpl
   int sampleRate = kDefaultSampleRate;
   double timeoutSec = kDefaultTimeoutSec;
   std::string status = "idle";
+
+  // Transcription is long-running, so process() hands it to this worker instead
+  // of blocking the pipeline thread (the App event loop / UI thread).
+  // `generating` admits one at a time; `localMutex` guards the shared recognizer
+  // so configure() never reloads it while the worker is decoding.
+  std::atomic<bool> generating{ false };
+  std::thread worker;
+  std::mutex localMutex;
 
   // Local-backend config lives on LocalWhisper when it is compiled in, so that
   // the loaded-recognizer cache is invalidated in lockstep with the values.
@@ -247,7 +272,15 @@ SpeechToText::SpeechToText(const std::string& instanceId)
 {
 }
 
-SpeechToText::~SpeechToText() = default;
+SpeechToText::~SpeechToText()
+{
+  // Let any in-flight transcription finish so the worker never touches a
+  // half-destroyed service (it calls sendNotification/emit through the base).
+  if (m_impl && m_impl->worker.joinable())
+  {
+    m_impl->worker.join();
+  }
+}
 
 json SpeechToText::configure(Data data)
 {
@@ -275,18 +308,29 @@ json SpeechToText::configure(Data data)
       }
     }
     updateIfNeeded(m_impl->model, (*j)["model"]);
-    for (const char* pathKey : { "encoderPath", "decoderPath", "tokensPath" })
     {
-      if (j->contains(pathKey) && (*j)[pathKey].is_string())
+      // Mutate the recognizer's paths/config and invalidate its cached model
+      // together, under the lock the worker holds while decoding, so a reload
+      // can never race an in-flight transcription (which would free the model
+      // out from under it). A configure() arriving mid-run blocks here until
+      // it ends.
+      std::lock_guard<std::mutex> lock(m_impl->localMutex);
+      for (const char* pathKey : { "encoderPath", "decoderPath", "tokensPath" })
       {
-        auto expanded = speech::expandUser((*j)[pathKey].get<std::string>());
-        if (std::string(pathKey) == "encoderPath") { m_impl->encoderPathRef() = expanded; }
-        else if (std::string(pathKey) == "decoderPath") { m_impl->decoderPathRef() = expanded; }
-        else { m_impl->tokensPathRef() = expanded; }
+        if (j->contains(pathKey) && (*j)[pathKey].is_string())
+        {
+          auto expanded = speech::expandUser((*j)[pathKey].get<std::string>());
+          if (std::string(pathKey) == "encoderPath") { m_impl->encoderPathRef() = expanded; }
+          else if (std::string(pathKey) == "decoderPath") { m_impl->decoderPathRef() = expanded; }
+          else { m_impl->tokensPathRef() = expanded; }
+        }
       }
+      updateIfNeeded(m_impl->languageRef(), (*j)["language"]);
+      updateIfNeeded(m_impl->numThreadsRef(), (*j)["numThreads"]);
+#ifdef HKP_SPEECH_ENABLED
+      m_impl->local.invalidateIfStale();
+#endif
     }
-    updateIfNeeded(m_impl->languageRef(), (*j)["language"]);
-    updateIfNeeded(m_impl->numThreadsRef(), (*j)["numThreads"]);
     updateIfNeeded(m_impl->timeoutSec, (*j)["timeoutSec"]);
     if (j->contains("sampleRate") && (*j)["sampleRate"].is_number())
     {
@@ -296,10 +340,6 @@ json SpeechToText::configure(Data data)
         m_impl->sampleRate = rate;
       }
     }
-
-#ifdef HKP_SPEECH_ENABLED
-    m_impl->local.invalidateIfStale();
-#endif
   }
   return Service::configure(data);
 }
@@ -333,6 +373,9 @@ Data SpeechToText::process(Data data)
     return Null();
   }
 
+  // These close over `this` only, so a copy survives the return of process()
+  // and can run on the worker thread. sendNotification marshals onto the App
+  // event loop, so it is safe to call from there.
   auto setStatus = [this](const std::string& status, const std::string& detail = {})
   {
     m_impl->status = status;
@@ -344,7 +387,7 @@ Data SpeechToText::process(Data data)
     sendNotification(Data(payload));
   };
 
-  auto fail = [&](const std::string& message) -> Data
+  auto fail = [this, setStatus](const std::string& message) -> Data
   {
     setStatus("error");
     json result = { { "error", message } };
@@ -352,6 +395,8 @@ Data SpeechToText::process(Data data)
     return Data(result);
   };
 
+  // Consume the audio synchronously (cheap) — the ring buffer is the input Data
+  // and must be read before process() returns.
   auto ring = getRingBufferFromData(data);
   if (!ring)
   {
@@ -365,111 +410,170 @@ Data SpeechToText::process(Data data)
     return fail("received empty audio");
   }
 
-  const int durationMs = static_cast<int>(
-    static_cast<double>(samples.size()) / m_impl->sampleRate * 1000.0);
-
-  std::string text;
-  std::string language;
-  json segments = json::array();
-
-  if (m_impl->backend == "local")
+  // Only one transcription at a time: the local recognizer is not reentrant and
+  // the server backend opens one connection. Reject an overlapping request.
+  bool expected = false;
+  if (!m_impl->generating.compare_exchange_strong(expected, true))
   {
+    setStatus("error", "a transcription is already in progress");
+    // Defer rather than stop: the in-flight transcription is still running and
+    // its emit() will close this service's processing bracket.
+    return deferCompletion();
+  }
+
+  SttParams params;
+  params.backend = m_impl->backend;
+  params.serverUrl = m_impl->serverUrl;
+  params.model = m_impl->model;
+  params.sampleRate = m_impl->sampleRate;
+  params.timeoutSec = m_impl->timeoutSec;
+  params.samples = std::move(samples);
+
+  // The inference below runs for seconds; doing it here would block the thread
+  // that drives the pipeline (the App event loop / UI thread). Compute it in a
+  // worker instead and emit() the result when done, so the services after this
+  // one run then (inversion of control).
+  auto transcribe = [this, setStatus, fail, params]() -> Data
+  {
+    const int durationMs = static_cast<int>(
+      static_cast<double>(params.samples.size()) / params.sampleRate * 1000.0);
+
+    std::string text;
+    std::string language;
+    json segments = json::array();
+
+    if (params.backend == "local")
+    {
 #ifdef HKP_SPEECH_ENABLED
-    if (m_impl->local.encoderPath.empty() || m_impl->local.decoderPath.empty() ||
-        m_impl->local.tokensPath.empty())
-    {
-      return fail("local backend needs encoderPath, decoderPath, and tokensPath (a sherpa Whisper model)");
-    }
+      // Held across ensure()+transcribe() so configure() cannot reload the model
+      // mid-decode (see configure()).
+      std::unique_lock<std::mutex> lock(m_impl->localMutex);
+      if (m_impl->local.encoderPath.empty() || m_impl->local.decoderPath.empty() ||
+          m_impl->local.tokensPath.empty())
+      {
+        return fail("local backend needs encoderPath, decoderPath, and tokensPath (a sherpa Whisper model)");
+      }
 
-    if (!m_impl->local.isLoaded())
-    {
-      setStatus("loading", "loading Whisper model");
-    }
-    if (auto error = m_impl->local.ensure(); !error.empty())
-    {
-      return fail(error);
-    }
+      if (!m_impl->local.isLoaded())
+      {
+        setStatus("loading", "loading Whisper model");
+      }
+      if (auto error = m_impl->local.ensure(); !error.empty())
+      {
+        return fail(error);
+      }
 
-    setStatus("transcribing");
-    auto transcription = m_impl->local.transcribe(samples, m_impl->sampleRate);
-    if (!transcription.error.empty() && transcription.text.empty())
-    {
-      return fail("transcription failed: " + transcription.error);
-    }
-    text = transcription.text;
-    language = transcription.language;
-    segments = transcription.segments;
+      setStatus("transcribing");
+      auto transcription = m_impl->local.transcribe(params.samples, params.sampleRate);
+      lock.unlock();
+
+      if (!transcription.error.empty() && transcription.text.empty())
+      {
+        return fail("transcription failed: " + transcription.error);
+      }
+      text = transcription.text;
+      language = transcription.language;
+      segments = transcription.segments;
 #else
-    return fail(kBuildHint);
+      return fail(kBuildHint);
 #endif
-  }
-  else
-  {
-    setStatus("transcribing");
-    auto resampled = speech::resampleLinear(samples, m_impl->sampleRate, kDefaultSampleRate);
-    const std::string wav = speech::writeWavPcm16(resampled, kDefaultSampleRate);
-
-    const std::string boundary = "----hkprtSpeechBoundary7MA4YWxkTrZu0gW";
-    std::string body;
-    auto field = [&](const std::string& name, const std::string& value)
+    }
+    else
     {
+      setStatus("transcribing");
+      auto resampled = speech::resampleLinear(params.samples, params.sampleRate, kDefaultSampleRate);
+      const std::string wav = speech::writeWavPcm16(resampled, kDefaultSampleRate);
+
+      const std::string boundary = "----hkprtSpeechBoundary7MA4YWxkTrZu0gW";
+      std::string body;
+      auto field = [&](const std::string& name, const std::string& value)
+      {
+        body += "--" + boundary + "\r\n";
+        body += "Content-Disposition: form-data; name=\"" + name + "\"\r\n\r\n";
+        body += value + "\r\n";
+      };
+      field("model", params.model);
+      field("response_format", "json");
       body += "--" + boundary + "\r\n";
-      body += "Content-Disposition: form-data; name=\"" + name + "\"\r\n\r\n";
-      body += value + "\r\n";
+      body += "Content-Disposition: form-data; name=\"file\"; filename=\"audio.wav\"\r\n";
+      body += "Content-Type: audio/wav\r\n\r\n";
+      body += wav;
+      body += "\r\n--" + boundary + "--\r\n";
+
+      try
+      {
+        const auto timeout = std::chrono::milliseconds(
+          static_cast<long long>(params.timeoutSec * 1000));
+        auto response = speech::httpPost(
+          params.serverUrl, "/v1/audio/transcriptions",
+          "multipart/form-data; boundary=" + boundary, "application/json", body, timeout);
+
+        if (response.status >= 400)
+        {
+          return fail("server returned HTTP " + std::to_string(response.status) + ": " +
+                      response.body.substr(0, 200));
+        }
+        auto parsed = json::parse(response.body, nullptr, false);
+        if (parsed.is_discarded() || !parsed.is_object() || !parsed.contains("text"))
+        {
+          return fail("unexpected response shape: " + response.body.substr(0, 200));
+        }
+        text = parsed.value("text", std::string{});
+        language = parsed.value("language", std::string{});
+        if (parsed.contains("segments") && parsed["segments"].is_array())
+        {
+          segments = parsed["segments"];
+        }
+      }
+      catch (const speech::ServerError& e)
+      {
+        return fail(e.what());
+      }
+      catch (const std::exception&)
+      {
+        return fail(serverHint(params.serverUrl));
+      }
+    }
+
+    json result = {
+      { "text", text },
+      { "language", language },
+      { "durationMs", durationMs },
+      { "segments", segments }
     };
-    field("model", m_impl->model);
-    field("response_format", "json");
-    body += "--" + boundary + "\r\n";
-    body += "Content-Disposition: form-data; name=\"file\"; filename=\"audio.wav\"\r\n";
-    body += "Content-Type: audio/wav\r\n\r\n";
-    body += wav;
-    body += "\r\n--" + boundary + "--\r\n";
 
-    try
-    {
-      const auto timeout = std::chrono::milliseconds(
-        static_cast<long long>(m_impl->timeoutSec * 1000));
-      auto response = speech::httpPost(
-        m_impl->serverUrl, "/v1/audio/transcriptions",
-        "multipart/form-data; boundary=" + boundary, "application/json", body, timeout);
-
-      if (response.status >= 400)
-      {
-        return fail("server returned HTTP " + std::to_string(response.status) + ": " +
-                    response.body.substr(0, 200));
-      }
-      auto parsed = json::parse(response.body, nullptr, false);
-      if (parsed.is_discarded() || !parsed.is_object() || !parsed.contains("text"))
-      {
-        return fail("unexpected response shape: " + response.body.substr(0, 200));
-      }
-      text = parsed.value("text", std::string{});
-      language = parsed.value("language", std::string{});
-      if (parsed.contains("segments") && parsed["segments"].is_array())
-      {
-        segments = parsed["segments"];
-      }
-    }
-    catch (const speech::ServerError& e)
-    {
-      return fail(e.what());
-    }
-    catch (const std::exception&)
-    {
-      return fail(serverHint(m_impl->serverUrl));
-    }
-  }
-
-  json result = {
-    { "text", text },
-    { "language", language },
-    { "durationMs", durationMs },
-    { "segments", segments }
+    setStatus("idle");
+    sendNotification(Data(result));
+    return Data(result);
   };
 
-  setStatus("idle");
-  sendNotification(Data(result));
-  return Data(result);
+  // Reap a previous finished-but-unjoined worker before launching the next; the
+  // generating CAS above guarantees single ownership of the thread handle here.
+  if (m_impl->worker.joinable())
+  {
+    m_impl->worker.join();
+  }
+  m_impl->worker = std::thread([this, transcribe]()
+  {
+    try
+    {
+      Data out = transcribe();
+      if (!isNull(out))
+      {
+        emit(out);
+      }
+    }
+    catch (const std::exception& e)
+    {
+      std::cerr << "speech-to-text worker failed: " << e.what() << std::endl;
+    }
+    m_impl->generating = false;
+  });
+
+  // Stop the synchronous push; the worker emit()s the result when it is ready,
+  // which also closes this service's processing bracket (deferCompletion tells
+  // the runtime to withhold the immediate "call-process-finished").
+  return deferCompletion();
 }
 
 }

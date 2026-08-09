@@ -248,6 +248,14 @@ void Runtime::sendData(Data data, MessagePurpose purpose, const std::string& sen
   });
 }
 
+void Runtime::notifyProcessFinished(const Service& service, const Data& data)
+{
+  // Same lifecycle event the synchronous loop sends, but driven by emit() when
+  // deferred async work lands — so a service's processing indicator brackets the
+  // real duration instead of the instant deferCompletion() return.
+  sendServiceLifecycleNotification(service, "call-process-finished", data);
+}
+
 Data Runtime::process(Data data, json context)
 {
   onProcessBegin();
@@ -268,12 +276,20 @@ Data Runtime::processFrom(const Service &service, Data data, bool advanceBefore,
     throw std::runtime_error("Runtime::processNext service not found in runtime");
   }
 
-  for (auto next = advanceBefore ? std::next(it) : it; 
-       next != m_services.cend(); 
+  for (auto next = advanceBefore ? std::next(it) : it;
+       next != m_services.cend();
        ++next)
   {
     sendServiceLifecycleNotification(**next, "call-process", data);
     data = (*next)->startProcess(data);
+    if ((*next)->takeProcessDeferred())
+    {
+      // The service handed its work to a worker and will emit() the real result
+      // later; emit() sends this service's "call-process-finished" then. Withhold
+      // it here and stop the synchronous push (the deferred result re-enters via
+      // emit → nextAsync, driving the services that follow).
+      return onProcessEnd(Null());
+    }
     sendServiceLifecycleNotification(**next, "call-process-finished", data);
     if (isNull(data)) // stop processing on null
     {
