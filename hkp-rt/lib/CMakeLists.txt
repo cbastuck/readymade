@@ -95,6 +95,7 @@ target_sources(${PROJECT_NAME}
       src/services/text_generation.cpp
       src/services/speech_to_text.cpp
       src/services/text_to_speech.cpp
+      src/services/tts_inflect.cpp
       src/services/websocket_writer.cpp
       src/services/writer_session.cpp
       src/services/peer_server/peer_registry.cpp

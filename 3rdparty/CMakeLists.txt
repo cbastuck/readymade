@@ -45,6 +45,151 @@ if(HKP_SPEECH_ENABLED)
     )
 endif()
 
+# inflect — the vendored Inflect v2 TTS pipeline (3rdparty/inflect), the
+# text-to-speech service's second local backend. Needs espeak-ng for
+# grapheme-to-phoneme and onnxruntime for inference, both of which sherpa-onnx
+# already fetches: with HKP_SPEECH_ENABLED this costs no new third-party code,
+# and without it the pair is far smaller than sherpa's stack (no kaldi, no
+# openfst, no piper-phonemize), which is what makes a local voice viable on
+# mobile. The two options are independent so a build can take either, both, or
+# neither.
+#
+# Declared AFTER sherpa so the reuse checks below see sherpa's targets.
+if(IOS OR ANDROID)
+    set(_HKP_INFLECT_DEFAULT OFF)
+else()
+    set(_HKP_INFLECT_DEFAULT ON)
+endif()
+option(HKP_INFLECT_ENABLED "Embed the inflect TTS pipeline for the text-to-speech inflect backend" ${_HKP_INFLECT_DEFAULT})
+
+if(HKP_INFLECT_ENABLED)
+    include(FetchContent)
+
+    # ── espeak-ng ────────────────────────────────────────────────────────────
+    # Regular (non-imported) targets are visible across directory scopes, so
+    # sherpa's copy is detectable by name. When it is absent, fetch the same
+    # fork at the same commit sherpa pins: two static espeak-ng archives in one
+    # binary would collide on symbols, so the version is a build-wide singleton
+    # either way, and pinning the same one keeps the two configurations
+    # identical. Phoneme output is fixed by the *data directory*, not by the
+    # code version, so this choice does not affect what either engine says.
+    if(NOT TARGET espeak-ng)
+        set(BUILD_ESPEAK_NG_TESTS OFF CACHE BOOL "" FORCE)
+        # Also gates data.cmake, which compiles ~19 MB of dictionaries for 40+
+        # languages. The service takes its data directory as a runtime path
+        # (an en-US-only set is 824 KB), so the build never needs to produce one.
+        set(BUILD_ESPEAK_NG_EXE OFF CACHE BOOL "" FORCE)
+        set(USE_ASYNC OFF CACHE BOOL "" FORCE)
+        set(USE_MBROLA OFF CACHE BOOL "" FORCE)
+        set(USE_LIBSONIC OFF CACHE BOOL "" FORCE)
+        set(USE_LIBPCAUDIO OFF CACHE BOOL "" FORCE)
+        set(USE_KLATT OFF CACHE BOOL "" FORCE)
+        set(USE_SPEECHPLAYER OFF CACHE BOOL "" FORCE)
+        FetchContent_Declare(espeak_ng
+            URL      "https://github.com/csukuangfj/espeak-ng/archive/ed530aa113046142eb5115cf2fc9157854d0ffe1.zip"
+            URL_HASH "SHA256=e4e262cbe34f7fe21f91f1ba3397f2728e1f30eafbae7853f2b753a9ed13f0dd"
+        )
+        # MakeAvailable rather than Populate + add_subdirectory: CMake 4 removed
+        # the ability to call FetchContent_Populate with declared details.
+        FetchContent_MakeAvailable(espeak_ng)
+        message(STATUS "hkp-rt-deps: inflect fetched its own espeak-ng")
+    else()
+        message(STATUS "hkp-rt-deps: inflect reuses sherpa-onnx's espeak-ng")
+    endif()
+
+    # sherpa populates espeak_ng inside a function, so its espeak_ng_SOURCE_DIR
+    # never reaches this scope. FetchContent's registry is global and answers
+    # for either path.
+    FetchContent_GetProperties(espeak_ng)
+    if(NOT espeak_ng_SOURCE_DIR)
+        message(FATAL_ERROR "HKP_INFLECT_ENABLED: could not locate the espeak-ng source directory")
+    endif()
+
+    # ── onnxruntime ──────────────────────────────────────────────────────────
+    # sherpa creates its `onnxruntime` as a non-GLOBAL IMPORTED target, which is
+    # scoped to its own directory and therefore invisible here — `if(TARGET
+    # onnxruntime)` would wrongly report absent and download a second, different
+    # copy. Probe the FetchContent state instead, which is global, and reuse the
+    # unpacked archive by path. When sherpa is off, fetch the prebuilt package
+    # inflect was developed against.
+    FetchContent_GetProperties(onnxruntime)
+    if(onnxruntime_POPULATED)
+        set(_hkp_ort_root "${onnxruntime_SOURCE_DIR}")
+        message(STATUS "hkp-rt-deps: inflect reuses sherpa-onnx's onnxruntime")
+    else()
+        set(HKP_INFLECT_ORT_VERSION "1.28.0" CACHE STRING "ONNX Runtime version fetched for the inflect backend")
+        if(APPLE)
+            if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm64|aarch64")
+                set(_ort_platform "osx-arm64")
+            else()
+                set(_ort_platform "osx-x86_64")
+            endif()
+        elseif(WIN32)
+            set(_ort_platform "win-x64")
+        elseif(UNIX)
+            if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64")
+                set(_ort_platform "linux-aarch64")
+            else()
+                set(_ort_platform "linux-x64")
+            endif()
+        else()
+            message(FATAL_ERROR "HKP_INFLECT_ENABLED: no prebuilt ONNX Runtime for this platform")
+        endif()
+        if(WIN32)
+            set(_ort_archive "onnxruntime-${_ort_platform}-${HKP_INFLECT_ORT_VERSION}.zip")
+        else()
+            set(_ort_archive "onnxruntime-${_ort_platform}-${HKP_INFLECT_ORT_VERSION}.tgz")
+        endif()
+        FetchContent_Declare(onnxruntime
+            URL "https://github.com/microsoft/onnxruntime/releases/download/v${HKP_INFLECT_ORT_VERSION}/${_ort_archive}"
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+        )
+        # The archive carries no CMakeLists, so this only unpacks it.
+        FetchContent_MakeAvailable(onnxruntime)
+        set(_hkp_ort_root "${onnxruntime_SOURCE_DIR}")
+        message(STATUS "hkp-rt-deps: inflect fetched onnxruntime ${HKP_INFLECT_ORT_VERSION}")
+    endif()
+
+    find_path(HKP_INFLECT_ORT_INCLUDE_DIR onnxruntime_cxx_api.h
+              HINTS "${_hkp_ort_root}/include" NO_DEFAULT_PATH)
+    find_library(HKP_INFLECT_ORT_LIBRARY NAMES onnxruntime
+                 HINTS "${_hkp_ort_root}/lib" NO_DEFAULT_PATH)
+    if(NOT HKP_INFLECT_ORT_INCLUDE_DIR OR NOT HKP_INFLECT_ORT_LIBRARY)
+        message(FATAL_ERROR
+            "HKP_INFLECT_ENABLED: onnxruntime headers or library not found under ${_hkp_ort_root}")
+    endif()
+
+    # ── the library ──────────────────────────────────────────────────────────
+    # A separate static target rather than sources compiled straight into
+    # hkp-rt-lib: espeak-ng exports src/include/compat on every consumer's
+    # include path, and the stub wctype.h there shadows the system header and
+    # breaks <string>/<regex>. Linking the archives by path takes the code
+    # without those usage requirements, and keeping it to one target confines
+    # the private include directory to the files that need it.
+    add_library(hkp-inflect STATIC
+        ${CMAKE_CURRENT_SOURCE_DIR}/inflect/src/engine.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/inflect/src/normalize.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/inflect/src/num2words.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/inflect/src/phonemize.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/inflect/src/tokens.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/inflect/src/utf8.cpp
+    )
+    target_include_directories(hkp-inflect
+        PUBLIC  ${CMAKE_CURRENT_SOURCE_DIR}/inflect/include
+        PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/inflect/src
+                ${HKP_INFLECT_ORT_INCLUDE_DIR}
+                ${espeak_ng_SOURCE_DIR}/src/include
+    )
+    target_link_libraries(hkp-inflect PUBLIC
+        ${HKP_INFLECT_ORT_LIBRARY}
+        $<TARGET_FILE:espeak-ng>
+        $<TARGET_FILE:ucd>
+    )
+    # $<TARGET_FILE:> drops the build ordering that naming the target would carry.
+    add_dependencies(hkp-inflect espeak-ng ucd)
+    set_target_properties(hkp-inflect PROPERTIES POSITION_INDEPENDENT_CODE ON)
+endif()
+
 # nlohmann/json — declared before inja so inja reuses this version. Skipped when
 # sherpa-onnx already created the target (see above) so the build shares one copy.
 if(NOT TARGET nlohmann_json)
@@ -167,6 +312,14 @@ if(HKP_SPEECH_ENABLED AND TARGET sherpa-onnx-c-api)
     message(STATUS "hkp-rt-deps: speech-to-text/text-to-speech local backends enabled (sherpa-onnx)")
 else()
     message(STATUS "hkp-rt-deps: speech-to-text/text-to-speech local backends disabled (server backend still available)")
+endif()
+
+if(HKP_INFLECT_ENABLED AND TARGET hkp-inflect)
+    target_link_libraries(${PROJECT_NAME} INTERFACE hkp-inflect)
+    target_compile_definitions(${PROJECT_NAME} INTERFACE HKP_INFLECT_ENABLED)
+    message(STATUS "hkp-rt-deps: text-to-speech inflect backend enabled")
+else()
+    message(STATUS "hkp-rt-deps: text-to-speech inflect backend disabled")
 endif()
 
 if(jwt-cpp_ADDED)

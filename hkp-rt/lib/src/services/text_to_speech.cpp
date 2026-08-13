@@ -12,6 +12,7 @@
 #include <types/ringbuffer.h>
 
 #include "./speech_http.h"
+#include "./tts_inflect.h"
 
 #ifdef HKP_SPEECH_ENABLED
   #include "sherpa-onnx/c-api/c-api.h"
@@ -31,6 +32,26 @@ constexpr double kDefaultTimeoutSec = 120.0;
 
 const std::string kBuildHint =
   "the local backend is not compiled in — rebuild hkp-rt with -DHKP_SPEECH_ENABLED=ON";
+
+const std::string kInflectBuildHint =
+  "the inflect backend is not compiled in — rebuild hkp-rt with -DHKP_INFLECT_ENABLED=ON";
+
+// espeak-ng holds its configuration and working buffers in process globals, and
+// both local engines phonemize through it — Kokoro by way of sherpa-onnx, the
+// inflect backend directly. Two synthesis workers calling in at once corrupt
+// that state, and the workers belong to different service instances, so the
+// per-instance lock cannot see the collision. Serialize on one lock for the
+// whole process.
+//
+// This orders the calls; it does not reconcile them. Whichever engine
+// initialises espeak-ng first fixes the data directory for the process, so a
+// build carrying both should point `dataDir` and `espeakDataPath` at the same
+// espeak-ng-data.
+std::mutex& espeakGlobalMutex()
+{
+  static std::mutex mutex;
+  return mutex;
+}
 
 std::string serverHint(const std::string& serverUrl)
 {
@@ -233,6 +254,64 @@ struct TextToSpeechImpl
   int numThreads = kDefaultNumThreads;
 #endif
 
+  // Likewise for the inflect backend. Its config is separate rather than shared
+  // with Kokoro's: the two describe different model layouts (one directory of
+  // two graphs versus four independent file paths), so a board that names both
+  // stays readable and switching backend does not silently reinterpret a path.
+#ifdef HKP_INFLECT_ENABLED
+  LocalInflect inflect;
+#else
+  std::string inflectModelDir;
+  std::string inflectEspeakDataPath;
+  int inflectNumThreads = 0;
+  double inflectVariation = 0.667;
+  long long inflectSeed = 0;
+  bool inflectSplitOnAbbreviations = true;
+#endif
+
+  std::string& inflectModelDirRef() {
+#ifdef HKP_INFLECT_ENABLED
+    return inflect.modelDir;
+#else
+    return inflectModelDir;
+#endif
+  }
+  std::string& inflectEspeakDataPathRef() {
+#ifdef HKP_INFLECT_ENABLED
+    return inflect.espeakDataPath;
+#else
+    return inflectEspeakDataPath;
+#endif
+  }
+  int& inflectNumThreadsRef() {
+#ifdef HKP_INFLECT_ENABLED
+    return inflect.numThreads;
+#else
+    return inflectNumThreads;
+#endif
+  }
+  double& inflectVariationRef() {
+#ifdef HKP_INFLECT_ENABLED
+    return inflect.variation;
+#else
+    return inflectVariation;
+#endif
+  }
+  long long& inflectSeedRef() {
+#ifdef HKP_INFLECT_ENABLED
+    return inflect.seed;
+#else
+    return inflectSeed;
+#endif
+  }
+  bool& inflectSplitOnAbbreviationsRef() {
+#ifdef HKP_INFLECT_ENABLED
+    return inflect.splitOnAbbreviations;
+#else
+    return inflectSplitOnAbbreviations;
+#endif
+  }
+
   std::string& modelPathRef()   {
 #ifdef HKP_SPEECH_ENABLED
     return local.modelPath;
@@ -325,7 +404,7 @@ json TextToSpeech::configure(Data data)
     if (j->contains("backend") && (*j)["backend"].is_string())
     {
       auto backend = (*j)["backend"].get<std::string>();
-      if (backend == "server" || backend == "local")
+      if (backend == "server" || backend == "local" || backend == "inflect")
       {
         m_impl->backend = backend;
       }
@@ -360,8 +439,31 @@ json TextToSpeech::configure(Data data)
       if (j->contains("dictDir") && (*j)["dictDir"].is_string())       { m_impl->dictDirRef()    = speech::expandUser((*j)["dictDir"].get<std::string>()); }
       updateIfNeeded(m_impl->langRef(), (*j)["lang"]);
       updateIfNeeded(m_impl->numThreadsRef(), (*j)["numThreads"]);
+
+      if (j->contains("modelDir") && (*j)["modelDir"].is_string())
+      {
+        m_impl->inflectModelDirRef() = speech::expandUser((*j)["modelDir"].get<std::string>());
+      }
+      if (j->contains("espeakDataPath") && (*j)["espeakDataPath"].is_string())
+      {
+        m_impl->inflectEspeakDataPathRef() = speech::expandUser((*j)["espeakDataPath"].get<std::string>());
+      }
+      updateIfNeeded(m_impl->inflectNumThreadsRef(), (*j)["inflectNumThreads"]);
+      updateIfNeeded(m_impl->inflectSeedRef(), (*j)["seed"]);
+      updateIfNeeded(m_impl->inflectSplitOnAbbreviationsRef(), (*j)["splitOnAbbreviations"]);
+      if (j->contains("variation") && (*j)["variation"].is_number())
+      {
+        const double variation = (*j)["variation"].get<double>();
+        if (variation >= 0.0 && variation <= 1.0)
+        {
+          m_impl->inflectVariationRef() = variation;
+        }
+      }
 #ifdef HKP_SPEECH_ENABLED
       m_impl->local.invalidateIfStale();
+#endif
+#ifdef HKP_INFLECT_ENABLED
+      m_impl->inflect.invalidateIfStale();
 #endif
     }
     updateIfNeeded(m_impl->timeoutSec, (*j)["timeoutSec"]);
@@ -398,6 +500,12 @@ json TextToSpeech::getState() const
     { "dictDir", m_impl->dictDirRef() },
     { "lang", m_impl->langRef() },
     { "numThreads", m_impl->numThreadsRef() },
+    { "modelDir", m_impl->inflectModelDirRef() },
+    { "espeakDataPath", m_impl->inflectEspeakDataPathRef() },
+    { "inflectNumThreads", m_impl->inflectNumThreadsRef() },
+    { "variation", m_impl->inflectVariationRef() },
+    { "seed", m_impl->inflectSeedRef() },
+    { "splitOnAbbreviations", m_impl->inflectSplitOnAbbreviationsRef() },
     { "speed", m_impl->speed },
     { "sampleRate", kDefaultSampleRate },
     { "timeoutSec", m_impl->timeoutSec },
@@ -513,7 +621,12 @@ Data TextToSpeech::process(Data data)
       }
 
       setStatus("generating");
-      auto synthesis = m_impl->local.generate(params.text, params.speed, params.speakerId);
+      Synthesis synthesis;
+      {
+        // Kokoro phonemizes through espeak-ng's process globals.
+        std::lock_guard<std::mutex> espeakLock(espeakGlobalMutex());
+        synthesis = m_impl->local.generate(params.text, params.speed, params.speakerId);
+      }
       lock.unlock();
 
       if (!synthesis.error.empty())
@@ -524,6 +637,40 @@ Data TextToSpeech::process(Data data)
       sampleRate = synthesis.sampleRate;
 #else
       return fail(kBuildHint);
+#endif
+    }
+    else if (params.backend == "inflect")
+    {
+#ifdef HKP_INFLECT_ENABLED
+      // Held across ensure()+generate() for the same reason as the Kokoro
+      // branch: configure() must not reload the engine mid-synthesis.
+      std::unique_lock<std::mutex> lock(m_impl->localMutex);
+
+      if (!m_impl->inflect.isLoaded())
+      {
+        setStatus("loading", "loading inflect model");
+      }
+      if (auto error = m_impl->inflect.ensure(); !error.empty())
+      {
+        return fail(error);
+      }
+
+      setStatus("generating");
+      InflectSynthesis synthesis;
+      {
+        std::lock_guard<std::mutex> espeakLock(espeakGlobalMutex());
+        synthesis = m_impl->inflect.generate(params.text, params.speed);
+      }
+      lock.unlock();
+
+      if (!synthesis.error.empty())
+      {
+        return fail(synthesis.error);
+      }
+      samples = std::move(synthesis.samples);
+      sampleRate = synthesis.sampleRate;
+#else
+      return fail(kInflectBuildHint);
 #endif
     }
     else
@@ -583,6 +730,7 @@ Data TextToSpeech::process(Data data)
       std::chrono::steady_clock::now() - started).count();
 
     json meta = {
+      { "backend", params.backend },
       { "voice", params.voice },
       { "sampleRate", sampleRate },
       { "samples", static_cast<uint64_t>(emitted) },

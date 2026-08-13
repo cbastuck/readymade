@@ -12,16 +12,19 @@
  * Service ID: text-to-speech
  * Service Name: TextToSpeech
  * Runtime: hkp-rt
- * Modes: synthesize, via one of two backends selected by the `backend` state:
+ * Modes: synthesize, via one of three backends selected by the `backend` state:
  *        local (default) — runs a Kokoro ONNX model in-process via sherpa-onnx
+ *        inflect         — runs an Inflect v2 model in-process via 3rdparty/inflect
  *        server          — OpenAI-compatible /v1/audio/speech client
- * Key Config: backend (local|server),
+ * Key Config: backend (local|inflect|server),
  *             serverUrl (server backend: base URL of an OpenAI-compatible server),
  *             model (server backend: model name; local backend: unused label),
  *             voice (server backend voice name),
  *             modelPath, voicesPath, tokensPath, dataDir, lexicon, dictDir
  *             (local backend: the sherpa Kokoro model files),
  *             speakerId (local backend speaker index),
+ *             modelDir, espeakDataPath, inflectNumThreads, variation (0.0-1.0),
+ *             seed, splitOnAbbreviations (inflect backend),
  *             speed (0.5-2.0), lang, numThreads,
  *             timeoutSec (server backend request timeout)
  * IO: in=String/TextData (the text) or JSON ({text} | {prompt})
@@ -34,6 +37,20 @@
  * loaded lazily on first use through the embedded sherpa-onnx and reloaded when
  * its paths or thread count change. Compiled in only when the runtime is built
  * with -DHKP_SPEECH_ENABLED=ON (the default on desktop platforms).
+ *
+ * Inflect backend: the same lazy-load contract over two ONNX graphs in
+ * `modelDir` (onnx/duration.onnx, onnx/decode.onnx) plus an `espeakDataPath`
+ * espeak-ng-data directory. Gated independently on -DHKP_INFLECT_ENABLED=ON, so
+ * a build can carry this backend without sherpa-onnx — the two dependencies it
+ * needs are a fraction of sherpa's stack, which is what makes it the local
+ * backend that fits on mobile. Selecting a backend the build omits is reported
+ * as an error naming the option to rebuild with.
+ *
+ * Both local backends phonemize through espeak-ng, whose configuration and
+ * working buffers are process globals. Calls are serialized on one process-wide
+ * lock, but the espeak-ng data directory is fixed by whichever engine
+ * initialises first: a build carrying both should point `dataDir` and
+ * `espeakDataPath` at the same directory.
  *
  * Server backend: the service is a thin client — synthesis runs in a separate
  * process that speaks the OpenAI audio-speech API. Always available, and the
