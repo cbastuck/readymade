@@ -117,6 +117,8 @@ public:
   void sendData(Data, MessagePurpose, const std::string&,
                 std::function<void(Data)>) override {}
 
+  void notifyProcessFinished(const Service&, const Data&) override {}
+
   std::shared_ptr<SubRuntime> createSubRuntime(const Service& ownerInParent,
                                                const json& servicesConfig) override {
     REQUIRE(factory);

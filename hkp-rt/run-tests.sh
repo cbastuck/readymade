@@ -44,7 +44,14 @@ if [[ "$SUITE" != "all" && "$SUITE" != "runtime" && "$SUITE" != "services" ]]; t
   exit 2
 fi
 
-echo "==> Configuring hkp-rt tests (${CONFIG})"
+# The in-process ML backends (llama.cpp, sherpa-onnx, inflect) are the bulk of
+# this build's dependency weight and nothing under tests/ exercises them: the
+# services they belong to are registered either way and keep a server backend
+# that needs no dependency. Off by default so a test run costs what the tests
+# need; HKP_ML_BACKENDS=ON compiles the guarded regions too.
+HKP_ML_BACKENDS="${HKP_ML_BACKENDS:-OFF}"
+
+echo "==> Configuring hkp-rt tests (${CONFIG}, ML backends ${HKP_ML_BACKENDS})"
 cmake \
   -S "${HKP_RT_DIR}" \
   -B "${BUILD_DIR}" \
@@ -55,6 +62,10 @@ cmake \
   -DVCPKG_TARGET_TRIPLET="${VCPKG_TARGET_TRIPLET}" \
   -DVCPKG_OVERLAY_TRIPLETS="${VCPKG_OVERLAY_TRIPLETS_DIR}" \
   -DBUILD_TESTING=ON \
+  -DHKP_RT_BUILD_TESTS=ON \
+  -DHKP_LLAMA_ENABLED="${HKP_ML_BACKENDS}" \
+  -DHKP_SPEECH_ENABLED="${HKP_ML_BACKENDS}" \
+  -DHKP_INFLECT_ENABLED="${HKP_ML_BACKENDS}" \
   -DBUILD_HKP_SAUCER=OFF
 
 echo "==> Building hkp-rt tests (${CONFIG})"

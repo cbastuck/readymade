@@ -3,6 +3,14 @@ project(hkp-rt-deps VERSION 1.0 LANGUAGES CXX)
 
 include(cmake/CPM.cmake)
 
+# A normal variable shadowing the BUILD_TESTING cache entry that include(CTest)
+# sets: dependencies fetched below inherit it, our own test directory (a sibling
+# scope) still sees the cache value and builds its suites. Third-party projects
+# that gate on BUILD_TESTING otherwise register their own tests with CTest, and
+# ones added EXCLUDE_FROM_ALL register tests whose executables are never built —
+# they surface as "Unable to find executable" failures in an hkp-rt test run.
+set(BUILD_TESTING OFF)
+
 # =============================================================================
 # CPM packages — must all be fetched BEFORE vcpkg is included so that
 # packageProject() ALIAS targets are created before vcpkg wraps add_library.

@@ -161,6 +161,14 @@ public:
     sent.push_back({ std::move(data), purpose, sender });
   }
 
+  // Services in this host defer completion rather than notify, so the bracket
+  // close is only recorded, not forwarded as a notification.
+  std::vector<Data> processFinished;
+
+  void notifyProcessFinished(const Service&, const Data& data) override {
+    processFinished.push_back(data);
+  }
+
   size_t notificationsFrom(const std::string& sender) const {
     return static_cast<size_t>(std::count_if(
       sent.cbegin(), sent.cend(), [&](const Sent& s) {
