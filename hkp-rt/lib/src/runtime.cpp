@@ -513,12 +513,12 @@ std::string Runtime::getRuntimeUrl() const
 
 void Runtime::onProcessBegin()
 {
-  m_processContext.increment();
+  m_processDepth.increment();
 }
 
 const Data& Runtime::onProcessEnd(const Data& data, json context, std::function<void(Data)> callback)
 {
-  if (m_processContext.decrement() == 0)
+  if (m_processDepth.decrement() == 0)
   {  
     // if we are the last initiator, we should communicate the result
     if (!m_boardName.empty())

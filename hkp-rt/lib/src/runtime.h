@@ -6,7 +6,7 @@
 #include <types/message.h>
 
 #include "./uuid.h"
-#include "./process_context.h"
+#include "./process_depth.h"
 #include "./runtime_host.h"
 
 namespace hkp
@@ -98,7 +98,7 @@ private:
   std::string m_boardName;
   std::list<std::shared_ptr<Service>> m_services; // TODO: not thread safe
   std::vector<RuntimeInput> m_inputs;
-  ProcessContext m_processContext;
+  ProcessDepth m_processDepth;
   std::array<std::function<void()>, 100> m_scheduledProcesses;
 
   struct PendingResolve {
